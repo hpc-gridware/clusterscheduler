@@ -1,5 +1,53 @@
 # Full List of Fixes
 
+## v9.1.4
+
+### [CS-1129](https://hpc-gridware.atlassian.net/browse/CS-1129) Provide a UI for a modern qmon replacement for cluster configuration
+
+- [CS-2377](https://hpc-gridware.atlassian.net/browse/CS-2377) Qontrol: Add log file tracing support
+- [CS-2407](https://hpc-gridware.atlassian.net/browse/CS-2407) Qontrol: Add --config-dir: dedicated writable config directory for admin-managed files (scripts, loadsensors, license-manager)
+- [CS-2409](https://hpc-gridware.atlassian.net/browse/CS-2409) Provide a quick-start guide for Qontrol
+- [CS-2413](https://hpc-gridware.atlassian.net/browse/CS-2413) Qontrol should not load artifacts (icons etc.) from external sources
+
+### [CS-335](https://hpc-gridware.atlassian.net/browse/CS-335) dbwriter: bring-up and stabilization
+
+- [CS-1266](https://hpc-gridware.atlassian.net/browse/CS-1266) make dbwriter handle the custom usage values in accounting records
+
+### Bug
+
+- [CS-2340](https://hpc-gridware.atlassian.net/browse/CS-2340) event_master build_subscription(): unbounded client EVS_id indexes fixed sub_array (OOB heap write)
+- [CS-2341](https://hpc-gridware.atlassian.net/browse/CS-2341) cull getByteArray(): NULL-deref on unset PACK_string crashes qmaster (remote DoS)
+- [CS-2342](https://hpc-gridware.atlassian.net/browse/CS-2342) cull unpackstr(): out-of-bounds read (reads before bounds check) on crafted network buffer
+- [CS-2343](https://hpc-gridware.atlassian.net/browse/CS-2343) commlib cl_xml_parse_version: pre-auth OOB write via unsigned underflow on crafted version attribute
+- [CS-2346](https://hpc-gridware.atlassian.net/browse/CS-2346) component_parse_auth_info: unbounded pre-auth allocation from client-supplied supplementary-group count
+- [CS-2347](https://hpc-gridware.atlassian.net/browse/CS-2347) shepherd IJS: heap over-read via strlen/sscanf on non-NUL-terminated wire buffer (SETTINGS_CTRL_MSG, reconnect ACCEPT)
+- [CS-2348](https://hpc-gridware.atlassian.net/browse/CS-2348) qquota controller: crash on malformed server-supplied RQS limit value (std::stoul) and RUE key (wild pointer)
+- [CS-2349](https://hpc-gridware.atlassian.net/browse/CS-2349) Off-by-one stack buffer overflow in ulong_parse_date_time_from_string (date/time parse)
+- [CS-2350](https://hpc-gridware.atlassian.net/browse/CS-2350) NULL deref / reachable assert in var_list_parse_from_string on all-delimiter variable token
+- [CS-2353](https://hpc-gridware.atlassian.net/browse/CS-2353) sge_afs_extend_token: unbounded strcpy into err_str ignores err_str_size (latent)
+- [CS-2354](https://hpc-gridware.atlassian.net/browse/CS-2354) Format-string vulnerability in sge_tmpnam via TMPDIR (sge_dstring_sprintf)
+- [CS-2392](https://hpc-gridware.atlassian.net/browse/CS-2392) license-manager: fix lm-loadsensor.sh quote bugs, stale deployment-guide env names, and doc/runtime contract gaps (R7)
+- [CS-2403](https://hpc-gridware.atlassian.net/browse/CS-2403) qrsh/qlogin: builtin-IJS background job stuck as "Stopped (tty input)" (SIGTTIN on background stdin read; also SIGTTOU in raw mode)
+- [CS-2404](https://hpc-gridware.atlassian.net/browse/CS-2404) DRMAA: -hard -q from native spec is unioned with sge_request default instead of overriding it
+- [CS-2406](https://hpc-gridware.atlassian.net/browse/CS-2406) qsub / DRMAA: sge_request -q entries survive a command-line / native-spec -q override
+- [CS-2408](https://hpc-gridware.atlassian.net/browse/CS-2408) message from the communication library are sometimes truncated, e.g., "can't send response for this message id - protoco"
+- [CS-2410](https://hpc-gridware.atlassian.net/browse/CS-2410) qacct sometimes reports unreasonably high values for cpu and maxrss (UINT64_MAX-as-double) on systemd hosts
+
+### Improvement
+
+- [CS-2385](https://hpc-gridware.atlassian.net/browse/CS-2385) Qontrol: Add support for configuring license-manager
+- [CS-2387](https://hpc-gridware.atlassian.net/browse/CS-2387) qstat -f should display np_load_avg instead of load_avg
+- [CS-2391](https://hpc-gridware.atlassian.net/browse/CS-2391) license-manager: tolerant YAML decoding and schemaVersion key for GUI forward compatibility (R3)
+- [CS-2393](https://hpc-gridware.atlassian.net/browse/CS-2393) license-manager: log a config fingerprint at startup for restart verification (R6)
+- [CS-2399](https://hpc-gridware.atlassian.net/browse/CS-2399) qgpu: Prolog and epilog commands should work with self-defined RSMAPs
+- [CS-2402](https://hpc-gridware.atlassian.net/browse/CS-2402) qgpu should provide NVML support as fallback for load-sensor only
+- [CS-2411](https://hpc-gridware.atlassian.net/browse/CS-2411) add option to reporting_params to write the reporting file synchronously
+
+### New Feature
+
+- [CS-2389](https://hpc-gridware.atlassian.net/browse/CS-2389) license-manager: add "version --json" with capabilities and supported env vars (R1)
+- [CS-2390](https://hpc-gridware.atlassian.net/browse/CS-2390) license-manager: add "validate-config" subcommand with stable exit codes (R2)
+
 ## v9.1.3
 
 ### [CS-1129](https://hpc-gridware.atlassian.net/browse/CS-1129) Provide a UI for a modern qmon replacement for cluster configuration
