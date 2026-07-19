@@ -570,6 +570,19 @@ sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *
 
    task_id = lGetUlong(jatep, JAT_task_number);
 
+   /* CS-1908: under retention a JFINISHED ja_task lives on JB_ja_tasks until
+    * the sweep prunes it. qmod actions (suspend/unsuspend/reschedule/
+    * clearerror) target a running or errored task -- none of them make
+    * sense against a finished one, and the running-side machinery below
+    * silently no-ops when JAT_master_queue is empty (which it is once the
+    * finish path has run). Emit the same INFO the mod handler uses so the
+    * caller understands why nothing happened. */
+   if (lGetUlong(jatep, JAT_status) == JFINISHED) {
+      INFO(MSG_JOB_ALREADYFINISHED_NOMOD_U, job_id);
+      answer_list_add(answer, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
+      DRETURN(0);
+   }
+
    lListElem *queueep;
    if (lGetString(jatep, JAT_master_queue)) {
       const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);

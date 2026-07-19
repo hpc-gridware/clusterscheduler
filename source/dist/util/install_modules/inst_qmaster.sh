@@ -933,6 +933,8 @@ PrintConf()
    $ECHO "max_u_jobs             0"
    $ECHO "max_jobs               0"
    $ECHO "max_advance_reservations 0"
+   $ECHO "finished_jobs_keep_time 00:00:00"
+   $ECHO "finished_jobs_max      0"
    $ECHO "auto_user_oticket      0"
    $ECHO "auto_user_fshare       0"
    $ECHO "auto_user_default_project NONE"

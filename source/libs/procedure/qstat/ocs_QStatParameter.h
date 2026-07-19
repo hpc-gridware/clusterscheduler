@@ -103,7 +103,13 @@ namespace ocs {
 
    public:
       // @todo cleanup: declare protected and provide access methods
-      uint32_t show_ = QSTAT_DISPLAY_ALL; // similar to *show* in qhost
+      /* CS-1908: default excludes QSTAT_DISPLAY_FINISHED so a bare `qstat`
+       * behaves like `qstat -s a` (== -s prs). Before U7 removed the MORE_INFO
+       * env-var gate in process_jobs_finished_state, the FINISHED bit in
+       * QSTAT_DISPLAY_ALL was inert; without this override the default would
+       * now spill the entire retention window on every plain qstat call.
+       * Retention viewing stays opt-in via `-s f`. */
+      uint32_t show_ = QSTAT_DISPLAY_PENDING | QSTAT_DISPLAY_RUNNING | QSTAT_DISPLAY_SUSPENDED;
 
       enum class OutputMode {
          QSELECT,

@@ -78,6 +78,7 @@
 #define WAITING_SYM                        'w'
 #define EXITING_SYM                        'x'  /* NOT P1003.15D12 compliant! 'e' */
 #define ERROR_SYM                          'E'
+#define FINISHED_SYM                       'f'  /* CS-1908: retained finished ja_task; distinct from 'x' (EXITING) */
 
 /* Keep_list Constants */
 #define KEEP_NONE_SYM                      'n'

@@ -261,7 +261,10 @@ void ocs::QStatDefaultViewJSON::report_finished_jobs_started(std::ostream &os, Q
    } else {
       os << ",\n";
    }
-   os << std::string(indent * 3, ' ') << "\"jobs_finished\": [";
+   /* CS-1908 U7: renamed from "jobs_finished" — under retention this array
+    * contains the ja_tasks currently retained in the finished-history window
+    * (not the transient JOBS-WAITING-FOR-ACCOUNTING queue it modeled before). */
+   os << std::string(indent * 3, ' ') << "\"jobs_finished_retained\": [";
    indent++;
    DRETURN_VOID;
 }

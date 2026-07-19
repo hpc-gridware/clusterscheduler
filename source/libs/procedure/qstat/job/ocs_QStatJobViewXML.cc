@@ -466,6 +466,11 @@ void ocs::QStatJobViewXML::report_task_start_time(std::ostream &os, const lListE
    DRETURN_VOID;
 }
 
+void ocs::QStatJobViewXML::report_task_end_time(std::ostream &os, const lListElem *job, const lListElem *task) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
 void ocs::QStatJobViewXML::report_task_resource_map(std::ostream &os, const lListElem *job, const lListElem *task) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;

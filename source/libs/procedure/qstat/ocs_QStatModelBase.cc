@@ -88,7 +88,7 @@ void ocs::QStatModelBase::apply_state_filter(QStatParameter &parameter) {
           * come after multi byte options starting with the same character (e.g. "hs")!
           */
          static const char* flags[] = {
-            "hu", "hs", "ho", "hd", "hj", "ha", "h", "p", "r", "s", "a", nullptr
+            "hu", "hs", "ho", "hd", "hj", "ha", "h", "p", "r", "s", "f", "a", nullptr
          };
          static uint32_t bits[] = {
             (QSTAT_DISPLAY_USERHOLD|QSTAT_DISPLAY_PENDING),
@@ -101,7 +101,12 @@ void ocs::QStatModelBase::apply_state_filter(QStatParameter &parameter) {
             QSTAT_DISPLAY_PENDING,
             QSTAT_DISPLAY_RUNNING,
             QSTAT_DISPLAY_SUSPENDED,
-            (QSTAT_DISPLAY_PENDING|QSTAT_DISPLAY_RUNNING|QSTAT_DISPLAY_SUSPENDED),
+            QSTAT_DISPLAY_FINISHED,  /* CS-1908: qstat -s f = retained finished ja_tasks */
+            /* CS-1908: `-s a` means "all states" and now includes the
+             * QSTAT_DISPLAY_FINISHED retention bit. The plain `qstat` default
+             * (QStatParameter::show_) still excludes finished so users opt
+             * into the retention window either via `-s a` or `-s f`. */
+            (QSTAT_DISPLAY_PENDING|QSTAT_DISPLAY_RUNNING|QSTAT_DISPLAY_SUSPENDED|QSTAT_DISPLAY_FINISHED),
             0
          };
 
@@ -714,7 +719,7 @@ lEnumeration *ocs::QStatModelBase::get_job_view_what() {
                                    "%I%I%I"
                                    "%I->%T(%I%I%I"
                                    "%I%I%I%I"
-                                   "%I%I%I"
+                                   "%I%I%I%I"
                                    "%I)%I"
 
                                    "%I%I%I->%T"
@@ -739,7 +744,7 @@ lEnumeration *ocs::QStatModelBase::get_job_view_what() {
             JB_env_list, JB_job_args, JB_script_file,
             JB_ja_tasks, JAT_Type, JAT_state, JAT_status, JAT_hold,
             JAT_task_number, JAT_scaled_usage_list, JAT_job_restarted, JAT_task_list,
-            JAT_message_list, JAT_start_time, JAT_granted_resources_list,
+            JAT_message_list, JAT_start_time, JAT_end_time, JAT_granted_resources_list,
             JAT_granted_destin_identifier_list, JB_context,
 
             JB_cwd, JB_stderr_path_list, JB_jid_predecessor_list, JRE_Type,

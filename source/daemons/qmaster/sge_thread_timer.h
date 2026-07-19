@@ -52,3 +52,8 @@ sge_timer_terminate();
 
 [[noreturn]] void *
 sge_timer_main(void *arg);
+
+/* CS-1908: sge_reschedule_finished_jobs_sweep() lives in ocs_FinishedJobs.h
+ * (kept in a leaner translation unit so lightweight consumers such as
+ * test_qmaster_calendar can link it without pulling in this file's full
+ * timed-event-thread dependency graph). */

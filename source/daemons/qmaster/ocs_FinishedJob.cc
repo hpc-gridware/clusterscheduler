@@ -18,10 +18,12 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_Usage.h"
+#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_schedd_conf.h"
@@ -31,6 +33,7 @@
 #include "ocs_SharetreeUsage.h"
 #include "ocs_FinishedJob.h"
 #include "sge_persistence_qmaster.h"
+#include "sge_qmaster_timed_event.h"
 
 namespace {
    /* Remove the debited-job-usage entry for the given job number from the
@@ -201,4 +204,28 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
 
    lFreeList(&decay_list);
    return 0;
+}
+
+/* CS-1908 finished-job retention sweep reschedule helper. See the doxygen
+ * block on the header declaration for rationale and semantics. Kept in this
+ * translation unit rather than sge_thread_timer.cc so consumers that do not
+ * link the timed-event thread's full TU (e.g. test_qmaster_calendar) can
+ * still resolve the symbol. Mirrors the CS-1239 split between
+ * sge_sharetree_tick_handler (sge_thread_timer.cc) and
+ * sge_reschedule_sharetree_tick (ocs_SharetreeUsage.cc). */
+void
+sge_reschedule_finished_jobs_sweep() {
+   DENTER(TOP_LAYER);
+
+   te_delete_all_one_time_events(TYPE_FINISHED_JOBS_SWEEP_EVENT);
+
+   const uint32_t sweep_all = (mconf_get_finished_jobs_keep_time() == 0 &&
+                               mconf_get_finished_jobs_max() == 0) ? 1u : 0u;
+   te_event_t ev = te_new_event(sge_get_gmt64() + sge_gmt32_to_gmt64(5),
+                                TYPE_FINISHED_JOBS_SWEEP_EVENT, ONE_TIME_EVENT,
+                                sweep_all, 0, "finished-jobs-sweep");
+   te_add_event(ev);
+   te_free_event(&ev);
+
+   DRETURN_VOID;
 }

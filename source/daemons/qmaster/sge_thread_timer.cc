@@ -33,8 +33,11 @@
 /*___INFO__MARK_END__*/
 
 #include <pthread.h>
+#include <algorithm>
 #include <cstring>
+#include <vector>
 
+#include "uti/sge_bootstrap_env.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon_macros.h"
@@ -328,6 +331,145 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief CS-1908 retention sweep handler.
+ *
+ * Periodically walks master_job_list, identifies finished ja_tasks eligible for
+ * pruning by time (JAT_end_time + finished_jobs_keep_time < now) or by count
+ * (JAT falls outside the newest finished_jobs_max globally) — whichever bites
+ * first, per-tick-bounded by finished_jobs_sweep_batch (R18). Eligible JATs
+ * are pruned via sge_bury_ja_task, which owns its own BDB transaction per
+ * KTD6 (no outer wrap; the sweep loops one JAT at a time).
+ *
+ * Runs under LOCK_GLOBAL write, matching the sge_sharetree_tick_handler
+ * pattern.
+ *
+ * The event carries a "sweep_all" flag in aKey1: when 0 (normal), the tick
+ * respects retention gates and short-circuits if both are 0 (feature off);
+ * when 1, the tick drains every JFINISHED ja_task on master_job_list
+ * regardless of retention state (still capped by sweep_batch per tick). The
+ * sweep_all=1 mode is activated by sge_reschedule_finished_jobs_sweep() when
+ * retention has just been turned off via qconf -mconf, and by the bootstrap
+ * tick after qmaster start (in case retained ja_tasks were reloaded from
+ * spool for a cluster whose retention was disabled between shutdowns).
+ * The handler keeps rescheduling with sweep_all=1 until the drain is complete
+ * (finished.size() <= sweep_batch), then transitions to the normal cadence.
+ */
+static void
+sge_finished_jobs_sweep_handler(te_event_t anEvent, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
+   const uint32_t keep_time = mconf_get_finished_jobs_keep_time();
+   const uint32_t max_finished = mconf_get_finished_jobs_max();
+   const uint32_t sweep_interval = static_cast<uint32_t>(mconf_get_finished_jobs_sweep_interval());
+   const bool sweep_all = (te_get_first_numeric_key(anEvent) != 0);
+
+   /* Feature off AND no drain requested: skip the walk entirely, still
+    * self-reschedule at the normal cadence so a runtime qconf -mconf enable
+    * is picked up on the next tick. */
+   if (!sweep_all && keep_time == 0 && max_finished == 0) {
+      te_event_t ev = te_new_event(sge_get_gmt64() + sge_gmt32_to_gmt64(sweep_interval),
+                                   TYPE_FINISHED_JOBS_SWEEP_EVENT, ONE_TIME_EVENT,
+                                   0, 0, "finished-jobs-sweep");
+      te_add_event(ev);
+      te_free_event(&ev);
+      DRETURN_VOID;
+   }
+
+   MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
+
+   struct PruneCandidate {
+      lListElem *job;
+      lListElem *ja_task;
+      uint64_t end_time;
+   };
+
+   /* Phase 1: enumerate all finished ja_tasks with their end_time. Store raw
+    * pointers into master_job_list -- we hold LOCK_GLOBAL write for the whole
+    * tick, so nothing else can mutate the list, the JBs, or their JAT
+    * sublists. Phase 3 uses the stored pointers directly, avoiding a per-JAT
+    * ID relookup. sge_bury_ja_task on entry i removes only that JAT (and
+    * possibly its whole JB if entry i was the last JAT on it), which cannot
+    * invalidate any other entry's pointers: each JAT appears at most once,
+    * and if a JB is whole-removed at entry i then no other entry references
+    * it (that would contradict the "last remaining JAT" precondition). */
+   std::vector<PruneCandidate> finished;
+   lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   for_each_rw_lv(job, master_job_list) {
+      for_each_rw_lv(ja_task, lGetListRW(job, JB_ja_tasks)) {
+         if (lGetUlong(ja_task, JAT_status) == JFINISHED) {
+            finished.push_back({job, ja_task, lGetUlong64(ja_task, JAT_end_time)});
+         }
+      }
+   }
+
+   /* Phase 2: compute eligibility. Sort by end_time ascending so oldest come
+    * first — lets us mark the count-eligible prefix trivially and gives us
+    * predictable time-based eviction order. */
+   std::sort(finished.begin(), finished.end(),
+             [](const PruneCandidate &a, const PruneCandidate &b) {
+                return a.end_time < b.end_time;
+             });
+
+   const size_t count_overflow = (max_finished > 0 && finished.size() > max_finished)
+                                    ? finished.size() - max_finished
+                                    : 0;
+   const uint64_t curr_time = sge_get_gmt64();
+   const uint64_t keep_time_delta = (keep_time > 0) ? sge_gmt32_to_gmt64(keep_time) : 0;
+   const uint32_t sweep_batch = static_cast<uint32_t>(mconf_get_finished_jobs_sweep_batch());
+
+   std::vector<PruneCandidate> eligible;
+   for (size_t i = 0; i < finished.size() && eligible.size() < sweep_batch; ++i) {
+      if (sweep_all) {
+         /* Drain mode: every finished ja_task is eligible until sweep_batch
+          * bites. Ignores keep_time / max — used when retention has just
+          * been turned off (via qconf -mconf) or on qmaster start-up with
+          * retained ja_tasks reloaded from spool. */
+         eligible.push_back(finished[i]);
+         continue;
+      }
+      const bool count_eligible = (i < count_overflow);
+      const bool time_eligible = (keep_time > 0 && finished[i].end_time > 0 &&
+                                  finished[i].end_time + keep_time_delta < curr_time);
+      if (count_eligible || time_eligible) {
+         eligible.push_back(finished[i]);
+      }
+   }
+
+   /* Phase 3: prune. Pointers stored in phase 1 remain valid under the
+    * still-held LOCK_GLOBAL write (see PruneCandidate comment above). */
+   const char *sge_root = bootstrap_get_sge_root();
+   for (const PruneCandidate &c : eligible) {
+      sge_bury_ja_task(sge_root, c.job, lGetUlong(c.job, JB_job_number),
+                       c.ja_task, 1 /* spool_job */, 0 /* no_events */,
+                       ocs::SessionManager::GDI_SESSION_NONE);
+   }
+
+   SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
+
+   /* Self-reschedule at +sweep_interval. Runtime tunable changes take effect
+    * on the next tick; sge_reschedule_finished_jobs_sweep() (called from
+    * configuration_qmaster.cc after qconf -mconf) drops the pending event and
+    * re-queues at +5 s for a tighter response to interval shortening.
+    *
+    * Carry sweep_all=1 forward when we were in drain mode AND there are still
+    * finished ja_tasks beyond this tick's sweep_batch to clear -- the next
+    * tick continues the drain. Otherwise the drain is complete (or this was
+    * a normal tick) and the next tick uses sweep_all=0. */
+   const uint32_t next_sweep_all = (sweep_all && finished.size() > sweep_batch) ? 1u : 0u;
+   te_event_t ev = te_new_event(sge_get_gmt64() + sge_gmt32_to_gmt64(sweep_interval),
+                                TYPE_FINISHED_JOBS_SWEEP_EVENT, ONE_TIME_EVENT,
+                                next_sweep_all, 0, "finished-jobs-sweep");
+   te_add_event(ev);
+   te_free_event(&ev);
+
+   DRETURN_VOID;
+}
+
+/* sge_reschedule_finished_jobs_sweep() lives in ocs_FinishedJobs.cc so it can
+ * be linked into consumers (e.g. lightweight test binaries) that do not pull
+ * in this whole translation unit. See ocs_FinishedJobs.h. */
+
 /****** qmaster/sge_thread_timer/sge_timer_register_event_handler() *************
 *  NAME
 *     sge_timer_register_event_handler() -- register event handlers
@@ -362,6 +504,8 @@ sge_timer_register_event_handler() {
    te_register_event_handler(sge_sharetree_spool_handler, TYPE_SHARETREE_SPOOL_EVENT);
 
    te_register_event_handler(sge_sharetree_tick_handler, TYPE_SHARETREE_TICK_EVENT);
+
+   te_register_event_handler(sge_finished_jobs_sweep_handler, TYPE_FINISHED_JOBS_SWEEP_EVENT);
 
    /*
     * one time events
@@ -453,6 +597,21 @@ void sge_timer_start_periodic_tasks() {
     * configuration_qmaster.cc. */
    ev = te_new_event(sge_get_gmt64() + sge_gmt32_to_gmt64(5),
                      TYPE_SHARETREE_TICK_EVENT, ONE_TIME_EVENT, 0, 0, "sharetree-tick");
+   te_add_event(ev);
+   te_free_event(&ev);
+
+   /* CS-1908: bootstrap the finished-job retention sweep at +5 s. Passed with
+    * sweep_all=1 (aKey1=1) so a freshly-started qmaster whose retention was
+    * disabled between shutdowns still drains any retained ja_tasks that
+    * reloaded from spool. If nothing is retained the first tick short-
+    * circuits after a cheap master_job_list walk and reschedules
+    * sweep_all=0; if retention is enabled the first tick honours the
+    * tunables and starts pruning. The handler self-reschedules at
+    * +finished_jobs_sweep_interval. Config changes that need to take effect
+    * sooner go through sge_reschedule_finished_jobs_sweep() from
+    * configuration_qmaster.cc. */
+   ev = te_new_event(sge_get_gmt64() + sge_gmt32_to_gmt64(5),
+                     TYPE_FINISHED_JOBS_SWEEP_EVENT, ONE_TIME_EVENT, 1, 0, "finished-jobs-sweep");
    te_add_event(ev);
    te_free_event(&ev);
 

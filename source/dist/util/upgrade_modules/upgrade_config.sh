@@ -560,9 +560,25 @@ UpOrDowngradeTo902000() {
          if [ "$obj_name" = "global" ]; then
             LogIt "I" "Modifying global configuration object $file"
 
-            # Remove finished jobs (zombie jobs) attribute (deprecated and not used anymore)
-            RemoveLineWithMatch "${file}" 'finished_jobs.*' ""
-            LogIt "I" "Removed finished_jobs"
+            # CS-1908: the pre-9.2 zombie-jobs attribute finished_jobs is
+            # replaced by the retention tunables finished_jobs_max (count
+            # cap, same intent as the old attribute) and
+            # finished_jobs_keep_time (age cap, new). If the operator had a
+            # non-zero finished_jobs value we carry it forward as
+            # finished_jobs_max so the cluster keeps the same visible-history
+            # cap; retention still has to be enabled explicitly via
+            # finished_jobs_keep_time (defaulted to 0 here). Anchor the
+            # match so we do not accidentally pick up the new
+            # finished_jobs_max / finished_jobs_keep_time lines that share
+            # the finished_jobs prefix.
+            old_finished_jobs=$(grep '^finished_jobs[[:space:]]' "${file}" 2>/dev/null | head -1 | tr -s ' ' | cut -f 2 -d ' ')
+            case "${old_finished_jobs}" in
+               ''|*[!0-9]*) old_finished_jobs=0 ;;
+            esac
+            RemoveLineWithMatch "${file}" '^finished_jobs[[:space:]]' ""
+            ReplaceOrAddLine "${file}" 'finished_jobs_max.*' "finished_jobs_max ${old_finished_jobs}"
+            ReplaceOrAddLine "${file}" 'finished_jobs_keep_time.*' "finished_jobs_keep_time 0"
+            LogIt "I" "Mapped finished_jobs=${old_finished_jobs} to finished_jobs_max; added finished_jobs_keep_time=0 (retention off by default)"
 
             # Port range attribute added in 9.1.2 but might still be missing if customer did not add it manually
             port_range=$(GetAttrValue "${file}" "port_range")

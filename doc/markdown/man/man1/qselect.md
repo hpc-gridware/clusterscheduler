@@ -13,7 +13,7 @@ date: __DATE__
 # SYNTAX
 
 `qselect` \[`-help`\] \[`-l` *resource*=*val*,...\] \[`-pe` *pe_name*,...\] \[`-q` *wc_queue*,...\] 
-\[`-s` {r\|p\|s\|z\|hu\|ho\|hs\|hj\|ha\|h}+\] \[`-U` *user*,...\]
+\[`-U` *user*,...\]
 
 # DESCRIPTION
 

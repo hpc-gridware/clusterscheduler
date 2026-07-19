@@ -80,6 +80,18 @@
 #define STREE_TICK_INTERVAL_MIN 1
 #define STREE_TICK_INTERVAL_MAX 300
 
+/* CS-1908: finished-job retention qmaster_params bounds for the sweep-behaviour
+ * pair (finished_jobs_sweep_interval, finished_jobs_sweep_batch). These are
+ * tuning knobs, so they live in qmaster_params. The retention-semantics pair
+ * (finished_jobs_keep_time, finished_jobs_max) are top-level global-config
+ * attributes -- see the struct confel additions further down. */
+#define FINISHED_JOBS_SWEEP_INTERVAL_DEF   10       /* seconds between sweep ticks */
+#define FINISHED_JOBS_SWEEP_INTERVAL_MIN   1
+#define FINISHED_JOBS_SWEEP_INTERVAL_MAX   3600     /* 1 hour */
+#define FINISHED_JOBS_SWEEP_BATCH_DEF      100      /* max prunes per tick (R18 cap) */
+#define FINISHED_JOBS_SWEEP_BATCH_MIN      1
+#define FINISHED_JOBS_SWEEP_BATCH_MAX      100000
+
 /* This list is *ONLY* used by the execd and should be moved eventually */
 lList *Execd_Config_List = nullptr;
 
@@ -139,6 +151,8 @@ struct confel {                       /* cluster configuration parameters */
    char        *binding_params;      //< string containing al binding specific parameters
    char        *jsv_params;          //< string containing jsv specific parameters
    char        *topology_file;       //< None or path to a hwloc topology file
+   uint32_t    finished_jobs_keep_time; /* CS-1908: seconds a finished ja_task is retained; 0 = time dimension off */
+   uint32_t    finished_jobs_max;    /* CS-1908: global count ceiling on retained finished ja_tasks; 0 = count dimension off */
 };
 
 typedef struct confel sge_conf_type;
@@ -148,7 +162,8 @@ static sge_conf_type Master_Config = {
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr,
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
    nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0,
-   0, 0, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr
+   0, 0, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+   0, 0   /* CS-1908: finished_jobs_keep_time, finished_jobs_max */
 };
 static bool is_new_config = false;
 static bool forbid_reschedule = false;
@@ -270,6 +285,13 @@ static int spool_time = STREESPOOLTIMEDEF;
  * mconf_get_sharetree_tick_interval(). */
 static int sharetree_tick_interval = STREE_TICK_INTERVAL_DEF;
 
+/* CS-1908: finished-job retention sweep-behaviour qmaster_params.
+ * (Retention semantics -- finished_jobs_keep_time, finished_jobs_max -- are
+ * top-level Master_Config attributes, not qmaster_params.)
+ * See mconf_get_finished_jobs_sweep_{interval,batch} accessors. */
+static int finished_jobs_sweep_interval = FINISHED_JOBS_SWEEP_INTERVAL_DEF;
+static int finished_jobs_sweep_batch    = FINISHED_JOBS_SWEEP_BATCH_DEF;
+
 // Maximum time in milliseconds to wait before update of secondary DS is enforced
 #define DEFAULT_DS_DEVIATION (1000)
 static int max_ds_deviation = DEFAULT_DS_DEVIATION;
@@ -365,6 +387,8 @@ static int jsv_threshold = 5000;
 #define MAX_U_JOBS                "0"
 #define MAX_JOBS                  "0"
 #define MAX_ADVANCE_RESERVATIONS  "0"
+#define FINISHED_JOBS_KEEP_TIME   "0"    /* CS-1908: seconds, 0 = time dimension off */
+#define FINISHED_JOBS_MAX         "0"    /* CS-1908: JAT count, 0 = count dimension off */
 #define REPORTING_PARAMS          "accounting=true reporting=false flush_time=00:00:15 joblog=false sharelog=00:00:00"
 
 static tConfEntry conf_entries[] = {
@@ -415,6 +439,8 @@ static tConfEntry conf_entries[] = {
  { "max_u_jobs",                 0, MAX_U_JOBS,                1, nullptr},
  { "max_jobs",                   0, MAX_JOBS,                  1, nullptr},
  { "max_advance_reservations",   0, MAX_ADVANCE_RESERVATIONS,  1, nullptr},
+ { "finished_jobs_keep_time",    0, FINISHED_JOBS_KEEP_TIME,   1, nullptr},
+ { "finished_jobs_max",          0, FINISHED_JOBS_MAX,         1, nullptr},
  { "auto_user_oticket",          0, "0",                       1, nullptr},
  { "auto_user_fshare",           0, "0",                       1, nullptr},
  { "auto_user_default_project",  0, NONE_STR,                  1, nullptr},
@@ -482,11 +508,12 @@ config_param_value_type(const char *name)
    }
    static const char *const int_params[] = {
       "min_uid", "min_gid", "max_aj_instances", "max_aj_tasks", "max_u_jobs",
-      "max_jobs", "max_advance_reservations", "auto_user_oticket", "auto_user_fshare", nullptr
+      "max_jobs", "max_advance_reservations", "finished_jobs_max",
+      "auto_user_oticket", "auto_user_fshare", nullptr
    };
    static const char *const time_params[] = {
       "load_report_time", "max_unheard", "token_extend_time", "reschedule_unknown",
-      "auto_user_delete_time", nullptr
+      "finished_jobs_keep_time", "auto_user_delete_time", nullptr
    };
    for (const char *const *p = int_params; *p != nullptr; p++) {
       if (strcmp(name, *p) == 0) {
@@ -678,6 +705,8 @@ setConfFromCull(lList *lpCfg) {
    chg_conf_val(lpCfg, "max_u_jobs", nullptr, &Master_Config.max_u_jobs, ocs::CEntry::Type::INT);
    chg_conf_val(lpCfg, "max_jobs", nullptr, &Master_Config.max_jobs, ocs::CEntry::Type::INT);
    chg_conf_val(lpCfg, "max_advance_reservations", nullptr, &Master_Config.max_advance_reservations, ocs::CEntry::Type::INT);
+   chg_conf_val(lpCfg, "finished_jobs_keep_time", nullptr, &Master_Config.finished_jobs_keep_time, ocs::CEntry::Type::TIME);
+   chg_conf_val(lpCfg, "finished_jobs_max", nullptr, &Master_Config.finished_jobs_max, ocs::CEntry::Type::INT);
    chg_conf_val(lpCfg, "auto_user_oticket", nullptr, &Master_Config.auto_user_oticket, ocs::CEntry::Type::INT);
    chg_conf_val(lpCfg, "auto_user_fshare", nullptr, &Master_Config.auto_user_fshare, ocs::CEntry::Type::INT);
    chg_conf_val(lpCfg, "auto_user_default_project", &Master_Config.auto_user_default_project, nullptr, ocs::CEntry::Type::TIME);
@@ -801,6 +830,8 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
       is_monitor_message = true;
       spool_time = STREESPOOLTIMEDEF;
       sharetree_tick_interval = STREE_TICK_INTERVAL_DEF;
+      finished_jobs_sweep_interval = FINISHED_JOBS_SWEEP_INTERVAL_DEF;
+      finished_jobs_sweep_batch = FINISHED_JOBS_SWEEP_BATCH_DEF;
       max_ds_deviation = DEFAULT_DS_DEVIATION;
       use_qidle = false;
       disable_reschedule = false;
@@ -878,6 +909,29 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
                                        MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "STREE_TICK_INTERVAL",
                                        STREE_TICK_INTERVAL_DEF);
                sharetree_tick_interval = STREE_TICK_INTERVAL_DEF;
+            }
+            continue;
+         }
+         /* CS-1908: finished-job retention sweep-behaviour qmaster_params.
+          * (Retention semantics keep_time / max are top-level global-config
+          * attributes; see chg_conf_val above.) SWEEP_INTERVAL and SWEEP_BATCH
+          * reject <= 0 and fall back to DEF. Values above the upper bound are
+          * clamped silently at read time in their mconf_get accessors. */
+         if (parse_int_param(s, "FINISHED_JOBS_SWEEP_INTERVAL", &finished_jobs_sweep_interval, ocs::CEntry::Type::TIME)) {
+            if (finished_jobs_sweep_interval <= 0) {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "FINISHED_JOBS_SWEEP_INTERVAL",
+                                       FINISHED_JOBS_SWEEP_INTERVAL_DEF);
+               finished_jobs_sweep_interval = FINISHED_JOBS_SWEEP_INTERVAL_DEF;
+            }
+            continue;
+         }
+         if (parse_int_param(s, "FINISHED_JOBS_SWEEP_BATCH", &finished_jobs_sweep_batch, ocs::CEntry::Type::INT)) {
+            if (finished_jobs_sweep_batch <= 0) {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "FINISHED_JOBS_SWEEP_BATCH",
+                                       FINISHED_JOBS_SWEEP_BATCH_DEF);
+               finished_jobs_sweep_batch = FINISHED_JOBS_SWEEP_BATCH_DEF;
             }
             continue;
          }
@@ -2269,6 +2323,32 @@ uint32_t mconf_get_max_advance_reservations() {
    DRETURN(max_advance_reservations);
 }
 
+/* CS-1908: retention "age at which a finished ja_task is prunable", in seconds.
+ * 0 disables the time dimension (retention bounded only by finished_jobs_max).
+ * Default 0 = feature off. Top-level global-config attribute. */
+uint32_t mconf_get_finished_jobs_keep_time() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   const uint32_t value = Master_Config.finished_jobs_keep_time;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(value);
+}
+
+/* CS-1908: retention global count ceiling across master_job_list. 0 disables
+ * the count dimension (retention bounded only by finished_jobs_keep_time).
+ * Default 0 = feature off. Top-level global-config attribute. */
+uint32_t mconf_get_finished_jobs_max() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   const uint32_t value = Master_Config.finished_jobs_max;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(value);
+}
+
 uint32_t mconf_get_auto_user_fshare() {
    uint32_t auto_user_fshare;
 
@@ -2819,6 +2899,43 @@ int mconf_get_sharetree_tick_interval() {
       value = STREE_TICK_INTERVAL_MIN;
    } else if (value > STREE_TICK_INTERVAL_MAX) {
       value = STREE_TICK_INTERVAL_MAX;
+   }
+
+   DRETURN(value);
+}
+
+/* CS-1908: retention sweep tick interval in seconds. Dedicated to CS-1908 —
+ * NOT shared with sharetree_tick_interval. Clamped into [MIN, MAX] at read time. */
+int mconf_get_finished_jobs_sweep_interval() {
+   DENTER(BASIS_LAYER);
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   int value = finished_jobs_sweep_interval;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   if (value < FINISHED_JOBS_SWEEP_INTERVAL_MIN) {
+      value = FINISHED_JOBS_SWEEP_INTERVAL_MIN;
+   } else if (value > FINISHED_JOBS_SWEEP_INTERVAL_MAX) {
+      value = FINISHED_JOBS_SWEEP_INTERVAL_MAX;
+   }
+
+   DRETURN(value);
+}
+
+/* CS-1908: retention sweep per-tick prune cap enforcing R18. When the
+ * eligible-prune queue exceeds this cap, overflow defers to subsequent ticks.
+ * Clamped into [MIN, MAX] at read time. */
+int mconf_get_finished_jobs_sweep_batch() {
+   DENTER(BASIS_LAYER);
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   int value = finished_jobs_sweep_batch;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   if (value < FINISHED_JOBS_SWEEP_BATCH_MIN) {
+      value = FINISHED_JOBS_SWEEP_BATCH_MIN;
+   } else if (value > FINISHED_JOBS_SWEEP_BATCH_MAX) {
+      value = FINISHED_JOBS_SWEEP_BATCH_MAX;
    }
 
    DRETURN(value);

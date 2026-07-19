@@ -64,6 +64,16 @@ int sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep, 
 void sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_t mode,
                     int commit_flags, monitoring_t *monitor, uint64_t gdi_session);
 
+/* CS-1908: sge_bury_job SPLIT into finish-side and bury-side. Existing callers
+ * of sge_bury_job continue to use the (static) wrapper. Retention introduces
+ * external callers:
+ *   - U4 finish path calls sge_finish_ja_task and defers the bury-side.
+ *   - U5 retention sweep calls sge_bury_ja_task at prune time. */
+void sge_finish_ja_task(const char *sge_root, lListElem *job, uint32_t job_id,
+                        lListElem *ja_task, int no_events, uint64_t gdi_session);
+void sge_bury_ja_task(const char *sge_root, lListElem *job, uint32_t job_id,
+                      lListElem *ja_task, int spool_job, int no_events, uint64_t gdi_session);
+
 bool gdil_del_all_orphaned(const lList *gdil_list, lList **alpp, uint64_t gdi_session);
 
 void sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor);

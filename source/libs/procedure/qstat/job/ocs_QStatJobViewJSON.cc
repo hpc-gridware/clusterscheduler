@@ -1454,6 +1454,16 @@ void ocs::QStatJobViewJSON::report_task_start_time(std::ostream &os, const lList
    DRETURN_VOID;
 }
 
+/* CS-1908 retention: emit end_time only for retained finished ja_tasks. */
+void ocs::QStatJobViewJSON::report_task_end_time(std::ostream &os, const lListElem *job, const lListElem *task) {
+   DENTER(TOP_LAYER);
+   if (lGetUlong(task, JAT_status) != JFINISHED) {
+      DRETURN_VOID;
+   }
+   report_X_task_ISO_8601_timestamp(os, task, JAT_end_time, "end_time");
+   DRETURN_VOID;
+}
+
 void ocs::QStatJobViewJSON::report_task_resource_map(std::ostream &os, const lListElem *job, const lListElem *task) {
    DENTER(TOP_LAYER);
    if (first_task_attribute) {

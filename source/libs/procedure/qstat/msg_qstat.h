@@ -52,11 +52,11 @@
 #define MSG_QSTAT_USAGE_PRINTINFOONGIVENQUEUE               _MESSAGE(19020, _("print information on given queue"))
 #define MSG_QSTAT_USAGE_PRINTINFOCQUEUESTATESEL             _MESSAGE(19021, _("selects queues which are in the given state(s)"))
 #define MSG_QSTAT_USAGE_SHOWREQUESTEDRESOURCESOFJOB         _MESSAGE(19022, _("show requested resources of job(s)"))
-#define MSG_QSTAT_USAGE_SHOWPENDINGRUNNINGSUSPENDESZOMBIEJOBS _MESSAGE(19023, _("show pending, running, suspended jobs,"))
+#define MSG_QSTAT_USAGE_SHOWPENDINGRUNNINGSUSPENDESZOMBIEJOBS _MESSAGE(19023, _("show pending, running, suspended, finished jobs,"))
 #define MSG_QSTAT_USAGE_JOBSWITHAUSEROPERATORSYSTEMHOLD     _MESSAGE(19024, _("jobs with a user/operator/system/array-dependency hold, "))
 #define MSG_QSTAT_USAGE_JOBSWITHSTARTTIMEINFUTORE           _MESSAGE(19025, _("jobs with a start time in future or any combination only."))
 #define MSG_QSTAT_USAGE_HISABBREVIATIONFORHUHOHSHJHA        _MESSAGE(19026, _("h is an abbreviation for huhohshdhjha"))
-#define MSG_QSTAT_USAGE_AISABBREVIATIONFOR                  _MESSAGE(19027, _("a is an abbreviation for prsh"))
+#define MSG_QSTAT_USAGE_AISABBREVIATIONFOR                  _MESSAGE(19027, _("a is an abbreviation for prsf"))
 #define MSG_QSTAT_USAGE_SHOWTASKINFO                        _MESSAGE(19028, _("show task information (implicitly -g t)"))
 #define MSG_QSTAT_USAGE_VIEWONLYJOBSOFTHISUSER              _MESSAGE(19029, _("view only jobs of this user"))
 #define MSG_QSTAT_USAGE_SELECTQUEUESWHEREUSERXHAVEACCESS    _MESSAGE(19030, _("select only queues where these users have access"))
@@ -71,6 +71,7 @@
 #define MSG_QSTAT_FOUNDNOMATCHING                           _MESSAGE(19046, _("Found no matching jobs"))
 #define MSG_QSTAT_PRT_JOBSWAITINGFORACCOUNTING              _MESSAGE(19047, _(" -----   JOBS WAITING FOR ACCOUNTING  -  JOBS WAITING FOR ACCOUNTING   ----- "))
 #define MSG_QSTAT_PRT_ERRORJOBS                             _MESSAGE(19048, _("  -  ERROR JOBS  -  ERROR JOBS  -  ERROR JOBS  -  ERROR JOBS  -  ERROR JOBS  -"))
+#define MSG_QSTAT_PRT_FINISHEDJOBS                          _MESSAGE(19049, _(" -----   RETAINED FINISHED JOBS   -   RETAINED FINISHED JOBS    ----- "))
 
 #define MSG_QSTAT_NOQUEUESREMAININGAFTERXQUEUESELECTION_S   _MESSAGE(19050, _("no queues remaining after " SFN " queue selection"))
 

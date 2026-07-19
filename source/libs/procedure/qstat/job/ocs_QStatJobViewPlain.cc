@@ -1208,6 +1208,21 @@ void ocs::QStatJobViewPlain::report_task_start_time(std::ostream &os, const lLis
    DRETURN_VOID;
 }
 
+/* CS-1908 retention: emit end_time only for retained finished ja_tasks
+ * (JAT_status == JFINISHED). For live/pending rows the field is either 0 or
+ * an execd-side h_rt projection that would be misleading here. */
+void ocs::QStatJobViewPlain::report_task_end_time(std::ostream &os, const lListElem *job, const lListElem *task) {
+   DENTER(TOP_LAYER);
+   if (lGetUlong(task, JAT_status) != JFINISHED) {
+      DRETURN_VOID;
+   }
+   uint32_t task_number = lGetUlong(task, JAT_task_number);
+   DSTRING_STATIC(time_ds, 32);
+   os << std::format("{:<{}} {:>{}}: {}", "end_time", left_width_short, task_number, mid_width,
+                     sge_ctime64(lGetUlong64(task, JAT_end_time), &time_ds)) << "\n";
+   DRETURN_VOID;
+}
+
 void ocs::QStatJobViewPlain::report_task_resource_map(std::ostream &os, const lListElem *job, const lListElem *task) {
    DENTER(TOP_LAYER);
    dstring task_resources = DSTRING_INIT;

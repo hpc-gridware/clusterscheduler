@@ -75,6 +75,17 @@
 #define JFINISHED                            0x00010000
 /* used in execd to prevent slave jobs from getting started */
 #define JSLAVE                               0x00020000
+
+/* CS-1908 finished-job retention: display-only state bit set by
+ * jatask_combine_state_and_status_for_output when JAT_status is JFINISHED,
+ * so the state character renders as FINISHED_SYM ('f') for retention rows
+ * instead of the pre-CS-1908 JEXITING ('x') symbol. Do NOT persist this
+ * bit onto JAT_state — it exists only inside the transient value the
+ * combine helper returns for rendering. The bit value is disjoint from
+ * every real JAT_state bit, so any accidental persistence would still be
+ * invisible to code that masks against the real state bits. */
+#define JFINISHED_DISPLAY                    0x00040000
+
 #define JDEFERRED_REQ                        0x00100000
 
 /*

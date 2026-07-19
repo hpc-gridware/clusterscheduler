@@ -1265,18 +1265,23 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
          continue;
       }
 
-      /* ignore modify requests if all job tasks are already JFINISHED
-         and no task id remains in not yet ran task id lists */
+      /* Ignore modify requests if all job tasks are already JFINISHED and
+       * no task id remains in not-yet-ran task id lists. Under CS-1908
+       * retention this branch is reachable for as long as the retention
+       * window holds the finished JB (previously the JFINISHED window was
+       * microseconds and the skip was defensive), so emit an INFO answer
+       * so the user knows why nothing was modified. */
       if (job_get_not_enrolled_ja_tasks(jobep) == 0) {
-         const lListElem *ja_task;
          bool all_finished = true;
-         for_each_ep(ja_task, lGetList(jobep, JB_ja_tasks)) {
+         for_each_ep_lv(ja_task, lGetList(jobep, JB_ja_tasks)) {
             if (lGetUlong(ja_task, JAT_status) != JFINISHED) {
                all_finished = false;
                break;
             }
          }
          if (all_finished) {
+            INFO(MSG_JOB_ALREADYFINISHED_NOMOD_U, lGetUlong(jobep, JB_job_number));
+            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
             continue;
          }
       }
@@ -3866,6 +3871,15 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
    uint64_t max_job_deletion_time = sge_gmt32_to_gmt64(mconf_get_max_job_deletion_time());
    bool get_enable_forced_qdel_if_unknown = mconf_get_enable_forced_qdel_if_unknown();
    bool simulate_execds = mconf_get_simulate_execds();
+   /* CS-1908: when both retention tunables are 0 the feature is off and
+    * sge_commit_job(_EE) buries the ja_task (and the JB, if last enrolled)
+    * inline as before — the `job` element passed to sge_commit_job may be
+    * freed on return. When retention is on, sge_commit_job leaves the JAT
+    * on JB_ja_tasks with JAT_status == JFINISHED and the JB is not touched.
+    * Snapshot the effective mode here so the qdel loop can decide whether
+    * the ja_task was buried WITHOUT dereferencing the possibly-freed
+    * `job` element after the commit. */
+   bool retention_enabled = (mconf_get_finished_jobs_keep_time() > 0 || mconf_get_finished_jobs_max() > 0);
 
    DENTER(TOP_LAYER);
 
@@ -4144,7 +4158,14 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
                } else {
                   sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
                                  COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, packet->gdi_session);
-                  ja_task_buried = true;
+                  /* CS-1908: retention-off preserves pre-9.2 semantics
+                   * (sge_commit_job buries the ja_task and may free `job`);
+                   * retention-on leaves the ja_task on JB_ja_tasks as
+                   * JFINISHED and `job` untouched. We must not dereference
+                   * `job` or `tmp_task` here — they may be freed under
+                   * retention-off — so use the config snapshot taken at
+                   * function entry to decide the outcome. */
+                  ja_task_buried = !retention_enabled;
                   showmessage = 1;
                   if (!*alltasks && showmessage) {
                      range_list_insert_id(&range_list, nullptr, task_number);
@@ -4153,7 +4174,9 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
 
                if (ja_task_buried && --remaining_enrolled == 0) {
                   /* Last enrolled ja_task buried -> `job` element has been
-                   * removed from the master job list and is no longer valid. */
+                   * removed from the master job list and is no longer valid.
+                   * Under CS-1908 retention this branch does not fire because
+                   * ja_task_buried is false when the JAT stays retained. */
                   job = nullptr;
                   break;
                }

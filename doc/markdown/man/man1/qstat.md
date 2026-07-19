@@ -14,7 +14,7 @@ date: __DATE__
 
 `qstat` \[`-ext`\] \[`-f`\] \[`-F` \[*resource_name*,...\]\] \[`-g` {c\|d\|t}+ \] \[`-help`\] \[`-j` \[*job_list*\]\] 
 \[`-l` *resource*=*val*,...\] \[`-ne`\] \[`-pe` *pe_name*,...\] \[`-pri`\] \[`-q` *wc_queue_list*\] 
-\[`-qs` {a\|c\|d\|o\|s\|u\|A\|C\|D\|E\|S}\] \[`-r`\] \[`-s` {r\|p\|s\|hu\|ho\|hs\|hd\|hj\|ha\|h\|a}+\]  
+\[`-qs` {a\|c\|d\|o\|s\|u\|A\|C\|D\|E\|S}\] \[`-r`\] \[`-s` {r\|p\|s\|f\|hu\|ho\|hs\|hd\|hj\|ha\|h\|a}+\]  
 \[`-t`\] \[`-U` *user*,...\] \[`-u` *user*,...\] \[`-urg`\] \[`-xml`\]
 
 # DESCRIPTION
@@ -128,14 +128,20 @@ Prints extended information about the resource requirements of the displayed job
 
 Please refer to the *OUTPUT FORMATS* sub-section *Expanded Format* below for detailed information.
 
-## -s {*p*\|*r*\|*s*\|*hu*\|*ho*\|*hs*\|*hd*\|*hj*\|*ha*\|*h*\|*a*}\[+\]  
+## -s {*p*\|*r*\|*s*\|*f*\|*hu*\|*ho*\|*hs*\|*hd*\|*hj*\|*ha*\|*h*\|*a*}\[+\]  
 Prints only jobs in the specified state, any combination of states is possible. `-s` *prs* corresponds to the regular 
-`qstat` output without `-s` at all. To display jobs in 
+`qstat` output without `-s` at all. The `-s` *f* option shows retained finished jobs — jobs that have completed but
+that xxqs_name_sxx_qmaster(8) is still holding in the job list because the *finished_jobs_keep_time* /
+*finished_jobs_max* retention window (see xxqs_name_sxx_conf(5)) has not yet pruned them. Retained finished jobs
+render with state `f` and can be inspected with `qstat -j` and resubmitted with qresub(1); use `-s f -g d` to drill
+down to per-task rows for retained array jobs. To display jobs in
 user/operator/system/array-dependency hold, use the `-s` *hu*/*ho*/*hs*/*hd* option. The `-s` *ha* option shows jobs 
 which where submitted with the `qsub -a` command. `qstat -s` *hj* displays all jobs which are not eligible for 
 execution unless the job has entries in the job dependency list. `qstat -s` *h* is an abbreviation for 
-`qstat -s` *huhohshdhjha* and `qstat -s` is an abbreviation for `qstat -s` *psr* (see `-a`, `-hold_jid` and 
-`-hold_jid_ad` options to qsub(1)).
+`qstat -s` *huhohshdhjha*, `qstat -s` *a* is an abbreviation for `qstat -s` *prsfh* (all pending, running, suspended,
+retained-finished and held jobs), and `qstat` without the `-s` option is an abbreviation for `qstat -s` *psr* —
+retained finished jobs are NOT shown by default and must be requested explicitly with `-s f` or `-s a` (see `-a`,
+`-hold_jid` and `-hold_jid_ad` options to qsub(1)).
 
 ## -t  
 Prints extended information about the controlled sub-tasks of the displayed parallel jobs. Please refer to the 
@@ -212,10 +218,13 @@ Following the header line a line is printed for each job consisting of
 
 -   the username of the job owner.
 
--   the status of the job - one of d(eletion), E(rror), h(old), r(unning), R(estarted), s(uspended), S(uspended), 
-    t(ransfering), T(hreshold) or w(aiting).
+-   the status of the job - one of d(eletion), E(rror), f(inished), h(old), r(unning), R(estarted), s(uspended),
+    S(uspended), t(ransfering), T(hreshold) or w(aiting).
 
-The state d(eletion) indicates that a qdel(1) has been used to initiate job deletion. The states t(ransfering) 
+The state d(eletion) indicates that a qdel(1) has been used to initiate job deletion. The state f(inished) is
+shown for retained finished jobs — jobs that have completed but that xxqs_name_sxx_qmaster(8) is still holding in
+the job list under the *finished_jobs_keep_time* / *finished_jobs_max* retention window (see
+xxqs_name_sxx_conf(5)); use `-s f` or `-s a` to include them in the listing. The states t(ransfering)
 and r(unning) indicate that a job is about to be executed or is already executing, whereas the states s(uspended), 
 S(uspended) and T(hreshold) show that an already running jobs has been suspended. The s(uspended) state is caused 
 by suspending the job via the qmod(1) command, the S(uspended) state indicates that the queue containing the job 
