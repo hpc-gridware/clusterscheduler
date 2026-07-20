@@ -630,6 +630,61 @@ EXIT() {
    exit "$1"
 }
 
+# CS-2394: since 9.2 the access list (userset) names "manager" and "operator" are
+# reserved - they hold the manager and operator lists of the cluster. A cluster
+# older than 9.2 may contain a user-defined access list of that name. It cannot be
+# carried over automatically: everything that references it (user_lists/xuser_lists
+# of queues, hosts, parallel environments and the cluster configuration, acl/xacl of
+# projects, resource quota sets) would silently resolve to the reserved list after
+# the upgrade, and with that to different access rights. Renaming it here would
+# additionally be ambiguous, because user names and access list names share one
+# namespace and user names take precedence.
+#
+# Refuse to load such a configuration. This runs before any object is loaded, so
+# nothing has been changed in the new cluster when we abort.
+#
+# Note: loading a manager/operator access list from a 9.2 or newer backup is fine -
+# there they ARE the reserved lists.
+#
+#   $1 - the backup directory (as saved by save_config.sh)
+CheckReservedAccessListNames()
+{
+   dir=$1
+
+   # $LOAD_VERSION is the version of the saved cluster, e.g.
+   # "GCS 9.1.0beta1 (210226-1224)". Only a pre-9.2 backup can carry a
+   # user-defined access list named manager/operator.
+   ver=`echo "$LOAD_VERSION" | awk '{print $2}'`
+   ver_major=`echo "$ver" | cut -d. -f1 | tr -cd '0-9'`
+   ver_minor=`echo "$ver" | cut -d. -f2 | tr -cd '0-9'`
+   if [ -n "$ver_major" ] && [ -n "$ver_minor" ]; then
+      if [ "$ver_major" -gt 9 ] || { [ "$ver_major" -eq 9 ] && [ "$ver_minor" -ge 2 ]; }; then
+         return 0
+      fi
+   fi
+
+   for acl in manager operator; do
+      if [ -f "$dir/usersets/$acl" ]; then
+         $INFOTEXT ""
+         $INFOTEXT "[CRITICAL] The saved configuration contains a user-defined access list"
+         $INFOTEXT "named \"$acl\" (saved from version: $LOAD_VERSION)."
+         $INFOTEXT ""
+         $INFOTEXT "Beginning with version 9.2 the access list names \"manager\" and \"operator\""
+         $INFOTEXT "are reserved: they hold the manager and operator lists of the cluster."
+         $INFOTEXT ""
+         $INFOTEXT "Rename the access list \"$acl\" in the old cluster and adapt everything that"
+         $INFOTEXT "references it (user_lists/xuser_lists of queues, hosts, parallel environments"
+         $INFOTEXT "and the cluster configuration, acl/xacl of projects, resource quota sets),"
+         $INFOTEXT "save the configuration again, then repeat the upgrade."
+         $INFOTEXT ""
+         $INFOTEXT "Nothing has been loaded. The upgrade is aborted."
+         LogIt "C" "Backup contains a user-defined access list named \"$acl\" - name is reserved since 9.2"
+         EXIT 1
+      fi
+   done
+   return 0
+}
+
 ########
 # MAIN #
 ########
@@ -742,6 +797,10 @@ LOAD_VERSION=`cat ${DIR}/version`
 LogIt "I" "LOAD $DIR"
 LogIt "I" "$CURRENT_VERSION"
 LogIt "I" "$LOAD_VERSION"
+
+# CS-2394: refuse a pre-9.2 backup that uses the now-reserved access list names.
+# Must run before IterativeLoad, i.e. before anything is loaded.
+CheckReservedAccessListNames "${DIR}"
 
 $INFOTEXT "Loading saved cluster configuration from $DIR (log in $MESSAGE_FILE_NAME)..."
 
