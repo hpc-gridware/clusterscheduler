@@ -2,12 +2,20 @@
 
 ## v9.1.4
 
+### [CS-1105](https://hpc-gridware.atlassian.net/browse/CS-1105) Go API Interface Updates
+
+- [CS-2416](https://hpc-gridware.atlassian.net/browse/CS-2416) go-clusterscheduler: Unknown parameters lost or breaking qconf Add/Modify for PE and calendar
+- [CS-2417](https://hpc-gridware.atlassian.net/browse/CS-2417) go-clusterscheduler: Calendar year/week values with multiple ranges truncated on read
+
 ### [CS-1129](https://hpc-gridware.atlassian.net/browse/CS-1129) Provide a UI for a modern qmon replacement for cluster configuration
 
 - [CS-2377](https://hpc-gridware.atlassian.net/browse/CS-2377) Qontrol: Add log file tracing support
 - [CS-2407](https://hpc-gridware.atlassian.net/browse/CS-2407) Qontrol: Add --config-dir: dedicated writable config directory for admin-managed files (scripts, loadsensors, license-manager)
 - [CS-2409](https://hpc-gridware.atlassian.net/browse/CS-2409) Provide a quick-start guide for Qontrol
 - [CS-2413](https://hpc-gridware.atlassian.net/browse/CS-2413) Qontrol should not load artifacts (icons etc.) from external sources
+- [CS-2414](https://hpc-gridware.atlassian.net/browse/CS-2414) Qontrol: Allow to add calendars from templates
+- [CS-2419](https://hpc-gridware.atlassian.net/browse/CS-2419) Create-from-template driven by config-dir templates (PE, Calendar, Config Files)
+- [CS-2420](https://hpc-gridware.atlassian.net/browse/CS-2420) Qontrol: Duplicate PE/calendar creation returned 500 or silently overwrote
 
 ### [CS-335](https://hpc-gridware.atlassian.net/browse/CS-335) dbwriter: bring-up and stabilization
 
@@ -94,9 +102,6 @@
 
 - [CS-2260](https://hpc-gridware.atlassian.net/browse/CS-2260) Add a way that only licenses defined in alias file are added as GCS complexes
 - [CS-2326](https://hpc-gridware.atlassian.net/browse/CS-2326) Add spooling to PostgreSQL
-
-
-
 
 ## v9.1.2
 
