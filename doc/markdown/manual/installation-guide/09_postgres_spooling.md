@@ -566,3 +566,6 @@ schema.
 - The chapter **High Availability and Reliability** in the
   Administrator Guide for the broader HA story that PostgreSQL
   spooling enables.
+
+  [//]: # (Each file has to end with two empty lines)
+
