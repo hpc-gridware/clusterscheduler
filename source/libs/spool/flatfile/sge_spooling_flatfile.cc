@@ -191,11 +191,6 @@ spool_classic_create_context(lList **answer_list, const char *args)
                                               &spool_config_instr);
                   field_info[i].instr  = &qconf_sfi;
                   break;
-               case SGE_TYPE_MANAGER:
-               case SGE_TYPE_OPERATOR:
-                  field_info[i].fields = nullptr;
-                  field_info[i].instr  = nullptr;
-                  break;
                case SGE_TYPE_EXECHOST:
                   field_info[i].fields = sge_build_EH_field_list(true, false, false);
                   field_info[i].instr  = &qconf_sfi;
@@ -771,11 +766,6 @@ spool_classic_default_read_func(lList **answer_list,
       case SGE_TYPE_EXECHOST:
          directory = EXECHOST_DIR;
          filename  = key;
-         break;
-      case SGE_TYPE_MANAGER:
-      case SGE_TYPE_OPERATOR:
-         directory = nullptr;
-         filename  = nullptr;
          break;
       case SGE_TYPE_PE:
          directory = PE_DIR;

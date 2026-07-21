@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   CT_id = 7050,
+   CT_id = 6850,
    CT_str,
    CT_refcount,
    CT_rejected,

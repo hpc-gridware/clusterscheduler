@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   TE_when = 5950,
+   TE_when = 5750,
    TE_type,
    TE_mode,
    TE_interval,

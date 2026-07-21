@@ -25,6 +25,11 @@ object type, those rules must be updated after upgrading to version 9.2. See the
 [Compatibility Notes](07_compatibility_notes.md#gdi-request-limits-for-status-query-commands) for details and
 replacement examples.
 
+The object types *MANAGER* and *OPERATOR* have also been removed from `gdi_request_limits`. The upgrade
+procedure removes any rule that uses them automatically (managers and operators are access lists now; limit
+them via the *USER_SET* object instead). See the
+[Compatibility Notes](07_compatibility_notes.md#object-types-manager-and-operator-removed).
+
 ## Zombie Jobs Removed, Replaced by Finished-Job Retention
 
 Version 9.2 removes the pre-existing *zombie jobs* mechanism. The `qstat -s z` option is gone. The retention

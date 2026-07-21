@@ -544,7 +544,7 @@ UpOrDowngradeTo901000() {
    return 0
 }
 
-## @brief switch between 9.1.x -> 9.2.0 or vice versa (not implemented)
+## @brief switch between 9.1.x -> 9.2.0 (downgrade not supported)
 # shellcheck disable=SC2317
 UpOrDowngradeTo902000() {
    do_upgrade="${1:?Missing upgrade/downgrade parameter}"; # 1=upgrade, 0=downgrade
@@ -585,6 +585,40 @@ UpOrDowngradeTo902000() {
             if [ -z "$port_range" ]; then
                ReplaceOrAddLine "${file}" 'port_range.*' "port_range NONE"
                LogIt "I" "Added port_range"
+            fi
+
+            # CS-2394: the gdi_request_limits object types MANAGER and OPERATOR were
+            # removed in 9.2 - managers and operators are access lists now and are
+            # limited via the USER_SET object. Drop any rule whose object filter is
+            # MANAGER or OPERATOR so the upgraded qmaster does not reject the config.
+            # A rule is "source:type:object:user:host=limit"; the object is the third
+            # colon-separated field, and rules are separated by commas.
+            gdi_limits=$(GetAttrValue "${file}" "gdi_request_limits")
+            if [ -n "$gdi_limits" ] && [ "$gdi_limits" != "NONE" ]; then
+               new_limits=""
+               saved_ifs=$IFS
+               IFS=','
+               for rule in $gdi_limits; do
+                  rule_object=$(echo "$rule" | cut -f 3 -d ':')
+                  case "$rule_object" in
+                     MANAGER|OPERATOR)
+                        LogIt "I" "Dropping obsolete gdi_request_limits rule (object $rule_object): $rule"
+                        ;;
+                     *)
+                        if [ -z "$new_limits" ]; then
+                           new_limits="$rule"
+                        else
+                           new_limits="$new_limits,$rule"
+                        fi
+                        ;;
+                  esac
+               done
+               IFS=$saved_ifs
+               [ -z "$new_limits" ] && new_limits="NONE"
+               if [ "$new_limits" != "$gdi_limits" ]; then
+                  ReplaceOrAddLine "${file}" 'gdi_request_limits.*' "gdi_request_limits $new_limits"
+                  LogIt "I" "Rewrote gdi_request_limits after removing MANAGER/OPERATOR rules: $new_limits"
+               fi
             fi
          fi
       done

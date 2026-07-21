@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   HGRP_name = 7350,
+   HGRP_name = 7150,
    HGRP_host_list,
    HGRP_cqueue_list,
    HGRP_joker

@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   RTIC_host = 12800,
+   RTIC_host = 12600,
    RTIC_tickets
 };
 

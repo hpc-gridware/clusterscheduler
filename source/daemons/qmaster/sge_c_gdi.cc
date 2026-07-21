@@ -70,7 +70,6 @@
 #include "sge_job_qmaster.h"
 #include "sge_userset_qmaster.h"
 #include "sge_calendar_qmaster.h"
-#include "sge_manop_qmaster.h"
 #include "sge_centry_qmaster.h"
 #include "sge_cqueue_qmaster.h"
 #include "sge_pe_qmaster.h"
@@ -177,8 +176,6 @@ static gdi_object_t gdi_object[] = {
         {ocs::gdi::Target::CE_LIST,      CE_name,   CE_Type,   "complex entry",           SGE_TYPE_CENTRY,          centry_mod,   centry_spool,   centry_success},
         {ocs::gdi::Target::ORDER_LIST,   0,         nullptr,   "order",                   SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
         {ocs::gdi::Target::MASTER_EVENT, 0,         nullptr,   "master event",            SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
-        {ocs::gdi::Target::UM_LIST,      0,         nullptr,   "manager",                 SGE_TYPE_MANAGER,         nullptr,      nullptr,        nullptr},
-        {ocs::gdi::Target::UO_LIST,      0,         nullptr,   "operator",                SGE_TYPE_OPERATOR,        nullptr,      nullptr,        nullptr},
         {ocs::gdi::Target::PE_LIST,      PE_name,   PE_Type,   "parallel environment",    SGE_TYPE_PE,              pe_mod,       pe_spool,       pe_success},
         {ocs::gdi::Target::CONF_LIST,    0,         nullptr,   "configuration",           SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
         {ocs::gdi::Target::SC_LIST,      0,         nullptr,   "scheduler configuration", SGE_TYPE_NONE,            schedd_mod,   nullptr,        nullptr},
@@ -476,32 +473,6 @@ sge_c_gdi_get_in_worker(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Ta
          DPRINTF("Returning procedure information is not implemented yet\n");
          answer_list_add(&(task->answer_list), "Returning procedure information is not implemented yet", STATUS_OK, ANSWER_QUALITY_END);
          break;
-      case ocs::gdi::Target::UM_LIST:
-      case ocs::gdi::Target::UO_LIST: {
-         /*
-          * CS-2394: managers/operators are stored in the reserved "manager"/
-          * "operator" userset. Build the UM_Type/UO_Type name list from that
-          * userset so the -sm/-so (GET) output is unchanged.
-          */
-         const bool is_manager = (task->target == ocs::gdi::Target::UM_LIST);
-         const char *userset_name = is_manager ? MANAGER_USERSET : OPERATOR_USERSET;
-         const int name_nm = is_manager ? static_cast<int>(UM_name) : static_cast<int>(UO_name);
-         const lDescr *descr = is_manager ? UM_Type : UO_Type;
-
-         const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-         const lListElem *userset = lGetElemStr(master_userset_list, US_name, userset_name);
-         lList *manop_list = lCreateList("", descr);
-         if (userset != nullptr) {
-            for_each_ep_lv(ue, lGetList(userset, US_entries)) {
-               lAddElemStr(&manop_list, name_nm, lGetString(ue, UE_name), descr);
-            }
-         }
-         task->data_list = lSelectHashPack("", manop_list, task->condition, task->enumeration, false, nullptr);
-         task->do_select_pack_simultaneous = false;
-         answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK, ANSWER_QUALITY_END);
-         lFreeList(&manop_list);
-         break;
-      }
       default:
          /*
           * Issue 1365
@@ -640,10 +611,6 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                      break;
                }
                break;
-            case ocs::gdi::Target::UM_LIST:
-            case ocs::gdi::Target::UO_LIST:
-               sge_add_manop(packet, task, ep, &(task->answer_list), packet->user, packet->host, task->target);
-               break;
 
             case ocs::gdi::Target::STN_LIST:
                sge_add_sharetree(packet, task, ep, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), &(task->answer_list),
@@ -750,10 +717,6 @@ sge_c_gdi_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Command 
                sge_del_pe(packet, task, ep, &(task->answer_list), packet->user, packet->host);
                break;
 
-            case ocs::gdi::Target::UM_LIST:
-            case ocs::gdi::Target::UO_LIST:
-               sge_del_manop(packet, task, ep, &(task->answer_list), packet->user, packet->host, task->target);
-               break;
 
             case ocs::gdi::Target::CONF_LIST:
                sge_del_configuration(packet, task, ep, &(task->answer_list), packet->user, packet->host);
@@ -1270,8 +1233,6 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::T
       case ocs::gdi::Target::EH_LIST:
       case ocs::gdi::Target::CQ_LIST:
       case ocs::gdi::Target::CE_LIST:
-      case ocs::gdi::Target::UO_LIST:
-      case ocs::gdi::Target::UM_LIST:
       case ocs::gdi::Target::PE_LIST:
       case ocs::gdi::Target::CONF_LIST:
       case ocs::gdi::Target::SC_LIST:

@@ -401,10 +401,6 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
          break;
       case ocs::gdi::Target::CONF_LIST:
          break;
-      case ocs::gdi::Target::UM_LIST:
-         break;
-      case ocs::gdi::Target::UO_LIST:
-         break;
       case ocs::gdi::Target::PE_LIST:
          break;
       case ocs::gdi::Target::SC_LIST:

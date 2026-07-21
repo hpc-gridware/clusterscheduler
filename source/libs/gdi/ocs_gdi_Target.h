@@ -35,8 +35,6 @@ namespace ocs::gdi {
       ORDER_LIST,
       MASTER_EVENT,
       CONF_LIST,
-      UM_LIST,
-      UO_LIST,
       PE_LIST,
       SC_LIST,
       UU_LIST,

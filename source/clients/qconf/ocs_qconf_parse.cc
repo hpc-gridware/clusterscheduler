@@ -101,6 +101,7 @@ static int sge_error_and_exit(const char *ptr);
 
 /* ------------------------------------------------------------- */
 static bool show_object_list(ocs::gdi::Target, lDescr *, int, const char *);
+static bool show_manop_list(const char *userset_name, const char *display_name);
 static int show_thread_list();
 static int show_processors(bool has_binding_param);
 static int show_eventclients();
@@ -2442,13 +2443,17 @@ int sge_parse_qconf(char *argv[])
       if (strcmp("-am", *spp) == 0) {
          /* no adminhost/manager check needed here */
 
+         /* CS-2394: managers are the members of the reserved "manager" userset;
+          * -am user is equivalent to -au user manager. */
          spp = sge_parser_get_next(spp);
-         lString2List(*spp, &lp, UM_Type, UM_name, ", ");
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::UM_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+         lString2List(*spp, &lp, UE_Type, UE_name, ", ");
+         lString2List(MANAGER_USERSET, &arglp, US_Type, US_name, ", ");
+         sge_client_add_user(&alp, lp, arglp);
          sge_parse_return |= show_answer_list(alp);
 
          lFreeList(&alp);
          lFreeList(&lp);
+         lFreeList(&arglp);
 
          spp++;
          continue;
@@ -2460,13 +2465,17 @@ int sge_parse_qconf(char *argv[])
       if (strcmp("-ao", *spp) == 0) {
          /* no adminhost/manager check needed here */
 
+         /* CS-2394: operators are the members of the reserved "operator" userset;
+          * -ao user is equivalent to -au user operator. */
          spp = sge_parser_get_next(spp);
-         lString2List(*spp, &lp, UO_Type, UO_name, ", ");
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::UO_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+         lString2List(*spp, &lp, UE_Type, UE_name, ", ");
+         lString2List(OPERATOR_USERSET, &arglp, US_Type, US_name, ", ");
+         sge_client_add_user(&alp, lp, arglp);
          sge_parse_return |= show_answer_list(alp);
 
          lFreeList(&alp);
          lFreeList(&lp);
+         lFreeList(&arglp);
 
          spp++;
          continue;
@@ -3212,13 +3221,16 @@ int sge_parse_qconf(char *argv[])
       if (strcmp("-dm", *spp) == 0) {
          /* no adminhost/manager check needed here */
 
+         /* CS-2394: -dm user is equivalent to -du user manager. */
          spp = sge_parser_get_next(spp);
 
-         lString2List(*spp, &lp, UM_Type, UM_name, ", ");
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::UM_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+         lString2List(*spp, &lp, UE_Type, UE_name, ", ");
+         lString2List(MANAGER_USERSET, &arglp, US_Type, US_name, ", ");
+         sge_client_del_user(&alp, lp, arglp);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
+         lFreeList(&arglp);
 
          spp++;
          continue;
@@ -3229,13 +3241,16 @@ int sge_parse_qconf(char *argv[])
       if (strcmp("-do", *spp) == 0) {
          /* no adminhost/manager check needed here */
 
+         /* CS-2394: -do user is equivalent to -du user operator. */
          spp = sge_parser_get_next(spp);
 
-         lString2List(*spp, &lp, UO_Type, UO_name, ", ");
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::UO_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+         lString2List(*spp, &lp, UE_Type, UE_name, ", ");
+         lString2List(OPERATOR_USERSET, &arglp, US_Type, US_name, ", ");
+         sge_client_del_user(&alp, lp, arglp);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
+         lFreeList(&arglp);
 
          spp++;
          continue;
@@ -5826,7 +5841,8 @@ int sge_parse_qconf(char *argv[])
       /* "-sm" */
 
       if (strcmp("-sm", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::UM_LIST, UM_Type, UM_name, "manager")) {
+         /* CS-2394: managers are the members of the reserved "manager" userset. */
+         if (!show_manop_list(MANAGER_USERSET, "manager")) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5960,7 +5976,8 @@ int sge_parse_qconf(char *argv[])
       /* "-so" */
 
       if (strcmp("-so", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::UO_LIST, UO_Type, UO_name, "operator")) {
+         /* CS-2394: operators are the members of the reserved "operator" userset. */
+         if (!show_manop_list(OPERATOR_USERSET, "operator")) {
             sge_parse_return = 1;
          }
          spp++;
@@ -7868,6 +7885,77 @@ static bool show_object_list(ocs::gdi::Target target, lDescr *type, int keynm, c
    lFreeList(&alp);
    lFreeList(&lp);
 
+   DRETURN(ret);
+}
+
+/****** show_manop_list() *****************************************************
+*  NAME
+*     show_manop_list() -- print the managers/operators (qconf -sm/-so)
+*
+*  FUNCTION
+*     CS-2394: managers and operators are the members of the reserved
+*     "manager"/"operator" access lists (usersets). This reads that access list
+*     and prints its member names, reproducing the historical -sm/-so output: a
+*     sorted plain name list (one per line), or, with -fmt json, the name-list
+*     JSON envelope. Because the names now come from the userset entries
+*     (UE_Type), the JSON envelope identity reflects the access-list-entry type
+*     rather than the retired "manager"/"operator" object type - the plain text
+*     output is unchanged.
+*
+*  INPUTS
+*     userset_name - the reserved userset ("manager" or "operator")
+*     display_name - name used in the "no X defined" message
+*
+*  RESULT
+*     bool - true on success, false on error or when the list is empty
+******************************************************************************/
+static bool show_manop_list(const char *userset_name, const char *display_name)
+{
+   DENTER(TOP_LAYER);
+   lList *alp = nullptr, *lp = nullptr;
+   bool ret = true;
+
+   lCondition *where = lWhere("%T(%I==%s)", US_Type, US_name, userset_name);
+   lEnumeration *what = lWhat("%T(%I%I->(%I))", US_Type, US_name, US_entries, UE_name);
+   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, ocs::gdi::Command::GET,
+                                   ocs::gdi::SubCommand::NONE, &lp, where, what);
+   lFreeWhere(&where);
+   lFreeWhat(&what);
+
+   lListElem *ep1 = lFirstRW(alp);
+   answer_exit_if_not_recoverable(ep1);
+   if (answer_list_output(&alp)) {
+      lFreeList(&lp);
+      DRETURN(false);
+   }
+
+   /* the reserved userset always exists; print its members (UE_name entries).
+    * Select it explicitly by name - do not rely on lFirst(): the GET may return
+    * more than the requested userset, and both reserved sets share this code. */
+   lListElem *us = lGetElemStrRW(lp, US_name, userset_name);
+   lList *entries = (us != nullptr) ? lGetListRW(us, US_entries) : nullptr;
+   lPSortList(entries, "%I+", UE_name);
+
+   if (qconf_opt_format == SP_FORM_JSON) {
+      dstring out = DSTRING_INIT;
+      spool_json_write_name_list(&alp, entries, UE_name, &out);
+      printf("%s", sge_dstring_get_string(&out));
+      sge_dstring_free(&out);
+   } else if (entries != nullptr && lGetNumberOfElem(entries) > 0) {
+      for_each_ep_lv (ep, entries) {
+         const char *line = lGetString(ep, UE_name);
+         if (line != nullptr && line[0] != COMMENT_CHAR) {
+            printf("%s\n", line);
+         }
+      }
+   } else {
+      fprintf(stderr, MSG_QCONF_NOXDEFINED_S, display_name);
+      fprintf(stderr, "\n");
+      ret = false;
+   }
+
+   lFreeList(&alp);
+   lFreeList(&lp);
    DRETURN(ret);
 }
 

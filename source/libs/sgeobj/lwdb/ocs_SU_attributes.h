@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   SU_name = 7850,
+   SU_name = 7650,
    SU_jobs
 };
 

@@ -39,10 +39,7 @@
 *    Usage value as a double.
 *
 *    SGE_STRING(UA_svalue) - String Value
-*    Usage value as a string, for custom usage values that are not numeric.
-*    Nullptr when the value is numeric — presence of svalue is the discriminator
-*    between string and numeric custom usage. Standard usage values (USAGE_ATTR_*
-*    names) never carry svalue. See CS-849.
+*    Usage value as a string, for custom usage values that are not numeric. Nullptr when the value is numeric — presence of svalue is the discriminator between string and numeric custom usage. Standard usage values (USAGE_ATTR_* names) never carry svalue. See CS-849.
 *
 */
 

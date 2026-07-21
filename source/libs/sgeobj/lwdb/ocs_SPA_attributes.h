@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   SPA_number = 3550,
+   SPA_number = 3350,
    SPA_argtype,
    SPA_switch_val,
    SPA_switch_arg,

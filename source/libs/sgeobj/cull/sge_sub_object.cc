@@ -250,12 +250,6 @@ object_get_subtype(int nm)
       case US_joker:
          ret = VA_Type;
          break;
-      case UM_joker:
-         ret = VA_Type;
-         break;
-      case UO_joker:
-         ret = VA_Type;
-         break;
       case PE_user_list:
          ret = US_Type;
          break;

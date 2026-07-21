@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   KRB_commproc = 5450,
+   KRB_commproc = 5250,
    KRB_id,
    KRB_host,
    KRB_timestamp,

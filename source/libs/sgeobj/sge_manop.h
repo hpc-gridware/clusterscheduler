@@ -35,9 +35,6 @@
 
 #include "gdi/ocs_gdi_Packet.h"
 
-#include "sgeobj/cull/sge_manop_UM_L.h"
-#include "sgeobj/cull/sge_manop_UO_L.h"
-
 bool user_list_is_user_grp_sgrp_in_list(const ocs::gdi::Packet *packet, const lList *usr_grp_sgrp_list, int nm);
 bool user_is_ar_user(const ocs::gdi::Packet *packet, const lList *ar_users_list);
 bool user_is_deadline_user(const ocs::gdi::Packet *packet, const lList *ar_users_list);

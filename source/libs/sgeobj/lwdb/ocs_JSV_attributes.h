@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   JSV_name = 12700,
+   JSV_name = 12500,
    JSV_context,
    JSV_url,
    JSV_type,

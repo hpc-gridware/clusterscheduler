@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   RQR_name = 11900,
+   RQR_name = 11700,
    RQR_filter_users,
    RQR_filter_projects,
    RQR_filter_pes,

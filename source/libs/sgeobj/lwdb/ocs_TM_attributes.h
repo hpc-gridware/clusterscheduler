@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   TM_mday = 6350,
+   TM_mday = 6150,
    TM_mon,
    TM_year,
    TM_sec,

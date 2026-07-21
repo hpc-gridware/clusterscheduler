@@ -32,6 +32,18 @@ number of invocations per second:
 | `qrstat:get:*:*:*=N` | `qrstat:get:proc:*:*=N` |
 | `qquota:get:*:*:*=N` | `qquota:get:proc:*:*=N` |
 
+### Object Types *MANAGER* and *OPERATOR* Removed
+
+The `gdi_request_limits` object types *MANAGER* and *OPERATOR* no longer exist in version 9.2. Managers and
+operators are now the members of the reserved *manager* and *operator* access lists (see *Managers and
+Operators Are Reserved Access Lists* below), and adding or removing them is performed on those access lists.
+A rule that limited manager or operator operations should therefore target the *USER_SET* object instead.
+
+A configuration that still contains a rule with object *MANAGER* or *OPERATOR* would be rejected by the
+version 9.2 qmaster. The upgrade procedure handles this automatically: any such rule is removed from
+`gdi_request_limits` during the upgrade (if no rule remains, the value is set to *NONE*). No manual action
+is required; adapt your rules to *USER_SET* afterwards if you want to keep limiting these operations.
+
 ## *qquota* Plain Output: Memory and Time Limits Shown With Units
 
 In the plain (non-XML, non-JSON) output of *qquota*, resource-quota limit and usage values are now displayed in the
@@ -91,9 +103,22 @@ and `operator`, instead of in their own `managers` and `operators` files in the 
 access list is the single place where they live, which allows RBAC roles to reference managers and operators
 by access list name instead of duplicating those lists.
 
-**The manager and operator command line interface is unchanged.** `qconf -am`, `-dm`, `-sm`, `-ao`, `-do` and
-`-so` behave exactly as before and produce the same output; they are kept for convenience and now operate on
-the reserved access lists.
+**The manager and operator command line interface behaves as before.** `qconf -am`, `-dm`, `-sm`, `-ao`,
+`-do` and `-so` continue to work and are kept for convenience; they now operate on the reserved access lists.
+The listing output of `qconf -sm` and `-so` (the plain list of names) is unchanged.
+
+**One visible change — the confirmation messages of `-am`/`-ao`/`-dm`/`-do`.** Because these commands now add
+to / remove from an access list, they report the access-list wording instead of the former manager/operator
+wording, for example:
+
+| Operation | Before | Since 9.2 |
+|-----------|--------|-----------|
+| `qconf -am user` | `added "user" to manager list` | `added "user" to access list "manager"` |
+| `qconf -am user` (existing) | `manager "user" already exists` | `"user" is already in access list "manager"` |
+| `qconf -dm user` | `removed "user" from manager list` | `deleted user "user" from access list "manager"` |
+
+Scripts that parse this confirmation text (rather than relying on the exit code) must be adapted. The
+equivalent operations via the access list interface (`qconf -au`/`-du`) always used this wording.
 
 In addition, both access lists are ordinary access lists at the interface: they are listed by `qconf -sul`,
 shown by `qconf -su manager`, and can be modified with `-au`, `-du`, `-mu`, `-Mu` and `-Au`. `qconf -au user

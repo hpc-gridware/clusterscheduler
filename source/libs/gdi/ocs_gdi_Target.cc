@@ -33,8 +33,6 @@ std::string ocs::gdi::to_string(const Target target) {
       case Target::ORDER_LIST: return "ORDER_LIST";
       case Target::MASTER_EVENT: return "MASTER_EVENT";
       case Target::CONF_LIST: return "CONF_LIST";
-      case Target::UM_LIST: return "UM_LIST";
-      case Target::UO_LIST: return "UO_LIST";
       case Target::PE_LIST: return "PE_LIST";
       case Target::SC_LIST: return "SC_LIST";
       case Target::UU_LIST: return "UU_LIST";

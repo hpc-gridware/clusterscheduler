@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   SPR_name = 8050,
+   SPR_name = 7850,
    SPR_url,
    SPR_option_func,
    SPR_startup_func,

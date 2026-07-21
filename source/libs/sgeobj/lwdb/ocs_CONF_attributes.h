@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   CONF_name = 2850,
+   CONF_name = 2650,
    CONF_version,
    CONF_entries
 };

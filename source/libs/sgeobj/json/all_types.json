@@ -188,20 +188,6 @@
          "add_to_sge_all_lists": true
       },
       {
-         "className": "Manager",
-         "cullPrefix": "UM",
-         "cullNameSpec": "manop",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
-      },
-      {
-         "className": "Operator",
-         "cullPrefix": "UO",
-         "cullNameSpec": "manop",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
-      },
-      {
          "className": "ParallelEnvironment",
          "cullPrefix": "PE",
          "cullNameSpec": "pe",

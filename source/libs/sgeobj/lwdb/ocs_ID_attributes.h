@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   ID_str = 5750,
+   ID_str = 5550,
    ID_ja_structure,
    ID_action,
    ID_force,

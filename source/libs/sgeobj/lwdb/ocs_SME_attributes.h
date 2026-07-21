@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   SME_message_list = 6750,
+   SME_message_list = 6550,
    SME_global_message_list
 };
 

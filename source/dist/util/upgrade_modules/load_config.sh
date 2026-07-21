@@ -121,8 +121,11 @@ ResolveResult()
    case "$resOpt" in
       -ah|-ac|-as|-am|-ao)
          #We can ignore  (already exists)
+         # CS-2394: -am/-ao now operate on the reserved manager/operator access
+         # lists, so re-adding an existing entry reports "X is already in access
+         # list Y" instead of the old "manager X already exists". Accept both.
          case "$resMsg" in
-            *'already exists')
+            *'already exists'|*'is already in access list'*)
                if [ "$ON_ERROR" = "abort" ]; then
                   LogIt "C" "Aborting on error as requested: $resOpt $obj already exists"
                   EXIT 1

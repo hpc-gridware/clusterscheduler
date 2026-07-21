@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   TEST_bool = 13200,
+   TEST_bool = 13000,
    TEST_uint32,
    TEST_uint64,
    TEST_int,

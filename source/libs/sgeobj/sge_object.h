@@ -91,22 +91,16 @@ typedef enum {
    SGE_TYPE_PETASK,
    SGE_TYPE_JOB,
    SGE_TYPE_JOB_SCHEDD_INFO,
-   /* CS-2394: no longer back a master list (managers/operators live in the reserved
-    * "manager"/"operator" usersets). Kept as reserved slots: the values index
-    * object_base[] and are exposed to the Python bridge, so removing them renumbers
-    * every type below. */
-   SGE_TYPE_MANAGER,  // unused since 9.2.0 (reserved slot)
-   SGE_TYPE_OPERATOR, // 10 - unused since 9.2.0 (reserved slot)
    SGE_TYPE_SHARETREE,
    SGE_TYPE_PE,
    SGE_TYPE_PROJECT,
    SGE_TYPE_CQUEUE,
-   SGE_TYPE_QINSTANCE, // 15
+   SGE_TYPE_QINSTANCE, // 13
    SGE_TYPE_SCHEDD_CONF,
    SGE_TYPE_SCHEDD_MONITOR,
    SGE_TYPE_SHUTDOWN,
    SGE_TYPE_MARK_4_REGISTRATION,
-   SGE_TYPE_SUBMITHOST, // 20
+   SGE_TYPE_SUBMITHOST, // 18
    SGE_TYPE_USER,
    SGE_TYPE_USERSET,
    SGE_TYPE_HGROUP,
@@ -115,7 +109,7 @@ typedef enum {
    SGE_TYPE_RQS,
    SGE_TYPE_AR,
    SGE_TYPE_JOBSCRIPT,
-   SGE_TYPE_CATEGORY, // 30
+   SGE_TYPE_CATEGORY, // 28
    SGE_TYPE_PROCEDURE,
    SGE_TYPE_RL,
 

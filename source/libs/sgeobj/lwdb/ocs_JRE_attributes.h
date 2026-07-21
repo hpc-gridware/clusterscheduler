@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   JRE_job_number = 5650,
+   JRE_job_number = 5450,
    JRE_job_name
 };
 

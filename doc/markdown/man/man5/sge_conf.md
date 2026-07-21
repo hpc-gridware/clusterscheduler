@@ -1315,7 +1315,6 @@ The following request characteristics can be used:
   - *ECLIENT* : Event Clients
   - *CPLX* : Complex
   - *CONF* : Configuration
-  - *MANAGER*, *OPERATOR* : Manager, Operator
   - *PE* : Parallel Environment
   - *SCHED_CONF* : Scheduler Configuration
   - *USER* : User

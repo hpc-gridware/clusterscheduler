@@ -42,8 +42,6 @@
 #include "sgeobj/lwdb/ocs_PN_attributes.h"
 #include "sgeobj/lwdb/ocs_VA_attributes.h"
 #include "sgeobj/lwdb/ocs_MR_attributes.h"
-#include "sgeobj/lwdb/ocs_UM_attributes.h"
-#include "sgeobj/lwdb/ocs_UO_attributes.h"
 #include "sgeobj/lwdb/ocs_PE_attributes.h"
 #include "sgeobj/lwdb/ocs_QR_attributes.h"
 #include "sgeobj/lwdb/ocs_JC_attributes.h"
@@ -179,8 +177,6 @@ constexpr AttributeStatic all_attributes[] = {
       PN_ATTRIBUTES,
       VA_ATTRIBUTES,
       MR_ATTRIBUTES,
-      UM_ATTRIBUTES,
-      UO_ATTRIBUTES,
       PE_ATTRIBUTES,
       QR_ATTRIBUTES,
       JC_ATTRIBUTES,

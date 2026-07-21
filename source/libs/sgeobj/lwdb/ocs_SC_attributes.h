@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   SC_algorithm = 4350,
+   SC_algorithm = 4150,
    SC_schedule_interval,
    SC_maxujobs,
    SC_queue_sort_method,

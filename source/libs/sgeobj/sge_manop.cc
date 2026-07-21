@@ -64,12 +64,11 @@ user_list_is_group_in_list(const char *group, const lList *usr_grp_sgrp_list, in
  *
  * True is returned if the username, the primary group or one of the supplementary groups is
  * mentioned in usr_grp_sgrp_list. The nm field is used to retrieve the string from elements
- * within the list (UE_name for entries in user lists, UO_name for operator lists or UM_name
- * for the manager list).
+ * within the list (e.g. UE_name for the entries of an access list).
  *
  * @param packet              GDI packet containing the ownership information of the request creator
  * @param usr_grp_sgrp_list   user list with possible group entries (prefixed with @-character)
- * @param nm                  CULL name (e.g UE_name, UM_name or UO_name)
+ * @param nm                  CULL name (e.g UE_name)
  * @return                    false if neither the username nor one of the groups is referenced.
  */
 bool

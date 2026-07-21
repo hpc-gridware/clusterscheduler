@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   CA_yday_range_list = 6150,
+   CA_yday_range_list = 5950,
    CA_wday_range_list,
    CA_daytime_range_list,
    CA_state

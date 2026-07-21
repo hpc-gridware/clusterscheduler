@@ -204,21 +204,6 @@ typedef enum {
    sgeE_JOB_SCHEDD_INFO_DEL,        /* event jobs schedd info deleted */
    sgeE_JOB_SCHEDD_INFO_MOD,        /* event jobs schedd info modified */
 
-   /* CS-2394: managers/operators live in the reserved "manager"/"operator" usersets
-    * and are carried by the sgeE_USERSET_* events. The following slots are vestigial:
-    * they are never emitted or subscribed. They are kept (not removed) because
-    * deleting them would renumber every event below, and the numbers travel on the
-    * wire between qmaster and its event clients. */
-   sgeE_MANAGER_LIST,               /* unused since 9.2.0 (reserved slot) */
-   sgeE_MANAGER_ADD,                /* unused since 9.2.0 (reserved slot) */
-   sgeE_MANAGER_DEL,                /* unused since 9.2.0 (reserved slot) */
-   sgeE_MANAGER_MOD,                /* unused since 9.2.0 (reserved slot) */
-
-   sgeE_OPERATOR_LIST,              /* unused since 9.2.0 (reserved slot) */
-   sgeE_OPERATOR_ADD,               /* unused since 9.2.0 (reserved slot) */
-   sgeE_OPERATOR_DEL,               /* unused since 9.2.0 (reserved slot) */
-   sgeE_OPERATOR_MOD,               /* unused since 9.2.0 (reserved slot) */
-
    sgeE_NEW_SHARETREE,              /* replace possibly existing share tree */
 
    sgeE_PE_LIST,                    /* send pe list at registration */

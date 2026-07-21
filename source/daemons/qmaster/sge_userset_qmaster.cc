@@ -38,6 +38,7 @@
 #include "uti/sge_string.h"
 
 #include "sgeobj/sge_userset.h"
+#include "sgeobj/sge_manop.h"
 #include "sgeobj/ocs_Role.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
@@ -677,10 +678,20 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
    }
 
    /* the manager/operator usersets back the manager/operator lists (CS-2394).
-    * They may be changed via the userset interface, but they must stay an ACL and
-    * must not lose root or the admin user - the same guarantee qconf -dm/-do gives. */
+    * They may be changed via the userset interface, but only by a manager, they must
+    * stay an ACL and must not lose root or the admin user - the same guarantees the
+    * (retired) qconf -am/-dm/-ao/-do path always gave. */
    if (strcmp(userset_name, MANAGER_USERSET) == 0 || strcmp(userset_name, OPERATOR_USERSET) == 0) {
       const char *manop_name = (strcmp(userset_name, MANAGER_USERSET) == 0) ? MSG_OBJ_MANAGER : MSG_OBJ_OPERATOR;
+
+      /* Changing the manager/operator list requires manager rights. The US_LIST target
+       * itself only requires operator, so enforce it here where the reserved name is
+       * known - otherwise an operator could promote users to manager via -au/-mu. */
+      if (!manop_is_manager(packet)) {
+         ERROR(MSG_SGETEXT_MUSTBEMANAGER_S, packet->user);
+         answer_list_add(alpp, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
+         goto ERROR;
+      }
 
       /* NOTE: these rejections must not use STATUS_EEXIST: sge_client_del_user()
        * (qconf -du) maps STATUS_EEXIST to "access list does not exist" and drops

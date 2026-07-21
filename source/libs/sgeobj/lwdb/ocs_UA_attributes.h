@@ -29,19 +29,22 @@
 namespace ocs {
 
 enum {
-   UA_name = 3750,
-   UA_value
+   UA_name = 3550,
+   UA_value,
+   UA_svalue
 };
 
 constexpr const int UA_Type[] = {
    UA_name,
    UA_value,
+   UA_svalue,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
 #define UA_ATTRIBUTES \
    {UA_name, "UA_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
-   {UA_value, "UA_value", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
+   {UA_value, "UA_value", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {UA_svalue, "UA_svalue", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

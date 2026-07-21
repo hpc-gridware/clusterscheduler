@@ -150,8 +150,6 @@ static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
    { nullptr, pe_task_update_master_list,             nullptr, nullptr },
    { nullptr, job_update_master_list,                 nullptr, nullptr },
    { nullptr, job_schedd_info_update_master_list,     nullptr, nullptr },
-   { nullptr, generic_update_master_list,             nullptr, nullptr },
-   { nullptr, generic_update_master_list,             nullptr, nullptr },
    { nullptr, sharetree_update_master_list,           nullptr, nullptr },
    { nullptr, generic_update_master_list,             nullptr, nullptr },
    { nullptr, generic_update_master_list,             nullptr, nullptr },

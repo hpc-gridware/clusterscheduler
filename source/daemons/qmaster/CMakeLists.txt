@@ -57,7 +57,6 @@ set(QMASTER_SOURCES
         sge_job_enforce_limit.cc
         sge_job_qmaster.cc
         sge_job_verify.cc
-        sge_manop_qmaster.cc
         sge_pe_qmaster.cc
         sge_role_qmaster.cc
         sge_persistence_qmaster.cc

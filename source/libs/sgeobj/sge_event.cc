@@ -206,9 +206,6 @@ const char *event_text(const lListElem *event, dstring *buffer)
       sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "JOB_SCHEDD_INFO", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
 
-   /* CS-2394: the sgeE_MANAGER_ and sgeE_OPERATOR_ events are vestigial and never
-    * emitted; managers/operators are carried by the sgeE_USERSET_ events. */
-
    /* -------------------- */
    case sgeE_NEW_SHARETREE:
       sge_dstring_sprintf(buffer, MSG_EVENT_SHARETREEXNODESYLEAFS_UII, number,

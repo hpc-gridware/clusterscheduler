@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   QR_name = 2650
+   QR_name = 2450
 };
 
 constexpr const int QR_Type[] = {

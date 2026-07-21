@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   REP_type = 3650,
+   REP_type = 3450,
    REP_host,
    REP_list,
    REP_version,

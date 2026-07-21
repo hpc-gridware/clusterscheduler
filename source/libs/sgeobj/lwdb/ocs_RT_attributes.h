@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   RT_tid = 6450,
+   RT_tid = 6250,
    RT_hostname,
    RT_status,
    RT_state

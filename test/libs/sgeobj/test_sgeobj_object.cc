@@ -323,15 +323,15 @@ static void test_object_has_differences() {
    printf("\n--- object_has_differences ---\n");
 
    lList *alp = nullptr;
-   lListElem *a = lCreateElem(UM_Type);
-   lListElem *b = lCreateElem(UM_Type);
+   lListElem *a = lCreateElem(UE_Type);
+   lListElem *b = lCreateElem(UE_Type);
 
    // T44: two freshly allocated elements — all fields at their default values → no difference
    CHECK(44, "identical elements → false",            object_has_differences(a, &alp, b) == false);
 
    // T45: set a string field to different values → difference detected
-   lSetString(a, UM_name, "alice");
-   lSetString(b, UM_name, "bob");
+   lSetString(a, UE_name, "alice");
+   lSetString(b, UE_name, "bob");
    CHECK(45, "differing string field → true",         object_has_differences(a, &alp, b) == true);
 
    // T46: one nullptr, one valid element → true (one side has data, the other does not)
@@ -358,14 +358,14 @@ static void test_object_list_has_differences() {
    lList *alp = nullptr;
    lList *l1 = nullptr;
    lList *l2 = nullptr;
-   lAddElemStr(&l1, UM_name, "alice", UM_Type);
-   lAddElemStr(&l2, UM_name, "alice", UM_Type);
+   lAddElemStr(&l1, UE_name, "alice", UE_Type);
+   lAddElemStr(&l2, UE_name, "alice", UE_Type);
 
    // T48: lists with identical elements → false
    CHECK(48, "identical lists → false",               object_list_has_differences(l1, &alp, l2) == false);
 
    // T49: lists of different lengths → true (length check short-circuits element comparison)
-   lAddElemStr(&l2, UM_name, "bob", UM_Type);
+   lAddElemStr(&l2, UE_name, "bob", UE_Type);
    CHECK(49, "different lengths → true",              object_list_has_differences(l1, &alp, l2) == true);
 
    // T50: both nullptr → false

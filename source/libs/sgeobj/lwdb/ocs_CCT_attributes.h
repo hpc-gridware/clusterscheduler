@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   CCT_pe_name = 11400,
+   CCT_pe_name = 11200,
    CCT_ignore_queues,
    CCT_ignore_hosts,
    CCT_job_messages,

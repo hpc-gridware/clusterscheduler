@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   AR_id = 12300,
+   AR_id = 12100,
    AR_name,
    AR_account,
    AR_owner,

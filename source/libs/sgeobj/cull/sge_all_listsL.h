@@ -45,8 +45,6 @@
 #include "sgeobj/cull/sge_job_PN_L.h"
 #include "sgeobj/cull/sge_var_VA_L.h"
 #include "sgeobj/cull/sge_mailrec_MR_L.h"
-#include "sgeobj/cull/sge_manop_UM_L.h"
-#include "sgeobj/cull/sge_manop_UO_L.h"
 #include "sgeobj/cull/sge_pe_PE_L.h"
 #include "sgeobj/cull/sge_qref_QR_L.h"
 #include "sgeobj/cull/sge_userset_JC_L.h"
@@ -191,8 +189,6 @@ lNameSpace nmv[] = {
    {PN_LOWERBOUND, PN_SIZE, PNN, PN_Type},
    {VA_LOWERBOUND, VA_SIZE, VAN, VA_Type},
    {MR_LOWERBOUND, MR_SIZE, MRN, MR_Type},
-   {UM_LOWERBOUND, UM_SIZE, UMN, UM_Type},
-   {UO_LOWERBOUND, UO_SIZE, UON, UO_Type},
    {PE_LOWERBOUND, PE_SIZE, PEN, PE_Type},
    {QR_LOWERBOUND, QR_SIZE, QRN, QR_Type},
    {JC_LOWERBOUND, JC_SIZE, JCN, JC_Type},

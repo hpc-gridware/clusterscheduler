@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   RDE_time = 10900,
+   RDE_time = 10700,
    RDE_amount,
    RDE_resource_map_list,
    RDE_binding_inuse
