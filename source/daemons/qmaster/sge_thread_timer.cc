@@ -600,18 +600,26 @@ void sge_timer_start_periodic_tasks() {
    te_add_event(ev);
    te_free_event(&ev);
 
-   /* CS-1908: bootstrap the finished-job retention sweep at +5 s. Passed with
-    * sweep_all=1 (aKey1=1) so a freshly-started qmaster whose retention was
-    * disabled between shutdowns still drains any retained ja_tasks that
-    * reloaded from spool. If nothing is retained the first tick short-
-    * circuits after a cheap master_job_list walk and reschedules
-    * sweep_all=0; if retention is enabled the first tick honours the
-    * tunables and starts pruning. The handler self-reschedules at
-    * +finished_jobs_sweep_interval. Config changes that need to take effect
-    * sooner go through sge_reschedule_finished_jobs_sweep() from
-    * configuration_qmaster.cc. */
+   /* CS-1908: bootstrap the finished-job retention sweep at +5 s.
+    *
+    * The bootstrap arms sweep_all=1 ONLY when the effective retention
+    * config is OFF (both tunables 0) so any retained ja_tasks that
+    * reloaded from spool are drained cleanly — this covers the case
+    * where the operator disabled retention between shutdowns. When
+    * retention is currently ON we arm sweep_all=0: the reloaded
+    * retained ja_tasks are legitimately kept and the normal cadence
+    * (age/count bounds only) governs their prune schedule. Passing
+    * sweep_all=1 unconditionally would drain the retained set at
+    * every restart, which is exactly what R3/R4 forbid.
+    *
+    * The handler self-reschedules at +finished_jobs_sweep_interval.
+    * Config changes that need to take effect sooner go through
+    * sge_reschedule_finished_jobs_sweep() from configuration_qmaster.cc. */
+   const uint32_t boot_sweep_all =
+      (mconf_get_finished_jobs_keep_time() == 0 && mconf_get_finished_jobs_max() == 0) ? 1u : 0u;
    ev = te_new_event(sge_get_gmt64() + sge_gmt32_to_gmt64(5),
-                     TYPE_FINISHED_JOBS_SWEEP_EVENT, ONE_TIME_EVENT, 1, 0, "finished-jobs-sweep");
+                     TYPE_FINISHED_JOBS_SWEEP_EVENT, ONE_TIME_EVENT,
+                     boot_sweep_all, 0, "finished-jobs-sweep");
    te_add_event(ev);
    te_free_event(&ev);
 
