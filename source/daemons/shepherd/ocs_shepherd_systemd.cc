@@ -33,7 +33,15 @@
 
 
 namespace ocs {
+   // Without OCS_WITH_SYSTEMD there is no shepherd_systemd_init() body which could correct this
+   // default, and all systemd operations (scope creation, signalling) are compiled out. Defaulting
+   // to true would make callers take the systemd code path and silently skip their non-systemd
+   // fallback, e.g. core binding would never be applied and jobs would only be signalled via kill().
+#if defined(OCS_WITH_SYSTEMD)
    bool g_use_systemd = true;
+#else
+   bool g_use_systemd = false;
+#endif
    ocs::uti::SystemdProperties_t g_systemd_properties;
 
    /**

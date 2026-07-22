@@ -152,9 +152,20 @@ function(architecture_specific_settings)
       #       - 221: here StopUnit was added
       #       Our build hosts are OK as it is (RHEL-8 compatible for lx-* has a recent enough version,
       #       RHEL-7 compatible for ulx-* does not have it at all)
+      # Note: WITH_SYSTEMD must be set both in the cache (so it is shown correctly in cmake GUIs and
+      #       stays consistent over re-configure runs) and in the parent scope (where it is evaluated).
+      #       PARENT_SCOPE and CACHE cannot be combined in a single set() call - doing so silently
+      #       stores the literal list "ON;PARENT_SCOPE" in the cache instead.
       if (EXISTS /usr/include/systemd/sd-bus.h)
-         set(WITH_SYSTEMD ON PARENT_SCOPE CACHE STRING "" FORCE)
-         message(STATUS "systemd development files found")
+         set(WITH_SYSTEMD ON CACHE BOOL "Enable systemd support" FORCE)
+         set(WITH_SYSTEMD ON PARENT_SCOPE)
+         message(STATUS "systemd development files found - building with systemd support")
+      else()
+         # Reset a possibly stale value, e.g. when the systemd development files have been removed
+         # after an earlier configure run.
+         set(WITH_SYSTEMD OFF CACHE BOOL "Enable systemd support" FORCE)
+         set(WITH_SYSTEMD OFF PARENT_SCOPE)
+         message(STATUS "systemd development files (systemd-devel/libsystemd-dev) not found - building without systemd support")
       endif()
 
       if (SGE_ARCH MATCHES "lx-riscv64")

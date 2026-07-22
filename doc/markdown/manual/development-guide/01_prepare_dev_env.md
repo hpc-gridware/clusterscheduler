@@ -17,7 +17,14 @@ For the xxQS_NAMExx core product, the environment has to provide:
 Depending on the OS, additional packages are required:
 
 * libtirpc-devel (Linux)
-* systemd-devel or libudev-dev (Linux), libudev-devd (FreeBSD)
+* libudev-dev (Linux), libudev-devd (FreeBSD)
+* systemd-devel (RPM based distributions) or libsystemd-dev (Debian based distributions) (Linux).
+  These packages provide `/usr/include/systemd/sd-bus.h`. The cmake build enables systemd support
+  (`WITH_SYSTEMD`) only if this header is found. `libudev-dev` is *not* sufficient, it only ships
+  `libudev.h`. Without it, the daemons are built without systemd integration, which means that jobs
+  are not started in systemd scopes (no cgroup based core binding, device isolation or accounting).
+  The library itself (`libsystemd.so.0`) is loaded at runtime via `dlopen()`, so only the development
+  headers are needed at build time.
 * some cmake versions delivered with the OS are either too old or too new, and you need to install cmake yourself.
   In such a case we recommend installing version 3.27.9.
 
@@ -87,7 +94,7 @@ yum install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel rh-maven35
 ### Debian 12
 
 ```
-apt-get install -y binutils cmake autoconf automake libudev-dev
+apt-get install -y binutils cmake autoconf automake libudev-dev libsystemd-dev
 apt-get install -y build-essential manpages-dev git
 apt-get install -y doxygen graphviz
 apt-get install -y expect tcl tdom tcllib gnuplot vim
@@ -304,7 +311,7 @@ apt-get install -y expect tcl tdom tcllib gnuplot xterm
 apt-get install -y doxygen graphviz pandoc 
 apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev
 apt-get install -y libjemalloc2 libjemalloc-dev hwloc libhwloc-dev ocl-icd-opencl-dev
-apt-get install -y libudev-dev libmunge-dev libtirpc-dev
+apt-get install -y libudev-dev libmunge-dev libtirpc-dev libsystemd-dev
 apt-get install -y pandoc texlive*
 ```
 
