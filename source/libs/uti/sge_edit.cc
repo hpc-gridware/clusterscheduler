@@ -37,6 +37,7 @@
 #include <cerrno>
 #include <sys/wait.h>
 
+#include "uti/msg_utilib.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
@@ -105,8 +106,14 @@ int sge_edit(const char *fname, uid_t myuid, gid_t mygid) {
 
       sge_set_def_sig_mask(nullptr, nullptr);
       sge_unblock_all_signals();
-      setuid(getuid());
-      setgid(getgid());
+      if (setuid(getuid())) {
+         ERROR(MSG_SYSTEM_SETUIDFAILED_u, getuid());
+         sge_exit(1);
+      }
+      if (setgid(getgid())) {
+         ERROR(MSG_SYSTEM_SETGIDFAILED_g, getgid());
+         sge_exit(1);
+      }
 
       cp = sge_getenv("EDITOR");
       if (cp == nullptr || strlen(cp) == 0) {

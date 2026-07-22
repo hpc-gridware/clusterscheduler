@@ -35,6 +35,7 @@
 #include <csignal>
 #include <unistd.h>
 #include <cstdlib>
+#include <cstring>
 #include <sys/types.h>
 #include <pwd.h>
 #include <cerrno>
@@ -83,9 +84,15 @@ int main(int argc, char **argv)
       return 1;
    }
    
-   setgid(pw->pw_gid);
-   setuid(pw->pw_uid);  
- 
+   if (setgid(pw->pw_gid)) {
+      fprintf(stderr, "setgid(%d) failed: %s\n", (int) pw->pw_gid, strerror(errno));
+      return 1;
+   }
+   if (setuid(pw->pw_uid)) {
+      fprintf(stderr, "setuid(%d) failed: %s\n", (int) pw->pw_uid, strerror(errno));
+      return 1;
+   }
+
    argv += 2;
    execvp(argv[0], argv);
    fprintf(stderr, "execvp errno=%d\n", errno);

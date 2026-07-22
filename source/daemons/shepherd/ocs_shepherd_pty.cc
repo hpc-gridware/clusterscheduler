@@ -316,7 +316,10 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
    uid_t old_euid = geteuid();
    bool changed_uid = false;
    if (old_euid != SGE_SUPERUSER_UID) {
-      seteuid(SGE_SUPERUSER_UID);
+      if (seteuid(SGE_SUPERUSER_UID) < 0) {
+         sge_dstring_sprintf(err_msg, "seteuid(root) error: %d, %s", errno, strerror(errno));
+         return -1;
+      }
       changed_uid = true;
    }
 #if defined(FREEBSD) || defined(NETBSD)
@@ -332,7 +335,11 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
    shepherd_trace("created pty with slave device %s", pts_name);
 #endif
    if (changed_uid) {
-      seteuid(old_euid);
+      if (seteuid(old_euid) < 0) {
+         sge_dstring_sprintf(err_msg, "seteuid(%d) error: %d, %s", (int) old_euid, errno, strerror(errno));
+         close(fdm);
+         return -1;
+      }
    }
 #if defined(USE_PTY_AND_PIPE_ERR)
    if (pipe(fd_pipe_err) == -1) {
