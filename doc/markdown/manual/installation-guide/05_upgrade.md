@@ -101,24 +101,49 @@ The upgrade is done with following steps:
 
    At the end of this step your new `sge_qmaster` process will be active.
 
-7. Update your execution environments. On each execution node you will need to source the new settings file and then trigger the initialization of the executions daemon spooling area and the startup scripts.
+7. Set up the execution hosts. This step initializes each execution daemon's spool directory and installs the new autostart (RC or systemd) scripts. It does *not* start `sge_execd` — you start the daemons in a separate step below.
+
+   Be aware that, by default, `inst_sge -upd-execd` and `inst_sge -upd-rc` are cluster-wide operations: they read the list of execution hosts from `qconf -sel` and reach every one of them over ssh. You therefore have two ways to run this step. Pick one:
+
+   * **Option A — run it once from the master host.** If root can ssh from the master host to every execution host without a password prompt, run the commands on the master and let them fan out:
+
+     ```
+     $ . $SGE_ROOT/$SGE_CELL/common/settings.sh
+     $ $SGE_ROOT/inst_sge -upd-execd
+     $ $SGE_ROOT/inst_sge -upd-rc
+     ```
+
+   * **Option B — run it locally on every execution host.** If passwordless root ssh is not configured, log in to each execution host as root and add the `-noremote` flag. That flag limits the action to the local host and suppresses all remote calls:
+
+     ```
+     $ . $SGE_ROOT/$SGE_CELL/common/settings.sh
+     $ $SGE_ROOT/inst_sge -upd-execd -noremote
+     $ $SGE_ROOT/inst_sge -upd-rc -noremote
+     ```
+
+   Once the spool directories and startup scripts are in place, start the execution daemon on each execution host as a separate step — either through the newly installed unit (e.g. `systemctl start <slice-name>-sgeexecd`) or by running `$SGE_ROOT/$SGE_CELL/common/sgeexecd start` directly. Note that the resources of the machines may become oversubscribed if you also immediately allow new jobs to be submitted to the new cluster.
+
+8. Set up the shadow master hosts. Skip this step if your cluster does not use shadow masters, or if every shadow master host is also an execution host — in the latter case step 7 already installed the qmaster/shadowd startup scripts on that host, because `inst_sge -upd-rc` installs both the qmaster and the execd RC scripts on the local machine.
+
+   Otherwise, on every shadow master host that is *not* also an execution host, log in as root and run:
 
    ```
    $ . $SGE_ROOT/$SGE_CELL/common/settings.sh
-   $ $SGE_ROOT/inst_sge -upd-execd
-   $ $SGE_ROOT/inst_sge -upd-rc
+   $ $SGE_ROOT/inst_sge -upd-rc -noremote
    ```
 
-   You can now start the execution daemon on the execution hosts now, but please be aware that the resources of the machines may become oversubscribed if you also immediately allow new jobs to be submitted to the new cluster.
+   You can skip logging in to each shadow master host if you chose Option A in step 7: `inst_sge -upd-rc` without `-noremote` already contacts every host listed in `$SGE_ROOT/$SGE_CELL/common/shadow_masters` over ssh and installs the startup scripts there.
 
-8. Check your new cluster. 
+   As with the execution daemons, this step does *not* start `sge_shadowd`. Start it manually on each shadow master host, either through the installed unit (e.g. `systemctl start <slice-name>-sgemaster`) or by running `$SGE_ROOT/$SGE_CELL/common/sgemaster -shadowd start` directly.
+
+9. Check your new cluster.
 
    * Submit some test jobs and check that they are running as expected.
    * Make sure you do not have user generated scripts (JSV, Prolog, Epilog, PE-start/stop, starter/suspend/resume-method, ...) in the old $SGE_ROOT directory that are still used by the new cluster. Move them to a new location outside the old and new $SGE_ROOT directories and reconfigure your cluster to use the new location.
 
-9. If you are satisfied with the new cluster then you can switch over using the new cluster.
+10. If you are satisfied with the new cluster then you can switch over using the new cluster.
 
-10. If the last old job has finished then you can shut down the old daemons and remove the old $SGE_ROOT directory.
+11. If the last old job has finished then you can shut down the old daemons and remove the old $SGE_ROOT directory.
 
 ## In-Place Upgrade
 
@@ -172,17 +197,42 @@ Here are the steps required to complete the in-place upgrade:
 
    At the end of this step your new `sge_qmaster` process is active.
 
-10. Upgrade your execution environments. On each execution node you need to source the new settings file and then trigger the initialization of the executions daemons spooling area and the startup scripts.
+10. Set up the execution hosts. This step initializes each execution daemon's spool directory and installs the new autostart (RC or systemd) scripts. It does *not* start `sge_execd` — you start the daemons in a separate step below.
+
+    As in the side-by-side upgrade, `inst_sge -upd-execd` and `inst_sge -upd-rc` are cluster-wide operations by default: they read the list of execution hosts from `qconf -sel` and reach every one of them over ssh. Pick one of the following two ways to run this step:
+
+    * **Option A — run it once from the master host.** If root can ssh from the master host to every execution host without a password prompt, run the commands on the master and let them fan out:
+
+      ```
+      $ . $SGE_ROOT/$SGE_CELL/common/settings.sh
+      $ $SGE_ROOT/inst_sge -upd-execd
+      $ $SGE_ROOT/inst_sge -upd-rc
+      ```
+
+    * **Option B — run it locally on every execution host.** If passwordless root ssh is not configured, log in to each execution host as root and add the `-noremote` flag. That flag limits the action to the local host and suppresses all remote calls:
+
+      ```
+      $ . $SGE_ROOT/$SGE_CELL/common/settings.sh
+      $ $SGE_ROOT/inst_sge -upd-execd -noremote
+      $ $SGE_ROOT/inst_sge -upd-rc -noremote
+      ```
+
+    Once the spool directories and startup scripts are in place, start the execution daemon on each execution host as a separate step — either through the newly installed unit (e.g. `systemctl start <slice-name>-sgeexecd`) or by running `$SGE_ROOT/$SGE_CELL/common/sgeexecd start` directly.
+
+11. Set up the shadow master hosts. Skip this step if your cluster does not use shadow masters, or if every shadow master host is also an execution host — in the latter case step 10 already installed the qmaster/shadowd startup scripts on that host, because `inst_sge -upd-rc` installs both the qmaster and the execd RC scripts on the local machine.
+
+    Otherwise, on every shadow master host that is *not* also an execution host, log in as root and run:
 
     ```
     $ . $SGE_ROOT/$SGE_CELL/common/settings.sh
-    $ $SGE_ROOT/inst_sge -upd-execd
-    $ $SGE_ROOT/inst_sge -upd-rc
+    $ $SGE_ROOT/inst_sge -upd-rc -noremote
     ```
 
-    You can now start the execution daemon on the execution hosts.
+    You can skip logging in to each shadow master host if you chose Option A in step 10: `inst_sge -upd-rc` without `-noremote` already contacts every host listed in `$SGE_ROOT/$SGE_CELL/common/shadow_masters` over ssh and installs the startup scripts there.
 
-11. Continue with post installation steps.
+    As with the execution daemons, this step does *not* start `sge_shadowd`. Start it manually on each shadow master host, either through the installed unit (e.g. `systemctl start <slice-name>-sgemaster`) or by running `$SGE_ROOT/$SGE_CELL/common/sgemaster -shadowd start` directly.
+
+12. Continue with post installation steps.
 
 [//]: # (Each file has to end with two empty lines)
 
