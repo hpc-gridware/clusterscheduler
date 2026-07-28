@@ -35,6 +35,7 @@
 #include <cstring>
 
 #include "uti/ocs_Pattern.h"
+#include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
@@ -550,6 +551,78 @@ qref_list_cq_rejected(const lList *qref_list, const char *cqname,
 }
 
 
+/****** sge_qref/qref_hgroup_rejected() ****************************************
+*  NAME
+*     qref_hgroup_rejected() -- Check if a hostgroup contains a host
+*
+*  SYNOPSIS
+*     static bool qref_hgroup_rejected(const lListElem *hgroup, const char
+*     *hostname, const lList *hgroup_list)
+*
+*  FUNCTION
+*     Checks if "hostname" is a member of "hgroup", following nested
+*     hostgroup references.
+*
+*     Members are resolved *exactly*, never as patterns. sge_types(1) defines
+*     the content of a hostlist as
+*
+*        host_identifier := host_name | hostgroup_name
+*
+*     - there is no wildcard type on this side. Wildcard types (wc_host,
+*     wc_hostgroup, expression) are defined for the reference side only, i.e.
+*     for "-q wc_qdomain" and the RQS "hosts {...}" scopes.
+*
+*     This mirrors href_list_find_references(), which is what
+*     "qconf -shgrp_resolved" resolves with. Before CS-2450 the members were
+*     passed back into qref_list_host_rejected() and thus matched as
+*     expressions against *all* hostgroups, so the same configuration resolved
+*     to different host sets depending on the code path.
+*
+*     Cycles cannot occur: sge_hgroup_qmaster.cc rejects them when a hostgroup
+*     is added.
+*
+*  INPUTS
+*     const lListElem *hgroup  - hostgroup to search (HGRP_Type)
+*     const char *hostname     - the host in question
+*     const lList *hgroup_list - hostgroup list (HGRP_Type)
+*
+*  RESULT
+*     bool - True if the host is not a member.
+*
+*  NOTES
+*     MT-NOTE: qref_hgroup_rejected() is MT safe
+*
+*  SEE ALSO
+*     sgeobj/href/href_list_find_references()
+*******************************************************************************/
+static bool
+qref_hgroup_rejected(const lListElem *hgroup, const char *hostname, const lList *hgroup_list)
+{
+   DENTER(BASIS_LAYER);
+
+   for_each_ep_lv(href, lGetList(hgroup, HGRP_host_list)) {
+      const char *member = lGetHost(href, HR_name);
+
+      if (ocs::is_hgroup_name(member)) {
+         /* nested hostgroup - look it up by name, do not match it as a pattern */
+         const lListElem *sub_hgroup = hgroup_list_locate(hgroup_list, member);
+
+         if (sub_hgroup != nullptr && !qref_hgroup_rejected(sub_hgroup, hostname, hgroup_list)) {
+            DRETURN(false);
+         }
+      } else {
+         /* stored host name - compare it, do not match it as a pattern.
+          * sge_eval_expression() uses sge_hostcmp() for a pattern-free
+          * Type::HOST value anyway, so this is the same comparison. */
+         if (sge_hostcmp(member, hostname) == 0) {
+            DRETURN(false);
+         }
+      }
+   }
+
+   DRETURN(true);
+}
+
 /****** sge_qref/qref_list_host_rejected() *************************************
 *  NAME
 *     qref_list_host_rejected() -- Check if -q ??@href rejects host
@@ -561,6 +634,15 @@ qref_list_cq_rejected(const lList *qref_list, const char *cqname,
 *  FUNCTION
 *     Checks if a -q ??@href rejects host. The href may be either
 *     wc_hostgroup or wc_host.
+*
+*     "href" is the *reference* side, so expression semantics apply to it.
+*     The members of a matched hostgroup are resolved exactly by
+*     qref_hgroup_rejected() (CS-2450).
+*
+*     A reference without pattern characters is looked up via
+*     hgroup_list_locate(), i.e. a hash lookup on HGRP_name instead of a scan
+*     of the whole master hostgroup list. That is the common case and this
+*     function runs per RQS rule, per queue instance, per job.
 *
 *  INPUTS
 *     const char *href         - Host reference from -q ??@href
@@ -578,22 +660,28 @@ qref_list_host_rejected(const char *href, const char *hostname, const lList *hgr
 {
    DENTER(BASIS_LAYER);
 
-   if (href[0] == '@') { /* wc_hostgroup */
+   if (ocs::is_hgroup_name(href)) { /* wc_hostgroup */
       const char *wc_hostgroup = &href[1];
-      bool is_expression = ocs::is_expression(wc_hostgroup);
 
-      for_each_ep_lv(hgroup, hgroup_list) {
-         const char *hgroup_name = lGetHost(hgroup, HGRP_name);
+      if (ocs::is_expression(wc_hostgroup)) {
+         /* the reference is an expression - evaluate it against every hostgroup name */
+         for_each_ep_lv(hgroup, hgroup_list) {
+            const char *hgroup_name = lGetHost(hgroup, HGRP_name);
 
-         DPRINTF("found hostgroup \"%s\" wc_hostgroup: \"%s\"\n", hgroup_name, wc_hostgroup);
+            DPRINTF("found hostgroup \"%s\" wc_hostgroup: \"%s\"\n", hgroup_name, wc_hostgroup);
 
-         /* use hostgroup expression */
-         if (sge_eval_expression(ocs::CEntry::Type::HOST, wc_hostgroup, &hgroup_name[1], nullptr, true, is_expression) == 0) {
-            for_each_ep_lv(h, lGetList(hgroup, HGRP_host_list)) {
-               if (!qref_list_host_rejected(lGetHost(h, HR_name), hostname, hgroup_list)) {
+            if (sge_eval_expression(ocs::CEntry::Type::HOST, wc_hostgroup, &hgroup_name[1], nullptr, true, true) == 0) {
+               if (!qref_hgroup_rejected(hgroup, hostname, hgroup_list)) {
                   DRETURN(false);
                }
             }
+         }
+      } else {
+         /* plain hostgroup name - hash lookup instead of scanning the list */
+         const lListElem *hgroup = hgroup_list_locate(hgroup_list, href);
+
+         if (hgroup != nullptr && !qref_hgroup_rejected(hgroup, hostname, hgroup_list)) {
+            DRETURN(false);
          }
       }
    } else { /* wc_host */
