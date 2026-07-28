@@ -685,6 +685,88 @@ CheckReservedAccessListNames()
    return 0
 }
 
+# CS-2450: the primary name of a configuration object must not contain any of the
+# characters that make up a wildcard expression - * ? [ ] & | ! ( ). Object names
+# and the references pointing at them share one namespace, and wildcards are a
+# legal means of *referencing* objects (resource quota scopes, "-q" queue patterns,
+# "qsub -pe"), so an object whose name carries such a character cannot be addressed
+# unambiguously - it resolves to different host/object sets depending on which code
+# path does the resolution.
+#
+# Since 9.2 such a name is rejected when the object is added, so a backup taken from
+# an older cluster may still contain one. Loading it would fail somewhere in the
+# middle of the run with a message that does not explain the cause, leaving the new
+# cluster half populated. Report every offender up front and refuse instead.
+#
+# Unlike CheckReservedAccessListNames() this is deliberately NOT gated on the saved
+# version: a 9.2 cluster installed before this change can contain such names too.
+#
+#   $1 - the backup directory (as saved by save_config.sh)
+CheckPatternObjectNames()
+{
+   dir=$1
+   found=false
+
+   # An object name IS the file name in the backup (see DumpItemToFile() in
+   # save_config.sh), and the characters searched for here are exactly the ones the
+   # shell expands. Switch pathname expansion off for the whole scan so that no name
+   # can ever be interpreted as a glob.
+   set -f
+
+   # "<directory written by save_config.sh>:<what the object is called for a human>"
+   for entry in \
+      hostgroups:"host group" \
+      cqueues:"cluster queue" \
+      pe:"parallel environment" \
+      usersets:"access list" \
+      users:"user" \
+      projects:"project" \
+      calendars:"calendar" \
+      ckpt:"checkpointing interface" \
+      resource_quotas:"resource quota set"
+   do
+      subdir=`expr "$entry" : '\([^:]*\)'`
+      label=`expr "$entry" : '[^:]*:\(.*\)'`
+
+      if [ ! -d "$dir/$subdir" ]; then
+         continue
+      fi
+
+      # An object name cannot contain whitespace - it is rejected on creation - so
+      # splitting the listing on whitespace is safe here.
+      for name in `ls -A -- "$dir/$subdir" 2>/dev/null | grep '[][*?&|!()]'`; do
+         if [ "$found" = false ]; then
+            $INFOTEXT ""
+            $INFOTEXT "[CRITICAL] The saved configuration contains object names with wildcard"
+            $INFOTEXT "expression characters (saved from version: $LOAD_VERSION):"
+            $INFOTEXT ""
+            found=true
+         fi
+         $INFOTEXT "   $label \"$name\""
+         LogIt "I" "Backup contains $label \"$name\" carrying wildcard expression characters"
+      done
+   done
+
+   set +f
+
+   if [ "$found" = true ]; then
+      $INFOTEXT ""
+      $INFOTEXT "Beginning with version 9.2 the characters * ? [ ] & | ! ( ) are not allowed in"
+      $INFOTEXT "the name of a configuration object. They are reserved for referencing objects:"
+      $INFOTEXT "resource quota scopes, \"-q\" queue patterns and \"qsub -pe\" keep accepting"
+      $INFOTEXT "wildcards, so a name containing one of them cannot be addressed unambiguously"
+      $INFOTEXT "and does not resolve consistently."
+      $INFOTEXT ""
+      $INFOTEXT "Rename the objects listed above in the old cluster and adapt everything that"
+      $INFOTEXT "references them, save the configuration again, then repeat the upgrade."
+      $INFOTEXT ""
+      $INFOTEXT "Nothing has been loaded. The upgrade is aborted."
+      LogIt "C" "Backup contains object names with wildcard expression characters - upgrade aborted"
+      EXIT 1
+   fi
+   return 0
+}
+
 ########
 # MAIN #
 ########
@@ -801,6 +883,10 @@ LogIt "I" "$LOAD_VERSION"
 # CS-2394: refuse a pre-9.2 backup that uses the now-reserved access list names.
 # Must run before IterativeLoad, i.e. before anything is loaded.
 CheckReservedAccessListNames "${DIR}"
+
+# CS-2450: refuse a backup whose object names carry wildcard expression characters.
+# Must run before IterativeLoad, i.e. before anything is loaded.
+CheckPatternObjectNames "${DIR}"
 
 $INFOTEXT "Loading saved cluster configuration from $DIR (log in $MESSAGE_FILE_NAME)..."
 
