@@ -1936,7 +1936,7 @@ ec2_get_flush(sge_evc_class_t *thiz, ev_event event) {
       const lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, event);
 
       if (sub_event == nullptr) {
-         ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
+         WARNING(MSG_EVENT_NOTSUBSCRIBED_I, event);
       } else if (lGetBool(sub_event, EVS_flush)) {
          ret = lGetUlong(sub_event, EVS_interval);
       }
@@ -2002,23 +2002,21 @@ ec2_set_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int interval) {
          WARNING(MSG_EVENT_ILLEGALFLUSHTIME_I, interval); */
       } else {
          if (event == sgeE_ALL_EVENTS) {
-            for (int e = sgeE_ALL_EVENTS + 1; e < static_cast<int>(sgeE_EVENTSIZE); e++) {
-               const lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, e);
-
-               if (sub_event == nullptr) {
-                  ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
-               } else {
-                  ec2_mod_subscription_flush(thiz, event, EV_FLUSHED, interval);
-               }
-               if (lGetBool(sge_evc->ec, EV_changed)) {
-                  ret = true;
-               }
+            // ec2_mod_subscription_flush() walks the subscribed events itself and
+            // silently skips the ones that are not subscribed, so there is nothing
+            // to iterate over here. The loop that used to be at this place called
+            // it once per event id - every call walking the whole list again - and
+            // logged an error for each id the client had not subscribed, which is
+            // the normal case for a client that does not subscribe everything.
+            ec2_mod_subscription_flush(thiz, event, EV_FLUSHED, interval);
+            if (lGetBool(sge_evc->ec, EV_changed)) {
+               ret = true;
             }
          } else {
             const lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, event);
 
             if (sub_event == nullptr) {
-               ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
+               WARNING(MSG_EVENT_NOTSUBSCRIBED_I, event);
             } else {
                ec2_mod_subscription_flush(thiz, event, EV_FLUSHED, interval);
             }
@@ -2077,7 +2075,7 @@ ec2_unset_flush(sge_evc_class_t *thiz, ev_event event) {
       const lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, event);
 
       if (sub_event == nullptr) {
-         ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
+         WARNING(MSG_EVENT_NOTSUBSCRIBED_I, event);
       } else {
          ec2_mod_subscription_flush(thiz, event, EV_NOT_FLUSHED, EV_NO_FLUSH);
       }
