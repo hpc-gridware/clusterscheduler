@@ -644,8 +644,8 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
    }
    userset_name = lGetString(new_userset, US_name);
 
-   if (add && verify_str_key(
-           alpp, userset_name, MAX_VERIFY_STRING, object->object_name, KEY_TABLE) != STATUS_OK) {
+   if (add && verify_obj_name(
+           alpp, userset_name, MAX_VERIFY_STRING, object->object_name) != STATUS_OK) {
       goto ERROR;
    }
 

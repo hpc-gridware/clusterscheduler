@@ -109,6 +109,7 @@
 #define MSG_GDI_TYPE_TIME_SS           _MESSAGE(33077, _("value for attribute " SFN " " SFQ " is not a time value"))
 #define MSG_GDI_KEYSTR_NULL_S          _MESSAGE(33078, _("nullptr pointer passed as object name for " SFQ))
 #define MSG_GDI_MULTIPLE_OCCUR_SSSS    _MESSAGE(33079, _("denied: multiple occurances of " SFN " " SFQ " in " SFN " " SFQ))
+#define MSG_GDI_KEYSTR_PATTERNCHAR_SS  _MESSAGE(33080, _("wildcard expression characters (*?[]&|!()) are not allowed in the name of a " SFN ": " SFQ))
 #define MSG_GDI_KEYSTR_FIRSTCHAR_SC    _MESSAGE(33081, _(SFN " (\'%c\') not allowed as first character of objectname"))
 #define MSG_GDI_KEYSTR_FIRSTCHAR_S     _MESSAGE(33082, _(SFN " not allowed as first character of objectname"))
 #define MSG_GDI_KEYSTR_MIDCHAR_SC      _MESSAGE(33083, _(SFN " (\'%c\') not allowed in objectname"))

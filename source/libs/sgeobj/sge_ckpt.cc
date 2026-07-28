@@ -255,9 +255,9 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
    }
 
    /* -------- CK_name */
-   if (verify_str_key(
-         alpp, lGetString(this_elem, CK_name), 
-         MAX_VERIFY_STRING, "checkpoint interface", KEY_TABLE) != STATUS_OK) {
+   if (verify_obj_name(
+         alpp, lGetString(this_elem, CK_name),
+         MAX_VERIFY_STRING, "checkpoint interface") != STATUS_OK) {
       DRETURN(STATUS_EUNKNOWN);
    }
 

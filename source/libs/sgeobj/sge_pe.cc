@@ -243,7 +243,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
 
    DENTER(TOP_LAYER);
    pe_name = lGetString(pep, PE_name);
-   if (pe_name != nullptr && verify_str_key(alpp, pe_name, MAX_VERIFY_STRING, MSG_OBJ_PE, KEY_TABLE) != STATUS_OK) {
+   if (pe_name != nullptr && verify_obj_name(alpp, pe_name, MAX_VERIFY_STRING, MSG_OBJ_PE) != STATUS_OK) {
       if (alpp == nullptr) {
          ERROR(MSG_PE_INVALIDCHARACTERINPE_S, pe_name);
       } else {

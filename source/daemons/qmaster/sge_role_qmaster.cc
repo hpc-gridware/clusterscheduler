@@ -54,8 +54,8 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    }
    const char *role_name = lGetString(new_ep, RL_name);
 
-   if (add && verify_str_key(alpp, role_name, MAX_VERIFY_STRING, MSG_OBJ_ROLE, KEY_TABLE) != STATUS_OK) {
-      // answer list already filled by verify_str_key()
+   if (add && verify_obj_name(alpp, role_name, MAX_VERIFY_STRING, MSG_OBJ_ROLE) != STATUS_OK) {
+      // answer list already filled by verify_obj_name()
       DRETURN(STATUS_EUNKNOWN);
    }
 

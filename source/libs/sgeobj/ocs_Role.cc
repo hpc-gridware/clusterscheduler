@@ -46,7 +46,7 @@ ocs::Role::validate(const lListElem *role, lList **answer_list, bool startup) {
    DENTER(TOP_LAYER);
 
    if (const char *name = lGetString(role, RL_name);
-       verify_str_key(answer_list, name, MAX_VERIFY_STRING, MSG_OBJ_ROLE, KEY_TABLE) != STATUS_OK) {
+       verify_obj_name(answer_list, name, MAX_VERIFY_STRING, MSG_OBJ_ROLE) != STATUS_OK) {
       DRETURN(false);
    }
 

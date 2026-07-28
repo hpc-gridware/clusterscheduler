@@ -136,7 +136,7 @@ userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListE
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          goto Error;
       }
-      if (verify_str_key(alpp, userprj, MAX_VERIFY_STRING, obj_name, KEY_TABLE,
+      if (verify_obj_name(alpp, userprj, MAX_VERIFY_STRING, obj_name,
          user_flag ? "\\" : nullptr) != STATUS_OK) {
          goto Error;
       }

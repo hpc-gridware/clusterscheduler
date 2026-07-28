@@ -118,8 +118,8 @@ ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
          }
       }
       ckpt_name = lGetString(new_ckpt, CK_name);
-      if (add && verify_str_key(
-              alpp, ckpt_name, MAX_VERIFY_STRING, SGE_ATTR_CKPT_NAME, KEY_TABLE) != STATUS_OK) {
+      if (add && verify_obj_name(
+              alpp, ckpt_name, MAX_VERIFY_STRING, SGE_ATTR_CKPT_NAME) != STATUS_OK) {
          DRETURN(STATUS_EUNKNOWN);
       }
    } else {

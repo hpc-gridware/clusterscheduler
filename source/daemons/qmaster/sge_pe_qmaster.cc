@@ -87,7 +87,7 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
    pe_name = lGetString(new_pe, PE_name);
 
    /* Name has to be a valid filename without pathchanges */
-   if (add && verify_str_key(alpp, pe_name, MAX_VERIFY_STRING, MSG_OBJ_PE, KEY_TABLE) != STATUS_OK) {
+   if (add && verify_obj_name(alpp, pe_name, MAX_VERIFY_STRING, MSG_OBJ_PE) != STATUS_OK) {
       DRETURN(STATUS_EUNKNOWN);
    }
 

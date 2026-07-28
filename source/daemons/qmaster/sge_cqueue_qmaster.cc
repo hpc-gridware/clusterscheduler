@@ -585,8 +585,8 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
       const char *name = lGetPosString(reduced_elem, pos);
 
       if (add) {
-         if (verify_str_key(
-                 answer_list, name, MAX_VERIFY_STRING, "cqueue", KEY_TABLE) == STATUS_OK) {
+         if (verify_obj_name(
+                 answer_list, name, MAX_VERIFY_STRING, "cqueue") == STATUS_OK) {
             DTRACE;
             lSetString(cqueue, CQ_name, name);
          } else {

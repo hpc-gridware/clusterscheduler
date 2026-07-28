@@ -39,6 +39,7 @@
 
 #include "uti/sge_log.h"
 #include "uti/sge_hostname.h"
+#include "uti/ocs_Pattern.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
@@ -227,6 +228,72 @@ verify_str_key(lList **alpp, const char *str, size_t str_length, const char *nam
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          return STATUS_EUNKNOWN;
       }
+   }
+
+   return STATUS_OK;
+}
+
+/****** sge_utility/verify_obj_name() ******************************************
+*  NAME
+*     verify_obj_name() -- Verify the primary name of a configuration object
+*
+*  SYNOPSIS
+*     an_status_t verify_obj_name(lList **alpp, const char *str,
+*     size_t str_length, const char *name, const char *exceptions)
+*
+*  FUNCTION
+*     Verifies the name an object is created with, e.g. the group name of a
+*     host group or the name of a cluster queue. In addition to the checks
+*     done by verify_str_key() with KEY_TABLE the name must not contain any
+*     of the characters that make up a wildcard expression.
+*
+*     Object names and the references pointing at them share one namespace.
+*     Wildcards are a legal and intended means of *referencing* objects
+*     (RQS scopes, "-q wc_qdomain", "qsub -pe 'mpi*'"), so an object whose
+*     name carries such a character cannot be addressed unambiguously and
+*     resolves differently depending on the code path (CS-2450). Names are
+*     therefore restricted, references are not.
+*
+*     KEY_TABLE already rejects "[", "]", "|", "(" and ")", so in practice
+*     this function adds "*", "?", "&" and "!". The check is done via
+*     ocs::is_expression() so that validation and expression evaluation can
+*     never drift apart.
+*
+*     Do NOT use this function for references to objects - use
+*     verify_str_key() with KEY_TABLE there.
+*
+*  INPUTS
+*     lList **alpp            - answer list
+*     const char *str         - name to be verified
+*     size_t str_length       - maximum length of the name
+*     const char *name        - verbal description of the object
+*     const char *exceptions  - characters to be accepted although KEY_TABLE
+*                               forbids them (see verify_str_key())
+*
+*  RESULT
+*     an_status_t - STATUS_OK upon success
+*
+*  NOTES
+*     MT-NOTE: verify_obj_name() is MT safe
+*
+*  SEE ALSO
+*     sge_utility/verify_str_key()
+*     uti/ocs_Pattern/is_expression()
+*******************************************************************************/
+an_status_t
+verify_obj_name(lList **alpp, const char *str, size_t str_length, const char *name,
+                const char *exceptions) {
+   an_status_t ret = verify_str_key(alpp, str, str_length, name, KEY_TABLE, exceptions);
+
+   if (ret != STATUS_OK) {
+      /* verify_str_key() has already added a descriptive message */
+      return ret;
+   }
+
+   if (ocs::is_expression(str)) {
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_KEYSTR_PATTERNCHAR_SS, name, str);
+      answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+      return STATUS_EUNKNOWN;
    }
 
    return STATUS_OK;

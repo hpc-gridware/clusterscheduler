@@ -241,12 +241,95 @@ static void test_verify_host_name() {
 }
 
 // ---------------------------------------------------------------------------
+// verify_obj_name  [T43–T56]
+//
+// CS-2450: verify_obj_name() validates the *primary name* an object is created
+// with. On top of everything verify_str_key() enforces for KEY_TABLE it rejects
+// the characters that make up a wildcard expression, as defined by
+// ocs::is_expression(): * ? [ ] & | ! ( ).
+//
+// KEY_TABLE already rejects [ ] | ( ), so in practice this adds * ? & !. Object
+// names and the references pointing at them share one namespace, and wildcards
+// are a legal means of *referencing* objects (RQS scopes, "-q wc_qdomain",
+// "qsub -pe 'mpi*'"). A name carrying such a character cannot be addressed
+// unambiguously and resolves differently depending on the code path.
+//
+// Scenarios T43–T46 cover the four characters newly rejected here.
+// Scenarios T47–T51 verify that the delegation to verify_str_key() still holds.
+// Scenario  T52     covers null input.
+// Scenario  T53     covers the exceptions parameter (user names may carry '\').
+// Scenarios T54–T56 cover the host group scenario from CS-2450 verbatim.
+// ---------------------------------------------------------------------------
+static void test_verify_obj_name() {
+   printf("\n--- verify_obj_name ---\n");
+   lList *al = nullptr;
+
+   // T43: '*' makes the name a pattern — rejected although KEY_TABLE allows it
+   CHECK(43, "* rejected", verify_obj_name(&al, "name*", MAX_VERIFY_STRING, "test") != STATUS_OK);
+   lFreeList(&al);
+
+   // T44: '?' is a single-character wildcard
+   CHECK(44, "? rejected", verify_obj_name(&al, "name?", MAX_VERIFY_STRING, "test") != STATUS_OK);
+   lFreeList(&al);
+
+   // T45: '&' is the AND operator of the expression grammar
+   CHECK(45, "& rejected", verify_obj_name(&al, "a&b", MAX_VERIFY_STRING, "test") != STATUS_OK);
+   lFreeList(&al);
+
+   // T46: '!' is the NOT operator of the expression grammar
+   CHECK(46, "! rejected", verify_obj_name(&al, "!name", MAX_VERIFY_STRING, "test") != STATUS_OK);
+   lFreeList(&al);
+
+   // T47: '[' is rejected by KEY_TABLE already — delegation must still happen
+   CHECK(47, "[ still rejected (delegated)", verify_obj_name(&al, "name[0]", MAX_VERIFY_STRING, "test") != STATUS_OK);
+   lFreeList(&al);
+
+   // T48: '(' is rejected by KEY_TABLE already — delegation must still happen
+   CHECK(48, "( still rejected (delegated)", verify_obj_name(&al, "name(x)", MAX_VERIFY_STRING, "test") != STATUS_OK);
+   lFreeList(&al);
+
+   // T49: reserved keywords are still rejected through the delegation
+   CHECK(49, "keyword NONE still rejected (delegated)", verify_obj_name(&al, "NONE", MAX_VERIFY_STRING, "test") != STATUS_OK);
+   lFreeList(&al);
+
+   // T50: forbidden leading characters are still rejected through the delegation
+   CHECK(50, "leading dot still rejected (delegated)", verify_obj_name(&al, ".leadingdot", MAX_VERIFY_STRING, "test") != STATUS_OK);
+   lFreeList(&al);
+
+   // T51: an ordinary name is still accepted — the common case must not regress
+   CHECK(51, "plain name accepted", verify_obj_name(&al, "validname123", MAX_VERIFY_STRING, "test") == STATUS_OK);
+   lFreeList(&al);
+
+   // T52: a nullptr string is rejected without crashing
+   CHECK(52, "nullptr rejected", verify_obj_name(&al, nullptr, MAX_VERIFY_STRING, "test") != STATUS_OK);
+   lFreeList(&al);
+
+   // T53: the exceptions parameter is passed through — user names may carry '\'
+   CHECK(53, "backslash allowed when listed in exceptions", verify_obj_name(&al, "DOMAIN\\user", MAX_VERIFY_STRING, "test", "\\") == STATUS_OK);
+   lFreeList(&al);
+
+   // T54: CS-2450 — a host group named "@gpustar*" must no longer be creatable.
+   //      hgroup_check_name() strips the '@' before validating, hence "gpustar*".
+   CHECK(54, "hostgroup gpustar* rejected", verify_obj_name(&al, "gpustar*", MAX_VERIFY_STRING, "hostgroup") != STATUS_OK);
+   lFreeList(&al);
+
+   // T55: the pattern-free sibling from the same scenario stays creatable
+   CHECK(55, "hostgroup gpustar1 accepted", verify_obj_name(&al, "gpustar1", MAX_VERIFY_STRING, "hostgroup") == STATUS_OK);
+   lFreeList(&al);
+
+   // T56: the metacharacter is rejected wherever it sits, not just at the end
+   CHECK(56, "* in the middle rejected", verify_obj_name(&al, "gpu*star", MAX_VERIFY_STRING, "hostgroup") != STATUS_OK);
+   lFreeList(&al);
+}
+
+// ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
 
    test_verify_str_key();
    test_verify_host_name();
+   test_verify_obj_name();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

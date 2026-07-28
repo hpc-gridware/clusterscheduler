@@ -139,8 +139,8 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem 
    rqs_name = lGetString(new_rqs, RQS_name);
 
    /* Name has to be a valid name */
-   if (add && verify_str_key(alpp, rqs_name, MAX_VERIFY_STRING,
-                             MSG_OBJ_RQS, KEY_TABLE) != STATUS_OK) {
+   if (add && verify_obj_name(alpp, rqs_name, MAX_VERIFY_STRING,
+                              MSG_OBJ_RQS) != STATUS_OK) {
       goto ERROR;
    }
 

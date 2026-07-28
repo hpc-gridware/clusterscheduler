@@ -101,7 +101,7 @@ calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
    /* ---- CAL_name cannot get changed - we just ignore it */
    if (add == 1) {
       cal_name = lGetString(cep, CAL_name);
-      if (verify_str_key(alpp, cal_name, MAX_VERIFY_STRING, "calendar", KEY_TABLE) != STATUS_OK)
+      if (verify_obj_name(alpp, cal_name, MAX_VERIFY_STRING, "calendar") != STATUS_OK)
          goto ERROR;
       lSetString(new_cal, CAL_name, cal_name);
    } else {
