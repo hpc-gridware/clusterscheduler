@@ -1980,7 +1980,16 @@ FF_DEBUG(lNm2Str(nm));
       /* now read the data */
       if ((type != lListT) || (fields[field_index].read_func != nullptr)) {
          bool found_value = false;
-         
+         /* Depth of unmatched '[' seen so far in the current value.
+          * When > 0 we are inside a bracketed sub-block and must NOT stop
+          * on field_delimiter / record_delimiter / end_token — those
+          * characters are payload while inside brackets. This keeps
+          * grammars like the RSMAP per-instance characteristics
+          *   gpu=2(gpu0[device=/dev/nvidia0;memory=80G] ...)
+          * whole across the flat-capture, without requiring the read_func
+          * to reach back into the tokenizer. See CS-1338. */
+         int bracket_depth = 0;
+
          /* read field data and append until field/record end */
          sge_dstring_clear(&buffer);
          spool_return_whitespace = true;
@@ -1988,26 +1997,46 @@ FF_DEBUG(lNm2Str(nm));
          while (*token != 0 && !field_end && !record_end) {
 FF_DEBUG("reading value");
             if (is_delimiter(*token)) {
-               /* check for field end */
-               if (*spool_text == instr->field_delimiter) {
+               /* Track bracket nesting so we can suppress the sub-SFI
+                * stop-conditions while inside a bracketed sub-block. The
+                * external end_token (typically the outer field boundary
+                * like '\n') is always honoured so a malformed value with
+                * an unclosed '[' cannot swallow the rest of the file. */
+               if (*spool_text == '[') {
+                  ++bracket_depth;
+               } else if (*spool_text == ']' && bracket_depth > 0) {
+                  --bracket_depth;
+               }
+               if (bracket_depth == 0) {
+                  /* check for field end */
+                  if (*spool_text == instr->field_delimiter) {
 FF_DEBUG("detected field_delimiter");
-                  field_end = true;
-                  continue;
-               }
-               /* check for record end */
-               if (*spool_text == instr->record_end) {
+                     field_end = true;
+                     continue;
+                  }
+                  /* check for record end */
+                  if (*spool_text == instr->record_end) {
 FF_DEBUG("detected record_end");
-                  record_end = true;
-                  continue;
-               }
-               /* check for record end */
-               if (*spool_text == instr->record_delimiter) {
+                     record_end = true;
+                     continue;
+                  }
+                  /* check for record end */
+                  if (*spool_text == instr->record_delimiter) {
 FF_DEBUG("detected record_delimiter");
-                  record_end = true;
-                  continue;
+                     record_end = true;
+                     continue;
+                  }
                }
-               /* check for external end condition */
-               if (check_end_token(end_token, *spool_text)) {
+               /* External end condition (e.g. outer field's newline) —
+                * always honoured, even inside brackets. One exception:
+                * end_token is composed by get_end_token appending the
+                * current scope's record_delimiter (e.g. ',' for
+                * qconf_sub_name_value_comma_sfi), so a match on that
+                * particular char inside brackets would defeat the
+                * bracket-depth suppression above. Skip it explicitly. */
+               if (check_end_token(end_token, *spool_text) &&
+                   (bracket_depth == 0 ||
+                    *spool_text != instr->record_delimiter)) {
 FF_DEBUG("detected end_token");
                   record_end = true;
                   continue;
@@ -2018,11 +2047,11 @@ FF_DEBUG("detected end_token");
                   *token = spool_lex();
                }
             }
-            
+
             /* store data */
             sge_dstring_append(&buffer, spool_text);
             found_value = true;
-            
+
             *token = spool_lex();
          }
          spool_return_whitespace = false;

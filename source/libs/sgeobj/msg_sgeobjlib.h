@@ -369,4 +369,8 @@
 
 #define MSG_CONF_INVALIDPARAM_EMPTYTOKEN_SS  _MESSAGE(64559, _("invalid setting for " SFQ ", attribute " SFQ " - empty token between '|' separators (keeping previous value)"))
 
+#define MSG_RSMAP_CHARACTERISTIC_UNKNOWN_SSS   _MESSAGE(64560, _("RSMAP " SFQ " id " SFQ ": characteristic " SFQ " is not a defined complex"))
+#define MSG_RSMAP_CHARACTERISTIC_DUPLICATE_SSS _MESSAGE(64561, _("RSMAP " SFQ " id " SFQ ": characteristic " SFQ " is set more than once"))
+#define MSG_RSMAP_CHARACTERISTIC_PARSE_SSSS    _MESSAGE(64562, _("RSMAP " SFQ " id " SFQ ": characteristic " SFQ " value cannot be parsed: " SFN))
+
 // clang-format on

@@ -18,7 +18,12 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <algorithm>
+#include <cctype>
+#include <cstring>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "cull/cull_multitype.h"
 
@@ -35,15 +40,169 @@
 #include "sge_flatfile_obj_rsmap.h"
 
 
-static void
-store_resl(lListElem *centry, const char *id) {
+/**
+ * Return true if two RESL_properties lists carry identical characteristics —
+ * same set of {CE_name, CE_stringval} pairs, order-independent. Empty (or
+ * both nullptr) lists count as identical.
+ */
+static bool
+properties_equal(const lList *a, const lList *b) {
+   const int na = (a == nullptr) ? 0 : lGetNumberOfElem(a);
+   const int nb = (b == nullptr) ? 0 : lGetNumberOfElem(b);
+   if (na != nb) return false;
+   if (na == 0) return true;
+
+   const lListElem *ep;
+   for_each_ep (ep, a) {
+      const char *name = lGetString(ep, CE_name);
+      const lListElem *match = lGetElemStr(b, CE_name, name);
+      if (match == nullptr) return false;
+      const char *va = lGetString(ep, CE_stringval);
+      const char *vb = lGetString(match, CE_stringval);
+      if (va == nullptr || vb == nullptr) {
+         if (va != vb) return false;  // one nullptr, one not
+      } else if (strcmp(va, vb) != 0) {
+         return false;
+      }
+   }
+   return true;
+}
+
+/**
+ * Add an RSMAP id to a CE element, optionally attaching per-instance
+ * properties.
+ *
+ * Duplicate-id semantics (see CS-1338): the same id may appear multiple
+ * times in the input to model N-way sharing of one physical resource. In
+ * that case every occurrence must carry identical characteristics (or all
+ * be bare); the reader stores the property list once and increments
+ * RESL_amount to record the multiplicity. A mismatch — including
+ * bare-vs-annotated — is a syntax error, reported via `alpp` with the
+ * enclosing `rsmap_name` for context.
+ *
+ * Ownership of `*properties` is transferred to the CE on success (either
+ * attached to the RESL or, for a matching duplicate id, freed). On failure
+ * the properties list is also freed. `*properties` is always nulled out
+ * before return so the caller cannot double-free.
+ *
+ * @param centry      CE_Type element whose CE_resource_map_list is being built
+ * @param id          the RSMAP id to add
+ * @param properties  in/out list of CE_Type property elements to attach to
+ *                    the RESL; may be nullptr, and *properties may be
+ *                    nullptr (both mean "no properties")
+ * @param alpp        answer list for conflict messages
+ * @param rsmap_name  the enclosing RSMAP complex name, used only for error text
+ * @return            true on success (id added or matched); false on
+ *                    duplicate-id characteristic conflict
+ */
+static bool
+store_resl(lListElem *centry, const char *id, lList **properties,
+           lList **alpp, const char *rsmap_name) {
+   lList *incoming = (properties != nullptr) ? *properties : nullptr;
+
    lListElem *resl = lGetSubStrRW(centry, RESL_value, id, CE_resource_map_list);
    if (resl == nullptr) {
       resl = lAddSubStr(centry, RESL_value, id, CE_resource_map_list, RESL_Type);
-   }
-   if (resl != nullptr) {
+      if (resl == nullptr) {
+         if (properties != nullptr) lFreeList(properties);
+         return true;  // allocation failure is not this function's error to report
+      }
       lAddUlong(resl, RESL_amount, 1);
+      if (incoming != nullptr) {
+         lSetList(resl, RESL_properties, incoming);
+         *properties = nullptr;
+      }
+      return true;
    }
+
+   // duplicate id: incoming characteristics (if any) must match stored ones
+   const lList *stored = lGetList(resl, RESL_properties);
+   if (!properties_equal(stored, incoming)) {
+      answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                              MSG_RSMAP_CHARACTERISTIC_CONFLICT_SS,
+                              rsmap_name, id);
+      if (properties != nullptr) lFreeList(properties);
+      return false;
+   }
+
+   lAddUlong(resl, RESL_amount, 1);
+   if (properties != nullptr) lFreeList(properties);  // stored copy wins
+   return true;
+}
+
+/**
+ * Split an RSMAP id token into its id and characteristics list. A token like
+ *    gpu0[device=/dev/nvidia0,memory=80G]
+ * yields id="gpu0" and a CE_Type list with two elements carrying CE_name and
+ * CE_stringval verbatim; typing and centry-list resolution happen later
+ * during validation. Tokens without a '[' are stored as-is with
+ * *properties_out = nullptr.
+ *
+ * @param token             the raw id token grabbed from strtok, e.g.
+ *                          "gpu0" or "gpu0[device=/dev/nvidia0,memory=80G]"
+ * @param id_out            filled in with the id portion (before '[')
+ * @param properties_out    out: newly-allocated CE_Type list holding
+ *                          {CE_name, CE_stringval} pairs, or nullptr if the
+ *                          token has no characteristics block
+ * @param alpp              answer list for parse-error messages
+ * @param rsmap_name        the enclosing RSMAP complex name, used only for
+ *                          error text
+ * @return                  true on success (possibly with no characteristics),
+ *                          false on syntax error (answer_list is populated)
+ */
+static bool
+parse_id_characteristics(const char *token, std::string &id_out,
+                         lList **properties_out, lList **alpp,
+                         const char *rsmap_name) {
+   *properties_out = nullptr;
+
+   const char *bracket = strchr(token, RSMAP_CHARACTERISTICS_OPEN);
+   if (bracket == nullptr) {
+      id_out.assign(token);
+      return true;
+   }
+
+   const size_t token_len = strlen(token);
+   if (token_len == 0 || token[token_len - 1] != RSMAP_CHARACTERISTICS_CLOSE) {
+      answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                              MSG_RSMAP_CHARACTERISTIC_UNCLOSED_SS,
+                              rsmap_name, token);
+      return false;
+   }
+
+   id_out.assign(token, bracket - token);
+   const size_t chars_len = token_len - (bracket - token) - 2;
+   std::string chars_buf(bracket + 1, chars_len);
+
+   lList *props = nullptr;
+   struct saved_vars_s *ctx = nullptr;
+   for (char *ctok = sge_strtok_r(&chars_buf[0], RSMAP_CHARACTERISTIC_SEPARATOR_STR, &ctx);
+        ctok != nullptr;
+        ctok = sge_strtok_r(nullptr, RSMAP_CHARACTERISTIC_SEPARATOR_STR, &ctx)) {
+      char *eq = strchr(ctok, '=');
+      if (eq == nullptr) {
+         answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                 MSG_RSMAP_CHARACTERISTIC_NO_EQ_SSS,
+                                 rsmap_name, id_out.c_str(), ctok);
+         lFreeList(&props);
+         sge_free_saved_vars(ctx);
+         return false;
+      }
+      *eq = '\0';
+      const char *name = ctok;
+      const char *value = eq + 1;
+      if (props == nullptr) {
+         props = lCreateList("properties", CE_Type);
+      }
+      lListElem *cep = lCreateElem(CE_Type);
+      lSetString(cep, CE_name, name);
+      lSetString(cep, CE_stringval, value);
+      lAppendElem(props, cep);
+   }
+   sge_free_saved_vars(ctx);
+
+   *properties_out = props;
+   return true;
 }
 
 /**
@@ -68,10 +227,46 @@ read_CE_stringval_host(lListElem *ep, int nm, const char *buf, lList **alpp) {
     *    gpu=2(A B)
     *    gpu=2(1-2)
     *    gpu=4(A B 1-2)
+    * and ids with per-instance characteristics, e.g.
+    *    gpu=2(gpu0[device=/dev/nvidia0,memory=80G] gpu1[device=/dev/nvidia1,memory=80G])
+    * Characteristics are stored verbatim as CE_name/CE_stringval on the
+    * RESL_properties list; the centry-list lookup and type-checking happen
+    * later, on the qmaster side, in centry_check_rsmap / centry_elem_validate.
+    * Characteristics on a range (e.g. 1-3[foo=bar]) are rejected.
+    *
+    * Any whitespace inside a [...] block is stripped up front. The flatfile
+    * scanner turns a '\\' + <newline> line-continuation into a single space,
+    * which lets an admin split a long characteristics block across lines:
+    *   gpu=1(gpu0[device=/dev/nvidia0;\
+    *         memory=80G])
+    * The bracket-depth-aware preprocessing below preserves the useful spaces
+    * between id-specs (outside brackets) and removes the line-continuation
+    * residue (inside brackets) before the strtok-based tokenizer runs.
     */
+   const char *rsmap_name = lGetString(ep, CE_name);
+   std::string cleaned;
+   cleaned.reserve(strlen(buf));
+   {
+      int depth = 0;
+      for (const char *p = buf; *p != '\0'; ++p) {
+         if (*p == RSMAP_CHARACTERISTICS_OPEN) {
+            ++depth;
+            cleaned += *p;
+         } else if (*p == RSMAP_CHARACTERISTICS_CLOSE) {
+            if (depth > 0) --depth;
+            cleaned += *p;
+         } else if (depth > 0 && isspace(static_cast<unsigned char>(*p))) {
+            // strip whitespace inside [...] (line-continuation friendly)
+            continue;
+         } else {
+            cleaned += *p;
+         }
+      }
+   }
+
    struct saved_vars_s *context = nullptr;
    char *token;
-   if ((token = sge_strtok_r(buf, " (", &context))) {
+   if ((token = sge_strtok_r(&cleaned[0], " (", &context))) {
       // first token is the amount
       lSetString(ep, nm, token);
       u_long32 amount = SGE_STRTOU_LONG32(token);
@@ -83,28 +278,53 @@ read_CE_stringval_host(lListElem *ep, int nm, const char *buf, lList **alpp) {
             u_long32 range_start = 0;
             u_long32 range_end = 0;
             u_long32 range_step = 0;
+            const bool has_characteristics =
+                  (strchr(token, RSMAP_CHARACTERISTICS_OPEN) != nullptr);
 
-            // handle range
-            if (range_parse_get_ids(token, 0, range_start, range_end, range_step)) {
+            if (!has_characteristics &&
+                range_parse_get_ids(token, 0, range_start, range_end, range_step)) {
+               // bare range
                for (; range_start <= range_end; range_start += range_step) {
                   std::string id_str{std::to_string(range_start)};
-                  store_resl(ep, id_str.c_str());
+                  store_resl(ep, id_str.c_str(), nullptr, alpp, rsmap_name);
                   num_ids++;
                }
             } else {
-               // handle individual id
-               store_resl(ep, token);
+               // individual id, possibly with characteristics
+               std::string id_str;
+               lList *properties = nullptr;
+               if (!parse_id_characteristics(token, id_str, &properties, alpp,
+                                             rsmap_name)) {
+                  ret = 0;
+                  break;
+               }
+               // reject characteristics attached to a range spec like "1-3[foo=bar]"
+               if (has_characteristics &&
+                   range_parse_get_ids(id_str.c_str(), 0, range_start, range_end, range_step)) {
+                  answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                          MSG_RSMAP_CHARACTERISTIC_ON_RANGE_SS,
+                                          rsmap_name, token);
+                  lFreeList(&properties);
+                  ret = 0;
+                  break;
+               }
+               if (!store_resl(ep, id_str.c_str(), &properties, alpp, rsmap_name)) {
+                  ret = 0;
+                  break;
+               }
                num_ids++;
             }
          } while ((token = sge_strtok_r(nullptr, " )", &context)));
 
          // check if data is consistent
-         if (amount != num_ids) {
+         if (ret == 1 && amount != num_ids) {
             answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
-                                    MSG_RSMAP_INCONSISTENTAMOUNT_SSUU, lGetString(ep, CE_name),
+                                    MSG_RSMAP_INCONSISTENTAMOUNT_SSUU, rsmap_name,
                                     buf, amount, num_ids);
-            lSetList(ep, CE_resource_map_list, nullptr);
             ret = 0;
+         }
+         if (ret == 0) {
+            lSetList(ep, CE_resource_map_list, nullptr);
          }
       }
    }
@@ -177,10 +397,17 @@ write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, lList **al
        *    gpu=2(A B)
        *    gpu=2(1-2)
        *    gpu=4(A B 1-2)
+       * and ids with per-instance characteristics, e.g.
+       *    gpu=2(gpu0[device=/dev/nvidia0,memory=80G] gpu1[device=/dev/nvidia1,memory=80G])
        * we cannot use range functions from sgeobj lib as:
        *       - there is only the special case of ranges with step size 1
-       *       - the colon is required for topology masks (GPU1:SCCSCC)
        *       - multiple occurrences of one entry are possible (0 0 0 1 1 1)
+       * Range compaction only fires for consecutive numeric ids whose
+       * RESL_properties list is empty; as soon as an id carries characteristics
+       * the pending range is flushed and the characteristic-bearing id is
+       * emitted individually. Characteristics themselves are sorted ascending
+       * by CE_name (same convention as centry_list_sort) before emission; the
+       * stored CULL order is not modified.
        */
       const lList *resource_map = lGetList(ep, CE_resource_map_list);
       if (resource_map != nullptr && lGetNumberOfElem(resource_map) > 0) {
@@ -191,8 +418,39 @@ write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, lList **al
          for_each_ep (resource, resource_map) {
             str_value = lGetString(resource, RESL_value);
             amount = lGetUlong(resource, RESL_amount);
+            const lList *props = lGetList(resource, RESL_properties);
+            const bool has_props = (props != nullptr && lGetNumberOfElem(props) > 0);
 
-            if (sge_str_is_number(str_value)) {
+            if (has_props) {
+               // flush any pending range before emitting a characteristic-bearing id
+               if (range_start != -1) {
+                  store_range(str_out, range_start, range_last, amount, -1);
+               }
+
+               // build "id[k1=v1;k2=v2;...]" with characteristics sorted asc by CE_name
+               std::vector<std::pair<std::string, std::string>> pairs;
+               pairs.reserve(lGetNumberOfElem(props));
+               const lListElem *prop;
+               for_each_ep (prop, props) {
+                  const char *pname = lGetString(prop, CE_name);
+                  const char *pval = lGetString(prop, CE_stringval);
+                  pairs.emplace_back(pname != nullptr ? pname : "",
+                                     pval != nullptr ? pval : "");
+               }
+               std::sort(pairs.begin(), pairs.end(),
+                         [](const auto &a, const auto &b) { return a.first < b.first; });
+
+               std::string decorated{str_value != nullptr ? str_value : ""};
+               decorated += RSMAP_CHARACTERISTICS_OPEN;
+               for (size_t i = 0; i < pairs.size(); ++i) {
+                  if (i > 0) decorated += RSMAP_CHARACTERISTIC_SEPARATOR;
+                  decorated += pairs[i].first;
+                  decorated += '=';
+                  decorated += pairs[i].second;
+               }
+               decorated += RSMAP_CHARACTERISTICS_CLOSE;
+               store_item(str_out, decorated, amount);
+            } else if (sge_str_is_number(str_value)) {
                // can belong to a range
                range_current = strtol(str_value, nullptr, 10);
                if (range_start == -1) {

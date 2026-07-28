@@ -87,6 +87,18 @@ are always handled on a per job slot basis.
 The default value for this parameter is NONE, i.e. no administrator defined resource attribute quotas are 
 associated with the host.
 
+For a Resource Map (*RSMAP*, see xxqs_name_sxx_complex(5)) the value on the right of the `=` names the
+individual instances the host provides, and may attach per-instance characteristics inside square
+brackets. Example — a host with two NVIDIA GPUs, each carrying a device path, on-board memory, and a
+topology affinity mask:
+
+    complex_values GPU=2(gpu0[device=/dev/nvidia0,memory=80G,affinity_mask=SCCCCCCCCScccccccc] \
+                        gpu1[device=/dev/nvidia1,memory=80G,affinity_mask=SccccccccSCCCCCCCC])
+
+Each characteristic name (`device`, `memory`, `affinity_mask` in the example) must already be defined
+as a complex before it can be attached to an RSMAP instance; the referenced complex's
+type governs how the value is parsed. See xxqs_name_sxx_complex(5) for the full grammar.
+
 ## load_values
 
 This entry cannot be configured but is only displayed in case of a qconf(1) `-se` command. All load values are 

@@ -365,6 +365,55 @@ comparisons or in case of load scaling for the load complex entries:
 
 -   *HOST* is like *CSTRING* but the expression must match a valid hostname.
 
+-   *RSMAP* (Resource Map) manages a fixed pool of individually named resource instances on a host — GPUs,
+    NICs, licence seats, or any per-host resource where the scheduler needs to both count and place. RSMAP
+    is always consumable (see *consumable* below) and appears only in the *complex_values* list of a host
+    (see xxqs_name_sxx_host_conf(5)); it cannot be used as a per-queue limit. The value has the form:
+
+        <name>=<amount>(<id-spec> <id-spec> ...)
+
+    where each *id-spec* is either a bare identifier (`gpu0`), an integer range (`1-3` — expanded to
+    individual numeric ids at parse time), or an identifier followed by a per-instance characteristics
+    block:
+
+        <id>[<char-name>=<char-value>,<char-name>=<char-value>,...]
+
+    Characteristics attach arbitrary typed metadata to one specific instance — the PCI device path of a
+    GPU, its on-board memory, a topology-affinity mask, a NIC's bandwidth, etc. Multiple characteristics
+    are separated by `,` (comma). The `,` inside the brackets is unambiguous because the flatfile
+    parser is bracket-depth aware; the outer complex_values list separator is also `,`, so the two
+    layers stay visually consistent. Each *char-name* must itself be defined in the complex list before
+    it can be used as a characteristic; the referenced complex's *type* determines how *char-value* is
+    parsed (so `memory=80G` is parsed as *MEMORY*, `bandwidth=100000` as *INT*, an affinity mask as
+    *STRING*). A *char-value* may contain any byte except `,`, `]`, whitespace, `=`, `(`, and `)`;
+    there is no quoting or escape mechanism. Characteristics cannot be attached to a range spec — list
+    ids explicitly (`gpu=3(0[device=/dev/nvidia0] 1[device=/dev/nvidia1] 2[device=/dev/nvidia2])`).
+
+    An id may appear more than once inside the `(...)` block to model N-way sharing of a single physical
+    resource (e.g. `gpu=2(gpu0 gpu0)` — one GPU shared between two jobs). If any of the duplicate
+    occurrences carry characteristics, all occurrences of that id must carry an identical set of
+    characteristics (or all must be bare); the comparison is order-independent, so
+    `[a=1,b=2]` and `[b=2,a=1]` are treated as equal. A bare occurrence and an annotated occurrence
+    of the same id count as a mismatch and are rejected. Redundant identical annotations
+    (`gpu=2(gpu0[memory=80G] gpu0[memory=80G])`) are accepted and silently deduplicated.
+
+    Whitespace inside a `[...]` characteristics block is ignored, so a long RSMAP definition can be
+    split across lines using the standard `\` + newline continuation:
+
+        complex_values GPU=2(gpu0[device=/dev/nvidia0,memory=80G,affinity_mask=SCCCCCCCCScccccccc] \
+                            gpu1[device=/dev/nvidia1,memory=80G,\
+                                 affinity_mask=SccccccccSCCCCCCCC])
+
+    The line-continuation whitespace between `,` and the next characteristic is stripped before the
+    value is parsed. Whitespace between id-specs (outside brackets) still serves as the id separator
+    as normal.
+
+    Example:
+
+        complex_values GPU=2(gpu0[device=/dev/nvidia0,memory=80G] gpu1[device=/dev/nvidia1,memory=80G])
+
+    See xxqs_name_sxx_host_conf(5) for placement inside a host configuration.
+
 ## relop
 
 The relation operator. The relation operator is used when the value requested by the user for this parameter is 

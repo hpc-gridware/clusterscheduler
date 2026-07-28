@@ -60,5 +60,9 @@
 #define MSG_SPOOL_SCHEDDCONFIGNOTDELETED     _MESSAGE(62018, _("the scheduler configuration must not be deleted"))
 #define MSG_MUST_BE_POSITIVE_VALUE_S         _MESSAGE(62019, _("parameter " SFQ " must be a positive number"))
 #define MSG_RSMAP_INCONSISTENTAMOUNT_SSUU    _MESSAGE(62020, _("RSMAP " SFQ " value " SFQ " has amount " sge_u32 " but " sge_u32 " elements "))
+#define MSG_RSMAP_CHARACTERISTIC_UNCLOSED_SS _MESSAGE(62021, _("RSMAP " SFQ " id " SFQ " has an unclosed characteristics block, expected ']'"))
+#define MSG_RSMAP_CHARACTERISTIC_NO_EQ_SSS   _MESSAGE(62022, _("RSMAP " SFQ " id " SFQ " has malformed characteristic " SFQ ", expected name=value"))
+#define MSG_RSMAP_CHARACTERISTIC_ON_RANGE_SS _MESSAGE(62023, _("RSMAP " SFQ " range " SFQ " does not allow characteristics; list ids explicitly"))
+#define MSG_RSMAP_CHARACTERISTIC_CONFLICT_SS _MESSAGE(62024, _("RSMAP " SFQ " id " SFQ ": characteristics differ across occurrences of the same id; all occurrences must carry identical characteristics (or all be bare)"))
 
 // clang-format on
