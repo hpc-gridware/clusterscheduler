@@ -43,10 +43,11 @@
 #define MSG_EVENT_EVENTSWITHNOINCREASINGNUMBERS       _MESSAGE(65003, _("got events with not increasing numbers"))
 #define MSG_LIST_FAILEDINCULLUNPACKREPORT             _MESSAGE(65004, _("Failed in cull_unpack report"))
 #define MSG_EVENT_ILLEGAL_ID_OR_NAME_US               _MESSAGE(65005, _("Illegal id " sge_u32 " or name " SFQ " in event client registration"))
-#define MSG_EVENT_UNINITIALIZED_EC                    _MESSAGE(65006, _("event client not properly initialized (ec_prepare_registration)"))
+#define MSG_EVENT_UNINITIALIZED_EC                    _MESSAGE(65006, _("event client not properly initialized"))
 #define MSG_EVENT_ILLEGALEVENTID_I                    _MESSAGE(65007, _("illegal event id %d"))
 #define MSG_EVENT_ILLEGALFLUSHTIME_I                  _MESSAGE(65008, _("illegal flush time %d - must be in the range [0:63]"))
 #define MSG_EVENT_NOTREGISTERED                       _MESSAGE(65009, _("event client not registered"))
 #define MSG_EVENT_HAVETOHANDLEEVENTS                  _MESSAGE(65010, _("you have to handle the events sgeE_QMASTER_GOES_DOWN, sgeE_SHUTDOWN and sgeE_ACK_TIMEOUT"))
+#define MSG_EVENT_NOTSUBSCRIBED_I                     _MESSAGE(65011, _("event %d is not subscribed, its flush setting is ignored"))
 
 // clang-format on
