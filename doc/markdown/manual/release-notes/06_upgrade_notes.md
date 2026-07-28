@@ -64,5 +64,32 @@ Such an access list cannot be carried over automatically: everything that refere
 operator list after the upgrade, and with that to different access rights. Rename the access list in the old
 cluster, adapt the objects that reference it, and start the upgrade again.
 
+## Wildcard Characters in Object Names
+
+Beginning with version 9.2 the name of a configuration object may no longer contain any of the characters
+`*`, `?`, `[`, `]`, `&`, `|`, `!`, `(` and `)`. See the
+[Compatibility Notes](07_compatibility_notes.md#wildcard-characters-are-no-longer-allowed-in-object-names)
+for the reason and for what changes in the way such configurations resolve.
+
+Most clusters are not affected — these characters were unusual in object names, and five of the nine were
+rejected in earlier versions already. Nothing has to be done in that case.
+
+**If your cluster does have such an object**, it must be renamed before the upgrade. The upgrade procedure
+checks the saved configuration and, if it finds one, lists every offending object with its type and name and
+aborts before loading anything, so that no half-migrated cluster can result:
+
+    [CRITICAL] The saved configuration contains object names with wildcard
+    expression characters (saved from version: GCS 9.1.0):
+
+       host group "@gpustar*"
+       parallel environment "mpi&openmpi"
+
+Rename the objects in the old cluster and adapt everything that references them — the host lists of other host
+groups, resource quota scopes, and the queue or parallel environment requests in job scripts and default
+request files. Then save the configuration again and repeat the upgrade.
+
+Note that renaming changes which hosts a reference resolves to, if the old name was being matched as a pattern
+anywhere. Compare `qconf -shgrp_resolved` before and after to confirm the intended host set.
+
 [//]: # (Each file has to end with two empty lines)
 

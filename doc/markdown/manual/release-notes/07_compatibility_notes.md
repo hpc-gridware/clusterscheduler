@@ -111,5 +111,35 @@ directly has never been a supported interface. Clusters that use an access list 
 `operator` must rename it before upgrading; the upgrade detects the collision and aborts with an
 explanatory message — see the [Upgrade Notes](06_upgrade_notes.md#managers-and-operators-are-stored-as-access-lists).
 
+## Wildcard Characters Are No Longer Allowed in Object Names
+
+The name an object is created with may no longer contain any of the characters that make up a wildcard
+expression: `*`, `?`, `[`, `]`, `&`, `|`, `!`, `(` and `)`. Five of them — `[`, `]`, `|`, `(` and `)` — were
+already rejected in earlier versions; version 9.2 adds `*`, `?`, `&` and `!`, closing a gap in the name
+validation. This applies to the primary names of host groups, cluster queues, parallel environments, access
+lists, users, projects, calendars, checkpointing interfaces, resource quota sets and roles.
+
+**Wildcards on the referencing side are unaffected.** They keep working exactly as documented in
+`sge_types(1)`: resource quota scopes such as `hosts {@gpu*}`, queue patterns such as
+`-q '*@@gpuhosts'`, and `qsub -pe 'mpi*' 4` continue to accept patterns. The restriction applies to names
+only, never to references.
+
+The reason for the restriction is that names and the references pointing at them share one namespace. A host
+group literally named `@gpustar*` cannot be addressed unambiguously — every reference to it is also a pattern
+matching `@gpustar1`, `@gpustar2` and so on.
+
+**Impact:** such a configuration also resolved inconsistently, and that is corrected in the same release. Where
+a host group was referenced as a *member* of another host group, the member entry was matched as a pattern
+against all host groups instead of being looked up by name. The same configuration therefore resolved to
+different host sets depending on the code path: `qconf -shgrp_resolved` resolved exactly, while resource quota
+matching and `-q` matching resolved by pattern, so resource quota rules could apply to hosts that were not
+members of the referenced host group. Both paths now resolve members exactly.
+
+Clusters that have an object whose name contains one of the four newly excluded characters — and that reference
+it from a resource quota set, a `-q` request or the host list of another host group — see a reduced, and now
+correct, scope after the upgrade. Existing objects are not rejected retroactively; only the creation of new ones
+is validated. The upgrade procedure detects such names and aborts with an explanatory message before anything is
+loaded — see the [Upgrade Notes](06_upgrade_notes.md#wildcard-characters-in-object-names).
+
 [//]: # (Each file has to end with two empty lines)
 

@@ -137,6 +137,13 @@ A user set name is the name of an xxQS_NAMExx access list or department describe
 An object name is a sequence of up to 512 ASCII characters except "\\n", "\\t", "\\r", " ", "/", ":", "'", "\\", 
 "\[", "\]", "{", "}", "\|", "(", ")", "@", "%", "," or the " character itself.
 
+Beginning with version 9.2 the characters "\*", "?", "&" and "!" are excluded as well. Together with "\[", "\]",
+"\|", "(" and ")" - which were already excluded - these are the characters that form the *expression* and 
+*pattern* matching types described below. A name containing one of them could not be told apart from a pattern 
+meant to match it, and would resolve differently depending on which part of xxQS_NAMExx does the resolution. 
+Wildcards remain available wherever an object is *referenced*, i.e. in the matching types below - only the names 
+of the objects themselves are restricted.
+
 # MATCHING TYPES
 
 These types are used for matching xxQS_NAMExx configuration:
