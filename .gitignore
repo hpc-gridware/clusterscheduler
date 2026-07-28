@@ -19,3 +19,6 @@ local_notes
 # clion build
 cmake-build-debug
 cmake-build-release
+
+# ctest run artefacts, recreated in the source tree on every run
+Testing/
