@@ -63,9 +63,9 @@
 #define MSG_BERKELEY_UNPACKINITERROR_SS               _MESSAGE(70030, _("error initializing packing buffer while unpacking object with key " SFQ ": " SFN))
 #define MSG_BERKELEY_SETOPTIONTO_SS                   _MESSAGE(70031, _("setting spooling option " SFQ " to " SFQ))
 
-#define MSG_BERKELEY_DATABASEDIRDOESNTEXIST_S         _MESSAGE(70101, _("database directory " SFN " doesn't exist"))
+#define MSG_BERKELEY_DATABASEDIRDOESNTEXIST_S         _MESSAGE(70101, _("database directory " PFNMAX " doesn't exist"))
 #define MSG_BERKELEY_COULDNTCREATEENVIRONMENT_IS      _MESSAGE(70102, _("couldn't create database environment: (%d) " SFN))
-#define MSG_BERKELEY_COULDNTOPENENVIRONMENT_SIS      _MESSAGE(70103, _("couldn't open database environment in directory " SFQ ": (%d) " SFN))
+#define MSG_BERKELEY_COULDNTOPENENVIRONMENT_SIS      _MESSAGE(70103, _("couldn't open database environment in directory " PFQMAX ": (%d) " SFN))
 #define MSG_BERKELEY_COULDNTCLOSEENVIRONMENT_SIS      _MESSAGE(70104, _("couldn't close database environment: " SFN ": (%d) " SFN))
 #define MSG_BERKELEY_COULDNTESETUPLOCKDETECTION_IS    _MESSAGE(70105, _("couldn't setup deadlock detection: (%d) " SFN))
 #define MSG_BERKELEY_RUNRECOVERY                      _MESSAGE(70108, _("Corrupted database detected. Freeing all resources to prepare for a reconnect with recovery."))

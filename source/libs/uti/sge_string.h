@@ -41,7 +41,13 @@
 #define SFN2 "%-.200s"
 #define SFN4 "%-.400s"
 #define SFNMAX "%-.2047s"     /* write to buffer of size MAX_STRING_SIZE */
-#define PFNMAX "%-.1023s"     /* write to buffer of size SGE_PATH_MAX */
+
+/* File and directory paths. SFN/SFQ cut at 100 characters, which is right for
+ * object names - verify_str_key() limits those anyway - but far too short for a
+ * path: SGE_PATH_MAX is 1024, and a truncated path is worse than a missing one
+ * because it still looks like a real one (CS-2457). Use these for a path. */
+#define PFNMAX "%-.1023s"     /* path, write to buffer of size SGE_PATH_MAX */
+#define PFQMAX "\"%-.1023s\"" /* path, quoted */
 #define SN_UNLIMITED  "%s"    /* non-quoted string not limited intentionally */
 
 struct saved_vars_s {

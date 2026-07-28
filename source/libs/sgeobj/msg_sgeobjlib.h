@@ -326,8 +326,8 @@
 #define MSG_ULNG_INVALID_VALUE                   _MESSAGE(64513, _("Invalid or not existing number."))
 #define MSG_ULNG_INVALID_BAMOUNT_I               _MESSAGE(64514, _("invalid binding amount %d. must be an integer > 0"))
 
-#define MSG_JSV_EXISTS_S         _MESSAGE(64521, _("JSV file " SFQ " does not exist"))
-#define MSG_JSV_INSTANCIATE_S    _MESSAGE(64522, _("JSV file " SFQ " can't be started"))
+#define MSG_JSV_EXISTS_S         _MESSAGE(64521, _("JSV file " PFQMAX " does not exist"))
+#define MSG_JSV_INSTANCIATE_S    _MESSAGE(64522, _("JSV file " PFQMAX " can't be started"))
 #define MSG_JSV_START_S          _MESSAGE(64523, _("start of JSV " SFQ " failed"))
 #define MSG_JSV_STARTED_S        _MESSAGE(64524, _("JSV " SFQ " has been started"))
 #define MSG_JSV_STOPPED_S        _MESSAGE(64525, _("JSV " SFQ " has been stopped"))

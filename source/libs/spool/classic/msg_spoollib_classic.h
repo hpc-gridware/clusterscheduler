@@ -38,11 +38,11 @@
 // clang-format off
 
 #define MSG_CONFIG_READINGIN_S                        _MESSAGE(61000, _("Reading in " SFN "."))
-#define MSG_CONFIG_FAILEDREMOVINGSCRIPT_SS            _MESSAGE(61001, _("failed removing script of bad jobfile (reason: " SFN "): please delete " SFQ " manually"))
-#define MSG_CONFIG_REMOVEDSCRIPTOFBADJOBFILEX_S       _MESSAGE(61002, _("removed script of bad jobfile " SFQ))
+#define MSG_CONFIG_FAILEDREMOVINGSCRIPT_SS            _MESSAGE(61001, _("failed removing script of bad jobfile (reason: " SFN "): please delete " PFQMAX " manually"))
+#define MSG_CONFIG_REMOVEDSCRIPTOFBADJOBFILEX_S       _MESSAGE(61002, _("removed script of bad jobfile " PFQMAX))
 #define MSG_CONFIG_NODIRECTORY_S                      _MESSAGE(61003, _(SFQ " is no directory - skipping the entry"))
 #define MSG_CONFIG_CANTFINDSCRIPTFILE_U               _MESSAGE(61004, _("can't find script file for job " sge_u32 " - deleting"))
 #define MSG_CONFIG_JOBFILEXHASWRONGFILENAMEDELETING_U _MESSAGE(61005, _("job file \"" sge_u32 "\" has wrong file name - deleting"))
 #define MSG_CONFIG_JOBSPOOLINGLONGDELAY_UUF           _MESSAGE(61006, _("spooling job " sge_u32 "." sge_u32 " took %f seconds"))
-#define MSG_SPOOLCLASSIC_CANNOTREADDIR_SS             _MESSAGE(61007, _("can't read directory " SFN ": " SFN))
+#define MSG_SPOOLCLASSIC_CANNOTREADDIR_SS             _MESSAGE(61007, _("can't read directory " PFNMAX ": " SFN))
 // clang-format on

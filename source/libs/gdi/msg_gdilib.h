@@ -113,14 +113,14 @@
 #define MSG_GDI_ENDPOINT_UPTIME_UU           _MESSAGE(43303, _("endpoint is up since " sge_u32 " seconds and has status " sge_u32))
 #define MSG_GDI_CANT_CREATE_HANDLE_TOEXECD_S _MESSAGE(43306, _("can't create handle to execd \"%s\""))
 
-#define MSG_SEC_CAROOTNOTFOUND_S         _MESSAGE(55000, _("CA_ROOT directory " SFQ " doesn't exist"))
-#define MSG_SEC_CALOCALROOTNOTFOUND_S    _MESSAGE(55001, _("CA_LOCAL_ROOT directory " SFQ " doesn't exist"))
+#define MSG_SEC_CAROOTNOTFOUND_S         _MESSAGE(55000, _("CA_ROOT directory " PFQMAX " doesn't exist"))
+#define MSG_SEC_CALOCALROOTNOTFOUND_S    _MESSAGE(55001, _("CA_LOCAL_ROOT directory " PFQMAX " doesn't exist"))
 #define MSG_SEC_CAKEYFILENOTFOUND_S      _MESSAGE(55002, _("CA private key " SFQ " doesn't exist"))
 #define MSG_SEC_CACERTFILENOTFOUND_S     _MESSAGE(55003, _("CA certificate " SFQ " doesn't exist"))
 #define MSG_SEC_USERNOTFOUND_S           _MESSAGE(55007, _("user " SFQ " not found in password database"))
 #define MSG_SEC_KEYFILENOTFOUND_S        _MESSAGE(55004, _("key " SFQ " doesn't exist"))
 #define MSG_SEC_CERTFILENOTFOUND_S       _MESSAGE(55006, _("certificate " SFQ " doesn't exist"))
-#define MSG_SEC_RANDFILENOTFOUND_S       _MESSAGE(55005, _("random data file " SFQ " doesn't exist"))
+#define MSG_SEC_RANDFILENOTFOUND_S       _MESSAGE(55005, _("random data file " PFQMAX " doesn't exist"))
 #define MSG_SEC_CERT_VERIFY_FUNC_NO_VAL  _MESSAGE(55011, _("certificate verify callback function called without value"))
 
 #define MSG_GDI_MASTER_ON_HOST_X_RUNINNG_TERMINATE_S _MESSAGE(55013, _("qmaster on host " SFQ " is still running - terminating"))
@@ -129,6 +129,6 @@
 
 #define MSG_GDI_MUNGE_INIT_FAILED_S          _MESSAGE(55016, _("Munge initialization failed: " SFNMAX))
 #define MSG_GDI_PARSING_AUTHINFO_FAILED_SSIS _MESSAGE(55017, _("parsing auth info failed for " SFN "/" SFN "/%uh: " SFN))
-#define MSG_GDI_TLS_CLIENT_CERT_DEFERRED_S   _MESSAGE(55018, _("qmaster client certificate file " SFQ " is not yet available; deferring client TLS setup until act_qmaster points to a host with a valid certificate"))
+#define MSG_GDI_TLS_CLIENT_CERT_DEFERRED_S   _MESSAGE(55018, _("qmaster client certificate file " PFQMAX " is not yet available; deferring client TLS setup until act_qmaster points to a host with a valid certificate"))
 
 // clang-format on

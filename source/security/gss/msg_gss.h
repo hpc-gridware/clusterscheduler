@@ -123,8 +123,8 @@
 #define MSG_GSS_PERROR_SETGID                            _MESSAGE(51050, _("setgid"))
 #define MSG_GSS_PERROR_SETUID                            _MESSAGE(51051, _("setuid"))
 /* #define MSG_GSS_PERROR_EXECFAILED                        _message(51052, _("exec failed")) __TS Removed automatically from testsuite!! TS__*/
-#define MSG_GSS_COULDNOTLINKXTODCECREDENTIALSCACHEFILEYZ_SSS   _MESSAGE(51053, _("Could not link " SFN " to DCE credentials cache file " SFN " - " SFN))
-#define MSG_GSS_COULDNOTLINKXTODCECREDENTIALSCACHEFILEYINVALIDKRB5CCNAMEENVIRONMENTVARIABLEFORMAT_SS  _MESSAGE(51054, _("Could not link " SFN " to DCE credentials cache file " SFN " - invalid KRB5CCNAME environment variable format"))
+#define MSG_GSS_COULDNOTLINKXTODCECREDENTIALSCACHEFILEYZ_SSS   _MESSAGE(51053, _("Could not link " SFN " to DCE credentials cache file " PFNMAX " - " SFN))
+#define MSG_GSS_COULDNOTLINKXTODCECREDENTIALSCACHEFILEYINVALIDKRB5CCNAMEENVIRONMENTVARIABLEFORMAT_SS  _MESSAGE(51054, _("Could not link " SFN " to DCE credentials cache file " PFNMAX " - invalid KRB5CCNAME environment variable format"))
 
 
 /* 

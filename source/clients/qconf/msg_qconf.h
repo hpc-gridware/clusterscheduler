@@ -58,19 +58,19 @@
 
 #define MSG_CENTRY_NOTCHANGED                         _MESSAGE(5100, _("Complex attribute configuration has not been changed"))
 #define MSG_CENTRY_DOESNOTEXIST_S                     _MESSAGE(5101, _("Complex attribute " SFQ " does not exist"))
-#define MSG_CENTRY_FILENOTCORRECT_S                   _MESSAGE(5102, _("Complex attribute file " SFQ " is not correct"))
+#define MSG_CENTRY_FILENOTCORRECT_S                   _MESSAGE(5102, _("Complex attribute file " PFQMAX " is not correct"))
 #define MSG_CENTRY_NULL_URGENCY                       _MESSAGE(5103, _("Complex urgency definition is missing"))
 #define MSG_CENTRY_NULL_NAME                          _MESSAGE(5104, _("Invalid complex attribute definition"))
 #define MSG_CENTRY_NULL_SHORTCUT_S                    _MESSAGE(5105, _("Complex attribute " SFQ " has no shortcut defined"))
 
 #define MSG_CQUEUE_DOESNOTEXIST_S                     _MESSAGE(5150, _("Cluster queue entry " SFQ " does not exist"))
-#define MSG_CQUEUE_FILENOTCORRECT_S                   _MESSAGE(5151, _("Cluster queue file " SFQ " is not correct"))
+#define MSG_CQUEUE_FILENOTCORRECT_S                   _MESSAGE(5151, _("Cluster queue file " PFQMAX " is not correct"))
 #define MSG_CQUEUE_NAMENOTCORRECT_SS                  _MESSAGE(5152, _("The queue name " SFQ " is not correct.  Queue names may not begin with @.  Perhaps you mean \"*" SFN "\"?"))
 
 #define MSG_HGROUP_NOTEXIST_S                         _MESSAGE(5200, _("Host group " SFQ " does not exist"))
-#define MSG_HGROUP_FILEINCORRECT_S                    _MESSAGE(5201, _("Host group file " SFQ " is not correct"))
+#define MSG_HGROUP_FILEINCORRECT_S                    _MESSAGE(5201, _("Host group file " PFQMAX " is not correct"))
 
-#define MSG_RQS_NOTFOUNDINFILE_SS                     _MESSAGE(5251, _("resource quota set " SFQ " not found in file " SFQ))
+#define MSG_RQS_NOTFOUNDINFILE_SS                     _MESSAGE(5251, _("resource quota set " SFQ " not found in file " PFQMAX))
 
 #define MSG_CAT_DOESNOTEXIST_U                        _MESSAGE(5252, _("Category " sge_u32 " does not exist"))
 
@@ -78,11 +78,11 @@
 
 /* CS-2299: qconf add/modify/delete interface enhancements
  * (directory input, upsert, name lists, -dry, -strict, idempotent delete) */
-#define MSG_QCONF_CANTOPENDIRECTORY_SS                _MESSAGE(5010, _("cannot open directory " SFQ ": " SFN))
-#define MSG_QCONF_DELSKIPPEDNOTEXIST_SS               _MESSAGE(5011, _(SFQ " does not exist - skipped (from file " SFN ")"))
-#define MSG_QCONF_STRICTNOTHINGAPPLIED_SI             _MESSAGE(5012, _(SFN ": %d file(s) failed to parse - nothing applied (-strict)"))
-#define MSG_QCONF_ADDMODSUMMARY_SII                   _MESSAGE(5013, _(SFN ": %d object(s) added/modified, %d failed"))
-#define MSG_QCONF_DELCOLLECTSUMMARY_SII               _MESSAGE(5014, _(SFN ": %d name(s) collected, %d file(s) failed"))
+#define MSG_QCONF_CANTOPENDIRECTORY_SS                _MESSAGE(5010, _("cannot open directory " PFQMAX ": " SFN))
+#define MSG_QCONF_DELSKIPPEDNOTEXIST_SS               _MESSAGE(5011, _(SFQ " does not exist - skipped (from file " PFNMAX ")"))
+#define MSG_QCONF_STRICTNOTHINGAPPLIED_SI             _MESSAGE(5012, _(PFNMAX ": %d file(s) failed to parse - nothing applied (-strict)"))
+#define MSG_QCONF_ADDMODSUMMARY_SII                   _MESSAGE(5013, _(PFNMAX ": %d object(s) added/modified, %d failed"))
+#define MSG_QCONF_DELCOLLECTSUMMARY_SII               _MESSAGE(5014, _(PFNMAX ": %d name(s) collected, %d file(s) failed"))
 #define MSG_QCONF_DRYRUNWOULDADD_S                    _MESSAGE(5015, _("[dry-run] would add " SFQ))
 #define MSG_QCONF_DRYRUNWOULDMODIFY_S                 _MESSAGE(5016, _("[dry-run] would modify " SFQ))
 #define MSG_QCONF_DRYRUNWOULDDELETE_S                 _MESSAGE(5017, _("[dry-run] would delete " SFQ))
@@ -91,13 +91,13 @@
 #define MSG_QCONF_UNKNOWNFMT_S                        _MESSAGE(5020, _("unknown -fmt value " SFQ " (expected plain|json)"))
 
 /* CS-23xx: qconf -S<obj> bulk export (save objects to a file or directory of files) */
-#define MSG_QCONF_EXPORTSKIPPEDEXISTS_S               _MESSAGE(5021, _(SFQ " exists - skipped (use -f to overwrite)"))
-#define MSG_QCONF_EXPORTWRITEFAILED_S                 _MESSAGE(5022, _("failed to write " SFQ))
-#define MSG_QCONF_EXPORTWROTE_S                       _MESSAGE(5023, _("wrote " SFN))
+#define MSG_QCONF_EXPORTSKIPPEDEXISTS_S               _MESSAGE(5021, _(PFQMAX " exists - skipped (use -f to overwrite)"))
+#define MSG_QCONF_EXPORTWRITEFAILED_S                 _MESSAGE(5022, _("failed to write " PFQMAX))
+#define MSG_QCONF_EXPORTWROTE_S                       _MESSAGE(5023, _("wrote " PFNMAX))
 #define MSG_QCONF_EXPORTUNSAFENAME_S                  _MESSAGE(5024, _("object name " SFQ " is not a valid file name - not exported"))
 #define MSG_QCONF_EXPORTCOLLISION_SS                  _MESSAGE(5025, _("object name " SFQ " collides with " SFQ " on a case-insensitive file system - not exported"))
-#define MSG_QCONF_EXPORTCANTMKDIR_S                   _MESSAGE(5026, _("cannot create export directory " SFQ))
-#define MSG_QCONF_EXPORTNODIRALLOWED_S                _MESSAGE(5027, _(SFQ ": a directory argument is not allowed for this object - give a file name"))
+#define MSG_QCONF_EXPORTCANTMKDIR_S                   _MESSAGE(5026, _("cannot create export directory " PFQMAX))
+#define MSG_QCONF_EXPORTNODIRALLOWED_S                _MESSAGE(5027, _(PFQMAX ": a directory argument is not allowed for this object - give a file name"))
 #define MSG_QCONF_EXPORTSUMMARY_SII                   _MESSAGE(5028, _(SFN ": %d object(s) exported, %d failed"))
 #define MSG_QCONF_EXPORTNOOBJECT_S                    _MESSAGE(5029, _("no object named " SFQ " to export"))
 

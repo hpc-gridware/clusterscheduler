@@ -94,8 +94,8 @@
 #define MSG_SPOOLDEFAULTS_CQUEUES                     _MESSAGE(57118, _("cqueues <template_dir>        create cluster queues"))
 #define MSG_SPOOLDEFAULTS_USERS                       _MESSAGE(57119, _("users <template_dir>          create users"))
 #define MSG_SPOOLDEFAULTS_SHARETREE                   _MESSAGE(57120, _("sharetree <template>          create sharetree"))
-#define MSG_SPOOLDEFAULTS_CANTREADGLOBALCONF_S        _MESSAGE(57125, _("couldn't read global config file " SFN))
-#define MSG_SPOOLDEFAULTS_CANTREADLOCALCONF_S         _MESSAGE(57126, _("couldn't read local config file " SFN))
+#define MSG_SPOOLDEFAULTS_CANTREADGLOBALCONF_S        _MESSAGE(57125, _("couldn't read global config file " PFNMAX))
+#define MSG_SPOOLDEFAULTS_CANTREADLOCALCONF_S         _MESSAGE(57126, _("couldn't read local config file " PFNMAX))
 #define MSG_SPOOLDEFAULTS_CANTHANDLECLASSICSPOOLING   _MESSAGE(57129, _("can't handle classic spooling"))
 
 #define MSG_SPOOLINIT_COMMANDINTRO0    _MESSAGE(57200, _("method shlib libargs command [args]"))
@@ -115,7 +115,7 @@
 #define MSG_DBSTAT_DUMP                _MESSAGE(57303, _("dump key            dump the object matching key"))
 #define MSG_DBSTAT_LOAD                _MESSAGE(57304, _("load key file       load an object from file and store it using key"))
 #define MSG_DBSTAT_DELETE              _MESSAGE(57305, _("delete key          delete the object matching key"))
-#define MSG_DBSTAT_ERRORUNDUMPING_S    _MESSAGE(57306, _("error reading object from file " SFN))
+#define MSG_DBSTAT_ERRORUNDUMPING_S    _MESSAGE(57306, _("error reading object from file " PFNMAX))
 #define MSG_DBSTAT_INVALIDKEY_S        _MESSAGE(57307, _("invalid key " SFQ))
 
 #define MSG_SUIDROOT_START_BY_NONROOT       _MESSAGE(213109, _(SFN ": must be started with uid != 0"))
