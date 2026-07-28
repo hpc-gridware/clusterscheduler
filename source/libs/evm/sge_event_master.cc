@@ -661,7 +661,15 @@ sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost)
    sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
 
    DEBUG(MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, lGetString(clio, EV_name), MSG_EVE_EVENTCLIENT);
-   answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
+
+   // Build the answer for the requester itself instead of passing SGE_EVENT.
+   // DEBUG() fills that buffer only when the log level is at least LOG_DEBUG,
+   // which it is not at the default log_info, so the line above leaves the
+   // buffer untouched and the requester used to receive whatever this worker
+   // thread had logged before - the buffer is thread local, not per request.
+   answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO,
+                           MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost,
+                           lGetString(clio, EV_name), MSG_EVE_EVENTCLIENT);
 
    sge_event_master_flush_requests();
 
