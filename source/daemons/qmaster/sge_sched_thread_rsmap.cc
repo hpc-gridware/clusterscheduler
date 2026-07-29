@@ -77,6 +77,18 @@ gru_add_free_rsmap_ids(lListElem *gru, const char *name, const char *host_name, 
                   lListElem *resl = lGetSubStrRW(gru, RESL_value, id, GRU_resource_map_list);
                   if (resl == nullptr) {
                      resl = lAddSubStr(gru, RESL_value, id, GRU_resource_map_list, RESL_Type);
+                     /* CS-2462: propagate per-instance characteristics (e.g. the
+                      * "devices" characteristic used for systemd device isolation)
+                      * from the host's RSMAP definition into the granted RESL, so
+                      * they reach sge_execd along with the job start order. Must
+                      * be a deep copy (lCopyList): the source list lives on the
+                      * exec host object and would otherwise be shared with the
+                      * ja_task-owned granted_resources_list. */
+                     const lList *src_props = lGetList(defined_ep, RESL_properties);
+                     if (src_props != nullptr) {
+                        lSetList(resl, RESL_properties,
+                                 lCopyList("granted_properties", src_props));
+                     }
                   }
                   if (free_amount >= amount) {
                      DPRINTF("      ==> gru_add_free_rsmap_ids: id %s, amount %d\n", id, amount);

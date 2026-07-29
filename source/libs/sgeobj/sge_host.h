@@ -83,6 +83,11 @@
 #define LOAD_ATTR_CORES          "m_core"
 #define LOAD_ATTR_THREADS        "m_thread"
 
+/* CS-2462: consumed by the shepherd's systemd DeviceAllow via config
+ * entry devices_allow. Populated on the qmaster side from the "devices"
+ * characteristic of an RSMAP granted to the job. */
+#define LOAD_ATTR_DEVICES        "devices"
+
 bool host_is_referenced(const lListElem *host, lList **answer_list,
                         const lList *queue_list, const lList *hgrp_list);
 

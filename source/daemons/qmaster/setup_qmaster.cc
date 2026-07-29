@@ -868,6 +868,9 @@ setup_qmaster() {
               {LOAD_ATTR_CORES,    "core",   1, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
               {LOAD_ATTR_SOCKETS,  "socket", 1, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
               {LOAD_ATTR_TOPOLOGY, "topo",   9, CMPLXEQ_OP, CONSUMABLE_NO, nullptr, REQU_YES, "0"},
+              /* CS-2462: RSMAP characteristic name for systemd device isolation
+               * (see sge_shepherd/ocs_shepherd_systemd.cc devices_allow handling). */
+              {LOAD_ATTR_DEVICES,  "devs",   TYPE_RESTR, CMPLXEQ_OP, CONSUMABLE_NO, nullptr, REQU_YES, "0"},
               {nullptr,            nullptr,  0, 0,          0,  nullptr, 0,        nullptr}
       };
       int i;

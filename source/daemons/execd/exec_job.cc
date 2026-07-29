@@ -41,6 +41,9 @@
 #include <cstdlib>
 #include <csignal>
 
+#include <map>
+#include <string>
+
 #include "uti/ocs_Systemd.h"
 #include "uti/sge_afsutil.h"
 #include "uti/sge_arch.h"
@@ -80,6 +83,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/ocs_Binding.h"
 #include "sgeobj/sge_grantedres.h"
+#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/sge_path_alias.h"
 #include "sgeobj/sge_ulong.h"
@@ -1384,14 +1388,97 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             }
          }
 
-         // device isolation
-         // for testing purposes until we have device isolation via RSMAPs
-         env = lGetElemStr(lGetList(jep, JB_env_list), VA_variable, "SGE_DEBUG_DEVICES_ALLOW");
-         if (env != nullptr) {
-            const char *devices_allow = lGetString(env, VA_value);
-            fprintf(fp, "devices_allow=%s\n", devices_allow != nullptr ? devices_allow : "");
-         } else {
-            fprintf(fp, "devices_allow=\n");
+         // Device isolation for the shepherd (CS-1338 + CS-2462).
+         //
+         // Sources unioned into a single devices_allow= line:
+         //   1. SGE_DEBUG_DEVICES_ALLOW env var — legacy debug/testing knob.
+         //   2. "devices" characteristic on any granted RSMAP instance.
+         //
+         // Value format for both sources and the emitted line:
+         //     path[:mode];path[:mode];...
+         // where mode is one of r/w/rw. A missing mode defaults to "r" on
+         // the shepherd side. Duplicate paths across sources are merged
+         // with the widest access mode ('r' and 'w' seen for the same path
+         // becomes 'rw').
+         {
+            std::map<std::string, std::string> device_modes;
+
+            auto merge_mode = [](const std::string &a, const std::string &b) -> std::string {
+               const bool r = a.find('r') != std::string::npos || b.find('r') != std::string::npos;
+               const bool w = a.find('w') != std::string::npos || b.find('w') != std::string::npos;
+               if (r && w) return "rw";
+               if (r) return "r";
+               if (w) return "w";
+               return "";
+            };
+
+            auto add_devices = [&](const char *value) {
+               if (value == nullptr || *value == '\0') {
+                  return;
+               }
+               char *buf = strdup(value);
+               struct saved_vars_s *ctx = nullptr;
+               for (char *tok = sge_strtok_r(buf, ";", &ctx); tok != nullptr;
+                    tok = sge_strtok_r(nullptr, ";", &ctx)) {
+                  char *colon = strchr(tok, ':');
+                  std::string path;
+                  std::string mode;
+                  if (colon == nullptr) {
+                     path = tok;
+                  } else {
+                     *colon = '\0';
+                     path = tok;
+                     mode = colon + 1;
+                  }
+                  if (path.empty()) {
+                     continue;
+                  }
+                  auto it = device_modes.find(path);
+                  if (it == device_modes.end()) {
+                     device_modes[path] = mode;
+                  } else {
+                     it->second = merge_mode(it->second, mode);
+                  }
+               }
+               sge_free_saved_vars(ctx);
+               free(buf);
+            };
+
+            // Source 1: legacy debug env var.
+            env = lGetElemStr(lGetList(jep, JB_env_list), VA_variable, "SGE_DEBUG_DEVICES_ALLOW");
+            if (env != nullptr) {
+               add_devices(lGetString(env, VA_value));
+            }
+
+            // Source 2: "devices" characteristic on any granted RSMAP instance.
+            const lListElem *gru;
+            for_each_ep (gru, granted_resources_list) {
+               if (lGetUlong(gru, GRU_type) != GRU_RESOURCE_MAP_TYPE) {
+                  continue;
+               }
+               const lListElem *resl;
+               for_each_ep (resl, lGetList(gru, GRU_resource_map_list)) {
+                  const lListElem *dev_prop = lGetSubStr(resl, CE_name, LOAD_ATTR_DEVICES,
+                                                         RESL_properties);
+                  if (dev_prop != nullptr) {
+                     add_devices(lGetString(dev_prop, CE_stringval));
+                  }
+               }
+            }
+
+            // Emit the merged line (sorted by path — deterministic for testing).
+            std::string devices_allow;
+            for (const auto &kv : device_modes) {
+               if (!devices_allow.empty()) {
+                  devices_allow += ';';
+               }
+               devices_allow += kv.first;
+               if (!kv.second.empty()) {
+                  devices_allow += ':';
+                  devices_allow += kv.second;
+               }
+            }
+            fprintf(fp, "devices_allow=%s\n", devices_allow.c_str());
          }
 
          // in case of tightly integrated parallel jobs, we need to store the systemd slice.
