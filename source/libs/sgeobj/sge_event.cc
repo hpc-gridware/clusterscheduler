@@ -480,7 +480,6 @@ static bool event_client_verify_subscription(const lListElem *event_client, lLis
 *             admin user or root.
 *        - EV_name (valid string, limited length)
 *        - EV_d_time (valid delivery interval)
-*        - EV_flush_delay (valid flush delay)
 *        - EV_subscribed (valid subscription list)
 *        - EV_busy_handling (valid busy handling)
 *        - EV_session (valid string, limited length)
@@ -584,19 +583,6 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
                                  CL_DEFINE_CLIENT_CONNECTION_LIFETIME-5);
          ret = false;
          DPRINTF("d_time false\n");
-      }
-   }
-
-   /* 
-    * flush delay cannot be gt event delivery time 
-    * We can very easily run into this problem by configuring scheduler interval
-    * and flush_submit|finish_secs. Disabling the check.
-    */
-   if (ret) {
-      if (lGetUlong(event_client, EV_flush_delay) > d_time) {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
-                                 MSG_EVENT_FLUSHDELAYCANNOTBEGTDTIME);
-         ret = false;
       }
    }
 

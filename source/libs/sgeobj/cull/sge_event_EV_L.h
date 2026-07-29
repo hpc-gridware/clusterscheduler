@@ -55,9 +55,6 @@
 *    SGE_ULONG(EV_d_time) - event delivery interval
 *    The time interval in seconds in which an event package is delivered to the client.
 *
-*    SGE_ULONG(EV_flush_delay) - flush delay
-*    @todo is it actually used? Used for throttling of the event flushing mechanism (?)
-*
 *    SGE_LIST(EV_subscribed) - subscribed events
 *    a list of subscribed events
 *
@@ -113,7 +110,6 @@ enum {
    EV_commid,
    EV_uid,
    EV_d_time,
-   EV_flush_delay,
    EV_subscribed,
    EV_changed,
    EV_busy_handling,
@@ -138,7 +134,6 @@ LISTDEF(EV_Type)
    SGE_ULONG(EV_commid, CULL_DEFAULT)
    SGE_ULONG(EV_uid, CULL_DEFAULT)
    SGE_ULONG(EV_d_time, CULL_DEFAULT)
-   SGE_ULONG(EV_flush_delay, CULL_DEFAULT)
    SGE_LIST(EV_subscribed, EVS_Type, CULL_DEFAULT)
    SGE_BOOL(EV_changed, CULL_DEFAULT)
    SGE_ULONG(EV_busy_handling, CULL_DEFAULT)
@@ -163,7 +158,6 @@ NAMEDEF(EVN)
    NAME("EV_commid")
    NAME("EV_uid")
    NAME("EV_d_time")
-   NAME("EV_flush_delay")
    NAME("EV_subscribed")
    NAME("EV_changed")
    NAME("EV_busy_handling")

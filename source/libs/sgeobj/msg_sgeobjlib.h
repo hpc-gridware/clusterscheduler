@@ -256,7 +256,6 @@
 #define MSG_EVENT_INVALIDNAME _MESSAGE(64340, _("invalid event client name"))
 #define MSG_EVENT_ONLYADMINMAYSTARTSPECIALEVC _MESSAGE(64341, _("only admin user or root may start special event clients"))
 #define MSG_EVENT_INVALIDDTIME_II _MESSAGE(64342, _("invalid event delivery time %d. It has to be between 1 and %d"))
-#define MSG_EVENT_FLUSHDELAYCANNOTBEGTDTIME _MESSAGE(64343, _("event flush delay may not be greater than event delivery time"))
 #define MSG_EVENT_INVALIDBUSYHANDLING _MESSAGE(64344, _("invalid value for event client busy handling"))
 #define MSG_EVENT_INVALIDSESSIONKEY _MESSAGE(64345, _("invalid session key for event client"))
 #define MSG_EVENT_INVALIDEVENT _MESSAGE(64346, _("invalid event id in event client subscription"))

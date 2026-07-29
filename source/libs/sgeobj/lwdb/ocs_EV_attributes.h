@@ -36,7 +36,6 @@ enum {
    EV_commid,
    EV_uid,
    EV_d_time,
-   EV_flush_delay,
    EV_subscribed,
    EV_changed,
    EV_busy_handling,
@@ -61,7 +60,6 @@ constexpr const int EV_Type[] = {
    EV_commid,
    EV_uid,
    EV_d_time,
-   EV_flush_delay,
    EV_subscribed,
    EV_changed,
    EV_busy_handling,
@@ -87,7 +85,6 @@ constexpr const int EV_Type[] = {
    {EV_commid, "EV_commid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EV_uid, "EV_uid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EV_d_time, "EV_d_time", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {EV_flush_delay, "EV_flush_delay", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EV_subscribed, "EV_subscribed", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EV_changed, "EV_changed", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EV_busy_handling, "EV_busy_handling", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

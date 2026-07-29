@@ -94,9 +94,6 @@ struct sge_evc_class_str {
    bool (*ec_set_busy_handling)(sge_evc_class_t *thiz, ev_busy_handling handling);
    ev_busy_handling (*ec_get_busy_handling)(sge_evc_class_t *thiz);
 
-   bool (*ec_set_flush_delay)(sge_evc_class_t *thiz, uint32_t flush_delay);
-   uint32_t (*ec_get_flush_delay)(sge_evc_class_t *thiz);
-
    bool (*ec_set_busy)(sge_evc_class_t *thiz, int busy);
    bool (*ec_get_busy)(sge_evc_class_t *thiz);
 
