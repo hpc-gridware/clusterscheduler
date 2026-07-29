@@ -77,13 +77,15 @@ run_reader(lListElem *ce, const char *input, lList **alp) {
 }
 
 /* Look up a property by name inside a RESL's properties list; returns nullptr
- * if absent. */
+ * if absent. Only used by the GCS-only characteristics tests. */
+#if defined(WITH_EXTENSIONS)
 static const lListElem *
 find_prop(const lListElem *resl, const char *name) {
    const lList *props = lGetList(resl, RESL_properties);
    if (props == nullptr) return nullptr;
    return lGetElemStr(props, CE_name, name);
 }
+#endif /* WITH_EXTENSIONS */
 
 /* ------------------------------------------------------------------ */
 /* positive: base grammar — must still parse exactly as before CS-1338  */
@@ -158,8 +160,14 @@ test_mixed_range_and_names() {
 }
 
 /* ------------------------------------------------------------------ */
-/* positive: new per-instance characteristics grammar                   */
+/* per-instance characteristics grammar (GCS only)                      */
+/*                                                                      */
+/* Characteristics are a GCS-only feature: read_CE_stringval_host       */
+/* rejects them outright in an OCS build, so the cases below only make  */
+/* sense with extensions enabled. The OCS side is covered by            */
+/* test_characteristics_rejected_in_ocs() at the end of this file.      */
 /* ------------------------------------------------------------------ */
+#if defined(WITH_EXTENSIONS)
 
 static int
 test_single_characteristic() {
@@ -296,6 +304,8 @@ test_reject_characteristics_on_range() {
    return 0;
 }
 
+#endif /* WITH_EXTENSIONS */
+
 /* ------------------------------------------------------------------ */
 /* duplicate-id semantics (CS-1338, Option A: all occurrences must match) */
 /* ------------------------------------------------------------------ */
@@ -321,6 +331,10 @@ test_duplicate_bare() {
    lFreeList(&alp);
    return 0;
 }
+
+/* The remaining duplicate-id cases all involve characteristics, so they are
+ * likewise GCS only. */
+#if defined(WITH_EXTENSIONS)
 
 /* Duplicate id with identical characteristics: stored once, amount=2. */
 static int
@@ -434,27 +448,71 @@ test_reject_duplicate_bare_vs_annotated() {
    return 0;
 }
 
+#endif /* WITH_EXTENSIONS */
+
+#if !defined(WITH_EXTENSIONS)
+/* ------------------------------------------------------------------ */
+/* OCS build: characteristics must be refused, not silently ignored     */
+/* ------------------------------------------------------------------ */
+
+/* An OCS build must reject any id carrying a characteristics block, and must
+ * not leave a half-parsed resource map behind. Silently dropping the
+ * characteristics would be worse than failing: a site could believe device
+ * isolation was configured when nothing was applied. */
+static int
+test_characteristics_rejected_in_ocs() {
+   T_START("characteristics_rejected_in_ocs");
+   lListElem *ce = make_rsmap_ce("gpu");
+   lList *alp = nullptr;
+
+   T_ASSERT(run_reader(ce, "1(gpu0[device=/dev/nvidia0])", &alp) == 0);
+   T_ASSERT(alp != nullptr);
+   T_ASSERT(lGetList(ce, CE_resource_map_list) == nullptr);
+
+   lFreeElem(&ce);
+   lFreeList(&alp);
+
+   /* the plain grammar keeps working in OCS */
+   ce = make_rsmap_ce("gpu");
+   alp = nullptr;
+   T_ASSERT(run_reader(ce, "2(gpu0 gpu1)", &alp) == 1);
+   T_ASSERT(alp == nullptr);
+   T_ASSERT(lGetNumberOfElem(lGetList(ce, CE_resource_map_list)) == 2);
+
+   lFreeElem(&ce);
+   lFreeList(&alp);
+   return 0;
+}
+#endif /* !WITH_EXTENSIONS */
+
 }  /* anonymous namespace */
 
 int main(int, char **) {
    DENTER_MAIN(TOP_LAYER, "test_ff_rsmap");
    lInit(nmv);
 
+   /* base grammar - available in both OCS and GCS */
    test_bare_ids();
    test_range_only();
    test_mixed_range_and_names();
+   test_duplicate_bare();
+
+#if defined(WITH_EXTENSIONS)
+   /* per-instance characteristics - GCS only */
    test_single_characteristic();
    test_multiple_characteristics();
    test_mixed_with_and_without_characteristics();
    test_reject_unclosed_bracket();
    test_reject_missing_eq();
    test_reject_characteristics_on_range();
-   test_duplicate_bare();
    test_duplicate_matching_characteristics();
    test_duplicate_matching_reordered();
    test_reject_duplicate_conflict();
    test_reject_duplicate_bare_vs_annotated();
    test_whitespace_inside_brackets();
+#else
+   test_characteristics_rejected_in_ocs();
+#endif
 
    if (g_failures > 0) {
       fprintf(stderr, "\n=== %d test(s) FAILED ===\n", g_failures);

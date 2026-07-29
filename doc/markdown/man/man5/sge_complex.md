@@ -379,7 +379,8 @@ comparisons or in case of load scaling for the load complex entries:
         <id>[<char-name>=<char-value>,<char-name>=<char-value>,...]
 
     Characteristics attach arbitrary typed metadata to one specific instance — the PCI device path of a
-    GPU, its on-board memory, a topology-affinity mask, a NIC's bandwidth, etc. Multiple characteristics
+    GPU, its on-board memory, a topology-affinity mask, a NIC's bandwidth, etc. Available in GCS only.
+    Multiple characteristics
     are separated by `,` (comma). The `,` inside the brackets is unambiguous because the flatfile
     parser is bracket-depth aware; the outer complex_values list separator is also `,`, so the two
     layers stay visually consistent. Each *char-name* must itself be defined in the complex list before

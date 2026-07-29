@@ -162,6 +162,21 @@ parse_id_characteristics(const char *token, std::string &id_out,
       return true;
    }
 
+   // CS-1338: per-instance characteristics are a GCS-only feature. This is the
+   // single point where they enter the system from a configuration, so
+   // rejecting here keeps every downstream consumer (writer, validator,
+   // scheduler booking, execd device isolation) unreachable in an OCS build
+   // without needing its own guard.
+#if !defined(WITH_EXTENSIONS)
+   {
+      std::string id_only(token, bracket - token);
+      answer_list_add_sprintf(alpp, STATUS_ENOTAVAILABLE, ANSWER_QUALITY_ERROR,
+                              MSG_RSMAP_CHARACTERISTIC_NOT_AVAILABLE_SS,
+                              rsmap_name, id_only.c_str());
+      return false;
+   }
+#endif
+
    const size_t token_len = strlen(token);
    if (token_len == 0 || token[token_len - 1] != RSMAP_CHARACTERISTICS_CLOSE) {
       answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,

@@ -89,8 +89,8 @@ associated with the host.
 
 For a Resource Map (*RSMAP*, see xxqs_name_sxx_complex(5)) the value on the right of the `=` names the
 individual instances the host provides, and may attach per-instance characteristics inside square
-brackets. Example — a host with two NVIDIA GPUs, each carrying a device path, on-board memory, and a
-topology affinity mask:
+brackets. Per-instance characteristics are available in GCS only. Example — a host with two NVIDIA
+GPUs, each carrying a device path, on-board memory, and a topology affinity mask:
 
     complex_values GPU=2(gpu0[device=/dev/nvidia0,memory=80G,affinity_mask=SCCCCCCCCScccccccc] \
                         gpu1[device=/dev/nvidia1,memory=80G,affinity_mask=SccccccccSCCCCCCCC])
