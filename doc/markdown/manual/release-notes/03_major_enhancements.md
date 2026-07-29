@@ -1,5 +1,58 @@
 # Major Enhancements
 
+## v9.1.5
+
+### RSMAP Characteristics and Device Isolation
+
+A resource map (RSMAP) names the individual instances of a host resource — the GPUs in a node, its network interfaces, a pool of license seats — so that the scheduler can both count them and record which one each job received. Until now an instance was nothing more than a name. Anything an administrator knew about the hardware behind that name had to be encoded into the name itself and decoded again by a prolog script.
+
+Instances can now carry **characteristics**: typed metadata attached to one specific instance. A characteristic describes what sets that instance apart from its siblings — the device file of a GPU, the memory on the card, its affinity to a CPU socket, the bandwidth of an interface. Characteristics are written in square brackets after the instance name and separated by commas:
+
+```
+gpu=2(gpu0[device=/dev/nvidia0,gpu_memory=80G] gpu1[device=/dev/nvidia1,gpu_memory=40G])
+```
+
+Every characteristic name must be defined as a complex before it can be used, and the type of that complex determines how the value is parsed: `gpu_memory=80G` is read as a *MEMORY* value, a bandwidth as *INT*, a device path as *RESTRING*. The characteristics of an instance follow that instance through the scheduler, so a job is told which GPU it was granted along with everything the administrator recorded about it.
+
+The first consumer of this mechanism is **device isolation**. A characteristic named `devices` lists the device files a job may use, together with the access mode for each. When the job starts, `sge_execd` passes that list to `sge_shepherd`, which hands it to systemd as the `DeviceAllow` property of the job's scope and sets `DevicePolicy` to `closed`. The job then sees only the devices belonging to the GPU it was actually granted; the remaining GPUs on the host are invisible to it.
+
+Configuring a two-GPU node takes two steps. First define the characteristics as complexes:
+
+```bash
+$ qconf -Ac
+name         shortcut   type      relop   requestable   consumable   default   urgency
+gpu_memory   gpumem     MEMORY    <=      YES           NO           0         0
+```
+
+The `devices` complex is created automatically when xxqs_name_sxx_qmaster starts, so it does not have to be added by hand. Then attach the characteristics to the individual GPUs of the host:
+
+```bash
+$ qconf -mattr exechost complex_values \
+  'gpu=2(gpu0[devices=/dev/nvidia0:rw;/dev/nvidiactl:r,gpu_memory=80G] \
+         gpu1[devices=/dev/nvidia1:rw;/dev/nvidiactl:r,gpu_memory=40G])' \
+  node01
+```
+
+Within the `devices` value, a semicolon separates one device from the next and a colon separates a device from its access mode (`r`, `w` or `rw`). A device given without a mode defaults to read-only.
+
+Two jobs each requesting `-l gpu=1` are then granted different instances, and each is confined to the devices of the GPU it received:
+
+```bash
+$ qsub -l gpu=1 $SGE_ROOT/examples/jobs/sleeper.sh
+Your job 21 ("Sleeper") has been submitted
+
+$ systemctl show ocs8012.21.scope | grep ^Device
+DevicePolicy=closed
+DeviceAllow=/dev/nvidia0 rw
+DeviceAllow=/dev/nvidiactl r
+```
+
+Long definitions may be split across lines with a trailing backslash; whitespace inside a characteristics block is ignored.
+
+For the complete grammar, including how an instance may be listed more than once to model a shared device, see the **xxqs_name_sxx_complex(5)** and **xxqs_name_sxx_host_conf(5)** man pages. Device isolation is described in the *Administration Guide* chapter **"Systemd Integration"**.
+
+(Available in Gridware Cluster Scheduler only.)
+
 ## v9.1.3
 
 ### Postgres Spooling Backend
