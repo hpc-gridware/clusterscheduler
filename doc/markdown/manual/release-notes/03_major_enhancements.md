@@ -9,27 +9,20 @@ A resource map (RSMAP) names the individual instances of a host resource — the
 Instances can now carry **characteristics**: typed metadata attached to one specific instance. A characteristic describes what sets that instance apart from its siblings — the device file of a GPU, the memory on the card, its affinity to a CPU socket, the bandwidth of an interface. Characteristics are written in square brackets after the instance name and separated by commas:
 
 ```
-gpu=2(gpu0[device=/dev/nvidia0,gpu_memory=80G] gpu1[device=/dev/nvidia1,gpu_memory=40G])
+gpu=2(gpu0[device=/dev/nvidia0,gpu_memory=80G] \
+gpu1[device=/dev/nvidia1,gpu_memory=40G])
 ```
 
 Every characteristic name must be defined as a complex before it can be used, and the type of that complex determines how the value is parsed: `gpu_memory=80G` is read as a *MEMORY* value, a bandwidth as *INT*, a device path as *RESTRING*. The characteristics of an instance follow that instance through the scheduler, so a job is told which GPU it was granted along with everything the administrator recorded about it.
 
 The first consumer of this mechanism is **device isolation**. A characteristic named `devices` lists the device files a job may use, together with the access mode for each. When the job starts, `sge_execd` passes that list to `sge_shepherd`, which hands it to systemd as the `DeviceAllow` property of the job's scope and sets `DevicePolicy` to `closed`. The job then sees only the devices belonging to the GPU it was actually granted; the remaining GPUs on the host are invisible to it.
 
-Configuring a two-GPU node takes two steps. First define the characteristics as complexes:
-
-```bash
-$ qconf -Ac
-name         shortcut   type      relop   requestable   consumable   default   urgency
-gpu_memory   gpumem     MEMORY    <=      YES           NO           0         0
-```
-
-The `devices` complex is created automatically when xxqs_name_sxx_qmaster starts, so it does not have to be added by hand. Then attach the characteristics to the individual GPUs of the host:
+Configuring a two-GPU node:
 
 ```bash
 $ qconf -mattr exechost complex_values \
-  'gpu=2(gpu0[devices=/dev/nvidia0:rw;/dev/nvidiactl:r,gpu_memory=80G] \
-         gpu1[devices=/dev/nvidia1:rw;/dev/nvidiactl:r,gpu_memory=40G])' \
+  'gpu=2(gpu0[devices=/dev/nvidia0:rw;/dev/nvidiactl:r] \
+         gpu1[devices=/dev/nvidia1:rw;/dev/nvidiactl:r])' \
   node01
 ```
 
