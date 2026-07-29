@@ -3988,7 +3988,7 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
    char buffer[1024];
    dstring buffer_wrapper;
    bool stop_ec = false;
-   int parameter, ed_time = 30, flush_delay_rate = 6;
+   int parameter, ed_time = 30;
    const char *s;
    bool restarting;
    bool job_list_subscribed = false;
@@ -4036,12 +4036,6 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
          ed_time = parameter;
       }
    }
-   if ((s=getenv("SGE_JAPI_FLUSH_DELAY_RATE"))) {
-      parameter = atoi(s);
-      if (parameter > 0 && parameter < ed_time)
-         flush_delay_rate = parameter;
-   }
-
    /* register at qmaster as event client */
    DPRINTF("registering as event client ...\n");
    evc = sge_evc_class_create(EV_ID_ANY, &alp, nullptr);
@@ -4059,7 +4053,6 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
 
    evc->ec_set_edtime(evc, ed_time);
    evc->ec_set_busy_handling(evc, EV_BUSY_UNTIL_ACK);
-   evc->ec_set_flush_delay(evc, flush_delay_rate);
    evc->ec_set_session(evc, japi_session_key);
 
    /* subscription of the entire job list at start-up

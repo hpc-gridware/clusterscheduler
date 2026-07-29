@@ -621,8 +621,6 @@ static void ec2_mark4registration(sge_evc_class_t *thiz);
 static bool ec2_need_new_registration(sge_evc_class_t *thiz);
 static bool ec2_set_edtime(sge_evc_class_t *thiz, u_long32 interval);
 static u_long32 ec2_get_edtime(sge_evc_class_t *thiz);
-static bool ec2_set_flush_delay(sge_evc_class_t *thiz, u_long32 flush_delay);
-static u_long32 ec2_get_flush_delay(sge_evc_class_t *thiz);
 static bool ec2_set_busy_handling(sge_evc_class_t *thiz, ev_busy_handling handling);
 static ev_busy_handling ec2_get_busy_handling(sge_evc_class_t *thiz);
 static bool ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp);
@@ -707,8 +705,6 @@ sge_evc_class_create(ev_registration_id reg_id, lList **alpp, const char *name)
    ret->ec_get_edtime = ec2_get_edtime;
    ret->ec_set_busy_handling = ec2_set_busy_handling;
    ret->ec_get_busy_handling = ec2_get_busy_handling;
-   ret->ec_set_flush_delay = ec2_set_flush_delay;
-   ret->ec_get_flush_delay = ec2_get_flush_delay;
    ret->ec_set_busy = ec2_set_busy;
    ret->ec_get_busy = ec2_get_busy;
    ret->ec_set_session = ec2_set_session;
@@ -1085,88 +1081,6 @@ ec2_get_edtime(sge_evc_class_t *thiz) {
 
    DRETURN(interval);
 }
-
-/****** Eventclient/Client/ec_set_flush_delay() *****************************
-*  NAME
-*     ec_set_flush_delay() -- set flush delay parameter
-*
-*  SYNOPSIS
-*     #include "evc/sge_event_client.h"
-*
-*     bool
-*     ec_set_flush_delay(u_long32 flush_delay)
-*
-*  FUNCTION
-*
-*  INPUTS
-*     int flush_delay - flush delay parameter
-*
-*  RESULT
-*     bool - true, if the value was changed, else false
-*
-*  NOTES
-*
-*  SEE ALSO
-*     Eventclient/Client/ec_get_flush_delay()
-*     Eventclient/-Busy-state
-*     Eventclient/Client/ec_commit()
-*     Eventclient/Client/ec_get()
-*******************************************************************************/
-static bool
-ec2_set_flush_delay(sge_evc_class_t *thiz, u_long32 flush_delay) {
-   DENTER(EVC_LAYER);
-   bool ret = false;
-   auto *sge_evc = (sge_evc_t *)thiz->sge_evc_handle;
-
-   if (sge_evc->ec == nullptr) {
-      ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
-   } else {
-      ret = (lGetUlong(sge_evc->ec, EV_flush_delay) != flush_delay) ? true : false;
-
-      if (ret) {
-         lSetUlong(sge_evc->ec, EV_flush_delay, flush_delay);
-         ec2_config_changed(thiz);
-      }
-   }
-
-   DRETURN(ret);
-}
-
-/****** Eventclient/Client/ec_get_flush_delay() *****************************
-*  NAME
-*     ec_get_flush_delay() -- get configured flush delay parameter
-*
-*  SYNOPSIS
-*     #include "evc/sge_event_client.h"
-*
-*     int
-*     ec_get_flush_delay()
-*
-*  FUNCTION
-*     Returns the policy currently configured.
-*
-*  RESULT
-*     flush_delay - current flush delay parameter setting
-*
-*  SEE ALSO
-*     Eventclient/Client/ec_set_flush_delay()
-*     Eventclient/-Busy-state
-*******************************************************************************/
-static u_long32
-ec2_get_flush_delay(sge_evc_class_t *thiz) {
-   DENTER(EVC_LAYER);
-   u_long32 flush_delay = 0;
-   auto *sge_evc = (sge_evc_t *)thiz->sge_evc_handle;
-
-   if (sge_evc->ec == nullptr) {
-      ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
-   } else {
-      flush_delay = lGetUlong(sge_evc->ec, EV_flush_delay);
-   }
-
-   DRETURN(flush_delay);
-}
-
 
 /****** Eventclient/Client/ec_set_busy_handling() *****************************
 *  NAME

@@ -70,14 +70,6 @@
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
-			"name":	"flush_delay",
-			"summary":	"flush delay",
-			"description":	[{
-					"line":	"@todo is it actually used? Used for throttling of the event flushing mechanism (?)"
-				}],
-			"type":	"lUlongT",
-			"flags":	[]
-		}, {
 			"name":	"subscribed",
 			"summary":	"subscribed events",
 			"description":	[{
