@@ -875,6 +875,22 @@ if [ "$tmp_adminhost" != "$HOST" ]; then
    EXIT 1
 fi
 
+# Verify that we were pointed at a saved configuration at all. Without this the
+# empty LOAD_VERSION below reaches LogIt(), whose "${2:?Message is required}"
+# terminates the script mid-logging with a message that names neither the
+# directory nor the problem (CS-2470).
+if [ ! -d "$DIR" ]; then
+   $INFOTEXT "ERROR: \"$DIR\" does not exist."
+   LogIt "C" "Backup directory does not exist: $DIR"
+   EXIT 1
+fi
+if [ ! -f "$DIR/version" ]; then
+   $INFOTEXT "ERROR: \"$DIR\" is not a saved cluster configuration - the file \"version\" is missing."
+   $INFOTEXT "Pass the directory that save_config.sh wrote."
+   LogIt "C" "Not a saved cluster configuration, no version file: $DIR"
+   EXIT 1
+fi
+
 LOAD_VERSION=`cat ${DIR}/version`
 LogIt "I" "LOAD $DIR"
 LogIt "I" "$CURRENT_VERSION"
