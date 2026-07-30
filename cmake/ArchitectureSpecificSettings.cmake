@@ -98,6 +98,13 @@ function(architecture_specific_settings)
       else ()
          message(STATUS "Doing a release build")
          # cmake already adds -O3 and sets define NDEBUG add_compile_options(-O3)
+         # glibc marks setuid()/seteuid()/setgid() as warn_unused_result, but only
+         # once _FORTIFY_SOURCE is active - which on Linux happens only when
+         # optimizing, so this hits release builds only. Keep the diagnostic
+         # visible but non-fatal until the call sites are fixed (CS-2434).
+         if (OS_ID STREQUAL "ubuntu" AND OS_VERSION EQUAL 26.04)
+            add_compile_options(-Wno-error=unused-result)
+         endif ()
          if (ENABLE_LTO)
             add_link_options(-flto)
          endif ()
