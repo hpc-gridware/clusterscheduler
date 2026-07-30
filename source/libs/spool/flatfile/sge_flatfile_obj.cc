@@ -282,10 +282,16 @@ static spooling_field UE_sub_fields[] = {
    {  NoName,              0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr}
 };
 
+/* UA_svalue (string usage values, CS-849) is deliberately not listed here.
+ * String usage values only ever occur in job accounting usage lists, which are
+ * not spooled through this table. Every consumer of UA_sub_fields - the
+ * scheduler config weight list and the sharetree usage lists, which are
+ * filtered down to weight-list names by Usage::strip_irrelevant_usage() - is
+ * numeric by construction, so an entry here would only ever emit NONE and read
+ * that NONE back as a literal string value. */
 static spooling_field UA_sub_fields[] = {
    {  UA_name,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
    {  UA_value,            0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  UA_svalue,           0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
    {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
 };
 

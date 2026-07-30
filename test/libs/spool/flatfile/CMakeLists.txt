@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2024 HPC-Gridware GmbH
+#  Copyright 2024,2026 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -30,7 +30,13 @@ target_include_directories(test_spool_flatfile2 PRIVATE "./")
 target_link_libraries(test_spool_flatfile2 PRIVATE spool spoolc gdi sgeobj uti commlists ${SGE_LIBS})
 add_test(NAME test_spool_flatfile2 COMMAND test_spool_flatfile2)
 
+add_executable(test_spool_flatfile_usage test_spool_flatfile_usage.cc)
+target_include_directories(test_spool_flatfile_usage PRIVATE "./")
+target_link_libraries(test_spool_flatfile_usage PRIVATE spool spoolc gdi sgeobj uti commlists ${SGE_LIBS})
+add_test(NAME test_spool_flatfile_usage COMMAND test_spool_flatfile_usage)
+
 if (INSTALL_SGE_TEST)
    install(TARGETS test_spool_flatfile DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_spool_flatfile2 DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_spool_flatfile_usage DESTINATION testbin/${SGE_ARCH})
 endif ()
