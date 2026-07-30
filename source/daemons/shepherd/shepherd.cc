@@ -142,6 +142,31 @@ static int exit_status_for_qrsh = 0;
 static int ckpt_signal = 0;        /* signal to send to ckpt job */
 static int signalled_ckpt_job = 0; /* marker if signalled a ckpt job */
 
+/* CS-2476: a suspend/resume can lose the race against job startup: the job
+ * child gets its own process group (setpgid) and joins its systemd scope only
+ * *after* it has been forked, so a kill(-job_pid) arriving in between fails
+ * with ESRCH and FreezeUnit()/ThawUnit() fails with "Unit ... not loaded".
+ * Neither failure used to be acted upon - the suspend was simply dropped and
+ * the job kept running until the qmaster resent the signal 60 s later.
+ * A failed SIGSTOP/SIGCONT delivery is therefore retried from the SIGALRM
+ * path until it sticks (the window is a few tens of milliseconds). */
+#define SUSPEND_RETRY_DELAY  1   /* seconds between two delivery attempts */
+#define SUSPEND_RETRY_MAX   15   /* give up after that many attempts      */
+
+/* CS-2476: signals which arrived before the job child was forked are kept in
+ * the signal ring buffer and delivered from the SIGALRM path this many seconds
+ * after the fork, to give the child time to create its process group and to
+ * move itself into its systemd scope. This used to be a hardcoded 10 s, chosen
+ * as a generous "surely started by now" value because a delivery that came too
+ * early was lost for good - which made *every* suspend of a just-started job
+ * take 10 seconds. Measured setup time of the child is ~23 ms, so 1 s is still
+ * ~40x headroom, and a delivery that is nevertheless too early is now retried
+ * (see deliver_signal_or_method_with_retry()) instead of being dropped. */
+#define SIGNAL_DELIVERY_DELAY_AFTER_FORK  1
+static int suspend_retry_signal = 0; /* SIGSTOP/SIGCONT awaiting a retry, 0 = none */
+static int suspend_retry_count = 0;  /* attempts already made for suspend_retry_signal */
+static int suspend_retry_saved_alarm = 0; /* remainder of the alarm the retry preempted */
+
 
 /* function forward declarations */
 static int notify_tasker(uint32_t exit_status);
@@ -183,7 +208,9 @@ static void shepherd_deliver_signal(int sig,
 static int map_signal(int signal);
 static void set_sig_handler(int sig_num);
 static void shepherd_signal_handler(int dummy);
-static void shepconf_deliver_signal_or_method(int sig, int pid, pid_t *ctrl_pid);
+static bool shepconf_deliver_signal_or_method(int sig, int pid, pid_t *ctrl_pid);
+static bool deliver_signal_or_method_with_retry(int sig, int pid, int remaining_alarm,
+                                                pid_t *ctrl_pid);
 static void forward_signal_to_job(int pid, int timeout, int *postponed_signal,
                        int remaining_alarm, pid_t ctrl_pid[3]);
 
@@ -1215,9 +1242,10 @@ static int start_child(
       int number_of_signals = get_n_sigs();
 
       if (number_of_signals > 0) {
-         shepherd_trace("there are %d signals to deliver. Wait until "
-                                "job has been started.", number_of_signals);
-         alarm(10);
+         shepherd_trace("there are %d signals to deliver. Wait %d s until "
+                        "job has been started.", number_of_signals,
+                        SIGNAL_DELIVERY_DELAY_AFTER_FORK);
+         alarm(SIGNAL_DELIVERY_DELAY_AFTER_FORK);
       }
    }
 
@@ -1929,7 +1957,7 @@ void shepherd_deliver_signal(int sig, int pid, int *postponed_signal,
       }
    }
 
-   shepconf_deliver_signal_or_method(sig, pid, ctrl_pid);
+   deliver_signal_or_method_with_retry(sig, pid, remaining_alarm, ctrl_pid);
 }
 
 /****** shepherd/core/shepconf_deliver_signal_or_method() *********************************
@@ -1937,7 +1965,7 @@ void shepherd_deliver_signal(int sig, int pid, int *postponed_signal,
 *     shepherd_find_method() -- find the notify_name for a signal
 *
 *  SYNOPSIS
-*     static void shepconf_deliver_signal_or_method(int sig, int pid,
+*     static bool shepconf_deliver_signal_or_method(int sig, int pid,
 *                                                   pid_t *ctrl_pid)
 *
 *  FUNCTION
@@ -1950,11 +1978,18 @@ void shepherd_deliver_signal(int sig, int pid, int *postponed_signal,
 *     int pid               - pid of the job
 *     pid_t *ctrl_pid       - pid of applications which might be started
 *
+*  RESULT
+*     bool - true if the signal reached the job (or a user defined method was
+*            started), false if delivery failed, e.g. because the job's process
+*            group / systemd scope does not exist yet. See
+*            deliver_signal_or_method_with_retry().
+*
 *******************************************************************************/
-static void shepconf_deliver_signal_or_method(int sig, int pid, pid_t *ctrl_pid) {
+static bool shepconf_deliver_signal_or_method(int sig, int pid, pid_t *ctrl_pid) {
 
    const char* method_name = shepherd_find_method(sig);
    int new_sig;
+   bool delivered = true;
    dstring method = DSTRING_INIT;
 
    /*
@@ -1968,7 +2003,7 @@ static void shepconf_deliver_signal_or_method(int sig, int pid, pid_t *ctrl_pid)
       shepherd_trace("kill(%d, %s) -> overriddes kill(%d, %s)",
                      -pid, sge_sys_sig2str(new_sig),
                      -pid, sge_sys_sig2str(sig));
-      shepherd_signal_job(-pid, new_sig);
+      delivered = shepherd_signal_job(-pid, new_sig);
    } else if (shepconf_has_userdef_method(method_name, &method)) {
       shepherd_trace("%s -> overriddes kill(%d, %s)",
                      sge_dstring_get_string(&method), -pid,
@@ -1984,9 +2019,100 @@ static void shepconf_deliver_signal_or_method(int sig, int pid, pid_t *ctrl_pid)
       }
    } else {
       shepherd_trace("kill(%d, %s)", -pid, sge_sys_sig2str(sig));
-      shepherd_signal_job(-pid, sig);
+      delivered = shepherd_signal_job(-pid, sig);
    }
    sge_dstring_free(&method);
+
+   return delivered;
+}
+
+/****** shepherd/core/deliver_signal_or_method_with_retry() *******************
+*  NAME
+*     deliver_signal_or_method_with_retry() -- deliver, retry on a lost race
+*
+*  SYNOPSIS
+*     static bool deliver_signal_or_method_with_retry(int sig, int pid,
+*                                                     int remaining_alarm,
+*                                                     pid_t *ctrl_pid)
+*
+*  FUNCTION
+*     CS-2476: wrapper around shepconf_deliver_signal_or_method() which makes
+*     a failed SIGSTOP/SIGCONT delivery survive.
+*
+*     Right after the job child has been forked it is neither in its own
+*     process group nor in its systemd scope yet - the child creates both
+*     itself, which takes a few tens of milliseconds (moving into the cgroup
+*     v2 scope alone is measured at ~23 ms). A suspend arriving inside that
+*     window fails: kill(-job_pid) returns ESRCH and FreezeUnit() reports
+*     "Unit ... not loaded". Before, such a failure was only traced and the
+*     suspend was lost until the qmaster resent the signal after 60 s.
+*
+*     Now the signal is remembered and re-delivered from the SIGALRM path
+*     every SUSPEND_RETRY_DELAY seconds until it sticks (or SUSPEND_RETRY_MAX
+*     attempts have been made). Any foreign alarm the retry had to preempt
+*     (notify, checkpoint interval) is restored once the retry is done.
+*
+*     Only SIGSTOP/SIGCONT are retried. SIGKILL and friends have their own
+*     resend/escalation handling in execd and qmaster and must not be delayed.
+*
+*  INPUTS
+*     int sig               - signal to deliver
+*     int pid               - pid of the job
+*     int remaining_alarm   - remainder of the alarm the caller paused, 0 if none;
+*                             restored once the retries are done
+*     pid_t *ctrl_pid       - pid of applications which might be started
+*
+*  RESULT
+*     bool - true if the signal reached the job, false if a retry was armed
+*            (or the retry budget is exhausted)
+*******************************************************************************/
+static bool deliver_signal_or_method_with_retry(int sig, int pid, int remaining_alarm,
+                                                pid_t *ctrl_pid)
+{
+   bool delivered = shepconf_deliver_signal_or_method(sig, pid, ctrl_pid);
+
+   if (sig != SIGSTOP && sig != SIGCONT) {
+      return delivered;
+   }
+
+   if (delivered) {
+      if (suspend_retry_signal != 0) {
+         shepherd_trace("delivery of %s succeeded after %d retries",
+                        sge_sys_sig2str(sig), suspend_retry_count);
+         suspend_retry_signal = 0;
+         suspend_retry_count = 0;
+         if (suspend_retry_saved_alarm > 0) {
+            alarm(suspend_retry_saved_alarm);
+            suspend_retry_saved_alarm = 0;
+         }
+      }
+      return true;
+   }
+
+   if (suspend_retry_count >= SUSPEND_RETRY_MAX) {
+      shepherd_trace("giving up on delivering %s after %d attempts",
+                     sge_sys_sig2str(sig), suspend_retry_count);
+      suspend_retry_signal = 0;
+      suspend_retry_count = 0;
+      if (suspend_retry_saved_alarm > 0) {
+         alarm(suspend_retry_saved_alarm);
+         suspend_retry_saved_alarm = 0;
+      }
+      return false;
+   }
+
+   if (suspend_retry_signal == 0) {
+      /* first failure - remember what was armed so we can put it back */
+      suspend_retry_saved_alarm = remaining_alarm;
+   }
+   suspend_retry_signal = sig;
+   suspend_retry_count++;
+   shepherd_trace("delivery of %s failed (job not fully started yet?) - "
+                  "retrying in %d s (attempt %d of %d)", sge_sys_sig2str(sig),
+                  SUSPEND_RETRY_DELAY, suspend_retry_count, SUSPEND_RETRY_MAX);
+   alarm(SUSPEND_RETRY_DELAY);
+
+   return false;
 }
 
 /*--------------------------------------------------------------------
@@ -2194,12 +2320,29 @@ static void handle_signals_and_methods(
    if (npid == -1) {
       /* got SIGALRM */
       if (received_signal == SIGALRM) {
-         /* notify: postponed signals SIGSTOP, SIGKILL */
-         if (*postponed_signal) {
+         /* a previous suspend/resume delivery lost the race against job
+          * startup - try again (see deliver_signal_or_method_with_retry) */
+         if (suspend_retry_signal != 0) {
+            int retry_signal = suspend_retry_signal;
+
+            /* the retry alarm ate SUSPEND_RETRY_DELAY seconds of whatever
+             * alarm it preempted - account for that before it is restored */
+            if (suspend_retry_saved_alarm > SUSPEND_RETRY_DELAY) {
+               suspend_retry_saved_alarm -= SUSPEND_RETRY_DELAY;
+            } else {
+               suspend_retry_saved_alarm = 0;
+            }
+
+            shepherd_trace("retrying delivery of %s to the job",
+                           sge_sys_sig2str(retry_signal));
+            received_signal = 0;
+            deliver_signal_or_method_with_retry(retry_signal, pid, 0, ctrl_pid);
+         } else if (*postponed_signal) {
+            /* notify: postponed signals SIGSTOP, SIGKILL */
             shepherd_trace("kill(%d, %s) -> delivering postponed signal", -pid,
                            sge_sys_sig2str(*postponed_signal));
 
-            shepconf_deliver_signal_or_method(*postponed_signal, pid, ctrl_pid);
+            deliver_signal_or_method_with_retry(*postponed_signal, pid, remaining_alarm, ctrl_pid);
             /*shepherd_signal_job(-pid, postponed_signal);*/
             *postponed_signal = 0;
          } else {
@@ -2324,6 +2467,15 @@ static void handle_signals_and_methods(
       shepherd_trace("%s exited with exit status %d", childname, WEXITSTATUS(status));
       *job_status = status;
       *job_pid = -999;
+
+      /* nothing left to suspend/resume - drop a pending delivery retry */
+      if (suspend_retry_signal != 0) {
+         shepherd_trace("job exited - dropping pending %s delivery retry",
+                        sge_sys_sig2str(suspend_retry_signal));
+         suspend_retry_signal = 0;
+         suspend_retry_count = 0;
+         suspend_retry_saved_alarm = 0;
+      }
    }
 
    if ((npid == coshepherd_pid) && ((WIFSIGNALED(status) || WIFEXITED(status)))) {
@@ -2340,10 +2492,16 @@ static void handle_signals_and_methods(
     * period - would be lost, leaving the job never suspended. Whenever a
     * postponed signal is still scheduled and the block did not run (npid != -1),
     * restore the timer. (npid==-1 paths never set a new alarm here, so this
-    * cannot clobber a freshly-armed one.) */
-   if (npid != -1 && *postponed_signal != 0 && remaining_alarm > 0) {
-      shepherd_trace("re-arming paused notify alarm (%d s) for postponed signal %s",
-                     remaining_alarm, sge_sys_sig2str(*postponed_signal));
+    * cannot clobber a freshly-armed one.)
+    * The same applies to the retry timer of a suspend/resume whose delivery
+    * lost the race against job startup - without the re-arm the retry would
+    * never fire and the job would stay unsuspended. */
+   if (npid != -1 && (*postponed_signal != 0 || suspend_retry_signal != 0) &&
+       remaining_alarm > 0) {
+      shepherd_trace("re-arming paused alarm (%d s) for pending signal %s",
+                     remaining_alarm,
+                     sge_sys_sig2str(*postponed_signal != 0 ? *postponed_signal
+                                                            : suspend_retry_signal));
       alarm(remaining_alarm);
    }
 }
@@ -3072,8 +3230,12 @@ static void start_clean_command(char *cmd)
  grouping mechanism like sgi or cray. This version reads the osjobid
  and uses it instead of the pid. If reading or killing fails, the normal
  mechanism is used.
+
+ Returns true if the signal reached the job, false if delivery failed - which
+ for SIGSTOP/SIGCONT usually means the job child has not created its process
+ group / systemd scope yet, see deliver_signal_or_method_with_retry().
  ****************************************************************/
-void
+bool
 shepherd_signal_job(pid_t pid, int sig) {
    /*
     * Normal signaling for OSes without reliable grouping mechanisms and if
@@ -3090,6 +3252,7 @@ shepherd_signal_job(pid_t pid, int sig) {
    static int first_kill = 1;       // first time we signal with SIGKILL
    static time_t first_kill_ts = 0;
    static bool is_qrsh = false;
+   bool delivered = true;           // did the signal reach the job?
 
    if (first_kill == 1 || sig != SIGKILL) {
       if (search_conf_val("qrsh_pid_file") != nullptr) {
@@ -3122,8 +3285,19 @@ shepherd_signal_job(pid_t pid, int sig) {
       // In addition, we might signal with systemd or via additional group id.
      shepherd_trace("now sending signal %s to pid " pid_t_fmt, sge_sys_sig2str(sig), pid);
      sge_switch2start_user();
-     kill(pid, sig);
+     int kill_ret = kill(pid, sig);
+     int kill_errno = errno;
      sge_switch2admin_user();
+
+     /* ESRCH here means the target process group does not exist (yet) - the
+      * job child creates it itself right after the fork. Report it so the
+      * caller can retry instead of silently dropping the signal. */
+     delivered = (kill_ret == 0);
+     if (!delivered) {
+        DSTRING_STATIC(dstr, MAX_STRING_SIZE);
+        shepherd_trace("kill(" pid_t_fmt ", %s) failed: %s", pid,
+                       sge_sys_sig2str(sig), sge_strerror(kill_errno, &dstr));
+     }
 
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
      if (first_kill == 0 || sig != SIGKILL || !is_qrsh) {
@@ -3134,7 +3308,13 @@ shepherd_signal_job(pid_t pid, int sig) {
            if (sig != SIGKILL && sig != SIGSTOP && sig != SIGCONT) {
               systemd_pid = abs(systemd_pid);
            }
-            ocs::shepherd_systemd_signal_job(sig, systemd_pid > 0);
+            /* On systemd hosts freeze/thaw of the job scope is the primary
+             * suspend mechanism - but the plain kill(-pgid) above stops the
+             * job just as well. The signal counts as delivered if either of
+             * the two worked. */
+            if (ocs::shepherd_systemd_signal_job(sig, systemd_pid > 0)) {
+               delivered = true;
+            }
         } else {
 #  ifdef COMPILE_DC
            if (atoi(get_conf_val("enable_addgrp_kill")) == 1) {
@@ -3159,6 +3339,7 @@ shepherd_signal_job(pid_t pid, int sig) {
      }
 # endif
    } else {
+     /* deliberately suppressed duplicate kill - not a delivery failure */
      shepherd_trace("ignored signal %s to pid " pid_t_fmt, sge_sys_sig2str(sig), pid);
    }
 
@@ -3166,6 +3347,8 @@ shepherd_signal_job(pid_t pid, int sig) {
      first_kill = 0;
      first_kill_ts = time(nullptr);
    }
+
+   return delivered;
 }
 
 static int notify_tasker(uint32_t exit_status)

@@ -242,8 +242,12 @@ namespace ocs {
     *
     * @param signal - The signal to send to the job.
     * @param only_main - If true, only the main process of the job is signaled.
+    * @return true if systemd accepted the request, false otherwise. A freeze
+    *         of a scope which does not exist yet (the job child moves itself
+    *         into it right after the fork) fails here - the caller retries,
+    *         see deliver_signal_or_method_with_retry() in shepherd.cc.
     */
-   void shepherd_systemd_signal_job(int signal, bool only_main) {
+   bool shepherd_systemd_signal_job(int signal, bool only_main) {
 #if defined(OCS_WITH_SYSTEMD)
       // Signaling via systemd
       //   - Need the scope name
@@ -295,10 +299,14 @@ namespace ocs {
          } else {
             shepherd_trace("signalled job in systemd scope '%s' with signal %s", scope,  sge_sys_sig2str(signal));
          }
+         return success;
       } else {
          // error, but do not exit shepherd - signals are repeated, next time might work
          shepherd_error(0, "connecting to systemd failed: %s", sge_dstring_get_string(&error_dstr));
+         return false;
       }
+#else
+      return false;
 #endif
    }
 } // namespace ocs
