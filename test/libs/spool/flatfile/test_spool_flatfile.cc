@@ -39,6 +39,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
+#include "uti/ocs_Bootstrap.h"
 #include "uti/sge_component.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
@@ -118,6 +119,15 @@ int main(int argc, char** argv)
       }
       DRETURN(0);
    }
+
+   // Resolve the bootstrap configuration while log output still reaches stderr.
+   // Several of the checks below build CULL objects with hashed host fields, and
+   // hashing a host key goes through sge_hostcpy(), which needs the ignore_fqdn
+   // bootstrap setting. That lookup aborts the process when SGE_ROOT is unset,
+   // and once we are daemonized sge_log() no longer writes to stderr - the test
+   // would then die without any indication why. Touching it here keeps the
+   // critical error visible while the checks themselves stay free of log noise.
+   ocs::Bootstrap::get_ignore_fqdn();
 
    component_set_daemonized(true);
    lInit(nmv);

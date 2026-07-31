@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2024,2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -38,6 +38,7 @@
 
 #include <sys/wait.h>
 
+#include "uti/ocs_Bootstrap.h"
 #include "uti/sge_component.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
@@ -96,6 +97,16 @@ static int diff(const char *file1, const char *file2)
 
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_spool_flatfile2");
+
+   // Resolve the bootstrap configuration while log output still reaches stderr.
+   // The CQ fixture below sets a host field, and hashing a host key goes through
+   // sge_hostcpy(), which needs the ignore_fqdn bootstrap setting. That lookup
+   // aborts the process when SGE_ROOT is unset, and once we are daemonized
+   // sge_log() no longer writes to stderr - the test would then die without any
+   // indication why. Touching it here keeps the critical error visible while the
+   // checks themselves stay free of log noise.
+   ocs::Bootstrap::get_ignore_fqdn();
+
    component_set_daemonized(true);
    lInit(nmv);
 
