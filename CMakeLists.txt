@@ -101,6 +101,13 @@ option(WITH_CURL "Enable code depending on libcurl" OFF)
 set(PROJECT_EXTENSIONS "None" CACHE STRING "directory of private extensions")
 set(PROJECT_FEATURES "clusterscheduler" CACHE STRING "clusterscheduler or gcs-extensions")
 
+# testsuite. Pointing this at a testsuite checkout registers its tests as CTest
+# tests, so an IDE that builds its test tree from the CMake model shows them
+# next to the unit tests. Off by default and it adds no build targets -- see
+# <testsuite>/tools/CMakeLists.txt for what it does and TESTSUITE_LINE for
+# which release line to register.
+set(PROJECT_TESTSUITE "None" CACHE STRING "directory of the testsuite")
+
 # INSTALL OPTIONS
 option(INSTALL_SGE_BIN "Install binaries" ON)
    option(INSTALL_SGE_BIN_CLIENT "Install client binaries" OFF)
@@ -378,6 +385,10 @@ endif ()
 
 if (NOT PROJECT_EXTENSIONS STREQUAL "None")
    add_subdirectory(${PROJECT_EXTENSIONS} "gcs-extensions")
+endif ()
+
+if (NOT PROJECT_TESTSUITE STREQUAL "None")
+   add_subdirectory(${PROJECT_TESTSUITE}/tools "testsuite")
 endif ()
 
 # @todo: instead of library "dl" use ${CMAKE_DL_LIBS}? @todo: add virtual

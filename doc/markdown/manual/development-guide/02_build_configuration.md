@@ -57,6 +57,14 @@ If you want to install to a different location than the default */opt/ge* specif
 cmake ... -DCMAKE_INSTALL_PREFIX=$SGE_ROOT
 ```
 
+With *PROJECT_TESTSUITE* you can additionally point the build at a testsuite repository. The tests of that
+testsuite are then registered as `ctest` tests, which makes them available in an IDE next to the C++ module
+tests. This is optional and off by default. See *Register the Testsuite as CTest Tests* below.
+
+```
+cmake ... -DPROJECT_TESTSUITE=$OCS_BASE/testsuite -DTESTSUITE_LINE=92x
+```
+
 ## Select Build Options
 
 Some 3rd party dependencies may not be buildable on certain platforms, so they can be disabled with specific
@@ -151,6 +159,53 @@ definitions. Some dependencies may be optional for a platform that can be enable
    
       Test binaries required by the automated test environment
    
+
+## Register the Testsuite as CTest Tests
+
+The TCL/Expect based test environment can be made part of the CMake model. The tests of a release line are then
+registered as `ctest` tests, so an IDE shows them in the same test tree as the C++ module tests and can run a
+single test, a whole directory or a category from there. Nothing is added to the build itself: the branch
+generates `add_test()` calls only, and it is completely inactive unless *PROJECT_TESTSUITE* is set.
+
+* *PROJECT_TESTSUITE*
+
+  Path to the testsuite repository (see above). Setting it includes *`<testsuite>/tools/CMakeLists.txt`*.
+  Unset by default.
+
+* *TESTSUITE_LINE*
+
+  Release line whose testsuite is to be registered, e.g. *92x*. As long as it is empty nothing is registered
+  even if *PROJECT_TESTSUITE* is set. The line also decides which test clusters the tests are run on.
+
+* *TESTSUITE_RUNNERS*
+
+  Number of parallel test clusters the tests are distributed over. Default is *8*. The clusters themselves are
+  set up with `gcs-runners`; this value only has to match their number.
+
+* *TESTSUITE_FILTER*
+
+  Regular expression on the test name. Only matching tests are registered. Empty by default, which registers
+  all of them.
+
+  Restrict here rather than with `ctest -R` or `-L`: those filter at invocation time and `ctest` renumbers
+  whatever survives, while an IDE re-running a single test from its results tree passes the index of the full
+  list. Both together find nothing, or silently the wrong test. Switching test sets is therefore a CMake
+  profile, not a run configuration.
+
+```
+cmake ... -DPROJECT_TESTSUITE=$OCS_BASE/testsuite \
+          -DTESTSUITE_LINE=92x \
+          -DTESTSUITE_RUNNERS=8
+```
+
+The test list is generated at configure time instead of being checked in, because a checkout adds and removes
+tests; a stale list would not merely mislead but fail with *path not found in checktree*. The scan costs about
+0.15 s and rides along with a CMake reload. If it fails (typically because the test clusters of the line are
+not set up) this is only a *WARNING* and no tests are registered; a missing test setup never stops a product
+build.
+
+Setting up the test clusters, running the tests and the tools around it are described in
+*`<testsuite>/tools/doc/`*.
 
 ## Trigger the Buildsystem Generator Via Command Line
 
