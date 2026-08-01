@@ -75,13 +75,16 @@ constexpr std::array<std::string_view, PROGNAME_COUNT> prognames = {
 #undef X
 };
 
-constexpr const char *to_cstr(const ProgName p) {
-   return prognames[static_cast<std::size_t>(p)].data();
-}
-
 constexpr std::string_view to_string_view(const ProgName p) {
    const auto idx = static_cast<std::size_t>(p);
    return idx < prognames.size() ? prognames[idx] : std::string_view{};
+}
+
+// Out of range gives nullptr, mirroring to_string_view() above and to_cstr() in
+// ocs_ThreadName.h. Indexing the array directly aborted on PROGNAME_COUNT in a
+// build with _GLIBCXX_ASSERTIONS and read past the array without it.
+constexpr const char *to_cstr(const ProgName p) {
+   return to_string_view(p).data();
 }
 
 constexpr std::string to_string(const ProgName p) {
