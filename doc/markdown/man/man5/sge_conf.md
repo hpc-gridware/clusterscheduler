@@ -482,6 +482,658 @@ Changing *max_advance_reservations* will take immediate effect.
 
 This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
 
+## finished_jobs_keep_time
+
+A *time* value (`HH:MM:SS`, or `0` to disable) controlling how long xxqs_name_sxx_qmaster(8) keeps a finished
+job / array task in the job list before pruning it. Together with *finished_jobs_max* this defines the retention
+window that replaces the pre-9.2 zombie-job mechanism: for as long as a finished job / array task is retained it
+remains visible to qstat(1) `-s f`, addressable by qstat(1) `-j`, and resubmittable via qresub(1).
+
+Pruning is age-based: a retained job / array task is dropped when the age of its `end_time` (as reported by execd)
+exceeds this value. The check runs on the retention sweep schedule (see *FINISHED_JOBS_SWEEP_INTERVAL* under
+*qmaster_params*).
+
+The default is `0`, which disables age-based retention. When both *finished_jobs_keep_time* and *finished_jobs_max*
+are `0` the retention feature is off and finished jobs / array tasks are removed from the job list immediately
+(pre-9.2 behaviour). When either is non-zero the sweep runs on schedule; the pruning rule is "whichever bites
+first" — a job / array task is dropped as soon as it exceeds *finished_jobs_keep_time* OR the total count of
+retained finished jobs / array tasks exceeds *finished_jobs_max*.
+
+Changing *finished_jobs_keep_time* takes immediate effect via `qconf -mconf` without restarting any daemon; the
+next sweep observes the new value.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local
+configuration.
+
+## finished_jobs_max
+
+An unsigned integer (`0` to disable) capping the total number of retained finished jobs / array tasks that
+xxqs_name_sxx_qmaster(8) keeps in the job list. When the count exceeds the cap, the oldest retained entries (by
+`end_time`) are pruned first until the count returns to the cap.
+
+The default is `0` (no count cap). See *finished_jobs_keep_time* above for the combined semantics of the two
+retention tunables.
+
+Changing *finished_jobs_max* takes immediate effect via `qconf -mconf`. Lowering the value below the current
+retained count triggers the difference on the next sweep tick; the sweep can be bounded per tick via
+*FINISHED_JOBS_SWEEP_BATCH* under *qmaster_params* so that large drains do not hold the qmaster global lock for an
+unbounded time.
+
+**Sizing notes.** Retention keeps finished jobs / array tasks in three places that grow linearly with the count:
+
+- **Memory.** Each retained finished job / array task carries its full internal representation (usage,
+  environment, granted resources, message list). A rough working estimate is 5–20 KB per retained entry depending
+  on job shape; a retention window that holds a few tens of thousands of finished entries adds low hundreds of MB
+  to the qmaster resident set.
+- **Spool I/O.** Each retained finished job / array task still occupies its spool slot (classic file layout,
+  BerkeleyDB entry, or Postgres row) until it is pruned. Set *finished_jobs_max* conservatively when spooling to
+  a shared filesystem; the sweep's per-tick prune batches (see *FINISHED_JOBS_SWEEP_BATCH*) also cap the write
+  burst rate on backend storage during drain.
+- **Startup.** All retained finished jobs / array tasks are reloaded from the spool at qmaster startup. Startup
+  time scales with the size of the retained set on top of the running/pending set. On very large windows and
+  shared-filesystem spooling this can add measurable startup latency; the BerkeleyDB and Postgres backends are
+  noticeably faster than classic.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local
+configuration.
+
+## enforce_project
+
+If set to *true*, users are required to request a project whenever submitting a job. See the `-P` option to 
+qsub(1) for details.
+
+Changing *enforce_project* will take immediate effect. The default for *enforce_project* is *false*.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local 
+configuration.
+
+## enforce_user
+
+If set to *true*, a xxqs_name_sxx_user(5) must exist to allow for job submission. Jobs are rejected if no corresponding user exists.
+
+If set to *auto*, a xxqs_name_sxx_user(5) object for the submitting user will automatically be created during job submission, if 
+one does not already exist. The *auto_user_oticket*, *auto_user_fshare*, *auto_user_default_project*, and 
+*auto_user_delete_time* configuration parameters will be used as default attributes of the new xxqs_name_sxx_user(5)
+object.
+
+Changing *enforce_user* will take immediate effect. The default for *enforce_user* is *auto*.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## auto_user_oticket
+
+The number of override tickets to assign to automatically created xxqs_name_sxx_user(5) objects. User objects are 
+created automatically if the *enforce_user* attribute is set to *auto*.
+
+Changing *auto_user_oticket* will affect any newly created user objects, but will not change user objects created 
+in the past.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local 
+configuration.
+
+## auto_user_fshare
+
+The number of functional shares to assign to automatically created xxqs_name_sxx_user(5) objects. User objects are 
+created automatically if the *enforce_user* attribute is set to *auto*.
+
+Changing *auto_user_fshare* will affect any newly created user objects, but will not change user objects created in 
+the past.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## auto_user_default_project
+
+The default project to assign to automatically created xxqs_name_sxx_user(5) objects. User objects are created 
+automatically if the *enforce_user* attribute is set to *auto*.
+
+Changing *auto_user_default_project* will affect any newly created user objects, but will not change user objects 
+created in the past.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## auto_user_delete_time
+
+The number of seconds of inactivity after which automatically created xxqs_name_sxx_user(5) objects will be deleted. 
+User objects are created automatically if the *enforce_user* attribute is set to *auto*. If the user has no active 
+or pending** jobs for the specified amount of time, the object will automatically be deleted. A value of 0 can be used
+to indicate that the automatically created user object is permanent and should not be automatically deleted.
+
+Changing *auto_user_delete_time* will affect the deletion time for all users with active jobs.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## set_token_cmd
+
+Note: Deprecated, may be removed in future release. This parameter is only present if your xxQS_NAMExx system is 
+licensed to support AFS.
+
+*set_token_cmd* points to a command which sets and extends AFS tokens for xxQS_NAMExx jobs. In the standard 
+xxQS_NAMExx AFS distribution, it is supplied as a script which expects two command line parameters. It
+reads the token from STDIN, extends the token's expiration time and sets the token:
+
+    <set_token_cmd> <user> <token_extend_after_seconds>
+
+As a shell script this command will call the programs:
+
+* SetToken
+* forge
+
+which are provided by your distributor as source code. The script looks as follows:
+
+    --------------------------------
+    #!/bin/sh
+    # set_token_cmd
+    forge -u $1 -t $2 | SetToken
+    --------------------------------
+
+Since it is necessary for *forge* to read the secret AFS server key, a site might wish to replace the *set_token_cmd* 
+script by a command, which connects to a custom daemon at the AFS server. The token must be forged at the AFS server 
+and returned to the local machine, where *SetToken* is executed.
+
+Changing *set_token_cmd* will take immediate effect. The default for *set_token_cmd* is NONE. 
+
+The global configuration entry for this value may be overwritten by the execution host local configuration.
+
+## pag_cmd
+
+Note: Deprecated, may be removed in future release. This parameter is only present if your xxQS_NAMExx system 
+is licensed to support AFS.
+
+The path to your *pagsh* is specified via this parameter. The xxqs_name_sxx_shepherd(8) process and the job run 
+in a *pagsh*. Please ask your AFS administrator for details.
+
+Changing *pag_cmd* will take immediate effect. The default for *pag_cmd* is none.
+
+The global configuration entry for this value may be overwritten by the execution host local configuration.
+
+## token_extend_time
+
+Note: Deprecated, may be removed in future release. This parameter is only present if your xxQS_NAMExx system is 
+licensed to support AFS.
+
+The *token_extend_time* is the time period for which AFS tokens are periodically extended. xxQS_NAMExx will call 
+the token extension 30 minutes before the tokens expire until jobs have finished and the corresponding tokens are 
+no longer required.
+
+Changing *token_extend_time* will take immediate effect. The default for *token_extend_time* is 24:0:0, i.e. 24 hours.
+
+The global configuration entry for this value may be overwritten by the execution host local configuration.
+
+## shepherd_cmd
+  
+Alternative path to the *shepherd_cmd* binary. Typically used to call the shepherd binary by a wrapper script 
+or command.
+
+Changing *shepherd_cmd* will take immediate effect. The default for *shepherd_cmd* is none.
+
+The global configuration entry for this value may be overwritten by the execution host local configuration.
+
+In a shepherd wrapper make sure to call the actual shepherd binary with the same arguments as the wrapper, e.g.,
+
+```bash
+#!/bin/sh
+
+ARCH=`$SGE_ROOT/util/arch`
+SHEPHERD="$SGE_ROOT/bin/$ARCH/sge_shepherd"
+
+# Do the shepherd wrapper specific actions here.
+
+exec "$SHEPHERD" "$@"
+```
+
+## gid_range
+
+The *gid_range* is a comma separated list of range expressions of the form n-m (n as well as m are integer numbers 
+greater than 99), where m is an abbreviation for m-m. These numbers are used in xxqs_name_sxx_execd(8) to identify 
+processes belonging to the same job.
+
+Each xxqs_name_sxx_execd(8) may use a separate set up group ids for this purpose. All number in the group id range 
+have to be unused supplementary group ids on the system, where the xxqs_name_sxx_execd(8) is started.
+
+Changing *gid_range* will take immediate effect. There is no default for *gid_range*. The administrator will have to
+assign a value for *gid_range* during installation of xxQS_NAMExx.
+
+The global configuration entry for this value may be overwritten by the execution host local configuration.
+
+Because these group ids are unused, they have no name. Commands that resolve group ids to names see that
+and report it: `groups` exits with an error and the message *cannot find name for group ID*, and `id`
+does the same on distributions that ship the Rust rewrite of the coreutils (uutils) instead of GNU
+coreutils - GNU `id` prints the id numerically and succeeds. Commands that stay with numeric ids, such as
+`id -u`, `id -G` or `ls -l`, are not affected. In job, prolog and epilog scripts that evaluate an exit
+status, prefer `id -un` over `id` and `id -G` over `groups`.
+
+The ids can be given names, by creating a group for each of them on every execution host, but note that
+the range has to hold one id per job running on a host at the same time, that the names must be identical
+on all hosts, and that the ids are then no longer unused in the sense described above.
+
+
+## mailer
+
+*mailer* is the absolute pathname to the electronic mail delivery agent on your system. It must accept the 
+following syntax:
+
+    mailer -s <subject-of-mail-message> <recipient>
+
+Each xxqs_name_sxx_execd(8) may use a private mail agent. Changing *mailer* will take immediate effect.
+
+The default for *mailer* depends on the operating system of the host on which the xxQS_NAMExx master installation 
+was run. Common values are /bin/mail or /usr/bin/Mail.
+
+The global configuration entry for this value may be overwritten by the execution host local configuration.
+
+## xterm
+
+*xterm* is the absolute pathname to the X Window System terminal emulator, xterm(1).
+
+Changing *xterm* will take immediate effect.
+
+The default for *xterm* is /usr/bin/X11/xterm.
+
+The global configuration entry for this value may be overwritten by the execution host local configuration.
+
+## load_sensor
+
+A comma separated list of executable shell script paths or programs to be started by xxqs_name_sxx_execd(8) and to 
+be used in order to retrieve site configurable load information (e.g. free space on a certain disk partition).
+
+Each xxqs_name_sxx_execd(8) may use a set of private *load_sensor* programs or scripts. Changing *load_sensor* will 
+take effect after two load report intervals (see *load_report_time*). A load sensor will be restarted automatically 
+if the file modification time of the load sensor executable changes.
+
+The global configuration entry for this value may be overwritten by the execution host local configuration.
+
+In addition to the load sensors configured via *load_sensor*, xxqs_name_sxx_exec(8) searches for an executable file 
+named *qloadsensor* in the execution host's xxQS_NAMExx binary directory path. If such a file is found, it is treated 
+like the configurable load sensors defined in *load_sensor*. This facility is intended for pre-installing a default 
+load sensor.
+
+## prolog
+
+The executable path of a shell script that is started before execution of xxQS_NAMExx jobs with the same environment 
+setting as that for the xxQS_NAMExx jobs to be started afterwards. An optional prefix "user@" specifies the user 
+under which this procedure is to be started. The procedures standard output and the error output stream are written to
+the same file used also for the standard output and error output of each job. This procedure is intended as a means 
+for the xxQS_NAMExx administrator to automate the execution of general site specific tasks like the preparation of 
+temporary file systems with the need for the same context information as the job. Each xxqs_name_sxx_execd(8) may
+use a private prolog script. Correspondingly, the execution host local configurations is can be overwritten by the 
+queue configuration (see xxqs_name_sxx_queue_conf(5) ). Changing *prolog* will take immediate effect.
+
+The default for *prolog* is the special value NONE, which prevents from execution of a prolog script.
+
+The following special variables expanded at runtime can be used (besides any other strings which have to be 
+interpreted by the procedure) to constitute a command line:
+
+* \$sge_root
+  The product root directory.
+
+* \$sge_cell
+  The name of the cell directory.
+
+* \$host  
+  The name of the host on which the prolog or epilog procedures are started.
+
+* \$job_owner  
+  The username of the job owner.
+  
+* \$job_id  
+  xxQS_NAMExx's unique job identification number.
+
+* \$ja_task_id  
+  The task id of the job array task. 0 for non-array jobs.
+
+* \$job_name  
+  The name of the job.
+
+* \$processors  
+  The *processors* string as contained in the queue configuration (see xxqs_name_sxx_queue_conf(5)) of the master 
+  queue (the queue in which the prolog and epilog procedures are started).
+
+* \$queue  
+  The cluster queue name of the master queue instance, i.e. the cluster queue in which the prolog and epilog 
+  procedures are started.
+
+* \$stdin_path \$stdout_path \$stderr_path
+  The pathname of the stdin file. This is always /dev/null for prolog, pe_start, pe_stop and epilog. It is the 
+  pathname of the stdin file for the job in the job script. When delegated file staging is enabled, this
+  path is set to \$fs_stdin_tmp_path. When delegated file staging is not enabled, it is the stdin pathname given 
+  via DRMAA or qsub.
+
+  The pathname of the stdout/stderr file. This always points to the output/error file. When delegated file staging 
+  is enabled, this path is set to \$fs_stdout_tmp_path/\$fs_stderr_tmp_path. When delegated file staging is not 
+  enabled, it is the stdout/stderr pathname given via DRMAA or qsub.
+
+* $merge_stderr  
+  If merging of stderr and stdout is requested, this flag is "1", otherwise it is "0". If this flag is 1, stdout 
+  and stderr are merged in one file, the stdout file. Merging of stderr and stdout can be requested via the DRMAA 
+  job template attribute *drmaa_join_files* (see drmaa_attributes(3) ) or the qsub parameter `-j y` (see qsub(1) ).
+
+* \$fs_stdin_host, \$fs_stdout_host, \$fs_stderr_host
+  When delegated file staging is requested for the stdin file, this is the name of the host where the stdin file 
+  has to be copied from before the job is started.
+
+  When delegated file staging is requested for the stdout/stderr file, this is the name of the host where the 
+  stdout/stderr file has to be copied to after the job has run.
+
+* \$fs_stdin_path, \$fs_stdout_path, \$fs_stderr_path
+  When delegated file staging is requested for the stdin file, this is the pathname of the stdin file on the host 
+  \$fs_stdin_host.
+
+  When delegated file staging is requested for the stdout/stderr file, this is the pathname of the stdout/stderr 
+  file on the host \$fs_stdout_host/\$fs_stderr_host.
+
+* \$fs_stdin_tmp_path, \$fs_stdout_tmp_path, \$fs_stderr_tmp_path
+  When delegated file staging is requested for the stdin file, this is the destination pathname of the stdin file 
+  on the execution host. The prolog script must copy the stdin file from \$fs_stdin_host:\$fs_stdin_path to
+  localhost:\$fs_stdin_tmp_path to establish delegated file staging of the stdin file.
+
+  When delegated file staging is requested for the stdout/stderr file, this is the source pathname of the 
+  stdout/stderr file on the execution host. The epilog script must copy the stdout file from
+  localhost:\$fs_stdout_tmp_path to \$fs_stdout_host:\$fs_stdout_path (the stderr file from 
+  localhost:\$fs_stderr_tmp_path to \$fs_stderr_host:\$fs_stderr_path) to establish delegated file staging of
+  the stdout/stderr file.
+
+* \$fs_stdin_file_staging, \$fs_stdout_file_staging, \$fs_stderr_file_staging  
+  When delegated file staging is requested for the stdin/stdout/stderr file, the flag is set to "1", otherwise it 
+  is set to "0" (see in *delegated_file_staging* how to enable delegated file staging). These three flags correspond 
+  to the DRMAA job template attribute *drmaa_transfer_files* (see drmaa_attributes(3) ).
+
+The global configuration entry for this value may be overwritten by the execution host local configuration.
+
+Exit codes for the prolog attribute can be interpreted based on the following exit values:
+
+* 0: Success  
+* 99: Reschedule job  
+* 100: Put job in error state  
+* Anything else: Put queue in error state
+
+## epilog
+
+The executable path of a shell script that is started after execution of xxQS_NAMExx jobs with the same environment 
+setting as that for the xxQS_NAMExx jobs that has just completed. An optional prefix "user@" specifies the user under 
+which this procedure is to be started. The procedures standard output and the error output stream are written to
+the same file used also for the standard output and error output of each job. This procedure is intended as a means 
+for the xxQS_NAMExx administrator to automate the execution of general site specific tasks like the cleaning up of 
+temporary file systems with the need for the same context information as the job. Each xxqs_name_sxx_execd(8) may
+use a private epilog script. Correspondingly, the execution host local configurations is can be overwritten by the 
+queue configuration (see xxqs_name_sxx_queue_conf(5) ). Changing *epilog* will take immediate effect.
+
+The default for *epilog* is the special value NONE, which prevents from execution of an epilog script. The same 
+special variables as for *prolog* can be used to constitute a command line.
+
+The global configuration entry for this value may be overwritten by the execution host local configuration.
+
+Exit codes for the epilog attribute can be interpreted based on the following exit values:
+
+* 0: Success  
+* 99: Reschedule job  
+* 100: Put job in error state  
+* Anything else: Put queue in error state
+
+## shell_start_mode
+
+Note: Deprecated, may be removed in future release. This parameter defines the mechanisms which are used to 
+actually invoke the job scripts on the execution hosts. The following values are recognized:
+
+* *unix_behavior*  
+  If a user starts a job shell script under UNIX interactively by invoking it just with the script name the 
+  operating system's executable loader uses the information provided in a comment such as `#!/bin/csh` in the
+  first line of the script to detect which command interpreter to start to interpret the script. This mechanism 
+  is used by xxQS_NAMExx when starting jobs if *unix_behavior* is defined as *shell_start_mode.*
+
+* *posix_compliant*  
+  POSIX does not consider first script line comments such a `#!/bin/csh` as significant. The POSIX standard for 
+  batch queuing systems (P1003.2d) therefore requires a compliant queuing system to ignore such lines but
+  to use user specified or configured default command interpreters instead. Thus, if *shell_start_mode* is set to 
+  *posix_compliant* xxQS_NAMExx will either use the command interpreter indicated by the `-S` option of the qsub(1) 
+  command or the shell parameter of the queue to be used (see xxqs_name_sxx_queue_conf(5) for details).
+
+* *script_from_stdin*  
+  Setting the *shell_start_mode* parameter either to *posix_compliant* or *unix_behavior* requires you to set the 
+  umask in use for xxqs_name_sxx_execd(8) such that every user has read access to the active_jobs directory in the 
+  spool directory of the corresponding execution daemon. In case you have prolog and epilog scripts
+  configured, they also need to be readable by any user who may execute jobs. If this violates your site's security 
+  policies you may want to set *shell_start_mode* to *script_from_stdin*. This will force
+  xxQS_NAMExx to open the job script as well as the epilog and prolog scripts for reading into STDIN as root (if 
+  xxqs_name_sxx_execd(8) was started as root) before changing to the job owner's user account. The
+  script is then fed into the STDIN stream of the command interpreter indicated by the `-S` option of the qsub(1) 
+  command or the shell parameter of the queue to be used (see xxqs_name_sxx_queue_conf(5) for details).  
+  Thus setting *shell_start_mode* to *script_from_stdin* also implies *posix_compliant* behavior. Note, however, 
+  that feeding scripts into the STDIN stream of a command interpreter may cause trouble if commands like rsh(1) 
+  are invoked inside a job script as they also process the STDIN stream of the command interpreter. These 
+  problems can usually be resolved by redirecting the STDIN channel of those commands to come from /dev/null 
+  (e.g. rsh host date \< /dev/null). Note also, that any command-line options associated with the job are passed to
+  the executing shell. The shell will only forward them to the job if they are not recognized as valid shell options.
+
+Changes to *shell_start_mode* will take immediate effect. The default for *shell_start_mode* is *posix_compliant*.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## login_shells
+
+UNIX command interpreters like the Bourne-Shell (see sh(1)) or the C-Shell (see csh(1)) can be used by xxQS_NAMExx 
+to start job scripts. The command interpreters can either be started as login-shells (i.e. all system and user default 
+resource files like .login or .profile will be executed when the command interpreter is started and the environment for
+the job will be set up as if the user has just logged in) or just for command execution (i.e. only shell specific 
+resource files like .cshrc will be executed and a minimal default environment is set up by xxQS_NAMExx - see qsub(1)). 
+The parameter login_shells contains a comma separated list of the executable names of the command interpreters to be 
+started as login-shells. Shells in this list are only started as login shells if the parameter *shell_start_mode* 
+(see above) is set to *posix_compliant*.
+
+Changes to *login_shells* will take immediate effect. The default for *login_shells* is sh,bash,csh,tcsh,ksh.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## min_uid
+
+*min_uid* places a lower bound on user IDs that may use the cluster. Users whose user ID (as returned by getpwnam(3)) 
+is less than min_uid will not be allowed to run jobs on the cluster.
+
+Changes to *min_uid* will take immediate effect. The default for *min_uid* is 0.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## min_gid
+
+This parameter sets the lower bound on group IDs that may use the cluster. Users whose default group ID (as returned 
+by getpwnam(3)) is less than *min_gid* will not be allowed to run jobs on the cluster.
+
+Changes to *min_gid* will take immediate effect. The default for *min_gid* is 0.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## user_lists
+
+The *user_lists* parameter contains a comma separated list of user access lists as described in 
+xxqs_name_sxx_access_list(5). Each user contained in at least one of the enlisted access lists has access to the 
+cluster. If the *user_lists* parameter is set to NONE (the default) any user has access not explicitly excluded via 
+the *xuser_lists* parameter described below. If a user is contained both in an access list enlisted in *xuser_lists* 
+and *user_lists* the user is denied access to the cluster.
+
+Changes to *user_lists* will take immediate effect.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## xuser_lists 
+
+The *xuser_lists* parameter contains a comma separated list of user access lists as described in 
+xxqs_name_sxx_access_list(5). Each user contained in at least one of the enlisted access lists is denied access 
+to the cluster. If the *xuser_lists* parameter is set to NONE (the default) any user has access. If a user is 
+contained both in an access list enlisted in *xuser_lists* and *user_lists* (see above) the user is denied access 
+to the cluster.
+
+Changes to *xuser_lists* will take immediate effect.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## administrator_mail
+
+*administrator_mail* specifies a comma separated list of the electronic mail address(es) of the cluster 
+administrator(s) to whom internally-generated problem reports are sent. The mail address format
+depends on your electronic mail system and how it is configured; consult your system's configuration guide for 
+more information.
+
+Changing *administrator_mail* takes immediate effect. The default for *administrator_mail* is an empty mail list.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## mail_tag
+
+*mail_tag* is a string that will be prepended to the subject line of all electronic
+mail messages generated by xxQS_NAMExx. The tag is useful for distinguishing messages from different clusters or for
+filtering messages. The tag is also used in the subject line of mail messages sent to the cluster administrator(s)
+(see *administrator_mail*).
+
+Changing *mail_tag* takes immediate effect. The default for *mail_tag* is *none* which means an empty tag will be used.
+
+## projects
+
+The *projects* list contains all projects which are granted access to xxQS_NAMExx. User belonging to none of these 
+projects cannot use xxQS_NAMExx. If users belong to projects in the projects list and
+the *xprojects* list (see below), they also cannot use the system.
+
+Changing *projects* takes immediate effect. The default for *projects* is none.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## xprojects
+
+The *xprojects* list contains all projects that are denied access to xxQS_NAMExx. User belonging to one of these 
+projects cannot use xxQS_NAMExx. If users belong to projects in the *projects* list (see above) and the *xprojects* 
+list, they also cannot use the system.
+
+Changing *xprojects* takes immediate effect. The default for *xprojects* is none.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## load_report_time
+
+System load is reported periodically by the execution daemons to xxqs_name_sxx_qmaster(8). The parameter 
+*load_report_time* defines the time interval between load reports.
+
+Each xxqs_name_sxx_execd(8) may use a different load report time. Changing *load_report_time* will take immediate effect.
+
+Note: Be careful when modifying *load_report_time*. Reporting load too frequently might block 
+xxqs_name_sxx_qmaster(8) especially if the number of execution hosts is large. Moreover, since the system load
+typically increases and decreases smoothly, frequent load reports hardly offer any benefit.
+
+The default for *load_report_time* is 40 seconds.
+
+The global configuration entry for this value may be overwritten by the execution host local configuration.
+
+## reschedule_unknown
+
+Determines whether jobs on hosts in unknown state are rescheduled and thus sent to other hosts. Hosts are registered 
+as unknown if xxqs_name_sxx_master(8) cannot establish contact to the xxqs_name_sxx_execd(8) on those hosts (see 
+*max_unheard*). Likely reasons are a breakdown of the host or a breakdown of the network connection in between, 
+but also xxqs_name_sxx_execd(8) may not be executing on such hosts.
+
+In any case, xxQS_NAMExx can reschedule jobs running on such hosts to another system. *reschedule_unknown* controls 
+the time which xxQS_NAMExx will wait before jobs are rescheduled after a host became unknown. The time format 
+specification is hh:mm:ss. If the special value 00:00:00 is set, then jobs will not be rescheduled from this host.
+
+Rescheduling is only initiated for jobs which have activated the rerun flag (see the `-r y` option of qsub(1) and 
+the *rerun* option of xxqs_name_sxx_queue_conf(5)). Parallel jobs are only rescheduled if the host on which their 
+master task executes is in unknown state. The behavior of *reschedule_unknown* for parallel jobs and for jobs 
+without the rerun flag be set can be adjusted using the *qmaster_params* settings *ENABLE_RESCHEDULE_KILL* and 
+*ENABLE_RESCHEDULE_SLAVE*.
+
+Checkpointing jobs will only be rescheduled when the *when* option of the corresponding checkpointing environment 
+contains an appropriate flag. (see xxqs_name_sxx_checkpoint(5)). Interactive jobs (see qsh(1), qrsh(1), are not 
+rescheduled.
+
+The default for *reschedule_unknown* is 00:00:00
+
+The global configuration entry for this value may be overwritten by the execution host local configuration.
+
+## max_unheard
+
+If xxqs_name_sxx_qmaster(8) could not contact or was not contacted by the execution daemon of a host for 
+*max_unheard* seconds, all queues residing on that particular host are set to status unknown. xxqs_name_sxx_qmaster(8), 
+at least, should be contacted by the execution daemons in order to get the load reports. Thus, *max_unheard*
+should by greater than the *load_report_time* (see above).
+
+Changing *max_unheard* takes immediate effect. The default for *max_unheard* is 5 minutes.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## loglevel
+
+This parameter specifies the level of detail that xxQS_NAMExx components such as xxqs_name_sxx_qmaster(8) or 
+xxqs_name_sxx_execd(8) use to produce informative, warning or error messages which are logged to the
+*messages* files in the master and execution daemon spool directories (see the description of the *execd_spool_dir* 
+parameter above). The following message levels are available:
+
+* log_err  
+  All error events being recognized are logged.
+
+* log_warning  
+  All error events being recognized and all detected signs of potentially erroneous behavior are logged.
+
+* log_info  
+  All error events being recognized, all detected signs of potentially erroneous behavior and a variety of 
+  informative messages are logged.
+
+Changing *loglevel* will take immediate effect.
+
+The default for *loglevel* is *log_warning*.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## max_aj_instances
+
+This parameter defines the maximum amount of array task to be scheduled to run simultaneously per array job. An 
+instance of an array task will be created within the master daemon when it gets a start order from the scheduler. 
+The instance will be destroyed when the array task finishes. Thus the parameter provides control mainly over the 
+memory consumption of array jobs in the master and scheduler daemon. It is most useful for very large clusters and 
+very large array jobs. The default for this parameter is 2000. The value 0 will deactivate this limit and will allow
+the scheduler to start as many array job tasks as suitable resources are available in the cluster.
+
+Changing *max_aj_instances* will take immediate effect.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## max_aj_tasks
+
+This parameter defines the maximum number of array job tasks within an array job. xxqs_name_sxx_qmaster(8) will reject 
+all array job submissions which request more than *max_aj_tasks* array job tasks. The default for this parameter is 
+75000. The value 0 will deactivate this limit.
+
+Changing *max_aj_tasks* will take immediate effect.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## max_u_jobs
+
+The number of active (not finished) jobs which each xxQS_NAMExx user can have in the system simultaneously is 
+controlled by this parameter. A value greater than 0 defines the limit. The default value 0 means "unlimited". 
+If the *max_u_jobs* limit is exceeded by a job submission then the submission command exits with exit status 25 and an
+appropriate error message.
+
+Changing *max_u_jobs* will take immediate effect.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## max_jobs
+
+The number of active (not finished) jobs simultaneously allowed in xxQS_NAMExx is controlled by this parameter. 
+A value greater than 0 defines the limit. The default value 0 means "unlimited". If the *max_jobs* limit is exceeded 
+by a job submission then the submission command exits with exit status 25 and an appropriate error message.
+
+Changing *max_jobs* will take immediate effect.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
+## *max_advance_reservations*
+
+The number of active (not finished) Advance Reservations simultaneously allowed in xxQS_NAMExx is controlled by 
+this parameter. A value greater than 0 defines the limit. The default value 0 means "unlimited". If the
+*max_advance_reservations* limit is exceeded by an Advance Reservation request then the submission command exits 
+with exit status 25 and an appropriate error message.
+
+Changing *max_advance_reservations* will take immediate effect.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
+
 ## enforce_project
 
 If set to *true*, users are required to request a project whenever submitting a job. See the `-P` option to 

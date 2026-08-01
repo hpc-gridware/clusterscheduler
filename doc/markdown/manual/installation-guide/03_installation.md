@@ -307,6 +307,21 @@ Here are the steps required to complete the installation.
     Please enter a range [20000-20100] >>
     ```
 
+    > **These group ids have no name, and some tools treat that as an error.** Every process of a
+    > job carries one of them as an additional supplementary group, and by design it has no entry
+    > in `/etc/group` or in your directory service. Commands that turn group ids into names then
+    > report it: `groups` fails with *cannot find name for group ID*, and so does `id` on
+    > distributions that have replaced GNU coreutils with the Rust rewrite (uutils), which returns
+    > a non-zero exit status where GNU coreutils only warns. Anything working with numeric ids —
+    > `id -u`, `id -G`, `ls -l` — is unaffected.
+    >
+    > This matters for job, prolog and epilog scripts that check an exit status: use `id -un`
+    > instead of `id` and `id -G` instead of `groups`. Should you need the ids to resolve, you can
+    > create a named group for every id of the range on every execution host, but then keep in
+    > mind that the range is as large as the number of jobs you want to run per host, that the
+    > names have to be identical everywhere, and that the ids are no longer "unused" in the sense
+    > used above.
+
 15. Execution Service Spooling Location: Specify a default spooling location that should be used by all execution nodes.
 
     ```
