@@ -2934,13 +2934,13 @@ BackupConfig()
    # must also be restorable. sge_request and the other user-request/default
    # files are backed up here so a backup/restore cycle does not drop them.
    BUP_BDB_COMMON_FILE_LIST_TMP="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd sgebdb shadow_masters cluster_name slice_name"
-   BUP_BDB_COMMON_DIR_LIST_TMP="sgeCA"
+   BUP_BDB_COMMON_DIR_LIST_TMP="sgeCA certs"
    BUP_BDB_SPOOL_FILE_LIST_TMP="jobseqnum"
    BUP_PG_COMMON_FILE_LIST_TMP="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
-   BUP_PG_COMMON_DIR_LIST_TMP="sgeCA"
+   BUP_PG_COMMON_DIR_LIST_TMP="sgeCA certs"
    BUP_PG_DUMP_FILE="postgres-config.sql"
    BUP_CLASSIC_COMMON_FILE_LIST_TMP="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
-   BUP_CLASSIC_DIR_LIST_TMP="sgeCA"
+   BUP_CLASSIC_DIR_LIST_TMP="sgeCA certs"
    # CS-2394: no managers/operators files any more - managers/operators are members of
    # the reserved "manager"/"operator" usersets, covered by the usersets entry below.
    BUP_CLASSIC_SPOOL_FILE_LIST_TMP="configs sched_configuration jobseqnum advance_reservations admin_hosts calendars centry ckpt cqueues exec_hosts hostgroups resource_quotas pe projects qinstances schedd submit_hosts users usersets"
@@ -3078,17 +3078,17 @@ RestoreConfig()
    # moved aside with the cell dir and is never put back). sge_request and the
    # other user-request/default files are restored here for exactly that reason.
    BUP_COMMON_FILE_LIST="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd sgebdb shadow_masters st.enabled cluster_name slice_name"
-   BUP_COMMON_DIR_LIST="sgeCA"
+   BUP_COMMON_DIR_LIST="sgeCA certs"
    BUP_SPOOL_FILE_LIST="jobseqnum"
    BUP_PG_COMMON_FILE_LIST="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
-   BUP_PG_COMMON_DIR_LIST="sgeCA"
+   BUP_PG_COMMON_DIR_LIST="sgeCA certs"
    BUP_PG_DUMP_FILE="postgres-config.sql"
    # The configs directory (global + per-host configuration) and the
    # sched_configuration file now live in the spool directory (classic spooling),
    # so they are restored into the spool dir (not common). sgeCA remains a common
    # directory. Same-version restore only.
    BUP_CLASSIC_COMMON_FILE_LIST="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
-   BUP_CLASSIC_DIR_LIST="sgeCA"
+   BUP_CLASSIC_DIR_LIST="sgeCA certs"
    # CS-2394: no managers/operators files any more - their content lives in the reserved
    # "manager"/"operator" usersets, restored via the usersets entry.
    BUP_CLASSIC_SPOOL_FILE_LIST="configs sched_configuration jobseqnum admin_hosts advance_reservations calendars centry ckpt cqueues exec_hosts hostgroups pe projects qinstances resource_quotas schedd submit_hosts users usersets"
