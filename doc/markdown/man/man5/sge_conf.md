@@ -695,6 +695,17 @@ assign a value for *gid_range* during installation of xxQS_NAMExx.
 
 The global configuration entry for this value may be overwritten by the execution host local configuration.
 
+Because these group ids are unused, they have no name. Commands that resolve group ids to names see that
+and report it: `groups` exits with an error and the message *cannot find name for group ID*, and `id`
+does the same on distributions that ship the Rust rewrite of the coreutils (uutils) instead of GNU
+coreutils - GNU `id` prints the id numerically and succeeds. Commands that stay with numeric ids, such as
+`id -u`, `id -G` or `ls -l`, are not affected. In job, prolog and epilog scripts that evaluate an exit
+status, prefer `id -un` over `id` and `id -G` over `groups`.
+
+The ids can be given names, by creating a group for each of them on every execution host, but note that
+the range has to hold one id per job running on a host at the same time, that the names must be identical
+on all hosts, and that the ids are then no longer unused in the sense described above.
+
 ## qmaster_params
 
 A list of additional parameters can be passed to the xxQS_NAMExx qmaster. The following values are recognized:
