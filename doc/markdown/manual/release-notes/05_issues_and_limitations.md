@@ -1,6 +1,6 @@
 # Known Issues and Limitations
 
-## `id` and `groups` Fail Inside Jobs on Distributions Using uutils Coreutils
+## *id* and *groups* Fail Inside Jobs on Distributions Using uutils Coreutils
 
 Every process of a job carries one additional supplementary group id, taken from the *gid_range* of the
 execution host configuration. That is how xxQS_NAMExx recognises which processes belong to a job. These
