@@ -208,6 +208,7 @@
 #define MSG_UTI_MUNGE_DECODE_FAILED_S        _MESSAGE(59241, _("failed to munge decode authinfo: " SFN))
 #define MSG_UTI_MUNGE_AUTH_UID_MISMATCH_II   _MESSAGE(59242, _("uid mismatch between munge (" uid_t_fmt ") and auth_info (" uid_t_fmt ")"))
 #define MSG_UTI_MUNGE_AUTH_GID_MISMATCH_II   _MESSAGE(59243, _("gid mismatch between munge (" gid_t_fmt ") and auth_info (" gid_t_fmt ")"))
+#define MSG_UTI_MUNGE_NOT_INITIALIZED        _MESSAGE(59248, _("munge is configured as security mode but the munge library is not initialized"))
 #define MSG_UTI_UNABLE_TO_EXTRACT_UID        _MESSAGE(59244, _("unable to extract uid from auth_info"))
 #define MSG_UTI_UNABLE_TO_EXTRACT_GID        _MESSAGE(59245, _("unable to extract gid from auth_info"))
 #define MSG_UTI_UNABLE_TO_EXTRACT_NSUP       _MESSAGE(59246, _("unable to extract number of supplementary groups from auth_info"))

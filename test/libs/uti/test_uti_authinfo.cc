@@ -99,9 +99,60 @@ static parse_result_t parse(const std::vector<std::string> &fields) {
    return r;
 }
 
+/**
+ * @brief Point SGE_ROOT at a throwaway cell whose bootstrap disables security.
+ *
+ * component_parse_auth_info() asks Bootstrap which security modes are active,
+ * and Bootstrap reads that from $SGE_ROOT/$SGE_CELL/common/bootstrap on first
+ * use. Without this the test would depend on whatever cluster it happens to run
+ * in: with no SGE_ROOT at all Bootstrap calls sge_exit(1) because it cannot
+ * resolve the file, and inside a cluster configured for munge it would take the
+ * munge branch, which needs a munge daemon and a real credential -- neither has
+ * anything to do with the parser under test.
+ *
+ * @return the created directory, to be removed by the caller
+ */
+static std::string setup_private_bootstrap() {
+   char tmpl[] = "/tmp/test_uti_authinfo_XXXXXX";
+   const char *root = mkdtemp(tmpl);
+   if (root == nullptr) {
+      return {};
+   }
+   const std::string common = std::string(root) + "/default/common";
+   if (sge_mkdir(common.c_str(), 0755, false, true) != 0) {
+      return {};
+   }
+   FILE *fp = fopen((common + "/bootstrap").c_str(), "w");
+   if (fp == nullptr) {
+      return {};
+   }
+   // the nine entries Bootstrap requires, security deliberately off
+   fprintf(fp, "admin_user        none\n");
+   fprintf(fp, "default_domain    none\n");
+   fprintf(fp, "ignore_fqdn       true\n");
+   fprintf(fp, "spooling_method   classic\n");
+   fprintf(fp, "spooling_lib      libspoolc\n");
+   fprintf(fp, "spooling_params   %s/default/spool\n", root);
+   fprintf(fp, "binary_path       %s/bin\n", root);
+   fprintf(fp, "qmaster_spool_dir %s/default/spool/qmaster\n", root);
+   fprintf(fp, "security_mode     none\n");
+   fclose(fp);
+
+   sge_setenv("SGE_ROOT", root);
+   sge_setenv("SGE_CELL", "default");
+   return root;
+}
+
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_uti_authinfo");
    int id = 1;
+
+   // Must happen before anything asks Bootstrap anything -- it caches on first use.
+   const std::string private_root = setup_private_bootstrap();
+   if (private_root.empty()) {
+      printf("FAIL  cannot create a private bootstrap below /tmp\n");
+      return 1;
+   }
 
    // suppress ERROR-level sge_log output from the parse helper
    component_set_daemonized(true);
@@ -183,6 +234,11 @@ int main(int /*argc*/, char * /*argv*/[]) {
       parse_result_t r = parse({"0", "0", "u", "g", "1", "notagid", "a"});
       CHECK(id++, "non-numeric supplementary gid rejected", !r.ret);
       sge_free(&r.grp);
+   }
+
+   {
+      DSTRING_STATIC(err, MAX_STRING_SIZE);
+      sge_rmdir(private_root.c_str(), &err);
    }
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

@@ -878,6 +878,14 @@ component_get_auth_info() {
 
    if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_MUNGE)) {
 #if defined(OCS_WITH_MUNGE)
+      // The function pointers are filled by Munge::initialize(), which dlopen's
+      // libmunge. Without it they are null and calling through them is a crash,
+      // not an error -- the configuration alone does not guarantee the library
+      // was loaded in this process.
+      if (!ocs::uti::Munge::is_initialized()) {
+         ERROR(SFNMAX, MSG_UTI_MUNGE_NOT_INITIALIZED);
+         DRETURN(ret);
+      }
       // we need to encode the auth info in every call to this function
       // even if the user information and the payload will never change
       // munge certificates are valid for a limited time only and for a single use
@@ -944,6 +952,12 @@ component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char
    bool use_munge = ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_MUNGE);
    if (use_munge) {
 #if defined(OCS_WITH_MUNGE)
+      // See the encode side above: without Munge::initialize() the function
+      // pointers are null and this would be a call through nullptr.
+      if (!ocs::uti::Munge::is_initialized()) {
+         sge_dstring_sprintf(error_dstr, SFNMAX, MSG_UTI_MUNGE_NOT_INITIALIZED);
+         DRETURN(false);
+      }
       char *local_auth_buffer{nullptr};
       int local_len{0};
       const auto err = ocs::uti::Munge::munge_decode_func(auth_info, nullptr,
