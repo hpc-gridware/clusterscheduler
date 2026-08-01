@@ -55,6 +55,9 @@ namespace ocs::uti {
    using EVP_sha256_func_t = const EVP_MD *(*)();
    using OPENSSL_init_ssl_func_t = int (*)(uint64_t opts, const void *settings);
    using PEM_read_X509_func_t = X509 *(*)(FILE *fp, X509 **x, pem_password_cb *cb, void *u);
+   using PEM_read_PrivateKey_func_t = EVP_PKEY *(*)(FILE *fp, EVP_PKEY **x, pem_password_cb *cb, void *u);
+   using X509_check_private_key_func_t = int (*)(const X509 *x509, const EVP_PKEY *pkey);
+   using X509_NAME_get_text_by_NID_func_t = int (*)(const X509_NAME *name, int nid, char *buf, int len);
    using PEM_write_PrivateKey_func_t = int (*)(FILE *fp, EVP_PKEY *x, const EVP_CIPHER *enc, unsigned char *kstr, int klen, pem_password_cb *cb, void *u);
    using PEM_write_X509_func_t = int (*)(FILE *fp, X509 *x);
    using PEM_write_bio_X509_func_t = int (*)(BIO *, X509 *);
@@ -121,6 +124,9 @@ namespace ocs::uti {
       static EVP_sha256_func_t EVP_sha256_func;
       static OPENSSL_init_ssl_func_t OPENSSL_init_ssl_func;
       static PEM_read_X509_func_t PEM_read_X509_func;
+      static PEM_read_PrivateKey_func_t PEM_read_PrivateKey_func;
+      static X509_check_private_key_func_t X509_check_private_key_func;
+      static X509_NAME_get_text_by_NID_func_t X509_NAME_get_text_by_NID_func;
       static PEM_write_PrivateKey_func_t PEM_write_PrivateKey_func;
       static PEM_write_X509_func_t PEM_write_X509_func;
       static PEM_write_bio_X509_func_t PEM_write_bio_X509_func;
@@ -189,6 +195,21 @@ namespace ocs::uti {
 
          bool verify_create_directories(bool switch_user, bool called_as_root, dstring *error_dstr, bool &created_dirs) const;
          bool certificate_recreate_required(dstring *error_dstr);
+         /**
+          * @brief "<port>/<cell>" of this installation, derived from the key path.
+          *
+          * Goes into the certificate as OU, so a certificate says which
+          * installation it belongs to. See CS-2487. Empty for contexts that keep
+          * certificate and key in memory only.
+          */
+         std::string installation_tag() const;
+         /**
+          * @brief Set when the certificate on disk belongs to another installation.
+          *
+          * Such a certificate must not be replaced -- the installation that owns
+          * it may be running with it. The daemon start fails instead. CS-2487.
+          */
+         bool cert_of_other_installation = false;
 
          bool configure_server_context(dstring *error_dstr, bool is_recreate);
          bool configure_client_context(dstring *error_dstr);
