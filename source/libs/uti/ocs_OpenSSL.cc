@@ -64,6 +64,9 @@ namespace ocs::uti {
    EVP_sha256_func_t OpenSSL::EVP_sha256_func = nullptr;
    OPENSSL_init_ssl_func_t OpenSSL::OPENSSL_init_ssl_func = nullptr;
    PEM_read_X509_func_t OpenSSL::PEM_read_X509_func = nullptr;
+   PEM_read_PrivateKey_func_t OpenSSL::PEM_read_PrivateKey_func = nullptr;
+   X509_check_private_key_func_t OpenSSL::X509_check_private_key_func = nullptr;
+   X509_NAME_get_text_by_NID_func_t OpenSSL::X509_NAME_get_text_by_NID_func = nullptr;
    PEM_write_PrivateKey_func_t OpenSSL::PEM_write_PrivateKey_func = nullptr;
    PEM_write_X509_func_t OpenSSL::PEM_write_X509_func = nullptr;
    PEM_write_bio_X509_func_t OpenSSL::PEM_write_bio_X509_func = nullptr;
@@ -309,6 +312,30 @@ namespace ocs::uti {
          func = "PEM_read_X509";
          PEM_read_X509_func = reinterpret_cast<PEM_read_X509_func_t>(dlsym(libssl_handle, func));
          if (PEM_read_X509_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "PEM_read_PrivateKey";
+         PEM_read_PrivateKey_func = reinterpret_cast<PEM_read_PrivateKey_func_t>(dlsym(libssl_handle, func));
+         if (PEM_read_PrivateKey_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "X509_check_private_key";
+         X509_check_private_key_func = reinterpret_cast<X509_check_private_key_func_t>(dlsym(libssl_handle, func));
+         if (X509_check_private_key_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "X509_NAME_get_text_by_NID";
+         X509_NAME_get_text_by_NID_func = reinterpret_cast<X509_NAME_get_text_by_NID_func_t>(dlsym(libssl_handle, func));
+         if (X509_NAME_get_text_by_NID_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -751,7 +778,7 @@ namespace ocs::uti {
     * whether it's for a daemon or a user process. The path format depends on the home_dir parameter:
     *
     * - For daemons (home_dir == nullptr):
-    *   /var/lib/ocs/<port>/private/component_hostname.pem
+    *   /var/lib/ocs/<port>/<cell>/private/component_hostname.pem
     *   If port is 0, it's omitted from the path.
     *
     * - For user processes we currently generate the certificates and keys on the fly and only in memory.
@@ -774,17 +801,26 @@ namespace ocs::uti {
       DENTER(TOP_LAYER);
       bool ret = true;
       // -> daemon or user key?
-      //    -> daemon: /var/lib/ocs/<port>/private/component_hostname.pem
+      //    -> daemon: /var/lib/ocs/<port>/<cell>/private/component_hostname.pem
       //    -> with CS-1576: user: $HOME/.ocs/private/hostname.pem OR $HOME/.ocs/private/key.pem
       if (hostname == nullptr || comp_name == nullptr) {
          // @todo use error_dstr
          ret = false;
       } else {
          if (home_dir == nullptr) {
+            // Port AND cell: the port alone does not identify an installation.
+            // Two installations on the same host that use the same port - a
+            // side-by-side upgrade after the switch over, or a cluster that was
+            // reinstalled into a different cell - would otherwise share this
+            // file, and the one that did not write it fails to start with
+            // "key values mismatch". The predecessor stored below
+            // /var/sgeCA/port<port>/<cell> for exactly this reason; the cell
+            // was lost when the path was reworked for TLS. See CS-2487.
             key_path = std::string("/var/lib/ocs/");
             if (port != 0) {
-               key_path += std::to_string(port);
+               key_path += std::to_string(port) + std::string("/");
             }
+            key_path += std::string(bootstrap_get_sge_cell());
             key_path += std::string("/private/") + std::string(comp_name) + std::string("_") + std::string(hostname) + std::string(".pem");
          } else {
 #if defined(PER_USER_AND_HOST_CERTS)
@@ -897,6 +933,27 @@ namespace ocs::uti {
     * @note This version does not read the certificate file; it only checks cached renewal time.
     * @see certificate_recreate_required(dstring*)
     */
+   /**
+    * @brief "<port>/<cell>" of this installation, taken from the key path.
+    *
+    * build_key_path() writes /var/lib/ocs/<port>/<cell>/private/<file>, so the
+    * two directories above "private" name the installation. Deriving it here
+    * keeps the port out of the constructors and the commlib call sites.
+    */
+   std::string OpenSSL::OpenSSLContext::installation_tag() const {
+      if (key_path.empty()) {
+         // certificate and key are kept in memory only (qrsh)
+         return {};
+      }
+      const std::filesystem::path private_dir = key_path.parent_path();   // .../private
+      const std::filesystem::path cell_dir = private_dir.parent_path();   // .../<cell>
+      const std::filesystem::path port_dir = cell_dir.parent_path();      // .../<port>
+      if (cell_dir.empty() || port_dir.empty()) {
+         return {};
+      }
+      return port_dir.filename().string() + "/" + cell_dir.filename().string();
+   }
+
    bool OpenSSL::OpenSSLContext::certificate_recreate_required() const {
       DENTER(TOP_LAYER);
 
@@ -970,6 +1027,10 @@ namespace ocs::uti {
       bool ok = true;
       X509 *cert = nullptr;
 
+      // Re-evaluated on every call: the context may be checked again later (a
+      // renewal), and a verdict from an earlier call must not outlive its cause.
+      cert_of_other_installation = false;
+
       // Try to open the certificate file.
       FILE *fp = fopen(cert_path.c_str(), "r");
       if (fp == nullptr) {
@@ -1027,6 +1088,82 @@ namespace ocs::uti {
          }
       }
 
+      // Whose certificate is this?
+      //
+      // The OU carries "<port>/<cell>" of the installation that created it. A
+      // certificate of a different installation must not be touched -- that
+      // installation may be running with it right now -- and we cannot use it
+      // either, because our key does not match it. Answering this before the key
+      // is even looked at also covers the case that our key is missing.
+      char cert_tag[256] = {};
+      const std::string tag = installation_tag();
+      if (ok && !tag.empty()) {
+         X509_NAME_get_text_by_NID_func(X509_get_subject_name_func(cert), NID_organizationalUnitName,
+                                        cert_tag, sizeof(cert_tag) - 1);
+         if (cert_tag[0] != '\0' && tag != cert_tag) {
+            cert_of_other_installation = true;
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CERT_KEY_MISMATCH_SSS, cert_path.c_str(),
+                                key_path.c_str(), cert_tag);
+            ok = false;
+         }
+      }
+
+      // Is the private key there at all?
+      //
+      // An installation from before the key path carried the cell keeps its key
+      // in the old place, so after an upgrade the certificate is here and the
+      // key is not. That is not a reason to fail -- the certificate is ours (a
+      // foreign one was rejected above) -- but a reason to create the pair
+      // anew. Distinguish "not there" from "cannot look": during renewal we run
+      // as the admin user and /var/lib/ocs is root only, and a permission error
+      // must not be read as a missing file.
+      if (ok && !ret && !key_path.empty()) {
+         std::error_code ec;
+         const bool key_exists = std::filesystem::exists(key_path, ec);
+         if (!ec && !key_exists) {
+            DPRINTF("private key %s is missing - re-creating certificate and key\n", key_path.c_str());
+            ret = true;
+         }
+      }
+
+      // Does the private key on disk belong to this certificate?
+      //
+      // Not asking this was the actual defect of CS-2487: a valid, unexpired
+      // certificate paired with a foreign key passed this check, and the
+      // mismatch became fatal later, when OpenSSL loaded the pair ("key values
+      // mismatch"), aborting the daemon start.
+      //
+      // Only checked when the key is readable. During renewal we run as the
+      // admin user and cannot read /var/lib/ocs - reporting a mismatch there
+      // would make us regenerate on every renewal.
+      if (ok && !ret && !key_path.empty()) {
+         FILE *key_fp = fopen(key_path.c_str(), "r");
+         if (key_fp != nullptr) {
+            EVP_PKEY *pkey = PEM_read_PrivateKey_func(key_fp, nullptr, nullptr, nullptr);
+            fclose(key_fp);
+            if (pkey != nullptr) {
+               if (X509_check_private_key_func(cert, pkey) != 1) {
+                  // The certificate is ours: a foreign OU was rejected above,
+                  // and a certificate without an OU predates the marker and
+                  // lies in OUR cell -- another installation has its own cell.
+                  // So re-create both. Refusing here instead would leave an
+                  // upgrade stuck on a key some earlier attempt left behind,
+                  // and only an administrator could get it going again.
+                  if (tag.empty() || cert_tag[0] == '\0' || tag == cert_tag) {
+                     DPRINTF("certificate and key do not match, both belong to %s - re-creating them\n", cert_tag);
+                     ret = true;
+                  } else {
+                     // Unmarked certificate: fail, do not touch it.
+                     cert_of_other_installation = true;
+                     sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CERT_KEY_MISMATCH_SSS, cert_path.c_str(),
+                                         key_path.c_str(), cert_tag[0] == '\0' ? "unknown" : cert_tag);
+                  }
+               }
+               EVP_PKEY_free_func(pkey);
+            }
+         }
+      }
+
       // Clean up.
       if (cert != nullptr) {
          X509_free_func(cert);
@@ -1073,7 +1210,7 @@ namespace ocs::uti {
       bool ret = true;
 
       // When we are starting as root and creating a daemon certificate
-      // in $SGE_ROOT/$SGE_CELL/common/certs and /var/lib/ocs/private,
+      // in $SGE_ROOT/$SGE_CELL/common/certs and /var/lib/ocs/<port>/<cell>/private,
       // we need to be root to write the key.
       // But as root we might not be able to create directories or files in $SGE_ROOT,
       // so we need to switch to admin user.
@@ -1100,7 +1237,13 @@ namespace ocs::uti {
          // In this case we have to create the certificate and key.
          bool created_dirs = false;
          ret = verify_create_directories(switch_user, called_as_root, error_dstr, created_dirs);
-         if (ret && created_dirs) {
+         // Only a missing CERTIFICATE means we have to create one. Deciding this
+         // from "a directory had to be created" was wrong as soon as the key path
+         // became installation specific (CS-2487): the key directory is new for
+         // every port and cell, so a daemon started with a foreign port would
+         // take this shortcut and overwrite the certificate of the installation
+         // that owns the cell -- while that installation is running.
+         if (ret && !std::filesystem::exists(cert_path)) {
             create_certificate_and_key = true;
          }
       }
@@ -1108,7 +1251,11 @@ namespace ocs::uti {
       // We already have the directories and possibly the certificate + key,
       // check if they really exist and have not yet expired or are about to expire.
       if (ret && !create_certificate_and_key) {
-         if (certificate_recreate_required(error_dstr)) {
+         const bool recreate = certificate_recreate_required(error_dstr);
+         if (cert_of_other_installation) {
+            // error_dstr names both files and the owning installation
+            ret = false;
+         } else if (recreate) {
             if (sge_dstring_strlen(error_dstr) > 0) {
                // When there were errors we renew the certificate
                // no way to report this except some debug output.
@@ -1144,6 +1291,15 @@ namespace ocs::uti {
 
          X509_NAME *name = X509_get_subject_name_func(x509);
          X509_NAME_add_entry_by_txt_func(name, "CN", MBSTRING_ASC, (unsigned char *)component_get_qualified_hostname(), -1, -1, 0);
+         // Which installation does this certificate belong to? The CN must stay
+         // the hostname - clients verify it with SSL_set1_host() - so the
+         // installation goes into the OU. It lets a daemon tell "my key does not
+         // match my certificate" from "this certificate belongs to a different
+         // installation, do not touch it". See CS-2487.
+         const std::string tag = installation_tag();
+         if (!tag.empty()) {
+            X509_NAME_add_entry_by_txt_func(name, "OU", MBSTRING_ASC, (unsigned char *)tag.c_str(), -1, -1, 0);
+         }
          X509_set_issuer_name_func(x509, name);
 
          X509_sign_func(x509, pkey, EVP_sha256_func());

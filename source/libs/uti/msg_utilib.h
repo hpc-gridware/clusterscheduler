@@ -264,6 +264,7 @@
 #define MSG_OPENSSL_CANNOT_USE_CERT_FILE_SS        _MESSAGE(59308, _("cannot use certificate file: " SFQ ": " SFN4))
 #define MSG_OPENSSL_CANNOT_USE_KEY_PKEY_S          _MESSAGE(59309, _("cannot use private key from pkey: " SFN4))
 #define MSG_OPENSSL_CANNOT_USE_KEY_FILE_SS         _MESSAGE(59310, _("cannot use private key file: " SFQ ": " SFN4))
+#define MSG_OPENSSL_CERT_KEY_MISMATCH_SSS          _MESSAGE(59312, _("certificate " SFQ " and private key " SFQ " do not belong together; the certificate was created by installation " SFN4 " - remove the stale file or reinstall"))
 #define MSG_OPENSSL_EMPTY_CERT_PATH                _MESSAGE(59311, _("certificate path is empty in configuration of client context"))
 
 // clang-format on
