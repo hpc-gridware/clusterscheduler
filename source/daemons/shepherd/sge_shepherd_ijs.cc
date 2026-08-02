@@ -105,8 +105,10 @@ static int              g_x11_listen_fd                  = -1;   ///< Unix socke
 static int              g_x11_client_fds[X11_MAX_CONNS]; ///< per-conn_id fd toward job X client (-1=unused)
 static int              g_x11_display_num                = -1;   ///< display number N for :N.0
 static int              g_x11_next_conn_id               = 0;    ///< round-robin conn_id allocator
-static char             g_x11_socket_path[108]           = "";   ///< path to /tmp/.X11-unix/XN (for cleanup)
-static char             g_x11_xauth_path[512]            = "";   ///< path to ~/.Xauthority (for cleanup)
+static char             g_x11_socket_path[108]           = "";   ///< path to /tmp/.X11-unix/XN (for cleanup); 108 = sizeof(sockaddr_un.sun_path), not a general path buffer
+static char             g_x11_xauth_path[SGE_PATH_MAX]   = "";   ///< path to ~/.Xauthority (for cleanup)
+static uint8_t          g_x11_cookie[16]                 = {};   ///< this session's cookie -- identifies our own Xau record
+static bool             g_x11_cookie_written             = false; ///< true once the record is in ~/.Xauthority
 static pthread_mutex_t  g_x11_mutex                      = PTHREAD_MUTEX_INITIALIZER;
 
 /*
@@ -475,7 +477,7 @@ static bool setup_x11_forwarding(const char *cookie_hex) {
    // Use euid (job owner), not uid (which is root in the shepherd parent process).
    struct passwd *pw = getpwuid(geteuid());
    const char *home = (pw != nullptr) ? pw->pw_dir : "/tmp";
-   char xauth_path[512];
+   char xauth_path[SGE_PATH_MAX];
    snprintf(xauth_path, sizeof(xauth_path), "%s/.Xauthority", home);
    // Remember the path so cleanup_x11_xauth_entry() can find this entry
    // again at session end (CS-2188).
@@ -493,6 +495,24 @@ static bool setup_x11_forwarding(const char *cookie_hex) {
       cookie_bin[ci] = static_cast<uint8_t>(bval);
    }
    if (cookie_ok) {
+      // Under the lock the cleanup uses, not the display lock released above: the
+      // cleanup replaces ~/.Xauthority through a temp file and rename(), so an append
+      // that lands in the old inode between its read and its rename is discarded with
+      // that inode. Two sessions of one user then take each other's cookies away, and
+      // the job ends up with a DISPLAY it is not authorised for (CS-2496).
+      //
+      // Failing to take the lock is not a reason to skip the entry - without it there
+      // is no forwarding at all. That case degrades to the previous behaviour.
+      char xauth_lock_path[SGE_PATH_MAX];
+      snprintf(xauth_lock_path, sizeof(xauth_lock_path), "%s-shepherd.lock", xauth_path);
+      int xauth_lock_fd = open(xauth_lock_path, O_CREAT | O_RDWR, 0600);
+      if (xauth_lock_fd >= 0 && flock(xauth_lock_fd, LOCK_EX) != 0) {
+         shepherd_trace("setup_x11_forwarding: cannot acquire lock %s: %s",
+                        xauth_lock_path, strerror(errno));
+         close(xauth_lock_fd);
+         xauth_lock_fd = -1;
+      }
+
       // Append a FamilyWild Xau record — matches any host/display for this cookie.
       FILE *xaf = fopen(xauth_path, "ab");
       if (xaf != nullptr) {
@@ -515,11 +535,19 @@ static bool setup_x11_forwarding(const char *cookie_hex) {
          w16(16);            // auth data length = 16 bytes
          fwrite(cookie_bin, 1, 16, xaf);
          fclose(xaf);
+         // Remember what we wrote: at session end this is what tells our record
+         // apart from the records of other sessions.
+         memcpy(g_x11_cookie, cookie_bin, sizeof(g_x11_cookie));
+         g_x11_cookie_written = true;
          shepherd_trace("setup_x11_forwarding: wrote Xau entry to %s for display :%d",
                         xauth_path, g_x11_display_num);
       } else {
          shepherd_trace("setup_x11_forwarding: cannot open %s for writing: %s",
                         xauth_path, strerror(errno));
+      }
+      if (xauth_lock_fd >= 0) {
+         flock(xauth_lock_fd, LOCK_UN);
+         close(xauth_lock_fd);
       }
    } else {
       shepherd_trace("setup_x11_forwarding: cookie_hex parse failed");
@@ -544,12 +572,11 @@ static bool setup_x11_forwarding(const char *cookie_hex) {
  * @brief Remove this session's Xau record from the user's ~/.Xauthority.
  *
  * Counterpart to the in-line Xau record append in setup_x11_forwarding()
- * (CS-2188).  Reads ~/.Xauthority record by record, skips any whose
- * display-number field equals g_x11_display_num, and atomically replaces
- * the file via a temp + rename.  A per-file flock at
- * `<.Xauthority>-shepherd.lock` serialises concurrent shepherd cleanups
- * (and protects against a concurrent setup_x11_forwarding append in
- * another shepherd for the same user).
+ * (CS-2188).  Reads ~/.Xauthority record by record, skips the one carrying
+ * this session's cookie, and atomically replaces the file via a temp +
+ * rename.  A per-file flock at `<.Xauthority>-shepherd.lock` serialises
+ * concurrent shepherd cleanups and, since CS-2496, the append side as well
+ * -- which takes the same lock now instead of only the display lock.
  *
  * Direct file manipulation (rather than fork+exec'ing the xauth tool)
  * to avoid the system()/waitpid race that the append-side code also
@@ -560,13 +587,16 @@ static bool setup_x11_forwarding(const char *cookie_hex) {
  * the file is gone.
  */
 static void cleanup_x11_xauth_entry() {
-   if (g_x11_xauth_path[0] == '\0' || g_x11_display_num < 0) {
+   // Nothing of ours in the file means nothing to remove -- and without a cookie
+   // there is no way to tell our record from anybody else's, so rewriting the file
+   // could only do harm.
+   if (g_x11_xauth_path[0] == '\0' || !g_x11_cookie_written) {
       return;
    }
 
    // Per-user flock so concurrent shepherd add/remove on the same
    // .Xauthority don't lose each other's edits.
-   char lock_path[640];
+   char lock_path[SGE_PATH_MAX];
    snprintf(lock_path, sizeof(lock_path), "%s-shepherd.lock", g_x11_xauth_path);
    int lock_fd = open(lock_path, O_CREAT | O_RDWR, 0600);
    if (lock_fd < 0) {
@@ -589,7 +619,7 @@ static void cleanup_x11_xauth_entry() {
       return;
    }
 
-   char tmp_path[640];
+   char tmp_path[SGE_PATH_MAX];
    snprintf(tmp_path, sizeof(tmp_path), "%s.shepherd.tmp", g_x11_xauth_path);
    FILE *dst = fopen(tmp_path, "wb");
    if (dst == nullptr) {
@@ -600,10 +630,6 @@ static void cleanup_x11_xauth_entry() {
       close(lock_fd);
       return;
    }
-
-   char target_display_str[16];
-   snprintf(target_display_str, sizeof(target_display_str), "%d", g_x11_display_num);
-   size_t target_display_len = strlen(target_display_str);
 
    auto read_u16 = [&](uint16_t *out) -> bool {
       uint8_t b[2];
@@ -641,9 +667,15 @@ static void cleanup_x11_xauth_entry() {
       size_t data_n = std::min<size_t>(data_len, sizeof(data_buf));
       if (fread(data_buf, 1, data_n, src) != data_n) break;
 
-      // Drop records whose display-number field matches our N.
-      if (disp_n == target_display_len &&
-          memcmp(disp_buf, target_display_str, target_display_len) == 0) {
+      // Drop the record carrying this session's cookie -- and only that one.
+      //
+      // The display number is not an identity. The caller closes the listen socket
+      // and unlinks /tmp/.X11-unix/XN before it gets here, so from that moment any
+      // other shepherd of this user may bind :N and write its own record for the
+      // same number. Removing by number then takes away the cookie of a session
+      // that is still running (CS-2496). The 16 cookie bytes are unique per session.
+      if (data_n == sizeof(g_x11_cookie) &&
+          memcmp(data_buf, g_x11_cookie, sizeof(g_x11_cookie)) == 0) {
          removed++;
          continue;
       }
@@ -668,7 +700,7 @@ static void cleanup_x11_xauth_entry() {
                      tmp_path, g_x11_xauth_path, strerror(errno));
       unlink(tmp_path);
    } else {
-      shepherd_trace("cleanup_x11_xauth_entry: removed %d xauth entry/entries for display :%d",
+      shepherd_trace("cleanup_x11_xauth_entry: removed %d xauth entry/entries of this session (display :%d)",
                      removed, g_x11_display_num);
    }
 
