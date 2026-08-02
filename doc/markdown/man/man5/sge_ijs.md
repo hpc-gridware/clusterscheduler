@@ -351,6 +351,11 @@ The everyday use case for local suspend: background a long-running interactive j
 client without killing the job. Combined with reconnect, it gives near-tmux-like detach / reattach
 behavior.
 
+One limit of the analogy: X11 forwarding does not survive the detach. The proxy display lives in the
+client that started the session, so it dies with it, and `qrsh -reconnect` does not build a new one --
+the shell keeps pointing at the display that is gone. Input, output, signals and window size resume
+as described above; X clients started after the reconnect do not.
+
 ### Configuration parameters
 
 - `ijs_escape_char` — single character or `none`. Default `~`. (`qmaster_params`)

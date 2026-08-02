@@ -603,6 +603,22 @@ If a server JSV script is present, all attempts to modify binding-specific param
 `qalter` are rejected unless the *jsv_allowed_mod* parameter in the global
 configuration (see xxqs_name_sxx_conf(5)) includes the entry *binding*.
 
+## -bstrategy *strategy*
+
+Available for `qsub`, `qrsh`, `qsh`, `qlogin`, `qalter`, and `qrsub` only.
+
+Selects the strategy used to pick topology nodes once the topology string has been
+filtered (`-bfilter`), sorted (`-bsort`) and narrowed to a window
+(`-bstart` / `-bstop`).
+
+Valid values for *strategy* are:
+
+* `packed` — choose the nodes as closely together as the remaining topology allows.
+* `NONE` — no explicit strategy; the implementation falls back to `packed`.
+
+If the option is omitted, `packed` is used as well, so specifying it only matters
+when a future strategy is to be selected explicitly.
+
 ## -binding [ *binding_instance* ] *binding_strategy*
 
 Not available anymore. Use the following options instead: `-bunit`, `-bamount`, `-btype`, `-bfilter`, `-binstance`.
@@ -1184,6 +1200,19 @@ directory pathname.
 The value specified with this option will be passed to defined JSV instances as parameter with the name `N`. 
 (see `-jsv` option above or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
+## -now *y*\[*es*\]\|*n*\[*o*\]
+
+`-now y` submits the job as an **immediate** job: it is either started right away or
+rejected, it is never queued for later. `-now n` submits an ordinary job that waits in
+the queue until resources become available.
+
+The default differs by command: for the interactive commands `qrsh`, `qsh` and `qlogin`
+immediate scheduling is **on** — a session that cannot start now is of little use — and
+`-now n` turns it off. For `qsub` the default is `-now n`.
+
+An immediate job that cannot be scheduled is reported to the user right away and does
+not appear in `qstat`.
+
 ## -noshell  
 
 Available only for `qrsh` with a command line.
@@ -1315,6 +1344,14 @@ X11 connections from the job are tunneled back to the submitting client's real X
 `-X` is silently ignored when the legacy ssh/rsh transport is used; for that case rely on
 `ssh -X` or `ssh -Y` in your `rsh_command` configuration.
 
+The forwarding belongs to the client that started the session. When that client goes
+away and the session is taken over with `-reconnect`, the proxy display is gone and is
+**not** re-established: the shell keeps its old `DISPLAY`, and X clients started from
+then on fail with "unable to open display". Everything else about the session resumes
+normally.
+
+See xxqs_name_sxx_ijs(5) for the transport this option builds on.
+
 This parameter is not available in the JSV context. (see `-jsv` option above or find
 more information concerning JSV in xxqs_name_sxx_jsv(1))
 
@@ -1323,6 +1360,7 @@ more information concerning JSV in xxqs_name_sxx_jsv(1))
 Available for `qrsh` and `qlogin` only.
 
 `-pty yes` enforces the job to be started in a pseudo terminal (pty). If no pty is available, the job start fails. 
+See xxqs_name_sxx_ijs(5) for what the pty is used for in the builtin transport. 
 `-pty no` enforces the job to be started without a pty. By default, `qrsh` without a command and `qlogin` start the 
 job in a pty, `qrsh` with a command starts the job without a pty.
 
@@ -1383,6 +1421,12 @@ the token to the execd that runs the job. The waiting shepherd opens a fresh com
 connection back to the new client, presents the token, and on a match `SIGCONT`s the job
 and resumes the PTY bridge. From that point on, keystrokes and output flow to the new
 terminal; the original client is fully replaced.
+
+"Fully replaced" covers the terminal session — input, output, signals and window size.
+X11 forwarding is not part of it: a session started with `-X` continues without a usable
+display after the reconnect (see `-X` above).
+
+See xxqs_name_sxx_ijs(5) for the reconnect handshake and the grace period.
 
 The reconnect uses TLS-protected commlib (since 9.1.0) and respects the configured
 *port_range*, so existing firewall rules continue to apply. Because the token is
