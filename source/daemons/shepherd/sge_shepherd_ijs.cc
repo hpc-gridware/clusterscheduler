@@ -109,6 +109,7 @@ static char             g_x11_socket_path[108]           = "";   ///< path to /t
 static char             g_x11_xauth_path[SGE_PATH_MAX]   = "";   ///< path to ~/.Xauthority (for cleanup)
 static uint8_t          g_x11_cookie[16]                 = {};   ///< this session's cookie -- identifies our own Xau record
 static bool             g_x11_cookie_written             = false; ///< true once the record is in ~/.Xauthority
+static uid_t            g_x11_xauth_uid                  = (uid_t)-1; ///< euid that wrote the record -- the cleanup needs the same one
 static pthread_mutex_t  g_x11_mutex                      = PTHREAD_MUTEX_INITIALIZER;
 
 /*
@@ -539,6 +540,7 @@ static bool setup_x11_forwarding(const char *cookie_hex) {
          // apart from the records of other sessions.
          memcpy(g_x11_cookie, cookie_bin, sizeof(g_x11_cookie));
          g_x11_cookie_written = true;
+         g_x11_xauth_uid = geteuid();
          shepherd_trace("setup_x11_forwarding: wrote Xau entry to %s for display :%d",
                         xauth_path, g_x11_display_num);
       } else {
@@ -598,38 +600,93 @@ static void cleanup_x11_xauth_entry() {
    // .Xauthority don't lose each other's edits.
    char lock_path[SGE_PATH_MAX];
    snprintf(lock_path, sizeof(lock_path), "%s-shepherd.lock", g_x11_xauth_path);
+   // Do the file work as the user who wrote the entry, not as root.
+   //
+   // setup_x11_forwarding() runs with euid = job owner, which is why appending
+   // works. By the time we clean up, euid is root again -- and $HOME is regularly
+   // an NFS mount with root_squash, where root is mapped to nobody and may neither
+   // create the temp file nor rename it over the user's file. The cleanup then
+   // fails silently and leaves one Xau record behind per session (CS-2498).
+   struct stat xauth_st;
+   uid_t owner_uid = g_x11_xauth_uid;
+   if (stat(g_x11_xauth_path, &xauth_st) == 0) {
+      owner_uid = xauth_st.st_uid;
+   }
+   uid_t prev_euid = geteuid();
+   bool euid_switched = false;
+   if (owner_uid != (uid_t)-1 && prev_euid != owner_uid) {
+      if (seteuid(owner_uid) == 0) {
+         euid_switched = true;
+      } else {
+         shepherd_trace("cleanup_x11_xauth_entry: cannot switch to uid %d: %s -- trying as uid %d",
+                        (int)owner_uid, strerror(errno), (int)prev_euid);
+      }
+   }
+
+   // Not being able to lock must not stop the cleanup. $HOME is frequently an NFS
+   // mount, and with root_squash the shepherd -- running as root at this point --
+   // gets EACCES on the job owner's 0600 lock file. Returning here then leaks one
+   // Xau record per session, forever (CS-2498). Serialising is the better case,
+   // cleaning up unserialised is still much better than not cleaning up.
    int lock_fd = open(lock_path, O_CREAT | O_RDWR, 0600);
    if (lock_fd < 0) {
-      shepherd_trace("cleanup_x11_xauth_entry: cannot open lock %s: %s",
+      shepherd_trace("cleanup_x11_xauth_entry: cannot open lock %s: %s -- continuing unserialised",
                      lock_path, strerror(errno));
-      return;
-   }
-   if (flock(lock_fd, LOCK_EX) != 0) {
-      shepherd_trace("cleanup_x11_xauth_entry: cannot acquire lock %s: %s",
+   } else if (flock(lock_fd, LOCK_EX) != 0) {
+      shepherd_trace("cleanup_x11_xauth_entry: cannot acquire lock %s: %s -- continuing unserialised",
                      lock_path, strerror(errno));
       close(lock_fd);
-      return;
+      lock_fd = -1;
    }
 
    FILE *src = fopen(g_x11_xauth_path, "rb");
    if (src == nullptr) {
       // No xauth file: nothing to clean.
-      flock(lock_fd, LOCK_UN);
-      close(lock_fd);
+      if (lock_fd >= 0) { flock(lock_fd, LOCK_UN); close(lock_fd); }
+      if (euid_switched) { seteuid(prev_euid); }
       return;
    }
 
-   char tmp_path[SGE_PATH_MAX];
-   snprintf(tmp_path, sizeof(tmp_path), "%s.shepherd.tmp", g_x11_xauth_path);
-   FILE *dst = fopen(tmp_path, "wb");
-   if (dst == nullptr) {
-      shepherd_trace("cleanup_x11_xauth_entry: cannot open temp file %s: %s",
-                     tmp_path, strerror(errno));
-      fclose(src);
-      flock(lock_fd, LOCK_UN);
-      close(lock_fd);
-      return;
-   }
+   // Rewrite in place instead of writing a temp file and renaming it over the
+   // original. The rename needs write permission on $HOME, which is regularly an
+   // NFS mount with root_squash where even the switch to the owner does not buy
+   // us directory rights reliably -- and a cleanup that cannot write leaves one
+   // Xau record behind per session (CS-2498). Writing into the file itself needs
+   // nothing but the file's own permissions.
+   //
+   // The price is atomicity: a reader arriving mid-write sees a truncated file.
+   // The lock above covers the shepherds against each other; the window against
+   // an unrelated xauth reader is a few hundred microseconds for a file of a few
+   // hundred bytes, against a leak that is permanent.
+   char *keep_buf = nullptr;
+   size_t keep_len = 0, keep_cap = 0;
+   auto keep_append = [&](const void *data, size_t len) {
+      if (keep_len + len > keep_cap) {
+         size_t want = (keep_cap == 0) ? 4096 : keep_cap * 2;
+         while (want < keep_len + len) { want *= 2; }
+         char *bigger = static_cast<char *>(realloc(keep_buf, want));
+         if (bigger == nullptr) { return false; }
+         keep_buf = bigger;
+         keep_cap = want;
+      }
+      memcpy(keep_buf + keep_len, data, len);
+      keep_len += len;
+      return true;
+   };
+
+   // Our own record is the one that carries both this session's display number and
+   // the cookie -- and there is exactly one of it, so at most one is dropped.
+   //
+   // Neither field identifies the session on its own. The display number is
+   // released by the caller before we get here, so another shepherd may already
+   // have taken it; and the cookie is the cookie of the user's real display, which
+   // the client reads with "xauth list" -- every session of that user sends the
+   // same 16 bytes. Matching on either alone removes the records of sessions that
+   // are still running (CS-2496, CS-2498).
+   char target_display_str[16];
+   snprintf(target_display_str, sizeof(target_display_str), "%d", g_x11_display_num);
+   size_t target_display_len = strlen(target_display_str);
+   bool removed_own = false;
 
    auto read_u16 = [&](uint16_t *out) -> bool {
       uint8_t b[2];
@@ -639,7 +696,7 @@ static void cleanup_x11_xauth_entry() {
    };
    auto write_u16 = [&](uint16_t v) {
       uint8_t b[2] = {static_cast<uint8_t>(v >> 8), static_cast<uint8_t>(v & 0xFF)};
-      fwrite(b, 1, 2, dst);
+      keep_append(b, 2);
    };
 
    int removed = 0;
@@ -667,15 +724,14 @@ static void cleanup_x11_xauth_entry() {
       size_t data_n = std::min<size_t>(data_len, sizeof(data_buf));
       if (fread(data_buf, 1, data_n, src) != data_n) break;
 
-      // Drop the record carrying this session's cookie -- and only that one.
-      //
-      // The display number is not an identity. The caller closes the listen socket
-      // and unlinks /tmp/.X11-unix/XN before it gets here, so from that moment any
-      // other shepherd of this user may bind :N and write its own record for the
-      // same number. Removing by number then takes away the cookie of a session
-      // that is still running (CS-2496). The 16 cookie bytes are unique per session.
-      if (data_n == sizeof(g_x11_cookie) &&
+      // Drop our own record: display number and cookie must both match, and only
+      // the first such record goes -- see the note above the loop.
+      if (!removed_own &&
+          disp_n == target_display_len &&
+          memcmp(disp_buf, target_display_str, target_display_len) == 0 &&
+          data_n == sizeof(g_x11_cookie) &&
           memcmp(data_buf, g_x11_cookie, sizeof(g_x11_cookie)) == 0) {
+         removed_own = true;
          removed++;
          continue;
       }
@@ -683,29 +739,56 @@ static void cleanup_x11_xauth_entry() {
       // Keep this record.
       write_u16(family);
       write_u16(addr_len);
-      fwrite(addr_buf, 1, addr_n, dst);
+      keep_append(addr_buf, addr_n);
       write_u16(disp_len);
-      fwrite(disp_buf, 1, disp_n, dst);
+      keep_append(disp_buf, disp_n);
       write_u16(name_len);
-      fwrite(name_buf, 1, name_n, dst);
+      keep_append(name_buf, name_n);
       write_u16(data_len);
-      fwrite(data_buf, 1, data_n, dst);
+      keep_append(data_buf, data_n);
    }
 
    fclose(src);
-   fclose(dst);
 
-   if (rename(tmp_path, g_x11_xauth_path) != 0) {
-      shepherd_trace("cleanup_x11_xauth_entry: rename %s -> %s failed: %s",
-                     tmp_path, g_x11_xauth_path, strerror(errno));
-      unlink(tmp_path);
+   if (removed == 0) {
+      shepherd_trace("cleanup_x11_xauth_entry: no entry of this session found (display :%d)",
+                     g_x11_display_num);
    } else {
-      shepherd_trace("cleanup_x11_xauth_entry: removed %d xauth entry/entries of this session (display :%d)",
-                     removed, g_x11_display_num);
+      int fd = open(g_x11_xauth_path, O_WRONLY);
+      if (fd < 0) {
+         shepherd_trace("cleanup_x11_xauth_entry: cannot open %s for writing: %s",
+                        g_x11_xauth_path, strerror(errno));
+      } else {
+         bool ok = true;
+         size_t off = 0;
+         while (off < keep_len) {
+            ssize_t n = write(fd, keep_buf + off, keep_len - off);
+            if (n <= 0) { ok = false; break; }
+            off += static_cast<size_t>(n);
+         }
+         if (ok && ftruncate(fd, static_cast<off_t>(keep_len)) != 0) { ok = false; }
+         close(fd);
+         if (ok) {
+            // Our record is gone; a second call (see close_parent_loop) must not
+            // rewrite the file again.
+            g_x11_cookie_written = false;
+            shepherd_trace("cleanup_x11_xauth_entry: removed %d xauth entry/entries of this session (display :%d)",
+                           removed, g_x11_display_num);
+         } else {
+            shepherd_trace("cleanup_x11_xauth_entry: writing %s failed: %s",
+                           g_x11_xauth_path, strerror(errno));
+         }
+      }
    }
+   free(keep_buf);
 
-   flock(lock_fd, LOCK_UN);
-   close(lock_fd);
+   if (lock_fd >= 0) {
+      flock(lock_fd, LOCK_UN);
+      close(lock_fd);
+   }
+   if (euid_switched) {
+      seteuid(prev_euid);
+   }
 }
 
 /****** pty_to_commlib() *******************************************************
@@ -1899,6 +1982,12 @@ int close_parent_loop(int exit_status)
    int     ret = 0;
    char    sz_exit_status[21];
    DSTRING_STATIC(err_msg, MAX_STRING_SIZE);
+
+   // Remove our ~/.Xauthority record here as well, not only in pty_to_commlib.
+   // That thread exists in pty mode; a qrsh -X session runs without it and used to
+   // leave its record behind, one per session, forever (CS-2498). The call is a
+   // no-op when nothing was written or when the pty path already cleaned up.
+   cleanup_x11_xauth_entry();
 
    /*
     * Send UNREGISTER_CTRL_MSG
