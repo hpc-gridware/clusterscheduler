@@ -62,6 +62,13 @@ add_executable(test_drmaa_cs2404 ../../../test/libs/drmaa/test_drmaa_cs2404.cc)
 target_include_directories(test_drmaa_cs2404 PRIVATE "./")
 target_link_libraries(test_drmaa_cs2404 PRIVATE drmaa ${SGE_LIBS})
 
+# CS-2447 probe. Measures drmaa_wait() event latency with the job runtime
+# excluded, to check whether it scales with SGE_JAPI_EDTIME. Not wired into
+# CTest because it submits jobs and therefore needs a live cluster.
+add_executable(test_drmaa_cs2447 ../../../test/libs/drmaa/test_drmaa_cs2447.cc)
+target_include_directories(test_drmaa_cs2447 PRIVATE "./")
+target_link_libraries(test_drmaa_cs2447 PRIVATE drmaa ${SGE_LIBS})
+
 if (INSTALL_SGE_TEST)
    install(TARGETS test_drmaa DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_drmaa_issue1768 DESTINATION testbin/${SGE_ARCH})
@@ -72,4 +79,5 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_drmaa_perf DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_drmaa_sync DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_drmaa_cs2404 DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_drmaa_cs2447 DESTINATION testbin/${SGE_ARCH})
 endif ()
