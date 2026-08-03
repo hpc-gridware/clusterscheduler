@@ -63,6 +63,11 @@
  * <njobs>          Number of jobs submitted in parallel. Default 5. Keep it
  *                  at or below the number of free slots, otherwise the
  *                  surplus queues and inflates local_lat.
+ *
+ * sleep_seconds must exceed the time the cluster needs to dispatch the whole
+ * batch, otherwise the jobs never overlap and local_lat measures dispatch
+ * rather than event latency. The probe reports the observed start spread and
+ * warns when that condition is violated.
  * <native_spec>    Passed verbatim as DRMAA_NATIVE_SPECIFICATION, e.g.
  *                  "-l h=somehost" to pin all jobs to one execution host.
  *
@@ -318,6 +323,62 @@ main(int argc, char *argv[]) {
    print_stats("local_lat = drmaa_wait() return - (submitted + sleep)",
                "            (submit host clock only, immune to skew; also contains\n"
                "             dispatch and queueing delay)", local_lat);
+
+   /* ---- start spread: is the measurement even valid? --------------------
+    *
+    * The whole point of submitting everything before reaping anything is
+    * that the jobs run concurrently and end together, so what is measured
+    * is event latency rather than the cluster working through a queue. If
+    * dispatching the batch takes longer than a job runs, the first jobs
+    * finish before the last ones start, the batch never overlaps, and
+    * local_lat degenerates into a measurement of dispatch time - it
+    * contains the full start delay of every job by construction.
+    *
+    * That is easy to hit on a small or loaded machine (~80 ms/job of
+    * dispatch has been observed on a laptop VM), and it silently produces
+    * a latency that grows with the job count, which is exactly the false
+    * positive this warning exists to prevent. */
+   {
+      double min_start = 0.0, max_start = 0.0, min_end = 0.0;
+      bool have = false;
+
+      for (const auto &r : jobs) {
+         if (!r.reaped || r.start_time <= 0.0) {
+            continue;
+         }
+         if (!have) {
+            min_start = max_start = r.start_time;
+            min_end = r.end_time;
+            have = true;
+         } else {
+            if (r.start_time < min_start) min_start = r.start_time;
+            if (r.start_time > max_start) max_start = r.start_time;
+            if (r.end_time > 0.0 && (min_end <= 0.0 || r.end_time < min_end)) min_end = r.end_time;
+         }
+      }
+
+      if (have) {
+         const double spread = max_start - min_start;
+         printf("\nstart spread (last job start - first job start): %.3f s\n", spread);
+
+         if (spread >= sleep_d) {
+            printf("\n*** WARNING: start spread %.3f s >= job runtime %.3f s.\n", spread, sleep_d);
+            printf("***          The jobs did NOT run concurrently");
+            if (min_end > 0.0 && min_end < max_start) {
+               printf(" - the first job ended %.3f s\n"
+                      "***          BEFORE the last one started",
+                      max_start - min_end);
+            }
+            printf(".\n");
+            printf("***          local_lat therefore measures job dispatch, not event\n");
+            printf("***          latency, and will grow with the job count for that\n");
+            printf("***          reason alone. Re-run with a longer sleep (>= %.0f s for\n",
+                   spread * 2.0);
+            printf("***          this job count on this cluster), or read wait_lat,\n");
+            printf("***          which is measured against each job's own end_time.\n");
+         }
+      }
+   }
 
    printf("\ntotal wallclock (submit .. last reap): %.3f s\n", t_all1 - t_all0);
 
