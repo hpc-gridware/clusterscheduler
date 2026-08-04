@@ -705,25 +705,17 @@ sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost)
 static void
 sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t *monitor)
 {
-   lListElem *event_client = nullptr;
-   u_long32 id;
-   u_long32 busy;
-   u_long32 busy_handling;
-   u_long32 ev_d_time;
-   lListElem *clio = nullptr;
-   cl_thread_settings_t *thread_config = nullptr;
-
    DENTER(TOP_LAYER);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
 
-   clio = lGetObject(request, EVR_event_client);
+   lListElem *clio = lGetObject(request, EVR_event_client);
 
    /* try to find event_client */
-   id = lGetUlong(clio, EV_id);
+   u_long32 id = lGetUlong(clio, EV_id);
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
-   event_client = get_event_client(id);
+   lListElem *event_client = get_event_client(id);
 
    if (event_client == nullptr) {
       sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
@@ -733,9 +725,9 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
    }
 
    /* these parameters can be changed */
-   busy = lGetUlong(clio, EV_busy);
-   ev_d_time = lGetUlong(clio, EV_d_time);
-   busy_handling = lGetUlong(clio, EV_busy_handling);
+   u_long32 busy = lGetUlong(clio, EV_busy);
+   u_long32 ev_d_time = lGetUlong(clio, EV_d_time);
+   u_long32 busy_handling = lGetUlong(clio, EV_busy_handling);
 
    /* check for validity */
    if (ev_d_time < 1) {
@@ -757,9 +749,11 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
     * next_delivery_time - old_interval + new_interval
     */
    if (ev_d_time != lGetUlong(event_client, EV_d_time)) {
+      u_long64 old_interval = sge_gmt32_to_gmt64(lGetUlong(event_client, EV_d_time));
+      u_long64 new_interval = sge_gmt32_to_gmt64(ev_d_time);
+
       lSetUlong64(event_client, EV_next_send_time,
-                lGetUlong64(event_client, EV_next_send_time) -
-                        sge_gmt32_to_gmt64(lGetUlong(event_client, EV_d_time) + ev_d_time));
+                  lGetUlong64(event_client, EV_next_send_time) - old_interval + new_interval);
       lSetUlong(event_client, EV_d_time, ev_d_time);
    }
 
@@ -835,7 +829,7 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
 
    MONITOR_EDT_MOD(monitor);
 
-   thread_config = cl_thread_get_thread_config();
+   cl_thread_settings_t *thread_config = cl_thread_get_thread_config();
    DEBUG(MSG_SGETEXT_MODIFIEDINLIST_SSSS, thread_config ? thread_config->thread_name : "-NA-", "master host", lGetString(event_client, EV_name), MSG_EVE_EVENTCLIENT);
 
    sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
