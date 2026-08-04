@@ -7941,7 +7941,11 @@ static bool show_manop_list(const char *userset_name, const char *display_name)
 
    if (qconf_opt_format == SP_FORM_JSON) {
       dstring out = DSTRING_INIT;
-      spool_json_write_name_list(&alp, entries, UE_name, &out);
+      /* Name the envelope explicitly: the entries are UE_Type, which is not a
+       * registered object type, so deriving it would yield "unknown" for both -sm
+       * and -so. display_name keeps the pre-CS-2431 "manager"/"operator" envelope
+       * and its ocs-qconf-<name>-list.schema.json id. */
+      spool_json_write_name_list_ex(&alp, entries, UE_name, display_name, &out);
       printf("%s", sge_dstring_get_string(&out));
       sge_dstring_free(&out);
    } else if (entries != nullptr && lGetNumberOfElem(entries) > 0) {

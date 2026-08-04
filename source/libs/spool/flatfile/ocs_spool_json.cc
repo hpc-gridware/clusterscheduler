@@ -1411,6 +1411,29 @@ spool_json_write_typed_list(lList **answer_list, const lList *list,
 bool
 spool_json_write_name_list(lList **answer_list, const lList *list, int keynm, dstring *out)
 {
+   return spool_json_write_name_list_ex(answer_list, list, keynm, nullptr, out);
+}
+
+/**
+ * @brief Serialize a bare name list with an explicitly named envelope.
+ *
+ * Same output as spool_json_write_name_list(), except that @p type_name - when given -
+ * names the envelope instead of it being derived from the first element's object type.
+ * Needed where the elements are not a registered object type: object_get_type_name()
+ * yields "unknown" for those, which both breaks the $id (there is no
+ * ocs-qconf-unknown-list.schema.json) and makes two different lists indistinguishable.
+ *
+ * @param answer_list  for returning errors
+ * @param list         the list of name-bearing elements
+ * @param keynm        CULL field id of the name attribute
+ * @param type_name    envelope/$id name, or nullptr to derive it from the first element
+ * @param out          dstring the JSON document is appended to
+ * @return true on success
+ */
+bool
+spool_json_write_name_list_ex(lList **answer_list, const lList *list, int keynm,
+                              const char *type_name, dstring *out)
+{
    DENTER(JSON_LAYER);
 
    rapidjson::StringBuffer sb;
@@ -1422,12 +1445,14 @@ spool_json_write_name_list(lList **answer_list, const lList *list, int keynm, ds
 
    /* same $schema/$id envelope as the object lists, but the array holds bare names */
    writer.StartObject();
-   if (first != nullptr) {
+   if (type_name != nullptr || first != nullptr) {
       /* CS-2320: a name list carries its own "<type>-list" schema id so it is
        * distinguishable from the object schema and from a record list that shares
        * the same envelope key (e.g. -sc vs -scel, both "complex_entry"); the array
        * key itself stays the plain object type name. */
-      const char *type_name = spool_json_typename(first, &key);
+      if (type_name == nullptr) {
+         type_name = spool_json_typename(first, &key);
+      }
       dstring list_id = DSTRING_INIT;
       sge_dstring_sprintf(&list_id, "%s-list", type_name);
       spool_json_write_envelope_name(writer, sge_dstring_get_string(&list_id));

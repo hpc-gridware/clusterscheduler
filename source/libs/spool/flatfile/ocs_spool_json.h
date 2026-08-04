@@ -58,6 +58,13 @@ spool_json_write_list(lList **answer_list, const lList *list,
 bool
 spool_json_write_name_list(lList **answer_list, const lList *list, int keynm, dstring *out);
 
+/* Like spool_json_write_name_list but with an explicit @p type_name for the envelope, for
+ * lists whose element type is not a registered object and would otherwise be reported as
+ * "unknown" (CS-2431: -sm/-so now read UE_Type entries of the reserved access lists). */
+bool
+spool_json_write_name_list_ex(lList **answer_list, const lList *list, int keynm,
+                              const char *type_name, dstring *out);
+
 /* Like spool_json_write_list but with an explicit @p type_name for the envelope $id and
  * the array key (for lists whose element type is not a registered object, e.g. -stl). */
 bool
