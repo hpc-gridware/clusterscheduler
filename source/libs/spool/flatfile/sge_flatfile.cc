@@ -899,8 +899,8 @@ spool_flatfile_write_list(lList **answer_list,
       case SP_FORM_CULL:
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                  ANSWER_QUALITY_ERROR,
-                                 MSG_NOTYETIMPLEMENTED_S,
-                                 "XML and CULL spooling");
+                                 MSG_SPOOL_FORMATNOTSUPPORTED_S,
+                                 "XML and CULL");
          break;
    }
 
@@ -1055,7 +1055,9 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
       case SP_FORM_XML:
       case SP_FORM_CULL:
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
-                                 ANSWER_QUALITY_ERROR, "not yet implemented");
+                                 ANSWER_QUALITY_ERROR,
+                                 MSG_SPOOL_FORMATNOTSUPPORTED_S,
+                                 "XML and CULL");
          break;
    }
 

@@ -61,5 +61,9 @@
 #define MSG_RSMAP_INCONSISTENTAMOUNT_SSUU    _MESSAGE(62020, _("RSMAP " SFQ " value " SFQ " has amount " sge_u32 " but " sge_u32 " elements "))
 #define MSG_SPOOL_UNSAFE_KEY_S               _MESSAGE(62021, _("refusing to spool object with unsafe key " SFQ " (must not contain '/' or start with '.')"))
 #define MSG_SPOOL_LEGACYCLASSICPARAMS        _MESSAGE(62022, _("obsolete classic spooling parameter format: expected a single spool directory path, but the bootstrap file still uses the legacy common_dir;spool_dir form - please migrate it"))
+// Deliberately "not supported", not "not yet implemented": XML/CULL formats are frozen. The existing
+// XML-producing commands stay for compatibility, but nothing new is added - JSON is the supported
+// structured format.
+#define MSG_SPOOL_FORMATNOTSUPPORTED_S       _MESSAGE(62023, _("spooling format " SFQ " is not supported - use JSON for structured output"))
 
 // clang-format on
