@@ -27,6 +27,17 @@ target_include_directories(test_qmaster_timed_event PRIVATE "./")
 target_link_libraries(test_qmaster_timed_event PRIVATE sched mir evc sgeobj gdi cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_qmaster_timed_event COMMAND test_qmaster_timed_event)
 
+# CS-2438: the reserved host group guards live in the qmaster (hgroup_del(),
+# hgroup_mod()) and need a data store, a GDI packet and spooling -- so unlike
+# test_sgeobj_hgroup this one talks to a RUNNING qmaster over GDI.
+# Registered but DISABLED, like test_mir_basic and test_spool: a plain ctest run
+# has no cluster. Installed into testbin/ so a testsuite check can drive it.
+add_executable(test_qmaster_hgroup_reserved test_qmaster_hgroup_reserved.cc)
+target_include_directories(test_qmaster_hgroup_reserved PRIVATE "./")
+target_link_libraries(test_qmaster_hgroup_reserved PRIVATE gdi sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_qmaster_hgroup_reserved COMMAND test_qmaster_hgroup_reserved)
+set_tests_properties(test_qmaster_hgroup_reserved PROPERTIES DISABLED TRUE)
+
 add_executable(test_qmaster_calendar
       test_qmaster_calendar.cc
         ../../../source/daemons/qmaster/ocs_CategoryQmaster.cc
@@ -96,6 +107,7 @@ target_link_libraries(
 add_test(NAME test_qmaster_calendar COMMAND test_qmaster_calendar)
 
 if (INSTALL_SGE_TEST)
+   install(TARGETS test_qmaster_hgroup_reserved DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_timed_event DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_calendar DESTINATION testbin/${SGE_ARCH})
 endif ()

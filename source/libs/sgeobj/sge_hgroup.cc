@@ -36,6 +36,7 @@
  */
 
 #include <cstdio>
+#include <cstring>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_hostname.h"
@@ -56,6 +57,61 @@
 #include "msg_common.h"
 
 #define HGROUP_LAYER TOP_LAYER
+
+/****** sgeobj/hgroup/hgroup_is_reserved() ************************************
+*  NAME
+*     hgroup_is_reserved() -- is this one of the reserved host groups?
+*
+*  FUNCTION
+*     True for @admin_hosts, @submit_hosts and @exec_hosts (CS-2438). These
+*     back what used to be the AH_LIST/SH_LIST data models and the execution
+*     host list, so they may not be deleted and carry extra rules on write.
+*
+*     Comparison is case-sensitive, matching how the reserved usersets are
+*     compared in sge_userset_qmaster.cc: the names are fixed literals the
+*     product creates itself, not something a user types in a locale.
+*
+*  INPUTS
+*     const char *name - host group name including the leading '@'
+*
+*  RESULT
+*     bool - true if reserved
+*
+*  NOTES
+*     MT-NOTE: hgroup_is_reserved() is MT safe
+*******************************************************************************/
+bool hgroup_is_reserved(const char *name)
+{
+   return name != nullptr &&
+          (strcmp(name, ADMIN_HOSTGROUP) == 0 ||
+           strcmp(name, SUBMIT_HOSTGROUP) == 0 ||
+           strcmp(name, EXEC_HOSTGROUP) == 0);
+}
+
+/****** sgeobj/hgroup/hgroup_is_system_maintained() ***************************
+*  NAME
+*     hgroup_is_system_maintained() -- may nobody write this group?
+*
+*  FUNCTION
+*     True only for @exec_hosts, which the qmaster derives from the execution
+*     host list. Write access is refused for every role including manager --
+*     the spec states this independently of RBAC (04_Logical_View.md, "Protected
+*     Object Keys"), because a hand-edited copy would silently disagree with the
+*     exec host list it is supposed to mirror.
+*
+*  INPUTS
+*     const char *name - host group name including the leading '@'
+*
+*  RESULT
+*     bool - true if the group is maintained by the system
+*
+*  NOTES
+*     MT-NOTE: hgroup_is_system_maintained() is MT safe
+*******************************************************************************/
+bool hgroup_is_system_maintained(const char *name)
+{
+   return name != nullptr && strcmp(name, EXEC_HOSTGROUP) == 0;
+}
 
 /****** sgeobj/hgroup/hgroup_check_name() *************************************
 *  NAME

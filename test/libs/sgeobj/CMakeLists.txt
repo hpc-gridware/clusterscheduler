@@ -90,6 +90,13 @@ target_include_directories(test_sgeobj_manop PRIVATE "./")
 target_link_libraries(test_sgeobj_manop PRIVATE gdi sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_manop COMMAND test_sgeobj_manop)
 
+# hgroup_is_reserved()/hgroup_is_system_maintained() are plain predicates in
+# sgeobj -- no gdi needed, unlike test_sgeobj_manop above.
+add_executable(test_sgeobj_hgroup test_sgeobj_hgroup.cc)
+target_include_directories(test_sgeobj_hgroup PRIVATE "./")
+target_link_libraries(test_sgeobj_hgroup PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_sgeobj_hgroup COMMAND test_sgeobj_hgroup)
+
 add_executable(test_sgeobj_usage test_sgeobj_usage.cc)
 target_include_directories(test_sgeobj_usage PRIVATE "./")
 target_link_libraries(test_sgeobj_usage PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
@@ -123,6 +130,7 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_sgeobj_qref DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_role DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_manop DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sgeobj_hgroup DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_usage DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_usage_parse DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_ulong DESTINATION testbin/${SGE_ARCH})

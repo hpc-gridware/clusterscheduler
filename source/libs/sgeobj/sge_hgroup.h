@@ -35,7 +35,29 @@
 
 #include "sgeobj/cull/sge_hgroup_HGRP_L.h"
 
+/* Reserved host groups backing the admin/submit host lists (CS-2438), the
+ * counterpart to MANAGER_USERSET/OPERATOR_USERSET in sge_userset.h.
+ *
+ * The leading '@' is part of the stored HGRP_name: ocs::is_hgroup_name() is
+ * name[0] == '@' (uti/ocs_Pattern.h), and hgroup_check_name() validates the
+ * remainder from name[1] on.
+ *
+ * ADMIN and SUBMIT are maintained through the classic interface
+ * (qconf -ah/-dh/-as/-ds) as well as the host group CLI; EXEC is derived from
+ * the execution host list and is read-only for everyone, managers included.
+ */
+#define ADMIN_HOSTGROUP    "@admin_hosts"
+#define SUBMIT_HOSTGROUP   "@submit_hosts"
+#define EXEC_HOSTGROUP     "@exec_hosts"
+
 bool hgroup_check_name(lList **answer_list, const char* name);
+
+/* true if name is one of the three reserved host groups above */
+bool hgroup_is_reserved(const char *name);
+
+/* true if name is a reserved group that no role may write (currently only
+ * EXEC_HOSTGROUP, which the system maintains from the exec host list) */
+bool hgroup_is_system_maintained(const char *name);
 
 /* --- */
 

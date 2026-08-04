@@ -36,6 +36,7 @@
 #include <cctype>
 #include <cstring>
 
+#include "uti/sge_component.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -234,6 +235,33 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
    if (pos >= 0) {
       const char *name = lGetPosHost(reduced_elem, pos);
 
+      /*
+       * @exec_hosts is derived from the execution host list, so no GDI write
+       * may touch it -- for every role including manager (CS-2438; the spec
+       * states this independently of RBAC, 04_Logical_View.md "Protected Object
+       * Keys"). The qmaster's own maintenance of the group does not run through
+       * hgroup_mod(), so it is unaffected by this refusal.
+       *
+       * Both names are examined: the incoming one, and on modify the name of
+       * the group actually being changed, so the group cannot be reached by
+       * renaming something else onto it.
+       */
+      {
+         const char *existing_name = add ? nullptr : lGetHost(hgroup, HGRP_name);
+         const char *reserved = nullptr;
+
+         if (hgroup_is_system_maintained(name)) {
+            reserved = name;
+         } else if (hgroup_is_system_maintained(existing_name)) {
+            reserved = existing_name;
+         }
+         if (reserved != nullptr) {
+            ERROR(MSG_HGRP_RESERVED_READONLY_S, reserved);
+            answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_EEXIST);
+         }
+      }
+
       if (add) {
          /* Check groupname for new hostgroups */
          if (hgroup_check_name(answer_list, name)) {
@@ -278,6 +306,35 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
          if (ret) {
             ret &= hgroup_mod_hostlist(hgroup, answer_list, reduced_elem, cmd, sub_command, &add_hosts, &rem_hosts, &occupant_groups);
          }
+
+         /*
+          * The qmaster host must stay a member of @admin_hosts (CS-2438). This
+          * ports MSG_SGETEXT_CANTDELADMINQMASTER_S from sge_del_host(), which
+          * guarded the same thing while the admin hosts were their own list.
+          *
+          * Checked on the END STATE, after hgroup_mod_hostlist() has applied the
+          * change, rather than by rejecting a particular operation -- the lesson
+          * CS-2394 recorded for userset_mod(): every route in (-mhgrp, -Mhgrp,
+          * the sub-command paths, and the classic -dh once chunk 3 redirects it)
+          * ends here, so one end-state check covers them all and none of them has
+          * to be enumerated.
+          *
+          * Direct membership only: a qmaster host reachable through a nested
+          * group would still be an admin host, but the guarantee the old check
+          * gave was about the entry itself, and chunk 4 makes nested removal an
+          * error of its own.
+          */
+         if (ret && strcmp(lGetHost(hgroup, HGRP_name), ADMIN_HOSTGROUP) == 0) {
+            const char *qualified_hostname = component_get_qualified_hostname();
+            const lList *host_list = lGetList(hgroup, HGRP_host_list);
+
+            if (href_list_locate(host_list, qualified_hostname) == nullptr) {
+               ERROR(MSG_HGRP_RESERVED_NOQMASTER_SS, qualified_hostname, ADMIN_HOSTGROUP);
+               answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+               ret = false;
+            }
+         }
+
          if (ret) {
             const lListElem *cqueue;
 
@@ -431,6 +488,20 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
        */
       if (name != nullptr) {
          lListElem *hgroup;
+
+         /*
+          * The reserved host groups back the admin/submit host lists and the
+          * execution host list (CS-2438). Deleting one would drop every admin
+          * or submit host at once, so it is refused here -- the same guard the
+          * reserved usersets get in sge_del_userset(). Checked before the
+          * existence lookup so the answer does not depend on whether the group
+          * happens to be spooled yet.
+          */
+         if (hgroup_is_reserved(name)) {
+            ERROR(MSG_HGRP_RESERVED_NODELETE_S, name);
+            answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_EEXIST);
+         }
 
          /*
           * Does this hostgroup exist?

@@ -706,5 +706,12 @@
 #define MSG_USERSET_RESERVED_NODELETE_S        _MESSAGE(33992, _("denied: the reserved userset " SFQ " backs the manager/operator list and cannot be deleted; remove its members instead"))
 #define MSG_USERSET_RESERVED_MUSTBEACL_S       _MESSAGE(33993, _("denied: the reserved userset " SFQ " backs the manager/operator list and must stay a user access list (type ACL)"))
 #define MSG_ROLE_PARENT_CYCLE_SS               _MESSAGE(33991, _("denied: adding role " SFQ " as parent of role " SFQ " would create a cycle in the role hierarchy"))
+// Reserved host groups (CS-2438) -- the counterpart to the reserved-userset
+// messages above. @admin_hosts/@submit_hosts back what used to be the admin and
+// submit host lists; @exec_hosts is derived from the execution host list.
+#define MSG_HGRP_RESERVED_NODELETE_S           _MESSAGE(33994, _("denied: the reserved host group " SFQ " backs the admin/submit host list and cannot be deleted; remove its members instead"))
+#define MSG_HGRP_RESERVED_READONLY_S           _MESSAGE(33995, _("denied: the host group " SFQ " is maintained by the system from the execution host list and cannot be modified"))
+#define MSG_HGRP_RESERVED_NOQMASTER_SS         _MESSAGE(33996, _("denied: host " SFQ " runs the qmaster and cannot be removed from the reserved host group " SFQ))
+#define MSG_HGRP_RESERVED_NOSEED_S             _MESSAGE(33997, _("can't write reserved host group " SFQ " to the spool area"))
 
 // clang-format on

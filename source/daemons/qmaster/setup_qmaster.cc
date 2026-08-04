@@ -65,6 +65,7 @@
 #include "sgeobj/ocs_Role.h"
 #include "sgeobj/ocs_Session.h"
 #include "sgeobj/ocs_Usage.h"
+#include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_answer.h"
@@ -949,6 +950,53 @@ setup_qmaster() {
    DPRINTF("host group definitions-----------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), SGE_TYPE_HGROUP);
    answer_list_output(&answer_list);
+
+   /*
+    * CS-2438: admin and submit hosts are stored in the reserved "@admin_hosts"
+    * and "@submit_hosts" host groups; "@exec_hosts" mirrors the execution host
+    * list. Ensure all three exist, the same way CS-2394 seeds the reserved
+    * manager/operator usersets a few lines below.
+    *
+    * No migration is attempted here. A minor-release upgrade (9.0.x/9.1.x ->
+    * 9.2.0) is the only supported path, and the upgrade procedure reads the old
+    * admin_hosts/submit_hosts spool entries and writes them into these groups.
+    *
+    * Idempotent: an existing group is left untouched, except that the qmaster
+    * host is (re-)added to @admin_hosts -- the guarantee the "add qmaster host
+    * to master admin host list" step further below gave while admin hosts were
+    * their own list.
+    */
+   {
+      lList **master_hgroup_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
+
+      for (const char *hgrp_name : {ADMIN_HOSTGROUP, SUBMIT_HOSTGROUP, EXEC_HOSTGROUP}) {
+         lListElem *hgrp = lGetElemHostRW(*master_hgroup_list, HGRP_name, hgrp_name);
+         bool changed = false;
+
+         if (hgrp == nullptr) {
+            hgrp = lAddElemHost(master_hgroup_list, HGRP_name, hgrp_name, HGRP_Type);
+            if (hgrp == nullptr) {
+               CRITICAL(MSG_SGETEXT_NOMEM);
+               DRETURN(-1);
+            }
+            changed = true;
+         }
+
+         /* the qmaster is an admin host by definition -- see the block below */
+         if (strcmp(hgrp_name, ADMIN_HOSTGROUP) == 0 &&
+             lGetSubHost(hgrp, HR_name, qualified_hostname, HGRP_host_list) == nullptr) {
+            lAddSubHost(hgrp, HR_name, qualified_hostname, HGRP_host_list, HR_Type);
+            changed = true;
+         }
+
+         if (changed &&
+             !spool_write_object(&answer_list, spooling_context, hgrp, hgrp_name, SGE_TYPE_HGROUP, true)) {
+            answer_list_output(&answer_list);
+            CRITICAL(MSG_HGRP_RESERVED_NOSEED_S, hgrp_name);
+            DRETURN(-1);
+         }
+      }
+   }
 
    DPRINTF("userset_list------------------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET), SGE_TYPE_USERSET);
