@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -92,17 +92,12 @@
 *     reporting_initialize() -- initialize the reporting module
 *
 *  SYNOPSIS
-*     bool reporting_initialize(lList **answer_list) 
+*     void reporting_initialize()
 *
 *  FUNCTION
-*     Register reporting and sharelog trigger as well as the respective event
-*     handler.
-*
-*  INPUTS
-*     lList **answer_list - used to return error messages
-*
-*  RESULT
-*     bool - true on success, false on error
+*     Register the event handler for the reporting trigger and create the
+*     ReportingFileWriters. Creating the writers also creates the reporting
+*     trigger itself.
 *
 *  NOTES
 *     MT-NOTE: reporting_initialize() is MT safe.
@@ -113,28 +108,32 @@
 *******************************************************************************/
 void
 reporting_initialize() {
-
    DENTER(TOP_LAYER);
 
-   // create ReportingFileWriter
-   ocs::ReportingFileWriter::initialize();
-
+   // Register the handler before creating the writers. ReportingFileWriter::initialize()
+   // ends in update_config_all(), which calls reporting_reinitialize_timed_event() and so
+   // already adds the reporting trigger - and that event is due immediately. Were the
+   // handler not registered by then, the timer thread could deliver the event to nobody
+   // and the trigger would be lost for the lifetime of the qmaster.
    te_register_event_handler(reporting_trigger_handler, TYPE_REPORTING_TRIGGER);
 
-   /* we always have the reporting trigger for flushing reporting files and
-    * checking for new reporting configuration
-    */
-   te_event_t ev = te_new_event(sge_get_gmt64(), TYPE_REPORTING_TRIGGER, ONE_TIME_EVENT, 1, 0, nullptr);
-   te_add_event(ev);
-   te_free_event(&ev);
+   // Create the ReportingFileWriters. This also creates the reporting trigger, which we
+   // always need for flushing reporting files and checking for new reporting configuration.
+   ocs::ReportingFileWriter::initialize();
+
+   DRETURN_VOID;
 }
 
 void
 reporting_reinitialize_timed_event() {
+   DENTER(TOP_LAYER);
+
    te_delete_all_one_time_events(TYPE_REPORTING_TRIGGER);
    te_event_t ev = te_new_event(sge_get_gmt64(), TYPE_REPORTING_TRIGGER, ONE_TIME_EVENT, 1, 0, nullptr);
    te_add_event(ev);
    te_free_event(&ev);
+
+   DRETURN_VOID;
 }
 
 /****** qmaster/reporting/reporting_shutdown() *****************************
