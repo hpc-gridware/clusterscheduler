@@ -506,7 +506,10 @@ int do_ck_to_do(bool is_qmaster_down) {
 #endif
 
    if (sge_sig_handler_dead_children != 0) {
-      /* reap max. 10 jobs which generated a SIGCLD */
+      /* reap max. 10 jobs which generated a SIGCLD
+       * @todo The 10 jobs as cap is not a well-founded decision.
+       *       We should better limit by time, e.g., stop after 500ms.
+       */
 
       /* SIGCHILD signal is blocked from dispatcher(), so
        * we can be sure that sge_sig_handler_dead_children is untouched here
@@ -629,6 +632,8 @@ int do_ck_to_do(bool is_qmaster_down) {
       }
 
       // send only 1 load report per second
+      // @todo one per 100ms significantly reduces latency, see CS-2447
+      //       make it configurable
       if (last_report_send + sge_gmt32_to_gmt64(1) <= now) {
          last_report_send = now;
 
