@@ -7915,11 +7915,14 @@ static bool show_manop_list(const char *userset_name, const char *display_name)
    lList *alp = nullptr, *lp = nullptr;
    bool ret = true;
 
-   lCondition *where = lWhere("%T(%I==%s)", US_Type, US_name, userset_name);
+   /* No where-filter: the userset is selected by name below, so filtering in the
+    * qmaster would only save bandwidth on an interactive admin command over a
+    * list the enumeration has already reduced to names. RBAC will move this work
+    * into the qmaster anyway - the request is to be executed there and only the
+    * reduced output transferred - so the name lookup is the part that survives. */
    lEnumeration *what = lWhat("%T(%I%I->(%I))", US_Type, US_name, US_entries, UE_name);
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, ocs::gdi::Command::GET,
-                                   ocs::gdi::SubCommand::NONE, &lp, where, what);
-   lFreeWhere(&where);
+                                   ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
    lFreeWhat(&what);
 
    lListElem *ep1 = lFirstRW(alp);
@@ -7930,8 +7933,8 @@ static bool show_manop_list(const char *userset_name, const char *display_name)
    }
 
    /* the reserved userset always exists; print its members (UE_name entries).
-    * Select it explicitly by name - do not rely on lFirst(): the GET may return
-    * more than the requested userset, and both reserved sets share this code. */
+    * The GET returns every userset, so select ours by name - never lFirst(),
+    * which would print the manager list for -so. */
    lListElem *us = lGetElemStrRW(lp, US_name, userset_name);
    lList *entries = (us != nullptr) ? lGetListRW(us, US_entries) : nullptr;
    lPSortList(entries, "%I+", UE_name);
