@@ -106,13 +106,41 @@
 *    Its purpose is to be able to add new attributes without changing the spooling format.
 *    It is a list of arbitrary type and it is spooled.
 *
+*    SGE_LIST(HGRP_cached_hosts) - Cached Resolved Host List
+*    CS-2451: the fully resolved host list of this host group - every host
+*    reachable through the nested references of host_list, flattened.
+*     
+*    Maintained by qmaster whenever a host group changes and distributed with
+*    the object through the normal event mechanism, so a membership test is a
+*    hash lookup on HR_name instead of a walk of the nested tree.
+*     
+*    Only valid when cache_version is non-zero - see there.
+*
+*    SGE_ULONG(HGRP_cache_version) - Cache Validity
+*    CS-2451: 0 means cached_hosts has not been computed and every consumer
+*    must fall back to walking the nested references. Any other value means
+*    cached_hosts is authoritative.
+*     
+*    This is a PRESENCE FLAG, not a stamp to compare against anything. The
+*    field is needed because cull cannot distinguish an empty list from a
+*    missing one - both are nullptr - so an empty cached_hosts would otherwise
+*    be indistinguishable from an uncomputed one.
+*     
+*    Staleness is prevented by construction, not detected here: qmaster
+*    recomputes every affected group before sending its events, and the mirror
+*    replaces the element wholesale on MOD, so a distributed element is never
+*    partially stale. Do not add logic that compares two version values - a
+*    consumer has nothing to compare against.
+*
 */
 
 enum {
    HGRP_name = HGRP_LOWERBOUND,
    HGRP_host_list,
    HGRP_cqueue_list,
-   HGRP_joker
+   HGRP_joker,
+   HGRP_cached_hosts,
+   HGRP_cache_version
 };
 
 LISTDEF(HGRP_Type)
@@ -120,6 +148,8 @@ LISTDEF(HGRP_Type)
    SGE_LIST(HGRP_host_list, HR_Type, CULL_SPOOL)
    SGE_LIST(HGRP_cqueue_list, CQ_Type, CULL_DEFAULT)
    SGE_LIST(HGRP_joker, VA_Type, CULL_SPOOL)
+   SGE_LIST(HGRP_cached_hosts, HR_Type, CULL_DEFAULT)
+   SGE_ULONG(HGRP_cache_version, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(HGRPN)
@@ -127,6 +157,8 @@ NAMEDEF(HGRPN)
    NAME("HGRP_host_list")
    NAME("HGRP_cqueue_list")
    NAME("HGRP_joker")
+   NAME("HGRP_cached_hosts")
+   NAME("HGRP_cache_version")
 NAMEEND
 
 #define HGRP_SIZE sizeof(HGRPN)/sizeof(char *)

@@ -270,7 +270,101 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {"name": "SPOOL"}
+            {
+               "name": "SPOOL"
+            }
+         ]
+      },
+      {
+         "name": "cached_hosts",
+         "summary": "Cached Resolved Host List",
+         "description": [
+            {
+               "line": "CS-2451: the fully resolved host list of this host group - every host"
+            },
+            {
+               "line": "reachable through the nested references of host_list, flattened."
+            },
+            {
+               "line": " "
+            },
+            {
+               "line": "Maintained by qmaster whenever a host group changes and distributed with"
+            },
+            {
+               "line": "the object through the normal event mechanism, so a membership test is a"
+            },
+            {
+               "line": "hash lookup on HR_name instead of a walk of the nested tree."
+            },
+            {
+               "line": " "
+            },
+            {
+               "line": "Only valid when cache_version is non-zero - see there."
+            }
+         ],
+         "type": "lListT",
+         "subClassName": "HR",
+         "subCullPrefix": "HR",
+         "flags": [
+            {
+               "name": "JGDI_HIDDEN"
+            }
+         ]
+      },
+      {
+         "name": "cache_version",
+         "summary": "Cache Validity",
+         "description": [
+            {
+               "line": "CS-2451: 0 means cached_hosts has not been computed and every consumer"
+            },
+            {
+               "line": "must fall back to walking the nested references. Any other value means"
+            },
+            {
+               "line": "cached_hosts is authoritative."
+            },
+            {
+               "line": " "
+            },
+            {
+               "line": "This is a PRESENCE FLAG, not a stamp to compare against anything. The"
+            },
+            {
+               "line": "field is needed because cull cannot distinguish an empty list from a"
+            },
+            {
+               "line": "missing one - both are nullptr - so an empty cached_hosts would otherwise"
+            },
+            {
+               "line": "be indistinguishable from an uncomputed one."
+            },
+            {
+               "line": " "
+            },
+            {
+               "line": "Staleness is prevented by construction, not detected here: qmaster"
+            },
+            {
+               "line": "recomputes every affected group before sending its events, and the mirror"
+            },
+            {
+               "line": "replaces the element wholesale on MOD, so a distributed element is never"
+            },
+            {
+               "line": "partially stale. Do not add logic that compares two version values - a"
+            },
+            {
+               "line": "consumer has nothing to compare against."
+            }
+         ],
+         "type": "lUlongT",
+         "flags": [
+            {
+               "name": "JGDI_HIDDEN"
+            }
          ]
       }
    ]

@@ -32,7 +32,9 @@ enum {
    HGRP_name = 7150,
    HGRP_host_list,
    HGRP_cqueue_list,
-   HGRP_joker
+   HGRP_joker,
+   HGRP_cached_hosts,
+   HGRP_cache_version
 };
 
 constexpr const int HGRP_Type[] = {
@@ -40,6 +42,8 @@ constexpr const int HGRP_Type[] = {
    HGRP_host_list,
    HGRP_cqueue_list,
    HGRP_joker,
+   HGRP_cached_hosts,
+   HGRP_cache_version,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -47,7 +51,9 @@ constexpr const int HGRP_Type[] = {
    {HGRP_name, "HGRP_name", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {HGRP_host_list, "HGRP_host_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {HGRP_cqueue_list, "HGRP_cqueue_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {HGRP_joker, "HGRP_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
+   {HGRP_joker, "HGRP_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {HGRP_cached_hosts, "HGRP_cached_hosts", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {HGRP_cache_version, "HGRP_cache_version", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

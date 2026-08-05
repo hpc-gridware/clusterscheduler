@@ -481,6 +481,9 @@ object_get_subtype(int nm)
       case HGRP_joker:
          ret = VA_Type;
          break;
+      case HGRP_cached_hosts:
+         ret = HR_Type;
+         break;
       case LS_incomplete:
          ret = LR_Type;
          break;
