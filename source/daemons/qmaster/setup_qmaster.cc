@@ -998,6 +998,16 @@ setup_qmaster() {
       }
    }
 
+   /*
+    * CS-2451: with the final host group list in place -- spooled groups plus the
+    * reserved ones seeded above -- resolve every group once and store the flat
+    * result in HGRP_cached_hosts. From here on the caches are maintained
+    * incrementally in hgroup_success(); this is the only full rebuild.
+    */
+   if (!hgroup_list_update_caches(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), &answer_list)) {
+      answer_list_output(&answer_list);
+   }
+
    DPRINTF("userset_list------------------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET), SGE_TYPE_USERSET);
    answer_list_output(&answer_list);

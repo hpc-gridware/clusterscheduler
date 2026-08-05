@@ -230,6 +230,19 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
 
    DENTER(TOP_LAYER);
 
+   /*
+    * CS-2451: only HGRP_name and HGRP_host_list are ever read out of
+    * reduced_elem -- the element the CLIENT sent. That must stay true.
+    *
+    * HGRP_cached_hosts is a qmaster-maintained resolution of HGRP_host_list,
+    * and hgroup_success() recomputes it from scratch after every write. If any
+    * code here started copying the field out of the incoming element instead,
+    * a client could name hosts in a group without them being members -- and
+    * since RQS scopes and (with CS-2438) the admin/submit host lists resolve
+    * through host groups, that is a way to forge host membership rather than
+    * merely a stale cache.
+    */
+
    /* Did we get a hostgroupname?  */
    pos = lGetPosViaElem(reduced_elem, HGRP_name, SGE_NO_ABORT);
    if (pos >= 0) {
@@ -589,6 +602,36 @@ hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hgroup
 
    DENTER(TOP_LAYER);
 
+   /*
+    * CS-2451: the resolved host list of this group just changed, and with it
+    * that of every group referencing it -- transitively, since @a may contain
+    * @b which contains @c. Refresh all of them BEFORE any event goes out, so
+    * no event carries a cache that disagrees with the master list.
+    *
+    * The caller has already chained the new object into the master list (and
+    * chained the old one out), so resolving here sees the new state.
+    */
+   lList *master_hgroup_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
+   lList *cache_answer_list = nullptr;
+   lList *referencees = nullptr;   /* HR_Type */
+
+   hgroup_update_cache(hgroup, &cache_answer_list, master_hgroup_list);
+   if (hgroup_find_all_referencees(hgroup, &cache_answer_list, master_hgroup_list, &referencees)) {
+      const lListElem *href;
+
+      /* a diamond (@top -> @a, @b -> @x) lists @x once per path */
+      lUniqHost(referencees, HR_name);
+
+      for_each_ep(href, referencees) {
+         lListElem *referencee = hgroup_list_locate(master_hgroup_list, lGetHost(href, HR_name));
+
+         if (referencee != nullptr) {
+            hgroup_update_cache(referencee, &cache_answer_list, master_hgroup_list);
+         }
+      }
+   }
+   answer_list_output(&cache_answer_list);
+
    /* we will have the cqueue_list in the final event */
    lXchgList(hgroup, HGRP_cqueue_list, &cqueue_list);
    /*
@@ -597,6 +640,26 @@ hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hgroup
    sge_add_event(0, old_hgroup ? sgeE_HGROUP_MOD : sgeE_HGROUP_ADD, 0, 0, name, nullptr, nullptr, hgroup, packet->gdi_session);
 
    lXchgList(hgroup, HGRP_cqueue_list, &cqueue_list);
+
+   /*
+    * One event per referencee so the mirrors pick up their refreshed cache.
+    * sge_add_event(), not sge_event_spool(): HGRP_cached_hosts is not spooled
+    * and nothing in the referencees' own configuration changed, so rewriting
+    * their spool files would be pure I/O.
+    */
+   {
+      const lListElem *href;
+
+      for_each_ep(href, referencees) {
+         const char *ref_name = lGetHost(href, HR_name);
+         lListElem *referencee = hgroup_list_locate(master_hgroup_list, ref_name);
+
+         if (referencee != nullptr) {
+            sge_add_event(0, sgeE_HGROUP_MOD, 0, 0, ref_name, nullptr, nullptr, referencee, packet->gdi_session);
+         }
+      }
+   }
+   lFreeList(&referencees);
 
    /*
     * QI add or delete events. Finalize operation.

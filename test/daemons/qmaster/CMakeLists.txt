@@ -38,6 +38,16 @@ target_link_libraries(test_qmaster_hgroup_reserved PRIVATE gdi sgeobj cull comm 
 add_test(NAME test_qmaster_hgroup_reserved COMMAND test_qmaster_hgroup_reserved)
 set_tests_properties(test_qmaster_hgroup_reserved PROPERTIES DISABLED TRUE)
 
+# CS-2451: stage 2 only maintains the resolved host list cache, nothing reads it
+# yet -- so no existing test can notice it going wrong. This one checks the cache
+# directly against a fresh tree walk. Needs a RUNNING qmaster; same DISABLED +
+# installed treatment as test_qmaster_hgroup_reserved above.
+add_executable(test_qmaster_hgroup_cache test_qmaster_hgroup_cache.cc)
+target_include_directories(test_qmaster_hgroup_cache PRIVATE "./")
+target_link_libraries(test_qmaster_hgroup_cache PRIVATE gdi sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_qmaster_hgroup_cache COMMAND test_qmaster_hgroup_cache)
+set_tests_properties(test_qmaster_hgroup_cache PROPERTIES DISABLED TRUE)
+
 add_executable(test_qmaster_calendar
       test_qmaster_calendar.cc
         ../../../source/daemons/qmaster/ocs_CategoryQmaster.cc
@@ -108,6 +118,7 @@ add_test(NAME test_qmaster_calendar COMMAND test_qmaster_calendar)
 
 if (INSTALL_SGE_TEST)
    install(TARGETS test_qmaster_hgroup_reserved DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_qmaster_hgroup_cache DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_timed_event DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_calendar DESTINATION testbin/${SGE_ARCH})
 endif ()

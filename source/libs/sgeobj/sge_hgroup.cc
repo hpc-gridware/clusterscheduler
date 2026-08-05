@@ -58,6 +58,100 @@
 
 #define HGROUP_LAYER TOP_LAYER
 
+/****** sgeobj/hgroup/hgroup_update_cache() ***********************************
+*  NAME
+*     hgroup_update_cache() -- refresh the resolved host list of one group
+*
+*  FUNCTION
+*     CS-2451: resolves the nested references of @p hgroup once and stores the
+*     flat result in HGRP_cached_hosts, so a membership test becomes a hash
+*     lookup on HR_name instead of a walk of the tree.
+*
+*     Qmaster-side maintenance only. Readers never compute a cache; they use it
+*     when HGRP_cache_version is non-zero and fall back to the walk when it is 0.
+*
+*     The version counter is a PRESENCE FLAG, not a stamp to compare against
+*     anything (see HGRP.json). It only has to be non-zero and never 0, which is
+*     why the counter starts at 1 and skips 0 on wrap.
+*
+*  INPUTS
+*     lListElem *hgroup             - the group to refresh (HGRP_Type)
+*     lList **answer_list           - for returning errors
+*     const lList *master_hgroup_list - list the references are resolved against
+*
+*  RESULT
+*     bool - true on success; on failure the cache is left INVALID (version 0)
+*            rather than stale, so consumers fall back to the walk
+*
+*  NOTES
+*     MT-NOTE: hgroup_update_cache() is not MT safe -- call it under the write
+*              lock, like every other writer of the HGRP master list
+*******************************************************************************/
+bool
+hgroup_update_cache(lListElem *hgroup, lList **answer_list, const lList *master_hgroup_list)
+{
+   static lUlong next_version = 1;
+   bool ret = true;
+
+   DENTER(HGROUP_LAYER);
+   if (hgroup == nullptr || master_hgroup_list == nullptr) {
+      DRETURN(false);
+   }
+
+   lList *used_hosts = nullptr;
+
+   // resolve the whole nested tree once
+   ret = hgroup_find_all_references(hgroup, answer_list, master_hgroup_list, &used_hosts, nullptr);
+
+   if (ret) {
+      lSetList(hgroup, HGRP_cached_hosts, used_hosts);   // takes ownership
+      if (++next_version == 0) {
+         next_version = 1;                               // 0 means "not computed"
+      }
+      lSetUlong(hgroup, HGRP_cache_version, next_version);
+   } else {
+      // Leave no half-resolved cache behind: an invalid cache must look
+      // uncomputed, never plausible-but-wrong.
+      lFreeList(&used_hosts);
+      lSetList(hgroup, HGRP_cached_hosts, nullptr);
+      lSetUlong(hgroup, HGRP_cache_version, 0);
+   }
+
+   DRETURN(ret);
+}
+
+/****** sgeobj/hgroup/hgroup_list_update_caches() *****************************
+*  NAME
+*     hgroup_list_update_caches() -- refresh every group's resolved host list
+*
+*  FUNCTION
+*     Used at qmaster startup, after the host group list has been read from the
+*     spool area. Every group is resolved independently, so the order in the
+*     list does not matter.
+*
+*  INPUTS
+*     lList *master_hgroup_list - the list to refresh in place
+*     lList **answer_list       - for returning errors
+*
+*  RESULT
+*     bool - true if every group could be resolved
+*
+*  NOTES
+*     MT-NOTE: hgroup_list_update_caches() is not MT safe
+*******************************************************************************/
+bool
+hgroup_list_update_caches(lList *master_hgroup_list, lList **answer_list)
+{
+   bool ret = true;
+
+   DENTER(HGROUP_LAYER);
+   lListElem *hgroup;
+   for_each_rw(hgroup, master_hgroup_list) {
+      ret &= hgroup_update_cache(hgroup, answer_list, master_hgroup_list);
+   }
+   DRETURN(ret);
+}
+
 /****** sgeobj/hgroup/hgroup_is_reserved() ************************************
 *  NAME
 *     hgroup_is_reserved() -- is this one of the reserved host groups?

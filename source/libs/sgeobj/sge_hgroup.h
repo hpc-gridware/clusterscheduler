@@ -52,6 +52,14 @@
 
 bool hgroup_check_name(lList **answer_list, const char* name);
 
+/* CS-2451: recompute HGRP_cached_hosts/HGRP_cache_version of one group, or of
+ * every group in the list. Qmaster-side maintenance -- readers never compute. */
+bool
+hgroup_update_cache(lListElem *hgroup, lList **answer_list, const lList *master_hgroup_list);
+
+bool
+hgroup_list_update_caches(lList *master_hgroup_list, lList **answer_list);
+
 /* true if name is one of the three reserved host groups above */
 bool hgroup_is_reserved(const char *name);
 

@@ -19,10 +19,16 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <initializer_list>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "uti/ocs_Pattern.h"
+#include "uti/sge_hostname.h"
+
+#include "sgeobj/sge_answer.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_hgroup.h"
@@ -157,6 +163,226 @@ test_constants() {
          strcmp(EXEC_HOSTGROUP, "@exec_hosts") == 0);
 }
 
+
+// ---------------------------------------------------------------------------
+// hgroup_update_cache() / hgroup_list_update_caches()  -- CS-2451
+// ---------------------------------------------------------------------------
+
+/*
+ * hgroup_find_all_references() compares host names with sge_hostcmp(), which
+ * consults ocs::Bootstrap for ignore_fqdn / default_domain. Bootstrap loads
+ * $SGE_ROOT/$SGE_CELL/common/bootstrap on first access and calls sge_exit(1) if
+ * it cannot, so a throwaway one is created here -- the same trick
+ * test_sgeobj_qref.cc uses. The values only have to parse.
+ */
+static char s_sge_root[128];
+
+static bool setup_bootstrap() {
+   char path[256];
+
+   snprintf(s_sge_root, sizeof(s_sge_root), "/tmp/test_sgeobj_hgroup_%ld", (long) getpid());
+   if (mkdir(s_sge_root, 0755) != 0) {
+      return false;
+   }
+   snprintf(path, sizeof(path), "%s/default", s_sge_root);
+   if (mkdir(path, 0755) != 0) {
+      return false;
+   }
+   snprintf(path, sizeof(path), "%s/default/common", s_sge_root);
+   if (mkdir(path, 0755) != 0) {
+      return false;
+   }
+   snprintf(path, sizeof(path), "%s/default/common/bootstrap", s_sge_root);
+
+   FILE *fp = fopen(path, "w");
+   if (fp == nullptr) {
+      return false;
+   }
+   fprintf(fp,
+           "admin_user        none\n"
+           "default_domain    none\n"
+           "ignore_fqdn       true\n"
+           "spooling_method   classic\n"
+           "spooling_lib      none\n"
+           "spooling_params   none\n"
+           "binary_path       none\n"
+           "qmaster_spool_dir none\n"
+           "security_mode     none\n");
+   fclose(fp);
+
+   setenv("SGE_ROOT", s_sge_root, 1);
+   setenv("SGE_CELL", "default", 1);
+   return true;
+}
+
+static void teardown_bootstrap() {
+   char path[256];
+
+   snprintf(path, sizeof(path), "%s/default/common/bootstrap", s_sge_root);
+   unlink(path);
+   snprintf(path, sizeof(path), "%s/default/common", s_sge_root);
+   rmdir(path);
+   snprintf(path, sizeof(path), "%s/default", s_sge_root);
+   rmdir(path);
+   rmdir(s_sge_root);
+}
+
+/* Append a host group with the given members. Name validation off: these lists
+ * are built by hand, not accepted from a client. */
+static lListElem *
+add_hgroup(lList **list, const char *name, std::initializer_list<const char *> members) {
+   lList *hrefs = nullptr;
+
+   for (const char *m : members) {
+      href_list_add(&hrefs, nullptr, m);
+   }
+
+   /* hgroup_create() takes ownership of hrefs (lSetList, no copy) */
+   lListElem *hgroup = hgroup_create(nullptr, name, hrefs, false);
+   if (hgroup == nullptr) {
+      lFreeList(&hrefs);
+      return nullptr;
+   }
+   if (*list == nullptr) {
+      *list = lCreateList("hgroups", HGRP_Type);
+   }
+   lAppendElem(*list, hgroup);
+   return hgroup;
+}
+
+/* Does the cache equal a fresh walk, element by element and in order? The cache
+ * must reproduce the walk exactly -- see the note on duplicates below. */
+static bool
+cache_equals_walk(const lListElem *hgroup, const lList *master_list) {
+   lList *walked = nullptr;
+
+   if (!hgroup_find_all_references(hgroup, nullptr, master_list, &walked, nullptr)) {
+      lFreeList(&walked);
+      return false;
+   }
+
+   const lList *cached = lGetList(hgroup, HGRP_cached_hosts);
+   bool ok = lGetNumberOfElem(cached) == lGetNumberOfElem(walked);
+   const lListElem *c = lFirst(cached);
+   const lListElem *w = lFirst(walked);
+
+   while (ok && c != nullptr && w != nullptr) {
+      ok = (sge_hostcmp(lGetHost(c, HR_name), lGetHost(w, HR_name)) == 0);
+      c = lNext(c);
+      w = lNext(w);
+   }
+   lFreeList(&walked);
+   return ok;
+}
+
+static bool
+cached_has(const lList *master_list, const char *group, const char *host) {
+   const lListElem *hgroup = lGetElemHost(master_list, HGRP_name, group);
+   return hgroup != nullptr && href_list_locate(lGetList(hgroup, HGRP_cached_hosts), host) != nullptr;
+}
+
+static void
+test_update_cache() {
+   printf("\n--- hgroup_update_cache ---\n");
+
+   lList *master_list = nullptr;
+
+   /* @leaf -> two hosts;  @mid -> @leaf;  @top -> @mid + a host of its own */
+   add_hgroup(&master_list, "@leaf", {"hosta", "hostb"});
+   add_hgroup(&master_list, "@mid", {"@leaf"});
+   add_hgroup(&master_list, "@top", {"@mid", "hostc"});
+
+   CHECK(26, "nothing is cached before the first update",
+         lGetUlong(lGetElemHost(master_list, HGRP_name, "@leaf"), HGRP_cache_version) == 0);
+
+   CHECK(27, "hgroup_list_update_caches succeeds",
+         hgroup_list_update_caches(master_list, nullptr));
+
+   CHECK(28, "@leaf caches its own hosts",
+         cached_has(master_list, "@leaf", "hosta") && cached_has(master_list, "@leaf", "hostb"));
+   CHECK(29, "@mid resolves one level down",
+         cached_has(master_list, "@mid", "hosta") && cached_has(master_list, "@mid", "hostb"));
+   CHECK(30, "@top resolves two levels down and keeps its own host",
+         cached_has(master_list, "@top", "hosta") && cached_has(master_list, "@top", "hostc"));
+   CHECK(31, "no group reference leaks into a cache",
+         !cached_has(master_list, "@top", "@mid") && !cached_has(master_list, "@mid", "@leaf"));
+
+   {
+      const lListElem *hgroup;
+      bool all = true;
+
+      for_each_ep(hgroup, master_list) {
+         all &= (lGetUlong(hgroup, HGRP_cache_version) != 0) && cache_equals_walk(hgroup, master_list);
+      }
+      CHECK(32, "every cache equals a fresh walk and carries a version", all);
+   }
+
+   /* the nested case: change @leaf, and the containers must follow */
+   {
+      lListElem *leaf = lGetElemHostRW(master_list, HGRP_name, "@leaf");
+      lList *new_hosts = nullptr;
+
+      href_list_add(&new_hosts, nullptr, "hosta");
+      href_list_add(&new_hosts, nullptr, "hostd");
+      lSetList(leaf, HGRP_host_list, new_hosts);
+
+      /* what the qmaster does in hgroup_success(): the group plus its referencees */
+      lList *referencees = nullptr;
+      CHECK(33, "the referencees of @leaf are found transitively",
+            hgroup_find_all_referencees(leaf, nullptr, master_list, &referencees) &&
+            lGetElemHost(referencees, HR_name, "@mid") != nullptr &&
+            lGetElemHost(referencees, HR_name, "@top") != nullptr);
+
+      hgroup_update_cache(leaf, nullptr, master_list);
+      const lListElem *href;
+      for_each_ep(href, referencees) {
+         hgroup_update_cache(lGetElemHostRW(master_list, HGRP_name, lGetHost(href, HR_name)),
+                             nullptr, master_list);
+      }
+      lFreeList(&referencees);
+
+      CHECK(34, "the removed host is gone from @top",
+            !cached_has(master_list, "@top", "hostb"));
+      CHECK(35, "the added host reached @top",
+            cached_has(master_list, "@top", "hostd"));
+      CHECK(36, "@top still has its own host",
+            cached_has(master_list, "@top", "hostc"));
+   }
+
+   /*
+    * The empty result -- this is what HGRP_cache_version is FOR.
+    *
+    * cull represents an empty list as nullptr, so "resolved to no hosts" and
+    * "never computed" are the same value in HGRP_cached_hosts. Only the version
+    * tells them apart, and a consumer that checked the list alone would fall
+    * back to the walk forever on a group that legitimately resolves to nothing.
+    *
+    * Two ways to get there, both exercised: a group with no members at all, and
+    * a group whose only member is a group that does not exist. The second is not
+    * an error: href_list_find_references() skips a reference it cannot locate
+    * and still reports success. Through GDI it cannot happen -- hgroup_mod()
+    * rejects unknown references via hgroup_list_exists() -- but a spool file
+    * written by hand can produce it, and it must not poison the cache.
+    */
+   {
+      lListElem *empty = add_hgroup(&master_list, "@empty", {});
+      lListElem *dangling = add_hgroup(&master_list, "@dangling", {"@does_not_exist"});
+
+      CHECK(37, "a group with no members caches successfully",
+            hgroup_update_cache(empty, nullptr, master_list));
+      CHECK(38, "a dangling group reference is skipped, not an error",
+            hgroup_update_cache(dangling, nullptr, master_list));
+      CHECK(39, "both resolve to no hosts at all",
+            lGetList(empty, HGRP_cached_hosts) == nullptr &&
+            lGetList(dangling, HGRP_cached_hosts) == nullptr);
+      CHECK(40, "and both are still marked computed -- empty is not uncomputed",
+            lGetUlong(empty, HGRP_cache_version) != 0 &&
+            lGetUlong(dangling, HGRP_cache_version) != 0);
+   }
+
+   lFreeList(&master_list);
+}
+
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
@@ -165,6 +391,13 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_is_reserved();
    test_is_system_maintained();
    test_constants();
+
+   if (!setup_bootstrap()) {
+      printf("FAIL - cannot create the throwaway bootstrap environment\n");
+      return 1;
+   }
+   test_update_cache();
+   teardown_bootstrap();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;
