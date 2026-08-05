@@ -227,6 +227,83 @@ static void test_qref_list_host_rejected() {
    lFreeList(&hgroups);
 }
 
+
+// ---------------------------------------------------------------------------
+// The cache must answer exactly what the walk answers  [T15-T31]  -- CS-2451
+//
+// Stage 3 replaces the member walk inside qref_hgroup_rejected() with a lookup
+// in HGRP_cached_hosts. This is the check that the replacement is faithful.
+//
+// It deliberately does NOT restate the expected answers: it runs the same
+// (reference, host) pairs against two identical fixtures, one cached and one
+// not, and requires the two to AGREE. Restating expectations would let the two
+// implementations drift apart while both tests still pass; agreement cannot.
+//
+// The pairs are those of T01-T14 above, so the CS-2450 trap is included: the
+// fixture contains a group literally named "@gpustar*", and the cache must
+// resolve the member entry "@gpustar*" to that group alone and never as a
+// pattern. hgroup_find_all_references() uses hgroup_list_locate() for exactly
+// that reason, but this is where it gets proven for the cached path.
+// ---------------------------------------------------------------------------
+
+static void build_fixture(lList **hgroups) {
+   add_hgroup(hgroups, "@gpustar*",    "v04706", nullptr);
+   add_hgroup(hgroups, "@gpustar1",    "v04707", nullptr);
+   add_hgroup(hgroups, "@cacheparent", "@gpustar*", nullptr);
+   add_hgroup(hgroups, "@nested",      "@cacheparent", nullptr);
+}
+
+static void test_qref_cache_agrees_with_walk() {
+   printf("\n--- cached vs uncached agreement ---\n");
+
+   struct { const char *reference; const char *host; } pairs[] = {
+      {"@gpustar*", "v04706"}, {"@gpustar*", "v04707"}, {"@gpustar*", "v04708"},
+      {"@cacheparent", "v04706"}, {"@cacheparent", "v04707"}, {"@cacheparent", "v04708"},
+      {"@nested", "v04706"}, {"@nested", "v04707"}, {"@nested", "v04708"},
+      {"@gpustar?", "v04707"}, {"@gpustar?", "v04706"}, {"@nomatch*", "v04706"},
+      {"v04706", "v04706"}, {"v0470*", "v04707"}, {"@doesnotexist", "v04706"},
+   };
+   const int num_pairs = sizeof(pairs) / sizeof(pairs[0]);
+
+   lList *walked = nullptr;
+   lList *cached = nullptr;
+   build_fixture(&walked);
+   build_fixture(&cached);
+
+   hgroup_list_update_caches(cached, nullptr);
+
+   /* Without this the whole comparison could pass with no cache anywhere -- two
+    * runs of the same walk always agree. */
+   {
+      const lListElem *hgroup;
+      bool all = (lGetNumberOfElem(cached) > 0);
+
+      for_each_ep(hgroup, cached) {
+         all &= hgroup_has_host_cache(hgroup);
+      }
+      CHECK(15, "the cached fixture really carries caches", all);
+
+      bool none = true;
+      for_each_ep(hgroup, walked) {
+         none &= !hgroup_has_host_cache(hgroup);
+      }
+      CHECK(16, "the uncached fixture really carries none", none);
+   }
+
+   for (int i = 0; i < num_pairs; i++) {
+      const bool a = qref_list_host_rejected(pairs[i].reference, pairs[i].host, walked);
+      const bool b = qref_list_host_rejected(pairs[i].reference, pairs[i].host, cached);
+      char label[128];
+
+      snprintf(label, sizeof(label), "%s vs %s: same answer (%s)",
+               pairs[i].reference, pairs[i].host, a ? "excluded" : "covered");
+      CHECK(17 + i, label, a == b);
+   }
+
+   lFreeList(&walked);
+   lFreeList(&cached);
+}
+
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
@@ -238,6 +315,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    }
 
    test_qref_list_host_rejected();
+   test_qref_cache_agrees_with_walk();
 
    teardown_bootstrap();
 

@@ -60,6 +60,23 @@ hgroup_update_cache(lListElem *hgroup, lList **answer_list, const lList *master_
 bool
 hgroup_list_update_caches(lList *master_hgroup_list, lList **answer_list);
 
+/* CS-2451: consume the resolved host list cache.
+ *
+ * Correctness must never depend on the cache. A consumer asks
+ * hgroup_has_host_cache() first and falls back to the tree walk when it says no
+ * -- that covers a missed computation site, a rolling upgrade, and an element
+ * that arrived through a GDI "what" filter without the fields.
+ *
+ * Two functions rather than one returning the list, because an EMPTY cache is
+ * valid: a group can legitimately resolve to no hosts, and cull stores an empty
+ * list as nullptr. "No hosts" and "no cache" must not collapse into one answer.
+ */
+bool
+hgroup_has_host_cache(const lListElem *hgroup);
+
+bool
+hgroup_cache_contains_host(const lListElem *hgroup, const char *hostname);
+
 /* true if name is one of the three reserved host groups above */
 bool hgroup_is_reserved(const char *name);
 

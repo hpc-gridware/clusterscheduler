@@ -600,6 +600,24 @@ qref_hgroup_rejected(const lListElem *hgroup, const char *hostname, const lList 
 {
    DENTER(BASIS_LAYER);
 
+   /*
+    * CS-2451: this is the hot path -- called per scope entry, per rule, per RQS,
+    * per queue instance, per job. When qmaster has resolved the group, the whole
+    * nested tree is already flattened in HGRP_cached_hosts and the walk below
+    * collapses into one hash lookup.
+    *
+    * The two answer identically by construction: the cache is built by
+    * hgroup_find_all_references(), which flattens the same tree, skips the same
+    * unresolvable group references, and stores only hosts -- and the lookup uses
+    * the same host comparison semantics as sge_hostcmp() (see
+    * hgroup_cache_contains_host()).
+    *
+    * No cache -> fall through to the walk. Correctness never depends on this.
+    */
+   if (hgroup_has_host_cache(hgroup)) {
+      DRETURN(!hgroup_cache_contains_host(hgroup, hostname));
+   }
+
    for_each_ep_lv(href, lGetList(hgroup, HGRP_host_list)) {
       const char *member = lGetHost(href, HR_name);
 

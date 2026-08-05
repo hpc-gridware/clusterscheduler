@@ -152,6 +152,77 @@ hgroup_list_update_caches(lList *master_hgroup_list, lList **answer_list)
    DRETURN(ret);
 }
 
+/****** sgeobj/hgroup/hgroup_has_host_cache() *********************************
+*  NAME
+*     hgroup_has_host_cache() -- does this group carry a usable resolved list?
+*
+*  FUNCTION
+*     CS-2451. True when HGRP_cache_version is non-zero, i.e. qmaster has
+*     resolved this group and the result travelled with the element.
+*
+*     The version is what makes the answer possible at all: cull stores an empty
+*     list as nullptr, so HGRP_cached_hosts alone cannot distinguish a group that
+*     resolves to no hosts from one that was never resolved.
+*
+*  INPUTS
+*     const lListElem *hgroup - HGRP_Type object, may be nullptr
+*
+*  RESULT
+*     bool - true if hgroup_cache_contains_host() may be used on this element
+*
+*  NOTES
+*     MT-NOTE: hgroup_has_host_cache() is MT safe
+*
+*     HGRP_cached_hosts and HGRP_cache_version are a UNIT. A GDI "what" filter
+*     that selects the version without the list would present an empty cache as
+*     valid, and every membership test against that group would answer "no".
+*     Every descriptor in the tree is currently lWhat("%T(ALL)"); if a reduced
+*     one is ever introduced -- RBAC output reduction is the likely reason --
+*     it must take both fields or neither.
+*******************************************************************************/
+bool
+hgroup_has_host_cache(const lListElem *hgroup)
+{
+   return hgroup != nullptr && lGetUlong(hgroup, HGRP_cache_version) != 0;
+}
+
+/****** sgeobj/hgroup/hgroup_cache_contains_host() ****************************
+*  NAME
+*     hgroup_cache_contains_host() -- is host a member, according to the cache?
+*
+*  FUNCTION
+*     CS-2451. Answers the membership question with a single hash lookup instead
+*     of a walk of the nested group tree.
+*
+*     The lookup is equivalent to the walk's sge_hostcmp() comparison, not merely
+*     similar: cull normalises host keys with sge_hostcpy() + sge_strtoupper()
+*     (cull_multitype.cc), and sge_hostcpy() honours the same ignore_fqdn and
+*     default_domain rules as sge_hostcmp() (sge_hostname.cc). HR_name carries
+*     the HASH flag, so the lookup is O(1).
+*
+*  INPUTS
+*     const lListElem *hgroup - HGRP_Type object with a valid cache
+*     const char *hostname    - host to look for
+*
+*  RESULT
+*     bool - true if the host is in the group, directly or through nesting
+*
+*  NOTES
+*     MT-NOTE: hgroup_cache_contains_host() is MT safe
+*
+*     Only meaningful when hgroup_has_host_cache() is true; on an element without
+*     a cache it reports false, which is the WRONG answer rather than a safe one.
+*     Always guard the call.
+*******************************************************************************/
+bool
+hgroup_cache_contains_host(const lListElem *hgroup, const char *hostname)
+{
+   if (hgroup == nullptr || hostname == nullptr) {
+      return false;
+   }
+   return lGetElemHost(lGetList(hgroup, HGRP_cached_hosts), HR_name, hostname) != nullptr;
+}
+
 /****** sgeobj/hgroup/hgroup_is_reserved() ************************************
 *  NAME
 *     hgroup_is_reserved() -- is this one of the reserved host groups?
