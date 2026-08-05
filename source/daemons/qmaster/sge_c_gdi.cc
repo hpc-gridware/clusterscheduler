@@ -797,9 +797,6 @@ static void sge_c_gdi_copy(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi:
 
 static void
 sge_gdi_do_permcheck(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
-   const lList *master_admin_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
-   const lList *master_submit_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
-
    DENTER(TOP_LAYER);
 
    // whatever client sent - we do not need that, instead we use data from commlib stored in packet
@@ -817,9 +814,12 @@ sge_gdi_do_permcheck(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    lSetBool(ep, PERM_is_manager, is_manager);
    lSetBool(ep, PERM_is_operator, is_operator);
 
-   // add host roles
-   bool is_admin_host = (lGetElemHost(master_admin_host_list, AH_name, hostname) != nullptr);
-   bool is_submit_host = (lGetElemHost(master_submit_host_list, SH_name, hostname) != nullptr);
+   // add host roles -- through the same helpers as the checks above, so that
+   // what permcheck REPORTS and what the permission checks ENFORCE cannot drift
+   // apart. This site used a direct lGetElemHost() on AH_name/SH_name, which is
+   // what host_list_locate() resolves to for these list types anyway.
+   bool is_admin_host = host_is_admin_host(hostname);
+   bool is_submit_host = host_is_submit_host(hostname);
    lSetBool(ep, PERM_is_admin_host, is_admin_host);
    lSetBool(ep, PERM_is_submit_host, is_submit_host);
 
@@ -893,7 +893,7 @@ sge_c_gdi_trigger_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task, mo
    switch (target) {
       case ocs::gdi::Target::MASTER_EVENT:
          // shutdown request for qmaster (qconf -km)
-         if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
+         if (!host_is_admin_host(packet->host)) {
             ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN_VOID;
@@ -902,7 +902,7 @@ sge_c_gdi_trigger_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task, mo
          DRETURN_VOID;
       case ocs::gdi::Target::SC_LIST:
          // trigger scheduling (qconf -tsm)
-         if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
+         if (!host_is_admin_host(packet->host)) {
             ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
             DRETURN_VOID;
@@ -1024,13 +1024,11 @@ sge_gdi_shutdown_event_client(const ocs::gdi::Packet *packet, ocs::gdi::Task *ta
          continue;
       }
 
-      if (client_id == EV_ID_SCHEDD &&
-          !host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
+      if (client_id == EV_ID_SCHEDD && !host_is_admin_host(packet->host)) {
          ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
          continue;
-      } else if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), packet->host)
-                 && !host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
+      } else if (!host_is_submit_host(packet->host) && !host_is_admin_host(packet->host)) {
          ERROR(MSG_SGETEXT_NOSUBMITORADMINHOST_S, packet->host);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
          continue;
@@ -1318,10 +1316,8 @@ sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, const ocs::
    DENTER(TOP_LAYER);
 
    if (!packet->is_intern_request) {
-      const lList *master_admin_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
-      bool is_admin_host = host_list_locate(master_admin_host_list, packet->host) != nullptr ? true : false;
-      const lList *master_submit_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
-      bool is_submit_host = host_list_locate(master_submit_host_list, packet->host) != nullptr ? true : false;
+      bool is_admin_host = host_is_admin_host(packet->host);
+      bool is_submit_host = host_is_submit_host(packet->host);
 
       switch (target) {
          case ocs::gdi::Target::EH_LIST: {
@@ -1403,10 +1399,8 @@ sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
 
    // only external requests need to be checked
    if (!packet->is_intern_request) {
-      const lList *master_admin_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
-      const bool is_admin_host = host_list_locate(master_admin_host_list, packet->host) != nullptr ? true : false;
-      const lList *master_submit_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
-      const bool is_submit_host = host_list_locate(master_submit_host_list, packet->host) != nullptr ? true : false;
+      const bool is_admin_host = host_is_admin_host(packet->host);
+      const bool is_submit_host = host_is_submit_host(packet->host);
 
       switch (task->target) {
          case ocs::gdi::Target::CONF_LIST: {

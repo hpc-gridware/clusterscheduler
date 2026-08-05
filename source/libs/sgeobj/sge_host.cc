@@ -37,6 +37,7 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_qinstance.h"
@@ -92,6 +93,67 @@ host_list_locate(const lList *host_list, const char *hostname) {
    }
 
    DRETURN(ret);
+}
+
+/****** sgeobj/host/host_is_admin_host() **************************************
+*  NAME
+*     host_is_admin_host() -- is this host an admin host?
+*
+*  FUNCTION
+*     CS-2438. The single place this question is answered, so that the dozen
+*     call sites on the GDI permission path do not each know WHERE the answer
+*     lives. Mirrors manop_is_manager() (sge_manop.cc), which does the same for
+*     the reserved manager userset.
+*
+*     Fetches the master list itself rather than taking it as a parameter --
+*     again like manop_is_manager() -- because a caller that has to name the
+*     list is a caller that has to be edited when the list changes, which is
+*     exactly what this helper exists to avoid.
+*
+*  INPUTS
+*     const char *hostname - resolved host name, normally packet->host
+*
+*  RESULT
+*     bool - true if the host may issue admin requests
+*
+*  NOTES
+*     MT-NOTE: host_is_admin_host() is MT safe
+*
+*     STILL BACKED BY THE CLASSIC AH_LIST. The reserved "@admin_hosts" host
+*     group exists (chunk 1 seeds it) but is NOT yet the source of truth: the
+*     write path still maintains AH_LIST (sge_host_qmaster.cc), and nothing
+*     fills the group at runtime. Switching this body over before that happens
+*     would strip admin rights from every admin host except the qmaster host.
+*     The switch is chunk 2b, together with or after the write path.
+*******************************************************************************/
+bool
+host_is_admin_host(const char *hostname)
+{
+   return host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), hostname) != nullptr;
+}
+
+/****** sgeobj/host/host_is_submit_host() *************************************
+*  NAME
+*     host_is_submit_host() -- is this host a submit host?
+*
+*  FUNCTION
+*     CS-2438. See host_is_admin_host() above; same role, same reason for
+*     fetching the master list itself, and the same note about the classic
+*     SH_LIST still being the source of truth until chunk 2b.
+*
+*  INPUTS
+*     const char *hostname - resolved host name, normally packet->host
+*
+*  RESULT
+*     bool - true if the host may submit
+*
+*  NOTES
+*     MT-NOTE: host_is_submit_host() is MT safe
+*******************************************************************************/
+bool
+host_is_submit_host(const char *hostname)
+{
+   return host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), hostname) != nullptr;
 }
 
 /****** sgeobj/host/host_is_referenced() **************************************

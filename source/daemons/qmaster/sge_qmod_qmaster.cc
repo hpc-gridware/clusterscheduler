@@ -450,8 +450,7 @@ sge_change_queue_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem
 
    // if we are not owner but operator (or manager), we need to be on an admin host
    if (!isowner) {
-      const lList *master_admin_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
-      bool is_admin_host = host_list_locate(master_admin_host_list, packet->host) != nullptr;
+      bool is_admin_host = host_is_admin_host(packet->host);
       if (!is_admin_host) {
          ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
          answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
@@ -544,8 +543,7 @@ sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *
       }
 
       // if we are an operator, then we also need to be on an admin host
-      const lList *master_admin_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
-      bool is_admin_host = host_list_locate(master_admin_host_list, packet->host) != nullptr;
+      bool is_admin_host = host_is_admin_host(packet->host);
       if (!is_admin_host) {
          ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
          answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);

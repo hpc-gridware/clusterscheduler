@@ -102,6 +102,21 @@ host_is_centry_a_complex_value(const lListElem *this_elem,
 lListElem *
 host_list_locate(const lList *this_list, const char *hostname);
 
+/* CS-2438: is this host an admin / submit host?
+ *
+ * The one place the question is answered, so that moving the answer from the
+ * classic AH_LIST/SH_LIST to the reserved @admin_hosts/@submit_hosts groups is
+ * a change to two function bodies rather than to a dozen call sites on the GDI
+ * permission path. Mirrors manop_is_manager() in sge_manop.h, which plays the
+ * same role for the reserved manager/operator usersets.
+ *
+ * Still backed by the classic lists -- see the note at the implementation. */
+bool
+host_is_admin_host(const char *hostname);
+
+bool
+host_is_submit_host(const char *hostname);
+
 bool
 host_list_merge(lList *this_list);
 
