@@ -32,6 +32,7 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_hgroup.h"
+#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_href.h"
 
 /*
@@ -383,6 +384,73 @@ test_update_cache() {
    lFreeList(&master_list);
 }
 
+
+// ---------------------------------------------------------------------------
+// host_is_referenced() and the reserved groups -- CS-2438
+// ---------------------------------------------------------------------------
+
+/*
+ * host_is_referenced() decides whether "qconf -de" may delete an exec host. It
+ * walks the host groups, and before CS-2438 the admin and submit host lists were
+ * NOT host groups, so being an admin host never blocked a deletion.
+ *
+ * Seeding @admin_hosts with the qmaster host turned that into a deadlock: the
+ * deletion is refused because the host is in @admin_hosts, and hgroup_mod()
+ * refuses to take the qmaster host out of @admin_hosts, so no command sequence
+ * gets the user out of it. Caught by system_tests/clients/qconf, qconf_de_check.
+ */
+static void
+test_host_is_referenced_reserved() {
+   printf("\n--- host_is_referenced and reserved groups ---\n");
+
+   lListElem *host = lCreateElem(EH_Type);
+   lSetHost(host, EH_name, "hosta");
+
+   /* one group at a time, so a passing case cannot be masked by another group */
+   for (int i = 0; i < 3; i++) {
+      const char *reserved[] = {ADMIN_HOSTGROUP, SUBMIT_HOSTGROUP, EXEC_HOSTGROUP};
+      lList *hgrp_list = nullptr;
+      lList *answer_list = nullptr;
+
+      add_hgroup(&hgrp_list, reserved[i], {"hosta"});
+      bool referenced = host_is_referenced(host, &answer_list, nullptr, hgrp_list);
+
+      CHECK(41 + i, reserved[i], !referenced);
+      lFreeList(&answer_list);
+      lFreeList(&hgrp_list);
+   }
+
+   /* the skip must not swallow real references */
+   {
+      lList *hgrp_list = nullptr;
+      lList *answer_list = nullptr;
+
+      add_hgroup(&hgrp_list, "@userowned", {"hosta"});
+      CHECK(44, "a user group still counts as a reference",
+            host_is_referenced(host, &answer_list, nullptr, hgrp_list));
+      lFreeList(&answer_list);
+      lFreeList(&hgrp_list);
+   }
+
+   /* the deliberate boundary: reserved groups are skipped as GROUPS, not as a
+    * source of hosts. A user group that pulls in @admin_hosts is still that
+    * user's own configuration naming this host, and they can edit it -- so it
+    * counts, and there is no deadlock. */
+   {
+      lList *hgrp_list = nullptr;
+      lList *answer_list = nullptr;
+
+      add_hgroup(&hgrp_list, ADMIN_HOSTGROUP, {"hosta"});
+      add_hgroup(&hgrp_list, "@wraps_admin", {ADMIN_HOSTGROUP});
+      CHECK(45, "a user group referencing a reserved group still counts",
+            host_is_referenced(host, &answer_list, nullptr, hgrp_list));
+      lFreeList(&answer_list);
+      lFreeList(&hgrp_list);
+   }
+
+   lFreeElem(&host);
+}
+
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
@@ -397,6 +465,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       return 1;
    }
    test_update_cache();
+   test_host_is_referenced_reserved();
    teardown_bootstrap();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

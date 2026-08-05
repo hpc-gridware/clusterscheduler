@@ -160,15 +160,41 @@ bool host_is_referenced(const lListElem *host,
          lList *host_list = nullptr;
 
          for_each_ep_lv(hgrp_elem, hgrp_list) {
+            const char *hgrp_name = lGetHost(hgrp_elem, HGRP_name);
+
+            /*
+             * CS-2438: the reserved host groups do not count as a reference.
+             *
+             * They are not user configuration that a host could be "used by" --
+             * they are the storage for what used to be separate lists, and
+             * host_is_referenced() never looked at those lists:
+             *
+             *   @admin_hosts / @submit_hosts  membership is the old AH_LIST /
+             *     SH_LIST. Deleting an exec host that was also an admin host
+             *     always worked, and left it an admin host. Counting these here
+             *     would not just change that -- it would DEADLOCK the deletion,
+             *     because hgroup_mod() refuses to remove the qmaster host from
+             *     @admin_hosts, so the obvious workaround is impossible.
+             *   @exec_hosts  mirrors the execution host list, so it contains
+             *     every exec host by definition; counting it would make every
+             *     exec host permanently undeletable.
+             *
+             * A USER group that references a reserved group still counts -- that
+             * really is someone's configuration naming this host, and they can
+             * edit it.
+             */
+            if (hgroup_is_reserved(hgrp_name)) {
+               continue;
+            }
+
             hgroup_find_all_references(hgrp_elem, nullptr, hgrp_list, &host_list, nullptr);
             if (host_list != nullptr) {
                if (lGetElemHost(host_list, HR_name, hostname) != nullptr) {
-                  const char *hgrp_name = lGetHost(hgrp_elem, HGRP_name);
-
                   snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_HOSTREFINHGRP_SS, hostname, hgrp_name);
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
                   ret = true;
+                  lFreeList(&host_list);
                   break;
                }
                lFreeList(&host_list);
