@@ -116,6 +116,7 @@ namespace ocs {
    }
 
 #define DEVICES_DELIMITOR ";"
+#define DEVICES_MODE_SEPARATOR ':'
 #define DEVICES_DEFAULT_MODE "r"
    //       DeviceAllow, array of structs having two strings: device name and access mode: a(ss)
    //          use config file entry devices_allow to specify devices which are allowed
@@ -137,11 +138,11 @@ namespace ocs {
             char *device = sge_strtok_r(devices_allow, DEVICES_DELIMITOR, &context);
             ocs::uti::SystemdDevice_t systemd_device{};
             while (device != nullptr) {
-               // device is a string of the form "device_name=access_mode"
-               // where access_mode can contain "r", "w", "rw"
-               char *access_mode = strchr(device, '=');
+               // device is a string of the form "device_name:access_mode"
+               // where access_mode can contain "r", "w", "rw" (CS-2462).
+               char *access_mode = strchr(device, DEVICES_MODE_SEPARATOR);
                if (access_mode == nullptr || *access_mode == '\0') {
-                  shepherd_trace("no mode specifice for device %s, using \"rw\" as default", device);
+                  shepherd_trace("no mode specified for device %s, using \"" DEVICES_DEFAULT_MODE "\" as default", device);
                   systemd_device.second = DEVICES_DEFAULT_MODE; // default access mode
                } else {
                   *access_mode = '\0'; // split device name and access mode

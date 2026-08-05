@@ -111,7 +111,7 @@
 struct cmplx_tmp {
    const char *name;
    const char *shortcut;
-   uint32_t valtype;
+   ocs::CEntry::Type valtype;
    uint32_t relop;
    uint32_t consumable;
    const char *valdefault;
@@ -867,11 +867,18 @@ setup_qmaster() {
     */
    {
       struct cmplx_tmp new_complexes[] = {
-              {LOAD_ATTR_THREADS,  "thread", 1, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
-              {LOAD_ATTR_CORES,    "core",   1, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
-              {LOAD_ATTR_SOCKETS,  "socket", 1, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
-              {LOAD_ATTR_TOPOLOGY, "topo",   9, CMPLXEQ_OP, CONSUMABLE_NO, nullptr, REQU_YES, "0"},
-              {nullptr,            nullptr,  0, 0,          0,  nullptr, 0,        nullptr}
+              {LOAD_ATTR_THREADS,  "thread", ocs::CEntry::Type::INT, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
+              {LOAD_ATTR_CORES,    "core",   ocs::CEntry::Type::INT, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
+              {LOAD_ATTR_SOCKETS,  "socket", ocs::CEntry::Type::INT, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
+              {LOAD_ATTR_TOPOLOGY, "topo",   ocs::CEntry::Type::RESTR, CMPLXEQ_OP, CONSUMABLE_NO, nullptr, REQU_YES, "0"},
+#if defined(WITH_EXTENSIONS)
+              /* CS-2462: RSMAP characteristic name for systemd device isolation
+               * (see sge_shepherd/ocs_shepherd_systemd.cc devices_allow handling).
+               * RSMAP per-instance characteristics are GCS-only, so an OCS build
+               * must not create the complex - it could never be used there. */
+              {LOAD_ATTR_DEVICES,  "devs",   ocs::CEntry::Type::RESTR, CMPLXEQ_OP, CONSUMABLE_NO, nullptr, REQU_YES, "0"},
+#endif
+              {nullptr,            nullptr,  ocs::CEntry::Type::NONE, 0,          0,  nullptr, 0,        nullptr}
       };
       int i;
 
@@ -887,7 +894,7 @@ setup_qmaster() {
             lSetString(new_centry, CE_shortcut, new_complexes[i].shortcut);
             lSetString(new_centry, CE_defaultval, new_complexes[i].valdefault);
             lSetString(new_centry, CE_urgency_weight, new_complexes[i].urgency_weight);
-            lSetUlong(new_centry, CE_valtype, new_complexes[i].valtype);
+            lSetUlong(new_centry, CE_valtype, static_cast<uint32_t>(new_complexes[i].valtype));
             lSetUlong(new_centry, CE_relop, new_complexes[i].relop);
             lSetUlong(new_centry, CE_consumable, new_complexes[i].consumable);
             lSetUlong(new_centry, CE_requestable, new_complexes[i].requestable);

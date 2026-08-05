@@ -24,3 +24,6 @@
 
 bool centry_check_rsmap(lList **answer_list, uint32_t status, const char* attrname);
 
+bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry,
+                                        const lList *master_centry_list);
+

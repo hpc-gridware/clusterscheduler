@@ -55,6 +55,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/msg_sgeobjlib.h"
@@ -737,6 +738,15 @@ centry_list_fill_request(const lList *this_list, lList **answer_list, const lLis
          if (centry_fill_and_check(entry, answer_list, allow_empty_boolean, allow_neg_consumable)) {
             /* no error msg here - centry_fill_and_check() makes it */
             DRETURN(-1);
+         }
+
+         /* RSMAP entries may carry per-instance characteristics on
+            RESL_properties. Resolve them against the master centry list,
+            populate valtype, and type-check each value. */
+         if (static_cast<ocs::CEntry::Type>(lGetUlong(entry, CE_valtype)) == ocs::CEntry::Type::RSMAP) {
+            if (!centry_check_rsmap_characteristics(answer_list, entry, master_centry_list)) {
+               DRETURN(-1);
+            }
          }
       } else {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_UNKNOWN_RESOURCE_S, name);
