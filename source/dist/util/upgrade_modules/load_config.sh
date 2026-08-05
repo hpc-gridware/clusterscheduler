@@ -688,6 +688,63 @@ CheckReservedAccessListNames()
    return 0
 }
 
+# CS-2438: a pre-9.2 cluster may own a user-defined host group named @admin_hosts,
+# @submit_hosts or @exec_hosts. Since 9.2 those three names are reserved: they hold
+# the admin and submit host lists of the cluster, and @exec_hosts mirrors the
+# execution host list.
+#
+# Loading such a group would silently hand a security-relevant list to whatever the
+# administrator happened to put in it - every reference to the group (queue host
+# lists, "qconf -mhgrp" nesting, resource quota scopes) keeps resolving, but now to
+# the reserved group, and the qmaster adds itself to @admin_hosts on top. The same
+# hazard CheckReservedAccessListNames() closes for manager/operator.
+#
+# Refuse to load such a configuration. This runs before any object is loaded, so
+# nothing has been changed in the new cluster when we abort.
+#
+# Note: loading these host groups from a 9.2 or newer backup is fine - there they
+# ARE the reserved groups.
+#
+#   $1 - the backup directory (as saved by save_config.sh)
+CheckReservedHostGroupNames()
+{
+   dir=$1
+
+   # $LOAD_VERSION is the version of the saved cluster, e.g.
+   # "GCS 9.1.0beta1 (210226-1224)". Only a pre-9.2 backup can carry a
+   # user-defined host group under one of the reserved names.
+   ver=`echo "$LOAD_VERSION" | awk '{print $2}'`
+   ver_major=`echo "$ver" | cut -d. -f1 | tr -cd '0-9'`
+   ver_minor=`echo "$ver" | cut -d. -f2 | tr -cd '0-9'`
+   if [ -n "$ver_major" ] && [ -n "$ver_minor" ]; then
+      if [ "$ver_major" -gt 9 ] || { [ "$ver_major" -eq 9 ] && [ "$ver_minor" -ge 2 ]; }; then
+         return 0
+      fi
+   fi
+
+   for hgrp in @admin_hosts @submit_hosts @exec_hosts; do
+      if [ -f "$dir/hostgroups/$hgrp" ]; then
+         $INFOTEXT ""
+         $INFOTEXT "[CRITICAL] The saved configuration contains a user-defined host group"
+         $INFOTEXT "named \"$hgrp\" (saved from version: $LOAD_VERSION)."
+         $INFOTEXT ""
+         $INFOTEXT "Beginning with version 9.2 the host group names \"@admin_hosts\","
+         $INFOTEXT "\"@submit_hosts\" and \"@exec_hosts\" are reserved: they hold the admin and"
+         $INFOTEXT "submit host lists of the cluster, and @exec_hosts mirrors the execution host"
+         $INFOTEXT "list."
+         $INFOTEXT ""
+         $INFOTEXT "Rename the host group \"$hgrp\" in the old cluster and adapt everything that"
+         $INFOTEXT "references it (host lists of queues, nested host groups, resource quota"
+         $INFOTEXT "scopes), save the configuration again, then repeat the upgrade."
+         $INFOTEXT ""
+         $INFOTEXT "Nothing has been loaded. The upgrade is aborted."
+         LogIt "C" "Backup contains a user-defined host group named \"$hgrp\" - name is reserved since 9.2"
+         EXIT 1
+      fi
+   done
+   return 0
+}
+
 # CS-2450: the primary name of a configuration object must not contain any of the
 # characters that make up a wildcard expression - * ? [ ] & | ! ( ). Object names
 # and the references pointing at them share one namespace, and wildcards are a
@@ -902,6 +959,10 @@ LogIt "I" "$LOAD_VERSION"
 # CS-2394: refuse a pre-9.2 backup that uses the now-reserved access list names.
 # Must run before IterativeLoad, i.e. before anything is loaded.
 CheckReservedAccessListNames "${DIR}"
+
+# CS-2438: refuse a pre-9.2 backup that uses the now-reserved host group names.
+# Must run before IterativeLoad, i.e. before anything is loaded.
+CheckReservedHostGroupNames "${DIR}"
 
 # CS-2450: refuse a backup whose object names carry wildcard expression characters.
 # Must run before IterativeLoad, i.e. before anything is loaded.
