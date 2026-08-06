@@ -59,6 +59,7 @@
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/config.h"
+#include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_userset.h"
@@ -101,6 +102,7 @@ static int sge_error_and_exit(const char *ptr);
 
 /* ------------------------------------------------------------- */
 static bool show_object_list(ocs::gdi::Target, lDescr *, int, const char *);
+static bool show_reserved_hgroup_hosts(const char *, const char *, const char *);
 static bool show_manop_list(const char *userset_name, const char *display_name);
 static int show_thread_list();
 static int show_processors(bool has_binding_param);
@@ -108,8 +110,9 @@ static int show_eventclients();
 
 /* ------------------------------------------------------------- */
 static void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, char *s);
-static bool add_host_of_type(lList *arglp, ocs::gdi::Target target);
 static bool del_host_of_type(lList *arglp, ocs::gdi::Target target);
+static bool mod_reserved_hgroup(lList *arglp, int nm, const char *group,
+                                ocs::gdi::SubCommand sub_command, const char *what);
 static int print_acl(lList *arglp);
 static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp, lListElem **epp, ocs::gdi::SubCommand sub_command, struct object_info_entry *info_entry);
 static lListElem *edit_exechost(lListElem *ep, uid_t uid, gid_t gid);
@@ -2280,7 +2283,8 @@ int sge_parse_qconf(char *argv[])
 
          spp = sge_parser_get_next(spp);
          parse_name_list_to_cull("host to add", &lp, AH_Type, AH_name, *spp);
-         if (!add_host_of_type(lp, ocs::gdi::Target::AH_LIST)) {
+         if (!mod_reserved_hgroup(lp, AH_name, ADMIN_HOSTGROUP,
+                                  ocs::gdi::SubCommand::APPEND, "administrative host")) {
             sge_parse_return |= 1;
          }
 
@@ -2704,7 +2708,8 @@ int sge_parse_qconf(char *argv[])
 
          spp = sge_parser_get_next(spp);
          parse_name_list_to_cull("host to add", &lp, SH_Type, SH_name, *spp);
-         if (!add_host_of_type(lp, ocs::gdi::Target::SH_LIST)) {
+         if (!mod_reserved_hgroup(lp, SH_name, SUBMIT_HOSTGROUP,
+                                  ocs::gdi::SubCommand::APPEND, "submit host")) {
             sge_parse_return = 1;
          }
          lFreeList(&lp);
@@ -3156,7 +3161,8 @@ int sge_parse_qconf(char *argv[])
          /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
          parse_name_list_to_cull("host to del", &lp, AH_Type, AH_name, *spp);
-         if (!del_host_of_type(lp, ocs::gdi::Target::AH_LIST)) {
+         if (!mod_reserved_hgroup(lp, AH_name, ADMIN_HOSTGROUP,
+                                  ocs::gdi::SubCommand::REMOVE, "administrative host")) {
             sge_parse_return = 1;
          }
          lFreeList(&lp);
@@ -3290,7 +3296,8 @@ int sge_parse_qconf(char *argv[])
 
          spp = sge_parser_get_next(spp);
          parse_name_list_to_cull("host to del", &lp, SH_Type, SH_name, *spp);
-         if (!del_host_of_type(lp, ocs::gdi::Target::SH_LIST)) {
+         if (!mod_reserved_hgroup(lp, SH_name, SUBMIT_HOSTGROUP,
+                                  ocs::gdi::SubCommand::REMOVE, "submit host")) {
             sge_parse_return = 1;
          }
          lFreeList(&lp);
@@ -5790,7 +5797,7 @@ int sge_parse_qconf(char *argv[])
 /*----------------------------------------------------------------------------*/
       /* "-sh" */
       if (strcmp("-sh", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::AH_LIST, AH_Type, AH_name,
+         if (!show_reserved_hgroup_hosts(ADMIN_HOSTGROUP, "adminhost",
                "administrative host")) {
             sge_parse_return = 1;
          }
@@ -6247,7 +6254,7 @@ int sge_parse_qconf(char *argv[])
       /* "-ss" */
       if (strcmp("-ss", *spp) == 0) {
 
-         if (!show_object_list(ocs::gdi::Target::SH_LIST, SH_Type, SH_name,
+         if (!show_reserved_hgroup_hosts(SUBMIT_HOSTGROUP, "submithost",
                "submit host")) {
             sge_parse_return = 1;
          }
@@ -7104,9 +7111,11 @@ int sge_parse_qconf(char *argv[])
 
 /*----------------------------------------------------------------------------*/
 
-      /* "-ss" */
+      /* "-ss" -- unreachable duplicate of the "-ss" branch above (same if-chain,
+       * the first match wins); converted with it so no reader has to work out
+       * which of the two is live, and so nothing here still names SH_LIST. */
       if (strcmp("-ss", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::SH_LIST, SH_Type, SH_name,
+         if (!show_reserved_hgroup_hosts(SUBMIT_HOSTGROUP, "submithost",
                "submit")) {
             sge_parse_return = 1;
          }
@@ -7266,66 +7275,100 @@ static int sge_error_and_exit(const char *ptr) {
    DRETURN(1); /* to prevent warning */
 }
 
-static bool add_host_of_type(lList *arglp, ocs::gdi::Target target)
+/****** qconf/mod_reserved_hgroup() *******************************************
+*  NAME
+*     mod_reserved_hgroup() -- add/remove hosts in a reserved host group
+*
+*  FUNCTION
+*     CS-2438. Admin and submit hosts live in the reserved host groups
+*     "@admin_hosts" and "@submit_hosts", so qconf -ah/-dh/-as/-ds modify those
+*     groups instead of the retired AH_LIST/SH_LIST targets.
+*
+*     The request is a GDI MOD on HGRP_LIST with the sublist sub-command
+*     APPEND or REMOVE -- the mechanism behind "qconf -aattr/-dattr". It is
+*     deliberately NOT a read-modify-write of HGRP_host_list in the client:
+*     read-modify-write loses a concurrent "-as" issued between the read and the
+*     write, which the old dedicated ADD/DEL target could not do. The qmaster
+*     merges the sublist under its own lock (attr_mod_sub_list() via
+*     hgroup_mod_hostlist()), so two concurrent additions cannot lose each other.
+*
+*     Privilege is unchanged: AH_LIST, SH_LIST and HGRP_LIST are labels of the
+*     same manager-only case in sge_c_gdi.cc, so redirecting the target neither
+*     grants nor removes any right.
+*
+*     One request per host, as before, so a failure names the host it belongs to
+*     rather than failing a whole batch.
+*
+*  INPUTS
+*     lList *arglp                    - list of names as parsed from the command line
+*     int nm                          - name field in arglp (AH_name or SH_name)
+*     const char *group               - ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP
+*     ocs::gdi::SubCommand sub_command - APPEND to add, REMOVE to delete
+*     const char *what                - "administrative host" / "submit host", for messages
+*
+*  RESULT
+*     bool - true if every request succeeded
+*******************************************************************************/
+static bool mod_reserved_hgroup(lList *arglp, int nm, const char *group,
+                                ocs::gdi::SubCommand sub_command, const char *what)
 {
-   lListElem *ep=nullptr;
-   lList *lp=nullptr, *alp=nullptr;
-   const char *host = nullptr;
-   int nm = NoName;
-   lDescr *type = nullptr;
-   const char *name = nullptr;
    bool ret = true;
 
    DENTER(TOP_LAYER);
 
-   switch (target) {
-      case ocs::gdi::Target::SH_LIST:
-         nm = SH_name;
-         type = SH_Type;
-         name = "submit host";
-         break;
-      case ocs::gdi::Target::AH_LIST:
-         nm = AH_name;
-         type = AH_Type;
-         name = "administrative host";
-         break;
-      default:
-         DPRINTF("add_host_of_type: unexpected type\n");
-         ret = false;
-         DRETURN(ret);
-   }
-
    for_each_rw_lv(argep, arglp) {
-      /* resolve hostname */
-      if (sge_resolve_host(argep, nm) != CL_RETVAL_OK) {
-         const char* hostname = lGetHost(argep, nm);
+      const char *name = lGetHost(argep, nm);
+
+      if (name == nullptr) {
          ret = false;
-         if (hostname == nullptr) {
-            hostname = "";
-         }
-         fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, hostname);
-         fprintf(stderr, "\n");
          continue;
       }
-      host = lGetHost(argep, nm);
 
-      /* make a new host element */
-      lp = lCreateList("host to add", type);
-      ep = lCopyElem(argep);
-      lAppendElem(lp, ep);
+      /*
+       * A host group reference is passed through untouched: "-ah @group" is
+       * legal (see the plan for CS-2438), and sge_resolve_host() would fail on
+       * it. hgroup_mod() checks in the qmaster that the group exists and that
+       * the reference introduces no cycle, so nothing has to be validated here.
+       */
+      if (!ocs::is_hgroup_name(name)) {
+         if (sge_resolve_host(argep, nm) != CL_RETVAL_OK) {
+            fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, name);
+            fprintf(stderr, "\n");
+            ret = false;
+            continue;
+         }
+         name = lGetHost(argep, nm);
+      }
 
+      /* the reduced element the qmaster merges: just the group name and the
+       * one entry to add to or remove from its host list */
+      lList *lp = lCreateList("host group to modify", HGRP_Type);
+      lListElem *hgrp = lAddElemHost(&lp, HGRP_name, group, HGRP_Type);
+      lList *hosts = nullptr;
 
-      /* add the new host to the host list */
-      alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+      lAddElemHost(&hosts, HR_name, name, HR_Type);
+      lSetList(hgrp, HGRP_host_list, hosts);
 
-      /* report results */
-      ep = lFirstRW(alp);
-      answer_exit_if_not_recoverable(ep);
-      if (answer_get_status(ep) == STATUS_OK) {
-         fprintf(stderr, MSG_QCONF_XADDEDTOYLIST_SS, host, name);
-         fprintf(stderr, "\n");
+      lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::MOD,
+                                             sub_command, &lp, nullptr, nullptr);
+
+      lListElem *aep = lFirstRW(alp);
+      answer_exit_if_not_recoverable(aep);
+      if (answer_get_status(aep) == STATUS_OK) {
+         /*
+          * Output is kept exactly as the retired targets produced it: -ah/-as
+          * confirmed each host, -dh/-ds said nothing on success and only spoke
+          * up on failure. There is no client side "removed from list" message
+          * and none is invented here -- a new line of output would be a
+          * compatibility change for every script parsing qconf.
+          */
+         if (sub_command == ocs::gdi::SubCommand::APPEND) {
+            fprintf(stderr, MSG_QCONF_XADDEDTOYLIST_SS, name, what);
+            fprintf(stderr, "\n");
+         }
       } else {
-         fprintf(stderr, "%s\n", lGetString(ep, AN_text));
+         fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+         ret = false;
       }
 
       lFreeList(&lp);
@@ -7335,6 +7378,11 @@ static bool add_host_of_type(lList *arglp, ocs::gdi::Target target)
    DRETURN(ret);
 }
 
+/* ------------------------------------------------------------ */
+
+/* add_host_of_type() removed with CS-2438: -ah/-as now modify the reserved
+ * host groups through mod_reserved_hgroup(). del_host_of_type() stays -- it is
+ * still the implementation of -de for EH_LIST. */
 /* ------------------------------------------------------------ */
 
 static bool del_host_of_type(lList *arglp, ocs::gdi::Target target )
@@ -7872,6 +7920,102 @@ static bool show_object_list(ocs::gdi::Target target, lDescr *type, int keynm, c
                DPRINTF("show_object_list: unexpected data type\n");
                break;
          }
+         if (line != nullptr && line[0] != COMMENT_CHAR) {
+            printf("%s\n", line);
+         }
+      }
+   } else {
+      fprintf(stderr, MSG_QCONF_NOXDEFINED_S, name);
+      fprintf(stderr, "\n");
+      ret = false;
+   }
+
+   lFreeList(&alp);
+   lFreeList(&lp);
+
+   DRETURN(ret);
+}
+
+/****** qconf/show_reserved_hgroup_hosts() ************************************
+*  NAME
+*     show_reserved_hgroup_hosts() -- qconf -sh / -ss from the reserved group
+*
+*  FUNCTION
+*     CS-2438 chunk 5. Prints the membership of "@admin_hosts"/"@submit_hosts"
+*     now that they, and not AH_LIST/SH_LIST, are the source of truth.
+*
+*     Deliberately prints the DIRECT entries -- host names and "@group"
+*     references -- rather than the resolved set. For a cluster that does not
+*     nest, which is every cluster on the day after the upgrade because
+*     migration replays a flat list, the output is byte-identical to 9.1.
+*     Where an admin did introduce nesting, the direct entries are the honest
+*     answer: they are what "-dh/-ds" operate on. The resolved view already has
+*     its own command, "qconf -shgrp_resolved @submit_hosts".
+*
+*     The three behaviours of show_object_list() that scripts depend on are
+*     reproduced exactly, and for the same reasons:
+*       1. output sorted ascending by name, not stored order;
+*       2. entries starting with COMMENT_CHAR skipped;
+*       3. an empty list prints to STDERR and returns false, i.e. non-zero exit.
+*
+*  INPUTS
+*     const char *group     - ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP
+*     const char *json_type - envelope name for -fmt json ("adminhost"/"submithost")
+*     const char *name      - "administrative host" / "submit host", for the message
+*
+*  RESULT
+*     bool - false if nothing is defined or the request failed
+*
+*  NOTES
+*     json_type has to be passed in: the entries are HR_Type elements, which are
+*     not a registered object type, so the envelope would derive as "unknown"
+*     and both the $id and the array key would change. It is only used when the
+*     list is non-empty, because the empty list produced the generic "names" key
+*     before and has to keep producing it.
+*******************************************************************************/
+static bool show_reserved_hgroup_hosts(const char *group, const char *json_type, const char *name)
+{
+   DENTER(TOP_LAYER);
+   lList *alp = nullptr, *lp = nullptr;
+   bool ret = true;
+
+   lEnumeration *what = lWhat("%T(%I %I)", HGRP_Type, HGRP_name, HGRP_host_list);
+   lCondition *where = lWhere("%T(%I==%s)", HGRP_Type, HGRP_name, group);
+
+   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET,
+                                   ocs::gdi::SubCommand::NONE, &lp, where, what);
+   lFreeWhat(&what);
+   lFreeWhere(&where);
+
+   lListElem *ep1 = lFirstRW(alp);
+   answer_exit_if_not_recoverable(ep1);
+   if (answer_list_output(&alp)) {
+      lFreeList(&lp);
+      DRETURN(false);
+   }
+
+   /* the group is seeded on every qmaster startup and cannot be deleted, so a
+    * missing element means an empty membership, handled below like an empty
+    * list -- but it must not reach lGetListRW(), which aborts on a nullptr
+    * element rather than returning nothing */
+   lListElem *hgroup = lFirstRW(lp);
+   lList *entries = (hgroup != nullptr) ? lGetListRW(hgroup, HGRP_host_list) : nullptr;
+
+   if (entries != nullptr) {
+      lPSortList(entries, "%I+", HR_name);
+   }
+
+   if (qconf_opt_format == SP_FORM_JSON) {
+      dstring out = DSTRING_INIT;
+      spool_json_write_name_list_ex(&alp, entries, HR_name,
+                                    lGetNumberOfElem(entries) > 0 ? json_type : nullptr, &out);
+      printf("%s", sge_dstring_get_string(&out));
+      sge_dstring_free(&out);
+   } else if (lGetNumberOfElem(entries) > 0) {
+      const lListElem *ep;
+      for_each_ep(ep, entries) {
+         const char *line = lGetHost(ep, HR_name);
+
          if (line != nullptr && line[0] != COMMENT_CHAR) {
             printf("%s\n", line);
          }

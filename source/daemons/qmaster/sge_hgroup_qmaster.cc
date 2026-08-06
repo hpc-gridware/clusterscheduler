@@ -73,6 +73,109 @@ hgroup_commit(lListElem *hgroup, uint64_t gdi_session);
 static void
 hgroup_rollback(lListElem *this_elem);
 
+/****** qmaster/hgroup/hgroup_reserved_delta_is_strict() **********************
+*  NAME
+*     hgroup_reserved_delta_is_strict() -- 9.1 membership errors for -ah/-dh/-as/-ds
+*
+*  FUNCTION
+*     CS-2438. attr_mod_sub_list() is deliberately TOLERANT: appending a member
+*     that is already there, or removing one that is not, is reported as an INFO
+*     answer with STATUS_OK and the request otherwise succeeds. That is right for
+*     "qconf -aattr" on an ordinary host group, and it is what made this check
+*     necessary -- once chunk 3 redirected "qconf -ah/-dh/-as/-ds" onto that
+*     path, both cases started exiting 0 where 9.1 exited 1, and "-ah" reported
+*     a host as added that it had not added.
+*
+*     Silently succeeding is the wrong answer for these two groups in
+*     particular. They are the admin and submit host lists: a script that says
+*     "qconf -ds host || alert" has to keep failing when the removal did not
+*     happen.
+*
+*     Scoped to @admin_hosts and @submit_hosts, so "-aattr/-dattr" on every
+*     other host group keeps the tolerant behaviour it has always had.
+*     @exec_hosts needs no entry -- it is system-maintained and every write to
+*     it is refused earlier.
+*
+*     Checked against the PRE-state, unlike the qmaster-host guard below which
+*     checks the end state: "was this host already a member" is a question about
+*     the state before the merge, and after attr_mod_sub_list() has run the two
+*     cases are indistinguishable from a successful one. Called after
+*     href_list_resolve_hostnames() so a short name and its FQDN compare equal.
+*
+*  INPUTS
+*     const lListElem *hgroup           - the group as it is BEFORE the merge
+*     lList **answer_list               - for returning the errors
+*     const lList *delta_list           - HR_Type entries the request carries
+*     ocs::gdi::SubCommand sub_command  - APPEND, REMOVE or neither
+*
+*  RESULT
+*     bool - false if any entry was already/not a member; the request must fail
+*
+*  NOTES
+*     The two messages are not symmetric, and that is not a slip: 9.1 produced
+*     MSG_SGETEXT_ALREADYEXISTS_SS with the GDI object name ("adminhost") from
+*     sge_c_gdi.cc and MSG_SGETEXT_DOESNOTEXIST_SS with the spelt-out name
+*     ("administrative host") from sge_del_host(). Both are reproduced as they
+*     were rather than unified, so no script parsing either one has to change.
+*******************************************************************************/
+static bool
+hgroup_reserved_delta_is_strict(const lListElem *hgroup, lList **answer_list,
+                                const lList *delta_list, ocs::gdi::SubCommand sub_command)
+{
+   const char *add_name;   /* as sge_c_gdi.cc named it   */
+   const char *del_name;   /* as sge_del_host() named it */
+   bool ret = true;
+
+   DENTER(TOP_LAYER);
+
+   const char *group = lGetHost(hgroup, HGRP_name);
+   if (group == nullptr) {
+      DRETURN(true);
+   }
+   if (strcmp(group, ADMIN_HOSTGROUP) == 0) {
+      add_name = "adminhost";
+      del_name = "administrative host";
+   } else if (strcmp(group, SUBMIT_HOSTGROUP) == 0) {
+      add_name = "submithost";
+      del_name = "submit host";
+   } else {
+      DRETURN(true);
+   }
+
+   const bool append = (sub_command & ocs::gdi::SubCommand::APPEND) == ocs::gdi::SubCommand::APPEND;
+   const bool remove = (sub_command & ocs::gdi::SubCommand::REMOVE) == ocs::gdi::SubCommand::REMOVE;
+
+   /* -mhgrp/-Mhgrp replace the list wholesale; there is no per-entry
+    * add-or-remove intent to report on, and 9.1 had no equivalent error */
+   if (!append && !remove) {
+      DRETURN(true);
+   }
+
+   const lList *current = lGetList(hgroup, HGRP_host_list);
+   const lListElem *href;
+
+   for_each_ep(href, delta_list) {
+      const char *name = lGetHost(href, HR_name);
+
+      if (name == nullptr) {
+         continue;
+      }
+      const bool is_member = (href_list_locate(current, name) != nullptr);
+
+      if (append && is_member) {
+         ERROR(MSG_SGETEXT_ALREADYEXISTS_SS, add_name, name);
+         answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+         ret = false;
+      } else if (remove && !is_member) {
+         ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, del_name, name);
+         answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+         ret = false;
+      }
+   }
+
+   DRETURN(ret);
+}
+
 static bool
 hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_elem,
                     ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, lList **add_hosts,
@@ -93,6 +196,9 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
 
          if (ret) {
             ret &= href_list_resolve_hostnames(list, answer_list, true);
+         }
+         if (ret) {
+            ret &= hgroup_reserved_delta_is_strict(hgroup, answer_list, list, sub_command);
          }
          if (ret) {
             attr_mod_sub_list(answer_list, hgroup, HGRP_host_list, HR_name,
