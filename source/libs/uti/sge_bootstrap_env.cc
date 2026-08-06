@@ -32,6 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The cluster settings that come from the environment, not from a file
+ *
+ * `$SGE_ROOT`, `$SGE_CELL` and the two daemon ports are read once per thread
+ * and cached in thread-local storage. This is the level the rest of the
+ * bootstrap machinery builds on: #bootstrap_get_cell_root and its neighbours
+ * derive their paths from the values here.
+ */
+
 #include <cstring>
 
 #include <pthread.h>
@@ -47,16 +56,22 @@
 
 #include "sge.h"
 
-// thread local storage (level 1)
-// initialization depends on data of level 0 (e.g. logging)
-// TODO: data can partially be shared between threads. cleanup required.
+/**
+ * @brief Thread local storage (level 1) holding the environment settings
+ *
+ * Level 1 because its initialisation depends on level 0 data such as logging.
+ * The two string members are owned by the struct and released by
+ * `bootstrap_env_tl1_destroy()`.
+ *
+ * @todo data can partially be shared between threads. cleanup required.
+ */
 typedef struct {
    // environment
-   char *sge_root;
-   char *sge_cell;
-   uint32_t sge_qmaster_port;
-   uint32_t sge_execd_port;
-   bool from_services;
+   char *sge_root;            ///< `$SGE_ROOT`; nullptr when the variable is unset
+   char *sge_cell;            ///< `$SGE_CELL`, or `DEFAULT_CELL` ("default") when unset
+   uint32_t sge_qmaster_port; ///< port the qmaster listens on
+   uint32_t sge_execd_port;   ///< port the execds listen on
+   bool from_services;        ///< true when the qmaster port came from the services database rather than the environment
 } sge_bootstrap_ts1_t;
 
 static pthread_once_t bootstrap_env_once = PTHREAD_ONCE_INIT;
@@ -116,8 +131,15 @@ bootstrap_env_mt_init() {
    pthread_once(&bootstrap_env_once, bootstrap_env_thread_local_once_init);
 }
 
+/**
+ * @brief Creates the thread-local key before `main()` runs
+ *
+ * Exists only for the side effect of its constructor. A single static instance
+ * is defined below; do not remove it, and do not instantiate it anywhere else.
+ */
 class BootstrapEnvThreadInit {
 public:
+   /// Runs the one-time `pthread_key_create()` for this module
    BootstrapEnvThreadInit() {
       bootstrap_env_mt_init();
    }
@@ -176,30 +198,61 @@ bootstrap_env_tl1_destroy(void *tl) {
    sge_free(&_tl);
 }
 
+/**
+ * @brief The installation root, from `$SGE_ROOT`
+ *
+ * @return the value of `$SGE_ROOT`, or nullptr when the variable is not set;
+ *         owned by thread-local storage, do not free
+ */
 const char *
 bootstrap_get_sge_root() {
    GET_SPECIFIC(sge_bootstrap_ts1_t, tl, bootstrap_env_tl1_init, sge_bootstrap_env_tl1_key);
    return tl->sge_root;
 }
 
+/**
+ * @brief The cell name, from `$SGE_CELL`
+ *
+ * @return the value of `$SGE_CELL`, or `DEFAULT_CELL` ("default") when it is not
+ *         set; never nullptr, and owned by thread-local storage, do not free
+ */
 const char *
 bootstrap_get_sge_cell() {
    GET_SPECIFIC(sge_bootstrap_ts1_t, tl, bootstrap_env_tl1_init, sge_bootstrap_env_tl1_key);
    return tl->sge_cell;
 }
 
+/**
+ * @brief The port the qmaster listens on
+ *
+ * Taken from `$SGE_QMASTER_PORT` if set, otherwise from the services database;
+ * #bootstrap_is_from_services tells which of the two it was.
+ *
+ * @return the port number
+ */
 uint32_t
 bootstrap_get_sge_qmaster_port() {
    GET_SPECIFIC(sge_bootstrap_ts1_t, tl, bootstrap_env_tl1_init, sge_bootstrap_env_tl1_key);
    return tl->sge_qmaster_port;
 }
 
+/**
+ * @brief The port the execds listen on
+ *
+ * @return the port number
+ */
 uint32_t
 bootstrap_get_sge_execd_port() {
    GET_SPECIFIC(sge_bootstrap_ts1_t, tl, bootstrap_env_tl1_init, sge_bootstrap_env_tl1_key);
    return tl->sge_execd_port;
 }
 
+/**
+ * @brief Where did the qmaster port come from?
+ *
+ * @return true when it was looked up in the services database, false when it
+ *         came from the environment
+ */
 bool
 bootstrap_is_from_services() {
    GET_SPECIFIC(sge_bootstrap_ts1_t, tl, bootstrap_env_tl1_init, sge_bootstrap_env_tl1_key);

@@ -19,6 +19,18 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Who and where this process is
+ *
+ * The identity of the running component — its program and thread name, the
+ * user it currently acts as, and the host it runs on. Split into data shared
+ * by all threads of the process (host names, user identities) and data that is
+ * per thread (thread name and id, log buffer).
+ *
+ * @todo move the program name defines to a different location where other
+ *       program names are defined
+ */
+
 #include <array>
 
 #include "uti/sge_uidgid.h"
@@ -27,13 +39,13 @@
 
 #include "sge.h"
 
-// TODO: move the defines to a different location where other program names are defines
-#define SGE_PREFIX      "sge_"
-#define SGE_SHEPHERD    "sge_shepherd"
-#define SGE_COSHEPHERD  "sge_coshepherd"
-#define SGE_SHADOWD     "sge_shadowd"
-#define PE_HOSTFILE     "pe_hostfile"
+#define SGE_PREFIX      "sge_"          ///< prefix shared by the daemon binaries
+#define SGE_SHEPHERD    "sge_shepherd"  ///< binary supervising one job on the execution host
+#define SGE_COSHEPHERD  "sge_coshepherd"///< binary supervising a job's tasks alongside the shepherd
+#define SGE_SHADOWD     "sge_shadowd"   ///< binary watching the qmaster and taking over on failure
+#define PE_HOSTFILE     "pe_hostfile"   ///< name of the file listing a parallel job's hosts
 
+/// Names of the security modes, indexed by @ref ocs::Bootstrap::bs_sec_mode_t, with `"NONE"` last
 constexpr std::array<const char*, 7> sec_mode_names = {
    "tls",
    "munge",
@@ -44,15 +56,17 @@ constexpr std::array<const char*, 7> sec_mode_names = {
    NONE_STR
 };
 
+/// The identities a component can act as; an index into its user table
 enum component_user_type_t {
-   COMPONENT_FIRST_USER = 0,
-   COMPONENT_START_USER = COMPONENT_FIRST_USER,
-   COMPONENT_ADMIN_USER,
+   COMPONENT_FIRST_USER = 0,                        ///< lowest valid index, for iterating
+   COMPONENT_START_USER = COMPONENT_FIRST_USER,     ///< the user the process was started as
+   COMPONENT_ADMIN_USER,                            ///< the cluster's admin user
 
-   COMPONENT_NUM_USERS
+   COMPONENT_NUM_USERS                              ///< number of identities, and the table size
 };
 
 
+/// Called to terminate the process, with the exit code as its argument
 typedef void (*sge_exit_func_t)(int);
 
 void component_ts0_init();

@@ -33,12 +33,25 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Accessors for the configuration file execd passes to shepherd
+ *
+ * See config_file.cc for how the list is held and how #replace_params expands
+ * `$variable` references against it.
+ */
+
 #include <string>
 #include <cinttypes>
 
 #include <sgeobj/ocs_CEntry.h>
 
-extern char err_msg[]; /* JG: TODO: that is potentially very dangerous! */
+/**
+ * @brief Last error text stored by #set_error
+ *
+ * @todo this is potentially very dangerous — a single global buffer shared by
+ *       every caller in the process
+ */
+extern char err_msg[];
 void set_error(const char *err_str);
 
 int read_config(const char *fname);

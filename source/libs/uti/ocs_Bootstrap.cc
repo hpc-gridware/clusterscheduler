@@ -18,6 +18,14 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Reads the cell's `bootstrap` file into @ref ocs::Bootstrap
+ *
+ * The setters and the file parser are private and run exactly once, on the
+ * first getter call. Everything public in here is a getter that returns a
+ * value already read from the file.
+ */
+
 #include <atomic>
 #include <cassert>
 #include <bitset>
@@ -147,11 +155,11 @@ ocs::Bootstrap::set_security_mode(const char *new_security_mode) {
    DRETURN_VOID;
 }
 
-#define MIN_CERTIFICATE_LIFETIME (120)
-#define MAX_CERTIFICATE_LIFETIME (365 * 24 * 60 * 60)
-#define MIN_CERTIFICATE_START_OFFSET (-300)
-#define DEFAULT_CERTIFICATE_START_OFFSET (-10)
-#define MAX_CERTIFICATE_START_OFFSET (0)
+#define MIN_CERTIFICATE_LIFETIME (120)                ///< shortest accepted certificate lifetime, in seconds
+#define MAX_CERTIFICATE_LIFETIME (365 * 24 * 60 * 60) ///< longest accepted certificate lifetime, in seconds (one year)
+#define MIN_CERTIFICATE_START_OFFSET (-300)           ///< earliest accepted certificate start, in seconds before now
+#define DEFAULT_CERTIFICATE_START_OFFSET (-10)        ///< certificate start used when none is configured
+#define MAX_CERTIFICATE_START_OFFSET (0)              ///< latest accepted certificate start: never in the future
 void
 ocs::Bootstrap::set_security_params(const char *new_security_params) {
    DENTER(TOP_LAYER);
@@ -232,6 +240,12 @@ ocs::Bootstrap::set_job_spooling(const bool new_job_spooling) {
    job_spooling = new_job_spooling;
 }
 
+/**
+ * @brief The enabled security modes, rendered for logging
+ *
+ * @return a comma separated list of mode names in #bs_sec_mode_t order, or
+ *         `"none"` when no mode is enabled
+ */
 std::string
 ocs::Bootstrap::get_security_modes() {
    DENTER(TOP_LAYER);
@@ -278,8 +292,10 @@ ocs::Bootstrap::log_all_parameter() {
 
 void
 ocs::Bootstrap::init_from_file() {
+/// @cond   function local: entries read from the bootstrap file, and how many of them are mandatory
 #define NUM_BOOTSTRAP 15
 #define NUM_REQ_BOOTSTRAP 9
+/// @endcond
    DENTER(TOP_LAYER);
    bootstrap_entry_t name[NUM_BOOTSTRAP] = {
            {"admin_user",        true},
@@ -369,59 +385,116 @@ ocs::Bootstrap::ensure_initialized() {
    }
 }
 
+/**
+ * @brief The user the cluster's daemons administer files as
+ *
+ * @return the `admin_user` entry; owned by the class, do not free
+ */
 const char *
 ocs::Bootstrap::get_admin_user() {
    ensure_initialized();
    return admin_user;
 }
 
+/**
+ * @brief The domain appended to unqualified hostnames
+ *
+ * @return the `default_domain` entry, which may be `"none"`; owned by the
+ *         class, do not free. Use #has_default_domain to test it rather than
+ *         comparing against `"none"` here.
+ */
 const char *
 ocs::Bootstrap::get_default_domain() {
    ensure_initialized();
    return default_domain;
 }
 
+/**
+ * @brief Is a usable default domain configured?
+ *
+ * @return true when `default_domain` is set and is not `"none"`
+ */
 bool ocs::Bootstrap::has_default_domain() {
    ensure_initialized();
    return has_default_domain_set;
 }
 
+/**
+ * @brief Are hostnames compared on their short name only?
+ *
+ * @return the `ignore_fqdn` entry
+ */
 bool
 ocs::Bootstrap::get_ignore_fqdn() {
    ensure_initialized();
    return ignore_fqdn;
 }
 
+/**
+ * @brief The spooling method qmaster uses, e.g. `classic` or `berkeleydb`
+ *
+ * @return the `spooling_method` entry; owned by the class, do not free
+ */
 const char *
 ocs::Bootstrap::get_spooling_method() {
    ensure_initialized();
    return spooling_method;
 }
 
+/**
+ * @brief The shared library implementing the spooling method
+ *
+ * @return the `spooling_lib` entry; owned by the class, do not free
+ */
 const char *
 ocs::Bootstrap::get_spooling_lib() {
    ensure_initialized();
    return spooling_lib;
 }
 
+/**
+ * @brief Arguments handed to the spooling library at startup
+ *
+ * @return the `spooling_params` entry; owned by the class, do not free
+ */
 const char *
 ocs::Bootstrap::get_spooling_params() {
    ensure_initialized();
    return spooling_params;
 }
 
+/**
+ * @brief The directory the cluster's binaries are installed in
+ *
+ * @return the `binary_path` entry; owned by the class, do not free
+ */
 const char *
 ocs::Bootstrap::get_binary_path() {
    ensure_initialized();
    return binary_path;
 }
 
+/**
+ * @brief The directory qmaster spools into
+ *
+ * @return the `qmaster_spool_dir` entry; owned by the class, do not free
+ */
 const char *
 ocs::Bootstrap::get_qmaster_spool_dir() {
    ensure_initialized();
    return qmaster_spool_dir;
 }
 
+/**
+ * @brief Is one specific security mode enabled?
+ *
+ * Several modes can be enabled at once, so this is the only correct way to
+ * ask — do not parse the string from #get_security_modes.
+ *
+ * @param mode the mode to test
+ * @return true when @p mode is enabled; false for an out-of-range @p mode,
+ *         including #BS_SECMODE_NONE
+ */
 bool
 ocs::Bootstrap::has_security_mode(bs_sec_mode_t mode) {
    ensure_initialized();
@@ -429,36 +502,78 @@ ocs::Bootstrap::has_security_mode(bs_sec_mode_t mode) {
    return (idx < BS_SEC_MODE_NUM_ENTRIES) ? security_modes.test(idx) : false;
 }
 
+/**
+ * @brief How long a generated certificate stays valid
+ *
+ * Read from `certificate_lifetime=` in the `security_params` entry and clamped
+ * to [#MIN_CERTIFICATE_LIFETIME, #MAX_CERTIFICATE_LIFETIME].
+ *
+ * @return the lifetime in seconds; one year when not configured
+ */
 int
 ocs::Bootstrap::get_cert_lifetime() {
    ensure_initialized();
    return certificate_lifetime;
 }
 
+/**
+ * @brief How far before "now" a generated certificate becomes valid
+ *
+ * The offset absorbs clock skew between the hosts of the cluster. Read from
+ * `certificate_start_offset=` in the `security_params` entry and clamped to
+ * [#MIN_CERTIFICATE_START_OFFSET, #MAX_CERTIFICATE_START_OFFSET].
+ *
+ * @return the offset in seconds; negative or zero, and
+ *         #DEFAULT_CERTIFICATE_START_OFFSET when not configured
+ */
 int
 ocs::Bootstrap::get_cert_start_offset() {
    ensure_initialized();
    return certificate_start_offset;
 }
 
+/**
+ * @brief Size of the qmaster listener thread pool
+ *
+ * @return the `listener_threads` entry, 4 when unset or not positive, capped
+ *         at 32
+ */
 int
 ocs::Bootstrap::get_listener_thread_count() {
    ensure_initialized();
    return listener_thread_count;
 }
 
+/**
+ * @brief Size of the qmaster worker thread pool
+ *
+ * @return the `worker_threads` entry, 4 when unset or not positive, capped
+ *         at 32
+ */
 int
 ocs::Bootstrap::get_worker_thread_count() {
    ensure_initialized();
    return worker_thread_count;
 }
 
+/**
+ * @brief Size of the qmaster reader thread pool
+ *
+ * @return the `reader_threads` entry, 4 when unset or not positive, capped
+ *         at 32
+ */
 int
 ocs::Bootstrap::get_reader_thread_count() {
    ensure_initialized();
    return reader_thread_count;
 }
 
+/**
+ * @brief Size of the scheduler thread pool
+ *
+ * @return always 1 — the `scheduler_threads` entry is clamped to a maximum of
+ *         one, since a second scheduler thread is not supported
+ */
 int
 ocs::Bootstrap::get_scheduler_thread_count() {
    ensure_initialized();

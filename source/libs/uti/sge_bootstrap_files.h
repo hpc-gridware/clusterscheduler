@@ -33,10 +33,18 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Accessors for the paths of the files in the cell's `common` directory
+ *
+ * Every getter returns a path cached in thread-local storage, or nullptr when
+ * the cell layout could not be resolved.
+ */
+
 #include <cinttypes>
 #include "sge_dstring.h"
 #include "uti/sge_component.h"
 
+/// @cond   identical duplicates of the definitions in ocs_Bootstrap.h, documented there
 #define PATH_SEPARATOR "/"
 #define COMMON_DIR "common"
 #define BOOTSTRAP_FILE "bootstrap"
@@ -47,6 +55,7 @@
 
 #define PATH_SEPARATOR "/"
 #define PATH_SEPARATOR_CHAR '/'
+/// @endcond
 
 const char *
 bootstrap_get_cell_root();

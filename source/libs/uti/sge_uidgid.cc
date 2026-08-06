@@ -92,15 +92,15 @@ static void set_admin_user(const char *user_name, uid_t, gid_t);
 static int get_admin_user(uid_t *, gid_t *);
 
 /**
- * \brief Return true/false if current real user is superuser (root/Administrator).
+ * @brief Return true/false if current real user is superuser (root/Administrator).
  *
- * \details
+ * @details
  * Check the real user id to determine if it is the superuser. If so, return
  * true, else return false. This function relies on getuid == 0 for UNIX.
  * Other members of the Administrators group do not have the permission
  * to "su" without password!
  *
- * \return
+ * @return
  * true - root was start user
  * false - otherwise
  */

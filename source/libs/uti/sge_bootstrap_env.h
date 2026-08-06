@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Accessors for the cluster settings taken from the environment
+ *
+ * `$SGE_ROOT`, `$SGE_CELL` and the qmaster and execd ports.
+ */
+
 #include <cinttypes>
 #include "sge_dstring.h"
 #include "uti/sge_component.h"

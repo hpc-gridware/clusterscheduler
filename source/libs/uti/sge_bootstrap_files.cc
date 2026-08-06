@@ -32,6 +32,20 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Paths of the files in the cell's `common` directory
+ *
+ * Every path is derived once per thread from `$SGE_ROOT` and `$SGE_CELL` (see
+ * #bootstrap_get_sge_root and #bootstrap_get_sge_cell) and cached in
+ * thread-local storage, so callers can treat the getters as cheap.
+ *
+ * If `$SGE_ROOT` cannot be stat()ed, is not a directory, or the cell or its
+ * `common` directory is missing, a `CRITICAL` message is logged and the paths
+ * are left unset — **the getters then return nullptr** rather than aborting.
+ * Callers that cannot proceed without a path must check, as
+ * `ocs::Bootstrap::init_from_file()` does for the bootstrap file.
+ */
+
 #include <cstring>
 
 #include <pthread.h>
@@ -55,18 +69,25 @@
 
 #include "sge.h"
 
-// thread local storage (level 1)
-// initialization depends on data of level 0 (e.g. logging)
-// TODO: data can partially be shared between threads. cleanup required.
+/**
+ * @brief Thread local storage (level 1) holding the cell's file paths
+ *
+ * Level 1 because its initialisation depends on level 0 data such as logging.
+ * Every member is owned by the struct and released by
+ * `bootstrap_files_tl1_destroy()`; all of them are nullptr when
+ * `bootstrap_init_paths()` failed.
+ *
+ * @todo data can partially be shared between threads. cleanup required.
+ */
 typedef struct {
    // files and paths
-   char *cell_root;
-   char *bootstrap_file;
-   char *act_qmaster_file;
-   char *acct_file;
-   char *reporting_file;
-   char *shadow_masters_file;
-   char *alias_file;
+   char *cell_root;          ///< `$SGE_ROOT/$SGE_CELL`
+   char *bootstrap_file;     ///< `<cell_root>/common/`#BOOTSTRAP_FILE
+   char *act_qmaster_file;   ///< `<cell_root>/common/act_qmaster`, naming the active qmaster host
+   char *acct_file;          ///< `<cell_root>/common/`#ACCT_FILE
+   char *reporting_file;     ///< `<cell_root>/common/`#REPORTING_FILE
+   char *shadow_masters_file;///< `<cell_root>/common/`#SHADOW_MASTERS_FILE
+   char *alias_file;         ///< `<cell_root>/common/host_aliases`, the host alias file
 } sge_bootstrap_files_tl1_t;
 
 static pthread_once_t bootstrap_files_once = PTHREAD_ONCE_INIT;
@@ -138,8 +159,15 @@ bootstrap_files_mt_init() {
    pthread_once(&bootstrap_files_once, bootstrap_files_thread_local_once_init);
 }
 
+/**
+ * @brief Creates the thread-local key before `main()` runs
+ *
+ * Exists only for the side effect of its constructor. A single static instance
+ * is defined below; do not remove it, and do not instantiate it anywhere else.
+ */
 class BootstrapFilesThreadInit {
 public:
+   /// Runs the one-time `pthread_key_create()` for this module
    BootstrapFilesThreadInit() {
       bootstrap_files_mt_init();
    }
@@ -245,42 +273,87 @@ bootstrap_files_tl1_destroy(void *tl) {
    sge_free(&_tl);
 }
 
+/**
+ * @brief The cell directory, `$SGE_ROOT/$SGE_CELL`
+ *
+ * @return the path, or nullptr if the paths could not be initialised; owned by
+ *         thread-local storage, do not free
+ */
 const char *
 bootstrap_get_cell_root() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
    return tl->cell_root;
 }
 
+/**
+ * @brief The cell's `bootstrap` file, the source of @ref ocs::Bootstrap
+ *
+ * @return the path, or nullptr if the paths could not be initialised; owned by
+ *         thread-local storage, do not free
+ */
 const char *
 bootstrap_get_bootstrap_file() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
    return tl->bootstrap_file;
 }
 
+/**
+ * @brief The file naming the host the qmaster currently runs on
+ *
+ * @return the path, or nullptr if the paths could not be initialised; owned by
+ *         thread-local storage, do not free
+ */
 const char *
 bootstrap_get_act_qmaster_file() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
    return tl->act_qmaster_file;
 }
 
+/**
+ * @brief The accounting file qmaster appends finished jobs to
+ *
+ * @return the path, or nullptr if the paths could not be initialised; owned by
+ *         thread-local storage, do not free
+ */
 const char *
 bootstrap_get_acct_file() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
    return tl->acct_file;
 }
 
+/**
+ * @brief The reporting file qmaster writes its reporting records to
+ *
+ * @return the path, or nullptr if the paths could not be initialised; owned by
+ *         thread-local storage, do not free
+ */
 const char *
 bootstrap_get_reporting_file() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
    return tl->reporting_file;
 }
 
+/**
+ * @brief The file listing the hosts allowed to take over as qmaster
+ *
+ * @return the path, or nullptr if the paths could not be initialised; owned by
+ *         thread-local storage, do not free
+ */
 const char *
 bootstrap_get_shadow_masters_file() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
    return tl->shadow_masters_file;
 }
 
+/**
+ * @brief The host alias file
+ *
+ * The same path #sge_get_alias_path builds, but taken from thread-local
+ * storage instead of allocated on every call — prefer this one.
+ *
+ * @return the path, or nullptr if the paths could not be initialised; owned by
+ *         thread-local storage, do not free
+ */
 const char *
 bootstrap_get_alias_file() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);

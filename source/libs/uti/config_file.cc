@@ -31,6 +31,20 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+/** @file
+ * @brief The `name value` configuration file passed from execd to shepherd
+ *
+ * Holds one global list of name/value pairs, read with #read_config and
+ * queried with #get_conf_val and friends. #replace_params expands `$variable`
+ * references in a string against that list, restricted to a whitelist of
+ * variable names — the `..._variables` arrays in this file are those
+ * whitelists, one per context (pe start, prolog/epilog, checkpointing, …).
+ *
+ * @note MT-NOTE: this module is not MT safe — the configuration list, the
+ *       error buffer and the error callback are all global. It is only used
+ *       in execd and shepherd, which are single-threaded here.
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cctype>
@@ -47,20 +61,33 @@
 #include "msg_daemons_common.h"
 
 
+/// Last error text stored by #set_error; shared by every caller in the process
 char err_msg[MAX_STRING_SIZE] = {'0'};
 
+/**
+ * @brief Store an error text in the global #err_msg buffer
+ *
+ * Truncates to the buffer size. A nullptr @p err_str leaves the previous text
+ * in place rather than clearing it.
+ *
+ * @param err_str the text to store
+ */
 void set_error(const char *err_str) {
    if (err_str) {
       sge_strlcpy(err_msg, err_str, sizeof(err_msg));
    }
 }
 
-/* handle the config file
-   This file is used to transfer parameters to the shepherd */
+/**
+ * @brief One entry of the configuration file, as a singly linked list node
+ *
+ * The list is built by #add_config_entry, which prepends, so entries are held
+ * in reverse file order. Both strings are owned by the entry.
+ */
 typedef struct config_entry {
-   char *name;
-   char *value;
-   struct config_entry *next;
+   char *name;                ///< the entry's name, never nullptr
+   char *value;               ///< the entry's value; nullptr when the line had no value
+   struct config_entry *next; ///< next entry, or nullptr at the end of the list
 } config_entry;
 
 /*
@@ -69,7 +96,7 @@ typedef struct config_entry {
  */
 static config_entry *config_list = nullptr;
 
-/* these variables may get used to replace variables in pe_start */
+/// Variables #replace_params accepts in a parallel environment's start and stop methods
 const char *pe_variables[] = {
         "sge_root",
         "sge_cell",
@@ -101,7 +128,7 @@ const char *pe_variables[] = {
         nullptr
 };
 
-/* these variables may get used to replace variables in prolog/epilog */
+/// Variables #replace_params accepts in prolog and epilog scripts
 const char *prolog_epilog_variables[] = {
         "sge_root",
         "sge_cell",
@@ -132,7 +159,7 @@ const char *prolog_epilog_variables[] = {
 };
 
 
-/* these variables may get used to replace variables in the allocation rule of a pe */
+/// Variables #replace_params accepts in a parallel environment's allocation rule
 const char *pe_alloc_rule_variables[] = {
         "pe_slots",
         "fill_up",
@@ -140,6 +167,7 @@ const char *pe_alloc_rule_variables[] = {
         nullptr
 };
 
+/// Variables #replace_params accepts in the methods of a checkpointing environment
 const char *ckpt_variables[] = {
         "sge_root",
         "sge_cell",
@@ -154,6 +182,7 @@ const char *ckpt_variables[] = {
         nullptr
 };
 
+/// Variables #replace_params accepts in a queue's suspend, resume and terminate methods
 const char *ctrl_method_variables[] = {
         "sge_root",
         "sge_cell",
@@ -166,17 +195,22 @@ const char *ctrl_method_variables[] = {
         nullptr
 };
 
+/// Callback invoked with an error text, or nullptr to discard errors silently
 void (*config_errfunc)(const char *) = nullptr;
 
-/*****************************************************
- read configuration file to memory.
- returns:
- - 0 Ok
- - 1 systemerror -> errno is valid
- - 2 malloc error
-
- MT-NOTE: read_config() is not MT safe
- *****************************************************/
+/**
+ * @brief Read a configuration file into the global list
+ *
+ * Discards the current list first, so this replaces rather than merges. Each
+ * line is split into a name and a value at the first space or `=`; a line with
+ * no separator becomes an entry with a nullptr value.
+ *
+ * @param fname the file to read
+ * @return 0 on success, 1 if the file could not be opened or closed (`errno`
+ *         is valid), 2 if an entry could not be allocated
+ *
+ * @note MT-NOTE: read_config() is not MT safe
+ */
 int read_config(const char *fname) {
    FILE *fp;
    char buf[100000], *name, *value;
@@ -211,7 +245,16 @@ int read_config(const char *fname) {
    return 1;
 }
 
-/******************************************************/
+/**
+ * @brief Prepend one entry to the global configuration list
+ *
+ * Does not check whether @p name is already present — use #set_conf_val when
+ * the entry should be replaced rather than shadowed. Both strings are copied.
+ *
+ * @param name the entry name
+ * @param value the entry value, or nullptr for a name without a value
+ * @return 0 on success, 1 if memory could not be allocated
+ */
 int add_config_entry(const char *name, const char *value) {
    config_entry *new_entry;
 
@@ -240,8 +283,13 @@ int add_config_entry(const char *name, const char *value) {
    return 0;
 }
 
-/****************************************************/
-
+/**
+ * @brief Find an entry by name, starting at @p ptr
+ *
+ * @param name the name to look for
+ * @param ptr the list node to start at
+ * @return the matching entry, or nullptr
+ */
 static config_entry *find_conf_entry(const char *name, config_entry *ptr) {
    while (ptr) {
       if (!strcmp(ptr->name, name))
@@ -252,7 +300,16 @@ static config_entry *find_conf_entry(const char *name, config_entry *ptr) {
    return nullptr;
 }
 
-/***************************************************/
+/**
+ * @brief Look up a configuration value, reporting a miss as an error
+ *
+ * A missing entry is passed to #config_errfunc. Use #search_conf_val when a
+ * miss is expected and should stay silent.
+ *
+ * @param name the entry name
+ * @return the value, or nullptr when there is no such entry; owned by the
+ *         list, do not free
+ */
 char *get_conf_val(const char *name) {
    config_entry *ptr = find_conf_entry(name, config_list);
    if (ptr) {
@@ -267,16 +324,14 @@ char *get_conf_val(const char *name) {
    return nullptr;
 }
 
-/*****************************************************************************
- * set_conf_val
- *   Sets the value of a config entry.
- *   If the config entry already exists, it replaces the value.
- *   If the config entry does not exist, it creates a new config entry.
+/**
+ * @brief Set a configuration value, adding the entry if it is missing
  *
- * Parameters:
- *   name:  Name of the config entry
- *   value: Value of the config entry
- *****************************************************************************/
+ * Does nothing when either argument is nullptr.
+ *
+ * @param name the entry name
+ * @param value the new value, which is copied
+ */
 void set_conf_val(const char *name, const char *value) {
    config_entry *pConfigEntry;
 
@@ -296,7 +351,13 @@ void set_conf_val(const char *name, const char *value) {
    }
 }
 
-/***************************************************/
+/**
+ * @brief Look up a configuration value without reporting a miss
+ *
+ * @param name the entry name
+ * @return the value, or nullptr when there is no such entry; owned by the
+ *         list, do not free
+ */
 char *search_conf_val(const char *name) {
    config_entry *ptr = config_list;
 
@@ -308,10 +369,13 @@ char *search_conf_val(const char *name) {
    }
 }
 
-/**************************************************
-   return nullptr if conf value does not exist or
-   if "none" is it's value
-*/
+/**
+ * @brief Look up a configuration value, treating `"none"` as absent
+ *
+ * @param name the entry name
+ * @return the value, or nullptr when there is no such entry or its value is
+ *         `"none"` in any capitalisation; owned by the list, do not free
+ */
 char *search_nonone_conf_val(const char *name) {
    char *s;
 
@@ -323,7 +387,9 @@ char *search_nonone_conf_val(const char *name) {
    }
 }
 
-/**************************************************/
+/**
+ * @brief Release every entry of the global configuration list
+ */
 void delete_config() {
    config_entry *next;
 
@@ -355,37 +421,40 @@ void delete_config() {
  * config_file could be moved to libspool.
  */
 
-/*
-   replace_params()
-
-DESCRIPTION 
-
-   can be used to 
-      check if all variables contained in src are allowed
-   or to 
-      build a new string in dst by replacing allowed variables
-      from config_list 
-
-   a variable starts with a "$" sign 
-   the name contains of chars from isalnum() or "_" 
-
-   the allowed variable names are given using a string array 
-   that contains accessable variables or all variable from 
-   config list are allowed if nullptr is passed
-
-ERROR
-
-   0  no error    
-
-   there are two classes of errors:
-      -1 a lack of an __allowed__ variable in the config_list   - execd damaged
-      1  a syntax error or a request of a not allowed variable - pe damaged
-  
-REM
-   
-   may be the config_list should be passed as an argument
-
-*/
+/**
+ * @brief Check or expand `$variable` references in a string
+ *
+ * A variable starts with `$` and its name continues for as long as the
+ * characters are alphanumeric or `_`.
+ *
+ * The function has two modes, selected by @p dst:
+ * - **validate only** (@p dst is nullptr) — checks that every variable in
+ *   @p src is allowed, without consulting the configuration list
+ * - **expand** — additionally looks each variable up in the configuration list
+ *   and writes the result to @p dst
+ *
+ * @warning @p dst_len is **ignored** and @p dst is not bounds-checked. The
+ *          check was removed because callers were passing wrong buffer
+ *          lengths; every caller must therefore size @p dst itself. See issue
+ *          \#1383.
+ *
+ * @param src the string to check or expand; nullptr is treated as empty
+ * @param dst buffer receiving the expanded string, or nullptr to only validate
+ * @param dst_len ignored, see the warning above
+ * @param allowed nullptr-terminated array of permitted variable names, or
+ *        nullptr to permit every name in the configuration list
+ * @return 0 on success; 1 for a syntax error or a variable that is not in
+ *         @p allowed (a damaged pe or ckpt definition); -1 for a variable that
+ *         is allowed but missing from the configuration list (a damaged execd)
+ *
+ * @todo config_file should not be part of libuti, but this is necessary due to
+ *       dependencies with other modules. replace_params calls a function
+ *       checking if a config value is available, but this should only be
+ *       called in shepherd; qmaster calls replace_params too and has no config
+ *       list. Solution: pass a function pointer for the checking function,
+ *       nullptr from qmaster. replace_params could then move to sge_string and
+ *       config_file to libspool.
+ */
 int replace_params(
         const char *src,
         char *dst,
@@ -508,6 +577,16 @@ int replace_params(
    return 0;
 }
 
+/**
+ * @brief Read a `variable=<time>` setting out of a parameter string
+ *
+ * @param input the parameter string to inspect
+ * @param variable the name to look for, matched case-insensitively
+ * @param[out] value the parsed number of seconds; set to 0 when @p input
+ *        carries the name without a value, and when the value does not parse
+ * @return true when @p input sets @p variable and the value parsed, false when
+ *         the name is absent or its value is not a valid time
+ */
 bool parse_time_param(const char *input, const char *variable, uint32_t *value) {
    bool ret = false;
 
@@ -551,6 +630,18 @@ bool parse_time_param(const char *input, const char *variable, uint32_t *value) 
 }
 
 
+/**
+ * @brief Read a `variable=<bool>` setting out of a parameter string
+ *
+ * The name on its own, with no `=`, counts as true — that is how these
+ * parameters are usually written.
+ *
+ * @param input the parameter string to inspect
+ * @param variable the name to look for, matched case-insensitively
+ * @param[out] value true for `1` or `true` in any capitalisation and for the
+ *        bare name, false for anything else
+ * @return true when @p input sets @p variable
+ */
 bool parse_bool_param(const char *input, const char *variable, bool *value) {
    bool ret = false;
 
@@ -597,6 +688,16 @@ bool parse_bool_param(const char *input, const char *variable, bool *value) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Read a `variable=<number>` setting out of a parameter string
+ *
+ * @param input the parameter string to inspect
+ * @param variable the name to look for, matched case-insensitively
+ * @param[out] value the parsed number; set to 0 when @p input carries the name
+ *        without a value, and when the value does not parse
+ * @param type how to interpret the value, e.g. a plain integer or a memory size
+ * @return true when @p input sets @p variable
+ */
 bool parse_int_param(const char *input, const char *variable, int *value, ocs::CEntry::Type type) {
    bool ret = false;
 
@@ -636,6 +737,15 @@ bool parse_int_param(const char *input, const char *variable, int *value, ocs::C
 
    DRETURN(ret);
 }
+/**
+ * @brief Read a `variable=<text>` setting out of a parameter string
+ *
+ * @param input the parameter string to inspect
+ * @param variable the name to look for, matched case-insensitively
+ * @param[out] value the text after the `=`; left untouched when @p input
+ *        carries the name without a value
+ * @return true when @p input sets @p variable
+ */
 bool parse_string_param(const char *input, const char *variable, std::string &value) {
    bool ret = false;
 

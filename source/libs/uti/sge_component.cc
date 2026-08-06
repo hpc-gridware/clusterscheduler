@@ -34,6 +34,15 @@
 #include "sge_rmon_macros.h"
 #include "sge_stdlib.h"
 
+/** @file
+ * @brief Identity of the running component: its names, users and hosts
+ *
+ * Implements @ref sge_component.h. The data lives in two places: a
+ * process-wide block guarded by a mutex (host names and the user identities,
+ * which every thread shares) and a thread-local block (thread name and id, log
+ * buffer, exit function).
+ */
+
 #include "msg_common.h"
 #include "msg_utilib.h"
 
@@ -41,11 +50,12 @@
 
 #include "ocs_Encoder.h"
 
-#define MAX_LOG_BUFFER (8*1024)
-#define MAX_COMP_NAME 32
-#define MAX_USER_GROUP 512
-#define MAX_HOSTNAME (2*1024)
+#define MAX_LOG_BUFFER (8*1024)  ///< size of each thread's log buffer
+#define MAX_COMP_NAME 32         ///< buffer size for a component or thread name
+#define MAX_USER_GROUP 512       ///< buffer size for a user or group name
+#define MAX_HOSTNAME (2*1024)    ///< buffer size for a host name
 
+/// One identity the component can act as, with its resolved names and groups
 typedef struct {
    bool user_initialized; ///< Flag indicating if the user structure has already been initialized.
    uid_t uid; ///< User ID.
@@ -61,19 +71,22 @@ typedef struct {
    std::string encoded_auth_info;   ///< cached auth_info (when not using Munge it does never change again - for Munge every request is uniquely encrypted)
 } sge_component_user_t;
 
-#define COMPONENT_MUTEX_NAME "component_mutex"
+#define COMPONENT_MUTEX_NAME "component_mutex" ///< name used when logging waits on the mutex
 
+/// Thread shared (level 0) component data: the users and the host names
 typedef struct component_ts0_t {
    pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; ///< mutex protecting the thread shared data
    sge_component_user_t users[COMPONENT_NUM_USERS];   ///< user specific information
    component_user_type_t current_user = COMPONENT_START_USER;  ///< the current user, index into the users array
-   bool hosts_initialized = false;
+   bool hosts_initialized = false;                    ///< have the host names been resolved yet?
    char qualified_hostname[MAX_HOSTNAME]; ///< Qualified hostname.
    char unqualified_hostname[MAX_HOSTNAME]; ///< Unqualified hostname.
 } sge_component_ts0_t;
 
+/// The one process-wide instance of the shared component data
 sge_component_ts0_t component_ts0_data{};
 
+/// Thread local (level 0) component data: names, ids and the log buffer
 typedef struct {
    char log_buffer[MAX_LOG_BUFFER]; ///< Log buffer for storing log messages.
    int thread_id; ///< Thread ID.
@@ -91,20 +104,20 @@ static pthread_once_t component_once = PTHREAD_ONCE_INIT;
 static pthread_key_t sge_component_tl0_key;
 
 /**
- * \brief Set the component ID.
+ * @brief Set the component ID.
  *
- * \param[in] tl Pointer to the thread-local component structure.
- * \param[in] component_id Component ID to set.
+ * @param[in] tl Pointer to the thread-local component structure.
+ * @param[in] component_id Component ID to set.
  */
 static void set_component_id(sge_component_tl0_t *tl, ProgName component_id) {
    tl->component_id = component_id;
 }
 
 /**
- * \brief Set the component name.
+ * @brief Set the component name.
  *
- * \param[in] tl Pointer to the thread-local component structure.
- * \param[in] component_name Component name to set.
+ * @param[in] tl Pointer to the thread-local component structure.
+ * @param[in] component_name Component name to set.
  */
 static void set_component_name(sge_component_tl0_t *tl, const char *component_name) {
    if (component_name != nullptr) {
@@ -113,51 +126,51 @@ static void set_component_name(sge_component_tl0_t *tl, const char *component_na
 }
 
 /**
- * \brief Set the daemonized flag.
+ * @brief Set the daemonized flag.
  *
- * \param[in] tl Pointer to the thread-local component structure.
- * \param[in] daemonized Daemonized flag to set.
+ * @param[in] tl Pointer to the thread-local component structure.
+ * @param[in] daemonized Daemonized flag to set.
  */
 static void set_daemonized(sge_component_tl0_t *tl, bool daemonized) {
    tl->daemonized = daemonized;
 }
 
 /**
- * \brief Set the exit function.
+ * @brief Set the exit function.
  *
- * \param[in] tl Pointer to the thread-local component structure.
- * \param[in] exit_func Exit function to set.
+ * @param[in] tl Pointer to the thread-local component structure.
+ * @param[in] exit_func Exit function to set.
  */
 static void set_exit_func(sge_component_tl0_t *tl, sge_exit_func_t exit_func) {
    tl->exit_func = exit_func;
 }
 
 /**
- * \brief Set the group ID.
+ * @brief Set the group ID.
  *
- * \param[in] user Pointer to the currently active user structure.
- * \param[in] gid Group ID to set.
+ * @param[in] user Pointer to the currently active user structure.
+ * @param[in] gid Group ID to set.
  */
 static void set_gid(sge_component_user_t *user, gid_t gid) {
    user->gid = gid;
 }
 
 /**
- * \brief Set the group name.
+ * @brief Set the group name.
  *
- * \param[in] user Pointer to the currently active user structure.
- * \param[in] group_name Group name to set.
+ * @param[in] user Pointer to the currently active user structure.
+ * @param[in] group_name Group name to set.
  */
 static void set_group_name(sge_component_user_t *user, const char *group_name) {
    strncpy(user->groupname, group_name, sizeof(user->groupname) - 1);
 }
 
 /**
- * \brief Set the qualified hostname.
+ * @brief Set the qualified hostname.
  *
- * \param[in] tl Pointer to the thread-local component structure.
- * \param[in] qualified_hostname Qualified hostname to set.
- * \note expects the component_ts0_data mutex to be locked
+ * @param[in] tl Pointer to the thread-local component structure.
+ * @param[in] qualified_hostname Qualified hostname to set.
+ * @note expects the component_ts0_data mutex to be locked
  */
 static void set_qualified_hostname(const char *qualified_hostname) {
    if (qualified_hostname != nullptr) {
@@ -166,21 +179,21 @@ static void set_qualified_hostname(const char *qualified_hostname) {
 }
 
 /**
- * \brief Set the qmaster internal flag.
+ * @brief Set the qmaster internal flag.
  *
- * \param[in] tl Pointer to the thread-local component structure.
- * \param[in] qmaster_internal Qmaster internal flag to set.
+ * @param[in] tl Pointer to the thread-local component structure.
+ * @param[in] qmaster_internal Qmaster internal flag to set.
  */
 static void set_qmaster_internal(sge_component_tl0_t *tl, bool qmaster_internal) {
    tl->qmaster_internal = qmaster_internal;
 }
 
 /**
- * \brief Set the supplementary groups.
+ * @brief Set the supplementary groups.
  *
- * \param[in] user Pointer to the currently active user structure.
- * \param[in] amount Number of supplementary groups.
- * \param[in] grp_array Array of supplementary group elements.
+ * @param[in] user Pointer to the currently active user structure.
+ * @param[in] amount Number of supplementary groups.
+ * @param[in] grp_array Array of supplementary group elements.
  */
 static void set_supplementray_groups(sge_component_user_t *user, int amount, ocs_grp_elem_t *grp_array) {
    user->amount = amount;
@@ -188,10 +201,10 @@ static void set_supplementray_groups(sge_component_user_t *user, int amount, ocs
 }
 
 /**
- * \brief Set the thread name.
+ * @brief Set the thread name.
  *
- * \param[in] tl Pointer to the thread-local component structure.
- * \param[in] thread_name Thread name to set.
+ * @param[in] tl Pointer to the thread-local component structure.
+ * @param[in] thread_name Thread name to set.
  */
 static void set_thread_name(sge_component_tl0_t *tl, const char *thread_name) {
    if (thread_name != nullptr) {
@@ -200,21 +213,21 @@ static void set_thread_name(sge_component_tl0_t *tl, const char *thread_name) {
 }
 
 /**
- * \brief Set the user ID.
+ * @brief Set the user ID.
  *
- * \param[in] user Pointer to the currently active user structure.
- * \param[in] uid User ID to set.
+ * @param[in] user Pointer to the currently active user structure.
+ * @param[in] uid User ID to set.
  */
 static void set_uid(sge_component_user_t *user, uid_t uid) {
    user->uid = uid;
 }
 
 /**
- * \brief Set the unqualified hostname.
+ * @brief Set the unqualified hostname.
  *
- * \param[in] tl Pointer to the thread-local component structure.
- * \param[in] unqualified_hostname Unqualified hostname to set.
- * \note expects the component_ts0_data mutex to be locked
+ * @param[in] tl Pointer to the thread-local component structure.
+ * @param[in] unqualified_hostname Unqualified hostname to set.
+ * @note expects the component_ts0_data mutex to be locked
  */
 static void set_unqualified_hostname(const char *unqualified_hostname) {
    if (unqualified_hostname != nullptr) {
@@ -223,17 +236,17 @@ static void set_unqualified_hostname(const char *unqualified_hostname) {
 }
 
 /**
- * \brief Set the username.
+ * @brief Set the username.
  *
- * \param[in] user Pointer to the currently active user structure.
- * \param[in] username Username to set.
+ * @param[in] user Pointer to the currently active user structure.
+ * @param[in] username Username to set.
  */
 static void set_username(sge_component_user_t *user, const char *username) {
    strncpy(user->username, username, sizeof(user->username)-1);
 }
 
 /**
- * \brief Initialize the thread shared user data.
+ * @brief Initialize the thread shared user data.
  *
  * Fills in user specific data for the current user.
  * We do lazy initialization of the supplementary groups, they are only initialized when first needed.
@@ -265,7 +278,7 @@ static void component_ts0_init_user() {
 }
 
 /**
- * \brief Initialize the thread shared data for supplemantary groups.
+ * @brief Initialize the thread shared data for supplemantary groups.
  *
  * The function is called on demand, when the data is first needed.
  * The caller needs to hold the component mutex.
@@ -285,7 +298,7 @@ static void component_ts0_init_supplementary_groups() {
 }
 
 /**
- * \brief Destroy the thread shared user specific data.
+ * @brief Destroy the thread shared user specific data.
  *
  * The function is called from component_ts0_destroy().
  */
@@ -298,12 +311,12 @@ static void component_ts0_destroy_user(component_user_type_t user_type) {
 }
 
 /**
- * \brief Initialize the component hosts
+ * @brief Initialize the component hosts
  *
  * Figures out the hostname where the component is running
  * and resolves it into qualified and unqualified hostnames.
  *
- * \note expects the component_ts0_data mutex to be locked
+ * @note expects the component_ts0_data mutex to be locked
  */
 static void
 component_ts0_init_hosts() {
@@ -336,7 +349,7 @@ component_ts0_init_hosts() {
 }
 
 /**
- * \brief Initialize the thread shared data.
+ * @brief Initialize the thread shared data.
  *
  * The function can be called during a component's initialization.
  * Otherwise, data is initialized on demand.
@@ -351,7 +364,7 @@ void component_ts0_init() {
 }
 
 /**
- * \brief Destroy the thread shared data.
+ * @brief Destroy the thread shared data.
  *
  * The function shall be called in the component's exit function.
  */
@@ -366,9 +379,9 @@ void component_ts0_destroy() {
 }
 
 /**
- * \brief Destroy the thread-local component structure.
+ * @brief Destroy the thread-local component structure.
  *
- * \param[in] tl Pointer to the thread-local component structure.
+ * @param[in] tl Pointer to the thread-local component structure.
  */
 static void component_tl0_destroy(void *tl) {
    auto _tl = (sge_component_tl0_t *) tl;
@@ -378,9 +391,9 @@ static void component_tl0_destroy(void *tl) {
 }
 
 /**
- * \brief Initialize the thread-local component structure.
+ * @brief Initialize the thread-local component structure.
  *
- * \param[in] tl Pointer to the thread-local component structure.
+ * @param[in] tl Pointer to the thread-local component structure.
  */
 static void component_tl0_init(sge_component_tl0_t *tl) {
    bool rmon_enabled = rmon_is_enabled();
@@ -408,26 +421,26 @@ static void component_tl0_init(sge_component_tl0_t *tl) {
 }
 
 /**
- * \brief Initialize the thread-local key for the component structure.
+ * @brief Initialize the thread-local key for the component structure.
  */
 static void component_thread_local_once_init() {
    pthread_key_create(&sge_component_tl0_key, component_tl0_destroy);
 }
 
 /**
- * \brief Initialize the component for multi-threading.
+ * @brief Initialize the component for multi-threading.
  */
 static void component_mt_init() {
    pthread_once(&component_once, component_thread_local_once_init);
 }
 
 /**
- * \brief Class to initialize the component for multi-threading.
+ * @brief Class to initialize the component for multi-threading.
  */
 class ComponentThreadInit {
 public:
    /**
-    * \brief Constructor that initializes the component for multi-threading.
+    * @brief Constructor that initializes the component for multi-threading.
     */
    ComponentThreadInit() {
       component_mt_init();
@@ -435,15 +448,15 @@ public:
 };
 
 /**
- * \brief Static instance to ensure the constructor is called, initializing the pthread key.
- * \note Although not used, the constructor call has the side effect to initialize the pthread key, so do not delete.
+ * @brief Static instance to ensure the constructor is called, initializing the pthread key.
+ * @note Although not used, the constructor call has the side effect to initialize the pthread key, so do not delete.
  */
 static ComponentThreadInit component_component_obj{};
 
 /**
- * \brief Check if the component is daemonized.
+ * @brief Check if the component is daemonized.
  *
- * \return True if the component is daemonized, false otherwise.
+ * @return True if the component is daemonized, false otherwise.
  */
 bool component_is_daemonized() {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -451,9 +464,9 @@ bool component_is_daemonized() {
 }
 
 /**
- * \brief Get the component ID.
+ * @brief Get the component ID.
  *
- * \return The component ID.
+ * @return The component ID.
  */
 ProgName component_get_component_id() {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -461,9 +474,9 @@ ProgName component_get_component_id() {
 }
 
 /**
- * \brief Get the component name.
+ * @brief Get the component name.
  *
- * \return The component name.
+ * @return The component name.
  */
 const char *component_get_component_name() {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -471,9 +484,9 @@ const char *component_get_component_name() {
 }
 
 /**
- * \brief Get the exit function.
+ * @brief Get the exit function.
  *
- * \return The exit function.
+ * @return The exit function.
  */
 sge_exit_func_t component_get_exit_func() {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -481,9 +494,9 @@ sge_exit_func_t component_get_exit_func() {
 }
 
 /**
- * \brief Get the group ID.
+ * @brief Get the group ID.
  *
- * \return The group ID.
+ * @return The group ID.
  */
 gid_t component_get_gid() {
    gid_t ret;
@@ -500,9 +513,9 @@ gid_t component_get_gid() {
 }
 
 /**
- * \brief Get the group name.
+ * @brief Get the group name.
  *
- * \return The group name.
+ * @return The group name.
  */
 const char *component_get_groupname() {
    const char *ret;
@@ -519,9 +532,9 @@ const char *component_get_groupname() {
 }
 
 /**
- * \brief Get the log buffer.
+ * @brief Get the log buffer.
  *
- * \return Pointer to the log buffer.
+ * @return Pointer to the log buffer.
  */
 char *component_get_log_buffer() {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -529,18 +542,18 @@ char *component_get_log_buffer() {
 }
 
 /**
- * \brief Get the size of the log buffer.
+ * @brief Get the size of the log buffer.
  *
- * \return The size of the log buffer.
+ * @return The size of the log buffer.
  */
 size_t component_get_log_buffer_size() {
    return MAX_LOG_BUFFER;
 }
 
 /**
- * \brief Get the qualified hostname.
+ * @brief Get the qualified hostname.
  *
- * \return The qualified hostname.
+ * @return The qualified hostname.
  */
 const char *component_get_qualified_hostname() {
    const char *qualified_hostname;
@@ -556,10 +569,10 @@ const char *component_get_qualified_hostname() {
 }
 
 /**
- * \brief Get the supplementary groups.
+ * @brief Get the supplementary groups.
  *
- * \param[out] amount Number of supplementary groups.
- * \param[out] grp_array Array of supplementary group elements.
+ * @param[out] amount Number of supplementary groups.
+ * @param[out] grp_array Array of supplementary group elements.
  */
 void component_get_supplementray_groups(int *amount, ocs_grp_elem_t **grp_array) {
    sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
@@ -576,9 +589,9 @@ void component_get_supplementray_groups(int *amount, ocs_grp_elem_t **grp_array)
 }
 
 /**
- * \brief Get the thread ID.
+ * @brief Get the thread ID.
  *
- * \return The thread ID.
+ * @return The thread ID.
  */
 int component_get_thread_id() {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -586,9 +599,9 @@ int component_get_thread_id() {
 }
 
 /**
- * \brief Get the thread name.
+ * @brief Get the thread name.
  *
- * \return The thread name.
+ * @return The thread name.
  */
 const char *component_get_thread_name() {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -596,9 +609,9 @@ const char *component_get_thread_name() {
 }
 
 /**
- * \brief Get the user ID.
+ * @brief Get the user ID.
  *
- * \return The user ID.
+ * @return The user ID.
  */
 uid_t component_get_uid() {
    uid_t ret;
@@ -615,9 +628,9 @@ uid_t component_get_uid() {
 }
 
 /**
- * \brief Get the unqualified hostname.
+ * @brief Get the unqualified hostname.
  *
- * \return The unqualified hostname.
+ * @return The unqualified hostname.
  */
 const char *component_get_unqualified_hostname() {
    const char *unqualified_hostname;
@@ -633,9 +646,9 @@ const char *component_get_unqualified_hostname() {
 }
 
 /**
- * \brief Get the username.
+ * @brief Get the username.
  *
- * \return The username.
+ * @return The username.
  */
 const char *component_get_username() {
    const char * ret;
@@ -652,9 +665,9 @@ const char *component_get_username() {
 }
 
 /**
- * \brief Check if the component is qmaster internal.
+ * @brief Check if the component is qmaster internal.
  *
- * \return True if the component is qmaster internal, false otherwise.
+ * @return True if the component is qmaster internal, false otherwise.
  */
 bool component_is_qmaster_internal() {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -662,9 +675,9 @@ bool component_is_qmaster_internal() {
 }
 
 /**
- * \brief Set the component ID and name.
+ * @brief Set the component ID and name.
  *
- * \param[in] component_id Component ID to set.
+ * @param[in] component_id Component ID to set.
  */
 void component_set_component_id(ProgName component_id) {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -673,14 +686,14 @@ void component_set_component_id(ProgName component_id) {
 }
 
 /**
- * \brief Override the component name independently of the component id.
+ * @brief Override the component name independently of the component id.
  *
  * component_set_component_id() forces the name to the ProgName's string. A
  * client (e.g. the Python bridge) can use a generic ProgName for the protocol
  * while presenting a custom commlib / qping identity by calling this afterwards,
  * before enrolling.
  *
- * \param[in] component_name Component name to set.
+ * @param[in] component_name Component name to set.
  */
 void component_set_component_name(const char *component_name) {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -688,9 +701,9 @@ void component_set_component_name(const char *component_name) {
 }
 
 /**
- * \brief Set the daemonized flag.
+ * @brief Set the daemonized flag.
  *
- * \param[in] daemonized Daemonized flag to set.
+ * @param[in] daemonized Daemonized flag to set.
  */
 void component_set_daemonized(bool daemonized) {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -698,9 +711,9 @@ void component_set_daemonized(bool daemonized) {
 }
 
 /**
- * \brief Set the exit function.
+ * @brief Set the exit function.
  *
- * \param[in] exit_func Exit function to set.
+ * @param[in] exit_func Exit function to set.
  */
 void component_set_exit_func(sge_exit_func_t exit_func) {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -708,9 +721,9 @@ void component_set_exit_func(sge_exit_func_t exit_func) {
 }
 
 /**
- * \brief Set the qmaster internal flag.
+ * @brief Set the qmaster internal flag.
  *
- * \param[in] qmaster_internal Qmaster internal flag to set.
+ * @param[in] qmaster_internal Qmaster internal flag to set.
  */
 void component_set_qmaster_internal(bool qmaster_internal) {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -718,9 +731,9 @@ void component_set_qmaster_internal(bool qmaster_internal) {
 }
 
 /**
- * \brief Set the qualified hostname.
+ * @brief Set the qualified hostname.
  *
- * \param[in] qualified_hostname Qualified hostname to set.
+ * @param[in] qualified_hostname Qualified hostname to set.
  */
 void component_set_qualified_hostname(const char *qualified_hostname) {
    sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
@@ -732,9 +745,9 @@ void component_set_qualified_hostname(const char *qualified_hostname) {
 }
 
 /**
- * \brief Set the thread ID.
+ * @brief Set the thread ID.
  *
- * \param[in] thread_id Thread ID to set.
+ * @param[in] thread_id Thread ID to set.
  */
 void component_set_thread_id(int thread_id) {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -742,9 +755,9 @@ void component_set_thread_id(int thread_id) {
 }
 
 /**
- * \brief Set the thread name.
+ * @brief Set the thread name.
  *
- * \param[in] thread_name Thread name to set.
+ * @param[in] thread_name Thread name to set.
  */
 void component_set_thread_name(const char *thread_name) {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -752,7 +765,7 @@ void component_set_thread_name(const char *thread_name) {
 }
 
 /**
- * \brief Log the component details.
+ * @brief Log the component details.
  */
 void component_do_log() {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
@@ -792,13 +805,13 @@ void component_do_log() {
 }
 
 /**
- * \brief Set the current user type.
+ * @brief Set the current user type.
  *
  * Sets the current user type. This can be the start user or the admin user.
  * The function is currently only called in sge_execd which does a user switch
  * between the start user (root) and the admin user.
  *
- * \param[in] type The user Type to set (COMPONENT_START_USER or COMPONENT_ADMIN_USER).
+ * @param[in] type The user Type to set (COMPONENT_START_USER or COMPONENT_ADMIN_USER).
  */
 void
 component_set_current_user_type(component_user_type_t type) {
@@ -813,14 +826,15 @@ component_set_current_user_type(component_user_type_t type) {
 }
 
 /**
- * \brief Get an authentification information string for the current user.
+ * @brief Get an authentification information string for the current user.
  *
  * Returns a string containing the user ID, group ID, username, groupname and supplementary groups.
  * It is encrypted, either by a simple custom encryption or by Munge.
  * The custom encryption is generated once and is cached, as it will never change.
  * For Munge authentication a new certificate is generated for every call.
  *
- * It is in the responsibility of the caller to free the returned string.
+ * @return the encoded authentication information, or nullptr if it could not
+ *         be produced. The caller owns the string and must free it.
  */
 char *
 component_get_auth_info() {
@@ -918,23 +932,22 @@ component_get_auth_info() {
 }
 
 /**
- * \brief Parse the authentication information string.
+ * @brief Parse the authentication information string.
  *
  * Parses a given authentication information string and extracts the user ID, group ID, username, groupname and supplementary groups.
  * It can either be encrypted by a simple custom encryption or by Munge.
  *
- * Should errors occur, the function returns false and an error message.
- *
- * \param[in] error_dstr Pointer to a dstring for storing an error message.
- * \param[in] auth_info Authentication information string to parse.
- * \param[out] uid Pointer to the user ID.
- * \param[out] user Pointer to the username.
- * \param[in] user_len Length of the username buffer.
- * \param[out] gid Pointer to the group ID.
- * \param[out] group Pointer to the groupname.
- * \param[in] group_len Length of the groupname buffer.
- * \param[out] amount Pointer to the number of supplementary groups.
- * \param[out] grp_array Pointer to the array of supplementary group elements.
+ * @param[in] error_dstr Pointer to a dstring for storing an error message.
+ * @param[in] auth_info Authentication information string to parse.
+ * @param[out] uid Pointer to the user ID.
+ * @param[out] user Pointer to the username.
+ * @param[in] user_len Length of the username buffer.
+ * @param[out] gid Pointer to the group ID.
+ * @param[out] group Pointer to the groupname.
+ * @param[in] group_len Length of the groupname buffer.
+ * @param[out] amount Pointer to the number of supplementary groups.
+ * @param[out] grp_array Pointer to the array of supplementary group elements.
+ * @return true on success; false on error, with the reason in @p error_dstr
  */
 bool
 component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char *user, size_t user_len, gid_t *gid, char *group, size_t group_len, int *amount, ocs_grp_elem_t **grp_array) {

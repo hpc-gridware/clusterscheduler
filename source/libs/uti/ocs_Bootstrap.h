@@ -19,36 +19,69 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Cluster-wide settings read once from the `bootstrap` file
+ *
+ * Declares @ref ocs::Bootstrap together with the names of the files that live
+ * in the cell's `common` directory.
+ */
+
 #include <bitset>
 
+#define PATH_SEPARATOR "/"                    ///< directory separator, as a string
+#define COMMON_DIR "common"                   ///< cell subdirectory holding the configuration files below
+#define BOOTSTRAP_FILE "bootstrap"            ///< the file @ref ocs::Bootstrap is read from
+#define SCHED_CONF_FILE "sched_configuration" ///< scheduler configuration
+#define ACCT_FILE "accounting"                ///< accounting records written by qmaster
+#define REPORTING_FILE "reporting"            ///< reporting records written by qmaster
+#define SHADOW_MASTERS_FILE "shadow_masters"  ///< hosts allowed to take over as qmaster
 #define PATH_SEPARATOR "/"
-#define COMMON_DIR "common"
-#define BOOTSTRAP_FILE "bootstrap"
-#define SCHED_CONF_FILE "sched_configuration"
-#define ACCT_FILE "accounting"
-#define REPORTING_FILE "reporting"
-#define SHADOW_MASTERS_FILE "shadow_masters"
-#define PATH_SEPARATOR "/"
-#define PATH_SEPARATOR_CHAR '/'
+#define PATH_SEPARATOR_CHAR '/'               ///< directory separator, as a character
 
 namespace ocs {
+   /**
+    * @brief The contents of the cell's `bootstrap` file
+    *
+    * A static-only class: there is one bootstrap configuration per process and
+    * it never changes at runtime. The file is read lazily — the first getter
+    * to run triggers `init_from_file()` through `std::call_once`, so no
+    * explicit initialisation call is needed and concurrent first calls are
+    * safe.
+    *
+    * Reading the file is fatal on failure: a missing file, or a missing
+    * mandatory entry, logs a `CRITICAL` message and calls #sge_exit. Getters
+    * therefore never report an error.
+    *
+    * Of the 15 entries, the first 9 are mandatory; `security_params`,
+    * `job_spooling` and the four thread counts may be absent and fall back to
+    * the defaults documented on the corresponding getters.
+    *
+    * @see #bootstrap_get_bootstrap_file for where the file itself is located
+    */
    class Bootstrap {
    public:
-      // security modes, must be in sync with the bitset in sge_bootstrap_ts1_t and the sec_mode_names array
+      /**
+       * @brief Security mechanisms that can be enabled in the `bootstrap` file
+       *
+       * Used as an index into a `std::bitset`, so several modes can be active
+       * at once — the file's `security_mode` entry is a comma separated list.
+       *
+       * @note Must stay in sync with the `sec_mode_names` array, which
+       *       `init_from_file()` asserts at compile time.
+       */
       typedef enum {
-         BS_SECMODE_NONE = -1,
+         BS_SECMODE_NONE = -1,     ///< no mode; not a valid bitset index
 
-         BS_SEC_MODE_TLS,
-         BS_SEC_MODE_MUNGE,
+         BS_SEC_MODE_TLS,          ///< TLS transport security
+         BS_SEC_MODE_MUNGE,        ///< MUNGE authentication
 
          // we still have code for AFS, CSP, DCE and KERBEROS, but it is probably broken
-         BS_SEC_MODE_AFS,
-         BS_SEC_MODE_CSP,
-         BS_SEC_MODE_DCE,
-         BS_SEC_MODE_KERBEROS,
+         BS_SEC_MODE_AFS,          ///< AFS token handling; legacy, likely broken
+         BS_SEC_MODE_CSP,          ///< certificate security protocol; legacy, likely broken
+         BS_SEC_MODE_DCE,          ///< DCE security; legacy, likely broken
+         BS_SEC_MODE_KERBEROS,     ///< Kerberos security; legacy, likely broken
 
-         // number of possible entries
-         BS_SEC_MODE_NUM_ENTRIES
+         BS_SEC_MODE_NUM_ENTRIES   ///< number of valid modes, and the bitset size
       } bs_sec_mode_t;
 
    private:
@@ -62,7 +95,7 @@ namespace ocs {
       static char *binary_path;
       static char *qmaster_spool_dir;
 
-      // this string is only used for logging and debugging, the actual modes are stored in the bitset below
+      // one bit per bs_sec_mode_t; get_security_modes() renders it for logging
       // @todo we should get rid of this string and only keep the bitset, but for now we keep it for better logging
       static std::bitset<BS_SEC_MODE_NUM_ENTRIES> security_modes;
       static int certificate_lifetime;
