@@ -525,6 +525,8 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
             }
          }
 
+         bool is_referenced_by_cqueue = false;
+
          if (ret) {
             const lListElem *cqueue;
 
@@ -538,6 +540,8 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
                   const lList *href_list = nullptr;
                   const char *name = nullptr;
                   lListElem *org_hgroup = nullptr;
+
+                  is_referenced_by_cqueue = true;
 
                   /*
                    * Find CQs lists of referenced hosts before and after
@@ -642,8 +646,23 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
           * Client and scheduler code expects existing EH_Type elements
           * for all hosts used in CQ_hostlist. Therefore it is neccessary
           * to create all not existing EH_Type elements.
+          *
+          * CS-2438: only when a cluster queue actually references this group.
+          * The EH_Type elements exist to back the queue instances created in the
+          * loop above; a group that no queue references produces no instances
+          * and needs none. Creating them unconditionally turned every member of
+          * the reserved "@admin_hosts"/"@submit_hosts" groups into an execution
+          * host as a side effect of "qconf -ah"/"-as" -- which 9.1 never did,
+          * because the flat AH_LIST/SH_LIST never went through this path -- and
+          * those phantom hosts then also appeared in "@exec_hosts", which is
+          * derived from the execution host list.
+          *
+          * A queue that starts referencing the group later is covered by the
+          * cqueue path: cqueue_mod_hostlist() resolves added group references to
+          * their effective host set (href_list_find_effective_diff()) and calls
+          * host_list_add_missing_href() with it.
           */
-         if (ret) {
+         if (ret && is_referenced_by_cqueue) {
             ret &= host_list_add_missing_href(packet, task, master_ehost_list, answer_list, add_hosts, monitor);
          }
 
