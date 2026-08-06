@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of user and group identity handling
+ */
+
 /*
  *   Parts of the code have been contributed by and are copyright of
  *   Tommy Karlsson <tommy.karlsson@bolero.se>
@@ -104,27 +108,17 @@ sge_is_start_user_superuser() {
    DRETURN(is_root);
 }
 
-/****** uti/uidgid/sge_set_admin_username() ***********************************
-*  NAME
-*     sge_set_admin_username() -- Set SGE/EE admin user
-*
-*  SYNOPSIS
-*     int sge_set_admin_username(const char *user, char *err_str)
-*
-*  FUNCTION
-*     Set SGE/EE admin user. If 'user' is "none" then use the current
-*     uid/gid. Ignore if current user is not root.
-*
-*  INPUTS
-*     const char *user - admin user name
-*     char *err_str    - error message
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Username does not exist
-*        -2 - Admin user was already set
-******************************************************************************/
+/**
+ * @brief Set SGE/EE admin user
+ *
+ * Set SGE/EE admin user. If 'user' is "none" then use the current
+ * uid/gid. Ignore if current user is not root.
+ *
+ * @param user admin user name
+ * @param err_str error message
+ *
+ * @return error state 0 - OK -1 - Username does not exist -2 - Admin user was already set
+ */
 int
 sge_set_admin_username(const char *user, char *err_str, size_t err_str_size) {
    DENTER(UIDGID_LAYER);
@@ -164,33 +158,20 @@ sge_set_admin_username(const char *user, char *err_str, size_t err_str_size) {
    DRETURN(ret);
 } /* sge_set_admin_username() */
 
-/****** uti/uidgid/sge_switch2admin_user() ************************************
-*  NAME
-*     sge_switch2admin_user() -- Set euid/egid to admin uid/gid
-*
-*  SYNOPSIS
-*     int sge_switch2admin_user()
-*
-*  FUNCTION
-*     Set euid/egid to admin uid/gid. Silently ignore if our uid
-*     is not root. Do nothing if out euid/egid is already the admin
-*     uid/gid. If the admin user was not set with
-*     sge_set_admin_username() the function will not return.
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - setegid()/seteuid() fails
-*
-*  NOTES
-*     MT-NOTE: sge_switch2admin_user() is MT safe.
-*
-*  SEE ALSO
-*     uti/uidgid/sge_switch2admin_user()
-*     uti/uidgid/sge_set_admin_username()
-*     uti/uidgid/sge_switch2start_user()
-*     uti/uidgid/sge_run_as_user()
-******************************************************************************/
+/**
+ * @brief Set euid/egid to admin uid/gid
+ *
+ * Set euid/egid to admin uid/gid. Silently ignore if our uid
+ * is not root. Do nothing if out euid/egid is already the admin
+ * uid/gid. If the admin user was not set with
+ * sge_set_admin_username() the function will not return.
+ *
+ * @return error state 0 - OK -1 - setegid()/seteuid() fails
+ *
+ * @note MT-NOTE: sge_switch2admin_user() is MT safe.
+ *
+ * @see #sge_switch2admin_user, #sge_set_admin_username, #sge_switch2start_user, `sge_run_as_user()`
+ */
 int
 sge_switch2admin_user() {
    uid_t uid;
@@ -243,34 +224,21 @@ DPRINTF("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n", (long) getu
    DRETURN(ret);
 } /* sge_switch_2admin_user() */
 
-/****** uti/uidgid/sge_switch2start_user() ************************************
-*  NAME
-*     sge_switch2start_user() -- set euid/egid to start uid/gid
-*
-*  SYNOPSIS
-*     int sge_switch2start_user()
-*
-*  FUNCTION
-*     Set euid/egid to the uid/gid of that user which started the
-*     application which calles this function. If our euid/egid is
-*     already the start uid/gid don't do anything. If the admin user
-*     was not set with sge_set_admin_username() the function will
-*     not return.
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - setegid()/seteuid() fails
-*
-*  NOTES
-*     MT-NOTE: sge_switch2start_user() is MT safe.
-*
-*  SEE ALSO
-*     uti/uidgid/sge_switch2admin_user()
-*     uti/uidgid/sge_set_admin_username()
-*     uti/uidgid/sge_switch2start_user()
-*     uti/uidgid/sge_run_as_user()
-******************************************************************************/
+/**
+ * @brief Set euid/egid to start uid/gid
+ *
+ * Set euid/egid to the uid/gid of that user which started the
+ * application which calles this function. If our euid/egid is
+ * already the start uid/gid don't do anything. If the admin user
+ * was not set with sge_set_admin_username() the function will
+ * not return.
+ *
+ * @return error state 0 - OK -1 - setegid()/seteuid() fails
+ *
+ * @note MT-NOTE: sge_switch2start_user() is MT safe.
+ *
+ * @see #sge_switch2admin_user, #sge_set_admin_username, #sge_switch2start_user, `sge_run_as_user()`
+ */
 int
 sge_switch2start_user() {
    uid_t uid, start_uid;
@@ -326,33 +294,23 @@ exit:
    DRETURN(ret);
 } /* sge_switch2start_user() */
 
-/****** uti/uidgid/sge_user2uid() *********************************************
-*  NAME
-*     sge_user2uid() -- resolves user name to uid and gid 
-*
-*  SYNOPSIS
-*     int sge_user2uid(const char *user, uid_t *puid, gid_t *pgid, int retries) 
-*
-*  FUNCTION
-*     Resolves a username ('user') to it's uid (stored in 'puid') and
-*     it's primary gid (stored in 'pgid').
-*     'retries' defines the number of (e.g. NIS/DNS) retries.
-*     If 'puid' is nullptr the user name is resolved without saving it.
-*
-*  INPUTS
-*     const char *user - username 
-*     uid_t *puid      - uid pointer 
-*     gid_t *pgid      - gid pointer
-*     int retries      - number of retries 
-*
-*  NOTES
-*     MT-NOTE: sge_user2uid() is MT safe.
-*
-*  RESULT
-*     int - exit state 
-*         0 - OK
-*         1 - Error
-******************************************************************************/
+/**
+ * @brief Resolves user name to uid and gid
+ *
+ * Resolves a username ('user') to it's uid (stored in 'puid') and
+ * it's primary gid (stored in 'pgid').
+ * 'retries' defines the number of (e.g. NIS/DNS) retries.
+ * If 'puid' is nullptr the user name is resolved without saving it.
+ *
+ * @param user username
+ * @param puid uid pointer
+ * @param pgid gid pointer
+ * @param retries number of retries
+ *
+ * @return exit state 0 - OK 1 - Error
+ *
+ * @note MT-NOTE: sge_user2uid() is MT safe.
+ */
 int
 sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries) {
    struct passwd *pw;
@@ -389,31 +347,21 @@ sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries) {
    DRETURN(0);
 } /* sge_user2uid() */
 
-/****** uti/uidgid/sge_group2gid() ********************************************
-*  NAME
-*     sge_group2gid() -- Resolve a group name to its gid 
-*
-*  SYNOPSIS
-*     int sge_group2gid(const char *gname, gid_t *gidp, int retries) 
-*
-*  FUNCTION
-*     Resolves a groupname ('gname') to its gid (stored in 'gidp').
-*     'retries' defines the number of (e.g. NIS/DNS) retries.
-*     If 'gidp' is nullptr the group name is resolved without saving it.
-*
-*  INPUTS
-*     const char *gname - group name 
-*     gid_t *gidp       - gid pointer 
-*     int retries       - number of retries  
-*
-*  NOTES
-*     MT-NOTE: sge_group2gid() is MT safe.
-*
-*  RESULT
-*     int - exit state 
-*         0 - OK
-*         1 - Error
-******************************************************************************/
+/**
+ * @brief Resolve a group name to its gid
+ *
+ * Resolves a groupname ('gname') to its gid (stored in 'gidp').
+ * 'retries' defines the number of (e.g. NIS/DNS) retries.
+ * If 'gidp' is nullptr the group name is resolved without saving it.
+ *
+ * @param gname group name
+ * @param gidp gid pointer
+ * @param retries number of retries
+ *
+ * @return exit state 0 - OK 1 - Error
+ *
+ * @note MT-NOTE: sge_group2gid() is MT safe.
+ */
 int
 sge_group2gid(const char *gname, gid_t *gidp, int retries) {
    struct group *gr;
@@ -450,31 +398,21 @@ sge_group2gid(const char *gname, gid_t *gidp, int retries) {
    DRETURN(0);
 } /* sge_group2gid() */
 
-/****** uti/uidgid/sge_uid2user() *********************************************
-*  NAME
-*     sge_uid2user() -- Resolves uid to user name. 
-*
-*  SYNOPSIS
-*     int sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) 
-*
-*  FUNCTION
-*     Resolves uid to user name. if 'dst' is nullptr the function checks
-*     only if the uid is resolvable. 
-*
-*  INPUTS
-*     uid_t uid   - user id 
-*     char *dst   - buffer for the username 
-*     size_t sz   - buffersize 
-*     int retries - number of retries 
-*
-*  NOTES
-*     MT-NOTE: sge_uid2user() is MT safe.
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*         1 - Error
-******************************************************************************/
+/**
+ * @brief Resolves uid to user name
+ *
+ * Resolves uid to user name. if 'dst' is nullptr the function checks
+ * only if the uid is resolvable.
+ *
+ * @param uid user id
+ * @param dst buffer for the username
+ * @param sz buffersize
+ * @param retries number of retries
+ *
+ * @return error state 0 - OK 1 - Error
+ *
+ * @note MT-NOTE: sge_uid2user() is MT safe.
+ */
 int
 sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
    struct passwd *pw;
@@ -585,27 +523,19 @@ sge_gid2group(gid_t gid, gid_t *last_gid, char **group_name_p, int retries) {
    DRETURN(0);
 } /* _sge_gid2group() */
 
-/****** uti/uidgid/get_pw_buffer_size() ****************************************
-*  NAME
-*     get_pw_buffer_size() -- get the buffer size required for getpw*_r
-*
-*  SYNOPSIS
-*     int get_pw_buffer_size() 
-*
-*  FUNCTION
-*     Returns the buffer size required for functions like getpwnam_r.
-*     It can either be retrieved via sysconf, or a bit (20k) buffer
-*     size is taken.
-*
-*  RESULT
-*     int - buffer size in bytes
-*
-*  NOTES
-*     MT-NOTE: get_pw_buffer_size() is MT safe 
-*
-*  SEE ALSO
-*     uti/uidgid/get_group_buffer_size()
-*******************************************************************************/
+/**
+ * @brief Get the buffer size required for getpw*_r
+ *
+ * Returns the buffer size required for functions like getpwnam_r.
+ * It can either be retrieved via sysconf, or a bit (20k) buffer
+ * size is taken.
+ *
+ * @return buffer size in bytes
+ *
+ * @note MT-NOTE: get_pw_buffer_size() is MT safe
+ *
+ * @see #get_group_buffer_size
+ */
 int
 get_pw_buffer_size() {
    static const int buf_size = 20480;
@@ -623,27 +553,19 @@ get_pw_buffer_size() {
    return sz;
 }
 
-/****** uti/uidgid/get_group_buffer_size() ****************************************
-*  NAME
-*     get_group_buffer_size() -- get the buffer size required for getgr*_r
-*
-*  SYNOPSIS
-*     int get_group_buffer_size() 
-*
-*  FUNCTION
-*     Returns the buffer size required for functions like getgrnam_r.
-*     It can either be retrieved via sysconf, or a bit (20k) buffer
-*     size is taken.
-*
-*  RESULT
-*     int - buffer size in bytes
-*
-*  NOTES
-*     MT-NOTE: get_group_buffer_size() is MT safe 
-*
-*  SEE ALSO
-*     uti/uidgid/get_pw_buffer_size()
-*******************************************************************************/
+/**
+ * @brief Get the buffer size required for getgr*_r
+ *
+ * Returns the buffer size required for functions like getgrnam_r.
+ * It can either be retrieved via sysconf, or a bit (20k) buffer
+ * size is taken.
+ *
+ * @return buffer size in bytes
+ *
+ * @note MT-NOTE: get_group_buffer_size() is MT safe
+ *
+ * @see #get_pw_buffer_size
+ */
 int
 get_group_buffer_size() {
    constexpr int buf_size = 20480;
@@ -660,49 +582,32 @@ get_group_buffer_size() {
    return sz;
 }
 
-/****** uti/uidgid/sge_set_uid_gid_addgrp() ***********************************
-*  NAME
-*     sge_set_uid_gid_addgrp() -- Set uid and gid of calling process
-*
-*  SYNOPSIS
-*     int sge_set_uid_gid_addgrp(const char *user, 
-*                                const char *intermediate_user,
-*                                int min_gid, int min_uid, int add_grp,
-*                                char *err_str, int use_qsub_gid, 
-*                                gid_t qsub_gid)
-*
-*  FUNCTION
-*     Set uid and gid of calling process. This can be done only by root.
-*
-*  INPUTS
-*     const char *user              - ???
-*     const char *intermediate_user - ???
-*     int min_gid                   - ???
-*     int min_uid                   - ???
-*     int add_grp                   - ???
-*     char *err_str                 - ???
-*     int use_qsub_gid              - ???
-*     gid_t qsub_gid                - ???
-*     bool skip_silently            - skip silently when add_grp could not 
-*                                     be added due to NGROUP_MAX limit
-*
-*  NOTES
-*     MT-NOTE: sge_set_uid_gid_addgrp() is MT safe
-*
-*     TODO: This function needs to be rewritten from scratch! It calls
-*     'initgroups()' which is not part of POSIX. The call to 'initgroups()'
-*     shall be replaced by a combination of 'getgroups()/getegid()/setgid()'.
-*      
-*     This function is used by 'shepherd' only anyway. Hence it shall be
-*     considered to move it from 'libuti' to 'shepherd'.
-* 
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - we can't switch to user since we are not root
-*         1 - we can't switch to user or we can't set add_grp
-*         4 - switch to user failed, likely wrong password for this user
-******************************************************************************/
+/**
+ * @brief Set uid and gid of calling process
+ *
+ * Set uid and gid of calling process. This can be done only by root.
+ *
+ * @param user ???
+ * @param intermediate_user ???
+ * @param min_gid ???
+ * @param min_uid ???
+ * @param add_grp ???
+ * @param err_str ???
+ * @param use_qsub_gid ???
+ * @param qsub_gid ???
+ * @param skip_silently skip silently when add_grp could not be added due to NGROUP_MAX limit
+ *
+ * @return error state 0 - OK -1 - we can't switch to user since we are not root 1 - we can't switch to user or we can't set add_grp 4 - switch to user failed, likely wrong password for this user
+ *
+ * @note MT-NOTE: sge_set_uid_gid_addgrp() is MT safe
+ *
+ *       TODO: This function needs to be rewritten from scratch! It calls
+ *       'initgroups()' which is not part of POSIX. The call to 'initgroups()'
+ *       shall be replaced by a combination of 'getgroups()/getegid()/setgid()'.
+ *
+ *       This function is used by 'shepherd' only anyway. Hence it shall be
+ *       considered to move it from 'libuti' to 'shepherd'.
+ */
 static int
 _sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user, gid_t min_gid, uid_t min_uid, gid_t add_grp,
                         char *err_str, size_t err_str_size, int use_qsub_gid, gid_t qsub_gid, char *buffer, int size, bool skip_silently) {
@@ -835,35 +740,22 @@ int sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user,
 }
 
 
-/****** uti/uidgid/sge_add_group() ********************************************
-*  NAME
-*     sge_add_group() -- Add a gid to the list of additional group ids
-*
-*  SYNOPSIS
-*     int sge_add_group(gid_t add_grp_id, char *err_str)
-*
-*  FUNCTION
-*     Add a gid to the list of additional group ids. If 'add_grp_id' 
-*     is 0 don't add value to group id list (but return successfully).
-*     If an error occurs, a descriptive string will be written to 
-*     err_str.
-*
-*  INPUTS
-*     gid_t add_grp_id   - new gid
-*     char *err_str      - if points to a valid string buffer
-*                          error descriptions 
-*                          will be written here
-*     bool skip_silently - skip silently if setting the group is skipped
-*                          because this would exceed the NGROUPS_MAX limit.
-*
-*  NOTE
-*     MT-NOTE: sge_add_group() is MT safe
-*
-*  RESULT
-*     int - error state
-*         0 - Success
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Add a gid to the list of additional group ids
+ *
+ * Add a gid to the list of additional group ids. If 'add_grp_id'
+ * is 0 don't add value to group id list (but return successfully).
+ * If an error occurs, a descriptive string will be written to
+ * err_str.
+ *
+ * @param add_grp_id new gid
+ * @param err_str if points to a valid string buffer error descriptions will be written here
+ * @param skip_silently skip silently if setting the group is skipped because this would exceed the NGROUPS_MAX limit.
+ *
+ * @return error state 0 - Success -1 - Error
+ *
+ * @note MT-NOTE: sge_add_group() is MT safe
+ */
 int
 sge_add_group(gid_t add_grp_id, char *err_str, size_t err_str_size, bool skip_silently) {
    uint32_t max_groups;
@@ -939,32 +831,22 @@ sge_add_group(gid_t add_grp_id, char *err_str, size_t err_str_size, bool skip_si
    return 0;
 }
 
-/****** uti/uidgid/sge_getpwnam_r() ********************************************
-*  NAME
-*     sge_getpwnam_r() -- Return password file entry for a given user name. 
-*
-*  SYNOPSIS
-*     struct passwd* sge_getpwnam_r(const char*, struct passwd*, char*, int) 
-*
-*  FUNCTION
-*     Search user database for a name. This function is just a wrapper for
-*     'getpwnam_r()', taking into account some additional possible errors.
-*     For a detailed description see 'getpwnam_r()' man page.
-*
-*  INPUTS
-*     const char *name  - points to user name 
-*     struct passwd *pw - points to structure which will be updated upon success 
-*     char *buffer      - points to memory referenced by 'pw'
-*     size_t buflen     - size of 'buffer' in bytes 
-*
-*  RESULT
-*     struct passwd* - Pointer to entry matching user name upon success,
-*                      nullptr otherwise.
-*
-*  NOTES
-*     MT-NOTE: sge_getpwnam_r() is MT safe. 
-*
-*******************************************************************************/
+/**
+ * @brief Return password file entry for a given user name
+ *
+ * Search user database for a name. This function is just a wrapper for
+ * 'getpwnam_r()', taking into account some additional possible errors.
+ * For a detailed description see 'getpwnam_r()' man page.
+ *
+ * @param name points to user name
+ * @param pw points to structure which will be updated upon success
+ * @param buffer points to memory referenced by 'pw'
+ * @param buflen size of 'buffer' in bytes
+ *
+ * @return Pointer to entry matching user name upon success, nullptr otherwise.
+ *
+ * @note MT-NOTE: sge_getpwnam_r() is MT safe.
+ */
 struct passwd *
 sge_getpwnam_r(const char *name, struct passwd *pw, char *buffer, size_t bufsize) {
    struct passwd *res = nullptr;
@@ -1042,53 +924,34 @@ sge_getgrgid_r(gid_t gid, struct group *pg, char **buffer, size_t *buffer_size, 
    DRETURN(res);
 }
 
-/****** uti/uidgid/sge_is_user_superuser() *************************************
-*  NAME
-*     sge_is_user_superuser() -- check if provided user is the superuser
-*
-*  SYNOPSIS
-*     bool sge_is_user_superuser(const char *name); 
-*
-*  FUNCTION
-*     Checks platform indepently if the provided user is the superuser.  
-*
-*  INPUTS
-*     const char *name - name of the user to check
-*
-*  RESULT
-*     bool - true if it is the superuser,
-*            false if not.
-*
-*  NOTES
-*     MT-NOTE: sge_is_user_superuser() is MT safe. 
-*
-*******************************************************************************/
+/**
+ * @brief Check if provided user is the superuser
+ *
+ * Checks platform indepently if the provided user is the superuser.
+ *
+ * @param name name of the user to check
+ *
+ * @return true if it is the superuser, false if not.
+ *
+ * @note MT-NOTE: sge_is_user_superuser() is MT safe.
+ */
 bool
 sge_is_user_superuser(const char *name) {
    return (strcmp(name, "root") == 0);
 }
 
-/****** uti/uidgid/set_admin_user() ********************************************
-*  NAME
-*     set_admin_user() -- Set user and group id of admin user. 
-*
-*  SYNOPSIS
-*     static void set_admin_user(uid_t theUID, gid_t theGID) 
-*
-*  FUNCTION
-*     Set user and group id of admin user. 
-*
-*  INPUTS
-*     uid_t theUID - user id of admin user 
-*     gid_t theGID - group id of admin user 
-*
-*  RESULT
-*     static void - none
-*
-*  NOTES
-*     MT-NOTE: set_admin_user() is MT safe. 
-*
-*******************************************************************************/
+/**
+ * @brief Set user and group id of admin user
+ *
+ * Set user and group id of admin user.
+ *
+ * @param theUID user id of admin user
+ * @param theGID group id of admin user
+ *
+ * @return none
+ *
+ * @note MT-NOTE: set_admin_user() is MT safe.
+ */
 static void
 set_admin_user(const char *user_name, uid_t theUID, gid_t theGID) {
    DENTER(UIDGID_LAYER);
@@ -1105,43 +968,34 @@ set_admin_user(const char *user_name, uid_t theUID, gid_t theGID) {
    DRETURN_VOID;
 } /* set_admin_user() */
 
-/****** uti/uidgid/get_admin_user() ********************************************
-*  NAME
-*     get_admin_user() -- Get user and group id of admin user.
-*
-*  SYNOPSIS
-*     static int get_admin_user(uid_t* theUID, gid_t* theGID) 
-*
-*  FUNCTION
-*     Get user and group id of admin user. 'theUID' and 'theGID' will contain
-*     the user and group id respectively, upon successful completion.
-*
-*     If the admin user has not been set by a call to 'set_admin_user()'
-*     previously, an error is returned. In case of an error, the locations
-*     pointed to by 'theUID' and 'theGID' remain unchanged.
-*
-*  OUTPUTS
-*     uid_t* theUID - pointer to user id storage.
-*     gid_t* theGID - pointer to group id storage.
-*
-*  RESULT
-*     int - Returns ESRCH, if no admin user has been initialized. 
-*
-*  EXAMPLE
-*
-*     uid_t uid;
-*     gid_t gid;
-*
-*     if (get_admin_user(&uid, &gid) == ESRCH) {
-*        printf("error: no admin user\n");
-*     } else {
-*        printf("uid = %d, gid =%d\n", (int)uid, (int)gid);
-*     }
-*       
-*  NOTES
-*     MT-NOTE: get_admin_user() is MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Get user and group id of admin user
+ *
+ * Get user and group id of admin user. 'theUID' and 'theGID' will contain
+ * the user and group id respectively, upon successful completion.
+ *
+ * If the admin user has not been set by a call to 'set_admin_user()'
+ * previously, an error is returned. In case of an error, the locations
+ * pointed to by 'theUID' and 'theGID' remain unchanged.
+ *
+ * @code
+ * uid_t uid;
+ * gid_t gid;
+ *
+ * if (get_admin_user(&uid, &gid) == ESRCH) {
+ *    printf("error: no admin user\n");
+ * } else {
+ *    printf("uid = %d, gid =%d\n", (int)uid, (int)gid);
+ * }
+ * @endcode
+ *
+ * @param theUID pointer to user id storage.
+ * @param theGID pointer to group id storage.
+ *
+ * @return Returns ESRCH, if no admin user has been initialized.
+ *
+ * @note MT-NOTE: get_admin_user() is MT safe.
+ */
 static int
 get_admin_user(uid_t *theUID, gid_t *theGID) {
    DENTER(UIDGID_LAYER);
@@ -1162,50 +1016,33 @@ get_admin_user(uid_t *theUID, gid_t *theGID) {
    DRETURN(res);
 } /* get_admin_user() */
 
-/****** uti/uidgid/get_admin_user_name() ***************************************
-*  NAME
-*     get_admin_user_name() -- Returns the admin user name
-*
-*  SYNOPSIS
-*     const char* get_admin_user_name() 
-*
-*  FUNCTION
-*     Returns the admin user name. 
-*
-*  INPUTS
-*     void - None 
-*
-*  RESULT
-*     const char* - Admin user name
-*
-*  NOTES
-*     MT-NOTE: get_admin_user_name() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Returns the admin user name
+ *
+ * Returns the admin user name.
+ *
+ * @param void None
+ *
+ * @return Admin user name
+ *
+ * @note MT-NOTE: get_admin_user_name() is MT safe
+ */
 const char *
 get_admin_user_name() {
    return admin_user.user_name;
 }
 
-/****** uti/uidgid/sge_has_admin_user() ****************************************
-*  NAME
-*     sge_has_admin_user() -- is there a admin user configured and set
-*
-*  SYNOPSIS
-*     bool sge_has_admin_user() 
-*
-*  FUNCTION
-*     Returns if there is a admin user setting configured and set. 
-*
-*  INPUTS
-*     void - None 
-*
-*  RESULT
-*     bool - result
-*        true  - there is a setting
-*
-*  NOTES
-*     MT-NOTE: sge_has_admin_user() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Is there a admin user configured and set
+ *
+ * Returns if there is a admin user setting configured and set.
+ *
+ * @param void None
+ *
+ * @return result true  - there is a setting
+ *
+ * @note MT-NOTE: sge_has_admin_user() is MT safe
+ */
 bool
 sge_has_admin_user() {
    DENTER(TOP_LAYER);
@@ -1418,30 +1255,21 @@ ocs_id2dstring(dstring *dstr, uid_t uid, const char *username,
    DRETURN_VOID;
 }
 
-/****** sge_urgency/sge_normalize_value() *******************************
-*  NAME
-*     sge_normalize_value() -- Returns normalized value with passed value range
-*
-*  SYNOPSIS
-*     double sge_normalize_value(double value, double range_min, double
-*     range_max)
-*
-*  FUNCTION
-*     The value passed is normalized and resulting value (0.0-1.0) is returned
-*     The value range passed is assumed. In case there is no range because
-*     min/max are (nearly) equal 0.5 is returned.
-*
-*  INPUTS
-*     double value     - Value to be normalized.
-*     double range_min - Range minimum value.
-*     double range_max - Range maximum value.
-*
-*  RESULT
-*     double - Normalized value (0.0-1.0)
-*
-*  NOTES
-*     MT-NOTE: sge_normalize_value() is MT safe
-*******************************************************************************/
+/**
+ * @brief Returns normalized value with passed value range
+ *
+ * The value passed is normalized and resulting value (0.0-1.0) is returned
+ * The value range passed is assumed. In case there is no range because
+ * min/max are (nearly) equal 0.5 is returned.
+ *
+ * @param value Value to be normalized.
+ * @param range_min Range minimum value.
+ * @param range_max Range maximum value.
+ *
+ * @return Normalized value (0.0-1.0)
+ *
+ * @note MT-NOTE: sge_normalize_value() is MT safe
+ */
 double sge_normalize_value(double value, double range_min, double range_max)
 {
    if (range_max - range_min < std::numeric_limits<double>::epsilon())

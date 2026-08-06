@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Service Management Facility integration (Solaris)
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif

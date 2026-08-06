@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of the Service Management Facility integration
+ */
+
 #if defined(SOLARIS)
 
 #include <cstring>
@@ -158,37 +162,20 @@ static int (*shared_contract_func__ct_pr_tmpl_set_fatal)(int ctfd, uint_t flag);
 static int (*shared_contract_func__ct_pr_tmpl_set_param)(int ctfd, uint_t flag);
 
 
-/************************** sge_init_lib() *************************************
-*  NAME
-*    sge_init_lib() -- loads func_name symbols from shared library lib_name
-*                       and stores the func_ptr
-*  SYNOPSIS
-*    static int sge_init_lib(void *lib_ptr,
-*                            char *lib_name,
-*                            const char *func_name[],
-*                            const void *func_ptr[])
-*
-*  FUNCTION
-*    loads func_name symbols from shared lib lib_name and stores the func_ptr
-*
-*  INPUTS
-*    void *lib_ptr           - pointer to the opened shared lib (dlopen())
-*    char *lib_name          - name of the library (e.g: "libcontract.so")
-*    const char *func_name[] - array of library function names to be loaded
-*    const void *func_ptr[]  - destination array for each function
-*
-*  RESULT
-*     int - error state
-*         0 - no error
-*         1 - error
-*
-*  NOTES
-*     LOCAL helper function
-*
-*  SEE ALSO
-*     init_scf_lib()
-*     init_contract_lib()
-*******************************************************************************/
+/**
+ * @brief Loads func_name symbols from shared library lib_name
+ *
+ * loads func_name symbols from shared lib lib_name and stores the func_ptr
+ *
+ * @param lib_ptr pointer to the opened shared lib (dlopen())
+ * @param lib_name name of the library (e.g: "libcontract.so") const char *func_name[] - array of library function names to be loaded const void *func_ptr[]  - destination array for each function
+ *
+ * @return error state 0 - no error 1 - error
+ *
+ * @note LOCAL helper function
+ *
+ * @see #init_scf_lib, #init_contract_lib
+ */
 static int sge_init_lib(void *lib_ptr, const char *lib_name,
                      const char *func_name[], const void *func_ptr[])
 {
@@ -223,30 +210,19 @@ static int sge_init_lib(void *lib_ptr, const char *lib_name,
 }
 
 
-/************************** init_scf_lib() *************************************
-*  NAME
-*    init_scf_lib() -- initialize shared SCF library
-*
-*  SYNOPSIS
-*    static void init_scf_lib()
-*
-*  FUNCTION
-*    Stores the required SCF library functions to the appropriate function
-*    pointers.
-*
-*  INPUTS
-*    void
-*
-*  RESULT
-*    void
-*
-*  NOTES
-*     LOCAL helper function, to be called only in once_libscf_init() as
-*     pthread_once init function
-*
-*  SEE ALSO
-*     once_libscf_init()
-*******************************************************************************/
+/**
+ * @brief Initialize shared SCF library
+ *
+ * Stores the required SCF library functions to the appropriate function
+ * pointers.
+ *
+ * @return void
+ *
+ * @note LOCAL helper function, to be called only in once_libscf_init() as
+ *       pthread_once init function
+ *
+ * @see #once_libscf_init
+ */
 static void init_scf_lib()
 {
  const char *func_name[] = {
@@ -281,32 +257,18 @@ static void init_scf_lib()
 }
 
 
-/********************** once_libscf_init() *************************************
-*  NAME
-*    once_libscf_init() -- initialize shared SCF library
-*
-*  SYNOPSIS
-*    static int once_libscf_init()
-*
-*  FUNCTION
-*    Stores the required SCF library functions to the appropriate function
-*    pointers.
-*
-*  INPUTS
-*    void
-*
-*  RESULT
-*    int - result
-*        0 - libscf was not loaded (ERROR)
-*        1 - libscf was loaded (SUCCESS)
-*
-*  NOTES
-*     LOCAL helper function, to be called as pthread_once init function
-*
-*  SEE ALSO
-*     sge_smf_init_libs()
-*     sge_smf_temporary_disable_instance()
-*******************************************************************************/
+/**
+ * @brief Initialize shared SCF library
+ *
+ * Stores the required SCF library functions to the appropriate function
+ * pointers.
+ *
+ * @return result 0 - libscf was not loaded (ERROR) 1 - libscf was loaded (SUCCESS)
+ *
+ * @note LOCAL helper function, to be called as pthread_once init function
+ *
+ * @see #sge_smf_init_libs, #sge_smf_temporary_disable_instance
+ */
 static int once_libscf_init()
 {
  DENTER(TOP_LAYER);
@@ -321,29 +283,18 @@ static int once_libscf_init()
 }
 
 
-/********************* init_contract_lib() *************************************
-*  NAME
-*    init_contract_lib() -- initialize shared CONTRACT library
-*
-*  SYNOPSIS
-*    static void init_contract_lib()
-*
-*  FUNCTION
-*    Stores the required CONTRACT library functions to the appropriate function
-*    pointers.
-*
-*  INPUTS
-*    void
-*
-*  RESULT
-*    void
-*
-*  NOTES
-*     LOCAL helper function, to be called as pthread_once init function
-*
-*  SEE ALSO
-*     sge_smf_init_libs()
-*******************************************************************************/
+/**
+ * @brief Initialize shared CONTRACT library
+ *
+ * Stores the required CONTRACT library functions to the appropriate function
+ * pointers.
+ *
+ * @return void
+ *
+ * @note LOCAL helper function, to be called as pthread_once init function
+ *
+ * @see #sge_smf_init_libs
+ */
 static void init_contract_lib()
 {
  const char *func_name[] = {
@@ -384,29 +335,18 @@ static void init_contract_lib()
 }
 
 
-/************************** init_scf_lib() *************************************
-*  NAME
-*    init_smf_libs() -- initialize shared SCF library
-*
-*  SYNOPSIS
-*    static void init_smf_libs()
-*
-*  FUNCTION
-*    Stores the required SCF library functions to the appropriate function
-*    pointers.
-*
-*  INPUTS
-*    void
-*
-*  RESULT
-*    void
-*
-*  NOTES
-*     LOCAL helper function, to be called only in as pthread_once init function
-*
-*  SEE ALSO
-*     sge_smf_init_libs()
-*******************************************************************************/
+/**
+ * @brief Initialize shared SCF library
+ *
+ * Stores the required SCF library functions to the appropriate function
+ * pointers.
+ *
+ * @return void
+ *
+ * @note LOCAL helper function, to be called only in as pthread_once init function
+ *
+ * @see #sge_smf_init_libs
+ */
 static void init_smf_libs()
 {
  DENTER(TOP_LAYER);
@@ -422,32 +362,18 @@ static void init_smf_libs()
 }
 
 
-/********************** sge_smf_init_libs() ************************************
-*  NAME
-*    sge_smf_init_libs() -- initialize SCF and CONTRACT shared libraries
-*
-*  SYNOPSIS
-*    int sge_smf_init_libs()
-*
-*  FUNCTION
-*    Try once to initialize SCF and CONTRACT shared libraries
-*
-*  INPUTS
-*    void
-*
-*  RESULT
-*    int - result
-*        0 - loading was successful
-*        1 - loading failed (ERROR)
-*
-*  NOTES
-*     MT-NOTES: sge_smf_init_libs is MT-safe because it modifies once
-*               static variables (libsLoaded) and returns it's value next time
-*
-*  SEE ALSO
-*     sge_smf_init_libs()
-*     sge_smf_temporary_disable_instance()
-*******************************************************************************/
+/**
+ * @brief Initialize SCF and CONTRACT shared libraries
+ *
+ * Try once to initialize SCF and CONTRACT shared libraries
+ *
+ * @return result 0 - loading was successful 1 - loading failed (ERROR)
+ *
+ * @note MT-NOTES: sge_smf_init_libs is MT-safe because it modifies once
+ *       static variables (libsLoaded) and returns it's value next time
+ *
+ * @see #sge_smf_init_libs, #sge_smf_temporary_disable_instance
+ */
 int sge_smf_init_libs()
 {
  DENTER(TOP_LAYER);
@@ -457,31 +383,19 @@ int sge_smf_init_libs()
 }
 
 
-/********************** is_valid_sge_fmri() ************************************
-*  NAME
-*    sge_smf_init_libs() -- initialize SCF and CONTRACT shared libraries
-*
-*  SYNOPSIS
-*    static int is_valid_sge_fmri(char *fmri)
-*
-*  FUNCTION
-*    Checks if service's fmri starts with valid sge service name
-*
-*  INPUTS
-*    char* fmri - service fmri to be validated
-*
-*  RESULT
-*    int - result
-*        0 - invalid fmri (ERROR)
-*        1 - valid fmri (OK)
-*
-*  NOTES
-*     LOCAL helper function
-*
-*  SEE ALSO
-*     init_fmri()
-*     get_fmri()
-*******************************************************************************/
+/**
+ * @brief Initialize SCF and CONTRACT shared libraries
+ *
+ * Checks if service's fmri starts with valid sge service name
+ *
+ * @param fmri service fmri to be validated
+ *
+ * @return result 0 - invalid fmri (ERROR) 1 - valid fmri (OK)
+ *
+ * @note LOCAL helper function
+ *
+ * @see #init_fmri, #get_fmri
+ */
 static int is_valid_sge_fmri(char *fmri)
 {
  DENTER(TOP_LAYER);
@@ -501,29 +415,18 @@ static int is_valid_sge_fmri(char *fmri)
  DRETURN(0);
 }
 
-/***************************** init_fmri() *************************************
-*  NAME
-*    init_fmri() -- initialize shared SCF library
-*
-*  SYNOPSIS
-*    static void init_fmri()
-*
-*  FUNCTION
-*    Detects service FMRI if process was started over SMF and stores the name
-*    to static variable called FMRI.
-*
-*  INPUTS
-*    void
-*
-*  RESULT
-*    void
-*
-*  NOTES
-*     LOCAL helper function, to be called only in as pthread_once init function
-*
-*  SEE ALSO
-*     get_fmri()
-*******************************************************************************/
+/**
+ * @brief Initialize shared SCF library
+ *
+ * Detects service FMRI if process was started over SMF and stores the name
+ * to static variable called FMRI.
+ *
+ * @return void
+ *
+ * @note LOCAL helper function, to be called only in as pthread_once init function
+ *
+ * @see #get_fmri
+ */
 static void init_fmri()
 {
  DENTER(TOP_LAYER);
@@ -538,30 +441,17 @@ static void init_fmri()
 }
 
 
-/******************************* get_fmri() ************************************
-*  NAME
-*    get_fmri() -- initialize fmri and return the value
-*
-*  SYNOPSIS
-*    static char *get_fmri()
-*
-*  FUNCTION
-*    Once initializes service fmri and always returns the initialized value.
-*
-*  INPUTS
-*    void
-*
-*  RESULT
-*    char* - result
-*        nullptr - no FMRI, smf was/can not be used
-*        other - valid service fmri of this process
-*
-*  NOTES
-*     LOCAL helper function
-*
-*  SEE ALSO
-*     init_use_smf()
-*******************************************************************************/
+/**
+ * @brief Initialize fmri and return the value
+ *
+ * Once initializes service fmri and always returns the initialized value.
+ *
+ * @return result nullptr - no FMRI, smf was/can not be used other - valid service fmri of this process
+ *
+ * @note LOCAL helper function
+ *
+ * @see #init_use_smf
+ */
 static char *get_fmri()
 {
  DENTER(TOP_LAYER);
@@ -573,29 +463,18 @@ static char *get_fmri()
 }
 
 
-/***************************** init_use_smf() **********************************
-*  NAME
-*    init_use_smf() -- initialize useSMF variable
-*
-*  SYNOPSIS
-*    static void init_use_smf()
-*
-*  FUNCTION
-*    Initialize useSMF variable. Set to 1 only if system is SMF capable and
-*    process was started over SMF. 0 otherwise.
-*
-*  INPUTS
-*    void
-*
-*  RESULT
-*    void
-*
-*  NOTES
-*     LOCAL helper function, to be called only in as pthread_once init function
-*
-*  SEE ALSO
-*     sge_smf_used()
-*******************************************************************************/
+/**
+ * @brief Initialize useSMF variable
+ *
+ * Initialize useSMF variable. Set to 1 only if system is SMF capable and
+ * process was started over SMF. 0 otherwise.
+ *
+ * @return void
+ *
+ * @note LOCAL helper function, to be called only in as pthread_once init function
+ *
+ * @see #sge_smf_used
+ */
 static void init_use_smf()
 {
  struct stat buff;
@@ -633,31 +512,18 @@ static void init_use_smf()
 }
 
 
-/*************************** sge_smf_used() ************************************
-*  NAME
-*    sge_smf_used() -- once initialize useSMF ad return it's value
-*
-*  SYNOPSIS
-*    int sge_smf_used()
-*
-*  FUNCTION
-*    Once initialize useSMF ad return it's value
-*
-*  INPUTS
-*    void
-*
-*  RESULT
-*    int - result
-*        0 - smf is not being used
-*        1 - smf is being used
-*
-*  NOTES
-*     MT-NOTES: sge_smf_used is MT-safe because it modifies once
-*               static variables (useSMF) and returns it's value next time
-*
-*  SEE ALSO
-*     sge_smf_contract_fork()
-*******************************************************************************/
+/**
+ * @brief Once initialize useSMF ad return it's value
+ *
+ * Once initialize useSMF ad return it's value
+ *
+ * @return result 0 - smf is not being used 1 - smf is being used
+ *
+ * @note MT-NOTES: sge_smf_used is MT-safe because it modifies once
+ *       static variables (useSMF) and returns it's value next time
+ *
+ * @see #sge_smf_contract_fork
+ */
 int sge_smf_used()
 {
  DENTER(TOP_LAYER);
@@ -669,30 +535,17 @@ int sge_smf_used()
 }
 
 
-/********************** contracts_pre_fork() ***********************************
-*  NAME
-*    contracts_pre_fork() -- initialize contract template
-*
-*  SYNOPSIS
-*    static int contracts_pre_fork()
-*
-*  FUNCTION
-*    Initialize contract template
-*
-*  INPUTS
-*    void
-*
-*  RESULT
-*    int - result
-*          -1 - contract template creation failed
-*       other - fd to the contract template
-*
-*  NOTES
-*     LOCAL helper function
-*
-*  SEE ALSO
-*     sge_smf_contract_fork()
-*******************************************************************************/
+/**
+ * @brief Initialize contract template
+ *
+ * Initialize contract template
+ *
+ * @return result -1 - contract template creation failed other - fd to the contract template
+ *
+ * @note LOCAL helper function
+ *
+ * @see #sge_smf_contract_fork
+ */
 static int contracts_pre_fork()
 {
 int fd;
@@ -733,38 +586,23 @@ return fd;
 }
 
 
-/********************** contracts_post_fork() **********************************
-*  NAME
-*    contracts_post_fork() -- close template, abandon new contract in parent
-*
-*  SYNOPSIS
-*    static int contracts_post_fork(int ctfd,
-*                                   int pid,
-*                                   char *err_str,
-*                                   int err_length)
-*
-*  FUNCTION
-*    To be called after fork(). Close the contract templated created in
-*    contract_pre_fork(). In parent process we abandon the new contract.
-*
-*  INPUTS
-*    int ctfd       - contract template fd
-*    int pid        - result of fork()
-*    char *err_str  - pointer for error message
-*    int err_length - max error message length
-*
-*  RESULT
-*    int - result
-*          -1 - fork() failed
-*          -2 - contracts_post_fork() failed
-*          input pid otherwise
-*
-*  NOTES
-*     LOCAL helper function
-*
-*  SEE ALSO
-*     sge_smf_contract_fork()
-*******************************************************************************/
+/**
+ * @brief Close template, abandon new contract in parent
+ *
+ * To be called after fork(). Close the contract templated created in
+ * contract_pre_fork(). In parent process we abandon the new contract.
+ *
+ * @param ctfd contract template fd
+ * @param pid result of fork()
+ * @param err_str pointer for error message
+ * @param err_length max error message length
+ *
+ * @return result -1 - fork() failed -2 - contracts_post_fork() failed input pid otherwise
+ *
+ * @note LOCAL helper function
+ *
+ * @see #sge_smf_contract_fork
+ */
 static int contracts_post_fork(int ctfd, int pid, char *err_str, int err_length)
 {
 char path[PATH_MAX]; /* PATH_MAX defined in limits.h */
@@ -847,34 +685,18 @@ return pid;
 }
 
 
-/*************************** sge_smf_contract_fork() ***************************
-*  NAME
-*    sge_smf_contract_fork() -- fork() with child in new contract
-*
-*  SYNOPSIS
-*    int sge_smf_contract_fork(char *err_str, int err_length)
-*
-*  FUNCTION
-*    Once initialize useSMF ad return it's value
-*
-*  INPUTS
-*    char *err_str  - error message
-*    int err_length - max error message length
-*
-*  RESULT
-*    int - result
-*          -1 - fork failed
-*          -2 - contract_pre_fork failed
-*          -3 - contract_post_fork failed
-*          -4 - smflibs could not be loaded
-*          result of fork() otherwise
-*
-*  NOTES
-*     MT-NOTES: sge_smf_contract_fork is not MT-safe
-*
-*  SEE ALSO
-*
-*******************************************************************************/
+/**
+ * @brief Fork() with child in new contract
+ *
+ * Once initialize useSMF ad return it's value
+ *
+ * @param err_str error message
+ * @param err_length max error message length
+ *
+ * @return result -1 - fork failed -2 - contract_pre_fork failed -3 - contract_post_fork failed -4 - smflibs could not be loaded result of fork() otherwise
+ *
+ * @note MT-NOTES: sge_smf_contract_fork is not MT-safe
+ */
 int sge_smf_contract_fork(char *err_str, int err_length)
 {
 int pid;
@@ -924,33 +746,22 @@ return pid;
 }
 
 
-/******************** sge_smf_temporary_disable_instance() *********************
-*  NAME
-*    sge_smf_temporary_disable_instance() -- temporary disable smf instance
-*
-*  SYNOPSIS
-*    void sge_smf_temporary_disable_instance()
-*
-*  FUNCTION
-*    Temporary disable this service instance in smf
-*
-*  INPUTS
-*    void
-*
-*  RESULT
-*    void
-*
-*  NOTES
-*     Can be called only if sge_smf_used() return 1 and sge_smf_used() was
-*     previously called.
-*
-*     MT-NOTES: sge_smf_temporary_disable_instance is MT-safe because it
-*               modifies once static variables (libscfLoaded)
-*               changes user id
-*
-*  SEE ALSO
-*     execd/execd_exit_func()
-*******************************************************************************/
+/**
+ * @brief Temporary disable smf instance
+ *
+ * Temporary disable this service instance in smf
+ *
+ * @return void
+ *
+ * @note Can be called only if sge_smf_used() return 1 and sge_smf_used() was
+ *       previously called.
+ *
+ *       MT-NOTES: sge_smf_temporary_disable_instance is MT-safe because it
+ *       modifies once static variables (libscfLoaded)
+ *       changes user id
+ *
+ * @see `execd_exit_func()`
+ */
 void sge_smf_temporary_disable_instance()
 {
  uid_t old_euid = 0;
@@ -980,55 +791,33 @@ void sge_smf_temporary_disable_instance()
 }
 
 
-/******************** sge_smf_get_instance_state() *****************************
-*  NAME
-*    sge_smf_get_instance_state() -- get instance state
-*
-*  SYNOPSIS
-*    char *sge_smf_get_instance_state()
-*
-*  FUNCTION
-*    Get this instance state from SMF.
-*
-*  INPUTS
-*    void
-*
-*  RESULT
-*    char * -- state
-*
-*  NOTES
-*    MT-NOTES: sge_smf_get_instance_state is MT-safe
-*
-*  SEE ALSO
-*     sge_smf_get_instance_next_state()
-*******************************************************************************/
+/**
+ * @brief Get instance state
+ *
+ * Get this instance state from SMF.
+ *
+ * @return char * -- state
+ *
+ * @note MT-NOTES: sge_smf_get_instance_state is MT-safe
+ *
+ * @see #sge_smf_get_instance_next_state
+ */
 char *sge_smf_get_instance_state() {
  return shared_scf_func__smf_get_state(FMRI);
 }
 
 
-/******************** sge_smf_get_instance_next_state() ***********************
-*  NAME
-*    sge_smf_get_instance_next_state() -- get instance state
-*
-*  SYNOPSIS
-*    char *sge_smf_get_instance_next_state()
-*
-*  FUNCTION
-*    Get this instance state from SMF.
-*
-*  INPUTS
-*    void
-*
-*  RESULT
-*    char * -- state
-*
-*  NOTES
-*    MT-NOTES: sge_smf_get_instance_state is MT-safe
-*
-*  SEE ALSO
-*     sge_smf_get_instance_next_state()
-*******************************************************************************/
+/**
+ * @brief Get instance state
+ *
+ * Get this instance state from SMF.
+ *
+ * @return char * -- state
+ *
+ * @note MT-NOTES: sge_smf_get_instance_state is MT-safe
+ *
+ * @see #sge_smf_get_instance_next_state
+ */
 char *sge_smf_get_instance_next_state()
 {
  scf_simple_prop_t *prop;

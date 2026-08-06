@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of the RMON debug tracing layer
+ */
+
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
@@ -104,61 +108,48 @@ static void rmon_helper_key_destroy(void *ctx) {
     free(ctx);
 }
 
-/****** rmon/Introduction ******************************************************
-*  NAME
-*     RMON - Cluster Scheduler Monitoring Interface
-*
-*  FUNCTION
-*     The RMON library is a set of functions, which do allow monitoring of 
-*     of application execution. The functions provided, however, should not
-*     be used directly. Rather the RMON functions are utilized by a set of
-*     monitoring macros, like 'DENTER' or 'DRETURN'/'DRETURN_VOID'.
-*
-*     If monitoring is active, the RMON functions do get called very frequently.
-*     Hence, the overhead caused by monitoring needs to be minimal. For this
-*     reason, access to external global and static global variables is NOT
-*     synchronized through a mutex! Not using a lock of type 'pthread_mutex_t'
-*     also means that the RMON functions are async-signal safe.
-* 
-*     To use RMON library in a multi threaded environment, some restrictions
-*     must be followed strictly! It is of utmost importance, that the function
-*     'rmon_mopen()' is ONLY invoked from exactly one thread. The thread which
-*     is calling 'rmon_mopen()' must be the ONLY thread at this point in time.
-*     'DENTER_MAIN' is the only macro from which 'rmon_mopen()' is called. The
-*     macro 'DENTER_MAIN' is used at the beginning of a main function. At this
-*     point in time, the so called main-thread is the only thread.
-*
-*     It is safe to call the remaining RMON functions, like 'rmon_menter()' or
-*     'rmon_mexit()', from within multiple threads. 'rmon_mopen()' is the only
-*     RMON function which does change the critical global variables ('mtype',
-*     'rmon_fp' and 'RMON_DEBUG_ON'). 'rmon_menter()' and 'rmon_mexit()' are used by
-*     the macro 'DENTER' and ,'DRETURN'/'DRETURN_VOID' respectively.
-*     
-*******************************************************************************/
+/**
+ * @brief The RMON library is a set of functions, which do allow monitoring of
+ *
+ * The RMON library is a set of functions, which do allow monitoring of
+ * of application execution. The functions provided, however, should not
+ * be used directly. Rather the RMON functions are utilized by a set of
+ * monitoring macros, like 'DENTER' or 'DRETURN'/'DRETURN_VOID'.
+ *
+ * If monitoring is active, the RMON functions do get called very frequently.
+ * Hence, the overhead caused by monitoring needs to be minimal. For this
+ * reason, access to external global and static global variables is NOT
+ * synchronized through a mutex! Not using a lock of type 'pthread_mutex_t'
+ * also means that the RMON functions are async-signal safe.
+ *
+ * To use RMON library in a multi threaded environment, some restrictions
+ * must be followed strictly! It is of utmost importance, that the function
+ * 'rmon_mopen()' is ONLY invoked from exactly one thread. The thread which
+ * is calling 'rmon_mopen()' must be the ONLY thread at this point in time.
+ * 'DENTER_MAIN' is the only macro from which 'rmon_mopen()' is called. The
+ * macro 'DENTER_MAIN' is used at the beginning of a main function. At this
+ * point in time, the so called main-thread is the only thread.
+ *
+ * It is safe to call the remaining RMON functions, like 'rmon_menter()' or
+ * 'rmon_mexit()', from within multiple threads. 'rmon_mopen()' is the only
+ * RMON function which does change the critical global variables ('mtype',
+ * 'rmon_fp' and 'RMON_DEBUG_ON'). 'rmon_menter()' and 'rmon_mexit()' are used by
+ * the macro 'DENTER' and ,'DRETURN'/'DRETURN_VOID' respectively.
+ */
 
-/****** rmon_macros/rmon_condition() *******************************************
-*  NAME
-*     rmon_condition() -- Check monitoring condition. 
-*
-*  SYNOPSIS
-*     int rmon_condition(int layer, int rmon_class)
-*
-*  FUNCTION
-*     Check whether monitoring should be enabled for the given combination of
-*     'layer' and 'rmon_class'.
-*
-*  INPUTS
-*     int layer - monitor layer 
-*     int rmon_class - monitor class
-*
-*  RESULT
-*     1 - do monitor
-*     0 - do not monitor
-*
-*  NOTES
-*     MT-NOTE: 'rmon_condition()' is MT safe with exceptions. See introduction!
-*
-*******************************************************************************/
+/**
+ * @brief Check monitoring condition
+ *
+ * Check whether monitoring should be enabled for the given combination of
+ * 'layer' and 'rmon_class'.
+ *
+ * @param layer monitor layer
+ * @param rmon_class monitor class
+ *
+ * @return do monitor 0 - do not monitor
+ *
+ * @note MT-NOTE: 'rmon_condition()' is MT safe with exceptions. See introduction!
+ */
 int rmon_condition(int layer, int rmon_class) {
     int ret_val;
 #define MLGETL(s, i) ((s)->ml[i]) /* for the sake of speed */
@@ -167,29 +158,19 @@ int rmon_condition(int layer, int rmon_class) {
 #undef MLGETL
 } /* rmon_condition() */
 
-/****** rmon_macros/rmon_is_enabled() ******************************************
-*  NAME
-*     rmon_is_enabled() -- Check if monitoring is enabled. 
-*
-*  SYNOPSIS
-*     int rmon_is_enabled() 
-*
-*  FUNCTION
-*     Check if monitoring is enabled. Note that even if monitoring is enabled
-*     no actual monitoring output may be generated. Generation of monitoring
-*     output is controlled by 'rmon_condition()'.   
-*
-*  INPUTS
-*     void - none 
-*
-*  RESULT
-*     1 - monitoring enabled 
-*     0 - monitoring disabled
-*
-*  NOTES
-*     MT-NOTE: 'rmon_is_enabled()' is MT safe with exceptions. See introduction! 
-*
-*******************************************************************************/
+/**
+ * @brief Check if monitoring is enabled
+ *
+ * Check if monitoring is enabled. Note that even if monitoring is enabled
+ * no actual monitoring output may be generated. Generation of monitoring
+ * output is controlled by 'rmon_condition()'.
+ *
+ * @param void none
+ *
+ * @return monitoring enabled 0 - monitoring disabled
+ *
+ * @note MT-NOTE: 'rmon_is_enabled()' is MT safe with exceptions. See introduction!
+ */
 int rmon_is_enabled() {
     return ((mtype == RMON_LOCAL) ? 1 : 0);
 }
@@ -203,34 +184,24 @@ void rmon_enable() {
 }
 
 
-/****** rmon_macros/rmon_mopen() ***********************************************
-*  NAME
-*     rmon_mopen() -- Open, i.e. initialize monitoring. 
-*
-*  SYNOPSIS
-*     void rmon_mopen(int *argc, char *argv[], char *programname) 
-*
-*  FUNCTION
-*     Initialize monitoring. Clear all monitoring levels. Set monitoring levels
-*     according to 'SGE_DEBUG_LEVEL' environment variable. Set monitoring
-*     target (i.e. output stream) according to 'SGE_DEBUG_TARGET' environment
-*     variable. Enable monitoring.  
-*
-*     NOTE: Even though 'argc' and 'argv' are not used, they do make sure that
-*     'rmon_mopen()' is only used within a main function to a certain degree.
-*
-*  INPUTS
-*     int *argc         - not used 
-*     char *argv[]      - not used 
-*     char *programname - not used 
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: 'rmon_mopen()' is NOT MT safe. See introduction! 
-*
-*******************************************************************************/
+/**
+ * @brief Open, i.e. initialize monitoring
+ *
+ * Initialize monitoring. Clear all monitoring levels. Set monitoring levels
+ * according to 'SGE_DEBUG_LEVEL' environment variable. Set monitoring
+ * target (i.e. output stream) according to 'SGE_DEBUG_TARGET' environment
+ * variable. Enable monitoring.
+ *
+ * NOTE: Even though 'argc' and 'argv' are not used, they do make sure that
+ * 'rmon_mopen()' is only used within a main function to a certain degree.
+ *
+ * @param argc not used char *argv[]      - not used
+ * @param programname not used
+ *
+ * @return none
+ *
+ * @note MT-NOTE: 'rmon_mopen()' is NOT MT safe. See introduction!
+ */
 void rmon_mopen() {
     rmon_mlclr(&RMON_DEBUG_ON);
     rmon_fp = stderr;
@@ -244,26 +215,17 @@ void rmon_mopen() {
     mtype = RMON_LOCAL;
 }
 
-/****** rmon_macros/rmon_menter() **********************************************
-*  NAME
-*     rmon_menter() -- Monitor function entry 
-*
-*  SYNOPSIS
-*     void rmon_menter(const char *func) 
-*
-*  FUNCTION
-*     Monitor function entry. Generate function entry message. 
-*
-*  INPUTS
-*     const char *func - function name 
-*
-*  RESULT
-*     void - none 
-*
-*  NOTES
-*     MT-NOTE: 'rmon_menter()' is MT safe with exceptions. See introduction! 
-*
-*******************************************************************************/
+/**
+ * @brief Monitor function entry
+ *
+ * Monitor function entry. Generate function entry message.
+ *
+ * @param func function name
+ *
+ * @return none
+ *
+ * @note MT-NOTE: 'rmon_menter()' is MT safe with exceptions. See introduction!
+ */
 
 void rmon_menter(const char *func, const char *thread_name, int thread_id) {
     char msgbuf[RMON_BUF_SIZE];
@@ -271,56 +233,38 @@ void rmon_menter(const char *func, const char *thread_name, int thread_id) {
     mwrite(msgbuf, thread_name ? thread_name : "NA", thread_id);
 }
 
-/****** rmon_macros/rmon_mexit() ***********************************************
-*  NAME
-*     rmon_mexit() -- Monitor function exit 
-*
-*  SYNOPSIS
-*     void rmon_mexit(const char *func, const char *file, int line) 
-*
-*  FUNCTION
-*     Monitor function exit. Generate function exit message. 
-*
-*  INPUTS
-*     const char *func - function name 
-*     const char *file - source file in which function is defined 
-*     int line         - number of invokation source line
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: 'rmon_mexit()' is MT safe with exceptions. See introduction! 
-*
-*******************************************************************************/
+/**
+ * @brief Monitor function exit
+ *
+ * Monitor function exit. Generate function exit message.
+ *
+ * @param func function name
+ * @param file source file in which function is defined
+ * @param line number of invokation source line
+ *
+ * @return none
+ *
+ * @note MT-NOTE: 'rmon_mexit()' is MT safe with exceptions. See introduction!
+ */
 void rmon_mexit(const char *func, const char *file, int line, const char *thread_name, int thread_id) {
     char msgbuf[RMON_BUF_SIZE];
     snprintf(msgbuf, sizeof(msgbuf), "<-- %s() %s %d }\n", func, file, line);
     mwrite(msgbuf, thread_name, thread_id);
 }
 
-/****** rmon_macros/rmon_mtrace() **********************************************
-*  NAME
-*     rmon_mtrace() -- Monitor function progress 
-*
-*  SYNOPSIS
-*     void rmon_mtrace(const char *func, const char *file, int line) 
-*
-*  FUNCTION
-*     Monitor function progress. Generate function trace message. 
-*
-*  INPUTS
-*     const char *func - function name 
-*     const char *file - source file in which function is defined 
-*     int line         - number of invokation source line
-*
-*  RESULT
-*     void - none 
-*
-*  NOTES
-*     MT-NOTE: 'rmon_mtrace()' is MT safe with exceptions. See introduction! 
-*
-*******************************************************************************/
+/**
+ * @brief Monitor function progress
+ *
+ * Monitor function progress. Generate function trace message.
+ *
+ * @param func function name
+ * @param file source file in which function is defined
+ * @param line number of invokation source line
+ *
+ * @return none
+ *
+ * @note MT-NOTE: 'rmon_mtrace()' is MT safe with exceptions. See introduction!
+ */
 void rmon_mtrace(const char *func, const char *file, int line, const char *thread_name, int thread_id) {
     char msgbuf[RMON_BUF_SIZE];
     strcpy(msgbuf, empty);
@@ -328,27 +272,17 @@ void rmon_mtrace(const char *func, const char *file, int line, const char *threa
     mwrite(msgbuf, thread_name, thread_id);
 }
 
-/****** rmon_macros/rmon_mprintf() *********************************************
-*  NAME
-*     rmon_mprintf() -- Print formatted monitoring message. 
-*
-*  SYNOPSIS
-*     void rmon_mprintf(const char *fmt, ...) 
-*
-*  FUNCTION
-*     Print formatted monitoring message. 
-*
-*  INPUTS
-*     const char *fmt - format string 
-*     ...             - variable argument list 
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: 'rmon_mprintf()' is MT safe with exceptions. See introduction! 
-*
-*******************************************************************************/
+/**
+ * @brief Print formatted monitoring message
+ *
+ * Print formatted monitoring message.
+ *
+ * @param fmt format string ...             - variable argument list
+ *
+ * @return none
+ *
+ * @note MT-NOTE: 'rmon_mprintf()' is MT safe with exceptions. See introduction!
+ */
 void rmon_mprintf(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -368,33 +302,24 @@ static void rmon_mprintf_va(const char *fmt, va_list args) {
    }
 }
 
-/****** rmon_macros/mwrite() ***************************************************
-*  NAME
-*     mwrite() -- Write monitoring message
-*
-*  SYNOPSIS
-*     static void mwrite(char *message) 
-*
-*  FUNCTION
-*     Write monitoring message. The message is written to the output stream
-*     associated with 'rmon_fp'. The output stream is flushed immediately. 
-*
-*     A prefix is added to 'message'. It does consist of a trace sequence number,
-*     the PID and the thread ID of the calling thread.
-*
-*  INPUTS
-*     char *message - monitoring message
-*
-*  RESULT
-*     void - none 
-*
-*  NOTES
-*     MT-NOTE: 'mwrite()' is MT safe with exceptions. See introduction!
-*     MT-NOTE:
-*     MT-NOTE: It is guaranteed that the output of different threads is not
-*     MT-NOTE: mingled.
-*
-*******************************************************************************/
+/**
+ * @brief Write monitoring message
+ *
+ * Write monitoring message. The message is written to the output stream
+ * associated with 'rmon_fp'. The output stream is flushed immediately.
+ *
+ * A prefix is added to 'message'. It does consist of a trace sequence number,
+ * the PID and the thread ID of the calling thread.
+ *
+ * @param message monitoring message
+ *
+ * @return none
+ *
+ * @note MT-NOTE: 'mwrite()' is MT safe with exceptions. See introduction!
+ *       MT-NOTE:
+ *       MT-NOTE: It is guaranteed that the output of different threads is not
+ *       MT-NOTE: mingled.
+ */
 static void
 mwrite(char *message, const char *thread_name, int thread_id) {
 
@@ -419,30 +344,19 @@ mwrite(char *message, const char *thread_name, int thread_id) {
    funlockfile(rmon_fp);
 }
 
-/****** rmon_macros/set_debug_level_from_env() *********************************
-*  NAME
-*     set_debug_level_from_env() -- Set debug level from environment variable.
-*
-*  SYNOPSIS
-*     static int set_debug_level_from_env() 
-*
-*  FUNCTION
-*     Set debug level. Read environment variable "SGE_DEBUG_LEVEL" and use it
-*     to initialize debug levels.
-*
-*  INPUTS
-*     void - none 
-*
-*  RESULT
-*     0 - successful
-*     ENOENT - environment variable not set
-*     EINVAL - unexpected format
-*
-*  NOTES
-*     MT-NOTE: 'set_debug_level_from_env()' is MT safe with exceptions.
-*     MT-NOTE:  See introduction!
-*
-*******************************************************************************/
+/**
+ * @brief Set debug level from environment variable
+ *
+ * Set debug level. Read environment variable "SGE_DEBUG_LEVEL" and use it
+ * to initialize debug levels.
+ *
+ * @param void none
+ *
+ * @return successful ENOENT - environment variable not set EINVAL - unexpected format
+ *
+ * @note MT-NOTE: 'set_debug_level_from_env()' is MT safe with exceptions.
+ *       MT-NOTE:  See introduction!
+ */
 static int set_debug_level_from_env() {
     const char *env = getenv("SGE_DEBUG_LEVEL");
     if (env == nullptr) {
@@ -467,33 +381,23 @@ static int set_debug_level_from_env() {
     return 0;
 }
 
-/****** rmon_macros/set_debug_target_from_env() *********************************
-*  NAME
-*     set_debug_target_from_env() -- Set debug target from environment variable.
-*
-*  SYNOPSIS
-*     static int set_debug_target_from_env() 
-*
-*  FUNCTION
-*     Set debug target. Read environment variable "SGE_DEBUG_TARGET" and use it
-*     to initialize debug output target. 
-*
-*     'SGE_DEBUG_TARGET' may either be 'stdout', 'stderr' or a fully qualified
-*     file name (that is file name and path). If a file name is given an 
-*     already existing file with the same name will be overwritten.
-*
-*  INPUTS
-*     void - none 
-*
-*  RESULT
-*     0 - successful
-*     EACCES - file name is invalid or unable to open file
-*
-*  NOTES
-*     MT-NOTE: 'set_debug_target_from_env()' is MT safe with exceptions.
-*     MT-NOTE: See introduction!
-*
-*******************************************************************************/
+/**
+ * @brief Set debug target from environment variable
+ *
+ * Set debug target. Read environment variable "SGE_DEBUG_TARGET" and use it
+ * to initialize debug output target.
+ *
+ * 'SGE_DEBUG_TARGET' may either be 'stdout', 'stderr' or a fully qualified
+ * file name (that is file name and path). If a file name is given an
+ * already existing file with the same name will be overwritten.
+ *
+ * @param void none
+ *
+ * @return successful EACCES - file name is invalid or unable to open file
+ *
+ * @note MT-NOTE: 'set_debug_target_from_env()' is MT safe with exceptions.
+ *       MT-NOTE: See introduction!
+ */
 static int set_debug_target_from_env() {
     const char *env = getenv("SGE_DEBUG_TARGET");
     if (env == nullptr) {

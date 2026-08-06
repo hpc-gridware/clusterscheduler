@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of runtime profiling, see @ref uti_profiling
+ */
+
 #include <iostream>
 #include <sys/times.h>
 #include <cstring>
@@ -48,118 +52,6 @@
 #include "uti/sge_time.h"
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_stdlib.h"
-
-/****** uti/profiling/--Profiling ****************************************
-*  NAME
-*     Profiling -- A simple profiling utility 
-*
-*  FUNCTION
-*     The profiling module provides a number of utility functions
-*     to output some performance metrics about a program, like wallclock,
-*     busy time, user and system cpu time etc.
-*
-*     Profiling can be started and stopped, the measured data can be 
-*     reset to 0.
-*
-*     Profiling for individual code blocks can be done by starting 
-*     and stopping a measurement.
-*
-*     Measured data can be queried individually for each metric variable,
-*     or an informational message string can be requested containing the
-*     most interesting variables.
-*
-*     To distinguish profiling data for different modules of a program,
-*     (e.g. time/cpu consumed for communication, spooling, etc.),
-*     multiple levels have been introduced.
-*
-*     Besides the predefined levels, there exist 10 custom levels 
-*     (SGE_PROF_CUSTOM0 up to SGE_PROF_CUSTOM9) that can
-*     be used to profile individual parts of a program.
-*
-*     The predefined levels shall only be used by the developers of the 
-*     corresponding components.
-*
-*     The level SGE_PROF_OTHER is maintained by the profiling module itself 
-*     and collects the remaining usage not covered by other levels. It shall 
-*     NOT be used outside the profiling module itself.
-*  
-*     A measurement is always done for a certain level.
-*     If a measurement for a certain level is started, while another
-*     measurement for another level is still active, the data of the
-*     subordinated measurement is remembered in the superordinated level.
-*
-*     When retrieving profiling information, a parameter defines whether
-*     information for subordinated measurements shall be included or excluded.
-*
-*     Cyclic starting of measurements is not allowed and will result in 
-*     profiling being switched off.
-*
-*  EXAMPLE
-*     There is a test program (libs/uti/test_sge_profiling) and the
-*     module is used in sge_schedd (daemons/schedd/scheduler.c),
-*     in the event mirror module (libs/gdi/sge_mirror.c), the qmaster
-*     and his threads, execd and the spooling
-*     test program (libs/spool/test_sge_spooling.c).
-*
-*  SEE ALSO
-*     uti/profiling/prof_is_active()
-*     uti/profiling/prof_start()
-*     uti/profiling/prof_stop()
-*     uti/profiling/prof_start_measurement()
-*     uti/profiling/prof_stop_measurement()
-*     uti/profiling/prof_reset()
-*     uti/profiling/prof_get_measurement_wallclock()
-*     uti/profiling/prof_get_measurement_utime()
-*     uti/profiling/prof_get_measurement_stime()
-*     uti/profiling/prof_get_total_wallclock()
-*     uti/profiling/prof_get_total_busy()
-*     uti/profiling/prof_get_total_utime()
-*     uti/profiling/prof_get_total_stime()
-*     uti/profiling/prof_get_info_string()
-*
-*  NOTES
-*     MT-NOTE: this module is MT safe, if prof_mt_init() and/or
-*              sge_prof_set_enabled() are called before
-*              profiling is started and sge_prof_cleanup() is called after
-*              all threads which make profiling calls have been stopped!
-*              sge_prof_cleanup() is used to free  the profiling array 
-*
-*  BUGS
-*     In a multithreaded program, the values delivered by the times system call
-*     for cpu system and user time are per process times.
-*     This module assumes that the values delivered by times are per thread
-*     values. 
-*     In the profiling output, the sum of user and system time can be higher 
-*     than the wallclock time, the utilization greater 100%.
-*
-*  TODO
-*     - Replace all pthread_mutex_(un)lock() calls with sge_mutex_(un)lock()
-*     - Separate public and private interfaces so that thread index can be
-*       passed around instead of always being rediscovered
-*     - Replace static array with thread specific storage?
-*     - Document static functions
-*     - Print levels without names
-*******************************************************************************/
-
-/****** uti/profiling/-Profiling-Defines ***************************************
-*  NAME
-*     Defines -- Defines and macros for profiling
-*
-*  SYNOPSIS
-*     #define PROF_START_MEASUREMENT ...
-*     #define PROF_STOP_MEASUREMENT ...
-*
-*  FUNCTION
-*     Macros to start and stop a profiling measurement.
-*     They test if profiling is enabled at all and then call the
-*     functions to start or stop a measurement.
-*
-*  SEE ALSO
-*     uti/profiling/prof_mt_init()
-*     uti/profiling/prof_is_active()
-*     uti/profiling/prof_start_measurement()
-*     uti/profiling/prof_stop_measurement()
-*******************************************************************************/
 
 /* this struct is used for pthread name, thread id mapping
    It also holds the profiling status information for each thread */
@@ -200,51 +92,27 @@ static pthread_once_t prof_once = PTHREAD_ONCE_INIT;
 
 constexpr int MAX_THREAD_NUM = MAX_TOTAL_COMPONENT_THREADS;
 
-/****** uti/profiling/sge_prof_set_enabled() ***********************************
-*  NAME
-*     sge_prof_set_enabled() -- enables/disables profiling
-*
-*  SYNOPSIS
-*     void sge_prof_set_enabled(bool enabled)
-*
-*  FUNCTION
-*     Enables/disables profiling completely.  Profiling is enabled by
-*     default.  This method is the fix to Issue 1471.
-*
-*  INPUTS
-*     bool enabled   Whether profiling should be enabled
-*  RESULT
-*
-*  NOTES
-*     MT-NOTE: sge_prof_set_enabled() is MT safe only if called before any other
-*              profiling calls
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Enables/disables profiling
+ *
+ * Enables/disables profiling completely.  Profiling is enabled by
+ * default.  This method is the fix to Issue 1471.
+ *
+ * @note MT-NOTE: sge_prof_set_enabled() is MT safe only if called before any other
+ *       profiling calls
+ */
 void sge_prof_set_enabled(bool enabled) {
    profiling_enabled = enabled;
 }
 
-/****** uti/profiling/prof_thread_local_once_init() ************************************
-*  NAME
-*     prof_thread_local_once_init() -- inititalizes the profiling array 
-*
-*  SYNOPSIS
-*     void prof_thread_local_once_init() 
-*
-*  FUNCTION
-*     Initializes the profiling array.
-*
-*  INPUTS
-*
-*  RESULT
-*
-*  NOTES
-*     MT-NOTE: prof_thread_local_once_init() is MT safe only if called before any other
-*              profiling calls other than sge_prof_set_enabled()
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Inititalizes the profiling array
+ *
+ * Initializes the profiling array.
+ *
+ * @note MT-NOTE: prof_thread_local_once_init() is MT safe only if called before any other
+ *       profiling calls other than sge_prof_set_enabled()
+ */
 static void prof_thread_local_once_init() {
    if (!profiling_enabled) {
       return;
@@ -274,31 +142,19 @@ public:
 static ProfThreadInit prof_obj{};
 
 
-/****** uti/profiling/prof_set_level_name() ************************************
-*  NAME
-*     prof_set_level_name() -- set name of a custom level
-*
-*  SYNOPSIS
-*     bool prof_set_level_name(prof_level level, const char *name) 
-*
-*  FUNCTION
-*     Set the name of a custom profiling level.
-*
-*  INPUTS
-*     prof_level level - level to edit
-*     const char *name - new name for level
-*     dstring *error   - if != nullptr, error messages will be put here
-*
-*  RESULT
-*     bool - true on success, else false is returned and an error message 
-*            is returned in parameter error, if error != nullptr
-*
-*  NOTES
-*     MT-NOTE: prof_set_level_name() is MT safe
-*
-*  SEE ALSO
-*     uti/profiling/--Profiling
-*******************************************************************************/
+/**
+ * @brief Set name of a custom level
+ *
+ * Set the name of a custom profiling level.
+ *
+ * @param level level to edit
+ * @param name new name for level
+ * @param error if != nullptr, error messages will be put here
+ *
+ * @return true on success, else false is returned and an error message is returned in parameter error, if error != nullptr
+ *
+ * @note MT-NOTE: prof_set_level_name() is MT safe
+ */
 bool prof_set_level_name(prof_level level, const char *name, dstring *error) {
    pthread_t thread_id;
    int thread_num;
@@ -325,27 +181,17 @@ bool prof_set_level_name(prof_level level, const char *name, dstring *error) {
    return ret;
 }
 
-/****** uti/profiling/prof_is_active() ****************************************
-*  NAME
-*     prof_is_active() -- is profiling active?
-*
-*  SYNOPSIS
-*     bool prof_is_active() 
-*
-*  FUNCTION
-*     Returns true, if profiling is active, else false.
-*
-*  RESULT
-*     bool - true on success, else false is returned and an error message 
-*            is returned in parameter error, if error != nullptr
-*
-*  SEE ALSO
-*     uti/profiling/prof_stop()
-*     uti/profiling/prof_stop()
-*
-*  NOTES
-*     MT-NOTE: prof_is_active() is MT safe
-*******************************************************************************/
+/**
+ * @brief Is profiling active?
+ *
+ * Returns true, if profiling is active, else false.
+ *
+ * @return true on success, else false is returned and an error message is returned in parameter error, if error != nullptr
+ *
+ * @note MT-NOTE: prof_is_active() is MT safe
+ *
+ * @see #prof_stop
+ */
 bool prof_is_active(prof_level level) {
    int thread_num;
    pthread_t thread_id;
@@ -363,33 +209,21 @@ bool prof_is_active(prof_level level) {
    return ret;
 }
 
-/****** uti/profiling/prof_start() ****************************************
-*  NAME
-*     prof_start() -- start profiling
-*
-*  SYNOPSIS
-*     bool prof_start(dstring *error) 
-*
-*  FUNCTION
-*     Enables profiling. All internal variables are reset to 0.
-*     Performance measurement has to be started and stopped by
-*     calling profiling_start_measurement or profiling_stop_measurement.
-*
-*  INPUTS
-*     dstring *error   - if != nullptr, error messages will be put here
-*
-*  RESULT
-*     bool - true on success, else false is returned and an error message 
-*            is returned in parameter error, if error != nullptr
-*
-*  SEE ALSO
-*     uti/profiling/prof_stop()
-*     uti/profiling/prof_start_measurement()
-*     uti/profiling/prof_stop_measurement()
-*
-*  NOTES
-*     MT-NOTE: prof_start() is MT safe
-*******************************************************************************/
+/**
+ * @brief Start profiling
+ *
+ * Enables profiling. All internal variables are reset to 0.
+ * Performance measurement has to be started and stopped by
+ * calling profiling_start_measurement or profiling_stop_measurement.
+ *
+ * @param error if != nullptr, error messages will be put here
+ *
+ * @return true on success, else false is returned and an error message is returned in parameter error, if error != nullptr
+ *
+ * @note MT-NOTE: prof_start() is MT safe
+ *
+ * @see #prof_stop, #prof_start_measurement, #prof_stop_measurement
+ */
 bool prof_start(prof_level level, dstring *error) {
    pthread_t thread_id;
    int thread_num;
@@ -452,36 +286,24 @@ bool prof_start(prof_level level, dstring *error) {
    return ret;
 }
 
-/****** uti/profiling/prof_stop() *****************************************
-*  NAME
-*     prof_stop() -- stop profiling
-*
-*  SYNOPSIS
-*     bool prof_stop(dstring *error) 
-*
-*  FUNCTION
-*     Profiling is disabled.
-*
-*     Subsequent calls to profiling_start_measurement or 
-*     profiling_stop_measurement will have no effect.
-*
-*     Profiling can be re-enabled by calling profiling_start.
-*
-*  INPUTS
-*     dstring *error   - if != nullptr, error messages will be put here
-*
-*  RESULT
-*     bool - true on success, else false is returned and an error message 
-*            is returned in parameter error, if error != nullptr
-*
-*  SEE ALSO
-*     uti/profiling/prof_start()
-*     uti/profiling/prof_start_measurement()
-*     uti/profiling/prof_stop_measurement()
-*
-*  NOTES
-*     MT-NOTE: prof_start() is MT safe
-*******************************************************************************/
+/**
+ * @brief Stop profiling
+ *
+ * Profiling is disabled.
+ *
+ * Subsequent calls to profiling_start_measurement or
+ * profiling_stop_measurement will have no effect.
+ *
+ * Profiling can be re-enabled by calling profiling_start.
+ *
+ * @param error if != nullptr, error messages will be put here
+ *
+ * @return true on success, else false is returned and an error message is returned in parameter error, if error != nullptr
+ *
+ * @note MT-NOTE: prof_start() is MT safe
+ *
+ * @see #prof_start, #prof_start_measurement, #prof_stop_measurement
+ */
 bool prof_stop(prof_level level, dstring *error) {
    pthread_t thread_id;
    int thread_num;
@@ -527,31 +349,21 @@ prof_start_stop(prof_level level, dstring *error, bool do_start) {
    }
 }
 
-/****** uti/profiling/prof_start_measurement() ****************************
-*  NAME
-*     prof_start_measurement() -- start measurement
-*
-*  SYNOPSIS
-*     bool prof_start_measurement(prof_level level, dstring *error) 
-*
-*  FUNCTION
-*     Starts measurement of performance data.
-*     Retrieves and stores current time and usage information.
-*
-*  INPUTS
-*     prof_level level - level to process
-*     dstring *error   - if != nullptr, error messages will be put here
-*
-*  RESULT
-*     bool - true on success, else false is returned and an error message 
-*            is returned in parameter error, if error != nullptr
-*
-*  SEE ALSO
-*     uti/profiling/prof_stop_measurement()
-*
-*  NOTES
-*     MT-NOTE: prof_start_measurement() is MT safe
-*******************************************************************************/
+/**
+ * @brief Start measurement
+ *
+ * Starts measurement of performance data.
+ * Retrieves and stores current time and usage information.
+ *
+ * @param level level to process
+ * @param error if != nullptr, error messages will be put here
+ *
+ * @return true on success, else false is returned and an error message is returned in parameter error, if error != nullptr
+ *
+ * @note MT-NOTE: prof_start_measurement() is MT safe
+ *
+ * @see #prof_stop_measurement
+ */
 bool prof_start_measurement(prof_level level, dstring *error) {
    pthread_t thread_id;
    int thread_num;
@@ -596,32 +408,22 @@ bool prof_start_measurement(prof_level level, dstring *error) {
    return ret;
 }
 
-/****** uti/profiling/prof_stop_measurement() *****************************
-*  NAME
-*     prof_stop_measurement() -- stop measurement
-*
-*  SYNOPSIS
-*     bool prof_stop_measurement(prof_level level, dstring *error) 
-*
-*  FUNCTION
-*     Stops measurement for a certain code block.
-*     Retrieves and stores current time and usage information.
-*     Sums up global usage information.
-*
-*  INPUTS
-*     prof_level level - level to process
-*     dstring *error   - if != nullptr, error messages will be put here
-*
-*  RESULT
-*     bool - true on success, else false is returned and an error message 
-*            is returned in parameter error, if error != nullptr
-*
-*  SEE ALSO
-*     uti/profiling/prof_start_measurement()
-*
-*  NOTES
-*     MT-NOTE: prof_stop_measurement() is MT safe
-*******************************************************************************/
+/**
+ * @brief Stop measurement
+ *
+ * Stops measurement for a certain code block.
+ * Retrieves and stores current time and usage information.
+ * Sums up global usage information.
+ *
+ * @param level level to process
+ * @param error if != nullptr, error messages will be put here
+ *
+ * @return true on success, else false is returned and an error message is returned in parameter error, if error != nullptr
+ *
+ * @note MT-NOTE: prof_stop_measurement() is MT safe
+ *
+ * @see #prof_start_measurement
+ */
 bool prof_stop_measurement(prof_level level, dstring *error) {
    pthread_t thread_id;
    int thread_num;
@@ -685,26 +487,17 @@ bool prof_stop_measurement(prof_level level, dstring *error) {
    return ret;
 }
 
-/****** uti/profiling/prof_reset() ****************************************
-*  NAME
-*     prof_reset() -- reset usage information
-*
-*  SYNOPSIS
-*     bool prof_reset(dstring *error) 
-*
-*  FUNCTION
-*     Reset usage and timing information to 0.
-*
-*  INPUTS
-*     dstring *error   - if != nullptr, error messages will be put here
-*
-*  RESULT
-*     bool - true on success, else false is returned and an error message 
-*            is returned in parameter error, if error != nullptr
-*
-*  NOTES
-*     MT-NOTE: prof_reset() is MT safe
-*******************************************************************************/
+/**
+ * @brief Reset usage information
+ *
+ * Reset usage and timing information to 0.
+ *
+ * @param error if != nullptr, error messages will be put here
+ *
+ * @return true on success, else false is returned and an error message is returned in parameter error, if error != nullptr
+ *
+ * @note MT-NOTE: prof_reset() is MT safe
+ */
 bool prof_reset(prof_level level, dstring *error) {
    pthread_t thread_id;
    int thread_num;
@@ -746,23 +539,13 @@ bool prof_reset(prof_level level, dstring *error) {
    return ret;
 }
 
-/****** uti/profiling/prof_reset_thread() **************************************
-*  NAME
-*     prof_reset_thread() -- reset usage information
-*
-*  SYNOPSIS
-*     bool prof_reset_thread(int thread_num, prof_level level) 
-*
-*  FUNCTION
-*     Reset usage and timing information for a single thread and level to 0.
-*
-*  INPUTS
-*     int thread_num    the thread to reset
-*     prof_level level  the profiling level to reset
-*
-*  NOTES
-*     MT-NOTE: prof_reset() is MT safe
-*******************************************************************************/
+/**
+ * @brief Reset usage information
+ *
+ * Reset usage and timing information for a single thread and level to 0.
+ *
+ * @note MT-NOTE: prof_reset() is MT safe
+ */
 static void prof_reset_thread(int thread_num, prof_level level) {
    struct tms tms_buffer{};
 
@@ -791,33 +574,20 @@ static void prof_reset_thread(int thread_num, prof_level level) {
    theInfo[thread_num][level].start_clock = times(&tms_buffer);
 }
 
-/****** uti/profiling/prof_get_measurement_wallclock() ********************
-*  NAME
-*     prof_get_measurement_wallclock() -- return wallclock of a measurement
-*
-*  SYNOPSIS
-*     double prof_get_measurement_wallclock(prof_level level, bool with_sub, dstring *error) 
-*
-*  FUNCTION
-*     Returns the wallclock of the last measurement in seconds.
-*     Resolution is clock ticks (_SC_CLK_TCK).
-*
-*  INPUTS
-*     prof_level level - level to process
-*     bool with_sub    - include usage of subordinated measurements?
-*     dstring *error   - if != nullptr, error messages will be put here
-*
-*  RESULT
-*     double - the wallclock time of the last measurement
-*              on error, 0 is returned and an error message is written 
-*              to the buffer given in parameter error, if error != nullptr
-*
-*  RESULT
-*     double - the wallclock time
-*
-*  NOTES
-*     MT-NOTE: prof_get_measurement_wallclock() is MT safe
-*******************************************************************************/
+/**
+ * @brief Return wallclock of a measurement
+ *
+ * Returns the wallclock of the last measurement in seconds.
+ * Resolution is clock ticks (_SC_CLK_TCK).
+ *
+ * @param level level to process
+ * @param with_sub include usage of subordinated measurements?
+ * @param error if != nullptr, error messages will be put here
+ *
+ * @return the wallclock time of the last measurement on error, 0 is returned and an error message is written to the buffer given in parameter error, if error != nullptr double - the wallclock time
+ *
+ * @note MT-NOTE: prof_get_measurement_wallclock() is MT safe
+ */
 double prof_get_measurement_wallclock(prof_level level, bool with_sub, dstring *error) {
    pthread_t thread_id;
    int thread_num;
@@ -847,30 +617,20 @@ double prof_get_measurement_wallclock(prof_level level, bool with_sub, dstring *
    return ret;
 }
 
-/****** uti/profiling/prof_get_measurement_utime() ************************
-*  NAME
-*     prof_get_measurement_utime() -- return user cpu time of measurement
-*
-*  SYNOPSIS
-*     double prof_get_measurement_utime(prof_level level, bool with_sub, dstring *error) 
-*
-*  FUNCTION
-*     Returns the user cpu time of the last measurement in seconds.
-*     Resolution is clock ticks (_SC_CLK_TCK).
-*
-*  INPUTS
-*     prof_level level - level to process
-*     bool with_sub    - include usage of subordinated measurements?
-*     dstring *error   - if != nullptr, error messages will be put here
-*
-*  RESULT
-*     double - the user cpu time of the last measurement
-*              on error, 0 is returned and an error message is written 
-*              to the buffer given in parameter error, if error != nullptr
-*
-*  NOTES
-*     MT-NOTE: prof_get_measurement_utime() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Return user cpu time of measurement
+ *
+ * Returns the user cpu time of the last measurement in seconds.
+ * Resolution is clock ticks (_SC_CLK_TCK).
+ *
+ * @param level level to process
+ * @param with_sub include usage of subordinated measurements?
+ * @param error if != nullptr, error messages will be put here
+ *
+ * @return the user cpu time of the last measurement on error, 0 is returned and an error message is written to the buffer given in parameter error, if error != nullptr
+ *
+ * @note MT-NOTE: prof_get_measurement_utime() is not MT safe
+ */
 double prof_get_measurement_utime(prof_level level, bool with_sub, dstring *error) {
    pthread_t thread_id;
    int thread_num;
@@ -900,30 +660,20 @@ double prof_get_measurement_utime(prof_level level, bool with_sub, dstring *erro
    return ret;
 }
 
-/****** uti/profiling/prof_get_measurement_stime() ************************
-*  NAME
-*     prof_get_measurement_stime() -- return system cpu time of measurement
-*
-*  SYNOPSIS
-*     double prof_get_measurement_stime(prof_level level, bool with_sub, dstring *error) 
-*
-*  FUNCTION
-*     Returns the system cpu time of the last measurement in seconds.
-*     Resolution is clock ticks (_SC_CLK_TCK).
-*
-*  INPUTS
-*     prof_level level - level to process
-*     bool with_sub    - include usage of subordinated measurements?
-*     dstring *error   - if != nullptr, error messages will be put here
-*
-*  RESULT
-*     double - the system cpu time of the last measurement
-*              on error, 0 is returned and an error message is written 
-*              to the buffer given in parameter error, if error != nullptr
-*
-*  NOTES
-*     MT-NOTE: prof_get_measurement_stime() is MT safe
-*******************************************************************************/
+/**
+ * @brief Return system cpu time of measurement
+ *
+ * Returns the system cpu time of the last measurement in seconds.
+ * Resolution is clock ticks (_SC_CLK_TCK).
+ *
+ * @param level level to process
+ * @param with_sub include usage of subordinated measurements?
+ * @param error if != nullptr, error messages will be put here
+ *
+ * @return the system cpu time of the last measurement on error, 0 is returned and an error message is written to the buffer given in parameter error, if error != nullptr
+ *
+ * @note MT-NOTE: prof_get_measurement_stime() is MT safe
+ */
 double prof_get_measurement_stime(prof_level level, bool with_sub, dstring *error) {
    pthread_t thread_id;
    int thread_num;
@@ -953,28 +703,18 @@ double prof_get_measurement_stime(prof_level level, bool with_sub, dstring *erro
    return ret;
 }
 
-/****** uti/profiling/prof_get_total_wallclock() **************************
-*  NAME
-*     prof_get_total_wallclock() -- get total wallclock time
-*
-*  SYNOPSIS
-*     double prof_get_total_wallclock(dstring *error) 
-*
-*  FUNCTION
-*     Returns the wallclock time since profiling was enabled in seconds.
-*     Resolution is clock ticks (_SC_CLK_TCK).
-*
-*  INPUTS
-*     dstring *error   - if != nullptr, error messages will be put here
-*
-*  RESULT
-*     double - the total wallclock time of the profiling run
-*              on error, 0 is returned and an error message is written 
-*              to the buffer given in parameter error, if error != nullptr
-*
-*  NOTES
-*     MT-NOTE: prof_get_total_wallclock() is MT safe
-*******************************************************************************/
+/**
+ * @brief Get total wallclock time
+ *
+ * Returns the wallclock time since profiling was enabled in seconds.
+ * Resolution is clock ticks (_SC_CLK_TCK).
+ *
+ * @param error if != nullptr, error messages will be put here
+ *
+ * @return the total wallclock time of the profiling run on error, 0 is returned and an error message is written to the buffer given in parameter error, if error != nullptr
+ *
+ * @note MT-NOTE: prof_get_total_wallclock() is MT safe
+ */
 
 double prof_get_total_wallclock(prof_level level, dstring *error) {
    pthread_t thread_id;
@@ -1005,31 +745,21 @@ double prof_get_total_wallclock(prof_level level, dstring *error) {
    return ret;
 }
 
-/****** uti/profiling/prof_get_total_busy() *******************************
-*  NAME
-*     prof_get_total_busy() -- return total busy time
-*
-*  SYNOPSIS
-*     double prof_get_total_busy(prof_level level, bool with_sub, dstring *error) 
-*
-*  FUNCTION
-*     Returns the total busy time since profiling was enabled in seconds.
-*     Busy time is the time between starting and stopping a measurement.
-*     Resolution is clock ticks (_SC_CLK_TCK).
-*
-*  INPUTS
-*     prof_level level - level to process
-*     bool with_sub    - include usage of subordinated measurements?
-*     dstring *error   - if != nullptr, error messages will be put here
-*
-*  RESULT
-*     double - the total busy time of the profiling run
-*              on error, 0 is returned and an error message is written 
-*              to the buffer given in parameter error, if error != nullptr
-*
-*  NOTES
-*     MT-NOTE: prof_get_total_busy() is MT safe
-*******************************************************************************/
+/**
+ * @brief Return total busy time
+ *
+ * Returns the total busy time since profiling was enabled in seconds.
+ * Busy time is the time between starting and stopping a measurement.
+ * Resolution is clock ticks (_SC_CLK_TCK).
+ *
+ * @param level level to process
+ * @param with_sub include usage of subordinated measurements?
+ * @param error if != nullptr, error messages will be put here
+ *
+ * @return the total busy time of the profiling run on error, 0 is returned and an error message is written to the buffer given in parameter error, if error != nullptr
+ *
+ * @note MT-NOTE: prof_get_total_busy() is MT safe
+ */
 static double _prof_get_total_busy(prof_level level, bool with_sub, dstring *error) {
    pthread_t thread_id = pthread_self();
    int thread_num;
@@ -1074,30 +804,20 @@ double prof_get_total_busy(prof_level level, bool with_sub, dstring *error) {
    return ret;
 }
 
-/****** uti/profiling/prof_get_total_utime() ******************************
-*  NAME
-*     prof_get_total_utime() -- get total user cpu time
-*
-*  SYNOPSIS
-*     double prof_get_total_utime(prof_level level, bool with_sub, dstring *error) 
-*
-*  FUNCTION
-*     Returns the user cpu time since profiling was enabled in seconds.
-*     Resolution is clock ticks (_SC_CLK_TCK).
-*
-*  INPUTS
-*     prof_level level - level to process
-*     bool with_sub    - include usage of subordinated measurements?
-*     dstring *error   - if != nullptr, error messages will be put here
-*
-*  RESULT
-*     double - the total user cpu time of the profiling run
-*              on error, 0 is returned and an error message is written 
-*              to the buffer given in parameter error, if error != nullptr
-*
-*  NOTES
-*     MT-NOTE: prof_get_total_utime() is MT safe
-*******************************************************************************/
+/**
+ * @brief Get total user cpu time
+ *
+ * Returns the user cpu time since profiling was enabled in seconds.
+ * Resolution is clock ticks (_SC_CLK_TCK).
+ *
+ * @param level level to process
+ * @param with_sub include usage of subordinated measurements?
+ * @param error if != nullptr, error messages will be put here
+ *
+ * @return the total user cpu time of the profiling run on error, 0 is returned and an error message is written to the buffer given in parameter error, if error != nullptr
+ *
+ * @note MT-NOTE: prof_get_total_utime() is MT safe
+ */
 static double _prof_get_total_utime(prof_level level, bool with_sub, dstring *error) {
    pthread_t thread_id = pthread_self();
    int thread_num;
@@ -1142,30 +862,20 @@ double prof_get_total_utime(prof_level level, bool with_sub, dstring *error) {
    return ret;
 }
 
-/****** uti/profiling/prof_get_total_stime() ******************************
-*  NAME
-*     prof_get_total_stime() -- get total system cpu time
-*
-*  SYNOPSIS
-*     double prof_get_total_stime(prof_level level, bool with_sub) 
-*
-*  FUNCTION
-*     Returns the total system cpu time since profiling was enabled in seconds.
-*     Resolution is clock ticks (_SC_CLK_TCK).
-*
-*  INPUTS
-*     prof_level level - level to process
-*     bool with_sub    - include usage of subordinated measurements?
-*     dstring *error   - if != nullptr, error messages will be put here
-*
-*  RESULT
-*     double - the total system cpu time of the profiling run
-*              on error, 0 is returned and an error message is written 
-*              to the buffer given in parameter error, if error != nullptr
-*
-*  NOTES
-*     MT-NOTE: prof_get_total_stime() is MT safe
-*******************************************************************************/
+/**
+ * @brief Get total system cpu time
+ *
+ * Returns the total system cpu time since profiling was enabled in seconds.
+ * Resolution is clock ticks (_SC_CLK_TCK).
+ *
+ * @param level level to process
+ * @param with_sub include usage of subordinated measurements?
+ * @param error if != nullptr, error messages will be put here
+ *
+ * @return the total system cpu time of the profiling run on error, 0 is returned and an error message is written to the buffer given in parameter error, if error != nullptr
+ *
+ * @note MT-NOTE: prof_get_total_stime() is MT safe
+ */
 static double _prof_get_total_stime(prof_level level, bool with_sub, dstring *error) {
    pthread_t thread_id = pthread_self();
    int thread_num;
@@ -1210,42 +920,32 @@ double prof_get_total_stime(prof_level level, bool with_sub, dstring *error) {
    return ret;
 }
 
-/****** uti/profiling/prof_get_info_string() ******************************
-*  NAME
-*     prof_get_info_string() -- get informational message 
-*
-*  SYNOPSIS
-*     const char* prof_get_info_string(prof_level level, bool with_sub, dstring *error) 
-*
-*  FUNCTION
-*     Returns a string containing the most interesting data, both for the
-*     last measurement and for the total runtime:
-*        - wallclock of measurement
-*        - user cpu time of measurement
-*        - system cpu time of measurement
-*        - total wallclock time (runtime)
-*        - total busys time
-*        - utilization (busy time / wallclock time) * 100 %
-*
-*  INPUTS
-*     prof_level level - level to process
-*     bool with_sub    - include usage of subordinated measurements?
-*     dstring *error   - if != nullptr, error messages will be put here
-*
-*  RESULT
-*     const char* - pointer to result string. It is valid until the next
-*                   call of prof_get_info_string()
-*                   on error, 0 is returned and an error message is written 
-*                   to the buffer given in parameter error, if error != nullptr
-*
-*  EXAMPLE
-*     The result can look like the following:
-*     "wc = 0.190s, utime = 0.120s, stime = 0.000s, runtime 9515s, busy 105s, 
-*     utilization 1%"
-*
-*  NOTES
-*     MT-NOTE: prof_get_info_string() is MT safe
-*******************************************************************************/
+/**
+ * @brief Get informational message
+ *
+ * Returns a string containing the most interesting data, both for the
+ * last measurement and for the total runtime:
+ *    - wallclock of measurement
+ *    - user cpu time of measurement
+ *    - system cpu time of measurement
+ *    - total wallclock time (runtime)
+ *    - total busys time
+ *    - utilization (busy time / wallclock time) * 100 %
+ *
+ * @code
+ * The result can look like the following:
+ * "wc = 0.190s, utime = 0.120s, stime = 0.000s, runtime 9515s, busy 105s,
+ * utilization 1%"
+ * @endcode
+ *
+ * @param level level to process
+ * @param with_sub include usage of subordinated measurements?
+ * @param error if != nullptr, error messages will be put here
+ *
+ * @return pointer to result string. It is valid until the next call of prof_get_info_string() on error, 0 is returned and an error message is written to the buffer given in parameter error, if error != nullptr
+ *
+ * @note MT-NOTE: prof_get_info_string() is MT safe
+ */
 
 #define PROF_GET_INFO_FORMAT "%-15.15s: wc = %10.3fs, utime = %10.3fs, stime = %10.3fs, utilization = %3.0f%%\n"
 
@@ -1370,27 +1070,15 @@ bool prof_output_info(prof_level level, bool with_sub, const char *info) {
 }
 
 
-/****** uti/profiling/prof_info_init() ******************************
-*  NAME
-*     prof_info_init() -- initialize the sge_prof_info_t struc array with default values 
-*
-*  SYNOPSIS
-*     static void prof_info_init(prof_level level) 
-*
-*  FUNCTION
-*     initialize the sge_prof_info_t struct array with default values
-*
-*  INPUTS
-*     prof_level level 
-*
-*  RESULT
-*     initialized sge_prof_info_t array for the given profiling level
-*
-*  EXAMPLE
-*
-*  NOTES
-*     MT-NOTE: prof_info_init() is MT safe
-*******************************************************************************/
+/**
+ * @brief Initialize the sge_prof_info_t struc array with default values
+ *
+ * initialize the sge_prof_info_t struct array with default values
+ *
+ * @return initialized sge_prof_info_t array for the given profiling level
+ *
+ * @note MT-NOTE: prof_info_init() is MT safe
+ */
 static void prof_info_init(prof_level level, pthread_t thread_id) {
    int thread_num;
 
@@ -1410,28 +1098,15 @@ static void prof_info_init(prof_level level, pthread_t thread_id) {
    }
 }
 
-/****** uti/profiling/prof_info_level_init() ******************************
-*  NAME
-*     prof_info_level_init() -- initialize the sge_prof_info_t struc array with default values 
-*
-*  SYNOPSIS
-*     static void prof_info_level_init(prof_level level) 
-*
-*  FUNCTION
-*     initialize the sge_prof_info_t struct array with default values
-*
-*  INPUTS
-*     int i
-*     int thread_num
-*
-*  RESULT
-*     initialized sge_prof_info_t array for the given profiling level
-*
-*  EXAMPLE
-*
-*  NOTES
-*     MT-NOTE: prof_info_level_init() is MT safe
-*******************************************************************************/
+/**
+ * @brief Initialize the sge_prof_info_t struc array with default values
+ *
+ * initialize the sge_prof_info_t struct array with default values
+ *
+ * @return initialized sge_prof_info_t array for the given profiling level
+ *
+ * @note MT-NOTE: prof_info_level_init() is MT safe
+ */
 static void prof_info_level_init(prof_level i, int thread_num) {
    switch (i) {
       case SGE_PROF_OTHER:
@@ -1512,28 +1187,15 @@ static void prof_info_level_init(prof_level i, int thread_num) {
 
 }
 
-/****** uti/profiling/init_array() ******************************
-*  NAME
-*     init_array() -- mallocs memory for the sge_prof_info_t array 
-*
-*  SYNOPSIS
-*     void init_array(pthread_t num) 
-*
-*  FUNCTION
-*     mallocs memory for sge_prof_info_t array for the number
-*     of MAX_THREAD_NUM threads
-*     mallocs memory for each thread if nedded 
-*
-*  INPUTS
-*     the thread id, which needs malloced memory 
-*
-*  RESULT
-*
-*  EXAMPLE
-*
-*  NOTES
-*     MT-NOTE: init_array() is MT safe
-*******************************************************************************/
+/**
+ * @brief Mallocs memory for the sge_prof_info_t array
+ *
+ * mallocs memory for sge_prof_info_t array for the number
+ * of MAX_THREAD_NUM threads
+ * mallocs memory for each thread if nedded
+ *
+ * @note MT-NOTE: init_array() is MT safe
+ */
 static void init_array(pthread_t num) {
 
    int i, c;
@@ -1596,27 +1258,15 @@ static void init_array_first() {
 
 }
 
-/****** uti/profiling/init_thread_info() ******************************
-*  NAME
-*     init_thread_info() -- mallocs memory for the thread_info_t array 
-*
-*  SYNOPSIS
-*     void init_thread_info() 
-*
-*  FUNCTION
-*     mallocs memory for thread_info_t array (thread name/id mapping) 
-*     for the number of MAX_THREAD_NUM threads. Must be called once
-*     per process.
-*
-*  INPUTS
-*
-*  RESULT
-*
-*  EXAMPLE
-*
-*  NOTES
-*     MT-NOTE: init_thread_info() is MT safe
-*******************************************************************************/
+/**
+ * @brief Mallocs memory for the thread_info_t array
+ *
+ * mallocs memory for thread_info_t array (thread name/id mapping)
+ * for the number of MAX_THREAD_NUM threads. Must be called once
+ * per process.
+ *
+ * @note MT-NOTE: init_thread_info() is MT safe
+ */
 static void init_thread_info() {
 
    if (!profiling_enabled) {
@@ -1634,28 +1284,14 @@ static void init_thread_info() {
 
 }
 
-/****** uti/profiling/set_thread_name() ******************************
-*  NAME
-*     set_thread_name() -- set the thread name mapped to its id 
-*
-*  SYNOPSIS
-*     void set_thread_name(pthread_t thread_id, const char* thread_name) 
-*
-*  FUNCTION
-*     maps the name and the id of a thread
-*     set the thread profiling status to false
-*
-*  INPUTS
-*     pthread_t thread_id
-*     const char* thread_name
-*
-*  RESULT
-*
-*  EXAMPLE
-*
-*  NOTES
-*     MT-NOTE: set_thread_info() is MT safe
-*******************************************************************************/
+/**
+ * @brief Set the thread name mapped to its id
+ *
+ * maps the name and the id of a thread
+ * set the thread profiling status to false
+ *
+ * @note MT-NOTE: set_thread_info() is MT safe
+ */
 void set_thread_name(pthread_t thread_id, const char *thread_name) {
 
    int thread_num;
@@ -1683,28 +1319,13 @@ void set_thread_name(pthread_t thread_id, const char *thread_name) {
 }
 
 
-/****** uti/profiling/set_thread_prof_status_by_id() ******************************
-*  NAME
-*     set_thread_prof_status_by_id() -- sets the profiling status for the thread
-*                                       with the given thread id 
-*
-*  SYNOPSIS
-*     void set_thread_prof_status_by_id(pthread_t thread_id, bool prof_status) 
-*
-*  FUNCTION
-*     set the thread profiling status of the thread with the given id 
-*
-*  INPUTS
-*     pthread_t thread_id
-*     bool prof_status 
-*
-*  RESULT
-*
-*  EXAMPLE
-*
-*  NOTES
-*     MT-NOTE: set_thread_prof_status_by_id() is MT safe
-*******************************************************************************/
+/**
+ * @brief Sets the profiling status for the thread
+ *
+ * set the thread profiling status of the thread with the given id
+ *
+ * @note MT-NOTE: set_thread_prof_status_by_id() is MT safe
+ */
 void set_thread_prof_status_by_id(pthread_t thread_id, bool prof_status) {
 
    int thread_num;
@@ -1727,31 +1348,15 @@ void set_thread_prof_status_by_id(pthread_t thread_id, bool prof_status) {
 }
 
 
-/****** uti/profiling/set_thread_prof_status_by_name() ******************************
-*  NAME
-*     set_thread_prof_status_by_name() -- sets the profiling status for the thread
-*                                         with the given thread id and thread name
-*
-*  SYNOPSIS
-*     void set_thread_prof_status_by_name(pthread_t thread_id, const char* thread_name,  bool prof_status) 
-*
-*  FUNCTION
-*     set the thread profiling status of the thread with the given id and name 
-*
-*  INPUTS
-*     pthread_t thread_id
-*     const char* thread_name
-*     bool prof_status
-*
-*  RESULTS
-*     return 0 - ok
-*     return 1 - thread_name = nullptr
-*
-*  EXAMPLE
-*
-*  NOTES
-*     MT-NOTE: set_thread_prof_status_by_name() is MT safe
-*******************************************************************************/
+/**
+ * @brief Sets the profiling status for the thread
+ *
+ * set the thread profiling status of the thread with the given id and name
+ *
+ * @return ok return 1 - thread_name = nullptr
+ *
+ * @note MT-NOTE: set_thread_prof_status_by_name() is MT safe
+ */
 int set_thread_prof_status_by_name(const char *thread_name, bool prof_status) {
 
    int i;
@@ -1814,26 +1419,13 @@ static void sge_prof_cleanup() {
 
 }
 
-/****** uti/profiling/thread_prof_active_by_id() ******************************
-*  NAME
-*     thread_prof_active_by_id() -- returns the status of a thread 
-*
-*  SYNOPSIS
-*     bool thread_prof_active_by_id(pthread_t thread_id) 
-*
-*  FUNCTION
-*     returns the profiling status of a thread
-*
-*  INPUTS
-*     pthread_t thread_id
-*
-*  RESULT
-*
-*  EXAMPLE
-*
-*  NOTES
-*     MT-NOTE: thread_prof_active_by_id() is MT safe
-*******************************************************************************/
+/**
+ * @brief Returns the status of a thread
+ *
+ * returns the profiling status of a thread
+ *
+ * @note MT-NOTE: thread_prof_active_by_id() is MT safe
+ */
 bool thread_prof_active_by_id(pthread_t thread_id) {
 
    int thread_num;
@@ -1858,26 +1450,13 @@ bool thread_prof_active_by_id(pthread_t thread_id) {
 }
 
 
-/****** uti/profiling/thread_prof_active_by_name() ******************************
-*  NAME
-*     thread_prof_active_by_name() -- returns the status of a thread 
-*
-*  SYNOPSIS
-*     bool thread_prof_active_by_name(pthread_t thread_id) 
-*
-*  FUNCTION
-*     returns the profiling status of a thread
-*
-*  INPUTS
-*     pthread_t thread_id
-*
-*  RESULT
-*
-*  EXAMPLE
-*
-*  NOTES
-*     MT-NOTE: thread_prof_active_by_name() is MT safe
-*******************************************************************************/
+/**
+ * @brief Returns the status of a thread
+ *
+ * returns the profiling status of a thread
+ *
+ * @note MT-NOTE: thread_prof_active_by_name() is MT safe
+ */
 bool thread_prof_active_by_name(const char *thread_name) {
 
    bool ret = false;
@@ -1911,23 +1490,16 @@ static int get_prof_info_thread_id(pthread_t thread_num) {
    return (int) ret;
 }
 
-/****** uti/profiling/thread_start_stop_profiling() ****************************
-*  NAME
-*     thread_start_stop_profiling() -- start profiling for thread
-*
-*  SYNOPSIS
-*     void 
-*     thread_start_stop_profiling() 
-*
-*  FUNCTION
-*     Checks if profiling has been enabled for the current thread.
-*     If yes, starts profiling for all levels.
-*     If profiling has been disabled for the current thread, profiling
-*     is disabled for all levels.
-*
-*  NOTES
-*     MT-NOTE: thread_start_stop_profiling() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Start profiling for thread
+ *
+ * Checks if profiling has been enabled for the current thread.
+ * If yes, starts profiling for all levels.
+ * If profiling has been disabled for the current thread, profiling
+ * is disabled for all levels.
+ *
+ * @note MT-NOTE: thread_start_stop_profiling() is MT safe
+ */
 void
 thread_start_stop_profiling() {
    if (!profiling_enabled) {
@@ -1941,34 +1513,25 @@ thread_start_stop_profiling() {
    }
 }
 
-/****** uti/profiling/thread_output_profiling() ********************************
-*  NAME
-*     thread_output_profiling() -- output profiling info for thread
-*
-*  SYNOPSIS
-*     void 
-*     thread_output_profiling(const char *title, uint64_t *next_prof_output)
-*
-*  FUNCTION
-*     Outputs profiling information for the current thread.
-*     Information for all active profiling levels is dumped.
-*     The first line dumped is a sort of title, that can/should be used
-*     to identify the thread.
-*
-*     The variable next_prof_output will be set by this function.
-*     This variable should be initialized to 0 (zero) by the caller before the
-*     first call of this function.
-*
-*  INPUTS
-*     const char *title        - title to print as first line
-*     uint64_t *next_prof_output - time of next profiling output
-*
-*  NOTES
-*     MT-NOTE: thread_output_profiling() is MT safe 
-*
-*  SEE ALSO
-*     uti/profiling/prof_output_info()
-*******************************************************************************/
+/**
+ * @brief Output profiling info for thread
+ *
+ * Outputs profiling information for the current thread.
+ * Information for all active profiling levels is dumped.
+ * The first line dumped is a sort of title, that can/should be used
+ * to identify the thread.
+ *
+ * The variable next_prof_output will be set by this function.
+ * This variable should be initialized to 0 (zero) by the caller before the
+ * first call of this function.
+ *
+ * @param title title to print as first line
+ * @param next_prof_output time of next profiling output
+ *
+ * @note MT-NOTE: thread_output_profiling() is MT safe
+ *
+ * @see #prof_output_info
+ */
 void
 thread_output_profiling(const char *title, uint64_t *next_prof_output) {
    if (prof_is_active(SGE_PROF_ALL)) {

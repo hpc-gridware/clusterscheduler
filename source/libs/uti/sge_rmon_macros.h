@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief RMON debug tracing macros: DENTER, DRETURN, DPRINTF
+ */
+
 #include <cstring>
 #include <cstdarg>
 #include <sys/types.h>

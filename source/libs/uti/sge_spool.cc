@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of the spooling directory layout handling
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -81,22 +85,15 @@ static void get_spool_dir_parts(uint32_t job_id, char *first, size_t first_size,
    snprintf(first, third_size, "%02d", (int) (job_id % 10000l));
 }
 
-/****** uti/spool/sge_get_ja_tasks_per_directory() *****************************
-*  NAME
-*     sge_get_ja_tasks_per_directory() -- Configured number of tasks per dir
-*
-*  SYNOPSIS
-*     uint32_t sge_get_ja_tasks_per_directory()
-*
-*  FUNCTION
-*     Returns the configured number of tasks per directory
-*
-*  RESULT
-*     uint32_t - the number
-*
-*  NOTES
-*     MT-NOTE: sge_get_ja_tasks_per_directory() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Configured number of tasks per dir
+ *
+ * Returns the configured number of tasks per directory
+ *
+ * @return the number
+ *
+ * @note MT-NOTE: sge_get_ja_tasks_per_directory() is not MT safe
+ */
 uint32_t sge_get_ja_tasks_per_directory() {
    static uint32_t tasks_per_directory = 0;
 
@@ -114,22 +111,15 @@ uint32_t sge_get_ja_tasks_per_directory() {
    return tasks_per_directory;
 }
 
-/****** uti/spool/sge_get_ja_tasks_per_file() **********************************
-*  NAME
-*     sge_get_ja_tasks_per_file() -- Configured number of tasks per file
-*
-*  SYNOPSIS
-*     uint32_t sge_get_ja_tasks_per_file()
-*
-*  FUNCTION
-*     Returns the configured number of tasks per file
-*
-*  RESULT
-*     uint32_t - the number
-*
-*  NOTES
-*     MT-NOTE: sge_get_ja_tasks_per_file() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Configured number of tasks per file
+ *
+ * Returns the configured number of tasks per file
+ *
+ * @return the number
+ *
+ * @note MT-NOTE: sge_get_ja_tasks_per_file() is not MT safe
+ */
 uint32_t sge_get_ja_tasks_per_file() {
    static uint32_t tasks_per_file = 0;
 
@@ -147,41 +137,23 @@ uint32_t sge_get_ja_tasks_per_file() {
    return tasks_per_file;
 }
 
-/****** uti/spool/sge_get_file_path() *****************************************
-*  NAME
-*     sge_get_file_path() -- Return SGE/EE specific file/pathname 
-*
-*  SYNOPSIS
-*     char* sge_get_file_path(char *buffer, sge_file_path_id_t id, 
-*                             sge_file_path_format_t format_flags, 
-*                             sge_spool_flags_t spool_flags, 
-*                             uint32_t ulong_val1, uint32_t ulong_val2,
-*                             const char *string_val1) 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     char *buffer                        - buffer for file/pathname 
-*     sge_file_path_id_t id               - type of file/pathname 
-*     sge_file_path_format_t format_flags - format of returned string 
-*     sge_spool_flags_t spool_flags       - context where the name is
-*                                           needed 
-*     uint32_t ulong_val1                 - 1st ulong
-*     uint32_t ulong_val2                 - 2nd ulong
-*     const char *string_val1             - 1st string
-*
-*  RESULT
-*     char* - equivalent with 'buffer' 
-*
-*  NOTES
-*     MT-NOTE: sge_get_file_path() is not MT safe due to get_spool_dir_range()
-*
-*  SEE ALSO
-*     uti/spool/sge_file_path_id_t
-*     uti/spool/sge_file_path_format_t
-*     uti/spool/sge_spool_flags_t 
-******************************************************************************/
+/**
+ * @brief Return SGE/EE specific file/pathname
+ *
+ * ???
+ *
+ * @param buffer buffer for file/pathname
+ * @param id type of file/pathname
+ * @param format_flags format of returned string
+ * @param spool_flags context where the name is needed
+ * @param ulong_val1 1st ulong
+ * @param ulong_val2 2nd ulong
+ * @param string_val1 1st string
+ *
+ * @return equivalent with 'buffer'
+ *
+ * @note MT-NOTE: sge_get_file_path() is not MT safe due to get_spool_dir_range()
+ */
 char *sge_get_file_path(char *buffer, size_t buffer_size, sge_file_path_id_t id,
                         sge_file_path_format_t format_flags,
                         sge_spool_flags_t spool_flags,
@@ -275,27 +247,19 @@ char *sge_get_file_path(char *buffer, size_t buffer_size, sge_file_path_id_t id,
    return buffer;
 }
 
-/****** uti/spool/sge_spoolmsg_write() ****************************************
-*  NAME
-*     sge_spoolmsg_write() -- add a comment in a file
-*
-*  SYNOPSIS
-*     int sge_spoolmsg_write(FILE *file, char comment_char)
-*
-*  FUNCTION
-*     This function writes an additional comment into a file. First
-*     character in a comment line is 'comment_char'.
-*
-*  INPUTS
-*     FILE *file        - file descriptor
-*     char comment_char - first character in a comment line
-*
-*  RESULT
-*     -1 on error else 0
-*
-*  NOTES
-*     MT-NOTE: sge_spoolmsg_write() is not MT safe due to FPRINTF() macro
-******************************************************************************/
+/**
+ * @brief Add a comment in a file
+ *
+ * This function writes an additional comment into a file. First
+ * character in a comment line is 'comment_char'.
+ *
+ * @param file file descriptor
+ * @param comment_char first character in a comment line
+ *
+ * @return -1 on error else 0
+ *
+ * @note MT-NOTE: sge_spoolmsg_write() is not MT safe due to FPRINTF() macro
+ */
 int sge_spoolmsg_write(FILE *file, char comment_char, const char *version) {
    int i;
 
@@ -330,28 +294,20 @@ void sge_spoolmsg_append(dstring *ds, char comment_char, const char *version) {
    }
 }
 
-/****** uti/spool/sge_readpid() ***********************************************
-*  NAME
-*     sge_readpid() -- Read pid from file
-*
-*  SYNOPSIS
-*     pid_t sge_readpid(const char *fname)
-*
-*  FUNCTION
-*     Read pid from file 'fname'. The pidfile may be terminated with
-*     a '\n'. Empty lines at the beginning of the file are ignored.
-*     Whitespaces at the beginning of the line are ignored.
-*     Any characters or lines after a valid pid are ignored.
-*
-*  INPUTS
-*     const char *fname - filename
-*
-*  RESULT
-*     pid_t - process id
-*  
-*  NOTES
-*     MT-NOTE: sge_readpid() is MT safe.
-******************************************************************************/
+/**
+ * @brief Read pid from file
+ *
+ * Read pid from file 'fname'. The pidfile may be terminated with
+ * a '\n'. Empty lines at the beginning of the file are ignored.
+ * Whitespaces at the beginning of the line are ignored.
+ * Any characters or lines after a valid pid are ignored.
+ *
+ * @param fname filename
+ *
+ * @return process id
+ *
+ * @note MT-NOTE: sge_readpid() is MT safe.
+ */
 pid_t sge_readpid(const char *fname) {
    FILE *fp;
    char buf[512], *cp;
@@ -391,22 +347,15 @@ pid_t sge_readpid(const char *fname) {
 DRETURN(0);
 } /* sge_readpid() */
 
-/****** uti/spool/sge_write_pid() *********************************************
-*  NAME
-*     sge_write_pid() -- Write pid into file
-*
-*  SYNOPSIS
-*     void sge_write_pid(const char *pid_log_file)
-*
-*  FUNCTION
-*     Write pid into file
-*
-*  INPUTS
-*     const char *pid_log_file - filename
-*  
-*  NOTES
-*     MT-NOTE: sge_write_pid() is MT safe
-******************************************************************************/
+/**
+ * @brief Write pid into file
+ *
+ * Write pid into file
+ *
+ * @param pid_log_file filename
+ *
+ * @note MT-NOTE: sge_write_pid() is MT safe
+ */
 void sge_write_pid(const char *pid_log_file) {
    int pid;
    FILE *fp;
@@ -427,30 +376,21 @@ DRETURN_VOID;
 }
 
 
-/****** uti/spool/sge_get_confval() *******************************************
-*  NAME
-*     sge_get_confval() -- Get config value for
-*
-*  SYNOPSIS
-*     char* sge_get_confval(const char *conf_val, const char *fname)
-*
-*  FUNCTION
-*     Get config value for entry 'conf_val' from file 'fname'.
-*
-*  INPUTS
-*     const char *conf_val - is case insensitive name
-*     const char *fname    - filename
-*
-*  RESULT
-*     char* - pointer to internal static buffer
-*
-*  NOTES
-*     Lines may be up to 1024 characters long. Up to 1024 characters of the
-*     config value are copied to the static buffer.
-*
-*  NOTES
-*     MT-NOTE: sge_get_confval() is MT safe
-******************************************************************************/
+/**
+ * @brief Get config value for
+ *
+ * Get config value for entry 'conf_val' from file 'fname'.
+ *
+ * @param conf_val is case insensitive name
+ * @param fname filename
+ *
+ * @return pointer to internal static buffer
+ *
+ * @note Lines may be up to 1024 characters long. Up to 1024 characters of the
+ *       config value are copied to the static buffer.
+ *
+ *       MT-NOTE: sge_get_confval() is MT safe
+ */
 char *sge_get_confval(const char *conf_val, const char *fname) {
    static char valuev[1][4097];
    bootstrap_entry_t namev[1];
@@ -464,28 +404,17 @@ char *sge_get_confval(const char *conf_val, const char *fname) {
    }
 }
 
-/****** uti/spool/sge_get_confval_array() *************************************
-*  NAME
-*     sge_get_confval_array() - Read configuration file entries
-*
-*  SYNOPSIS
-*     int sge_get_confval_array(const char *fname, int n,
-*                               const char *name[],
-*                               char value[][4097],
-*                               dstring *error_dstring)
-*
-*  FUNCTION
-*     Reads in an array of configuration file entries
-*
-*  RESULT
-*     int - 0 on success
-*
-*  BUGS
-*     Function can not differ multiple similar named entries.
-*
-*  NOTES
-*     MT-NOTE: sge_get_confval_array() is MT safe
-******************************************************************************/
+/**
+ * @brief Reads in an array of configuration file entries
+ *
+ * Reads in an array of configuration file entries
+ *
+ * @return 0 on success
+ *
+ * @note MT-NOTE: sge_get_confval_array() is MT safe
+ *
+ * @bug Function can not differ multiple similar named entries.
+ */
 int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entry_t name[],
                           char value[][4097], dstring *error_dstring) {
    FILE *fp;
@@ -598,44 +527,29 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
 
 
 
-/****** uti/spool/sge_status_set_type() ***************************************
-*  NAME
-*     sge_status_set_type() -- set display mode
-*
-*  SYNOPSIS
-*     void sge_status_set_type(washing_machine_t type)
-*
-*  FUNCTION
-*     With 'STATUS_ROTATING_BAR' each call of
-*     sge_status_next_turn() will show a rotating bar.
-*     In 'STATUS_DOTS'-mode each call will show more
-*     dots in a line.
-*
-*  INPUTS
-*     washing_machine_t type - display type
-*        STATUS_ROTATING_BAR
-*        STATUS_DOTS
-*
-*  NOTES
-*     MT-NOTE: sge_status_set_type() is not MT safe
-******************************************************************************/
+/**
+ * @brief Set display mode
+ *
+ * With 'STATUS_ROTATING_BAR' each call of
+ * sge_status_next_turn() will show a rotating bar.
+ * In 'STATUS_DOTS'-mode each call will show more
+ * dots in a line.
+ *
+ * @param type display type STATUS_ROTATING_BAR STATUS_DOTS
+ *
+ * @note MT-NOTE: sge_status_set_type() is not MT safe
+ */
 void sge_status_set_type(washing_machine_t type) {
    wtype = type;
 }
 
-/****** uti/spool/sge_status_next_turn() **************************************
-*  NAME
-*     sge_status_next_turn() -- show next turn
-*
-*  SYNOPSIS
-*     void sge_status_next_turn()
-*
-*  FUNCTION
-*     Show next turn of rotating washing machine.
-*
-*  NOTES
-*     MT-NOTE: sge_status_next_turn() is not MT safe
-******************************************************************************/
+/**
+ * @brief Show next turn
+ *
+ * Show next turn of rotating washing machine.
+ *
+ * @note MT-NOTE: sge_status_next_turn() is not MT safe
+ */
 void sge_status_next_turn() {
    static int cnt = 0;
    static const char s[] = "-\\/";
@@ -669,19 +583,13 @@ void sge_status_next_turn() {
    }
 }
 
-/****** uti/spool/sge_status_end_turn() ***************************************
-*  NAME
-*     sge_status_end_turn() -- remove washing machine from display
-*
-*  SYNOPSIS
-*     void sge_status_end_turn()
-*
-*  FUNCTION
-*     Last turn of washing machine.
-*
-*  NOTES
-*     MT-NOTE: sge_status_end_turn() is not MT safe
-******************************************************************************/
+/**
+ * @brief Remove washing machine from display
+ *
+ * Last turn of washing machine.
+ *
+ * @note MT-NOTE: sge_status_end_turn() is not MT safe
+ */
 void sge_status_end_turn() {
    switch (wtype) {
       case STATUS_ROTATING_BAR:
@@ -701,75 +609,48 @@ void sge_status_end_turn() {
    }
 }
 
-/****** uti/spool/sge_silent_set() ********************************************
-*  NAME
-*     sge_silent_set() -- Enable/disable silence during spool ops 
-*
-*  SYNOPSIS
-*     void sge_silent_set(int i) 
-*
-*  FUNCTION
-*     Enable/disable silence during spool operations. Silence means
-*     that no messages are printed to stdout. 
-*
-*  INPUTS
-*     int i - 0 or 1 
-*
-*  SEE ALSO
-*     uti/spool/sge_silent_get() 
-*
-*  NOTES
-*     MT-NOTE: sge_silent_set() is not MT safe
-******************************************************************************/
+/**
+ * @brief Enable/disable silence during spool ops
+ *
+ * Enable/disable silence during spool operations. Silence means
+ * that no messages are printed to stdout.
+ *
+ * @param i 0 or 1
+ *
+ * @note MT-NOTE: sge_silent_set() is not MT safe
+ *
+ * @see #sge_silent_get
+ */
 void sge_silent_set(int i) {
    silent_flag = i;
 }
 
-/****** uti/spool/sge_silent_get() ********************************************
-*  NAME
-*     sge_silent_get() -- Show whether silence is enable/disabled 
-*
-*  SYNOPSIS
-*     int sge_silent_get() 
-*
-*  FUNCTION
-*     Show whether silence is enable/disabled 
-*
-*  RESULT
-*     int - 0 or 1
-*
-*  SEE ALSO
-*     uti/spool/sge_silent_set() 
-*
-*  NOTES
-*     MT-NOTE: sge_silent_get() is not MT safe
-******************************************************************************/
+/**
+ * @brief Show whether silence is enable/disabled
+ *
+ * Show whether silence is enable/disabled
+ *
+ * @return 0 or 1
+ *
+ * @note MT-NOTE: sge_silent_get() is not MT safe
+ *
+ * @see #sge_silent_set
+ */
 int sge_silent_get() {
    return silent_flag;
 }
 
-/****** uti/spool/sge_get_management_entry() *************************************
-*  NAME
-*     sge_get_management_entry() - Read management.properties file entries
-*
-*  SYNOPSIS
-*     int sge_get_management_entry(const char *fname, int n, 
-*                               const char *name[], 
-*                               char value[][1025],
-*                               dstring *error_dstring) 
-*
-*  FUNCTION
-*     Reads in an array of configuration file entries
-*
-*  RESULT
-*     int - 0 on success
-*
-*  BUGS
-*     Function can not differ multiple similar named entries.
-*
-*  NOTES
-*     MT-NOTE: sge_get_management_entry() is MT safe
-******************************************************************************/
+/**
+ * @brief Reads in an array of configuration file entries
+ *
+ * Reads in an array of configuration file entries
+ *
+ * @return 0 on success
+ *
+ * @note MT-NOTE: sge_get_management_entry() is MT safe
+ *
+ * @bug Function can not differ multiple similar named entries.
+ */
 int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_entry_t name[],
                              char value[][SGE_PATH_MAX], dstring *error_dstring) {
    FILE *fp;
@@ -849,50 +730,38 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
 DRETURN(0);
 } /* sge_get_management_entry() */
 
-/****** uti/spool/sge_get_active_job_file_path() ********************************
-*  NAME
-*     sge_get_active_job_file_path() -- Create paths in active_jobs dir
-*
-*  SYNOPSIS
-*     const char* sge_get_active_job_file_path(dstring *buffer, 
-*        uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id,
-*        const char *filename) 
-*
-*  FUNCTION
-*     Creates paths in the execd's active_jobs directory.
-*     Both directory and file paths can be created.
-*     The result is placed in a buffer provided by the caller.
-* 
-*     WARNING: Do only use in shepherd and execution daemon!
-*
-*  INPUTS
-*     dstring *buffer        - buffer to hold the generated path
-*     uint32_t job_id        - job id
-*     uint32_t ja_task_id    - array task id
-*     const char *pe_task_id - optional pe task id
-*     const char *filename   - optional file name
-*
-*  RESULT
-*     const char* - pointer to the string buffer on success, else nullptr
-*
-*  EXAMPLE
-*     To create the relative path to a jobs/tasks environment file, the 
-*     following call would be used:
-*
-*     char buffer[SGE_PATH_MAX]
-*     sge_get_active_job_file_path(buffer, SGE_PATH_MAX, 
-*                                  job_id, ja_task_id, pe_task_id,
-*                                  "environment");
-*     
-*
-*  NOTES
-*     JG: TODO: The function might be converted to or might use a more 
-*     general path creating function (utilib).
-*
-*  SEE ALSO
-*     execd/sge_make_ja_task_active_dir()
-*     execd/sge_make_pe_task_active_dir()
-*******************************************************************************/
+/**
+ * @brief Create paths in active_jobs dir
+ *
+ * Creates paths in the execd's active_jobs directory.
+ * Both directory and file paths can be created.
+ * The result is placed in a buffer provided by the caller.
+ *
+ * WARNING: Do only use in shepherd and execution daemon!
+ *
+ * @code
+ * To create the relative path to a jobs/tasks environment file, the
+ * following call would be used:
+ *
+ * char buffer[SGE_PATH_MAX]
+ * sge_get_active_job_file_path(buffer, SGE_PATH_MAX,
+ *                              job_id, ja_task_id, pe_task_id,
+ *                              "environment");
+ * @endcode
+ *
+ * @param buffer buffer to hold the generated path
+ * @param job_id job id
+ * @param ja_task_id array task id
+ * @param pe_task_id optional pe task id
+ * @param filename optional file name
+ *
+ * @return pointer to the string buffer on success, else nullptr
+ *
+ * @note JG: TODO: The function might be converted to or might use a more
+ *       general path creating function (utilib).
+ *
+ * @see `sge_make_ja_task_active_dir()`, `sge_make_pe_task_active_dir()`
+ */
 const char *sge_get_active_job_file_path(dstring *buffer, uint32_t job_id,
                                          uint32_t ja_task_id, const char *pe_task_id, const char *filename) {
    DENTER(TOP_LAYER);

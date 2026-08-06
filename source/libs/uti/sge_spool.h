@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Spooling directory layout and file name handling
+ */
+
 #include <fstream>
 
 #include <cinttypes>
@@ -40,168 +44,132 @@
 
 #define COMMENT_CHAR '#'
 
-/****** uti/spool/sge_file_path_id_t ******************************************
-*  NAME
-*     sge_file_path_id_t -- Type of filename or pathname
-*
-*  SYNOPSIS
-*     typedef enum {
-*        JOBS_SPOOL_DIR,
-*        JOB_SPOOL_DIR,
-*        JOB_SPOOL_DIR_AS_FILE,
-*        JOB_SPOOL_FILE,
-*        TASKS_SPOOL_DIR,
-*        TASK_SPOOL_DIR,
-*        TASK_SPOOL_DIR_AS_FILE,
-*        TASK_SPOOL_FILE,
-*        PE_TASK_SPOOL_FILE,
-*        JOB_SCRIPT_DIR,
-*        JOB_SCRIPT_FILE,
-*        JOB_ACTIVE_DIR 
-*     } sge_file_path_id_t;
-*
-*  FUNCTION
-*     Type of filename or pathname if no other sge_spool_flags_t 
-*     and/or sge_file_path_format_t are specified 
-*     with sge_get_file_path():
-*
-*     JOBS_SPOOL_DIR - "./jobs"
-*
-*     JOB_SPOOL_DIR - "./jobs/xx/yyyy/zzzz" 
-*                     zzzz is a directory
-*                     'xxyyyyzzzz' is a job id
-*                    
-*     JOB_SPOOL_DIR_AS_FILE - "./jobs/xx/yyyy/zzzz"
-*                             zzzz is a file
-*                             'xxyyyyzzzz' is a job id  
-*
-*     JOB_SPOOL_FILE - "./jobs/xx/yyyy/zzzz/common"
-*
-*     TASKS_SPOOL_DIR - "./jobs/xx/yyyy/zzzz/1-4096"
-*                      (example for task ids between 1 and 4096)
-*                      
-*     TASK_SPOOL_DIR - "./jobs/xx/yyyy/zzzz/1-4096/1"
-*                       (example for task with id 1 (directory))
-*
-*     TASK_SPOOL_DIR_AS_FILE - "./jobs/xx/yyyy/zzzz/1-4096/1"
-*                              (example for task with id 1 (file))
-*
-*     TASK_SPOOL_FILE - "./jobs/xx/yyyy/zzzz/1-4096/1/common"
-*                       (example for task with id 1)
-*
-*     PE_TASK_SPOOL_FILE - "./jobs/xx/yyyy/zzzz/1-4096/1/1"
-*                       (example for ja_task 1 pe_task 1)
-*
-*     JOB_SCRIPT_DIR - "./job_scripts"
-*
-*     JOB_SCRIPT_FILE - "./job_scripts/1234"
-*                       (if job id is 1234)
-*
-*     JOB_ACTIVE_DIR - "./active_jobs"
-******************************************************************************/
+/**
+ * @brief Type of filename or pathname
+ *
+ * Type of filename or pathname if no other sge_spool_flags_t
+ * and/or sge_file_path_format_t are specified
+ * with sge_get_file_path():
+ *
+ * JOBS_SPOOL_DIR - "./jobs"
+ *
+ * JOB_SPOOL_DIR - "./jobs/xx/yyyy/zzzz"
+ *                 zzzz is a directory
+ *                 'xxyyyyzzzz' is a job id
+ *
+ * JOB_SPOOL_DIR_AS_FILE - "./jobs/xx/yyyy/zzzz"
+ *                         zzzz is a file
+ *                         'xxyyyyzzzz' is a job id
+ *
+ * JOB_SPOOL_FILE - "./jobs/xx/yyyy/zzzz/common"
+ *
+ * TASKS_SPOOL_DIR - "./jobs/xx/yyyy/zzzz/1-4096"
+ *                  (example for task ids between 1 and 4096)
+ *
+ * TASK_SPOOL_DIR - "./jobs/xx/yyyy/zzzz/1-4096/1"
+ *                   (example for task with id 1 (directory))
+ *
+ * TASK_SPOOL_DIR_AS_FILE - "./jobs/xx/yyyy/zzzz/1-4096/1"
+ *                          (example for task with id 1 (file))
+ *
+ * TASK_SPOOL_FILE - "./jobs/xx/yyyy/zzzz/1-4096/1/common"
+ *                   (example for task with id 1)
+ *
+ * PE_TASK_SPOOL_FILE - "./jobs/xx/yyyy/zzzz/1-4096/1/1"
+ *                   (example for ja_task 1 pe_task 1)
+ *
+ * JOB_SCRIPT_DIR - "./job_scripts"
+ *
+ * JOB_SCRIPT_FILE - "./job_scripts/1234"
+ *                   (if job id is 1234)
+ *
+ * JOB_ACTIVE_DIR - "./active_jobs"
+ */
+/** @brief Which file or directory of the spooling layout to build */
 typedef enum {
-   JOBS_SPOOL_DIR,
-   JOB_SPOOL_DIR,
-   JOB_SPOOL_DIR_AS_FILE,
-   JOB_SPOOL_FILE,
-   TASKS_SPOOL_DIR,
-   TASK_SPOOL_DIR,
-   TASK_SPOOL_DIR_AS_FILE,
-   TASK_SPOOL_FILE,
-   PE_TASK_SPOOL_FILE,
-   JOB_SCRIPT_DIR,
-   JOB_SCRIPT_FILE,
-   JOB_ACTIVE_DIR
+   JOBS_SPOOL_DIR,                   ///< directory holding all spooled jobs
+   JOB_SPOOL_DIR,                    ///< directory of one job
+   JOB_SPOOL_DIR_AS_FILE,            ///< the job directory addressed as a file, for removal
+   JOB_SPOOL_FILE,                   ///< spool file of one job
+   TASKS_SPOOL_DIR,                  ///< directory holding the array tasks of one job
+   TASK_SPOOL_DIR,                   ///< directory of one array task
+   TASK_SPOOL_DIR_AS_FILE,           ///< the task directory addressed as a file, for removal
+   TASK_SPOOL_FILE,                  ///< spool file of one array task
+   PE_TASK_SPOOL_FILE,               ///< spool file of one parallel task
+   JOB_SCRIPT_DIR,                   ///< directory holding the job scripts
+   JOB_SCRIPT_FILE,                  ///< the job script of one job
+   JOB_ACTIVE_DIR                    ///< active jobs directory of one job
 } sge_file_path_id_t;
 
-/****** uti/spool/sge_spool_flags_t *******************************************
-*  NAME
-*     sge_spool_flags_t -- Context information for spooling functions
-*
-*  SYNOPSIS
-*     typedef enum {
-*        SPOOL_DEFAULT               = 0x0000,
-*        SPOOL_HANDLE_AS_ZOMBIE      = 0x0001,
-*        SPOOL_WITHIN_EXECD          = 0x0002,
-*        SPOOL_IGNORE_TASK_INSTANCES = 0x0004,
-*        SPOOL_HANDLE_PARALLEL_TASKS = 0x0008,
-*     } sge_spool_flags_t; 
-*
-*  FUNCTION
-*     These constants are necessary to provide spooling functions
-*     with context information where they are called and what they 
-*     should do. It depends on these spooling functions, how these
-*     constants are interpreted. The documentation of these
-*     routines may give you a more detailed description than you 
-*     may find here.
-*
-*     SPOOL_DEFAULT - as it says the standard case
-*
-*     SPOOL_WITHIN_EXECD - Used for objects which are spooled
-*                          within the execd. 
-*
-*     SPOOL_IGNORE_TASK_INSTANCES - Dont't handle array tasks.
-*
-*     SPOOL_HANDLE_PARALLEL_TASKS - Spool pe tasks individually.
-*     
-*     SPOOL_ONLY_JATASK - spool only the ja_task, neither job nor pe_tasks
-*
-*     SPOOL_ONLY_PETASK - spool only the pe_task, neither job nor ja_task
-******************************************************************************/
+/**
+ * @brief Context information for spooling functions
+ *
+ * These constants are necessary to provide spooling functions
+ * with context information where they are called and what they
+ * should do. It depends on these spooling functions, how these
+ * constants are interpreted. The documentation of these
+ * routines may give you a more detailed description than you
+ * may find here.
+ *
+ * SPOOL_DEFAULT - as it says the standard case
+ *
+ * SPOOL_WITHIN_EXECD - Used for objects which are spooled
+ *                      within the execd.
+ *
+ * SPOOL_IGNORE_TASK_INSTANCES - Dont't handle array tasks.
+ *
+ * SPOOL_HANDLE_PARALLEL_TASKS - Spool pe tasks individually.
+ *
+ * SPOOL_ONLY_JATASK - spool only the ja_task, neither job nor pe_tasks
+ *
+ * SPOOL_ONLY_PETASK - spool only the pe_task, neither job nor ja_task
+ */
+/** @brief Options changing how a spooling path is built or traversed */
 typedef enum {
-   SPOOL_DEFAULT = 0x0000,
-   SPOOL_WITHIN_EXECD = 0x0002,
-   SPOOL_IGNORE_TASK_INSTANCES = 0x0004,
-   SPOOL_HANDLE_PARALLEL_TASKS = 0x0008,
-   SPOOL_ONLY_JATASK = 0x0010,
-   SPOOL_ONLY_PETASK = 0x0020
+   SPOOL_DEFAULT = 0x0000,           ///< no special handling
+   SPOOL_WITHIN_EXECD = 0x0002,      ///< paths are built for execd rather than qmaster
+   SPOOL_IGNORE_TASK_INSTANCES = 0x0004, ///< do not descend into the array task instances
+   SPOOL_HANDLE_PARALLEL_TASKS = 0x0008, ///< include the parallel tasks of a job
+   SPOOL_ONLY_JATASK = 0x0010,       ///< restrict the operation to the array task
+   SPOOL_ONLY_PETASK = 0x0020        ///< restrict the operation to the parallel task
 } sge_spool_flags_t;
 
-/****** uti/spool/sge_file_path_format_t **************************************
-*  NAME
-*     sge_file_path_format_t -- Format of filename and pathname
-*
-*  SYNOPSIS
-*     typedef enum {
-*        FORMAT_DEFAULT      = 0x0000,
-*        FORMAT_DOT_FILENAME = 0x0001,
-*        FORMAT_FIRST_PART   = 0x0002,
-*        FORMAT_SECOND_PART  = 0x0004,
-*        FORMAT_THIRD_PART   = 0x0008
-*     } sge_file_path_format_t;
-*
-*  FUNCTION
-*     These constants are used with sge_get_file_path() to retrieve
-*     file and pathnames for objects which should be spooled onto
-*     a filesystem. 
-*
-*     FORMAT_DEFAULT - as it says the default format
-*  
-*     FORMAT_DOT_FILENAME - insert a '.' in front of the filename
-*                           (e.g. '/path/path/.filename)
-*
-*     FORMAT_FIRST_PART   - first part of pathname (e.g /path)
-*
-*     FORMAT_SECOND_PART  - (e.g /path/part2)
-*
-*     FORMAT_THIRD_PART   - (e.g /path/part2/part3)
-******************************************************************************/
+/**
+ * @brief Format of filename and pathname
+ *
+ * These constants are used with sge_get_file_path() to retrieve
+ * file and pathnames for objects which should be spooled onto
+ * a filesystem.
+ *
+ * FORMAT_DEFAULT - as it says the default format
+ *
+ * FORMAT_DOT_FILENAME - insert a '.' in front of the filename
+ *                       (e.g. '/path/path/.filename)
+ *
+ * FORMAT_FIRST_PART   - first part of pathname (e.g /path)
+ *
+ * FORMAT_SECOND_PART  - (e.g /path/part2)
+ *
+ * FORMAT_THIRD_PART   - (e.g /path/part2/part3)
+ */
 typedef enum {
-   FORMAT_DEFAULT = 0x0000,
-   FORMAT_DOT_FILENAME = 0x0001,
-   FORMAT_FIRST_PART = 0x0002,
-   FORMAT_SECOND_PART = 0x0004,
-   FORMAT_THIRD_PART = 0x0008
+   FORMAT_DEFAULT = 0x0000,       ///< the full path, e.g. `/path/part2/part3`
+   FORMAT_DOT_FILENAME = 0x0001,  ///< hide the file by prefixing its name with a dot
+   FORMAT_FIRST_PART = 0x0002,    ///< only the leading directory, e.g. `/path`
+   FORMAT_SECOND_PART = 0x0004,   ///< up to the second component, e.g. `/path/part2`
+   FORMAT_THIRD_PART = 0x0008     ///< up to the third component, e.g. `/path/part2/part3`
 } sge_file_path_format_t;
 
+/** @brief How progress is shown while a long running operation waits */
 typedef enum {
-   STATUS_ROTATING_BAR,
-   STATUS_DOTS
+   STATUS_ROTATING_BAR,   ///< a spinning bar
+   STATUS_DOTS            ///< one dot per step
 } washing_machine_t;
 
+/** @brief One entry of the bootstrap file */
 typedef struct {
-   const char *name;
-   bool is_required;
+   const char *name;      ///< key as it appears in the bootstrap file
+   bool is_required;      ///< startup fails when the key is missing
 } bootstrap_entry_t;
 
 uint32_t sge_get_ja_tasks_per_directory();

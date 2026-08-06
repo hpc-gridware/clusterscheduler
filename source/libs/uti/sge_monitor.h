@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Thread monitoring: periodic health and throughput output
+ */
+
 #include <sys/time.h>
 #include <rapidjson/writer.h>
 
@@ -61,7 +65,7 @@
  * -----start thread --------------
  *    monitoring_t monitor;
  *   
- *    sge_monitor_init(&monitor, "THREAD NAME", <EXTENSION>, <WARNING>, <ERROR>);
+ *    sge_monitor_init(&monitor, "THREAD NAME", `<EXTENSION>`, `<WARNING>`, `<ERROR>`);
  *   
  *    <thread loop> {
  *       
@@ -96,35 +100,45 @@
  */
 
 
-/**
- * qping thread warning times in seconds
+/** @name qping thread warning thresholds, in seconds
+ *
+ * A thread that has not reported progress for this long is shown as delayed by
+ * `qping`. 0 disables the check for that thread.
+ * @{
  */
-const long NO_WARNING = 0;
-const long EVENT_MASTER_THREAD_WARNING = 5;
-const long TET_WARNING = 10;
-const long MT_WARNING = 0;
-const long WT_WARNING = 60;
-const long RT_WARNING = 60;
-const long ST_WARNING = 0;  /* no timeout for this thread */
-const long EXECD_WARNING = 10;
-const long SCT_WARNING = 20;
+const long NO_WARNING = 0;   ///< no warning threshold for this thread: warning
+const long EVENT_MASTER_THREAD_WARNING = 5;   ///< event master thread: warning
+const long TET_WARNING = 10;   ///< timed event thread: warning
+const long MT_WARNING = 0;   ///< main thread, no threshold: warning
+const long WT_WARNING = 60;   ///< worker thread: warning
+const long RT_WARNING = 60;   ///< reader thread: warning
+const long ST_WARNING = 0;   ///< scheduler thread, no threshold: warning
+const long EXECD_WARNING = 10;   ///< execd: warning
+const long SCT_WARNING = 20;   ///< signal/communication thread: warning
 
-/**
- * qping thread error times in seconds
- **/
-const long NO_ERROR = 0;
-const long EVENT_MASTER_THREAD_ERROR = 60;
-const long TET_ERROR = 60;
-const long MT_ERROR = 0;
-const long WT_ERROR = 600;
-const long RT_ERROR = 60*60*24*365;
-const long ST_ERROR = 0;   /* no timeout for this thread */
-const long EXECD_ERROR = 600;
-const long SCT_ERROR = 600;
+/** @} */
 
-/**
- * This function definition is the prototype for the output function of a data
- * extension
+/** @name qping thread error thresholds, in seconds
+ *
+ * As the warning thresholds above, but for the point at which `qping` reports
+ * the thread as failed rather than merely slow.
+ * @{
+ */
+const long NO_ERROR = 0;   ///< no error threshold for this thread: error
+const long EVENT_MASTER_THREAD_ERROR = 60;   ///< event master thread: error
+const long TET_ERROR = 60;   ///< timed event thread: error
+const long MT_ERROR = 0;   ///< main thread, no threshold: error
+const long WT_ERROR = 600;   ///< worker thread: error
+const long RT_ERROR = 60*60*24*365;   ///< reader thread, effectively never: error
+const long ST_ERROR = 0;   ///< scheduler thread, no threshold: error
+const long EXECD_ERROR = 600;   ///< execd: error
+const long SCT_ERROR = 600;   ///< signal/communication thread: error
+
+/** @} */
+
+/** @brief Renders the extension data of one thread into the monitoring output
+ *
+ * Each extension supplies one of these; #sge_monitor_output calls it.
  */
 typedef void (*extension_output)(
         dstring *info_message,    // target memory buffer
@@ -137,43 +151,53 @@ typedef void (*extension_output)(
  * This enum identifies all available extensions
  */
 typedef enum {
-   NONE_EXT = -1,
-   GDI_EXT = 0,         /* GDI = request processing thread */
-   EMAT_EXT = 1,        /* EMA = event master thread */
-   TET_EXT = 2,         /* TET = timed event thread */
-   LIS_EXT = 3,         /* LIS = listener thread */
-   SCH_EXT = 4          /* SCH = scheduler thread */
+   NONE_EXT = -1,       ///< no extension, only the common counters are collected
+   GDI_EXT = 0,         ///< request processing thread, data is #m_gdi_t
+   EMAT_EXT = 1,        ///< event master thread
+   TET_EXT = 2,         ///< timed event thread
+   LIS_EXT = 3,         ///< listener thread, data is #m_lis_t
+   SCH_EXT = 4          ///< scheduler thread, data is #m_sch_t
 } extension_t;
 
+/** @brief Receives the monitoring data of one interval as a JSON document
+ *
+ * Installed in #monitoring_t::json_output; used when JSON logging is enabled.
+ */
 typedef bool (*json_output_func)(const char *json_string);
 
-/**
- * the monitoring data structure
+/** @brief Monitoring state of one thread
+ *
+ * One of these per monitored thread, set up by #sge_monitor_init and released
+ * with #sge_monitor_free. The thread updates the counters through the
+ * `MONITOR_*` macros, and #sge_monitor_output writes a line per interval.
+ *
+ * Threads with extra metrics attach an extension: #ext_type says which, and
+ * #ext_data points at #m_gdi_t, #m_lis_t or #m_sch_t accordingly.
  */
 typedef struct {
    /*--- init data ------------*/
-   const char *thread_name;
-   time_t monitor_time;                   // stores the time interval for the measuring run
-   bool log_monitor_mes;                  // if true, it logs the monitoring info into the message file
-   bool log_monitor_json;                 // if true, it logs the monitoring info as json
+   const char *thread_name;               ///< name shown in the output
+   time_t monitor_time;                   ///< length of one measuring interval; 0 disables monitoring
+   bool log_monitor_mes;                  ///< write the monitoring info to the message file
+   bool log_monitor_json;                 ///< write the monitoring info as JSON
    /*--- output data ----------*/
-   dstring *output_line1;
-   dstring *output_line2;
-   dstring *work_line;
-   int pos;                               // position (line) in the qping output structure (kind of thread id)
-   json_output_func json_output;          // function to output json data
+   dstring *output_line1;                 ///< first output line, the common counters
+   dstring *output_line2;                 ///< second output line, the extension counters
+   dstring *work_line;                    ///< scratch buffer used while formatting
+   int pos;                               ///< line of this thread in the qping output, effectively a thread id
+   json_output_func json_output;          ///< where to send the JSON document, may be nullptr
    /*--- work data ------------*/
-   struct timeval now;                    // start time of measurement
-   bool output;                           // if true, triggers qping / message output
-   uint32_t message_in_count;
-   uint32_t message_out_count;
-   double idle;                           // idle time
-   double wait;                           // wait time
+   struct timeval now;                    ///< start of the current interval
+   bool output;                           ///< set when the interval elapsed and output is due
+   uint32_t message_in_count;             ///< messages received during the interval
+   uint32_t message_out_count;            ///< messages sent during the interval
+   double idle;                           ///< seconds spent idle during the interval
+   double wait;                           ///< seconds spent waiting during the interval
    /*--- extension data -------*/
-   extension_t ext_type;
-   void *ext_data;
-   uint32_t ext_data_size;
-   extension_output ext_output;
+   extension_t ext_type;                  ///< which extension #ext_data holds
+   void *ext_data;                        ///< the extension counters, or nullptr
+   uint32_t ext_data_size;                ///< size of #ext_data in bytes
+   extension_output ext_output;           ///< renders #ext_data into the output
 } monitoring_t;
 
 void sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext, long warning_timeout,
@@ -252,8 +276,10 @@ void sge_monitor_reset(monitoring_t *monitor);
                                     execute; \
                                  } \
 
+/// count one received message
 #define MONITOR_MESSAGES(monitor) if ((monitor != nullptr) && ((monitor)->monitor_time > 0)) (monitor)->message_in_count++
 
+/// count one sent message
 #define MONITOR_MESSAGES_OUT(monitor) if (((monitor) != nullptr) && ((monitor)->monitor_time > 0)) (monitor)->message_out_count++
 
 /*--------------------------------*/
@@ -270,7 +296,7 @@ void sge_monitor_reset(monitoring_t *monitor);
  *     case GDI_EXT :
  *          monitor->ext_data_size = sizeof(m_gdi_t);
  *          monitor->ext_data = malloc(sizeof(m_gdi_t));
- *          monitor->ext_output = &ext_gdi_output;
+ *          monitor->ext_output = `&ext_gdi_output`;
  *       break;
  *
  * - write the extension output function
@@ -280,131 +306,186 @@ void sge_monitor_reset(monitoring_t *monitor);
  **/
 
 
-/* scheduler thread extensions */
-
+/** @brief Extension counters of the scheduler thread
+ *
+ * The scheduler reports no extra metrics yet; the struct exists so the
+ * extension mechanism has something to attach.
+ */
 typedef struct {
-   uint32_t dummy;    /* unused */
+   uint32_t dummy;    ///< unused placeholder
 } m_sch_t;
 
-/* GDI message thread extensions */
-
+/** @brief Extension counters of a request processing thread
+ *
+ * Attached when #monitoring_t::ext_type is #GDI_EXT. Every counter is reset to
+ * zero after each interval is printed.
+ */
 typedef struct {
-   uint32_t gdi_add_count;    /* counts the gdi add requests */
-   uint32_t gdi_mod_count;    /* counts the gdi mod requests */
-   uint32_t gdi_get_count;    /* counts the gdi get requests */
-   uint32_t gdi_del_count;    /* counts teh gdi del requests */
-   uint32_t gdi_cp_count;     /* counts the gdi cp requests */
-   uint32_t gdi_trig_count;   /* counts the gdi trig requests */
-   uint32_t gdi_perm_count;   /* counts the gdi perm requests */
-   uint32_t gdi_replace_count;   /* counts the gdi perm requests */
+   uint32_t gdi_add_count;      ///< GDI add requests
+   uint32_t gdi_mod_count;      ///< GDI mod requests
+   uint32_t gdi_get_count;      ///< GDI get requests
+   uint32_t gdi_del_count;      ///< GDI del requests
+   uint32_t gdi_cp_count;       ///< GDI copy requests
+   uint32_t gdi_trig_count;     ///< GDI trigger requests
+   uint32_t gdi_perm_count;     ///< GDI permission requests
+   uint32_t gdi_replace_count;  ///< GDI replace requests
 
-   uint32_t eload_count; /* counts the execd load reports */
-   uint32_t econf_count; /* counts the execd conf version requests */
-   uint32_t ejob_count;  /* counts the execd job reports */
-   uint32_t eproc_count; /* counts the execd processor reports */
-   uint32_t eack_count;  /* counts the execd acks */
+   uint32_t eload_count;        ///< load reports received from execd
+   uint32_t econf_count;        ///< configuration version requests from execd
+   uint32_t ejob_count;         ///< job reports received from execd
+   uint32_t eproc_count;        ///< processor reports received from execd
+   uint32_t eack_count;         ///< acknowledgements received from execd
 
-   uint32_t queue_length;       //< main queue length (e.g. worker queue)
-   uint32_t rqueue_length;      //< reader queue length (e.g. reader queue)
-   uint32_t wrqueue_length;     //< waiting reader queue length (e.g. waiting reader queue)
+   uint32_t queue_length;       ///< length of the main (worker) queue
+   uint32_t rqueue_length;      ///< length of the reader queue
+   uint32_t wrqueue_length;     ///< length of the waiting reader queue
 } m_gdi_t;
 
+/// count one GDI add request
 #define MONITOR_GDI_ADD(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->gdi_add_count++
+/// count one GDI get request
 #define MONITOR_GDI_GET(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->gdi_get_count++
+/// count one GDI mod request
 #define MONITOR_GDI_MOD(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->gdi_mod_count++
+/// count one GDI del request
 #define MONITOR_GDI_DEL(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->gdi_del_count++
+/// count one GDI copy request
 #define MONITOR_GDI_CP(monitor)     if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->gdi_cp_count++
+/// count one GDI trigger request
 #define MONITOR_GDI_TRIG(monitor)   if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->gdi_trig_count++
+/// count one GDI permission request
 #define MONITOR_GDI_PERM(monitor)   if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->gdi_perm_count++
+/// count one GDI replace request
 #define MONITOR_GDI_REPLACE(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->gdi_replace_count++
 
+/** @brief Count one acknowledgement
+ *
+ * @bug Broken and unused. It casts #monitoring_t::ext_data to #m_gdi_t and
+ *      accesses `ack_count`, but that field belongs to #m_edt_t - #m_gdi_t has
+ *      `eack_count`. Any use of this macro fails to compile, which is why the
+ *      defect survived. #MONITOR_EDT_ACK is the working equivalent.
+ */
 #define MONITOR_ACK(monitor)     if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->ack_count++
 
+/// count one load report from execd
 #define MONITOR_ELOAD(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->eload_count++
+/// count one configuration version request from execd
 #define MONITOR_ECONF(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->econf_count++
+/// count one job report from execd
 #define MONITOR_EJOB(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->ejob_count++
+/// count one processor report from execd
 #define MONITOR_EPROC(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->eproc_count++
+/// count one acknowledgement from execd
 #define MONITOR_EACK(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->eack_count++
 
+/// record the current main queue length
 #define MONITOR_SET_QLEN(monitor, qlen)    if ((monitor) != nullptr && (monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->queue_length = (qlen)
+/// record the current reader queue length
 #define MONITOR_SET_RQLEN(monitor, qlen)    if ((monitor) != nullptr && (monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->rqueue_length = (qlen)
+/// record the current waiting reader queue length
 #define MONITOR_SET_WRQLEN(monitor, qlen)    if ((monitor) != nullptr && (monitor->monitor_time > 0) && (monitor->ext_type == GDI_EXT)) ((m_gdi_t*)(monitor->ext_data))->wrqueue_length = (qlen)
 
-/* listener extension */
+/** @brief Extension counters of a listener thread
+ *
+ * Attached when #monitoring_t::ext_type is #LIS_EXT.
+ */
 typedef struct {
-   uint32_t inc_gdi; /* incoming GDI requests */
-   uint32_t inc_ack; /* ack requests */
-   uint32_t inc_ece; /* event client exits */
-   uint32_t inc_rep; /* report request */
+   uint32_t inc_gdi;                     ///< incoming GDI requests
+   uint32_t inc_ack;                     ///< incoming acknowledgements
+   uint32_t inc_ece;                     ///< incoming event client exits
+   uint32_t inc_rep;                     ///< incoming reports
 
-   uint32_t gdi_get_count;    /* counts the gdi get requests */
-   uint32_t gdi_trig_count;   /* counts the gdi trig requests */
-   uint32_t gdi_perm_count;   /* counts the gdi perm requests */
+   uint32_t gdi_get_count;      ///< GDI get requests
+   uint32_t gdi_trig_count;     ///< GDI trigger requests
+   uint32_t gdi_perm_count;     ///< GDI permission requests
 } m_lis_t;
 
+/// count one incoming GDI request
 #define MONITOR_INC_GDI(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->inc_gdi++
+/// count one incoming acknowledgement
 #define MONITOR_INC_ACK(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->inc_ack++
+/// count one incoming event client exit
 #define MONITOR_INC_ECE(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->inc_ece++
+/// count one incoming report
 #define MONITOR_INC_REP(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->inc_rep++
 
+/// count one GDI get request seen by the listener
 #define MONITOR_LIS_GDI_GET(monitor)    if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->gdi_get_count++
+/// count one GDI trigger request seen by the listener
 #define MONITOR_LIS_GDI_TRIG(monitor)   if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->gdi_trig_count++
+/// count one GDI permission request seen by the listener
 #define MONITOR_LIS_GDI_PERM(monitor)   if ((monitor->monitor_time > 0) && (monitor->ext_type == LIS_EXT)) ((m_lis_t*)(monitor->ext_data))->gdi_perm_count++
 
-/* event master thread extension */
-
+/** @brief Extension counters of the event master thread
+ *
+ * Attached when #monitoring_t::ext_type is #EMAT_EXT.
+ */
 typedef struct {
-   uint32_t count;                /* counts the number of runs */
-   uint32_t client_count;         /* connected event clients */
-   uint32_t mod_client_count;     /* event client modifications */
-   uint32_t ack_count;            /* nr of acknowledges */
-   uint32_t new_event_count;      /* newly added events */
-   uint32_t added_event_count;    /* nr of events added to the event clients */
-   uint32_t skip_event_count;     /* nr of events ignored, no client has a subscription */
-   uint32_t blocked_client_count; /* nr of event clients blocked during send */
-   uint32_t busy_client_count;    /* nr of event clients busy during send */
+   uint32_t count;                       ///< monitoring runs of this thread
+   uint32_t client_count;                ///< currently connected event clients
+   uint32_t mod_client_count;            ///< event client modifications
+   uint32_t ack_count;                   ///< acknowledgements received
+   uint32_t new_event_count;             ///< newly created events
+   uint32_t added_event_count;           ///< events handed to event clients
+   uint32_t skip_event_count;            ///< events dropped because nobody subscribed them
+   uint32_t blocked_client_count;        ///< event clients blocked while sending
+   uint32_t busy_client_count;           ///< event clients busy while sending
 } m_edt_t;
 
+/// record the number of connected event clients
 #define MONITOR_CLIENT_COUNT(monitor, inc)  if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                                ((m_edt_t*) (monitor->ext_data))->client_count += inc
 
+/// count one event master run
 #define MONITOR_EDT_COUNT(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*) (monitor->ext_data))->count++
 
+/// count one event client modification
 #define MONITOR_EDT_MOD(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*) (monitor->ext_data))->mod_client_count++
 
+/// count one acknowledgement received by the event master
 #define MONITOR_EDT_ACK(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*)(monitor->ext_data))->ack_count++
 
+/// count one newly created event
 #define MONITOR_EDT_NEW(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*)(monitor->ext_data))->new_event_count++
 
+/// count one event handed to an event client
 #define MONITOR_EDT_ADDED(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*)(monitor->ext_data))->added_event_count++
 
+/// count one event dropped because nobody subscribed it
 #define MONITOR_EDT_SKIP(monitor) if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*)(monitor->ext_data))->skip_event_count++
 
+/// count one event client blocked while sending
 #define MONITOR_EDT_BLOCKED(monitor)  if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*)(monitor->ext_data))->blocked_client_count++
 
+/// count one event client busy while sending
 #define MONITOR_EDT_BUSY(monitor)  if ((monitor->monitor_time > 0) && (monitor->ext_type == EMAT_EXT)) \
                                     ((m_edt_t*)(monitor->ext_data))->busy_client_count++
 
-/* timed event thread extension */
-
+/** @brief Extension counters of the timed event thread
+ *
+ * Attached when #monitoring_t::ext_type is #TET_EXT.
+ */
 typedef struct {
-   uint32_t count;         /* counts the number of runs */
-   uint32_t event_count;   /* nr of pending events */
-   uint32_t exec_count;    /* nr of executed events */
+   uint32_t count;                       ///< monitoring runs of this thread
+   uint32_t event_count;                 ///< timed events still pending
+   uint32_t exec_count;                  ///< timed events executed
 } m_tet_t;
 
+/// count one timed event thread run
 #define MONITOR_TET_COUNT(monitor)  if ((monitor->monitor_time > 0) && (monitor->ext_type == TET_EXT)) \
                                     ((m_tet_t*)(monitor->ext_data))->count++
 
+/// record the number of pending timed events
 #define MONITOR_TET_EVENT(monitor, inc)  if ((monitor->monitor_time > 0) && (monitor->ext_type == TET_EXT)) \
                                     ((m_tet_t*)(monitor->ext_data))->event_count += inc
 
+/// count one executed timed event
 #define MONITOR_TET_EXEC(monitor)  if ((monitor->monitor_time > 0) && (monitor->ext_type == TET_EXT)) \
                                     ((m_tet_t*)(monitor->ext_data))->exec_count++

@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Switching user and group identity, and resolving user and group names
+ */
+
 #include <cstdio>
 #include <sys/types.h>
 #include <grp.h>

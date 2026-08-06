@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of thread monitoring
+ */
+
 #include <cstdlib>
 #include <cstring>
 #include <pthread.h>
@@ -111,24 +115,16 @@ static void ext_sch_output(dstring *message, void *monitoring_extension, double 
  ************************************************/
 
 
-/****** uti/monitor/sge_monitor_free() *****************************************
-*  NAME
-*     sge_monitor_free() -- frees the monitoring data structure
-*
-*  SYNOPSIS
-*     void sge_monitor_free(monitoring_t *monitor) 
-*
-*  FUNCTION
-*     removes the line for the commlib output, and frees memory in the 
-*     monitoring structure
-*
-*  INPUTS
-*     monitoring_t *monitor - monitoring structure
-*
-*  NOTES
-*     MT-NOTE: sge_monitor_free() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Frees the monitoring data structure
+ *
+ * removes the line for the commlib output, and frees memory in the
+ * monitoring structure
+ *
+ * @param monitor monitoring structure
+ *
+ * @note MT-NOTE: sge_monitor_free() is MT safe
+ */
 void sge_monitor_free(monitoring_t *monitor) {
    DENTER(GDI_LAYER);
 
@@ -170,30 +166,20 @@ void sge_monitor_free(monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
-/****** uti/monitor/sge_monitor_init() *****************************************
-*  NAME
-*     sge_monitor_init() -- init the monitoring structure
-*
-*  SYNOPSIS
-*     void sge_monitor_init(monitoring_t *monitor, const char *thread_name, 
-*     extension_t ext, thread_warning_t warning_timeout, thread_error_t 
-*     error_timeout) 
-*
-*  FUNCTION
-*     Sets the default values and inits the structure, finds the line pos
-*     for the comlib output
-*
-*  INPUTS
-*     monitoring_t *monitor            - monitoring structure
-*     const char *thread_name          - the thread name
-*     extension_t ext                  - the extension time (-> enum)
-*     thread_warning_t warning_timeout - the warning timeout (-> enum)
-*     thread_error_t error_timeout     - the error timeout (-> enum)
-*
-*  NOTES
-*     MT-NOTE: sge_monitor_init() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Init the monitoring structure
+ *
+ * Sets the default values and inits the structure, finds the line pos
+ * for the comlib output
+ *
+ * @param monitor monitoring structure
+ * @param thread_name the thread name
+ * @param ext the extension time (-> enum)
+ * @param warning_timeout the warning timeout (-> enum)
+ * @param error_timeout the error timeout (-> enum)
+ *
+ * @note MT-NOTE: sge_monitor_init() is MT safe
+ */
 void
 sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext, long warning_timeout,
                  long error_timeout, json_output_func json_output) {
@@ -364,31 +350,19 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
 }
 
 
-/****** uti/monitor/sge_monitor_status() ***************************************
-*  NAME
-*     sge_monitor_status() -- generates the status for qping / commlib
-*
-*  SYNOPSIS
-*     uint32_t sge_monitor_status(char **info_message, uint32_t monitor_time)
-*
-*  FUNCTION
-*     This method creates the health monitoring output and returns the monitoring
-*     info to the commlib. 
-*
-*  INPUTS
-*     char **info_message   - info_message pointer, has to point to a nullptr string
-*     uint32_t monitor_time - the configured monitoring interval
-*
-*  RESULT
-*     uint32_t - 0 : everything is okay
-*                1 : warning
-*                2 : error
-*                3 : init problems
-*
-*  NOTES
-*     MT-NOTE: sge_monitor_status() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Generates the status for qping / commlib
+ *
+ * This method creates the health monitoring output and returns the monitoring
+ * info to the commlib.
+ *
+ * @param info_message info_message pointer, has to point to a nullptr string
+ * @param monitor_time the configured monitoring interval
+ *
+ * @return 0 : everything is okay 1 : warning 2 : error 3 : init problems
+ *
+ * @note MT-NOTE: sge_monitor_status() is MT safe
+ */
 uint32_t sge_monitor_status(char **info_message, uint32_t monitor_time) {
    uint32_t ret = 0;
    char date[40];
@@ -492,25 +466,17 @@ uint32_t sge_monitor_status(char **info_message, uint32_t monitor_time) {
 }
 
 
-/****** uti/monitor/sge_set_last_wait_time() ***********************************
-*  NAME
-*     sge_set_last_wait_time() -- updates the last wait time (health monitoring)
-*
-*  SYNOPSIS
-*     void sge_set_last_wait_time(monitoring_t *monitor, struct timeval after) 
-*
-*  FUNCTION
-*     Updates the last wait time, which is used for the health monitoring to 
-*     determine if a thread has a problem or not.
-*
-*  INPUTS
-*     monitoring_t *monitor    - monitoring structure
-*     struct timeval wait_time - current time 
-*
-*  NOTES
-*     MT-NOTE: sge_set_last_wait_time() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Updates the last wait time (health monitoring)
+ *
+ * Updates the last wait time, which is used for the health monitoring to
+ * determine if a thread has a problem or not.
+ *
+ * @param monitor monitoring structure
+ * @param wait_time current time
+ *
+ * @note MT-NOTE: sge_set_last_wait_time() is MT safe
+ */
 void sge_set_last_wait_time(monitoring_t *monitor, struct timeval wait_time) {
    DENTER(GDI_LAYER);
 
@@ -557,33 +523,25 @@ static void sge_monitor_json_output(rapidjson::Writer<rapidjson::StringBuffer> *
    // the EndObject for data and for the whole json object must be done later, as we optionally add extensions here
 }
 
-/****** uti/monitor/sge_monitor_output() ***************************************
-*  NAME
-*     sge_monitor_output() -- outputs the result into the message file
-*
-*  SYNOPSIS
-*     void sge_monitor_output(monitoring_t *monitor) 
-*
-*  FUNCTION
-*     This function computes the output line from the gathered statistics.
-*     The output is only generated, when the the output flag in the
-*     monitoring structure is set.
-*
-*     The monitoring line is printed to the message file in the profiling
-*     class and it made available for the qping -f output. For the qping
-*     output, it stores the the generation time, though that qping can
-*     show, when the message was generated.
-*
-*     If an extension is set, it calls the appropriate output function for
-*     it.
-*
-*  INPUTS
-*     monitoring_t *monitor - the monitoring info
-*
-*  NOTES
-*     MT-NOTE: sge_monitor_output() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Outputs the result into the message file
+ *
+ * This function computes the output line from the gathered statistics.
+ * The output is only generated, when the the output flag in the
+ * monitoring structure is set.
+ *
+ * The monitoring line is printed to the message file in the profiling
+ * class and it made available for the qping -f output. For the qping
+ * output, it stores the the generation time, though that qping can
+ * show, when the message was generated.
+ *
+ * If an extension is set, it calls the appropriate output function for
+ * it.
+ *
+ * @param monitor the monitoring info
+ *
+ * @note MT-NOTE: sge_monitor_output() is MT safe
+ */
 void sge_monitor_output(monitoring_t *monitor) {
    DENTER(GDI_LAYER);
 
@@ -653,24 +611,16 @@ void sge_monitor_output(monitoring_t *monitor) {
 }
 
 
-/****** uti/monitor/sge_monitor_reset() ****************************************
-*  NAME
-*     sge_monitor_reset() --  resets the monitoring data
-*
-*  SYNOPSIS
-*     void sge_monitor_reset(monitoring_t *monitor) 
-*
-*  FUNCTION
-*     Resets the data structure including the extension. No data in the
-*     extension is preserved.
-*
-*  INPUTS
-*     monitoring_t *monitor - monitoring structure
-*
-*  NOTES
-*     MT-NOTE: sge_monitor_reset() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Resets the monitoring data
+ *
+ * Resets the data structure including the extension. No data in the
+ * extension is preserved.
+ *
+ * @param monitor monitoring structure
+ *
+ * @note MT-NOTE: sge_monitor_reset() is MT safe
+ */
 void sge_monitor_reset(monitoring_t *monitor) {
    DENTER(GDI_LAYER);
 
@@ -694,52 +644,35 @@ void sge_monitor_reset(monitoring_t *monitor) {
  * implementation section for extensions
  ****************************************/
 
-/****** uti/monitor/ext_sch_output() *******************************************
-*  NAME
-*     ext_sch_output() -- generates a string from the scheduler extension
-*
-*  SYNOPSIS
-*     static void 
-*     ext_sch_output(char *message, int size, void 
-*                    *monitoring_extension, double time) 
-*
-*  FUNCTION
-*     generates a string from the extension and returns it.
-*
-*  INPUTS
-*     char *message              - initialized string buffer
-*     int size                   - buffer size
-*     void *monitoring_extension - the extension structure
-*     double time                - length of the measurement interval
-*
-*  NOTES
-*     MT-NOTE: ext_gdi_output() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Generates a string from the scheduler extension
+ *
+ * generates a string from the extension and returns it.
+ *
+ * @param message initialized string buffer
+ * @param size buffer size
+ * @param monitoring_extension the extension structure
+ * @param time length of the measurement interval
+ *
+ * @note MT-NOTE: ext_gdi_output() is MT safe
+ */
 static void ext_sch_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer) {
    // no extensions
    sge_dstring_sprintf_append(message, "");
 }
 
-/****** uti/monitor/ext_gdi_output() *******************************************
-*  NAME
-*     ext_gdi_output() -- generates a string from the GDI extension
-*
-*  SYNOPSIS
-*     static void ext_gdi_output(char *message, int size, void 
-*     *monitoring_extension, double time) 
-*
-*  FUNCTION
-*     generates a string from the extension and returns it.
-*
-*  INPUTS
-*     char *message              - initialized string buffer
-*     int size                   - buffer size
-*     void *monitoring_extension - the extension structure
-*     double time                - length of the measurement interval
-*
-*  NOTES
-*     MT-NOTE: ext_gdi_output() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Generates a string from the GDI extension
+ *
+ * generates a string from the extension and returns it.
+ *
+ * @param message initialized string buffer
+ * @param size buffer size
+ * @param monitoring_extension the extension structure
+ * @param time length of the measurement interval
+ *
+ * @note MT-NOTE: ext_gdi_output() is MT safe
+ */
 static void ext_gdi_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer) {
    auto *gdi_ext = (m_gdi_t *) monitoring_extension;
 
@@ -791,27 +724,18 @@ static void ext_gdi_output(dstring *message, void *monitoring_extension, double 
    }
 }
 
-/****** uti/monitor/ext_lis_output() *******************************************
-*  NAME
-*     ext_lis_output() -- generates a string from the listener extension 
-*
-*  SYNOPSIS
-*     static void 
-*     ext_lis_output(char *message, int size, void 
-*                    *monitoring_extension, double time) 
-*
-*  FUNCTION
-*     generates a string from the extension and returns it.
-*
-*  INPUTS
-*     char *message              - initialized string buffer
-*     int size                   - buffer size
-*     void *monitoring_extension - the extension structure
-*     double time                - length of the measurement interval
-*
-*  NOTES
-*     MT-NOTE: ext_lis_output() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Generates a string from the listener extension
+ *
+ * generates a string from the extension and returns it.
+ *
+ * @param message initialized string buffer
+ * @param size buffer size
+ * @param monitoring_extension the extension structure
+ * @param time length of the measurement interval
+ *
+ * @note MT-NOTE: ext_lis_output() is MT safe
+ */
 static void ext_lis_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer) {
    auto *lis_ext = (m_lis_t *) monitoring_extension;
 
@@ -840,27 +764,18 @@ static void ext_lis_output(dstring *message, void *monitoring_extension, double 
 }
 
 
-/****** uti/monitor/ext_edt_output() *******************************************
-*  NAME
-*     ext_edt_output() -- generates a string from the event client extension
-*
-*  SYNOPSIS
-*     static void ext_edt_output(char *message, int size, void 
-*     *monitoring_extension, double time) 
-*
-*  FUNCTION
-*     generates a string from the extension and returns it.
-*
-*  INPUTS
-*     char *message              - initialized string buffer
-*     int size                   - buffer size
-*     void *monitoring_extension - the extension structure
-*     double time                - length of the measurement interval
-*
-*  NOTES
-*     MT-NOTE: ext_edt_output() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Generates a string from the event client extension
+ *
+ * generates a string from the extension and returns it.
+ *
+ * @param message initialized string buffer
+ * @param size buffer size
+ * @param monitoring_extension the extension structure
+ * @param time length of the measurement interval
+ *
+ * @note MT-NOTE: ext_edt_output() is MT safe
+ */
 static void ext_edt_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer) {
    auto *edt_ext = (m_edt_t *) monitoring_extension;
 
@@ -890,26 +805,17 @@ static void ext_edt_output(dstring *message, void *monitoring_extension, double 
    }
 }
 
-/****** uti/monitor/ext_tet_output() *******************************************
-*  NAME
-*     ext_tet_output() -- generates a string from the GDI extension
-*
-*  SYNOPSIS
-*     static void ext_edt_output(char *message, int size, void 
-*     *monitoring_extension, double time) 
-*
-*  FUNCTION
-*     generates a string from the extension and returns it.
-*
-*  INPUTS
-*     dstring *message           - initialized string buffer
-*     void *monitoring_extension - the extension structure
-*     double time                - length of the measurement interval
-*
-*  NOTES
-*     MT-NOTE: ext_tet_output() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Generates a string from the GDI extension
+ *
+ * generates a string from the extension and returns it.
+ *
+ * @param message initialized string buffer
+ * @param monitoring_extension the extension structure
+ * @param time length of the measurement interval
+ *
+ * @note MT-NOTE: ext_tet_output() is MT safe
+ */
 
 static void ext_tet_output(dstring *message, void *monitoring_extension, double time, rapidjson::Writer<rapidjson::StringBuffer> *writer) {
    auto *tet_ext = (m_tet_t *) monitoring_extension;
