@@ -33,15 +33,25 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief A per-thread "last error" with an id and a message
+ *
+ * Each thread has one error slot. #sge_err_set overwrites it; the accessors
+ * read it back. Nothing is allocated by the caller — the storage is
+ * thread-local and released when the thread ends.
+ */
+
 #include <cinttypes>
 
+/// What kind of error was recorded
 enum _sge_err_t {
-   SGE_ERR_SUCCESS = 0,
-   SGE_ERR_MEMORY,
-   SGE_ERR_PARAMETER,
-   SGE_ERR_FILE_EXIST
+   SGE_ERR_SUCCESS = 0,  ///< no error; the value the slot is cleared to
+   SGE_ERR_MEMORY,       ///< an allocation failed
+   SGE_ERR_PARAMETER,    ///< a function was called with an invalid argument
+   SGE_ERR_FILE_EXIST    ///< a file that was expected to be absent already exists
 };
 
+/// What kind of error was recorded; see @ref _sge_err_t
 typedef enum _sge_err_t sge_err_t;
 
 void
@@ -50,6 +60,16 @@ sge_err_set(sge_err_t id, const char *format, ...);
 void
 sge_err_get(uint32_t pos, sge_err_t *id, char *message, size_t size);
 
+/**
+ * @brief Number of errors recorded by the calling thread
+ *
+ * @warning **Declared but never defined.** There is no implementation in
+ *          `sge_err.cc` or anywhere else, so any call fails to link. Kept only
+ *          because removing a public declaration is a code change; it is a
+ *          deletion candidate.
+ *
+ * @return would be the number of recorded errors
+ */
 uint32_t
 sge_err_get_errors();
 

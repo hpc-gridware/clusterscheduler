@@ -18,6 +18,12 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "ocs_Exception.h"
+/** @file
+ * @brief Translation unit for @ref ocs::Exception
+ *
+ * The class is header-only, but this file must exist: without it the
+ * compiler emits no translation unit for the class and its key function's
+ * symbols are missing at link time.
+ */
 
-// Do not delete this file otherwise symbols will be missing during linking
+#include "ocs_Exception.h"

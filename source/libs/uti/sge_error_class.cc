@@ -34,31 +34,44 @@
 
 #include <cstring>
 
+/** @file
+ * @brief Implementation of the error collector declared in sge_error_class.h
+ *
+ * The collector is a singly linked list of messages with a head and a tail
+ * pointer, so appending stays O(1) and the errors come back in the order they
+ * were reported.
+ */
+
 #include "uti/sge_error_class.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 
 #include <sge_log.h>
 
+/// One collected error; see @ref sge_error_message_str
 typedef struct sge_error_message_str sge_error_message_t;
 
+/// One collected error
 struct sge_error_message_str {
-   int error_quality;
-   int error_type;
-   char *message;
-   sge_error_message_t *next;
+   int error_quality;            ///< caller defined severity of this error
+   int error_type;               ///< caller defined category of this error
+   char *message;                ///< the formatted text, owned by this node
+   sge_error_message_t *next;    ///< next error, or nullptr at the end
 };
 
+/// Cursor state; see @ref sge_error_iterator_str
 typedef struct sge_error_iterator_str sge_error_iterator_t;
 
+/// Cursor state behind a @ref sge_error_iterator_class_str
 struct sge_error_iterator_str {
-   bool is_first_flag;
-   sge_error_message_t *current;
+   bool is_first_flag;           ///< true until the first `next`, which then yields the head
+   sge_error_message_t *current; ///< the error the cursor is on, or nullptr past the end
 };
 
+/// The list of collected errors behind a @ref sge_error_class_str
 typedef struct {
-   sge_error_message_t *first;
-   sge_error_message_t *last;
+   sge_error_message_t *first;   ///< oldest error, or nullptr when none were reported
+   sge_error_message_t *last;    ///< newest error, kept so appending is O(1)
 } sge_error_t;
 
 static sge_error_iterator_class_t *sge_error_class_iterator(sge_error_class_t *thiz);
@@ -91,6 +104,12 @@ static uint32_t sge_error_iterator_get_type(sge_error_iterator_class_t *thiz);
 static bool sge_error_iterator_next(sge_error_iterator_class_t *thiz);
 
 
+/**
+ * @brief Create an empty error collector
+ *
+ * @return the new collector with its function table wired up, or nullptr if it
+ *         could not be allocated. Release it with #sge_error_class_destroy.
+ */
 sge_error_class_t *sge_error_class_create() {
    auto *ret = (sge_error_class_t *) sge_malloc(sizeof(sge_error_class_t));
    if (ret == nullptr) {
@@ -116,6 +135,13 @@ static sge_error_iterator_class_t *sge_error_class_iterator(sge_error_class_t *t
    return sge_error_iterator_class_create(thiz);
 }
 
+/**
+ * @brief Destroy a collector and every error it holds
+ *
+ * Does nothing when @p ec or `*ec` is nullptr.
+ *
+ * @param[in,out] ec the collector to destroy; set to nullptr on return
+ */
 void sge_error_class_destroy(sge_error_class_t **ec) {
    sge_error_t *et = nullptr;
 
@@ -128,6 +154,11 @@ void sge_error_class_destroy(sge_error_class_t **ec) {
    sge_free(ec);
 }
 
+/**
+ * @brief Discard every error a collector holds, leaving it reusable
+ *
+ * @param thiz the collector to clear; nullptr is ignored
+ */
 void sge_error_class_clear(sge_error_class_t *thiz) {
    if (thiz != nullptr) {
       auto *et = (sge_error_t *) thiz->sge_error_handle;
@@ -154,6 +185,11 @@ static void sge_error_clear(sge_error_t *et) {
 }
 
 
+/**
+ * @brief Release an error list and every message on it
+ *
+ * @param[in,out] t the list to destroy; set to nullptr on return
+ */
 void sge_error_destroy(sge_error_t **t) {
    if (t == nullptr || *t == nullptr) {
       return;
@@ -164,6 +200,11 @@ void sge_error_destroy(sge_error_t **t) {
 }
 
 
+/**
+ * @brief Release one collected error and its message text
+ *
+ * @param[in,out] elem the error to destroy; set to nullptr on return
+ */
 void sge_error_message_destroy(sge_error_message_t **elem) {
    if (elem == nullptr || *elem == nullptr) {
       return;
@@ -276,6 +317,13 @@ sge_error_error(sge_error_class_t *thiz, int error_type, int error_quality, cons
 }
 
 
+/**
+ * @brief Destroy an iterator obtained from `sge_error_class_str::iterator`
+ *
+ * The errors themselves belong to the collector and are not touched.
+ *
+ * @param[in,out] thiz the iterator to destroy; set to nullptr on return
+ */
 void sge_error_iterator_class_destroy(sge_error_iterator_class_t **thiz) {
    sge_error_iterator_t *elem = nullptr;
 

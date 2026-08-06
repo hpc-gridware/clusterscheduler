@@ -32,6 +32,14 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Per-thread "last error" storage
+ *
+ * One @ref _sge_err_object_t per thread, held in thread-local storage and
+ * created on first use. Only the most recent error survives — #sge_err_set
+ * overwrites both the id and the message.
+ */
+
 #include <cstdio>
 #include <cstring>
 
@@ -43,15 +51,17 @@
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_stdlib.h"
 
-#define ERR_LAYER TOP_LAYER
+#define ERR_LAYER TOP_LAYER ///< rmon layer this module logs under
 
-#define SGE_ERR_MAX_MESSAGE_LENGTH 256
+#define SGE_ERR_MAX_MESSAGE_LENGTH 256 ///< message buffer size; longer texts are truncated
 
+/// The error slot of one thread
 struct _sge_err_object_t {
-   sge_err_t id;
-   char message[SGE_ERR_MAX_MESSAGE_LENGTH];
+   sge_err_t id;                              ///< the recorded error, #SGE_ERR_SUCCESS when clear
+   char message[SGE_ERR_MAX_MESSAGE_LENGTH];  ///< the formatted message, truncated to fit
 };
 
+/// The error slot of one thread; see @ref _sge_err_object_t
 typedef struct _sge_err_object_t sge_err_object_t;
 
 static pthread_once_t sge_err_once = PTHREAD_ONCE_INIT;
@@ -120,8 +130,15 @@ sge_err_init() {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Creates the thread-local key before `main()` runs
+ *
+ * Exists only for the side effect of its constructor. A single static instance
+ * is defined below; do not remove it, and do not instantiate it anywhere else.
+ */
 class ErrorThreadInit {
 public:
+   /// Runs the one-time `pthread_key_create()` for this module
    ErrorThreadInit() {
       sge_err_init();
    }
@@ -131,6 +148,17 @@ public:
 static ErrorThreadInit error_obj{};
 
 
+/**
+ * @brief Record an error for the calling thread
+ *
+ * Replaces whatever was in the thread's slot. A nullptr @p format leaves the
+ * previous error untouched rather than clearing it.
+ *
+ * @param id the kind of error
+ * @param format `printf` style format for the message, truncated to
+ *        #SGE_ERR_MAX_MESSAGE_LENGTH
+ * @param ... the format's arguments
+ */
 void
 sge_err_set(sge_err_t id, const char *format, ...) {
    va_list args;
@@ -144,6 +172,19 @@ sge_err_set(sge_err_t id, const char *format, ...) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Read back the calling thread's error
+ *
+ * Does nothing if @p id or @p message is nullptr, or @p size is 0. When no
+ * error is recorded, @p id becomes #SGE_ERR_SUCCESS and @p message an empty
+ * string.
+ *
+ * @param pos unused — only the most recent error is kept, so there is no
+ *        position to select. Kept for source compatibility.
+ * @param[out] id the recorded error kind
+ * @param[out] message buffer receiving the message, truncated to @p size
+ * @param size size of @p message in bytes
+ */
 void
 sge_err_get(uint32_t pos, sge_err_t *id, char *message, size_t size) {
    DENTER(ERR_LAYER);
@@ -162,6 +203,12 @@ sge_err_get(uint32_t pos, sge_err_t *id, char *message, size_t size) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Has the calling thread recorded an error?
+ *
+ * @return true when the thread's slot holds anything other than
+ *         #SGE_ERR_SUCCESS
+ */
 bool
 sge_err_has_error() {
    sge_err_object_t *err_obj = nullptr;
@@ -173,6 +220,12 @@ sge_err_has_error() {
    DRETURN(ret);
 }
 
+/**
+ * @brief Clear the calling thread's error
+ *
+ * Resets the id to #SGE_ERR_SUCCESS. The message text is left in the buffer,
+ * but #sge_err_get will not return it while the id is #SGE_ERR_SUCCESS.
+ */
 void
 sge_err_clear() {
    sge_err_object_t *err_obj = nullptr;

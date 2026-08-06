@@ -19,12 +19,31 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The base exception type of the `ocs` namespace
+ */
+
 #include <exception>
 #include <string>
 
 namespace ocs {
+   /**
+    * @brief Base class for exceptions thrown by `ocs` code
+    *
+    * @warning Currently a placeholder. The constructor **discards** its
+    *          message: it neither stores it nor passes it to `std::exception`,
+    *          so `what()` returns the default text and the reason for the
+    *          throw is lost. Do not rely on the message surviving until this
+    *          is implemented.
+    */
    class Exception : public std::exception {
    public:
+      /**
+       * @brief Construct an exception
+       *
+       * @param message the reason for the throw; currently ignored, see the
+       *        class warning
+       */
       explicit Exception(std::string const &message) {};
    };
 }

@@ -19,6 +19,33 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Fine grained locking: many small locks taken in a safe order
+ *
+ * Instead of one lock per list, a thread can lock individual elements. Each
+ * lock is named by a root id (the list) and optionally an element id, either
+ * numeric (#fgl_add_u) or a string (#fgl_add_s); #fgl_add_r locks the list
+ * itself.
+ *
+ * Deadlock is avoided by ordering, not by a hierarchy: a thread first
+ * *registers* every lock it will need, and #fgl_lock then sorts the requests
+ * into one canonical order before acquiring any of them. Two threads wanting
+ * the same set therefore always take them in the same sequence.
+ *
+ * The usage is register, lock, work, unlock:
+ *
+ * @code
+ * fgl_add_r(SGE_TYPE_JOB, true);
+ * fgl_add_u(SGE_TYPE_JOB, job_id, true);
+ * fgl_lock();
+ * // ... work ...
+ * fgl_unlock();
+ * @endcode
+ *
+ * #fgl_unlock also clears the request list, so the next round starts empty.
+ * The requests are thread-local; the locks themselves are process-wide.
+ */
+
 void fgl_rsv_sort();
 
 void fgl_add_r(uint32_t root, bool rw);
