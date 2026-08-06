@@ -2421,7 +2421,27 @@ INCLUDE_FILE_PATTERNS  =
 # recursively expanded use the := operator instead of the = operator.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-PREDEFINED             =
+# Without these, every "#if defined(...)" is false and doxygen silently skips
+# the code behind it. Ten files in libs/uti alone are wrapped end to end in such
+# a guard - ocs_OpenSSL, ocs_Munge, ocs_Systemd, ocs_Topo among them - and were
+# reported as defect free only because they were never read. The set below is
+# the configuration this tree is actually built with: Linux, 64 bit, with the
+# optional features enabled.
+#
+# The platform macros are deliberately mutually exclusive: defining SOLARIS or
+# DARWIN alongside LINUX would feed doxygen contradictory declarations of the
+# same symbol. The cost is that Solaris and Darwin only code (sge_smf.cc, the
+# SOLARIS branch of sge_stdio.h) stays undocumented and unchecked - see
+# "06 Exclusions and generated code" in the project notes.
+
+PREDEFINED             = LINUX \
+                         TARGET_64BIT \
+                         SGE_MT \
+                         SECURE \
+                         OCS_WITH_OPENSSL \
+                         OCS_WITH_MUNGE \
+                         OCS_WITH_SYSTEMD \
+                         OCS_HWLOC
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The
