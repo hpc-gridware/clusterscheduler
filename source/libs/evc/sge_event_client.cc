@@ -392,10 +392,6 @@
 *
 *        sgeE_ALL_EVENTS
 *
-*        sgeE_ADMINHOST_LIST              send admin host list at registration
-*        sgeE_ADMINHOST_ADD               event add admin host
-*        sgeE_ADMINHOST_DEL               event delete admin host
-*        sgeE_ADMINHOST_MOD               event modify admin host
 *
 *        sgeE_CALENDAR_LIST               send calendar list at registration
 *        sgeE_CALENDAR_ADD                event add calendar
@@ -469,10 +465,6 @@
 *
 *        sgeE_SHUTDOWN                    request shutdown of an event client
 *
-*        sgeE_SUBMITHOST_LIST             send submit host list at registration
-*        sgeE_SUBMITHOST_ADD              event add submit host
-*        sgeE_SUBMITHOST_DEL              event delete submit hostsource/libs/evc/sge_event_client.c
-*        sgeE_SUBMITHOST_MOD              event modify submit host
 *
 *        sgeE_USER_LIST                   send user list at registration
 *        sgeE_USER_ADD                    event user add

@@ -241,10 +241,9 @@ const int SOURCE_LIST[LIST_MAX][3] = {
  *****************************************************
  */
 
-#define total_update_eventsMAX 20
+#define total_update_eventsMAX 18
 
-const int total_update_events[total_update_eventsMAX + 1] = {sgeE_ADMINHOST_LIST,
-                                       sgeE_CALENDAR_LIST,
+const int total_update_events[total_update_eventsMAX + 1] = {sgeE_CALENDAR_LIST,
                                        sgeE_CKPT_LIST,
                                        sgeE_CENTRY_LIST,
                                        sgeE_CONFIG_LIST,
@@ -255,7 +254,6 @@ const int total_update_events[total_update_eventsMAX + 1] = {sgeE_ADMINHOST_LIST
                                        sgeE_PE_LIST,
                                        sgeE_CQUEUE_LIST,
                                        sgeE_SCHED_CONF,
-                                       sgeE_SUBMITHOST_LIST,
                                        sgeE_USERSET_LIST,
                                        sgeE_NEW_SHARETREE,
                                        sgeE_PROJECT_LIST,
@@ -266,7 +264,6 @@ const int total_update_events[total_update_eventsMAX + 1] = {sgeE_ADMINHOST_LIST
                                        -1};
 
 const int block_events[total_update_eventsMAX][9] = {
-   {sgeE_ADMINHOST_ADD, sgeE_ADMINHOST_DEL, sgeE_ADMINHOST_MOD, -1, -1, -1, -1, -1, -1},
    {sgeE_CALENDAR_ADD,  sgeE_CALENDAR_DEL,  sgeE_CALENDAR_MOD,  -1, -1, -1, -1, -1, -1},
    {sgeE_CKPT_ADD,      sgeE_CKPT_DEL,      sgeE_CKPT_MOD,      -1, -1, -1, -1, -1, -1},
    {sgeE_CENTRY_ADD,    sgeE_CENTRY_DEL,    sgeE_CENTRY_MOD,    -1, -1, -1, -1, -1, -1},
@@ -278,7 +275,6 @@ const int block_events[total_update_eventsMAX][9] = {
    {sgeE_PE_ADD,              sgeE_PE_DEL,              sgeE_PE_MOD,              -1, -1, -1, -1, -1, -1},
    {sgeE_CQUEUE_ADD,          sgeE_CQUEUE_DEL,          sgeE_CQUEUE_MOD, sgeE_QINSTANCE_ADD, sgeE_QINSTANCE_DEL, sgeE_QINSTANCE_MOD, sgeE_QINSTANCE_SOS, sgeE_QINSTANCE_USOS, -1},
    {-1, -1, -1, -1, -1, -1, -1, -1},
-   {sgeE_SUBMITHOST_ADD,      sgeE_SUBMITHOST_DEL,      sgeE_SUBMITHOST_MOD,      -1, -1, -1, -1, -1, -1},
    {sgeE_USERSET_ADD,         sgeE_USERSET_DEL,         sgeE_USERSET_MOD,         -1, -1, -1, -1, -1, -1},
    {-1, -1, -1, -1, -1, -1, -1, -1},
    {sgeE_PROJECT_ADD,         sgeE_PROJECT_DEL,         sgeE_PROJECT_MOD,         -1, -1, -1, -1, -1, -1},
@@ -772,7 +768,6 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
       old_sub = (subscription_t *)lGetRef(event_client, EV_sub_array);
 
 
-      check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_ADMINHOST_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_CALENDAR_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_CKPT_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_CENTRY_LIST);
@@ -786,7 +781,6 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_PROJECT_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_CQUEUE_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_SCHED_CONF);
-      check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_SUBMITHOST_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_USER_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_USERSET_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_HGROUP_LIST);
@@ -1939,7 +1933,6 @@ init_send_events() {
 
    memset(SEND_EVENTS, false, sizeof(bool) * sgeE_EVENTSIZE);
 
-   SEND_EVENTS[sgeE_ADMINHOST_LIST] = true;
    SEND_EVENTS[sgeE_CALENDAR_LIST] = true;
    SEND_EVENTS[sgeE_CKPT_LIST] = true;
    SEND_EVENTS[sgeE_CENTRY_LIST] = true;
@@ -1953,7 +1946,6 @@ init_send_events() {
    SEND_EVENTS[sgeE_QMASTER_GOES_DOWN] = true;
    SEND_EVENTS[sgeE_ACK_TIMEOUT] = true;
    SEND_EVENTS[sgeE_CQUEUE_LIST] = true;
-   SEND_EVENTS[sgeE_SUBMITHOST_LIST] = true;
    SEND_EVENTS[sgeE_USER_LIST] = true;
    SEND_EVENTS[sgeE_USERSET_LIST] = true;
    SEND_EVENTS[sgeE_HGROUP_LIST] = true;
@@ -2357,7 +2349,6 @@ total_update(lListElem *event_client, uint64_t gdi_session)
       }
    }
 
-   total_update_event(event_client, sgeE_ADMINHOST_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_CALENDAR_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_CKPT_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_CENTRY_LIST, false, gdi_session);
@@ -2369,7 +2360,6 @@ total_update(lListElem *event_client, uint64_t gdi_session)
    total_update_event(event_client, sgeE_PE_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_CQUEUE_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_SCHED_CONF, false, gdi_session);
-   total_update_event(event_client, sgeE_SUBMITHOST_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_USERSET_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_NEW_SHARETREE, false, gdi_session);
    total_update_event(event_client, sgeE_PROJECT_LIST, false, gdi_session);
@@ -2839,9 +2829,6 @@ static void total_update_event(lListElem *event_client, ev_event type, bool new_
     * to be useless. */
    if (new_subscription || eventclient_subscribed(event_client, type, nullptr)) {
       switch (type) {
-         case sgeE_ADMINHOST_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
-            break;
          case sgeE_CALENDAR_LIST:
             lp = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
             break;
@@ -2879,9 +2866,6 @@ static void total_update_event(lListElem *event_client, ev_event type, bool new_
             break;
          case sgeE_SCHED_CONF:
             copy_lp = sconf_get_config_list();
-            break;
-         case sgeE_SUBMITHOST_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
             break;
          case sgeE_USER_LIST:
             lp = *ocs::DataStore::get_master_list(SGE_TYPE_USER);

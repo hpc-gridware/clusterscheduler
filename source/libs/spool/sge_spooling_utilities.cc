@@ -379,9 +379,7 @@ bool spool_default_validate_func(lList **answer_list,
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
    switch (object_type) {
-      case SGE_TYPE_ADMINHOST:
-      case SGE_TYPE_EXECHOST:
-      case SGE_TYPE_SUBMITHOST: {
+      case SGE_TYPE_EXECHOST: {
          int cl_ret;
          int key_nm = object_type_get_key_nm(object_type);
          char *old_name = strdup(lGetHost(object, key_nm));
@@ -542,12 +540,9 @@ spool_default_validate_list_func(lList **answer_list,
    DENTER(TOP_LAYER);
 
    switch (object_type) {
-      case SGE_TYPE_ADMINHOST:
-         break;
       case SGE_TYPE_EXECHOST:
          host_list_merge(*ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST));
          break;
-      case SGE_TYPE_SUBMITHOST:
       case SGE_TYPE_CONFIG:
       case SGE_TYPE_USERSET:
       case SGE_TYPE_CKPT:

@@ -71,18 +71,6 @@ const char *event_text(const lListElem *event, dstring *buffer)
    switch (type) {
 
    /* -------------------- */
-   case sgeE_ADMINHOST_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "ADMINHOST", n);
-      break;
-   case sgeE_ADMINHOST_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "ADMINHOST", strkey);
-      break;
-   case sgeE_ADMINHOST_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "ADMINHOST", strkey);
-      break;
-   case sgeE_ADMINHOST_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "ADMINHOST", strkey);
-      break;
 
    /* -------------------- */
    case sgeE_CALENDAR_LIST:
@@ -298,18 +286,6 @@ const char *event_text(const lListElem *event, dstring *buffer)
       break;
 
    /* -------------------- */
-   case sgeE_SUBMITHOST_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "SUBMITHOST", n);
-      break;
-   case sgeE_SUBMITHOST_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "SUBMITHOST", strkey);
-      break;
-   case sgeE_SUBMITHOST_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "SUBMITHOST", strkey);
-      break;
-   case sgeE_SUBMITHOST_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "SUBMITHOST", strkey);
-      break;
 
    /* -------------------- */
    case sgeE_USER_LIST:

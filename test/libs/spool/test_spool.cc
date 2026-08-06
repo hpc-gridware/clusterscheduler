@@ -184,16 +184,6 @@ static bool read_spooled_data()
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master exechost list\n", lGetNumberOfElem(master_list));
 
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_ADMINHOST);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_ADMINHOST);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master admin host list\n", lGetNumberOfElem(master_list));
-
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SUBMITHOST);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_SUBMITHOST);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master submit host list\n", lGetNumberOfElem(master_list));
-
    /* CS-2394: managers/operators are no longer spooled as own lists - they are
     * members of the reserved "manager"/"operator" usersets, covered below. */
 
@@ -280,9 +270,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
 
    if(action == SGE_EMA_LIST) {
       switch(type) {
-         case SGE_TYPE_ADMINHOST:      
          case SGE_TYPE_EXECHOST:
-         case SGE_TYPE_SUBMITHOST:
          case SGE_TYPE_CONFIG:
          case SGE_TYPE_HGROUP:
             for_each_ep(ep, *master_list) {
@@ -467,9 +455,7 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
    
       case SGE_EMA_DEL:
          switch(type) {
-            case SGE_TYPE_ADMINHOST:
             case SGE_TYPE_EXECHOST:
-            case SGE_TYPE_SUBMITHOST:
             case SGE_TYPE_CONFIG:
             case SGE_TYPE_CALENDAR:
             case SGE_TYPE_CKPT:
@@ -491,9 +477,7 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
       case SGE_EMA_ADD:
       case SGE_EMA_MOD:
          switch(type) {
-            case SGE_TYPE_ADMINHOST:
             case SGE_TYPE_EXECHOST:
-            case SGE_TYPE_SUBMITHOST:
             case SGE_TYPE_CONFIG:
                key = lGetString(event, ET_strkey);
                ep = lGetElemHost(*master_list, key_nm, lGetString(event, ET_strkey));

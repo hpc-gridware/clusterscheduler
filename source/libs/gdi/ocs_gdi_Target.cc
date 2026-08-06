@@ -23,8 +23,6 @@
 std::string ocs::gdi::to_string(const Target target) {
    switch (target) {
       case Target::NO_TARGET: return "NO_TARGET";
-      case Target::AH_LIST: return "AH_LIST";
-      case Target::SH_LIST: return "SH_LIST";
       case Target::EH_LIST: return "EH_LIST";
       case Target::CQ_LIST: return "CQ_LIST";
       case Target::JB_LIST: return "JB_LIST";

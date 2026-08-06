@@ -730,13 +730,12 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
 *******************************************************************************/
 static void qevent_subscribe_mode(sge_evc_class_t *evc)
 {
-   int event_type = SGE_TYPE_ADMINHOST;
+   int event_type = SGE_TYPE_FIRST;
 
    DENTER(TOP_LAYER);
 
    sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_SHUTDOWN, print_event, nullptr, nullptr, nullptr, nullptr);
-   sge_mirror_subscribe(evc, SGE_TYPE_ADMINHOST, print_event, nullptr, nullptr, nullptr, nullptr);
 
    while(!shut_me_down) {
       sge_mirror_error error = sge_mirror_process_events(evc);
@@ -746,7 +745,7 @@ static void qevent_subscribe_mode(sge_evc_class_t *evc)
             printf("Subscribe event_type: %d\n", event_type);
             error = sge_mirror_subscribe(evc, (sge_object_type)event_type, print_event, nullptr, nullptr, nullptr, nullptr);
          } else {
-            event_type = SGE_TYPE_ADMINHOST;
+            event_type = SGE_TYPE_FIRST;
             printf("Unsubscribe all event_types\n");
             error = sge_mirror_unsubscribe(evc, SGE_TYPE_ALL);
          }

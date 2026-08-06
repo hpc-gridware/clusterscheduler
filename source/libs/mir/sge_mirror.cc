@@ -141,7 +141,6 @@ sge_mirror_update_master_list_cat_key(lList **list, const lDescr *list_descr,
  */
 static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
    /*cbb   cbd                                     cba   cd   */
-   { nullptr, host_update_master_list,                nullptr, nullptr },
    { nullptr, generic_update_master_list,             nullptr, nullptr },
    { nullptr, generic_update_master_list,             nullptr, nullptr },
    { nullptr, host_update_master_list,                nullptr, nullptr },
@@ -159,7 +158,6 @@ static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
    { nullptr, nullptr,                                nullptr, nullptr },
    { nullptr, sge_mirror_process_shutdown,            nullptr, nullptr },
    { nullptr, sge_mirror_process_mark4registration,   nullptr, nullptr },
-   { nullptr, host_update_master_list,                nullptr, nullptr },
    { nullptr, generic_update_master_list,             nullptr, nullptr },
    { nullptr, generic_update_master_list,             nullptr, nullptr },
    { nullptr, host_update_master_list,                nullptr, nullptr }, /*hgroup*/
@@ -431,18 +429,6 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
 
    /* type already has been checked before */
    switch (type) {
-      case SGE_TYPE_ADMINHOST:
-         evc->ec_subscribe(evc, sgeE_ADMINHOST_LIST);
-         evc->ec_subscribe(evc, sgeE_ADMINHOST_ADD);
-         evc->ec_subscribe(evc, sgeE_ADMINHOST_DEL);
-         evc->ec_subscribe(evc, sgeE_ADMINHOST_MOD);
-         if (what_el && where_el) {
-            evc->ec_mod_subscription_where(evc, sgeE_ADMINHOST_MOD, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_ADMINHOST_DEL, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_ADMINHOST_ADD, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_ADMINHOST_LIST, what_el, where_el);
-         }
-         break;
       case SGE_TYPE_CALENDAR:
          evc->ec_subscribe(evc, sgeE_CALENDAR_LIST);
          evc->ec_subscribe(evc, sgeE_CALENDAR_ADD);
@@ -631,18 +617,6 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
             evc->ec_mod_subscription_where(evc, sgeE_ACK_TIMEOUT, what_el, where_el);
          }
          break;
-      case SGE_TYPE_SUBMITHOST:
-         evc->ec_subscribe(evc, sgeE_SUBMITHOST_LIST);
-         evc->ec_subscribe(evc, sgeE_SUBMITHOST_ADD);
-         evc->ec_subscribe(evc, sgeE_SUBMITHOST_DEL);
-         evc->ec_subscribe(evc, sgeE_SUBMITHOST_MOD);
-         if (what_el && where_el) {
-            evc->ec_mod_subscription_where(evc, sgeE_SUBMITHOST_LIST, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_SUBMITHOST_ADD, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_SUBMITHOST_DEL, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_SUBMITHOST_MOD, what_el, where_el);
-         }
-         break;
       case SGE_TYPE_USER:
          evc->ec_subscribe(evc, sgeE_USER_LIST);
          evc->ec_subscribe(evc, sgeE_USER_ADD);
@@ -818,12 +792,6 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
    mirror_base[type].filtered          = false;
 
    switch (type) {
-      case SGE_TYPE_ADMINHOST:
-         evc->ec_unsubscribe(evc, sgeE_ADMINHOST_LIST);
-         evc->ec_unsubscribe(evc, sgeE_ADMINHOST_ADD);
-         evc->ec_unsubscribe(evc, sgeE_ADMINHOST_DEL);
-         evc->ec_unsubscribe(evc, sgeE_ADMINHOST_MOD);
-         break;
       case SGE_TYPE_CALENDAR:
          evc->ec_unsubscribe(evc, sgeE_CALENDAR_LIST);
          evc->ec_unsubscribe(evc, sgeE_CALENDAR_ADD);
@@ -917,12 +885,6 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
          break;
       case SGE_TYPE_MARK_4_REGISTRATION:
          ERROR(SFNMAX, MSG_EVENT_HAVETOHANDLEEVENTS);
-         break;
-      case SGE_TYPE_SUBMITHOST:
-         evc->ec_unsubscribe(evc, sgeE_SUBMITHOST_LIST);
-         evc->ec_unsubscribe(evc, sgeE_SUBMITHOST_ADD);
-         evc->ec_unsubscribe(evc, sgeE_SUBMITHOST_DEL);
-         evc->ec_unsubscribe(evc, sgeE_SUBMITHOST_MOD);
          break;
       case SGE_TYPE_USER:
          evc->ec_unsubscribe(evc, sgeE_USER_LIST);
@@ -1122,18 +1084,6 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
 #endif
 
       switch (lGetUlong(event, ET_type)) {
-         case sgeE_ADMINHOST_LIST:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_ADMINHOST, SGE_EMA_LIST, event);
-            break;
-         case sgeE_ADMINHOST_ADD:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_ADMINHOST, SGE_EMA_ADD, event);
-            break;
-         case sgeE_ADMINHOST_DEL:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_ADMINHOST, SGE_EMA_DEL, event);
-            break;
-         case sgeE_ADMINHOST_MOD:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_ADMINHOST, SGE_EMA_MOD, event);
-            break;
 
          case sgeE_CALENDAR_LIST:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_CALENDAR, SGE_EMA_LIST, event);
@@ -1318,18 +1268,6 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
             no_more_events = true;
             break;
 
-         case sgeE_SUBMITHOST_LIST:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_SUBMITHOST, SGE_EMA_LIST, event);
-            break;
-         case sgeE_SUBMITHOST_ADD:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_SUBMITHOST, SGE_EMA_ADD, event);
-            break;
-         case sgeE_SUBMITHOST_DEL:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_SUBMITHOST, SGE_EMA_DEL, event);
-            break;
-         case sgeE_SUBMITHOST_MOD:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_SUBMITHOST, SGE_EMA_MOD, event);
-            break;
 
          case sgeE_USER_LIST:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_USER, SGE_EMA_LIST, event);

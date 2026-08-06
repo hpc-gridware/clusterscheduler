@@ -76,7 +76,6 @@
 // TODO: CS-254 move object_base into cull namespace
 static object_description object_base[SGE_TYPE_ALL] = {
         /* list               name                 descr      key */
-        {"ADMINHOST",         AH_Type,   AH_name},
         {"CALENDAR",          CAL_Type,  CAL_name},
         {"CKPT",              CK_Type,   CK_name},
         {"CONFIG",            CONF_Type, CONF_name},
@@ -94,7 +93,6 @@ static object_description object_base[SGE_TYPE_ALL] = {
         {"SCHEDD_MONITOR",    nullptr,   NoName},
         {"SHUTDOWN",          nullptr,   NoName},
         {"QMASTER_GOES_DOWN", nullptr,   NoName},
-        {"SUBMITHOST",        SH_Type,   SH_name},
         {"USER",              UU_Type,   UU_name},
         {"USERSET",           US_Type,   US_name},
         {"HOSTGROUP",         HGRP_Type, HGRP_name},

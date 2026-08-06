@@ -7395,12 +7395,6 @@ static bool del_host_of_type(lList *arglp, ocs::gdi::Target target )
    DENTER(TOP_LAYER);
 
    switch (target) {
-   case ocs::gdi::Target::SH_LIST:
-      type = SH_Type;
-      break;
-   case ocs::gdi::Target::AH_LIST:
-      type = AH_Type;
-      break;
    case ocs::gdi::Target::EH_LIST:
       type = EH_Type;
       break;

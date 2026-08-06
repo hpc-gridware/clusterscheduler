@@ -160,14 +160,6 @@ spool_classic_create_context(lList **answer_list, const char *args)
                   field_info[i].fields = CQ_fields;
                   field_info[i].instr  = &qconf_sfi;
                   break;
-               case SGE_TYPE_ADMINHOST:
-                  field_info[i].fields = AH_fields;
-                  field_info[i].instr  = &qconf_sfi;
-                  break;
-               case SGE_TYPE_SUBMITHOST:
-                  field_info[i].fields = SH_fields;
-                  field_info[i].instr  = &qconf_sfi;
-                  break;
                case SGE_TYPE_HGROUP:
                   field_info[i].fields = HGRP_fields;
                   field_info[i].instr  = &qconf_sfi;
@@ -335,8 +327,6 @@ spool_classic_default_startup_func(lList **answer_list,
          sge_mkdir2(url, CQUEUE_DIR,  0700, true);
          sge_mkdir2(url, QINSTANCES_DIR,  0700, true);
          sge_mkdir2(url, EXECHOST_DIR, 0700, true);
-         sge_mkdir2(url, SUBMITHOST_DIR, 0700, true);
-         sge_mkdir2(url, ADMINHOST_DIR, 0700, true);
          sge_mkdir2(url, CENTRY_DIR, 0700, true);
          sge_mkdir2(url, EXEC_DIR, 0700, true);
          sge_mkdir2(url, PE_DIR, 0700, true);
@@ -516,9 +506,6 @@ spool_classic_default_list_func(lList **answer_list,
       }
 
       switch(object_type) {
-         case SGE_TYPE_ADMINHOST:
-            directory = ADMINHOST_DIR;
-            break;
          case SGE_TYPE_CALENDAR:
             directory = CAL_DIR;
             break;
@@ -551,9 +538,6 @@ spool_classic_default_list_func(lList **answer_list,
             /* JG: TODO: we'll have to quicksort the queue list, see
              * function cqueue_list_add_cqueue
              */
-            break;
-         case SGE_TYPE_SUBMITHOST:
-            directory = SUBMITHOST_DIR;
             break;
          case SGE_TYPE_USERSET:
             directory = USERSET_DIR;
@@ -744,10 +728,6 @@ spool_classic_default_read_func(lList **answer_list,
 
    /* prepare filenames */
    switch(object_type) {
-      case SGE_TYPE_ADMINHOST:
-         directory = ADMINHOST_DIR;
-         filename  = key;
-         break;
       case SGE_TYPE_CALENDAR:
          directory = CAL_DIR;
          filename = key;
@@ -781,10 +761,6 @@ spool_classic_default_read_func(lList **answer_list,
          break;
       case SGE_TYPE_QINSTANCE:
          directory = QINSTANCES_DIR;
-         filename  = key;
-         break;
-      case SGE_TYPE_SUBMITHOST:
-         directory = SUBMITHOST_DIR;
          filename  = key;
          break;
       case SGE_TYPE_USERSET:
@@ -965,10 +941,6 @@ spool_classic_default_write_func(lList **answer_list,
 
    /* prepare filenames */
    switch(object_type) {
-      case SGE_TYPE_ADMINHOST:
-         directory = ADMINHOST_DIR;
-         filename  = key;
-         break;
       case SGE_TYPE_CALENDAR:
          directory = CAL_DIR;
          filename = key;
@@ -1011,10 +983,6 @@ spool_classic_default_write_func(lList **answer_list,
          sge_free(&directory);
          directory = sge_dstring_sprintf(&tmp, "%s/%s", QINSTANCES_DIR, lGetString(object, QU_qname));
          filename = lGetHost(object, QU_qhostname);
-         break;
-      case SGE_TYPE_SUBMITHOST:
-         directory = SUBMITHOST_DIR;
-         filename  = key;
          break;
       case SGE_TYPE_USERSET:
          directory = USERSET_DIR;
@@ -1234,9 +1202,6 @@ spool_classic_default_delete_func(lList **answer_list,
    }
 
    switch(object_type) {
-      case SGE_TYPE_ADMINHOST:
-         ret = sge_unlink(ADMINHOST_DIR, key);
-         break;
       case SGE_TYPE_CALENDAR:
          ret = sge_unlink(CAL_DIR, key);
          break;
@@ -1318,9 +1283,6 @@ spool_classic_default_delete_func(lList **answer_list,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_SPOOL_SCHEDDCONFIGNOTDELETED);
          ret = false;
-         break;
-      case SGE_TYPE_SUBMITHOST:
-         ret = sge_unlink(SUBMITHOST_DIR, key);
          break;
       case SGE_TYPE_USER:
          ret = sge_unlink(USER_DIR, key);

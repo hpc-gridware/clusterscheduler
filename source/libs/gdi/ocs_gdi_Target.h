@@ -25,9 +25,9 @@
 namespace ocs::gdi {
    enum class Target : uint32_t {
       NO_TARGET = 0,
-      AH_LIST = 1,
-      SH_LIST,
-      EH_LIST,
+      // CS-2438: AH_LIST/SH_LIST retired -- admin and submit hosts are stored in
+      // the reserved "@admin_hosts"/"@submit_hosts" host groups (HGRP_LIST)
+      EH_LIST = 1,
       CQ_LIST,
       JB_LIST,
       EV_LIST,

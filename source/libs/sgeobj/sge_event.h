@@ -153,10 +153,6 @@ typedef enum {
 typedef enum {
    sgeE_ALL_EVENTS,                 /*impl. and tested, - = not available */
 
-   sgeE_ADMINHOST_LIST,             /* send admin host list at registration */
-   sgeE_ADMINHOST_ADD,              /* event add admin host */
-   sgeE_ADMINHOST_DEL,              /* event delete admin host */
-   sgeE_ADMINHOST_MOD,              /* event modify admin host */
 
    sgeE_CALENDAR_LIST,              /* send calendar list at registration */
    sgeE_CALENDAR_ADD,               /* event add calendar */
@@ -235,10 +231,6 @@ typedef enum {
 
    sgeE_SHUTDOWN,                   /* request shutdown of an event client */
 
-   sgeE_SUBMITHOST_LIST,            /* send submit host list at registration */
-   sgeE_SUBMITHOST_ADD,             /* event add submit host */
-   sgeE_SUBMITHOST_DEL,             /* event delete submit host */
-   sgeE_SUBMITHOST_MOD,             /* event modify submit host */
 
    sgeE_USER_LIST,                  /* send user list at registration */
    sgeE_USER_ADD,                   /* event user add */
@@ -292,8 +284,7 @@ typedef bool (*evm_ack_func_t)(
 );
 
 #define IS_TOTAL_UPDATE_EVENT(x) \
-  (((x)==sgeE_ADMINHOST_LIST) || \
-  ((x)==sgeE_CALENDAR_LIST) || \
+  (((x)==sgeE_CALENDAR_LIST) || \
   ((x)==sgeE_CKPT_LIST) || \
   ((x)==sgeE_CENTRY_LIST) || \
   ((x)==sgeE_CONFIG_LIST) || \
@@ -304,7 +295,6 @@ typedef bool (*evm_ack_func_t)(
   ((x)==sgeE_PE_LIST) || \
   ((x)==sgeE_PROJECT_LIST) || \
   ((x)==sgeE_CQUEUE_LIST) || \
-  ((x)==sgeE_SUBMITHOST_LIST) || \
   ((x)==sgeE_USER_LIST) || \
   ((x)==sgeE_USERSET_LIST) || \
   ((x)==sgeE_HGROUP_LIST) || \
