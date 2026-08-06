@@ -34,8 +34,23 @@
 #include "uti/sge_dstring.h"
 
 
+/** @file
+ * @brief Dynamically loaded TLS, built on OpenSSL 3
+ *
+ * TLS is one of the security modes selectable in the `bootstrap` file — see
+ * `ocs::Bootstrap::BS_SEC_MODE_TLS`. `libssl` is opened with `dlopen` at
+ * runtime rather than linked, so a binary built with TLS support still starts
+ * on a host without OpenSSL; @ref ocs::uti::OpenSSL::is_openssl_available
+ * reports which case applies.
+ *
+ * Three layers, outer to inner: @ref ocs::uti::OpenSSL loads the library,
+ * @ref ocs::uti::OpenSSL::OpenSSLContext holds one certificate and key pair,
+ * and @ref ocs::uti::OpenSSL::OpenSSLConnection is one TLS connection on a
+ * socket.
+ */
+
 namespace ocs::uti {
-   // function types for the OpenSSL interface
+   /// @cond   pointer types mirroring the libssl ABI, resolved with dlsym at runtime
    using ASN1_INTEGER_set_func_t = int (*)(ASN1_INTEGER *a, long v);
    using ASN1_TIME_diff_func_t = int (*)(int *pday, int *psec, const ASN1_TIME *from, const ASN1_TIME *to);
    using BIO_free_func_t = int (*)(BIO *a);
@@ -99,7 +114,15 @@ namespace ocs::uti {
    using X509_set_pubkey_func_t = int (*)(X509 *x, EVP_PKEY *pkey);
    using X509_set_version_func_t = int (*)(X509 *x, long version);
    using X509_sign_func_t = int (*)(X509 *x, EVP_PKEY *pkey, const EVP_MD *md);
+   /// @endcond
 
+   /**
+    * @brief Entry point to the OpenSSL library and the TLS objects built on it
+    *
+    * Static only: the library is opened once per process by #initialize and
+    * the resolved function pointers are shared. Only OpenSSL 3 is supported;
+    * the header refuses to compile against any other major version.
+    */
    class OpenSSL {
       // static data
       // handle and function pointers of the libssl.so
@@ -173,12 +196,41 @@ namespace ocs::uti {
       // static methods
       static bool initialize(dstring *error_dstr);
       static void cleanup();
+
+      /**
+       * @brief Is libssl loaded and usable?
+       *
+       * @return true once #initialize has succeeded; false when the library is
+       *         absent, which is not in itself an error
+       */
       static bool is_openssl_available() { return libssl_handle != nullptr; }
+
+      /**
+       * @brief Build the path a component's certificate is stored at
+       *
+       * @param[out] cert_path receives the path
+       * @param home_dir the user's home directory, or nullptr for a daemon
+       * @param hostname host name to embed in the file name
+       * @param comp_name component name to embed in the file name, e.g. `qmaster`
+       * @return true when a path could be built
+       */
       static bool build_cert_path(std::string &cert_path, const char *home_dir, const char *hostname, const char *comp_name);
       static bool build_key_path(std::string &key_path, const char *home_dir, const char *hostname, uint32_t port, const char *comp_name);
       static const char *get_error_message();
 
       // sub-classes
+      /**
+       * @brief One certificate and key pair, as an `SSL_CTX`
+       *
+       * Created through one of the #create overloads; the constructor is
+       * private. A context is shared by every connection made from it and
+       * counts them, so it is destroyed through
+       * #mark_context_for_deletion rather than `delete` — the actual
+       * destruction is deferred until the last connection has gone.
+       *
+       * Certificates expire, so a context also knows when it needs replacing:
+       * see #certificate_recreate_required and #is_cert_file_updated.
+       */
       class OpenSSLContext {
          static std::vector<OpenSSLContext *> contexts_to_delete;
          bool is_server;
@@ -224,17 +276,54 @@ namespace ocs::uti {
 
          ~OpenSSLContext();
 
+         /**
+          * @brief Was this context created for the server side of a connection?
+          * @return true for a server context, false for a client one
+          */
          bool get_is_server() { return is_server; }
+
+         /// Register one more connection using this context
          void inc_connection_count() { connection_count++; }
+
+         /// Drop one connection, and destroy any context left without users
          void dec_connection_count() { connection_count--; delete_no_longer_used_contexts(); }
+
+         /**
+          * @brief The underlying OpenSSL context
+          * @return the `SSL_CTX`; owned by this object, do not free it
+          */
          SSL_CTX *get_SSL_CTX() { return ssl_ctx; }
          const char *get_cert() const;
+
+         /**
+          * @brief Path of the certificate file this context was built from
+          * @return the path; owned by this object, and empty for a context
+          *         that keeps its certificate in memory only
+          */
          const char *get_cert_file() { return cert_path.c_str(); }
+
+         /**
+          * @brief When the certificate should be replaced
+          * @return a unix timestamp, or 0 when no renewal is scheduled
+          */
          uint64_t get_renewal_time() { return renewal_time; }
+
+         /**
+          * @brief Has the certificate expired, or is it about to?
+          * @return true when the certificate needs replacing
+          */
          bool certificate_recreate_required() const;
          bool is_cert_file_updated();
       };
 
+      /**
+       * @brief One TLS connection on an already connected socket
+       *
+       * Created with #create from a context, then given a file descriptor with
+       * #set_fd. The server side calls #accept, the client side
+       * #set_server_name_for_sni and #connect. Every method reports failure
+       * through a `dstring` rather than a return code alone.
+       */
       class OpenSSLConnection {
          OpenSSLContext *context;
          bool is_server;
@@ -251,13 +340,25 @@ namespace ocs::uti {
          static OpenSSLConnection *create(OpenSSLContext *context, dstring *error_dstr);
          ~OpenSSLConnection();
 
-         SSL *get_ssl() { return ssl; } // @todo remove it
+         /**
+          * @brief The raw OpenSSL connection
+          * @return the `SSL`; owned by this object, do not free it
+          * @todo remove it — callers should go through this class
+          */
+         SSL *get_ssl() { return ssl; }
          bool set_fd(int new_fd, dstring *error_dstr);
          bool accept(dstring *error_dstr) const; // server side
          bool set_server_name_for_sni(const char *server_name, dstring *error_dstr) const; // client side
          bool connect(dstring *error_dstr) const;
          int read(char *buffer, size_t max_len, dstring *error_dstr) const;
          int write(char *buffer, size_t len, dstring *error_dstr);
+         /**
+          * @brief Must the last #write be retried?
+          *
+          * OpenSSL can ask for a write to be repeated with the same buffer.
+          *
+          * @return true when the previous #write must be issued again
+          */
          bool repeat_write_required() { return repeat_write; }
       };
    };

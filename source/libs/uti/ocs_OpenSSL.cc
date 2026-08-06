@@ -18,6 +18,15 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Implementation of the TLS support declared in ocs_OpenSSL.h
+ *
+ * Resolves the libssl entry points with `dlsym`, then builds contexts and
+ * connections on top of them. Also generates a self-signed certificate and key
+ * when none is present, which is why so much of this file is X509 handling
+ * rather than transport code.
+ */
+
 #include <filesystem>
 #include <string>
 #include <system_error>
@@ -780,7 +789,7 @@ namespace ocs::uti {
     * whether it's for a daemon or a user process. The path format depends on the home_dir parameter:
     *
     * - For daemons (home_dir == nullptr):
-    *   /var/lib/ocs/<port>/<cell>/private/component_hostname.pem
+    *   `/var/lib/ocs/<port>/<cell>/private/component_hostname.pem`
     *   If port is 0, it's omitted from the path.
     *
     * - For user processes we currently generate the certificates and keys on the fly and only in memory.
@@ -2079,6 +2088,9 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
+#define SGE_OPENSSL_RETRY_TIMEOUT_SERVER (1 * 1000000) ///< how long #ocs::uti::OpenSSL::OpenSSLConnection::accept retries the handshake, in microseconds
+#define SGE_OPENSSL_RETRY_TIMEOUT_CLIENT (10 * 1000000) ///< how long #ocs::uti::OpenSSL::OpenSSLConnection::connect retries the handshake, in microseconds
+
    /**
     * @brief Performs SSL handshake for server-side connection acceptance.
     *
@@ -2088,7 +2100,7 @@ namespace ocs::uti {
     * The function handles SSL_ERROR_WANT_* conditions by:
     * 1. Waiting for the socket to become ready (using select)
     * 2. Retrying the SSL_accept() operation
-    * 3. Timing out after SGE_OPENSSL_RETRY_TIMEOUT_SERVER (1 second)
+    * 3. Timing out after #SGE_OPENSSL_RETRY_TIMEOUT_SERVER (1 second)
     *
     * This function must be called after:
     * - TCP accept() has completed
@@ -2103,9 +2115,6 @@ namespace ocs::uti {
     * @note On non-blocking sockets, this function handles retries internally.
     * @todo CS-1679 Make timeout configurable.
     */
-#define SGE_OPENSSL_RETRY_TIMEOUT_SERVER (1 * 1000000) // 1 second
-#define SGE_OPENSSL_RETRY_TIMEOUT_CLIENT (10 * 1000000) // 10 seconds
-
    bool OpenSSL::OpenSSLConnection::accept(dstring *error_dstr) const {
       DENTER(TOP_LAYER);
 
