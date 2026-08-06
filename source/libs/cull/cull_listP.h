@@ -33,51 +33,55 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Internal layout of a cull list and its elements
+ */
+
 #include "cull/cull_list.h"
 
-/****** cull/list/-Cull-List-defines ***************************************
-*
-*  NAME
-*     Cull-List-defines -- macros and constant definitions
-*
-*  SYNOPSIS
-*     #define FREE_ELEM             (1<<0)
-*     #define BOUND_ELEM            (1<<1)
-*     #define TRANS_BOUND_ELEM      (1<<2)
-*     #define OBJECT_ELEM           (1<<3)
-*
-*  FUNCTION
-*     The following definitions describe possible values for the status 
-*     a list element (lListElem):
-*     FREE_ELEM        - a list element not being part of a list or
-*                        being a sub object
-*     BOUND_ELEM       - a list element contained in a list.
-*     TRANS_BOUND_ELEM - temporary status while unpacking elements.
-*                        After unpacking, bound elements or sub objects
-*                        have this status to prevent errors from functions
-*                        like lAppendElem, that reject bound objects.
-*     OBJECT_ELEM      - a list element being subobject of another element
-*
-****************************************************************************
-*/
+/**
+ * @defgroup cull_elem_status Element status
+ * @brief Possible values of _lListElem::status
+ *
+ * The status records who owns an element, which decides whether it may be
+ * appended to a list and who has to free it.
+ * @{
+ */
 
-#define FREE_ELEM             (1<<0)
-#define BOUND_ELEM            (1<<1)
-#define TRANS_BOUND_ELEM      (1<<2)
-#define OBJECT_ELEM           (1<<3)
 
+/* values of _lListElem::status */
+#define FREE_ELEM             (1<<0) ///< not part of a list and not a sub-object; the holder must free it
+#define BOUND_ELEM            (1<<1) ///< contained in a list, which owns it
+#define TRANS_BOUND_ELEM      (1<<2) ///< temporary status while unpacking; bound elements and sub-objects carry it afterwards so that functions such as `lAppendElem()`, which reject bound objects, do not fail
+#define OBJECT_ELEM           (1<<3) ///< a sub-object of another element's field
+/** @} */
+
+/**
+ * @brief One element of a cull list
+ *
+ * An element carries its own descriptor, so it can exist outside any list —
+ * `lCreateElem()` produces exactly that. Its field values live in a separate
+ * array indexed the same way as the descriptor.
+ */
 struct _lListElem {
-   lListElem *next;             /* next lList element                        */
-   lListElem *prev;             /* previous lList element                    */
-   lUlong status;               /* status: element in list/ element free     */
-   lDescr *descr;               /* pointer to the descriptor array           */
-   lMultiType *cont;            /* pointer to the lMultiType array           */
+   lListElem *next;   ///< next element, or nullptr at the end of the list
+   lListElem *prev;   ///< previous element, or nullptr at the head
+   lUlong status;     ///< whether the element is in a list or free standing
+   lDescr *descr;     ///< the object type, as an array of field descriptors
+   lMultiType *cont;  ///< the field values, indexed the same way as descr
 };
 
+/**
+ * @brief A cull list: a doubly linked list of elements of one object type
+ *
+ * Every element shares the list's descriptor, so a list is homogeneous. The
+ * element count is kept rather than walked, and both ends are held so
+ * appending is O(1).
+ */
 struct _lList {
-   uint32_t nelem;              /* number of elements in the list            */
-   char *listname;              /* name of the list                          */
-   lDescr *descr;               /* pointer to the descriptor array           */
-   lListElem *first;            /* pointer to the first element of the list  */
-   lListElem *last;             /* pointer to the last element of the list   */
+   uint32_t nelem;    ///< number of elements currently in the list
+   char *listname;    ///< name of the list, used in dumps and error messages
+   lDescr *descr;     ///< the object type every element has
+   lListElem *first;  ///< first element, or nullptr when the list is empty
+   lListElem *last;   ///< last element, or nullptr when the list is empty
 };

@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Creating, copying and walking cull lists and elements
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -41,6 +45,7 @@
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
+/// Suppresses the monitoring code in the rmon macros for this file
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
@@ -68,105 +73,58 @@
 #  include "cull/cull_observe.h"
 #endif
 
-#define CULL_BASIS_LAYER CULL_LAYER
+#define CULL_BASIS_LAYER CULL_LAYER ///< rmon layer this file logs under
 
 
 static void lWriteList_(const lList *lp, dstring *buffer, int nesting_level);
 
 static void lWriteElem_(const lListElem *lp, dstring *buffer, int nesting_level);
 
-/****** cull/list/-Field_Attributes *************************************************
-*  NAME
-*     Field_Attributes -- Attributes of cull type fields
-*
-*  SYNOPSIS
-*     When a field of a cull object type is defined, any number of
-*     attributes can be given to the field.
-*
-*     The syntax of the field definition is
-*        <typedef>(<field_name>, <attrib1> [|<attrib2> ...]
-*     e.g.
-*        SGE_STRING(QU_qname, CULL_HASH | CULL_UNIQUE)
-*
-*     The following attributes can be given to a field:
-*        CULL_DEFAULT
-*           no special settings - default behaviour
-*        CULL_PRIMARY_KEY
-*           the field is part of the primary key
-*           does *not* imply uniqueness or hashing
-*        CULL_HASH
-*           a hash table will be created on the field for lists of the
-*           object type (non unique, unless explicitly specified by CULL_UNIQUE)
-*        CULL_UNIQUE
-*           the field value has to be unique for all objects in a list
-*           currently only used for the definition of hash tables,
-*           but it could be used for general consistency checks.
-*        CULL_JGDI_HIDDEN
-*        CULL_CONFIGURE
-*           the field can be changed by configuration functions
-*           not yet implemented
-*        CULL_SPOOL
-*           the field is spooled
-*        CULL_SUBLIST
-*           the field is spooled when the type is used as subtype in another
-*           type, but less fields shall be spooled, e.g. in the CE_TYPE:
-*           all fields are spooled if the complex variable definition is spooled,
-*           but only CE_name and CE_stringval are spooled when used as subtype,
-*           like in the complex_values of exec host or queue
-*        CULL_SPOOL_PROJECT
-*           deprecated?
-*        CULL_SPOOL_USER
-*           deprecated?
-*        CULL_JGDI_RO
-*        CULL_JGDI_CONF
-*
-*  NOTES
-*     Further attributes can be introduced as necessary, e.g.
-*        CULL_ARRAY - the field is an array of the specified data type
-*
-*  SEE ALSO
-*     cull/list/mt_get_type()
-*     cull/list/mt_do_hashing()
-*     cull/list/mt_is_unique()
-******************************************************************************/
+/**
+ * @defgroup cull_field_attributes Field attributes
+ * @brief Attributes a cull object field can be given
+ *
+ * When a field of a cull object type is defined, any number of attributes can
+ * be combined into its flags. The syntax of a field definition is
+ *
+ * @code
+ * <typedef>(<field_name>, <attrib1> [| <attrib2> ...])
+ * e.g.
+ * SGE_STRING(QU_qname, CULL_HASH | CULL_UNIQUE)
+ * @endcode
+ *
+ * See #CULL_DEFAULT and its neighbours for the individual attributes.
+ *
+ * @note Further attributes can be introduced as necessary, e.g. `CULL_ARRAY`
+ *       for a field holding an array of the given data type.
+ * @{
+ * @}
+ */
 
-/****** cull/list/lCopyElem() *************************************************
-*  NAME
-*     lCopyElem() -- Copies a whole list element
-*
-*  SYNOPSIS
-*     lListElem* lCopyElem(const lListElem *ep)
-*
-*  FUNCTION
-*     Copies a whole list element
-*
-*  INPUTS
-*     const lListElem *ep - element
-*
-*  RESULT
-*     lListElem* - copy of 'ep'
-******************************************************************************/
+
+/**
+ * @brief Copies a whole list element
+ *
+ * Copies a whole list element
+ *
+ * @param ep element
+ *
+ * @return copy of 'ep'
+ */
 lListElem *lCopyElem(const lListElem *ep) {
    return lCopyElemHash(ep, true);
 }
 
-/****** cull/list/lCopyElemHash() *************************************************
-*  NAME
-*     lCopyElemHash() -- Copies a whole list element
-*
-*  SYNOPSIS
-*     lListElem* lCopyElemHash(const lListElem *ep, bool isHash)
-*
-*  FUNCTION
-*     Copies a whole list element
-*
-*  INPUTS
-*     const lListElem *ep - element
-*     bool                - generate hash or not
-*
-*  RESULT
-*     lListElem* - copy of 'ep'
-******************************************************************************/
+/**
+ * @brief Copies a whole list element
+ *
+ * Copies a whole list element
+ *
+ * @param ep element
+ * @param isHash true to build the hash tables of the copy as well
+ *
+ * @return copy of 'ep'
+ */
 lListElem *lCopyElemHash(const lListElem *ep, bool isHash) {
    lListElem *new_ep;
    int index;
@@ -200,28 +158,18 @@ lListElem *lCopyElemHash(const lListElem *ep, bool isHash) {
    DRETURN(new_ep);
 }
 
-/****** cull/list/lModifyWhat() ************************************************
-*  NAME
-*     lModifyWhat() -- Copy parts of an element
-*
-*  SYNOPSIS
-*     int lModifyWhat(lListElem *dst, const lListElem *src,
-*                     const lEnumeration *enp)
-*
-*  FUNCTION
-*     Copies elements from 'src' to 'dst' using the enumeration 'enp'
-*     as a mask or copies all elements if 'enp' is nullptr
-*
-*  INPUTS
-*     lListElem *dst          - destination element
-*     const lListElem *src    - source element
-*     const lEnumeration *enp - mask
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Copy parts of an element
+ *
+ * Copies elements from 'src' to 'dst' using the enumeration 'enp'
+ * as a mask or copies all elements if 'enp' is nullptr
+ *
+ * @param dst destination element
+ * @param src source element
+ * @param enp mask
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lModifyWhat(lListElem *dst, const lListElem *src, const lEnumeration *enp) {
    int ret, i = 0;
 
@@ -232,36 +180,24 @@ int lModifyWhat(lListElem *dst, const lListElem *src, const lEnumeration *enp) {
    DRETURN(ret);
 }
 
-/****** cull/list/lCopyElemPartialPack() **************************************
-*  NAME
-*     lCopyElemPartialPack() -- Copies parts of an element
-*
-*  SYNOPSIS
-*     int
-*     lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
-*                          const lEnumeration *enp, bool isHash,
-*                          sge_pack_buffer *pb)
-*
-*  FUNCTION
-*     Copies elements from list element 'src' to 'dst' using the
-*     enumeration 'enp' as a mask or copies all elements if
-*     'enp' is nullptr. Copying starts at index *jp. If pb is not nullptr
-*     then the elements will be stored in the packbuffer 'pb' instead of
-*     being copied.
-*
-*  INPUTS
-*     lListElem *dst          - destination element
-*     int *jp                 - Where should the copy operation start
-*     const lListElem *src    - src element
-*     const lEnumeration *enp - enumeration
-*     bool                    - generate hash or not
-*     sge_pack_buffer *pb     - packbuffer
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*******************************************************************************/
+/**
+ * @brief Copies parts of an element
+ *
+ * Copies elements from list element 'src' to 'dst' using the
+ * enumeration 'enp' as a mask or copies all elements if
+ * 'enp' is nullptr. Copying starts at index *jp. If pb is not nullptr
+ * then the elements will be stored in the packbuffer 'pb' instead of
+ * being copied.
+ *
+ * @param dst destination element
+ * @param jp Where should the copy operation start
+ * @param src src element
+ * @param enp enumeration
+ * @param isHash true to build the hash tables of the copy as well
+ * @param pb packbuffer
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int
 lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
                      const lEnumeration *enp, bool isHash,
@@ -315,34 +251,23 @@ lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
    DRETURN(0);
 }
 
-/****** cull/list/lCopySwitchPack() *******************************************
-*  NAME
-*     lCopySwitchPacPackk() -- Copy parts of elements indedendent from type
-*
-*  SYNOPSIS
-*     int
-*     lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx,
-*                 int dst_idx, bool isHash, sge_pack_buffer *pb)
-*
-*  FUNCTION
-*     Copies from the element 'sep' (using index 'src_idx') to
-*     the element 'dep' (using index 'dst_idx') in dependence
-*     of the type or it copies the it directly into pb.
-*
-*  INPUTS
-*     const lListElem *sep - source element
-*     lListElem *dep       - destination element
-*     int src_idx          - source index
-*     int dst_idx          - destination index
-*     bool isHash          - create Hash or not
-*     lEnumeration *ep     - enumeration oiter to be used for sublists
-*     sge_pack_buffer *pb  - pack buffer
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*******************************************************************************/
+/**
+ * @brief Copy parts of elements indedendent from type
+ *
+ * Copies from the element 'sep' (using index 'src_idx') to
+ * the element 'dep' (using index 'dst_idx') in dependence
+ * of the type or it copies the it directly into pb.
+ *
+ * @param sep source element
+ * @param dep destination element
+ * @param src_idx source index
+ * @param dst_idx destination index
+ * @param isHash create Hash or not
+ * @param ep enumeration oiter to be used for sublists
+ * @param pb pack buffer
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int
 lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
                 bool isHash, lEnumeration *ep, sge_pack_buffer *pb) {
@@ -414,22 +339,15 @@ lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
    DRETURN(0);
 }
 
-/****** cull/list/lGetListName() **********************************************
-*  NAME
-*     lGetListName() -- returns the user defined name of a list
-*
-*  SYNOPSIS
-*     const char* lGetListName(const lList *lp)
-*
-*  FUNCTION
-*     Returns the user defined name of a list.
-*
-*  INPUTS
-*     const lList *lp - list pointer
-*
-*  RESULT
-*     const char* - list name
-******************************************************************************/
+/**
+ * @brief Returns the user defined name of a list
+ *
+ * Returns the user defined name of a list.
+ *
+ * @param lp list pointer
+ *
+ * @return list name
+ */
 const char *lGetListName(const lList *lp) {
    DENTER(CULL_LAYER);
 
@@ -446,25 +364,17 @@ const char *lGetListName(const lList *lp) {
    DRETURN(lp->listname);
 }
 
-/****** cull/list/lGetListDescr() *********************************************
-*  NAME
-*     lGetListDescr() -- Returns the descriptor of a list
-*
-*  SYNOPSIS
-*     const lDescr* lGetListDescr(const lList *lp)
-*
-*  FUNCTION
-*     Returns the descriptor of a list
-*
-*  INPUTS
-*     const lList *lp - list pointer
-*
-*  RESULT
-*     const lDescr* - destriptor
-*
-*  NOTES
-*     MT-NOTE: lGetListDescr() is MT safe
-******************************************************************************/
+/**
+ * @brief Returns the descriptor of a list
+ *
+ * Returns the descriptor of a list
+ *
+ * @param lp list pointer
+ *
+ * @return destriptor
+ *
+ * @note MT-NOTE: lGetListDescr() is MT safe
+ */
 const lDescr *lGetListDescr(const lList *lp) {
    DENTER(CULL_LAYER);
 
@@ -475,25 +385,17 @@ const lDescr *lGetListDescr(const lList *lp) {
    DRETURN(lp->descr);
 }
 
-/****** cull/list/lGetNumberOfElem() ******************************************
-*  NAME
-*     lGetNumberOfElem() -- Returns the number of elements in a list
-*
-*  SYNOPSIS
-*     int lGetNumberOfElem(const lList *lp)
-*
-*  FUNCTION
-*     Returns the number of elements in a list
-*
-*  INPUTS
-*     const lList *lp - list pointer
-*
-*  RESULT
-*     int - number of elements
-*
-*  NOTES
-*     MT-NOTE: lGetNumberOfElem() is MT safe
-******************************************************************************/
+/**
+ * @brief Returns the number of elements in a list
+ *
+ * Returns the number of elements in a list
+ *
+ * @param lp list pointer
+ *
+ * @return number of elements
+ *
+ * @note MT-NOTE: lGetNumberOfElem() is MT safe
+ */
 uint32_t lGetNumberOfElem(const lList *lp) {
    DENTER(CULL_LAYER);
 
@@ -505,23 +407,16 @@ uint32_t lGetNumberOfElem(const lList *lp) {
    DRETURN(lp->nelem);
 }
 
-/****** cull/list/lGetElemIndex() *********************************************
-*  NAME
-*     lGetElemIndex() -- returns the index of element in list lp
-*
-*  SYNOPSIS
-*     int lGetElemIndex(const lListElem* ep, const lList* lp)
-*
-*  FUNCTION
-*     returns the index of element in list lp
-*
-*  INPUTS
-*     lListElem* ep - element
-*     lList* lp     - list
-*
-*  RESULT
-*     index number
-******************************************************************************/
+/**
+ * @brief Returns the index of element in list lp
+ *
+ * returns the index of element in list lp
+ *
+ * @param ep element
+ * @param lp list
+ *
+ * @return index number
+ */
 int lGetElemIndex(const lListElem *ep, const lList *lp) {
    DENTER(CULL_LAYER);
 
@@ -563,23 +458,15 @@ uint32_t lGetNumberOfRemainingElem(const lListElem *ep) {
    DRETURN(i);
 }
 
-/****** cull/list/lGetElemDescr() **********************************************
-*  NAME
-*     lGetElemDescr() -- returns the descriptor of a list element
-*
-*  SYNOPSIS
-*     const lDescr* lGetElemDescr(const lListElem* ep)
-*
-*  FUNCTION
-*     returns the descriptor of a list element
-*
-*  INPUTS
-*     lListElem* ep - CULL element
-*
-*  RESULT
-*     Pointer to descriptor
-*
-******************************************************************************/
+/**
+ * @brief Returns the descriptor of a list element
+ *
+ * returns the descriptor of a list element
+ *
+ * @param ep CULL element
+ *
+ * @return Pointer to descriptor
+ */
 const lDescr *lGetElemDescr(const lListElem *ep) {
    DENTER(CULL_LAYER);
 
@@ -590,19 +477,13 @@ const lDescr *lGetElemDescr(const lListElem *ep) {
    DRETURN(ep->descr);
 }
 
-/****** cull/list/lWriteElem() ************************************************
-*  NAME
-*     lWriteElem() -- Write a element to monitoring level CULL_LAYER
-*
-*  SYNOPSIS
-*     void lWriteElem(const lListElem *ep)
-*
-*  FUNCTION
-*     Write a element to monitoring level CULL_LAYER a info message
-*
-*  INPUTS
-*     const lListElem *ep - element
-******************************************************************************/
+/**
+ * @brief Write a element to monitoring level CULL_LAYER
+ *
+ * Write a element to monitoring level CULL_LAYER a info message
+ *
+ * @param ep element
+ */
 void lWriteElem(const lListElem *ep) {
    dstring buffer = DSTRING_INIT;
    const char *str;
@@ -617,21 +498,14 @@ void lWriteElem(const lListElem *ep) {
    DRETURN_VOID;
 }
 
-/****** cull/list/lWriteElemTo() **********************************************
-*  NAME
-*     lWriteElemTo() -- Write a element to file stream
-*
-*  SYNOPSIS
-*     void lWriteElemTo(const lListElem *ep, FILE *fp)
-*
-*  FUNCTION
-*     Write a element to file stream
-*
-*  INPUTS
-*     const lListElem *ep - element
-*     FILE *fp            - file stream
-*     ???/???
-******************************************************************************/
+/**
+ * @brief Write a element to file stream
+ *
+ * Write a element to file stream
+ *
+ * @param ep element
+ * @param fp file stream ???/???
+ */
 void lWriteElemTo(const lListElem *ep, FILE *fp) {
    dstring buffer = DSTRING_INIT;
    const char *str;
@@ -646,6 +520,12 @@ void lWriteElemTo(const lListElem *ep, FILE *fp) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Render an element into a string
+ *
+ * @param ep the element to render
+ * @param[out] buffer receives the rendered element
+ */
 void lWriteElemToStr(const lListElem *ep, dstring *buffer) {
    DENTER(CULL_LAYER);
    lWriteElem_(ep, buffer, 0);
@@ -734,19 +614,13 @@ static void lWriteElem_(const lListElem *ep, dstring *buffer, int nesting_level)
    DRETURN_VOID;
 }
 
-/****** cull/list/lWriteList() ************************************************
-*  NAME
-*     lWriteList() -- Write a list to monitoring level CULL_LAYER
-*
-*  SYNOPSIS
-*     void lWriteList(const lList *lp)
-*
-*  FUNCTION
-*     Write a list to monitoring level CULL_LAYER as info message.
-*
-*  INPUTS
-*     const lList *lp - list
-******************************************************************************/
+/**
+ * @brief Write a list to monitoring level CULL_LAYER
+ *
+ * Write a list to monitoring level CULL_LAYER as info message.
+ *
+ * @param lp list
+ */
 void lWriteList(const lList *lp) {
    dstring buffer = DSTRING_INIT;
    const char *str;
@@ -764,20 +638,14 @@ void lWriteList(const lList *lp) {
    DRETURN_VOID;
 }
 
-/****** cull/list/lWriteListTo() **********************************************
-*  NAME
-*     lWriteListTo() -- Write a list to a file stream
-*
-*  SYNOPSIS
-*     void lWriteListTo(const lList *lp, FILE *fp)
-*
-*  FUNCTION
-*     Write a list to a file stream
-*
-*  INPUTS
-*     const lList *lp - list
-*     FILE *fp        - file stream
-*******************************************************************************/
+/**
+ * @brief Write a list to a file stream
+ *
+ * Write a list to a file stream
+ *
+ * @param lp list
+ * @param fp file stream
+ */
 void lWriteListTo(const lList *lp, FILE *fp) {
    dstring buffer = DSTRING_INIT;
    const char *str;
@@ -792,6 +660,12 @@ void lWriteListTo(const lList *lp, FILE *fp) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Render a list and all its elements into a string
+ *
+ * @param lp the list to render
+ * @param[out] buffer receives the rendered list
+ */
 void lWriteListToStr(const lList *lp, dstring *buffer) {
    DENTER(CULL_LAYER);
    lWriteList_(lp, buffer, 0);
@@ -821,22 +695,15 @@ static void lWriteList_(const lList *lp, dstring *buffer, int nesting_level) {
    DRETURN_VOID;
 }
 
-/****** cull/list/lCreateElem() ***********************************************
-*  NAME
-*     lCreateElem() -- Create an element for a specific list
-*
-*  SYNOPSIS
-*     lListElem* lCreateElem(const lDescr *dp)
-*
-*  FUNCTION
-*     Create an element for a specific list
-*
-*  INPUTS
-*     const lDescr *dp - descriptor
-*
-*  RESULT
-*     lListElem* - element pointer or nullptr
-******************************************************************************/
+/**
+ * @brief Create an element for a specific list
+ *
+ * Create an element for a specific list
+ *
+ * @param dp descriptor
+ *
+ * @return element pointer or nullptr
+ */
 lListElem *lCreateElem(const lDescr *dp) {
    int n, i;
    lListElem *ep;
@@ -887,48 +754,34 @@ lListElem *lCreateElem(const lDescr *dp) {
    DRETURN(ep);
 }
 
-/****** cull/list/lCreateList() ***********************************************
-*  NAME
-*     lCreateList() -- Create an empty list
-*
-*  SYNOPSIS
-*     lList* lCreateList(const char *listname, const lDescr *descr)
-*
-*  FUNCTION
-*     Create an empty list with a given descriptor and a user defined
-*     listname.
-*
-*  INPUTS
-*     const char *listname - list name
-*     const lDescr *descr  - descriptor
-*
-*  RESULT
-*     lList* - list pointer or nullptr
-*******************************************************************************/
+/**
+ * @brief Create an empty list
+ *
+ * Create an empty list with a given descriptor and a user defined
+ * listname.
+ *
+ * @param listname list name
+ * @param descr descriptor
+ *
+ * @return list pointer or nullptr
+ */
 lList *lCreateList(const char *listname, const lDescr *descr) {
    return lCreateListHash(listname, descr, true);
 }
 
-/****** cull/list/lCreateListHash() ********************************************
-*  NAME
-*     lCreateList() -- Create an empty list
-*
-*  SYNOPSIS
-*     lList* lCreateList(const char *listname, const lDescr *descr, bool hash)
-*
-*  FUNCTION
-*     Create an empty list with a given descriptor and a user defined
-*     listname.
-*     The caller can choose whether hashtables shall be created or not.
-*
-*  INPUTS
-*     const char *listname - list name
-*     const lDescr *descr  - descriptor
-*     bool hash            - shall hashtables be created?
-*
-*  RESULT
-*     lList* - list pointer or nullptr
-*******************************************************************************/
+/**
+ * @brief Create an empty list
+ *
+ * Create an empty list with a given descriptor and a user defined
+ * listname.
+ * The caller can choose whether hashtables shall be created or not.
+ *
+ * @param listname list name
+ * @param descr descriptor
+ * @param hash shall hashtables be created?
+ *
+ * @return list pointer or nullptr
+ */
 lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
    lList *lp;
    int i, n;
@@ -991,26 +844,18 @@ lList *lCreateListHash(const char *listname, const lDescr *descr, bool hash) {
    DRETURN(lp);
 }
 
-/****** cull/list/lCreateElemList() *******************************************
-*  NAME
-*     lCreateElemList() -- Create a list with n elements
-*
-*  SYNOPSIS
-*     lList* lCreateElemList(const char *listname, const lDescr *descr,
-*                            int nr_elem)
-*
-*  FUNCTION
-*     Create a list with a given descriptor and insert 'nr_elem'
-*     only initialized elements
-*
-*  INPUTS
-*     const char *listname - list name
-*     const lDescr *descr  - descriptor
-*     int nr_elem          - number of elements
-*
-*  RESULT
-*     lList* - list or nullptr
-*******************************************************************************/
+/**
+ * @brief Create a list with n elements
+ *
+ * Create a list with a given descriptor and insert 'nr_elem'
+ * only initialized elements
+ *
+ * @param listname list name
+ * @param descr descriptor
+ * @param nr_elem number of elements
+ *
+ * @return list or nullptr
+ */
 lList *lCreateElemList(const char *listname, const lDescr *descr, int nr_elem) {
    lList *lp = nullptr;
    lListElem *ep = nullptr;
@@ -1035,22 +880,15 @@ lList *lCreateElemList(const char *listname, const lDescr *descr, int nr_elem) {
    DRETURN(lp);
 }
 
-/****** cull/list/lFreeElem() *************************************************
-*  NAME
-*     lFreeElem() -- Free a element including strings and sublists
-*
-*  SYNOPSIS
-*     void lFreeElem(lListElem **ep)
-*
-*  FUNCTION
-*     Free a element including strings and sublists
-*
-*  INPUTS
-*     lListElem **ep - element, will be set to nullptr
-*
-*  NOTES
-*     MT-NOTE: lRemoveElem() is MT safe
-******************************************************************************/
+/**
+ * @brief Free a element including strings and sublists
+ *
+ * Free a element including strings and sublists
+ *
+ * @param[in,out] ep1 element to remove; set to nullptr on return
+ *
+ * @note MT-NOTE: lRemoveElem() is MT safe
+ */
 void lFreeElem(lListElem **ep1) {
    int i = 0;
    lListElem *ep = nullptr;
@@ -1134,25 +972,16 @@ void lFreeElem(lListElem **ep1) {
    DRETURN_VOID;
 }
 
-/****** cull/list/lFreeList() *************************************************
-*  NAME
-*     lFreeList() -- Frees a list including all elements
-*
-*  SYNOPSIS
-*     void lFreeList(lList **lp)
-*
-*  FUNCTION
-*     Frees a list including all elements
-*
-*  INPUTS
-*     lList **lp - list
-*
-*  RESULT
-*     void
-*
-*  NOTES
-*     MT-NOTE: lFreeList() is MT safe
-******************************************************************************/
+/**
+ * @brief Frees a list including all elements
+ *
+ * Frees a list including all elements
+ *
+ * @param lp list
+ *
+ *
+ * @note MT-NOTE: lFreeList() is MT safe
+ */
 void lFreeList(lList **lp) {
    DENTER(CULL_LAYER);
 
@@ -1190,29 +1019,21 @@ void lFreeList(lList **lp) {
 }
 
 
-/****** cull/list/lAddSubList() ************************************************
-*  NAME
-*     lAddSubList() -- Append a list to the sublist of an element
-*
-*  SYNOPSIS
-*     int lAddSubList(lListElem *ep, int nm, const lList *to_add)
-*
-*  FUNCTION
-*     Appends the list 'to_add' to the sublist 'nm' of the element
-*     'ep'. The list pointer becomes invalid and the returned pointer
-*     should be used instead to access the complete sublist.
-*
-*  INPUTS
-*     lListElem *ep       - The CULL list element
-*     int nm              - The CULL field name of a sublist
-*     const lList *to_add - The list to be added
-*
-*  RESULT
-*     lList * - Returns
-*
-*  NOTES
-*     MT-NOTE: lAddSubList() is MT safe
-*******************************************************************************/
+/**
+ * @brief Append a list to the sublist of an element
+ *
+ * Appends the list 'to_add' to the sublist 'nm' of the element
+ * 'ep'. The list pointer becomes invalid and the returned pointer
+ * should be used instead to access the complete sublist.
+ *
+ * @param ep The CULL list element
+ * @param nm The CULL field name of a sublist
+ * @param to_add The list to be added
+ *
+ * @return Returns
+ *
+ * @note MT-NOTE: lAddSubList() is MT safe
+ */
 lList *lAddSubList(lListElem *ep, int nm, lList *to_add) {
    lList *tmp;
    if (lGetNumberOfElem(to_add)) {
@@ -1224,28 +1045,18 @@ lList *lAddSubList(lListElem *ep, int nm, lList *to_add) {
    return lGetListRW(ep, nm);
 }
 
-/****** cull/list/lAddList() **************************************************
-*  NAME
-*     lAddList() -- Concatenate two lists
-*
-*  SYNOPSIS
-*     int lAddList(lList *lp0, lList **lp1)
-*
-*  FUNCTION
-*     Concatenate two lists of equal type throwing away the second list
-*
-*  INPUTS
-*     lList *lp0 - first list
-*     lList **lp1 - second list
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*
-*  NOTES
-*     MT-NOTE: lAddList() is MT safe
-******************************************************************************/
+/**
+ * @brief Concatenate two lists
+ *
+ * Concatenate two lists of equal type throwing away the second list
+ *
+ * @param lp0 first list
+ * @param lp1 second list
+ *
+ * @return error state 0 - OK -1 - Error
+ *
+ * @note MT-NOTE: lAddList() is MT safe
+ */
 int lAddList(lList *lp0, lList **lp1) {
    /* No need to do any safety checks.  lAppendList will do them for us. */
    int res = 0;
@@ -1256,28 +1067,18 @@ int lAddList(lList *lp0, lList **lp1) {
    DRETURN(res);
 }
 
-/****** cull/list/lAppendList() ************************************************
-*  NAME
-*     lAppendList() -- Concatenate two lists
-*
-*  SYNOPSIS
-*     int lAppendList(lList *lp0, lList *lp1)
-*
-*  FUNCTION
-*     Concatenate two lists of equal type without throwing away the second list
-*
-*  INPUTS
-*     lList *lp0 - first list
-*     lList *lp1 - second list
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*
-*  NOTES
-*     MT-NOTE: lAppendList() is MT safe
-******************************************************************************/
+/**
+ * @brief Concatenate two lists
+ *
+ * Concatenate two lists of equal type without throwing away the second list
+ *
+ * @param lp0 first list
+ * @param lp1 second list
+ *
+ * @return error state 0 - OK -1 - Error
+ *
+ * @note MT-NOTE: lAppendList() is MT safe
+ */
 int lAppendList(lList *lp0, lList *lp1) {
    lListElem *ep;
    const lDescr *dp0, *dp1;
@@ -1311,34 +1112,23 @@ int lAppendList(lList *lp0, lList *lp1) {
    DRETURN(0);
 }
 
-/****** cull/list/lOverrideStrList() ************************************************
-*  NAME
-*     lOverrideStrList() -- Merge two lists
-*
-*  SYNOPSIS
-*     int lOverrideStrList(lList *lp0, lList *lp1, int nm, const char *str)
-*
-*  FUNCTION
-*     Merge two lists of equal type, and replace values in the first list
-*     with values from the second list.
-*
-*     This only applies to values equal str.
-*
-*  INPUTS
-*     lList *lp0      - first list
-*     lList *lp1      - second list
-*     int nm          - field name used for merging
-*     const char *str - override criteria, e.g. "-q" for "override all -q switches,
-*                       all others are simply merged"
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*
-*  NOTES
-*     MT-NOTE: lOverrideStrList() is MT safe
-******************************************************************************/
+/**
+ * @brief Merge two lists
+ *
+ * Merge two lists of equal type, and replace values in the first list
+ * with values from the second list.
+ *
+ * This only applies to values equal str.
+ *
+ * @param lp0 first list
+ * @param lp1 second list
+ * @param nm field name used for merging
+ * @param str override criteria, e.g. "-q" for "override all -q switches, all others are simply merged"
+ *
+ * @return error state 0 - OK -1 - Error
+ *
+ * @note MT-NOTE: lOverrideStrList() is MT safe
+ */
 int lOverrideStrList(lList *lp0, lList *lp1, int nm, const char *str) {
    lListElem *ep;
    const lDescr *dp0, *dp1;
@@ -1395,28 +1185,18 @@ int lOverrideStrList(lList *lp0, lList *lp1, int nm, const char *str) {
    DRETURN(0);
 }
 
-/****** cull/list/lCompListDescr() ********************************************
-*  NAME
-*     lCompListDescr() -- Compare two descriptors
-*
-*  SYNOPSIS
-*     int lCompListDescr(const lDescr *dp0, const lDescr *dp1)
-*
-*  FUNCTION
-*     Compare two descriptors
-*
-*  INPUTS
-*     const lDescr *dp0 - descriptor one
-*     const lDescr *dp1 - descriptor two
-*
-*  RESULT
-*     int - Result of compare operation
-*         0 - equivalent
-*        -1 - not equivalent
-*
-*  NOTES
-*     MT-NOTE: lCompListDescr() is MT safe
-******************************************************************************/
+/**
+ * @brief Compare two descriptors
+ *
+ * Compare two descriptors
+ *
+ * @param dp0 descriptor one
+ * @param dp1 descriptor two
+ *
+ * @return Result of compare operation 0 - equivalent -1 - not equivalent
+ *
+ * @note MT-NOTE: lCompListDescr() is MT safe
+ */
 int lCompListDescr(const lDescr *dp0, const lDescr *dp1) {
    int i, n, m;
 
@@ -1462,47 +1242,33 @@ int lCompListDescr(const lDescr *dp0, const lDescr *dp1) {
    DRETURN(0);
 }
 
-/****** cull/list/lCopyList() *************************************************
-*  NAME
-*     lCopyList() -- Copy a list including strings and sublists
-*
-*  SYNOPSIS
-*     lList* lCopyList(const char *name, const lList *src)
-*
-*  FUNCTION
-*     Copy a list including strings and sublists. The new list will
-*     get 'name' as user defined name
-*
-*  INPUTS
-*     const char *name - list name
-*     const lList *src - source list
-*
-*  RESULT
-*     lList* - Copy of 'src' or nullptr
-******************************************************************************/
+/**
+ * @brief Copy a list including strings and sublists
+ *
+ * Copy a list including strings and sublists. The new list will
+ * get 'name' as user defined name
+ *
+ * @param name list name
+ * @param src source list
+ *
+ * @return Copy of 'src' or nullptr
+ */
 lList *lCopyList(const char *name, const lList *src) {
    return lCopyListHash(name, src, true);
 }
 
-/****** cull/list/lCopyListHash() *************************************************
-*  NAME
-*     lCopyListHash() -- Copy a list including strings and sublists
-*
-*  SYNOPSIS
-*     lList* lCopyListHash(const char *name, const lList *src, bool isHash)
-*
-*  FUNCTION
-*     Copy a list including strings and sublists. The new list will
-*     get 'name' as user defined name
-*
-*  INPUTS
-*     const char *name - list name
-*     const lList *src - source list
-*     bool hash - if set to true, a hash table is generated
-*
-*  RESULT
-*     lList* - Copy of 'src' or nullptr
-******************************************************************************/
+/**
+ * @brief Copy a list including strings and sublists
+ *
+ * Copy a list including strings and sublists. The new list will
+ * get 'name' as user defined name
+ *
+ * @param name list name
+ * @param src source list
+ * @param hash if set to true, a hash table is generated
+ *
+ * @return Copy of 'src' or nullptr
+ */
 lList *lCopyListHash(const char *name, const lList *src, bool hash) {
    lList *dst = nullptr;
    lListElem *sep;
@@ -1616,28 +1382,18 @@ int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) {
    DRETURN(0);
 }
 
-/****** cull/list/lAppendElem() ***********************************************
-*  NAME
-*     lAppendElem() -- Append element at the end of a list
-*
-*  SYNOPSIS
-*     int lAppendElem(lList *lp, lListElem *ep)
-*
-*  FUNCTION
-*     Append element 'ep' at the end of list 'lp'
-*
-*  INPUTS
-*     lList *lp     - list
-*     lListElem *ep - element
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*
-*  NOTES
-*     MT-NOTE: lAppendElem() is MT safe
-******************************************************************************/
+/**
+ * @brief Append element at the end of a list
+ *
+ * Append element 'ep' at the end of list 'lp'
+ *
+ * @param lp list
+ * @param ep element
+ *
+ * @return error state 0 - OK -1 - Error
+ *
+ * @note MT-NOTE: lAppendElem() is MT safe
+ */
 int lAppendElem(lList *lp, lListElem *ep) {
    DENTER(CULL_LAYER);
 
@@ -1683,28 +1439,18 @@ int lAppendElem(lList *lp, lListElem *ep) {
    DRETURN(0);
 }
 
-/****** cull/list/lRemoveElem() ***********************************************
-*  NAME
-*     lRemoveElem() -- Delete a element from a list
-*
-*  SYNOPSIS
-*     int lRemoveElem(lList *lp, lListElem *ep)
-*
-*  FUNCTION
-*     Remove element 'ep' from list 'lp'. 'ep' gets deleted.
-*
-*  INPUTS
-*     lList *lp     - list
-*     lListElem **ep - element, will be set to nullptr
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*
-*  NOTES
-*     MT-NOTE: lRemoveElem() is MT safe
-*******************************************************************************/
+/**
+ * @brief Delete a element from a list
+ *
+ * Remove element 'ep' from list 'lp'. 'ep' gets deleted.
+ *
+ * @param lp list
+ * @param[in,out] ep1 element to remove; set to nullptr on return
+ *
+ * @return error state 0 - OK -1 - Error
+ *
+ * @note MT-NOTE: lRemoveElem() is MT safe
+ */
 int lRemoveElem(lList *lp, lListElem **ep1) {
    lListElem *ep = nullptr;
 
@@ -1746,27 +1492,19 @@ int lRemoveElem(lList *lp, lListElem **ep1) {
    DRETURN(0);
 }
 
-/****** cull/list/lDechainList() **********************************************
-*  NAME
-*     lDechainList() -- splits a list into two at the given elem.
-*
-*  SYNOPSIS
-*     lListElem* lDechainList(lList *lp, lListElem *ep)
-*
-*  FUNCTION
-*    splits a list into two at the given elem.
-*    If no target list is given, new one is created, otherwise the splited
-*    list is appended to the second one.
-*
-*  INPUTS
-*     lList *source  - list
-*     lList **target - list
-*     lListElem *ep  - element
-*
-*
-*  NOTES
-*     MT-NOTE: lDechainList() is MT safe
-******************************************************************************/
+/**
+ * @brief Splits a list into two at the given elem
+ *
+ * splits a list into two at the given elem.
+ * If no target list is given, new one is created, otherwise the splited
+ * list is appended to the second one.
+ *
+ * @param source list
+ * @param target list
+ * @param ep element
+ *
+ * @note MT-NOTE: lDechainList() is MT safe
+ */
 void
 lDechainList(lList *source, lList **target, lListElem *ep) {
    lListElem *target_last;
@@ -1836,26 +1574,18 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
    DRETURN_VOID;
 }
 
-/****** cull/list/lDechainElem() **********************************************
-*  NAME
-*     lDechainElem() -- Remove a element from a list
-*
-*  SYNOPSIS
-*     lListElem* lDechainElem(lList *lp, lListElem *ep)
-*
-*  FUNCTION
-*     Remove element 'ep' from list 'lp'. 'ep' gets not deleted.
-*
-*  INPUTS
-*     lList *lp     - list
-*     lListElem *ep - element
-*
-*  RESULT
-*     lListElem* - dechained element or nullptr
-*
-*  NOTES
-*     MT-NOTE: lDechainElem() is MT safe
-******************************************************************************/
+/**
+ * @brief Remove a element from a list
+ *
+ * Remove element 'ep' from list 'lp'. 'ep' gets not deleted.
+ *
+ * @param lp list
+ * @param ep element
+ *
+ * @return dechained element or nullptr
+ *
+ * @note MT-NOTE: lDechainElem() is MT safe
+ */
 lListElem *lDechainElem(lList *lp, lListElem *ep) {
    int i;
 
@@ -1906,23 +1636,17 @@ lListElem *lDechainElem(lList *lp, lListElem *ep) {
    DRETURN(ep);
 }
 
-/****** cull/list/lDechainObject() **********************************************
-*  NAME
-*     lDechainObject() -- Remove a element from a list
-*
-*  SYNOPSIS
-*     lListElem* lDechainObject(lList *lp, int name)
-*
-*  FUNCTION
-*     Remove element 'ep' from list 'lp'. 'ep' gets not deleted.
-*
-*  INPUTS
-*     lList *lp     - list
-*     int name      - attribute name
-*
-*  RESULT
-*     lListElem* - dechained element or nullptr
-******************************************************************************/
+/**
+ * @brief Remove a element from a list
+ *
+ * Removes the sub-object held in a field and returns it. The object is not
+ * deleted, and the field is left holding nullptr.
+ *
+ * @param parent element holding the sub-object
+ * @param name the field the sub-object lives in
+ *
+ * @return the dechained object, now owned by the caller, or nullptr
+ */
 lListElem *lDechainObject(lListElem *parent, int name) {
    int pos;
    lListElem *dep;
@@ -1956,125 +1680,114 @@ lListElem *lDechainObject(lListElem *parent, int name) {
    DRETURN(dep);
 }
 
-/****** cull/list/lFirst() ****************************************************
-*  NAME
-*     lFirst() -- Return the first element of a list
-*
-*  SYNOPSIS
-*     lListElem* lFirst(const lList *slp)
-*
-*  FUNCTION
-*     Return the first element of a list.
-*
-*  INPUTS
-*     const lList *slp - list
-*
-*  RESULT
-*     lListElem* - first element or nullptr
-******************************************************************************/
+/**
+ * @brief Return the first element of a list
+ *
+ * Return the first element of a list.
+ *
+ * @param slp list
+ *
+ * @return first element or nullptr
+ */
 lListElem *lFirstRW(const lList *slp) {
    DENTER(CULL_LAYER);
    DRETURN(slp ? slp->first : nullptr);
 }
 
+/**
+ * @brief Return the first element of a list, read only
+ *
+ * @param slp list
+ * @return first element or nullptr
+ */
 const lListElem *lFirst(const lList *slp) {
    return lFirstRW(slp);
 }
 
-/****** cull/list/lLast() *****************************************************
-*  NAME
-*     lLast() -- Returns the last element of a list
-*
-*  SYNOPSIS
-*     lListElem* lLast(const lList *slp)
-*
-*  FUNCTION
-*     Returns the last element of a list.
-*
-*  INPUTS
-*     const lList *slp - list
-*
-*  RESULT
-*     lListElem* - last element or nullptr
-******************************************************************************/
+/**
+ * @brief Returns the last element of a list
+ *
+ * Returns the last element of a list.
+ *
+ * @param slp list
+ *
+ * @return last element or nullptr
+ */
 lListElem *lLastRW(const lList *slp) {
    DENTER(CULL_LAYER);
    DRETURN(slp ? slp->last : nullptr);
 }
 
+/**
+ * @brief Return the last element of a list, read only
+ *
+ * @param slp list
+ * @return last element or nullptr
+ */
 const lListElem *lLast(const lList *slp) {
    return lLastRW(slp);
 }
 
-/****** cull/list/lNext() *****************************************************
-*  NAME
-*     lNext() -- Returns the next element or nullptr
-*
-*  SYNOPSIS
-*     lListElem* lNext(const lListElem *sep)
-*
-*  FUNCTION
-*     Returns the next element of 'sep' or nullptr
-*
-*  INPUTS
-*     const lListElem *sep - element
-*
-*  RESULT
-*     lListElem* - next element or nullptr
-*******************************************************************************/
+/**
+ * @brief Returns the next element or nullptr
+ *
+ * Returns the next element of 'sep' or nullptr
+ *
+ * @param sep element
+ *
+ * @return next element or nullptr
+ */
 lListElem *lNextRW(const lListElem *sep) {
    DENTER(CULL_LAYER);
    DRETURN(sep ? sep->next : nullptr);
 }
 
+/**
+ * @brief Return the following element, read only
+ *
+ * @param sep the current element
+ * @return the next element, or nullptr at the end of the list
+ */
 const lListElem *lNext(const lListElem *sep) {
    return lNextRW(sep);
 }
 
-/****** cull/list/lPrev() *****************************************************
-*  NAME
-*     lPrev() -- Returns the previous element or nullptr
-*
-*  SYNOPSIS
-*     lListElem* lPrev(const lListElem *sep)
-*
-*  FUNCTION
-*     Returns the previous element or nullptr.
-*
-*  INPUTS
-*     const lListElem *sep - element
-*
-*  RESULT
-*     lListElem* - previous element
-******************************************************************************/
+/**
+ * @brief Returns the previous element or nullptr
+ *
+ * Returns the previous element or nullptr.
+ *
+ * @param sep element
+ *
+ * @return previous element
+ */
 lListElem *lPrevRW(const lListElem *sep) {
    DENTER(CULL_LAYER);
    DRETURN(sep ? sep->prev : nullptr);
 }
 
+/**
+ * @brief Return the preceding element, read only
+ *
+ * @param sep the current element
+ * @return the previous element, or nullptr at the head of the list
+ */
 const lListElem *lPrev(const lListElem *sep) {
    return lPrevRW(sep);
 }
 
-/****** cull/list/lFindFirstRW() ************************************************
-*  NAME
-*     lFindFirstRW() -- Returns first element fulfilling condition
-*
-*  SYNOPSIS
-*     lListElem* lFindFirstRW(const lList *slp, const lCondition *cp)
-*
-*  FUNCTION
-*     Returns the first element fulfilling the condition 'cp' or
-*     nullptr if nothing is found. If the condition is nullptr the first
-*     element is delivered.
-*
-*  INPUTS
-*     const lList *slp     - list
-*     const lCondition *cp - condition
-*
-*  RESULT
-*     lListElem* - element or nullptr
-******************************************************************************/
+/**
+ * @brief Returns first element fulfilling condition
+ *
+ * Returns the first element fulfilling the condition 'cp' or
+ * nullptr if nothing is found. If the condition is nullptr the first
+ * element is delivered.
+ *
+ * @param lp list
+ * @param cp condition
+ *
+ * @return element or nullptr
+ */
 lListElem *lFindFirstRW(const lList *lp, const lCondition *cp) {
    lListElem *ep;
 
@@ -2091,25 +1804,18 @@ lListElem *lFindFirstRW(const lList *lp, const lCondition *cp) {
    DRETURN(ep);
 }
 
-/****** cull/list/lFindLastRW() *************************************************
-*  NAME
-*     lFindLastRW() -- Returns last element fulfilling condition
-*
-*  SYNOPSIS
-*     lListElem* lFindLastRW(const lList *slp, const lCondition *cp)
-*
-*  FUNCTION
-*     Retruns the last element fulfilling the condition 'cp' or nullptr
-*     if nothing is found. If the condition is nullptr then the last
-*     element is delivered.
-*
-*  INPUTS
-*     const lList *slp     - list
-*     const lCondition *cp - condition
-*
-*  RESULT
-*     lListElem* - element or nullptr
-******************************************************************************/
+/**
+ * @brief Returns last element fulfilling condition
+ *
+ * Retruns the last element fulfilling the condition 'cp' or nullptr
+ * if nothing is found. If the condition is nullptr then the last
+ * element is delivered.
+ *
+ * @param lp list
+ * @param cp condition
+ *
+ * @return element or nullptr
+ */
 lListElem *lFindLastRW(const lList *lp, const lCondition *cp) {
    lListElem *ep;
 
@@ -2126,25 +1832,18 @@ lListElem *lFindLastRW(const lList *lp, const lCondition *cp) {
    DRETURN(ep);
 }
 
-/****** cull/list/lFindNext() *************************************************
-*  NAME
-*     lFindNext() -- Returns the next element fulfilling condition
-*
-*  SYNOPSIS
-*     lListElem* lFindNext(const lListElem *ep, const lCondition *cp)
-*
-*  FUNCTION
-*     Returns the next element fulfilling the condition 'cp' or nullptr
-*     if nothing is found. If condition is nullptr than the following
-*     element is delivered.
-*
-*  INPUTS
-*     const lListElem *ep  - element
-*     const lCondition *cp - condition
-*
-*  RESULT
-*     lListElem* - element or nullptr
-*******************************************************************************/
+/**
+ * @brief Returns the next element fulfilling condition
+ *
+ * Returns the next element fulfilling the condition 'cp' or nullptr
+ * if nothing is found. If condition is nullptr than the following
+ * element is delivered.
+ *
+ * @param ep element
+ * @param cp condition
+ *
+ * @return element or nullptr
+ */
 lListElem *lFindNextRW(const lListElem *ep, const lCondition *cp) {
    DENTER(CULL_LAYER);
 
@@ -2160,25 +1859,18 @@ lListElem *lFindNextRW(const lListElem *ep, const lCondition *cp) {
    DRETURN((lListElem *) ep);
 }
 
-/****** cull/list/lFindPrevRW() *************************************************
-*  NAME
-*     lFindPrevRW() -- Returns previous element fulfilling condition
-*
-*  SYNOPSIS
-*     lListElem* lFindPrevRW(const lListElem *ep, const lCondition *cp)
-*
-*  FUNCTION
-*     Returns the previous element fulfilling the condition 'cp' or
-*     nullptr if nothing is found. If condition is nullptr than the following
-*     element is delivered.
-*
-*  INPUTS
-*     const lListElem *ep  - element
-*     const lCondition *cp - condition
-*
-*  RESULT
-*     lListElem* - element or nullptr
-******************************************************************************/
+/**
+ * @brief Returns previous element fulfilling condition
+ *
+ * Returns the previous element fulfilling the condition 'cp' or
+ * nullptr if nothing is found. If condition is nullptr than the following
+ * element is delivered.
+ *
+ * @param ep element
+ * @param cp condition
+ *
+ * @return element or nullptr
+ */
 lListElem *lFindPrevRW(const lListElem *ep, const lCondition *cp) {
    DENTER(CULL_LAYER);
 
@@ -2194,30 +1886,19 @@ lListElem *lFindPrevRW(const lListElem *ep, const lCondition *cp) {
    DRETURN((lListElem *) ep);
 }
 
-/****** cull/list/lPSortList() ************************************************
-*  NAME
-*     lPSortList() -- Sort a given list
-*
-*  SYNOPSIS
-*     int lPSortList(lList * lp, const char *fmt, ...)
-*
-*  FUNCTION
-*     Sort a given list. The sorting order is given by the format
-*     string and additional arguments.
-*
-*  INPUTS
-*     lList * lp      - list
-*     const char *fmt - format string (see lParseSortOrder())
-*     ...             - additional arguments (see lParseSortOrder())
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*
-*  SEE ALSO
-*     cull/list/lParseSortOrder()
-******************************************************************************/
+/**
+ * @brief Sort a given list
+ *
+ * Sort a given list. The sorting order is given by the format
+ * string and additional arguments.
+ *
+ * @param lp list
+ * @param fmt format string (see lParseSortOrder()) ...             - additional arguments (see lParseSortOrder())
+ *
+ * @return error state 0 - OK -1 - Error
+ *
+ * @see `lParseSortOrder()`
+ */
 int lPSortList(lList *lp, const char *fmt, ...) {
    va_list ap;
 
@@ -2245,25 +1926,16 @@ int lPSortList(lList *lp, const char *fmt, ...) {
    DRETURN(0);
 }
 
-/****** cull/list/lSortList() *************************************************
-*  NAME
-*     lSortList() -- Sort list according to sort order object
-*
-*  SYNOPSIS
-*     int lSortList(lList *lp, const lSortOrder *sp)
-*
-*  FUNCTION
-*     Sort list according to sort order object.
-*
-*  INPUTS
-*     lList *lp            - list
-*     const lSortOrder *sp - sort order object
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Sort list according to sort order object
+ *
+ * Sort list according to sort order object.
+ *
+ * @param lp list
+ * @param sp sort order object
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSortList(lList *lp, const lSortOrder *sp) {
    lListElem *ep;
    lListElem **pointer;
@@ -2339,25 +2011,16 @@ int lSortList(lList *lp, const lSortOrder *sp) {
    DRETURN(0);
 }
 
-/****** cull/list/lUniqStr() **************************************************
-*  NAME
-*     lUniqStr() -- Uniq a string key list
-*
-*  SYNOPSIS
-*     int lUniqStr(lList *lp, int keyfield)
-*
-*  FUNCTION
-*     Uniq a string key list
-*
-*  INPUTS
-*     lList *lp    - list
-*     int keyfield - string field name id
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Uniq a string key list
+ *
+ * Uniq a string key list
+ *
+ * @param lp list
+ * @param keyfield string field name id
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lUniqStr(lList *lp, int keyfield) {
    lListElem *ep;
    lListElem *rep;
@@ -2387,25 +2050,16 @@ int lUniqStr(lList *lp, int keyfield) {
    DRETURN(0);
 }
 
-/****** cull/list/lUniqHost() *************************************************
-*  NAME
-*     lUniqHost() -- Uniq a host key list
-*
-*  SYNOPSIS
-*     int lUniqHost(lList *lp, int keyfield)
-*
-*  FUNCTION
-*     Uniq a hostname key list.
-*
-*  INPUTS
-*     lList *lp    - list
-*     int keyfield - host field
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Uniq a host key list
+ *
+ * Uniq a hostname key list.
+ *
+ * @param lp list
+ * @param keyfield host field
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lUniqHost(lList *lp, int keyfield) {
    lListElem *ep;
    lListElem *rep;
@@ -2435,81 +2089,52 @@ int lUniqHost(lList *lp, int keyfield) {
    DRETURN(0);
 }
 
-/****** cull/list/mt_get_type() ************************************************
-*  NAME
-*     mt_get_type() -- get data type for cull object field
-*
-*  SYNOPSIS
-*     int mt_get_type(int mt)
-*
-*  FUNCTION
-*     Returns the data type of a cull object field given the multitype
-*     attribute of a cull descriptor.
-*
-*  INPUTS
-*     int mt - mt (multitype) struct element of a field descriptor
-*
-*  RESULT
-*     int - cull data type enum value (from _enum_lMultiType)
-*
-*  EXAMPLE
-*     switch(mt_get_type(descr[i].mt)) {
-*        case lDoubleT:
-*           ...
-*     }
-*
-*  SEE ALSO
-*
-*
-*  NOTES
-*     MT-NOTE: mt_get_type() is MT safe
-*******************************************************************************/
-/****** cull/list/mt_do_hashing() ************************************************
-*  NAME
-*     mt_do_hashing() -- is there hash access for a field
-*
-*  SYNOPSIS
-*     int mt_do_hashing(int mt)
-*
-*  FUNCTION
-*     Returns the information if hashing is active for a cull object field
-*     given the multitype attribute of a cull descriptor.
-*
-*  INPUTS
-*     int mt - mt (multitype) struct element of a field descriptor
-*
-*  RESULT
-*     int - 1, if hashing is requested, else 0
-*
-*  SEE ALSO
-*
-*******************************************************************************/
-/****** cull/list/mt_is_unique() ************************************************
-*  NAME
-*     mt_is_unique() -- is the cull object field unique
-*
-*  SYNOPSIS
-*     int mt_is_unique(int mt)
-*
-*  FUNCTION
-*     Returns the information if a certain cull object field is unique within
-*     a cull list given the multitype attribute of a cull descriptor.
-*
-*  INPUTS
-*     int mt - mt (multitype) struct element of a field descriptor
-*
-*  RESULT
-*     int - 1 = unique, 0 = not unique
-*
-*  EXAMPLE
-*     if(mt_is_unique(descr[i].mt)) {
-*        // check for uniqueness before inserting new elemente into a list
-*        if(lGetElemUlong(....) != nullptr) {
-*           WARNING(MSG_DUPLICATERECORD....);
-*           DRETURN(nullptr);
-*        }
-*     }
-*
-*  SEE ALSO
-*
-*******************************************************************************/
+/**
+ * @brief Get data type for cull object field
+ *
+ * Returns the data type of a cull object field given the multitype
+ * attribute of a cull descriptor.
+ *
+ * @code
+ * switch(mt_get_type(descr[i].mt)) {
+ *    case lDoubleT:
+ *       ...
+ * }
+ * @endcode
+ *
+ * @param mt mt (multitype) struct element of a field descriptor
+ *
+ * @return cull data type enum value (from _enum_lMultiType)
+ *
+ * @note MT-NOTE: mt_get_type() is MT safe
+ */
+/**
+ * @brief Is there hash access for a field
+ *
+ * Returns the information if hashing is active for a cull object field
+ * given the multitype attribute of a cull descriptor.
+ *
+ * @param mt mt (multitype) struct element of a field descriptor
+ *
+ * @return 1, if hashing is requested, else 0
+ */
+/**
+ * @brief Is the cull object field unique
+ *
+ * Returns the information if a certain cull object field is unique within
+ * a cull list given the multitype attribute of a cull descriptor.
+ *
+ * @code
+ * if(mt_is_unique(descr[i].mt)) {
+ *    // check for uniqueness before inserting new elemente into a list
+ *    if(lGetElemUlong(....) != nullptr) {
+ *       WARNING(MSG_DUPLICATERECORD....);
+ *       DRETURN(nullptr);
+ *    }
+ * }
+ * @endcode
+ *
+ * @param mt mt (multitype) struct element of a field descriptor
+ *
+ * @return 1 = unique, 0 = not unique
+ */

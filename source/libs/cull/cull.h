@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Umbrella header pulling in the whole cull list library
+ */
+
 #include "cull/cull_listP.h"
 #include "cull/cull_list.h"
 #include "cull/cull_where.h"
