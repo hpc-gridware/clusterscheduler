@@ -1311,7 +1311,7 @@ The following request characteristics can be used:
 - *object* : The object of the request. Possible values are
   - *JOB* : Job
   - *CQUEUE* : Cluster Queue
-  - *AHOST*, *EHOST*, *SHOST* : Admin, Execution, Submission Host
+  - *EHOST* : Execution Host
   - *ECLIENT* : Event Clients
   - *CPLX* : Complex
   - *CONF* : Configuration

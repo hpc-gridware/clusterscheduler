@@ -589,9 +589,13 @@ UpOrDowngradeTo902000() {
 
             # CS-2394: the gdi_request_limits object types MANAGER and OPERATOR were
             # removed in 9.2 - managers and operators are access lists now and are
-            # limited via the USER_SET object. Drop any rule whose object filter is
-            # MANAGER or OPERATOR so the upgraded qmaster does not reject the config.
-            # A rule is "source:type:object:user:host=limit"; the object is the third
+            # limited via the USER_SET object.
+            # CS-2438: AHOST and SHOST go the same way - admin and submit hosts are
+            # the reserved host groups "@admin_hosts"/"@submit_hosts" now and are
+            # limited via the HGRP object.
+            # Drop any rule whose object filter is one of the four so the upgraded
+            # qmaster does not reject the config. A rule is
+            # "source:type:object:user:host=limit"; the object is the third
             # colon-separated field, and rules are separated by commas.
             gdi_limits=$(GetAttrValue "${file}" "gdi_request_limits")
             if [ -n "$gdi_limits" ] && [ "$gdi_limits" != "NONE" ]; then
@@ -601,7 +605,7 @@ UpOrDowngradeTo902000() {
                for rule in $gdi_limits; do
                   rule_object=$(echo "$rule" | cut -f 3 -d ':')
                   case "$rule_object" in
-                     MANAGER|OPERATOR)
+                     MANAGER|OPERATOR|AHOST|SHOST)
                         LogIt "I" "Dropping obsolete gdi_request_limits rule (object $rule_object): $rule"
                         ;;
                      *)
@@ -617,7 +621,7 @@ UpOrDowngradeTo902000() {
                [ -z "$new_limits" ] && new_limits="NONE"
                if [ "$new_limits" != "$gdi_limits" ]; then
                   ReplaceOrAddLine "${file}" 'gdi_request_limits.*' "gdi_request_limits $new_limits"
-                  LogIt "I" "Rewrote gdi_request_limits after removing MANAGER/OPERATOR rules: $new_limits"
+                  LogIt "I" "Rewrote gdi_request_limits after removing MANAGER/OPERATOR/AHOST/SHOST rules: $new_limits"
                fi
             fi
          fi
