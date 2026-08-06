@@ -164,6 +164,8 @@
 #define MSG_SCHEDD_INFO_ARISINERROR                   _MESSAGE(47151, _("Jobs can not run because requested advance reservation is in error state"))  
 #define MSG_SCHEDD_INFO_HNOTARRESERVED_SI             _MESSAGE(47152, _("cannot run on host " SFQ " because it was not reserved by advance reservation " sge_u32))
 #define MSG_SCHEDD_INFO_HNOTARRESERVED                _MESSAGE(47153, _("Jobs can not run because host was not reserved by advance reservation"))
+#define MSG_SCHEDD_INFO_CONSUMABLENOVALUE_SS          _MESSAGE(47154, _("cannot run in queue instance " SFQ " because consumable " SFQ " used as load threshold has no value at queue, host or global level"))
+#define MSG_SCHEDD_INFO_CONSUMABLENOVALUE             _MESSAGE(47155, _("Jobs can not run because a consumable used as load threshold has no value"))
 
 #define MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_S        _MESSAGE(47168, _("failed parsing allocation rule " SFQ))
 #define MSG_PROJECT                                   _MESSAGE(47170, _("project"))

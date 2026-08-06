@@ -36,6 +36,7 @@
 #include <cstdlib>
 #include <cfloat>
 #include <climits>
+#include <cmath>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge.h"
@@ -4992,11 +4993,10 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool 
  */
 static int
 parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
-   int avail_h = 0;
-   const char *eh_name = lGetHost(host, EH_name);
-
    DENTER(TOP_LAYER);
 
+   int avail_h = 0;
+   const char *eh_name = lGetHost(host, EH_name);
    const void *queue_iterator = nullptr;
    lListElem *next_queue, *qep;
    for (next_queue = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator);
@@ -5048,10 +5048,19 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
 
             if ((centry = get_attribute_by_name(a->gep, host, qep, name, a->centry_list, a->load_adjustments, a->start,
                                                 a->duration)) == nullptr) {
-                /* no load value, no assigned consumable to queue, host, or global */
+                /* No load value and no consumable assigned at queue, host or global level, so
+                 * this threshold cannot be evaluated. Skip it instead of discarding the whole
+                 * host: a single unevaluable threshold in one queue must not make every queue
+                 * of the host unusable. Note that advance reservations run with QS_STATE_EMPTY,
+                 * where dynamic load values are ignored, so a consumable that only ever has a
+                 * load value ends up here for every AR.
+                 */
                 DPRINTF("the consumable " SFN " used in queue " SFN " as load threshold has no instance at queue, host or global level\n",
                          name, lGetString(qep, QU_full_name));
-                DRETURN(0);
+                schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
+                               SCHEDD_INFO_CONSUMABLENOVALUE_SS,
+                               lGetString(qep, QU_full_name), name);
+                continue;
             }
 
             load_value = lGetString(centry, CE_pj_stringval);
@@ -5102,20 +5111,24 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
             load_np_value_adjustment(name, host, &adjustment);
          }
 
-         /* load alarm is defined in a way, that a host can go with one
-            used slot into alarm and not that the dispatching prevents
-            the alarm state. For this behavior we have to add 1 to the
-            available slots. However, this is not true for consumables
-            as load threshold*/
-         int avail = (threshold - load)/adjustment;
-         if (lGetUlong(cep, CE_consumable) == CONSUMABLE_NO) {
-            avail++;
-         }
+         /* Load alarm is defined in a way that a queue may go into alarm with the last
+          * slot it gets: the alarm stops *further* dispatching, it does not prevent the
+          * alarm state itself. ceil() yields exactly the number of slots that tips the
+          * queue into alarm, and that last one is still allowed - which is the same as
+          * exempting the last task of a job from the threshold.
+          *
+          * This used to truncate and add 1 for non-consumables only. Truncating alone is
+          * one too few unless the division comes out exact, and truncating plus 1 is one
+          * too many when it does, so consumables and ordinary load thresholds disagreed
+          * with each other and both were off at one end. ceil() is correct for both.
+          */
+         int avail = static_cast<int>(ceil((threshold - load) / adjustment));
          avail_q = std::min(avail, avail_q);
       } // end loop over all load thresholds
 
       avail_h = MAX(avail_h, avail_q);
    }
+
    DRETURN(avail_h);
 }
 

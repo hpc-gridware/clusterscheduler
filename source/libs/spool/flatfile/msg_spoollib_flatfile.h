@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -65,5 +65,10 @@
 // XML-producing commands stay for compatibility, but nothing new is added - JSON is the supported
 // structured format.
 #define MSG_SPOOL_FORMATNOTSUPPORTED_S       _MESSAGE(62023, _("spooling format " SFQ " is not supported - use JSON for structured output"))
+#define MSG_RSMAP_CHARACTERISTIC_UNCLOSED_SS _MESSAGE(62024, _("RSMAP " SFQ " id " SFQ " has an unclosed characteristics block, expected ']'"))
+#define MSG_RSMAP_CHARACTERISTIC_NO_EQ_SSS   _MESSAGE(62025, _("RSMAP " SFQ " id " SFQ " has malformed characteristic " SFQ ", expected name=value"))
+#define MSG_RSMAP_CHARACTERISTIC_ON_RANGE_SS _MESSAGE(62026, _("RSMAP " SFQ " range " SFQ " does not allow characteristics; list ids explicitly"))
+#define MSG_RSMAP_CHARACTERISTIC_CONFLICT_SS _MESSAGE(62027, _("RSMAP " SFQ " id " SFQ ": characteristics differ across occurrences of the same id; all occurrences must carry identical characteristics (or all be bare)"))
+#define MSG_RSMAP_CHARACTERISTIC_NOT_AVAILABLE_SS _MESSAGE(62028, _("RSMAP " SFQ " id " SFQ ": per-instance characteristics are not available in OCS"))
 
 // clang-format on
