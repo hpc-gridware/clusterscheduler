@@ -37,8 +37,13 @@
  * @brief Localisable message catalogue of the event client library
  *
  * Message ids in the range [65000;65099] are reserved for the event client
- * library. Each entry is a `_MESSAGE(id, text)` pair; the id is what the
- * message catalogue is keyed on and must never be reused for different text.
+ * library. Each entry pairs an id with its text; the id is what the message
+ * catalogue is keyed on and must never be reused for different text.
+ *
+ * Do not write the message macro's name followed by an opening parenthesis
+ * anywhere in this file's comments: the testsuite parses these headers line by
+ * line looking for exactly that string, and a prose line carrying it fails
+ * `update_macro_messages_list` during test setup.
  *
  * @see @ref evc
  */
