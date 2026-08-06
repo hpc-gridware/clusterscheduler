@@ -44,6 +44,18 @@ version 9.2 qmaster. The upgrade procedure handles this automatically: any such 
 `gdi_request_limits` during the upgrade (if no rule remains, the value is set to *NONE*). No manual action
 is required; adapt your rules to *USER_SET* afterwards if you want to keep limiting these operations.
 
+### Object Types *AHOST* and *SHOST* Removed
+
+The `gdi_request_limits` object types *AHOST* and *SHOST* no longer exist in version 9.2. Admin and submit
+hosts are now the members of the reserved *@admin_hosts* and *@submit_hosts* host groups (see *Admin and
+Submit Hosts Are Reserved Host Groups* below), and adding or removing them is performed on those host groups.
+A rule that limited admin or submit host operations should therefore target the *HGROUP* object instead.
+
+A configuration that still contains a rule with object *AHOST* or *SHOST* would be rejected by the version 9.2
+qmaster. The upgrade procedure handles this automatically: any such rule is removed from `gdi_request_limits`
+during the upgrade (if no rule remains, the value is set to *NONE*). No manual action is required; adapt your
+rules to *HGROUP* afterwards if you want to keep limiting these operations.
+
 ## *qquota* Plain Output: Memory and Time Limits Shown With Units
 
 In the plain (non-XML, non-JSON) output of *qquota*, resource-quota limit and usage values are now displayed in the
@@ -135,6 +147,71 @@ tooling that read those files directly must use `qconf -sm`/`-so` (unchanged) in
 directly has never been a supported interface. Clusters that use an access list named `manager` or
 `operator` must rename it before upgrading; the upgrade detects the collision and aborts with an
 explanatory message — see the [Upgrade Notes](06_upgrade_notes.md#managers-and-operators-are-stored-as-access-lists).
+
+## Admin and Submit Hosts Are Reserved Host Groups
+
+Administrative hosts and submit hosts are now stored as the members of two reserved host groups named
+`@admin_hosts` and `@submit_hosts`, instead of in their own `admin_hosts` and `submit_hosts` entries in the
+qmaster spool directory. The host group is the single place where they live, which allows RBAC roles to
+reference admin and submit hosts by host group name instead of duplicating those lists.
+
+**The admin and submit host command line interface behaves as before, including its messages.** `qconf -ah`,
+`-dh`, `-sh`, `-as`, `-ds` and `-ss` continue to work and are kept for convenience; they now operate on the
+reserved host groups. The listing output of `-sh` and `-ss` is unchanged for a cluster that does not use
+nesting — same names, same sort order — and so is the `-fmt json` document, including its schema. Unlike the
+manager and operator commands described above, **the confirmation and error messages of these six commands are
+byte-for-byte identical to version 9.1**, including the exit codes: adding a host that is already present
+still fails with `adminhost "..." already exists`, and deleting one that is not a member still fails with
+`denied: administrative host "..." does not exist`. Scripts parsing this text do not need to be adapted.
+
+Both groups are ordinary host groups at the interface: they are listed by `qconf -shgrpl`, shown by
+`qconf -shgrp @admin_hosts`, and can be modified with `-mhgrp`, `-Mhgrp` and the `-?attr` options.
+`qconf -aattr hostgroup hostlist host @admin_hosts` and `qconf -ah host` are two ways of doing the same
+thing.
+
+**What is genuinely new** follows from admin and submit hosts being host groups, which the flat lists could
+not express:
+
+* `-ah`/`-as` accept a host group reference, e.g. `qconf -as @lx_cluster`, making every host of that group a
+  submit host. Nested references are validated by the qmaster like any other host group reference, cycles
+  included.
+* `-sh`/`-ss` print such a reference as a `@group` entry. This can only appear if an administrator introduced
+  the nesting, so the output of a cluster upgraded from 9.1 is unchanged until they do. Use
+  `qconf -shgrp_resolved @admin_hosts` for the resolved host set and `-shgrp_tree` for the structure.
+* `-dh`/`-ds` remove a **direct** member only. Deleting a host that is an admin or submit host only because a
+  nested group contains it is refused, naming the containing group(s), and exits non-zero:
+
+      denied: host "lx-01" is not a direct member of "@submit_hosts" but is contained in
+      @lx_cluster; use "qconf -mhgrp" to change the nesting
+
+  In 9.1 this case could not arise, since the flat lists had no notion of nesting. Silently succeeding would
+  leave the host deleted but still a submit host.
+
+Because these two host groups carry the permissions of the cluster, restrictions apply to them and to no other
+host group: they cannot be deleted, and the host running the qmaster cannot be removed from `@admin_hosts` —
+the same rule `-dh` always enforced, now also enforced when going through `-mhgrp` or the `-?attr` options.
+
+A third reserved host group, **`@exec_hosts`**, is new in 9.2. It contains the configured execution hosts
+(excluding the *global* and *template* pseudo-hosts) and is maintained by the system: it is recomputed when an
+execution host is added or removed and rebuilt at every qmaster startup. It is therefore **read-only for every
+user, including managers** — `-mhgrp`, `-Mhgrp` and the `-?attr` options reject it:
+
+    denied: the host group "@exec_hosts" is maintained by the system from the execution host
+    list and cannot be modified
+
+Referencing it from a cluster queue's *hostlist* makes the queue follow the execution host list
+automatically. One consequence: an execution host that a queue reaches *only* through `@exec_hosts` can still
+be deleted with `qconf -de` — the queue instance derived from the reserved group does not count as a reference,
+because otherwise no execution host could ever be deleted once a queue named the group.
+
+**Impact:** the `admin_hosts` and `submit_hosts` spool entries no longer exist, and the qmaster no longer reads
+them. Any tooling that read them directly must use `qconf -sh`/`-ss` (unchanged) instead; reading spool files
+directly has never been a supported interface. The dedicated GDI request targets for admin and submit hosts
+and their event types (`ADMINHOST`/`SUBMITHOST`) have been removed as well — event clients receive host group
+events for these changes now. Clusters that use a host group named `@admin_hosts`, `@submit_hosts` or
+`@exec_hosts` must rename it before upgrading; the upgrade detects the collision and aborts with an
+explanatory message — see the
+[Upgrade Notes](06_upgrade_notes.md#admin-and-submit-hosts-are-stored-as-host-groups).
 
 ## Wildcard Characters Are No Longer Allowed in Object Names
 

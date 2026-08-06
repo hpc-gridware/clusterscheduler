@@ -141,6 +141,10 @@ installation. Admin hosts generally do not need to run a service component.
 
 Users with the manager role can add and remove admin hosts in a cluster.
 
+As of version 9.2 the admin hosts are the members of the reserved host group *@admin_hosts* (see 
+xxqs_name_sxx_hostgroup(5)). `qconf -ah`/`-dh`/`-sh` continue to work unchanged, and additionally accept a 
+host group reference, so a whole group of hosts can be granted administrative rights at once.
+
 ### User Commands
 
 Users wishing to submit workloads to a cluster must do so on hosts registered as submit hosts in the 
@@ -150,6 +154,10 @@ A cluster must have at least one submit host. The master host is automatically m
 default installation. There is no need to run a service component for submit hosts in general.
 
 Users with the manager role can add and remove submit hosts in a cluster.
+
+As of version 9.2 the submit hosts are the members of the reserved host group *@submit_hosts* (see 
+xxqs_name_sxx_hostgroup(5)). `qconf -as`/`-ds`/`-ss` continue to work unchanged, and additionally accept a 
+host group reference, so a whole group of hosts can be granted submit rights at once.
 
 ## User Roles
 

@@ -30,6 +30,11 @@ procedure removes any rule that uses them automatically (managers and operators 
 them via the *USER_SET* object instead). See the
 [Compatibility Notes](07_compatibility_notes.md#object-types-manager-and-operator-removed).
 
+The same applies to the object types *AHOST* and *SHOST*, removed in 9.2 because admin and submit hosts are
+host groups now. Any rule using them is removed by the upgrade procedure as well; limit these operations via
+the *HGROUP* object instead. See the
+[Compatibility Notes](07_compatibility_notes.md#object-types-ahost-and-shost-removed).
+
 ## Zombie Jobs Removed, Replaced by Finished-Job Retention
 
 Version 9.2 removes the pre-existing *zombie jobs* mechanism. The `qstat -s z` option is gone. The retention
@@ -86,6 +91,34 @@ Such an access list cannot be carried over automatically: everything that refere
 `acl`/`xacl` of projects, and resource quota sets — would silently resolve to the reserved manager or
 operator list after the upgrade, and with that to different access rights. Rename the access list in the old
 cluster, adapt the objects that reference it, and start the upgrade again.
+
+## Admin and Submit Hosts Are Stored as Host Groups
+
+Administrative hosts and submit hosts are no longer stored in the `admin_hosts` and `submit_hosts` entries of
+the qmaster spool directory. They are now the members of two reserved host groups named `@admin_hosts` and
+`@submit_hosts`, spooled with all other host groups. A third reserved group, `@exec_hosts`, mirrors the
+execution host list and is maintained by the system. See the
+[Compatibility Notes](07_compatibility_notes.md#admin-and-submit-hosts-are-reserved-host-groups) for what this
+changes at the user interface — in short, very little: the command line interface and its messages are
+unchanged.
+
+The regular upgrade procedure (`inst_sge -upd`) handles the migration automatically: the existing admin and
+submit hosts are dumped from the old cluster and re-added to the upgraded one with `qconf -ah`/`-as`, where
+they are stored in the reserved host groups. No manual action is required, and the old `admin_hosts` and
+`submit_hosts` spool entries are simply no longer read. As always, the upgrade procedure has to be run —
+replacing only the binaries is not a supported way to install a new version.
+
+**If your cluster uses a host group named `@admin_hosts`, `@submit_hosts` or `@exec_hosts`**, it must be
+renamed before the upgrade, because those three names are now reserved. Host groups existed long before these
+names were reserved, so nothing prevented such a name previously. The upgrade detects this and aborts with an
+explanatory message while the old cluster is still untouched, so that no half-migrated cluster can result.
+
+Such a host group cannot be carried over automatically: everything that references it — the *hostlist* of
+cluster queues and of other host groups, and the scopes of resource quota sets — would silently resolve to the
+reserved group after the upgrade, and with that to a different set of hosts and different access rights.
+Rename the host group in the old cluster, adapt the objects that reference it, and start the upgrade again.
+
+Compare `qconf -shgrp_resolved` before and after the rename to confirm the intended host set.
 
 ## Wildcard Characters in Object Names
 

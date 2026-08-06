@@ -139,6 +139,11 @@ xxQS_NAMExx commands, the sole exception to this being the execution of `qconf` 
 node. The default xxQS_NAMExx installation procedures add all designated execution hosts (see the `-ae`
 option above) to the xxQS_NAMExx trusted host list automatically. Requires root/manager privileges.
 
+The trusted host list is the *@admin_hosts* host group (see xxqs_name_sxx_hostgroup(5)). *hostname* may
+therefore also be the name of a host group (*@group*), which adds a reference to that group rather than a
+single host; every host the group resolves to is then an administrative host. Adding a host that is already
+a member is refused.
+
 ## -am *user*,...
 Adds the indicated users to the xxQS_NAMExx manager list. Requires root/manager privileges.
 
@@ -154,6 +159,11 @@ convenience equivalent of `-au` *user* *operator*.
 ## -as *hostname*, ...
 Add hosts *hostname* to the list of hosts allowed to submit xxQS_NAMExx jobs and control their behavior only.
 Requires root/manager privileges.
+
+The submit host list is the *@submit_hosts* host group (see xxqs_name_sxx_hostgroup(5)). *hostname* may
+therefore also be the name of a host group (*@group*), which adds a reference to that group rather than a
+single host; every host the group resolves to is then a submit host. Adding a host that is already a member
+is refused.
 
 ## -astnode *node_path*=*shares*, ...
 Adds the specified share tree node(s) to the share tree (see xxqs_name_sxx_share_tree(5)). The *node_path* is
@@ -322,6 +332,12 @@ Requires root/manager privileges (`-Du` also accepts operator privilege).
 Deletes hosts from the xxQS_NAMExx trusted host list. The host on which xxqs_name_sxx_qmaster(8) is currently
 running cannot be removed from the list of administrative hosts. Requires root/manager privileges.
 
+The trusted host list is the *@admin_hosts* host group (see xxqs_name_sxx_hostgroup(5)), so only a **direct**
+member is removed: *host_name* may be a host or a host group reference (*@group*). Deleting a host that is an
+administrative host only because some nested group contains it is refused, naming the containing group(s) --
+change the nesting with `-mhgrp` instead. Deleting a host that is not a member at all is refused as well.
+Both refusals exit non-zero.
+
 ## -dm *user*\[,*user*,...\]
 Deletes managers from the manager list. It is not possible to delete the admin user or the user root
 from the manager list. Requires root/manager privileges.
@@ -333,6 +349,12 @@ from the operator list. Requires root or manager privileges.
 ## -ds host_name,... \<delete submit host>
 Deletes hosts from the xxQS_NAMExx submit host list. Requires root or
 manager privileges.
+
+The submit host list is the *@submit_hosts* host group (see xxqs_name_sxx_hostgroup(5)), so only a **direct**
+member is removed: *host_name* may be a host or a host group reference (*@group*). Deleting a host that is a
+submit host only because some nested group contains it is refused, naming the containing group(s) -- change
+the nesting with `-mhgrp` instead. Deleting a host that is not a member at all is refused as well. Both
+refusals exit non-zero.
 
 ## -dstnode *node_path*,...
 Deletes the specified share tree node(s). The *node_path* is a hierarchical path
@@ -614,7 +636,11 @@ systems or versions might be supported with the future update releases. In case 
 '0' will be displayed.
 
 ## -sh
-Displays the xxQS_NAMExx administrative host list.
+Displays the xxQS_NAMExx administrative host list, i.e. the **direct** members of the *@admin_hosts* host
+group (see xxqs_name_sxx_hostgroup(5)), sorted by name. If the group contains references to other host
+groups, those appear as *@group* entries; use `-shgrp_resolved` *@admin_hosts* for the resolved host set,
+or `-shgrp_tree` *@admin_hosts* for the nesting structure. An empty list is reported on stderr and exits
+non-zero.
 
 ## -shgrp *group*
 Displays the host group entries for the group specified in *group*.
@@ -681,7 +707,11 @@ xxqs_name_sxx_types(1).
 Shows a list of all currently defined cluster queues.
 
 ## -ss
-Displays the xxQS_NAMExx submit host list.
+Displays the xxQS_NAMExx submit host list, i.e. the **direct** members of the *@submit_hosts* host group
+(see xxqs_name_sxx_hostgroup(5)), sorted by name. If the group contains references to other host groups,
+those appear as *@group* entries; use `-shgrp_resolved` *@submit_hosts* for the resolved host set, or
+`-shgrp_tree` *@submit_hosts* for the nesting structure. An empty list is reported on stderr and exits
+non-zero.
 
 ## -ssconf  
 Displays the current scheduler configuration in the format explained in xxqs_name_sxx_sched_conf(5).

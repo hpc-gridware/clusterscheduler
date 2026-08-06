@@ -41,6 +41,34 @@ group. As list separators white-spaces are supported only. Default value for thi
 Note, if the first character of the *host_identifier* is an "@" sign the name is used to reference a 
 xxqs_name_sxx_hostgroup(5) which is taken as subgroup of this group.
 
+# RESERVED HOST GROUPS
+
+Three host group names are reserved by xxQS_NAMExx and are created automatically when
+xxqs_name_sxx_qmaster(8) starts. **None of the three can be deleted**, and a cluster that already owns a
+user-defined host group under one of these names cannot be upgraded until it is renamed (see the upgrade
+notes).
+
+## @admin_hosts
+
+The administrative host list -- a host must be a member to run administrative xxQS_NAMExx commands. It is
+modified through qconf(1) `-ah`/`-dh` as well as through the ordinary host group options, and displayed by
+`-sh`. The host running xxqs_name_sxx_qmaster(8) cannot be removed from it.
+
+## @submit_hosts
+
+The list of hosts allowed to submit jobs. Modified through qconf(1) `-as`/`-ds` as well as the ordinary host
+group options, and displayed by `-ss`.
+
+## @exec_hosts
+
+The set of configured execution hosts, excluding the *global* and *template* pseudo-hosts. This group is
+**maintained by the system** and is therefore **read-only for every user, including managers**: it is
+recomputed from the execution host list whenever a host is added or removed and rebuilt at every qmaster
+startup, so any attempt to modify it via `-mhgrp`, `-Mhgrp` or the `-?attr` options is rejected. Reference it
+from a cluster queue's *hostlist* to have the queue follow the execution host list automatically.
+
+This asymmetry is deliberate: *@admin_hosts* and *@submit_hosts* are yours to edit, *@exec_hosts* is derived.
+
 # EXAMPLE
 
 This is a typical host group entry:
