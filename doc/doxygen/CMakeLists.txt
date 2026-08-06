@@ -43,6 +43,45 @@ if (DOXYGEN_FOUND)
    if (INSTALL_SGE_SRCDOC AND CMAKE_BUILD_TYPE MATCHES "^Debug")
       install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc_doxygen/html DESTINATION doc/doxygen)
    endif ()
+
+   # ------------------------------------------------------------------------
+   # Documentation gate for modules that have been converted to doxygen.
+   #
+   # Doxyfile.strict parses only the modules listed below and turns every
+   # documentation defect in them into a build error, so a converted module
+   # cannot silently regress. Modules that have not been converted yet are not
+   # listed and are therefore not checked.
+   #
+   # To register a module: convert it with the runbook, then add one line here.
+   # Paths are relative to the clusterscheduler directory.
+   #
+   # See doc/doxygen/Readme-dxm.md
+   # ------------------------------------------------------------------------
+   option(DOXYGEN_STRICT "Fail the build on documentation defects in converted modules" ON)
+
+   set(DXM_FINISHED_MODULES
+         # source/libs/evc
+   )
+
+   if (DXM_FINISHED_MODULES)
+      # dxm-check.sh parses the whole tree - needed so cross module references
+      # resolve - and then fails only on warnings inside the listed modules.
+      if (DOXYGEN_STRICT)
+         add_custom_target(doc_doxygen_strict ALL
+               COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/dxm-check.sh ${DXM_FINISHED_MODULES}
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../..
+               COMMENT "Checking documentation of converted modules"
+               VERBATIM)
+      else ()
+         add_custom_target(doc_doxygen_strict
+               COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/dxm-check.sh ${DXM_FINISHED_MODULES}
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../..
+               COMMENT "Checking documentation of converted modules"
+               VERBATIM)
+      endif ()
+   else ()
+      message(STATUS "No converted modules registered yet, documentation gate is inactive")
+   endif ()
 else ()
    message("Doxygen need to be installed to generate the doxygen documentation")
 endif ()

@@ -1,0 +1,128 @@
+# Doxyfile.strict - documentation gate for converted modules
+#
+# Purpose: this is not a documentation generator, it is a check. It produces no
+# output at all. It parses only those modules whose documentation has already
+# been converted to doxygen, and turns every documentation defect in them into a
+# build error, so a converted module cannot silently regress.
+#
+# Every setting is inherited from the main Doxyfile below, so project name,
+# aliases and language settings never drift between the two files. Only the
+# settings that turn "generate" into "verify" are overridden here.
+#
+# The list of converted modules is NOT maintained in this file - it lives in
+# CMakeLists.txt as DXM_FINISHED_MODULES, and is substituted into INPUT below.
+#
+# Background and rationale:
+#   doc/doxygen/Readme-dxm.md
+#   vault: 02 Work Projects/22 Doxygen Comment Migration/05 Strict gate Doxyfile.md
+
+@INCLUDE = @CMAKE_CURRENT_BINARY_DIR@/Doxyfile
+
+#---------------------------------------------------------------------------
+# Output: as little as doxygen will allow
+#
+# This configuration exists to produce warnings, not documentation, so ideally
+# every GENERATE_* would be NO. Doxygen refuses: with no output format selected
+# it emits "No output formats selected!", and because WARN_AS_ERROR is set below
+# that one message makes the run fail even when the documentation is perfect.
+# The gate would then fail always, which is the same as not having a gate.
+#
+# So exactly one format is enabled, and man was measured to be the cheapest:
+#
+#   backend   time     files   size     (source/libs/uti, doxygen 1.15.0)
+#   html      722 ms   281     3.1M
+#   xml       394 ms   199     3.4M
+#   rtf       268 ms     3     584K
+#   man       234 ms    60     240K
+#
+# The choice is safe: html, man and rtf were verified to produce the identical
+# set of 475 warnings on source/libs/uti + source/libs/sched, so the backend
+# affects only what is written to disk, never what is reported. The output is
+# written into the build tree and is meant to be thrown away.
+#---------------------------------------------------------------------------
+
+GENERATE_MAN           = YES
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = NO
+GENERATE_RTF           = NO
+GENERATE_DOCBOOK       = NO
+GENERATE_AUTOGEN_DEF   = NO
+GENERATE_SQLITE3       = NO
+
+OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/doc_doxygen_strict/
+QUIET                  = YES
+
+# No diagrams either - they cost time and produce no warnings
+HAVE_DOT               = NO
+
+#---------------------------------------------------------------------------
+# Input: the whole tree, deliberately
+#
+# It would seem natural to parse only the converted modules. That does not
+# work: a cross reference like #EV_NO_FLUSH can only be resolved if the file
+# that defines the symbol was parsed too. With a per module INPUT, every
+# reference into a neighbouring module fails with "explicit link request ...
+# could not be resolved" and the gate rejects correct documentation.
+#
+# So the whole tree is parsed - measured at ~3 seconds - and the *warnings* are
+# filtered down to the converted modules afterwards by dxm-check.sh. INPUT is
+# therefore inherited unchanged from the main Doxyfile above.
+#
+# Consequence worth knowing while the migration is in progress: a #reference to
+# a macro in a module that has not been converted yet still fails, because a
+# file without an @file block contributes no link targets. Use backticks for
+# those and upgrade them to #reference once that module is converted.
+#---------------------------------------------------------------------------
+
+RECURSIVE              = YES
+
+# Message catalogues are excluded from the gate. A msg_*.h file is a flat list
+# of _MESSAGE(id, text) entries whose text already says what the entry is for -
+# 3232 of them across 41 files - so a per macro comment would restate the
+# message string and nothing more. The @file block describing the catalogue as a
+# whole is still wanted, and the main Doxyfile still documents these files; only
+# the "every macro must be documented" requirement is lifted here.
+#
+# EXCLUDE_PATTERNS is repeated rather than appended because @INCLUDE brings the
+# main Doxyfile's value along, and doxygen has no += for it.
+EXCLUDE_PATTERNS       = */._* \
+                         */msg_*.h
+
+#---------------------------------------------------------------------------
+# What has to be documented
+#
+# EXTRACT_ALL must stay NO: doxygen disables WARN_IF_UNDOCUMENTED when
+# EXTRACT_ALL is YES, which would silently switch the whole gate off.
+#
+# EXTRACT_STATIC stays NO for now. File-local helpers are still documented per
+# the house style, they are just not build blockers yet. Flipping this to YES
+# is the intended next tightening step once the conversion is complete.
+#---------------------------------------------------------------------------
+
+EXTRACT_ALL            = NO
+EXTRACT_STATIC         = NO
+EXTRACT_PRIVATE        = NO
+EXTRACT_PRIV_VIRTUAL   = NO
+EXTRACT_PACKAGE        = NO
+EXTRACT_LOCAL_METHODS  = NO
+
+#---------------------------------------------------------------------------
+# Every documentation defect is an error
+#
+# FAIL_ON_WARNINGS rather than YES: doxygen reports every problem it finds and
+# then exits non-zero, instead of stopping at the first one. That difference
+# matters a lot while converting a module.
+#
+# Note that these checks only see a file that carries a /** @file */ block.
+# Without one, doxygen reports nothing at all for that file's free functions -
+# not even missing @param tags. Adding the @file block is therefore the first
+# step of every module conversion, not a cosmetic afterthought.
+#---------------------------------------------------------------------------
+
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_IF_INCOMPLETE_DOC = YES
+WARN_NO_PARAMDOC       = YES
+WARN_IF_UNDOC_ENUM_VAL = YES
+WARN_AS_ERROR          = FAIL_ON_WARNINGS
