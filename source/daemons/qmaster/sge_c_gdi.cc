@@ -698,7 +698,7 @@ sge_c_gdi_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Command 
             case ocs::gdi::Target::SH_LIST:
             case ocs::gdi::Target::EH_LIST:
                sge_del_host(packet, task, ep, &(task->answer_list), packet->user, packet->host, task->target,
-                            *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP));
+                            *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), monitor);
                break;
 
             case ocs::gdi::Target::CQ_LIST:

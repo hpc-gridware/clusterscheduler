@@ -714,5 +714,6 @@
 #define MSG_HGRP_RESERVED_NOQMASTER_SS         _MESSAGE(33996, _("denied: host " SFQ " runs the qmaster and cannot be removed from the reserved host group " SFQ))
 #define MSG_HGRP_RESERVED_NOSEED_S             _MESSAGE(33997, _("can't write reserved host group " SFQ " to the spool area"))
 #define MSG_HGRP_RESERVED_NESTED_SSS           _MESSAGE(33998, _("denied: host " SFQ " is not a direct member of " SFQ " but is contained in " SFN "; use \"qconf -mhgrp\" to change the nesting"))
+#define MSG_HGRP_RESERVED_NOSYNC_S             _MESSAGE(33999, _("could not update the reserved host group " SFQ " from the execution host list; it is left unchanged"))
 
 // clang-format on

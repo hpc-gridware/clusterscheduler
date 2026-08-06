@@ -48,9 +48,12 @@
 #include "sgeobj/ocs_Session.h"
 #include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_id.h"
+#include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_host.h"
+#include "sgeobj/sge_href.h"
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
@@ -78,6 +81,7 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 #include "sge_host_qmaster.h"
+#include "sge_hgroup_qmaster.h"
 #include "evm/sge_event_master.h"
 #include "configuration_qmaster.h"
 #include "sge_c_gdi.h"
@@ -252,7 +256,7 @@ host_list_add_missing_href(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const
 
 */
 int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep, lList **alpp, char *ruser, char *rhost, ocs::gdi::Target target,
-                 const lList *master_hgroup_list) {
+                 const lList *master_hgroup_list, monitoring_t *monitor) {
    int pos;
    lListElem *ep;
    const char *host;
@@ -437,6 +441,12 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
 
    /* delete found host element */
    lRemoveElem(*host_list, &ep);
+
+   /* CS-2438 chunk 7: @exec_hosts follows the exec host list. After the removal,
+    * so the rebuild sees the list without the deleted host. */
+   if (target == ocs::gdi::Target::EH_LIST) {
+      host_sync_exec_hostgroup(packet, task, monitor, true);
+   }
 
    INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, unique, name);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -670,6 +680,295 @@ host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    DRETURN(ret);
 }
 
+/****** qmaster/host/host_sync_exec_hostgroup() *******************************
+*  NAME
+*     host_sync_exec_hostgroup() -- rebuild @exec_hosts from the exec host list
+*
+*  FUNCTION
+*     CS-2438 chunk 7. "@exec_hosts" is derived, not administered: it mirrors
+*     the execution host list and is read-only for every role including manager.
+*     This is the one place that fills it.
+*
+*     A full rebuild, not an incremental add/remove of the one host that
+*     changed. Exec hosts are added and deleted rarely -- this is nowhere near a
+*     hot path -- and a rebuild converges even if some future code path forgets
+*     to call it, whereas a missed incremental update stays wrong until the next
+*     qmaster restart. For a derived list, self-correcting beats cheap.
+*
+*     "global" and "template" are excluded: they are pseudo-hosts carrying
+*     default values, not machines, and a queue instance on them makes no sense.
+*
+*     Not spooled, deliberately. The membership is derived from EH_LIST, which
+*     IS spooled, and it is rebuilt at every qmaster startup -- writing it to
+*     disk on every exec host add would be I/O for state that is reconstructed
+*     anyway. The group object itself was spooled once when chunk 1 seeded it.
+*
+*  INPUTS
+*     ocs::gdi::Packet *packet - for cqueue_handle_qinstances() and the session
+*     ocs::gdi::Task *task     - likewise
+*     monitoring_t *monitor    - likewise
+*     bool send_events         - false during qmaster startup, where the event
+*                                system is not serving yet and setup_qmaster.cc
+*                                rebuilds every cache once afterwards anyway
+*
+*  RESULT
+*     bool - true if the membership changed
+*
+*  NOTES
+*     MT-NOTE: call under the write lock -- it modifies the HGRP master list
+*******************************************************************************/
+bool
+host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
+                         bool send_events) {
+   DENTER(TOP_LAYER);
+
+   const uint64_t gdi_session = (packet != nullptr) ? packet->gdi_session
+                                                    : ocs::SessionManager::GDI_SESSION_NONE;
+
+   lList *master_hgroup_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
+   lListElem *hgrp = hgroup_list_locate(master_hgroup_list, EXEC_HOSTGROUP);
+
+   if (hgrp == nullptr) {
+      /* not seeded yet -- setup_qmaster.cc creates it and calls us afterwards */
+      DRETURN(false);
+   }
+
+   const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const lListElem *ehost;
+   lList *wanted = nullptr;
+
+   for_each_ep(ehost, master_ehost_list) {
+      const char *name = lGetHost(ehost, EH_name);
+
+      if (name == nullptr || strcmp(name, SGE_GLOBAL_NAME) == 0 || strcmp(name, SGE_TEMPLATE_NAME) == 0) {
+         continue;
+      }
+      lAddElemHost(&wanted, HR_name, name, HR_Type);
+   }
+
+   /*
+    * Leave the object alone when nothing changed. Every exec host modify comes
+    * through host_success() too, and an unconditional lSetList() would emit an
+    * HGROUP_MOD event -- and a cache recomputation for every referencing group
+    * -- on each "qconf -Me", for a membership that did not move.
+    */
+   const lList *current = lGetList(hgrp, HGRP_host_list);
+   bool changed = (lGetNumberOfElem(current) != lGetNumberOfElem(wanted));
+
+   if (!changed) {
+      const lListElem *href;
+
+      for_each_ep(href, wanted) {
+         if (href_list_locate(current, lGetHost(href, HR_name)) == nullptr) {
+            changed = true;
+            break;
+         }
+      }
+   }
+
+   if (!changed) {
+      lFreeList(&wanted);
+      DRETURN(false);
+   }
+
+   /*
+    * Queue instances have to follow the membership, exactly as they do when an
+    * administrator edits an ordinary host group. hgroup_mod() gets that from the
+    * cqueue machinery below; a plain lSetList() here would not, and a cluster
+    * queue whose hostlist names @exec_hosts would silently stop gaining queue
+    * instances for newly added exec hosts -- a desync that does NOT heal, since
+    * startup reads the queues and their instances back from the spool.
+    *
+    * The structure mirrors hgroup_mod(): per referencing queue, resolve its
+    * hostlist before and after the change, reduce the raw add/remove sets to the
+    * hosts that queue actually gains or loses, and hand those to
+    * cqueue_handle_qinstances() on a copy that hgroup_commit() swaps in at the
+    * end. Where hgroup_mod() dechains its not-yet-installed copy in and out of
+    * the master list to get the two views, this group is modified in place, so
+    * the same effect comes from swapping the new member list in for the length
+    * of one resolution.
+    */
+   lList *answer_list = nullptr;
+   lList *add_hosts = nullptr;
+   lList *rem_hosts = nullptr;
+   lList *add_groups = nullptr;
+   lList *rem_groups = nullptr;
+   bool ret = href_list_find_diff(wanted, &answer_list, current, &add_hosts, &rem_hosts,
+                                  &add_groups, &rem_groups);
+
+   /* @exec_hosts holds plain hosts only -- it never nests */
+   lFreeList(&add_groups);
+   lFreeList(&rem_groups);
+
+   /* the groups whose resolution changes: this one, plus everything above it */
+   lList *occupant_groups = nullptr;
+   if (ret) {
+      ret &= href_list_add(&occupant_groups, &answer_list, EXEC_HOSTGROUP);
+      ret &= hgroup_find_all_referencees(hgrp, &answer_list, master_hgroup_list, &occupant_groups);
+   }
+
+   lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   const lListElem *cqueue;
+
+   for_each_ep(cqueue, master_cqueue_list) {
+      if (!ret) {
+         break;
+      }
+      if (!cqueue_is_a_href_referenced(cqueue, occupant_groups, true)) {
+         continue;
+      }
+
+      const lList *cq_hostlist = lGetList(cqueue, CQ_hostlist);
+      lList *before_mod_list = nullptr;
+      lList *after_mod_list = nullptr;
+      lList *real_add_hosts = nullptr;
+      lList *real_rem_hosts = nullptr;
+
+      ret &= href_list_find_all_references(cq_hostlist, &answer_list, master_hgroup_list,
+                                           &before_mod_list, nullptr);
+
+      /* swap the new membership in just long enough to resolve the "after" view */
+      lXchgList(hgrp, HGRP_host_list, &wanted);
+      ret &= href_list_find_all_references(cq_hostlist, &answer_list, master_hgroup_list,
+                                           &after_mod_list, nullptr);
+      lXchgList(hgrp, HGRP_host_list, &wanted);
+
+      if (ret) {
+         /* a host this queue keeps reaching by another route is not really lost,
+          * and one it already reached is not really gained */
+         ret &= href_list_compare(rem_hosts, &answer_list, after_mod_list, &real_rem_hosts,
+                                  nullptr, nullptr, nullptr);
+         ret &= href_list_compare(add_hosts, &answer_list, before_mod_list, &real_add_hosts,
+                                  nullptr, nullptr, nullptr);
+      }
+
+      if (ret) {
+         lList *pending = lGetListRW(hgrp, HGRP_cqueue_list);
+
+         if (pending == nullptr) {
+            pending = lCreateList("", CQ_Type);
+            lSetList(hgrp, HGRP_cqueue_list, pending);
+         }
+
+         lListElem *new_cqueue = lCopyElem(cqueue);
+
+         if (new_cqueue != nullptr) {
+            lAppendElem(pending, new_cqueue);
+
+            /*
+             * hgrp as the "reduced element": cqueue_handle_qinstances() only
+             * probes it for cluster queue attributes the client changed, and an
+             * HGRP element yields none -- which is the truth here. No queue
+             * attribute moved, only the set of hosts. refresh_all_values is true
+             * for the same reason hgroup_mod() sets it: the hostlist changed, so
+             * a previously unambiguous attribute value may now be ambiguous.
+             */
+            ret &= cqueue_handle_qinstances(packet, task, new_cqueue, &answer_list, hgrp,
+                                            real_add_hosts, real_rem_hosts, true, monitor,
+                                            master_hgroup_list, master_cqueue_list);
+         } else {
+            ret = false;
+         }
+      }
+
+      lFreeList(&before_mod_list);
+      lFreeList(&after_mod_list);
+      lFreeList(&real_add_hosts);
+      lFreeList(&real_rem_hosts);
+   }
+
+   lFreeList(&occupant_groups);
+   lFreeList(&add_hosts);
+   lFreeList(&rem_hosts);
+
+   if (!ret) {
+      /* leave the group untouched -- a partial update is worse than none */
+      hgroup_rollback_cqueues(hgrp);
+      lFreeList(&wanted);
+      answer_list_output(&answer_list);
+      ERROR(MSG_HGRP_RESERVED_NOSYNC_S, EXEC_HOSTGROUP);
+      DRETURN(false);
+   }
+
+   lSetList(hgrp, HGRP_host_list, wanted);   /* takes ownership */
+
+   lList *referencees = nullptr;
+   hgroup_refresh_caches(hgrp, master_hgroup_list, &referencees);
+
+   if (send_events) {
+      lList *pending = nullptr;
+
+      /* the pending queue copies are not part of the group's own event */
+      lXchgList(hgrp, HGRP_cqueue_list, &pending);
+      sge_add_event(0, sgeE_HGROUP_MOD, 0, 0, EXEC_HOSTGROUP, nullptr, nullptr, hgrp, gdi_session);
+      lXchgList(hgrp, HGRP_cqueue_list, &pending);
+
+      hgroup_send_referencee_events(referencees, master_hgroup_list, gdi_session);
+   }
+   lFreeList(&referencees);
+
+   /*
+    * Spool the queue instances the change created or altered, before committing
+    * them. The GDI route gets this from hgroup_spool(), which walks the same
+    * HGRP_cqueue_list; this path does not go through the GDI object table, so it
+    * has to do it itself. Without it a queue instance born from an exec host add
+    * lives only in memory and is gone after the next qmaster start -- and the
+    * matching delete then tries to unlink a spool file that was never written.
+    *
+    * The group itself is deliberately NOT spooled here: its membership is
+    * derived from the execution host list and rebuilt at every startup.
+    */
+   {
+      const lList *pending_queues = lGetList(hgrp, HGRP_cqueue_list);
+      const lListElem *cq;
+      dstring key_dstring = DSTRING_INIT;
+      lList *spool_answer_list = nullptr;
+      bool spool_ok = spool_transaction(&spool_answer_list, spool_get_default_context(), STC_begin);
+
+      answer_list_output(&spool_answer_list);
+
+      for_each_ep(cq, pending_queues) {
+         const char *cqname = lGetString(cq, CQ_name);
+         const lListElem *qinstance;
+
+         if (!spool_ok) {
+            break;
+         }
+         for_each_ep(qinstance, lGetList(cq, CQ_qinstances)) {
+            const uint32_t tag = lGetUlong(qinstance, QU_tag);
+
+            if (tag == SGE_QI_TAG_ADD || tag == SGE_QI_TAG_MOD) {
+               const char *key = sge_dstring_sprintf(&key_dstring, "%s/%s", cqname,
+                                                     lGetHost(qinstance, QU_qhostname));
+
+               if (!spool_write_object(&spool_answer_list, spool_get_default_context(),
+                                       qinstance, key, SGE_TYPE_QINSTANCE, true)) {
+                  answer_list_output(&spool_answer_list);
+                  spool_ok = false;
+                  break;
+               }
+            }
+         }
+      }
+
+      spool_transaction(&spool_answer_list, spool_get_default_context(),
+                        spool_ok ? STC_commit : STC_rollback);
+      answer_list_output(&spool_answer_list);
+      sge_dstring_free(&key_dstring);
+
+      if (!spool_ok) {
+         WARNING(MSG_HGRP_RESERVED_NOSYNC_S, EXEC_HOSTGROUP);
+      }
+   }
+
+   /* installs the modified queues and sends their QINSTANCE add/mod/del events */
+   hgroup_commit(hgrp, gdi_session);
+
+   answer_list_output(&answer_list);
+
+   DRETURN(true);
+}
+
 int
 host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -689,6 +988,12 @@ host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
 
          host_update_categories(ep, old_ep, packet->gdi_session);
          sge_add_event(0, old_ep ? sgeE_EXECHOST_MOD : sgeE_EXECHOST_ADD, 0, 0, host, nullptr, nullptr, ep, packet->gdi_session);
+
+         /* CS-2438 chunk 7: @exec_hosts follows the exec host list. Called for
+          * MOD too, not just ADD -- it is a no-op when the membership did not
+          * move, and that is cheaper than reasoning about which modify paths
+          * can rename a host. */
+         host_sync_exec_hostgroup(packet, task, monitor, true);
       }
          break;
 

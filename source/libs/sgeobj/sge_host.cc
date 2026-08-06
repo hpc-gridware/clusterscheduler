@@ -38,7 +38,9 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_hgroup.h"
+#include "sgeobj/sge_href.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_resource_utilization.h"
@@ -204,9 +206,73 @@ host_is_submit_host(const char *hostname)
    return host_is_in_reserved_hostgroup(hostname, SUBMIT_HOSTGROUP);
 }
 
+/****** sgeobj/host/cqueue_reaches_host_without_exec_hosts() ******************
+*  NAME
+*     cqueue_reaches_host_without_exec_hosts() -- reference other than @exec_hosts?
+*
+*  FUNCTION
+*     CS-2438 chunk 7. Resolves a cluster queue's host list with the reserved
+*     "@exec_hosts" entry taken out, and reports whether the host is still
+*     reached.
+*
+*     This is what makes an exec host deletable again. @exec_hosts mirrors the
+*     execution host list, so every exec host is in it by definition; a queue
+*     that names @exec_hosts therefore has a queue instance on every exec host,
+*     and counting those instances as references would make every exec host
+*     permanently undeletable -- the very outcome chunk 1a avoided for the host
+*     group check, reintroduced through the queue instances instead.
+*
+*     A queue instance that exists ONLY because of @exec_hosts is not somebody's
+*     configuration naming this host. Removing the exec host removes it from
+*     @exec_hosts, and the (empty) queue instance goes with it, which is what
+*     host_sync_exec_hostgroup() drives through the cqueue machinery.
+*
+*     The boundary is the one chunk 1a already drew: a USER group that references
+*     @exec_hosts still counts. Only the queue's own direct "@exec_hosts" entry
+*     is filtered, because a user group naming it really is configuration the
+*     administrator wrote and can edit.
+*
+*  INPUTS
+*     const lListElem *cqueue - CQ_Type object
+*     const char *hostname    - host being deleted
+*     const lList *hgrp_list  - HGRP_Type master list
+*
+*  RESULT
+*     bool - true if the queue reaches the host by some route other than the
+*            reserved group, i.e. the reference is real and must block deletion
+******************************************************************************/
+static bool
+cqueue_reaches_host_without_exec_hosts(const lListElem *cqueue, const char *hostname,
+                                       const lList *hgrp_list) {
+   const lList *cq_hostlist = lGetList(cqueue, CQ_hostlist);
+   const lListElem *href;
+   lList *filtered = nullptr;
+   lList *resolved = nullptr;
+   bool reaches = false;
+
+   for_each_ep(href, cq_hostlist) {
+      const char *entry = lGetHost(href, HR_name);
+
+      if (entry == nullptr || strcmp(entry, EXEC_HOSTGROUP) == 0) {
+         continue;
+      }
+      lAddElemHost(&filtered, HR_name, entry, HR_Type);
+   }
+
+   if (filtered != nullptr &&
+       href_list_find_all_references(filtered, nullptr, hgrp_list, &resolved, nullptr)) {
+      reaches = (lGetElemHost(resolved, HR_name, hostname) != nullptr);
+   }
+
+   lFreeList(&resolved);
+   lFreeList(&filtered);
+
+   return reaches;
+}
+
 /****** sgeobj/host/host_is_referenced() **************************************
 *  NAME
-*     host_is_referenced() -- Is a given host referenced in other objects? 
+*     host_is_referenced() -- Is a given host referenced in other objects?
 *
 *  SYNOPSIS
 *     bool host_is_referenced(const lListElem *host, 
@@ -256,6 +322,17 @@ bool host_is_referenced(const lListElem *host,
 
          if (queue != nullptr) {
             const char *queuename = lGetString(cqueue, CQ_name);
+
+            /*
+             * CS-2438: a queue instance that exists only because the queue names
+             * the reserved @exec_hosts group is not a reference the administrator
+             * can remove -- the group is system-maintained. Deleting the exec host
+             * takes it out of @exec_hosts and the empty instance goes with it.
+             */
+            if (object_has_type(host, EH_Type) &&
+                !cqueue_reaches_host_without_exec_hosts(cqueue, hostname, hgrp_list)) {
+               continue;
+            }
 
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_HOSTREFINQUEUE_SS, hostname, queuename);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);

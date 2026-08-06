@@ -44,7 +44,7 @@
 /* funtions called via gdi and inside the qmaster */
 int
 sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *, lList **, char *, char *, ocs::gdi::Target traget,
-             const lList *master_hGroup_List);
+             const lList *master_hGroup_List, monitoring_t *monitor);
 
 int
 host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object);
@@ -56,6 +56,13 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
 
 int
 host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor);
+
+/* CS-2438 chunk 7: rebuild the reserved "@exec_hosts" group from the execution
+ * host list, excluding the "global"/"template" pseudo-hosts. Returns true if the
+ * membership changed. Pass send_events=false during qmaster startup. */
+bool
+host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
+                         bool send_events);
 
 void
 sge_mark_unheard(lListElem *hep, uint64_t gdi_session);

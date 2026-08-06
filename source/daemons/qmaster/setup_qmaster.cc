@@ -999,6 +999,27 @@ setup_qmaster() {
    }
 
    /*
+    * CS-2438 chunk 7: @exec_hosts is derived from the execution host list, so it
+    * is rebuilt from scratch here rather than trusted from the spool -- the spool
+    * copy can be stale (nothing writes it at runtime, by design) and an upgrade
+    * or downgrade can bypass the runtime path entirely.
+    *
+    * Placed after the seeding block, which creates the group, and before the
+    * cache rebuild below, which then resolves it with its members already in.
+    * No events: the event system is not serving yet at this point.
+    */
+   {
+      ocs::gdi::Packet packet;
+      ocs::gdi::Task task;
+      packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
+
+      /* no cluster queue exists yet -- they are read from the spool further
+       * below, with their queue instances -- so the cqueue reconciliation inside
+       * is a no-op here and only the membership is established */
+      host_sync_exec_hostgroup(&packet, &task, &monitor, false);
+   }
+
+   /*
     * CS-2451: with the final host group list in place -- spooled groups plus the
     * reserved ones seeded above -- resolve every group once and store the flat
     * result in HGRP_cached_hosts. From here on the caches are maintained
