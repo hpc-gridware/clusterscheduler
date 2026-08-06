@@ -168,8 +168,6 @@ schedd_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
 static gdi_object_t gdi_object[] = {
         {ocs::gdi::Target::CAL_LIST,     CAL_name,  CAL_Type,  "calendar",                SGE_TYPE_CALENDAR,        calendar_mod, calendar_spool, calendar_update_queue_states},
         {ocs::gdi::Target::EV_LIST,      0,         nullptr,   "event",                   SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
-        {ocs::gdi::Target::AH_LIST,      AH_name,   AH_Type,   "adminhost",               SGE_TYPE_ADMINHOST,       host_mod,     host_spool,     host_success},
-        {ocs::gdi::Target::SH_LIST,      SH_name,   SH_Type,   "submithost",              SGE_TYPE_SUBMITHOST,      host_mod,     host_spool,     host_success},
         {ocs::gdi::Target::EH_LIST,      EH_name,   EH_Type,   "exechost",                SGE_TYPE_EXECHOST,        host_mod,     host_spool,     host_success},
         {ocs::gdi::Target::CQ_LIST,      CQ_name,   CQ_Type,   "cluster queue",           SGE_TYPE_CQUEUE,          cqueue_mod,   cqueue_spool,   cqueue_success},
         {ocs::gdi::Target::JB_LIST,      0,         nullptr,   "job",                     SGE_TYPE_JOB,             nullptr,      nullptr,        nullptr},
@@ -694,8 +692,6 @@ sge_c_gdi_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Command 
       for_each_rw_lv(ep, task->data_list) {
          /* try to remove the element */
          switch (task->target) {
-            case ocs::gdi::Target::AH_LIST:
-            case ocs::gdi::Target::SH_LIST:
             case ocs::gdi::Target::EH_LIST:
                sge_del_host(packet, task, ep, &(task->answer_list), packet->user, packet->host, task->target,
                             *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), monitor);
@@ -1226,8 +1222,6 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::T
    /* check permissions of user */
    switch (const auto tar = target) {
       case ocs::gdi::Target::ORDER_LIST:
-      case ocs::gdi::Target::AH_LIST:
-      case ocs::gdi::Target::SH_LIST:
       case ocs::gdi::Target::EH_LIST:
       case ocs::gdi::Target::CQ_LIST:
       case ocs::gdi::Target::CE_LIST:
@@ -1477,9 +1471,7 @@ sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **
     * resolve host name in case of objects with hostnames as key
     * before searching for the objects
     */
-   if (object->key_nm == EH_name ||
-       object->key_nm == AH_name ||
-       object->key_nm == SH_name) {
+   if (object->key_nm == EH_name) {
       if (sge_resolve_host(instructions, object->key_nm) != CL_RETVAL_OK) {
          const char *host = lGetHost(instructions, object->key_nm);
          ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, host ? host : "nullptr");

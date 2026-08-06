@@ -905,10 +905,6 @@ setup_qmaster() {
    DPRINTF("host_list----------------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST),
                    SGE_TYPE_EXECHOST);
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_ADMINHOST),
-                   SGE_TYPE_ADMINHOST);
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_SUBMITHOST),
-                   SGE_TYPE_SUBMITHOST);
    answer_list_output(&answer_list);
 
    if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), SGE_TEMPLATE_NAME)) {
@@ -930,15 +926,11 @@ setup_qmaster() {
          ERROR(SFNMAX, MSG_CONFIG_ADDINGHOSTGLOBALTOEXECHOSTLIST);
    }
 
-   /* add qmaster host to master admin host list as an administrative host */
-   if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), qualified_hostname)) {
-      ocs::gdi::Packet packet;
-      ocs::gdi::Task task;
-      packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
-      if (sge_add_host_of_type(&packet, &task, qualified_hostname, ocs::gdi::Target::AH_LIST, &monitor)) {
-         DRETURN(-1);
-      }
-   }
+   /*
+    * CS-2438: the qmaster host is seeded into the reserved "@admin_hosts" group
+    * a few lines below; the old AH_LIST seeding this replaced is gone with the
+    * list itself.
+    */
 
    // ensure that all exec hosts have defined slots
    for_each_rw_lv(ehost, *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST)) {

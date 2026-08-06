@@ -26,18 +26,6 @@
 #include "ocs_MirrorListenerDataStore.h"
 
 void ocs::MirrorListenerDataStore::subscribe_events() {
-   sge_mirror_subscribe(evc, SGE_TYPE_ADMINHOST, nullptr, nullptr, nullptr, nullptr, nullptr);
-   evc->ec_set_flush(evc, sgeE_ADMINHOST_LIST, true, 0);
-   evc->ec_set_flush(evc, sgeE_ADMINHOST_ADD, true, 0);
-   evc->ec_set_flush(evc, sgeE_ADMINHOST_MOD, true, 0);
-   evc->ec_set_flush(evc, sgeE_ADMINHOST_DEL, true, 0);
-
-   sge_mirror_subscribe(evc, SGE_TYPE_SUBMITHOST, nullptr, nullptr, nullptr, nullptr, nullptr);
-   evc->ec_set_flush(evc, sgeE_SUBMITHOST_LIST, true, 0);
-   evc->ec_set_flush(evc, sgeE_SUBMITHOST_ADD, true, 0);
-   evc->ec_set_flush(evc, sgeE_SUBMITHOST_MOD, true, 0);
-   evc->ec_set_flush(evc, sgeE_SUBMITHOST_DEL, true, 0);
-
    sge_mirror_subscribe(evc, SGE_TYPE_HGROUP, nullptr, nullptr, nullptr, nullptr, nullptr);
    evc->ec_set_flush(evc, sgeE_HGROUP_LIST, true, 0);
    evc->ec_set_flush(evc, sgeE_HGROUP_ADD, true, 0);

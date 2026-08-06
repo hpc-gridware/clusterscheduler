@@ -258,14 +258,6 @@ sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_
    }
 
    switch (event) {
-      case sgeE_ADMINHOST_LIST:
-      case sgeE_ADMINHOST_ADD:
-      case sgeE_ADMINHOST_DEL:
-      case sgeE_ADMINHOST_MOD:
-         key = strkey;
-         element = object;
-         object_type = SGE_TYPE_ADMINHOST;
-         break;
       case sgeE_CALENDAR_LIST:
       case sgeE_CALENDAR_ADD:
       case sgeE_CALENDAR_DEL:
@@ -397,14 +389,6 @@ sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_
          /* nothing to spool for this event */
          object_type = SGE_TYPE_ALL;
          break;
-      case sgeE_SUBMITHOST_LIST:
-      case sgeE_SUBMITHOST_ADD:
-      case sgeE_SUBMITHOST_DEL:
-      case sgeE_SUBMITHOST_MOD:
-         key = strkey;
-         element = object;
-         object_type = SGE_TYPE_SUBMITHOST;
-         break;
       case sgeE_USER_LIST:
       case sgeE_USER_ADD:
       case sgeE_USER_DEL:
@@ -463,7 +447,6 @@ sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_
    /* only continue in case of valid event */
    if (ret) {
       switch (event) {
-         case sgeE_ADMINHOST_DEL:
          case sgeE_CALENDAR_DEL:
          case sgeE_CKPT_DEL:
          case sgeE_CENTRY_DEL:
@@ -477,7 +460,6 @@ sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_
          case sgeE_PROJECT_DEL:
          case sgeE_CQUEUE_DEL:
          case sgeE_QINSTANCE_DEL:
-         case sgeE_SUBMITHOST_DEL:
          case sgeE_USER_DEL:
          case sgeE_USERSET_DEL:
          case sgeE_RQS_DEL:

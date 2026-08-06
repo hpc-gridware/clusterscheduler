@@ -220,10 +220,6 @@ static int spool_complexes(int argc, char *argv[])
    return spool_object_list(argv[2], CE_fields, &qconf_sfi, CE_Type, SGE_TYPE_CENTRY);
 }
 
-static int spool_adminhosts(int argc, char *argv[])
-{
-   return spool_object_list(argv[2], AH_fields, &qconf_sfi, AH_Type, SGE_TYPE_ADMINHOST);
-}
 
 static int spool_calendars(int argc, char *argv[])
 {
@@ -273,10 +269,6 @@ static int spool_projects(int argc, char *argv[])
    return ret;
 }
 
-static int spool_submithosts(int argc, char *argv[])
-{
-   return spool_object_list(argv[2], SH_fields, &qconf_sfi, SH_Type, SGE_TYPE_SUBMITHOST);
-}
 
 static int spool_users(int argc, char *argv[])
 {
@@ -371,8 +363,6 @@ int main(int argc, char *argv[])
             if (argc < 3) {
                usage(argv[0]);
                ret = EXIT_FAILURE;
-            } else if (strcmp(argv[1], "adminhosts") == 0) {
-               ret = spool_adminhosts(argc, argv);
             } else if (strcmp(argv[1], "calendars") == 0) {
                ret = spool_calendars(argc, argv);
             } else if (strcmp(argv[1], "ckpts") == 0) {
@@ -393,8 +383,6 @@ int main(int argc, char *argv[])
                ret = spool_projects(argc, argv);
             } else if (strcmp(argv[1], "sharetree") == 0) {
                ret = spool_sharetree(argc, argv);
-            } else if (strcmp(argv[1], "submithosts") == 0) {
-               ret = spool_submithosts(argc, argv);
             } else if (strcmp(argv[1], "users") == 0) {
                ret = spool_users(argc, argv);
             } else if (strcmp(argv[1], "usersets") == 0) {

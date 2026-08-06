@@ -267,8 +267,6 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
    int ret;
    const char *qualified_hostname = component_get_qualified_hostname();
    lList **master_ehost_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
-   lList **master_ahost_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_ADMINHOST);
-   lList **master_shost_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_SUBMITHOST);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
@@ -284,16 +282,6 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
          host_list = master_ehost_list;
          nm = EH_name;
          name = "execution host";
-         break;
-      case ocs::gdi::Target::AH_LIST:
-         host_list = master_ahost_list;
-         nm = AH_name;
-         name = "administrative host";
-         break;
-      case ocs::gdi::Target::SH_LIST:
-         host_list = master_shost_list;
-         nm = SH_name;
-         name = "submit host";
          break;
       default:
       DRETURN(STATUS_EUNKNOWN);
@@ -338,17 +326,6 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
       }
    }
 
-   /* 
-      check if someone tries to delete 
-      the qmaster host from admin host list
-   */
-   if (target == ocs::gdi::Target::AH_LIST &&
-       !sge_hostcmp(unique, qualified_hostname)) {
-      ERROR(MSG_SGETEXT_CANTDELADMINQMASTER_S, qualified_hostname);
-      answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-      DRETURN(STATUS_EEXIST);
-   }
-
    if (target == ocs::gdi::Target::EH_LIST &&
        host_is_referenced(hep, alpp, master_cqueue_list, master_hgroup_list)) {
       answer_list_log(alpp, false, true);
@@ -363,14 +340,6 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
 
    /* remove host file and send event */
    switch (target) {
-      case ocs::gdi::Target::AH_LIST: {
-         lList *answer_list = nullptr;
-         sge_event_spool(&answer_list, 0, sgeE_ADMINHOST_DEL,
-                         0, 0, lGetHost(ep, nm), nullptr, nullptr,
-                         nullptr, nullptr, nullptr, true, true, packet->gdi_session);
-         answer_list_output(&answer_list);
-         break;
-      }
       case ocs::gdi::Target::EH_LIST: {
          lList *answer_list = nullptr;
          sge_event_spool(&answer_list, 0, sgeE_EXECHOST_DEL,
@@ -379,14 +348,6 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
          answer_list_output(&answer_list);
          host_update_categories(nullptr, ep, packet->gdi_session);
 
-         break;
-      }
-      case ocs::gdi::Target::SH_LIST: {
-         lList *answer_list = nullptr;
-         sge_event_spool(&answer_list, 0, sgeE_SUBMITHOST_DEL,
-                         0, 0, lGetHost(ep, nm), nullptr, nullptr,
-                         nullptr, nullptr, nullptr, true, true, packet->gdi_session);
-         answer_list_output(&answer_list);
          break;
       }
       case ocs::gdi::Target::NO_TARGET:
@@ -641,7 +602,7 @@ host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    int pos;
    int dataType;
    const char *key;
-   sge_object_type host_type = SGE_TYPE_ADMINHOST;
+   sge_object_type host_type = SGE_TYPE_EXECHOST;
 
    int ret = 0;
    lList *answer_list = nullptr;
@@ -657,14 +618,8 @@ host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    }
 
    switch (object->key_nm) {
-      case AH_name:
-         host_type = SGE_TYPE_ADMINHOST;
-         break;
       case EH_name:
          host_type = SGE_TYPE_EXECHOST;
-         break;
-      case SH_name:
-         host_type = SGE_TYPE_SUBMITHOST;
          break;
    }
 
@@ -997,15 +952,6 @@ host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
       }
          break;
 
-      case AH_name:
-         sge_add_event(0, old_ep ? sgeE_ADMINHOST_MOD : sgeE_ADMINHOST_ADD,
-                       0, 0, lGetHost(ep, AH_name), nullptr, nullptr, ep, packet->gdi_session);
-         break;
-
-      case SH_name:
-         sge_add_event(0, old_ep ? sgeE_SUBMITHOST_MOD : sgeE_SUBMITHOST_ADD,
-                       0, 0, lGetHost(ep, SH_name), nullptr, nullptr, ep, packet->gdi_session);
-         break;
    }
 
    DRETURN(0);
