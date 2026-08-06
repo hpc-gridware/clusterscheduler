@@ -561,7 +561,7 @@ object_get_name(const lDescr *descr) {
    if (descr != nullptr) {
       int i;
 
-      for (i = SGE_TYPE_ADMINHOST; i < SGE_TYPE_ALL; i++) {
+      for (i = SGE_TYPE_FIRST; i < SGE_TYPE_ALL; i++) {
          if (object_base[i].descr == descr) {
             name = object_base[i].type_name;
             break;
@@ -592,7 +592,7 @@ object_get_type_name(const lListElem *object) {
    if (object != nullptr) {
       const lDescr *descr = lGetElemDescr(object);
 
-      for (int i = SGE_TYPE_ADMINHOST; i < SGE_TYPE_ALL; i++) {
+      for (int i = SGE_TYPE_FIRST; i < SGE_TYPE_ALL; i++) {
          if (object_base[i].descr != nullptr && object_base[i].key_nm != NoName &&
              lGetPosInDescr(descr, object_base[i].key_nm) >= 0) {
             name = object_base[i].type_name;
@@ -1064,7 +1064,7 @@ sge_object_type object_name_get_type(const char *name) {
       *colon = '\0';
    }
 
-   for (i = (int) SGE_TYPE_ADMINHOST; i < (int) SGE_TYPE_ALL; i++) {
+   for (i = (int) SGE_TYPE_FIRST; i < (int) SGE_TYPE_ALL; i++) {
       if (strcasecmp(object_base[i].type_name, type_name) == 0) {
          ret = (sge_object_type) i;
          break;

@@ -409,7 +409,7 @@ sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc,
    if (type == SGE_TYPE_ALL) {
       int i;
       
-      for (i = (int)SGE_TYPE_ADMINHOST; i < (int)SGE_TYPE_ALL; i++) {
+      for (i = (int)SGE_TYPE_FIRST; i < (int)SGE_TYPE_ALL; i++) {
          sge_mirror_subscribe_internal(evc, (sge_object_type) i, callback_before, callback_after, client_data,
                                        nullptr, nullptr);
       }
@@ -793,7 +793,7 @@ sge_mirror_error sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object_type ty
    if (type == SGE_TYPE_ALL) {
       int i;
 
-      for (i = (int)SGE_TYPE_ADMINHOST; i < (int)SGE_TYPE_ALL; i++) {
+      for (i = (int)SGE_TYPE_FIRST; i < (int)SGE_TYPE_ALL; i++) {
          if (i != (int)SGE_TYPE_SHUTDOWN && i != (int)SGE_TYPE_MARK_4_REGISTRATION) {
             sge_mirror_unsubscribe_internal(evc, (sge_object_type) i);
          }

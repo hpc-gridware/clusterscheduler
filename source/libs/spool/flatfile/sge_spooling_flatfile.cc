@@ -145,7 +145,7 @@ spool_classic_create_context(lList **answer_list, const char *args)
 
          /* create info which fields to spool once */
          field_info = (flatfile_info *)sge_malloc(sizeof(flatfile_info) * SGE_TYPE_ALL);
-         for (i = (int)SGE_TYPE_ADMINHOST; i < (int)SGE_TYPE_ALL; i++) {
+         for (i = (int)SGE_TYPE_FIRST; i < (int)SGE_TYPE_ALL; i++) {
             switch (i) {
                /* pseudo types without spooling action */
                // @see spool_classic_default_shutdown_func
@@ -370,7 +370,7 @@ spool_classic_default_shutdown_func(lList **answer_list,
    DENTER(TOP_LAYER);
 
    auto field_info = static_cast<flatfile_info *>(lGetRef(rule, SPR_clientdata));
-   for (auto i = static_cast<int>(SGE_TYPE_ADMINHOST); i < static_cast<int>(SGE_TYPE_ALL); i++) {
+   for (auto i = static_cast<int>(SGE_TYPE_FIRST); i < static_cast<int>(SGE_TYPE_ALL); i++) {
       // for most type we use static fields but for some we need to free the dynamic fields
       // @see spool_classic_create_context
       switch (i) {
