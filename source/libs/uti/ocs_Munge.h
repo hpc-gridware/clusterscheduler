@@ -25,7 +25,18 @@
 
 #include "uti/sge_dstring.h"
 
+/** @file
+ * @brief Dynamically loaded access to MUNGE authentication
+ *
+ * MUNGE is one of the security modes selectable in the `bootstrap` file — see
+ * `ocs::Bootstrap::BS_SEC_MODE_MUNGE`. `libmunge` is opened with `dlopen` at
+ * runtime rather than linked, so a cluster built with MUNGE support still
+ * starts on a host that does not have the library installed;
+ * @ref ocs::uti::Munge::is_initialized reports which case applies.
+ */
+
 namespace ocs::uti {
+   /// @cond   pointer types mirroring the libmunge ABI, resolved with dlsym at runtime
    using munge_encode_func_t = munge_err_t (*)(char **cred, munge_ctx_t ctx, const void *buf, int len);
    using munge_decode_func_t = munge_err_t (*)(char *cred, munge_ctx_t ctx, void **buf, int *len, uid_t *uid, gid_t *gid);
    using munge_strerror_func_t = const char *(*)(munge_err_t err);
@@ -40,7 +51,16 @@ namespace ocs::uti {
    using munge_enum_is_valid_func_t = int (*)(munge_enum_t type, int val);
    using munge_enum_int_to_str_func_t = const char * (*)(munge_enum_t type, int val);
    using munge_enum_str_to_int_func_t = int (*)(munge_enum_t type, const char *str);
+   /// @endcond
 
+/**
+ * @brief Entry point to the MUNGE credential library
+ *
+ * Static only: the library is opened once per process by #initialize and the
+ * resolved function pointers are shared. #munge_encode_func and its two
+ * neighbours are public because callers invoke them directly; they are nullptr
+ * until #initialize has succeeded.
+ */
 class Munge {
 private:
    static void *lib_handle;
@@ -66,15 +86,38 @@ private:
 #endif
 
 public:
+   /// libmunge's `munge_encode()`; nullptr until #initialize has succeeded
    static munge_encode_func_t munge_encode_func;
+   /// libmunge's `munge_decode()`; nullptr until #initialize has succeeded
    static munge_decode_func_t munge_decode_func;
+   /// libmunge's `munge_strerror()`; nullptr until #initialize has succeeded
    static munge_strerror_func_t munge_strerror_func;
 
+   /**
+    * @brief Has libmunge been loaded successfully?
+    *
+    * @return true when #initialize has succeeded and the function pointers are
+    *         usable
+    */
    static bool is_initialized();
 
+   /**
+    * @brief Open libmunge and resolve the functions this code uses
+    *
+    * Fails if it has already succeeded — it is not idempotent, so call it once
+    * per process.
+    *
+    * @param[out] error_dstr receives the reason on failure: already
+    *        initialised, the library could not be opened, or a symbol was
+    *        missing
+    * @return true on success
+    */
    static bool initialize(dstring *error_dstr);
+
+   /// Close libmunge and forget the resolved function pointers
    static void shutdown();
 
+   /// Log the enum values libmunge reports, for diagnosing version mismatches
    static void print_munge_enums();
 };
 } // ocs::uti

@@ -57,33 +57,42 @@
 #include "gdi/msg_gdilib.h"
 
 
-#define SGE_COMMD_SERVICE "sge_qmaster"
-#define CA_DIR          "common/sgeCA"
-#define CA_LOCAL_ROOTUSER_DIR    "/var/sgeCA"
-#define CA_LOCAL_NORMALUSER_DIR  "/tmp/sgeCA"
-#define CaKey           "cakey.pem"
-#define CaCert          "cacert.pem"
-#define SGESecPath      ".sge"
-#define UserKey         "key.pem"
-#define RandFile        "rand.seed"
-#define UserCert        "cert.pem"
-#define CrlFile         "ca-crl.pem"
-#define ReconnectFile   "private/reconnect.dat"
-#define VALID_MINUTES    7          /* expiry of connection        */
+/** @file
+ * @brief Builds the CSP key and certificate paths declared in sge_csp_path.h
+ *
+ * All paths are computed once by `sge_csp_path_setup()`, called from
+ * #sge_csp_path_class_create. Nothing here touches the file system beyond
+ * looking up the calling user's home directory.
+ */
 
+#define SGE_COMMD_SERVICE "sge_qmaster" ///< service name used in the local CA path when the port comes from the services database
+#define CA_DIR          "common/sgeCA"      ///< CA directory, relative to the cell
+#define CA_LOCAL_ROOTUSER_DIR    "/var/sgeCA" ///< local CA root when running as a superuser
+#define CA_LOCAL_NORMALUSER_DIR  "/tmp/sgeCA" ///< local CA root when running as an ordinary user
+#define CaKey           "cakey.pem"          ///< file name of the CA's private key
+#define CaCert          "cacert.pem"         ///< file name of the CA's certificate
+#define SGESecPath      ".sge"               ///< per-user security directory, inside the home directory
+#define UserKey         "key.pem"            ///< file name of a user's private key
+#define RandFile        "rand.seed"          ///< file name of the random number seed
+#define UserCert        "cert.pem"           ///< file name of a user's certificate
+#define CrlFile         "ca-crl.pem"         ///< file name of the certificate revocation list
+#define ReconnectFile   "private/reconnect.dat" ///< file name of the reconnect data
+#define VALID_MINUTES    7                   ///< expiry of a connection, in minutes
+
+/// The computed paths behind a @ref sge_csp_path_class_str
 typedef struct {
-   char *ca_root;                /* path of ca_root directory */
-   char *ca_local_root;          /* path of ca_local_root directory */
-   char *CA_cert_file;           /* CA certificate file */
-   char *CA_key_file;            /* CA's private key file */
-   char *cert_file;              /* user certificate file */
-   char *key_file;               /* user's key file */
-   char *rand_file;              /* rand file */
-   char *reconnect_file;         /* reconnect data file (not used) */
-   char *crl_file;               /* CRL file */
-   unsigned long refresh_time;   /* connection refresh time (not used) */
-   char *password;               /* password for encrypted keyfiles (not used) */
-   cl_ssl_verify_func_t verify_func; /* cert verify function */
+   char *ca_root;                ///< path of the ca_root directory
+   char *ca_local_root;          ///< path of the ca_local_root directory
+   char *CA_cert_file;           ///< CA certificate file
+   char *CA_key_file;            ///< CA's private key file
+   char *cert_file;              ///< user certificate file
+   char *key_file;               ///< user's key file
+   char *rand_file;              ///< random seed file
+   char *reconnect_file;         ///< reconnect data file; computed but unused
+   char *crl_file;               ///< certificate revocation list file
+   unsigned long refresh_time;   ///< connection refresh time; never set, so always 0
+   char *password;               ///< password for encrypted key files; never set
+   cl_ssl_verify_func_t verify_func; ///< peer certificate verification callback, or nullptr
 } sge_csp_path_t;
 
 static bool sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_error_class_t *eh);
@@ -223,6 +232,21 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
 }
 
 
+/**
+ * @brief Create a path set and compute every path in it
+ *
+ * The paths come from `$SGE_ROOT`, `$SGE_CELL`, the qmaster port and the
+ * calling user: daemons and the superuser use the shared CA directories, an
+ * ordinary user a directory under their home. Four environment variables
+ * override individual results — `$SGE_CAKEYFILE`, `$SGE_CERTFILE`,
+ * `$SGE_KEYFILE`, and `$SGE_NO_CA_LOCAL_ROOT` (the last currently disabled,
+ * because the `sge_ca` script does not support it).
+ *
+ * @param eh collector that receives the reason on failure
+ * @return the new path set, or nullptr if it could not be allocated or the
+ *         paths could not be determined. Release it with
+ *         #sge_csp_path_class_destroy.
+ */
 sge_csp_path_class_t *
 sge_csp_path_class_create(sge_error_class_t *eh)
 {
@@ -278,6 +302,13 @@ sge_csp_path_class_create(sge_error_class_t *eh)
    DRETURN(ret);
 }
 
+/**
+ * @brief Destroy a path set and release every string in it
+ *
+ * Does nothing when @p pst or `*pst` is nullptr.
+ *
+ * @param[in,out] pst the path set to destroy; set to nullptr on return
+ */
 void sge_csp_path_class_destroy(sge_csp_path_class_t **pst) {
    DENTER(TOP_LAYER);
 
