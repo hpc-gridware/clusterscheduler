@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   RQRL_name = 11900,
+   RQRL_name = 11700,
    RQRL_value,
    RQRL_type,
    RQRL_dvalue,

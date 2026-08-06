@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   ASTR_href = 8450,
+   ASTR_href = 8250,
    ASTR_value
 };
 

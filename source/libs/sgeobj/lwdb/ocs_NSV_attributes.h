@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   NSV_name = 8350,
+   NSV_name = 8150,
    NSV_strings
 };
 

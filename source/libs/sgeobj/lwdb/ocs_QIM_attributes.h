@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   QIM_type = 9900,
+   QIM_type = 9700,
    QIM_message
 };
 

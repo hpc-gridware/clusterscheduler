@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   RL_name = 13300,
+   RL_name = 13100,
    RL_enabled,
    RL_user_list,
    RL_parent_role_list,

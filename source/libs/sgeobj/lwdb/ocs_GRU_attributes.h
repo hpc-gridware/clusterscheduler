@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   GRU_type = 3850,
+   GRU_type = 3650,
    GRU_name,
    GRU_amount,
    GRU_resource_map_list,

@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   MES_job_number_list = 6650,
+   MES_job_number_list = 6450,
    MES_message_number,
    MES_message
 };

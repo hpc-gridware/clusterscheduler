@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   FCAT_job_share = 10000,
+   FCAT_job_share = 9800,
    FCAT_user_share,
    FCAT_user,
    FCAT_project_share,

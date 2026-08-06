@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   US_name = 1750,
+   US_name = 1550,
    US_type,
    US_fshare,
    US_oticket,

@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   JR_job_number = 4550,
+   JR_job_number = 4350,
    JR_ja_task_number,
    JR_queue_name,
    JR_state,

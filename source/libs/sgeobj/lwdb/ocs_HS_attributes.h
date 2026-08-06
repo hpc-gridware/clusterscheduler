@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   HS_name = 950,
+   HS_name = 750,
    HS_value
 };
 

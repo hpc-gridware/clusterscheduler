@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   UPU_job_number = 5050,
+   UPU_job_number = 4850,
    UPU_old_usage_list
 };
 

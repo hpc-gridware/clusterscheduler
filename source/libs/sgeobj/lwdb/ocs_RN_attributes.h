@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   RN_min = 1950,
+   RN_min = 1750,
    RN_max,
    RN_step
 };

@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   SGEJ_priority = 6950,
+   SGEJ_priority = 6750,
    SGEJ_job_number,
    SGEJ_job_name,
    SGEJ_owner,

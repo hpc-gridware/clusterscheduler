@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   LR_name = 1450,
+   LR_name = 1250,
    LR_value,
    LR_global,
    LR_is_static,

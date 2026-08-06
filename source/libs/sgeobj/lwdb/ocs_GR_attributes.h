@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   GR_group = 12800
+   GR_group = 12600
 };
 
 constexpr const int GR_Type[] = {

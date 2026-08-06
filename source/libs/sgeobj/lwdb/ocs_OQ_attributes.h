@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   OQ_slots = 1650,
+   OQ_slots = 1450,
    OQ_dest_queue,
    OQ_dest_version,
    OQ_ticket,

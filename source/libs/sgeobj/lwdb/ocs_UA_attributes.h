@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   UA_name = 3550,
+   UA_name = 3350,
    UA_value,
    UA_svalue
 };

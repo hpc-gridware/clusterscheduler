@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   BN_new_type = 12900,
+   BN_new_type = 12700,
    BN_instance,
    BN_amount,
    BN_unit,

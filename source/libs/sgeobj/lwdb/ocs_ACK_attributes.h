@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   ACK_type = 12300,
+   ACK_type = 12100,
    ACK_id,
    ACK_id2,
    ACK_str

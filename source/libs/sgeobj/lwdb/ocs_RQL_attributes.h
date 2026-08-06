@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   RQL_name = 12000,
+   RQL_name = 11800,
    RQL_result,
    RQL_time,
    RQL_slots,

@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   SCT_str = 11400,
+   SCT_str = 11200,
    SCT_job_pending_ref,
    SCT_job_ref
 };

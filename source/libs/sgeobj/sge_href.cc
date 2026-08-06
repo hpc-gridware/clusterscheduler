@@ -640,7 +640,7 @@ href_list_find_referencees(const lList *this_list, lList **answer_list,
 *
 *  INPUTS
 *     const lList *this_list   - RH_Type 
-*     lList **answer_list      - AH_Type 
+*     lList **answer_list      - AN_Type
 *     const lList *master_list - HGRP_Type 
 *     lList **occupant_groups  - RH_Type 
 *

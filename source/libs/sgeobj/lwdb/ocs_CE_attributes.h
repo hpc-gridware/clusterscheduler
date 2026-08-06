@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   CE_name = 1350,
+   CE_name = 1150,
    CE_shortcut,
    CE_valtype,
    CE_stringval,

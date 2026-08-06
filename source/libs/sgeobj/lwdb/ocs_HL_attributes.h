@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   HL_name = 850,
+   HL_name = 650,
    HL_value,
    HL_last_update,
    HL_is_static

@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   ST_name = 2850,
+   ST_name = 2650,
    ST_id
 };
 

@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   QAJ_host = 3250,
+   QAJ_host = 3050,
    QAJ_queue,
    QAJ_group,
    QAJ_owner,

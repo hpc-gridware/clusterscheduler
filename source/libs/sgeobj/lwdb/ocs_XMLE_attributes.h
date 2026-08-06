@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   XMLE_Attribute = 10600,
+   XMLE_Attribute = 10400,
    XMLE_Print,
    XMLE_Element,
    XMLE_List

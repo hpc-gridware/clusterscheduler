@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   TMR_begin = 6050,
+   TMR_begin = 5850,
    TMR_end
 };
 

@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   JG_qname = 3050,
+   JG_qname = 2850,
    JG_qversion,
    JG_qhostname,
    JG_slots,

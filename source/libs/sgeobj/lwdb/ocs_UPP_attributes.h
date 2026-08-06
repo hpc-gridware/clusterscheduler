@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   UPP_name = 6350,
+   UPP_name = 6150,
    UPP_usage,
    UPP_long_term_usage
 };

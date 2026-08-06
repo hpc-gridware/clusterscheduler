@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   CAL_name = 5850,
+   CAL_name = 5650,
    CAL_year_calendar,
    CAL_week_calendar,
    CAL_parsed_year_calendar,

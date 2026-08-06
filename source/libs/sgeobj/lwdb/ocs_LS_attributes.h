@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   LS_name = 7450,
+   LS_name = 7250,
    LS_command,
    LS_pid,
    LS_in,

@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   STN_name = 4050,
+   STN_name = 3850,
    STN_type,
    STN_id,
    STN_shares,

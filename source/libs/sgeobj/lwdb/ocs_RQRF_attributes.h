@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   RQRF_expand = 11800,
+   RQRF_expand = 11600,
    RQRF_scope,
    RQRF_xscope
 };

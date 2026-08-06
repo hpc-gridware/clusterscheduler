@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   MR_user = 2250,
+   MR_user = 2050,
    MR_host
 };
 

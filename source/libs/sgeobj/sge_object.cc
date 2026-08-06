@@ -389,9 +389,7 @@ const lDescr *
 object_get_type(const lListElem *object) {
    const lDescr *ret = nullptr;
 
-   if (object_has_type(object, AH_Type)) {
-      ret = AH_Type;
-   } else if (object_has_type(object, CAL_Type)) {
+   if (object_has_type(object, CAL_Type)) {
       ret = CAL_Type;
    } else if (object_has_type(object, CK_Type)) {
       ret = CK_Type;
@@ -411,8 +409,6 @@ object_get_type(const lListElem *object) {
       ret = QR_Type;
    } else if (object_has_type(object, RN_Type)) {
       ret = RN_Type;
-   } else if (object_has_type(object, SH_Type)) {
-      ret = SH_Type;
    } else if (object_has_type(object, VA_Type)) {
       ret = VA_Type;
    }

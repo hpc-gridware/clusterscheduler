@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   EV_id = 1150,
+   EV_id = 950,
    EV_name,
    EV_host,
    EV_commproc,

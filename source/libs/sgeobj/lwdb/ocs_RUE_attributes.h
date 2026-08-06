@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   RUE_name = 10800,
+   RUE_name = 10600,
    RUE_utilized_now,
    RUE_utilized_now_resource_map_list,
    RUE_utilized_now_binding_inuse,

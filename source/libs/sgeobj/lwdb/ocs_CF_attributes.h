@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   CF_name = 2750,
+   CF_name = 2550,
    CF_value,
    CF_sublist,
    CF_local

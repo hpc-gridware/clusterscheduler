@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   ARA_name = 12200,
+   ARA_name = 12000,
    ARA_group
 };
 

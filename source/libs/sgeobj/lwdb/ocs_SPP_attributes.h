@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   SPP_name = 13200,
+   SPP_name = 13000,
    SPP_value_list
 };
 

@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   PN_path = 2050,
+   PN_path = 1850,
    PN_host,
    PN_file_host,
    PN_file_staging

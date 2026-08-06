@@ -24,8 +24,6 @@
 #include "sgeobj/lwdb/ocs_JRS_attributes.h"
 #include "sgeobj/lwdb/ocs_QU_attributes.h"
 #include "sgeobj/lwdb/ocs_EH_attributes.h"
-#include "sgeobj/lwdb/ocs_AH_attributes.h"
-#include "sgeobj/lwdb/ocs_SH_attributes.h"
 #include "sgeobj/lwdb/ocs_AN_attributes.h"
 #include "sgeobj/lwdb/ocs_HL_attributes.h"
 #include "sgeobj/lwdb/ocs_HS_attributes.h"
@@ -159,8 +157,6 @@ constexpr AttributeStatic all_attributes[] = {
       JRS_ATTRIBUTES,
       QU_ATTRIBUTES,
       EH_ATTRIBUTES,
-      AH_ATTRIBUTES,
-      SH_ATTRIBUTES,
       AN_ATTRIBUTES,
       HL_ATTRIBUTES,
       HS_ATTRIBUTES,

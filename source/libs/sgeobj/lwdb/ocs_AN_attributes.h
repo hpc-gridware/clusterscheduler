@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   AN_status = 750,
+   AN_status = 550,
    AN_text,
    AN_quality
 };

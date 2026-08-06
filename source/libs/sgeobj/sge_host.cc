@@ -75,10 +75,6 @@ host_list_locate(const lList *host_list, const char *hostname) {
 
             if (object_has_type(element, EH_Type)) {
                nm = object_get_primary_key(EH_Type);
-            } else if (object_has_type(element, AH_Type)) {
-               nm = object_get_primary_key(AH_Type);
-            } else if (object_has_type(element, SH_Type)) {
-               nm = object_get_primary_key(SH_Type);
             }
             ret = lGetElemHostRW(host_list, nm, hostname);
          }
@@ -287,7 +283,7 @@ cqueue_reaches_host_without_exec_hosts(const lListElem *cqueue, const char *host
 *     to the "answer_list". 
 *
 *  INPUTS
-*     const lListElem *host   - EH_Type, AH_Type or SH_Type object 
+*     const lListElem *host   - EH_Type object
 *     lList **answer_list     - AN_Type list 
 *     const lList *queue_list - CQ_Type list 
 *     const lList *hgrp_list  - HGRP_Type list (Master list)
@@ -308,10 +304,6 @@ bool host_is_referenced(const lListElem *host,
 
       if (object_has_type(host, EH_Type)) {
          nm = object_get_primary_key(EH_Type);
-      } else if (object_has_type(host, AH_Type)) {
-         nm = object_get_primary_key(AH_Type);
-      } else if (object_has_type(host, SH_Type)) {
-         nm = object_get_primary_key(SH_Type);
       }
       hostname = lGetHost(host, nm);
 

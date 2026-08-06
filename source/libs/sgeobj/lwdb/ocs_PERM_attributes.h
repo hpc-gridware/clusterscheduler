@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   PERM_is_manager = 7350,
+   PERM_is_manager = 7150,
    PERM_is_operator,
    PERM_is_admin_host,
    PERM_is_submit_host,

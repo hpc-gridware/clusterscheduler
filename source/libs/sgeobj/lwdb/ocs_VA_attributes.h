@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   VA_variable = 2150,
+   VA_variable = 1950,
    VA_value
 };
 

@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   OR_type = 1550,
+   OR_type = 1350,
    OR_job_number,
    OR_ja_task_number,
    OR_job_version,

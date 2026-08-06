@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   RU_job_number = 7550,
+   RU_job_number = 7350,
    RU_task_number,
    RU_state
 };

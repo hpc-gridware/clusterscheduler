@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   LDR_queue_ref_list = 11000,
+   LDR_queue_ref_list = 10800,
    LDR_limit,
    LDR_global,
    LDR_host,

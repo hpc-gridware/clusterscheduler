@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   XMLA_Name = 10300,
+   XMLA_Name = 10100,
    XMLA_Value
 };
 

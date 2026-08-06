@@ -489,16 +489,6 @@ spooling_field CQ_fields[] = {
    {  NoName,                    21, nullptr,                 false, nullptr,                false, nullptr,                                   nullptr,                      nullptr}
 };
 
-spooling_field SH_fields[] = {
-   {  SH_name,           21, "hostname",   false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,            21, nullptr,         false, nullptr, false, nullptr, nullptr, nullptr}
-};
-
-spooling_field AH_fields[] = {
-   {  AH_name,           21, "hostname",   false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,            21, nullptr,         false, nullptr, false, nullptr, nullptr, nullptr}
-};
-
 static spooling_field RN_sub_fields[] = {
    {  RN_min,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
    {  RN_max,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},

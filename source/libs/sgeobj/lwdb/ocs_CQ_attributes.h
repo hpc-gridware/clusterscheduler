@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   CQ_name = 9750,
+   CQ_name = 9550,
    CQ_hostlist,
    CQ_qinstances,
    CQ_seq_no,

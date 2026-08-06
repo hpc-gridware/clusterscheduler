@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   QETI_total = 10900,
+   QETI_total = 10700,
    QETI_resource_instance,
    QETI_queue_end_next
 };

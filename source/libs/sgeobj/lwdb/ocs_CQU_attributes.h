@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   CQU_state = 11300,
+   CQU_state = 11100,
    CQU_till
 };
 

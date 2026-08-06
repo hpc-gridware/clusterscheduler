@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   PE_name = 2350,
+   PE_name = 2150,
    PE_slots,
    PE_user_list,
    PE_xuser_list,

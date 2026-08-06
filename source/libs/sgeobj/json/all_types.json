@@ -62,20 +62,6 @@
          "add_to_sge_all_lists": true
       },
       {
-         "className": "AdminHost",
-         "cullPrefix": "AH",
-         "cullNameSpec": "host",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
-      },
-      {
-         "className": "SubmitHost",
-         "cullPrefix": "SH",
-         "cullNameSpec": "host",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
-      },
-      {
          "className": "Answer",
          "cullPrefix": "AN",
          "cullNameSpec": "answer",

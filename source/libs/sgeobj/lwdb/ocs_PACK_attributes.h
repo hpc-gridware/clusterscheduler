@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   PACK_id = 13100,
+   PACK_id = 12900,
    PACK_string
 };
 

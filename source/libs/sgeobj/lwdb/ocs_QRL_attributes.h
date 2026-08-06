@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   QRL_queue = 11100
+   QRL_queue = 10900
 };
 
 constexpr const int QRL_Type[] = {

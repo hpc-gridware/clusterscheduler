@@ -27,8 +27,6 @@
 #include "sgeobj/cull/sge_job_JRS_L.h"
 #include "sgeobj/cull/sge_qinstance_QU_L.h"
 #include "sgeobj/cull/sge_host_EH_L.h"
-#include "sgeobj/cull/sge_host_AH_L.h"
-#include "sgeobj/cull/sge_host_SH_L.h"
 #include "sgeobj/cull/sge_answer_AN_L.h"
 #include "sgeobj/cull/sge_host_HL_L.h"
 #include "sgeobj/cull/sge_host_HS_L.h"
@@ -171,8 +169,6 @@ lNameSpace nmv[] = {
    {JRS_LOWERBOUND, JRS_SIZE, JRSN, JRS_Type},
    {QU_LOWERBOUND, QU_SIZE, QUN, QU_Type},
    {EH_LOWERBOUND, EH_SIZE, EHN, EH_Type},
-   {AH_LOWERBOUND, AH_SIZE, AHN, AH_Type},
-   {SH_LOWERBOUND, SH_SIZE, SHN, SH_Type},
    {AN_LOWERBOUND, AN_SIZE, ANN, AN_Type},
    {HL_LOWERBOUND, HL_SIZE, HLN, HL_Type},
    {HS_LOWERBOUND, HS_SIZE, HSN, HS_Type},

@@ -217,12 +217,6 @@ object_get_subtype(int nm)
       case EH_joker:
          ret = VA_Type;
          break;
-      case AH_joker:
-         ret = VA_Type;
-         break;
-      case SH_joker:
-         ret = VA_Type;
-         break;
       case EV_subscribed:
          ret = EVS_Type;
          break;

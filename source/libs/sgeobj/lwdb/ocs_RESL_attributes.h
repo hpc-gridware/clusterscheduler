@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   RESL_value = 3950,
+   RESL_value = 3750,
    RESL_id_instance,
    RESL_pe_task_id,
    RESL_amount,

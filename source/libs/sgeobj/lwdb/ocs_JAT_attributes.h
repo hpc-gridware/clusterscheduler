@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   JAT_task_number = 6750,
+   JAT_task_number = 6550,
    JAT_status,
    JAT_start_time,
    JAT_end_time,

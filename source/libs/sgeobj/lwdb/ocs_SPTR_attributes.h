@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   SPTR_is_default = 8050,
+   SPTR_is_default = 7850,
    SPTR_rule_name,
    SPTR_rule
 };

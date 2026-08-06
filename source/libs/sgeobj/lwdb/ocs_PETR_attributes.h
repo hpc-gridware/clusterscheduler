@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   PETR_jobid = 4350,
+   PETR_jobid = 4150,
    PETR_jataskid,
    PETR_queuename,
    PETR_owner,

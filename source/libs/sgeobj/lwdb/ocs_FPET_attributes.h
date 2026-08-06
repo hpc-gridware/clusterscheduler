@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   FPET_id = 4450
+   FPET_id = 4250
 };
 
 constexpr const int FPET_Type[] = {

@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   EVS_id = 1250,
+   EVS_id = 1050,
    EVS_flush,
    EVS_interval,
    EVS_what,

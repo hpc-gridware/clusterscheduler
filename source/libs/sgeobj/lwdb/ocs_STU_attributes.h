@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   STU_name = 2950
+   STU_name = 2750
 };
 
 constexpr const int STU_Type[] = {

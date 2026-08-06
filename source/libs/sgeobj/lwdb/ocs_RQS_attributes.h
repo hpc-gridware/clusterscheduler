@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   RQS_name = 11600,
+   RQS_name = 11400,
    RQS_description,
    RQS_enabled,
    RQS_rule,

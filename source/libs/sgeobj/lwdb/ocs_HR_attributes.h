@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   HR_name = 7250
+   HR_name = 7050
 };
 
 constexpr const int HR_Type[] = {

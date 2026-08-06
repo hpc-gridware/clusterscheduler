@@ -115,13 +115,16 @@ typedef enum {
    /*
     * Don't forget to edit
     *
-    *    'mirror_base' in libs/mir/sge_mirror.c
-    *    'object_base' in libs/sgeobj/sge_object.c
-    *    'table_base' in libs/spool/sge_spooling_database.c
+    *    'dev_mirror_base' in libs/mir/sge_mirror.cc
+    *    'object_base' in libs/sgeobj/sge_object.cc
     *
-    *    'sge_mirror_unsubscribe_internal' libs/mir/sge_mirror.c
-    *    'sge_mirror_subscribe_internal' libs/mir/sge_mirror.c
+    *    'sge_mirror_unsubscribe_internal' libs/mir/sge_mirror.cc
+    *    'sge_mirror_subscribe_internal' libs/mir/sge_mirror.cc
     * if something is changed here!
+    *
+    * Both arrays are indexed BY THIS ENUM and are sized [SGE_TYPE_ALL], so a
+    * value added or removed here silently shifts every row below it -- the rows
+    * carry no type name to grep for. Count them after editing.
     */
 
    SGE_TYPE_ALL,            /* must be the second to the last entry */

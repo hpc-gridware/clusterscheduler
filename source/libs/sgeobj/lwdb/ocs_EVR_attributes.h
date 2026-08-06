@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   EVR_operation = 12400,
+   EVR_operation = 12200,
    EVR_timestamp,
    EVR_event_client_id,
    EVR_event_number,

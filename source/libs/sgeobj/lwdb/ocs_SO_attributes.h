@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   SO_name = 3150,
+   SO_name = 2950,
    SO_threshold,
    SO_slots_sum,
    SO_seq_no,

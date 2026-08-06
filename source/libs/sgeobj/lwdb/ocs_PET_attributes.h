@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   PET_id = 4250,
+   PET_id = 4050,
    PET_name,
    PET_status,
    PET_granted_destin_identifier_list,

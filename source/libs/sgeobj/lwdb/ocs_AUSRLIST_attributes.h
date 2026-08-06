@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   AUSRLIST_href = 9250,
+   AUSRLIST_href = 9050,
    AUSRLIST_value
 };
 

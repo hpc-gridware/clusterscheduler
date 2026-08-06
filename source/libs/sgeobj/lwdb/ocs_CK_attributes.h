@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   CK_name = 5150,
+   CK_name = 4950,
    CK_interface,
    CK_ckpt_command,
    CK_migr_command,

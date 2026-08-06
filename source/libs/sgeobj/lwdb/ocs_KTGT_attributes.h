@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   KTGT_id = 6450,
+   KTGT_id = 6250,
    KTGT_tgt
 };
 

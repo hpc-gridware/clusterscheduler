@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   ET_unique_id = 1050,
+   ET_unique_id = 850,
    ET_number,
    ET_timestamp,
    ET_type,

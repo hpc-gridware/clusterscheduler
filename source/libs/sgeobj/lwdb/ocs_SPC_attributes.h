@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   SPC_name = 7750,
+   SPC_name = 7550,
    SPC_rules,
    SPC_types
 };

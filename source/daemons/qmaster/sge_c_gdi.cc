@@ -812,8 +812,8 @@ sge_gdi_do_permcheck(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
 
    // add host roles -- through the same helpers as the checks above, so that
    // what permcheck REPORTS and what the permission checks ENFORCE cannot drift
-   // apart. This site used a direct lGetElemHost() on AH_name/SH_name, which is
-   // what host_list_locate() resolves to for these list types anyway.
+   // apart. This site used a direct lGetElemHost() on the retired admin/submit
+   // host lists, which host_list_locate() resolved to for those list types.
    bool is_admin_host = host_is_admin_host(hostname);
    bool is_submit_host = host_is_submit_host(hostname);
    lSetBool(ep, PERM_is_admin_host, is_admin_host);

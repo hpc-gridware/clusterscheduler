@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   SPT_type = 7950,
+   SPT_type = 7750,
    SPT_name,
    SPT_rules
 };

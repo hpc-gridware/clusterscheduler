@@ -111,7 +111,7 @@ static int show_eventclients();
 /* ------------------------------------------------------------- */
 static void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, char *s);
 static bool del_host_of_type(lList *arglp, ocs::gdi::Target target);
-static bool mod_reserved_hgroup(lList *arglp, int nm, const char *group,
+static bool mod_reserved_hgroup(lList *arglp, const char *group,
                                 ocs::gdi::SubCommand sub_command, const char *what);
 static int print_acl(lList *arglp);
 static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp, lListElem **epp, ocs::gdi::SubCommand sub_command, struct object_info_entry *info_entry);
@@ -2282,8 +2282,8 @@ int sge_parse_qconf(char *argv[])
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-         parse_name_list_to_cull("host to add", &lp, AH_Type, AH_name, *spp);
-         if (!mod_reserved_hgroup(lp, AH_name, ADMIN_HOSTGROUP,
+         parse_name_list_to_cull("host to add", &lp, HR_Type, HR_name, *spp);
+         if (!mod_reserved_hgroup(lp, ADMIN_HOSTGROUP,
                                   ocs::gdi::SubCommand::APPEND, "administrative host")) {
             sge_parse_return |= 1;
          }
@@ -2707,8 +2707,8 @@ int sge_parse_qconf(char *argv[])
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-         parse_name_list_to_cull("host to add", &lp, SH_Type, SH_name, *spp);
-         if (!mod_reserved_hgroup(lp, SH_name, SUBMIT_HOSTGROUP,
+         parse_name_list_to_cull("host to add", &lp, HR_Type, HR_name, *spp);
+         if (!mod_reserved_hgroup(lp, SUBMIT_HOSTGROUP,
                                   ocs::gdi::SubCommand::APPEND, "submit host")) {
             sge_parse_return = 1;
          }
@@ -3160,8 +3160,8 @@ int sge_parse_qconf(char *argv[])
       if (strcmp("-dh", *spp) == 0) {
          /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
-         parse_name_list_to_cull("host to del", &lp, AH_Type, AH_name, *spp);
-         if (!mod_reserved_hgroup(lp, AH_name, ADMIN_HOSTGROUP,
+         parse_name_list_to_cull("host to del", &lp, HR_Type, HR_name, *spp);
+         if (!mod_reserved_hgroup(lp, ADMIN_HOSTGROUP,
                                   ocs::gdi::SubCommand::REMOVE, "administrative host")) {
             sge_parse_return = 1;
          }
@@ -3295,8 +3295,8 @@ int sge_parse_qconf(char *argv[])
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-         parse_name_list_to_cull("host to del", &lp, SH_Type, SH_name, *spp);
-         if (!mod_reserved_hgroup(lp, SH_name, SUBMIT_HOSTGROUP,
+         parse_name_list_to_cull("host to del", &lp, HR_Type, HR_name, *spp);
+         if (!mod_reserved_hgroup(lp, SUBMIT_HOSTGROUP,
                                   ocs::gdi::SubCommand::REMOVE, "submit host")) {
             sge_parse_return = 1;
          }
@@ -7300,8 +7300,8 @@ static int sge_error_and_exit(const char *ptr) {
 *     rather than failing a whole batch.
 *
 *  INPUTS
-*     lList *arglp                    - list of names as parsed from the command line
-*     int nm                          - name field in arglp (AH_name or SH_name)
+*     lList *arglp                    - HR_Type list of names as parsed from the
+*                                       command line
 *     const char *group               - ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP
 *     ocs::gdi::SubCommand sub_command - APPEND to add, REMOVE to delete
 *     const char *what                - "administrative host" / "submit host", for messages
@@ -7309,7 +7309,7 @@ static int sge_error_and_exit(const char *ptr) {
 *  RESULT
 *     bool - true if every request succeeded
 *******************************************************************************/
-static bool mod_reserved_hgroup(lList *arglp, int nm, const char *group,
+static bool mod_reserved_hgroup(lList *arglp, const char *group,
                                 ocs::gdi::SubCommand sub_command, const char *what)
 {
    bool ret = true;
@@ -7317,7 +7317,7 @@ static bool mod_reserved_hgroup(lList *arglp, int nm, const char *group,
    DENTER(TOP_LAYER);
 
    for_each_rw_lv(argep, arglp) {
-      const char *name = lGetHost(argep, nm);
+      const char *name = lGetHost(argep, HR_name);
 
       if (name == nullptr) {
          ret = false;
@@ -7331,13 +7331,13 @@ static bool mod_reserved_hgroup(lList *arglp, int nm, const char *group,
        * the reference introduces no cycle, so nothing has to be validated here.
        */
       if (!ocs::is_hgroup_name(name)) {
-         if (sge_resolve_host(argep, nm) != CL_RETVAL_OK) {
+         if (sge_resolve_host(argep, HR_name) != CL_RETVAL_OK) {
             fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, name);
             fprintf(stderr, "\n");
             ret = false;
             continue;
          }
-         name = lGetHost(argep, nm);
+         name = lGetHost(argep, HR_name);
       }
 
       /* the reduced element the qmaster merges: just the group name and the

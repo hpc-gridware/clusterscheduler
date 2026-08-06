@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   XMLH_Version = 10400,
+   XMLH_Version = 10200,
    XMLH_Name,
    XMLH_Stylesheet,
    XMLH_Attribute,

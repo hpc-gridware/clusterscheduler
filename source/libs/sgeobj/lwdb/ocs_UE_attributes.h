@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   UE_name = 1850
+   UE_name = 1650
 };
 
 constexpr const int UE_Type[] = {

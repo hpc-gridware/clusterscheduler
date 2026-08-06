@@ -46,8 +46,6 @@ extern spooling_field US_fields[];
 extern spooling_field SC_fields[];
 extern spooling_field CQ_fields[];
 extern spooling_field CU_fields[];
-extern spooling_field SH_fields[];
-extern spooling_field AH_fields[];
 extern spooling_field AR_fields[];
 extern spooling_field PE_fields[];
 extern spooling_field RL_fields[];

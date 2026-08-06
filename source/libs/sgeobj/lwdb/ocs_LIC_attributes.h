@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   LIC_processors = 4650,
+   LIC_processors = 4450,
    LIC_arch
 };
 

@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   ULNG_value = 7050
+   ULNG_value = 6850
 };
 
 constexpr const int ULNG_Type[] = {
