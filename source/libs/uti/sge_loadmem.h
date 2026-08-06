@@ -33,32 +33,25 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Memory and swap usage of the local host
+ */
+
 #if defined(SOLARIS) || defined(LINUX) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD)
 
 #define SGE_LOADMEM
 
-/****** uti/os/sge_mem_info_t *************************************************
-*  NAME
-*     sge_mem_info_t -- Structure to store memory information
-*
-*  SYNOPSIS
-*     typedef struct {
-*        double mem_total; 
-*        double mem_free;  
-*        double swap_total; 
-*        double swap_free;   
-*     } sge_mem_info_t;
-*
-*  FUNCTION
-*     mem_total  - total amount of memory in MB
-*     mem_free   - amount of free memory in MB
-*     swap_total - total amount of swap space in MB
-*     swap_free  - amount of free swap space in MB
-*     swap_rsvd  - amount of reserved swap space in MB
-*
-*  SEE ALSO
-*     uti/os/sge_loadmem()
-******************************************************************************/
+/**
+ * @brief Structure to store memory information
+ *
+ * mem_total  - total amount of memory in MB
+ * mem_free   - amount of free memory in MB
+ * swap_total - total amount of swap space in MB
+ * swap_free  - amount of free swap space in MB
+ * swap_rsvd  - amount of reserved swap space in MB
+ *
+ * @see #sge_loadmem
+ */
 typedef struct {
    double mem_total;
    double mem_free;

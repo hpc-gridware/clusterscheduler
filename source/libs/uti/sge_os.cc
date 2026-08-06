@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Operating system helpers: process groups, file descriptors, daemonising
+ */
 #include <filesystem>
 #include <string>
 
@@ -66,34 +70,22 @@
 
 static void sge_close_fd(int fd);
 
-/****** uti/os/sge_get_pids() *************************************************
-*  NAME
-*     sge_get_pids() -- Return all "pids" of a running processes 
-*
-*  SYNOPSIS
-*     int sge_get_pids(pid_t *pids, int max_pids, const char *name, 
-*                      const char *pscommand) 
-*
-*  FUNCTION
-*     Return all "pids" of a running processes with given "name". 
-*     Only first 8 characters of "name" are significant.
-*     Checks only basename of command after "/".
-*
-*  INPUTS
-*     pid_t *pids           - pid array
-*     int max_pids          - size of pid array
-*     const char *name      - name 
-*     const char *pscommand - ps commandline
-*
-*  RESULT
-*     int - Result 
-*         0 - No program with given name found
-*        >0 - Number of processes with "name" 
-*        -1 - Error
-*
-*  NOTES
-*     MT-NOTES: sge_get_pids() is not MT safe
-******************************************************************************/
+/**
+ * @brief Return all "pids" of a running processes
+ *
+ * Return all "pids" of a running processes with given "name".
+ * Only first 8 characters of "name" are significant.
+ * Checks only basename of command after "/".
+ *
+ * @param pids pid array
+ * @param max_pids size of pid array
+ * @param name name
+ * @param pscommand ps commandline
+ *
+ * @return Result 0 - No program with given name found >0 - Number of processes with "name" -1 - Error
+ *
+ * @note MT-NOTES: sge_get_pids() is not MT safe
+ */
 int sge_get_pids(pid_t *pids, int max_pids, const char *name,
                  const char *pscommand) {
    FILE *fp_in, *fp_out, *fp_err;
@@ -150,29 +142,19 @@ int sge_get_pids(pid_t *pids, int max_pids, const char *name,
    DRETURN(num_of_pids);
 }
 
-/****** uti/os/sge_contains_pid() *********************************************
-*  NAME
-*     sge_contains_pid() -- Checks whether pid array contains pid 
-*
-*  SYNOPSIS
-*     int sge_contains_pid(pid_t pid, pid_t *pids, int npids) 
-*
-*  FUNCTION
-*     whether pid array contains pid 
-*
-*  INPUTS
-*     pid_t pid   - process id 
-*     pid_t *pids - pid array 
-*     int npids   - number of pids in array 
-*
-*  RESULT
-*     int - result state
-*         0 - pid was not found
-*         1 - pid was found
-*
-*  NOTES
-*     MT-NOTES: sge_contains_pid() is MT safe
-******************************************************************************/
+/**
+ * @brief Checks whether pid array contains pid
+ *
+ * whether pid array contains pid
+ *
+ * @param pid process id
+ * @param pids pid array
+ * @param npids number of pids in array
+ *
+ * @return result state 0 - pid was not found 1 - pid was found
+ *
+ * @note MT-NOTES: sge_contains_pid() is MT safe
+ */
 int sge_contains_pid(pid_t pid, pid_t *pids, int npids) {
    int i;
 
@@ -184,33 +166,21 @@ int sge_contains_pid(pid_t pid, pid_t *pids, int npids) {
    return 0;
 }
 
-/****** uti/os/sge_checkprog() ************************************************
-*  NAME
-*     sge_checkprog() -- Has "pid" of a running process the given "name" 
-*
-*  SYNOPSIS
-*     int sge_checkprog(pid_t pid, const char *name, 
-*                       const char *pscommand) 
-*
-*  FUNCTION
-*     Check if "pid" of a running process has given "name".
-*     Only first 8 characters of "name" are significant.
-*     Check only basename of command after "/". 
-*
-*  INPUTS
-*     pid_t pid             - process id 
-*     const char *name      - process name 
-*     const char *pscommand - ps commandline 
-*
-*  RESULT
-*     int - result state
-*         0 - Process with "pid" has "name"
-*         1 - No such pid or pid has other name
-*        -1 - error occurred (mostly sge_peopen() failed) 
-*
-*  NOTES
-*     MT-NOTES: sge_checkprog() is not MT safe
-******************************************************************************/
+/**
+ * @brief Has "pid" of a running process the given "name"
+ *
+ * Check if "pid" of a running process has given "name".
+ * Only first 8 characters of "name" are significant.
+ * Check only basename of command after "/".
+ *
+ * @param pid process id
+ * @param name process name
+ * @param pscommand ps commandline
+ *
+ * @return result state 0 - Process with "pid" has "name" 1 - No such pid or pid has other name -1 - error occurred (mostly sge_peopen() failed)
+ *
+ * @note MT-NOTES: sge_checkprog() is not MT safe
+ */
 int sge_checkprog(pid_t pid, const char *name, const char *pscommand) {
    FILE *fp_in, *fp_out, *fp_err;
    char buf[1000], *ptr;
@@ -270,28 +240,18 @@ int sge_checkprog(pid_t pid, const char *name, const char *pscommand) {
    DRETURN(notfound);
 }
 
-/****** uti/os/redirect_to_dev_null() ******************************************
-*  NAME
-*     redirect_to_dev_null() -- redirect a channel to /dev/null
-*
-*  SYNOPSIS
-*     int redirect_to_dev_null(int target, int mode) 
-*
-*  FUNCTION
-*     Attaches a certain filedescriptor to /dev/null.
-*
-*  INPUTS
-*     int target - file descriptor
-*     int mode   - mode for open
-*
-*  RESULT
-*     int - target fd number if there was an error
-*           else -1
-*
-*  NOTES
-*     MT-NOTE: redirect_to_dev_null() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Redirect a channel to /dev/null
+ *
+ * Attaches a certain filedescriptor to /dev/null.
+ *
+ * @param target file descriptor
+ * @param mode mode for open
+ *
+ * @return target fd number if there was an error else -1
+ *
+ * @note MT-NOTE: redirect_to_dev_null() is MT safe
+ */
 int redirect_to_dev_null(int target, int mode) {
    SGE_STRUCT_STAT buf{};
 
@@ -304,32 +264,19 @@ int redirect_to_dev_null(int target, int mode) {
    return -1;
 }
 
-/****** uti/os/sge_occupy_first_three() ***************************************
-*  NAME
-*     sge_occupy_first_three() -- Open descriptor 0, 1, 2 to /dev/null
-*
-*  SYNOPSIS
-*     int sge_occupy_first_three()
-*
-*  FUNCTION
-*     Occupy the first three filedescriptors, if not available. This is done
-*     to be sure that a communication by a socket will not get any "forgotten"
-*     print output from code.
-*
-*  RESULT
-*     int - error state
-*        -1 - OK
-*         0 - there are problems with stdin
-*         1 - there are problems with stdout
-*         2 - there are problems with stderr
-*
-*  NOTES
-*     MT-NOTE: sge_occupy_first_three() is MT safe
-*
-*  SEE ALSO
-*     uti/os/redirect_to_dev_null()
-*     uti/os/sge_close_all_fds()
-******************************************************************************/
+/**
+ * @brief Open descriptor 0, 1, 2 to /dev/null
+ *
+ * Occupy the first three filedescriptors, if not available. This is done
+ * to be sure that a communication by a socket will not get any "forgotten"
+ * print output from code.
+ *
+ * @return error state -1 - OK 0 - there are problems with stdin 1 - there are problems with stdout 2 - there are problems with stderr
+ *
+ * @note MT-NOTE: sge_occupy_first_three() is MT safe
+ *
+ * @see #redirect_to_dev_null, #sge_close_all_fds
+ */
 int sge_occupy_first_three() {
    int ret = -1;
 
@@ -352,62 +299,38 @@ int sge_occupy_first_three() {
 extern int _insure_is_internal_fd(int);
 #endif
 
-/****** uti/os/sge_get_max_fd() ************************************************
-*  NAME
-*     sge_get_max_fd() -- get max filedescriptor count
-*
-*  SYNOPSIS
-*     int sge_get_max_fd() 
-*
-*  FUNCTION
-*     This function returns the nr of file descriptors which are available 
-*     (Where fd 0 is the first one).
-*     So the highest file descriptor value is: max_fd - 1.
-*
-*  INPUTS
-*     void - no input parameters
-*
-*  RESULT
-*     int - max. possible open file descriptor count on this system
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief Get max filedescriptor count
+ *
+ * This function returns the nr of file descriptors which are available
+ * (Where fd 0 is the first one).
+ * So the highest file descriptor value is: max_fd - 1.
+ *
+ * @return max. possible open file descriptor count on this system
+ */
 int sge_get_max_fd() {
    return sysconf(_SC_OPEN_MAX);
 }
 
 #if not defined(LINUX) && not defined(SOLARIS)
-/****** uti/os/fd_compare() ****************************************************
-*  NAME
-*     fd_compare() -- file descriptor compare function for qsort()
-*
-*  SYNOPSIS
-*     static int fd_compare(const void* fd1, const void* fd2) 
-*
-*  FUNCTION
-*     qsort() needs a callback function to compare two filedescriptors for
-*     sorting them. This is the implementation to value the difference of two
-*     file descriptors. If one parameter is nullptr, only the pointers are
-*     used for the comparsion.
-*     Used by sge_close_all_fds().
-*
-*  INPUTS
-*     const void* fd1 - pointer to an int (file descriptor 1)
-*     const void* fd2 - pointer to an int (file descriptor 2)
-*
-*  RESULT
-*     static int - compare result (1, 0 or -1)
-*                  1  : fd1 > fd2
-*                  0  : fd1 == fd2
-*                  -1 : fd1 < fd2
-*
-*  NOTES
-*     MT-NOTE: fd_compare() is MT safe 
-*
-*  SEE ALSO
-*     uti/os/sge_close_all_fds()
-*******************************************************************************/
+/**
+ * @brief File descriptor compare function for qsort()
+ *
+ * qsort() needs a callback function to compare two filedescriptors for
+ * sorting them. This is the implementation to value the difference of two
+ * file descriptors. If one parameter is nullptr, only the pointers are
+ * used for the comparsion.
+ * Used by sge_close_all_fds().
+ *
+ * @param fd1 pointer to an int (file descriptor 1)
+ * @param fd2 pointer to an int (file descriptor 2)
+ *
+ * @return compare result (1, 0 or -1) 1  : fd1 > fd2 0  : fd1 == fd2 -1 : fd1 < fd2
+ *
+ * @note MT-NOTE: fd_compare() is MT safe
+ *
+ * @see #sge_close_all_fds
+ */
 static int fd_compare(const void *fd1, const void *fd2) {
    int *i1 = (int *) fd1;
    int *i2 = (int *) fd2;
@@ -506,27 +429,19 @@ std::set<int> get_all_fds(pid_t pid) {
 }
 #endif
 
-/****** uti/os/sge_close_fd() **************************************************
-*  NAME
-*     sge_close_fd() -- close a file descriptor
-*
-*  SYNOPSIS
-*     static void sge_close_fd(int fd) 
-*
-*  FUNCTION
-*     This function closes the specified file descriptor on an architecture
-*     specific way. If __INSURE__ is defined during compile time and it is an
-*     fd used by insure the file descriptor is not closed.
-*
-*  INPUTS
-*     int fd - file descriptor number to close
-*
-*  RESULT
-*     static void - no return value
-*
-*  SEE ALSO
-*     uti/os/sge_close_all_fds()
-*******************************************************************************/
+/**
+ * @brief Close a file descriptor
+ *
+ * This function closes the specified file descriptor on an architecture
+ * specific way. If __INSURE__ is defined during compile time and it is an
+ * fd used by insure the file descriptor is not closed.
+ *
+ * @param fd file descriptor number to close
+ *
+ * @return no return value
+ *
+ * @see #sge_close_all_fds
+ */
 static void sge_close_fd(int fd) {
    DENTER(TOP_LAYER);
 #ifdef __INSURE__
@@ -639,31 +554,21 @@ void sge_close_all_fds(int *keep_open, unsigned long nr_of_keep_open_entries) {
 }
 #endif
 
-/****** uti/os/sge_dup_fd_above_stderr() **************************************
-*  NAME
-*     sge_dup_fd_above_stderr() -- Make sure a fd is >=3
-*
-*  SYNOPSIS
-*     int sge_dup_fd_above_stderr(int *fd) 
-*
-*  FUNCTION
-*     This function checks if the given fd is <3, if yes it dups it to be >=3.
-*     The fd obtained by open(), socket(), pipe(), etc. can be <3 if stdin, 
-*     stdout and/or stderr are closed. As it is difficult for an application
-*     to determine if the first three fds are connected to the std-handles or
-*     something else and because many programmers just rely on these three fds
-*     to be connected to the std-handles, this function makes sure that it 
-*     doesn't use these three fds.
-*
-*  INPUTS
-*     int *fd - pointer to the fd which is to be checked and dupped.
-*
-*  RESULT
-*     int - 0: Ok
-*          >0: errno
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Make sure a fd is >=3
+ *
+ * This function checks if the given fd is <3, if yes it dups it to be >=3.
+ * The fd obtained by open(), socket(), pipe(), etc. can be <3 if stdin,
+ * stdout and/or stderr are closed. As it is difficult for an application
+ * to determine if the first three fds are connected to the std-handles or
+ * something else and because many programmers just rely on these three fds
+ * to be connected to the std-handles, this function makes sure that it
+ * doesn't use these three fds.
+ *
+ * @param fd pointer to the fd which is to be checked and dupped.
+ *
+ * @return 0: Ok >0: errno
+ */
 int sge_dup_fd_above_stderr(int *fd) {
    if (fd == nullptr) {
       return EINVAL;

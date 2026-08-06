@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Memory and swap usage of the local host
+ */
+
 #include <cstring>
 
 #ifdef TEST
@@ -50,12 +54,14 @@
 
 #include <unistd.h>
 
+/// converts a page count to megabytes, selected at runtime by #init_pageshift
 int (*p_page2M)(int size);
 void init_pageshift();
 static int page2M_none(int size);
 static int page2M_left(int size);
 static int page2M_right(int size);
 
+/// convert a page count to megabytes
 #define page2M(size) ((*p_page2M)(size))
 
 /* MT-NOTE: only execd and utilities use code that depends on the modules global variables */
@@ -80,6 +86,7 @@ int size
    return (size >> pageshift);
 }   
 
+/** @brief Work out how to convert page counts to megabytes on this host */
 void init_pageshift()
 {
    int i;

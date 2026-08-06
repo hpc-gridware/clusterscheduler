@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Security layer setup and user authentication helpers
+ */
+
 #include <string>
 
 void sge_security_exit(int i);

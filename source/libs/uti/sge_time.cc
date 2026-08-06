@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Time formatting, parsing and monotonic time sources
+ */
+
 #include <ctime>
 #include <chrono>
 #include <sys/times.h>
@@ -82,28 +86,19 @@ const char *append_time(uint64_t timestamp, dstring *dstr, bool is_xml) {
    return sge_dstring_append(dstr, sge_ctime64(timestamp, &local_dstr, is_xml, true));
 }
 
-/****** uti/time/append_time() **************************************************
-*  NAME
-*     append_time() -- Convert time value into string 
-*
-*  SYNOPSIS
-*     const char* append_time(time_t i, dstring *buffer) 
-*
-*  FUNCTION
-*     Convert time value into string 
-*
-*  INPUTS
-*     time_t i - time value 
-*     dstring *buffer - dstring
-*     bool is_xml - write in XML dateTime format?
-*
-*  RESULT
-*     const char* - time string (current time if 'i' was 0) 
-*     dstring *buffer - buffer provided by caller
-*
-*  NOTES
-*     MT-NOTE: append_time() is MT safe if localtime_r() can be used
-******************************************************************************/
+/**
+ * @brief Convert time value into string
+ *
+ * Convert time value into string
+ *
+ * @param i time value
+ * @param buffer dstring
+ * @param is_xml write in XML dateTime format?
+ *
+ * @return time string (current time if 'i' was 0) dstring *buffer - buffer provided by caller
+ *
+ * @note MT-NOTE: append_time() is MT safe if localtime_r() can be used
+ */
 const char *append_time(time_t i, dstring *buffer, bool is_xml) {
    const char *ret;
    struct tm tm_buffer{};
@@ -191,6 +186,14 @@ const char *sge_ctime64_date_time(uint64_t timestamp, dstring *dstr) {
    return ret;
 }
 
+/** @brief Wait until an absolute point in time
+ *
+ * Sleeps until @p then, returning early only if interrupted.
+ *
+ * @param i the instant to wait for, as a `time_t`
+ * @param buffer buffer receiving the formatted time
+ * @return the formatted time held by @p buffer
+ */
 const char *sge_at_time(time_t i, dstring *buffer) {
    struct tm tm_buffer{};
 
@@ -202,26 +205,18 @@ const char *sge_at_time(time_t i, dstring *buffer) {
                               tm->tm_hour, tm->tm_min, tm->tm_sec);
 }
 
-/****** uti/time/duration_add_offset() ****************************************
-*  NAME
-*     duration_add_offset() -- add function for time add
-*
-*  SYNOPSIS
-*     uint32_t duration_add_offset(uint32_t duration, uint32_t offset)
-*
-*  FUNCTION
-*     add function to catch ulong overflow. Returns max ulong value if necessary
-*
-*  INPUTS
-*     uint32_t duration - duration in seconds
-*     uint32_t offset   - offset in seconds
-*
-*  RESULT
-*     uint32_t - value < std::numeric_limits<uint32_t>::max()
-*
-*  NOTES
-*     MT-NOTE: duration_add_offset() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Add function for time add
+ *
+ * add function to catch ulong overflow. Returns max ulong value if necessary
+ *
+ * @param duration duration in seconds
+ * @param offset offset in seconds
+ *
+ * @return value < std::numeric_limits<uint32_t>::max()
+ *
+ * @note MT-NOTE: duration_add_offset() is not MT safe
+ */
 uint64_t duration_add_offset(uint64_t duration, uint64_t offset) {
    if (duration == std::numeric_limits<uint64_t>::max() || offset == std::numeric_limits<uint64_t>::max()) {
       return std::numeric_limits<uint64_t>::max();
@@ -236,25 +231,15 @@ uint64_t duration_add_offset(uint64_t duration, uint64_t offset) {
    return duration;
 }
 
-/****** uti/time/sge_usleep() ****************************************
-*  NAME
-*     sge_usleep() -- Mimiks a non-iterruptable usleep() 
-*
-*  SYNOPSIS
-*     void sge_usleep(int sleep_time) 
-*
-*  FUNCTION
-*     Mimiks a non-iterruptable usleep() to the caller.
-*
-*  INPUTS
-*     int sleep_time - requested sleep time
-*
-*  RESULT
-*     n/a
-*
-*  NOTES
-*     None.
-*******************************************************************************/
+/**
+ * @brief Mimiks a non-iterruptable usleep()
+ *
+ * Mimiks a non-iterruptable usleep() to the caller.
+ *
+ * @param sleep_time requested sleep time
+ *
+ * @note None.
+ */
 void sge_usleep(int sleep_time) {
    struct timeval wake_tv{}, sleep_tv{}, snooze_tv{};
    int time_to_sleep = sleep_time;

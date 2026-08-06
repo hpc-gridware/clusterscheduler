@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Reader/writer locks used to guard the master data stores
+ */
+
 #include <cstdlib>
 #include <pthread.h>
 #include <cstring>
@@ -58,43 +62,38 @@ static double writer_count[NUM_OF_LOCK_TYPES] = {0.0, 0.0};
 #define PRINT_LOCK
 #endif
 
-/****** sge_lock/Introduction ****************************************************
-*  NAME
-*     Cluster Scheduler Locking API
-*
-*  FUNCTION
-*     The Cluster Scheduler Locking API is a mediator between a lock service provider
-*     and a lock client. A lock service provider offers a particular lock
-*     implementation by registering a set of callbacks. A lock client does acquire
-*     and release a lock using the respective API functions.
-*
-*     A lock service provider (usually a daemon) needs to register three
-*     different callbacks:
-*
-*       + a lock callback, which is used by the API lock function
-*
-*       + an unlock callback, which is used by the API unlock function
-*
-*       + an ID callback, which is used by the API locker ID function
-*     
-*     Lock service provider has to register these callbacks *before* lock client
-*     uses the lock/unlock API functions. Otherwise the lock/unlock operations do
-*     have no effect at all.
-*
-*     Locktype denotes the entity which will be locked/unlocked (e.g. Global
-*     Lock. Lockmode denotes in which mode the locktype will be locked/unlocked.
-*     Locker ID unambiguously identifies a lock client.
-*
-*     Adding a new locktype does recquire two steps:
-*
-*     1. Add an enumerator to 'sge_locktype_t'. Do not forget to update
-*        'NUM_OF_TYPES'.
-*
-*     2. Add a description to 'locktype_names'.
-*
-*  SEE ALSO
-*     sge_lock/sge_lock.h
-*******************************************************************************/
+/**
+ * @brief The Cluster Scheduler Locking API is a mediator between a lock service provider
+ *
+ * The Cluster Scheduler Locking API is a mediator between a lock service provider
+ * and a lock client. A lock service provider offers a particular lock
+ * implementation by registering a set of callbacks. A lock client does acquire
+ * and release a lock using the respective API functions.
+ *
+ * A lock service provider (usually a daemon) needs to register three
+ * different callbacks:
+ *
+ *   + a lock callback, which is used by the API lock function
+ *
+ *   + an unlock callback, which is used by the API unlock function
+ *
+ *   + an ID callback, which is used by the API locker ID function
+ *
+ * Lock service provider has to register these callbacks *before* lock client
+ * uses the lock/unlock API functions. Otherwise the lock/unlock operations do
+ * have no effect at all.
+ *
+ * Locktype denotes the entity which will be locked/unlocked (e.g. Global
+ * Lock. Lockmode denotes in which mode the locktype will be locked/unlocked.
+ * Locker ID unambiguously identifies a lock client.
+ *
+ * Adding a new locktype does recquire two steps:
+ *
+ * 1. Add an enumerator to 'sge_locktype_t'. Do not forget to update
+ *    'NUM_OF_TYPES'.
+ *
+ * 2. Add a description to 'locktype_names'.
+ */
 #ifdef SGE_USE_LOCK_FIFO
 static sge_fifo_rw_lock_t Global_Lock;
 static sge_fifo_rw_lock_t Scheduler_Lock;
@@ -196,6 +195,14 @@ void sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, 
 
 #else
 
+/** @brief Take a lock if it is free, without blocking
+ *
+ * @param aType which data store to lock, see #sge_locktype_t
+ * @param aMode shared or exclusive, see #sge_lockmode_t
+ * @param func name of the calling function, for the lock trace
+ * @param anID identifies the caller, see #sge_locker_id
+ * @return true when the lock was taken, false when it was already held
+ */
 bool sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID) {
    bool res = false;
 
@@ -259,33 +266,22 @@ bool sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, 
 } /* sge_try_lock */
 #endif
 
-/****** sge_lock/sge_lock() ****************************************************
-*  NAME
-*     sge_lock() -- Acquire lock
-*
-*  SYNOPSIS
-*     void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, sge_locker_t 
-*     anID) 
-*
-*  FUNCTION
-*     Acquire lock. If the lock is already held, block the caller until lock
-*     becomes available again.
-*
-*     Instead of using this function directly the convenience macro
-*     'SGE_LOCK(type, mode)' could (and should) be used. 
-*     
-*
-*  INPUTS
-*     sge_locktype_t aType - lock to acquire
-*     sge_lockmode_t aMode - lock mode
-*     sge_locker_t anID    - locker id
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: sge_lock() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Acquire lock
+ *
+ * Acquire lock. If the lock is already held, block the caller until lock
+ * becomes available again.
+ *
+ * Instead of using this function directly the convenience macro
+ * #SGE_LOCK could (and should) be used.
+ *
+ * @param aType lock to acquire
+ * @param aMode lock mode
+ * @param func name of the calling function, for the lock trace
+ * @param anID locker id
+ *
+ * @note MT-NOTE: sge_lock() is MT safe
+ */
 #ifdef SGE_LOCK_DEBUG
 void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID)
 {
@@ -409,31 +405,21 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
 } /* sge_lock */
 #endif
 
-/****** sge_lock/sge_unlock() **************************************************
-*  NAME
-*     sge_unlock() -- Release lock
-*
-*  SYNOPSIS
-*     void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, sge_locker_t 
-*     anID) 
-*
-*  FUNCTION
-*     Release lock. 
-*
-*     Instead of using this function directly the convenience macro
-*     'SGE_UNLOCK(type, mode)' could (and should) be used. 
-*
-*  INPUTS
-*     sge_locktype_t aType - lock to release
-*     sge_lockmode_t aMode - lock mode in which the lock has been acquired 
-*     sge_locker_t anID    - locker id
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: sge_unlock() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Release lock
+ *
+ * Release lock.
+ *
+ * Instead of using this function directly the convenience macro
+ * #SGE_UNLOCK could (and should) be used.
+ *
+ * @param aType lock to release
+ * @param aMode lock mode in which the lock has been acquired
+ * @param func name of the calling function, for the lock trace
+ * @param anID locker id
+ *
+ * @note MT-NOTE: sge_unlock() is MT safe
+ */
 #ifdef SGE_LOCK_DEBUG
 void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID)
 {
@@ -487,28 +473,18 @@ void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sg
 
 #endif
 
-/****** sge_lock/sge_locker_id() ***********************************************
-*  NAME
-*     sge_locker_id() -- Locker identifier 
-*
-*  SYNOPSIS
-*     sge_locker_t sge_locker_id() 
-*
-*  FUNCTION
-*     Return an unambiguous identifier for the locker.  
-*
-*  INPUTS
-*     void - none 
-*
-*  RESULT
-*     sge_locker_t - locker identifier 
-*
-*  NOTES
-*     There is a 1 to 1 mapping between a locker id an a thread. However the 
-*     locker id and the thread id may be different.
-*
-*     MT-NOTE: sge_locker_id() is MT safe
-*******************************************************************************/
+/**
+ * @brief Locker identifier
+ *
+ * Return an unambiguous identifier for the locker.
+ *
+ * @return locker identifier
+ *
+ * @note There is a 1 to 1 mapping between a locker id an a thread. However the
+ *       locker id and the thread id may be different.
+ *
+ *       MT-NOTE: sge_locker_id() is MT safe
+ */
 sge_locker_t sge_locker_id() {
    sge_locker_t id = 0;
 
@@ -519,33 +495,21 @@ sge_locker_t sge_locker_id() {
    return id;
 } /* sge_locker_id */
 
-/****** libs/lck/lock_once_init() **************************
-*  NAME
-*     lock_once_init() -- setup lock service 
-*
-*  SYNOPSIS
-*     static void lock_once_init() 
-*
-*  FUNCTION
-*     Determine number of locks needed. Create and initialize the respective
-*     mutexes. Register the callbacks required by the locking API 
-*
-*  INPUTS
-*     void - none 
-*
-*  RESULT
-*     void - none 
-*
-*  NOTES
-*     MT-NOTE: lock_once_init() is NOT MT safe. 
-*
-*     Currently we do not use so called recursive mutexes. This may change
-*     *without* warning, if necessary!
-*
-*  SEE ALSO
-*     libs/lck/sge_lock.c
-*
-*******************************************************************************/
+/**
+ * @brief Setup lock service
+ *
+ * Determine number of locks needed. Create and initialize the respective
+ * mutexes. Register the callbacks required by the locking API
+ *
+ * @param void none
+ *
+ * @return none
+ *
+ * @note MT-NOTE: lock_once_init() is NOT MT safe.
+ *
+ *       Currently we do not use so called recursive mutexes. This may change
+ *       *without* warning, if necessary!
+ */
 static void lock_once_init() {
 #ifdef SGE_USE_LOCK_FIFO
    sge_fifo_lock_init(&Global_Lock);
@@ -559,26 +523,17 @@ static void lock_once_init() {
 #endif
 } /* prog_once_init() */
 
-/****** libs/lck/id_callback_impl() *********************************
-*  NAME
-*     id_callback_impl() -- locker ID callback 
-*
-*  SYNOPSIS
-*     static sge_locker_t id_callback_impl() 
-*
-*  FUNCTION
-*     Return ID of current locker. 
-*
-*  INPUTS
-*     void - none 
-*
-*  RESULT
-*     sge_locker_t - locker id
-*
-*  NOTES
-*     MT-NOTE: id_callback() is MT safe. 
-*
-*******************************************************************************/
+/**
+ * @brief Locker ID callback
+ *
+ * Return ID of current locker.
+ *
+ * @param void none
+ *
+ * @return locker id
+ *
+ * @note MT-NOTE: id_callback() is MT safe.
+ */
 static sge_locker_t id_callback_impl() {
    return (sge_locker_t) pthread_self();
 } /* id_callback */

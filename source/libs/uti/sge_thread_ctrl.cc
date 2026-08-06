@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Cooperative thread shutdown flag
+ */
+
 #include <pthread.h>
 
 #include "sge_mtutil.h"
@@ -40,38 +44,29 @@
 
 #include "sge_thread_ctrl.h"
 
+/// name reported when the thread control mutex is locked or unlocked
 #define THREAD_CONTROL_MUTEX "thread_control_mutex"
 
+/// debug layer used by every DENTER/DPRINTF in this file
 #define THREAD_LAYER BASIS_LAYER
 
+/// the one instance shared by every thread of the process
 thread_control_t Thread_Control = {
         PTHREAD_MUTEX_INITIALIZER,
         PTHREAD_COND_INITIALIZER,
         false
 };
 
-/****** uti/thread_ctrl/sge_thread_has_shutdown_started() **********************
-*  NAME
-*     sge_thread_has_shutdown_started() -- shutdown in progress?
-*
-*  SYNOPSIS
-*     bool sge_thread_has_shutdown_started()
-*
-*  FUNCTION
-*     Service function which can be used to check if the executing
-*     component is already shutting down.
-*
-*  INPUTS
-*     void - NONE
-*
-*  RESULT
-*     bool - is in progress?
-*        true  - yes
-*        false - no
-*
-*  NOTES
-*     MT-NOTE: sge_thread_has_shutdown_started() is MT safe
-*******************************************************************************/
+/**
+ * @brief Shutdown in progress?
+ *
+ * Service function which can be used to check if the executing
+ * component is already shutting down.
+ *
+ * @return is in progress? true  - yes false - no
+ *
+ * @note MT-NOTE: sge_thread_has_shutdown_started() is MT safe
+ */
 bool
 sge_thread_has_shutdown_started() {
    DENTER(THREAD_LAYER);
@@ -81,32 +76,19 @@ sge_thread_has_shutdown_started() {
    DRETURN(res);
 }
 
-/****** uti/thread_ctrl/sge_thread_notify_all_waiting() ************************
-*  NAME
-*     sge_thread_notify_all_waiting() -- notify waiting thread
-*
-*  SYNOPSIS
-*     void sge_thread_notify_all_waiting()
-*
-*  FUNCTION
-*     After the main thread has initialized all needed components and
-*     threads it waits for a certain condition to be signaled
-*     (sge_thread_wait_for_signal).
-*     This signal will start the shutdown process of the master.
-*     This function triggers this signal.
-*
-*  INPUTS
-*     void - NONE
-*
-*  RESULT
-*     void - NONE
-*
-*  NOTES
-*     MT-NOTE: sge_thread_notify_all_waiting() is MT safe
-*
-*  SEE ALSO
-*     uti/thread_ctrl/sge_thread_wait_for_signal()
-*******************************************************************************/
+/**
+ * @brief Notify waiting thread
+ *
+ * After the main thread has initialized all needed components and
+ * threads it waits for a certain condition to be signaled
+ * (sge_thread_wait_for_signal).
+ * This signal will start the shutdown process of the master.
+ * This function triggers this signal.
+ *
+ * @note MT-NOTE: sge_thread_notify_all_waiting() is MT safe
+ *
+ * @see #sge_thread_wait_for_signal
+ */
 void
 sge_thread_notify_all_waiting() {
    DENTER(THREAD_LAYER);
@@ -121,29 +103,16 @@ sge_thread_notify_all_waiting() {
    DRETURN_VOID;
 }
 
-/****** uti/thread_ctrl/sge_thread_wait_for_signal() ***************************
-*  NAME
-*     sge_thread_wait_for_signal() -- block current thread till shutdown
-*
-*  SYNOPSIS
-*     void sge_thread_wait_for_signal()
-*
-*  FUNCTION
-*     A call of this function will block the executing thread until the
-*     shutdown of the process is triggered via sge_thread_notify_all_waiting()
-*
-*  INPUTS
-*     void - NONE
-*
-*  RESULT
-*     void - NONE
-*
-*  NOTES
-*     MT-NOTE: sge_thread_wait_for_signal() is not MT safe
-*
-*  SEE ALSO
-*     uti/thread_ctrl/sge_thread_notify_all_waiting()
-*******************************************************************************/
+/**
+ * @brief Block current thread till shutdown
+ *
+ * A call of this function will block the executing thread until the
+ * shutdown of the process is triggered via sge_thread_notify_all_waiting()
+ *
+ * @note MT-NOTE: sge_thread_wait_for_signal() is not MT safe
+ *
+ * @see #sge_thread_notify_all_waiting
+ */
 void
 sge_thread_wait_for_signal() {
    DENTER(THREAD_LAYER);
@@ -155,23 +124,14 @@ sge_thread_wait_for_signal() {
    DRETURN_VOID;
 }
 
-/****** uti/thread_ctrl/sge_thread_usleep_during_shutdown() ********************
-*  @brief Sleep for a short duration during shutdown.
-*
-*  This function is used to introduce a short sleep period while
-*  a thread is waiting to be cancelled during sge_qmaster shutdown.
-*  The thread will no longer perform any useful work, to a void busy
-*  waiting it does micro sleeps for 50 milliseconds.
-*  Example:
-*     // pthread cancellation point
-*     do {
-*        pthread_cleanup_push((void (*)(void *)) sge_timer_cleanup_monitor, (void *) p_monitor);
-*        cl_thread_func_testcancel(thread_config);
-*        pthread_cleanup_pop(execute);
-*
-*        sge_thread_usleep_during_shutdown();
-*     } while (sge_thread_has_shutdown_started());
-*******************************************************************************/
+/**
+ *  @brief Sleep for a short duration during shutdown.
+ *
+ *  This function is used to introduce a short sleep period while
+ *  a thread is waiting to be cancelled during sge_qmaster shutdown.
+ *  The thread will no longer perform any useful work, to a void busy
+ *  waiting it does micro sleeps for 50 milliseconds.
+ */
 void
 sge_thread_usleep_during_shutdown() {
    DENTER(THREAD_LAYER);

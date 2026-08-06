@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Operating system helpers: process groups, file descriptors, daemonising
+ */
+
 #include <set>
 
 #include <sys/types.h>
@@ -41,6 +45,9 @@
 #include "sge_loadmem.h"
 #include "sge_nprocs.h"
 
+/** @def PSCMD
+ * @brief platform specific `ps` command line used to inspect processes
+ */
 #if defined(LINUX) || defined(FREEBSD) || defined(NETBSD) || defined(DARWIN)
 #  define PSCMD "/bin/ps -axc"
 #elif defined(SOLARIS)
@@ -53,10 +60,11 @@
  * typedef for sge_daemonize_prepare() and sge_daemonize_finalize() 
  * max. supported number = 999 
  */
+/** @brief Outcome of daemonising a process */
 typedef enum uti_daemonize_state_type {
-   SGE_DAEMONIZE_OK = 0,
-   SGE_DAEMONIZE_DEAD_CHILD = 100,
-   SGE_DAEMONIZE_TIMEOUT = 101
+   SGE_DAEMONIZE_OK = 0,             ///< the daemon started successfully
+   SGE_DAEMONIZE_DEAD_CHILD = 100,   ///< the child died before it reported readiness
+   SGE_DAEMONIZE_TIMEOUT = 101       ///< the child did not report readiness in time
 } uti_daemonize_state_t;
 
 

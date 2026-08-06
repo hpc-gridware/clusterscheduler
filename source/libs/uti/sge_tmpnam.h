@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Temporary file name creation
+ */
+
 #include "sge_dstring.h"
 
 char *sge_tmpnam(char *aBuffer, int *fd, dstring *error_message);

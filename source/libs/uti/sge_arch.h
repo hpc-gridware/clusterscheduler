@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Architecture and installation path helpers
+ */
+
 #include <cstdlib>
 
 const char *sge_get_arch();

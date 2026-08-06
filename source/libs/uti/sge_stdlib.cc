@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Memory allocation wrappers and process exit handling
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -43,26 +47,18 @@
 #include "uti/sge_stdlib.h"
 #include "uti/ocs_TerminationManager.h"
 
-/****** uti/stdlib/sge_malloc() ***********************************************
-*  NAME
-*     sge_malloc() -- replacement for malloc() 
-*
-*  SYNOPSIS
-*     char* sge_malloc(int size) 
-*
-*  FUNCTION
-*     Allocates a memory block. Initilizes the block (0). Aborts in case
-*     of error. 
-*
-*  INPUTS
-*     int size - size in bytes 
-*
-*  RESULT
-*     char* - pointer to memory block
-*
-*  NOTES
-*     MT-NOTE: sge_malloc() is MT safe
-******************************************************************************/
+/**
+ * @brief Replacement for malloc()
+ *
+ * Allocates a memory block. Initilizes the block (0). Aborts in case
+ * of error.
+ *
+ * @param size size in bytes
+ *
+ * @return pointer to memory block
+ *
+ * @note MT-NOTE: sge_malloc() is MT safe
+ */
 char *sge_malloc(size_t size) {
    DENTER_(BASIS_LAYER);
 
@@ -79,27 +75,19 @@ char *sge_malloc(size_t size) {
    DRETURN_(cp);
 }
 
-/****** uti/stdlib/sge_realloc() **********************************************
-*  NAME
-*     sge_realloc() -- replacement for realloc 
-*
-*  SYNOPSIS
-*     char* sge_realloc(char *ptr, int size, int abort) 
-*
-*  FUNCTION
-*     Reallocates a memory block. Aborts in case of an error. 
-*
-*  INPUTS
-*     char *ptr - pointer to a memory block
-*     int size  - new size
-*     int abort - do abort when realloc fails?
-*
-*  RESULT
-*     char* - pointer to the (new) memory block
-*
-*  NOTES
-*     MT-NOTE: sge_realloc() is MT safe
-******************************************************************************/
+/**
+ * @brief Replacement for realloc
+ *
+ * Reallocates a memory block. Aborts in case of an error.
+ *
+ * @param ptr pointer to a memory block
+ * @param size new size
+ * @param do_abort do abort when realloc fails?
+ *
+ * @return pointer to the (new) memory block
+ *
+ * @note MT-NOTE: sge_realloc() is MT safe
+ */
 void *sge_realloc(void *ptr, size_t size, int do_abort) {
    DENTER_(BASIS_LAYER);
 
@@ -122,25 +110,15 @@ void *sge_realloc(void *ptr, size_t size, int do_abort) {
    DRETURN_(cp);
 }
 
-/****** uti/stdlib/sge_free() *************************************************
-*  NAME
-*     sge_free() -- replacement for free 
-*
-*  SYNOPSIS
-*     void sge_free(char **cp) 
-*
-*  FUNCTION
-*     Replacement for free function. Accepts nullptr pointers.
-*
-*  INPUTS
-*     char **cp - pointer to a pointer of a memory block 
-*
-*  RESULT
-*     char* - nullptr
-*
-*  NOTES
-*     MT-NOTE: sge_free() is MT safe
-******************************************************************************/
+/**
+ * @brief Replacement for free
+ *
+ * Replacement for free function. Accepts nullptr pointers.
+ *
+ * @param cp pointer to a pointer of a memory block
+ *
+ * @note MT-NOTE: sge_free() is MT safe
+ */
 void sge_free(void *cp) {
    char **mem = (char **) cp;
 
@@ -150,60 +128,40 @@ void sge_free(void *cp) {
    }
 }
 
-/****** uti/stdlib/sge_getenv() ***********************************************
-*  NAME
-*     sge_getenv() -- get an environment variable 
-*
-*  SYNOPSIS
-*     const char* sge_getenv(const char *env_str) 
-*
-*  FUNCTION
-*     The function searches the environment list for a
-*     string that matches the string pointed to by 'env_str'.
-*
-*  INPUTS
-*     const char *env_str - name of env. varibale 
-*
-*  RESULT
-*     const char* - value
-*
-*  SEE ALSO
-*     uti/stdlib/sge_putenv()
-*     uti/stdlib/sge_setenv() 
-*
-*  NOTES
-*     MT-NOTE: sge_getenv() is MT safe
-******************************************************************************/
+/**
+ * @brief Get an environment variable
+ *
+ * The function searches the environment list for a
+ * string that matches the string pointed to by 'env_str'.
+ *
+ * @param env_str name of env. varibale
+ *
+ * @return value
+ *
+ * @note MT-NOTE: sge_getenv() is MT safe
+ *
+ * @see #sge_putenv, #sge_setenv
+ */
 const char *sge_getenv(const char *env_str) {
    DENTER_(BASIS_LAYER);
    const char *cp = (char *) getenv(env_str);
    DRETURN_(cp);
 }
 
-/****** uti/stdlib/sge_putenv() ***********************************************
-*  NAME
-*     sge_putenv() -- put an environment variable to environment
-*
-*  SYNOPSIS
-*     static int sge_putenv(const char *var) 
-*
-*  FUNCTION
-*     Duplicates the given environment variable and calls the system call
-*     putenv.
-*
-*  INPUTS
-*     const char *var - variable to put in the form <name>=<value>
-*
-*  RESULT
-*     static int - 1 on success, else 0
-*
-*  SEE ALSO
-*     uti/stdlib/sge_setenv() 
-*     uti/stdlib/sge_getenv()
-*
-*  NOTES
-*     MT-NOTE: sge_putenv() is MT safe
-*******************************************************************************/
+/**
+ * @brief Put an environment variable to environment
+ *
+ * Duplicates the given environment variable and calls the system call
+ * putenv.
+ *
+ * @param var variable to set, in the form `name=value`
+ *
+ * @return 1 on success, else 0
+ *
+ * @note MT-NOTE: sge_putenv() is MT safe
+ *
+ * @see #sge_setenv, #sge_getenv
+ */
 int sge_putenv(const char *var) {
    char *duplicate;
 
@@ -224,33 +182,20 @@ int sge_putenv(const char *var) {
    return 1;
 }
 
-/****** uti/stdlib/sge_setenv() ***********************************************
-*  NAME
-*     sge_setenv() -- Change or add an environment variable 
-*
-*  SYNOPSIS
-*     int sge_setenv(const char *name, const char *value) 
-*
-*  FUNCTION
-*     Change or add an environment variable 
-*
-*  INPUTS
-*     const char *name  - variable name 
-*     const char *value - new value 
-*
-*  RESULT
-*     int - error state
-*         1 - success
-*         0 - error 
-*
-*  SEE ALSO
-*     uti/stdlib/sge_putenv() 
-*     uti/stdlib/sge_getenv()
-*     uti/stdio/addenv()
-*
-*  NOTES
-*     MT-NOTE: sge_setenv() is MT safe
-*******************************************************************************/
+/**
+ * @brief Change or add an environment variable
+ *
+ * Change or add an environment variable
+ *
+ * @param name variable name
+ * @param value new value
+ *
+ * @return error state 1 - success 0 - error
+ *
+ * @note MT-NOTE: sge_setenv() is MT safe
+ *
+ * @see #sge_putenv, #sge_getenv, `addenv()`
+ */
 int sge_setenv(const char *name, const char *value) {
    int ret = 0;
 
@@ -265,26 +210,16 @@ int sge_setenv(const char *name, const char *value) {
 }
 
 
-/****** uti/stdlib/sge_unsetenv() *************************************************
-*  NAME
-*     sge_unsetenv() -- unset environment variable
-*
-*  SYNOPSIS
-*     void sge_unsetenv(const char* varName) 
-*
-*  FUNCTION
-*     Some architectures doesn't support unsetenv(), sge_unsetenv() is used
-*     to unset an environment variable. 
-*
-*  INPUTS
-*     const char* varName - name of envirionment variable
-*
-*  RESULT
-*     void - no return value
-*
-*  NOTES
-*     MT-NOTE: sge_unsetenv() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Unset environment variable
+ *
+ * Some architectures doesn't support unsetenv(), sge_unsetenv() is used
+ * to unset an environment variable.
+ *
+ * @param varName name of envirionment variable
+ *
+ * @note MT-NOTE: sge_unsetenv() is not MT safe
+ */
 void sge_unsetenv(const char *varName) {
 #ifdef USE_SGE_UNSETENV
    extern char **environ;

@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Load average of the local host
+ */
 #include <cerrno>
 #include <fcntl.h>
 #include <cstdio>
@@ -74,6 +78,7 @@
 #  include <sys/sysctl.h>
 #endif
 
+/// convert a kernel load average value to the user space representation
 #define KERNEL_TO_USER_AVG(x) ((double)x/SGE_FSCALE)
 
 #if defined(SOLARIS)
@@ -95,8 +100,10 @@
 #endif
 
 #if defined(FREEBSD)
+/** @brief Handle used to read kernel statistics, platform specific */
 typedef kvm_t* kernel_fd_type;
 #else
+/** @brief Handle used to read kernel statistics, platform specific */
 typedef int kernel_fd_type;
 #endif
 
@@ -598,6 +605,9 @@ static int get_load_avg(
 #endif
 
 
+/** @brief File descriptor of the kernel statistics channel
+ * @return the descriptor, or -1 when it could not be opened
+ */
 int get_channel_fd() {
    if (kernel_initialized) {
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD)
@@ -610,6 +620,12 @@ int get_channel_fd() {
    }
 }
 
+/** @brief Load average of the local host
+ *
+ * @param[out] loadavg receives the 1, 5 and 15 minute averages, in that order
+ * @param nelem how many of them to fill in, at most 3
+ * @return the number of values written, or -1 on error
+ */
 int sge_getloadavg(double loadavg[], int nelem) {
    int elem = 0;
 
@@ -628,25 +644,15 @@ int sge_getloadavg(double loadavg[], int nelem) {
 
 #ifdef SGE_LOADCPU
 
-/****** uti/os/sge_getcpuload() ***********************************************
-*  NAME
-*     sge_getcpuload() -- Retrieve cpu utilization percentage 
-*
-*  SYNOPSIS
-*     int sge_getcpuload(double *cpu_load) 
-*
-*  FUNCTION
-*     Retrieve cpu utilization percentage (load value "cpu")
-*
-*  INPUTS
-*     double *cpu_load - caller passes adr of double variable 
-*                        for cpu load
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        !0 - Error 
-******************************************************************************/
+/**
+ * @brief Retrieve cpu utilization percentage
+ *
+ * Retrieve cpu utilization percentage (load value "cpu")
+ *
+ * @param cpu_load caller passes adr of double variable for cpu load
+ *
+ * @return error state 0 - OK !0 - Error
+ */
 int sge_getcpuload(double *cpu_load) {
    double load;
    int ret;

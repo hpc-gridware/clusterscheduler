@@ -33,35 +33,33 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Memory allocation wrappers and process exit handling
+ */
+
 #include <cstdlib>
 
+/** @def SGE_STRTOU_LONG32
+ * @brief parse a decimal string into a 32 bit unsigned long
+ */
 #if defined(TARGET_64BIT)
 #  define SGE_STRTOU_LONG32(S) strtoul(S, nullptr, 10)
 #else
 #  define SGE_STRTOU_LONG32(S) strtoul(S, nullptr, 10)
 #endif
 
-/****** uti/stdlib/FREE() *****************************************************
-*  NAME
-*     FREE() -- replacement for sge_free()
-*
-*  SYNOPSIS
-*     #define FREE(x)
-*     void FREE(char *cp) 
-*
-*  FUNCTION
-*     Replacement for sge_free(). Accepts nullptr pointers.
-*     After a call of this macro "cp" will be nullptr.
-*
-*  INPUTS
-*     char *cp - pointer to a memory block 
-*
-*  RESULT
-*     char* - nullptr
-*
-*  SEE ALSO
-*     uti/stdlib/sge_free()
-******************************************************************************/
+/**
+ * @brief Replacement for sge_free()
+ *
+ * Replacement for sge_free(). Accepts nullptr pointers.
+ * After a call of this macro "cp" will be nullptr.
+ *
+ * @param ... pointer to a memory block
+ *
+ * @return nullptr
+ *
+ * @see #sge_free
+ */
 #define FREE(x) \
    if (x != nullptr) { \
       free((char *)x); \

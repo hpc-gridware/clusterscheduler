@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Localisation: gettext initialisation and message translation
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -105,48 +109,24 @@ static bool sge_are_language_functions_installed = false;
 
 static int sge_get_message_id_output_implementation();
 
-/****** uti/language/sge_init_language() **************************************
-*  NAME
-*     sge_init_language() -- initialize language package for gettext()
-*
-*  SYNOPSIS
-*     int sge_init_language(char* package, char* localeDir)
-*
-*
-*  FUNCTION
-*     starts up the language initialization for gettext(). This
-*     function should be called nearly after the main() function.
-*
-*     sge_init_language_func() must be called first to install the
-*     correct function pointers for gettext() setlocale() etc. etc.
-*
-*  INPUTS
-*     char* package     -  package name like "clusterscheduler" of binary
-*                          package *.mo file.
-*                          (if package is nullptr sge_init_language tries
-*                          to get the package name from the invironment
-*                          variable "GRIDPACKAGE").
-*     char* localeDir  -   path to the localisazion directory
-*                          (if localeDir is nullptr sge_init_language
-*                          tries to get the localization directory path
-*                          from the invironment variable
-*                          "GRIDLOCALEDIR").
-*
-*  RESULT
-*     int state         -  true for seccess, false on error.
-*
-*  NOTES
-*     MT-NOTE: sge_init_languagefunc() is guarded by language_mutex
-*
-*  SEE ALSO
-*     uti/language/sge_init_language()
-*     uti/language/sge_init_language_func()
-*     uti/language/sge_gettext()
-*     uti/language/sge_gettext_()
-*     uti/language/sge_gettext__()
-*     uti/language/sge_get_message_id_output()
-*     uti/language/sge_set_message_id_output()
-******************************************************************************/
+/**
+ * @brief Initialize language package for gettext()
+ *
+ * starts up the language initialization for gettext(). This
+ * function should be called nearly after the main() function.
+ *
+ * sge_init_language_func() must be called first to install the
+ * correct function pointers for gettext() setlocale() etc. etc.
+ *
+ * @param package package name like "clusterscheduler" of binary package *.mo file. (if package is nullptr sge_init_language tries to get the package name from the invironment variable "GRIDPACKAGE").
+ * @param localeDir path to the localisazion directory (if localeDir is nullptr sge_init_language tries to get the localization directory path from the invironment variable "GRIDLOCALEDIR").
+ *
+ * @return true for seccess, false on error.
+ *
+ * @note MT-NOTE: sge_init_languagefunc() is guarded by language_mutex
+ *
+ * @see #sge_init_language, #sge_init_language_func, #sge_gettext, #sge_gettext_, #sge_gettext__, #sge_get_message_id_output, #sge_set_message_id_output
+ */
 int sge_init_languagefunc(char *package, char *localeDir) {
    char *packName = nullptr;
    char *locDir = nullptr;
@@ -368,40 +348,23 @@ int sge_init_languagefunc(char *package, char *localeDir) {
    DRETURN_(success);
 }
 
-/****** uti/language/sge_init_language_func() **********************************
-*  NAME
-*     sge_init_language() -- install language functions
-*
-*  SYNOPSIS
-*     void sge_init_language_func(gettext_func_type new_gettext,
-*                         setlocale_func_type new_setlocale,
-*                         bindtextdomain_func_type new_bindtextdomain,
-*                         textdomain_func_type new_textdomain);
-*
-*  FUNCTION
-*     set the function pointer for the gettext(), setlocale(),
-*     bindtextdomain() and textdomain() function calls. This function
-*     must called before any call to sge_init_language() and
-*     sge_gettext().
-*
-*  INPUTS
-*     gettext_func_type        - pointer for gettext()
-*     setlocale_func_type      - pointer for setlocale()
-*     bindtextdomain_func_type - pointer for bindtextdomain()
-*     textdomain_func_type     - pointer for textdomain()
-*
-*  NOTES
-*     MT-NOTE: sge_init_language_func() is guarded by language_mutex
-*
-*  SEE ALSO
-*     uti/language/sge_init_language()
-*     uti/language/sge_init_language_func()
-*     uti/language/sge_gettext()
-*     uti/language/sge_gettext_()
-*     uti/language/sge_gettext__()
-*     uti/language/sge_get_message_id_output()
-*     uti/language/sge_set_message_id_output()
-******************************************************************************/
+/**
+ * @brief Install language functions
+ *
+ * set the function pointer for the gettext(), setlocale(),
+ * bindtextdomain() and textdomain() function calls. This function
+ * must called before any call to sge_init_language() and
+ * sge_gettext().
+ *
+ * @param gettext_func_type pointer for gettext()
+ * @param setlocale_func_type pointer for setlocale()
+ * @param bindtextdomain_func_type pointer for bindtextdomain()
+ * @param textdomain_func_type pointer for textdomain()
+ *
+ * @note MT-NOTE: sge_init_language_func() is guarded by language_mutex
+ *
+ * @see #sge_init_language, #sge_init_language_func, #sge_gettext, #sge_gettext_, #sge_gettext__, #sge_get_message_id_output, #sge_set_message_id_output
+ */
 void sge_init_language_func(gettext_func_type new_gettext,
                             setlocale_func_type new_setlocale,
                             bindtextdomain_func_type new_bindtextdomain,
@@ -441,33 +404,19 @@ void sge_init_language_func(gettext_func_type new_gettext,
    DRETURN_VOID_;
 }
 
-/****** uti/language/sge_set_message_id_output() *******************************
-*  NAME
-*     sge_set_message_id_output() -- enable message id number adding
-*
-*  SYNOPSIS
-*     void sge_set_message_id_output(int flag)
-*
-*  FUNCTION
-*     This procedure is used to enable the adding of message id's when
-*     showing error messages. This function is used in the macro
-*     SGE_ADD_MSG_ID(x) to enable the message id for errors.
-*
-*  INPUTS
-*     int flag - 0 = off ; 1 = on
-*
-*  NOTES
-*     MT-NOTE: sge_set_message_id_output() is guarded by language_mutex
-*
-*  SEE ALSO
-*     uti/language/sge_init_language()
-*     uti/language/sge_init_language_func()
-*     uti/language/sge_gettext()
-*     uti/language/sge_gettext_()
-*     uti/language/sge_gettext__()
-*     uti/language/sge_get_message_id_output()
-*     uti/language/sge_set_message_id_output()
-*******************************************************************************/
+/**
+ * @brief Enable message id number adding
+ *
+ * This procedure is used to enable the adding of message id's when
+ * showing error messages. This function is used in the macro
+ * SGE_ADD_MSG_ID(x) to enable the message id for errors.
+ *
+ * @param flag 0 = off ; 1 = on
+ *
+ * @note MT-NOTE: sge_set_message_id_output() is guarded by language_mutex
+ *
+ * @see #sge_init_language, #sge_init_language_func, #sge_gettext, #sge_gettext_, #sge_gettext__, #sge_get_message_id_output, #sge_set_message_id_output
+ */
 void sge_set_message_id_output(int flag) {
    int *buf = nullptr;
 
@@ -484,33 +433,18 @@ void sge_set_message_id_output(int flag) {
    DRETURN_VOID_;
 }
 
-/****** uti/language/sge_get_message_id_output() *******************************
-*  NAME
-*     sge_get_message_id_output() -- check if message id should be added
-*
-*  SYNOPSIS
-*     int sge_get_message_id_output()
-*
-*  FUNCTION
-*     This function returns the value stored in the static global
-*     variable sge_message_id_view_flag.
-*
-*  RESULT
-*     int - value of sge_message_id_view_flag
-*
-*  NOTES
-*     MT-NOTE: sge_get_message_id_output() is guarded by language_mutex
-*
-*  SEE ALSO
-*     uti/language/sge_init_language()
-*     uti/language/sge_init_language_func()
-*     uti/language/sge_gettext()
-*     uti/language/sge_gettext_()
-*     uti/language/sge_gettext__()
-*     uti/language/sge_get_message_id_output()
-*     uti/language/sge_set_message_id_output()
-*     uti/language/sge_get_message_id_output_implementation()
-*******************************************************************************/
+/**
+ * @brief Check if message id should be added
+ *
+ * This function returns the value stored in the static global
+ * variable sge_message_id_view_flag.
+ *
+ * @return value of sge_message_id_view_flag
+ *
+ * @note MT-NOTE: sge_get_message_id_output() is guarded by language_mutex
+ *
+ * @see #sge_init_language, #sge_init_language_func, #sge_gettext, #sge_gettext_, #sge_gettext__, #sge_get_message_id_output, #sge_set_message_id_output, #sge_get_message_id_output_implementation
+ */
 int sge_get_message_id_output() {
    int ret;
 
@@ -523,37 +457,21 @@ int sge_get_message_id_output() {
    DRETURN_(ret);
 }
 
-/****** uti/language/sge_get_message_id_output_implementation() ***************
-*  NAME
-*     sge_get_message_id_output_implementation() -- pure implementation of
-*        sge_get_message_id_output_implementation() that does not lock
-*        language_mutex
-*
-*  SYNOPSIS
-*     int sge_get_message_id_output_implementation()
-*
-*  FUNCTION
-*     When the sge_get_message_id_output() functionality is needed from within
-*     the language modules the language_mutex may not be obtained because this
-*     mutex is already owned by the same thread.
-*
-*  RESULT
-*     int - value of sge_message_id_view_flag
-*
-*  NOTES
-*     MT-NOTE: The caller of sge_get_message_id_output_implementation() must
-*     MT-NOTE: have obtained the language_mutex mutex due to access to
-*     MT-NOTE: 'sge_enable_msg_id' and 'sge_enable_msg_id_to_every_message'.
-*
-*  SEE ALSO
-*     uti/language/sge_init_language()
-*     uti/language/sge_init_language_func()
-*     uti/language/sge_gettext()
-*     uti/language/sge_gettext_()
-*     uti/language/sge_gettext__()
-*     uti/language/sge_get_message_id_output()
-*     uti/language/sge_set_message_id_output()
-*******************************************************************************/
+/**
+ * @brief Pure implementation of
+ *
+ * When the sge_get_message_id_output() functionality is needed from within
+ * the language modules the language_mutex may not be obtained because this
+ * mutex is already owned by the same thread.
+ *
+ * @return value of sge_message_id_view_flag
+ *
+ * @note MT-NOTE: The caller of sge_get_message_id_output_implementation() must
+ *       MT-NOTE: have obtained the language_mutex mutex due to access to
+ *       MT-NOTE: 'sge_enable_msg_id' and 'sge_enable_msg_id_to_every_message'.
+ *
+ * @see #sge_init_language, #sge_init_language_func, #sge_gettext, #sge_gettext_, #sge_gettext__, #sge_get_message_id_output, #sge_set_message_id_output
+ */
 static int sge_get_message_id_output_implementation() {
    int *buf;
    DENTER_(CULL_LAYER);
@@ -577,31 +495,17 @@ static int sge_get_message_id_output_implementation() {
    }
 }
 
-/****** uti/language/sge_gettext() *********************************************
-*  NAME
-*     sge_gettext() -- dummy gettext() function
-*
-*  SYNOPSIS
-*     const char* sge_gettext(char *x)
-*
-*  FUNCTION
-*     This function returns the given argument
-*
-*  INPUTS
-*     char *x - string
-*
-*  RESULT
-*     const char* - input string
-*
-*  SEE ALSO
-*     uti/language/sge_init_language()
-*     uti/language/sge_init_language_func()
-*     uti/language/sge_gettext()
-*     uti/language/sge_gettext_()
-*     uti/language/sge_gettext__()
-*     uti/language/sge_get_message_id_output()
-*     uti/language/sge_set_message_id_output()
-*******************************************************************************/
+/**
+ * @brief Dummy gettext() function
+ *
+ * This function returns the given argument
+ *
+ * @param x string
+ *
+ * @return input string
+ *
+ * @see #sge_init_language, #sge_init_language_func, #sge_gettext, #sge_gettext_, #sge_gettext__, #sge_get_message_id_output, #sge_set_message_id_output
+ */
 const char *sge_gettext(const char *x) {
    return x;
 }
@@ -707,36 +611,21 @@ const char *sge_gettext_(int msg_id, const char *msg_str) {
 #endif
 }
 
-/****** uti/language/sge_gettext__() *******************************************
-*  NAME
-*     sge_gettext__() -- get translated message from message file
-*
-*  SYNOPSIS
-*     char *sge_gettext__(char *x)
-*
-*  FUNCTION
-*     makes a call to sge_language_functions.gettext_func(x) if
-*     gettext_func is not nullptr, otherwise it returns the input
-*     string.
-*
-*  INPUTS
-*     char *x - pointer to message which should be internationalizied
-*
-*  RESULT
-*     char*   - pointer internationalized message
-*
-*  NOTE
-*     MT-NOTE: not guarded b/c sge_gettext__() is used only in infotext utility
-*
-*  SEE ALSO
-*     uti/language/sge_init_language()
-*     uti/language/sge_init_language_func()
-*     uti/language/sge_gettext()
-*     uti/language/sge_gettext_()
-*     uti/language/sge_gettext__()
-*     uti/language/sge_get_message_id_output()
-*     uti/language/sge_set_message_id_output()
-*******************************************************************************/
+/**
+ * @brief Get translated message from message file
+ *
+ * makes a call to sge_language_functions.gettext_func(x) if
+ * gettext_func is not nullptr, otherwise it returns the input
+ * string.
+ *
+ * @param x pointer to message which should be internationalizied
+ *
+ * @return pointer internationalized message
+ *
+ * @note MT-NOTE: not guarded b/c sge_gettext__() is used only in infotext utility
+ *
+ * @see #sge_init_language, #sge_init_language_func, #sge_gettext, #sge_gettext_, #sge_gettext__, #sge_get_message_id_output, #sge_set_message_id_output
+ */
 const char *sge_gettext__(const char *x) {
    const char *z;
    DENTER_(BASIS_LAYER);

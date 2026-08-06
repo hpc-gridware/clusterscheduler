@@ -32,6 +32,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Split a command line string into an argument vector
+ */
 #include "sge_sl.h"
 
 int sge_quick_count_num_args(const char *args);

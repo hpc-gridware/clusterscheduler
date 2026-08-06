@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Load average of the local host
+ */
+
 #if defined(LINUX) || defined(SOLARIS) || defined(SOLARIS64) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD)
 #  define SGE_LOADAVG
 #endif

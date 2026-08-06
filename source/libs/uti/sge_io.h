@@ -33,34 +33,26 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Buffered file reading and writing helpers
+ */
+
 #include "sge_tmpnam.h"
 
-/****** uti/io/sge_mode_t *****************************************************
-*  NAME
-*     sge_mode_t -- Type of operation for sge_copy_append()
-*
-*  SYNOPSIS
-*
-*     typedef enum {
-*        SGE_MODE_APPEND = 1,
-*        SGE_MODE_COPY = 2
-*     } sge_mode_t;
-*
-*  FUNCTION
-*     Defines the operation which should be performed by 
-*     sge_copy_append():
-*
-*        SGE_MODE_APPEND - append the file
-*        SGE_MODE_COPY   - copy the file
-*
-*  SEE ALSO
-*     uti/io/sge_copy_append();
-******************************************************************************/
+/**
+ * @brief Type of operation for sge_copy_append()
+ *
+ * Defines the operation which should be performed by
+ * sge_copy_append():
+ *
+ *    SGE_MODE_APPEND - append the file
+ *    SGE_MODE_COPY   - copy the file
+ */
 #include <cstdio>
 
 typedef enum {
-   SGE_MODE_APPEND = 1,
-   SGE_MODE_COPY = 2
+   SGE_MODE_APPEND = 1,   ///< append to the target file
+   SGE_MODE_COPY = 2      ///< replace the target file
 } sge_mode_t;
 
 int sge_readnbytes(int sfd, char *ptr, int n);

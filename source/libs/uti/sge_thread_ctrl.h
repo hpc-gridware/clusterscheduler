@@ -33,22 +33,20 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Cooperative thread shutdown flag
+ */
+
 #include <pthread.h>
 
+/** @brief The process wide shutdown flag threads can wait on */
 struct thread_control_t {
-   /* Used to guard 'cond_var' and 'shutdown_started' variable of this structure */
-   pthread_mutex_t mutex;
-
-   /*
-    * Used for thread waiting. If a thread wants to wait for shutdown of qmaster it can
-    * wait for this condition.
-    */
-   pthread_cond_t cond_var;
-
-   /* flag thats indicates that the shutdown process has already started */
-   bool shutdown_started;
+   pthread_mutex_t mutex;    ///< guards #cond_var and #shutdown_started
+   pthread_cond_t cond_var;  ///< signalled when shutdown begins; threads may wait on it
+   bool shutdown_started;    ///< true once the shutdown process has begun
 };
 
+/// the one instance shared by every thread of the process
 extern thread_control_t Thread_Control;
 
 bool

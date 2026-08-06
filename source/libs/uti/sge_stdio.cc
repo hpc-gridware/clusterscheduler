@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief stdio helpers, including popen/pclose with process control
+ */
 #include <cstdio>
 #include <cerrno>
 #include <cstdlib>
@@ -90,6 +94,23 @@ static void addenv(const char *key, const char *value) {
  * This function can't be used in multi threaded environments because it
  * might cause a deadlock in the executing qmaster thread.
  * Use sge_peopen_r() instead.
+ */
+/** @brief Start a command in a shell, with pipes to its standard streams
+ *
+ * Like `popen`, but gives the caller all three streams, lets the command run as
+ * another user, and returns the pid so the caller can control the process.
+ * Close it again with #sge_peclose.
+ *
+ * @param shell shell to run the command in
+ * @param login_shell start the shell as a login shell
+ * @param command the command line to run
+ * @param user user to run as, or nullptr to stay the current one
+ * @param env environment for the child, nullptr to inherit
+ * @param[out] fp_in receives the pipe writing to the child's stdin
+ * @param[out] fp_out receives the pipe reading the child's stdout
+ * @param[out] fp_err receives the pipe reading the child's stderr
+ * @param null_stderr send the child's stderr to /dev/null instead of @p fp_err
+ * @return pid of the child, or -1 on error
  */
 pid_t sge_peopen(const char *shell, int login_shell, const char *command,
                  const char *user, char **env, FILE **fp_in, FILE **fp_out,
@@ -598,33 +619,30 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
    DRETURN(pid);
 }
 
-/****** uti/stdio/sge_peclose() ***********************************************
-*  NAME
-*     sge_peclose() -- pclose() call which is suitable for sge_peopen()
-*
-*  SYNOPSIS
-*     int sge_peclose(pid_t pid, FILE *fp_in, FILE *fp_out, 
-*                     FILE *fp_err, struct timeval *timeout)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     pid_t pid               - pid returned by peopen()
-*     FILE *fp_in
-*     FILE *fp_out
-*     FILE *fp_err
-*     struct timeval *timeout
-*
-*  RESULT
-*     int - exit code of command or -1 in case of errors
-*
-*  SEE ALSO
-*     uti/stdio/peopen()
-*
-*  NOTES
-*     MT-NOTE: sge_peclose() is MT safe
-******************************************************************************/
+/**
+ * @brief pclose() counterpart for #sge_peopen
+ *
+ * Closes the three streams handed out by #sge_peopen and reaps the child.
+ *
+ * Without @p timeout the call blocks until the child exits. With @p timeout it
+ * polls once per second and decrements @p timeout->tv_sec; when that reaches
+ * zero the child is killed with `SIGKILL` and the call then blocks until it is
+ * reaped. @p timeout is therefore modified by this function.
+ *
+ * @param pid process id returned by #sge_peopen
+ * @param fp_in the child's stdin stream, or nullptr
+ * @param fp_out the child's stdout stream, or nullptr
+ * @param fp_err the child's stderr stream, or nullptr
+ * @param[in,out] timeout seconds to wait for the child, or nullptr to wait
+ *                indefinitely
+ *
+ * @return exit code of the command, or -1 if it was terminated by a signal or
+ *         the wait failed
+ *
+ * @note MT-NOTE: sge_peclose() is MT safe
+ *
+ * @see #sge_peopen
+ */
 int sge_peclose(pid_t pid, FILE *fp_in, FILE *fp_out, FILE *fp_err,
                 struct timeval *timeout) {
    int i, status;
@@ -669,6 +687,12 @@ int sge_peclose(pid_t pid, FILE *fp_in, FILE *fp_out, FILE *fp_err,
 }
 
 void
+/** @brief Print one option and its explanation, for a usage message
+ *
+ * @param fp where to print
+ * @param option the option as the user would type it
+ * @param meaning what it does, or nullptr to print the option alone
+ */
 print_option_syntax(FILE *fp, const char *option, const char *meaning) {
    if (!meaning)
       fprintf(fp, "   %s\n", option);
@@ -676,6 +700,15 @@ print_option_syntax(FILE *fp, const char *option, const char *meaning) {
       fprintf(fp, "   %-40.40s %s\n", option, meaning);
 }
 
+/** @brief Is a stream still connected to the expected descriptor?
+ *
+ * Detects that stdout or stderr was closed or redirected behind the program's
+ * back, which would otherwise make later output go somewhere unexpected.
+ *
+ * @param file the stream to check
+ * @param fd the descriptor it should be attached to
+ * @return true when @p file still refers to @p fd
+ */
 bool sge_check_stdout_stream(FILE *file, int fd) {
    if (fileno(file) != fd) {
       return false;

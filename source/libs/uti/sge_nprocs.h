@@ -33,4 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Number of processors available to the host
+ */
+
 int sge_nprocs();

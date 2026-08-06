@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Buffered file reading and writing helpers
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <sys/stat.h>
@@ -47,34 +51,26 @@
 
 #include "uti/msg_utilib.h"
 
+/// size of the read buffer used while copying
 #define BUFFER     4096
+/// growth step when reading a file of unknown size
 #define FILE_CHUNK (100*1024)
 
-/****** uti/io/sge_readnbytes() ***********************************************
-*  NAME
-*     sge_readnbytes() -- Read n bytes from file descriptor  
-*
-*  SYNOPSIS
-*     int sge_readnbytes(int sfd, char *ptr, 
-*                        int n) 
-*
-*  FUNCTION
-*     Read n bytes from file descriptor. 
-*
-*  INPUTS
-*     int sfd   - file descriptor 
-*     char *ptr - pointer to buffer 
-*     int n     - number of bytes 
-*
-*  RESULT
-*     int - number of bytes read
-*  
-*  SEE ALSO
-*     uti/io/sge_writenbytes()
-*  
-*  NOTES
-*     MT-NOTE: sge_readnbytes() is MT safe
-******************************************************************************/
+/**
+ * @brief Read n bytes from file descriptor
+ *
+ * Read n bytes from file descriptor.
+ *
+ * @param sfd file descriptor
+ * @param ptr pointer to buffer
+ * @param n number of bytes
+ *
+ * @return number of bytes read
+ *
+ * @note MT-NOTE: sge_readnbytes() is MT safe
+ *
+ * @see #sge_writenbytes
+ */
 int sge_readnbytes(int sfd, char *ptr, int n) {
    int i;                       /* number of bytes read */
    int nleft = n;               /* number of bytes still to read */
@@ -103,31 +99,21 @@ int sge_readnbytes(int sfd, char *ptr, int n) {
 
 }
 
-/****** uti/io/sge_writenbytes() **********************************************
-*  NAME
-*     sge_writenbytes() -- Write n bytes to file descriptor 
-*
-*  SYNOPSIS
-*     int sge_writenbytes(int sfd, const char *ptr, 
-*                         int n) 
-*
-*  FUNCTION
-*     Write n bytes to file descriptor 
-*
-*  INPUTS
-*     int sfd         - file descriptor 
-*     const char *ptr - pointer to buffer 
-*     int n           - number of bytes 
-*
-*  RESULT
-*     int - number of bytes written
-*
-*  SEE ALSO
-*     uti/io/sge_readnbytes()
-*
-*  NOTES
-*     MT-NOTE: sge_writenbytes() is MT safe
-******************************************************************************/
+/**
+ * @brief Write n bytes to file descriptor
+ *
+ * Write n bytes to file descriptor
+ *
+ * @param sfd file descriptor
+ * @param ptr pointer to buffer
+ * @param n number of bytes
+ *
+ * @return number of bytes written
+ *
+ * @note MT-NOTE: sge_writenbytes() is MT safe
+ *
+ * @see #sge_readnbytes
+ */
 int sge_writenbytes(int sfd, const char *ptr, int n) {
    DENTER(BASIS_LAYER);
 
@@ -155,36 +141,26 @@ int sge_writenbytes(int sfd, const char *ptr, int n) {
    DRETURN((n));
 }
 
-/****** uti/io/sge_filecmp() **************************************************
-*  NAME
-*     sge_filecmp() -- Compare two files
-*
-*  SYNOPSIS
-*     int sge_filecmp(const char *name0, const char *name1)
-*
-*  FUNCTION
-*     Compare two files. They are equal if:
-*        - both of them have the same name
-*        - if a stat() succeeds for both files and
-*          i-node/device-id are equal
-*
-*     we are not sure
-*     - if stat() failes for at least one of the files
-*       (It could be that both pathes direct to the same
-*       file not existing)
-*
-*  INPUTS
-*     const char *name0 - 1st filename
-*     const char *name1 - 2nd filename
-*
-*  RESULT
-*     int - Identical?
-*         0 - Yes.
-*         1 - No they are not equivalent.
-*
-*  NOTES
-*     MT-NOTE: sge_filecmp() is MT safe
-******************************************************************************/
+/**
+ * @brief Compare two files
+ *
+ * Compare two files. They are equal if:
+ *    - both of them have the same name
+ *    - if a stat() succeeds for both files and
+ *      i-node/device-id are equal
+ *
+ * we are not sure
+ * - if stat() failes for at least one of the files
+ *   (It could be that both pathes direct to the same
+ *   file not existing)
+ *
+ * @param name0 1st filename
+ * @param name1 2nd filename
+ *
+ * @return Identical? 0 - Yes. 1 - No they are not equivalent.
+ *
+ * @note MT-NOTE: sge_filecmp() is MT safe
+ */
 int sge_filecmp(const char *name0, const char *name1) {
    SGE_STRUCT_STAT buf0{}, buf1{};
 
@@ -209,35 +185,23 @@ int sge_filecmp(const char *name0, const char *name1) {
    }
 }
 
-/****** uti/io/sge_copy_append() **********************************************
-*  NAME
-*     sge_copy_append() -- Copy/append one file to another 
-*
-*  SYNOPSIS
-*     int sge_copy_append(char *src, const char *dst, 
-*                         sge_mode_t mode) 
-*
-*  FUNCTION
-*     Copy/append content from 'src' to 'dst' 
-*
-*  INPUTS
-*     char *src       - source filename 
-*     const char *dst - destination filename 
-*     sge_mode_t mode - mode 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*
-*  SEE ALSO
-*     uti/io/sge_mode_t
-*
-*  NOTES
-*     MT-NOTE: sge_copy_append() is MT safe
-******************************************************************************/
+/**
+ * @brief Copy/append one file to another
+ *
+ * Copy/append content from 'src' to 'dst'
+ *
+ * @param src source filename
+ * @param dst destination filename
+ * @param mode mode
+ *
+ * @return error state 0 - OK -1 - Error
+ *
+ * @note MT-NOTE: sge_copy_append() is MT safe
+ */
 int sge_copy_append(const char *src, const char *dst, sge_mode_t mode) {
+/// @cond   function local copy buffer size
 #define CPBUF 1024
+/// @endcond
 
    char buf[CPBUF];
    int fdsrc, fddst, modus, rs, ws;
@@ -299,35 +263,26 @@ int sge_copy_append(const char *src, const char *dst, sge_mode_t mode) {
    DRETURN((error ? -1 : 0));
 }
 
-/****** uti/io/sge_bin2string() ***********************************************
-*  NAME
-*     sge_bin2string() -- Put binary stream into a string 
-*
-*  SYNOPSIS
-*     char* sge_bin2string(FILE *fp, int size) 
-*
-*  FUNCTION
-*     Read a binary steam from given file descriptor 'fp' and
-*     write it into (dynamically) malloced buffer as "ASCII" format.
-*  
-*     "ASCII" format means:
-*           '\0' is written as '\\' '\0' 
-*           '\\' is written as '\\' '\\'
-*           End of buffer is written as '\0'
-*
-*  INPUTS
-*     FILE *fp - file descriptor 
-*     int size - size of the buffer used within this function 
-*
-*  RESULT
-*     char* - malloced buffer
-*
-*  SEE ALSO
-*     uti/io/sge_string2bin()
-*
-*  NOTES
-*     MT-NOTE: sge_bin2string() is MT safe
-******************************************************************************/
+/**
+ * @brief Put binary stream into a string
+ *
+ * Read a binary steam from given file descriptor 'fp' and
+ * write it into (dynamically) malloced buffer as "ASCII" format.
+ *
+ * "ASCII" format means:
+ *       '\0' is written as '\\' '\0'
+ *       '\\' is written as '\\' '\\'
+ *       End of buffer is written as '\0'
+ *
+ * @param fp file descriptor
+ * @param size size of the buffer used within this function
+ *
+ * @return malloced buffer
+ *
+ * @note MT-NOTE: sge_bin2string() is MT safe
+ *
+ * @see #sge_string2bin
+ */
 char *sge_bin2string(FILE *fp, int size) {
    int i, fd;
    char inbuf[BUFFER], outbuf[2 * BUFFER];
@@ -408,31 +363,20 @@ char *sge_bin2string(FILE *fp, int size) {
    }
 }
 
-/****** uti/io/sge_string2bin() ***********************************************
-*  NAME
-*     sge_string2bin() -- Write 'binary' string into file 
-*
-*  SYNOPSIS
-*     int sge_string2bin(FILE *fp, const char *buf) 
-*
-*  FUNCTION
-*     Write 'binary' string into file 
-*
-*  INPUTS
-*     FILE *fp        - file descriptor 
-*     const char *buf - "ASCII" string (see sge_bin2string())
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*
-*  SEE ALSO
-*     uti/io/sge_bin2string()
-*
-*  NOTES
-*     MT-NOTE: sge_string2bin() is MT safe
-******************************************************************************/
+/**
+ * @brief Write 'binary' string into file
+ *
+ * Write 'binary' string into file
+ *
+ * @param fp file descriptor
+ * @param buf "ASCII" string (see sge_bin2string())
+ *
+ * @return error state 0 - OK -1 - Error
+ *
+ * @note MT-NOTE: sge_string2bin() is MT safe
+ *
+ * @see #sge_bin2string
+ */
 int sge_string2bin(FILE *fp, const char *buf) {
    char outbuf[BUFFER];
    char *outp;
@@ -463,34 +407,24 @@ int sge_string2bin(FILE *fp, const char *buf) {
    return 0;
 }
 
-/****** uti/io/sge_file2string() **********************************************
-*  NAME
-*     sge_file2string() -- Load file into string
-*
-*  SYNOPSIS
-*     char* sge_file2string(const char *fname, int *len)
-*
-*  FUNCTION
-*     Load file into string. Returns a pointer to a string buffer containing
-*     the file contents and the size of the buffer (= number of bytes read)
-*     in the variable len.
-*     If the file cannot be read (doesn't exist, permissions etc.), nullptr is
-*     returned as buffer and len is set to 0.
-*
-*  INPUTS
-*     const char *fname - filename
-*     int *len          - number of bytes read
-*
-*  RESULT
-*     char* - malloced string buffer
-*
-*  SEE ALSO
-*     uti/io/sge_string2file()
-*     uti/io/sge_stream2string()
-*
-*  NOTES
-*     MT-NOTE: sge_file2string() is MT safe
-******************************************************************************/
+/**
+ * @brief Load file into string
+ *
+ * Load file into string. Returns a pointer to a string buffer containing
+ * the file contents and the size of the buffer (= number of bytes read)
+ * in the variable len.
+ * If the file cannot be read (doesn't exist, permissions etc.), nullptr is
+ * returned as buffer and len is set to 0.
+ *
+ * @param fname filename
+ * @param len number of bytes read
+ *
+ * @return malloced string buffer
+ *
+ * @note MT-NOTE: sge_file2string() is MT safe
+ *
+ * @see #sge_string2file, #sge_stream2string
+ */
 char *sge_file2string(const char *fname, int *len) {
    FILE *fp;
    SGE_STRUCT_STAT statbuf;
@@ -557,30 +491,20 @@ char *sge_file2string(const char *fname, int *len) {
 DRETURN(nullptr);
 }
 
-/****** uti/io/sge_stream2string() ********************************************
-*  NAME
-*     sge_stream2string() -- Read string from stream
-*
-*  SYNOPSIS
-*     char* sge_stream2string(FILE *fp, int *len)
-*
-*  FUNCTION
-*     Read string from stream
-*
-*  INPUTS
-*     FILE *fp - file descriptor
-*     int *len - number of bytes read
-*
-*  RESULT
-*     char* - pointer to malloced string buffer
-*
-*  SEE ALSO
-*     uti/io/sge_file2string()
-*     uti/io/sge_string2file()
-*
-*  NOTES
-*     MT-NOTE: sge_stream2string() is MT safe
-******************************************************************************/
+/**
+ * @brief Read string from stream
+ *
+ * Read string from stream
+ *
+ * @param fp file descriptor
+ * @param len number of bytes read
+ *
+ * @return pointer to malloced string buffer
+ *
+ * @note MT-NOTE: sge_stream2string() is MT safe
+ *
+ * @see #sge_file2string, #sge_string2file
+ */
 char *sge_stream2string(FILE *fp, int *len) {
    char *str;
    int filled = 0;
@@ -615,33 +539,21 @@ char *sge_stream2string(FILE *fp, int *len) {
    DRETURN(str);
 }
 
-/****** uti/io/sge_string2file() **********************************************
-*  NAME
-*     sge_string2file() -- Write string into file
-*
-*  SYNOPSIS
-*     int sge_string2file(const char *str, int len, const char *fname)
-*
-*  FUNCTION
-*     Write string into file 
-*
-*  INPUTS
-*     const char *str   - pointer to buffer
-*     int len           - number of bytes which should be written
-*     const char *fname - filename
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*
-*  SEE ALSO
-*     uti/io/sge_file2string()  
-*     uti/io/sge_stream2string()
-*
-*  NOTES
-*     MT-NOTE: sge_string2file() is MT safe
-******************************************************************************/
+/**
+ * @brief Write string into file
+ *
+ * Write string into file
+ *
+ * @param str pointer to buffer
+ * @param len number of bytes which should be written
+ * @param fname filename
+ *
+ * @return error state 0 - OK -1 - Error
+ *
+ * @note MT-NOTE: sge_string2file() is MT safe
+ *
+ * @see #sge_file2string, #sge_stream2string
+ */
 
 /* #define USE_FOPEN */
 

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Architecture and installation path helpers
+ */
+
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
@@ -48,24 +52,18 @@
 
 #include "msg_common.h"
 
-/****** uti/prog/sge_get_arch() ************************************************
-*  NAME
-*     sge_get_arch() -- SGE/EE architecture string
-*
-*  SYNOPSIS
-*     const char* sge_get_arch() 
-*
-*  FUNCTION
-*     This function returns the SGE/EE architecture string of that
-*     host where the application is running which called this 
-*     functionon.
-*
-*  NOTES:
-*     MT-NOTE: sge_get_arch() is MT safe
-*
-*  RESULT
-*     const char* - architecture string
-******************************************************************************/
+/**
+ * @brief SGE/EE architecture string
+ *
+ * This function returns the SGE/EE architecture string of that
+ * host where the application is running which called this
+ * functionon.
+ *
+ * NOTES:
+ * MT-NOTE: sge_get_arch() is MT safe
+ *
+ * @return architecture string
+ */
 const char *sge_get_arch() {
 #ifndef SGE_ARCH_STRING
 #   pragma "Define an architecture for SGE"
@@ -74,37 +72,26 @@ const char *sge_get_arch() {
    return (SGE_ARCH_STRING);
 }
 
-/****** uti/prog/sge_get_root_dir() *******************************************
-*  NAME
-*     sge_get_root_dir() -- SGE/SGEEE installation directory 
-*
-*  SYNOPSIS
-*     const char* sge_get_root_dir(int do_exit, 
-*                                  char *buffer, 
-*                                  size_t size,
-*                                  int do_error_log ) 
-*
-*  FUNCTION
-*     This function returns the installation directory of SGE/SGEEE.
-*     This directory is defined by the SGE_ROOT environment variable 
-*     of the calling process. 
-*     If the environment variable does not exist or is not set then
-*     this function will handle this as error and return nullptr
-*     (do_exit = 0). If 'do_exit' is 1 and an error occures, the 
-*     function will terminate the  calling application.
-*
-*  INPUTS
-*     int do_exit - Terminate the application in case of an error
-*     char *buffer - buffer to be used for error message
-*     size_t size - size of buffer
-*     int do_error_log - enable/disable error logging
-*
-*  RESULT
-*     const char* - Root directory of the SGE/SGEEE installation
-*
-*  NOTES
-*     MT-NOTE: sge_get_arch() is MT safe
-*******************************************************************************/
+/**
+ * @brief SGE/SGEEE installation directory
+ *
+ * This function returns the installation directory of SGE/SGEEE.
+ * This directory is defined by the SGE_ROOT environment variable
+ * of the calling process.
+ * If the environment variable does not exist or is not set then
+ * this function will handle this as error and return nullptr
+ * (do_exit = 0). If 'do_exit' is 1 and an error occures, the
+ * function will terminate the  calling application.
+ *
+ * @param do_exit Terminate the application in case of an error
+ * @param buffer buffer to be used for error message
+ * @param size size of buffer
+ * @param do_error_log enable/disable error logging
+ *
+ * @return Root directory of the SGE/SGEEE installation
+ *
+ * @note MT-NOTE: sge_get_arch() is MT safe
+ */
 const char *sge_get_root_dir(int do_exit, char *buffer, size_t size, int do_error_log) {
    char *sge_root;
    char *s;
@@ -151,29 +138,16 @@ const char *sge_get_root_dir(int do_exit, char *buffer, size_t size, int do_erro
    return nullptr;
 }
 
-/****** uti/prog/sge_get_lib_dir() ********************************************
-*  NAME
-*     sge_get_lib_dir() -- Path to SGE libraries
-*
-*  SYNOPSIS
-*     int sge_get_lib_dir(char *buffer, size_t size)
-*
-*  FUNCTION
-*     This function stores the path to the SGE libraries in the buffer
-*
-*  INPUTS
-*     char     *buffer - Buffer where to store the SGE library dir
-*     size_t   size    - Size of the given buffer
-*  NOTES:
-*     MT-NOTE: sge_get_lib_dir() is MT safe
-*
-*  RESULT
-*     int - Return code
-*       0 - Success
-*      -1 - Given buffer is nullptr
-*      -2 - SGE_ROOT cannot be obtained
-*      -3 - given buffer is to small
-******************************************************************************/
+/**
+ * @brief Path to SGE libraries
+ *
+ * This function stores the path to the SGE libraries in the buffer
+ *
+ * @param buffer Buffer where to store the SGE library dir
+ * @param size Size of the given buffer NOTES: MT-NOTE: sge_get_lib_dir() is MT safe
+ *
+ * @return Return code 0 - Success -1 - Given buffer is nullptr -2 - SGE_ROOT cannot be obtained -3 - given buffer is to small
+ */
 int sge_get_lib_dir(char *buffer, size_t size) {
    if (buffer == nullptr) {
       return -1;
@@ -207,26 +181,19 @@ int sge_get_lib_dir(char *buffer, size_t size) {
    return 0;
 }
 
-/****** uti/prog/sge_get_default_cell() ***************************************
-*  NAME
-*     sge_get_default_cell() -- get cell name and remove trailing slash 
-*
-*  SYNOPSIS
-*     const char* sge_get_default_cell() 
-*
-*  FUNCTION
-*     This function returns the defined cell name of SGE/SGEEE.
-*     This directory is defined by the SGE_CELL environment variable
-*     of the calling process.
-*     If the environment variable does not exist or is not set then
-*     this function will return the 'DEFAULT_CELL'.
-*
-*  RESULT
-*     const char* - Cell name of this SGE/SGEEE installation
-*
-*  NOTES
-*     MT-NOTE: sge_get_default_cell() is MT safe
-******************************************************************************/
+/**
+ * @brief Get cell name and remove trailing slash
+ *
+ * This function returns the defined cell name of SGE/SGEEE.
+ * This directory is defined by the SGE_CELL environment variable
+ * of the calling process.
+ * If the environment variable does not exist or is not set then
+ * this function will return the 'DEFAULT_CELL'.
+ *
+ * @return Cell name of this SGE/SGEEE installation
+ *
+ * @note MT-NOTE: sge_get_default_cell() is MT safe
+ */
 const char *sge_get_default_cell() {
    DENTER_(TOP_LAYER);
    char *sge_cell = getenv("SGE_CELL");
@@ -249,20 +216,17 @@ const char *sge_get_default_cell() {
    DRETURN_(s);
 }
 
-/****** uti/prog/sge_get_alias_path() *****************************************
-*  NAME
-*     sge_get_alias_path() -- Return the path of the 'alias_file' 
-*
-*  SYNOPSIS
-*     const char* sge_get_alias_path() 
-*
-*  FUNCTION
-*     Return the path of the 'alias_file' 
-*
-*  NOTES
-*     MT-NOTE: sge_get_alias_path() is MT safe
-*
-******************************************************************************/
+/**
+ * @brief Return the path of the host alias file
+ *
+ * Builds the path `<sge_root>/<cell>/#COMMON_DIR/#ALIAS_FILE` from
+ * #sge_get_root_dir and #sge_get_default_cell. Terminates the process with
+ * #sge_exit if `$SGE_ROOT` cannot be stat()ed or the allocation fails.
+ *
+ * @return the alias file path, allocated with #sge_malloc; the caller owns it
+ *
+ * @note MT-NOTE: sge_get_alias_path() is MT safe
+ */
 const char *sge_get_alias_path() {
    DENTER_(TOP_LAYER);
 

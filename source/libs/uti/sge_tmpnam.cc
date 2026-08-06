@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Temporary file name creation
+ */
+
 #include "uti/sge_tmpnam.h"
 
 #include <cstdlib>
@@ -53,45 +57,38 @@ static int elect_path(dstring *aBuffer);
 static int spawn_file(dstring *aBuffer, int *fd, dstring *error_message);
 
 
-/****** uti/sge_tmpnam/sge_tmpnam() *******************************************
-*  NAME
-*     sge_tmpnam() -- Secure replacement for tmpnam() 
-*
-*  SYNOPSIS
-*     char* sge_tmpnam(char *aBuffer) 
-*
-*  FUNCTION
-*     Generate a string that is a unique valid filename within a given
-*     directory. The corresponding file is created as soon as the filename
-*     has been generated, thus avoiding any delay between filename generation
-*     and actual file usage. The file will have read and write access for the
-*     user only. 
-*
-*     The 'aBuffer' argument points to an array of at least SGE_PATH_MAX length.
-*     'aBuffer' will contain the generated filename upon successful completion.
-*     In addition, 'aBuffer' will be returned. If the function fails, nullptr will
-*     be returned and 'errno' set to indicate the error.
-*
-*     If the environment variable TMPDIR is defined, it's value will be used
-*     as the path prefix for the file. If TMPDIR is not set or it does not
-*     refer to a valid directory, the value of P_tmpdir will be used.
-*     P_tmpdir shall be defined in <cstdio>. If P_tmpdir is not defined or
-*     it does not refer to a valid directory, /tmp will be used.
-*
-*     NOTE: Since the file already exists, the O_EXCL flag must not be used if
-*     the returned filename is opened for usage within an application. It is,
-*     however, the duty of the application calling this function to delete the
-*     file denoted by the generated filename after it is no longer needed.
-*
-*  INPUTS
-*     char *aBuffer - Array to hold filename
-*
-*  RESULT
-*     char* - Points to 'aBuffer' if successful, nullptr otherwise
-*
-*  NOTE
-*     MT-NOTE: sge_tmpnam() is MT safe.
-******************************************************************************/
+/**
+ * @brief Secure replacement for tmpnam()
+ *
+ * Generate a string that is a unique valid filename within a given
+ * directory. The corresponding file is created as soon as the filename
+ * has been generated, thus avoiding any delay between filename generation
+ * and actual file usage. The file will have read and write access for the
+ * user only.
+ *
+ * @p aBuffer points to an array of at least `SGE_PATH_MAX` length and receives
+ * the generated filename upon successful completion. On failure nullptr is
+ * returned and @p error_message describes the cause.
+ *
+ * If the environment variable `TMPDIR` is defined, its value is used as the
+ * path prefix for the file. If `TMPDIR` is not set or does not refer to a
+ * valid directory, the value of `P_tmpdir` is used. `P_tmpdir` shall be
+ * defined in `<cstdio>`. If `P_tmpdir` is not defined or does not refer to a
+ * valid directory, `/tmp` is used.
+ *
+ * Since the file already exists, the `O_EXCL` flag must not be used if the
+ * returned filename is opened for usage within an application. It is the duty
+ * of the calling application to delete the file denoted by the generated
+ * filename after it is no longer needed.
+ *
+ * @param[out] aBuffer array of at least `SGE_PATH_MAX` bytes, receives the filename
+ * @param[out] fd file descriptor of the created file, as returned by `mkstemp()`
+ * @param[out] error_message error text on failure
+ *
+ * @return @p aBuffer if successful, nullptr otherwise
+ *
+ * @note MT-NOTE: sge_tmpnam() is MT safe.
+ */
 char *sge_tmpnam(char *aBuffer, int *fd, dstring *error_message) {
    dstring s = DSTRING_INIT;
 

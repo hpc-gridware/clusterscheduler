@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Message logging: ERROR, WARNING, INFO, DEBUG and the message file
+ */
+
 #include <cstdio>
 #include <cerrno>
 #include <fcntl.h>
@@ -53,12 +57,13 @@
 #include "ocs_DebugParam.h"
 #include "basis_types.h"
 
+/** @brief Process wide logging configuration and open log file */
 typedef struct {
-   pthread_mutex_t mutex;
-   const char *log_file;
-   int log_level;
-   int log_as_admin_user;
-   int verbose;
+   pthread_mutex_t mutex;     ///< protects every other field
+   const char *log_file;      ///< path of the message file
+   int log_level;             ///< highest severity that is still written
+   int log_as_admin_user;     ///< write as the admin user rather than the current one
+   int verbose;               ///< also echo messages to stderr
    int log_fd;                ///< persistent log file descriptor; -1 when not open
    uint64_t last_inode_check; ///< gmt64 timestamp of last rotation inode check
 } log_state_t;
@@ -116,20 +121,13 @@ sge_do_log(uint32_t prog_number, const char *prog_or_thread_name, int thread_id,
    }
 }
 
-/****** uti/log/log_state_get_log_level() ******************************************
-*  NAME
-*     log_state_get_log_level() -- Return log level.
-*
-*  SYNOPSIS
-*     uint32_t log_state_get_log_level()
-*
-*  FUNCTION
-*     Return log level
-*
-*  RESULT
-*     uint32_t
-*
-******************************************************************************/
+/**
+ * @brief Return log level
+ *
+ * Return log level
+ *
+ * @return uint32_t
+ */
 int log_state_get_log_level() {
    sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    int level = Log_State.log_level;
@@ -137,34 +135,22 @@ int log_state_get_log_level() {
    return level;
 }
 
-/****** uti/sge_log/log_state_get_log_file() ***********************************
-*  NAME
-*     log_state_get_log_file() -- get log file name
-*
-*  SYNOPSIS
-*     const char* log_state_get_log_file() 
-*
-*  FUNCTION
-*     Return name of current log file. The string returned may or may not 
-*     contain a path.
-*
-*  INPUTS
-*     void - none 
-*
-*  RESULT
-*     const char* - log file name (with relative or absolute path)
-*
-*  NOTES
-*     MT-NOTE: log_state_get_log_file() is not MT safe.
-*     MT-NOTE:
-*     MT-NOTE: It is safe, however, to call this function from within multiple
-*     MT-NOTE: threads as long as no other thread does change 'Log_File'.
-*
-*  BUGS
-*     BUGBUG-AD: This function should use something like a barrier for
-*     BUGBUG-AD: synchronization.
-*
-*******************************************************************************/
+/**
+ * @brief Get log file name
+ *
+ * Return name of current log file. The string returned may or may not
+ * contain a path.
+ *
+ * @return log file name (with relative or absolute path)
+ *
+ * @note MT-NOTE: log_state_get_log_file() is not MT safe.
+ *       MT-NOTE:
+ *       MT-NOTE: It is safe, however, to call this function from within multiple
+ *       MT-NOTE: threads as long as no other thread does change 'Log_File'.
+ *
+ * @bug BUGBUG-AD: This function should use something like a barrier for
+ *      BUGBUG-AD: synchronization.
+ */
 const char *log_state_get_log_file() {
    sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    const char *file = Log_State.log_file;
@@ -172,24 +158,17 @@ const char *log_state_get_log_file() {
    return file;
 }
 
-/****** uti/log/log_state_get_log_verbose() ******************************************
-*  NAME
-*     log_state_get_log_verbose() -- Is verbose logging enabled?
-*
-*  SYNOPSIS
-*     int log_state_get_log_verbose() 
-*
-*  FUNCTION
-*     Is verbose logging enabled? 
-*     With verbose logging enabled not only ERROR/CRITICAL messages are 
-*     printed to stderr but also WARNING/INFO.
-*
-*  RESULT
-*     int - 0 or 1 
-*
-*  SEE ALSO
-*     uti/log/log_state_set_log_verbose()
-******************************************************************************/
+/**
+ * @brief Is verbose logging enabled?
+ *
+ * Is verbose logging enabled?
+ * With verbose logging enabled not only ERROR/CRITICAL messages are
+ * printed to stderr but also WARNING/INFO.
+ *
+ * @return 0 or 1
+ *
+ * @see #log_state_set_log_verbose
+ */
 int log_state_get_log_verbose() {
    sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    int verbose = Log_State.verbose;
@@ -197,22 +176,15 @@ int log_state_get_log_verbose() {
    return verbose;
 }
 
-/****** uti/log/log_state_set_log_level() *****************************************
-*  NAME
-*     log_state_set_log_level() -- Set log level to be used.
-*
-*  SYNOPSIS
-*     void log_state_set_log_level(int i) 
-*
-*  FUNCTION
-*     Set log level to be used.
-*
-*  INPUTS
-*     uint32_t
-*
-*  SEE ALSO
-*     uti/log/log_state_get_log_level() 
-******************************************************************************/
+/**
+ * @brief Set log level to be used
+ *
+ * Set log level to be used.
+ *
+ * @param theLevel highest severity that should still be written
+ *
+ * @see #log_state_get_log_level
+ */
 void log_state_set_log_level(uint32_t theLevel) {
    sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    Log_State.log_level = theLevel;
@@ -230,48 +202,31 @@ void log_state_set_log_file(const char *file) {
    sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 }
 
-/****** uti/log/log_state_set_log_verbose() *****************************************
-*  NAME
-*     log_state_set_log_verbose() -- Enable/disable verbose logging 
-*
-*  SYNOPSIS
-*     void log_state_set_log_verbose(int i) 
-*
-*  FUNCTION
-*     Enable/disable verbose logging 
-*
-*  INPUTS
-*     int i - 0 or 1  
-*
-*  SEE ALSO
-*     uti/log/log_state_get_log_verbose() 
-******************************************************************************/
+/**
+ * @brief Enable/disable verbose logging
+ *
+ * Enable/disable verbose logging
+ *
+ * @param i 0 or 1
+ *
+ * @see #log_state_get_log_verbose
+ */
 void log_state_set_log_verbose(int i) {
    sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    Log_State.verbose = i;
    sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 }
 
-/****** uti/log/log_state_set_log_as_admin_user() *****************************
-*  NAME
-*     log_state_set_log_as_admin_user() -- Enable/Disable logging as admin user 
-*
-*  SYNOPSIS
-*     void log_state_set_log_as_admin_user(int i)
-*
-*  FUNCTION
-*     This function enables/disables logging as admin user. This 
-*     means that the function/macros switches from start user to 
-*     admin user before any messages will be written. After that 
-*     they will switch back to 'start' user. 
-*
-*  INPUTS
-*     int i - 0 or 1 
-*  
-*  SEE ALSO
-*     uti/uidgid/sge_switch2admin_user
-*     uti/uidgid/sge_switch2start_user
-******************************************************************************/
+/**
+ * @brief Enable/Disable logging as admin user
+ *
+ * This function enables/disables logging as admin user. This
+ * means that the function/macros switches from start user to
+ * admin user before any messages will be written. After that
+ * they will switch back to 'start' user.
+ *
+ * @param i 0 or 1
+ */
 void log_state_set_log_as_admin_user(int i) {
    sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    Log_State.log_as_admin_user = i;

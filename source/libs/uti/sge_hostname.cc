@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Host name resolving, comparison and the host name cache
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
@@ -60,12 +64,15 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge.h"
 
+/// how often a name service lookup is retried before giving up
 #define SGE_MAXNISRETRY 5
 
 #ifndef h_errno
+/// resolver error code, declared here when the platform headers do not
 extern int h_errno;
 #endif
 
+/// trace hook provided by the commlib
 extern void trace(char *);
 
 static pthread_mutex_t get_qmaster_port_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -104,29 +111,29 @@ static struct servent *sge_getservbyname_r(struct servent *se_result, const char
    return nullptr;
 }
 
-/****** sge_hostname/sge_get_qmaster_port() ************************************
-*  NAME
-*     sge_get_qmaster_port() -- get qmaster port
-*
-*  SYNOPSIS
-*     int sge_get_qmaster_port(bool *from_services) 
-*
-*  FUNCTION
-*     This function returns the TCP/IP port of the qmaster daemon. It returns
-*     a cached value from a previous run. The cached value will be refreshed
-*     every 10 Minutes. The port may come from environment variable
-*     SGE_QMASTER_PORT or the services files entry "sge_qmaster".
-*
-*  INPUTS
-*     bool *from_services - Pointer to a boolean which is set to true
-*                           when the port value comes from the services file.
-*
-*  RESULT
-*     int - port of qmaster
-*
-*******************************************************************************/
+/**
+ * @brief Get qmaster port
+ *
+ * This function returns the TCP/IP port of the qmaster daemon. It returns
+ * a cached value from a previous run. The cached value will be refreshed
+ * every 10 Minutes. The port may come from environment variable
+ * SGE_QMASTER_PORT or the services files entry "sge_qmaster".
+ *
+ * @param from_services Pointer to a boolean which is set to true when the port value comes from the services file.
+ *
+ * @return port of qmaster
+ */
 #define SGE_PORT_CACHE_TIMEOUT 60*10   /* 10 Min. */
 
+/** @brief TCP port qmaster listens on
+ *
+ * Taken from `SGE_QMASTER_PORT` when set, otherwise from the services database.
+ * The result is cached, so later calls do not repeat the lookup.
+ *
+ * @param[out] from_services set to true when the value came from the services
+ *             database rather than the environment; may be nullptr
+ * @return the port number
+ */
 int sge_get_qmaster_port(bool *from_services) {
    char *port = nullptr;
    int int_port = -1;
@@ -207,6 +214,13 @@ int sge_get_qmaster_port(bool *from_services) {
    DRETURN(int_port);
 }
 
+/** @brief TCP port execd listens on
+ *
+ * Taken from `SGE_EXECD_PORT` when set, otherwise from the services database.
+ * The result is cached.
+ *
+ * @return the port number
+ */
 int sge_get_execd_port() {
    char *port = nullptr;
    int int_port = -1;
@@ -274,10 +288,10 @@ int sge_get_execd_port() {
 }
 
 /* this globals are used for profiling */
-unsigned long gethostbyname_calls = 0;
-unsigned long gethostbyname_sec = 0;
-unsigned long gethostbyaddr_calls = 0;
-unsigned long gethostbyaddr_sec = 0;
+unsigned long gethostbyname_calls = 0;   ///< number of `gethostbyname` calls made
+unsigned long gethostbyname_sec = 0;     ///< seconds spent in `gethostbyname`
+unsigned long gethostbyaddr_calls = 0;   ///< number of `gethostbyaddr` calls made
+unsigned long gethostbyaddr_sec = 0;     ///< seconds spent in `gethostbyaddr`
 
 
 #ifdef GETHOSTBYNAME_M
@@ -290,30 +304,27 @@ static pthread_mutex_t hostbyname_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t hostbyaddr_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
+/// seconds a resolver call may block before it is reported as slow
 #define MAX_RESOLVER_BLOCKING 15
 
-/****** uti/hostname/sge_gethostbyname_retry() *************************************
-*  NAME
-*     sge_gethostbyname_retry() -- gethostbyname() wrapper
-*
-*  SYNOPSIS
-*     struct hostent *sge_gethostbyname_retry(const char *name)
-*
-*  FUNCTION
-*     Wraps sge_gethostbyname() function calls, and retries if the host is not
-*     found.
-*
-*     return value must be released by function caller (don't forget the 
-*     char** array lists inside of struct hostent)
-*
-*     If possible (libcomm linked) use getuniquehostname() or 
-*     cl_com_cached_gethostbyname() or cl_com_gethostname() from commlib.
-*
-*     This will return an sge aliased hostname.
-*
-*  NOTES
-*     MT-NOTE: see sge_gethostbyname()
-*******************************************************************************/
+/**
+ * @brief Gethostbyname() wrapper
+ *
+ * Wraps #sge_gethostbyname and retries up to #MAX_NIS_RETRIES times if the
+ * host is not found. The resolver error code is discarded; use
+ * #sge_gethostbyname directly if it is needed.
+ *
+ * The returned host carries an SGE aliased hostname.
+ *
+ * If possible (libcomm linked) use `getuniquehostname()`,
+ * `cl_com_cached_gethostbyname()` or `cl_com_gethostname()` from commlib.
+ *
+ * @param name host name to resolve
+ * @return the resolved host, or nullptr. Release it with #sge_free_hostent
+ *         — the `char **` array lists inside `struct hostent` included
+ *
+ * @note MT-NOTE: see sge_gethostbyname()
+ */
 struct hostent *sge_gethostbyname_retry(
         const char *name
 ) {
@@ -339,34 +350,31 @@ struct hostent *sge_gethostbyname_retry(
    DRETURN(he);
 }
 
-/****** uti/host/sge_gethostbyname() ****************************************
-*  NAME
-*     sge_gethostbyname() -- gethostbyname() wrapper
-*
-*  SYNOPSIS
-*     struct hostent *sge_gethostbyname(const char *name)
-*
-*  FUNCTION
-*     Wrapps gethostbyname() function calls, measures time spent 
-*     in gethostbyname() and logs when very much time has passed.
-*
-*     return value must be released by function caller (don't forget the 
-*     char* array lists inside of struct hostent)
-*
-*     If possible (libcomm linked) use getuniquehostname() or 
-*     cl_com_cached_gethostbyname() or cl_com_gethostname() from libcomm.
-*
-*     This will return an sge aliased hostname.
-*
-*
-*  NOTES
-*     MT-NOTE: sge_gethostbyname() is MT safe
-*     MT-NOTE: sge_gethostbyname() uses a mutex to guard access to the
-*     MT-NOTE: gethostbyname() system call on all platforms other than Solaris,
-*     MT-NOTE: Linux and MacOS 10.2 and greater.  Therefore,
-*     MT-NOTE: except on the aforementioned platforms, MT calls to
-*     MT-NOTE: gethostbyname() must go through sge_gethostbyname() to be MT safe.
-*******************************************************************************/
+/**
+ * @brief Gethostbyname() wrapper
+ *
+ * Wrapps gethostbyname() function calls, measures time spent
+ * in gethostbyname() and logs when very much time has passed.
+ *
+ * return value must be released by function caller (don't forget the
+ * char* array lists inside of struct hostent)
+ *
+ * If possible (libcomm linked) use getuniquehostname() or
+ * cl_com_cached_gethostbyname() or cl_com_gethostname() from libcomm.
+ *
+ * This will return an sge aliased hostname.
+ *
+ * @param name host name to resolve
+ * @param[out] system_error_retval receives the resolver error code; may be nullptr
+ * @return the resolved host, or nullptr. Release it with #sge_free_hostent
+ *
+ * @note MT-NOTE: sge_gethostbyname() is MT safe
+ *       MT-NOTE: sge_gethostbyname() uses a mutex to guard access to the
+ *       MT-NOTE: gethostbyname() system call on all platforms other than Solaris,
+ *       MT-NOTE: Linux and MacOS 10.2 and greater.  Therefore,
+ *       MT-NOTE: except on the aforementioned platforms, MT calls to
+ *       MT-NOTE: gethostbyname() must go through sge_gethostbyname() to be MT safe.
+ */
 struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
    struct hostent *he = nullptr;
    int l_errno = 0;
@@ -486,20 +494,17 @@ struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
    DRETURN(he);
 }
 
-/****** uti/host/sge_copy_hostent() ****************************************
-*  NAME
-*     sge_copy_hostent() -- make a deep copy of a struct hostent
-*
-*  SYNOPSIS
-*     struct hostent *sge_copy_hostent (struct hostent *orig)
-*
-*  FUNCTION
-*     Makes a deep copy of a struct hostent so that sge_gethostbyname() can
-*     free it's buffer for the gethostbyname_r() calls on Linux and Solaris.
-*
-*  NOTES
-*     MT-NOTE: sge_copy_hostent() is MT safe
-*******************************************************************************/
+/**
+ * @brief Make a deep copy of a struct hostent
+ *
+ * Makes a deep copy of a struct hostent so that sge_gethostbyname() can
+ * free it's buffer for the gethostbyname_r() calls on Linux and Solaris.
+ *
+ * @param orig the hostent to copy
+ * @return a deep copy of @p orig, to be released with #sge_free_hostent
+ *
+ * @note MT-NOTE: sge_copy_hostent() is MT safe
+ */
 struct hostent *sge_copy_hostent(struct hostent *orig) {
    struct hostent *copy = (struct hostent *) sge_malloc(sizeof(struct hostent));
    char **p = nullptr;
@@ -566,32 +571,29 @@ struct hostent *sge_copy_hostent(struct hostent *orig) {
    DRETURN(copy);
 }
 
-/****** uti/host/sge_gethostbyaddr() ****************************************
-*  NAME
-*     sge_gethostbyaddr() -- gethostbyaddr() wrapper
-*
-*  SYNOPSIS
-*     struct hostent *sge_gethostbyaddr(const struct in_addr *addr)
-*
-*  FUNCTION
-*     Wrapps gethostbyaddr() function calls, measures time spent 
-*     in gethostbyaddr() and logs when very much time has passed.
-*
-*     return value must be released by function caller (don't forget the 
-*     char** array lists inside of struct hostent)
-*
-*     If possible (libcomm linked) use  cl_com_cached_gethostbyaddr() 
-*     from libcomm. This will return an sge aliased hostname.
-*
-*
-*  NOTES
-*     MT-NOTE: sge_gethostbyaddr() is MT safe
-*     MT-NOTE: sge_gethostbyaddr() uses a mutex to guard access to the
-*     MT-NOTE: gethostbyaddr() system call on all platforms other than Solaris,
-*     MT-NOTE: Linux.  Therefore, except on the aforementioned
-*     MT-NOTE: platforms, MT calls to gethostbyaddr() must go through
-*     MT-NOTE: sge_gethostbyaddr() to be MT safe.
-*******************************************************************************/
+/**
+ * @brief Gethostbyaddr() wrapper
+ *
+ * Wrapps gethostbyaddr() function calls, measures time spent
+ * in gethostbyaddr() and logs when very much time has passed.
+ *
+ * return value must be released by function caller (don't forget the
+ * char** array lists inside of struct hostent)
+ *
+ * If possible (libcomm linked) use  cl_com_cached_gethostbyaddr()
+ * from libcomm. This will return an sge aliased hostname.
+ *
+ * @param addr the address to resolve
+ * @param[out] system_error_retval receives the resolver error code; may be nullptr
+ * @return the resolved host, or nullptr. Release it with #sge_free_hostent
+ *
+ * @note MT-NOTE: sge_gethostbyaddr() is MT safe
+ *       MT-NOTE: sge_gethostbyaddr() uses a mutex to guard access to the
+ *       MT-NOTE: gethostbyaddr() system call on all platforms other than Solaris,
+ *       MT-NOTE: Linux.  Therefore, except on the aforementioned
+ *       MT-NOTE: platforms, MT calls to gethostbyaddr() must go through
+ *       MT-NOTE: sge_gethostbyaddr() to be MT safe.
+ */
 struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_retval) {
    struct hostent *he = nullptr;
    int l_errno;
@@ -717,6 +719,10 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_
    DRETURN(he);
 }
 
+/** @brief Release a hostent produced by this module
+ *
+ * @param[in,out] he_to_del address of the hostent to free; set to nullptr
+ */
 void sge_free_hostent(struct hostent **he_to_del) {
    struct hostent *he = nullptr;
    char **help = nullptr;
@@ -763,31 +769,20 @@ void sge_free_hostent(struct hostent **he_to_del) {
    sge_free(he_to_del);
 }
 
-/****** uti/hostname/sge_hostcpy() ********************************************
-*  NAME
-*     sge_hostcpy() -- strcpy() for hostnames.
-*
-*  SYNOPSIS
-*     void sge_hostcpy(char *dst, const char *raw)
-*
-*  FUNCTION
-*     strcpy() for hostnames. Honours some configuration values:
-*        - Domain name may be ignored
-*        - Domain name may be replaced by a 'default domain'
-*        - Hostnames may be used as they are.
-*        - straight strcpy() for hostgroup names
-*
-*  INPUTS
-*     char *dst       - possibly modified hostname
-*     const char *raw - hostname
-*
-*  SEE ALSO
-*     uti/hostname/sge_hostcmp()
-*     uti/hostname/sge_hostmatch()
-*
-*  NOTES:
-*     MT-NOTE: sge_hostcpy() is MT safe
-******************************************************************************/
+/**
+ * @brief Strcpy() for hostnames
+ *
+ * strcpy() for hostnames. Honours some configuration values:
+ *    - Domain name may be ignored
+ *    - Domain name may be replaced by a 'default domain'
+ *    - Hostnames may be used as they are.
+ *    - straight strcpy() for hostgroup names
+ *
+ * @param dst possibly modified hostname
+ * @param raw hostname
+ *
+ * @see #sge_hostcmp, #sge_hostmatch
+ */
 void sge_hostcpy(char *dst, const char *raw) {
    if (!dst || !raw) {
       return;
@@ -840,33 +835,21 @@ void sge_hostcpy(char *dst, const char *raw) {
    sge_strlcpy(dst, raw, N);
 }
 
-/****** uti/hostname/sge_hostcmp() ********************************************
-*  NAME
-*     sge_hostcmp() -- strcmp() for hostnames
-*
-*  SYNOPSIS
-*     int sge_hostcmp(const char *h1, const char*h2)
-*
-*  FUNCTION
-*     strcmp() for hostnames. Honours some configuration values:
-*        - Domain name may be ignored
-*        - Domain name may be replaced by a 'default domain'
-*        - Hostnames may be used as they are.
-*
-*  INPUTS
-*     const char *h1 - 1st hostname
-*     const char *h2 - 2nd hostname
-*
-*  RESULT
-*     int - 0, 1 or -1
-*
-*  SEE ALSO
-*     uti/hostname/sge_hostmatch()
-*     uti/hostname/sge_hostcpy()
-*
-*  NOTES:
-*     MT-NOTE: sge_hostcmp() is MT safe
-******************************************************************************/
+/**
+ * @brief Strcmp() for hostnames
+ *
+ * strcmp() for hostnames. Honours some configuration values:
+ *    - Domain name may be ignored
+ *    - Domain name may be replaced by a 'default domain'
+ *    - Hostnames may be used as they are.
+ *
+ * @param h1 1st hostname
+ * @param h2 2nd hostname
+ *
+ * @return 0, 1 or -1
+ *
+ * @see #sge_hostmatch, #sge_hostcpy
+ */
 int sge_hostcmp(const char* h1, const char* h2) {
    DENTER(BASIS_LAYER);
 
@@ -920,33 +903,21 @@ int sge_hostcmp(const char* h1, const char* h2) {
    DRETURN(SGE_STRCASECMP(a, b));
 }
 
-/****** uti/hostname/sge_hostmatch() ********************************************
-*  NAME
-*     sge_hostmatch() -- fnmatch() for hostnames
-*
-*  SYNOPSIS
-*     int sge_hostmatch(const char *h1, const char*h2)
-*
-*  FUNCTION
-*     fnmatch() for hostnames. Honours some configuration values:
-*        - Domain name may be ignored
-*        - Domain name may be replaced by a 'default domain'
-*        - Hostnames may be used as they are.
-*
-*  INPUTS
-*     const char *h1 - 1st hostname
-*     const char *h2 - 2nd hostname
-*
-*  RESULT
-*     int - 0, 1 or -1
-*
-*  SEE ALSO
-*     uti/hostname/sge_hostcmp()
-*     uti/hostname/sge_hostcpy()
-*
-*  NOTES:
-*     MT-NOTE: sge_hostmatch() is MT safe
-******************************************************************************/
+/**
+ * @brief Fnmatch() for hostnames
+ *
+ * fnmatch() for hostnames. Honours some configuration values:
+ *    - Domain name may be ignored
+ *    - Domain name may be replaced by a 'default domain'
+ *    - Hostnames may be used as they are.
+ *
+ * @param h1 1st hostname
+ * @param h2 2nd hostname
+ *
+ * @return 0, 1 or -1
+ *
+ * @see #sge_hostcmp, #sge_hostcpy
+ */
 int sge_hostmatch(const char *h1, const char *h2) {
    DENTER(BASIS_LAYER);
    int cmp = -1;

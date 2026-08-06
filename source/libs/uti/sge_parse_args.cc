@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Split a command line string into an argument vector
+ */
+
 #include <cctype>
 
 #include "uti/sge_rmon_macros.h"
@@ -44,6 +48,14 @@
  * dirty algorithm.  The algorithm may incorrectly report the number of arguments
  * to be too large because it does not parse quotations correctly. 
  * MT-NOTE: sge_quick_count_num_args() is MT safe
+ */
+/** @brief Count the arguments a string would split into
+ *
+ * Counts without building the vector, so a caller can size its array before
+ * calling #sge_parse_args.
+ *
+ * @param args the argument string
+ * @return the number of arguments @p args contains
  */
 int sge_quick_count_num_args(const char *args) {
    DENTER(TOP_LAYER);
@@ -71,6 +83,17 @@ int sge_quick_count_num_args(const char *args) {
 
 /* This method should probably be moved out of this file into somewhere more
  * common so that other routines can use it. */
+/** @brief Split a command line string into an argument vector
+ *
+ * Splits at whitespace, honouring single and double quotes so a quoted section
+ * stays one argument.
+ *
+ * @param args the argument string to split
+ * @param[out] pargs receives the arguments, nullptr terminated. The caller
+ *             supplies an array of at least #sge_quick_count_num_args entries
+ *             plus one, and owns the strings written into it
+ * @return the number of arguments written
+ */
 int sge_parse_args(
         const char *args, /* The argument string to parse by whitespace and quotes */
         char **pargs /* The array to contain the parsed arguments */
@@ -130,74 +153,54 @@ int sge_parse_args(
  * 1 - unmatched quote "
  * 2 - unmatched quote '
  */
-/****** sge_parse_args/parse_quoted_command_line() *****************************
-*  NAME
-*     parse_quoted_command_line() -- parses a command line with quoted arguments
-*
-*  SYNOPSIS
-*     int parse_quoted_command_line(char *command, sge_sl_list_t *sl_args) 
-*
-*  FUNCTION
-*     Parses a command line with quoted arguments and stores the single
-*     arguments into a SGE simple list (sge_sl). The command line is modified
-*     during the parse process. This function recognizes the quotes " and '.
-*     This function can't handle escaped quotes, see last example.
-*
-*  INPUTS
-*     char *command          - the command line to be parsed. "command" gets
-*                              modified during the parse process, so provide
-*                              a copy of the real command line if you need it
-*                              afterwards.
-*     sge_sl_list_t *sl_args - pointer to the list where the single arguments
-*                              get stored to. This must be a properly created
-*                              list (using sge_sl_create()).
-*                              In case of error, the list contains all arguments
-*                              not including the last quoted one (with the
-*                              missing closing quote)
-*
-*  RESULT
-*     int - 0: OK
-*           1: unmatched quote "
-*           2: unmatched quote '
-*
-*  EXAMPLE
-*     command line: foo "bar trala 'hey hu'"
-*     list:
-*     + foo
-*     + bar trala 'hey hu'
-*
-*     command line: 'foo bar' trala "hey" hu
-*     list:
-*     + foo bar
-*     + trala
-*     + hey
-*     + hu
-*     
-*     command line: foo "bar trala '"hey hu'
-*     list:
-*     + foo
-*     + bar trala '
-*     + hey hu'
-*
-*     command line: foo "bar trala hey hu
-*     return value 1
-*     list:
-*     + foo
-*
-*     command line: "foo \"bar huhu\" trala" hey
-*     list:
-*     + foo \
-*     + bar
-*     + huhu\
-*     +  trala
-*     + hey
-*
-*  NOTES
-*     MT-NOTE: parse_quoted_command_line() is not MT safe 
-*
-*  SEE ALSO
-*     sge_parse_args/convert_arg_list_to_vector
-*******************************************************************************/
+/**
+ * @brief Parses a command line with quoted arguments
+ *
+ * Parses a command line with quoted arguments and stores the single
+ * arguments into a SGE simple list (sge_sl). The command line is modified
+ * during the parse process. This function recognizes the quotes <tt>&quot;</tt>
+ * and <tt>'</tt>. It cannot handle escaped quotes, see the last example.
+ *
+ * @code
+ * command line: foo "bar trala 'hey hu'"
+ * list:
+ * + foo
+ * + bar trala 'hey hu'
+ *
+ * command line: 'foo bar' trala "hey" hu
+ * list:
+ * + foo bar
+ * + trala
+ * + hey
+ * + hu
+ *
+ * command line: foo "bar trala '"hey hu'
+ * list:
+ * + foo
+ * + bar trala '
+ * + hey hu'
+ *
+ * command line: "foo \"bar huhu\" trala" hey
+ * list:
+ * + foo \
+ * + bar
+ * + huhu\
+ * +  trala
+ * + hey
+ * @endcode
+ *
+ * An unterminated quote ends the parse: the command line
+ * <tt>foo &quot;bar trala hey hu</tt> yields the single argument
+ * <tt>foo</tt> and the return value 1.
+ *
+ * @param command the command line to be parsed. @p command gets modified during the parse process, so provide a copy of the real command line if you need it afterwards.
+ * @param sl_args pointer to the list where the single arguments get stored to. This must be a properly created list (using #sge_sl_create). In case of error, the list contains all arguments not including the last quoted one (with the missing closing quote)
+ *
+ * @return 0 on success, 1 on an unterminated double quote, 2 on an
+ *         unterminated single quote
+ *
+ * @note MT-NOTE: parse_quoted_command_line() is not MT safe
+ */
 int parse_quoted_command_line(
         char *command,
         sge_sl_list_t *sl_args) {
@@ -268,51 +271,37 @@ int parse_quoted_command_line(
    return 0;
 }
 
-/****** sge_parse_args/convert_arg_list_to_vector() ****************************
-*  NAME
-*     convert_arg_list_to_vector() -- creates an argument vector from a list
-*
-*  SYNOPSIS
-*     void convert_arg_list_to_vector(sge_sl_list_t *sl_args, char ***pargs) 
-*
-*  FUNCTION
-*     Takes the list of arguments (i.e. a list of strings) and creates an
-*     argument vector out of it, like you get it in the main() function.
-*     The strings in the argument vector are still the ones from the argument
-*     list, i.e. the string buffers are not copied, the elements of the
-*     argument vector just point to them.
-*
-*  INPUTS
-*     sge_sl_list_t *sl_args - a list with single C strings as elements
-*     char ***pargs          - an argument vector like main() provides, filled
-*                              with all arguments from the list.
-*                              This argument vector is terminated by an element
-*                              that points to nullptr.
-*
-*  RESULT
-*     int - The length of the argument vector including the terminal nullptr
-*           element.
-*
-*  EXAMPLE
-*     sge_sl_list_t *sl_args;
-*     char          **args;
-*     char          command_line[] = "foo bla \"trala\"";
-* 
-*     sge_sl_create(&sl_args);
-*
-*     parse_quoted_command_line(command_line, sl_args);
-*     convert_arg_list_to_vector(sl_args, &args);
-*
-*     ... use args ...
-*     ... done using args ...
-*     sge_sl_destroy(&sl_args, nullptr);
-*     
-*  NOTES
-*     MT-NOTE: convert_arg_list_to_vector() is not MT safe 
-*
-*  SEE ALSO
-*     sge_parse_args/parse_quoted_command_line
-*******************************************************************************/
+/**
+ * @brief Creates an argument vector from a list
+ *
+ * Takes the list of arguments (i.e. a list of strings) and creates an
+ * argument vector out of it, like you get it in the main() function.
+ * The strings in the argument vector are still the ones from the argument
+ * list, i.e. the string buffers are not copied, the elements of the
+ * argument vector just point to them.
+ *
+ * @code
+ * sge_sl_list_t *sl_args;
+ * char          **args;
+ * char          command_line[] = "foo bla \"trala\"";
+ *
+ * sge_sl_create(&sl_args);
+ *
+ * parse_quoted_command_line(command_line, sl_args);
+ * convert_arg_list_to_vector(sl_args, &args);
+ *
+ * ... use args ...
+ * ... done using args ...
+ * sge_sl_destroy(&sl_args, nullptr);
+ * @endcode
+ *
+ * @param sl_args a list with single C strings as elements
+ * @param pargs an argument vector like main() provides, filled with all arguments from the list. This argument vector is terminated by an element that points to nullptr.
+ *
+ * @return The length of the argument vector including the terminal nullptr element.
+ *
+ * @note MT-NOTE: convert_arg_list_to_vector() is not MT safe
+ */
 int convert_arg_list_to_vector(
         sge_sl_list_t *sl_args,
         char ***pargs) {

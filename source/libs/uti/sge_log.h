@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Message logging: ERROR, WARNING, INFO, DEBUG and the message file
+ */
+
 #include <algorithm>
 #include <cassert>
 #include <syslog.h>
@@ -42,10 +46,14 @@
 
 #include "uti/sge_component.h"
 
-#define LOG_PROF       0      /* no action, but it has to be printed always */
+/// pseudo log level for profiling output, which is always written
+#define LOG_PROF       0
 
 void log_state_set_log_level(uint32_t);
 
+/** @brief Set the file log messages are written to
+ * @param file path of the message file
+ */
 void log_state_set_log_file(const char *file);
 
 void log_state_set_log_verbose(int i);
@@ -58,10 +66,21 @@ const char *log_state_get_log_file();
 
 int log_state_get_log_verbose();
 
+/** @brief Write one message to the message file and, when verbose, to stderr
+ *
+ * Called by the logging macros; use those rather than this directly.
+ *
+ * @param log_level severity, one of the `LOG_*` values
+ * @param msg the message text
+ * @param file source file the message originates from
+ * @param line source line the message originates from
+ */
 void
 sge_log(int log_level, const char *msg, const char *file, int line);
 
+/// the calling component's log message buffer
 #define SGE_EVENT component_get_log_buffer()
+/// size of #SGE_EVENT in bytes
 #define SGE_EVENT_SIZE component_get_log_buffer_size()
 
 #if defined(__INSURE__)
@@ -74,23 +93,14 @@ sge_log(int log_level, const char *msg, const char *file, int line);
 #   define DEBUG(x)    (sprintf x,sge_log(LOG_DEBUG,  SGE_EVENT,__FILE__,__LINE__)) ? 1 : 0
 #else
 
-/****** uti/log/PROFILING() ****************************************************
-*  NAME
-*     PROFILING() -- Log a profiling message 
-*
-*  SYNOPSIS
-*     #define PROFILING(params)
-*     void PROFILING(char *buffer, const char* formatstring, ...) 
-*
-*  FUNCTION
-*     Log a profiling message .
-*     When PROFILING is called, it will always be logged, independent on the log_level.
-*
-*  INPUTS
-*     buffer       - e.g., SGE_EVENT
-*     formatstring - printf formatstring
-*     ...
-******************************************************************************/
+/**
+ * @brief Log a profiling message
+ *
+ * Log a profiling message .
+ * When PROFILING is called, it will always be logged, independent on the log_level.
+ *
+ * @param ... printf style format string followed by its arguments
+ */
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
 #   define PROFILING(...) { \
    char *log_buffer = component_get_log_buffer(); \
@@ -109,22 +119,13 @@ sge_log(int log_level, const char *msg, const char *file, int line);
 } void()
 #endif
 
-/****** uti/log/CRITICAL() ****************************************************
-*  NAME
-*     CRITICAL() -- Log a critical message 
-*
-*  SYNOPSIS
-*     #define CRITICAL(params)
-*     void CRITICAL(char *buffer, const char* formatstring, ...) 
-*
-*  FUNCTION
-*     Log a critical message 
-*
-*  INPUTS
-*     buffer       - e.g SGE_EVENT
-*     formatstring - printf formatstring
-*     ...
-******************************************************************************/
+/**
+ * @brief Log a critical message
+ *
+ * Log a critical message
+ *
+ * @param ... printf style format string followed by its arguments
+ */
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
 #   define CRITICAL(...) { \
    char *log_buffer = component_get_log_buffer(); \
@@ -143,22 +144,13 @@ sge_log(int log_level, const char *msg, const char *file, int line);
 } void()
 #endif
 
-/****** uti/log/ERROR() *******************************************************
-*  NAME
-*     ERROR() -- Log an error message 
-*
-*  SYNOPSIS
-*     #define ERROR(params)
-*     void ERROR(char *buffer, const char* formatstring, ...) 
-*
-*  FUNCTION
-*     Log a error message 
-*
-*  INPUTS
-*     buffer       - e.g SGE_EVENT
-*     formatstring - printf formatstring
-*     ...
-******************************************************************************/
+/**
+ * @brief Log an error message
+ *
+ * Log a error message
+ *
+ * @param ... printf style format string followed by its arguments
+ */
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
 #   define ERROR(...) { \
    char *log_buffer = component_get_log_buffer(); \
@@ -177,22 +169,13 @@ sge_log(int log_level, const char *msg, const char *file, int line);
 } void()
 #endif
 
-/****** uti/log/WARNING() ******************************************************
-*  NAME
-*     WARNING() -- Log an warning message
-*
-*  SYNOPSIS
-*     #define WARNING(params)
-*     void WARNING(char *buffer, const char* formatstring, ...)
-*
-*  FUNCTION
-*     Log a warning message
-*
-*  INPUTS
-*     buffer       - e.g SGE_EVENT
-*     formatstring - printf formatstring
-*     ...
-******************************************************************************/
+/**
+ * @brief Log an warning message
+ *
+ * Log a warning message
+ *
+ * @param ... printf style format string followed by its arguments
+ */
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
 #   define WARNING(...) { \
    char *log_buffer = component_get_log_buffer(); \
@@ -211,23 +194,14 @@ sge_log(int log_level, const char *msg, const char *file, int line);
 } void()
 #endif
 
-/****** uti/log/NOTICE() ******************************************************
-*  NAME
-*     NOTICE() -- Log a notice message
-*
-*  SYNOPSIS
-*     #define NOTICE(params)
-*     void NOTICE(char *buffer, const char* formatstring, ...)
-*
-*  FUNCTION
-*     Log a notice message
-*     @todo NOTICE is actually not used, consider removing it.
-*
-*  INPUTS
-*     buffer       - e.g SGE_EVENT
-*     formatstring - printf formatstring
-*     ...
-******************************************************************************/
+/**
+ * @brief Log a notice message
+ *
+ * Log a notice message
+ * @todo NOTICE is actually not used, consider removing it.
+ *
+ * @param ... printf style format string followed by its arguments
+ */
 #   define NOTICE(...) { \
    if (LOG_NOTICE <= std::max(log_state_get_log_level(), LOG_WARNING)) { \
       char *log_buffer = component_get_log_buffer(); \
@@ -237,22 +211,13 @@ sge_log(int log_level, const char *msg, const char *file, int line);
    } \
 } void()
 
-/****** uti/log/INFO() ********************************************************
-*  NAME
-*     INFO() -- Log an info message
-*
-*  SYNOPSIS
-*     #define INFO(params)
-*     void INFO(char *buffer, const char* formatstring, ...)
-*
-*  FUNCTION
-*     Log an info message
-*
-*  INPUTS
-*     buffer       - e.g SGE_EVENT
-*     formatstring - printf formatstring
-*     ...
-******************************************************************************/
+/**
+ * @brief Log an info message
+ *
+ * Log an info message
+ *
+ * @param ... printf style format string followed by its arguments
+ */
 /*
  * @todo CS-1744 I18N/L10N was missing for INFO messages.
  * But enabling it leads to all clients printing "ok" as last output line
@@ -287,22 +252,13 @@ if (LOG_INFO <= std::max(log_state_get_log_level(), LOG_WARNING)) { \
    sge_log(LOG_INFO, log_buffer, __FILE__, __LINE__); \
 } void()
 
-/****** uti/log/DEBUG() ******************************************************
-*  NAME
-*     DEBUG() -- Log a debug message
-*
-*  SYNOPSIS
-*     #define DEBUG(params)
-*     void DEBUG(char *buffer, const char* formatstring, ...)
-*
-*  FUNCTION
-*     Log a debug message
-*
-*  INPUTS
-*     buffer       - e.g SGE_EVENT
-*     formatstring - printf formatstring
-*     ...
-******************************************************************************/
+/**
+ * @brief Log a debug message
+ *
+ * Log a debug message
+ *
+ * @param ... printf style format string followed by its arguments
+ */
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
 #   define DEBUG(...) { \
    if (LOG_DEBUG <= std::max(log_state_get_log_level(), LOG_WARNING)) { \
@@ -324,20 +280,13 @@ if (LOG_INFO <= std::max(log_state_get_log_level(), LOG_WARNING)) { \
 #endif
 #endif
 
-/****** uti/log/SGE_ASSERT() **************************************************
-*  NAME
-*     SGE_ASSERT() -- Log a message and exit if assertion is false 
-*
-*  SYNOPSIS
-*     #define SGE_ASSERT(expression)
-*     void SGE_ASSERT(int expression) 
-*
-*  FUNCTION
-*     Log a critical message and exit if assertion is false.
-*
-*  INPUTS
-*     expression   - a logical expression 
-******************************************************************************/
+/**
+ * @brief Log a message and exit if assertion is false
+ *
+ * Log a critical message and exit if assertion is false.
+ *
+ * @param ... the expression that must hold
+ */
 #  define SGE_ASSERT(x) \
    if (!(x)) { \
       sge_log(LOG_CRIT, MSG_UNREC_ERROR,__FILE__,__LINE__); \

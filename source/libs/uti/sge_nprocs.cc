@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Number of processors available to the host
+ */
 #include "msg_utilib.h"
 
 #if defined(DARWIN)
@@ -69,23 +73,16 @@ void main(int, char**);
 int sge_nprocs ();
 #endif
 
-/****** uti/os/sge_nprocs() ***************************************************
-*  NAME
-*     sge_nprocs() -- Number of processors in this machine 
-*
-*  SYNOPSIS
-*     int sge_nprocs() 
-*
-*  FUNCTION
-*     Use this function to get the number of processors in 
-*     this machine 
-*
-*  RESULT
-*     int - number of procs
-* 
-*  NOTES
-*     MT-NOTE: sge_nprocs() is MT safe (SOLARIS, LINUX)
-******************************************************************************/
+/**
+ * @brief Number of processors in this machine
+ *
+ * Use this function to get the number of processors in
+ * this machine
+ *
+ * @return number of procs
+ *
+ * @note MT-NOTE: sge_nprocs() is MT safe (SOLARIS, LINUX)
+ */
 int sge_nprocs() {
    int nprocs = 1; /* default */
 

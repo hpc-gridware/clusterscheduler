@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief stdio helpers, including popen/pclose with process control
+ */
+
 #include <cstdio>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -44,88 +48,62 @@
 /* On some systems, FOPEN is already defined as value -1 */
 #undef FOPEN
 
+/// open a file, jumping to the function's error label when it fails
 #define FOPEN(var, fname, fmode) \
    if((var = fopen(fname,fmode)) == nullptr) { \
       goto FOPEN_ERROR; \
    }
 
-/****** uti/stdio/FPRINTF() ***************************************************
-*  NAME
-*     FPRINTF() -- fprintf() macro 
-*
-*  SYNOPSIS
-*     #define FPRINTF(arguments)
-*     void fprintf(FILE *stream, const char *format, ...)
-*
-*  FUNCTION
-*     This FPRINTF macro has to be used similar to the fprintf 
-*     function. It is not necessary to check the return value. 
-*     In case of an error the macro will jump to a defined label.
-*     The label name is 'FPRINTF_ERROR'.
-*
-*  INPUTS
-*     FILE *stream       - output stream
-*     const char *format - format string
-*     ...
-*
-*  NOTES
-*     Don't forget to define the 'FPRINTF_ERROR'-label
-******************************************************************************/
+/**
+ * @brief Fprintf() macro
+ *
+ * This FPRINTF macro has to be used similar to the fprintf
+ * function. It is not necessary to check the return value.
+ * In case of an error the macro will jump to a defined label.
+ * The label name is 'FPRINTF_ERROR'.
+ *
+ * @param ... the arguments of the wrapped stdio call
+ *
+ * @note Don't forget to define the 'FPRINTF_ERROR'-label
+ */
 #define FPRINTF(x) \
    if (fprintf x < 0) { \
       goto FPRINTF_ERROR; \
    } \
    void()
 
-/****** uti/stdio/FPRINTF_ASSIGN() *******************************************
-*  NAME
-*     FPRINTF_ASSIGN() -- fprintf() macro with return value assignment 
-*
-*  SYNOPSIS
-*     #define FPRINTF_ASSIGN(var, arguments)
-*     void fprintf(FILE *stream, const char *format, ...)
-*
-*  FUNCTION
-*     This FPRINTF macro has to be used similar to the fprintf 
-*     function. It is not necessary to check the return value. 
-*     In case of an error the macro will jump to a defined label.
-*     The label name is 'FPRINTF_ERROR'. This is a variarion of 
-*     FPRINTF() that allows assigning the fprintf() return value to
-*     the variable passed as first makro argument.
-*
-*  INPUTS
-*     FILE *stream       - output stream
-*     const char *format - format string
-*     ...
-*
-*  NOTES
-*     Don't forget to define the 'FPRINTF_ERROR'-label
-******************************************************************************/
+/**
+ * @brief Fprintf() macro with return value assignment
+ *
+ * This FPRINTF macro has to be used similar to the fprintf
+ * function. It is not necessary to check the return value.
+ * In case of an error the macro will jump to a defined label.
+ * The label name is 'FPRINTF_ERROR'. This is a variarion of
+ * FPRINTF() that allows assigning the fprintf() return value to
+ * the variable passed as first makro argument.
+ *
+ * @param ... the arguments of the wrapped stdio call
+ *
+ * @note Don't forget to define the 'FPRINTF_ERROR'-label
+ */
 #define FPRINTF_ASSIGN(var, x) \
    if ((var = fprintf x) < 0) { \
       goto FPRINTF_ERROR; \
    }
 
-/****** uti/stdio/FCLOSE() ****************************************************
-*  NAME
-*     FCLOSE() -- fclose() macro 
-*
-*  SYNOPSIS
-*     #define FCLOSE(argument)
-*     int fclose(FILE *stream)
-*
-*  FUNCTION
-*     This FCLOSE macro has to be used similar to the fclose 
-*     function. It is not necessary to check the return value. 
-*     In case of an error the macro will jump to a defined label.
-*     The label name is 'FCLOSE_ERROR'.
-*
-*  INPUTS
-*     FILE *stream       - output stream
-*
-*  NOTES
-*     Don't forget to define the 'FCLOSE_ERROR'-label
-******************************************************************************/
+/**
+ * @brief Fclose() macro
+ *
+ * This FCLOSE macro has to be used similar to the fclose
+ * function. It is not necessary to check the return value.
+ * In case of an error the macro will jump to a defined label.
+ * The label name is 'FCLOSE_ERROR'.
+ *
+ * @param ... the arguments of the wrapped stdio call
+ *
+ * @note Don't forget to define the 'FCLOSE_ERROR'-label
+ */
+/// close a file, jumping to the function's error label when it fails
 #define FCLOSE(x) \
    if (x != nullptr) { \
       if (fclose(x) != 0) { \
@@ -134,6 +112,7 @@
    } \
    void()
 
+/// close a file, ignoring a close error
 #define FCLOSE_IGNORE_ERROR(x) fclose(x)
 
 pid_t sge_peopen(const char *shell, int login_shell, const char *command,
@@ -151,7 +130,11 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
                    const char *user, char **env, FILE **fp_in, FILE **fp_out,
                    FILE **fp_err, bool null_stderr);
 
+/** @def SGE_DEFAULT_PATH
+ * @brief PATH given to a child process when none is inherited
+ */
 #if defined(SOLARIS)
+/// PATH used when a child process is started without inheriting one
 #define SGE_DEFAULT_PATH "/usr/local/bin:/bin:/usr/bin:/usr/ucb"
 #else
 #define SGE_DEFAULT_PATH "/usr/local/bin:/bin:/usr/bin"

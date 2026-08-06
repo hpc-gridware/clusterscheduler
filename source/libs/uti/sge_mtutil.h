@@ -33,9 +33,14 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Mutex and condition variable helpers with logging
+ */
+
 #include <pthread.h>
 #include "uti/ocs_TerminationManager.h"
 
+/// fetch, and lazily create, the thread local data of a module
 #define GET_SPECIFIC(type, _variable, init_func, _key) \
    auto _variable = (type *)pthread_getspecific((pthread_key_t)(_key)); \
    if ((_variable) == nullptr) { \

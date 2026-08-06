@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Host name resolving, comparison and the host name cache
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cctype>
@@ -44,21 +48,24 @@
 
 #include "comm/cl_communication.h"
 
-/* host information based on the hostent structure */
+/** @brief One entry of the host name cache
+ *
+ * Holds what the resolver returned for a host, together with the name the
+ * administrator considers authoritative.
+ */
 typedef struct host {
-   struct hostent he;      /* copy of what we got from gethostbyname */
-   char mainname[CL_MAXHOSTNAMELEN];  /* This is what the administrator think it is
-                                   the mainname */
-   int deleted;                /* if we can no longer resolve this host */
-   struct host *alias;      /* chain aliases */
-   struct host *next;
+   struct hostent he;                 ///< copy of what `gethostbyname` returned
+   char mainname[CL_MAXHOSTNAMELEN];  ///< the name the administrator regards as the main one
+   int deleted;                       ///< set once the host can no longer be resolved
+   struct host *alias;                ///< chain of aliases of this host
+   struct host *next;                 ///< next entry in the cache
 } host;
 
 /* These external variables are used for profiling */
-extern unsigned long gethostbyname_calls;
-extern unsigned long gethostbyname_sec;
-extern unsigned long gethostbyaddr_calls;
-extern unsigned long gethostbyaddr_sec;
+extern unsigned long gethostbyname_calls;   ///< number of `gethostbyname` calls made
+extern unsigned long gethostbyname_sec;     ///< seconds spent in `gethostbyname`
+extern unsigned long gethostbyaddr_calls;   ///< number of `gethostbyaddr` calls made
+extern unsigned long gethostbyaddr_sec;     ///< seconds spent in `gethostbyaddr`
 
 int sge_hostcmp(const char *h1, const char *h2);
 

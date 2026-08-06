@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Signal names, numbers and signal handling helpers
+ */
+
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -44,6 +48,7 @@
 #include "uti/sge_stdlib.h"
 #include "uti/msg_utilib.h"
 
+/// maps every portable signal code to the local signal number and name
 const sig_mapT sig_map[] =
         {
                 {SGE_SIGHUP, SIGHUP, "HUP"},
@@ -84,26 +89,17 @@ const sig_mapT sig_map[] =
                 {SIGUNKNOWN, 0, nullptr}
         };
 
-/****** uti/signal/sge_unmap_signal() *****************************************
-*  NAME
-*     sge_unmap_signal() -- Unmap 32bit SGE/EE signal to system signal 
-*
-*  SYNOPSIS
-*     int sge_unmap_signal(uint32_t sge_sig)
-*
-*  FUNCTION
-*     Unmap the 32bit SGE/EEsignal to the system specific signal 
-*
-*  INPUTS
-*     uint32_t sge_sig - SGE/EE signal
-*
-*  RESULT
-*     int - system signal
-*
-*  NOTES
-*     MT-NOTE: sge_unmap_signal() is MT safe
-*
-******************************************************************************/
+/**
+ * @brief Unmap 32bit SGE/EE signal to system signal
+ *
+ * Unmap the 32bit SGE/EEsignal to the system specific signal
+ *
+ * @param sge_sig SGE/EE signal
+ *
+ * @return system signal
+ *
+ * @note MT-NOTE: sge_unmap_signal() is MT safe
+ */
 int sge_unmap_signal(uint32_t sge_sig) {
    const sig_mapT *mapptr = sig_map;
 
@@ -116,26 +112,17 @@ int sge_unmap_signal(uint32_t sge_sig) {
    return -1;
 }
 
-/****** uti/signal/sge_map_signal() *******************************************
-*  NAME
-*     sge_map_signal() -- Map system signal to 32bit SGE/EE signal 
-*
-*  SYNOPSIS
-*     uint32_t sge_map_signal(int sys_sig)
-*
-*  FUNCTION
-*     Map the system specific signal to the 32bit sge signal 
-*
-*  INPUTS
-*     int sys_sig - system signal 
-*
-*  RESULT
-*     uint32_t - SGE/EE Signal
-*
-*  NOTES
-*     MT-NOTE: sge_map_signal() is MT safe
-*
-******************************************************************************/
+/**
+ * @brief Map system signal to 32bit SGE/EE signal
+ *
+ * Map the system specific signal to the 32bit sge signal
+ *
+ * @param sys_sig system signal
+ *
+ * @return SGE/EE Signal
+ *
+ * @note MT-NOTE: sge_map_signal() is MT safe
+ */
 uint32_t sge_map_signal(int sys_sig) {
    const sig_mapT *mapptr = sig_map;
 
@@ -148,28 +135,19 @@ uint32_t sge_map_signal(int sys_sig) {
    return -1;
 }
 
-/****** uti/signal/sge_str2signal() ********************************************
-*  NAME
-*     str2signal() -- Make a SGE/SGEEE signal out of a string 
-*
-*  SYNOPSIS
-*     uint32_t sge_str2signal(const char *str)
-*
-*  FUNCTION
-*     Make a sge signal out of a string. 'str' can be the signal name 
-*     (caseinsensitive) without sig or the signal number (Take care 
-*     numbers are system dependent).
-*
-*  INPUTS
-*     const char *str - signal string 
-*
-*  RESULT
-*     uint32_t - SGE/EE signal
-*
-*  NOTES
-*     MT-NOTE: sge_str2signal() is MT safe
-*
-******************************************************************************/
+/**
+ * @brief Make a SGE/SGEEE signal out of a string
+ *
+ * Make a sge signal out of a string. 'str' can be the signal name
+ * (caseinsensitive) without sig or the signal number (Take care
+ * numbers are system dependent).
+ *
+ * @param str signal string
+ *
+ * @return SGE/EE signal
+ *
+ * @note MT-NOTE: sge_str2signal() is MT safe
+ */
 uint32_t sge_str2signal(const char *str) {
    const sig_mapT *mapptr = sig_map;
    uint32_t signum;
@@ -197,26 +175,17 @@ uint32_t sge_str2signal(const char *str) {
    return -1;
 }
 
-/****** uti/signal/sge_sys_str2signal() ***************************************
-*  NAME
-*     sge_sys_str2signal() -- Make a SGE/SGEEE signal out of a string 
-*
-*  SYNOPSIS
-*     uint32_t sge_sys_str2signal(const char *str)
-*
-*  FUNCTION
-*     Make a SGE/SGEEE signal out of a string 
-*
-*  INPUTS
-*     const char *str - signal name 
-*
-*  RESULT
-*     uint32_t - SGE/EE signal
-*
-*  NOTES
-*     MT-NOTE: sge_sys_str2signal() is MT safe
-*
-******************************************************************************/
+/**
+ * @brief Make a SGE/SGEEE signal out of a string
+ *
+ * Make a SGE/SGEEE signal out of a string
+ *
+ * @param str signal name
+ *
+ * @return SGE/EE signal
+ *
+ * @note MT-NOTE: sge_sys_str2signal() is MT safe
+ */
 uint32_t sge_sys_str2signal(const char *str) {
    const sig_mapT *mapptr = sig_map;
    uint32_t signum;
@@ -238,26 +207,17 @@ uint32_t sge_sys_str2signal(const char *str) {
    return SIGUNKNOWN;
 }
 
-/****** uti/signal/sge_sig2str() **********************************************
-*  NAME
-*     sge_sig2str() -- Make a string out of a SGE/EE signal 
-*
-*  SYNOPSIS
-*     const char* sge_sig2str(uint32_t sge_sig)
-*
-*  FUNCTION
-*     Make a string out of a SGE/EE signal    
-*
-*  INPUTS
-*     uint32_t sge_sig - SGE/EE signal
-*
-*  RESULT
-*     const char* - signal string
-*
-*  NOTES
-*     MT-NOTE: sge_sig2str() is MT safe
-*
-******************************************************************************/
+/**
+ * @brief Make a string out of a SGE/EE signal
+ *
+ * Make a string out of a SGE/EE signal
+ *
+ * @param sge_sig SGE/EE signal
+ *
+ * @return signal string
+ *
+ * @note MT-NOTE: sge_sig2str() is MT safe
+ */
 const char *sge_sig2str(uint32_t sge_sig) {
    const sig_mapT *mapptr;
 
@@ -271,26 +231,17 @@ const char *sge_sig2str(uint32_t sge_sig) {
    return MSG_PROC_UNKNOWNSIGNAL;
 }
 
-/****** uti/signal/sge_sys_sig2str() ******************************************
-*  NAME
-*     sge_sys_sig2str() -- Make a string out of a system signal 
-*
-*  SYNOPSIS
-*     const char* sge_sys_sig2str(uint32_t sys_sig)
-*
-*  FUNCTION
-*     Make a string out of a system signal 
-*
-*  INPUTS
-*     uint32_t sys_sig - system signal
-*
-*  RESULT
-*     const char* - signal string
-*
-*  NOTES
-*     MT-NOTE: sge_sys_sig2str() is MT safe
-*
-******************************************************************************/
+/**
+ * @brief Make a string out of a system signal
+ *
+ * Make a string out of a system signal
+ *
+ * @param sys_sig system signal
+ *
+ * @return signal string
+ *
+ * @note MT-NOTE: sge_sys_sig2str() is MT safe
+ */
 const char *sge_sys_sig2str(uint32_t sys_sig) {
    const sig_mapT *mapptr;
 
@@ -304,26 +255,16 @@ const char *sge_sys_sig2str(uint32_t sys_sig) {
    return MSG_PROC_UNKNOWNSIGNAL;
 }
 
-/****** uti/signal/sge_set_def_sig_mask() *************************************
-*  NAME
-*     sge_set_def_sig_mask() -- Set signal mask to default
-*
-*  SYNOPSIS
-*     void sge_set_def_sig_mask(int sig_num, err_func_t err_func)
-*
-*  FUNCTION
-*     Set signal mask to default for all signals except given signal
-*
-*  INPUTS
-*     sigset_t sig_num    - signals which should be ignored
-*                           (use sigemptyset and sigaddset to set signals,
-*                           if nullptr, no signals are ignored)
-*     err_func_t err_func - callback function to report errors
-*
-*  NOTES
-*     MT-NOTE: sge_set_def_sig_mask() is MT safe
-*
-******************************************************************************/
+/**
+ * @brief Set signal mask to default
+ *
+ * Set signal mask to default for all signals except given signal
+ *
+ * @param sig_num signals which should be ignored (use sigemptyset and sigaddset to set signals, if nullptr, no signals are ignored)
+ * @param err_func callback function to report errors
+ *
+ * @note MT-NOTE: sge_set_def_sig_mask() is MT safe
+ */
 void sge_set_def_sig_mask(sigset_t *sig_num, err_func_t err_func) {
    int i = 1;
    struct sigaction sig_vec;
@@ -363,20 +304,13 @@ void sge_set_def_sig_mask(sigset_t *sig_num, err_func_t err_func) {
    }
 }
 
-/****** uti/signal/sge_unblock_all_signals() **********************************
-*  NAME
-*     sge_unblock_all_signals()
-*
-*  SYNOPSIS
-*     void sge_unblock_all_signals()
-*
-*  FUNCTION
-*     Allow for all signals.
-*
-*  NOTES
-*     MT-NOTE: sge_unblock_all_signals() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Allow for all signals
+ *
+ * Allow for all signals.
+ *
+ * @note MT-NOTE: sge_unblock_all_signals() is MT safe
+ */
 void sge_unblock_all_signals() {
    sigset_t sigmask;
    /* unblock all signals */
@@ -386,28 +320,17 @@ void sge_unblock_all_signals() {
    sigprocmask(SIG_SETMASK, &sigmask, nullptr);
 }
 
-/****** uti/signal/sge_thread_block_all_signals() *****************************
-*  NAME
-*     sge_thread_block_all_signals()
-*
-*  SYNOPSIS
-*     int sge_thread_block_all_signals()
-*
-*  FUNCTION
-*     Blocks all signals the OS knows for the calling thread.
-*
-*  OUTPUTS
-*    sigset_t *oldsigmask - the sigmask of this thread that was set before
-*                           this function was called.
-*
-*  RETURN VALUES
-*     int - 0 if ok,
-*           errno if pthread_sigmask failed,
-*           1000 if oldsigmask == nullptr.
-*
-*  NOTES
-*     MT-NOTE: sge_thread_block_signals() is MT safe
-*******************************************************************************/
+/**
+ * @brief Blocks all signals the OS knows for the calling thread
+ *
+ * Blocks all signals the OS knows for the calling thread.
+ *
+ * @param oldsigmask the sigmask of this thread that was set before this function was called.
+ *
+ * @return 0 if ok, errno if pthread_sigmask failed, 1000 if oldsigmask == nullptr.
+ *
+ * @note MT-NOTE: sge_thread_block_signals() is MT safe
+ */
 int sge_thread_block_all_signals(sigset_t *oldsigmask) {
    sigset_t new_mask;
    int ret = 1000;

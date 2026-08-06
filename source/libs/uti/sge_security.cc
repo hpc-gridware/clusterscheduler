@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Security layer setup and user authentication helpers
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <pwd.h>
@@ -487,23 +491,16 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
 #endif
 
 
-/****** gdi/security/sge_security_exit() **************************************
-*  NAME
-*     sge_security_exit -- exit sge security
-*
-*  SYNOPSIS
-*     void sge_security_exit(int status);
-*
-*  FUNCTION
-*     Execute any routines that the security mechanism needs to do when
-*     the program
-*
-*  INPUTS
-*     status - exit status value
-*
-*  NOTES
-*     MT-NOTE: sge_security_exit() is MT safe
-******************************************************************************/
+/**
+ * @brief Exit sge security
+ *
+ * Execute any routines that the security mechanism needs to do when
+ * the program
+ *
+ * @param i exit status of the process
+ *
+ * @note MT-NOTE: sge_security_exit() is MT safe
+ */
 void sge_security_exit(int i)
 {
    DENTER(TOP_LAYER);
@@ -521,6 +518,14 @@ void sge_security_exit(int i)
 
 /* MT-NOTE: sge_security_verify_user() is MT safe (assumptions) */
 bool
+/** @brief Check that a request really comes from the user it claims
+ *
+ * @param host host the request arrived from
+ * @param commproc name of the sending component
+ * @param id commlib id of the sender
+ * @param gdi_user user the request claims to be from
+ * @return true when the claim holds
+ */
 sge_security_verify_user(const char *host, const char *commproc, uint32_t id, const char *gdi_user)
 {
    DENTER(TOP_LAYER);
@@ -554,6 +559,17 @@ sge_security_verify_user(const char *host, const char *commproc, uint32_t id, co
    DRETURN(true);
 }
 
+/** @brief Check that a connection is owned by the expected user
+ *
+ * @param check_admin_user also accept the admin user
+ * @param user the user the connection should belong to
+ * @param progname name of the calling program
+ * @param progid id of the calling program
+ * @param hostname host the connection comes from
+ * @param commproc name of the sending component
+ * @param commid commlib id of the sender
+ * @return true when the connection may be trusted
+ */
 bool sge_security_verify_unique_identifier(bool check_admin_user, const char* user, const char* progname,
         unsigned long progid, const char* hostname, const char* commproc, unsigned long commid) {
 

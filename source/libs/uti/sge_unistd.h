@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Filesystem and process helpers around the unistd calls
+ */
+
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -40,6 +44,59 @@
 #include <cinttypes>
 
 #include "sge_dstring.h"
+
+/** @name Portability wrappers
+ *
+ * Each of these resolves to the spelling the current platform needs, so the
+ * rest of the code does not have to know which one that is.
+ * @{
+ */
+/** @def SGE_OPEN2
+ * @brief open a file, using the 64 bit variant where the platform needs it
+ */
+/** @def SGE_OPEN3
+ * @brief open or create a file, using the 64 bit variant where the platform needs it
+ */
+/** @def SGE_STAT
+ * @brief stat a path, 64 bit safe
+ */
+/** @def SGE_LSTAT
+ * @brief stat a path without following symlinks, 64 bit safe
+ */
+/** @def SGE_FSTAT
+ * @brief stat an open file descriptor, 64 bit safe
+ */
+/** @def SGE_READDIR
+ * @brief read the next directory entry
+ */
+/** @def SGE_READDIR_R
+ * @brief read the next directory entry, reentrant variant
+ */
+/** @def SGE_TELLDIR
+ * @brief current position within a directory stream
+ */
+/** @def SGE_SEEKDIR
+ * @brief seek within a directory stream
+ */
+/** @def SETPGRP
+ * @brief put the process into its own process group
+ */
+/** @def GETPGRP
+ * @brief process group of the calling process
+ */
+/** @def SGE_STRUCT_STAT
+ * @brief stat structure, 64 bit safe on every platform
+ */
+/** @def SGE_INO_T
+ * @brief inode number type, 64 bit safe on every platform
+ */
+/** @def SGE_OFF_T
+ * @brief file offset type, 64 bit safe on every platform
+ */
+/** @def SGE_STRUCT_DIRENT
+ * @brief directory entry structure, 64 bit safe on every platform
+ */
+/** @} */
 
 #if defined(SOLARIS) || defined(LINUX)
 #  define SGE_OPEN2(filename, oflag)       open64(filename, oflag)
@@ -49,6 +106,7 @@
 #  define SGE_OPEN3(filename, oflag, mode) open(filename, oflag, mode)
 #endif
 
+/// close a file descriptor
 #define SGE_CLOSE(fd) close(fd);
 
 #if defined(SOLARIS)
@@ -112,24 +170,16 @@ int sge_is_executable(const char *name);
 
 void sge_sleep(int sec, int usec);
 
-/****** uti/unistd/sge_sysconf_t **********************************************
-*  NAME
-*     sge_sysconf_t -- Constants for sge_sysconf() 
-*
-*  SYNOPSIS
-*     typedef enum {
-*        SGE_SYSCONF_NGROUPS_MAX
-*     } sge_sysconf_t;  
-*
-*  FUNCTION
-*     SGE_SYSCONF_NGROUPS_MAX - Maximum number of additional group ids
-*                               which are allowed per user  
-*
-*  SEE ALSO
-*     uti/unistd/sge_sysconf()
-******************************************************************************/
+/**
+ * @brief Constants for sge_sysconf()
+ *
+ * SGE_SYSCONF_NGROUPS_MAX - Maximum number of additional group ids
+ *                           which are allowed per user
+ *
+ * @see #sge_sysconf
+ */
 typedef enum {
-   SGE_SYSCONF_NGROUPS_MAX
+   SGE_SYSCONF_NGROUPS_MAX   ///< largest number of supplementary groups a process may have
 } sge_sysconf_t;
 
 uint32_t sge_sysconf(sge_sysconf_t id);
