@@ -60,7 +60,7 @@ if (DOXYGEN_FOUND)
    option(DOXYGEN_STRICT "Fail the build on documentation defects in converted modules" ON)
 
    set(DXM_FINISHED_MODULES
-         # source/libs/evc
+         source/libs/evc
    )
 
    if (DXM_FINISHED_MODULES)

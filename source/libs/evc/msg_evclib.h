@@ -33,6 +33,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Localisable message catalogue of the event client library
+ *
+ * Message ids in the range [65000;65099] are reserved for the event client
+ * library. Each entry is a `_MESSAGE(id, text)` pair; the id is what the
+ * message catalogue is keyed on and must never be reused for different text.
+ *
+ * @see @ref evc
+ */
+
 #include "uti/sge_string.h"
 
 // clang-format off
