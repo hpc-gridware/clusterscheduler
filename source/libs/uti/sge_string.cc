@@ -1382,31 +1382,22 @@ sge_str_reverse(char *str) {
    }
 }
 
-/****** uti/spool/sge_is_valid_filename2() ************************************
-*  NAME
-*     sge_is_valid_filename2() -- Verify file name.
-*
-*  SYNOPSIS
-*     int sge_is_valid_filename2(const char *fname)
-*
-*  FUNCTION
-*     Verify the applicability of a file name.
-*     We dont like:
-*        - names longer than 256 chars including '\0'
-*        - blanks or other ugly chars
-*     We like digits, chars and '_'.
-*
-*  INPUTS
-*     const char *fname - filename
-*
-*  RESULT
-*     int - result
-*        0 - OK
-*        1 - Invalid filename
-*
-*  NOTES
-*     MT-NOTE: sge_is_valid_filename2() is MT safe
-******************************************************************************/
+/**
+ * @brief Verify that a file name is usable as a spooling file name
+ *
+ * Accepts alphanumeric characters, `_` and `.`, up to 255 characters. Rejects
+ * blanks and anything else, and rejects the relative names `.` and `..` and
+ * paths starting with `../`.
+ *
+ * Stricter than #sge_is_valid_filename, which also allows `-` and imposes no
+ * length limit.
+ *
+ * @param fname the file name to check, must not be nullptr
+ * @return 0 when the name is valid, 1 when it is not
+ *
+ * @note MT-NOTE: sge_is_valid_filename2() is MT safe
+ * @see #sge_is_valid_filename
+ */
 int sge_is_valid_filename2(const char *fname) {
    int i = 0;
 
@@ -1429,29 +1420,19 @@ int sge_is_valid_filename2(const char *fname) {
    return 0;
 }
 
-/****** uti/spool/sge_is_valid_filename() *************************************
-*  NAME
-*     sge_is_valid_filename() -- Check for a valid filename.
-*
-*  SYNOPSIS
-*     int sge_is_valid_filename(const char *fname)
-*
-*  FUNCTION
-*     Check for a valid filename. Filename can only
-*     contain: 0-9a-zA-Z._-
-*     '/' is not allowed.
-*
-*  INPUTS
-*     const char *fname - filename
-*
-*  RESULT
-*     int - result
-*         0 - valid filename
-*         1 - invalid filename
-*
-*  NOTES
-*     MT-NOTE: sge_is_valid_filename() is MT safe
-******************************************************************************/
+/**
+ * @brief Check that a file name contains no path separator
+ *
+ * Accepts alphanumeric characters and `.`, `_`, `-`. Everything else is
+ * rejected, in particular `/`, so the result can be used as a single path
+ * component without escaping a directory.
+ *
+ * @param fname the file name to check; nullptr counts as invalid
+ * @return 0 when the name is valid, 1 when it is not
+ *
+ * @note MT-NOTE: sge_is_valid_filename() is MT safe
+ * @see #sge_is_valid_filename2
+ */
 int sge_is_valid_filename(const char *fname) {
    const char *cp = fname;
 
