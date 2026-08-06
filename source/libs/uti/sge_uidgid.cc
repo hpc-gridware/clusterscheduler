@@ -316,7 +316,7 @@ exit:
  * @note MT-NOTE: sge_user2uid() is MT safe.
  */
 int
-sge_user2uid(const char *user, uid_t *puid, uid_t *pgid, int retries) {
+sge_user2uid(const char *user, uid_t *puid, gid_t *pgid, int retries) {
    struct passwd *pw;
    struct passwd pwentry{};
    char *buffer;
