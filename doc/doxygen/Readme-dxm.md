@@ -37,6 +37,15 @@ Only converted modules are checked. The list is in `CMakeLists.txt`
 | `dxm-check.sh` | run the gate against any directory, without a cmake build tree |
 | `dxm-nocomment-diff.sh` | prove a change touched only comments |
 | `dxm-strip-comments.py` | helper for the above, removes comments from C/C++ |
+| `dxm-convert-banners.py` | migration aid: rewrite legacy banners as doxygen blocks |
+| `dxm-add-file-blocks.py` | migration aid: insert the mandatory `@file` block |
+
+The two migration aids do the mechanical part only. They deliberately leave
+module banners (`--Something`) alone, because turning those into a `@defgroup`
+or a `@page` is a judgement call, and they never invent parameters. Always
+re-read the result against the code afterwards, and run the gate with
+`EXTRACT_STATIC = YES` once to catch wrong `@param` names - the normal gate does
+not see `static` functions.
 
 ```
 cd clusterscheduler

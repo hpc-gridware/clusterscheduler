@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+"""Convert legacy GE banner headers into doxygen blocks.
+
+    dxm-convert-banners.py FILE [FILE ...]
+
+This is a migration aid, not a formatter. It does the mechanical part of the
+conversion - splitting a banner into its NAME/FUNCTION/INPUTS/RESULT/NOTES/
+SEE ALSO sections and re-emitting them as @brief/@param/@return/@note/@see - so
+that a human or an agent can spend its attention on the part that actually needs
+judgement: checking the prose against the code.
+
+What it deliberately does NOT do, because each needs a decision:
+
+  * Module banners (the ones whose name starts with '-', e.g. --Bitfield or
+    -Bitfield_Typedefs) are left untouched and reported. They become @defgroup
+    or @page and the choice of which, and where, is not mechanical.
+  * @param thiz and friends are not invented. A banner that predates a refactor
+    lists the wrong parameters; the gate reports that afterwards.
+  * SYNOPSIS is dropped - doxygen renders the real signature - but it is not
+    checked against the code first.
+
+After running this, ALWAYS:
+
+  1. re-read the prose against the function body, and
+  2. run the gate with EXTRACT_STATIC = YES to get the list of @param
+     mismatches, missing @return and undocumented functions.
+
+Exit status is 0 even when nothing was converted; the summary is on stderr.
+"""
+
+import re
+import sys
+
+SECTION_RE = re.compile(r'^  ([A-Z][A-Z /]*[A-Z])\s*$')
+BANNER_RE = re.compile(r'^/\*{5,}\s+(\S+)')
+
+# Section name variants seen in the tree, mapped to the canonical name.
+CANON = {
+    'INPUT': 'INPUTS', 'INPUTS': 'INPUTS',
+    'RESULT': 'RESULT', 'RESULTS': 'RESULT', 'RETURN': 'RESULT',
+    'RETURNS': 'RESULT', 'RETURN VALUES': 'RESULT',
+    'NOTE': 'NOTES', 'NOTES': 'NOTES', 'MUTEXES': 'NOTES',
+    'OUTPUT': 'OUTPUTS', 'OUTPUTS': 'OUTPUTS',
+    'EXAMPLE': 'EXAMPLE', 'EXAMPLES': 'EXAMPLE',
+    'NAME': 'NAME', 'FUNCTION': 'FUNCTION', 'SYNOPSIS': 'SYNOPSIS',
+    'SEE ALSO': 'SEE ALSO', 'BUGS': 'BUGS', 'TODO': 'TODO',
+}
+
+
+def parse_sections(block):
+    secs, cur = {}, None
+    for line in block:
+        body = line[1:] if line.startswith('*') else line
+        m = SECTION_RE.match(body.rstrip())
+        if m:
+            cur = CANON.get(m.group(1).strip())
+            if cur:
+                secs.setdefault(cur, [])
+        elif cur:
+            secs[cur].append(body[5:] if body.startswith('     ') else body.strip())
+    return secs
+
+
+def trim(lines):
+    lines = list(lines)
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    while lines and not lines[-1].strip():
+        lines.pop()
+    return lines
+
+
+def see_also(entry, local_symbols):
+    """module/path/name() -> #name when the symbol is local, else `name()`."""
+    e = entry.strip()
+    if not e:
+        return None
+    m = re.match(r'^[\w\- /]*?([A-Za-z_]\w*)\(\)$', e)
+    if m:
+        name = m.group(1)
+        return ('#' + name) if name in local_symbols else '`%s()`' % name
+    return None
+
+
+def convert_block(block, local_symbols):
+    s = parse_sections(block)
+    out = []
+
+    brief = ''
+    for line in s.get('NAME', []):
+        if '--' in line:
+            brief = line.split('--', 1)[1].strip()
+            break
+    if not brief:
+        fn = trim(s.get('FUNCTION', []))
+        brief = fn[0] if fn else 'TODO document this'
+    brief = brief.rstrip('. ')
+    if brief:
+        brief = brief[0].upper() + brief[1:]
+    out.append(' * @brief ' + brief)
+
+    fn = trim(s.get('FUNCTION', []))
+    if fn:
+        out.append(' *')
+        out.extend((' * ' + line).rstrip() for line in fn)
+
+    ex = trim(s.get('EXAMPLE', []))
+    if ex:
+        out.append(' *')
+        out.append(' * @code')
+        out.extend((' * ' + line).rstrip() for line in ex)
+        out.append(' * @endcode')
+
+    params = []
+    for line in trim(s.get('INPUTS', [])) + trim(s.get('OUTPUTS', [])):
+        m = re.match(r'^\s*(?:[\w \*\[\]]+?[ \*])?(\w+)\s+-\s+(.*)$', line)
+        if m:
+            params.append([m.group(1), m.group(2).strip()])
+        elif params and line.strip():
+            params[-1][1] += ' ' + line.strip()
+    if params:
+        out.append(' *')
+        for name, desc in params:
+            out.append((' * @param %s %s' % (name, desc)).rstrip())
+
+    ret = trim(s.get('RESULT', []))
+    if ret:
+        txt = ' '.join(x.strip() for x in ret if x.strip())
+        txt = re.sub(r'^[\w \*]+?\s+-\s+', '', txt)
+        out.append(' *')
+        out.append(' * @return ' + txt)
+
+    notes = trim(s.get('NOTES', []))
+    if notes:
+        out.append(' *')
+        out.append(' * @note ' + notes[0].strip())
+        out.extend((' *       ' + x.strip()).rstrip() for x in notes[1:])
+
+    for key, tag in (('BUGS', '@bug'), ('TODO', '@todo')):
+        body = trim(s.get(key, []))
+        if body:
+            out.append(' *')
+            out.append(' * %s %s' % (tag, body[0].strip()))
+            out.extend((' *      ' + x.strip()).rstrip() for x in body[1:])
+
+    refs = [see_also(x, local_symbols) for x in trim(s.get('SEE ALSO', []))]
+    refs = [r for r in dict.fromkeys(r for r in refs if r)]
+    if refs:
+        out.append(' *')
+        out.append(' * @see ' + ', '.join(refs))
+
+    return ['/**'] + out + [' */']
+
+
+def local_symbol_names(text):
+    """Function-ish names defined or declared in this file."""
+    return set(re.findall(r'^[\w:<>,\* &\[\]]*?\b(\w+)\s*\(', text, re.M))
+
+
+def process(path):
+    text = open(path, encoding='utf-8', errors='surrogateescape').read()
+    lines = text.split('\n')
+    symbols = local_symbol_names(text)
+
+    out, i, converted, skipped = [], 0, 0, []
+    while i < len(lines):
+        m = BANNER_RE.match(lines[i])
+        if m and lines[i].rstrip().endswith('*'):
+            name = m.group(1).rstrip('()').split('/')[-1]
+            j = i + 1
+            while j < len(lines) and not lines[j].rstrip().endswith('*/'):
+                j += 1
+            if j >= len(lines):
+                out.append(lines[i]); i += 1; continue
+            if name.startswith('-'):
+                skipped.append(name)
+                out.extend(lines[i:j + 1])
+            else:
+                out.extend(convert_block(lines[i + 1:j], symbols))
+                converted += 1
+            i = j + 1
+            continue
+        out.append(lines[i])
+        i += 1
+
+    if converted:
+        open(path, 'w', encoding='utf-8', errors='surrogateescape').write('\n'.join(out))
+    return converted, skipped
+
+
+def main():
+    if len(sys.argv) < 2:
+        sys.stderr.write(__doc__)
+        return 2
+    total, all_skipped = 0, []
+    for path in sys.argv[1:]:
+        n, skipped = process(path)
+        total += n
+        for s in skipped:
+            all_skipped.append('%s: %s' % (path, s))
+        sys.stderr.write('%-50s %3d converted, %d module banners left\n'
+                         % (path, n, len(skipped)))
+    if all_skipped:
+        sys.stderr.write('\nModule banners needing a manual @defgroup / @page decision:\n')
+        for s in all_skipped:
+            sys.stderr.write('  %s\n' % s)
+    sys.stderr.write('\ntotal converted: %d\n' % total)
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
