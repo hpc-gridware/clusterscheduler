@@ -240,6 +240,9 @@ const char* sge_get_schedd_text( int nr )
       case SCHEDD_INFO_ARISINERROR_I:
          return MSG_SCHEDD_INFO_ARISINERROR_I; 
 
+      case SCHEDD_INFO_CONSUMABLENOVALUE_SS:
+         return MSG_SCHEDD_INFO_CONSUMABLENOVALUE_SS;
+
 /* */
 
       case SCHEDD_INFO_CANNOTRUNATHOST          :
@@ -406,6 +409,9 @@ const char* sge_get_schedd_text( int nr )
 
       case SCHEDD_INFO_ARISINERROR:
          return MSG_SCHEDD_INFO_ARISINERROR; 
+
+      case SCHEDD_INFO_CONSUMABLENOVALUE:
+         return MSG_SCHEDD_INFO_CONSUMABLENOVALUE;
 
       default:
          return "";
