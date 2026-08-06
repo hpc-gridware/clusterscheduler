@@ -186,12 +186,6 @@ static FeatureThreadInit feature_obj{};
  * @param a first request, as a `fgl_t *`
  * @param b second request, as a `fgl_t *`
  * @return negative if @p a sorts first, positive if @p b does, 0 if equal
- *
- * @bug The #LOCK_ALL_LISTS_FIRST branch tests `x->id_root < y->id_root` twice
- *      instead of testing `>` the second time, in all three of its root id
- *      comparisons. With that branch enabled the comparator is not a strict
- *      weak ordering and `qsort` behaviour is undefined. Harmless as shipped,
- *      because the branch is compiled out.
  */
 int fgl_rsv_compare(const void *a, const void *b) {
    fgl_t *x = (fgl_t *) a;
@@ -202,7 +196,7 @@ int fgl_rsv_compare(const void *a, const void *b) {
    if (x->type == FGL_NONE && y->type == FGL_NONE) {
       if (x->id_root < y->id_root) {
          return -1;
-      } else if (x->id_root < y->id_root) {
+      } else if (x->id_root > y->id_root) {
          return 1;
       } else {
          return 0;
@@ -216,7 +210,7 @@ int fgl_rsv_compare(const void *a, const void *b) {
    } else if (x->type == FGL_ULONG && y->type == FGL_ULONG) {
       if (x->id_root < y->id_root) {
          return -1;
-      } else if (x->id_root < y->id_root) {
+      } else if (x->id_root > y->id_root) {
          return 1;
       } else {
          if (x->u.id_ulong < y->u.id_ulong) {
@@ -236,7 +230,7 @@ int fgl_rsv_compare(const void *a, const void *b) {
    } else if (x->type == FGL_STR && y->type == FGL_STR) {
       if (x->id_root < y->id_root) {
          return -1;
-      } else if (x->id_root < y->id_root) {
+      } else if (x->id_root > y->id_root) {
          return 1;
       } else {
          return strcmp(x->u.id_str, y->u.id_str);
