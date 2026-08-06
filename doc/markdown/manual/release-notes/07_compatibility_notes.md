@@ -164,6 +164,10 @@ byte-for-byte identical to version 9.1**, including the exit codes: adding a hos
 still fails with `adminhost "..." already exists`, and deleting one that is not a member still fails with
 `denied: administrative host "..." does not exist`. Scripts parsing this text do not need to be adapted.
 
+Because they are host groups, the permission checks on the GDI request path also resolve through the cached
+host group membership introduced in this release — see *Faster Host Group Resolution in Resource Quota
+Matching* in the [Major Enhancements](03_major_enhancements.md#faster-host-group-resolution-in-resource-quota-matching).
+
 Both groups are ordinary host groups at the interface: they are listed by `qconf -shgrpl`, shown by
 `qconf -shgrp @admin_hosts`, and can be modified with `-mhgrp`, `-Mhgrp` and the `-?attr` options.
 `qconf -aattr hostgroup hostlist host @admin_hosts` and `qconf -ah host` are two ways of doing the same

@@ -67,6 +67,42 @@ The following status query commands have been converted to use stored procedures
 
 (Available in Open and Gridware Cluster Scheduler.)
 
+### Faster Host Group Resolution in Resource Quota Matching
+
+Resource quota rules whose scope is a host group used to be expensive to evaluate. Answering *"is host H a
+member of @group"* meant walking the group's members, including any nested groups, and the scheduler asks that
+question once per host, per rule, per pending job category, on every scheduling run. The cost therefore grew
+with the size of the host group rather than with the number of rules.
+
+Version 9.2 keeps the resolved host set with the host group object itself and refreshes it when the group or
+any group it references changes, so a membership test is a lookup instead of a walk. Admin and submit hosts
+also became host groups in this release (see the *Compatibility Notes*), which means they resolve through the
+same cached path.
+
+**Measured effect.** The numbers below are the *additional* scheduler run time attributable to three resource
+quota rules — each scenario measured against a "no resource quotas" baseline on the same cluster, because the
+absolute run time depends on the cluster. 1000 hosts, 4 host groups, 50 pending job categories, 3 rules, three
+samples per scenario:
+
+| Host scope of the three rules | 9.1 | 9.2 |
+|---|---|---|
+| a small group of real hosts | +0.39 s | +0.16 s |
+| a nested group resolving to 1000 hosts | +5.96 s | +0.45 s |
+| two overlapping groups of 500 hosts | +9.53 s | +0.28 s |
+| a host group pattern (`@flat_*`) | +5.79 s | +0.62 s |
+
+The gain grows with the size of the host group, which is where the old behaviour hurt most: rules over a small
+group were already cheap, while rules over a large or nested group dominated the scheduling run. Clusters that
+express resource quotas over large host groups benefit most; clusters without resource quotas are unaffected,
+since the baseline itself is unchanged.
+
+Individual samples varied by at most 0.09 s within a scenario, so the differences above are well outside the
+measurement noise. As always with scheduler timings, treat them as the shape of the improvement on a
+comparable configuration rather than as a figure your cluster will reproduce exactly. The two releases were
+measured on the same six hosts with the same cluster configuration.
+
+(Available in Open and Gridware Cluster Scheduler.)
+
 ### X11 Forwarding for Interactive Jobs
 
 The builtin Interactive Job Support (IJS) mode now supports X11 forwarding for qrsh(1) and qlogin(1).
