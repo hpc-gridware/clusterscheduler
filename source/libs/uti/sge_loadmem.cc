@@ -240,16 +240,26 @@ int sge_loadmem(sge_mem_info_t *mem_info)
 #include <cstdio>
 #include <cstring>
 
-#define PROC_MEMINFO "/proc/meminfo"
+#define PROC_MEMINFO "/proc/meminfo" ///< file the memory figures are read from
 
-#define KEY_MEMTOTAL  "MemTotal"
-#define KEY_MEMFREE   "MemFree"
-#define KEY_SWAPTOTAL "SwapTotal"
-#define KEY_SWAPFREE  "SwapFree"
+#define KEY_MEMTOTAL  "MemTotal"   ///< `/proc/meminfo` key for total physical memory
+#define KEY_MEMFREE   "MemFree"    ///< `/proc/meminfo` key for unused physical memory
+#define KEY_SWAPTOTAL "SwapTotal"  ///< `/proc/meminfo` key for total swap
+#define KEY_SWAPFREE  "SwapFree"   ///< `/proc/meminfo` key for unused swap
 
-#define KEY_BUFFERS   "Buffers"
-#define KEY_CACHED    "Cached"
+#define KEY_BUFFERS   "Buffers"    ///< `/proc/meminfo` key for block device buffers
+#define KEY_CACHED    "Cached"     ///< `/proc/meminfo` key for the page cache
 
+/**
+ * @brief Read the host's memory and swap usage
+ *
+ * On Linux the figures come from `/proc/meminfo`. Buffers and the page cache
+ * are counted as free, since the kernel reclaims them on demand — so
+ * @ref sge_mem_info_t::mem_free is larger than the raw `MemFree` value.
+ *
+ * @param[out] mem_info receives the figures, in megabytes
+ * @return 0 on success, -1 when the source could not be read
+ */
 int sge_loadmem(sge_mem_info_t *mem_info) {
    int ret = 0;
    char dummy[512], buffer[1024];
@@ -260,11 +270,13 @@ int sge_loadmem(sge_mem_info_t *mem_info) {
    if ((fp = fopen(PROC_MEMINFO, "r"))) {
       while (fgets(buffer, sizeof(buffer) - 1, fp)) {
 
+/// @cond   function local: pull one `key: value` line out of the buffer
 #define READ_VALUE(key, dest)    if (!strncmp(buffer, key, sizeof(key)-1)) { \
             sscanf(buffer, "%[^0-9]%lf", dummy, &kbytes); \
             dest = kbytes/1024; \
             continue; \
          }
+/// @endcond
 
          READ_VALUE(KEY_MEMTOTAL, mem_info->mem_total);
          READ_VALUE(KEY_MEMFREE, mem_info->mem_free);

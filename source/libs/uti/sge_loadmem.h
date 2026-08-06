@@ -42,21 +42,17 @@
 #define SGE_LOADMEM
 
 /**
- * @brief Structure to store memory information
+ * @brief The host's memory and swap usage, in megabytes
  *
- * mem_total  - total amount of memory in MB
- * mem_free   - amount of free memory in MB
- * swap_total - total amount of swap space in MB
- * swap_free  - amount of free swap space in MB
- * swap_rsvd  - amount of reserved swap space in MB
+ * Filled in by #sge_loadmem.
  *
  * @see #sge_loadmem
  */
 typedef struct {
-   double mem_total;
-   double mem_free;
-   double swap_total;
-   double swap_free;
+   double mem_total;   ///< total physical memory, in MB
+   double mem_free;    ///< free physical memory, in MB, counting buffers and page cache as free
+   double swap_total;  ///< total swap space, in MB
+   double swap_free;   ///< free swap space, in MB
 } sge_mem_info_t;
 
 int sge_loadmem(sge_mem_info_t *mem_info);

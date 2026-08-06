@@ -58,11 +58,14 @@
 
 #ifdef SECURE
 
+/// Marker string a built binary carries so `strings` shows whether SECURE was enabled
 const char* sge_dummy_sec_string = "AIMK_SECURE_OPTION_ENABLED";
 
 static pthread_mutex_t sec_ssl_setup_config_mutex = PTHREAD_MUTEX_INITIALIZER;
 static cl_ssl_setup_t* sec_ssl_setup_config       = nullptr;
+/// Take the mutex guarding the process-wide SSL setup
 #define SEC_LOCK_SSL_SETUP()      sge_mutex_lock("ssl_setup_mutex", __func__, __LINE__, &sec_ssl_setup_config_mutex)
+/// Release the mutex guarding the process-wide SSL setup
 #define SEC_UNLOCK_SSL_SETUP()    sge_mutex_unlock("ssl_setup_mutex", __func__, __LINE__, &sec_ssl_setup_config_mutex)
 
 static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char* value);
@@ -95,7 +98,26 @@ static bool is_master(const char* progname) {
    return false;
 }
 
-/* int 0 on success, -1 on failure */
+/**
+ * @brief Work out the CSP file locations and hand them to the commlib
+ *
+ * Builds the CA, certificate and key paths for @p progname running as @p user,
+ * checks that the ones that must already exist do, and passes the result to
+ * the commlib as its SSL configuration. Daemons use the cluster-wide CA
+ * directories, ordinary users a directory under their home; `$SGE_CAKEYFILE`,
+ * `$SGE_CERTFILE`, `$SGE_KEYFILE` and `$SGE_NO_CA_LOCAL_ROOT` override
+ * individual results.
+ *
+ * A missing directory or file is reported with a `CRITICAL` message.
+ *
+ * @param progname name of the calling program, which decides whether the
+ *        daemon or the per-user layout applies
+ * @param user the user whose home directory the per-user paths are built from
+ * @return 0 on success, -1 on failure
+ *
+ * @note The same path vocabulary is defined a third time here; see
+ *       `sge_csp_path.cc` and `ocs_Bootstrap.h`.
+ */
 int sge_ssl_setup_security_path(const char *progname, const char *user) {
 
    int return_value = 0;
@@ -109,6 +131,7 @@ int sge_ssl_setup_security_path(const char *progname, const char *user) {
    char *sge_keyfile = nullptr;
    char *sge_certfile = nullptr;
 
+/// @cond   function local duplicates of the path vocabulary in sge_csp_path.cc
 #define SGE_COMMD_SERVICE "sge_qmaster"
 #define CA_DIR          "common/sgeCA"
 #define CA_LOCAL_DIR    "/var/sgeCA"
@@ -121,6 +144,7 @@ int sge_ssl_setup_security_path(const char *progname, const char *user) {
 #define CrlFile         "ca-crl.pem"
 #define ReconnectFile   "private/reconnect.dat"
 #define VALID_MINUTES    7          /* expiry of connection        */
+/// @endcond
 
    /* former global values */
    dstring ca_key_file    = DSTRING_INIT;   

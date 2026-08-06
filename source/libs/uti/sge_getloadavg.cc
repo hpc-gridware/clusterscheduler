@@ -94,9 +94,9 @@
 #     define KERNEL_AVG_NAME "avenrun"
 #  endif
 #elif defined(LINUX)
-#  define LINUX_LOAD_SOURCE "/proc/loadavg"
-#  define CPUSTATES 4
-#  define PROCFS "/proc"
+#  define LINUX_LOAD_SOURCE "/proc/loadavg" ///< file the load averages are read from
+#  define CPUSTATES 4                       ///< CPU time states in `/proc/stat`: user, nice, system, idle
+#  define PROCFS "/proc"                    ///< mount point of the proc filesystem
 #endif
 
 #if defined(FREEBSD)

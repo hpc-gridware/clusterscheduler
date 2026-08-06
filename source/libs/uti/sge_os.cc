@@ -502,6 +502,17 @@ static bool keep_fd_open(int *keep_open, unsigned long nr_of_keep_open_entries, 
    return false;
 }
 
+/**
+ * @brief Close every file descriptor except a named few
+ *
+ * Used before exec'ing a child, so it does not inherit descriptors it has no
+ * business holding. On Linux and Solaris only the descriptors actually open
+ * are visited, rather than every number up to the limit.
+ *
+ * @param keep_open descriptors to leave open, or nullptr to close everything
+ * @param nr_of_keep_open_entries number of entries in @p keep_open — not a
+ *        descriptor count
+ */
 void sge_close_all_fds(int *keep_open, unsigned long nr_of_keep_open_entries) {
    std::set all_fds = get_all_fds();
    for (auto fd : all_fds) {

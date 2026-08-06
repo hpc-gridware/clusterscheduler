@@ -57,6 +57,16 @@ int get_freemem(long *freememp);
 
 #ifdef SGE_LOADCPU
 
+/**
+ * @brief Read the host's CPU utilisation
+ *
+ * Derived from two samples of the kernel's CPU time counters, so the first
+ * call after start-up has no previous sample to compare against and reports
+ * nothing usable.
+ *
+ * @param[out] cpu_load receives the utilisation, as a percentage
+ * @return 0 on success, -1 when the value could not be determined
+ */
 int sge_getcpuload(double *cpu_load);
 
 #endif
