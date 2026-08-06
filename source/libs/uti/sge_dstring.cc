@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of the dynamically growing string buffer
+ */
+
 #include <limits>
 #include <cstring>
 #include <cstdio>
@@ -40,6 +44,7 @@
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
+/// suppresses the monitoring code of the RMON macros in this file
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
@@ -51,12 +56,17 @@
 
 #include <sge_log.h>
 
+/// growth step in bytes when a dynamic buffer has to be enlarged
 #define REALLOC_CHUNK   1024
 
+/// debug layer used by every DENTER/DPRINTF in this file
 #define DSTRING_LAYER BASIS_LAYER
 
-/* JG: TODO: Introduction uti/dstring/--Dynamic_String is missing */
-
+/** @brief Either #sge_dstring_copy_string or #sge_dstring_append, selected by the caller
+ *
+ * Lets `sge_dstring_vsprintf_copy_append()` serve both the copying and the
+ * appending sprintf variants with one implementation.
+ */
 typedef const char *(*sge_dstring_copy_append_f)(dstring *sb, const char *a);
 
 static const char *
@@ -151,6 +161,18 @@ sge_dstring_allocate(dstring *sb, size_t request) {
    }
 }
 
+/** @brief Initialise a dstring with a preallocated dynamic buffer
+ *
+ * Use instead of #DSTRING_INIT when the final size is roughly known, to avoid
+ * repeated reallocation while the string grows.
+ *
+ * @param[out] sb the dstring to initialise
+ * @param size number of bytes to preallocate
+ * @return @p sb, or nullptr when @p sb is nullptr or the allocation failed
+ *
+ * @note MT-NOTE: sge_dstring_init_dynamic() is MT safe
+ * @see #sge_dstring_init, #sge_dstring_free
+ */
 dstring *sge_dstring_init_dynamic(dstring *sb, size_t size) {
    memset(sb, 0, sizeof(dstring));
    if (sb != nullptr && size > 0) {
@@ -161,26 +183,18 @@ dstring *sge_dstring_init_dynamic(dstring *sb, size_t size) {
 }
 
 
-/****** uti/dstring/sge_dstring_append() **************************************
-*  NAME
-*     sge_dstring_append() -- strcat() for dstring's 
-*
-*  SYNOPSIS
-*     const char* sge_dstring_append(dstring *sb, const char *a) 
-*
-*  FUNCTION
-*     Append 'a' after 'sb' 
-*
-*  INPUTS
-*     dstring *sb   - dynamic string 
-*     const char *a - string 
-*
-*  NOTES
-*     MT-NOTE: sge_dstring_append() is MT safe
-*
-*  RESULT
-*     const char* - result string
-******************************************************************************/
+/**
+ * @brief Strcat() for dstring's
+ *
+ * Append 'a' after 'sb'
+ *
+ * @param sb dynamic string
+ * @param a string
+ *
+ * @return result string
+ *
+ * @note MT-NOTE: sge_dstring_append() is MT safe
+ */
 const char *sge_dstring_append(dstring *sb, const char *a) {
    size_t len;  /* length of string a */
 
@@ -264,6 +278,15 @@ const char *sge_dstring_nappend(dstring *sb, const char *a, size_t n) {
    DRETURN(sb->s);
 }
 
+/** @brief Append a single character
+ *
+ * @param sb the dstring to append to
+ * @param a the character to append
+ * @return the resulting string, or nullptr when @p sb is nullptr
+ *
+ * @note MT-NOTE: sge_dstring_append_char() is MT safe
+ * @see #sge_dstring_append
+ */
 const char *sge_dstring_append_char(dstring *sb, const char a) {
    DENTER(DSTRING_LAYER);
 
@@ -295,6 +318,18 @@ const char *sge_dstring_append_char(dstring *sb, const char a) {
    DRETURN(sb->s);
 }
 
+/** @brief Append the symbolic form of a mail option bitmask
+ *
+ * Renders @p mailopt the way `qsub -m` expects it, appending one symbol per set
+ * flag - abort, beginning, end, suspend - or the "no mail" symbol when none is
+ * set.
+ *
+ * @param sb the dstring to append to
+ * @param mailopt bitmask of `MAIL_AT_*` flags
+ * @return the resulting string
+ *
+ * @note MT-NOTE: sge_dstring_append_mailopt() is MT safe
+ */
 const char *sge_dstring_append_mailopt(dstring *sb, uint32_t mailopt) {
    DENTER(DSTRING_LAYER);
 
@@ -317,52 +352,34 @@ const char *sge_dstring_append_mailopt(dstring *sb, uint32_t mailopt) {
    DRETURN(sb->s);
 }
 
-/****** uti/dstring/sge_dstring_append_dstring() ******************************
-*  NAME
-*     sge_dstring_append() -- strcat() for dstring's 
-*
-*  SYNOPSIS
-*     const char* sge_dstring_append(dstring *sb, const dstring *a) 
-*
-*  FUNCTION
-*     Append 'a' after 'sb' 
-*
-*  INPUTS
-*     dstring *sb      - dynamic string 
-*     const dstring *a - string 
-*
-*  NOTES
-*     MT-NOTE: sge_dstring_append_dstring() is MT safe
-*
-*  RESULT
-*     const char* - result string
-******************************************************************************/
+/**
+ * @brief Strcat() for dstring's
+ *
+ * Append 'a' after 'sb'
+ *
+ * @param sb dynamic string
+ * @param a string
+ *
+ * @return result string
+ *
+ * @note MT-NOTE: sge_dstring_append_dstring() is MT safe
+ */
 const char *sge_dstring_append_dstring(dstring *sb, const dstring *a) {
    return sge_dstring_append(sb, sge_dstring_get_string(a));
 }
 
-/****** uti/dstring/sge_dstring_sprintf() *************************************
-*  NAME
-*     sge_dstring_sprintf() -- sprintf() for dstring's 
-*
-*  SYNOPSIS
-*     const char* sge_dstring_sprintf(dstring *sb, 
-*                                     const char *format, ...) 
-*
-*  FUNCTION
-*     see sprintf() 
-*
-*  INPUTS
-*     dstring *sb        - dynamic string 
-*     const char *format - format string 
-*     ...                - additional parameters 
-*
-*  RESULT
-*     const char* - result string 
-*
-*  NOTES
-*     MT-NOTE: sge_dstring_sprintf() is MT safe
-******************************************************************************/
+/**
+ * @brief Sprintf() for dstring's
+ *
+ * see sprintf()
+ *
+ * @param sb dynamic string
+ * @param format format string ...                - additional parameters
+ *
+ * @return result string
+ *
+ * @note MT-NOTE: sge_dstring_sprintf() is MT safe
+ */
 const char *sge_dstring_sprintf(dstring *sb, const char *format, ...) {
    const char *ret = nullptr;
 
@@ -381,27 +398,19 @@ const char *sge_dstring_sprintf(dstring *sb, const char *format, ...) {
    return ret;
 }
 
-/****** uti/dstring/sge_dstring_vsprintf() *************************************
-*  NAME
-*     sge_dstring_vsprintf() -- vsprintf() for dstring's 
-*
-*  SYNOPSIS
-*     const char* sge_dstring_vsprintf(dstring *sb, const char *format,va_list ap)
-*
-*  FUNCTION
-*     see vsprintf() 
-*
-*  INPUTS
-*     dstring *sb        - dynamic string 
-*     const char *format - format string 
-*     va_list ap         - argument list
-*
-*  RESULT
-*     const char* - result string 
-*
-*  NOTES
-*     MT-NOTE: sge_dstring_vsprintf() is MT safe
-******************************************************************************/
+/**
+ * @brief Vsprintf() for dstring's
+ *
+ * see vsprintf()
+ *
+ * @param sb dynamic string
+ * @param format format string
+ * @param ap argument list
+ *
+ * @return result string
+ *
+ * @note MT-NOTE: sge_dstring_vsprintf() is MT safe
+ */
 const char *sge_dstring_vsprintf(dstring *sb, const char *format, va_list ap) {
    const char *ret = nullptr;
 
@@ -416,30 +425,20 @@ const char *sge_dstring_vsprintf(dstring *sb, const char *format, va_list ap) {
    return ret;
 }
 
-/****** uti/dstring/sge_dstring_sprintf_append() ******************************
-*  NAME
-*     sge_dstring_sprintf_append() -- sprintf() and append for dstring's 
-*
-*  SYNOPSIS
-*     const char* sge_dstring_sprintf_append(dstring *sb, 
-*                                            const char *format, ...) 
-*
-*  FUNCTION
-*     See sprintf() 
-*     The string created by sprintf is appended already existing 
-*     contents of the dstring.
-*
-*  INPUTS
-*     dstring *sb        - dynamic string 
-*     const char *format - format string 
-*     ...                - additional parameters 
-*
-*  RESULT
-*     const char* - result string 
-*
-*  NOTES
-*     MT-NOTE: sge_dstring_sprintf_append() is MT safe
-******************************************************************************/
+/**
+ * @brief Sprintf() and append for dstring's
+ *
+ * See sprintf()
+ * The string created by sprintf is appended already existing
+ * contents of the dstring.
+ *
+ * @param sb dynamic string
+ * @param format format string ...                - additional parameters
+ *
+ * @return result string
+ *
+ * @note MT-NOTE: sge_dstring_sprintf_append() is MT safe
+ */
 const char *sge_dstring_sprintf_append(dstring *sb, const char *format, ...) {
    const char *ret = nullptr;
 
@@ -457,26 +456,18 @@ const char *sge_dstring_sprintf_append(dstring *sb, const char *format, ...) {
    return ret;
 }
 
-/****** uti/dstring/sge_dstring_copy_string() *********************************
-*  NAME
-*     sge_dstring_copy_string() -- copy string into dstring 
-*
-*  SYNOPSIS
-*     const char* sge_dstring_copy_string(dstring *sb, char* str) 
-*
-*  FUNCTION
-*     Copy string into dstring 
-*
-*  INPUTS
-*     dstring *sb - destination dstring 
-*     char* str   - source string 
-*
-*  NOTES
-*     MT-NOTE: sge_dstring_copy_string() is MT safe
-*
-*  RESULT
-*     const char* - result string 
-*******************************************************************************/
+/**
+ * @brief Copy string into dstring
+ *
+ * Copy string into dstring
+ *
+ * @param sb destination dstring
+ * @param str source string
+ *
+ * @return result string
+ *
+ * @note MT-NOTE: sge_dstring_copy_string() is MT safe
+ */
 const char *sge_dstring_copy_string(dstring *sb, const char *str) {
    const char *ret = nullptr;
 
@@ -490,27 +481,18 @@ const char *sge_dstring_copy_string(dstring *sb, const char *str) {
    DRETURN(ret);
 }
 
-/****** uti/dstring/sge_dstring_copy_dstring() ********************************
-*  NAME
-*     sge_dstring_copy_dstring() -- strcpy() for dstrings's 
-*
-*  SYNOPSIS
-*     const char* sge_dstring_copy_dstring(dstring *sb1, 
-*                                          const dstring *sb2) 
-*
-*  FUNCTION
-*     strcpy() for dstrings's 
-*
-*  INPUTS
-*     dstring *sb1 - destination dstring
-*     const dstring *sb2 - source dstring 
-*
-*  NOTES
-*     MT-NOTE: sge_dstring_copy_dstring() is MT safe
-*
-*  RESULT
-*     const char* - result string buffer 
-*******************************************************************************/
+/**
+ * @brief Strcpy() for dstrings's
+ *
+ * strcpy() for dstrings's
+ *
+ * @param sb1 destination dstring
+ * @param sb2 source dstring
+ *
+ * @return result string buffer
+ *
+ * @note MT-NOTE: sge_dstring_copy_dstring() is MT safe
+ */
 const char *sge_dstring_copy_dstring(dstring *sb1, const dstring *sb2) {
    const char *ret = nullptr;
 
@@ -524,22 +506,15 @@ const char *sge_dstring_copy_dstring(dstring *sb1, const dstring *sb2) {
    DRETURN(ret);
 }
 
-/****** uti/dstring/sge_dstring_free() ****************************************
-*  NAME
-*     sge_dstring_free() -- sge_free() for dstring's 
-*
-*  SYNOPSIS
-*     void sge_dstring_free(dstring *sb) 
-*
-*  FUNCTION
-*     Frees a dynamically allocated string 
-*
-*  NOTES
-*     MT-NOTE: sge_dstring_free() is MT safe
-*
-*  INPUTS
-*     dstring *sb - dynamic string 
-******************************************************************************/
+/**
+ * @brief Sge_free() for dstring's
+ *
+ * Frees a dynamically allocated string
+ *
+ * @param sb dynamic string
+ *
+ * @note MT-NOTE: sge_dstring_free() is MT safe
+ */
 void sge_dstring_free(dstring *sb) {
    if (sb != nullptr && !sb->is_static && sb->s != nullptr) {
       sge_free(&(sb->s));
@@ -548,22 +523,15 @@ void sge_dstring_free(dstring *sb) {
    }
 }
 
-/****** uti/dstring/sge_dstring_clear() ****************************************
-*  NAME
-*     sge_dstring_clear() -- empty a dstring
-*
-*  SYNOPSIS
-*     void sge_dstring_clear(dstring *sb) 
-*
-*  FUNCTION
-*     Set a dstring to an empty string.
-*
-*  NOTES
-*     MT-NOTE: sge_dstring_clear() is MT safe
-*
-*  INPUTS
-*     dstring *sb - dynamic string 
-******************************************************************************/
+/**
+ * @brief Empty a dstring
+ *
+ * Set a dstring to an empty string.
+ *
+ * @param sb dynamic string
+ *
+ * @note MT-NOTE: sge_dstring_clear() is MT safe
+ */
 void sge_dstring_clear(dstring *sb) {
    if (sb == nullptr)
       return;
@@ -575,27 +543,19 @@ void sge_dstring_clear(dstring *sb) {
    sb->length = 0;
 }
 
-/****** uti/dstring/sge_dstring_get_string() **********************************
-*  NAME
-*     sge_dstring_get_string() -- Returns string buffer 
-*
-*  SYNOPSIS
-*     const char* sge_dstring_get_string(const dstring *string) 
-*
-*  FUNCTION
-*     Returns a pointer to the buffer where the string is stored.
-*     The pointer is not valid until doomsday. The next
-*     sge_dstring_* call may make it invalid.
-*
-*  INPUTS
-*     const dstring *string - pointer to dynamic string 
-*
-*  NOTES
-*     MT-NOTE: sge_dstring_get_string() is MT safe
-*
-*  RESULT
-*     const char* - pointer to string buffer
-*******************************************************************************/
+/**
+ * @brief Returns string buffer
+ *
+ * Returns a pointer to the buffer where the string is stored.
+ * The pointer is not valid until doomsday. The next
+ * sge_dstring_* call may make it invalid.
+ *
+ * @param sb the dstring to query
+ *
+ * @return pointer to string buffer
+ *
+ * @note MT-NOTE: sge_dstring_get_string() is MT safe
+ */
 const char *sge_dstring_get_string(const dstring *sb) {
    return (sb != nullptr) ? sb->s : nullptr;
 }
@@ -621,25 +581,17 @@ size_t sge_dstring_get_size(const dstring *sb) {
    return (sb != nullptr) ? sb->size : 0;
 }
 
-/****** uti/dstring/sge_dstring_strlen() **************************************
-*  NAME
-*     sge_dstring_strlen() -- strlen() for dstring's 
-*
-*  SYNOPSIS
-*     size_t sge_dstring_strlen(const dstring *string) 
-*
-*  FUNCTION
-*     strlen() for dstring's 
-*
-*  INPUTS
-*     const dstring *string - pointer to dynamic string 
-*
-*  NOTES
-*     MT-NOTE: sge_dstring_strlen() is MT safe
-*
-*  RESULT
-*     size_t - string length
-*******************************************************************************/
+/**
+ * @brief Strlen() for dstring's
+ *
+ * strlen() for dstring's
+ *
+ * @param sb the dstring to query
+ *
+ * @return string length
+ *
+ * @note MT-NOTE: sge_dstring_strlen() is MT safe
+ */
 size_t sge_dstring_strlen(const dstring *sb) {
    size_t ret = 0;
 
@@ -650,25 +602,17 @@ size_t sge_dstring_strlen(const dstring *sb) {
    return ret;
 }
 
-/****** uti/dstring/sge_dstring_remaining() **************************************
-*  NAME
-*     sge_dstring_remaining() -- remaining chars in dstring
-*
-*  SYNOPSIS
-*     size_t sge_dstring_remaining(const dstring *string) 
-*
-*  FUNCTION
-*     Returns number of chars remaining in dstrings.
-*
-*  INPUTS
-*     const dstring *string - pointer to dynamic string 
-*
-*  NOTES
-*     MT-NOTE: sge_dstring_remaining() is MT safe
-*
-*  RESULT
-*     size_t - remaining chars
-*******************************************************************************/
+/**
+ * @brief Remaining chars in dstring
+ *
+ * Returns number of chars remaining in dstrings.
+ *
+ * @param sb the dstring to query
+ *
+ * @return remaining chars
+ *
+ * @note MT-NOTE: sge_dstring_remaining() is MT safe
+ */
 size_t sge_dstring_remaining(const dstring *sb) {
    size_t ret = 0;
 
@@ -683,25 +627,24 @@ size_t sge_dstring_remaining(const dstring *sb) {
    return ret;
 }
 
-/****** uti/dstring/sge_dstring_init() **************************************
-*  NAME
-*     sge_dstring_init() -- init static dstrings
-*
-*  SYNOPSIS
-*     size_t sge_dstring_init(dstring *string, char *s, size_t size) 
-*
-*  FUNCTION
-*     Initialize dstring with a static buffer.
-*
-*  INPUTS
-*     const dstring *string - pointer to dynamic string 
-*
-*  NOTES
-*     MT-NOTE: sge_dstring_init() is MT safe
-*
-*  RESULT
-*     size_t - remaining chars
-*******************************************************************************/
+/** @brief Wrap a caller supplied buffer in a dstring
+ *
+ * The counterpart of #DSTRING_INIT for buffers the caller already owns. The
+ * dstring starts out empty and static; it switches to an allocated buffer by
+ * itself once the content no longer fits, so @p s does not have to be large
+ * enough for the final result.
+ *
+ * One byte of @p size is reserved for the terminating NUL.
+ *
+ * Does nothing when @p sb or @p s is nullptr.
+ *
+ * @param[out] sb the dstring to initialise
+ * @param s buffer to use, must stay alive as long as @p sb is used
+ * @param size size of @p s in bytes
+ *
+ * @note MT-NOTE: sge_dstring_init() is MT safe
+ * @see #DSTRING_STATIC, #sge_dstring_init_dynamic
+ */
 void sge_dstring_init(dstring *sb, char *s, size_t size) {
    if (sb != nullptr && s != nullptr) {
       sb->is_static = true;
@@ -782,7 +725,7 @@ sge_dstring_split(dstring *string, char character, dstring *before, dstring *aft
 /**
  * @brief Strip trailing spaces and tabs from a dstring.
  *
- * Removes trailing ' ' and '\t' characters from the dstring's raw buffer.
+ * Removes trailing space and tab characters from the dstring's raw buffer.
  * Newlines and other whitespace are not touched. The dstring length field is
  * not updated after stripping; use sge_dstring_get_string() rather than
  * sge_dstring_strlen() to observe the result.
@@ -801,6 +744,21 @@ void sge_dstring_strip_trailing_blanks(dstring *string) {
    DRETURN_VOID;
 }
 
+/** @brief Join an argument vector into one space separated string
+ *
+ * Arguments are appended in order, separated by single spaces. An argument is
+ * wrapped in double quotes when it needs protecting, so the result can be shown
+ * to a user or fed back to a shell without the word boundaries being lost.
+ *
+ * @param dstr the dstring to append to
+ * @param argc number of entries in @p argv
+ * @param argv the arguments to join
+ * @param quote_whitespace quote arguments containing whitespace
+ * @param quote_patterns quote arguments containing shell pattern characters
+ * @return the resulting string
+ *
+ * @note MT-NOTE: sge_dstring_from_argv() is MT safe
+ */
 const char *
 sge_dstring_from_argv(dstring *dstr, int argc, const char *argv[], bool quote_whitespace, bool quote_patterns) {
    bool first = true;
@@ -833,31 +791,22 @@ sge_dstring_from_argv(dstring *dstr, int argc, const char *argv[], bool quote_wh
    return sge_dstring_get_string(dstr);
 }
 
-/****** uti/string/sge_strerror() **********************************************
-*  NAME
-*     sge_strerror() -- replacement for strerror
-*
-*  SYNOPSIS
-*     const char*
-*     sge_strerror(int errnum)
-*
-*  FUNCTION
-*     Returns a string describing an error condition set by system
-*     calls (errno).
-*
-*     Wrapper arround strerror. Access to strerrror is serialized by the
-*     use of a mutex variable to make strerror thread safe.
-*
-*  INPUTS
-*     int errnum        - the errno to explain
-*     dstring *buffer   - buffer into which the error message is written
-*
-*  RESULT
-*     const char* - pointer to a string explaining errnum
-*
-*  NOTES
-*     MT-NOTE: sge_strerror() is MT safe
-*******************************************************************************/
+/**
+ * @brief Replacement for strerror
+ *
+ * Returns a string describing an error condition set by system
+ * calls (errno).
+ *
+ * Wrapper arround strerror. Access to strerrror is serialized by the
+ * use of a mutex variable to make strerror thread safe.
+ *
+ * @param errnum the errno to explain
+ * @param buffer buffer into which the error message is written
+ *
+ * @return pointer to a string explaining errnum
+ *
+ * @note MT-NOTE: sge_strerror() is MT safe
+ */
 const char *
 sge_strerror(int errnum, dstring *buffer) {
    static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;

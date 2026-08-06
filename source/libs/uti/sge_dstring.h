@@ -33,39 +33,57 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Dynamically growing string buffer
+ */
+
 #include <cinttypes>
 
 #include <cstdio>
 
-/****** uti/dstring/DSTRING_INIT **********************************************
-*  NAME
-*     DSTRING_INIT -- Define to initialize dstring variables 
-*
-*  SYNOPSIS
-*     #define DSTRING_INIT {nullptr, 0, 0}
-*
-*  FUNCTION
-*     Define to preinitialize dstring variables 
-*
-*  EXAMPLE
-*     {
-*        dstring error_msg = DSTRING_INIT;
-*     }
-*  NOTE 
-*     The DSTRING_INIT counterpart for static buffers is sge_dstring_init()
-******************************************************************************/
+/**
+ * @brief Define to initialize dstring variables
+ *
+ * Define to preinitialize dstring variables
+ *
+ * @code
+ * {
+ *    dstring error_msg = DSTRING_INIT;
+ * }
+ * @endcode
+ *
+ * @note The DSTRING_INIT counterpart for static buffers is sge_dstring_init()
+ */
 
 #define DSTRING_INIT {nullptr, 0, 0, false}
+
+/** @brief Declare a #dstring backed by a stack buffer of @p s bytes
+ *
+ * Declares both the buffer and the #dstring named @p n wrapping it, so no
+ * allocation happens unless the content outgrows the buffer.
+ *
+ * @code
+ * DSTRING_STATIC(error_msg, MAX_STRING_SIZE);
+ * @endcode
+ */
 #define DSTRING_STATIC(n, s) char _buffer_for_##n[s] = "\0"; \
                                     dstring n = {_buffer_for_##n, 0, s, true}
 
+/** @brief A string buffer that grows as needed
+ *
+ * Initialise it with #DSTRING_INIT for a purely dynamic buffer,
+ * #DSTRING_STATIC or #sge_dstring_init to start from a caller supplied buffer,
+ * or #sge_dstring_init_dynamic to preallocate. Release it with
+ * #sge_dstring_free.
+ *
+ * A static buffer switches to an allocated one as soon as the content no longer
+ * fits, so the caller never has to check for overflow.
+ */
 typedef struct {
-   char *s;        /* refers to allocated buffer with dynamic dstrings
-                    *  or static buffer with static dstrings 
-                    */
-   size_t length;  /* length of the string */
-   size_t size;    /* size of the string buffer */
-   bool is_static;  /* is it a static or a dynamic buffer? */
+   char *s;         ///< the buffer: allocated, or caller supplied when #is_static
+   size_t length;   ///< length of the string, excluding the terminating NUL
+   size_t size;     ///< capacity of #s in bytes
+   bool is_static;  ///< true while #s is the caller's buffer and must not be freed
 } dstring;
 
 /* DSTRING_INIT counterpart when static buffers are wrapped with dstring */

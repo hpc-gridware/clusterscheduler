@@ -33,35 +33,38 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Thread safe task queue
+ */
+
 #include <cinttypes>
 #include "sge_sl.h"
 
+/** @brief A queue of tasks, shared between producer and consumer threads
+ *
+ * Consumers block in #sge_tq_wait_for_task until a producer stores one with
+ * #sge_tq_store_notify.
+ */
 struct sge_tq_queue_t {
-   /*
-    * List that stores tasks.
-    * Mutex of the list will be used to secure also this structure
-    */
-   sge_sl_list_t *list;
-
-   /* Condition to signal waiting threads */
-   pthread_cond_t cond;
-
-   /* Waiting threads */
-   uint32_t waiting;
+   sge_sl_list_t *list;   ///< the tasks; its mutex also protects this struct
+   pthread_cond_t cond;   ///< signalled when a task is stored or a wakeup is requested
+   uint32_t waiting;      ///< number of threads currently blocked on #cond
 };
 
+/** @brief What a task carries, so a consumer can cast #sge_tq_task_t::data */
 enum sge_tq_type_t {
-   SGE_TQ_UNKNOWN = 0,
+   SGE_TQ_UNKNOWN = 0,   ///< unset
 
-   SGE_TQ_GDI_PACKET,    /* GDI packets */
+   SGE_TQ_GDI_PACKET,    ///< payload is a GDI packet
 
-   SGE_TQ_TYPE1,  /* used for module tests */
-   SGE_TQ_TYPE2   /* used for module tests */
+   SGE_TQ_TYPE1,         ///< used by the module tests only
+   SGE_TQ_TYPE2          ///< used by the module tests only
 };
 
+/** @brief One queued task */
 struct sge_tq_task_t {
-   sge_tq_type_t type;
-   void *data;
+   sge_tq_type_t type;   ///< how to interpret #data
+   void *data;           ///< the payload, owned by the consumer once dequeued
 };
 
 bool

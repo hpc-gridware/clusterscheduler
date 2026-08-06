@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of the thread safe doubly linked list, see @ref uti_sl
+ */
+
 #include <cstdlib>
 #include <cstdio>
 
@@ -43,45 +47,35 @@
 
 #include "msg_common.h"
 
+/// debug layer used by every DENTER/DPRINTF in this file
 #define SL_LAYER BASIS_LAYER
+/// name reported when the list mutex is locked or unlocked
 #define SL_MUTEX_NAME "sl_mutex"
 
-/****** uti/sl/sge_sl_elem_create() ******************************************
-*  NAME
-*     sge_sl_elem_create() -- create a list element 
-*
-*  SYNOPSIS
-*     bool sge_sl_elem_create(sge_sl_elem_t **elem, void *data) 
-*
-*  FUNCTION
-*     This function creates a new sl element that can later on be inserted
-*     into a sl list.
-*
-*     On success the function creates the element stores the 'data' pointer
-*     in it and returns the element pointer in 'elem'.
-*
-*     On error false is returned by this function and 'elem' contains a
-*     nullptr pointer.
-*
-*     sge_sl_elem_destroy() can be used to destroy elements that were
-*     created with this function.
-*
-*  INPUTS
-*     sge_sl_elem_t **elem - location were the pointer to the new 
-*                            element will be stored 
-*     void *data           - data pointer that will be stored in elem 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error 
-*
-*  NOTES
-*     MT-NOTE: sge_sl_elem_create() is MT safe 
-*
-*  SEE ALSO
-*     uti/sl/sge_sl_elem_destroy()
-*******************************************************************************/
+/**
+ * @brief Create a list element
+ *
+ * This function creates a new sl element that can later on be inserted
+ * into a sl list.
+ *
+ * On success the function creates the element stores the 'data' pointer
+ * in it and returns the element pointer in 'elem'.
+ *
+ * On error false is returned by this function and 'elem' contains a
+ * nullptr pointer.
+ *
+ * sge_sl_elem_destroy() can be used to destroy elements that were
+ * created with this function.
+ *
+ * @param elem location were the pointer to the new element will be stored
+ * @param data data pointer that will be stored in elem
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_elem_create() is MT safe
+ *
+ * @see #sge_sl_elem_destroy
+ */
 bool
 sge_sl_elem_create(sge_sl_elem_t **elem, void *data) {
    bool ret = true;
@@ -106,51 +100,39 @@ sge_sl_elem_create(sge_sl_elem_t **elem, void *data) {
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_elem_destroy() *******************************************
-*  NAME
-*     sge_sl_elem_destroy() -- destroys a sl element 
-*
-*  SYNOPSIS
-*     bool sge_sl_elem_destroy(sge_sl_elem_t **elem, sge_sl_destroy_f destroy) 
-*
-*     typedef bool (*sge_sl_destroy_f)(void **data);
-*
-*  FUNCTION
-*     This function destroys the provided sl 'elem' and optionally destroys
-*     also the data that is referenced in the element if a 'destroy'
-*     function is passed.
-*
-*     If 'elem' is part of a list it has to be unchained before this
-*     function can be called. Otherwise the list would be corrupted.
-*
-*     On success elem will be set to nullptr and the function returns true.
-*
-*  INPUTS
-*     sge_sl_elem_t **elem     - pointer to a sl element pointer
-*     sge_sl_destroy_f destroy - destroy function 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  EXAMPLE
-*     Here is an example for a destroy function for a C string.
-*
-*        bool
-*        destroy(void **data_ptr) {
-*           char *string = *(char **) data_ptr;
-*
-*           sge_free(&string);
-*           return true;
-*        }
-*
-*  NOTES
-*     MT-NOTE: sge_sl_elem_destroy() is MT safe.
-*
-*  SEE ALSO
-*     uti/sl/sge_sl_elem_create()
-*******************************************************************************/
+/**
+ * @brief Destroys a sl element
+ *
+ * This function destroys the provided sl 'elem' and optionally destroys
+ * also the data that is referenced in the element if a 'destroy'
+ * function is passed.
+ *
+ * If 'elem' is part of a list it has to be unchained before this
+ * function can be called. Otherwise the list would be corrupted.
+ *
+ * On success elem will be set to nullptr and the function returns true.
+ *
+ * @code
+ * Here is an example for a destroy function for a C string.
+ *
+ *    bool
+ *    destroy(void **data_ptr) {
+ *       char *string = *(char **) data_ptr;
+ *
+ *       sge_free(&string);
+ *       return true;
+ *    }
+ * @endcode
+ *
+ * @param elem pointer to a sl element pointer
+ * @param destroy destroy function
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_elem_destroy() is MT safe.
+ *
+ * @see #sge_sl_elem_create
+ */
 bool
 sge_sl_elem_destroy(sge_sl_elem_t **elem, sge_sl_destroy_f destroy) {
    bool ret = true;
@@ -165,29 +147,19 @@ sge_sl_elem_destroy(sge_sl_elem_t **elem, sge_sl_destroy_f destroy) {
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_elem_data() ******************************************
-*  NAME
-*     sge_sl_elem_data() -- return first/last data pointer 
-*
-*  SYNOPSIS
-*     void *sge_sl_elem_data(sge_sl_elem_t *elem) 
-*
-*  FUNCTION
-*     returns the stored data pointer of an element 
-*
-*  INPUTS
-*     sge_sl_elem_t *elem - sl element 
-*
-*  RESULT
-*     void * - data pointer
-*
-*  NOTES
-*     MT-NOTE: sge_sl_elem_data() is MT safe
-*
-*  SEE ALSO
-*     uti/sl/sge_sl_elem_create()
-*     uti/sl/sge_sl_elem_destroy()
-*******************************************************************************/
+/**
+ * @brief Return first/last data pointer
+ *
+ * returns the stored data pointer of an element
+ *
+ * @param elem sl element
+ *
+ * @return data pointer
+ *
+ * @note MT-NOTE: sge_sl_elem_data() is MT safe
+ *
+ * @see #sge_sl_elem_create, #sge_sl_elem_destroy
+ */
 void *
 sge_sl_elem_data(sge_sl_elem_t *elem) {
    void *ret = nullptr;
@@ -199,38 +171,21 @@ sge_sl_elem_data(sge_sl_elem_t *elem) {
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_dechain() ************************************************
-*  NAME
-*     sge_sl_dechain() -- unchains a element from a list 
-*
-*  SYNOPSIS
-*     bool sge_sl_dechain(sge_sl_list_t *list, sge_sl_elem_t *elem) 
-*
-*  FUNCTION
-*     This functions unchains 'elem' from 'list'. 'elem' can afterwards
-*     be inserted into a list again or can be destroyed.
-*
-*  INPUTS
-*     sge_sl_list_t *list - sl list 
-*     sge_sl_elem_t *elem - sl elem 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*        
-*  NOTES
-*     MT-NOTE: sge_sl_dechain() is MT safe 
-*
-*  SEE ALSO
-*     uti/sl/sge_sl_elem_destroy()
-*     uti/sl/sge_sl_dechain()
-*     uti/sl/sge_sl_append()
-*     uti/sl/sge_sl_append_after()
-*     uti/sl/sge_sl_insert()
-*     uti/sl/sge_sl_insert_before()
-*     uti/sl/sge_sl_insert_search()
-*******************************************************************************/
+/**
+ * @brief Unchains a element from a list
+ *
+ * This functions unchains 'elem' from 'list'. 'elem' can afterwards
+ * be inserted into a list again or can be destroyed.
+ *
+ * @param list sl list
+ * @param elem sl elem
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_dechain() is MT safe
+ *
+ * @see #sge_sl_elem_destroy, #sge_sl_dechain, `sge_sl_append()`, #sge_sl_append_after, #sge_sl_insert, #sge_sl_insert_before, #sge_sl_insert_search
+ */
 bool
 sge_sl_dechain(sge_sl_list_t *list, sge_sl_elem_t *elem) {
    bool ret = true;
@@ -258,41 +213,22 @@ sge_sl_dechain(sge_sl_list_t *list, sge_sl_elem_t *elem) {
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_insert_before() ******************************************
-*  NAME
-*     sge_sl_insert_before() -- inserts a new element before another one 
-*
-*  SYNOPSIS
-*     bool 
-*     sge_sl_insert_before(sge_sl_list_t *list, 
-*                          sge_sl_elem_t *new_elem, sge_sl_elem_t *elem) 
-*
-*  FUNCTION
-*     Inserts 'new_elem' before 'elem' in 'list'. 'elem' must be
-*     an element already part of 'list'. 
-*
-*  INPUTS
-*     sge_sl_list_t *list     - sl list 
-*     sge_sl_elem_t *new_elem - new sl element 
-*     sge_sl_elem_t *elem     - sl elem already part of 'list" 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_sl_insert_before() is MT safe 
-*
-*  SEE ALSO
-*     uti/sl/sge_sl_elem_destroy()
-*     uti/sl/sge_sl_dechain()
-*     uti/sl/sge_sl_append()
-*     uti/sl/sge_sl_append_after()
-*     uti/sl/sge_sl_insert()
-*     uti/sl/sge_sl_insert_before()
-*     uti/sl/sge_sl_insert_search()
-*******************************************************************************/
+/**
+ * @brief Inserts a new element before another one
+ *
+ * Inserts 'new_elem' before 'elem' in 'list'. 'elem' must be
+ * an element already part of 'list'.
+ *
+ * @param list sl list
+ * @param new_elem new sl element
+ * @param elem sl elem already part of 'list"
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_insert_before() is MT safe
+ *
+ * @see #sge_sl_elem_destroy, #sge_sl_dechain, `sge_sl_append()`, #sge_sl_append_after, #sge_sl_insert, #sge_sl_insert_before, #sge_sl_insert_search
+ */
 bool
 sge_sl_insert_before(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_elem_t *elem) {
    bool ret = true;
@@ -319,40 +255,21 @@ sge_sl_insert_before(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_elem_t
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_append_after() ****************************************
-*  NAME
-*     sge_sl_append_after() -- Appends a new element after another one 
-*
-*  SYNOPSIS
-*     bool 
-*     sge_sl_append_after(sge_sl_list_t *list, 
-*                         sge_sl_elem_t *new_elem, sge_sl_elem_t *elem) 
-*
-*  FUNCTION
-*     This elements appends 'new_elem' into 'list' after 'elem'.
-*
-*  INPUTS
-*     sge_sl_list_t *list     - sl list 
-*     sge_sl_elem_t *new_elem - new sl elem 
-*     sge_sl_elem_t *elem     - sl elem already part of list 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_sl_append_after() is MT safe 
-*
-*  SEE ALSO
-*     uti/sl/sge_sl_elem_destroy()
-*     uti/sl/sge_sl_dechain()
-*     uti/sl/sge_sl_append()
-*     uti/sl/sge_sl_append_after()
-*     uti/sl/sge_sl_insert()
-*     uti/sl/sge_sl_insert_before()
-*     uti/sl/sge_sl_insert_search()
-*******************************************************************************/
+/**
+ * @brief Appends a new element after another one
+ *
+ * This elements appends 'new_elem' into 'list' after 'elem'.
+ *
+ * @param list sl list
+ * @param new_elem new sl elem
+ * @param elem sl elem already part of list
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_append_after() is MT safe
+ *
+ * @see #sge_sl_elem_destroy, #sge_sl_dechain, `sge_sl_append()`, #sge_sl_append_after, #sge_sl_insert, #sge_sl_insert_before, #sge_sl_insert_search
+ */
 bool
 sge_sl_append_after(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_elem_t *elem) {
    bool ret = true;
@@ -379,68 +296,56 @@ sge_sl_append_after(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_elem_t 
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_elem_next() **********************************************
-*  NAME
-*     sge_sl_elem_next() -- provides the next element in sequence
-*
-*  SYNOPSIS
-*     bool 
-*     sge_sl_elem_next(sge_sl_list_t *list, 
-*                      sge_sl_elem_t **elem, sge_sl_direction_t direction) 
-*
-*  FUNCTION
-*     This function provides the possibility to iterate over all elements
-*     in 'list'. 'elem' will contain a pointer to an element when the
-*     function returns or the value nullptr.  'elem' is also an input
-*     parameter and it defines what element of 'list' is returned.
-*   
-*     If *elem is nullptr and direction is SGE_SL_FORWARD them *elem will
-*     contain the first element in 'list'. If direction is SGE_SL_BACKWARD
-*     then it will contain the last.
-*
-*     If *elem is not nullptr then the next element in the list sequence is
-*     returned if direction is SGE_SL_FORWARD or the previous one if
-*     direction is SGE_SL_BACKWARD.
-*
-*     If the list is empty or if there is no previous/next element then
-*     nullptr will be retuned in 'elem'.
-*
-*  INPUTS
-*     sge_sl_list_t *list          - sl list 
-*     sge_sl_elem_t **elem         - input/output sl elem 
-*     sge_sl_direction_t direction - direction 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  EXAMPLE
-*     Following code shows how it is possible to iterate over
-*     the whole list:
-*
-*     {
-*        sge_sl_list_t *list;
-*        sge_sl_elem_t *next;
-*        sge_sl_elem_t *current;
-*
-*        // assume that elements are added to the list here
-*
-*        next = nullptr;
-*        sge_sl_elem_next(list, &next, SGE_SL_FORWARD);
-*        while ((current = next) != nullptr) {
-*           sge_sl_elem_next(list, &next, SGE_SL_FORWARD);
-*
-*           // so something with 'current' here
-*        } 
-*     }
-*
-*  NOTES
-*     MT-NOTE: sge_sl_elem_next() is MT safe 
-*
-*  SEE ALSO
-*     uti/sl/sge_sl_elem_search()
-*******************************************************************************/
+/**
+ * @brief Provides the next element in sequence
+ *
+ * This function provides the possibility to iterate over all elements
+ * in 'list'. 'elem' will contain a pointer to an element when the
+ * function returns or the value nullptr.  'elem' is also an input
+ * parameter and it defines what element of 'list' is returned.
+ *
+ * If *elem is nullptr and direction is SGE_SL_FORWARD them *elem will
+ * contain the first element in 'list'. If direction is SGE_SL_BACKWARD
+ * then it will contain the last.
+ *
+ * If *elem is not nullptr then the next element in the list sequence is
+ * returned if direction is SGE_SL_FORWARD or the previous one if
+ * direction is SGE_SL_BACKWARD.
+ *
+ * If the list is empty or if there is no previous/next element then
+ * nullptr will be retuned in 'elem'.
+ *
+ * @code
+ * Following code shows how it is possible to iterate over
+ * the whole list:
+ *
+ * {
+ *    sge_sl_list_t *list;
+ *    sge_sl_elem_t *next;
+ *    sge_sl_elem_t *current;
+ *
+ *    // assume that elements are added to the list here
+ *
+ *    next = nullptr;
+ *    sge_sl_elem_next(list, &next, SGE_SL_FORWARD);
+ *    while ((current = next) != nullptr) {
+ *       sge_sl_elem_next(list, &next, SGE_SL_FORWARD);
+ *
+ *       // so something with 'current' here
+ *    }
+ * }
+ * @endcode
+ *
+ * @param list sl list
+ * @param elem input/output sl elem
+ * @param direction direction
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_elem_next() is MT safe
+ *
+ * @see #sge_sl_elem_search
+ */
 bool
 sge_sl_elem_next(sge_sl_list_t *list,
                  sge_sl_elem_t **elem, sge_sl_direction_t direction) {
@@ -467,70 +372,57 @@ sge_sl_elem_next(sge_sl_list_t *list,
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_elem_search() ********************************************
-*  NAME
-*     sge_sl_elem_search() -- searches the next element in sequence 
-*
-*  SYNOPSIS
-*     bool 
-*     sge_sl_elem_search(sge_sl_list_t *list, sge_sl_elem_t **elem, 
-*                        void *key, sge_sl_compare_f compare, 
-*                        sge_sl_direction_t direction) 
-*
-*  FUNCTION
-*     This function provides the possibility to iterate over certain
-*     elements in 'list'. 'elem' will contain a pointer to an element when
-*     the function returns or the value nullptr.  'elem' is also an input
-*     parameter and it defines what element of 'list' is returned.
-*   
-*     If *elem is nullptr and direction is SGE_SL_FORWARD then *elem will
-*     contain the first element in 'list' that is equivalent with the
-*     provided 'key'.  If direction is SGE_SL_BACKWARD then it will contain
-*     the last element that matches.
-*
-*     If *elem is not nullptr then the next element in the list sequence is
-*     returned if direction is SGE_SL_FORWARD or the previous one if
-*     direction is SGE_SL_BACKWARD.
-*
-*     If the list is empty or if there is no previous/next element then
-*     nullptr will be retuned in 'elem'.
-*
-*     The provided 'compare' function is used to compare the provided 'key'
-*     with the data that is contained in the element. 'key' is passed as
-*     first parameter to the 'compare' function.
-*
-*  INPUTS
-*     sge_sl_list_t *list          - sl list 
-*     sge_sl_elem_t **elem         - input/output sl elem 
-*     void *key                    - key that must match 
-*     sge_sl_compare_f compare     - compare function 
-*     sge_sl_direction_t direction - search direction 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  EXAMPLE
-*     This compare function could match static C strings stored in
-*     a sl list as data pointers.
-*
-*     int 
-*     fnmatch_compare(const void *key_pattern, const void *data) {
-*        int ret = 0;
-*
-*        if (key_pattern != nullptr && data != nullptr) {
-*           ret = fnmatch(*(char**)key_pattern, *(char**)data, 0);
-*        }
-*        return ret;
-*     }
-*
-*  NOTES
-*     MT-NOTE: sge_sl_elem_search() is MT safe 
-*
-*  SEE ALSO
-*     uti/sl/sge_sl_elem_next()
-*******************************************************************************/
+/**
+ * @brief Searches the next element in sequence
+ *
+ * This function provides the possibility to iterate over certain
+ * elements in 'list'. 'elem' will contain a pointer to an element when
+ * the function returns or the value nullptr.  'elem' is also an input
+ * parameter and it defines what element of 'list' is returned.
+ *
+ * If *elem is nullptr and direction is SGE_SL_FORWARD then *elem will
+ * contain the first element in 'list' that is equivalent with the
+ * provided 'key'.  If direction is SGE_SL_BACKWARD then it will contain
+ * the last element that matches.
+ *
+ * If *elem is not nullptr then the next element in the list sequence is
+ * returned if direction is SGE_SL_FORWARD or the previous one if
+ * direction is SGE_SL_BACKWARD.
+ *
+ * If the list is empty or if there is no previous/next element then
+ * nullptr will be retuned in 'elem'.
+ *
+ * The provided 'compare' function is used to compare the provided 'key'
+ * with the data that is contained in the element. 'key' is passed as
+ * first parameter to the 'compare' function.
+ *
+ * @code
+ * This compare function could match static C strings stored in
+ * a sl list as data pointers.
+ *
+ * int
+ * fnmatch_compare(const void *key_pattern, const void *data) {
+ *    int ret = 0;
+ *
+ *    if (key_pattern != nullptr && data != nullptr) {
+ *       ret = fnmatch(*(char**)key_pattern, *(char**)data, 0);
+ *    }
+ *    return ret;
+ * }
+ * @endcode
+ *
+ * @param list sl list
+ * @param elem input/output sl elem
+ * @param key key that must match
+ * @param compare compare function
+ * @param direction search direction
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_elem_search() is MT safe
+ *
+ * @see #sge_sl_elem_next
+ */
 bool
 sge_sl_elem_search(sge_sl_list_t *list, sge_sl_elem_t **elem, void *key,
                    sge_sl_compare_f compare, sge_sl_direction_t direction) {
@@ -569,31 +461,20 @@ sge_sl_elem_search(sge_sl_list_t *list, sge_sl_elem_t **elem, void *key,
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_create() *************************************************
-*  NAME
-*     sge_sl_create() -- Create a new simple list 
-*
-*  SYNOPSIS
-*     bool sge_sl_create(sge_sl_list_t **list) 
-*
-*  FUNCTION
-*     This function creates a new simple list and returns the list in the
-*     'list' parameter. In case of an error nullptr will be returned.
-*
-*  INPUTS
-*     sge_sl_list_t **list - new simple list 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_sl_create() is MT safe 
-*
-*  SEE ALSO
-*     uti/sl/sge_sl_destroy()
-*******************************************************************************/
+/**
+ * @brief Create a new simple list
+ *
+ * This function creates a new simple list and returns the list in the
+ * 'list' parameter. In case of an error nullptr will be returned.
+ *
+ * @param list new simple list
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_create() is MT safe
+ *
+ * @see #sge_sl_destroy
+ */
 bool
 sge_sl_create(sge_sl_list_t **list) {
    bool ret = true;
@@ -628,46 +509,35 @@ sge_sl_create(sge_sl_list_t **list) {
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_destroy() *********************************************
-*  NAME
-*     sge_sl_destroy() -- Destroys a simple list 
-*
-*  SYNOPSIS
-*     bool sge_sl_destroy(sge_sl_list_t **list, sge_sl_destroy_f destroy) 
-*
-*  FUNCTION
-*     This function destroys 'list' and sets the pointer to nullptr.
-*     If a 'destroy' function is provided then it will be used
-*     to destroy all data elements that are referenced by the list
-*     elements. 
-*
-*  INPUTS
-*     sge_sl_list_t **list     - sl list
-*     sge_sl_destroy_f destroy - destroy function 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_sl_destroy() is not MT safe 
-*
-*  EXAMPLE
-*     Here is an example for a destroy function for a C string.
-*
-*        bool
-*        destroy(void **data_ptr) {
-*           char *string = *(char **) data_ptr;
-*
-*           sge_free(&string);
-*           return true;
-*        }
-*
-*  SEE ALSO
-*     uti/sl/sge_sl_create()
-*     uti/sl/sge_sl_elem_destroy()
-*******************************************************************************/
+/**
+ * @brief Destroys a simple list
+ *
+ * This function destroys 'list' and sets the pointer to nullptr.
+ * If a 'destroy' function is provided then it will be used
+ * to destroy all data elements that are referenced by the list
+ * elements.
+ *
+ * @code
+ * Here is an example for a destroy function for a C string.
+ *
+ *    bool
+ *    destroy(void **data_ptr) {
+ *       char *string = *(char **) data_ptr;
+ *
+ *       sge_free(&string);
+ *       return true;
+ *    }
+ * @endcode
+ *
+ * @param list sl list
+ * @param destroy destroy function
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_destroy() is not MT safe
+ *
+ * @see #sge_sl_create, #sge_sl_elem_destroy
+ */
 bool
 sge_sl_destroy(sge_sl_list_t **list, sge_sl_destroy_f destroy) {
    bool ret = true;
@@ -694,32 +564,21 @@ sge_sl_destroy(sge_sl_list_t **list, sge_sl_destroy_f destroy) {
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_lock() *************************************************
-*  NAME
-*     sge_sl_lock() -- locks a list 
-*
-*  SYNOPSIS
-*     bool sge_sl_lock(sge_sl_list_t *list) 
-*
-*  FUNCTION
-*     A call of this functions locks the provided 'list' so that all
-*     list operations executed between the lock and unlock are
-*     executed as atomic operation.
-*
-*  INPUTS
-*     sge_sl_list_t *list - list 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_sl_lock() is MT safe 
-*
-*  SEE ALSO
-*     uti/sl/sge_sl_unlock() 
-*******************************************************************************/
+/**
+ * @brief Locks a list
+ *
+ * A call of this functions locks the provided 'list' so that all
+ * list operations executed between the lock and unlock are
+ * executed as atomic operation.
+ *
+ * @param list list
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_lock() is MT safe
+ *
+ * @see #sge_sl_unlock
+ */
 bool
 sge_sl_lock(sge_sl_list_t *list) {
    bool ret = true;
@@ -731,31 +590,19 @@ sge_sl_lock(sge_sl_list_t *list) {
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_unlock() ***********************************************
-*  NAME
-*     sge_sl_unlock() -- unlocks a list 
-*
-*  SYNOPSIS
-*     bool sge_sl_unlock(sge_sl_list_t *list) 
-*
-*  FUNCTION
-*     A call of this functions unlocks the provided 'list' that was
-*     previously locked with sge_sl_lock.
-*
-*  INPUTS
-*     sge_sl_list_t *list - list 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_sl_unlock() is MT safe 
-*
-*  SEE ALSO
-*     uti/sl/sge_sl_lock() 
-*******************************************************************************/
+/**
+ * @brief Unlocks a list
+ *
+ * A call of this functions unlocks the provided 'list' that was
+ * previously locked with sge_sl_lock.
+ *
+ * @param list list
+ *
+ *
+ * @note MT-NOTE: sge_sl_unlock() is MT safe
+ *
+ * @see #sge_sl_lock
+ */
 void
 sge_sl_unlock(sge_sl_list_t *list) {
    DENTER(SL_LAYER);
@@ -805,37 +652,23 @@ sge_sl_elem_insert(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_directio
    DRETURN_VOID;
 }
 
-/****** uti/sl/sge_sl_insert() *************************************************
-*  NAME
-*     sge_sl_insert() -- insert a new element 
-*
-*  SYNOPSIS
-*     bool 
-*     sge_sl_insert(sge_sl_list_t *list, 
-*                   void *data, sge_sl_direction_t direction) 
-*
-*  FUNCTION
-*     Insert a new node in 'list' that references 'data'. If 'direction' 
-*     is SGE_SL_FORWARD then the element will be inserted at the beginning
-*     of 'list' otherwise at the end.
-*
-*  INPUTS
-*     sge_sl_list_t *list - simple list 
-*     void *data          - data  
-*     sge_sl_direction_t  - direction
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_sl_insert() is MT safe 
-*
-*  SEE ALSO
-*     uti/sl/sge_sl_append() 
-*     uti/sl/sge_sl_insert_search() 
-*******************************************************************************/
+/**
+ * @brief Insert a new element
+ *
+ * Insert a new node in 'list' that references 'data'. If 'direction'
+ * is SGE_SL_FORWARD then the element will be inserted at the beginning
+ * of 'list' otherwise at the end.
+ *
+ * @param list simple list
+ * @param data data
+ * @param direction insert at the head or at the tail of the list
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_insert() is MT safe
+ *
+ * @see `sge_sl_append()`, #sge_sl_insert_search
+ */
 bool
 sge_sl_insert(sge_sl_list_t *list, void *data, sge_sl_direction_t direction) {
    bool ret = true;
@@ -852,49 +685,37 @@ sge_sl_insert(sge_sl_list_t *list, void *data, sge_sl_direction_t direction) {
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_insert_search() *************************************************
-*  NAME
-*     sge_sl_insert_search() -- inserts a new element in a sorted list
-*
-*  SYNOPSIS
-*     bool sge_sl_insert_search(sge_sl_list_t *list, void *data, 
-*                        sge_sl_compare_f *compare) 
-*
-*  FUNCTION
-*     Inserts a new element in 'list' that references 'data'. The function
-*     assumes that 'list' is sorted in ascending order. To find the correct
-*     position for the new element the 'compare' function will be used. 
-*
-*  INPUTS
-*     sge_sl_list_t *list      - list 
-*     void *data               - data reference 
-*     sge_sl_compare_f compare - compare function 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  EXAMPLE
-*     Example for a compare function when data is a C string
-*
-*     int 
-*     compare(const void *data1, const void *data2) {
-*        int ret = 0;
-*
-*        if (data1 != nullptr && data2 != nullptr) {
-*           ret = strcmp(*(char**)data1, *(char**)data2);
-*        }
-*        return ret;
-*     }
-*
-*  NOTES
-*     MT-NOTE: sge_sl_insert_search() is MT safe 
-*
-*  SEE ALSO
-*     uti/sl/sge_sl_insert() 
-*     uti/sl/sge_sl_append() 
-*******************************************************************************/
+/**
+ * @brief Inserts a new element in a sorted list
+ *
+ * Inserts a new element in 'list' that references 'data'. The function
+ * assumes that 'list' is sorted in ascending order. To find the correct
+ * position for the new element the 'compare' function will be used.
+ *
+ * @code
+ * Example for a compare function when data is a C string
+ *
+ * int
+ * compare(const void *data1, const void *data2) {
+ *    int ret = 0;
+ *
+ *    if (data1 != nullptr && data2 != nullptr) {
+ *       ret = strcmp(*(char**)data1, *(char**)data2);
+ *    }
+ *    return ret;
+ * }
+ * @endcode
+ *
+ * @param list list
+ * @param data data reference
+ * @param compare compare function
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_insert_search() is MT safe
+ *
+ * @see #sge_sl_insert, `sge_sl_append()`
+ */
 bool
 sge_sl_insert_search(sge_sl_list_t *list, void *data, sge_sl_compare_f compare) {
    bool ret = true;
@@ -940,32 +761,19 @@ sge_sl_insert_search(sge_sl_list_t *list, void *data, sge_sl_compare_f compare) 
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_data() ************************************************
-*  NAME
-*     sge_sl_data() -- returns the first or last data element 
-*
-*  SYNOPSIS
-*     bool 
-*     sge_sl_data(sge_sl_list_t *list, 
-*                 void **data, sge_sl_direction_t direction) 
-*
-*  FUNCTION
-*     Depending on 'direction' this function returns the pointer
-*     to the first/last data object of 'list' in 'data'.
-*
-*  INPUTS
-*     sge_sl_list_t *list          - list 
-*     void **data                  - data pointer 
-*     sge_sl_direction_t direction - direction 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_sl_data() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Returns the first or last data element
+ *
+ * Depending on 'direction' this function returns the pointer
+ * to the first/last data object of 'list' in 'data'.
+ *
+ * @param list list
+ * @param data data pointer
+ * @param direction direction
+ *
+ *
+ * @note MT-NOTE: sge_sl_data() is MT safe
+ */
 void
 sge_sl_data(sge_sl_list_t *list, void **data, sge_sl_direction_t direction) {
    DENTER(SL_LAYER);
@@ -982,37 +790,25 @@ sge_sl_data(sge_sl_list_t *list, void **data, sge_sl_direction_t direction) {
    }
 }
 
-/****** uti/sl/sge_sl_data_search() ***********************************************
-*  NAME
-*     sge_sl_data_search() --  search a elements in list
-*
-*  SYNOPSIS
-*     bool 
-*     sge_sl_data_search(sge_sl_list_t *list, void *key, void **data, 
-*                        sge_sl_compare_f compare, sge_sl_direction_t direction) 
-*
-*  FUNCTION
-*     This function tries to find a element in 'list'. As result of the
-*     search the 'data' pointer will be returned. To find the data pointer
-*     the 'compare' function and the 'key' will be used. 'key' is past as
-*     first argument to the 'compare' function. 'direction' decides if
-*     this function starts the search from beginning or end of the list.
-*
-*  INPUTS
-*     sge_sl_list_t *list          - list 
-*     void *key                    - search key 
-*     void **data                  - returned data pointer 
-*     sge_sl_compare_f compare     - compare function 
-*     sge_sl_direction_t direction - direction 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_sl_data_search() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Search a elements in list
+ *
+ * This function tries to find a element in 'list'. As result of the
+ * search the 'data' pointer will be returned. To find the data pointer
+ * the 'compare' function and the 'key' will be used. 'key' is past as
+ * first argument to the 'compare' function. 'direction' decides if
+ * this function starts the search from beginning or end of the list.
+ *
+ * @param list list
+ * @param key search key
+ * @param data returned data pointer
+ * @param compare compare function
+ * @param direction direction
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_data_search() is MT safe
+ */
 bool
 sge_sl_data_search(sge_sl_list_t *list, void *key, void **data,
                    sge_sl_compare_f compare, sge_sl_direction_t direction) {
@@ -1034,33 +830,21 @@ sge_sl_data_search(sge_sl_list_t *list, void *key, void **data,
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_delete() *************************************************
-*  NAME
-*     sge_sl_delete() -- delete first/last element 
-*
-*  SYNOPSIS
-*     bool 
-*     sge_sl_delete(sge_sl_list_t *list, sge_sl_destroy_f destroy, 
-*                   sge_sl_direction_t direction) 
-*
-*  FUNCTION
-*     This function deletes the first/last element of 'list' depending
-*     on the provided 'direction'. If 'destroy' is not nullptr then
-*     this function will be used to destroy the element data. 
-*
-*  INPUTS
-*     sge_sl_list_t *list          - list 
-*     sge_sl_destroy_f destroy     - destroy 
-*     sge_sl_direction_t direction - direction 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_sl_delete() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Delete first/last element
+ *
+ * This function deletes the first/last element of 'list' depending
+ * on the provided 'direction'. If 'destroy' is not nullptr then
+ * this function will be used to destroy the element data.
+ *
+ * @param list list
+ * @param destroy destroy
+ * @param direction direction
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_delete() is MT safe
+ */
 bool
 sge_sl_delete(sge_sl_list_t *list,
               sge_sl_destroy_f destroy, sge_sl_direction_t direction) {
@@ -1085,40 +869,26 @@ sge_sl_delete(sge_sl_list_t *list,
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_delete_search() ****************************************
-*  NAME
-*     sge_sl_delete_search() -- search a element and delete it 
-*
-*  SYNOPSIS
-*     bool 
-*     sge_sl_delete_search(sge_sl_list_t *list, void *key, 
-*                          sge_sl_destroy_f destroy, 
-*                          sge_sl_compare_f compare, 
-*                          sge_sl_direction_t direction) 
-*
-*  FUNCTION
-*     This function searches a element in 'list' using the 'key' and
-*     'compare' function and then deletes it. If 'direction' is
-*     SGE_SL_FORWARD then the search will start from beginning, otherwise
-*     from the end of the list. The first matched element will be
-*     destroyed. If there is a 'destroy' function provided then this
-*     function will be used to destroy the element data.
-*
-*  INPUTS
-*     sge_sl_list_t *list          - list
-*     void *key                    - search key 
-*     sge_sl_destroy_f destroy     - destroy function 
-*     sge_sl_compare_f compare     - compare function 
-*     sge_sl_direction_t direction - search direction 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_sl_delete_search() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Search a element and delete it
+ *
+ * This function searches a element in 'list' using the 'key' and
+ * 'compare' function and then deletes it. If 'direction' is
+ * SGE_SL_FORWARD then the search will start from beginning, otherwise
+ * from the end of the list. The first matched element will be
+ * destroyed. If there is a 'destroy' function provided then this
+ * function will be used to destroy the element data.
+ *
+ * @param list list
+ * @param key search key
+ * @param destroy destroy function
+ * @param compare compare function
+ * @param direction search direction
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_delete_search() is MT safe
+ */
 bool
 sge_sl_delete_search(sge_sl_list_t *list, void *key, sge_sl_destroy_f destroy,
                      sge_sl_compare_f compare, sge_sl_direction_t direction) {
@@ -1141,25 +911,17 @@ sge_sl_delete_search(sge_sl_list_t *list, void *key, sge_sl_destroy_f destroy,
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_elem_count() *****************************************
-*  NAME
-*     sge_sl_elem_count() -- returns the number of elements 
-*
-*  SYNOPSIS
-*     uint32_t sge_sl_elem_count(sge_sl_list_t *list)
-*
-*  FUNCTION
-*     This function returns the number of elements contained in 'list'. 
-*
-*  INPUTS
-*     sge_sl_list_t *list - list pointer 
-*
-*  RESULT
-*     uint32_t - number of elements
-*
-*  NOTES
-*     MT-NOTE: sge_sl_elem_count() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Returns the number of elements
+ *
+ * This function returns the number of elements contained in 'list'.
+ *
+ * @param list list pointer
+ *
+ * @return number of elements
+ *
+ * @note MT-NOTE: sge_sl_elem_count() is MT safe
+ */
 uint32_t
 sge_sl_get_elem_count(sge_sl_list_t *list) {
    uint32_t elems = 0;
@@ -1173,32 +935,21 @@ sge_sl_get_elem_count(sge_sl_list_t *list) {
    DRETURN(elems);
 }
 
-/****** uti/sl/sge_sl_sort() *************************************************
-*  NAME
-*     sge_sl_sort() -- Sorts the list 
-*
-*  SYNOPSIS
-*     bool sge_sl_sort(sge_sl_list_t *list, sge_sl_compare_f compare) 
-*
-*  FUNCTION
-*     This function sorts the 'list' with the quick sort algorithm.
-*     'compare' function will be used to compare the list elements.
-*
-*  INPUTS
-*     sge_sl_list_t *list      - list 
-*     sge_sl_compare_f compare - compare function 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_sl_sort() is MT safe 
-*
-*  SEE ALSO
-*     uti/sl/sge_sl_insert_search()
-*******************************************************************************/
+/**
+ * @brief Sorts the list
+ *
+ * This function sorts the 'list' with the quick sort algorithm.
+ * 'compare' function will be used to compare the list elements.
+ *
+ * @param list list
+ * @param compare compare function
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_sl_sort() is MT safe
+ *
+ * @see #sge_sl_insert_search
+ */
 bool
 sge_sl_sort(sge_sl_list_t *list, sge_sl_compare_f compare) {
    bool ret = true;
@@ -1241,25 +992,17 @@ sge_sl_sort(sge_sl_list_t *list, sge_sl_compare_f compare) {
    DRETURN(ret);
 }
 
-/****** uti/sl/sge_sl_get_mutex() **********************************************
-*  NAME
-*     sge_sl_get_mutex() -- returns the list mutex 
-*
-*  SYNOPSIS
-*     pthread_mutex_t * sge_sl_get_mutex(sge_sl_list_t *list) 
-*
-*  FUNCTION
-*     retrns the list mutex 
-*
-*  INPUTS
-*     sge_sl_list_t *list - list 
-*
-*  RESULT
-*     pthread_mutex_t * - mutex used in the list to secure actions
-*
-*  NOTES
-*     MT-NOTE: sge_sl_get_mutex() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Returns the list mutex
+ *
+ * retrns the list mutex
+ *
+ * @param list list
+ *
+ * @return mutex used in the list to secure actions
+ *
+ * @note MT-NOTE: sge_sl_get_mutex() is MT safe
+ */
 pthread_mutex_t *
 sge_sl_get_mutex(sge_sl_list_t *list) {
    pthread_mutex_t *mutex = nullptr;

@@ -33,43 +33,52 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Variable size bitfields, and bit macros for native integer types
+ */
+
 #include <cstdio>
 
 #include <cinttypes>
 
-/****** uti/bitfield/BIT_MANIPULATION_MAKROS() ********************************
-*  NAME
-*     ISSET(),VALID(),SETBIT(),CLEARBIT() - Bit manipulation makros 
-*
-*  SYNOPSIS
-*     #define ISSET(a,b)      ((a&b)==b)
-*     #define VALID(a,b)      ((a|b)==b)
-*     #define SETBIT(a,b)     (b=(a)|b);
-*     #define CLEARBIT(a,b)   (b &= (~(a)));
-*
-*  FUNCTION
-*     Makros to get/set/clear bits in native variables. 
-*
-*  INPUTS
-*     int,long,uint32_t... a - Bitmask
-*     int,long,uint32_t... b - Variable
-*
-*  RESULT
-*     b will be modified
-*
-*  NOTE
-*     These Makros can't be used in combination with the bitfield type.
-*******************************************************************************/
-#define ISSET(a, b)      ((a&b)==b)
-#define VALID(a, b)      ((a|b)==b)
-#define SETBIT(a, b)     (b=(a)|b);
-#define CLEARBIT(a, b)   (b &= (~(a)));
+/** @defgroup uti_bitfield Bitfield
+ * @brief A variable size bitfield implementation
+ *
+ * The size of a bitfield is fixed when it is created; individual bits can then
+ * be set, read and cleared, and the contents printed to a file handle.
+ *
+ * Small bitfields cost no allocation at all: up to #fixed_bits bits are held
+ * inline in #bitfield::bf, which saves both memory and, above all, the
+ * allocation itself. Larger ones allocate.
+ *
+ * @note MT-NOTE: this module is MT safe
+ * @{
+ */
 
+/** @name Bit macros for native integer types
+ *
+ * These operate on plain integers, **not** on #bitfield, and must not be mixed
+ * with it.
+ * @{
+ */
+#define ISSET(a, b)      ((a&b)==b)   ///< true when every bit of `a` is set in `b`
+#define VALID(a, b)      ((a|b)==b)   ///< true when `a` sets no bit outside `b`
+#define SETBIT(a, b)     (b=(a)|b);   ///< set the bits of `a` in `b`
+#define CLEARBIT(a, b)   (b &= (~(a)));  ///< clear the bits of `a` in `b`
+/** @} */
+
+/** @brief A variable size bitfield
+ *
+ * Create one with #sge_bitfield_new, or initialise an existing struct with
+ * #sge_bitfield_init. Either way it has to be released again, with
+ * #sge_bitfield_free or #sge_bitfield_free_data respectively.
+ */
 typedef struct {
-   unsigned int size;
+   unsigned int size;            ///< size of the bitfield in bits
+   /** @brief Storage, inline for small bitfields and allocated for large ones */
    union {
-      char fix[sizeof(char *)];  /* fixed size buffer for small bitfields */
-      char *dyn;                 /* dynamic size buffer for large bitfields */
+      char fix[sizeof(char *)];  ///< inline buffer, used while `size` <= #fixed_bits
+      char *dyn;                 ///< allocated buffer, used for larger bitfields
    } bf;
 } bitfield;
 
@@ -109,7 +118,13 @@ sge_bitfield_changed(const bitfield *source);
 void
 sge_bitfield_print(const bitfield *bf, FILE *fd);
 
+/// number of bits that fit into the inline buffer, so need no allocation
 #define fixed_bits (sizeof(char *) * 8)
+/// size of a bitfield in bits
 #define sge_bitfield_get_size(bf) ((bf)->size)
+/// bytes needed to hold `size` bits, rounded up
 #define sge_bitfield_get_size_bytes(size) ((size) / 8 + (((size) % 8) > 0 ? 1 : 0))
+/// buffer holding the bits, inline or allocated depending on the size
 #define sge_bitfield_get_buffer(source) ((source)->size <= fixed_bits) ? (source)->bf.fix : (source)->bf.dyn
+
+/** @} */

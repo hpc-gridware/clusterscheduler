@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Implementation of the string helpers
+ */
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -45,36 +49,28 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 
+/// true when character @p c is one of the delimiters in @p delimitor
 #define IS_DELIMITOR(c, delimitor) \
    (delimitor?(strchr(delimitor, c)?1:0):isspace(c))
 
-/****** uti/string/sge_basename() *********************************************
-*  NAME
-*     sge_basename() -- get basename for path
-*
-*  SYNOPSIS
-*     char* sge_basename(const char *name, int delim) 
-*
-*  FUNCTION
-*     Determines the basename for a path like string - the last field 
-*     of a string where fields are separated by a fixed one character 
-*     delimiter.
-*
-*  INPUTS
-*     const char *name - contains the input string (path)
-*     int delim        - delimiter
-*
-*  RESULT
-*     char* - pointer to base of name after the last delimter
-*             nullptr if "name" is nullptr or zero length string or
-*             delimiter is the last character in "name"
-*
-*  EXAMPLE
-*     sge_basename("/usr/local/bin/flex", '/'); returns "flex"
-*
-*  NOTES
-*     MT-NOTE: sge_basename() is MT safe
-******************************************************************************/
+/**
+ * @brief Get basename for path
+ *
+ * Determines the basename for a path like string - the last field
+ * of a string where fields are separated by a fixed one character
+ * delimiter.
+ *
+ * @code
+ * sge_basename("/usr/local/bin/flex", '/'); returns "flex"
+ * @endcode
+ *
+ * @param name contains the input string (path)
+ * @param delim delimiter
+ *
+ * @return pointer to base of name after the last delimter nullptr if "name" is nullptr or zero length string or delimiter is the last character in "name"
+ *
+ * @note MT-NOTE: sge_basename() is MT safe
+ */
 const char *sge_basename(const char *name, int delim) {
    char *cp;
 
@@ -131,31 +127,23 @@ const char *sge_jobname(const char *name) {
    DRETURN(cp);
 }
 
-/****** uti/string/sge_dirname() **********************************************
-*  NAME
-*     sge_dirname() -- Return first part of string up to deliminator 
-*
-*  SYNOPSIS
-*     char* sge_dirname(const char *name, int delim) 
-*
-*  FUNCTION
-*     The function will return a malloced string containing the first 
-*     part of 'name' up to, but not including deliminator. nullptr will
-*     be returned if 'name' is nullptr or a zero length string or if
-*     'delim' is the first character in 'name' 
-*
-*  INPUTS
-*     const char *name - string 
-*     int delim        - deliminator 
-*
-*  RESULT
-*     char* - malloced string
-*
-*  NOTES
-*     This routine is called "dirname" in opposite to "basename"
-*     but is mostly used to strip off the domainname of a FQDN     
-*     MT-NOTE: sge_dirname() is MT safe
-******************************************************************************/
+/**
+ * @brief Return first part of string up to deliminator
+ *
+ * The function will return a malloced string containing the first
+ * part of 'name' up to, but not including deliminator. nullptr will
+ * be returned if 'name' is nullptr or a zero length string or if
+ * 'delim' is the first character in 'name'
+ *
+ * @param name string
+ * @param delim deliminator
+ *
+ * @return malloced string
+ *
+ * @note This routine is called "dirname" in opposite to "basename"
+ *       but is mostly used to strip off the domainname of a FQDN
+ *       MT-NOTE: sge_dirname() is MT safe
+ */
 char *sge_dirname(const char *name, int delim) {
    char *cp, *cp2;
 
@@ -307,28 +295,20 @@ sge_strlcat(char *dst, const char *src, size_t dstsize) {
    dst[dst_idx] = '\0';
 }
 
-/****** uti/string/sge_strlcpy() ***********************************************
-*  NAME
-*     sge_strlcpy() -- sge strlcpy implementation
-*
-*  SYNOPSIS
-*     size_t sge_strlcpy(char *dst, const char *src, size_t dstsize) 
-*
-*  FUNCTION
-*     copies "dstsize"-1 characters from from "src" to "dst" and terminates
-*     the src string with '\0'- Returns the size of the "src" string.
-*
-*  INPUTS
-*     char *dst       - destination
-*     const char *src - source string (must be '\0' terminated)
-*     size_t dstsize  - size of source string 
-*
-*  RESULT
-*     size_t - strlen of src, not dst !!!
-*
-*  NOTES
-*     MT-NOTE: sge_strlcpy() is MT safe
-*******************************************************************************/
+/**
+ * @brief Sge strlcpy implementation
+ *
+ * copies "dstsize"-1 characters from from "src" to "dst" and terminates
+ * the src string with '\0'- Returns the size of the "src" string.
+ *
+ * @param dst destination
+ * @param src source string (must be '\0' terminated)
+ * @param dstsize size of source string
+ *
+ * @return strlen of src, not dst !!!
+ *
+ * @note MT-NOTE: sge_strlcpy() is MT safe
+ */
 size_t sge_strlcpy(char *dst, const char *src, size_t dstsize) {
    size_t index = 0;
    if (dst == nullptr) {
@@ -348,36 +328,25 @@ size_t sge_strlcpy(char *dst, const char *src, size_t dstsize) {
    return index;
 }
 
-/****** uti/string/sge_strtok_r() *********************************************
-*  NAME
-*     sge_strtok_r() -- Reentrant version of strtok()
-*
-*  SYNOPSIS
-*     char* sge_strtok_r(const char *str, const char *delimitor, 
-*                        struct saved_vars_s **context) 
-*
-*  FUNCTION
-*     Reentrant version of sge_strtok. When 'str' is not nullptr,
-*     '*context'has to be nullptr. If 'str' is nullptr, '*context'
-*     must not be nullptr. The caller is responsible for freeing
-*     '*context' with sge_free_saved_vars(). 
-*     If no delimitor is given isspace() is used. 
-*
-*  INPUTS
-*     const char *str               - str which should be tokenized 
-*     const char *delimitor         - delimitor string 
-*     struct saved_vars_s **context - context
-*
-*  RESULT
-*     char* - first/next token
-*
-*  SEE ALSO
-*     uti/string/sge_strtok()     
-*     uti/string/sge_free_saved_vars()
-*
-*  NOTES
-*     MT-NOTE: sge_strtok_r() is MT safe
-******************************************************************************/
+/**
+ * @brief Reentrant version of strtok()
+ *
+ * Reentrant version of sge_strtok. When 'str' is not nullptr,
+ * '*context'has to be nullptr. If 'str' is nullptr, '*context'
+ * must not be nullptr. The caller is responsible for freeing
+ * '*context' with sge_free_saved_vars().
+ * If no delimitor is given isspace() is used.
+ *
+ * @param str str which should be tokenized
+ * @param delimitor delimitor string
+ * @param context context
+ *
+ * @return first/next token
+ *
+ * @note MT-NOTE: sge_strtok_r() is MT safe
+ *
+ * @see #sge_strtok, #sge_free_saved_vars
+ */
 char *sge_strtok_r(const char *str, const char *delimitor,
                    struct saved_vars_s **context) {
    char *cp;
@@ -450,25 +419,17 @@ char *sge_strtok_r(const char *str, const char *delimitor,
    DRETURN(nullptr);
 }
 
-/****** uti/string/sge_free_saved_vars() **************************************
-*  NAME
-*     sge_free_saved_vars() -- Free 'context' of sge_strtok_r() 
-*
-*  SYNOPSIS
-*     void sge_free_saved_vars(struct saved_vars_s *context) 
-*
-*  FUNCTION
-*     Free 'context' of sge_strtok_r() 
-*
-*  INPUTS
-*     struct saved_vars_s *context 
-*
-*  SEE ALSO
-*     uti/string/sge_strtok_r() 
-*
-*  NOTES
-*     MT-NOTE: sge_free_saved_vars() is MT safe
-******************************************************************************/
+/**
+ * @brief Free 'context' of sge_strtok_r()
+ *
+ * Free 'context' of sge_strtok_r()
+ *
+ * @param context parser state returned by #sge_strtok_r; nullptr is allowed
+ *
+ * @note MT-NOTE: sge_free_saved_vars() is MT safe
+ *
+ * @see #sge_strtok_r
+ */
 void sge_free_saved_vars(struct saved_vars_s *context) {
    if (context) {
       if (context->static_str) {
@@ -478,26 +439,18 @@ void sge_free_saved_vars(struct saved_vars_s *context) {
    }
 }
 
-/****** uti/string/sge_strdup() ***********************************************
-*  NAME
-*     sge_strdup() -- Replacement for strdup() 
-*
-*  SYNOPSIS
-*     char* sge_strdup(char *old_str, const char *s) 
-*
-*  FUNCTION
-*     Duplicate string 's'. "Use" 'old_str' buffer.
-*
-*  INPUTS
-*     char *old_str     - buffer (will be freed) 
-*     const char *s - string 
-*
-*  RESULT
-*     char* - malloced string
-*
-*  NOTES
-*     MT-NOTE: sge_strdup() is MT safe
-******************************************************************************/
+/**
+ * @brief Replacement for strdup()
+ *
+ * Duplicate string 's'. "Use" 'old_str' buffer.
+ *
+ * @param old_str buffer (will be freed)
+ * @param s string
+ *
+ * @return malloced string
+ *
+ * @note MT-NOTE: sge_strdup() is MT safe
+ */
 char *sge_strdup(char *old_str, const char *s) {
    char *ret = nullptr;
 
@@ -519,24 +472,17 @@ char *sge_strdup(char *old_str, const char *s) {
    return ret;
 }
 
-/****** uti/string/sge_strip_blanks() *****************************************
-*  NAME
-*     sge_strip_blanks() -- Strip blanks from string 
-*
-*  SYNOPSIS
-*     void sge_strip_blanks(char *str) 
-*
-*  FUNCTION
-*     Strip all blanks contained in a string. The string is used
-*     both as source and drain for the necessary copy operations.
-*     The string is '\0' terminated afterwards. 
-*
-*  INPUTS
-*     char *str - pointer to string to be condensed 
-*
-*  NOTES
-*     MT-NOTE: sge_strip_blanks() is MT safe
-******************************************************************************/
+/**
+ * @brief Strip blanks from string
+ *
+ * Strip all blanks contained in a string. The string is used
+ * both as source and drain for the necessary copy operations.
+ * The string is '\0' terminated afterwards.
+ *
+ * @param str pointer to string to be condensed
+ *
+ * @note MT-NOTE: sge_strip_blanks() is MT safe
+ */
 void sge_strip_blanks(char *str) {
    char *cp = str;
 
@@ -562,7 +508,7 @@ void sge_strip_blanks(char *str) {
 /**
  * @brief Strip trailing spaces and tabs from a C string.
  *
- * Removes trailing ' ' and '\t' characters from @p str by writing '\0' over
+ * Removes trailing space and tab characters from @p str by writing '\0' over
  * them. Newlines and other whitespace are not touched. MT-safe.
  *
  * @param str string to be modified (modified in place)
@@ -582,25 +528,15 @@ void sge_strip_trailing_blanks(char *str) {
    DRETURN_VOID;
 }
 
-/****** uti/string/sge_strip_slash_at_eol() ******************************
-*  NAME
-*     sge_strip_slash_at_eol() -- truncate slash at EOL 
-*
-*  SYNOPSIS
-*     void sge_strip_slash_at_eol(char *str) 
-*
-*  FUNCTION
-*     Truncate slash from the end of the string 
-*
-*  INPUTS
-*     char *str - string to be modified 
-*
-*  RESULT
-*     void - NONE
-*
-*  NOTES
-*     MT-NOTE: sge_strip_slash_at_eol() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Truncate slash at EOL
+ *
+ * Truncate slash from the end of the string
+ *
+ * @param str string to be modified
+ *
+ * @note MT-NOTE: sge_strip_slash_at_eol() is MT safe
+ */
 void sge_strip_slash_at_eol(char *str) {
    DENTER(BASIS_LAYER);
 
@@ -616,40 +552,25 @@ void sge_strip_slash_at_eol(char *str) {
 }
 
 
-/****** uti/string/sge_delim_str() *******************************************
-*  NAME
-*     sge_delim_str() -- Trunc. a str according to a delimiter set 
-*
-*  SYNOPSIS
-*     char* sge_delim_str(char *str, char **delim_pos, 
-*                         const char *delim) 
-*
-*  FUNCTION
-*     Truncates a string according to a delimiter set. A copy of 
-*     the string truncated according to the delimiter set will be 
-*     returned.
-*
-*     ATTENTION: The user is responsible for freeing the allocated
-*     memory outside this routine. If not enough space could be 
-*     allocated, nullptr is returned.
-*
-*  INPUTS
-*     char *str         - string to be truncated 
-*     char **delim_pos  - A placeholder for the delimiting position
-*                         in str on exit. 
-*                         If set on entry the position of the 
-*                         delimiter in the input string 'str' is
-*                         returned. If no delimiting character in
-*                         string was found, the address of the
-*                         closing '\0' in 'str' is returned.
-*     const char *delim - string containing delimiter characters 
-*
-*  RESULT
-*     char* - Truncated copy of 'str' (Has to be freed by the caller!)
-*
-*  NOTES
-*     MT-NOTE: sge_delim_str() is MT safe
-******************************************************************************/
+/**
+ * @brief Trunc. a str according to a delimiter set
+ *
+ * Truncates a string according to a delimiter set. A copy of
+ * the string truncated according to the delimiter set will be
+ * returned.
+ *
+ * ATTENTION: The user is responsible for freeing the allocated
+ * memory outside this routine. If not enough space could be
+ * allocated, nullptr is returned.
+ *
+ * @param str string to be truncated
+ * @param delim_pos A placeholder for the delimiting position in str on exit. If set on entry the position of the delimiter in the input string 'str' is returned. If no delimiting character in string was found, the address of the closing '\0' in 'str' is returned.
+ * @param delim string containing delimiter characters
+ *
+ * @return Truncated copy of 'str' (Has to be freed by the caller!)
+ *
+ * @note MT-NOTE: sge_delim_str() is MT safe
+ */
 char *sge_delim_str(char *str, char **delim_pos, const char *delim) {
    char *cp = nullptr;
    char *tstr = nullptr;
@@ -684,31 +605,20 @@ char *sge_delim_str(char *str, char **delim_pos, const char *delim) {
    DRETURN(tstr);
 }
 
-/****** uti/string/sge_strnullcmp() *******************************************
-*  NAME
-*     sge_strnullcmp() -- Like strcmp() but honours nullptr ptrs.
-*
-*  SYNOPSIS
-*     int sge_strnullcmp(const char *a, const char *b) 
-*
-*  FUNCTION
-*     Like strcmp() apart from the handling of nullptr strings.
-*     These are treated as being less than any not-nullptr strings.
-*     Important for sorting lists where nullptr strings can occur.
-*
-*  INPUTS
-*     const char *a - 1st string 
-*     const char *b - 2nd string 
-*
-*  RESULT
-*     int - result
-*         0 - strings are the same or both nullptr
-*        -1 - a < b or a is nullptr
-*         1 - a > b or b is nullptr
-*
-*  NOTES
-*     MT-NOTE: sge_strnullcmp() is MT safe
-******************************************************************************/
+/**
+ * @brief Like strcmp() but honours nullptr ptrs
+ *
+ * Like strcmp() apart from the handling of nullptr strings.
+ * These are treated as being less than any not-nullptr strings.
+ * Important for sorting lists where nullptr strings can occur.
+ *
+ * @param a 1st string
+ * @param b 2nd string
+ *
+ * @return result 0 - strings are the same or both nullptr -1 - a < b or a is nullptr 1 - a > b or b is nullptr
+ *
+ * @note MT-NOTE: sge_strnullcmp() is MT safe
+ */
 int sge_strnullcmp(const char *a, const char *b) {
    if (!a && b) {
       return -1;
@@ -722,31 +632,20 @@ int sge_strnullcmp(const char *a, const char *b) {
    return strcmp(a, b);
 }
 
-/****** uti/string/sge_patternnullcmp() ****************************************
-*  NAME
-*     sge_patternnullcmp() -- like fnmatch 
-*
-*  SYNOPSIS
-*     int sge_patternnullcmp(const char *str, const char *pattern) 
-*
-*  FUNCTION
-*     Like fnmatch() apart from the handling of nullptr strings.
-*     These are treated as being less than any not-nullptr strings.
-*     Important for sorting lists where nullptr strings can occur.
-*
-*  INPUTS
-*     const char *str     - string 
-*     const char *pattern - pattern to match 
-*
-*  RESULT
-*     int - result
-*         0 - strings are the same or both nullptr
-*        -1 - a < b or a is nullptr
-*         1 - a > b or b is nullptr
-*
-*  NOTES
-*   MT-NOTE: fnmatch uses static variables, not MT safe
-*******************************************************************************/
+/**
+ * @brief Like fnmatch
+ *
+ * Like fnmatch() apart from the handling of nullptr strings.
+ * These are treated as being less than any not-nullptr strings.
+ * Important for sorting lists where nullptr strings can occur.
+ *
+ * @param str string
+ * @param pattern pattern to match
+ *
+ * @return result 0 - strings are the same or both nullptr -1 - a < b or a is nullptr 1 - a > b or b is nullptr
+ *
+ * @note MT-NOTE: fnmatch uses static variables, not MT safe
+ */
 int sge_patternnullcmp(const char *str, const char *pattern) {
    if (!str && pattern) {
       return -1;
@@ -761,31 +660,20 @@ int sge_patternnullcmp(const char *str, const char *pattern) {
 }
 
 
-/****** uti/string/sge_strnullcasecmp() ***************************************
-*  NAME
-*     sge_strnullcasecmp() -- Like strcasecmp() but honours nullptr ptrs.
-*
-*  SYNOPSIS
-*     int sge_strnullcasecmp(const char *a, const char *b) 
-*
-*  FUNCTION
-*     Like strcasecmp() apart from the handling of nullptr strings.
-*     These are treated as being less than any not-nullptr strings.
-*     Important for sorting lists where nullptr strings can occur.
-*
-*  INPUTS
-*     const char *a - 1st string 
-*     const char *b - 2nd string 
-*
-*  RESULT
-*     int - result
-*         0 - strings are the same minus case or both nullptr
-*        -1 - a < b or a is nullptr
-*         1 - a > b or b is nullptr
-*
-*  NOTES
-*     MT-NOTE: sge_strnullcasecmp() is MT safe
-******************************************************************************/
+/**
+ * @brief Like strcasecmp() but honours nullptr ptrs
+ *
+ * Like strcasecmp() apart from the handling of nullptr strings.
+ * These are treated as being less than any not-nullptr strings.
+ * Important for sorting lists where nullptr strings can occur.
+ *
+ * @param a 1st string
+ * @param b 2nd string
+ *
+ * @return result 0 - strings are the same minus case or both nullptr -1 - a < b or a is nullptr 1 - a > b or b is nullptr
+ *
+ * @note MT-NOTE: sge_strnullcasecmp() is MT safe
+ */
 int sge_strnullcasecmp(const char *a, const char *b) {
    if (!a && b)
       return -1;
@@ -796,6 +684,11 @@ int sge_strnullcasecmp(const char *a, const char *b) {
    return SGE_STRCASECMP(a, b);
 }
 
+/** @brief Does the string contain any whitespace?
+ *
+ * @param s the string to inspect
+ * @return true when @p s contains at least one character `isspace()` accepts
+ */
 bool sge_has_whitespace(const char *s) {
    char c;
    while ((c = *s++)) {
@@ -806,28 +699,17 @@ bool sge_has_whitespace(const char *s) {
    return false;
 }
 
-/****** uti/string/sge_strisint() *********************************************
-*  NAME
-*     sge_strisint() -- Is string a integer value in characters?
-*
-*  SYNOPSIS
-*     int sge_strisint(const char *str) 
-*
-*  FUNCTION
-*     May we convert 'str' to int? 
-*
-*  INPUTS
-*     const char *str - string 
-*
-*  RESULT
-*     int - result
-*         0 - It is no integer
-*         1 - It is a integer
-*
-*  NOTES
-*     MT-NOTE: sge_strisint() is MT safe
-*
-******************************************************************************/
+/**
+ * @brief Is string a integer value in characters?
+ *
+ * May we convert 'str' to int?
+ *
+ * @param str string
+ *
+ * @return result 0 - It is no integer 1 - It is a integer
+ *
+ * @note MT-NOTE: sge_strisint() is MT safe
+ */
 int sge_strisint(const char *str) {
    const char *cp = str;
 
@@ -839,23 +721,16 @@ int sge_strisint(const char *str) {
    return 1;
 }
 
-/****** uti/string/sge_strtoupper() *******************************************
-*  NAME
-*     sge_strtoupper() -- Convert the first n to upper case 
-*
-*  SYNOPSIS
-*     void sge_strtoupper(char *buffer, int max_len) 
-*
-*  FUNCTION
-*     Convert the first 'max_len' characters to upper case. 
-*
-*  INPUTS
-*     char *buffer - string 
-*     int max_len  - number of chars 
-*
-*  NOTES
-*     MT-NOTE: sge_strtoupper() is MT safe
-******************************************************************************/
+/**
+ * @brief Convert the first n to upper case
+ *
+ * Convert the first 'max_len' characters to upper case.
+ *
+ * @param buffer string
+ * @param max_len number of chars
+ *
+ * @note MT-NOTE: sge_strtoupper() is MT safe
+ */
 void sge_strtoupper(char *buffer, int max_len) {
    DENTER(BASIS_LAYER);
 
@@ -868,28 +743,16 @@ void sge_strtoupper(char *buffer, int max_len) {
    DRETURN_VOID;
 }
 
-/****** uti/hostname/sge_strtolower() ********************************************
-*  NAME
-*     sge_strtolower() -- convert all upper character in the string to lower case
-*
-*  SYNOPSIS
-*     int sge_strtolower(char *buffer)
-*
-*  FUNCTION
-*     sge_strtolower() for hostnames. Honours some configuration values:
-*
-*  INPUTS
-*     char *buffer - string to be lowered
-*
-*  RESULT
-*     no result, this function modify the argument string
-*
-*  SEE ALSO
-*     uti/string/sge_strtoupper()
-*
-*  NOTES:
-*     MT-NOTE: sge_strtolower() is MT safe
-******************************************************************************/
+/**
+ * @brief Convert all upper character in the string to lower case
+ *
+ * sge_strtolower() for hostnames. Honours some configuration values:
+ *
+ * @param buffer string to be lowered, modified in place
+ * @param max_len maximum number of characters to convert
+ *
+ * @see #sge_strtoupper
+ */
 void sge_strtolower(char *buffer, int max_len) {
    DENTER(BASIS_LAYER);
    if (buffer != nullptr) {
@@ -901,28 +764,20 @@ void sge_strtolower(char *buffer, int max_len) {
    DRETURN_VOID;
 }
 
-/****** uti/string/sge_stradup() **********************************************
-*  NAME
-*     sge_stradup() -- Duplicate array of strings
-*
-*  SYNOPSIS
-*     char** sge_stradup(char **cpp, int n) 
-*
-*  FUNCTION
-*     Copy list of character pointers including the strings these
-*     pointers refer to. If 'n' is 0 strings are '\0'-delimited, if 
-*     'n' is not 0 we use n as length of the strings. 
-*
-*  INPUTS
-*     char **cpp - pointer to array of strings 
-*     int n      - '\0' terminated? 
-*
-*  RESULT
-*     char** - copy of 'cpp'
-*
-*  NOTES
-*     MT-NOTE: sge_stradup() is MT safe
-******************************************************************************/
+/**
+ * @brief Duplicate array of strings
+ *
+ * Copy list of character pointers including the strings these
+ * pointers refer to. If 'n' is 0 strings are '\0'-delimited, if
+ * 'n' is not 0 we use n as length of the strings.
+ *
+ * @param cpp pointer to array of strings
+ * @param n '\0' terminated?
+ *
+ * @return copy of 'cpp'
+ *
+ * @note MT-NOTE: sge_stradup() is MT safe
+ */
 char **sge_stradup(char **cpp, int n) {
    int count = 0, len;
    char **cpp1, **cpp2, **cpp3;
@@ -969,22 +824,15 @@ char **sge_stradup(char **cpp, int n) {
    return cpp1;
 }
 
-/****** uti/string/sge_strafree() *********************************************
-*  NAME
-*     sge_strafree() -- Free list of character pointers 
-*
-*  SYNOPSIS
-*     void sge_strafree(char **cpp) 
-*
-*  FUNCTION
-*     Free list of character pointers 
-*
-*  INPUTS
-*     char ***cpp - Pointer to array of string pointers 
-*
-*  NOTES
-*     MT-NOTE: sge_strafree() is MT safe
-******************************************************************************/
+/**
+ * @brief Free list of character pointers
+ *
+ * Free list of character pointers
+ *
+ * @param cpp Pointer to array of string pointers
+ *
+ * @note MT-NOTE: sge_strafree() is MT safe
+ */
 void sge_strafree(char ***cpp) {
    if (cpp != nullptr && *cpp != nullptr) {
       char **cpp1 = *cpp;
@@ -997,32 +845,21 @@ void sge_strafree(char ***cpp) {
    }
 }
 
-/****** uti/string/sge_stramemncpy() ******************************************
-*  NAME
-*     sge_stramemncpy() -- Find string in string array 
-*
-*  SYNOPSIS
-*     char** sge_stramemncpy(const char *cp, char **cpp, int n) 
-*
-*  FUNCTION
-*     Compare string with string field and return the pointer to
-*     the matched character pointer. Compare exactly n chars 
-*     case insensitive.
-*
-*  INPUTS
-*     const char *cp - string to be found 
-*     char **cpp     - pointer to array of strings 
-*     int n          - number of chars 
-*
-*  NOTES:
-*     MT-NOTE: sge_stramemncpy() is MT safe
-*
-*  RESULT
-*     char** - nullptr or pointer a string
-*
-*  NOTES
-*     MT-NOTE: sge_stramemncpy() is MT safe
-******************************************************************************/
+/**
+ * @brief Find string in string array
+ *
+ * Compare string with string field and return the pointer to
+ * the matched character pointer. Compare exactly n chars
+ * case insensitive.
+ *
+ * @param cp string to be found
+ * @param cpp pointer to array of strings
+ * @param n number of chars NOTES: MT-NOTE: sge_stramemncpy() is MT safe
+ *
+ * @return nullptr or pointer a string
+ *
+ * @note MT-NOTE: sge_stramemncpy() is MT safe
+ */
 char **sge_stramemncpy(const char *cp, char **cpp, int n) {
    while (*cpp) {
       if (!memcmp(*cpp, cp, n)) {
@@ -1033,27 +870,19 @@ char **sge_stramemncpy(const char *cp, char **cpp, int n) {
    return nullptr;
 }
 
-/****** uti/string/sge_stracasecmp() ******************************************
-*  NAME
-*     sge_stracasecmp() -- Find string in string array 
-*
-*  SYNOPSIS
-*     char** sge_stracasecmp(const char *cp, char **cpp) 
-*
-*  FUNCTION
-*     Compare string with string field and return the pointer to
-*     the matched character pointer. Compare case sensitive. 
-*
-*  INPUTS
-*     const char *cp - string 
-*     char **cpp     - pointer to array of strings  
-*
-*  RESULT
-*     char** - nullptr or pointer a string
-*
-*  NOTES
-*     MT-NOTE: sge_stracasecmp() is MT safe
-******************************************************************************/
+/**
+ * @brief Find string in string array
+ *
+ * Compare string with string field and return the pointer to
+ * the matched character pointer. Compare case sensitive.
+ *
+ * @param cp string
+ * @param cpp pointer to array of strings
+ *
+ * @return nullptr or pointer a string
+ *
+ * @note MT-NOTE: sge_stracasecmp() is MT safe
+ */
 char **sge_stracasecmp(const char *cp, char **cpp) {
    while (*cpp) {
       if (!strcasecmp(*cpp, cp))
@@ -1063,6 +892,12 @@ char **sge_stracasecmp(const char *cp, char **cpp) {
    return nullptr;
 }
 
+/** @brief Print a nullptr terminated string array to stdout, one entry per line
+ *
+ * A debugging aid for the arrays returned by #string_list.
+ *
+ * @param stra the array to print, must be nullptr terminated
+ */
 void
 stra_printf(char *stra[]) {
    int i = 0;
@@ -1073,31 +908,21 @@ stra_printf(char *stra[]) {
    }
 }
 
-/****** uti/string/stra_from_str() ********************************************
-*  NAME
-*     str_from_str() -- Extract valid qstat options/paramers from qstat profile.
-*
-*  SYNOPSIS
-*     char **str_from_str(const char *source_str, const char *delim);
-*
-*  FUNCTION
-*     Parse string 'source_str' based on delimeter(s) 'delim' and store
-*     resulting tokens in string array 'ret'. Supports comment lines.
-*
-*  INPUTS
-*     const char *source_str - File content of qstat profile as plain string.
-*     const char *delim      - Sequence of characters used to identify tokens
-*                              and parameters.
-*
-*  RESULT
-*     char** - String array containing tokens found based on 'delim'.
-*
-*  NOTES
-*     It is the caller's responsibilty to free dynamic memory allocated in this
-*     routine.
-*     MT-NOTE: stra_from_str() is MT safe.
-*
-*************************************************************************************/
+/**
+ * @brief Extract valid qstat options/paramers from qstat profile
+ *
+ * Parse string 'source_str' based on delimeter(s) 'delim' and store
+ * resulting tokens in string array 'ret'. Supports comment lines.
+ *
+ * @param source_str File content of qstat profile as plain string.
+ * @param delim Sequence of characters used to identify tokens and parameters.
+ *
+ * @return String array containing tokens found based on 'delim'.
+ *
+ * @note It is the caller's responsibilty to free dynamic memory allocated in this
+ *       routine.
+ *       MT-NOTE: stra_from_str() is MT safe.
+ */
 char **
 stra_from_str(const char *source_str, const char *delim) {
    char **ret = nullptr;
@@ -1180,22 +1005,15 @@ stra_from_str(const char *source_str, const char *delim) {
    return ret;
 }
 
-/****** uti/string/sge_compress_slashes() *************************************
-*  NAME
-*     sge_compress_slashes() -- compresses sequences of slashes 
-*
-*  SYNOPSIS
-*     void sge_compress_slashes(char *str) 
-*
-*  FUNCTION
-*     Compresses sequences of slashes in str to one slash 
-*
-*  INPUTS
-*     char *str - string (e.g. path) 
-*
-*  NOTES
-*     MT-NOTE: sge_compress_slashes() is MT safe
-*******************************************************************************/
+/**
+ * @brief Compresses sequences of slashes
+ *
+ * Compresses sequences of slashes in str to one slash
+ *
+ * @param str string (e.g. path)
+ *
+ * @note MT-NOTE: sge_compress_slashes() is MT safe
+ */
 void sge_compress_slashes(char *str) {
    char *p;
    int compressed = 0;
@@ -1215,22 +1033,15 @@ void sge_compress_slashes(char *str) {
    DRETURN_VOID;
 }
 
-/****** uti/string/sge_strip_quotes() *****************************************
-*  NAME
-*     sge_strip_quotes() -- Strip quotes from string
-*
-*  SYNOPSIS
-*     void sge_strip_quotes(char **pstr) 
-*
-*  FUNCTION
-*     Strip quotes from "pstr". 
-*
-*  INPUTS
-*     char **pstr - string to be modified 
-*
-*  NOTES
-*     MT-NOTE: sge_strip_quotes() is MT safe
-******************************************************************************/
+/**
+ * @brief Strip quotes from string
+ *
+ * Strip quotes from "pstr".
+ *
+ * @param pstr string to be modified
+ *
+ * @note MT-NOTE: sge_strip_quotes() is MT safe
+ */
 void sge_strip_quotes(char **pstr) {
    char *cp = nullptr;
    char *cp2 = nullptr;
@@ -1254,25 +1065,17 @@ void sge_strip_quotes(char **pstr) {
    DRETURN_VOID;
 }
 
-/****** uti/string/sge_strlen() ***********************************************
-*  NAME
-*     sge_strlen() -- replacement for strlen() 
-*
-*  SYNOPSIS
-*     int sge_strlen(const char *str) 
-*
-*  FUNCTION
-*     replacement for strlen 
-*
-*  INPUTS
-*     const char *str - nullptr or pointer to string
-*
-*  RESULT
-*     int - length of string or 0 if nullptr pointer
-*
-*  NOTES
-*     MT-NOTE: sge_strlen() is MT safe
-*******************************************************************************/
+/**
+ * @brief Replacement for strlen()
+ *
+ * replacement for strlen
+ *
+ * @param str nullptr or pointer to string
+ *
+ * @return length of string or 0 if nullptr pointer
+ *
+ * @note MT-NOTE: sge_strlen() is MT safe
+ */
 size_t sge_strlen(const char *str) {
    size_t ret = 0;
 
@@ -1309,6 +1112,20 @@ size_t sge_strlen(const char *str) {
 **     MT-NOTE: string_list() is MT safe
 **
 */
+/** @brief Split a string into a nullptr terminated array of tokens
+ *
+ * Splits @p str at any of the delimiters in @p delis. Quoted sections are kept
+ * together, so a delimiter inside quotes does not split.
+ *
+ * @p str is modified in place: the delimiters are overwritten with NUL and the
+ * returned entries point into it, so @p str has to outlive the result.
+ *
+ * @param str string to split, modified in place
+ * @param delis characters to split at
+ * @param pstr caller supplied array to fill, or nullptr to have one allocated
+ * @return the token array, nullptr terminated. When it was allocated the caller
+ *         frees it, but not the entries, which point into @p str
+ */
 char **string_list(char *str, const char *delis, char **pstr) {
    unsigned int i = 0, j = 0;
    bool is_space = false;
@@ -1396,29 +1213,17 @@ char **string_list(char *str, const char *delis, char **pstr) {
    DRETURN(head);
 }
 
-/****** uti/string/sge_str_is_number() *****************************************
-*  NAME
-*     sge_str_is_number() -- represents the given string a number
-*
-*  SYNOPSIS
-*     bool sge_str_is_number(const char *string)
-*
-*  FUNCTION
-*     This function returns true if the given string represents a number.
-*
-*  INPUTS
-*     const char *string - string to parse
-*
-*  RESULT
-*     bool - result
-*        true  - string represents a number
-*        false - string is not a number
-*
-*  NOTES
-*     MT-NOTE: sge_str_is_number() is MT safe
-*  SEE ALSO
-*     man strtod, man strol contains a C example on Linux
-*******************************************************************************/
+/**
+ * @brief Represents the given string a number
+ *
+ * This function returns true if the given string represents a number.
+ *
+ * @param string string to parse
+ *
+ * @return result true  - string represents a number false - string is not a number
+ *
+ * @note MT-NOTE: sge_str_is_number() is MT safe
+ */
 bool sge_str_is_number(const char *string) {
    bool ret = true;
    char *end = nullptr;
@@ -1448,32 +1253,22 @@ bool sge_str_is_number(const char *string) {
    return ret;
 }
 
-/****** uti/string/sge_replace_substring() *****************************************
-*  NAME
-*     sge_replace_substring - replace sub strings in a string
-*
-*  SYNOPSIS
-*     const char *sge_replace_substring(const char *input, char *search, char *replace)
-*
-*  FUNCTION
-*     Replaces all occurences of old with new.
-*     If old is part of the given string input, a new string is returned
-*     where the replacement is done.
-*
-*  INPUTS
-*     const char *input - the input string
-*     const char *search   - the string to replace
-*     const char *replace   - the replacement string
-*
-*  RESULT
-*     nullptr, if the input string didn't contain the pattern,
-*     else a newly allocated string containing the input string with replacements.
-*
-*  NOTES
-*     MT-NOTE: sge_str_is_number() is MT safe 
-*     It is the responsibility of the caller to free the returned string!
-*
-*******************************************************************************/
+/**
+ * @brief Replaces all occurences of old with new
+ *
+ * Replaces all occurences of old with new.
+ * If old is part of the given string input, a new string is returned
+ * where the replacement is done.
+ *
+ * @param input the input string
+ * @param search the string to replace
+ * @param replace the replacement string
+ *
+ * @return nullptr, if the input string didn't contain the pattern, else a newly allocated string containing the input string with replacements.
+ *
+ * @note MT-NOTE: sge_str_is_number() is MT safe
+ *       It is the responsibility of the caller to free the returned string!
+ */
 const char *sge_replace_substring(const char *input, const char *search, const char *replace) {
    int to_replace = 0;
    int change, new_len;
@@ -1538,6 +1333,17 @@ const char *sge_replace_substring(const char *input, const char *search, const c
    return return_string;
 }
 
+/** @brief Move a substring to the front of its buffer
+ *
+ * Copies the string beginning at @p substr down to @p start, overwriting
+ * whatever came before it, and terminates the result. Used to drop a prefix
+ * without allocating.
+ *
+ * @param start where the text should end up, the beginning of the buffer
+ * @param substr where the text currently begins; must be at or after @p start
+ * @return @p start, or nullptr when either argument is nullptr or @p substr
+ *         lies before @p start
+ */
 const char *sge_str_move_left(char *start, char *substr) {
    if (start == nullptr || substr == nullptr || substr < start) {
       return nullptr;

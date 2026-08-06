@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of the variable size bitfield, see @ref uti_bitfield
+ */
+
 #include <cstdio>
 #include <cstring>
 
@@ -40,89 +44,21 @@
 
 #include <sge_log.h>
 
-/****** uti/bitfield/--Bitfield ****************************************
-*  NAME
-*     Bitfield -- A variable size bitfield implementation
-*
-*  SYNOPSIS
-*     bitfield sge_bitfield_new(unsigned int size)
-*
-*  FUNCTION
-*     This module provides variable size bitfields.
-*     The size of a bitfield can be defined when the bitfield is created.
-*     Individual bits can be set, read and cleared.
-*     The contents of a bitfield can be printed to stdout or any
-*     file handle.
-*
-*  EXAMPLE
-*     See main program (module test) in libs/uti/sge_bitfield.c
-*
-*  NOTES
-*     MT-NOTE: this module is MT safe
-*
-*  SEE ALSO
-*     uti/bitfield/sge_bitfield_new()
-*     uti/bitfield/sge_bitfield_free()
-*     uti/bitfield/sge_bitfield_set()
-*     uti/bitfield/sge_bitfield_get()
-*     uti/bitfield/sge_bitfield_clear()
-*     uti/bitfield/sge_bitfield_reset()
-*     uti/bitfield/sge_bitfield_copy()
-*     uti/bitfield/sge_bitfield_bitwise_copy()
-*     uti/bitfield/sge_bitfield_print()
-*******************************************************************************/
-
-/****** uti/bitfield/-Bitfield_Typedefs ****************************************
-*  NAME
-*     Bitfield_Typedefs -- type definitions for the Bitfield module
-*
-*  SYNOPSIS
-*     typedef struct {
-*        unsigned int size;
-*        union {
-*           char fix[sizeof(char *)];
-*           char *dyn;
-*        } bf;
-*     } bitfield;
-*     
-*     typedef _bitfield *bitfield;
-*
-*  FUNCTION
-*     The _bitfield structure is the internal representation of a bitfield.
-*     All operations on bitfields use the bitfield type.
-*
-*     For small bitfields, no memory is allocated, but the space available in
-*     bf.fix is used (depending on the architecture, this suffices for 32 or 64
-*     bit bitfields).
-*     This saves a considerable amount of memory and above all processing time.
-*******************************************************************************/
-
-/****** uti/bitfield/sge_bitfield_new() ****************************************
-*  NAME
-*     sge_bitfield_new() -- create a new bitfield
-*
-*  SYNOPSIS
-*     bitfield *
-*     sge_bitfield_new(unsigned int size) 
-*
-*  FUNCTION
-*     Allocates and initializes the necessary memory.
-*     It is in the responsibility of the caller to free the bitfield
-*     once it is no longer needed.
-*
-*  INPUTS
-*     unsigned int size - size in bits
-*
-*  RESULT
-*     bitfield - a new bitfield or nullptr, if the creation of the bitfield
-*                failed
-*
-*  NOTES
-*     MT-NOTE: sge_bitfield_new() is MT safe
-*
-*  SEE ALSO
-*     uti/bitfield/sge_bitfield_free()
-*******************************************************************************/
+/**
+ * @brief Create a new bitfield
+ *
+ * Allocates and initializes the necessary memory.
+ * It is in the responsibility of the caller to free the bitfield
+ * once it is no longer needed.
+ *
+ * @param size size in bits
+ *
+ * @return a new bitfield or nullptr, if the creation of the bitfield failed
+ *
+ * @note MT-NOTE: sge_bitfield_new() is MT safe
+ *
+ * @see #sge_bitfield_free
+ */
 bitfield *
 sge_bitfield_new(unsigned int size) {
    bitfield *bf;
@@ -140,29 +76,20 @@ sge_bitfield_new(unsigned int size) {
    return bf;
 }
 
-/****** uti/bitfield/sge_bitfield_init() ***************************************
-*  NAME
-*     sge_bitfield_init() -- initialize a bitfield object
-*
-*  SYNOPSIS
-*     bool 
-*     sge_bitfield_init(bitfield *bf, unsigned int size) 
-*
-*  FUNCTION
-*     Initializes a bitfield object.
-*     Storage for the bits is allocated if necessary (size of the bitfield is 
-*     bigger than the preallocated storage) and the size is stored.
-*
-*  INPUTS
-*     bitfield *bf      - the bitfield to initialize
-*     unsigned int size - the targeted size of the bitfield
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     MT-NOTE: sge_bitfield_init() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Initialize a bitfield object
+ *
+ * Initializes a bitfield object.
+ * Storage for the bits is allocated if necessary (size of the bitfield is
+ * bigger than the preallocated storage) and the size is stored.
+ *
+ * @param bf the bitfield to initialize
+ * @param size the targeted size of the bitfield
+ *
+ * @return true on success, else false
+ *
+ * @note MT-NOTE: sge_bitfield_init() is MT safe
+ */
 bool
 sge_bitfield_init(bitfield *bf, unsigned int size) {
    bool ret = true;
@@ -192,30 +119,19 @@ sge_bitfield_init(bitfield *bf, unsigned int size) {
    return ret;
 }
 
-/****** uti/bitfield/sge_bitfield_copy() ***************************************
-*  NAME
-*     sge_bitfield_copy() -- copies a bitfield into another one. 
-*
-*  SYNOPSIS
-*     bool
-*     sge_bitfield_copy(const bitfield *source, bitfield *target) 
-*
-*  FUNCTION
-*     The memory has to be allocated before, and source and target has to have
-*     the same size. Otherwise it will return false and does not copy anything.
-*
-*  INPUTS
-*     const bitfield *source  - source bitfield
-*     bitfield *target        - target bitfield
-*
-*  RESULT
-*     bool - false, if one of the bitfields is nullptr or
-*                   the bitfield sizes are different
-*
-*  NOTES
-*     MT-NOTE: sge_bitfield_copy() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Copies a bitfield into another one
+ *
+ * The memory has to be allocated before, and source and target has to have
+ * the same size. Otherwise it will return false and does not copy anything.
+ *
+ * @param source source bitfield
+ * @param target target bitfield
+ *
+ * @return false, if one of the bitfields is nullptr or the bitfield sizes are different
+ *
+ * @note MT-NOTE: sge_bitfield_copy() is MT safe
+ */
 bool
 sge_bitfield_copy(const bitfield *source, bitfield *target) {
    bool ret = true;
@@ -240,30 +156,20 @@ sge_bitfield_copy(const bitfield *source, bitfield *target) {
 }
 
 
-/****** uti/bitfield/sge_bitfield_bitwise_copy() *******************************
-*  NAME
-*     sge_bitfield_copy() -- copies a bitfield into another one. 
-*
-*  SYNOPSIS
-*     bool 
-*     sge_bitfield_bitwise_copy(const bitfield *source, bitfield *target) 
-*
-*  FUNCTION
-*     The memory has to be allocated before, but the bitfields can have
-*     different sizes.  If the source is longer than the target, only the bits
-*     up to target's length are copied.
-*
-*  INPUTS
-*     const bitfield *source  - source bitfield
-*     bitfield *target        - target bitfield
-*
-*  RESULT
-*     bool - false, if one of the bitfields is nullptr
-*
-*  NOTES
-*     MT-NOTE: sge_bitfield_bitwise_copy() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Copies a bitfield into another one
+ *
+ * The memory has to be allocated before, but the bitfields can have
+ * different sizes.  If the source is longer than the target, only the bits
+ * up to target's length are copied.
+ *
+ * @param source source bitfield
+ * @param target target bitfield
+ *
+ * @return false, if one of the bitfields is nullptr
+ *
+ * @note MT-NOTE: sge_bitfield_bitwise_copy() is MT safe
+ */
 bool
 sge_bitfield_bitwise_copy(const bitfield *source, bitfield *target) {
    bool ret = true;
@@ -293,26 +199,15 @@ sge_bitfield_bitwise_copy(const bitfield *source, bitfield *target) {
    return ret;
 }
 
-/****** uti/bitfield/sge_bitfield_changed() ************************************
-*  NAME
-*     sge_bitfield_changed() -- figures out if something was changed.
-*
-*  SYNOPSIS
-*     bool 
-*     sge_bitfield_changed(const bitfield *source) 
-*
-*  FUNCTION
-*
-*  INPUTS
-*     bitfield *source - bitfield to analyze
-*
-*  RESULT
-*     bool - true, if the bitfield has a changed bit set.
-*
-*  NOTES
-*     MT-NOTE: sge_bitfield_copy() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Figures out if something was changed
+ *
+ * @param bf bitfield to analyze
+ *
+ * @return true, if the bitfield has a changed bit set.
+ *
+ * @note MT-NOTE: sge_bitfield_copy() is MT safe
+ */
 bool
 sge_bitfield_changed(const bitfield *bf) {
    bool ret = false;
@@ -333,26 +228,15 @@ sge_bitfield_changed(const bitfield *bf) {
    return ret;
 }
 
-/****** uti/bitfield/sge_bitfield_reset() ***************************************
-*  NAME
-*     sge_bitfield_reset() -- clears a bitfield
-*
-*  SYNOPSIS
-*     bool 
-*     sge_bitfield_reset(bitfield *bf) 
-*
-*  FUNCTION
-*
-*  INPUTS
-*     bitfield *bf - bitfield to reset
-*
-*  RESULT
-*     bool - false, if bf is nullptr
-*
-*  NOTES
-*     MT-NOTE: sge_bitfield_copy() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Clears a bitfield
+ *
+ * @param bf bitfield to reset
+ *
+ * @return false, if bf is nullptr
+ *
+ * @note MT-NOTE: sge_bitfield_copy() is MT safe
+ */
 bool
 sge_bitfield_reset(bitfield *bf) {
    if (bf != nullptr) {
@@ -370,25 +254,17 @@ sge_bitfield_reset(bitfield *bf) {
 }
 
 
-/****** uti/bitfield/sge_bitfield_free() ***************************************
-*  NAME
-*     sge_bitfield_free() -- destroy a bitfield
-*
-*  SYNOPSIS
-*     bitfield sge_bitfield_free(bitfield *bf) 
-*
-*  FUNCTION
-*     Destroys a bitfield. Frees all memory allocated by the bitfield.
-*
-*  INPUTS
-*     bitfield *bf - the bitfield to destroy
-*
-*  NOTES
-*     MT-NOTE: sge_bitfield_free() is MT safe
-*
-*  RESULT
-*     bitfield * - nullptr
-*******************************************************************************/
+/**
+ * @brief Destroy a bitfield
+ *
+ * Destroys a bitfield. Frees all memory allocated by the bitfield.
+ *
+ * @param bf the bitfield to destroy
+ *
+ * @return nullptr
+ *
+ * @note MT-NOTE: sge_bitfield_free() is MT safe
+ */
 bitfield *sge_bitfield_free(bitfield *bf) {
    if (bf != nullptr) {
       if (bf->size > fixed_bits) {
@@ -402,27 +278,18 @@ bitfield *sge_bitfield_free(bitfield *bf) {
    return nullptr;
 }
 
-/****** uti/bitfield/sge_bitfield_free_data() **********************************
-*  NAME
-*     sge_bitfield_free_data() -- free the bitfield data
-*
-*  SYNOPSIS
-*     bool 
-*     sge_bitfield_free_data(bitfield *bf) 
-*
-*  FUNCTION
-*     Frees the data part of a bitfield.
-*     The bitfield itself is not freed.
-*
-*  INPUTS
-*     bitfield *bf - the bitfield to work on
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     MT-NOTE: sge_bitfield_free_data() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Free the bitfield data
+ *
+ * Frees the data part of a bitfield.
+ * The bitfield itself is not freed.
+ *
+ * @param bf the bitfield to work on
+ *
+ * @return true on success, else false
+ *
+ * @note MT-NOTE: sge_bitfield_free_data() is MT safe
+ */
 bool
 sge_bitfield_free_data(bitfield *bf) {
    bool ret = true;
@@ -440,28 +307,18 @@ sge_bitfield_free_data(bitfield *bf) {
    return ret;
 }
 
-/****** uti/bitfield/sge_bitfield_set() ****************************************
-*  NAME
-*     sge_bitfield_set() -- set a bit
-*
-*  SYNOPSIS
-*     bool
-*     sge_bitfield_set(bitfield *bf, unsigned int bit) 
-*
-*  FUNCTION
-*     Sets a certain bit in a bitfield to 1.
-*
-*  INPUTS
-*     bitfield *bf - the bitfield to manipulate
-*     unsigned int bit     - the bit to set
-*
-*  NOTES
-*     MT-NOTE: sge_bitfield_set() is MT safe
-*
-*  RESULT
-*     bool - true on success, 
-*           false on error
-*******************************************************************************/
+/**
+ * @brief Set a bit
+ *
+ * Sets a certain bit in a bitfield to 1.
+ *
+ * @param bf the bitfield to manipulate
+ * @param bit the bit to set
+ *
+ * @return true on success, false on error
+ *
+ * @note MT-NOTE: sge_bitfield_set() is MT safe
+ */
 bool
 sge_bitfield_set(bitfield *bf, unsigned int bit) {
    bool ret = true;
@@ -481,28 +338,18 @@ sge_bitfield_set(bitfield *bf, unsigned int bit) {
    return ret;
 }
 
-/****** uti/bitfield/sge_bitfield_get() ****************************************
-*  NAME
-*     sge_bitfield_get() -- read a bit 
-*
-*  SYNOPSIS
-*     bool
-*     sge_bitfield_get(const bitfield *bf, unsigned int bit) 
-*
-*  FUNCTION
-*     Reads a certain bit of a bitfield and returns it's contents.
-*
-*  INPUTS
-*     bitfield *bf - the bitfield to read from
-*     unsigned int bit     - the bit to read
-*
-*  NOTES
-*     MT-NOTE: sge_bitfield_get() is MT safe
-*
-*  RESULT
-*     bool - false, if bit is not set (or input params invalid),
-*            true, if bit is set
-*******************************************************************************/
+/**
+ * @brief Read a bit
+ *
+ * Reads a certain bit of a bitfield and returns it's contents.
+ *
+ * @param bf the bitfield to read from
+ * @param bit the bit to read
+ *
+ * @return false, if bit is not set (or input params invalid), true, if bit is set
+ *
+ * @note MT-NOTE: sge_bitfield_get() is MT safe
+ */
 bool
 sge_bitfield_get(const bitfield *bf, unsigned int bit) {
    bool ret = false;
@@ -520,28 +367,18 @@ sge_bitfield_get(const bitfield *bf, unsigned int bit) {
    return ret;
 }
 
-/****** uti/bitfield/sge_bitfield_clear() **************************************
-*  NAME
-*     sge_bitfield_clear() -- clear a bit
-*
-*  SYNOPSIS
-*     bool
-*     sge_bitfield_clear(bitfield *bf, unsigned int bit) 
-*
-*  FUNCTION
-*     Clears a certain bit in a bitfield (sets its content to 0).
-*
-*  INPUTS
-*     bitfield *bf - the bitfield to manipulate
-*     unsigned int bit     - the bit to clear
-*
-*  NOTES
-*     MT-NOTE: sge_bitfield_clear() is MT safe
-*
-*  RESULT
-*     bool - true on success,
-*            false on error
-*******************************************************************************/
+/**
+ * @brief Clear a bit
+ *
+ * Clears a certain bit in a bitfield (sets its content to 0).
+ *
+ * @param bf the bitfield to manipulate
+ * @param bit the bit to clear
+ *
+ * @return true on success, false on error
+ *
+ * @note MT-NOTE: sge_bitfield_clear() is MT safe
+ */
 bool
 sge_bitfield_clear(bitfield *bf, unsigned int bit) {
    bool ret = true;
@@ -561,25 +398,18 @@ sge_bitfield_clear(bitfield *bf, unsigned int bit) {
    return ret;
 }
 
-/****** uti/bitfield/sge_bitfield_print() **************************************
-*  NAME
-*     sge_bitfield_print() -- print contents of a bitfield
-*
-*  SYNOPSIS
-*     void sge_bitfield_print(bitfield *bf, FILE *fd) 
-*
-*  FUNCTION
-*     Prints the contents of a bitfield.
-*     For each bit one digit (0/1) is printed.
-*     If nullptr is passed as file descriptor, output is sent to stdout.
-*
-*  NOTES
-*     MT-NOTE: sge_bitfield_print() is MT safe
-*
-*  INPUTS
-*     bitfield  bf - the bitfield to output
-*     FILE *fd     - filehandle or nullptr
-*******************************************************************************/
+/**
+ * @brief Print contents of a bitfield
+ *
+ * Prints the contents of a bitfield.
+ * For each bit one digit (0/1) is printed.
+ * If nullptr is passed as file descriptor, output is sent to stdout.
+ *
+ * @param bf the bitfield to output
+ * @param fd filehandle or nullptr
+ *
+ * @note MT-NOTE: sge_bitfield_print() is MT safe
+ */
 void sge_bitfield_print(const bitfield *bf, FILE *fd) {
    unsigned int i;
 

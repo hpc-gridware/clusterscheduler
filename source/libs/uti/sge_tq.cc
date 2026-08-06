@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of the thread safe task queue
+ */
+
 #include "ocs_cond.h"
 #include "sge_tq.h"
 
@@ -46,37 +50,31 @@
 
 #include "msg_common.h"
 
+/// debug layer used by every DENTER/DPRINTF in this file
 #define TQ_LAYER BASIS_LAYER
+/// name reported when the queue mutex is locked or unlocked
 #define TQ_MUTEX_NAME "tq_mutex"
 
-/****** uti/tq/sge_tq_task_compare_type() **************************************
-*  NAME
-*     sge_tq_task_compare_type() -- compare two tasks
-*
-*  SYNOPSIS
-*     static int sge_tq_task_compare_type(const void *data1, const void *data2)
-*
-*  FUNCTION
-*     This function compares two tasks and returns if the first ('data1')
-*     is smaller or bigger that the second ('data2'). It is equal if the
-*     type field of the elements are equal.
-*
-*     If the type field in 'data1' is SGE_TQ_UNKNOWN then the function
-*     will always return 0 to indicate that independent of the type field
-*     inf 'data2' all tasks are identified as equal. This makes it possible
-*     to use this function as a search function where SGE_TQ_UNKNOWN
-*     matches any object in a list like a wild card '*'.
-*
-*  INPUTS
-*     const void *data1 - key or task object
-*     const void *data2 - task
-*
-*  RESULT
-*     static int - compare result -1, 1 or 0
-*
-*  NOTES
-*     MT-NOTE: sge_tq_task_compare_type() is MT safe
-*******************************************************************************/
+/**
+ * @brief Compare two tasks
+ *
+ * This function compares two tasks and returns if the first ('data1')
+ * is smaller or bigger that the second ('data2'). It is equal if the
+ * type field of the elements are equal.
+ *
+ * If the type field in 'data1' is SGE_TQ_UNKNOWN then the function
+ * will always return 0 to indicate that independent of the type field
+ * inf 'data2' all tasks are identified as equal. This makes it possible
+ * to use this function as a search function where SGE_TQ_UNKNOWN
+ * matches any object in a list like a wild card '*'.
+ *
+ * @param data1 key or task object
+ * @param data2 task
+ *
+ * @return compare result -1, 1 or 0
+ *
+ * @note MT-NOTE: sge_tq_task_compare_type() is MT safe
+ */
 static int
 sge_tq_task_compare_type(const void *data1, const void *data2) {
    int ret;
@@ -100,32 +98,21 @@ sge_tq_task_compare_type(const void *data1, const void *data2) {
    return ret;
 }
 
-/****** uti/tq/sge_tq_task_create() ********************************************
-*  NAME
-*     sge_tq_task_create() -- creates a task element
-*
-*  SYNOPSIS
-*     static bool
-*     sge_tq_task_create(sge_tq_task_t **task, sge_tq_type_t type, void *data)
-*
-*  FUNCTION
-*     Creates a task element that can be added to a queue. Each task
-*     has a type and a data pointer. The type makes it possible to identify
-*     the type of the data pointer.
-*
-*  INPUTS
-*     sge_tq_task_t **task - new task element
-*     sge_tq_type_t type   - type id
-*     void *data           - data pointer
-*
-*  RESULT
-*     static bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_tq_task_create() is MT safe
-*******************************************************************************/
+/**
+ * @brief Creates a task element
+ *
+ * Creates a task element that can be added to a queue. Each task
+ * has a type and a data pointer. The type makes it possible to identify
+ * the type of the data pointer.
+ *
+ * @param task new task element
+ * @param type type id
+ * @param data data pointer
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_tq_task_create() is MT safe
+ */
 static bool
 sge_tq_task_create(sge_tq_task_t **task, sge_tq_type_t type, void *data) {
    bool ret = true;
@@ -150,27 +137,17 @@ sge_tq_task_create(sge_tq_task_t **task, sge_tq_type_t type, void *data) {
    DRETURN(ret);
 }
 
-/****** uti/tq/sge_tq_task_destroy() *******************************************
-*  NAME
-*     sge_tq_task_destroy() -- Destroy a task
-*
-*  SYNOPSIS
-*     static bool sge_tq_task_destroy(sge_tq_task_t **task)
-*
-*  FUNCTION
-*     Destroy a task.
-*
-*  INPUTS
-*     sge_tq_task_t **task - task to be destroyed
-*
-*  RESULT
-*     static bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_tq_task_destroy() is MT safe
-*******************************************************************************/
+/**
+ * @brief Destroy a task
+ *
+ * Destroy a task.
+ *
+ * @param task task to be destroyed
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_tq_task_destroy() is MT safe
+ */
 bool
 sge_tq_task_destroy(sge_tq_task_t **task) {
    bool ret = true;
@@ -182,30 +159,19 @@ sge_tq_task_destroy(sge_tq_task_t **task) {
    DRETURN(ret);
 }
 
-/****** uti/tq/sge_tq_create() *************************************************
-*  NAME
-*     sge_tq_create() -- Creates a task queue
-*
-*  SYNOPSIS
-*     bool sge_tq_create(sge_tq_queue_t **queue)
-*
-*  FUNCTION
-*     This function creates a task queue.
-*
-*  INPUTS
-*     sge_tq_queue_t **queue - task queue
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_tq_create() is MT safe
-*
-*  SEE ALSO
-*     uti/tq/sge_tq_destroy()
-*******************************************************************************/
+/**
+ * @brief Creates a task queue
+ *
+ * This function creates a task queue.
+ *
+ * @param queue task queue
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_tq_create() is MT safe
+ *
+ * @see #sge_tq_destroy
+ */
 bool
 sge_tq_create(sge_tq_queue_t **queue) {
    bool ret = true;
@@ -231,36 +197,24 @@ sge_tq_create(sge_tq_queue_t **queue) {
    DRETURN(ret);
 }
 
-/****** uti/tq/sge_tq_destroy() ************************************************
-*  NAME
-*     sge_tq_destroy() -- destroys a queue.
-*
-*  SYNOPSIS
-*     bool sge_tq_destroy(sge_tq_queue_t **queue)
-*
-*  FUNCTION
-*     This function destroys a queue.
-*     If data stored in the task queue has been dynamically allocated,
-*     a destroy func shall be given, which destroy the data and then calls
-*     sge_tq_destroy_task() to destroy the task data structure itself.
-*     If nullptr is given as destroy func (default), then sge_tq_destroy_task()
-*     is called as destroy func.
-*
-*  INPUTS
-*     sge_tq_queue_t **queue - task queue
-*     sge_sl_destroy_f destroy_func - destroy func which can destroy arbitrary data
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_tq_destroy() is MT safe
-*
-*  SEE ALSO
-*     uti/tq/sge_tq_create()
-*******************************************************************************/
+/**
+ * @brief Destroys a queue
+ *
+ * This function destroys a queue.
+ * If data stored in the task queue has been dynamically allocated,
+ * a destroy func shall be given, which destroy the data and then calls
+ * sge_tq_destroy_task() to destroy the task data structure itself.
+ * If nullptr is given as destroy func (default), then sge_tq_destroy_task()
+ * is called as destroy func.
+ *
+ * @param queue task queue
+ * @param destroy_func destroy func which can destroy arbitrary data
+ *
+ *
+ * @note MT-NOTE: sge_tq_destroy() is MT safe
+ *
+ * @see #sge_tq_create
+ */
 void
 sge_tq_destroy(sge_tq_queue_t **queue, sge_sl_destroy_f destroy_func) {
    DENTER(TQ_LAYER);
@@ -275,25 +229,17 @@ sge_tq_destroy(sge_tq_queue_t **queue, sge_sl_destroy_f destroy_func) {
    DRETURN_VOID;
 }
 
-/****** uti/tq/sge_tq_get_task_count() *****************************************
-*  NAME
-*     sge_tq_get_task_count() -- Returns the number of tasks in queue
-*
-*  SYNOPSIS
-*     uint32_t sge_tq_get_task_count(sge_tq_queue_t *queue)
-*
-*  FUNCTION
-*     This function returns the number of tasks in 'queue'
-*
-*  INPUTS
-*     sge_tq_queue_t *queue - task queue
-*
-*  RESULT
-*     uint32_t - number of tasks
-*
-*  NOTES
-*     MT-NOTE: sge_tq_get_task_count() is MT safe
-*******************************************************************************/
+/**
+ * @brief Returns the number of tasks in queue
+ *
+ * This function returns the number of tasks in 'queue'
+ *
+ * @param queue task queue
+ *
+ * @return number of tasks
+ *
+ * @note MT-NOTE: sge_tq_get_task_count() is MT safe
+ */
 uint32_t
 sge_tq_get_task_count(sge_tq_queue_t *queue) {
    uint32_t count = 0;
@@ -305,30 +251,21 @@ sge_tq_get_task_count(sge_tq_queue_t *queue) {
    DRETURN(count);
 }
 
-/****** uti/tq/sge_tq_get_waiting_count() **************************************
-*  NAME
-*     sge_tq_get_waiting_count() -- Returns number of waiting threads
-*
-*  SYNOPSIS
-*     uint32_t sge_tq_get_waiting_count(sge_tq_queue_t *queue)
-*
-*  FUNCTION
-*     This function returns the number of waiting threads. If this number
-*     is bigger than 0 than this indicates that threads are waiting
-*     in the function sge_tq_wait_for_task().
-*
-*  INPUTS
-*     sge_tq_queue_t *queue - task queue
-*
-*  RESULT
-*     uint32_t - number of threads waiting
-*
-*  NOTES
-*     MT-NOTE: sge_tq_get_waiting_count() is MT safe
-*
-*  SEE ALSO
-*     uti/tq/sge_tq_wait_for_task()
-*******************************************************************************/
+/**
+ * @brief Returns number of waiting threads
+ *
+ * This function returns the number of waiting threads. If this number
+ * is bigger than 0 than this indicates that threads are waiting
+ * in the function sge_tq_wait_for_task().
+ *
+ * @param queue task queue
+ *
+ * @return number of threads waiting
+ *
+ * @note MT-NOTE: sge_tq_get_waiting_count() is MT safe
+ *
+ * @see #sge_tq_wait_for_task
+ */
 uint32_t
 sge_tq_get_waiting_count(sge_tq_queue_t *queue) {
    uint32_t count = 0;
@@ -342,40 +279,27 @@ sge_tq_get_waiting_count(sge_tq_queue_t *queue) {
    DRETURN(count);
 }
 
-/****** uti/tq/sge_tq_store_notify() *******************************************
-*  NAME
-*     sge_tq_store_notify() -- Appends a new task at the end of queue
-*
-*  SYNOPSIS
-*     bool
-*     sge_tq_store_notify(sge_tq_queue_t *queue,
-*                         sge_tq_type_t type, void *data)
-*
-*  FUNCTION
-*     This function creates a new task using 'type' and 'data'. The new
-*     task will then be appended to 'queue'. If there are threads waiting
-*     in sge_tq_wait_for_task() then one of those waiting threads will be
-*     triggered so that it will wake up.
-*
-*     If there are multiple threads waiting then it might happen that
-*     always the same thread wakes up to catch the task (starvation).
-*
-*  INPUTS
-*     sge_tq_queue_t *queue - task queue
-*     sge_tq_type_t type    - task type
-*     void *data            - task data
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_tq_store_notify() is MT safe
-*
-*  SEE ALSO
-*     uti/tq/sge_tq_wait_for_task()
-*******************************************************************************/
+/**
+ * @brief Appends a new task at the end of queue
+ *
+ * This function creates a new task using 'type' and 'data'. The new
+ * task will then be appended to 'queue'. If there are threads waiting
+ * in sge_tq_wait_for_task() then one of those waiting threads will be
+ * triggered so that it will wake up.
+ *
+ * If there are multiple threads waiting then it might happen that
+ * always the same thread wakes up to catch the task (starvation).
+ *
+ * @param queue task queue
+ * @param type task type
+ * @param data task data
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_tq_store_notify() is MT safe
+ *
+ * @see #sge_tq_wait_for_task
+ */
 bool
 sge_tq_store_notify(sge_tq_queue_t *queue, sge_tq_type_t type, void *data) {
    bool ret = true;
@@ -400,31 +324,19 @@ sge_tq_store_notify(sge_tq_queue_t *queue, sge_tq_type_t type, void *data) {
    DRETURN(ret);
 }
 
-/****** uti/tq/sge_tq_wakeup_waiting() *****************************************
-*  NAME
-*     sge_tq_wakeup_waiting() -- wake up all waitng threads
-*
-*  SYNOPSIS
-*     bool sge_tq_wakeup_waiting(sge_tq_queue_t *queue)
-*
-*  FUNCTION
-*     This function wakes up all waiting threads that are blocking in
-*     sge_tq_wait_for_task().
-*
-*  INPUTS
-*     sge_tq_queue_t *queue - task queue
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_tq_wakeup_waiting() is MT safe
-*
-*  SEE ALSO
-*     uti/tq/sge_tq_wait_for_task()
-*******************************************************************************/
+/**
+ * @brief Wake up all waitng threads
+ *
+ * This function wakes up all waiting threads that are blocking in
+ * sge_tq_wait_for_task().
+ *
+ * @param queue task queue
+ *
+ *
+ * @note MT-NOTE: sge_tq_wakeup_waiting() is MT safe
+ *
+ * @see #sge_tq_wait_for_task
+ */
 void
 sge_tq_wakeup_waiting(sge_tq_queue_t *queue) {
    DENTER(TQ_LAYER);
@@ -439,51 +351,34 @@ sge_tq_wakeup_waiting(sge_tq_queue_t *queue) {
    DRETURN_VOID;
 }
 
-/****** uti/tq/sge_tq_wait_for_task() ******************************************
-*  NAME
-*     sge_tq_wait_for_task() -- Waits for a task
-*
-*  SYNOPSIS
-*     bool
-*     sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds,
-*                          sge_tq_type_t type, void **data);
-*
-*  FUNCTION
-*     This function tries to get a task of 'type'. If there is one
-*     available then the data pointer will be returned in 'data'.  If there
-*     is none available the this function will sleep a number of 'seconds'
-*     before it checks again if there is a task available.
-*
-*     The sleep time might be interrupted by another thread that adds a
-*     task to the queue via sge_tq_store_notify() or by a thread that
-*     called sge_tq_wakeup_waiting().
-*
-*     The function returns either if a task of the correct type is
-*     available of if sge_thread_has_shutdown_started() returns true to
-*     indicate that the shutdown of the thread/process has been triggered.
-*     In that case the function might return with nullptr in *data.
-*
-*  INPUTS
-*     sge_tq_queue_t *queue - task queue
-*     int seconds           - max number of seconds to sleep
-*     sge_tq_type_t type    - type of the task that should be returned
-*     void **data           - nullptr in case of thread/process shutdown
-*                             or the data pointer of the task
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: sge_tq_wait_for_task() is MT safe
-*
-*  SEE ALSO
-*     uti/tq/sge_tq_store_notify()
-*     uti/tq/sge_tq_wakeup_waiting()
-*     uti/thread_ctrl/sge_thread_has_shutdown_started()
-*     uti/thread_ctrl/sge_thread_notify_all_waiting()
-*******************************************************************************/
+/**
+ * @brief Waits for a task
+ *
+ * This function tries to get a task of 'type'. If there is one
+ * available then the data pointer will be returned in 'data'.  If there
+ * is none available the this function will sleep a number of 'seconds'
+ * before it checks again if there is a task available.
+ *
+ * The sleep time might be interrupted by another thread that adds a
+ * task to the queue via sge_tq_store_notify() or by a thread that
+ * called sge_tq_wakeup_waiting().
+ *
+ * The function returns either if a task of the correct type is
+ * available of if sge_thread_has_shutdown_started() returns true to
+ * indicate that the shutdown of the thread/process has been triggered.
+ * In that case the function might return with nullptr in *data.
+ *
+ * @param queue task queue
+ * @param seconds max number of seconds to sleep
+ * @param type type of the task that should be returned
+ * @param data nullptr in case of thread/process shutdown or the data pointer of the task
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: sge_tq_wait_for_task() is MT safe
+ *
+ * @see #sge_tq_store_notify, #sge_tq_wakeup_waiting, `sge_thread_has_shutdown_started()`, `sge_thread_notify_all_waiting()`
+ */
 bool
 sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds,
                      sge_tq_type_t type, void **data) {

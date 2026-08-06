@@ -33,26 +33,43 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief String helpers: copying, splitting, joining and formatting
+ */
+
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define SFQ  "\"%-.100s\""    /* save string format quoted */
-#define SFN  "%-.100s"        /* save string format non-quoted */
-#define SFN2 "%-.200s"
-#define SFN4 "%-.400s"
-#define SFNMAX "%-.2047s"     /* write to buffer of size MAX_STRING_SIZE */
+/** @name Length limited printf formats for strings
+ *
+ * Every one of these truncates rather than overflowing, which is what makes
+ * them safe to use with a fixed size buffer. Pick the one that matches what is
+ * being printed: object names and paths have very different length limits.
+ * @{
+ */
+#define SFQ  "\"%-.100s\""    ///< object name, quoted, cut at 100 characters
+#define SFN  "%-.100s"        ///< object name, cut at 100 characters
+#define SFN2 "%-.200s"        ///< string cut at 200 characters
+#define SFN4 "%-.400s"        ///< string cut at 400 characters
+#define SFNMAX "%-.2047s"     ///< string for a buffer of `MAX_STRING_SIZE`
 
 /* File and directory paths. SFN/SFQ cut at 100 characters, which is right for
  * object names - verify_str_key() limits those anyway - but far too short for a
  * path: SGE_PATH_MAX is 1024, and a truncated path is worse than a missing one
  * because it still looks like a real one (CS-2457). Use these for a path. */
-#define PFNMAX "%-.1023s"     /* path, write to buffer of size SGE_PATH_MAX */
-#define PFQMAX "\"%-.1023s\"" /* path, quoted */
-#define SN_UNLIMITED  "%s"    /* non-quoted string not limited intentionally */
+#define PFNMAX "%-.1023s"     ///< path, for a buffer of `SGE_PATH_MAX`
+#define PFQMAX "\"%-.1023s\"" ///< path, quoted, for a buffer of `SGE_PATH_MAX`
+#define SN_UNLIMITED  "%s"    ///< deliberately unlimited, use only where the length is known
+/** @} */
 
+/** @brief Parser state of #sge_strtok_r, the reentrant strtok variant
+ *
+ * Created by the first #sge_strtok_r call and released with
+ * #sge_free_saved_vars.
+ */
 struct saved_vars_s {
-   char *static_cp;
-   char *static_str;
+   char *static_cp;    ///< position reached in the string being tokenised
+   char *static_str;   ///< the writable copy the tokens point into
 };
 
 const char *sge_basename(const char *name, int delim);
@@ -126,4 +143,5 @@ const char *sge_str_move_left(char *start, char *substr);
 
 void sge_str_reverse(char *string);
 
+/// case insensitive string compare, following the `strcmp` convention
 #define SGE_STRCASECMP(a, b) strcasecmp(a, b)
