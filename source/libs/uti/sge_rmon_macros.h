@@ -52,6 +52,11 @@
 #  include <note.h>
 #endif
 
+/** @brief Open monitoring and trace entry into a program's main function
+ *
+ * @param layer debug layer this translation unit belongs to
+ * @param program name used in the trace output
+ */
 #define DENTER_MAIN(layer, program) \
    static const char *SGE_FUNC = program; \
    static const int xaybzc = layer; \
@@ -67,6 +72,13 @@
    } \
    void()
 
+/** @brief Trace entry into a function
+ *
+ * Must be the first statement of the function, and must be paired with
+ * #DRETURN or #DRETURN_VOID on every return path.
+ *
+ * @param layer debug layer this translation unit belongs to
+ */
 #define DENTER(layer) \
    static const int xaybzc = layer; \
    if (rmon_condition(xaybzc, TRACE)) { \
@@ -80,6 +92,10 @@
    } \
    void()
 
+/** @brief As #DENTER, but without opening a new trace level
+ *
+ * @param layer debug layer this translation unit belongs to
+ */
 #define DENTER_(layer) \
    static const int xaybzc = layer; \
    if (rmon_condition(xaybzc, TRACE)) { \
@@ -87,6 +103,10 @@
    } \
    void()
 
+/** @brief Trace the exit of a function and return @p ret
+ *
+ * @param ret the value to return
+ */
 #define DRETURN(ret) \
    if (rmon_condition(xaybzc, TRACE)) { \
       const char *__thread_name = component_get_thread_name(); \
@@ -99,12 +119,18 @@
    } \
    return ret
 
+/** @brief As #DRETURN, but without closing a trace level
+ *
+ * @param ret the value to return
+ */
 #define DRETURN_(ret) \
    if (rmon_condition(xaybzc, TRACE)) { \
       rmon_mexit(__func__, __FILE__, __LINE__, nullptr, -1); \
    } \
    return ret
 
+/** @brief Trace the exit of a void function and return
+ */
 #define DRETURN_VOID \
    if (rmon_condition(xaybzc, TRACE)) { \
       const char *__thread_name = component_get_thread_name(); \
@@ -117,12 +143,16 @@
    } \
    return
 
+/** @brief As #DRETURN_VOID, but without closing a trace level
+ */
 #define DRETURN_VOID_ \
    if (rmon_condition(xaybzc, TRACE)) { \
       rmon_mexit(__func__, __FILE__, __LINE__, nullptr, -1); \
    } \
    return
 
+/** @brief Trace that execution reached this point
+ */
 #define DTRACE \
    if (rmon_condition(xaybzc, TRACE)) { \
       const char *__thread_name = component_get_thread_name(); \
@@ -135,13 +165,19 @@
    } \
    void()
 
+/** @brief As #DTRACE, but without opening a trace level
+ */
 #define DTRACE_                                                                  \
    if (rmon_condition(xaybzc, TRACE)) {                                          \
       rmon_mtrace(__func__, __FILE__, __LINE__, nullptr, -1);                    \
    }
 
+/** @brief True when #DPRINTF output would actually be written
+ */
 #define DPRINTF_IS_ACTIVE rmon_condition(xaybzc, INFOPRINT)
 
+/** @brief Write a printf style debug message, if the layer has INFOPRINT enabled
+ */
 #define DPRINTF(...) \
    if (rmon_condition(xaybzc, INFOPRINT)) { \
       rmon_helper_t *helper = rmon_get_helper(); \
@@ -161,13 +197,19 @@
    } \
    void()
 
+/** @brief As #DPRINTF, but without the trace level prefix
+ */
 #define DPRINTF_(...) \
    if (rmon_condition(xaybzc, INFOPRINT)) { \
       rmon_mprintf(__VA_ARGS__); \
    }
 
+/** @brief True when tracing is enabled for this translation unit's layer
+ */
 #define ISTRACE (rmon_condition(xaybzc, TRACE))
 
+/** @brief True when monitoring is enabled and at least one layer is traced
+ */
 #define TRACEON  (rmon_is_enabled() && !rmon_mliszero(&RMON_DEBUG_ON))
 
 #else /* NO_SGE_COMPILE_DEBUG */
@@ -183,12 +225,15 @@
 
 #endif /* NO_SGE_COMPILE_DEBUG */
 
+/// currently enabled debug classes per layer
 extern monitoring_level RMON_DEBUG_ON;
 
 int rmon_condition(int layer, int debug_class);
 
 int rmon_is_enabled();
+/// switch monitoring off for this process
 void rmon_disable();
+/// switch monitoring on for this process
 void rmon_enable();
 
 void rmon_mopen();
@@ -201,9 +246,11 @@ void rmon_mexit(const char *func, const char *file, int line, const char *thread
 
 void rmon_mprintf(const char *fmt, ...);
 
+/** @brief Thread local data used to label trace output */
 struct rmon_helper_t {
-    char thread_name[32];
-    int thread_id;
+    char thread_name[32];   ///< name of the thread, truncated to 31 characters
+    int thread_id;          ///< id of the thread
 };
 
+/// helper of the calling thread, allocated on first use
 rmon_helper_t *rmon_get_helper();

@@ -62,21 +62,21 @@
  * You have to call MONITOR_IDLE_TIME and sge_monitor_output. After that
  * everything is up to you to design...
  *
- * -----start thread --------------
+ * @code
  *    monitoring_t monitor;
- *   
- *    sge_monitor_init(&monitor, "THREAD NAME", `<EXTENSION>`, `<WARNING>`, `<ERROR>`);
- *   
- *    <thread loop> {
- *       
- *       MONITOR_IDLE_TIME(<wait for something>,(&monitor), monitor_time);
- *   
- *      < do your stuff and monitoring >
- *   
+ *
+ *    sge_monitor_init(&monitor, "THREAD NAME", extension, warning_to, error_to);
+ *
+ *    while (thread_runs) {
+ *
+ *       MONITOR_IDLE_TIME(wait_for_something(), (&monitor), monitor_time);
+ *
+ *       // do your work, and the monitoring calls that go with it
+ *
  *       sge_monitor_output(&monitor);
  *    }
  *    sge_monitor_free(&monitor);
- * ------end thread----------------
+ * @endcode
  *
  * Important:
  * ----------

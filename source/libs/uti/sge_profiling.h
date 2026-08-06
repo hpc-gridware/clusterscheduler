@@ -55,7 +55,7 @@
  * Reports wallclock, busy time, and user and system CPU time. Profiling can be
  * started, stopped and reset, and individual code blocks measured by starting
  * and stopping a measurement around them. Results can be read back one metric
- * at a time, or as a ready formatted summary with #prof_get_info_string.
+ * at a time, or as a ready formatted summary with `prof_get_info_string()`.
  *
  * @section uti_profiling_levels Levels
  *
@@ -75,8 +75,8 @@
  *
  * @note MT-NOTE: this module is MT safe provided `prof_mt_init()` and/or
  *       #sge_prof_set_enabled are called before profiling starts, and
- *       #sge_prof_cleanup is called after every thread that profiles has
- *       stopped. #sge_prof_cleanup frees the profiling array.
+ *       `sge_prof_cleanup()` is called after every thread that profiles has
+ *       stopped. `sge_prof_cleanup()` frees the profiling array.
  *
  * @bug In a multithreaded program the `times()` system call reports per process
  *      CPU times, but this module treats them as per thread values. The CPU
@@ -149,7 +149,7 @@ typedef struct {
    prof_level akt_level;      ///< level currently being measured
    bool ever_started;         ///< true once profiling has been started at least once
    pthread_t thread_id;       ///< thread this data belongs to
-   dstring info_string;       ///< buffer for #prof_get_info_string
+   dstring info_string;       ///< buffer for `prof_get_info_string()`
 } sge_prof_info_t;
 
 void sge_prof_set_enabled(bool enabled);

@@ -55,15 +55,19 @@
 
 #include "uti/sge_rmon_monitoring_level.h"
 
+/// default monitoring type compiled into this translation unit
 #define DEBUG RMON_LOCAL
 
+/** @brief Monitoring state and buffer sizing */
 enum {
-    RMON_NONE = 0,       /* monitoring off */
-    RMON_LOCAL = 1,      /* monitoring on */
-    RMON_BUF_SIZE = 5120 /* size of buffer used for monitoring messages */
+    RMON_NONE = 0,       ///< monitoring off
+    RMON_LOCAL = 1,      ///< monitoring on
+    RMON_BUF_SIZE = 5120 ///< size of the buffer used for monitoring messages
 };
 
+/// currently enabled debug classes per layer
 monitoring_level RMON_DEBUG_ON = {{0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L}};
+/// saved copy of #RMON_DEBUG_ON, used while tracing is temporarily suppressed
 monitoring_level RMON_DEBUG_ON_STORAGE = {{0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L}};
 
 static const char *empty = "    ";
@@ -86,6 +90,10 @@ static void rmon_helper_key_init();
 
 static void rmon_helper_key_destroy(void *ctx);
 
+/** @brief Thread local helper holding the thread name and id for trace output
+ *
+ * @return the calling thread's helper, allocated on first use
+ */
 rmon_helper_t *rmon_get_helper() {
     pthread_once(&rmon_helper_key_once, rmon_helper_key_init);
     auto *helper = (rmon_helper_t *) pthread_getspecific(rmon_helper_key);
@@ -152,7 +160,9 @@ static void rmon_helper_key_destroy(void *ctx) {
  */
 int rmon_condition(int layer, int rmon_class) {
     int ret_val;
+/// @cond   function local shorthand, undefined again a few lines below
 #define MLGETL(s, i) ((s)->ml[i]) /* for the sake of speed */
+/// @endcond
     ret_val = ((mtype != RMON_NONE) && (rmon_class & MLGETL(&RMON_DEBUG_ON, layer))) ? 1 : 0;
     return ret_val;
 #undef MLGETL
@@ -165,9 +175,7 @@ int rmon_condition(int layer, int rmon_class) {
  * no actual monitoring output may be generated. Generation of monitoring
  * output is controlled by 'rmon_condition()'.
  *
- * @param void none
- *
- * @return monitoring enabled 0 - monitoring disabled
+ * @return 1 when monitoring is enabled, 0 when it is disabled
  *
  * @note MT-NOTE: 'rmon_is_enabled()' is MT safe with exceptions. See introduction!
  */
@@ -175,10 +183,12 @@ int rmon_is_enabled() {
     return ((mtype == RMON_LOCAL) ? 1 : 0);
 }
 
+/** @brief Switch monitoring off for this process */
 void rmon_disable() {
    mtype = RMON_NONE;
 }
 
+/** @brief Switch monitoring on for this process */
 void rmon_enable() {
    mtype = RMON_LOCAL;
 }
@@ -192,13 +202,10 @@ void rmon_enable() {
  * target (i.e. output stream) according to 'SGE_DEBUG_TARGET' environment
  * variable. Enable monitoring.
  *
- * NOTE: Even though 'argc' and 'argv' are not used, they do make sure that
- * 'rmon_mopen()' is only used within a main function to a certain degree.
+ * @note The function used to take `argc` and `argv` to discourage calling it
+ *       outside a main function. Those parameters are gone; the convention
+ *       that only `DENTER_MAIN` calls it remains.
  *
- * @param argc not used char *argv[]      - not used
- * @param programname not used
- *
- * @return none
  *
  * @note MT-NOTE: 'rmon_mopen()' is NOT MT safe. See introduction!
  */
@@ -220,9 +227,9 @@ void rmon_mopen() {
  *
  * Monitor function entry. Generate function entry message.
  *
- * @param func function name
- *
- * @return none
+ * @param func name of the function being entered
+ * @param thread_name name of the calling thread
+ * @param thread_id id of the calling thread
  *
  * @note MT-NOTE: 'rmon_menter()' is MT safe with exceptions. See introduction!
  */
@@ -238,11 +245,11 @@ void rmon_menter(const char *func, const char *thread_name, int thread_id) {
  *
  * Monitor function exit. Generate function exit message.
  *
- * @param func function name
- * @param file source file in which function is defined
- * @param line number of invokation source line
- *
- * @return none
+ * @param func name of the function
+ * @param file source file the function is defined in
+ * @param line source line of the call
+ * @param thread_name name of the calling thread
+ * @param thread_id id of the calling thread
  *
  * @note MT-NOTE: 'rmon_mexit()' is MT safe with exceptions. See introduction!
  */
@@ -257,11 +264,11 @@ void rmon_mexit(const char *func, const char *file, int line, const char *thread
  *
  * Monitor function progress. Generate function trace message.
  *
- * @param func function name
- * @param file source file in which function is defined
- * @param line number of invokation source line
- *
- * @return none
+ * @param func name of the function
+ * @param file source file the function is defined in
+ * @param line source line of the call
+ * @param thread_name name of the calling thread
+ * @param thread_id id of the calling thread
  *
  * @note MT-NOTE: 'rmon_mtrace()' is MT safe with exceptions. See introduction!
  */
@@ -277,9 +284,7 @@ void rmon_mtrace(const char *func, const char *file, int line, const char *threa
  *
  * Print formatted monitoring message.
  *
- * @param fmt format string ...             - variable argument list
- *
- * @return none
+ * @param fmt printf style format string, followed by its arguments
  *
  * @note MT-NOTE: 'rmon_mprintf()' is MT safe with exceptions. See introduction!
  */

@@ -846,6 +846,11 @@ char *sge_smf_get_instance_next_state()
 
 #else
 
+/** @brief Placeholder so the translation unit is not empty without SMF
+ *
+ * Built when SMF support is compiled out. Some toolchains reject an object file
+ * with no external symbol at all.
+ */
 void dummy() {
    /* Just a dummy function */
    void();

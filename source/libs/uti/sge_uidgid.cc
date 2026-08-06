@@ -67,19 +67,22 @@
 
 #include "msg_common.h"
 
+/// debug layer used by every DENTER/DPRINTF in this file
 #define UIDGID_LAYER CULL_LAYER
+/// longest line accepted when reading a passwd or group file
 #define MAX_LINE_LENGTH 10000
 
 enum {
-   SGE_MAX_USERGROUP_BUF = 255
+   SGE_MAX_USERGROUP_BUF = 255   ///< initial buffer size for getpwnam_r/getgrgid_r results
 };
 
+/** @brief The admin user this process runs work as, resolved once and cached */
 typedef struct {
-   pthread_mutex_t mutex;
-   const char *user_name;
-   uid_t uid;
-   gid_t gid;
-   bool initialized;
+   pthread_mutex_t mutex;    ///< protects every other field
+   const char *user_name;    ///< name of the admin user
+   uid_t uid;                ///< resolved user id
+   gid_t gid;                ///< resolved group id
+   bool initialized;         ///< true once the name has been resolved
 } admin_user_t;
 
 static admin_user_t admin_user = {PTHREAD_MUTEX_INITIALIZER, nullptr, (uid_t) -1, (gid_t) -1, false};
@@ -114,8 +117,9 @@ sge_is_start_user_superuser() {
  * Set SGE/EE admin user. If 'user' is "none" then use the current
  * uid/gid. Ignore if current user is not root.
  *
- * @param user admin user name
- * @param err_str error message
+ * @param user admin user name, or "none" to use the current uid/gid
+ * @param err_str buffer receiving an error message
+ * @param err_str_size size of @p err_str in bytes
  *
  * @return error state 0 - OK -1 - Username does not exist -2 - Admin user was already set
  */
@@ -450,7 +454,7 @@ sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
  * @param dst [out] Destination buffer to store the group name.
  * @param sz [in] Size of the destination buffer.
  * @param retries [in] Number of retries for resolving the group name.
- * @retrn 0 on success, 1 on failure.
+ * @return 0 on success, 1 on failure.
  * @note This function is MT safe.
  */
 int
@@ -476,6 +480,19 @@ sge_gid2group(gid_t gid, char *dst, const size_t sz, const int retries) {
    DRETURN(0);
 }
 
+/** @brief Resolve a group id to its name, with a one entry cache
+ *
+ * @param gid the group id to resolve
+ * @param[in,out] last_gid gid resolved by the previous call; used as a cache so
+ *                repeated lookups of the same group cost nothing
+ * @param[in,out] group_name_p receives the group name; the previous value is
+ *                reused when @p gid equals @p last_gid, otherwise it is freed
+ *                and replaced. The caller owns the result
+ * @param retries number of retries when NIS or LDAP is slow to answer
+ * @return 0 on success, 1 when the group could not be resolved
+ *
+ * @note MT-NOTE: sge_gid2group() is MT safe
+ */
 int
 sge_gid2group(gid_t gid, gid_t *last_gid, char **group_name_p, int retries) {
    struct group *gr;
@@ -727,6 +744,27 @@ _sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user, gid_t m
    return 0;
 }
 
+/** @brief Switch the process to a user, its group and an additional group
+ *
+ * Resolves @p user, sets the group id, the supplementary group @p add_grp_id
+ * and finally the user id, so the process gives up its privileges in the order
+ * that cannot be undone.
+ *
+ * @param user the user to become
+ * @param intermediate_user if not nullptr, the user to switch to first
+ * @param min_gid lowest acceptable group id; smaller ones are rejected
+ * @param min_uid lowest acceptable user id; smaller ones are rejected
+ * @param add_grp supplementary group to add, 0 for none
+ * @param err_str buffer receiving an error message
+ * @param err_str_size size of @p err_str in bytes
+ * @param use_qsub_gid use the group id configured for qsub instead of the
+ *                     user's own
+ * @param qsub_gid group id to use when @p use_qsub_gid is set
+ * @param skip_silently do not log when the supplementary group is already set
+ * @return 0 on success, a negative value on error, with @p err_str describing it
+ *
+ * @note MT-NOTE: sge_set_uid_gid_addgrp() is not MT safe
+ */
 int sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user,
                            int min_gid, int min_uid, int add_grp, char *err_str, size_t err_str_size,
                            int use_qsub_gid, gid_t qsub_gid, bool skip_silently) {
@@ -748,8 +786,9 @@ int sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user,
  * If an error occurs, a descriptive string will be written to
  * err_str.
  *
- * @param add_grp_id new gid
- * @param err_str if points to a valid string buffer error descriptions will be written here
+ * @param add_grp_id new gid; 0 means do nothing and succeed
+ * @param err_str if not nullptr, an error description is written here
+ * @param err_str_size size of @p err_str in bytes
  * @param skip_silently skip silently if setting the group is skipped because this would exceed the NGROUPS_MAX limit.
  *
  * @return error state 0 - Success -1 - Error
@@ -841,7 +880,7 @@ sge_add_group(gid_t add_grp_id, char *err_str, size_t err_str_size, bool skip_si
  * @param name points to user name
  * @param pw points to structure which will be updated upon success
  * @param buffer points to memory referenced by 'pw'
- * @param buflen size of 'buffer' in bytes
+ * @param bufsize size of @p buffer in bytes
  *
  * @return Pointer to entry matching user name upon success, nullptr otherwise.
  *
@@ -877,7 +916,7 @@ sge_getpwnam_r(const char *name, struct passwd *pw, char *buffer, size_t bufsize
  *  @param gid group ID
  *  @param pg points to structure which will be updated upon success
  *  @param buffer points to memory referenced by 'pg'
- *  @param bufsize size of 'buffer' in bytes
+ *  @param buffer_size size of @p buffer in bytes, grown when too small
  *  @param retries number of retries to connect to NIS/LDAP
  *  @return Pointer to entry matching group information upon success, nullptr otherwise.
  */
@@ -1021,7 +1060,6 @@ get_admin_user(uid_t *theUID, gid_t *theGID) {
  *
  * Returns the admin user name.
  *
- * @param void None
  *
  * @return Admin user name
  *
@@ -1037,7 +1075,6 @@ get_admin_user_name() {
  *
  * Returns if there is a admin user setting configured and set.
  *
- * @param void None
  *
  * @return result true  - there is a setting
  *

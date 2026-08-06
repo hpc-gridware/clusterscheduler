@@ -67,17 +67,19 @@
  *
  **************************************************/
 
+/** @brief One line of the qping output, belonging to one monitored thread */
 typedef struct {
-   const char *name;           /* thread name */
-   struct timeval last_wait_time;  /* last wait time, last time when one thread loop finished */
-   long warning_timeout; /* how long can the thread be blocked before a warning is shown */
-   long error_timeout;   /* how long can the thread be blocked before an error is shown */
-   time_t update_time;     /* last update time */
-   dstring *output;          /* thread specific info line */
-   pthread_mutex_t Output_Mutex;    /* guards one line */
+   const char *name;                ///< thread name
+   struct timeval last_wait_time;   ///< when this thread last completed a loop
+   long warning_timeout;            ///< seconds without progress before a warning is shown
+   long error_timeout;              ///< seconds without progress before an error is shown
+   time_t update_time;              ///< when #output was last refreshed
+   dstring *output;                 ///< the info line of this thread
+   pthread_mutex_t Output_Mutex;    ///< guards this line
 } Output_t;
 
-#define MAX_OUTPUT_LINES 512           /* max number of threads to monitor at the same time */
+/// largest number of threads that can be monitored at the same time
+#define MAX_OUTPUT_LINES 512
 static bool Output_initialized = false;
 static Output_t Output[MAX_OUTPUT_LINES];
 
@@ -172,11 +174,12 @@ void sge_monitor_free(monitoring_t *monitor) {
  * Sets the default values and inits the structure, finds the line pos
  * for the comlib output
  *
- * @param monitor monitoring structure
- * @param thread_name the thread name
- * @param ext the extension time (-> enum)
- * @param warning_timeout the warning timeout (-> enum)
- * @param error_timeout the error timeout (-> enum)
+ * @param monitor monitoring structure to initialise
+ * @param thread_name name of the thread, shown in the output
+ * @param ext which extension counters to attach, see #extension_t
+ * @param warning_timeout seconds without progress before a warning is shown
+ * @param error_timeout seconds without progress before an error is shown
+ * @param json_output where to send the JSON document, or nullptr
  *
  * @note MT-NOTE: sge_monitor_init() is MT safe
  */

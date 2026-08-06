@@ -53,7 +53,9 @@
 
 #include "sge.h"
 
+/// array tasks spooled into one directory before a new one is started
 #define MAX_JA_TASKS_PER_DIR  (4096l)
+/// array tasks stored in one spool file
 #define MAX_JA_TASKS_PER_FILE (1l)
 
 static int silent_flag = 0;
@@ -142,10 +144,11 @@ uint32_t sge_get_ja_tasks_per_file() {
  *
  * ???
  *
- * @param buffer buffer for file/pathname
- * @param id type of file/pathname
- * @param format_flags format of returned string
- * @param spool_flags context where the name is needed
+ * @param buffer buffer receiving the path
+ * @param buffer_size size of @p buffer in bytes
+ * @param id which file or directory to build, see #sge_file_path_id_t
+ * @param format_flags how much of the path to return, see #sge_file_path_format_t
+ * @param spool_flags context the name is needed in, see #sge_spool_flags_t
  * @param ulong_val1 1st ulong
  * @param ulong_val2 2nd ulong
  * @param string_val1 1st string
@@ -253,13 +256,14 @@ char *sge_get_file_path(char *buffer, size_t buffer_size, sge_file_path_id_t id,
  * This function writes an additional comment into a file. First
  * character in a comment line is 'comment_char'.
  *
- * @param file file descriptor
- * @param comment_char first character in a comment line
+ * @param file file to write to
  *
  * @return -1 on error else 0
  *
  * @note MT-NOTE: sge_spoolmsg_write() is not MT safe due to FPRINTF() macro
- */
+ * @param comment_char character introducing the comment line
+ * @param version version string written into the comment
+*/
 int sge_spoolmsg_write(FILE *file, char comment_char, const char *version) {
    int i;
 
@@ -275,6 +279,13 @@ int sge_spoolmsg_write(FILE *file, char comment_char, const char *version) {
    return -1;
 }
 
+/** @brief Add a comment line to a spool file, C++ stream variant
+ *
+ * @param stream stream to write to
+ * @param comment_char character introducing the comment line
+ * @param version version string written into the comment
+ * @return 0 on success, -1 on write error
+ */
 int sge_spoolmsg_write(std::ofstream &stream, char comment_char, const char *version) {
    stream << comment_char << " Version: " << version << '\n';
    for (int i = 0; spoolmsg_message[i] != nullptr; ++i) {
@@ -284,6 +295,12 @@ int sge_spoolmsg_write(std::ofstream &stream, char comment_char, const char *ver
    return stream.fail() ? -1 : 0;
 }
 
+/** @brief Append a spool file comment line to a dstring
+ *
+ * @param ds the dstring to append to
+ * @param comment_char character introducing the comment line
+ * @param version version string written into the comment
+ */
 void sge_spoolmsg_append(dstring *ds, char comment_char, const char *version) {
    int i = 0;
 
@@ -414,7 +431,14 @@ char *sge_get_confval(const char *conf_val, const char *fname) {
  * @note MT-NOTE: sge_get_confval_array() is MT safe
  *
  * @bug Function can not differ multiple similar named entries.
- */
+ *
+ * @param fname path of the bootstrap file to read
+ * @param n number of entries in @p name and @p value
+ * @param nmissing how many of the entries may be absent without it being an error
+ * @param name the keys to look for, see #bootstrap_entry_t
+ * @param value receives the value of each key, in the order of @p name
+ * @param error_dstring if not nullptr, an error message is appended here
+*/
 int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entry_t name[],
                           char value[][4097], dstring *error_dstring) {
    FILE *fp;
@@ -650,7 +674,14 @@ int sge_silent_get() {
  * @note MT-NOTE: sge_get_management_entry() is MT safe
  *
  * @bug Function can not differ multiple similar named entries.
- */
+ *
+ * @param fname path of the management file to read
+ * @param n number of entries in @p name and @p value
+ * @param nmissing how many of the entries may be absent without it being an error
+ * @param name the keys to look for, see #bootstrap_entry_t
+ * @param value receives the value of each key, in the order of @p name
+ * @param error_dstring if not nullptr, an error message is appended here
+*/
 int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_entry_t name[],
                              char value[][SGE_PATH_MAX], dstring *error_dstring) {
    FILE *fp;

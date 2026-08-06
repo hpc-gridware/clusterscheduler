@@ -60,6 +60,7 @@ char *sge_smf_get_instance_state();
 
 char *sge_smf_get_instance_next_state();
 #else
+/// placeholder declared when SMF support is compiled out
 void dummy();
 #endif
 #ifdef __cplusplus

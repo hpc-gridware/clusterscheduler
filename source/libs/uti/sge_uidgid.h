@@ -45,16 +45,20 @@
 #include "sge_dstring.h"
 #include "basis_types.h"
 
+/// user id of the superuser
 #define SGE_SUPERUSER_UID 0
+/// group id of the superuser
 #define SGE_SUPERUSER_GID 0
 
 #ifndef MAX_NIS_RETRIES
+/// how often a NIS lookup is retried before giving up
 #  define MAX_NIS_RETRIES 10
 #endif
 
+/** @brief One supplementary group: its id together with its resolved name */
 typedef struct {
-    gid_t id;
-    char name[MAX_STRING_SIZE];
+    gid_t id;                      ///< the group id
+    char name[MAX_STRING_SIZE];    ///< the group name belonging to #id
 } ocs_grp_elem_t;
 
 bool

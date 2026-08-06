@@ -42,6 +42,7 @@
 #include <cinttypes>
 #include "sge_dstring.h"
 
+/// character introducing a comment line in a spool file
 #define COMMENT_CHAR '#'
 
 /**
