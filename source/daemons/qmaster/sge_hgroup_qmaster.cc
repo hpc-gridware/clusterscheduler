@@ -36,7 +36,9 @@
 #include <cctype>
 #include <cstring>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_component.h"
+#include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -107,6 +109,7 @@ hgroup_rollback(lListElem *this_elem);
 *     lList **answer_list               - for returning the errors
 *     const lList *delta_list           - HR_Type entries the request carries
 *     ocs::gdi::SubCommand sub_command  - APPEND, REMOVE or neither
+*     const lList *master_hgroup_list   - to resolve nested references (chunk 4)
 *
 *  RESULT
 *     bool - false if any entry was already/not a member; the request must fail
@@ -118,9 +121,57 @@ hgroup_rollback(lListElem *this_elem);
 *     ("administrative host") from sge_del_host(). Both are reproduced as they
 *     were rather than unified, so no script parsing either one has to change.
 *******************************************************************************/
+/****** qmaster/hgroup/hgroup_nesting_that_contains() *************************
+*  NAME
+*     hgroup_nesting_that_contains() -- which nested group reaches this host?
+*
+*  FUNCTION
+*     CS-2438 chunk 4. Walks the DIRECT entries of a reserved group, and for
+*     each "@group" reference among them asks whether that group contains the
+*     host. Appends the names of those that do, comma-separated.
+*
+*     Only used to build an error message, so it is allowed to be the slow path.
+*
+*  INPUTS
+*     const lList *current            - direct HR_Type entries of the reserved group
+*     const char *hostname            - host that could not be removed directly
+*     const lList *master_hgroup_list - list the references resolve against
+*     dstring *groups                 - receives the comma-separated names
+*
+*  RESULT
+*     bool - true if at least one nested group contains the host
+*******************************************************************************/
+static bool
+hgroup_nesting_that_contains(const lList *current, const char *hostname,
+                             const lList *master_hgroup_list, dstring *groups)
+{
+   const lListElem *href;
+   bool found = false;
+
+   for_each_ep(href, current) {
+      const char *entry = lGetHost(href, HR_name);
+
+      if (entry == nullptr || !ocs::is_hgroup_name(entry)) {
+         continue;
+      }
+      const lListElem *nested = hgroup_list_locate(master_hgroup_list, entry);
+
+      if (hgroup_contains_host(nested, hostname, master_hgroup_list)) {
+         if (found) {
+            sge_dstring_append(groups, ", ");
+         }
+         sge_dstring_append(groups, entry);
+         found = true;
+      }
+   }
+
+   return found;
+}
+
 static bool
 hgroup_reserved_delta_is_strict(const lListElem *hgroup, lList **answer_list,
-                                const lList *delta_list, ocs::gdi::SubCommand sub_command)
+                                const lList *delta_list, ocs::gdi::SubCommand sub_command,
+                                const lList *master_hgroup_list)
 {
    const char *add_name;   /* as sge_c_gdi.cc named it   */
    const char *del_name;   /* as sge_del_host() named it */
@@ -167,9 +218,24 @@ hgroup_reserved_delta_is_strict(const lListElem *hgroup, lList **answer_list,
          answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          ret = false;
       } else if (remove && !is_member) {
-         ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, del_name, name);
+         /*
+          * CS-2438 chunk 4. "Not a direct member" has two very different causes,
+          * and reporting both as "does not exist" is what the plan called the
+          * worst possible outcome for a security-relevant list: the admin is
+          * told the host is not there while it still resolves as an admin or
+          * submit host through a nested group. Name the group that grants it,
+          * and point at the command that can change the nesting.
+          */
+         dstring nesting = DSTRING_INIT;
+
+         if (hgroup_nesting_that_contains(current, name, master_hgroup_list, &nesting)) {
+            ERROR(MSG_HGRP_RESERVED_NESTED_SSS, name, group, sge_dstring_get_string(&nesting));
+         } else {
+            ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, del_name, name);
+         }
          answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          ret = false;
+         sge_dstring_free(&nesting);
       }
    }
 
@@ -198,7 +264,8 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
             ret &= href_list_resolve_hostnames(list, answer_list, true);
          }
          if (ret) {
-            ret &= hgroup_reserved_delta_is_strict(hgroup, answer_list, list, sub_command);
+            ret &= hgroup_reserved_delta_is_strict(hgroup, answer_list, list, sub_command,
+                                                   master_hgroup_list);
          }
          if (ret) {
             attr_mod_sub_list(answer_list, hgroup, HGRP_host_list, HR_name,

@@ -223,6 +223,62 @@ hgroup_cache_contains_host(const lListElem *hgroup, const char *hostname)
    return lGetElemHost(lGetList(hgroup, HGRP_cached_hosts), HR_name, hostname) != nullptr;
 }
 
+/****** sgeobj/hgroup/hgroup_contains_host() **********************************
+*  NAME
+*     hgroup_contains_host() -- is the host a member, directly or through nesting?
+*
+*  FUNCTION
+*     CS-2438. The two functions above composed the way consumers actually want
+*     them: use the cache when the element carries one, resolve the nested tree
+*     when it does not.
+*
+*     This exists so that the guard is written once. hgroup_cache_contains_host()
+*     on an element without a cache answers "no", which is the wrong answer
+*     rather than a safe one -- and its callers are the GDI permission path
+*     (host_is_admin_host()) and the delete-semantics check in the qmaster, where
+*     a wrong "no" denies a request or reports a member as absent.
+*
+*  INPUTS
+*     const lListElem *hgroup         - HGRP_Type object, may be nullptr
+*     const char *hostname            - host to look for
+*     const lList *master_hgroup_list - list the nested references resolve against
+*
+*  RESULT
+*     bool - true if the host is in the group, directly or transitively
+*
+*  NOTES
+*     MT-NOTE: hgroup_contains_host() is MT safe
+*
+*     The fallback allocates and walks; it is not the hot path and must not
+*     become one. If a caller finds itself here on every request, the cache is
+*     not being maintained -- fix that rather than optimising this.
+*******************************************************************************/
+bool
+hgroup_contains_host(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list)
+{
+   DENTER(HGROUP_LAYER);
+
+   if (hgroup == nullptr || hostname == nullptr) {
+      DRETURN(false);
+   }
+
+   if (hgroup_has_host_cache(hgroup)) {
+      DRETURN(hgroup_cache_contains_host(hgroup, hostname));
+   }
+
+   lList *answer_list = nullptr;
+   lList *used_hosts = nullptr;
+   bool ret = false;
+
+   if (hgroup_find_all_references(hgroup, &answer_list, master_hgroup_list, &used_hosts, nullptr)) {
+      ret = lGetElemHost(used_hosts, HR_name, hostname) != nullptr;
+   }
+   lFreeList(&used_hosts);
+   lFreeList(&answer_list);
+
+   DRETURN(ret);
+}
+
 /****** sgeobj/hgroup/hgroup_is_reserved() ************************************
 *  NAME
 *     hgroup_is_reserved() -- is this one of the reserved host groups?

@@ -103,11 +103,10 @@ host_list_locate(const lList *host_list, const char *hostname) {
 *     CS-2438 chunk 2b. The one place that answers "is this host in
 *     @admin_hosts / @submit_hosts", for both helpers below.
 *
-*     Cache first, walk as fallback -- the contract CS-2451 defines
-*     (sge_hgroup.h): correctness must never depend on the cache, so a group
-*     whose cache was never computed, or that arrived through a GDI "what"
-*     filter without the fields, is resolved the slow way rather than answered
-*     wrongly. Answering "no" here denies a GDI request.
+*     Locating the group is all this adds; the membership question itself is
+*     hgroup_contains_host(), which honours the CS-2451 contract (cache when
+*     there is one, tree walk when there is not) and is shared with the
+*     delete-semantics check in the qmaster.
 *
 *     Both steps are O(1) in the normal case: HGRP_name carries CULL_HASH, so
 *     locating the group is a hash lookup, and so is the membership test
@@ -140,25 +139,8 @@ host_is_in_reserved_hostgroup(const char *hostname, const char *group_name)
 
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
    const lListElem *hgroup = hgroup_list_locate(master_hgroup_list, group_name);
-   if (hgroup == nullptr) {
-      DRETURN(false);
-   }
 
-   if (hgroup_has_host_cache(hgroup)) {
-      DRETURN(hgroup_cache_contains_host(hgroup, hostname));
-   }
-
-   lList *answer_list = nullptr;
-   lList *used_hosts = nullptr;
-   bool ret = false;
-
-   if (hgroup_find_all_references(hgroup, &answer_list, master_hgroup_list, &used_hosts, nullptr)) {
-      ret = lGetElemHost(used_hosts, HR_name, hostname) != nullptr;
-   }
-   lFreeList(&used_hosts);
-   lFreeList(&answer_list);
-
-   DRETURN(ret);
+   DRETURN(hgroup_contains_host(hgroup, hostname, master_hgroup_list));
 }
 
 /****** sgeobj/host/host_is_admin_host() **************************************

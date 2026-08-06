@@ -77,6 +77,15 @@ hgroup_has_host_cache(const lListElem *hgroup);
 bool
 hgroup_cache_contains_host(const lListElem *hgroup, const char *hostname);
 
+/* CS-2438: does this group contain the host, directly or through nesting?
+ *
+ * The two functions above, composed the way every consumer wants them: cache
+ * when there is one, tree walk when there is not. Prefer this over calling them
+ * by hand -- an unguarded hgroup_cache_contains_host() answers "no" on an
+ * element without a cache, which on the permission path denies a GDI request. */
+bool
+hgroup_contains_host(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list);
+
 /* true if name is one of the three reserved host groups above */
 bool hgroup_is_reserved(const char *name);
 
