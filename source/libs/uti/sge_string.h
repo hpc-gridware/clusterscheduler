@@ -93,8 +93,6 @@ char *sge_strtok_r(const char *str, const char *delimitor,
 
 void sge_free_saved_vars(struct saved_vars_s *last);
 
-int sge_is_valid_filename(const char *fname);
-
 int sge_strnullcasecmp(const char *a, const char *b);
 
 int sge_strnullcmp(const char *a, const char *b);
@@ -142,6 +140,10 @@ const char *sge_replace_substring(const char *input, const char *search, const c
 const char *sge_str_move_left(char *start, char *substr);
 
 void sge_str_reverse(char *string);
+
+int sge_is_valid_filename2(const char *fname);
+
+int sge_is_valid_filename(const char *fname);
 
 /// case insensitive string compare, following the `strcmp` convention
 #define SGE_STRCASECMP(a, b) strcasecmp(a, b)

@@ -214,10 +214,6 @@ char *sge_get_file_path(char *buffer, size_t buffer_size, sge_file_path_id_t,
                         uint32_t ulong_val1, uint32_t ulong_val2,
                         const char *string_val1);
 
-int sge_is_valid_filename2(const char *fname);
-
-int sge_is_valid_filename(const char *fname);
-
 int sge_spoolmsg_write(FILE *file, char comment_char, const char *version);
 int sge_spoolmsg_write(std::ofstream &stream, char comment_char, const char *version);
 
