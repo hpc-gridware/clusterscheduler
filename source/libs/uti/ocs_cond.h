@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Condition variable helpers with a relative timeout
+ */
+
 #include <pthread.h>
 
 namespace ocs::uti {

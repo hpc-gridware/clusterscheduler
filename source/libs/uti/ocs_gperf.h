@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Optional CPU profiling through gperftools
+ */
+
 #include <string>
 
 #ifdef WITH_GPERF

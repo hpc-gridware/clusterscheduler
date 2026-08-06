@@ -19,10 +19,15 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief A three-valued boolean, for settings that can be unset
+ */
+
 namespace ocs {
+   /// A boolean that can also be "not configured"
    enum class Ternary {
-      No = 0,
-      Yes = 1,
-      Unset = 2
+      No = 0,     ///< explicitly off
+      Yes = 1,    ///< explicitly on
+      Unset = 2   ///< not configured; the caller decides what to default to
    };
 }

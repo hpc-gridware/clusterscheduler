@@ -18,25 +18,24 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Implementation of the condition variable helpers
+ */
+
 #include <time.h>
 
 #include "ocs_cond.h"
 
 namespace ocs::uti {
-   /****** ocs_cond/condition_initialize() ***************************************
-   *  \brief Initialize a condition variable.
-   *
-   *  \details
-   *  This function initializes a condition variable with a monotonic clock attribute.
-   *  It sets the clock attribute to CLOCK\_MONOTONIC to ensure that the condition
-   *  variable uses a monotonic clock for timeouts.
-   *
-   *  \param condition  Pointer to the condition variable to be initialized.
-   *
-   *  \return
-   *  \li 0 - Success
-   *  \li Non-zero - Error code returned by pthread\_cond\_init
-   ******************************************************************************/
+   /**
+    * @brief Initialize a condition variable
+    *
+    * Sets the clock attribute to `CLOCK_MONOTONIC`, so timeouts are unaffected
+    * by changes to the system clock.
+    *
+    * @param condition the condition variable to initialize
+    * @return 0 on success, otherwise the error code from `pthread_cond_init()`
+    */
    int condition_initialize(pthread_cond_t *condition) {
       int ret{0};
 
@@ -53,22 +52,21 @@ namespace ocs::uti {
       return ret;
    }
 
-   /****** ocs_cond/condition_timedwait() ****************************************
-   *  \brief Wait for a condition variable with a timeout.
-   *
-   *  \details
-   *  This function waits for a condition variable to be signaled or for a timeout
-   *  to occur. It uses a monotonic clock to calculate the timeout period.
-   *
-   *  \param[in] condition  Pointer to the condition variable to wait on.
-   *  \param[in] mutex      Pointer to the mutex that is associated with the condition variable.
-   *  \param[in] timeout_sec  Timeout period in seconds.
-   *  \param[in] timeout_usec Timeout period in microseconds.
-   *
-   *  \return
-   *  \li 0 - Success
-   *  \li Non-zero - Error code returned by pthread\_cond\_timedwait
-   ******************************************************************************/
+   /**
+    * @brief Wait on a condition variable with a relative timeout
+    *
+    * The timeout is relative to now and measured against `CLOCK_MONOTONIC`, so
+    * the caller does not have to build an absolute deadline and the wait is
+    * unaffected by system clock changes. @p mutex must be held on entry and is
+    * held again on return.
+    *
+    * @param condition the condition variable to wait on
+    * @param mutex the mutex associated with @p condition
+    * @param timeout_sec seconds to wait
+    * @param timeout_usec additional microseconds to wait
+    * @return 0 when the condition was signalled, otherwise the error code from
+    *         `pthread_cond_timedwait()` — `ETIMEDOUT` when the wait expired
+    */
    int condition_timedwait(pthread_cond_t *condition, pthread_mutex_t *mutex, long timeout_sec, long timeout_usec) {
       int ret{0};
 

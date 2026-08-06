@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Implementation of the JSON writing helpers
+ */
+
 #include "ocs_JsonUtil.h"
 
 void

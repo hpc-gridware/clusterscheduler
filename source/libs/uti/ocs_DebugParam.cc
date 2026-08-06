@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Reads the debug settings from the environment
+ */
+
 #include "ocs_DebugParam.h"
 
 #include <cstdio>

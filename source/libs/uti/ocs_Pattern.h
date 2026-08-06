@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Telling an expression apart from a plain string
+ */
+
 #include <array>
 
 namespace ocs {

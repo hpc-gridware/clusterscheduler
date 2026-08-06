@@ -19,11 +19,25 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Obfuscation of short strings for the authentication info
+ */
+
 #include <cstdint>
 #include <string>
 #include <array>
 
 namespace ocs {
+   /**
+    * @brief Reversible obfuscation of short strings
+    *
+    * Each byte becomes two characters from a fixed alphabet, so the result is
+    * twice as long as the input and contains no separators or control
+    * characters. Used for the authentication info string.
+    *
+    * @warning This is obfuscation, not encryption — the mapping is fixed and
+    *          carries no key. Do not use it to protect a secret.
+    */
    class Encoder {
    private:
       static const std::array<int8_t, 256>& get_lut();

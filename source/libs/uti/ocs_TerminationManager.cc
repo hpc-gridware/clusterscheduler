@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Implementation of the crash handling declared in ocs_TerminationManager.h
+ */
+
 #include <algorithm>
 #include <csignal>
 #include <exception>
@@ -51,7 +55,7 @@
  * This method might fail if no additional heap memory can be allocated. In this case,
  * an empty string is returned. If it succeeds, the stacktrace is returned as a string:
  *
- * @example
+ * @code
  *    ./gcs-extensions/test/libs/sgeobj/test_Stacktrace : ocs::get_stacktrace[abi:cxx11](bool)  +0x50 => 0x41b629
  *    ./gcs-extensions/test/libs/sgeobj/test_Stacktrace : Y::test_function_a(int)  +0x1d => 0x41b243
  *    ./gcs-extensions/test/libs/sgeobj/test_Stacktrace : X::TestClassA::method(int)  +0x19 => 0x41b353
@@ -59,6 +63,7 @@
  *    ./gcs-extensions/test/libs/sgeobj/test_Stacktrace : main  +0x25 => 0x41b2c1
  *    /lib64/libc.so.6 : __libc_start_main  +0xf3 => 0x7f4f16763493
  *    ./gcs-extensions/test/libs/sgeobj/test_Stacktrace : _start  +0x2e => 0x41b16e
+ * @endcode
  *
  * If `demangle_names` is set to *true*, function names are demangled (like in the output above).
  * If demangling fails or is turned off then the raw output is shown which might mean that namespace
@@ -72,14 +77,16 @@
  * the `addr2line` tool to get the exact line number in the source code where the function was called
  * or `gdb` can be used to get the same information.
  *
- * @example
+ * @code
  *    > addr2line -e ./gcs-extensions/test/libs/sgeobj/test_Stacktrace -f -C 0x41b353
  *    /home/ebablick/CS/cs2-0/gcs-extensions/test/libs/sgeobj/test_Stacktrace.cc:27
+ * @endcode
  *
- * @example
+ * @code
  *    > gdb ./gcs-extensions/test/libs/sgeobj/test_Stacktrace
  *    (gdb) list *(0x41b353)
  *    0x41b353 is in X::TestClassA::method(int) (/home/ebablick/CS/cs2-0/gcs-extensions/test/libs/sgeobj/test_Stacktrace.cc:27).
+ * @endcode
  *
  * @note
  *    The stacktrace is only available on Linux systems. On other systems, the function returns an empty string.
@@ -237,6 +244,8 @@ ocs::TerminationManager::allow_core_dumps() {
  * - SIGFPE (Floating point exception)
  * - SIGILL (Illegal instruction)
  * - SIGBUS (Bus error)
+ *
+ * @return true when every handler was installed
  */
 bool
 ocs::TerminationManager::install_signal_handler() {
@@ -281,6 +290,8 @@ ocs::TerminationManager::install_signal_handler() {
 /** @brief Install terminate handler for uncaught exceptions.
  *
  * This method installs a terminate handler that is called when an uncaught exception is thrown.
+ *
+ * @return true when the handler was installed
  */
 bool
 ocs::TerminationManager::install_terminate_handler() {
@@ -305,7 +316,7 @@ ocs::TerminationManager::install_terminate_handler() {
  * The output for an uncaught exception looks like this. The exception information is
  * printed by the termination handler.
  *
- * @example
+ * @code
  *    terminate called after throwing an instance of 'std::runtime_error'
  *    what():  This is a test exception that was triggered in ocs::TerminationManager::trigger_exception()
  *
@@ -327,6 +338,7 @@ ocs::TerminationManager::install_terminate_handler() {
  *    ./sge_qmaster.all : sge_listener_main(void*)  +0x19d => 0x4e6bad
  *    /lib64/libpthread.so.0 :   +0x817a => 0x7f0e4a82417a
  *    /lib64/libc.so.6 : clone  +0x43 => 0x7f0e497eddc3
+ * @endcode
  *
  * @param sig Signal number
  * @param info Signal information
@@ -456,12 +468,16 @@ ocs::TerminationManager::trigger_segfault() {
    *p = 42; // This will cause a segmentation fault
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 /** @brief Trigger a stack overflow.
  *
  * This method triggers a stack overflow by calling itself recursively.
+ *
+ * @param iterations recursion depth requested by the caller; ignored, because
+ *        the recursive call passes the default again and the stack runs out
+ *        first
  */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
 void
 ocs::TerminationManager::trigger_stack_overflow(const int iterations) {
    if (iterations > 0) {

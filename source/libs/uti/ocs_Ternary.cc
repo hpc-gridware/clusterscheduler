@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Translation unit for the `ocs::Ternary` enum
+ */
+
 #include "uti/sge_log.h"
 
 #include "ocs_Ternary.h"

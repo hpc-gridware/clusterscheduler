@@ -20,11 +20,23 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Crash handling: signal handlers, stacktraces and core dumps
+ */
+
 #include <csignal>
 #include <cstdint>
 #include <string>
 
 namespace ocs {
+   /**
+    * @brief Turns a crash into a diagnosable report
+    *
+    * Installs handlers for the synchronous fatal signals and for unhandled C++
+    * exceptions, so that a crash prints a stacktrace instead of dying
+    * silently. The `trigger_*` methods deliberately crash the process and
+    * exist to test that machinery.
+    */
    class TerminationManager {
    private:
       static void
@@ -48,6 +60,11 @@ namespace ocs {
       static std::string
       get_stacktrace(bool demangle_names);
 
+      /**
+       * @brief Log the calling thread's stacktrace
+       *
+       * @param level the log level to write at
+       */
       static void
       show_stacktrace(uint32_t level);
 
@@ -57,6 +74,7 @@ namespace ocs {
       static void
       trigger_exception();
 
+      /// Abort the process deliberately; used to test the crash handling
       static void
       trigger_abort();
 

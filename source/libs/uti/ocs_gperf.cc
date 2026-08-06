@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Implementation of the gperftools profiling hooks
+ */
+
 #include <string>
 #include <fnmatch.h>
 

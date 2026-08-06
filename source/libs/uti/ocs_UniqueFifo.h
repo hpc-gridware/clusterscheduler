@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief A FIFO that ignores duplicate pushes
+ */
+
 #include <cstddef>
 #include <deque>
 #include <functional>
@@ -26,8 +30,10 @@
 #include <utility>
 
 namespace ocs {
-   /** Linked-hash FIFO: a queue that ignores duplicate pushes while preserving
-    *  insertion order for the unique entries. Combines a std::deque (for fair
+   /**
+    * @brief A queue that ignores duplicate pushes, preserving arrival order
+    *
+    *  Combines a std::deque (for fair
     *  drain in arrival order) with an std::unordered_set (for O(1) dedup on
     *  push); the two backing containers are kept in sync internally and
     *  cannot be desynced from outside.
@@ -43,9 +49,13 @@ namespace ocs {
    template <typename T, typename Hash = std::hash<T>, typename Equal = std::equal_to<T>>
    class UniqueFifo {
    public:
-      /** Enqueue value at the tail if it is not already present. A duplicate
-       *  push is silently dropped. Returns true if value was newly added,
-       *  false if it was already in the queue.
+      /**
+       * @brief Enqueue a value at the tail if it is not already present
+       *
+       * A duplicate push is silently dropped.
+       *
+       * @param value the value to enqueue
+       * @return true if it was newly added, false if it was already queued
        */
       bool push(T value) {
          if (!seen_.insert(value).second) {
@@ -55,7 +65,12 @@ namespace ocs {
          return true;
       }
 
-      /** Remove and return the front element. Caller must ensure !empty(). */
+      /**
+       * @brief Remove and return the oldest element
+       *
+       * @return the element that was at the front
+       * @warning The caller must ensure the queue is not #empty first.
+       */
       T pop_front() {
          T value = std::move(order_.front());
          order_.pop_front();
@@ -63,21 +78,30 @@ namespace ocs {
          return value;
       }
 
+      /**
+       * @brief Is the queue empty?
+       * @return true when no elements are queued
+       */
       bool empty() const noexcept {
          return order_.empty();
       }
 
+      /**
+       * @brief How many elements are queued?
+       * @return the number of queued elements
+       */
       std::size_t size() const noexcept {
          return order_.size();
       }
 
+      /// Discard every queued element
       void clear() noexcept {
          order_.clear();
          seen_.clear();
       }
 
    private:
-      std::deque<T> order_;
-      std::unordered_set<T, Hash, Equal> seen_;
+      std::deque<T> order_;                       ///< the elements, in arrival order
+      std::unordered_set<T, Hash, Equal> seen_;   ///< the same elements, for O(1) duplicate detection
    };
 }
