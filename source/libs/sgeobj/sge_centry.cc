@@ -73,7 +73,7 @@
 
 /* EB: ADOC: add commets */
 
-const int max_host_resources = 28;/* specifies the number of elements in the host_resource array */
+const int max_host_resources = 29;/* specifies the number of elements in the host_resource array */
 const struct queue2cmplx host_resource[] = {
         {"arch",             0, 0, 0, TYPE_STR},
         {"cpu",              0, 0, 0, TYPE_DOUBLE},
@@ -102,7 +102,8 @@ const struct queue2cmplx host_resource[] = {
         {LOAD_ATTR_CORES,    0, 0, 0, TYPE_INT},
         {LOAD_ATTR_SOCKETS,  0, 0, 0, TYPE_INT},
         {LOAD_ATTR_THREADS,  0, 0, 0, TYPE_INT},
-        {LOAD_ATTR_TOPOLOGY, 0, 0, 0, TYPE_STR}
+        {LOAD_ATTR_TOPOLOGY, 0, 0, 0, TYPE_STR},
+        {LOAD_ATTR_DEVICES,  0, 0, 0, TYPE_RESTR}
 };
 
 const int max_queue_resources = 24; /* specifies the number of elements in the queue_resource array */
