@@ -98,7 +98,7 @@ const struct queue2cmplx host_resource[] = {
         {LOAD_ATTR_CORES,    0, 0, 0, ocs::CEntry::Type::INT},
         {LOAD_ATTR_SOCKETS,  0, 0, 0, ocs::CEntry::Type::INT},
         {LOAD_ATTR_THREADS,  0, 0, 0, ocs::CEntry::Type::INT},
-        {LOAD_ATTR_TOPOLOGY, 0, 0, 0, ocs::CEntry::Type::STR}
+        {LOAD_ATTR_TOPOLOGY, 0, 0, 0, ocs::CEntry::Type::STR},
         {LOAD_ATTR_DEVICES,  0, 0, 0, ocs::CEntry::Type::RESTR}
 };
 
