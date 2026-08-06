@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Reading and writing the fields of a cull element
+ */
+
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -41,6 +45,7 @@
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
+/// Suppresses the monitoring code in the rmon macros for this file
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
@@ -62,11 +67,12 @@
 #  include "cull/cull_observe.h"
 #endif
 
-#define CULL_BASIS_LAYER CULL_LAYER
+#define CULL_BASIS_LAYER CULL_LAYER ///< rmon layer this file logs under
 
 /* ---------- global variable --------------------------------- */
 
 
+/// Name of each @ref _enum_lMultiType, indexed by the enumerator; used in error messages and dumps
 const char *multitypes[] =
         {
                 "lEndT",
@@ -83,6 +89,12 @@ const char *multitypes[] =
                 "lUlong64T"
         };
 
+/**
+ * @brief Report a field accessed as the wrong type, and abort
+ *
+ * @param str name of the function that detected the mismatch
+ * @return never returns; the process is aborted
+ */
 int incompatibleType(const char *str) {
    int i;
 
@@ -98,6 +110,13 @@ int incompatibleType(const char *str) {
    DRETURN(-1);
 }
 
+/**
+ * @brief Report a field accessed as the wrong type, with a formatted message, and abort
+ *
+ * @param fmt `printf` style format naming the field and the types involved
+ * @param ... the format's arguments
+ * @return never returns; the process is aborted
+ */
 int incompatibleType2(const char *fmt, ...) {
    va_list ap;
    char buf[MAX_STRING_SIZE];
@@ -114,7 +133,12 @@ int incompatibleType2(const char *fmt, ...) {
    DRETURN(-1);
 }
 
-/* ------------------------------------------------------------ */
+/**
+ * @brief Report an unknown field type, and abort
+ *
+ * @param str name of the function that detected it
+ * @return never returns; the process is aborted
+ */
 int unknownType(const char *str) {
    DENTER(CULL_LAYER);
 
@@ -125,24 +149,17 @@ int unknownType(const char *str) {
    DRETURN(-1);
 }
 
-/****** cull/multitype/lGetPosViaElem() ****************************************
-*  NAME
-*     lGetPosViaElem() -- Get Position of name within element 
-*
-*  SYNOPSIS
-*     int lGetPosViaElem(const lListElem *element, int name, int do_abort) 
-*
-*  FUNCTION
-*     Get Position of field 'name' within 'element' 
-*
-*  INPUTS
-*     const lListElem *element - element 
-*     int name                 - field name id 
-*     int do_abort             - call do_abort if do_abort=1
-*
-*  RESULT
-*     int - position or -1 in case of an error
-*******************************************************************************/
+/**
+ * @brief Get Position of name within element
+ *
+ * Get Position of field 'name' within 'element'
+ *
+ * @param element element
+ * @param name field name id
+ * @param do_abort call do_abort if do_abort=1
+ *
+ * @return position or -1 in case of an error
+ */
 int lGetPosViaElem(const lListElem *element, int name, int do_abort) {
    int pos = -1;
 
@@ -166,23 +183,12 @@ int lGetPosViaElem(const lListElem *element, int name, int do_abort) {
    DRETURN(pos);
 }
 
-/****** cull/multitype/lMt2Str() **********************************************
-*  NAME
-*     lMt2Str() -- returns the string representation of a type id
-*
-*  SYNOPSIS
-*     char* lMt2Str(int mt) 
-*
-*  FUNCTION
-*     returns the string representation of a type id
-*
-*  INPUTS
-*     int mt - multitype id (e.g. lStringT)
-*
-*  RESULT
-*     char* - string representation of mt 
-*  
-******************************************************************************/
+/**
+ * @brief Returns the string representation of a type id
+ *
+ * @param mt see the read/write variant
+ * @return the string, or nullptr when the field is unset
+ */
 const char *lMt2Str(int mt) {
    if (mt >= 0 && mt < (int) (sizeof(multitypes) / sizeof(char *))) {
       return multitypes[mt];
@@ -191,25 +197,17 @@ const char *lMt2Str(int mt) {
    }
 }
 
-/****** cull/multitype/lCountDescr() ****************************************
-*  NAME
-*     lCountDescr() -- Returns the size of a descriptor 
-*
-*  SYNOPSIS
-*     int lCountDescr(const lDescr *dp) 
-*
-*  FUNCTION
-*     Returns the size of a descriptor excluding lEndT Descr. 
-*
-*  INPUTS
-*     const lDescr *dp - pointer to descriptor 
-*
-*  RESULT
-*     int - size or -1 on error 
-*
-*  NOTES
-*     MT-NOTE: lCountDescr() is MT safe
-******************************************************************************/
+/**
+ * @brief Returns the size of a descriptor
+ *
+ * Returns the size of a descriptor excluding lEndT Descr.
+ *
+ * @param dp pointer to descriptor
+ *
+ * @return size or -1 on error
+ *
+ * @note MT-NOTE: lCountDescr() is MT safe
+ */
 int lCountDescr(const lDescr *dp) {
    const lDescr *p;
 
@@ -227,23 +225,16 @@ int lCountDescr(const lDescr *dp) {
    DRETURN((p - &dp[0]));
 }
 
-/****** cull/multitype/lCopyDescr() *******************************************
-*  NAME
-*     lCopyDescr() -- Copys a descriptor 
-*
-*  SYNOPSIS
-*     lDescr* lCopyDescr(const lDescr *dp) 
-*
-*  FUNCTION
-*     Returns a pointer to a copied descriptor, has to be freed by 
-*     the user. 
-*
-*  INPUTS
-*     const lDescr *dp - descriptor 
-*
-*  RESULT
-*     lDescr* - descriptor pointer or nullptr in case of error
-******************************************************************************/
+/**
+ * @brief Copys a descriptor
+ *
+ * Returns a pointer to a copied descriptor, has to be freed by
+ * the user.
+ *
+ * @param dp descriptor
+ *
+ * @return descriptor pointer or nullptr in case of error
+ */
 lDescr *lCopyDescr(const lDescr *dp) {
    int i;
    lDescr *new_descr = nullptr;
@@ -278,20 +269,14 @@ lDescr *lCopyDescr(const lDescr *dp) {
    DRETURN(nullptr);
 }
 
-/****** cull/multitype/lWriteDescrTo() ****************************************
-*  NAME
-*     lWriteDescrTo() -- Writes a descriptor (for debugging purpose) 
-*
-*  SYNOPSIS
-*     void lWriteDescrTo(const lDescr *dp, FILE *fp) 
-*
-*  FUNCTION
-*     Writes a descriptor (for debugging purpose) 
-*
-*  INPUTS
-*     const lDescr *dp - descriptor 
-*     FILE *fp         - output stream 
-******************************************************************************/
+/**
+ * @brief Writes a descriptor (for debugging purpose)
+ *
+ * Writes a descriptor (for debugging purpose)
+ *
+ * @param dp descriptor
+ * @param fp output stream
+ */
 void lWriteDescrTo(const lDescr *dp, FILE *fp) {
    int i;
 
@@ -327,24 +312,17 @@ void lWriteDescrTo(const lDescr *dp, FILE *fp) {
    DRETURN_VOID;
 }
 
-/****** cull/multitype/_lGetPosInDescr() ***************************************
-*  NAME
-*     _lGetPosInDescr() -- Returns position of a name in a descriptor 
-*
-*  SYNOPSIS
-*     int _lGetPosInDescr(const lDescr *dp, int name) 
-*
-*  FUNCTION
-*     Returns position of a name in a descriptor array. Does a full search
-*     in the descriptor even if the element is not a reduced element.
-*
-*  INPUTS
-*     const lDescr *dp - descriptor 
-*     int name         - namse 
-*
-*  RESULT
-*     int - position or -1 if not found 
-******************************************************************************/
+/**
+ * @brief Returns position of a name in a descriptor
+ *
+ * Returns position of a name in a descriptor array. Does a full search
+ * in the descriptor even if the element is not a reduced element.
+ *
+ * @param dp descriptor
+ * @param name namse
+ *
+ * @return position or -1 if not found
+ */
 int _lGetPosInDescr(const lDescr *dp, int name) {
    const lDescr *ldp;
 
@@ -364,23 +342,16 @@ int _lGetPosInDescr(const lDescr *dp, int name) {
    return ldp - dp;
 }
 
-/****** cull/multitype/lGetPosInDescr() ***************************************
-*  NAME
-*     lGetPosInDescr() -- Returns position of a name in a descriptor 
-*
-*  SYNOPSIS
-*     int lGetPosInDescr(const lDescr *dp, int name) 
-*
-*  FUNCTION
-*     Returns position of a name in a descriptor array 
-*
-*  INPUTS
-*     const lDescr *dp - descriptor 
-*     int name         - namse 
-*
-*  RESULT
-*     int - position or -1 if not found 
-******************************************************************************/
+/**
+ * @brief Returns position of a name in a descriptor
+ *
+ * Returns position of a name in a descriptor array
+ *
+ * @param dp descriptor
+ * @param name namse
+ *
+ * @return position or -1 if not found
+ */
 int lGetPosInDescr(const lDescr *dp, int name) {
    const lDescr *ldp;
 
@@ -409,25 +380,18 @@ int lGetPosInDescr(const lDescr *dp, int name) {
    return ldp - dp;
 }
 
-/****** cull/multitype/lGetPosType() ****************************************
-*  NAME
-*     lGetPosType() -- Returns type at position
-*
-*  SYNOPSIS
-*     int lGetPosType(const lDescr *dp, int pos) 
-*
-*  FUNCTION
-*     Returns the type at specified position in a descriptor array. The
-*     Position must be inside the valid range of the descriptor. Returns
-*     NoName if descriptor is nullptr or pos < 0.
-*
-*  INPUTS
-*     const lDescr *dp - Descriptor 
-*     int pos          - Position 
-*
-*  RESULT
-*     int - Type 
-******************************************************************************/
+/**
+ * @brief Returns type at position
+ *
+ * Returns the type at specified position in a descriptor array. The
+ * Position must be inside the valid range of the descriptor. Returns
+ * NoName if descriptor is nullptr or pos < 0.
+ *
+ * @param dp Descriptor
+ * @param pos Position
+ *
+ * @return Type
+ */
 int lGetPosType(const lDescr *dp, int pos) {
    if (!dp) {
       LERROR(LEDESCRNULL);
@@ -439,6 +403,13 @@ int lGetPosType(const lDescr *dp, int pos) {
    return mt_get_type(dp[pos].mt);
 }
 
+/**
+ * @brief Returns the sub-list held in a field, without copying, read only
+ *
+ * @param ep the element
+ * @param name the field
+ * @return the sub-list, or nullptr when the field is unset
+ */
 lList **lGetListRef(const lListElem *ep, int name) {
    int pos;
 
@@ -452,6 +423,13 @@ lList **lGetListRef(const lListElem *ep, int name) {
    DRETURN(&(ep->cont[pos].glp));
 }
 
+/**
+ * @brief Returns the string held at a field position, without copying, read only
+ *
+ * @param ep the element
+ * @param pos the field position
+ * @return the string, or nullptr when the field is unset
+ */
 char **lGetPosStringRef(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -461,6 +439,13 @@ char **lGetPosStringRef(const lListElem *ep, int pos) {
    DRETURN(&(ep->cont[pos].str));
 }
 
+/**
+ * @brief Returns the host name held at a field position, without copying, read only
+ *
+ * @param ep the element
+ * @param pos the field position
+ * @return the string, or nullptr when the field is unset
+ */
 char **lGetPosHostRef(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -480,23 +465,16 @@ char **lGetPosHostRef(const lListElem *ep, int pos) {
    ARGUMENTS ARE ALLRIGHT.
  */
 
-/****** cull/multitype/lGetPosInt() *******************************************
-*  NAME
-*     lGetPosInt() -- Returns the int value at position  
-*
-*  SYNOPSIS
-*     lInt lGetPosInt(const lListElem *ep, int pos) 
-*
-*  FUNCTION
-*     Returns the int value at position 'pos' 
-*
-*  INPUTS
-*     const lListElem *ep - element pointer 
-*     int pos             - position id 
-*
-*  RESULT
-*     lInt - int
-******************************************************************************/
+/**
+ * @brief Returns the int value at position
+ *
+ * Returns the int value at position 'pos'
+ *
+ * @param ep element pointer
+ * @param pos position id
+ *
+ * @return int
+ */
 lInt lGetPosInt(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -506,23 +484,16 @@ lInt lGetPosInt(const lListElem *ep, int pos) {
    DRETURN((lInt) ep->cont[pos].i);
 }
 
-/****** cull/multitype/lGetInt() **********************************************
-*  NAME
-*     lGetInt() -- Returns the int value for field name 
-*
-*  SYNOPSIS
-*     lInt lGetInt(const lListElem *ep, int name) 
-*
-*  FUNCTION
-*     Returns the int value for field name 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int name            - field name id 
-*
-*  RESULT
-*     lInt - int 
-******************************************************************************/
+/**
+ * @brief Returns the int value for field name
+ *
+ * Returns the int value for field name
+ *
+ * @param ep element
+ * @param name field name id
+ *
+ * @return int
+ */
 lInt lGetInt(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
@@ -536,23 +507,16 @@ lInt lGetInt(const lListElem *ep, int name) {
    DRETURN((lInt) ep->cont[pos].i);
 }
 
-/****** cull/multitype/lGetPosUlong() ****************************************
-*  NAME
-*     lGetPosUlong() -- Returns the ulong value at position pos 
-*
-*  SYNOPSIS
-*     lUlong lGetPosUlong(const lListElem *ep, int pos) 
-*
-*  FUNCTION
-*     Returns the ulong value at position pos 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int pos             - pos value 
-*
-*  RESULT
-*     lUlong - ulong
-******************************************************************************/
+/**
+ * @brief Returns the ulong value at position pos
+ *
+ * Returns the ulong value at position pos
+ *
+ * @param ep element
+ * @param pos pos value
+ *
+ * @return ulong
+ */
 lUlong lGetPosUlong(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -568,25 +532,18 @@ lUlong lGetPosUlong(const lListElem *ep, int pos) {
    DRETURN((lUlong) ep->cont[pos].ul);
 }
 
-/****** cull/multitype/lGetUlong() ********************************************
-*  NAME
-*     lGetUlong() -- Return 'uint32_t' value for specified fieldname
-*
-*  SYNOPSIS
-*     lUlong lGetUlong(const lListElem *ep, int name) 
-*
-*  FUNCTION
-*     Return the content of the field specified by fieldname 'name' of 
-*     list element 'ep'. The type of the field 'name' has to be of
-*     type 'uint32_t'.
-*
-*  INPUTS
-*     const lListElem *ep - Pointer to list element 
-*     int name            - field name 
-*
-*  RESULT
-*     lUlong - uint32_t value
-******************************************************************************/
+/**
+ * @brief Return 'uint32_t' value for specified fieldname
+ *
+ * Return the content of the field specified by fieldname 'name' of
+ * list element 'ep'. The type of the field 'name' has to be of
+ * type 'uint32_t'.
+ *
+ * @param ep Pointer to list element
+ * @param name field name
+ *
+ * @return uint32_t value
+ */
 lUlong lGetUlong(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
@@ -600,23 +557,16 @@ lUlong lGetUlong(const lListElem *ep, int name) {
    DRETURN((lUlong) ep->cont[pos].ul);
 }
 
-/****** cull/multitype/lGetPosUlong64() **************************************
-*  NAME
-*     lGetPosUlong64() -- Returns the ulong64 value at position pos 
-*
-*  SYNOPSIS
-*     lUlong64 lGetPosUlong64(const lListElem *ep, int pos) 
-*
-*  FUNCTION
-*     Returns the ulong64 value at position pos 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int pos             - pos value 
-*
-*  RESULT
-*     lUlong64 - ulong64
-******************************************************************************/
+/**
+ * @brief Returns the ulong64 value at position pos
+ *
+ * Returns the ulong64 value at position pos
+ *
+ * @param ep element
+ * @param pos pos value
+ *
+ * @return ulong64
+ */
 lUlong64 lGetPosUlong64(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -632,25 +582,18 @@ lUlong64 lGetPosUlong64(const lListElem *ep, int pos) {
    DRETURN((lUlong64) ep->cont[pos].ul64);
 }
 
-/****** cull/multitype/lGetUlong64() ******************************************
-*  NAME
-*     lGetUlong64() -- Return 'uint64_t' value for specified fieldname
-*
-*  SYNOPSIS
-*     lUlong64 lGetUlong64(const lListElem *ep, int name) 
-*
-*  FUNCTION
-*     Return the content of the field specified by fieldname 'name' of 
-*     list element 'ep'. The type of the field 'name' has to be of
-*     type 'uint64_t'.
-*
-*  INPUTS
-*     const lListElem *ep - Pointer to list element 
-*     int name            - field name 
-*
-*  RESULT
-*     lUlong64 - uint64_t value
-******************************************************************************/
+/**
+ * @brief Return 'uint64_t' value for specified fieldname
+ *
+ * Return the content of the field specified by fieldname 'name' of
+ * list element 'ep'. The type of the field 'name' has to be of
+ * type 'uint64_t'.
+ *
+ * @param ep Pointer to list element
+ * @param name field name
+ *
+ * @return uint64_t value
+ */
 lUlong64 lGetUlong64(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
@@ -664,23 +607,13 @@ lUlong64 lGetUlong64(const lListElem *ep, int name) {
    DRETURN((lUlong64) ep->cont[pos].ul64);
 }
 
-/****** cull/multitype/lGetPosString() ****************************************
-*  NAME
-*     lGetPosString() -- Returns the string ptr value at position pos 
-*
-*  SYNOPSIS
-*     const char* lGetPosString(const lListElem *ep, int pos) 
-*
-*  FUNCTION
-*     Returns the char* value at position pos (runtime type checking) 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int pos             - pos value 
-*
-*  RESULT
-*     const char* - string pointer 
-*******************************************************************************/
+/**
+ * @brief Returns the string ptr value at position pos
+ *
+ * @param ep the element
+ * @param pos the field position
+ * @return the string, or nullptr when the field is unset
+ */
 const char *lGetPosString(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -697,23 +630,13 @@ const char *lGetPosString(const lListElem *ep, int pos) {
    DRETURN((lString) ep->cont[pos].str);
 }
 
-/****** cull/multitype/lGetPosHost() ******************************************
-*  NAME
-*     lGetPosHost() -- Returns the hostname value at position pos 
-*
-*  SYNOPSIS
-*     const char* lGetPosHost(const lListElem *ep, int pos) 
-*
-*  FUNCTION
-*     Returns the hostname value at position pos 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int pos             - position 
-*
-*  RESULT
-*     const char* - Hostname  
-******************************************************************************/
+/**
+ * @brief Returns the hostname value at position pos
+ *
+ * @param ep the element
+ * @param pos the field position
+ * @return the string, or nullptr when the field is unset
+ */
 const char *lGetPosHost(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -729,23 +652,16 @@ const char *lGetPosHost(const lListElem *ep, int pos) {
    DRETURN((lHost) ep->cont[pos].host);
 }
 
-/****** cull/multitype/lGetType() *********************************************
-*  NAME
-*     lGetType() -- Return type of field within descriptor 
-*
-*  SYNOPSIS
-*     int lGetType(const lDescr *dp, int nm) 
-*
-*  FUNCTION
-*     Return type of field within descriptor.
-*
-*  INPUTS
-*     const lDescr *dp - descriptor 
-*     int nm           - field name id 
-*
-*  RESULT
-*     int - Type id or lEndT
-******************************************************************************/
+/**
+ * @brief Return type of field within descriptor
+ *
+ * Return type of field within descriptor.
+ *
+ * @param dp descriptor
+ * @param nm field name id
+ *
+ * @return Type id or lEndT
+ */
 int lGetType(const lDescr *dp, int nm) {
    int pos;
 
@@ -759,25 +675,18 @@ int lGetType(const lDescr *dp, int nm) {
    DRETURN(mt_get_type(dp[pos].mt));
 }
 
-/****** cull/multitype/lGetString() ********************************************
-*  NAME
-*     lGetString() -- Return string for specified fieldname 
-*
-*  SYNOPSIS
-*     const char *lGetString(const lListElem *ep, int name) 
-*
-*  FUNCTION
-*     Return the content of the field specified by fieldname 'name' of 
-*     list element 'ep'. The type of the field 'name' has to be of
-*     type string.
-*
-*  INPUTS
-*     const lListElem *ep - Pointer to list element 
-*     int name            - field name 
-*
-*  RESULT
-*     const char* - string pointer (no copy) 
-******************************************************************************/
+/**
+ * @brief Return string for specified fieldname
+ *
+ * Return the content of the field specified by fieldname 'name' of
+ * list element 'ep'. The type of the field 'name' has to be of
+ * type string.
+ *
+ * @param ep Pointer to list element
+ * @param name field name
+ *
+ * @return string pointer (no copy)
+ */
 const char *lGetString(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
@@ -797,6 +706,13 @@ const char *lGetString(const lListElem *ep, int name) {
 *     MT-NOTE: MT-safety depends on lGetString (which has no MT-NOTE)
 *              lGetStringNotNull() itself is MT-safe
 */
+/**
+ * @brief The string held in a field, never nullptr
+ *
+ * @param ep the element
+ * @param name the field
+ * @return the string, or the empty string when the field is unset
+ */
 const char *lGetStringNotNull(const lListElem *ep, int name) {
    const char *ret = lGetString(ep, name);
    if (ret == nullptr) {
@@ -805,24 +721,17 @@ const char *lGetStringNotNull(const lListElem *ep, int name) {
    return ret;
 }
 
-/****** cull/multitype/lGetHost() **********************************************
-*  NAME
-*     lGetHost() -- Return hostname string for specified field 
-*
-*  SYNOPSIS
-*     const char* lGetHost(const lListElem *ep, int name) 
-*
-*  FUNCTION
-*     This procedure returns the hostname string for the field name, 
-*     but doesn't copy the string (runtime type checking)
-*
-*  INPUTS
-*     const lListElem *ep - list element pointer
-*     int name            - name of list element
-*
-*  RESULT
-*     const char* - value of list entry 
-*******************************************************************************/
+/**
+ * @brief Return hostname string for specified field
+ *
+ * This procedure returns the hostname string for the field name,
+ * but doesn't copy the string (runtime type checking)
+ *
+ * @param ep list element pointer
+ * @param name name of list element
+ *
+ * @return value of list entry
+ */
 const char *lGetHost(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
@@ -836,23 +745,13 @@ const char *lGetHost(const lListElem *ep, int name) {
    DRETURN((lHost) ep->cont[pos].host);
 }
 
-/****** cull/multitype/lGetPosObject() ******************************************
-*  NAME
-*     lGetPosObject() -- Returns the CULL object at position pos (no copy) 
-*
-*  SYNOPSIS
-*     lList* lGetPosObject(const lListElem *ep, int pos) 
-*
-*  FUNCTION
-*     Returns the CULL object (list element) at position pos (no copy) 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int pos             - pos value 
-*
-*  RESULT
-*     lListElem* - CULL list element pointer
-******************************************************************************/
+/**
+ * @brief Returns the CULL object at position pos (no copy)
+ *
+ * @param ep the element
+ * @param pos the field position
+ * @return the matching element, or nullptr when there is none
+ */
 lListElem *lGetPosObject(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -869,23 +768,13 @@ lListElem *lGetPosObject(const lListElem *ep, int pos) {
    DRETURN((lListElem *) ep->cont[pos].obj);
 }
 
-/****** cull/multitype/lGetPosList() ******************************************
-*  NAME
-*     lGetPosList() -- Returns the CULL list at position pos (no copy) 
-*
-*  SYNOPSIS
-*     lList* lGetPosList(const lListElem *ep, int pos) 
-*
-*  FUNCTION
-*     Returns the CULL list at position pos (no copy) 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int pos             - pos value 
-*
-*  RESULT
-*     lList* - CULL list pointer
-******************************************************************************/
+/**
+ * @brief Returns the CULL list at position pos (no copy)
+ *
+ * @param ep the element
+ * @param pos the field position
+ * @return the sub-list, or nullptr when the field is unset
+ */
 lList *lGetPosList(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -902,23 +791,13 @@ lList *lGetPosList(const lListElem *ep, int pos) {
    DRETURN((lList *) ep->cont[pos].glp);
 }
 
-/****** cull/multitype/lGetObject() *********************************************
-*  NAME
-*     lGetObject() -- Returns the CULL object for a field name 
-*
-*  SYNOPSIS
-*     lListElem* lGetObject(const lListElem *ep, int name) 
-*
-*  FUNCTION
-*     Returns the CULL object for a field name 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int name            - field name value 
-*
-*  RESULT
-*     lListElem* - CULL list element pointer 
-******************************************************************************/
+/**
+ * @brief Returns the CULL object for a field name
+ *
+ * @param ep the element
+ * @param name the field
+ * @return the matching element, or nullptr when there is none
+ */
 lListElem *lGetObject(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
@@ -931,23 +810,13 @@ lListElem *lGetObject(const lListElem *ep, int name) {
    DRETURN((lListElem *) ep->cont[pos].obj);
 }
 
-/****** cull/multitype/lGetList() *********************************************
-*  NAME
-*     lGetList() -- Returns the CULL list for a field name 
-*
-*  SYNOPSIS
-*     lList* lGetList(const lListElem *ep, int name) 
-*
-*  FUNCTION
-*     Returns the CULL list for a field name 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int name            - field name value 
-*
-*  RESULT
-*     lList* - CULL list pointer 
-******************************************************************************/
+/**
+ * @brief Returns the CULL list for a field name
+ *
+ * @param ep the element
+ * @param name the field
+ * @return the sub-list, or nullptr when the field is unset
+ */
 lList *lGetListRW(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
@@ -962,39 +831,26 @@ lList *lGetListRW(const lListElem *ep, int name) {
    DRETURN((lList *) ep->cont[pos].glp);
 }
 
+/**
+ * @brief Returns the sub-list held in a field, read only
+ *
+ * @param ep the element
+ * @param nm the field
+ * @return the sub-list, or nullptr when the field is unset
+ */
 const lList *lGetList(const lListElem *ep, int nm) {
    return lGetListRW(ep, nm);
 }
 
-/****** cull/multitype/lGetOrCreateList() **************************************
-*  NAME
-*     lGetOrCreateList() -- Returns the CULL list for a field name
-*
-*  SYNOPSIS
-*     lList* 
-*     lGetOrCreateList(lListElem *ep, int name, const char *list_name, 
-*                      const lDescr *descr) 
-*
-*  FUNCTION
-*     Returns the CULL list for a field name.
-*     If the list does not yet exist, create it.
-*
-*  INPUTS
-*     lListElem *ep         - element
-*     int name              - field name value
-*     const char *list_name - list name for list creation
-*     const lDescr *descr   - descriptor for list creation
-*
-*  RESULT
-*     lList* - CULL list pointer
-*
-*  NOTES
-*     MT-NOTE: lGetOrCreateList() is MT safe 
-*
-*  SEE ALSO
-*     cull/multitype/lGetList()
-*     cull/list/lCreateList()
-*******************************************************************************/
+/**
+ * @brief Returns the CULL list for a field name
+ *
+ * @param ep the element
+ * @param name the field
+ * @param list_name see the read/write variant
+ * @param descr see the read/write variant
+ * @return the sub-list, or nullptr when the field is unset
+ */
 lList *lGetOrCreateList(lListElem *ep, int name,
                         const char *list_name, const lDescr *descr) {
    lList *list = nullptr;
@@ -1010,23 +866,16 @@ lList *lGetOrCreateList(lListElem *ep, int name,
    return list;
 }
 
-/****** cull/multitype/lGetPosDouble() ****************************************
-*  NAME
-*     lGetPosDouble() -- Returns a double value at pos
-*
-*  SYNOPSIS
-*     lDouble lGetPosDouble(const lListElem *ep, int pos) 
-*
-*  FUNCTION
-*     Returns a double value at pos 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int pos             - pos 
-*
-*  RESULT
-*     lDouble - double value 
-*******************************************************************************/
+/**
+ * @brief Returns a double value at pos
+ *
+ * Returns a double value at pos
+ *
+ * @param ep element
+ * @param pos pos
+ *
+ * @return double value
+ */
 lDouble lGetPosDouble(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
    if (mt_get_type(ep->descr[pos].mt) != lDoubleT)
@@ -1034,23 +883,16 @@ lDouble lGetPosDouble(const lListElem *ep, int pos) {
    DRETURN(ep->cont[pos].db);
 }
 
-/****** cull/multitype/lGetDouble() *******************************************
-*  NAME
-*     lGetDouble() -- Returns the double value for field name 
-*
-*  SYNOPSIS
-*     lDouble lGetDouble(const lListElem *ep, int name) 
-*
-*  FUNCTION
-*     Returns the double value for field name 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int name            - field name value 
-*
-*  RESULT
-*     lDouble - double value 
-******************************************************************************/
+/**
+ * @brief Returns the double value for field name
+ *
+ * Returns the double value for field name
+ *
+ * @param ep element
+ * @param name field name value
+ *
+ * @return double value
+ */
 lDouble lGetDouble(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
@@ -1063,23 +905,16 @@ lDouble lGetDouble(const lListElem *ep, int name) {
    DRETURN(ep->cont[pos].db);
 }
 
-/****** cull/multitype/lGetPosLong() ****************************************
-*  NAME
-*     lGetPosLong() -- Returns the long value at position pos 
-*
-*  SYNOPSIS
-*     lLong lGetPosLong(const lListElem *ep, int pos) 
-*
-*  FUNCTION
-*     Returns the long value at position pos 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int pos             - position 
-*
-*  RESULT
-*     lLong - long 
-*******************************************************************************/
+/**
+ * @brief Returns the long value at position pos
+ *
+ * Returns the long value at position pos
+ *
+ * @param ep element
+ * @param pos position
+ *
+ * @return long
+ */
 lLong lGetPosLong(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
    if (mt_get_type(ep->descr[pos].mt) != lLongT)
@@ -1087,23 +922,16 @@ lLong lGetPosLong(const lListElem *ep, int pos) {
    DRETURN(ep->cont[pos].l);
 }
 
-/****** cull/multitype/lGetLong() *********************************************
-*  NAME
-*     lGetLong() -- Returns the long value for a field name 
-*
-*  SYNOPSIS
-*     lLong lGetLong(const lListElem *ep, int name) 
-*
-*  FUNCTION
-*     Returns the long value for a field name 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int name            - name 
-*
-*  RESULT
-*     lLong - long 
-******************************************************************************/
+/**
+ * @brief Returns the long value for a field name
+ *
+ * Returns the long value for a field name
+ *
+ * @param ep element
+ * @param name name
+ *
+ * @return long
+ */
 lLong lGetLong(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
@@ -1115,23 +943,16 @@ lLong lGetLong(const lListElem *ep, int name) {
    DRETURN(ep->cont[pos].l);
 }
 
-/****** cull/multitype/lGetPosBool() ******************************************
-*  NAME
-*     lGetPosBool() -- Returns the boolean value at position pos 
-*
-*  SYNOPSIS
-*     lChar lGetPosBool(const lListElem *ep, int pos) 
-*
-*  FUNCTION
-*     Returns the boolean value at position pos 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int pos             - position 
-*
-*  RESULT
-*     lBool - boolean 
-******************************************************************************/
+/**
+ * @brief Returns the boolean value at position pos
+ *
+ * Returns the boolean value at position pos
+ *
+ * @param ep element
+ * @param pos position
+ *
+ * @return boolean
+ */
 lBool lGetPosBool(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -1140,23 +961,16 @@ lBool lGetPosBool(const lListElem *ep, int pos) {
    DRETURN(ep->cont[pos].b);
 }
 
-/****** cull/multitype/lGetBool() *********************************************
-*  NAME
-*     lGetBool() -- Returns the boolean value for a field name 
-*
-*  SYNOPSIS
-*     lBool lGetBool(const lListElem *ep, int name) 
-*
-*  FUNCTION
-*     Returns the boolean value for a field name 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int name            - field name 
-*
-*  RESULT
-*     lBool - boolean
-******************************************************************************/
+/**
+ * @brief Returns the boolean value for a field name
+ *
+ * Returns the boolean value for a field name
+ *
+ * @param ep element
+ * @param name field name
+ *
+ * @return boolean
+ */
 lBool lGetBool(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
@@ -1168,23 +982,16 @@ lBool lGetBool(const lListElem *ep, int name) {
    DRETURN(ep->cont[pos].b);
 }
 
-/****** cull/multitype/lGetPosRef() *******************************************
-*  NAME
-*     lGetPosRef() -- Returns the reference at position pos 
-*
-*  SYNOPSIS
-*     lRef lGetPosRef(const lListElem *ep, int pos) 
-*
-*  FUNCTION
-*     Returns the reference at position pos 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int pos             - position 
-*
-*  RESULT
-*     lRef - reference (pointer) 
-******************************************************************************/
+/**
+ * @brief Returns the reference at position pos
+ *
+ * Returns the reference at position pos
+ *
+ * @param ep element
+ * @param pos position
+ *
+ * @return reference (pointer)
+ */
 lRef lGetPosRef(const lListElem *ep, int pos) {
    DENTER(CULL_BASIS_LAYER);
    if (mt_get_type(ep->descr[pos].mt) != lRefT) {
@@ -1193,23 +1000,16 @@ lRef lGetPosRef(const lListElem *ep, int pos) {
    DRETURN(ep->cont[pos].ref);
 }
 
-/****** cull/multitype/lGetRef() **********************************************
-*  NAME
-*     lGetRef() -- Returns the reference for a field name
-*
-*  SYNOPSIS
-*     lRef lGetRef(const lListElem *ep, int name) 
-*
-*  FUNCTION
-*     Returns the reference for a field name
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     int name            - field name value 
-*
-*  RESULT
-*     lRef - reference 
-******************************************************************************/
+/**
+ * @brief Returns the reference for a field name
+ *
+ * Returns the reference for a field name
+ *
+ * @param ep element
+ * @param name field name value
+ *
+ * @return reference
+ */
 lRef lGetRef(const lListElem *ep, int name) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
@@ -1222,26 +1022,17 @@ lRef lGetRef(const lListElem *ep, int name) {
    DRETURN(ep->cont[pos].ref);
 }
 
-/****** cull/multitype/lSetPosInt() ****************************************
-*  NAME
-*     lSetPosInt() -- Sets the int value 
-*
-*  SYNOPSIS
-*     int lSetPosInt(lListElem *ep, int pos, int value) 
-*
-*  FUNCTION
-*     Sets in the element 'ep' at position 'pos' the int 'value' 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int pos             - position 
-*     int value           - value 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Sets the int value
+ *
+ * Sets in the element 'ep' at position 'pos' the int 'value'
+ *
+ * @param ep element
+ * @param pos position
+ * @param value value
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetPosInt(lListElem *ep, int pos, int value) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -1271,26 +1062,17 @@ int lSetPosInt(lListElem *ep, int pos, int value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetInt() **********************************************
-*  NAME
-*     lSetInt() -- Sets an int within an element 
-*
-*  SYNOPSIS
-*     int lSetInt(lListElem *ep, int name, int value) 
-*
-*  FUNCTION
-*     Sets an int within an element 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int name      - field name id 
-*     int value     - new value 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Sets an int within an element
+ *
+ * Sets an int within an element
+ *
+ * @param ep element
+ * @param name field name id
+ * @param value new value
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetInt(lListElem *ep, int name, int value) {
    int pos;
    DENTER(CULL_BASIS_LAYER);
@@ -1323,26 +1105,17 @@ int lSetInt(lListElem *ep, int name, int value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetPosUlong() *****************************************
-*  NAME
-*     lSetPosUlong() -- Get ulong at a certain position 
-*
-*  SYNOPSIS
-*     int lSetPosUlong(lListElem *ep, int pos, lUlong value) 
-*
-*  FUNCTION
-*     Get ulong at a certain position 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int pos             - position 
-*     lUlong value        - new value 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*******************************************************************************/
+/**
+ * @brief Get ulong at a certain position
+ *
+ * Get ulong at a certain position
+ *
+ * @param ep element
+ * @param pos position
+ * @param value new value
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
@@ -1382,26 +1155,17 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetUlong() ********************************************
-*  NAME
-*     lSetUlong() -- Set ulong value at the given field name id 
-*
-*  SYNOPSIS
-*     int lSetUlong(lListElem *ep, int name, lUlong value) 
-*
-*  FUNCTION
-*     Set ulong value at the given field name id 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int name      - field name id 
-*     lUlong value  - new value 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Set ulong value at the given field name id
+ *
+ * Set ulong value at the given field name id
+ *
+ * @param ep element
+ * @param name field name id
+ * @param value new value
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetUlong(lListElem *ep, int name, lUlong value) {
    int pos;
 
@@ -1447,30 +1211,24 @@ int lSetUlong(lListElem *ep, int name, lUlong value) {
    DRETURN(0);
 }
 
-/****** cull_multitype/lAddUlong() *********************************************
-*  NAME
-*     lAddUlong() -- Adds a lUlong offset to the lUlong field
-*
-*  SYNOPSIS
-*     int lAddUlong(lListElem *ep, int name, lUlong offset) 
-*
-*  FUNCTION
-*     The 'offset' is added to the lUlong field 'name' of
-*     the CULL element 'ep'.
-*
-*  INPUTS
-*     lListElem *ep - element
-*     int name      - field name id
-*     lUlong offset - the offset
-*
-*  RESULT
-*     int - 
-*
-*  EXAMPLE
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*******************************************************************************/
+/**
+ * @brief Adds a lUlong offset to the lUlong field
+ *
+ * The 'offset' is added to the lUlong field 'name' of
+ * the CULL element 'ep'.
+ *
+ * @code
+ * int - error state
+ *     0 - OK
+ *    -1 - Error
+ * @endcode
+ *
+ * @param ep element
+ * @param name field name id
+ * @param offset the offset
+ *
+ * @return int -
+ */
 int lAddUlong(lListElem *ep, int name, lUlong offset) {
    int pos;
 
@@ -1516,26 +1274,17 @@ int lAddUlong(lListElem *ep, int name, lUlong offset) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetUlong64() ******************************************
-*  NAME
-*     lSetUlong64() -- Set ulong value at the given field name id 
-*
-*  SYNOPSIS
-*     int lSetUlong64(lListElem *ep, int name, lUlong64 value) 
-*
-*  FUNCTION
-*     Set ulong64 value at the given field name id 
-*
-*  INPUTS
-*     lListElem *ep  - element 
-*     int name       - field name id 
-*     lUlong64 value - new value 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Set ulong value at the given field name id
+ *
+ * Set ulong64 value at the given field name id
+ *
+ * @param ep element
+ * @param name field name id
+ * @param value new value
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
    int pos;
 
@@ -1581,30 +1330,24 @@ int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
    DRETURN(0);
 }
 
-/****** cull_multitype/lAddUlong64() *******************************************
-*  NAME
-*     lAddUlong64() -- Adds a lUlong64 offset to the lUlong64 field
-*
-*  SYNOPSIS
-*     int lAddUlong64(lListElem *ep, int name, lUlong64 offset) 
-*
-*  FUNCTION
-*     The 'offset' is added to the lUlong64 field 'name' of
-*     the CULL element 'ep'.
-*
-*  INPUTS
-*     lListElem *ep   - element
-*     int name        - field name id
-*     lUlong64 offset - the offset
-*
-*  RESULT
-*     int - 
-*
-*  EXAMPLE
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*******************************************************************************/
+/**
+ * @brief Adds a lUlong64 offset to the lUlong64 field
+ *
+ * The 'offset' is added to the lUlong64 field 'name' of
+ * the CULL element 'ep'.
+ *
+ * @code
+ * int - error state
+ *     0 - OK
+ *    -1 - Error
+ * @endcode
+ *
+ * @param ep element
+ * @param name field name id
+ * @param offset the offset
+ *
+ * @return int -
+ */
 int lAddUlong64(lListElem *ep, int name, lUlong64 offset) {
    int pos;
 
@@ -1650,26 +1393,17 @@ int lAddUlong64(lListElem *ep, int name, lUlong64 offset) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetPosUlong64() ***************************************
-*  NAME
-*     lSetPosUlong64() -- Get ulong64 at a certain position 
-*
-*  SYNOPSIS
-*     int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) 
-*
-*  FUNCTION
-*     Get ulong64 at a certain position 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int pos             - position 
-*     lUlong64 value      - new value 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*******************************************************************************/
+/**
+ * @brief Get ulong64 at a certain position
+ *
+ * Get ulong64 at a certain position
+ *
+ * @param ep element
+ * @param pos position
+ * @param value new value
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
@@ -1709,26 +1443,17 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetPosString() ***************************************
-*  NAME
-*     lSetPosString() -- Sets the string at a certain position 
-*
-*  SYNOPSIS
-*     int lSetPosString(lListElem *ep, int pos, const char *value) 
-*
-*  FUNCTION
-*     Sets the string at a certain position. 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int pos             - position 
-*     const char *value   - string value 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-******************************************************************************/
+/**
+ * @brief Sets the string at a certain position
+ *
+ * Sets the string at a certain position.
+ *
+ * @param ep element
+ * @param pos position
+ * @param value string value
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetPosString(lListElem *ep, int pos, const char *value) {
    char *str = nullptr;
    int changed;
@@ -1800,26 +1525,17 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetPosHost() ******************************************
-*  NAME
-*     lSetPosHost() -- Sets the hostname at a certain position
-*
-*  SYNOPSIS
-*     int lSetPosHost(lListElem *ep, int pos, const char *value) 
-*
-*  FUNCTION
-*     Sets the hostname at a certain position 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int pos             - position 
-*     const char *value   - new hostname 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*******************************************************************************/
+/**
+ * @brief Sets the hostname at a certain position
+ *
+ * Sets the hostname at a certain position
+ *
+ * @param ep element
+ * @param pos position
+ * @param value new hostname
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetPosHost(lListElem *ep, int pos, const char *value) {
    char *str = nullptr;
    int changed;
@@ -1893,26 +1609,17 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetString() *******************************************
-*  NAME
-*     lSetString() -- Sets the string at the given field name id 
-*
-*  SYNOPSIS
-*     int lSetString(lListElem *ep, int name, const char *value) 
-*
-*  FUNCTION
-*     Sets the string at the given field name id 
-*
-*  INPUTS
-*     lListElem *ep     - element 
-*     int name          - field name id
-*     const char *value - new string 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-*******************************************************************************/
+/**
+ * @brief Sets the string at the given field name id
+ *
+ * Sets the string at the given field name id
+ *
+ * @param ep element
+ * @param name field name id
+ * @param value new string
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetString(lListElem *ep, int name, const char *value) {
    char *str;
    int pos;
@@ -1989,29 +1696,19 @@ int lSetString(lListElem *ep, int name, const char *value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetHost() *********************************************
-*  NAME
-*     lSetHost() -- Set hostname for field name in element
-*
-*  SYNOPSIS
-*     int lSetHost(lListElem *ep, int name, const char *value) 
-*
-*  FUNCTION
-*     Sets in the element ep for field name the char * value.
-*     Also duplicates the pointed to char array
-*     (runtime type checking)
-*
-*
-*  INPUTS
-*     lListElem *ep     - list element pointer
-*     int name          - name of list element (e.g. EH_name)
-*     const char *value - new value for list element
-*
-*  RESULT
-*     int - error state
-*         -1 - Error 
-*          0 - OK 
-******************************************************************************/
+/**
+ * @brief Set hostname for field name in element
+ *
+ * Sets in the element ep for field name the char * value.
+ * Also duplicates the pointed to char array
+ * (runtime type checking)
+ *
+ * @param ep list element pointer
+ * @param name name of list element (e.g. EH_name)
+ * @param value new value for list element
+ *
+ * @return error state -1 - Error 0 - OK
+ */
 int lSetHost(lListElem *ep, int name, const char *value) {
    char *str;
    int pos;
@@ -2085,27 +1782,18 @@ int lSetHost(lListElem *ep, int name, const char *value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetPosObject() ****************************************
-*  NAME
-*     lSetPosObject() -- Set list element at position pos 
-*
-*  SYNOPSIS
-*     int lSetPosObject(lListElem *ep, int pos, lListElem *value) 
-*
-*  FUNCTION
-*     Sets in the element 'ep' at position 'pos' the list element 'value'.
-*     Doesn't copy the object. Does runtime type checking. 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int pos             - position 
-*     lListElem *value    - value 
-*
-*  RESULT
-*     int - error state 
-*         0 - OK
-*        -1 - Error
-*******************************************************************************/
+/**
+ * @brief Set list element at position pos
+ *
+ * Sets in the element 'ep' at position 'pos' the list element 'value'.
+ * Doesn't copy the object. Does runtime type checking.
+ *
+ * @param ep element
+ * @param pos position
+ * @param value value
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetPosObject(lListElem *ep, int pos, lListElem *value) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -2150,27 +1838,18 @@ int lSetPosObject(lListElem *ep, int pos, lListElem *value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetPosList() ****************************************
-*  NAME
-*     lSetPosList() -- Set list at position pos 
-*
-*  SYNOPSIS
-*     int lSetPosList(lListElem *ep, int pos, lList *value) 
-*
-*  FUNCTION
-*     Sets in the element 'ep' at position 'pos' the lists 'value'.
-*     Doesn't copy the list. Does runtime type checking. 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int pos             - position 
-*     lList *value        - value 
-*
-*  RESULT
-*     int - error state 
-*         0 - OK
-*        -1 - Error
-*******************************************************************************/
+/**
+ * @brief Set list at position pos
+ *
+ * Sets in the element 'ep' at position 'pos' the lists 'value'.
+ * Doesn't copy the list. Does runtime type checking.
+ *
+ * @param ep element
+ * @param pos position
+ * @param value value
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetPosList(lListElem *ep, int pos, lList *value) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -2206,26 +1885,17 @@ int lSetPosList(lListElem *ep, int pos, lList *value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lXchgString() ********************************************
-*  NAME
-*     lXchgList() -- Exchange field name value string pointer 
-*
-*  SYNOPSIS
-*     int lXchgString(lListElem *ep, int name, char **str) 
-*
-*  FUNCTION
-*     Exchange the string pointer, which has the given field name value. 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int name      - field name value 
-*     char **str   - pointer to a string
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Exchange field name value string pointer
+ *
+ * Exchange the string pointer, which has the given field name value.
+ *
+ * @param ep element
+ * @param name field name value
+ * @param str pointer to a string
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lXchgString(lListElem *ep, int name, char **str) {
    int pos;
    char *tmp;
@@ -2262,26 +1932,17 @@ int lXchgString(lListElem *ep, int name, char **str) {
 
 }
 
-/****** cull/multitype/lXchgList() ********************************************
-*  NAME
-*     lXchgList() -- Exchange field name value list pointer 
-*
-*  SYNOPSIS
-*     int lXchgList(lListElem *ep, int name, lList **lpp) 
-*
-*  FUNCTION
-*     Exchange the list pointer which has the given field name value. 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int name      - field name value 
-*     lList **lpp   - pointer to CULL list 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Exchange field name value list pointer
+ *
+ * Exchange the list pointer which has the given field name value.
+ *
+ * @param ep element
+ * @param name field name value
+ * @param lpp pointer to CULL list
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lXchgList(lListElem *ep, int name, lList **lpp) {
    int pos;
    lList *tmp;
@@ -2318,27 +1979,18 @@ int lXchgList(lListElem *ep, int name, lList **lpp) {
 
 }
 
-/****** cull/multitype/lSwapList() ********************************************
-*  NAME
-*     lSwapList() -- Exchange two lists within two elements
-*
-*  SYNOPSIS
-*     int lSwapList(lListElem *to, int nm_to, lListElem *from, int nm_from) 
-*
-*  FUNCTION
-*     Exchange two lists within two elements. 
-*
-*  INPUTS
-*     lListElem *to   - element one 
-*     int nm_to       - field name id of a list attribute of 'to' 
-*     lListElem *from - element two 
-*     int nm_from     - field name id of a list attribute of 'from' 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-******************************************************************************/
+/**
+ * @brief Exchange two lists within two elements
+ *
+ * Exchange two lists within two elements.
+ *
+ * @param to element one
+ * @param nm_to field name id of a list attribute of 'to'
+ * @param from element two
+ * @param nm_from field name id of a list attribute of 'from'
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSwapList(lListElem *to, int nm_to, lListElem *from, int nm_from) {
    lList *tmp = nullptr;
 
@@ -2358,26 +2010,17 @@ int lSwapList(lListElem *to, int nm_to, lListElem *from, int nm_from) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetObject() *********************************************
-*  NAME
-*     lSetObject() -- Sets a list at the given field name id 
-*
-*  SYNOPSIS
-*     int lSetObject(lListElem *ep, int name, lList *value) 
-*
-*  FUNCTION
-*     Sets a list at the given field name id. List will not be copyed.
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int name      - field name id 
-*     lList *value  - new list pointer 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-******************************************************************************/
+/**
+ * @brief Sets a list at the given field name id
+ *
+ * Sets a list at the given field name id. List will not be copyed.
+ *
+ * @param ep element
+ * @param name field name id
+ * @param value new list pointer
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetObject(lListElem *ep, int name, lListElem *value) {
    int pos;
 
@@ -2429,29 +2072,19 @@ int lSetObject(lListElem *ep, int name, lListElem *value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetList() *********************************************
-*  NAME
-*     lSetList() -- Sets a list at the given field name id 
-*
-*  SYNOPSIS
-*     int lSetList(lListElem *ep, int name, lList *value) 
-*
-*  FUNCTION
-*     Sets a list at the given field name id. List will not be copied.
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int name      - field name id 
-*     lList *value  - new list pointer 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-*
-*  NOTES
-*     MT-NOTE: lAddSubList() is MT safe
-******************************************************************************/
+/**
+ * @brief Sets a list at the given field name id
+ *
+ * Sets a list at the given field name id. List will not be copied.
+ *
+ * @param ep element
+ * @param name field name id
+ * @param value new list pointer
+ *
+ * @return error state 0 - OK -1 - Error
+ *
+ * @note MT-NOTE: lAddSubList() is MT safe
+ */
 int lSetList(lListElem *ep, int name, lList *value) {
    int pos;
 
@@ -2490,26 +2123,17 @@ int lSetList(lListElem *ep, int name, lList *value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetPosDouble() ****************************************
-*  NAME
-*     lSetPosDouble() -- Set double value at given position 
-*
-*  SYNOPSIS
-*     int lSetPosDouble(lListElem *ep, int pos, lDouble value) 
-*
-*  FUNCTION
-*     Set double value at given position. 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int pos             - position 
-*     lDouble value       - new double value 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-******************************************************************************/
+/**
+ * @brief Set double value at given position
+ *
+ * Set double value at given position.
+ *
+ * @param ep element
+ * @param pos position
+ * @param value new double value
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetPosDouble(lListElem *ep, int pos, lDouble value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
@@ -2539,26 +2163,17 @@ int lSetPosDouble(lListElem *ep, int pos, lDouble value) {
 }
 
 
-/****** cull/multitype/lSetDouble() *******************************************
-*  NAME
-*     lSetDouble() -- Set double value with given field name id 
-*
-*  SYNOPSIS
-*     int lSetDouble(lListElem *ep, int name, lDouble value) 
-*
-*  FUNCTION
-*     Set double value with given field name id 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int name      - field name id 
-*     lDouble value - new double value 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-*******************************************************************************/
+/**
+ * @brief Set double value with given field name id
+ *
+ * Set double value with given field name id
+ *
+ * @param ep element
+ * @param name field name id
+ * @param value new double value
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetDouble(lListElem *ep, int name, lDouble value) {
    int pos;
 
@@ -2591,27 +2206,17 @@ int lSetDouble(lListElem *ep, int name, lDouble value) {
    DRETURN(0);
 }
 
-/****** cull_multitype/lAddDouble() ********************************************
-*  NAME
-*     lAddDouble() -- Adds a double offset to the double field
-*
-*  SYNOPSIS
-*     lAddDouble(lListElem *ep, int name, lDouble offset) 
-*
-*  FUNCTION
-*     The 'offset' is added to the double field 'name' of 
-*     the CULL element 'ep'.
-*
-*  INPUTS
-*     lListElem *ep  - element
-*     int name       - field name id 
-*     lDouble offset - the offset
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-*******************************************************************************/
+/**
+ * @brief Adds an offset to a double field
+ *
+ * @p value is added to the double field @p name of the element @p ep.
+ *
+ * @param ep element
+ * @param name field name id
+ * @param value the amount to add
+ *
+ * @return 0 on success, -1 on error
+ */
 int lAddDouble(lListElem *ep, int name, lDouble value) {
    int pos;
 
@@ -2645,26 +2250,17 @@ int lAddDouble(lListElem *ep, int name, lDouble value) {
 }
 
 
-/****** cull/multitype/lSetPosLong() ******************************************
-*  NAME
-*     lSetPosLong() -- Set long value at given position 
-*
-*  SYNOPSIS
-*     int lSetPosLong(lListElem *ep, int pos, lLong value) 
-*
-*  FUNCTION
-*     Set long value at given position. 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int pos             - position 
-*     lLong value         - new long value 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-******************************************************************************/
+/**
+ * @brief Set long value at given position
+ *
+ * Set long value at given position.
+ *
+ * @param ep element
+ * @param pos position
+ * @param value new long value
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetPosLong(lListElem *ep, int pos, lLong value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
@@ -2693,26 +2289,17 @@ int lSetPosLong(lListElem *ep, int pos, lLong value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetLong() *********************************************
-*  NAME
-*     lSetLong() -- Set long value with given field name id 
-*
-*  SYNOPSIS
-*     int lSetLong(lListElem *ep, int name, lLong value) 
-*
-*  FUNCTION
-*     Set long value with given field name id. 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int name      - field name id 
-*     lLong value   - value 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-******************************************************************************/
+/**
+ * @brief Set long value with given field name id
+ *
+ * Set long value with given field name id.
+ *
+ * @param ep element
+ * @param name field name id
+ * @param value value
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetLong(lListElem *ep, int name, lLong value) {
    int pos;
 
@@ -2745,26 +2332,17 @@ int lSetLong(lListElem *ep, int name, lLong value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetPosBool() ******************************************
-*  NAME
-*     lSetPosBool() -- Sets the character a the given position 
-*
-*  SYNOPSIS
-*     int lSetPosBool(lListElem *ep, int pos, lBool value) 
-*
-*  FUNCTION
-*     Sets the character a the given position. 
-*
-*  INPUTS
-*     lListElem *ep - element 
-*     int pos             - position 
-*     lBool value         - value 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-******************************************************************************/
+/**
+ * @brief Sets the character a the given position
+ *
+ * Sets the character a the given position.
+ *
+ * @param ep element
+ * @param pos position
+ * @param value value
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetPosBool(lListElem *ep, int pos, lBool value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
@@ -2793,26 +2371,17 @@ int lSetPosBool(lListElem *ep, int pos, lBool value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetBool() *********************************************
-*  NAME
-*     lSetBool() -- Sets character with the given field name id 
-*
-*  SYNOPSIS
-*     int lSetBool(lListElem * ep, int name, lBool value) 
-*
-*  FUNCTION
-*     Sets character with the given field name id 
-*
-*  INPUTS
-*     lListElem * ep - element 
-*     int name       - field name id 
-*     lBool value    - new character 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-******************************************************************************/
+/**
+ * @brief Sets character with the given field name id
+ *
+ * Sets character with the given field name id
+ *
+ * @param ep element
+ * @param name field name id
+ * @param value new character
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetBool(lListElem *ep, int name, lBool value) {
    int pos;
 
@@ -2845,26 +2414,17 @@ int lSetBool(lListElem *ep, int name, lBool value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetPosRef() *******************************************
-*  NAME
-*     lSetPosRef() -- Set pointer at given position 
-*
-*  SYNOPSIS
-*     int lSetPosRef(lListElem * ep, int pos, lRef value) 
-*
-*  FUNCTION
-*     Set pointer at given position 
-*
-*  INPUTS
-*     lListElem * ep - element 
-*     int pos              - position 
-*     lRef value           - pointer 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Set pointer at given position
+ *
+ * Set pointer at given position
+ *
+ * @param ep element
+ * @param pos position
+ * @param value pointer
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetPosRef(lListElem *ep, int pos, lRef value) {
    DENTER(CULL_BASIS_LAYER);
    if (!ep) {
@@ -2893,26 +2453,17 @@ int lSetPosRef(lListElem *ep, int pos, lRef value) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lSetRef() **********************************************
-*  NAME
-*     lSetRef() -- Set pointer with the given field name id 
-*
-*  SYNOPSIS
-*     int lSetRef(lListElem * ep, int name, lRef value) 
-*
-*  FUNCTION
-*     Set pointer with the given field name id 
-*
-*  INPUTS
-*     lListElem * ep - element 
-*     int name       - field name id 
-*     lRef value     - new pointer 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-******************************************************************************/
+/**
+ * @brief Set pointer with the given field name id
+ *
+ * Set pointer with the given field name id
+ *
+ * @param ep element
+ * @param name field name id
+ * @param value new pointer
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lSetRef(lListElem *ep, int name, lRef value) {
    int pos;
 
@@ -2945,107 +2496,134 @@ int lSetRef(lListElem *ep, int name, lRef value) {
    DRETURN(0);
 }
 
-/* ------------------------------------------------------------ 
-   compares two int values i0 and i1 
-   return values like strcmp
+/**
+ * @brief Compare two ints
+ *
+ * @param i0 first value
+ * @param i1 second value
+ * @return 0 when equal, -1 when @p i0 is the smaller, 1 when it is the larger
  */
 int intcmp(int i0, int i1) {
    return i0 == i1 ? 0 : (i0 < i1 ? -1 : 1);
 }
 
-/* ------------------------------------------------------------ 
-   compares two ulong values u0 and u1 
-   return values like strcmp
+/**
+ * @brief Compare two 32 bit unsigned values
+ *
+ * @param u0 first value
+ * @param u1 second value
+ * @return 0 when equal, -1 when @p u0 is the smaller, 1 when it is the larger
  */
 int ulongcmp(lUlong u0, lUlong u1) {
    return u0 == u1 ? 0 : (u0 < u1 ? -1 : 1);
 }
 
+/**
+ * @brief Does a bit mask contain every bit of another?
+ *
+ * @param bm0 the mask to test
+ * @param bm1 the bits required to be set in @p bm0
+ * @return 1 when every bit of @p bm1 is set in @p bm0, 0 otherwise
+ *
+ * @note Despite its name and its neighbours, this is a containment test, not
+ *       an ordering: it never returns -1 and its result is not strcmp-like.
+ */
 int bitmaskcmp(lUlong bm0, lUlong bm1) {
    return ((bm0 & bm1) == bm1) ? 1 : 0;
 }
 
-/* ------------------------------------------------------------ 
-   compares two ulong64 values u0 and u1 
-   return values like strcmp
+/**
+ * @brief Compare two 64 bit unsigned values
+ *
+ * @param u0 first value
+ * @param u1 second value
+ * @return 0 when equal, -1 when @p u0 is the smaller, 1 when it is the larger
  */
 int ulong64cmp(lUlong64 u0, lUlong64 u1) {
    return u0 == u1 ? 0 : (u0 < u1 ? -1 : 1);
 }
 
-/* ------------------------------------------------------------ 
-   compares two lFloat values f0 and f1 
-   return values like strcmp
+/**
+ * @brief Compare two floats
+ *
+ * @param f0 first value
+ * @param f1 second value
+ * @return 0 when equal, -1 when @p f0 is the smaller, 1 when it is the larger
  */
 int floatcmp(lFloat f0, lFloat f1) {
    return f0 == f1 ? 0 : (f0 < f1 ? -1 : 1);
 }
 
-/* ------------------------------------------------------------ 
-   compares two double values d0 and d1 
-   return values like strcmp
+/**
+ * @brief Compare two doubles
+ *
+ * @param d0 first value
+ * @param d1 second value
+ * @return 0 when equal, -1 when @p d0 is the smaller, 1 when it is the larger
  */
 int doublecmp(lDouble d0, lDouble d1) {
    return d0 == d1 ? 0 : (d0 < d1 ? -1 : 1);
 }
 
-/* ------------------------------------------------------------ 
-   compares two long values l0 and l1 
-   return values like strcmp
+/**
+ * @brief Compare two longs
+ *
+ * @param l0 first value
+ * @param l1 second value
+ * @return 0 when equal, -1 when @p l0 is the smaller, 1 when it is the larger
  */
 int longcmp(lLong l0, lLong l1) {
    return l0 == l1 ? 0 : (l0 < l1 ? -1 : 1);
 }
 
-/* ------------------------------------------------------------ 
-   compares two bool values c0 and c1 
-   return values like strcmp
+/**
+ * @brief Compare two booleans
+ *
+ * @param b0 first value
+ * @param b1 second value
+ * @return 0 when equal, -1 when @p b0 is the smaller, 1 when it is the larger
  */
 int boolcmp(lBool b0, lBool b1) {
    return b0 == b1 ? 0 : (b0 < b1 ? -1 : 1);
 }
 
-/* ------------------------------------------------------------ 
-   compares two char values c0 and c1 
-   return values like strcmp
+/**
+ * @brief Compare two characters
+ *
+ * @param c0 first value
+ * @param c1 second value
+ * @return 0 when equal, -1 when @p c0 is the smaller, 1 when it is the larger
  */
 int charcmp(lChar c0, lChar c1) {
    return c0 == c1 ? 0 : (c0 < c1 ? -1 : 1);
 }
 
-/* ------------------------------------------------------------ 
-   compares two lRef values c0 and c1 
-   return values like strcmp
+/**
+ * @brief Compare two opaque references, by address
+ *
+ * @param c0 first value
+ * @param c1 second value
+ * @return 0 when equal, -1 when @p c0 is the smaller, 1 when it is the larger
  */
 int refcmp(lRef c0, lRef c1) {
    return c0 == c1 ? 0 : (c0 < c1 ? -1 : 1);
 }
 
-/****** cull/multitype/lAddSubStr() *******************************************
-*  NAME
-*     lAddSubStr() -- adds a string to the string sublist  
-*
-*  SYNOPSIS
-*     lListElem* lAddSubStr(lListElem* ep, int nm, char* str, 
-*                           int snm, lDescr* dp) 
-*
-*  FUNCTION
-*     This function add a new element into a sublist snm of an 
-*     element ep. The field nm of this added element will get the 
-*     initial value specified with str. 
-*
-*  INPUTS
-*     lListElem* ep - list element 
-*     int nm        - field id contained in the element which 
-*                     will be created
-*     char* str     - initial value if nm 
-*     int snm       - field id of the sublist within ep 
-*     lDescr* dp    - Type of the new element 
-*
-*  RESULT
-*     nullptr in case of error
-*     otherwise pointer to the added element 
-******************************************************************************/
+/**
+ * @brief Adds a string to the string sublist
+ *
+ * This function add a new element into a sublist snm of an
+ * element ep. The field nm of this added element will get the
+ * initial value specified with str.
+ *
+ * @param ep list element
+ * @param nm field id contained in the element which will be created
+ * @param str initial value if nm
+ * @param snm field id of the sublist within ep
+ * @param dp Type of the new element
+ *
+ * @return nullptr in case of error otherwise pointer to the added element
+ */
 lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm,
                       const lDescr *dp) {
    lListElem *ret;
@@ -3074,31 +2652,21 @@ lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm,
    DRETURN(ret);
 }
 
-/****** cull/multitype/lAddSubHost() ******************************************
-*  NAME
-*     lAddSubHost() -- adds a string to the string sublist  
-*
-*  SYNOPSIS
-*     lListElem* lAddSubHost(lListElem* ep, int nm, char* str, 
-*                            int snm, lDescr* dp) 
-*
-*  FUNCTION
-*     This function add a new element into a sublist snm of an 
-*     element ep. The field nm of this added element will get the 
-*     initial value specified with str. 
-*
-*  INPUTS
-*     lListElem* ep - list element 
-*     int nm        - field id contained in the element which 
-*                     will be created
-*     char* str     - initial value if nm 
-*     int snm       - field id of the sublist within ep 
-*     lDescr* dp    - Type of the new element 
-*
-*  RESULT
-*     nullptr in case of error
-*     otherwise pointer to the added element 
-******************************************************************************/
+/**
+ * @brief Adds a string to the string sublist
+ *
+ * This function add a new element into a sublist snm of an
+ * element ep. The field nm of this added element will get the
+ * initial value specified with str.
+ *
+ * @param ep list element
+ * @param nm field id contained in the element which will be created
+ * @param str initial value if nm
+ * @param snm field id of the sublist within ep
+ * @param dp Type of the new element
+ *
+ * @return nullptr in case of error otherwise pointer to the added element
+ */
 lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm,
                        const lDescr *dp) {
    lListElem *ret;
@@ -3128,27 +2696,19 @@ lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm,
 }
 
 
-/****** cull/multitype/lAddElemStr() ******************************************
-*  NAME
-*     lAddElemStr() -- adds a string to the string list  
-*
-*  SYNOPSIS
-*     lListElem* lAddElemStr(lList **lpp, int nm, const char *str, 
-*                            const lDescr *dp) 
-*
-*  FUNCTION
-*     This function adds a new element of type dp to the list referenced
-*     by lpp. The field nm will get the initial value str.
-*
-*  INPUTS
-*     lList** lpp - list reference 
-*     int nm      - field id 
-*     char* str   - initial value 
-*     lDescr* dp  - Type of the object which will be added  
-*
-*  RESULT
-*     lListElem* - 
-******************************************************************************/
+/**
+ * @brief Adds a string to the string list
+ *
+ * This function adds a new element of type dp to the list referenced
+ * by lpp. The field nm will get the initial value str.
+ *
+ * @param lpp list reference
+ * @param nm field id
+ * @param str initial value
+ * @param dp Type of the object which will be added
+ *
+ * @return lListElem* -
+ */
 lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp) {
    lListElem *sep;
    int pos;
@@ -3189,26 +2749,18 @@ lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp) {
    DRETURN(sep);
 }
 
-/****** cull/multitype/lAddElemHost() *****************************************
-*  NAME
-*     lAddElemHost() -- Adds a hostname to a hostname list 
-*
-*  SYNOPSIS
-*     lListElem* lAddElemHost(lList **lpp, int nm, const char *str, 
-*                             const lDescr *dp) 
-*
-*  FUNCTION
-*     Adds a hostname to a hostname list 
-*
-*  INPUTS
-*     lList **lpp      - list reference 
-*     int nm           - hostname field id 
-*     const char *str  - new hostname 
-*     const lDescr *dp - descriptor of new element 
-*
-*  RESULT
-*     lListElem* - new element or nullptr
-******************************************************************************/
+/**
+ * @brief Adds a hostname to a hostname list
+ *
+ * Adds a hostname to a hostname list
+ *
+ * @param lpp list reference
+ * @param nm hostname field id
+ * @param str new hostname
+ * @param dp descriptor of new element
+ *
+ * @return new element or nullptr
+ */
 lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp) {
    lListElem *sep;
    int pos;
@@ -3248,28 +2800,20 @@ lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp) 
    DRETURN(sep);
 }
 
-/****** cull/multitype/lDelSubStr() *******************************************
-*  NAME
-*     lDelSubStr() -- removes an element from a sublist 
-*
-*  SYNOPSIS
-*     int lDelSubStr(lListElem* ep, int nm, const char* str, int snm) 
-*
-*  FUNCTION
-*     This function removes an element specified by a string field 
-*     nm and the string str supposed to be in the sublist snm of the 
-*     element ep.
-*
-*  INPUTS
-*     lListElem* ep - element 
-*     int nm        - field id 
-*     const char* str     - string 
-*     int snm       - field id of a sublist of ep
-*
-*  RESULT
-*     1 element was found and removed
-*     0 in case of an error 
-******************************************************************************/
+/**
+ * @brief Removes an element from a sublist
+ *
+ * This function removes an element specified by a string field
+ * nm and the string str supposed to be in the sublist snm of the
+ * element ep.
+ *
+ * @param ep element
+ * @param nm field id
+ * @param str string
+ * @param snm field id of a sublist of ep
+ *
+ * @return 1 element was found and removed 0 in case of an error
+ */
 int lDelSubStr(lListElem *ep, int nm, const char *str, int snm) {
    int ret, sublist_pos;
 
@@ -3283,26 +2827,18 @@ int lDelSubStr(lListElem *ep, int nm, const char *str, int snm) {
    DRETURN(ret);
 }
 
-/****** cull/multitype/lDelElemStr() ******************************************
-*  NAME
-*     lDelElemStr() -- removes element specified by a string field nm 
-*
-*  SYNOPSIS
-*     int lDelElemStr(lList** lpp, int nm, const char* str) 
-*
-*  FUNCTION
-*     This function removes an element from the list referenced by 
-*     lpp, which is identified by the field nm and the string str 
-*
-*  INPUTS
-*     lList** lpp - list reference 
-*     int nm      - field id
-*     const char* str   - string
-*
-*  RESULT
-*     1 if the element was found and removed
-*     0 in case of an error 
-******************************************************************************/
+/**
+ * @brief Removes element specified by a string field nm
+ *
+ * This function removes an element from the list referenced by
+ * lpp, which is identified by the field nm and the string str
+ *
+ * @param lpp list reference
+ * @param nm field id
+ * @param str string
+ *
+ * @return 1 if the element was found and removed 0 in case of an error
+ */
 int lDelElemStr(lList **lpp, int nm, const char *str) {
    lListElem *ep;
 
@@ -3332,29 +2868,15 @@ int lDelElemStr(lList **lpp, int nm, const char *str) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lGetSubStr() *******************************************
-*  NAME
-*     lGetSubStr() -- returns element specified by a string field nm 
-*
-*  SYNOPSIS
-*     lListElem* lGetSubStr(const lListElem* ep, int nm, 
-*                           const char* str, int snm) 
-*
-*  FUNCTION
-*     returns an element specified by a string field nm and the 
-*     string str from the sublist snm of the element ep 
-*
-*  INPUTS
-*     const lListElem* ep - element pointer 
-*     int nm              - field id contained in an sublist 
-*                           element of ep 
-*     const char* str     - string 
-*     int snm             - field id contained in ep 
-*
-*  RESULT
-*     nullptr if element was not found or in case of an error
-*     otherwise pointer to an element
-******************************************************************************/
+/**
+ * @brief Returns element specified by a string field nm
+ *
+ * @param ep the element
+ * @param nm the field
+ * @param str the value to look for
+ * @param snm the field of the sub-element to compare
+ * @return the matching element, or nullptr when there is none
+ */
 lListElem *lGetSubStrRW(const lListElem *ep, int nm, const char *str, int snm) {
    int sublist_pos;
    lListElem *ret = nullptr;
@@ -3371,30 +2893,28 @@ lListElem *lGetSubStrRW(const lListElem *ep, int nm, const char *str, int snm) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Returns the sub-element whose string field matches, read only
+ *
+ * @param ep the element
+ * @param nm the field holding the sub-list
+ * @param str the value to look for
+ * @param snm the field of the sub-element to compare
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *
 lGetSubStr(const lListElem *ep, int nm, const char *str, int snm) {
    return lGetSubStrRW(ep, nm, str, snm);
 }
 
-/****** cull/multitype/lGetElemStr() ******************************************
-*  NAME
-*     lGetElemStr() -- returns element specified by a string field nm 
-*
-*  SYNOPSIS
-*     lListElem* lGetElemStr(const lList* lp, int nm, const char* str) 
-*
-*  FUNCTION
-*     returns an element specified by a string field nm from list lp 
-*
-*  INPUTS
-*     const lList* lp - list 
-*     int nm    - field id 
-*     const char* str - value 
-*
-*  RESULT
-*     nullptr when element was not found or if an error occurred
-*     otherwise pointer to element 
-******************************************************************************/
+/**
+ * @brief Returns element specified by a string field nm
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param str the value to look for
+ * @return the matching element, or nullptr when there is none
+ */
 lListElem *lGetElemStrRW(const lList *lp, int nm, const char *str) {
    const void *iterator = nullptr;
    lListElem *ret = nullptr;
@@ -3404,36 +2924,35 @@ lListElem *lGetElemStrRW(const lList *lp, int nm, const char *str) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Returns the element whose string field matches, read only
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param str the value to look for
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetElemStr(const lList *lp, int nm, const char *str) {
    return lGetElemStrRW(lp, nm, str);
 }
 
 
-/****** cull/multitype/lGetElemStrFirst() *************************************
-*  NAME
-*     lGetElemStrFirst() -- Find first element with a certain string 
-*
-*  SYNOPSIS
-*     lListElem* lGetElemStrFirst(const lList *lp, int nm, 
-*                                 const char *str, const void **iterator) 
-*
-*  FUNCTION
-*     Returns the first element within 'lp' where the attribute
-*     with field name id 'nm' is equivalent with 'str'. 'iterator'
-*     will be filled with context information which will make it 
-*     possible to use 'iterator' with lGetElemStrNext() to get
-*     the next element. 
-*      
-*
-*  INPUTS
-*     const lList *lp       - list 
-*     int nm                - field name id 
-*     const char *str       - string to be compared 
-*     const void **iterator - iterator 
-*
-*  RESULT
-*     lListElem* - first element or nullptr
-******************************************************************************/
+/**
+ * @brief Find first element with a certain string
+ *
+ * Returns the first element within 'lp' where the attribute
+ * with field name id 'nm' is equivalent with 'str'. 'iterator'
+ * will be filled with context information which will make it
+ * possible to use 'iterator' with lGetElemStrNext() to get
+ * the next element.
+ *
+ * @param lp list
+ * @param nm field name id
+ * @param str string to be compared
+ * @param iterator iterator
+ *
+ * @return first element or nullptr
+ */
 lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const void **iterator) {
    int pos;
    int data_type;
@@ -3488,36 +3007,35 @@ lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const vo
    DRETURN(nullptr);
 }
 
+/**
+ * @brief Returns the first element whose string field matches, starting an iteration, read only
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param str the value to look for
+ * @param iterator iteration state, carried between calls
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetElemStrFirst(const lList *lp, int nm, const char *str, const void **iterator) {
    return lGetElemStrFirstRW(lp, nm, str, iterator);
 }
 
-/****** cull/multitype/lGetElemStrNext() **************************************
-*  NAME
-*     lGetElemStrNext() -- Get next element with a certain string 
-*
-*  SYNOPSIS
-*     lListElem* lGetElemStrNext(const lList *lp, 
-*                                int nm, 
-*                                const char *str, 
-*                                const void **iterator) 
-*
-*  FUNCTION
-*     Returns a element within list 'lp' where the attribute with
-*     field name id 'nm' is equivalent with 'str'. The function
-*     uses 'iterator' as input. 'iterator' containes context
-*     information which where fillen in in a previous call of
-*     lGetElemStrFirst().
-*
-*  INPUTS
-*     const lList *lp       - list 
-*     int nm                - string field name id 
-*     const char *str       - string 
-*     const void **iterator - iterator 
-*
-*  RESULT
-*     lListElem* - next element or nullptr
-******************************************************************************/
+/**
+ * @brief Get next element with a certain string
+ *
+ * Returns a element within list 'lp' where the attribute with
+ * field name id 'nm' is equivalent with 'str'. The function
+ * uses 'iterator' as input. 'iterator' containes context
+ * information which where fillen in in a previous call of
+ * lGetElemStrFirst().
+ *
+ * @param lp list
+ * @param nm string field name id
+ * @param str string
+ * @param iterator iterator
+ *
+ * @return next element or nullptr
+ */
 lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const void **iterator) {
    lListElem *ep;
    int pos, data_type;
@@ -3574,32 +3092,27 @@ lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const voi
    DRETURN(nullptr);
 }
 
+/**
+ * @brief Returns the next element whose string field matches, continuing an iteration, read only
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param str the value to look for
+ * @param iterator iteration state, carried between calls
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetElemStrNext(const lList *lp, int nm, const char *str, const void **iterator) {
    return lGetElemStrNextRW(lp, nm, str, iterator);
 }
 
-/****** cull/multitype/lGetElemStrLike() **************************************
-*  NAME
-*     lGetElemStrLike() -- returns element specified by a wildcard 
-*
-*  SYNOPSIS
-*     lListElem* lGetElemStrLike(const lList* lp, int nm, 
-*                                const char* str) 
-*
-*  FUNCTION
-*     returns an element specified by a string field nm from the 
-*     list lp and uses a trailing '*' as a wilcard, e.g. 'OAport' 
-*     matches 'OA*' 
-*
-*  INPUTS
-*     const lList* lp - list pointer 
-*     int nm    - field id 
-*     const char* str - wildcard string 
-*
-*  RESULT
-*     nullptr if element was not found or in case of error
-*     otherwise pointer to element 
-******************************************************************************/
+/**
+ * @brief Returns element specified by a wildcard
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param str the value to look for
+ * @return the matching element, or nullptr when there is none
+ */
 lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
    int pos;
    const char *s;
@@ -3645,35 +3158,33 @@ lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
    DRETURN(nullptr);
 }
 
+/**
+ * @brief Returns the element whose string field matches a pattern, read only
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param str the value to look for
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetElemStrLike(const lList *lp, int nm, const char *str) {
    return lGetElemStrLikeRW(lp, nm, str);
 }
 
-/****** cull/multitype/lAddSubUlong() *****************************************
-*  NAME
-*     lAddSubUlong() -- adds ulong to the ulong sublist of element ep 
-*
-*  SYNOPSIS
-*     lListElem* lAddSubUlong(lListElem* ep, int nm, lUlong val, 
-*                             int snm, const lDescr* dp) 
-*
-*  FUNCTION
-*     This function adds a new element into the sublist snm of the 
-*     element ep. The field nm of the added element will get the 
-*     initial value val. 
-*
-*  INPUTS
-*     lListElem* ep       - element 
-*     int nm              - field which will get value val 
-*     lUlong val          - initial value for nm 
-*     int snm             - sublist within ep where the element 
-*                           will be added 
-*     const lDescr* dp    - Type of the new element (e.g. JB_Type) 
-*
-*  RESULT
-*     nullptr in case of error
-*     or the pointer to the new element 
-******************************************************************************/
+/**
+ * @brief Adds ulong to the ulong sublist of element ep
+ *
+ * This function adds a new element into the sublist snm of the
+ * element ep. The field nm of the added element will get the
+ * initial value val.
+ *
+ * @param ep element
+ * @param nm field which will get value val
+ * @param val initial value for nm
+ * @param snm sublist within ep where the element will be added
+ * @param dp Type of the new element (e.g. JB_Type)
+ *
+ * @return nullptr in case of error or the pointer to the new element
+ */
 lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm,
                         const lDescr *dp) {
    lListElem *ret;
@@ -3702,29 +3213,19 @@ lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm,
    DRETURN(ret);
 }
 
-/****** cull/multitype/lAddElemUlong() ****************************************
-*  NAME
-*     lAddElemUlong() -- adds a ulong to the ulong list 
-*
-*  SYNOPSIS
-*     lListElem* lAddElemUlong(lList** lpp, int nm, lUlong val, 
-*                              const lDescr* dp) 
-*
-*  FUNCTION
-*     Adds an new element to a list lpp where one field nm within
-*     the new element gets an initial value val 
-*
-*  INPUTS
-*     lList** lpp       - list  
-*     int nm            - field in the new element which will get 
-*                         value val 
-*     lUlong val        - initial value for nm 
-*     const lDescr* dp  - type of the list (e.g. JB_Type) 
-*
-*  RESULT
-*     nullptr on error
-*     or pointer to the added element 
-******************************************************************************/
+/**
+ * @brief Adds a ulong to the ulong list
+ *
+ * Adds an new element to a list lpp where one field nm within
+ * the new element gets an initial value val
+ *
+ * @param lpp list
+ * @param nm field in the new element which will get value val
+ * @param val initial value for nm
+ * @param dp type of the list (e.g. JB_Type)
+ *
+ * @return nullptr on error or pointer to the added element
+ */
 lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp) {
    lListElem *sep;
    int pos;
@@ -3758,28 +3259,20 @@ lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp) {
    DRETURN(sep);
 }
 
-/****** cull/multitype/lDelSubUlong() *****************************************
-*  NAME
-*     lDelSubUlong() -- removes an element from a sublist 
-*
-*  SYNOPSIS
-*     int lDelSubUlong(lListElem* ep, int nm, lUlong val, int snm) 
-*
-*  FUNCTION
-*     This function removes an element specified by a ulong field nm
-*     and the ulong val supposed to be in the sublist snm of the 
-*     element ep 
-*
-*  INPUTS
-*     lListElem* ep - element 
-*     int nm        - field id 
-*     lUlong val    - value 
-*     int snm       - field id of the sublist in ep 
-*
-*  RESULT
-*     1 element was found and removed
-*     0 in case of an error 
-******************************************************************************/
+/**
+ * @brief Removes an element from a sublist
+ *
+ * This function removes an element specified by a ulong field nm
+ * and the ulong val supposed to be in the sublist snm of the
+ * element ep
+ *
+ * @param ep element
+ * @param nm field id
+ * @param val value
+ * @param snm field id of the sublist in ep
+ *
+ * @return 1 element was found and removed 0 in case of an error
+ */
 int lDelSubUlong(lListElem *ep, int nm, lUlong val, int snm) {
    int ret, sublist_pos;
 
@@ -3793,26 +3286,18 @@ int lDelSubUlong(lListElem *ep, int nm, lUlong val, int snm) {
    DRETURN(ret);
 }
 
-/****** cull/multitype/lDelElemUlong() ****************************************
-*  NAME
-*     lDelElemUlong() -- removes elem specified by a ulong field nm 
-*
-*  SYNOPSIS
-*     int lDelElemUlong(lList** lpp, int nm, lUlong val) 
-*
-*  FUNCTION
-*     This function removes an element specified by a ulong field nm 
-*     with the value val from the list referenced by lpp. 
-*
-*  INPUTS
-*     lList** lpp - reference to a list 
-*     int nm      - field id 
-*     lUlong val  - value if nm 
-*
-*  RESULT
-*     1 element was found and removed 
-*     0 an error occurred
-******************************************************************************/
+/**
+ * @brief Removes elem specified by a ulong field nm
+ *
+ * This function removes an element specified by a ulong field nm
+ * with the value val from the list referenced by lpp.
+ *
+ * @param lpp reference to a list
+ * @param nm field id
+ * @param val value if nm
+ *
+ * @return 1 element was found and removed 0 an error occurred
+ */
 int lDelElemUlong(lList **lpp, int nm, lUlong val) {
    lListElem *ep;
 
@@ -3840,29 +3325,19 @@ int lDelElemUlong(lList **lpp, int nm, lUlong val) {
    DRETURN(1);
 }
 
-/****** cull/multitype/lGetSubUlong() *****************************************
-*  NAME
-*     lGetSubUlong() -- Element specified by a ulong field nm 
-*
-*  SYNOPSIS
-*     lListElem* lGetSubUlong(const lListElem* ep, int nm, 
-*                             lUlong val, int snm) 
-*
-*  FUNCTION
-*     returns an element specified by a ulong field nm an the ulong 
-*     value val from the sublist snm of the element ep 
-*
-*  INPUTS
-*     const lListElem* ep - element pointer 
-*     int nm              - field id which is part of a sublist 
-*                           element of ep 
-*     lUlong val          - unsigned long value 
-*     int snm             - field id of a list which is part of ep 
-*
-*  RESULT
-*     nullptr if element was not found or in case of an error
-*     otherwise pointer to the element 
-******************************************************************************/
+/**
+ * @brief Element specified by a ulong field nm
+ *
+ * returns an element specified by a ulong field nm an the ulong
+ * value val from the sublist snm of the element ep
+ *
+ * @param ep element pointer
+ * @param nm field id which is part of a sublist element of ep
+ * @param val unsigned long value
+ * @param snm field id of a list which is part of ep
+ *
+ * @return nullptr if element was not found or in case of an error otherwise pointer to the element
+ */
 lListElem *lGetSubUlongRW(const lListElem *ep, int nm, lUlong val, int snm) {
    int sublist_pos;
    lListElem *ret;
@@ -3877,64 +3352,59 @@ lListElem *lGetSubUlongRW(const lListElem *ep, int nm, lUlong val, int snm) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Returns the sub-element whose 32 bit field matches, read only
+ *
+ * @param ep the element
+ * @param nm the field
+ * @param val the value to look for
+ * @param snm the field of the sub-element to compare
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetSubUlong(const lListElem *ep, int nm, lUlong val, int snm) {
    return lGetSubUlongRW(ep, nm, val, snm);
 }
 
-/****** cull/multitype/lGetElemUlong() ****************************************
-*  NAME
-*     lGetElemUlong() -- returns element specified by a ulong field nm 
-*
-*  SYNOPSIS
-*     lListElem* lGetElemUlong(const lList* lp, int nm, lUlong val) 
-*
-*  FUNCTION
-*     returns an element specified by a ulong field nm an an ulong 
-*     value val from list lp 
-*
-*  INPUTS
-*     const lList* lp  - list pointer 
-*     int nm     - field id 
-*     lUlong val - unsigned long value 
-*
-*  RESULT
-*    nullptr if element was not found or an error occurred
-*    otherwise pointer to element 
-******************************************************************************/
+/**
+ * @brief Returns element specified by a ulong field nm
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param val the value to look for
+ * @return the matching element, or nullptr when there is none
+ */
 lListElem *lGetElemUlongRW(const lList *lp, int nm, lUlong val) {
    const void *iterator = nullptr;
    return lGetElemUlongFirstRW(lp, nm, val, &iterator);
 }
 
+/**
+ * @brief Returns the element whose 32 bit field matches, read only
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param val the value to look for
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetElemUlong(const lList *lp, int nm, lUlong val) {
    return lGetElemUlongRW(lp, nm, val);
 }
 
-/****** cull/multitype/lGetElemUlongFirst() ***********************************
-*  NAME
-*     lGetElemUlongFirst() -- Find first ulong within a list 
-*
-*  SYNOPSIS
-*     lListElem* lGetElemUlongFirst(const lList *lp, 
-*                                   int nm, 
-*                                   lUlong val, 
-*                                   const void **iterator) 
-*
-*  FUNCTION
-*     Return the first element of list 'lp' where the attribute
-*     with field name id 'nm' is equivalent with 'val'. Context
-*     information will be stored in 'iterator'. 'iterator' might
-*     be used in lGetElemUlongNext() to get the next element.
-*
-*  INPUTS
-*     const lList *lp       - list 
-*     int nm                - ulong field anme id 
-*     lUlong val            - ulong value 
-*     const void **iterator - iterator 
-*
-*  RESULT
-*     lListElem* - element or nullptr
-******************************************************************************/
+/**
+ * @brief Find first ulong within a list
+ *
+ * Return the first element of list 'lp' where the attribute
+ * with field name id 'nm' is equivalent with 'val'. Context
+ * information will be stored in 'iterator'. 'iterator' might
+ * be used in lGetElemUlongNext() to get the next element.
+ *
+ * @param lp list
+ * @param nm ulong field anme id
+ * @param val ulong value
+ * @param iterator iterator
+ *
+ * @return element or nullptr
+ */
 lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void **iterator) {
    DENTER(CULL_LAYER);
    int pos;
@@ -3974,36 +3444,35 @@ lListElem *lGetElemUlongFirstRW(const lList *lp, int nm, lUlong val, const void 
    DRETURN(nullptr);
 }
 
+/**
+ * @brief Returns the first element whose 32 bit field matches, starting an iteration, read only
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param val the value to look for
+ * @param iterator iteration state, carried between calls
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetElemUlongFirst(const lList *lp, int nm, lUlong val, const void **iterator) {
    return lGetElemUlongFirstRW(lp, nm, val, iterator);
 }
 
-/****** cull/multitype/lGetElemUlongNext() ************************************
-*  NAME
-*     lGetElemUlongNext() -- Find next ulong element within a list 
-*
-*  SYNOPSIS
-*     lListElem* lGetElemUlongNext(const lList *lp, 
-*                                  int nm, 
-*                                  lUlong val, 
-*                                  const void **iterator) 
-*
-*  FUNCTION
-*     This function might be used after a call to lGetElemUlongFirst().
-*     It expects 'iterator' to contain context information which
-*     makes it possible to find the next element within list 'lp'
-*     where the attribute with field name id 'nm' is equivalent with
-*     'val'. 
-*
-*  INPUTS
-*     const lList *lp       - list 
-*     int nm                - ulong field name id 
-*     lUlong val            - value 
-*     const void **iterator - iterator 
-*
-*  RESULT
-*     lListElem* - next element or nullptr
-******************************************************************************/
+/**
+ * @brief Find next ulong element within a list
+ *
+ * This function might be used after a call to lGetElemUlongFirst().
+ * It expects 'iterator' to contain context information which
+ * makes it possible to find the next element within list 'lp'
+ * where the attribute with field name id 'nm' is equivalent with
+ * 'val'.
+ *
+ * @param lp list
+ * @param nm ulong field name id
+ * @param val value
+ * @param iterator iterator
+ *
+ * @return next element or nullptr
+ */
 lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void **iterator) {
    lListElem *ep;
    int pos;
@@ -4042,35 +3511,34 @@ lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void *
    DRETURN(nullptr);
 }
 
+/**
+ * @brief Returns the next element whose 32 bit field matches, continuing an iteration, read only
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param val the value to look for
+ * @param iterator iteration state, carried between calls
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetElemUlongNext(const lList *lp, int nm, lUlong val, const void **iterator) {
    return lGetElemUlongNextRW(lp, nm, val, iterator);
 }
 
-/****** cull/multitype/lAddSubUlong64() ***************************************
-*  NAME
-*     lAddSubUlong64() -- adds ulong64 to the ulong64 sublist of element ep 
-*
-*  SYNOPSIS
-*     lListElem* lAddSubUlong64(lListElem* ep, int nm, lUlong64 val, 
-*                             int snm, const lDescr* dp) 
-*
-*  FUNCTION
-*     This function adds a new element into the sublist snm of the 
-*     element ep. The field nm of the added element will get the 
-*     initial value val. 
-*
-*  INPUTS
-*     lListElem* ep       - element 
-*     int nm              - field which will get value val 
-*     lUlong64 val        - initial value for nm 
-*     int snm             - sublist within ep where the element 
-*                           will be added 
-*     const lDescr* dp    - Type of the new element (e.g. JB_Type) 
-*
-*  RESULT
-*     nullptr in case of error
-*     or the pointer to the new element 
-******************************************************************************/
+/**
+ * @brief Adds ulong64 to the ulong64 sublist of element ep
+ *
+ * This function adds a new element into the sublist snm of the
+ * element ep. The field nm of the added element will get the
+ * initial value val.
+ *
+ * @param ep element
+ * @param nm field which will get value val
+ * @param val initial value for nm
+ * @param snm sublist within ep where the element will be added
+ * @param dp Type of the new element (e.g. JB_Type)
+ *
+ * @return nullptr in case of error or the pointer to the new element
+ */
 lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm,
                           const lDescr *dp) {
    lListElem *ret;
@@ -4099,29 +3567,19 @@ lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm,
    DRETURN(ret);
 }
 
-/****** cull/multitype/lAddElemUlong64() **************************************
-*  NAME
-*     lAddElemUlong64() -- adds a ulong64 to the ulong64 list 
-*
-*  SYNOPSIS
-*     lListElem* lAddElemUlong64(lList** lpp, int nm, lUlong64 val, 
-*                              const lDescr* dp) 
-*
-*  FUNCTION
-*     Adds an new element to a list lpp where one field nm within
-*     the new element gets an initial value val 
-*
-*  INPUTS
-*     lList** lpp       - list  
-*     int nm            - field in the new element which will get 
-*                         value val 
-*     lUlong64 val      - initial value for nm 
-*     const lDescr* dp  - type of the list (e.g. JB_Type) 
-*
-*  RESULT
-*     nullptr on error
-*     or pointer to the added element 
-******************************************************************************/
+/**
+ * @brief Adds a ulong64 to the ulong64 list
+ *
+ * Adds an new element to a list lpp where one field nm within
+ * the new element gets an initial value val
+ *
+ * @param lpp list
+ * @param nm field in the new element which will get value val
+ * @param val initial value for nm
+ * @param dp type of the list (e.g. JB_Type)
+ *
+ * @return nullptr on error or pointer to the added element
+ */
 lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp) {
    lListElem *sep;
    int pos;
@@ -4155,28 +3613,20 @@ lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp) 
    DRETURN(sep);
 }
 
-/****** cull/multitype/lDelSubUlong64() ***************************************
-*  NAME
-*     lDelSubUlong64() -- removes an element from a sublist 
-*
-*  SYNOPSIS
-*     int lDelSubUlong64(lListElem* ep, int nm, lUlong64 val, int snm) 
-*
-*  FUNCTION
-*     This function removes an element specified by a ulong field nm
-*     and the ulong64 val supposed to be in the sublist snm of the 
-*     element ep 
-*
-*  INPUTS
-*     lListElem* ep - element 
-*     int nm        - field id 
-*     lUlong64 val  - value 
-*     int snm       - field id of the sublist in ep 
-*
-*  RESULT
-*     1 element was found and removed
-*     0 in case of an error 
-******************************************************************************/
+/**
+ * @brief Removes an element from a sublist
+ *
+ * This function removes an element specified by a ulong field nm
+ * and the ulong64 val supposed to be in the sublist snm of the
+ * element ep
+ *
+ * @param ep element
+ * @param nm field id
+ * @param val value
+ * @param snm field id of the sublist in ep
+ *
+ * @return 1 element was found and removed 0 in case of an error
+ */
 int lDelSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm) {
    int ret, sublist_pos;
 
@@ -4190,26 +3640,18 @@ int lDelSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm) {
    DRETURN(ret);
 }
 
-/****** cull/multitype/lDelElemUlong64() **************************************
-*  NAME
-*     lDelElemUlong64() -- removes elem specified by a ulong64 field nm 
-*
-*  SYNOPSIS
-*     int lDelElemUlong64(lList** lpp, int nm, lUlong64 val) 
-*
-*  FUNCTION
-*     This function removes an element specified by a ulong64 field nm 
-*     with the value val from the list referenced by lpp. 
-*
-*  INPUTS
-*     lList** lpp    - reference to a list 
-*     int nm         - field id 
-*     lUlong64 val   - value if nm 
-*
-*  RESULT
-*     1 element was found and removed 
-*     0 an error occurred
-******************************************************************************/
+/**
+ * @brief Removes elem specified by a ulong64 field nm
+ *
+ * This function removes an element specified by a ulong64 field nm
+ * with the value val from the list referenced by lpp.
+ *
+ * @param lpp reference to a list
+ * @param nm field id
+ * @param val value if nm
+ *
+ * @return 1 element was found and removed 0 an error occurred
+ */
 int lDelElemUlong64(lList **lpp, int nm, lUlong64 val) {
    lListElem *ep;
 
@@ -4237,29 +3679,19 @@ int lDelElemUlong64(lList **lpp, int nm, lUlong64 val) {
    DRETURN(1);
 }
 
-/****** cull/multitype/lGetSubUlong64() *****************************************
-*  NAME
-*     lGetSubUlong64() -- Element specified by a ulong64 field nm 
-*
-*  SYNOPSIS
-*     lListElem* lGetSubUlong64(const lListElem* ep, int nm, 
-*                             lUlong64 val, int snm) 
-*
-*  FUNCTION
-*     returns an element specified by a ulong64 field nm an the ulong64
-*     value val from the sublist snm of the element ep 
-*
-*  INPUTS
-*     const lListElem* ep - element pointer 
-*     int nm              - field id which is part of a sublist 
-*                           element of ep 
-*     lUlong64 val        - unsigned long value 
-*     int snm             - field id of a list which is part of ep 
-*
-*  RESULT
-*     nullptr if element was not found or in case of an error
-*     otherwise pointer to the element 
-******************************************************************************/
+/**
+ * @brief Element specified by a ulong64 field nm
+ *
+ * returns an element specified by a ulong64 field nm an the ulong64
+ * value val from the sublist snm of the element ep
+ *
+ * @param ep element pointer
+ * @param nm field id which is part of a sublist element of ep
+ * @param val unsigned long value
+ * @param snm field id of a list which is part of ep
+ *
+ * @return nullptr if element was not found or in case of an error otherwise pointer to the element
+ */
 lListElem *lGetSubUlong64RW(const lListElem *ep, int nm, lUlong64 val, int snm) {
    int sublist_pos;
    lListElem *ret;
@@ -4274,64 +3706,59 @@ lListElem *lGetSubUlong64RW(const lListElem *ep, int nm, lUlong64 val, int snm) 
    DRETURN(ret);
 }
 
+/**
+ * @brief Returns the sub-element whose 64 bit field matches, read only
+ *
+ * @param ep the element
+ * @param nm the field
+ * @param val the value to look for
+ * @param snm the field of the sub-element to compare
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int snm) {
    return lGetSubUlong64RW(ep, nm, val, snm);
 }
 
-/****** cull/multitype/lGetElemUlong64() **************************************
-*  NAME
-*     lGetElemUlong64() -- returns element specified by a ulong64 field nm 
-*
-*  SYNOPSIS
-*     lListElem* lGetElemUlong64(const lList* lp, int nm, lUlong64 val) 
-*
-*  FUNCTION
-*     returns an element specified by a ulong64 field nm an an ulong64 
-*     value val from list lp 
-*
-*  INPUTS
-*     const lList* lp  - list pointer 
-*     int nm     - field id 
-*     lUlong64 val - unsigned long value 
-*
-*  RESULT
-*    nullptr if element was not found or an error occurred
-*    otherwise pointer to element 
-******************************************************************************/
+/**
+ * @brief Returns element specified by a ulong64 field nm
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param val the value to look for
+ * @return the matching element, or nullptr when there is none
+ */
 lListElem *lGetElemUlong64RW(const lList *lp, int nm, lUlong64 val) {
    const void *iterator = nullptr;
    return lGetElemUlong64FirstRW(lp, nm, val, &iterator);
 }
 
+/**
+ * @brief Returns the element whose 64 bit field matches, read only
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param val the value to look for
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetElemUlong64(const lList *lp, int nm, lUlong64 val) {
    return lGetElemUlong64RW(lp, nm, val);
 }
 
-/****** cull/multitype/lGetElemUlong64First() *********************************
-*  NAME
-*     lGetElemUlong64First() -- Find first ulong64 within a list 
-*
-*  SYNOPSIS
-*     lListElem* lGetElemUlong64First(const lList *lp, 
-*                                   int nm, 
-*                                   lUlong64 val, 
-*                                   const void **iterator) 
-*
-*  FUNCTION
-*     Return the first element of list 'lp' where the attribute
-*     with field name id 'nm' is equivalent with 'val'. Context
-*     information will be stored in 'iterator'. 'iterator' might
-*     be used in lGetElemUlong64Next() to get the next element.
-*
-*  INPUTS
-*     const lList *lp       - list 
-*     int nm                - ulong64 field name id 
-*     lUlong64 val          - ulong64 value 
-*     const void **iterator - iterator 
-*
-*  RESULT
-*     lListElem* - element or nullptr
-******************************************************************************/
+/**
+ * @brief Find first ulong64 within a list
+ *
+ * Return the first element of list 'lp' where the attribute
+ * with field name id 'nm' is equivalent with 'val'. Context
+ * information will be stored in 'iterator'. 'iterator' might
+ * be used in lGetElemUlong64Next() to get the next element.
+ *
+ * @param lp list
+ * @param nm ulong64 field name id
+ * @param val ulong64 value
+ * @param iterator iterator
+ *
+ * @return element or nullptr
+ */
 lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const void **iterator) {
    DENTER(CULL_LAYER);
    int pos;
@@ -4371,36 +3798,35 @@ lListElem *lGetElemUlong64FirstRW(const lList *lp, int nm, lUlong64 val, const v
    DRETURN(nullptr);
 }
 
+/**
+ * @brief Returns the first element whose 64 bit field matches, starting an iteration, read only
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param val the value to look for
+ * @param iterator iteration state, carried between calls
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val, const void **iterator) {
    return lGetElemUlong64FirstRW(lp, nm, val, iterator);
 }
 
-/****** cull/multitype/lGetElemUlong64Next() **********************************
-*  NAME
-*     lGetElemUlong64Next() -- Find next ulong64 element within a list 
-*
-*  SYNOPSIS
-*     lListElem* lGetElemUlong64Next(const lList *lp, 
-*                                    int nm, 
-*                                    lUlong64 val, 
-*                                    const void **iterator) 
-*
-*  FUNCTION
-*     This function might be used after a call to lGetElemUlong64First().
-*     It expects 'iterator' to contain context information which
-*     makes it possible to find the next element within list 'lp'
-*     where the attribute with field name id 'nm' is equivalent with
-*     'val'. 
-*
-*  INPUTS
-*     const lList *lp       - list 
-*     int nm                - ulong64 field name id 
-*     lUlong64 val          - value 
-*     const void **iterator - iterator 
-*
-*  RESULT
-*     lListElem* - next element or nullptr
-******************************************************************************/
+/**
+ * @brief Find next ulong64 element within a list
+ *
+ * This function might be used after a call to lGetElemUlong64First().
+ * It expects 'iterator' to contain context information which
+ * makes it possible to find the next element within list 'lp'
+ * where the attribute with field name id 'nm' is equivalent with
+ * 'val'.
+ *
+ * @param lp list
+ * @param nm ulong64 field name id
+ * @param val value
+ * @param iterator iterator
+ *
+ * @return next element or nullptr
+ */
 lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const void **iterator) {
    lListElem *ep;
    int pos;
@@ -4439,33 +3865,28 @@ lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const vo
    DRETURN(nullptr);
 }
 
+/**
+ * @brief Returns the next element whose 64 bit field matches, continuing an iteration, read only
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param val the value to look for
+ * @param iterator iteration state, carried between calls
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetElemUlong64Next(const lList *lp, int nm, lUlong64 val, const void **iterator) {
    return lGetElemUlong64NextRW(lp, nm, val, iterator);
 }
 
-/****** cull/multitype/lGetSubCaseStr() ***************************************
-*  NAME
-*     lGetSubCaseStr() -- returns elem specified by a string field nm 
-*
-*  SYNOPSIS
-*     lListElem* lGetSubCaseStr(const lListElem* ep, int nm, 
-*                               const char* str, int snm) 
-*
-*  FUNCTION
-*     returns an element specified by a string field nm and a string 
-*     str from a sublist snm of the element ep 
-*
-*  INPUTS
-*     const lListElem* ep - element pointer 
-*     int nm              - field within an element of the sublist 
-*     const char* str     - string 
-*     int snm             - field within ep which identifies the 
-*                           sublist 
-*
-*  RESULT
-*     nullptr if element was not found or in case of an error
-*     otherwise pointer to element 
-******************************************************************************/
+/**
+ * @brief Returns elem specified by a string field nm
+ *
+ * @param ep the element
+ * @param nm the field
+ * @param str the value to look for
+ * @param snm the field of the sub-element to compare
+ * @return the matching element, or nullptr when there is none
+ */
 lListElem *lGetSubCaseStr(const lListElem *ep, int nm, const char *str,
                           int snm) {
    int sublist_pos;
@@ -4481,29 +3902,14 @@ lListElem *lGetSubCaseStr(const lListElem *ep, int nm, const char *str,
    DRETURN(ret);
 }
 
-/****** cull/multitype/lGetElemCaseStr() **************************************
-*  NAME
-*     lGetElemCaseStr() -- returns element specified by a string field 
-*
-*  SYNOPSIS
-*     lListElem* lGetElemCaseStr(const lList* lp, int nm, 
-*                                const char* str) 
-*
-*  FUNCTION
-*     This functions returns an element specified by a string 
-*     field nm and str from the list lp. 
-*
-*  INPUTS
-*     const lList* lp - Pointer to a list 
-*     int nm          - Constant specifying an attribute within an 
-*                       element of lp 
-*     const char* str - string 
-*
-*  RESULT
-*     nullptr when element is not found or an error occurred
-*     otherwise the pointer to an element 
-*
-******************************************************************************/
+/**
+ * @brief Returns element specified by a string field
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param str the value to look for
+ * @return the matching element, or nullptr when there is none
+ */
 lListElem *lGetElemCaseStrRW(const lList *lp, int nm, const char *str) {
    DENTER(CULL_LAYER);
    int pos;
@@ -4550,59 +3956,55 @@ lListElem *lGetElemCaseStrRW(const lList *lp, int nm, const char *str) {
    DRETURN(nullptr);
 }
 
+/**
+ * @brief Returns the element whose string field matches, ignoring case, read only
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param str the value to look for
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetElemCaseStr(const lList *lp, int nm, const char *str) {
    return lGetElemCaseStrRW(lp, nm, str);
 }
 
-/****** cull/multitype/lGetElemHost() *****************************************
-*  NAME
-*     lGetElemHost() -- returns an element specified by a hostname 
-*
-*  SYNOPSIS
-*     lListElem* lGetElemHost(const lList* lp, int nm, const char* str) 
-*
-*  FUNCTION
-*     returns an element specified by a string field nm and a hostname
-*     from the list lp 
-*
-*  INPUTS
-*     const lList* lp - Pointer to an element which contains a hostname 
-*     int nm          - host field containing the hostname 
-*     const char* str - hostname 
-*
-*  RESULT
-*     nullptr when the list does not contain the element or in case of
-*     error otherwise pointer to an element
-******************************************************************************/
+/**
+ * @brief Returns an element specified by a hostname
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param str the value to look for
+ * @return the matching element, or nullptr when there is none
+ */
 lListElem *lGetElemHostRW(const lList *lp, int nm, const char *str) {
    const void *iterator = nullptr;
    return lGetElemHostFirstRW(lp, nm, str, &iterator);
 }
 
+/**
+ * @brief Returns the element whose host field matches, read only
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param str the value to look for
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetElemHost(const lList *lp, int nm, const char *str) {
    return lGetElemHostRW(lp, nm, str);
 }
 
-/****** cull/multitype/lGetElemHostFirst() ************************************
-*  NAME
-*     lGetElemHostFirst() -- lGetElemHostFirst for hostnames 
-*
-*  SYNOPSIS
-*     lListElem* lGetElemHostFirst(const lList *lp, int nm, const char *str, 
-*                                  const void **iterator) 
-*
-*  FUNCTION
-*     lGetElemHostFirst for hostnames 
-*
-*  INPUTS
-*     const lList *lp       - list 
-*     int nm                - hostname field id 
-*     const char *str       - hostname 
-*     const void **iterator - iterator 
-*
-*  RESULT
-*     lListElem* - element or nullptr
-******************************************************************************/
+/**
+ * @brief LGetElemHostFirst for hostnames
+ *
+ * lGetElemHostFirst for hostnames
+ *
+ * @param lp list
+ * @param nm hostname field id
+ * @param str hostname
+ * @param iterator iterator
+ *
+ * @return element or nullptr
+ */
 lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const void **iterator) {
    int pos;
    int data_type;
@@ -4661,32 +4063,31 @@ lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const v
    DRETURN(nullptr);
 }
 
+/**
+ * @brief Returns the first element whose host field matches, starting an iteration, read only
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param str the value to look for
+ * @param iterator iteration state, carried between calls
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetElemHostFirst(const lList *lp, int nm, const char *str, const void **iterator) {
    return lGetElemHostFirstRW(lp, nm, str, iterator);
 }
 
-/****** cull/multitype/lGetElemHostNext() *************************************
-*  NAME
-*     lGetElemHostNext() -- lGetElemHostNext() for hostnames 
-*
-*  SYNOPSIS
-*     lListElem* lGetElemHostNext(const lList *lp, 
-*                                 int nm, 
-*                                 const char *str, 
-*                                 const void **iterator) 
-*
-*  FUNCTION
-*     lGetElemHostNext() for hostnames 
-*
-*  INPUTS
-*     const lList *lp       - list 
-*     int nm                - hostname field id 
-*     const char *str       - hostname 
-*     const void **iterator - iterator 
-*
-*  RESULT
-*     lListElem* - element or nullptr
-******************************************************************************/
+/**
+ * @brief LGetElemHostNext() for hostnames
+ *
+ * lGetElemHostNext() for hostnames
+ *
+ * @param lp list
+ * @param nm hostname field id
+ * @param str hostname
+ * @param iterator iterator
+ *
+ * @return element or nullptr
+ */
 lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const void **iterator) {
    int pos;
    lListElem *ep = nullptr;
@@ -4739,32 +4140,28 @@ lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const vo
    DRETURN(nullptr);
 }
 
+/**
+ * @brief Returns the next element whose host field matches, continuing an iteration, read only
+ *
+ * @param lp the list
+ * @param nm the field
+ * @param str the value to look for
+ * @param iterator iteration state, carried between calls
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetElemHostNext(const lList *lp, int nm, const char *str, const void **iterator) {
    return lGetElemHostNextRW(lp, nm, str, iterator);
 }
 
-/****** cull/multitype/lGetSubHost() ******************************************
-*  NAME
-*     lGetSubHost() -- returns elem specified by a string field nm 
-*
-*  SYNOPSIS
-*     lListElem* lGetSubHost(const lListElem* ep, int nm, 
-*                            const char* str, int snm) 
-*
-*  FUNCTION
-*     returns an element specified by a string field nm and the 
-*     hostname str from the sublist snm of the element ep 
-*
-*  INPUTS
-*     const lListElem* ep - element pointer 
-*     int nm              - field id within an sublist element of ep 
-*     const char* str     - hostname 
-*     int snm             - field id of a sublist in ep 
-*
-*  RESULT
-*     nullptr if element was not found or in case of error
-*     otherwise pointer to element 
-******************************************************************************/
+/**
+ * @brief Returns elem specified by a string field nm
+ *
+ * @param ep the element
+ * @param nm the field
+ * @param str the value to look for
+ * @param snm the field of the sub-element to compare
+ * @return the matching element, or nullptr when there is none
+ */
 lListElem *lGetSubHostRW(const lListElem *ep, int nm, const char *str, int snm) {
    int sublist_pos;
    lListElem *ret;
@@ -4779,32 +4176,33 @@ lListElem *lGetSubHostRW(const lListElem *ep, int nm, const char *str, int snm) 
    DRETURN(ret);
 }
 
+/**
+ * @brief Returns the sub-element whose host field matches, read only
+ *
+ * @param ep the element
+ * @param nm the field
+ * @param str the value to look for
+ * @param snm the field of the sub-element to compare
+ * @return the matching element, or nullptr when there is none
+ */
 const lListElem *lGetSubHost(const lListElem *ep, int nm, const char *str, int snm) {
    return lGetSubHostRW(ep, nm, str, snm);
 }
 
-/****** cull/multitype/lDelElemHost() ****************************************
-*  NAME
-*     lDelElemHost() -- removes elem specified by a lHostT field nm 
-*
-*  SYNOPSIS
-*     int lDelElemHost(lList** lpp, int nm, const char* str) 
-*
-*  FUNCTION
-*     removes an element specified by a string field nm and the 
-*     hostname str from the list referenced by lpp.
-*     If it is the last element within lpp the list itself will be 
-*     deleted.
-*
-*  INPUTS
-*     lList** lpp       - list 
-*     int nm            - field id 
-*     const char* str   - string  
-*
-*  RESULT
-*     1 if the host element was found and removed 
-*     0 in case of an error
-******************************************************************************/
+/**
+ * @brief Removes elem specified by a lHostT field nm
+ *
+ * removes an element specified by a string field nm and the
+ * hostname str from the list referenced by lpp.
+ * If it is the last element within lpp the list itself will be
+ * deleted.
+ *
+ * @param lpp list
+ * @param nm field id
+ * @param str string
+ *
+ * @return 1 if the host element was found and removed 0 in case of an error
+ */
 int lDelElemHost(lList **lpp, int nm, const char *str) {
    lListElem *ep;
 
@@ -4833,25 +4231,18 @@ int lDelElemHost(lList **lpp, int nm, const char *str) {
    DRETURN(0);
 }
 
-/****** cull/multitype/lGetPosName() ****************************************
-*  NAME
-*     lGetPosName() -- Returns name at position
-*
-*  SYNOPSIS
-*     int lGetPosName(const lDescr *dp, int pos) 
-*
-*  FUNCTION
-*     Returns the name at specified position in a descriptor array. The
-*     Position must be inside the valid range of the descriptor. Returns
-*     NoName if descriptor is nullptr or pos < 0.
-*
-*  INPUTS
-*     const lDescr *dp - Descriptor 
-*     int pos          - Position 
-*
-*  RESULT
-*     int - Name 
-******************************************************************************/
+/**
+ * @brief Returns name at position
+ *
+ * Returns the name at specified position in a descriptor array. The
+ * Position must be inside the valid range of the descriptor. Returns
+ * NoName if descriptor is nullptr or pos < 0.
+ *
+ * @param dp Descriptor
+ * @param pos Position
+ *
+ * @return Name
+ */
 int lGetPosName(const lDescr *dp, int pos) {
 
    if (!dp) {
@@ -4864,6 +4255,14 @@ int lGetPosName(const lDescr *dp, int pos) {
    return dp[pos].nm;
 }
 
+/**
+ * @brief Are all bits of a mask set in a 32 bit field?
+ *
+ * @param ep the element
+ * @param nm the field
+ * @param bitmask the bits required to be set
+ * @return true when every bit of @p bitmask is set in the field
+ */
 bool lMatchUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -4876,6 +4275,14 @@ bool lMatchUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DRETURN((ep->cont[pos].ul & bitmask) > 0 ? true : false);
 }
 
+/**
+ * @brief Set bits in a 32 bit field
+ *
+ * @param ep the element
+ * @param nm the field
+ * @param bitmask the bits to set
+ * @return 0 on success, -1 when @p ep is nullptr
+ */
 int lOrUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -4900,6 +4307,14 @@ int lOrUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
 
    DRETURN(0);
 }
+/**
+ * @brief Keep only the bits of a mask in a 32 bit field
+ *
+ * @param ep the element
+ * @param nm the field
+ * @param bitmask the bits to keep
+ * @return 0 on success, -1 when @p ep is nullptr
+ */
 int lAndUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
 
@@ -4924,6 +4339,14 @@ int lAndUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
 
    DRETURN(0);
 }
+/**
+ * @brief Clear bits in a 32 bit field
+ *
+ * @param ep the element
+ * @param nm the field
+ * @param bitmask the bits to clear
+ * @return 0 on success, -1 when @p ep is nullptr
+ */
 int lClearUlongBitMask(lListElem *ep, int nm, uint32_t bitmask) {
    DENTER(CULL_BASIS_LAYER);
 

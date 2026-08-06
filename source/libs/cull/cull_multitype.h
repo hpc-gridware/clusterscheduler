@@ -35,18 +35,24 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The typed field accessors of the cull library
+ */
+
 #include <cstdio>
 
 #include "cull/cull_list.h"
 #include "cull/cull_name.h"
 
-#define SGE_NO_ABORT    0
-#define SGE_DO_ABORT    1
+#define SGE_NO_ABORT    0 ///< a field lookup that misses returns an error
+#define SGE_DO_ABORT    1 ///< a field lookup that misses aborts the process
 
+/// Walk the fields of a descriptor, stopping at the #NoName terminator
 #define for_each_attr(ATTR, LDP) for (ATTR = LDP->nm; ATTR != NoName; LDP++, ATTR = LDP->nm)
 
 extern const char *multitypes[];
 
+/// Compares two elements on one field; returns a strcmp style result
 typedef int (*lCmpFunction)(lListElem *, lListElem *, int);
 
 void lWriteDescrTo(const lDescr *dp, FILE *fp);
@@ -320,6 +326,18 @@ const lListElem *lGetSubUlong64(const lListElem *ep, int nm, lUlong64 val, int s
    functions for lists with a case insensitive char * as key
 
 */
+/**
+ * @brief Remove the element whose string field matches, ignoring case
+ *
+ * @warning **Declared but never defined**, anywhere in the tree, and never
+ *          called. Any use fails to link. Kept only because removing a public
+ *          declaration is a code change; it is a deletion candidate.
+ *
+ * @param lpp the list to remove from
+ * @param nm the field to compare
+ * @param str the value to look for
+ * @return would be non-zero when an element was removed
+ */
 int lDelElemCaseStr(lList **lpp, int nm, const char *str);
 
 lListElem *lGetElemCaseStrRW(const lList *lp, int nm, const char *str);

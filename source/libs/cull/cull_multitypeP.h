@@ -35,21 +35,33 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Internal representation of a cull field value
+ */
+
 #include "cull/cull_list.h"
 #include "cull/cull_multitype.h"
 
+/**
+ * @brief The value of one cull field
+ *
+ * Which member is live is decided by the field's type in the descriptor —
+ * see @ref _enum_lMultiType and #mt_get_type. Reading the wrong member is not
+ * detected by the compiler, which is why the accessors in cull_multitype.cc
+ * check the type first and abort through #incompatibleType on a mismatch.
+ */
 union _lMultiType {
-   lDouble db;
-   lUlong ul;
-   lUlong64 ul64;
-   lLong l;
-   lChar c;
-   lBool b;
-   lInt i;
-   lString str;
-   lList *glp;
-   lListElem *obj;
-   lRef ref;
-   lHost host;
-   lCondition *cp;
+   lDouble db;        ///< value when the field is #lDoubleT
+   lUlong ul;         ///< value when the field is #lUlongT
+   lUlong64 ul64;     ///< value when the field is #lUlong64T
+   lLong l;           ///< value when the field is #lLongT
+   lChar c;           ///< value when the field is a single character
+   lBool b;           ///< value when the field is #lBoolT
+   lInt i;            ///< value when the field is #lIntT
+   lString str;       ///< value when the field is #lStringT; owned by the element
+   lList *glp;        ///< value when the field is #lListT; owned by the element
+   lListElem *obj;    ///< value when the field is #lObjectT; owned by the element
+   lRef ref;          ///< value when the field is #lRefT; never owned, never spooled
+   lHost host;        ///< value when the field is #lHostT; owned by the element
+   lCondition *cp;    ///< a condition, used when a descriptor carries a where clause
 };
