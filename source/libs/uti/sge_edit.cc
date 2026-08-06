@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Runs the user's editor on a temporary file
+ */
+
 #include <cstring>
 #include <cstdio>
 #include <cerrno>
@@ -49,6 +53,21 @@
 
 #include "msg_common.h"
 
+/**
+ * @brief Run the user's editor on a file and report whether it changed
+ *
+ * Forks, drops back to the real user id, and execs `$EDITOR` — or #DEFAULT_EDITOR
+ * when that is unset — on @p fname. Change is detected by comparing the file's
+ * modification time and size before and after, so an edit that rewrites the
+ * file identically counts as unchanged.
+ *
+ * @param fname the file to edit
+ * @param myuid user id to run the editor as
+ * @param mygid group id to run the editor as
+ * @return 0 when the file was changed, 1 when it was left unchanged, and -1 on
+ *         error — the editor could not be started, exited non-zero, was killed
+ *         by a signal, or the file no longer exists
+ */
 int sge_edit(const char *fname, uid_t myuid, gid_t mygid) {
    SGE_STRUCT_STAT before, after;
    pid_t pid;

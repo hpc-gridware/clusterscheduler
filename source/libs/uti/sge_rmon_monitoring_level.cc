@@ -32,9 +32,19 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of the per-layer debug level bitmask
+ */
+
 #include "uti/sge_rmon_monitoring_level.h"
 
 int
+/**
+ * @brief Is debugging switched off for every layer?
+ *
+ * @param m the level to test
+ * @return non-zero when no message class is enabled in any layer
+ */
 rmon_mliszero(const monitoring_level *m) {
    for (int j = 0; j < N_LAYER; j++) {
        if (m->ml[j] != 0) {
@@ -45,6 +55,11 @@ rmon_mliszero(const monitoring_level *m) {
 }
 
 void
+/**
+ * @brief Switch debugging off for every layer
+ *
+ * @param d the level to clear
+ */
 rmon_mlclr(monitoring_level *d) {
    for (int j = 0; j < N_LAYER; j++) {
        d->ml[j] = 0;
@@ -52,11 +67,27 @@ rmon_mlclr(monitoring_level *d) {
 }
 
 u_long
+/**
+ * @brief The message classes switched on for one layer
+ *
+ * @param s the level to read
+ * @param i the layer, one of the `*_LAYER` constants
+ * @return the bitmask, or 0 when @p i is out of range
+ */
 rmon_mlgetl(const monitoring_level *s, const int i) {
    return s->ml[i];
 }
 
 void
+/**
+ * @brief Set the message classes switched on for one layer
+ *
+ * Out of range layers are ignored.
+ *
+ * @param s the level to modify
+ * @param i the layer, one of the `*_LAYER` constants
+ * @param mask the message classes to enable
+ */
 rmon_mlputl(monitoring_level *s, const int i, const u_long mask) {
    s->ml[i] = mask;
 }

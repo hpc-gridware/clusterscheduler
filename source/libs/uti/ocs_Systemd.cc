@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Implementation of the systemd integration declared in ocs_Systemd.h
+ */
+
 #if defined(OCS_WITH_SYSTEMD)
 #include <filesystem>
 #include <fstream>
@@ -1261,6 +1265,8 @@ namespace ocs::uti {
     * @param property The name of the property to retrieve
     * @param value A reference to a string where the property value will be stored
     * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @param[out] not_exists set to true when the unit itself is absent, so the
+    *        caller can tell a missing unit from a failed query; may be nullptr
     * @return true if the operation was successful, false otherwise
     */
    bool
@@ -1342,6 +1348,8 @@ namespace ocs::uti {
     * @param property The name of the property to retrieve
     * @param value A reference to a uint64_t where the property value will be stored
     * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @param[out] not_exists set to true when the unit itself is absent, so the
+    *        caller can tell a missing unit from a failed query; may be nullptr
     * @return true if the operation was successful, false otherwise
     */
    bool

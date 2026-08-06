@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of the FIFO reader/writer lock
+ */
+
 #include <pthread.h>
 
 #include "uti/sge_lock_fifo.h"

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief AFS token handling for the legacy AFS security mode
+ */
+
 #include <cstdio>
 #include <fcntl.h>
 #include <unistd.h>
@@ -48,13 +52,13 @@
 #include "uti/sge_stdlib.h"
 
 /**
- * \brief Read token from file.
+ * @brief Read token from file.
  *
- * \param[in] file Filename.
+ * @param[in] file Filename.
  *
- * \return Pointer to a malloced buffer or nullptr if error occurred.
+ * @return Pointer to a malloced buffer or nullptr if error occurred.
  *
- * \note MT-NOTE: sge_read_token() is MT safe.
+ * @note MT-NOTE: sge_read_token() is MT safe.
  */
 char *sge_read_token(const char *file) {
    SGE_STRUCT_STAT sb;
@@ -89,20 +93,20 @@ char *sge_read_token(const char *file) {
 }
 
 /**
- * \brief Extend an AFS token.
+ * @brief Extend an AFS token.
  *
- * \param[in] command Command to execute.
- * \param[in] tokenbuf Input for the command.
- * \param[in] user First argument for the command.
- * \param[in] token_extend_time Second argument for the command.
- * \param[out] err_str Error message.
- * \param[in] err_str_size Size of the error message buffer.
+ * @param[in] command Command to execute.
+ * @param[in] tokenbuf Input for the command.
+ * @param[in] user First argument for the command.
+ * @param[in] token_extend_time Second argument for the command.
+ * @param[out] err_str Error message.
+ * @param[in] err_str_size Size of the error message buffer.
  *
- * \return Error state:
- * \retval 0 OK
- * \retval -1 Error
+ * @return Error state:
+ * @retval 0 OK
+ * @retval -1 Error
  *
- * \note MT-NOTE: sge_afs_extend_token() is not MT safe because it uses MT unsafe sge_peopen().
+ * @note MT-NOTE: sge_afs_extend_token() is not MT safe because it uses MT unsafe sge_peopen().
  */
 int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
                          int token_extend_time, char *err_str, size_t err_str_size) {
@@ -147,17 +151,17 @@ int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
 }
 
 /**
- * \brief Check if 'tokencmdname' is executable.
+ * @brief Check if 'tokencmdname' is executable.
  *
- * \param[in] tokencmdname Command to check.
- * \param[out] buf Buffer for error message, or nullptr.
- * \param[in] buf_size Size of the error message buffer.
+ * @param[in] tokencmdname Command to check.
+ * @param[out] buf Buffer for error message, or nullptr.
+ * @param[in] buf_size Size of the error message buffer.
  *
- * \return Error state:
- * \retval 0 OK
- * \retval 1 Error
+ * @return Error state:
+ * @retval 0 OK
+ * @retval 1 Error
  *
- * \note MT-NOTE: sge_get_token_cmd() is MT safe.
+ * @note MT-NOTE: sge_get_token_cmd() is MT safe.
  */
 int sge_get_token_cmd(const char *tokencmdname, char *buf, size_t buf_size) {
    SGE_STRUCT_STAT sb{};

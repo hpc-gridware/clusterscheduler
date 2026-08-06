@@ -33,8 +33,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Portability shim for `va_copy`
+ */
+
 #include <cstdarg>
 
 #ifndef va_copy
+/// Fallback `va_copy` for platforms whose `<cstdarg>` does not provide one
 #define va_copy(dst, src) memcpy(&dst, &src, sizeof(va_list))
 #endif

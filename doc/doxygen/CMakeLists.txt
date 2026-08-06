@@ -61,6 +61,7 @@ if (DOXYGEN_FOUND)
 
    set(DXM_FINISHED_MODULES
          source/libs/evc
+         source/libs/uti
    )
 
    if (DXM_FINISHED_MODULES)

@@ -33,7 +33,11 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#define TOKEN_FILE "token.afs"
+/** @file
+ * @brief AFS token handling for the legacy AFS security mode
+ */
+
+#define TOKEN_FILE "token.afs" ///< name of the file an AFS token is written to
 
 char *sge_read_token(const char *file);
 

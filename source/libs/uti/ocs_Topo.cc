@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Implementation of the topology discovery declared in ocs_Topo.h
+ */
+
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 #include <string>
 #include <tuple>
@@ -30,9 +34,9 @@
 #include "sgeobj/ocs_TopologyString.h"
 
 // we do lazy initialization of the hwloc library
-bool topo_initialized = false;
-hwloc_topology_t topo_hwloc_topology = nullptr;
-std::string fake_topo_file = NONE_STR;           //< active topology file or NONE
+bool topo_initialized = false;                   ///< has the hwloc topology been loaded yet?
+hwloc_topology_t topo_hwloc_topology = nullptr;  ///< the loaded topology, or nullptr before first use
+std::string fake_topo_file = NONE_STR;           ///< topology file read instead of the real machine, or `"NONE"`
 
 /* @todo: We might want to do the initialization for every operation, e.g.
  *        in execd retrieving topology as load value:

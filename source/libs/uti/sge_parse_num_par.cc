@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of the numeric and memory-size parsing
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -47,7 +51,7 @@
 #include "sgeobj/ocs_CEntry.h"
 
 #if !defined(SOLARIS64) && !defined(SOLARISAMD64)
-#  define RLIM_MAX RLIM_INFINITY
+#  define RLIM_MAX RLIM_INFINITY ///< largest representable resource limit
 #else
 #  define RLIM_MAX 0x7fffffffffffffff
 #endif
@@ -94,12 +98,41 @@ RETURN
 NOTES
    MT-NOTE: parse_ulong_val() is MT safe
 */
+/**
+ * @brief Parse a configuration value of a given type
+ *
+ * Equivalent to #extended_parse_ulong_val with infinity allowed and negative
+ * values accepted.
+ *
+ * @param[out] dvalp receives the value as a double, or nullptr if not wanted
+ * @param[out] uvalp receives the value as an unsigned, or nullptr if not wanted
+ * @param type how to interpret @p s — a time, a memory size, a plain number
+ * @param s the text to parse
+ * @param[out] error_str receives the reason on failure, or nullptr
+ * @param error_len size of @p error_str
+ * @return 1 when the value parsed, 0 on a parsing error
+ *
+ * @note MT-NOTE: parse_ulong_val() is MT safe
+ */
 int parse_ulong_val(double *dvalp, uint32_t *uvalp, ocs::CEntry::Type type, const char *s, char *error_str, int error_len) {
    return extended_parse_ulong_val(dvalp, uvalp, type, s, error_str, error_len, 1, false);
 }
 
-/* enable_infinity enhancement: if 0 no infinity value is allowed */
-/*    MT-NOTE: extended_parse_ulong_val() is MT safe */
+/**
+ * @brief Parse a configuration value, controlling what is accepted
+ *
+ * @param[out] dvalp receives the value as a double, or nullptr if not wanted
+ * @param[out] uvalp receives the value as an unsigned, or nullptr if not wanted
+ * @param type how to interpret @p s — a time, a memory size, a plain number
+ * @param s the text to parse; nullptr is a parsing error
+ * @param[out] error_str receives the reason on failure, or nullptr
+ * @param error_len size of @p error_str
+ * @param enable_infinity 0 to reject `INFINITY` as a value
+ * @param only_positive true to reject any value containing a minus sign
+ * @return 1 when the value parsed, 0 on a parsing error
+ *
+ * @note MT-NOTE: extended_parse_ulong_val() is MT safe
+ */
 int extended_parse_ulong_val(double *dvalp, uint32_t *uvalp, ocs::CEntry::Type type, const char *s, char *error_str, int error_len, int enable_infinity, bool only_positive) {
    int retval = 0; /* error */
    char dummy[10];
@@ -184,6 +217,15 @@ int extended_parse_ulong_val(double *dvalp, uint32_t *uvalp, ocs::CEntry::Type t
 
 /*----------------------------------------------------------------------*/
 /*    MT-NOTE: sge_parse_loglevel_val() is MT safe */
+/**
+ * @brief Parse a log level name such as `log_warning`
+ *
+ * @param[out] uval receives the matching syslog level
+ * @param s the level name, matched case-insensitively
+ * @return true when @p s named a known level
+ *
+ * @note MT-NOTE: sge_parse_loglevel_val() is MT safe
+ */
 bool sge_parse_loglevel_val(uint32_t *uval, const char *s) {
    bool ret = true;
 
@@ -217,6 +259,14 @@ bool sge_parse_loglevel_val(uint32_t *uval, const char *s) {
  *
  * NOTES
  *     MT-NOTE: mul_infinity() is MT safe
+ */
+/**
+ * @brief Multiply a resource limit, saturating instead of overflowing
+ *
+ * @param rlim the limit to scale
+ * @param muli the multiplier
+ * @return the product, or `RLIM_INFINITY` when either argument is infinite or
+ *         the product would overflow
  */
 sge_rlim_t mul_infinity(sge_rlim_t rlim, sge_rlim_t muli) {
    if (rlim == RLIM_INFINITY ||
@@ -328,27 +378,25 @@ static double get_multiplier(sge_rlim_t *rlimp, char **dptr,
    return mul;
 }
 
-/***********************************************************************
- * sge_parse_num_val -
- *    parse numeric attribute values from command-line
+/**
+ * @brief Parse a numeric attribute value from a command line
  *
- *    Numeric attribute values may look like -l <attr>=<num><m>,...
- *    with <num> being a decimal (both integer and fixed float),
- *    hex and octal constant. <m> is a multiplier (see get_multiplier
- *    above).
+ * Accepts `<num><multiplier>` as written after `-l <attr>=`, where `<num>` is
+ * decimal (integer or fixed point), hexadecimal or octal, and the optional
+ * multiplier is a suffix such as `k`, `M` or `G`.
  *
- * !new feature!
- *    
- *    call the good old parse_num_val() with a non null argument for err_str
- *    and it will ++NOT++ abort your daemon.
+ * @param[out] rlimp receives the value as a resource limit, or nullptr
+ * @param[out] dvalp receives the value as a double, or nullptr
+ * @param str the text to parse
+ * @param where context named in the error message, e.g. the attribute name
+ * @param[out] err_str receives the reason on failure. **Passing nullptr makes a
+ *        parsing error fatal** — the daemon is aborted. Pass a buffer to get an
+ *        error back instead.
+ * @param err_len size of @p err_str
+ * @return non-zero when the value parsed
  *
- *    in case of a parsing error the err_str gets filled with an error
- *    message
- *
- * NOTES
- *     MT-NOTE: sge_parse_num_val() is MT safe
- **********************************************************************/
-
+ * @note MT-NOTE: sge_parse_num_val() is MT safe
+ */
 uint32_t
 sge_parse_num_val(sge_rlim_t *rlimp, double *dvalp,
                   const char *str, const char *where,

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Putting the controlling terminal into raw mode
+ */
+
 #include <unistd.h>
 #include <cerrno>
 #include <cstring>

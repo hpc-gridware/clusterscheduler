@@ -35,6 +35,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Localisable message catalogue of the uti library
+ */
+
 #include "uti/sge_string.h"
 
 // clang-format off

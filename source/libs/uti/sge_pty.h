@@ -32,5 +32,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Putting the controlling terminal into raw mode
+ */
+
 int terminal_enter_raw_mode();
 int terminal_leave_raw_mode();

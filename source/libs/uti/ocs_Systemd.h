@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Talking to systemd over D-Bus: slices, scopes and cgroup limits
+ */
+
 #include <cstdint>
 #include <map>
 #include <string>
@@ -34,16 +38,18 @@
 #endif
 
 namespace ocs::uti {
-   // systemd properties type
    // we use it in the signature of a shepherd function - therefore, we need it outside OCS_WITH_SYSTEMD
+   /// One device a cgroup may be granted access to: its path and the permissions
    using SystemdDevice_t =  std::pair<std::string, std::string>;
+   /// The value of one systemd property, in any of the types systemd reports
    using SystemdProperty_t = std::variant<std::string, uint64_t, bool,
                                           std::vector<uint8_t>, std::vector<SystemdDevice_t>>;
+   /// A set of systemd properties, keyed by property name
    using SystemdProperties_t = std::map<std::string, SystemdProperty_t>;
 
 #if defined(OCS_WITH_SYSTEMD)
 
-   // function types for the sdbus interface
+   /// @cond   pointer types mirroring the libsystemd sd-bus ABI, resolved with dlsym at runtime
    using sd_bus_open_system_func_t = int (*)(sd_bus **bus);
    using sd_bus_unref_func_t = sd_bus *(*)(sd_bus *bus);
    using sd_bus_call_method_func_t = int (*)(sd_bus *bus, const char *destination, const char *path,
@@ -68,14 +74,24 @@ namespace ocs::uti {
    using sd_bus_path_encode_func_t = int (*)(const char *prefix, const char *external_id, char **ret_path);
    using sd_bus_get_property_func_t = int (*)(sd_bus *bus, const char *destination, const char *path, const char *interface, const char *member, sd_bus_error *ret_error, sd_bus_message **reply, const char *type);
    using sd_bus_error_free_func_t = void (*)(sd_bus_error *error);
+   /// @endcond
 
    // @brief Systemd class
    //
-   // This class provides an interface to interact with systemd using the sd-bus API.
-   // It allows for opening a system bus connection, making method calls, and handling messages.
-   // It has static methods for initialization and checking systemd availability.
-   // An instance of the class connects to the system bus and provides methods for
-   // interacting with systemd services.
+   /**
+    * @brief Talks to systemd over the sd-bus API
+    *
+    * `libsystemd` is opened with `dlopen` at runtime rather than linked, so a
+    * binary built with systemd support still starts on a host without it;
+    * #is_systemd_available reports which case applies.
+    *
+    * The static half loads the library and answers questions about the
+    * environment. An instance owns a connection to the system bus and is what
+    * you make method calls through.
+    *
+    * Used to place the execd's jobs in their own systemd scopes, so that the
+    * cgroup limits systemd enforces apply per job.
+    */
    class Systemd {
       private:
          // static data
@@ -113,15 +129,41 @@ namespace ocs::uti {
 
       public:
          // constants
+         /// Name of the systemd service the execd runs as
          static const std::string execd_service_name;
+         /// Name prefix of the systemd scope created for each job's shepherd
          static const std::string shepherd_scope_name;
 
          // static methods
+         /**
+          * @brief Open libsystemd and work out how this process is running
+          *
+          * Resolves the sd-bus entry points, then determines whether the
+          * process is itself running as a systemd service, which cgroup
+          * version is in use and which systemd version.
+          *
+          * @param service_name_in name of the service this process runs as
+          * @param[out] error_dstr receives the reason on failure
+          * @return true on success
+          */
          static bool initialize(const std::string &service_name_in, dstring *error_dstr);
          static bool is_systemd_available();  // we can load the systemd library and connect to systemd
          static bool is_running_as_service(); // the process is running as a systemd service
+         /**
+          * @brief The top level slice jobs are placed under
+          * @return the slice name, read from the cell's `slice_name` file, or
+          *         empty when not running under systemd control
+          */
          static std::string get_slice_name() { return slice_name; }
+         /**
+          * @brief Which cgroup hierarchy the host uses
+          * @return 1 or 2, or 0 when it could not be determined
+          */
          static int get_cgroup_version() { return cgroup_version; }
+         /**
+          * @brief The systemd version this host runs
+          * @return the major version, or 0 when it could not be determined
+          */
          static int get_systemd_version() { return systemd_version; }
 
       private:

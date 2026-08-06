@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Runs the user's editor on a temporary file
+ */
+
 #include "uti/sge_uidgid.h"
 
 int sge_edit(const char *fname, uid_t uid, gid_t gid);

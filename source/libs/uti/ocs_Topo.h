@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The host's CPU topology, as discovered through hwloc
+ */
+
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 
 #include <string>
@@ -26,6 +30,19 @@
 #include <vector>
 
 namespace ocs {
+   /**
+    * @brief The host's CPU topology, discovered once through hwloc
+    *
+    * Static only, initialised lazily on first use. Provides two things: a
+    * *topology string* describing the machine, and cpusets for binding a job
+    * to specific hardware.
+    *
+    * The topology string encodes the hierarchy with one letter per object -
+    * sockets, cores and threads - so a whole machine layout fits in a value
+    * that can be reported as a complex and matched against a request.
+    * #make_cpuset walks the same alphabet in reverse to turn a binding string
+    * back into a cpuset.
+    */
    class Topo {
 
       static int get_total_amount_of_type(hwloc_obj_type_t type);
@@ -33,32 +50,89 @@ namespace ocs {
       static int count_type_in_object(const hwloc_obj_t object, const hwloc_obj_type_t type);
 
    public:
+      /**
+       * @brief Performance and efficiency core detection
+       *
+       * On hybrid CPUs hwloc reports several "kinds" of core. Each kind is
+       * given a letter so it can appear in the topology string.
+       */
       class CpuKind {
          using LetterBitmap = std::tuple<char, hwloc_bitmap_t>;
          static std::vector<LetterBitmap> cpu_kinds;
       public:
+         /// Ask hwloc which CPU kinds are present and assign each a letter
          static void detect_via_hwloc();
+         /// Release the bitmaps allocated by #detect_via_hwloc
          static void release_data();
+         /**
+          * @brief The letter identifying one core's kind
+          * @param topology the hwloc topology the core belongs to
+          * @param core the core to classify
+          * @return its letter, for use in the topology string
+          */
          static char get_letter_for_core(hwloc_topology_t topology, hwloc_obj_t core);
       };
 
+      /**
+       * @brief Read the topology from a file instead of the real machine
+       *
+       * For testing scheduling against hardware the test host does not have.
+       *
+       * @param topo_file an hwloc XML topology file, or `"NONE"` to go back to
+       *        the real machine
+       */
       static void set_fake_topo_file(std::string &topo_file);
       static bool init();
 
       static bool has_topology_information();
 
+      /**
+       * @brief Can jobs be bound to cores on this host?
+       * @return true when binding is supported and the topology is known
+       */
       static bool has_core_binding();
 
+      /**
+       * @brief The underlying hwloc topology
+       * @return the topology; owned by this class, do not destroy it
+       */
       static hwloc_topology_t get_hwloc_topology();
 
+      /**
+       * @brief Append one object and everything below it to a topology string
+       *
+       * Recursive; #get_new_topology is the entry point.
+       *
+       * @param[in,out] topo_string the string to append to
+       * @param topology the topology being walked
+       * @param obj the object to describe at this step
+       * @param depth current recursion depth
+       * @param no_data_nodes true to leave cache and memory objects out
+       */
       static void get_sub_topology(std::string& topo_string, hwloc_topology_t topology, hwloc_obj_t obj, int depth, bool no_data_nodes);
 
+      /**
+       * @brief Build the topology string for this host
+       * @param[out] topology receives the string
+       * @param data_nodes true to include cache and memory objects
+       * @param enable_hwloc false to skip hwloc and report nothing
+       * @return true when a topology could be determined
+       */
       static bool get_new_topology(std::string &topology, bool data_nodes = false, bool enable_hwloc = true);
       static bool get_topology(std::string &topology);
       static bool get_topology(char **topology, int *length); // @todo switch to the func above
 
       static bool get_processor_ids(int socket_number, int core_number, int **proc_ids, int *amount);
 
+      /**
+       * @brief Add one hardware thread to a cpuset, by logical position
+       * @param cpuset the set to add to
+       * @param socket_id logical socket number, counting from 0
+       * @param core_id logical core number within the socket
+       * @param thread_id logical thread number within the core
+       * @return 0 on success, -1 when the topology is unknown or that position
+       *         does not exist
+       */
       static int add_hw_for_logical_id(hwloc_bitmap_t cpuset, int socket_id, int core_id, int thread_id);
 
       static int get_amount_of_cores_for_socket(int socket_number);
@@ -71,6 +145,19 @@ namespace ocs {
 
       static int get_total_amount_of_sockets();
 
+      /**
+       * @brief Turn a binding string into a cpuset
+       *
+       * Walks @p binding_to_use one letter at a time: `S`/`s` steps to the next
+       * socket, `C`/`c` to the next core, `T`/`t` to the next thread, and an
+       * upper case letter also selects the hardware it steps to. @p cpuset is
+       * emptied first.
+       *
+       * Does nothing when @p cpuset is nullptr or @p binding_to_use is empty.
+       *
+       * @param cpuset the set to fill
+       * @param binding_to_use the binding string to interpret
+       */
       static void make_cpuset(hwloc_bitmap_t cpuset, const std::string &binding_to_use);
       };
 }

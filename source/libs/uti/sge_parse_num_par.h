@@ -33,13 +33,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Parsing of numbers, memory sizes and time values from configuration
+ */
+
 #include <sys/resource.h>
 
 #include "cull/cull_list.h"
 
 #include "sgeobj/ocs_CEntry.h"
 
-/* type wrapper */
+/// A resource limit value; a thin wrapper over the system's `rlim_t`
 typedef rlim_t sge_rlim_t;
 
 sge_rlim_t mul_infinity(sge_rlim_t rlim, sge_rlim_t muli);
@@ -51,6 +55,15 @@ int extended_parse_ulong_val(double *dvalp, uint32_t *uvalp, ocs::CEntry::Type t
                              const char *s, char *err_str, int err_len,
                              int enable_infinity, bool only_positive);
 
+/**
+ * @brief Is a checkpointing `when` bitmask a valid combination?
+ *
+ * @param bitmask the combination of checkpointing occasions to validate
+ * @return non-zero when the combination is valid
+ *
+ * @note Declared here but implemented in `daemons/qmaster/sge_ckpt_qmaster.cc`,
+ *       so this header does not describe a libuti function.
+ */
 int is_checkpoint_when_valid(int bitmask);
 
 bool sge_parse_loglevel_val(uint32_t *uval, const char *s);

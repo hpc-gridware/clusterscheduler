@@ -33,26 +33,33 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The per-layer debug level bitmask used by the rmon macros
+ */
+
 #include <sys/types.h>
 
-/* different layers for monitoring */
+/// Number of layers debugging can be switched on for, and the size of monitoring_level::ml
 constexpr int N_LAYER = 8;
 
-#define TOP_LAYER        0 /* t */
-#define CULL_LAYER       1 /* c */
-#define BASIS_LAYER      2 /* b */
-#define GUI_LAYER        3 /* g */
-#define UNUSED0_LAYER    4 /* u */
-#define COMMD_LAYER      5 /* h */
-#define GDI_LAYER        6 /* a */
-#define PACK_LAYER       7 /* p */
+/* different layers for monitoring; the letter is the one the user types in a
+ * debug level string, e.g. "t" turns on the top layer */
+#define TOP_LAYER        0 ///< general code, selected by `t`
+#define CULL_LAYER       1 ///< the cull list library, selected by `c`
+#define BASIS_LAYER      2 ///< low level helpers, selected by `b`
+#define GUI_LAYER        3 ///< the qmon GUI, selected by `g`
+#define UNUSED0_LAYER    4 ///< unused; kept so the layer numbering stays stable
+#define COMMD_LAYER      5 ///< the communication library, selected by `h`
+#define GDI_LAYER        6 ///< the GDI request layer, selected by `a`
+#define PACK_LAYER       7 ///< the packing library, selected by `p`
 
 /* different classes of monitoring messages */
-#define TRACE            1 /* t */
-#define INFOPRINT        2 /* i */
+#define TRACE            1 ///< function entry and exit tracing, selected by `t`
+#define INFOPRINT        2 ///< explicit debug messages, selected by `i`
 
+/// Which message classes are switched on, per layer
 struct monitoring_level {
-   u_long ml[N_LAYER];
+   u_long ml[N_LAYER]; ///< one bitmask of message classes per layer, indexed by the `*_LAYER` constants
 };
 
 int rmon_mliszero(const monitoring_level *);

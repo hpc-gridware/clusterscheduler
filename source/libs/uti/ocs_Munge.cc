@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Loads libmunge at runtime and exposes its functions
+ */
+
 #if defined(OCS_WITH_MUNGE)
 #include <iostream>
 #include <dlfcn.h>
