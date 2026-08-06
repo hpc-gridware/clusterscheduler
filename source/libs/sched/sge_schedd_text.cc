@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -240,6 +240,9 @@ const char* sge_get_schedd_text( int nr )
       case SCHEDD_INFO_ARISINERROR_I:
          return MSG_SCHEDD_INFO_ARISINERROR_I; 
 
+      case SCHEDD_INFO_CONSUMABLENOVALUE_SS:
+         return MSG_SCHEDD_INFO_CONSUMABLENOVALUE_SS;
+
 /* */
 
       case SCHEDD_INFO_CANNOTRUNATHOST          :
@@ -406,6 +409,9 @@ const char* sge_get_schedd_text( int nr )
 
       case SCHEDD_INFO_ARISINERROR:
          return MSG_SCHEDD_INFO_ARISINERROR; 
+
+      case SCHEDD_INFO_CONSUMABLENOVALUE:
+         return MSG_SCHEDD_INFO_CONSUMABLENOVALUE;
 
       default:
          return "";

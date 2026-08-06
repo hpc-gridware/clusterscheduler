@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -112,6 +112,7 @@ enum {
    SCHEDD_INFO_QNOTARRESERVED_SI,
    SCHEDD_INFO_HNOTARRESERVED_SI,
    SCHEDD_INFO_ARISINERROR_I,
+   SCHEDD_INFO_CONSUMABLENOVALUE_SS,
 
    /* global messages*/
    SCHEDD_INFO_CANNOTRUNATHOST,
@@ -169,6 +170,7 @@ enum {
    SCHEDD_INFO_QNOTARRESERVED,
    SCHEDD_INFO_HNOTARRESERVED,
    SCHEDD_INFO_ARISINERROR,
+   SCHEDD_INFO_CONSUMABLENOVALUE,
 
    TOOBIG /* don't move from last position! */
 };
