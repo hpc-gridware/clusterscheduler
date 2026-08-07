@@ -82,7 +82,7 @@ def see_also(entry, local_symbols):
     return None
 
 
-def convert_block(block, local_symbols):
+def convert_block(block, local_symbols, returns_void=False):
     s = parse_sections(block)
     out = []
 
@@ -126,9 +126,20 @@ def convert_block(block, local_symbols):
     ret = trim(s.get('RESULT', []))
     if ret:
         txt = ' '.join(x.strip() for x in ret if x.strip())
-        txt = re.sub(r'^[\w \*]+?\s+-\s+', '', txt)
-        out.append(' *')
-        out.append(' * @return ' + txt)
+        # A RESULT section on a void function still describes something, but
+        # @return on a function that returns nothing is a doxygen warning.
+        # Drop the boilerplate ones and demote the rest to a @note.
+        m = re.match(r'^void\s*(?:-\s*(.*))?$', txt)
+        if m or returns_void:
+            rest = (m.group(1) if m else txt) or ''
+            rest = rest.strip().rstrip('.')
+            if rest and rest.lower() not in ('none', 'nothing', 'no result'):
+                out.append(' *')
+                out.append(' * @note ' + rest)
+        else:
+            txt = re.sub(r'^[\w \*]+?\s+-\s+', '', txt)
+            out.append(' *')
+            out.append(' * @return ' + txt)
 
     notes = trim(s.get('NOTES', []))
     if notes:
@@ -149,12 +160,40 @@ def convert_block(block, local_symbols):
         out.append(' *')
         out.append(' * @see ' + ', '.join(refs))
 
-    return ['/**'] + out + [' */']
+    return ['/**'] + [placeholders(x) for x in out] + [' */']
+
+
+def placeholders(line):
+    """`<name>` is banner-speak for "the parameter called name".
+
+    Doxygen reads it as an HTML tag instead and warns about every one of them,
+    so turn it into inline code. A '<' that follows an identifier character is
+    left alone - that is a template argument such as vector<int>, not a
+    placeholder.
+    """
+    return re.sub(r'(?<![\w>])<([A-Za-z_]\w*)>', r'`\1`', line)
 
 
 def local_symbol_names(text):
     """Function-ish names defined or declared in this file."""
     return set(re.findall(r'^[\w:<>,\* &\[\]]*?\b(\w+)\s*\(', text, re.M))
+
+
+def returns_void(lines, start):
+    """Does the declaration following a banner return void?
+
+    A RESULT section is not reliable here: plenty of banners describe what a
+    void function changed ("'this_range' will be modified") without naming the
+    type, and @return on a void function is a doxygen warning. The signature is
+    the only thing that actually knows.
+    """
+    for line in lines[start:start + 4]:
+        if not line.strip():
+            continue
+        sig = line.strip()
+        # The return type is sometimes on a line of its own, above the name.
+        return re.match(r'^(static\s+)?void(\s+[\w:]+\s*\(|\s*$)', sig) is not None
+    return False
 
 
 def process(path):
@@ -176,7 +215,8 @@ def process(path):
                 skipped.append(name)
                 out.extend(lines[i:j + 1])
             else:
-                out.extend(convert_block(lines[i + 1:j], symbols))
+                out.extend(convert_block(lines[i + 1:j], symbols,
+                                         returns_void(lines, j + 1)))
                 converted += 1
             i = j + 1
             continue
