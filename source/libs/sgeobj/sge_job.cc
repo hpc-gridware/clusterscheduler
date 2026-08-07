@@ -2840,9 +2840,27 @@ bool sge_unparse_resource_list_dstring(dstring *category_str, lList *resource_li
          } else {
             sge_dstring_append(category_str, ",");
          }
-         sge_dstring_append(category_str, lGetString(sub_elem, CE_name));
-         sge_dstring_append(category_str, "=");
-         sge_dstring_append(category_str, lGetString(sub_elem, CE_stringval));
+         /* CS-2014: the category has to be identical for requests that differ
+          * only in the unit they were written with ("-l h_vmem=1G" and
+          * "-l h_vmem=1073741824" are the same request), so MEM values go into
+          * the category in their canonical byte form.
+          *
+          * Done here and not in centry_fill_and_check(): that one rewrites
+          * CE_stringval, the stored value, and plain client output has to show
+          * the value as the user wrote it.
+          */
+         switch (static_cast<ocs::CEntry::Type>(lGetUlong(sub_elem, CE_valtype))) {
+            case ocs::CEntry::Type::MEM:
+               sge_dstring_sprintf_append(category_str, "%s=%.0f",
+                                          lGetString(sub_elem, CE_name),
+                                          lGetDouble(sub_elem, CE_doubleval));
+               break;
+            default:
+               sge_dstring_append(category_str, lGetString(sub_elem, CE_name));
+               sge_dstring_append(category_str, "=");
+               sge_dstring_append(category_str, lGetString(sub_elem, CE_stringval));
+               break;
+         }
       }
       sge_dstring_append(category_str, " ");
    }

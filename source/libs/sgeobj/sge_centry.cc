@@ -237,16 +237,23 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
             lSetString(this_elem, CE_stringval, str_value);
          }
 
-         /* normalize memory values, so that the string value is based on bytes */
-         if (type == ocs::CEntry::Type::MEM && dval != DBL_MAX) {
-            char str_value[100];
-            dstring ds;
-            sge_dstring_init(&ds, str_value, sizeof(str_value));
-            sge_dstring_sprintf(&ds, "%.0f", dval);
-            DPRINTF("normalized memory value from \"%s\" to \"%s\"\n",
-                    lGetString(this_elem, CE_stringval), str_value);
-            lSetString(this_elem, CE_stringval, str_value);
-         }
+         /* MEM values are deliberately NOT normalized here.
+          *
+          * CS-2014 originally did, so that two job requests differing only in
+          * unit ("80G" and "85899345920") end up in the same category. But this
+          * function rewrites CE_stringval, i.e. the value that is STORED and
+          * that every plain client prints back. Plain output has to show what
+          * the user wrote -- qstat, qhost, qrsh and qquota do not normalize, and
+          * only the JSON and XML renderings may show a normalized value, and
+          * only when asked for it.
+          *
+          * The normalization therefore belongs to the one place that needs a
+          * canonical form: sge_unparse_resource_list_dstring() in sge_job.cc,
+          * which builds the category string from CE_doubleval.
+          *
+          * TIME above keeps its normalization: seconds are the stored form for
+          * time values throughout, not a display choice.
+          */
 
          /* also the CE_defaultval must be parsable for numeric types */
          if ((s=lGetString(this_elem, CE_defaultval))
