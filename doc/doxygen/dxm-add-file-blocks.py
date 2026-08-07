@@ -34,7 +34,11 @@ def insert(path, brief):
 
     block = '\n/** @file\n * @brief %s\n */\n' % (brief or PLACEHOLDER)
 
-    m = re.search(r'/\*___INFO__MARK_END(?:_NEW)?__\*/\n', text)
+    # The trailing [ \t]* matters: 25 files in the tree have whitespace after
+    # the marker, and without it the fallback below fires and puts the block
+    # ABOVE the license header - which is both wrong per 03 and easy to miss,
+    # because doxygen accepts it and the gate stays green.
+    m = re.search(r'/\*___INFO__MARK_END(?:_NEW)?__\*/[ \t]*\n', text)
     if m:
         pos = m.end()
     else:
