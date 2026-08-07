@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Per-thread state of the cull library
+ */
+
 #include "cull_state.h"
 
 #include <cstring>
@@ -44,12 +48,18 @@
 #include "cull/pack.h"
 
 
-/* struct to store ALL state information of cull lib */
+/**
+ * @brief All per-thread state of the cull library
+ *
+ * Held in thread-local storage. #global_sort_order is here because `qsort()`
+ * takes no user argument, so #lSortCompareUsingGlobal has no other way to
+ * reach the order it should apply.
+ */
 typedef struct {
-   int lerrno;            /* cull errno               */
-   char noinit[50];        /* cull error buffer        */
-   const lSortOrder *global_sort_order; /* qsort() by-pass argument */
-   const lNameSpace *name_space;        /* name vector              */
+   int lerrno;                          ///< last cull error, one of the `LE*` codes
+   char noinit[50];                     ///< buffer for the placeholder #lNm2Str returns for an unknown id
+   const lSortOrder *global_sort_order; ///< sort order for #lSortCompareUsingGlobal, since `qsort()` passes no argument
+   const lNameSpace *name_space;        ///< the name space field numbers are resolved against
 #ifdef OBSERVE
    dstring observe_dstring;
    bool observe_started;
@@ -68,14 +78,11 @@ static cull_state_t *cull_state_getspecific(pthread_key_t aKey);
 static void cull_state_init(cull_state_t *theState);
 
 
-/****** cull_state/state/cull_state_get_????() ************************************
-*  NAME
-*     cull_state_get_????() - read access to cull state.
-*
-*  FUNCTION
-*     Provides access to thread local storage.
-*
-******************************************************************************/
+/**
+ * @brief The last cull error recorded on this thread
+ *
+ * @return one of the `LE*` codes, or 0 when none was recorded
+ */
 int cull_state_get_lerrno() {
    cull_state_t *cull_state = nullptr;
 
@@ -86,6 +93,10 @@ int cull_state_get_lerrno() {
    return cull_state->lerrno;
 }
 
+/**
+ * @brief The placeholder text stored by #cull_state_set_noinit
+ * @return the text; owned by thread-local storage, do not free
+ */
 const char *cull_state_get_noinit() {
    cull_state_t *cull_state = nullptr;
 
@@ -96,6 +107,10 @@ const char *cull_state_get_noinit() {
    return cull_state->noinit;
 }
 
+/**
+ * @brief The sort order #lSortCompareUsingGlobal will apply
+ * @return the order, or nullptr when none is set
+ */
 const lSortOrder *cull_state_get_global_sort_order() {
    cull_state_t *cull_state = nullptr;
 
@@ -106,6 +121,10 @@ const lSortOrder *cull_state_get_global_sort_order() {
    return cull_state->global_sort_order;
 }
 
+/**
+ * @brief The name space field numbers are resolved against on this thread
+ * @return the name space, or nullptr when none is bound
+ */
 const lNameSpace *cull_state_get_name_space() {
    cull_state_t *cull_state = nullptr;
 
@@ -116,14 +135,11 @@ const lNameSpace *cull_state_get_name_space() {
    return cull_state->name_space;
 }
 
-/****** cull/list/cull_state_set_????() ************************************
-*  NAME
-*     cull_state_set_????() - write access to cull state.
-*
-*  FUNCTION
-*     Provides access to thread local storage.
-*
-******************************************************************************/
+/**
+ * @brief Record a cull error on this thread
+ *
+ * @param i one of the `LE*` codes
+ */
 void cull_state_set_lerrno(int i) {
    cull_state_t *cull_state = nullptr;
 
@@ -136,6 +152,10 @@ void cull_state_set_lerrno(int i) {
    return;
 }
 
+/**
+ * @brief Store the placeholder text for an unresolvable field number
+ * @param s the text to store
+ */
 void cull_state_set_noinit(char *s) {
    cull_state_t *cull_state = nullptr;
 
@@ -148,6 +168,10 @@ void cull_state_set_noinit(char *s) {
    return;
 }
 
+/**
+ * @brief Set the sort order #lSortCompareUsingGlobal will apply
+ * @param so the order to use
+ */
 void cull_state_set_global_sort_order(const lSortOrder *so) {
    cull_state_t *cull_state = nullptr;
 
@@ -160,6 +184,10 @@ void cull_state_set_global_sort_order(const lSortOrder *so) {
    return;
 }
 
+/**
+ * @brief Set the name space field numbers are resolved against
+ * @param ns the name space to use
+ */
 void cull_state_set_name_space(const lNameSpace *ns) {
    cull_state_t *cull_state = nullptr;
 
@@ -209,81 +237,54 @@ bool cull_state_get_observe_started()
 }
 #endif
 
-/****** cull_state/cull_once_init() ********************************************
-*  NAME
-*     cull_once_init() -- One-time CULL initialization.
-*
-*  SYNOPSIS
-*     static cull_once_init() 
-*
-*  FUNCTION
-*     Create access key for thread local storage. Register cleanup function.
-*
-*     This function must be called exactly once.
-*
-*  INPUTS
-*     void - none
-*
-*  RESULT
-*     void - none 
-*
-*  NOTES
-*     MT-NOTE: cull_once_init() is MT safe. 
-*
-*******************************************************************************/
+/**
+ * @brief One-time CULL initialization
+ *
+ * Create access key for thread local storage. Register cleanup function.
+ *
+ * This function must be called exactly once.
+ *
+ * @param void none
+ *
+ * @return none
+ *
+ * @note MT-NOTE: cull_once_init() is MT safe.
+ */
 static void cull_once_init() {
    pthread_key_create(&cull_state_key, cull_state_destroy);
    return;
 } /* cull_once_init() */
 
-/****** cull_state/cull_state_destroy() ****************************************
-*  NAME
-*     cull_state_destroy() -- Free thread local storage
-*
-*  SYNOPSIS
-*     static void cull_state_destroy(void* theState) 
-*
-*  FUNCTION
-*     Free thread local storage.
-*
-*  INPUTS
-*     void* theState - Pointer to memory which should be freed.
-*
-*  RESULT
-*     static void - none
-*
-*  NOTES
-*     MT-NOTE: cull_state_destroy() is MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Free thread local storage
+ *
+ * Free thread local storage.
+ *
+ * @param theState Pointer to memory which should be freed.
+ *
+ * @return none
+ *
+ * @note MT-NOTE: cull_state_destroy() is MT safe.
+ */
 static void cull_state_destroy(void *theState) {
    sge_free(&theState);
 }
 
-/****** cull_state/cull_state_getspecific() ************************************
-*  NAME
-*     cull_state_getspecific() -- Get thread local cull state 
-*
-*  SYNOPSIS
-*     static cull_state_t* cull_state_getspecific(pthread_key_t aKey) 
-*
-*  FUNCTION
-*     Return thread local cull state. 
-*
-*     If a given thread does call this function for the first time, no thread
-*     local cull state is available for this particular thread. In this case the
-*     thread local cull state is allocated and set.
-*
-*  INPUTS
-*     pthread_key_t aKey - Key for thread local cull state 
-*
-*  RESULT
-*     static cull_state_t* - Pointer to thread local cull state
-*
-*  NOTES
-*     MT-NOTE: cull_state_getspecific() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Get thread local cull state
+ *
+ * Return thread local cull state.
+ *
+ * If a given thread does call this function for the first time, no thread
+ * local cull state is available for this particular thread. In this case the
+ * thread local cull state is allocated and set.
+ *
+ * @param aKey Key for thread local cull state
+ *
+ * @return Pointer to thread local cull state
+ *
+ * @note MT-NOTE: cull_state_getspecific() is MT safe
+ */
 static cull_state_t *cull_state_getspecific(pthread_key_t aKey) {
    cull_state_t *cull_state = (cull_state_t *) pthread_getspecific(aKey);
 
@@ -303,26 +304,17 @@ static cull_state_t *cull_state_getspecific(pthread_key_t aKey) {
    return cull_state;
 } /* cull_state_getspecific() */
 
-/****** cull_state/cull_state_init() *******************************************
-*  NAME
-*     cull_state_init() -- Initialize CULL state.
-*
-*  SYNOPSIS
-*     static void cull_state_init(cull_state_t *theState) 
-*
-*  FUNCTION
-*     Initialize CULL state.
-*
-*  INPUTS
-*     struct cull_state_t* theState - Pointer to CULL state structure.
-*
-*  RESULT
-*     static void - none
-*
-*  NOTES
-*     MT-NOTE: cull_state_init() is MT safe. 
-*
-*******************************************************************************/
+/**
+ * @brief Initialize CULL state
+ *
+ * Initialize CULL state.
+ *
+ * @param theState Pointer to CULL state structure.
+ *
+ * @return none
+ *
+ * @note MT-NOTE: cull_state_init() is MT safe.
+ */
 static void cull_state_init(cull_state_t *theState) {
    theState->lerrno = 0;
    theState->noinit[0] = '\0';

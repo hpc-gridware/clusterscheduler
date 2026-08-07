@@ -17,6 +17,10 @@
  *
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
+
+/** @file
+ * @brief Resolving cull field numbers to their names
+ */
 #pragma once
 
 #include "cull/cull_list.h"
@@ -25,18 +29,8 @@
  *  @param ns_vector  sentinel-terminated name space array */
 void lInit(const lNameSpace *ns_vector);
 
-/** @brief Return the string name for a CULL name id (direct index per entry).
- *  @param nm  CULL name id
- *  @return    the field name, or a placeholder string if unknown */
 const char *lNm2Str(int nm);
 
-/** @brief Resolve a field name to its CULL name id (O(1) hash lookup).
- *  @param str  field name to resolve
- *  @return     the CULL name id, or NoName if unknown */
 int lStr2Nm(const char *str);
 
-/** @brief Resolve a field name against an explicit name space.
- *  @param str  field name to resolve
- *  @param ns   name space; nullptr uses the thread's bound default
- *  @return     the CULL name id, or NoName if unknown */
 int lStr2Nm(const char *str, const lNameSpace *ns);

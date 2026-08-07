@@ -34,10 +34,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Hash tables over cull list fields
+ */
+
 #include <cstdio>
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
+/// Suppresses the monitoring code in the rmon macros for this file
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
@@ -54,129 +59,70 @@
 #include "cull/cull_multitype.h"
 #include "cull/msg_cull.h"
 
-/****** cull/hash/--CULL_Hashtable **********************************************
-*  NAME
-*     htable -- Hashtable extensions for cull lists 
-*
-*  SYNOPSIS
-*     cull_htable cull_hash_create(const lDescr *descr, int size);
-*
-*     void cull_hash_new(lList *lp, int name, bool unique);
-*
-*     void cull_hash_insert(const lListElem *ep, const int pos, );
-*
-*     void cull_hash_remove(const lListElem *ep, const int pos);
-*
-*     void cull_hash_elem(const lListElem *ep);
-*
-*     lListElem *cull_hash_first(const lList *lp, const int pos, 
-*                         const void *key, const void **iterator);
-*
-*     lListElem *cull_hash_next(const lList *lp, const int pos, 
-*                         const void *key, const void **iterator);
-*
-*     void cull_hash_free_descr(lDescr *descr);
-*
-*  FUNCTION
-*     This module provides an abstraction layer between cull and 
-*     the hash table implementation in libuti. It provides the 
-*     necessary functions to use hash tables from libuti for cull lists.
-*
-*     The functions defined in this module implement hash tables with 
-*     non unique keys, provide wrapper functions for hash insert, remove 
-*     and search that are aware of the non unique hash implementation, 
-*     functions that deal with the necessary extensions to the cull list
-*     descriptor objects etc.
-*
-*  SEE ALSO
-*     uti/hash/--Hashtable
-*     cull/hash/cull_hash_create()
-*     cull/hash/cull_hash_new()
-*     cull/hash/cull_hash_insert()
-*     cull/hash/cull_hash_remove()
-*     cull/hash/cull_hash_elem()
-*******************************************************************************/
+/**
+ * @defgroup cull_hash Hash tables for cull lists
+ * @brief An abstraction layer between cull and the hash tables in libuti
+ *
+ * A field marked #CULL_HASH gets a hash table over its values, so looking an
+ * element up by that field does not have to walk the list.
+ *
+ * libuti's hash tables store one value per key. Cull needs **non unique** keys
+ * as well, so for those the table stores a pointer to a chain of
+ * @ref _non_unique_hash nodes rather than to the element itself. The wrapper
+ * functions here hide that difference: insert, remove and search behave the
+ * same whether the field was declared #CULL_UNIQUE or not.
+ *
+ * @see @ref cull_field_attributes
+ */
 
-/****** cull/hash/-CULL_Hashtable_Defines ****************************************************
-*  NAME
-*     Defines -- Constants for the cull hash implementation
-*
-*  SYNOPSIS
-*     #define MIN_CULL_HASH_SIZE 4
-*
-*  FUNCTION
-*     Provides constants to be used in the hash table implementation 
-*     for cull lists.
-*
-*     MIN_CULL_HASH_SIZE - minimum size of a hash table. When a new 
-*                          hash table is created, it will have the size 
-*                          2^MIN_CULL_HASH_SIZE
-*******************************************************************************/
+
+/// A new hash table is created with 2^#MIN_CULL_HASH_SIZE buckets
 #define MIN_CULL_HASH_SIZE 4
 
-/****** cull/hash/-CULL_Hashtable_Typedefs ***************************************************
-*  NAME
-*     Typedefs -- Typedefs for cull hash implementation 
-*
-*  SYNOPSIS
-*     typedef struct _non_unique_hash non_unique_hash;
-*     
-*     struct _non_unique_hash {
-*        non_unique_hash *next;
-*        const void *data;
-*     };
-*
-*  FUNCTION
-*     Internal data structure to handle hash tables with non unique 
-*     keys. The hash table (from libuti) in this case will not store 
-*     a pointer to the cull object itself, but a pointer to a list of 
-*     cull objects. This list is implemented using the non_unique_hash 
-*     structures.
-*
-*  SEE ALSO
-*     uti/hash/--Hashtable
-*******************************************************************************/
+/// One node of the chain a non unique hash key maps to; see @ref _non_unique_hash
 typedef struct _non_unique_hash non_unique_hash;
 
+/// Head and tail of the chain a non unique hash key maps to
 typedef struct non_unique_header {
-   non_unique_hash *first;
-   non_unique_hash *last;
+   non_unique_hash *first; ///< first node of the chain
+   non_unique_hash *last;  ///< last node, kept so appending stays O(1)
 } non_unique_header;
 
+/**
+ * @brief One element in the chain a non unique hash key maps to
+ *
+ * Doubly linked so that removing one element is O(1) once found — the caller
+ * already holds the node, and does not have to walk the chain to unlink it.
+ */
 struct _non_unique_hash {
-   non_unique_hash *prev;
-   non_unique_hash *next;
-   const void *data;
+   non_unique_hash *prev; ///< previous node, or nullptr at the head of the chain
+   non_unique_hash *next; ///< next node, or nullptr at the end of the chain
+   const void *data;      ///< the cull element this node stands for
 };
 
+/**
+ * @brief A cull hash table: the key table, plus the chains for non unique keys
+ */
 struct _cull_htable {
-   htable ht;       /* hashtable for keys */
-   htable nuht;     /* hashtable for lookup of non unique object references */
+   htable ht;   ///< maps a field value to an element, or to a @ref non_unique_header
+   htable nuht; ///< maps an element back to its chain node, so removal need not search
 };
 
-/****** cull/hash/cull_hash_create() *******************************************
-*  NAME
-*     cull_hash_create() -- create a new hash table
-*
-*  SYNOPSIS
-*     cull_htable cull_hash_create(const lDescr *descr, int size) 
-*
-*  FUNCTION
-*     Creates a new hash table for a certain descriptor and returns the 
-*     hash description (lHash) for it.
-*     The initial size of the hashtable can be specified.
-*     This allows for optimization of the hashtable, as resize operations
-*     can be minimized when the final hashtable size is known at creation time,
-*     e.g. when copying complete lists.
-*
-*  INPUTS
-*     const lDescr *descr - descriptor for the data field in a 
-*                           cull object.
-*     int size            - initial size of hashtable will be 2^size
-*
-*  RESULT
-*     cull_htable - initialized hash description
-*******************************************************************************/
+/**
+ * @brief Create a new hash table
+ *
+ * Creates a new hash table for a certain descriptor and returns the
+ * hash description (lHash) for it.
+ * The initial size of the hashtable can be specified.
+ * This allows for optimization of the hashtable, as resize operations
+ * can be minimized when the final hashtable size is known at creation time,
+ * e.g. when copying complete lists.
+ *
+ * @param descr descriptor for the data field in a cull object.
+ * @param size initial size of hashtable will be 2^size
+ *
+ * @return initialized hash description
+ */
 cull_htable cull_hash_create(const lDescr *descr, int size) {
    htable ht = nullptr;   /* hash table for keys */
    htable nuht = nullptr;   /* hash table for non unique access */
@@ -238,23 +184,16 @@ cull_htable cull_hash_create(const lDescr *descr, int size) {
    return ret;
 }
 
-/****** cull/hash/cull_hash_create_hashtables() ********************************
-*  NAME
-*     cull_hash_create_hashtables() -- create all hashtables on a list
-*
-*  SYNOPSIS
-*     void cull_hash_create_hashtables(lList *lp) 
-*
-*  FUNCTION
-*     Creates all hashtables for an empty list.
-*
-*  INPUTS
-*     lList *lp - initialized list structure
-*
-*  NOTES
-*     If the list already contains elements, these elements are not 
-*     inserted into the hash lists.
-*******************************************************************************/
+/**
+ * @brief Create all hashtables on a list
+ *
+ * Creates all hashtables for an empty list.
+ *
+ * @param lp initialized list structure
+ *
+ * @note If the list already contains elements, these elements are not
+ *       inserted into the hash lists.
+ */
 void cull_hash_create_hashtables(lList *lp) {
    if (lp != nullptr) {
       /* compute final size of hashtables when all elements are inserted */
@@ -275,24 +214,17 @@ void cull_hash_create_hashtables(lList *lp) {
    }
 }
 
-/****** cull/hash/cull_hash_insert() *******************************************
-*  NAME
-*     cull_hash_insert() -- insert a new element in a hash table
-*
-*  SYNOPSIS
-*     void cull_hash_insert(const lListElem *ep, const int pos) 
-*
-*  FUNCTION
-*     Inserts ep into the hash list for data field at position pos.
-*     A hash key will be computed. The element will be inserted
-*     in the corresponding hash table considering unique/non unique
-*     hash storage.
-*
-*  INPUTS
-*     const lListElem *ep - the cull object to be stored in a hash list
-*     const int pos       - describes the data field of the objects that
-*                           is to be hashed
-*******************************************************************************/
+/**
+ * @brief Insert a new element in a hash table
+ *
+ * Stores @p ep under @p key, honouring whether the table holds unique or non
+ * unique keys.
+ *
+ * @param ep the cull object to be stored in a hash list
+ * @param key the hash key, from #cull_hash_key
+ * @param ht the table to insert into
+ * @param unique true when the field was declared #CULL_UNIQUE
+ */
 void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool unique) {
    if (ht == nullptr || ep == nullptr || key == nullptr) {
       return;
@@ -340,20 +272,14 @@ void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool uniqu
    }
 }
 
-/****** cull/hash/cull_hash_remove() *******************************************
-*  NAME
-*     cull_hash_remove() -- remove a cull object from a hash list
-*
-*  SYNOPSIS
-*     void cull_hash_remove(const lListElem *ep, const int pos) 
-*
-*  FUNCTION
-*     Removes ep from a hash table for data field specified by pos.
-*
-*  INPUTS
-*     const lListElem *ep - the cull object to be removed
-*     const int pos       - position of the data field 
-*******************************************************************************/
+/**
+ * @brief Remove a cull object from a hash list
+ *
+ * Removes ep from a hash table for data field specified by pos.
+ *
+ * @param ep the cull object to be removed
+ * @param pos position of the data field
+ */
 void cull_hash_remove(const lListElem *ep, const int pos) {
    char host_key[CL_MAXHOSTNAMELEN + 1];
    cull_htable ht;
@@ -421,20 +347,14 @@ void cull_hash_remove(const lListElem *ep, const int pos) {
    }
 }
 
-/****** cull/hash/cull_hash_elem() *********************************************
-*  NAME
-*     cull_hash_elem() -- insert cull object into associated hash tables
-*
-*  SYNOPSIS
-*     void cull_hash_elem(const lListElem *ep) 
-*
-*  FUNCTION
-*     Insert the cull element ep into all hash tables that are 
-*     defined for the cull list ep is member of.
-*
-*  INPUTS
-*     const lListElem *ep - the cull object to be hashed
-*******************************************************************************/
+/**
+ * @brief Insert cull object into associated hash tables
+ *
+ * Insert the cull element ep into all hash tables that are
+ * defined for the cull list ep is member of.
+ *
+ * @param ep the cull object to be hashed
+ */
 void cull_hash_elem(const lListElem *ep) {
    int i;
    lDescr *descr;
@@ -454,36 +374,25 @@ void cull_hash_elem(const lListElem *ep) {
    }
 }
 
-/****** cull/hash/cull_hash_first() *******************************************
-*  NAME
-*     cull_hash_first() -- find first object for a certain key
-*
-*  SYNOPSIS
-*     lListElem* cull_hash_first(const lList *lp, const int pos, 
-*                                const void  *key, 
-*                                const void **iterator) 
-*
-*  FUNCTION
-*     Searches for key in the hash table for data field described by 
-*     pos in the cull list lp.
-*     If an element is found, it is returned.
-*     If the hash table uses non unique hash keys, iterator returns the 
-*     necessary data for consecutive calls of cull_hash_next() returning
-*     objects with the same hash key.
-*
-*  INPUTS
-*     const lList *lp       - the cull list to search
-*     const int pos         - position of the data field for key
-*     const void *key       - the key to use for the search
-*     const void **iterator - iterator for calls of cull_hash_next
-*
-*  RESULT
-*     lListElem* - first object found matching key, 
-*                  if no object found: nullptr
-*
-*  SEE ALSO
-*     cull/hash/cull_hash_next()
-******************************************************************************/
+/**
+ * @brief Find first object for a certain key
+ *
+ * Searches for key in the hash table for data field described by
+ * pos in the cull list lp.
+ * If an element is found, it is returned.
+ * If the hash table uses non unique hash keys, iterator returns the
+ * necessary data for consecutive calls of cull_hash_next() returning
+ * objects with the same hash key.
+ *
+ * @param ht the table to search
+ * @param key the key to use for the search
+ * @param unique true when the table holds unique keys
+ * @param[out] iterator receives the state #cull_hash_next continues from
+ *
+ * @return first object found matching key, if no object found: nullptr
+ *
+ * @see #cull_hash_next
+ */
 lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,
                            const void **iterator) {
    union {
@@ -526,34 +435,22 @@ lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,
    }
 }
 
-/****** cull/hash/cull_hash_next() *********************************************
-*  NAME
-*     cull_hash_next() -- find next object matching a key
-*
-*  SYNOPSIS
-*     lListElem* cull_hash_next(const lList *lp, const int pos, 
-*                               const void *key, const void **iterator) 
-*
-*  FUNCTION
-*     Returns the next object matching the same key as a previous call
-*     to cull_hash_first or cull_hash_next.
-*
-*  INPUTS
-*     const lList *lp       - the cull list to search
-*     const int pos         - position of the data field for key
-*     const void *key       - the key to use for the search
-*     const void **iterator - iterator to use for the search.
-*
-*  RESULT
-*     lListElem* - object if found, else nullptr
-*
-*  NOTES
-*     The order in which objects with the same key are returned is not
-*     defined.
-*
-*  SEE ALSO
-*     cull/hash/cull_hash_first()
-*******************************************************************************/
+/**
+ * @brief Find next object matching a key
+ *
+ * Returns the next object matching the same key as a previous call
+ * to cull_hash_first or cull_hash_next.
+ *
+ * @param ht the table to search
+ * @param[in,out] iterator the state from #cull_hash_first, advanced by this call
+ *
+ * @return object if found, else nullptr
+ *
+ * @note The order in which objects with the same key are returned is not
+ *       defined.
+ *
+ * @see #cull_hash_first
+ */
 lListElem *cull_hash_next(cull_htable ht, const void **iterator) {
    lListElem *ep = nullptr;
    non_unique_hash *nuh = (non_unique_hash *) *iterator;
@@ -573,30 +470,21 @@ lListElem *cull_hash_next(cull_htable ht, const void **iterator) {
    return ep;
 }
 
-/****** cull/hash/cull_hash_delete_non_unique_chain() *************************
-*  NAME
-*     cull_hash_delete_non_unique_chain() -- del list of non unique obj.
-*
-*  SYNOPSIS
-*     void cull_hash_delete_non_unique_chain(cull_htable table, 
-*                                            const void *key, 
-*                                            const void **data) 
-*
-*  FUNCTION
-*     For objects that are stored in a hash table with non unique keys, 
-*     for each key a linked list of objects is created.
-*     This function deletes this linked list for each key in the hash 
-*     table. It is designed to be called by the function 
-*     sge_htable_for_each from the libuti hash implementation.
-*
-*  INPUTS
-*     cull_htable table   - hash table in which to delete/free a sublist
-*     const void *key   - key of the list to be freed 
-*     const void **data - pointer to the sublist
-*
-*  SEE ALSO
-*     uti/hash/sge_htable_for_each_ep()
-******************************************************************************/
+/**
+ * @brief Del list of non unique obj
+ *
+ * For objects that are stored in a hash table with non unique keys,
+ * for each key a linked list of objects is created.
+ * This function deletes this linked list for each key in the hash
+ * table. It is designed to be called by the function
+ * sge_htable_for_each from the libuti hash implementation.
+ *
+ * @param table hash table in which to delete/free a sublist
+ * @param key key of the list to be freed
+ * @param data pointer to the sublist
+ *
+ * @see #sge_htable_for_each_ep
+ */
 void cull_hash_delete_non_unique_chain(htable table, const void *key,
                                        const void **data) {
    auto *head = (non_unique_header *) *data;
@@ -611,25 +499,17 @@ void cull_hash_delete_non_unique_chain(htable table, const void *key,
    }
 }
 
-/****** cull/hash/cull_hash_free_descr() **************************************
-*  NAME
-*     cull_hash_free_descr() -- free the hash contents of a cull descr
-*
-*  SYNOPSIS
-*     void cull_hash_free_descr(lDescr *descr) 
-*
-*  FUNCTION
-*     Frees the memory used by the hashing information in a cull 
-*     descriptor (lDescr). If a hash table is still associated to 
-*     the descriptor, it is also deleted.
-*
-*  INPUTS
-*     lDescr *descr - descriptor to free 
-*
-*  SEE ALSO
-*     cull/hash/cull_hash_delete_non_unique()
-*     uti/hash/sge_htable_destroy()
-******************************************************************************/
+/**
+ * @brief Free the hash contents of a cull descr
+ *
+ * Frees the memory used by the hashing information in a cull
+ * descriptor (lDescr). If a hash table is still associated to
+ * the descriptor, it is also deleted.
+ *
+ * @param descr descriptor to free
+ *
+ * @see `cull_hash_delete_non_unique()`, #sge_htable_destroy
+ */
 void cull_hash_free_descr(lDescr *descr) {
    int i;
    for (i = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
@@ -648,43 +528,35 @@ void cull_hash_free_descr(lDescr *descr) {
 }
 
 
-/****** cull/hash/cull_hash_new_check() ****************************************
-*  NAME
-*     cull_hash_new() -- create new hash table, if it does not yet exist
-*
-*  SYNOPSIS
-*     int cull_hash_new_check(lList *lp, int nm, bool unique) 
-*
-*  FUNCTION
-*     Usually hash tables are defined in the object type definition
-*     for each object type in libs/gdi.
-*
-*     There are cases where for a certain application additional hash 
-*     tables shall be defined to speed up certain access methods.
-*
-*     cull_hash_new_check can be used to create a hash table for a list
-*     on the contents of a certain field.
-*     If it already exist, nothing is done.
-*
-*     The caller can choose whether the field contents have to be
-*     unique within the list or not.
-*
-*  INPUTS
-*     lList *lp   - the list to hold the new hash table
-*     int nm      - the field on which to create the hash table 
-*     bool unique - unique contents or not 
-*
-*  RESULT
-*     int - 1 on success, else 0
-*
-*  EXAMPLE
-*     create a non unique hash index on the job owner for a job list
-*     cull_hash_new_check(job_list, JB_owner, false);
-*
-*  SEE ALSO
-*     cull/hash/cull_hash_new()
-*
-*******************************************************************************/
+/**
+ * @brief Create new hash table, if it does not yet exist
+ *
+ * Usually hash tables are defined in the object type definition
+ * for each object type in libs/gdi.
+ *
+ * There are cases where for a certain application additional hash
+ * tables shall be defined to speed up certain access methods.
+ *
+ * cull_hash_new_check can be used to create a hash table for a list
+ * on the contents of a certain field.
+ * If it already exist, nothing is done.
+ *
+ * The caller can choose whether the field contents have to be
+ * unique within the list or not.
+ *
+ * @code
+ * create a non unique hash index on the job owner for a job list
+ * cull_hash_new_check(job_list, JB_owner, false);
+ * @endcode
+ *
+ * @param lp the list to hold the new hash table
+ * @param nm the field on which to create the hash table
+ * @param unique unique contents or not
+ *
+ * @return 1 on success, else 0
+ *
+ * @see #cull_hash_new
+ */
 int cull_hash_new_check(lList *lp, int nm, bool unique) {
    const lDescr *descr = lGetListDescr(lp);
    int pos = lGetPosInDescr(descr, nm);
@@ -698,38 +570,31 @@ int cull_hash_new_check(lList *lp, int nm, bool unique) {
    return 1;
 }
 
-/****** cull/hash/cull_hash_new() **********************************************
-*  NAME
-*     cull_hash_new() -- create new hash table
-*
-*  SYNOPSIS
-*     int cull_hash_new(lList *lp, int nm, int unique) 
-*
-*  FUNCTION
-*     Usually hash tables are defined in the object type definition
-*     for each object type in libs/gdi.
-*
-*     There are cases where for a certain application additional hash 
-*     tables shall be defined to speed up certain access methods.
-*
-*     cull_hash_new can be used to create a hash table for a list
-*     on the contents of a certain field.
-*     The caller can choose whether the field contents have to be
-*     unique within the list or not.
-*
-*  INPUTS
-*     lList *lp  - the list to hold the new hash table
-*     int nm     - the field on which to create the hash table 
-*     bool unique - unique contents or not 
-*
-*  RESULT
-*     int - 1 on success, else 0
-*
-*  EXAMPLE
-*     create a non unique hash index on the job owner for a job list
-*     cull_hash_new(job_list, JB_owner, 0);
-*
-*******************************************************************************/
+/**
+ * @brief Create new hash table
+ *
+ * Usually hash tables are defined in the object type definition
+ * for each object type in libs/gdi.
+ *
+ * There are cases where for a certain application additional hash
+ * tables shall be defined to speed up certain access methods.
+ *
+ * cull_hash_new can be used to create a hash table for a list
+ * on the contents of a certain field.
+ * The caller can choose whether the field contents have to be
+ * unique within the list or not.
+ *
+ * @code
+ * create a non unique hash index on the job owner for a job list
+ * cull_hash_new(job_list, JB_owner, 0);
+ * @endcode
+ *
+ * @param lp the list to hold the new hash table
+ * @param nm the field on which to create the hash table
+ * @param unique unique contents or not
+ *
+ * @return 1 on success, else 0
+ */
 int cull_hash_new(lList *lp, int nm, bool unique) {
    lDescr *descr;
    int pos, size;
@@ -777,6 +642,15 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
    DRETURN(1);
 }
 
+/**
+ * @brief The hash key for one field of an element
+ *
+ * @param ep the element
+ * @param pos position of the field in the descriptor
+ * @param host_key scratch buffer used when the field is a host name, which is
+ *        normalised before hashing
+ * @return the key, pointing either into @p ep or into @p host_key
+ */
 void *cull_hash_key(const lListElem *ep, int pos, char *host_key) {
    void *key = nullptr;
 
@@ -813,6 +687,13 @@ void *cull_hash_key(const lListElem *ep, int pos, char *host_key) {
 }
 
 
+/**
+ * @brief Render fill level and collision statistics of a hash table
+ *
+ * @param ht the table to report on
+ * @param[out] buffer receives the statistics
+ * @return the statistics text, pointing into @p buffer
+ */
 const char *
 cull_hash_statistics(cull_htable ht, dstring *buffer) {
    const char *ret = nullptr;
@@ -834,6 +715,14 @@ cull_hash_statistics(cull_htable ht, dstring *buffer) {
    return ret;
 }
 
+/**
+ * @brief Rebuild the hash tables of a list after it has been sorted
+ *
+ * Sorting relinks the elements, so any hash table holding positions has to be
+ * built again.
+ *
+ * @param lp the list whose tables to rebuild; nullptr is ignored
+ */
 void cull_hash_recreate_after_sort(lList *lp) {
    if (lp != nullptr) {
       lDescr *descr = lp->descr;

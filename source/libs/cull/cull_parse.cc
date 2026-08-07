@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The scanner used by the cull format strings
+ */
+
 #include <cstring>
 #include <cctype>
 

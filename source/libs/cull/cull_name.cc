@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Resolving cull field numbers to their names
+ */
+
 #include <cstdio>
 
 #include <atomic>
@@ -29,6 +33,7 @@
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
+/// Suppresses the monitoring code in the rmon macros for this file
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
@@ -43,7 +48,7 @@
 #  include "cull/cull_observe.h"
 #endif
 
-#define CULL_BASIS_LAYER CULL_LAYER
+#define CULL_BASIS_LAYER CULL_LAYER ///< rmon layer this file logs under
 
 namespace {
 

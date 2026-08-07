@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Hash tables over cull list fields
+ */
+
 #include "uti/sge_dstring.h"
 #include "uti/sge_htable.h"
 

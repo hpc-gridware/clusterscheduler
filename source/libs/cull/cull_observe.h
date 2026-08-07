@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Optional tracing of cull list and element changes
+ */
+
 #include "cull/cull_list.h"
 
 #ifdef OBSERVE

@@ -33,7 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Internal error state of the cull library
+ */
+
 #include "cull/cull_lerrno.h"
 #include "cull/cull_state.h"
 
+/// Record a cull error code as the calling thread's last error
 #define LERROR(x) cull_state_set_lerrno(x);

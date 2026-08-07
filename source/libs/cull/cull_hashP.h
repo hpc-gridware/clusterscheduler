@@ -33,4 +33,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Internal handle of a cull hash table
+ */
+
+/// Handle of a cull hash table; see @ref _cull_htable
 typedef struct _cull_htable *cull_htable;

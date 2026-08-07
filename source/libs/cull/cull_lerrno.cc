@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Error codes and messages of the cull library
+ */
 #include <cstring>
 
 /* do not compile in monitoring code */
@@ -45,27 +49,20 @@
 
 #include <cinttypes>
 
-/* global lerrno */
+/// Last cull error, as one of the `LE*` codes; see #lerror
 int lerrno = 0;
 
 const char *get_lerror_string(int nr);
 
-/****** cull/lerrno/get_lerror_string() ****************************************
-*  NAME
-*     get_lerror_string() -- Error number to message translation 
-*
-*  SYNOPSIS
-*     const char* get_lerror_string(int nr) 
-*
-*  FUNCTION
-*    Error number to message translation 
-*
-*  INPUTS
-*     int nr - Error number 
-*
-*  RESULT
-*     const char* - Error message
-*******************************************************************************/
+/**
+ * @brief Error number to message translation
+ *
+ * Error number to message translation
+ *
+ * @param nr Error number
+ *
+ * @return Error message
+ */
 const char *get_lerror_string(int nr) {
    switch (nr) {
       case LEMALLOC  :
@@ -182,6 +179,11 @@ const char *get_lerror_string(int nr) {
    return "";
 }
 
+/**
+ * @brief Print the last cull error to stderr
+ *
+ * @return always 0
+ */
 int lerror() {
    const char *errorText = nullptr;
 

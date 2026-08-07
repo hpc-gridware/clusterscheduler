@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Per-thread state of the cull library
+ */
+
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
 
@@ -45,6 +49,15 @@ void cull_state_set_global_sort_order(const lSortOrder *so);
 
 void cull_state_set_name_space(const lNameSpace *ns);
 
+/**
+ * @brief Switch change tracing on or off for this thread
+ *
+ * @param started true to start tracing, false to stop
+ *
+ * @note Declared twice in this header — once here and once inside the
+ *       `#ifdef OBSERVE` block below. The implementation exists only when
+ *       `OBSERVE` is defined, so a caller compiled without it fails to link.
+ */
 void cull_state_set_observe_started(bool started);
 
 int cull_state_get_lerrno();

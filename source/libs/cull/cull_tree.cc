@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Walking cull lists that nest through sub-lists
+ */
+
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
 #define NO_SGE_COMPILE_DEBUG
@@ -41,26 +45,19 @@
 
 #include "cull/cull.h"
 
-/****** cull/tree/lGetNumberOfNodes() *****************************************
-*  NAME
-*     lGetNumberOfNodes() -- Number of elements and subelements 
-*
-*  SYNOPSIS
-*     int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm) 
-*
-*  FUNCTION
-*     Returns the number of elements and subelements in the sublist 'nm' 
-*     of the element 'ep' (lp = nullptr) or returns the sum of all elements
-*     and subelements within the list 'lp' (ep = nullptr)
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     const lList *lp     - list 
-*     int nm              - field name id within element 
-*
-*  RESULT
-*     int - number of elements
-*******************************************************************************/
+/**
+ * @brief Number of elements and subelements
+ *
+ * Returns the number of elements and subelements in the sublist 'nm'
+ * of the element 'ep' (lp = nullptr) or returns the sum of all elements
+ * and subelements within the list 'lp' (ep = nullptr)
+ *
+ * @param ep element
+ * @param lp list
+ * @param nm field name id within element
+ *
+ * @return number of elements
+ */
 int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm) {
    int n = 0;
 
@@ -84,24 +81,17 @@ int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm) {
    }
 }
 
-/****** cull/tree/lGetNumberOfLeafs() *****************************************
-*  NAME
-*     lGetNumberOfLeafs() -- Returns the number of leaves 
-*
-*  SYNOPSIS
-*     int lGetNumberOfLeafs(const lListElem *ep, const lList *lp, int nm) 
-*
-*  FUNCTION
-*     Returns the number of leaves 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*     const lList *lp     - list 
-*     int nm              - field name if within ep 
-*
-*  RESULT
-*     int - number of leaves 
-******************************************************************************/
+/**
+ * @brief Returns the number of leaves
+ *
+ * Returns the number of leaves
+ *
+ * @param ep element
+ * @param lp list
+ * @param nm field name if within ep
+ *
+ * @return number of leaves
+ */
 int lGetNumberOfLeafs(const lListElem *ep, const lList *lp, int nm) {
    int n = 0;
 

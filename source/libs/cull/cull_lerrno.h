@@ -33,65 +33,67 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#define  LEMALLOC       1       /* malloc failure                         */
-#define  LEINCTYPE      2       /* incompatible type                      */
-#define  LEUNKTYPE      3       /* unknown type                           */
-#define  LEELEMNULL     4       /* element is nullptr                        */
-#define  LENAMENOT      5       /* name not in descriptor contained       */
-#define  LENAMEOUT      6       /* name out of namespaces                 */
-#define  LEDESCRNULL    7       /* descriptor is nullptr, empty describtor   */
-#define  LENEGPOS       8       /* negative position is not allowed       */
-#define  LESTRDUP       9       /* strdup failure                         */
-#define  LEFILENULL     10      /* file pointer is nullptr                   */
-#define  LEFGETBRA      11      /* fGetBra failed                         */
-#define  LEFGETKET      12      /* fGetKet failed                         */
-#define  LEFGETINT      13      /* fGetInt failed                         */
-#define  LEFGETDESCR    14      /* fGetDescr failed                       */
-#define  LELISTNULL     15      /* list is nullptr                           */
-#define  LECREATEELEM   16      /* lCreateElem failure                    */
-#define  LECOUNTDESCR   17      /* lCountDescr failure                    */
-#define  LEFIELDREAD    18      /* reading field failure                  */
-#define  LEFGETSTRING   19      /* fGetString failure                     */
-#define  LECREATELIST   20      /* lCreateList failure                    */
-#define  LEUNDUMPELEM   21      /* lUndumpElem failure                    */
+/** @file
+ * @brief Error codes and messages of the cull library
+ */
 
-#define  LESSCANF       22      /* sscanf failure                         */
-#define  LESYNTAX       23      /* syntax error                           */
-#define  LEFGETLINE     24      /* fGetLine failure                       */
-#define  LEFGETS        25      /* fgets failure                          */
-#define  LESPACECOMMENT 26      /* space_comment failure                  */
-#define  LEUNDUMPLIST   27      /* lUndumpList failure                    */
-#define  LECOPYSWITCH   28      /* lCopySwitch failure                    */
-#define  LEENUMNULL     29      /* lEnumeration is nullptr                   */
-#define  LECONDNULL     30      /* lCondition is nullptr                     */
-#define  LENOLISTNAME   31      /* no listname specified                  */
-#define  LEDIFFDESCR    32      /* different list descriptors             */
-#define  LEDECHAINELEM  33      /* lDechainElem failure                   */
-#define  LEAPPENDELEM   34      /* lAppendElem failure                    */
-#define  LENOFORMATSTR  35      /* format string is missing               */
-#define  LEPARSESORTORD 36      /* lParseSortOrder failure                */
-#define  LEGETNROFELEM  37      /* lgetNumberOfElem failure               */
-#define  LESORTORDNULL  38      /* lSortOrder is nullptr                     */
-#define  LESUM          39      /* sum in where.c failure                 */
-#define  LEOPUNKNOWN    40      /* operator of lCondition struct unknown  */
-#define  LECOPYELEMPART 41      /* lCopyElemPartialPack failure           */
-#define  LENULLARGS     42      /* function argument is nullptr              */
-#define  LEFALSEFIELD   43      /* field is not allowed here              */
-#define  LEJOINDESCR    44      /* lJoinDescr failure                     */
-#define  LEJOIN         45      /* lJoin failure                          */
-#define  LEJOINCOPYELEM 46      /* lJoinCopyElem failure                  */
-#define  LEADDLIST      47      /* lAddList failure                       */
-#define  LECOUNTWHAT    48      /* lCountWhat failure                     */
-#define  LEPARTIALDESCR 49      /* lPartialDescr failure                  */
-#define  LEENUMDESCR    50      /* enumeration no subset of descriptor    */
-#define  LEENUMBOTHNONE 51      /* at least one enumeration required      */
-#define  LENULLSTRING   52      /* string nullptr not allowed                */
-#define  LEPARSECOND    53      /* parsing condition failed               */
-#define  LEFORMAT       54      /* wrong packing format                   */
-#define  LEOPEN         55      /* error opening file                     */
-#define  LECLOSE        56      /* error closeing file                    */
-#define  LEBOUNDELEM    57      /* lListElem is already bound             */
-
+#define  LEMALLOC       1 ///< malloc failure
+#define  LEINCTYPE      2 ///< incompatible type
+#define  LEUNKTYPE      3 ///< unknown type
+#define  LEELEMNULL     4 ///< element is nullptr
+#define  LENAMENOT      5 ///< name not in descriptor contained
+#define  LENAMEOUT      6 ///< name out of namespaces
+#define  LEDESCRNULL    7 ///< descriptor is nullptr, empty descriptor
+#define  LENEGPOS       8 ///< negative position is not allowed
+#define  LESTRDUP       9 ///< strdup failure
+#define  LEFILENULL     10 ///< file pointer is nullptr
+#define  LEFGETBRA      11 ///< fGetBra failed
+#define  LEFGETKET      12 ///< fGetKet failed
+#define  LEFGETINT      13 ///< fGetInt failed
+#define  LEFGETDESCR    14 ///< fGetDescr failed
+#define  LELISTNULL     15 ///< list is nullptr
+#define  LECREATEELEM   16 ///< lCreateElem failure
+#define  LECOUNTDESCR   17 ///< lCountDescr failure
+#define  LEFIELDREAD    18 ///< reading field failure
+#define  LEFGETSTRING   19 ///< fGetString failure
+#define  LECREATELIST   20 ///< lCreateList failure
+#define  LEUNDUMPELEM   21 ///< lUndumpElem failure
+#define  LESSCANF       22 ///< sscanf failure
+#define  LESYNTAX       23 ///< syntax error
+#define  LEFGETLINE     24 ///< fGetLine failure
+#define  LEFGETS        25 ///< fgets failure
+#define  LESPACECOMMENT 26 ///< space_comment failure
+#define  LEUNDUMPLIST   27 ///< lUndumpList failure
+#define  LECOPYSWITCH   28 ///< lCopySwitch failure
+#define  LEENUMNULL     29 ///< lEnumeration is nullptr
+#define  LECONDNULL     30 ///< lCondition is nullptr
+#define  LENOLISTNAME   31 ///< no listname specified
+#define  LEDIFFDESCR    32 ///< different list descriptors
+#define  LEDECHAINELEM  33 ///< lDechainElem failure
+#define  LEAPPENDELEM   34 ///< lAppendElem failure
+#define  LENOFORMATSTR  35 ///< format string is missing
+#define  LEPARSESORTORD 36 ///< lParseSortOrder failure
+#define  LEGETNROFELEM  37 ///< lgetNumberOfElem failure
+#define  LESORTORDNULL  38 ///< lSortOrder is nullptr
+#define  LESUM          39 ///< sum in where.c failure
+#define  LEOPUNKNOWN    40 ///< operator of lCondition struct unknown
+#define  LECOPYELEMPART 41 ///< lCopyElemPartialPack failure
+#define  LENULLARGS     42 ///< function argument is nullptr
+#define  LEFALSEFIELD   43 ///< field is not allowed here
+#define  LEJOINDESCR    44 ///< lJoinDescr failure
+#define  LEJOIN         45 ///< lJoin failure
+#define  LEJOINCOPYELEM 46 ///< lJoinCopyElem failure
+#define  LEADDLIST      47 ///< lAddList failure
+#define  LECOUNTWHAT    48 ///< lCountWhat failure
+#define  LEPARTIALDESCR 49 ///< lPartialDescr failure
+#define  LEENUMDESCR    50 ///< enumeration no subset of descriptor
+#define  LEENUMBOTHNONE 51 ///< at least one enumeration required
+#define  LENULLSTRING   52 ///< string nullptr not allowed
+#define  LEPARSECOND    53 ///< parsing condition failed
+#define  LEFORMAT       54 ///< wrong packing format
+#define  LEOPEN         55 ///< error opening file
+#define  LECLOSE        56 ///< error closeing file
+#define  LEBOUNDELEM    57 ///< lListElem is already bound
 /* prototypes */
 
 int lerror();

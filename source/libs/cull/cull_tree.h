@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Walking cull lists that nest through sub-lists
+ */
+
 #include "cull/cull_list.h"
 
 int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm);
