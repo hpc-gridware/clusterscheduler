@@ -48,9 +48,8 @@
 
 #include <ocs_gdi_ClientServerBase.h>
 
-#define CLIENT_WAIT_TIME_S 1
-#define GDI_PACKET_MUTEX "gdi_packet_mutex"
-
+#define CLIENT_WAIT_TIME_S 1 ///< how long a client waits for a packet to be handled before checking again
+#define GDI_PACKET_MUTEX "gdi_packet_mutex" ///< name of Packet::mutex, used in the lock trace
 sge_tq_queue_t *GlobalRequestQueue = nullptr;
 sge_tq_queue_t *ReaderRequestQueue = nullptr;
 sge_tq_queue_t *ReaderWaitingRequestQueue = nullptr;
@@ -199,7 +198,7 @@ ocs::gdi::Packet::create_multi_answer(lList **malpp) {
  * @brief Wait til packet is handled
  *
  * This function blocks the calling thread till another one executes
- * ocs::gdi::Client::sge_gdi_packet_broadcast_that_handled(). Mutiple threads can use
+ * #broadcast_that_handled. Multiple threads can use
  * this call to get response if the packet is accessed by someone
  * else anymore.
  *
@@ -212,11 +211,9 @@ ocs::gdi::Packet::create_multi_answer(lList **malpp) {
  * they call this function to wait that they can access the packet
  * structure again.
  *
- * @return none
+ * @note MT-NOTE: wait_till_handled() is MT safe
  *
- * @note MT-NOTE: ocs::gdi::Client::sge_gdi_packet_wait_till_handled() is MT safe
- *
- * @see `sge_gdi_packet_queue_wait_for_new_packet()`, `sge_gdi_packet_queue_store_notify()`, #sge_gdi_packet_broadcast_that_handled, #sge_gdi_packet_is_handled
+ * @see `sge_gdi_packet_queue_wait_for_new_packet()`, `sge_gdi_packet_queue_store_notify()`, #broadcast_that_handled, #get_is_handled
  */
 void
 ocs::gdi::Packet::wait_till_handled() {
@@ -250,7 +247,7 @@ ocs::gdi::Packet::wait_till_handled() {
  *
  * @note MT-NOTE: ocs::gdi::Client::sge_gdi_packet_is_handled() is MT safe
  *
- * @see `sge_gdi_packet_queue_wait_for_new_packet()`, `sge_gdi_packet_queue_store_notify()`, #sge_gdi_packet_broadcast_that_handled
+ * @see `sge_gdi_packet_queue_wait_for_new_packet()`, `sge_gdi_packet_queue_store_notify()`, #broadcast_that_handled
  */
 bool
 ocs::gdi::Packet::get_is_handled() {
