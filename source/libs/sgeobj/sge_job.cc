@@ -2841,9 +2841,10 @@ bool sge_unparse_resource_list_dstring(dstring *category_str, lList *resource_li
             sge_dstring_append(category_str, ",");
          }
          /* CS-2014: the category has to be identical for requests that differ
-          * only in the unit they were written with ("-l h_vmem=1G" and
-          * "-l h_vmem=1073741824" are the same request), so MEM values go into
-          * the category in their canonical byte form.
+          * only in the notation they were written with -- "-l h_vmem=1G" and
+          * "-l h_vmem=1073741824" are the same request, and so are
+          * "-l h_rt=1:00:00" and "-l h_rt=3600". MEM and TIME values therefore
+          * go into the category in their canonical form (bytes, seconds).
           *
           * Done here and not in centry_fill_and_check(): that one rewrites
           * CE_stringval, the stored value, and plain client output has to show
@@ -2851,6 +2852,7 @@ bool sge_unparse_resource_list_dstring(dstring *category_str, lList *resource_li
           */
          switch (static_cast<ocs::CEntry::Type>(lGetUlong(sub_elem, CE_valtype))) {
             case ocs::CEntry::Type::MEM:
+            case ocs::CEntry::Type::TIME:
                sge_dstring_sprintf_append(category_str, "%s=%.0f",
                                           lGetString(sub_elem, CE_name),
                                           lGetDouble(sub_elem, CE_doubleval));

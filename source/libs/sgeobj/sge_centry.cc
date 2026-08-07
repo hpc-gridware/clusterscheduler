@@ -227,32 +227,23 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
          DPRINTF("   ===> centry_fill_and_check(%s, %s), dval = %f\n", name, s, dval);
          lSetDouble(this_elem, CE_doubleval, dval);
 
-         /* normalize time values, so that the string value is based on seconds */
-         if (type == ocs::CEntry::Type::TIME && dval != DBL_MAX) {
-            char str_value[100];
-            dstring ds;
-            sge_dstring_init(&ds, str_value, sizeof(str_value));
-            sge_dstring_sprintf(&ds, "%.0f", dval);
-            DPRINTF("normalized time value from \"%s\" to \"%s\"\n", lGetString(this_elem, CE_stringval), str_value);
-            lSetString(this_elem, CE_stringval, str_value);
-         }
-
-         /* MEM values are deliberately NOT normalized here.
+         /* Neither MEM nor TIME values are normalized here.
           *
-          * CS-2014 originally did, so that two job requests differing only in
-          * unit ("80G" and "85899345920") end up in the same category. But this
-          * function rewrites CE_stringval, i.e. the value that is STORED and
-          * that every plain client prints back. Plain output has to show what
-          * the user wrote -- qstat, qhost, qrsh and qquota do not normalize, and
-          * only the JSON and XML renderings may show a normalized value, and
-          * only when asked for it.
+          * CS-2014 normalized both, so that job requests differing only in the
+          * notation used ("80G" and "85899345920", "1:00:00" and "3600") end up
+          * in the same category. But this function rewrites CE_stringval, i.e.
+          * the value that is STORED and that every plain client prints back.
+          * Plain output has to show what the user wrote -- qstat, qhost, qrsh
+          * and qquota do not normalize, and only the JSON and XML renderings may
+          * show a normalized value, and only when it is asked for.
           *
           * The normalization therefore belongs to the one place that needs a
           * canonical form: sge_unparse_resource_list_dstring() in sge_job.cc,
           * which builds the category string from CE_doubleval.
           *
-          * TIME above keeps its normalization: seconds are the stored form for
-          * time values throughout, not a display choice.
+          * CE_doubleval is set above for every numeric type, so anything that
+          * needs the value rather than its notation reads that field and is
+          * unaffected by this.
           */
 
          /* also the CE_defaultval must be parsable for numeric types */
