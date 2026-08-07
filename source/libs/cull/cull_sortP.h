@@ -33,13 +33,35 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Internal representation of a sort order
+ */
+
 #include "cull/cull_sort.h"
 
+/**
+ * @brief One sort criterion: which field to compare and in which direction
+ *
+ * A sort order is an array of these, built by #lParseSortOrderVarArg or
+ * #lCreateSortOrder plus #lAddSortCriteria, and terminated by an entry whose
+ * field name is #NoName. Criteria are applied in order, the next one deciding
+ * only where the previous compared equal.
+ */
 struct _lSortOrder {
-   int pos;                     /* position in the desc array          */
-   int mt;                      /* type of the cont element            */
-   int nm;                      /* field name                          */
-   int ad;                      /* ascending (+1), descending (-1)     */
+   int pos;  ///< position of the field in the descriptor, resolved once when the order is built
+   int mt;   ///< the field's type and attributes, copied from the descriptor
+   int nm;   ///< the field to compare, or #NoName in the terminating entry
+   int ad;   ///< direction: +1 ascending, -1 descending
 };
 
+/**
+ * @brief Compare two elements using the sort order stored in the cull state
+ *
+ * Has the signature `qsort()` expects, which is why the order is passed
+ * through global state rather than as an argument.
+ *
+ * @param ep0 first element, as a `lListElem **`
+ * @param ep1 second element, as a `lListElem **`
+ * @return negative, 0 or positive as for `strcmp()`
+ */
 int lSortCompareUsingGlobal(const void *ep0, const void *ep1);

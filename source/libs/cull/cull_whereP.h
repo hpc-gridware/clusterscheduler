@@ -33,31 +33,46 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Internal representation of a selection condition
+ */
+
 
 #include "cull/cull_where.h"
 #include "cull/cull_multitypeP.h"
 
+/**
+ * @brief One node of a selection condition, as a binary expression tree
+ *
+ * A condition is either a *comparison* of a field against a value, or a
+ * *logical* combination of one or two sub-conditions. _lCondition::op decides
+ * which, and therefore which arm of the union is live — the same discipline
+ * as @ref _lMultiType.
+ */
 struct _lCondition {
-   int op;                      /* operator of the condition                 */
+   int op;                      ///< the operator; decides which arm of #operand is live
    union {
+      /// live when #op is a comparison
       struct {
-         int pos;               /* position in the cont/descr array          */
-         int mt;                /* type of the compare value                 */
-         int nm;                /* name of field                             */
-         lMultiType val;        /* compare value                             */
+         int pos;               ///< position of the field in the descriptor
+         int mt;                ///< type of the compare value
+         int nm;                ///< the field being compared
+         lMultiType val;        ///< the value to compare against
       } cmp;
+      /// live when #op is a logical operator
       struct {
-         lCondition *first;     /* ptr to 1st operand                        */
-         lCondition *second;    /* ptr to 2nd operand (if necessary)         */
+         lCondition *first;     ///< first operand
+         lCondition *second;    ///< second operand, or nullptr for a unary operator
       } log;
-   } operand;
+   } operand;                   ///< the comparison or the logical operands
 };
 
 
 /* new data structure for dynamically buildable args for lWhere         */
 /* the var_args model requires the knowledge of the fields at run time  */
+/// One field/value pair handed to the `lWhere()` parser
 struct _WhereArg {
-   lDescr *descriptor;
-   int field;
-   lMultiType value;
+   lDescr *descriptor; ///< descriptor of the object type the field belongs to
+   int field;          ///< the field to compare
+   lMultiType value;   ///< the value to compare against
 }; 

@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Building and evaluating selection conditions (`lWhere`)
+ */
+
 #include <cstdio>
 #include <cstdarg>
 #include <cstdlib>
@@ -82,23 +86,16 @@ static lCondition *_subscope(cull_parse_state *state, WhereArgList *wapp);
 
 static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp);
 
-/****** cull/where/lOrWhere() *************************************************
-*  NAME
-*     lOrWhere() -- Combines two conditions with an OR
-*
-*  SYNOPSIS
-*     lCondition* lOrWhere(const lCondition *cp0, const lCondition *cp1) 
-*
-*  FUNCTION
-*     Combines the conditions 'cp0' and 'cp1' logically with an OR 
-*
-*  INPUTS
-*     const lCondition *cp0 - first condition 
-*     const lCondition *cp1 - second condition 
-*
-*  RESULT
-*     lCondition* - cp0 OR cp1 
-******************************************************************************/
+/**
+ * @brief Combines two conditions with an OR
+ *
+ * Combines the conditions 'cp0' and 'cp1' logically with an OR
+ *
+ * @param cp0 first condition
+ * @param cp1 second condition
+ *
+ * @return cp0 OR cp1
+ */
 lCondition *lOrWhere(const lCondition *cp0, const lCondition *cp1) {
    lCondition *newcp;
 
@@ -121,23 +118,16 @@ lCondition *lOrWhere(const lCondition *cp0, const lCondition *cp1) {
    DRETURN(newcp);
 }
 
-/****** cull/where/lAndWhere() ************************************************
-*  NAME
-*     lAndWhere() -- Cobines two conditions with an AND 
-*
-*  SYNOPSIS
-*     lCondition* lAndWhere(const lCondition *cp0, const lCondition *cp1) 
-*
-*  FUNCTION
-*     Combines the conditions 'cp0' and 'cp1' with an logical AND. 
-*
-*  INPUTS
-*     const lCondition *cp0 - first condition 
-*     const lCondition *cp1 - second condition 
-*
-*  RESULT
-*     lCondition* - 'cp0' AND 'cp1' 
-******************************************************************************/
+/**
+ * @brief Cobines two conditions with an AND
+ *
+ * Combines the conditions 'cp0' and 'cp1' with an logical AND.
+ *
+ * @param cp0 first condition
+ * @param cp1 second condition
+ *
+ * @return 'cp0' AND 'cp1'
+ */
 lCondition *lAndWhere(const lCondition *cp0, const lCondition *cp1) {
    lCondition *newcp;
 
@@ -160,20 +150,14 @@ lCondition *lAndWhere(const lCondition *cp0, const lCondition *cp1) {
    DRETURN(newcp);
 }
 
-/****** cull/where/lWriteWhereTo() ********************************************
-*  NAME
-*     lWriteWhereTo() -- Write a condition struct to file stream.
-*
-*  SYNOPSIS
-*     void lWriteWhereTo(const lCondition *cp, FILE *fp) 
-*
-*  FUNCTION
-*     Write a condition struct to file stream. 
-*
-*  INPUTS
-*     const lCondition *cp - condition 
-*     FILE *fp             - file stream 
-******************************************************************************/
+/**
+ * @brief Write a condition struct to file stream
+ *
+ * Write a condition struct to file stream.
+ *
+ * @param cp condition
+ * @param fp file stream
+ */
 void lWriteWhereTo(const lCondition *cp, FILE *fp) {
    lWriteWhereTo_(cp, 0, fp);
 }
@@ -400,31 +384,16 @@ static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp) {
    DRETURN_VOID;
 }
 
-/****** cull/where/lWhere() ***************************************************
-*  NAME
-*     lWhere() -- Creates a condition tree 
-*
-*  SYNOPSIS
-*     lCondition* lWhere(const char *fmt, ...) 
-*
-*  FUNCTION
-*     Creates a condition tree. The condition is stated as a format 
-*     string and an associated list of additional parameters.
-*
-*  INPUTS
-*     const char *fmt - format string
-*                       %I                         - JB_job_number
-*                                                    (!= lList)
-*                       %T                         - JB_Type (Descriptor)
-*                       ==, <, >, <=, >=, !=, ==   - comp. operator
-*                       %s                         - string
-*                       %d                         - int
-*                       %u                         - ulong
-*     ...             - additional Arguments 
-*
-*  RESULT
-*     lCondition* - new condition 
-******************************************************************************/
+/**
+ * @brief Creates a condition tree
+ *
+ * Creates a condition tree. The condition is stated as a format
+ * string and an associated list of additional parameters.
+ *
+ * @param fmt format string %I                         - JB_job_number (!= lList) %T                         - JB_Type (Descriptor) ==, <, >, <=, >=, !=, ==   - comp. operator %s                         - string %d                         - int %u                         - ulong ...             - additional Arguments
+ *
+ * @return new condition
+ */
 lCondition *lWhere(const char *fmt, ...) {
    lCondition *cond;
    va_list ap;
@@ -1022,20 +991,13 @@ static lCondition *_read_val(lDescr *dp, cull_parse_state *state, WhereArgList *
    DRETURN(cp);
 }
 
-/****** cull/where/lFreeWhere() ***********************************************
-*  NAME
-*     lFreeWhere() -- Free a condition
-*
-*  SYNOPSIS
-*     lFreeWhere(lCondition **cp) 
-*
-*  FUNCTION
-*     Free a condition.
-*
-*  INPUTS
-*     lCondition **cp - condition, will be set to nullptr
-*
-******************************************************************************/
+/**
+ * @brief Free a condition
+ *
+ * Free a condition.
+ *
+ * @param cp condition, will be set to nullptr
+ */
 void lFreeWhere(lCondition **cp) {
    DENTER(CULL_LAYER);
 
@@ -1090,25 +1052,16 @@ void lFreeWhere(lCondition **cp) {
    DRETURN_VOID;
 }
 
-/****** cull/where/lCompare() *************************************************
-*  NAME
-*     lCompare() -- Decide if a element suffices a condition 
-*
-*  SYNOPSIS
-*     int lCompare(const lListElem *ep, const lCondition *cp) 
-*
-*  FUNCTION
-*     Decide if a element suffices a condition.
-*
-*  INPUTS
-*     const lListElem *ep  - element 
-*     const lCondition *cp - condition 
-*
-*  RESULT
-*     int - result
-*         0 - false
-*         1 - true 
-******************************************************************************/
+/**
+ * @brief Decide if a element suffices a condition
+ *
+ * Decide if a element suffices a condition.
+ *
+ * @param ep element
+ * @param cp condition
+ *
+ * @return result 0 - false 1 - true
+ */
 int lCompare(const lListElem *ep, const lCondition *cp) {
    int result = 0;
    const char *str1, *str2;
@@ -1325,22 +1278,15 @@ int lCompare(const lListElem *ep, const lCondition *cp) {
    DRETURN(result);
 }
 
-/****** cull/where/lCopyWhere() ***********************************************
-*  NAME
-*     lCopyWhere() -- Copy a condition
-*
-*  SYNOPSIS
-*     lCondition* lCopyWhere(const lCondition *cp) 
-*
-*  FUNCTION
-*     Copy a condition.
-*
-*  INPUTS
-*     const lCondition *cp - condition 
-*
-*  RESULT
-*     lCondition* - Copy of 'cp'
-******************************************************************************/
+/**
+ * @brief Copy a condition
+ *
+ * Copy a condition.
+ *
+ * @param cp condition
+ *
+ * @return Copy of 'cp'
+ */
 lCondition *lCopyWhere(const lCondition *cp) {
 
    lCondition *new_cond = nullptr;

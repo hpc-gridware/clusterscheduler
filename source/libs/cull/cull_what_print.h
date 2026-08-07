@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Rendering a field selection for debugging
+ */
+
 #include "cull/cull_list.h"
 
 #include "uti/sge_dstring.h"

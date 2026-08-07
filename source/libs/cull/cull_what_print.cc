@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Rendering a field selection for debugging
+ */
 #include <cstdio>
 
 /* do not compile in monitoring code */
@@ -92,20 +96,14 @@ static void _lWriteWhatTo(const lEnumeration *ep, dstring *buffer, int level) {
    DRETURN_VOID;
 }
 
-/****** cull/what/lWriteWhatTo() **********************************************
-*  NAME
-*     lWriteWhatTo() -- Writes a enumeration array to a file stream 
-*
-*  SYNOPSIS
-*     void lWriteWhatTo(const lEnumeration *ep, FILE *fp) 
-*
-*  FUNCTION
-*     Writes a enumeration array to a file stream 
-*
-*  INPUTS
-*     const lEnumeration *ep - enumeration 
-*     FILE *fp               - file stream 
-******************************************************************************/
+/**
+ * @brief Writes a enumeration array to a file stream
+ *
+ * Writes a enumeration array to a file stream
+ *
+ * @param ep enumeration
+ * @param fp file stream
+ */
 void lWriteWhatTo(const lEnumeration *ep, FILE *fp) {
    dstring buffer = DSTRING_INIT;
 
@@ -116,23 +114,14 @@ void lWriteWhatTo(const lEnumeration *ep, FILE *fp) {
    sge_dstring_free(&buffer);
 }
 
-/****** cull/what/lWriteWhatToDString() ****************************************
-*  NAME
-*     lWriteWhatToDString() -- Write enumeration to dynamic string 
-*
-*  SYNOPSIS
-*     void lWriteWhatToDString(const lEnumeration *ep, dstring *buffer) 
-*
-*  FUNCTION
-*     Write enumeration to dynamic string 
-*
-*  INPUTS
-*     const lEnumeration *ep - enumeration 
-*     dstring *buffer        - dynmaic string 
-*
-*  RESULT
-*     void - NONE
-*******************************************************************************/
+/**
+ * @brief Write enumeration to dynamic string
+ *
+ * Write enumeration to dynamic string
+ *
+ * @param ep enumeration
+ * @param[out] buffer the string to append to
+ */
 void lWriteWhatToDString(const lEnumeration *ep, dstring *buffer) {
    _lWriteWhatTo(ep, buffer, 0);
 }

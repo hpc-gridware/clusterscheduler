@@ -33,8 +33,24 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Field selection helpers for single elements
+ */
+
 #include "cull/cull_list.h"
 
+/**
+ * @brief Pack a field selection into a cull element, so it can be sent
+ *
+ * @param what the selection to pack
+ * @return the element, owned by the caller, or nullptr on error
+ */
 lListElem *lWhatToElem(const lEnumeration *what);
 
+/**
+ * @brief Rebuild a field selection from the element #lWhatToElem produced
+ *
+ * @param what the element to unpack
+ * @return the selection, to be released with #lFreeWhat, or nullptr on error
+ */
 lEnumeration *lWhatFromElem(const lListElem *what);

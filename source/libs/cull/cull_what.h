@@ -33,12 +33,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Selecting which fields of an object to transfer
+ */
+
 #include "cull/cull_list.h"
 
 #include "uti/sge_dstring.h"
 
-#define WHAT_ALL                        -1
-#define WHAT_NONE                       -2
+#define WHAT_ALL                        -1 ///< _lEnumeration::pos value meaning "every field of the type"
+#define WHAT_NONE                       -2 ///< _lEnumeration::pos value meaning "no field at all"
 
 lEnumeration *lWhat(const char *fmt, ...);
 

@@ -33,18 +33,22 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Internal representation of a field selection
+ */
+
 #include "cull/cull_what.h"
 
+/**
+ * @brief One entry of a field selection
+ *
+ * A selection is an array of these: the index is the field's position in the
+ * *reduced* descriptor, and _lEnumeration::pos says where that field sits in
+ * the original one. That is what lets a reduced object be expanded again.
+ */
 struct _lEnumeration {
-   int pos;          /* 
-                      * position in the old cont/descr array 
-                      * we build an array of _what structs, the      
-                      * index is the pos in the new descriptor       
-                      * THERE ARE TWO SPECIAL VALUES                 
-                      * WHAT_NONE     -1                           
-                      * WHAT_ALL      -2                           
-                      */
-   int mt;           /* type of the field */
-   int nm;           /* name of selected column */
-   lEnumeration *ep; /* sub enumeration; only used for objects and lists */
+   int pos;          ///< position of the field in the original descriptor, or #WHAT_ALL / #WHAT_NONE
+   int mt;           ///< the field's type and attributes
+   int nm;           ///< the selected field
+   lEnumeration *ep; ///< selection applied inside the field; only for sub-objects and sub-lists
 };

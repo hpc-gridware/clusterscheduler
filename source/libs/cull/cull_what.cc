@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Building and applying field selections (`lWhat`)
+ */
 #include <cstdarg>
 #include <cstring>
 
@@ -51,20 +55,14 @@
 
 static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app);
 
-/****** cull/what/nm_set() ****************************************************
-*  NAME
-*     nm_set() -- Build a int vector 
-*
-*  SYNOPSIS
-*     void nm_set(int job_field[], int nm) 
-*
-*  FUNCTION
-*     Build a int vector like it is used by lIntVector2What() 
-*
-*  INPUTS
-*     int job_field[] - int vector 
-*     int nm          - field name id  
-******************************************************************************/
+/**
+ * @brief Build a int vector
+ *
+ * Marks a field as selected, in the form #lIntVector2What consumes.
+ *
+ * @param[in,out] job_field the array to mark in, terminated by #NoName
+ * @param nm field name id; ignored when already present
+ */
 void nm_set(int job_field[], int nm) {
    int i;
 
@@ -84,27 +82,18 @@ void nm_set(int job_field[], int nm) {
    DRETURN_VOID;
 }
 
-/****** cull/what/lReduceDescr() **********************************************
-*  NAME
-*     lReduceDescr() -- Reduce a descriptor 
-*
-*  SYNOPSIS
-*     int lReduceDescr(lDescr **dst_dpp, lDescr *src_dp, lEnumeration *enp) 
-*
-*  FUNCTION
-*     Makes a new descriptor in 'dst_dpp' that containes only those 
-*     fields from 'src_dp' that are in 'enp'. 
-*
-*  INPUTS
-*     lDescr **dst_dpp  - destination for reduced descriptor 
-*     lDescr *src_dp    - source descriptor 
-*     lEnumeration *enp - condition 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*******************************************************************************/
+/**
+ * @brief Reduce a descriptor
+ *
+ * Makes a new descriptor in 'dst_dpp' that containes only those
+ * fields from 'src_dp' that are in 'enp'.
+ *
+ * @param dst_dpp destination for reduced descriptor
+ * @param src_dp source descriptor
+ * @param enp condition
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lReduceDescr(lDescr **dst_dpp, lDescr *src_dp, lEnumeration *enp) {
    int n, index = 0;
 
@@ -132,6 +121,18 @@ int lReduceDescr(lDescr **dst_dpp, lDescr *src_dp, lEnumeration *enp) {
 /* ------------------------------------------------------------ 
    _lWhat creates an enumeration array. This is used in lWhat
    to choose special fields of a list element.
+ */
+/**
+ * @brief Build a field selection from an already resolved field list
+ *
+ * The workhorse behind #lWhat: the format has been parsed and the field names
+ * collected by the caller.
+ *
+ * @param fmt the format the selection came from, used in error messages
+ * @param dp descriptor of the object type
+ * @param nm_list the selected field names
+ * @param nr_nm how many entries @p nm_list holds
+ * @return the selection, to be released with #lFreeWhat, or nullptr on error
  */
 lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
                      const int *nm_list, int nr_nm) {
@@ -302,47 +303,18 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
    DRETURN(nullptr);
 }
 
-/****** cull/what/lWhat() *****************************************************
-*  NAME
-*     lWhat() -- Create a ne enumeration 
-*
-*  SYNOPSIS
-*     lEnumeration *lWhat(const char *fmt, ...) 
-*
-*  FUNCTION
-*     Create a new enumeration. fmt describes the format of the enumeration 
-*
-*  INPUTS
-*     const char *fmt - format string: 
-*
-*                          element := type "(" attribute_list ")" .
-*                          type := "%T" .
-*                          attribute_list := "ALL" | "NONE" | attributes .
-*                          attributes = { "%I" | "%I" "->" element } .
-*
-*                       examples:
-*                          1) "%T(NONE)"
-*                          2) "%T(ALL)"
-*                          3) "%T(%I%I)"
-*                          4) "%T(%I%I->%T(%I%I))"
-*
-*     ...             - varibale list of arguments
-*              
-*                       varargs corresponding to examples above:
-*                          1) JB_Type
-*                          2) JB_Type
-*                          3) JB_Type JB_job_numer JB_ja_tasks
-*                          4) JB_Type JB_job_numer JB_ja_tasks
-*                                JAT_Type JAT_task_number JAT_status
-*                       
-*
-*  RESULT
-*     lEnumeration* - new enumeration
-*
-*  NOTES
-*     "%I" is equivalent with "%I->%T(ALL)" 
-*     "" is NOT equivalent with "%I->%T(NONE)"
-*******************************************************************************/
+/**
+ * @brief Create a ne enumeration
+ *
+ * Create a new enumeration. fmt describes the format of the enumeration
+ *
+ * @param fmt format string: element := type "(" attribute_list ")" . type := "%T" . attribute_list := "ALL" | "NONE" | attributes . attributes = { "%I" | "%I" "->" element } . examples: 1) "%T(NONE)" 2) "%T(ALL)" 3) "%T(%I%I)" 4) "%T(%I%I->%T(%I%I))" ...             - varibale list of arguments varargs corresponding to examples above: 1) JB_Type 2) JB_Type 3) JB_Type JB_job_numer JB_ja_tasks 4) JB_Type JB_job_numer JB_ja_tasks JAT_Type JAT_task_number JAT_status
+ *
+ * @return new enumeration
+ *
+ * @note "%I" is equivalent with "%I->%T(ALL)"
+ *       "" is NOT equivalent with "%I->%T(NONE)"
+ */
 lEnumeration *lWhat(const char *fmt, ...) {
    lEnumeration *enumeration = nullptr;
    va_list ap;
@@ -481,24 +453,16 @@ static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
    DRETURN(enumeration);
 }
 
-/****** cull/what/lWhatAll() *****************************************************
-*  NAME
-*     lWhatAll() -- Creates a enumeration array requesting all elements. 
-*
-*  SYNOPSIS
-*     lEnumeration* lWhatAll() 
-*
-*  FUNCTION
-*     Creates a enumeration array that requests complete elements 
-*     of whatever typed list. This is a shortcut for 
-*     lWhat("%T(ALL)", <List_type>)), cause for all the descriptor is not
-*     needed anyway, it is available from the list itself.
-*
-*  INPUTS
-*
-*  RESULT
-*     lEnumeration* - enumeration 
-******************************************************************************/
+/**
+ * @brief Creates a enumeration array requesting all elements
+ *
+ * Creates a enumeration array that requests complete elements
+ * of whatever typed list. This is a shortcut for
+ * `lWhat("%T(ALL)", <List_type>)`, cause for all the descriptor is not
+ * needed anyway, it is available from the list itself.
+ *
+ * @return enumeration
+ */
 lEnumeration *lWhatAll() {
    lEnumeration *ep;
    int error_status;
@@ -527,20 +491,13 @@ lEnumeration *lWhatAll() {
    DRETURN(nullptr);
 }
 
-/****** cull/what/lFreeWhat() *************************************************
-*  NAME
-*     lFreeWhat() -- Frees a enumeration array 
-*
-*  SYNOPSIS
-*     void lFreeWhat(lEnumeration **ep) 
-*
-*  FUNCTION
-*     Frees a enumeration array 
-*
-*  INPUTS
-*     lEnumeration **ep - enumeration, will be set to nullptr
-*
-******************************************************************************/
+/**
+ * @brief Frees a enumeration array
+ *
+ * Frees a enumeration array
+ *
+ * @param ep enumeration, will be set to nullptr
+ */
 void lFreeWhat(lEnumeration **ep) {
    int i;
 
@@ -558,23 +515,16 @@ void lFreeWhat(lEnumeration **ep) {
    DRETURN_VOID;
 }
 
-/****** cull/what/lCountWhat() ************************************************
-*  NAME
-*     lCountWhat() -- Returns size of enumeration 
-*
-*  SYNOPSIS
-*     int lCountWhat(const lEnumeration *enp, const lDescr *dp) 
-*
-*  FUNCTION
-*     Returns size of enumeration 
-*
-*  INPUTS
-*     const lEnumeration *enp - enumeration 
-*     const lDescr *dp        - descriptor 
-*
-*  RESULT
-*     int - number of fields in enumeration 
-******************************************************************************/
+/**
+ * @brief Returns size of enumeration
+ *
+ * Returns size of enumeration
+ *
+ * @param enp enumeration
+ * @param dp descriptor
+ *
+ * @return number of fields in enumeration
+ */
 int lCountWhat(const lEnumeration *enp, const lDescr *dp) {
    int n;
 
@@ -605,22 +555,15 @@ int lCountWhat(const lEnumeration *enp, const lDescr *dp) {
    DRETURN(n);
 }
 
-/****** cull/what/lCopyWhat() *************************************************
-*  NAME
-*     lCopyWhat() -- Copy a enumeration array 
-*
-*  SYNOPSIS
-*     lEnumeration* lCopyWhat(const lEnumeration *ep) 
-*
-*  FUNCTION
-*     Copy a enumeration array 
-*
-*  INPUTS
-*     const lEnumeration *ep - enumeration 
-*
-*  RESULT
-*     lEnumeration* - new copy of enumeration 
-******************************************************************************/
+/**
+ * @brief Copy a enumeration array
+ *
+ * Copy a enumeration array
+ *
+ * @param ep enumeration
+ *
+ * @return new copy of enumeration
+ */
 lEnumeration *lCopyWhat(const lEnumeration *ep) {
    int i, n;
    lEnumeration *copy = nullptr;
@@ -649,23 +592,16 @@ lEnumeration *lCopyWhat(const lEnumeration *ep) {
    DRETURN(copy);
 }
 
-/****** cull/what/lIntVector2What() *******************************************
-*  NAME
-*     lIntVector2What() -- Create a enumeration from int array 
-*
-*  SYNOPSIS
-*     lEnumeration* lIntVector2What(const lDescr *dp, const int intv[]) 
-*
-*  FUNCTION
-*     Create a enumeration from int array 
-*
-*  INPUTS
-*     const lDescr *dp - descriptor 
-*     const int intv[] - int array 
-*
-*  RESULT
-*     lEnumeration* - enumeration 
-******************************************************************************/
+/**
+ * @brief Create a enumeration from int array
+ *
+ * Create a enumeration from int array
+ *
+ * @param dp descriptor of the object type
+ * @param intv the selected field names, terminated by #NoName
+ *
+ * @return enumeration
+ */
 lEnumeration *lIntVector2What(const lDescr *dp, const int intv[]) {
    lEnumeration *what;
    char fmtstr[2000];
@@ -690,6 +626,16 @@ lEnumeration *lIntVector2What(const lDescr *dp, const int intv[]) {
    DRETURN(what);
 }
 
+/**
+ * @brief Merge one field selection into another
+ *
+ * The fields of @p what2 are added to @p what1, so the result selects the
+ * union of both.
+ *
+ * @param[in,out] what1 the selection to extend
+ * @param[in,out] what2 the selection to merge in; consumed and set to nullptr
+ * @return 0 on success, -1 on error
+ */
 int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
    int ret = 0;
 
@@ -801,6 +747,16 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Attach a field selection to a sub-list or sub-object field
+ *
+ * Lets a selection say "of this sub-list, only these fields".
+ *
+ * @param what1 the selection to modify
+ * @param nm the sub-list or sub-object field the selection applies inside
+ * @param[in,out] what2 the selection for that field; consumed and set to nullptr
+ * @return 0 on success, -1 when @p nm is not part of @p what1
+ */
 int lWhatSetSubWhat(lEnumeration *what1, int nm, lEnumeration **what2) {
    int ret = -1;
    int i;

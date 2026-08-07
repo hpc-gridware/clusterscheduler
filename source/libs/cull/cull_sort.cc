@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Sorting cull lists by one or more fields
+ */
+
 #include <cstring>
 
 /* do not compile in monitoring code */
@@ -196,36 +200,24 @@ lSortOrder *lParseSortOrderVarArg(const lDescr *dp, const char *fmt, ...) {
    return ret;
 }
 
-/****** cull/sort/lParseSortOrder() *******************************************
-*  NAME
-*     lParseSortOrder() -- Creates a sort order array 
-*
-*  SYNOPSIS
-*     lSortOrder* lParseSortOrder(const lDescr *dp, const char *fmt, 
-*                                 va_list ap) 
-*
-*  FUNCTION
-*     Create a sort oder array due to the given va_list. 
-*
-*  INPUTS
-*     const lDescr *dp - descriptor 
-*     const char *fmt  - format string
-*                        %d - int
-*                        %s - char*
-*                        %u - ulong
-*                        +  - ascending
-*                        -  - descending 
-*     va_list ap       - Attributes within descriptor 
-*
-*  RESULT
-*     lSortOrder* - sort order array 
-*
-*  EXAMPLE
-*     lParseSortOrder(dp,"%I+ %I-", H_hostname, H_memsize )
-*     
-*     Returns a sort order array which can be used for sorting an list
-*     with ascending H_hostname and descending H_memsize. 
-*******************************************************************************/
+/**
+ * @brief Creates a sort order array
+ *
+ * Create a sort oder array due to the given va_list.
+ *
+ * @code
+ * lParseSortOrder(dp,"%I+ %I-", H_hostname, H_memsize )
+ *
+ * Returns a sort order array which can be used for sorting an list
+ * with ascending H_hostname and descending H_memsize.
+ * @endcode
+ *
+ * @param dp descriptor
+ * @param fmt format string %d - int %s - char* %u - ulong +  - ascending -  - descending
+ * @param ap Attributes within descriptor
+ *
+ * @return sort order array
+ */
 lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap) {
    const char *s = nullptr;
    lSortOrder *sp = nullptr;
