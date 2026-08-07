@@ -42,10 +42,25 @@
 #include "gdi/ocs_gdi_Client.h"
 
 namespace ocs::gdi {
+   /// The GDI calls only an execution daemon makes
    class ClientExecd : public Client {
    public:
+      /**
+       * @brief Fetch the configuration with the host local values merged in
+       *
+       * @param[out] conf_list receives the merged configuration
+       * @return 0 on success, otherwise an error code
+       */
       static int gdi_get_merged_configuration(lList **conf_list);
 
+      /**
+       * @brief Block until qmaster has a configuration to hand out
+       *
+       * Used at execd start-up, when qmaster may not be up yet.
+       *
+       * @param[out] conf_list receives the configuration
+       * @return 0 once a configuration was received
+       */
       static int gdi_wait_for_conf(lList **conf_list);
 
       static int report_list_send(const lList *rlp, const char *rhost, const char *commproc, int id, int synchron);

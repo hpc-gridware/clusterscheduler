@@ -92,16 +92,29 @@ static pthread_mutex_t general_communication_error_mutex = PTHREAD_MUTEX_INITIAL
  * values com_access_denied and com_endpoint_not_unique will never be
  * restored to false again
  */
+/**
+ * @brief Communication errors remembered until someone asks about them
+ *
+ * The commlib reports errors as they happen, but a client usually only checks
+ * afterwards. The flags here stay set until `sge_get_com_error_flag()` reads them
+ * with `reset_error_flag`.
+ *
+ * The counters and timestamps exist so that repeated "access denied" and
+ * "endpoint not unique" errors are only logged once per period rather than on
+ * every retry.
+ *
+ * @todo the counter/timeout pairs are a workaround for BT 6350264 / IZ 1893
+ */
 typedef struct sge_gdi_com_error_type {
-   int com_error;                        /* current commlib error */
-   bool com_was_error;                    /* set if there was an communication error (but not CL_RETVAL_ACCESS_DENIED or CL_RETVAL_ENDPOINT_NOT_UNIQUE)*/
-   int com_last_error;                   /* last logged commlib error */
-   bool com_access_denied;                /* set when commlib reports CL_RETVAL_ACCESS_DENIED */
-   int com_access_denied_counter;        /* counts access denied errors (TODO: workaround for BT: 6350264, IZ: 1893) */
-   time_t com_access_denied_time;         /* timeout for counts access denied errors (TODO: workaround for BT: 6350264, IZ: 1893) */
-   bool com_endpoint_not_unique;          /* set when commlib reports CL_RETVAL_ENDPOINT_NOT_UNIQUE */
-   int com_endpoint_not_unique_counter;  /* counts access denied errors (TODO: workaround for BT: 6350264, IZ: 1893) */
-   time_t com_endpoint_not_unique_time;   /* timeout for counts access denied errors (TODO: workaround for BT: 6350264, IZ: 1893) */
+   int com_error;                       ///< the current commlib error
+   bool com_was_error;                  ///< some error occurred, other than access denied or endpoint not unique
+   int com_last_error;                  ///< the last error that was logged
+   bool com_access_denied;              ///< the commlib reported `CL_RETVAL_ACCESS_DENIED`
+   int com_access_denied_counter;       ///< how often, within the current period
+   time_t com_access_denied_time;       ///< when the current period started
+   bool com_endpoint_not_unique;        ///< the commlib reported `CL_RETVAL_ENDPOINT_NOT_UNIQUE`
+   int com_endpoint_not_unique_counter; ///< how often, within the current period
+   time_t com_endpoint_not_unique_time; ///< when the current period started
 } sge_gdi_com_error_t;
 
 static sge_gdi_com_error_t sge_gdi_communication_error = {CL_RETVAL_OK,
@@ -128,7 +141,7 @@ static sge_gdi_com_error_t sge_gdi_communication_error = {CL_RETVAL_OK,
  * @note MT-NOTE: general_communication_error() is MT safe
  *       (static struct variable "sge_gdi_communication_error" is used)
  *
- * @see #sge_get_com_error_flag
+ * @see `sge_get_com_error_flag()`
  */
 void
 ocs::gdi::ClientBase::general_communication_error(const cl_application_error_list_elem_t *commlib_error) {
