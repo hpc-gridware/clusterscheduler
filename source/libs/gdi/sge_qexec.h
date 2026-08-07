@@ -39,14 +39,14 @@
 
 #include "sgeobj/cull/sge_qexec_RT_L.h"
 
+/// Identifier of a remote task, as returned by #sge_qexecve
 typedef char *sge_tid_t;
 
-enum {                           /* possible values for RT_state */
-   RT_STATE_WAIT4ACK,            /* started - we are waiting for the exit msg
-                                  * for task */
-   RT_STATE_EXITED,              /* we got the exit message - keep in our list 
-                                  * to prevent task ids used multiple */
-   RT_STATE_WAITED               /* user reaped task by calling sge_qwaittid() */
+/// Life cycle of a remote task, as held in its `RT_state` field
+enum {
+   RT_STATE_WAIT4ACK,  ///< started; waiting for the task's exit message
+   RT_STATE_EXITED,    ///< the exit message arrived; kept in the list so the task id is not reused
+   RT_STATE_WAITED     ///< the caller reaped the task with #sge_qwaittid
 };
 
 #if 0
@@ -69,6 +69,18 @@ enum {                           /* possible values for RT_state */
 sge_tid_t sge_qexecve(const char *hostname, const char *queuename, const char *cwd,
                       const lList *environment, const lList *path_aliases, const char *cert);
 
+/**
+ * @brief Wait for a remote task started with #sge_qexecve
+ *
+ * @param tid the task to wait for, or nullptr for any
+ * @param[out] status receives the task's exit status
+ * @param options 0 to block, or `WNOHANG` to return immediately
+ * @return the id of the task that ended, or nullptr when none had
+ */
 int sge_qwaittid(sge_tid_t tid, int *status, int options);
 
+/**
+ * @brief The reason the last qexec call failed
+ * @return the message; static storage, do not free
+ */
 const char *qexec_last_err();

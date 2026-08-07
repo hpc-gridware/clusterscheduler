@@ -65,11 +65,16 @@ static char lasterror[4096];
 
 static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerBaseTag tag);
 
-/* option flags for rcv_from_execd() */
+/// `rcv_from_execd()` option: block until a message arrives
 #define OPT_SYNCHRON 1
 
+/// Find a remote task in the module's task list by its id
 #define LOCATE_RTASK(tid) lGetElemStrRW(remote_task_list, RT_tid, tid)
 
+/**
+ * @brief The reason the last qexec call failed
+ * @return the message; static storage, do not free
+ */
 const char *qexec_last_err() {
    return lasterror;
 }
@@ -85,8 +90,11 @@ const char *qexec_last_err() {
  * contains a task id that is returned to the caller of the function.
  *
  * @param hostname name of the host on which to start the task
+ * @param queuename queue to start the task in, or nullptr to let qmaster choose
+ * @param cwd working directory for the task, or nullptr for the job's
  * @param environment list containing environment variable settings for the task that override the default environment
  * @param path_aliases optional a path alias list
+ * @param cert the security credential to pass to the execution host, or nullptr
  *
  * @return the task id, if the task can be executed, a value <= 0 indicates an error.
  *

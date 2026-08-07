@@ -70,16 +70,19 @@
 #include <openssl/evp.h>
 #endif
 
-#define ENCODE_TO_STRING   1
-#define DECODE_FROM_STRING 0
+#define ENCODE_TO_STRING   1 ///< direction flag: encode a credential into its string form
+#define DECODE_FROM_STRING 0 ///< direction flag: decode a credential from its string form
 
 #ifdef SECURE
 
+/// Marker string a built binary carries so `strings` shows whether SECURE was enabled
 const char* sge_dummy_sec_string = "AIMK_SECURE_OPTION_ENABLED";
 
 static pthread_mutex_t sec_ssl_setup_config_mutex = PTHREAD_MUTEX_INITIALIZER;
 static cl_ssl_setup_t* sec_ssl_setup_config       = nullptr;
+/// Take the mutex guarding the process-wide SSL setup
 #define SEC_LOCK_SSL_SETUP()      sge_mutex_lock("ssl_setup_mutex", __func__, __LINE__, &sec_ssl_setup_config_mutex)
+/// Release the mutex guarding the process-wide SSL setup
 #define SEC_UNLOCK_SSL_SETUP()    sge_mutex_unlock("ssl_setup_mutex", __func__, __LINE__, &sec_ssl_setup_config_mutex)
 
 static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char* value);
@@ -94,7 +97,8 @@ static bool is_master(const char* progname);
  * Initialize sge security by initializing the underlying security
  * mechanism and setup the corresponding data structures
  *
- * @param name name of enrolling program
+ * @param progname name of the enrolling program
+ * @param username user the program runs as
  *
  * @return 0  in case of success, something different otherwise
  *
@@ -147,9 +151,12 @@ int sge_security_initialize(const char *progname, const char *username)
  * sets the accordant information in the job structure
  * If an error occurs the return value is unequal 0
  *
- * @param job the job structure
+ * @param sge_root the installation root
+ * @param mastername host qmaster runs on, used when acquiring the credential
+ * @param job the job structure the credential is stored in
+ * @param[out] alpp receives the reason on failure
  *
- * @return 0  in case of success, something different otherwise
+ * @return 0 in case of success, something different otherwise
  *
  * @note Hope, the above description is correct - don't know the
  *       DCE/KERBEROS code.
@@ -240,16 +247,16 @@ int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, l
 } 
 
 /**
- * @brief ???
+ * @brief Fetch the job's DCE or Kerberos credential and cache it in the job
  *
- * ???
+ * Runs the configured token command to obtain a credential for the job's
+ * owner and stores the result in the job's `JB_cred` field, so it can be
+ * forwarded to the execution host later. Does nothing unless a DCE or
+ * Kerberos security mode is configured.
  *
- * @code
- * ???
- * @endcode
- *
- * @param jep ???
- * @param rhost ???
+ * @param sge_root the installation root
+ * @param jep the job to fetch the credential for; `JB_cred` is filled in
+ * @param rhost the host the job will run on
  *
  * @return true, if jep got modified
  *
@@ -323,11 +330,13 @@ bool cache_sec_cred(const char* sge_root, lListElem *jep, const char *rhost)
    DRETURN(ret_value);
 }   
 
-/*
- * 
- *  NOTES
- *     MT-NOTE: delete_credentials() is MT safe (major assumptions!)
- * 
+/**
+ * @brief Remove the security credential stored for a job
+ *
+ * @param sge_root the installation root
+ * @param jep the job whose credential is removed
+ *
+ * @note MT-NOTE: delete_credentials() is MT safe (major assumptions!)
  */
 void delete_credentials(const char *sge_root, lListElem *jep)
 {
@@ -398,12 +407,19 @@ void delete_credentials(const char *sge_root, lListElem *jep)
 
 
 
-/* 
- * Execute command to store the client's DCE or Kerberos credentials.
- * This also creates a forwardable credential for the user.
+/**
+ * @brief Store the client's DCE or Kerberos credential for a job
  *
- *  NOTES
- *     MT-NOTE: store_sec_cred() is MT safe (assumptions)
+ * Runs the command that stores the credential, which also creates a
+ * forwardable credential for the user.
+ *
+ * @param sge_root the installation root
+ * @param jep the job the credential belongs to
+ * @param do_authentication non-zero to verify the credential while storing it
+ * @param[out] alpp receives the reason on failure
+ * @return 0 on success, something different otherwise
+ *
+ * @note MT-NOTE: store_sec_cred() is MT safe (assumptions)
  */
 int store_sec_cred(const char* sge_root, lListElem *jep, int do_authentication, lList** alpp)
 {
@@ -509,10 +525,22 @@ int store_sec_cred(const char* sge_root, lListElem *jep, int do_authentication, 
 
 
 
-/*
+/**
+ * @brief Store a job's credential, reporting through a dstring
  *
- *  NOTES
- *     MT-NOTE: store_sec_cred2() is MT safe (assumptions)
+ * The execution side counterpart of #store_sec_cred: same work, but it reports
+ * into a dstring rather than an answer list and distinguishes a general
+ * failure from one specific to this job.
+ *
+ * @param sge_root the installation root
+ * @param unqualified_hostname short name of the host storing the credential
+ * @param jelem the job the credential belongs to
+ * @param do_authentication non-zero to verify the credential while storing it
+ * @param[out] general set when the failure affects every job, not just this one
+ * @param[out] err_str receives the reason on failure
+ * @return 0 on success, something different otherwise
+ *
+ * @note MT-NOTE: store_sec_cred2() is MT safe (assumptions)
  */
 int store_sec_cred2(const char* sge_root, const char* unqualified_hostname, lListElem *jelem, int do_authentication, int *general, dstring *err_str)
 {
@@ -656,12 +684,13 @@ struct dispatch_entry *de
 #endif
 
 
-/* 
- *  FUNCTION
- *     get TGT from job entry and store in client connection 
+/**
+ * @brief Take the Kerberos TGT out of a job and put it into the connection
  *
- *  NOTES
- *     MT-NOTE: tgt2cc() is not MT safe (assumptions)
+ * @param jep the job carrying the ticket granting ticket
+ * @param rhost the host the connection goes to
+ *
+ * @note MT-NOTE: tgt2cc() is not MT safe (assumptions)
  */
 void tgt2cc(lListElem *jep, const char *rhost)
 {
@@ -704,10 +733,15 @@ void tgt2cc(lListElem *jep, const char *rhost)
 }
 
 
-/*
+/**
+ * @brief Remove the Kerberos TGT from a connection again
  *
- *  NOTES
- *     MT-NOTE: tgtcclr() is MT safe (assumptions)
+ * The counterpart of #tgt2cc.
+ *
+ * @param jep the job the ticket belongs to
+ * @param rhost the host the connection goes to
+ *
+ * @note MT-NOTE: tgtcclr() is MT safe (assumptions)
  */
 void tgtcclr(lListElem *jep, const char *rhost)
 {

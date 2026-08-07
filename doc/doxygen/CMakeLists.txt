@@ -63,6 +63,7 @@ if (DOXYGEN_FOUND)
          source/libs/evc
          source/libs/uti
          source/libs/cull
+         source/libs/gdi
    )
 
    if (DXM_FINISHED_MODULES)
