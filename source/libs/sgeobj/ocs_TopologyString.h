@@ -20,6 +20,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The compact string describing a host's CPU topology
+ */
+
 #include <algorithm>
 #include <array>
 #include <string>

@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Holding one cluster object list together with its metadata
+ */
+
 #include <string>
 
 #include "cull/cull.h"

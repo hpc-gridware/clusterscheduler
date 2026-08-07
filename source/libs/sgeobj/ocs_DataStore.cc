@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The per-thread copies of the cluster's object lists
+ */
+
 #include <pthread.h>
 
 #include "uti/sge_log.h"

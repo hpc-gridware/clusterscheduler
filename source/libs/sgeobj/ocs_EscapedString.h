@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Escaping and unescaping strings for configuration files
+ */
+
 #include <cstring>
 #include <string>
 #include <ostream>

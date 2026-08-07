@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Reading and writing binding specifications
+ */
+
 #include <string>
 
 #include "uti/sge_rmon_macros.h"
@@ -47,30 +51,19 @@
 #include "ocs_BindingInstance.h"
 #include "ocs_BindingStrategy.h"
 
-/****** sge_binding/binding_print_to_string() **********************************
-*  NAME
-*     binding_print_to_string() -- Prints the content of a binding list to a string
-*
-*  SYNOPSIS
-*     bool binding_print_to_string(const lListElem *this_elem, dstring *string)
-*
-*  FUNCTION
-*     Prints the binding type and binding strategy of a binding list element
-*     into a string.
-*
-*  INPUTS
-*     const lListElem* this_elem - Binding list element
-*
-*  OUTPUTS
-*     const dstring *string      - Output string which must be initialized.
-*
-*  RESULT
-*     bool - true in all cases
-*
-*  NOTES
-*     MT-NOTE: is_starting_point() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Prints the content of a binding list to a string
+ *
+ * Prints the binding type and binding strategy of a binding list element
+ * into a string.
+ *
+ * @param this_elem Binding list element
+ * @param string Output string which must be initialized.
+ *
+ * @return true in all cases
+ *
+ * @note MT-NOTE: is_starting_point() is MT safe
+ */
 void
 ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::string &binding_string, bool as_switches) {
    DENTER(TOP_LAYER);

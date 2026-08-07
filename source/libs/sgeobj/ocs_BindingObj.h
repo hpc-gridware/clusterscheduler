@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The binding request stored on a job
+ */
+
 #include <string>
 
 #include "cull/cull.h"

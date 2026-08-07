@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Resource quota sets: limits across users, projects and hosts
+ */
+
 #include <string>
 #include <unordered_set>
 

@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief One concrete binding of a job to hardware
+ */
+
 #include <string>
 
 namespace ocs {

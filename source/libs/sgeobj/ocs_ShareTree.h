@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The share tree that decides fair-share entitlements
+ */
+
 #include "cull/cull.h"
 
 typedef int (*sge_node_func_t) (lListElem *node, void *ptr);

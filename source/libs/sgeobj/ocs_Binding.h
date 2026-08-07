@@ -35,6 +35,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Binding a job to specific CPU hardware
+ */
+
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>

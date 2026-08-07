@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Users and projects, and the attributes they share
+ */
+
 #include "cull/cull.h"
 
 namespace ocs {

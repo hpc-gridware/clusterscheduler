@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The resources a scheduling decision granted a job
+ */
+
 #include <cstring>
 #include <sstream>
 

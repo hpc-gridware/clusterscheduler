@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Users and projects, and the attributes they share
+ */
+
 #include <cstring>
 
 #include "sgeobj/sge_userset.h"

@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Who enforces a binding: nobody, the host, or the slot
+ */
+
 #include <string>
 
 #include "ocs_BindingType.h"

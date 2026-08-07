@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Carrying a cull answer list as a C++ exception
+ */
+
 #include <string>
 
 #include "uti/ocs_Exception.h"

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Resource usage reported for a job or task
+ */
+
 #include <cstring>
 #include <math.h>
 

@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief How a binding walks the topology: linear, striding or explicit
+ */
+
 #include <string>
 
 namespace ocs {

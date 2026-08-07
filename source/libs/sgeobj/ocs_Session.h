@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief GDI sessions, giving a client read-after-write consistency
+ */
+
 #include <unordered_map>
 
 #include <pthread.h>

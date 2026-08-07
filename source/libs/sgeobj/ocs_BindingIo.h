@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Reading and writing binding specifications
+ */
+
 #include <string>
 
 #include "cull/cull_list.h"

@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Advance reservations: resources booked for a future time window
+ */
+
 #include <string>
 
 #include "cull/cull.h"

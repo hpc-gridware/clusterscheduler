@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Limits on how large or frequent a GDI request may be
+ */
+
 #include "uti/sge_mtutil.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"

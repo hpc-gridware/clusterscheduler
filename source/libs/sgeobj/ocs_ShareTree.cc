@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The share tree that decides fair-share entitlements
+ */
+
 #include <cstring>
 
 #include "sgeobj/sge_userset.h"

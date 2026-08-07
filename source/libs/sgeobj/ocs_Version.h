@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The product version and its compatibility rules
+ */
+
 #include <cstdint>
 #include <string>
 #include <tuple>

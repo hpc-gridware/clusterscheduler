@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief RBAC roles and the permissions they grant
+ */
+
 #include <string>
 #include <vector>
 

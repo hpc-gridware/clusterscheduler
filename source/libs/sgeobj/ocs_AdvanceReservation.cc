@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Advance reservations: resources booked for a future time window
+ */
+
 #include <cstring>
 
 #include "uti/ocs_Systemd.h"

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The binding request stored on a job
+ */
+
 #include <cstring>
 
 #include "uti/ocs_Systemd.h"

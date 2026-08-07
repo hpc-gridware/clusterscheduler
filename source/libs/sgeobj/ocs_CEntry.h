@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Complex entries: the resource types a cluster knows about
+ */
+
 #include <string>
 #include <cinttypes>
 

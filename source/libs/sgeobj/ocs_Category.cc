@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Job categories, grouping jobs with identical scheduling requirements
+ */
+
 #include <cstdio>
 
 #include "uti/sge_dstring.h"

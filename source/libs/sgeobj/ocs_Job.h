@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The job object and the operations on it
+ */
+
 #include <string>
 
 #include "cull/cull.h"

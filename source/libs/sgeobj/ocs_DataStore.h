@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The per-thread copies of the cluster's object lists
+ */
+
 #include "sge_object.h"
 
 #include "sge_event.h"

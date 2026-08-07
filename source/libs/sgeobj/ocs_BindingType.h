@@ -19,20 +19,36 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Who enforces a binding: nobody, the host, or the slot
+ */
+
 #include <string>
 
 namespace ocs {
+   /// Who applies a job's CPU binding
    class BindingType {
       BindingType() = default; // prevent instantiation
    public:
+      /// Who applies the binding
       enum Type {
-         UNINITIALIZED = 0,
-         NONE,
-         HOST,
-         SLOT
+         UNINITIALIZED = 0, ///< not set; the request has not been parsed yet
+         NONE,              ///< no binding is applied
+         HOST,              ///< the execution host binds the job
+         SLOT               ///< the binding follows the slots the job was granted
       };
 
+      /**
+       * @brief The keyword for a binding type, as written in a request
+       * @param mode the type to name
+       * @return its keyword
+       */
       static std::string to_string(Type mode);
+      /**
+       * @brief Parse a binding type keyword
+       * @param mode the keyword to parse
+       * @return the type, or #UNINITIALIZED when it is not recognised
+       */
       static Type from_string(const std::string& mode);
    };
 }

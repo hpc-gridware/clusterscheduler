@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The resources a scheduling decision granted a job
+ */
+
 #include <string>
 
 #include "cull/cull.h"

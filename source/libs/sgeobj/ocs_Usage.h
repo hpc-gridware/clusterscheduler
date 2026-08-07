@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Resource usage reported for a job or task
+ */
+
 #include "cull/cull.h"
 
 // usage interval in seconds (as double to avoid integer division)
