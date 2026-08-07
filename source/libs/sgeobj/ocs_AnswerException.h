@@ -39,7 +39,7 @@ namespace ocs {
     * hands both the list and its last message to the caller unchanged.
     */
    class AnswerException : public Exception {
-      lList *m_answer_list = nullptr; //< answer list to be transferred to the catching code
+      lList *m_answer_list = nullptr; ///< answer list to be transferred to the catching code
 
       /** @brief returns the last message in the answer list
        *

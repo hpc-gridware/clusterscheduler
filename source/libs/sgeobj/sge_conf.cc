@@ -148,9 +148,9 @@ struct confel {                       /* cluster configuration parameters */
    char        *delegated_file_staging; /*drmaa attribute: "true" or "false" */
    char        *libjvm_path;         /* libjvm_path for jvm_thread */
    char        *additional_jvm_args; /* additional_jvm_args for jvm_thread */
-   char        *binding_params;      //< string containing al binding specific parameters
-   char        *jsv_params;          //< string containing jsv specific parameters
-   char        *topology_file;       //< None or path to a hwloc topology file
+   char        *binding_params;      ///< string containing al binding specific parameters
+   char        *jsv_params;          ///< string containing jsv specific parameters
+   char        *topology_file;       ///< None or path to a hwloc topology file
    uint32_t    finished_jobs_keep_time; /* CS-1908: seconds a finished ja_task is retained; 0 = time dimension off */
    uint32_t    finished_jobs_max;    /* CS-1908: global count ceiling on retained finished ja_tasks; 0 = count dimension off */
 };

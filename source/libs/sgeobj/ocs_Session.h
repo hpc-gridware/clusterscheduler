@@ -45,13 +45,13 @@ namespace ocs {
    class SessionManager {
    private:
       struct Session {
-         uint64_t write_time;           //< time when write_unique_id was set
-         uint64_t write_unique_id;      //< unique id for the last write event
+         uint64_t write_time;           ///< time when write_unique_id was set
+         uint64_t write_unique_id;      ///< unique id for the last write event
       };
 
-      static pthread_mutex_t mutex;                             //< mutex that saves access to the session_map
-      static std::unordered_map<uint64_t, Session> session_map; //< hashtable for sessions
-      static uint64_t process_unique_id;                        //< unique id for the last processed event
+      static pthread_mutex_t mutex;                             ///< mutex that saves access to the session_map
+      static std::unordered_map<uint64_t, Session> session_map; ///< hashtable for sessions
+      static uint64_t process_unique_id;                        ///< unique id for the last processed event
 
       static void remove_unused();
 
