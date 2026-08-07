@@ -265,6 +265,55 @@ ExecuteAsAdmin()
 
 
 #-------------------------------------------------------------------------
+# WriteFileAsAdmin: write stdin into a file, creating it as $ADMINUSER
+#
+# $1 - path of the file to write
+# $2 - permissions to set on the file, e.g. 600
+#
+# Root cannot necessarily write below $SGE_ROOT - on an NFS mounted $SGE_ROOT
+# with root_squash only the admin user has write permission there. Files that
+# must not be world readable cannot use CreateAndMakeWriteable() either, as
+# that makes the file writable for everybody while it is being filled.
+#
+# The content is read from stdin, so it never shows up in the argument list of
+# any process. The permissions are applied to the still empty file, so there is
+# no moment in which the content exists with wider permissions.
+#
+# ExecuteAsAdmin() is deliberately not used: callers pipe into this function,
+# the shell therefore runs it in a subshell, and ExecuteAsAdmin() exiting on
+# failure would neither reach the calling script nor stop the installation.
+# The caller has to check the return code instead.
+#
+# USES: variables $ADMINUSER, $SGE_UTILBIN, $SGE_ROOT, $SGE_ARCH
+#
+# returns 0 on success, 1 on error
+#-------------------------------------------------------------------------
+WriteFileAsAdmin()
+{
+   wfa_file=$1
+   wfa_perm=$2
+
+   if [ "$ADMINUSER" = default ]; then
+      wfa_run=""
+   else
+      if [ -f $SGE_UTILBIN/adminrun ]; then
+         wfa_run="$SGE_UTILBIN/adminrun $ADMINUSER"
+      else
+         wfa_run="$SGE_ROOT/utilbin/$SGE_ARCH/adminrun $ADMINUSER"
+      fi
+   fi
+
+   $wfa_run $TOUCH "$wfa_file" || return 1
+   $wfa_run $CHMOD $wfa_perm "$wfa_file" || return 1
+   # tee rather than a redirection: the redirection would be done by the
+   # calling shell, which runs as root, not by the admin user
+   $wfa_run tee "$wfa_file" > /dev/null || return 1
+
+   return 0
+}
+
+
+#-------------------------------------------------------------------------
 # Execute command as user $ADMINUSER and exit if exit status != 0
 # if ADMINUSER = default then execute command unchanged
 #

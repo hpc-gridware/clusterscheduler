@@ -521,15 +521,16 @@ SetSpoolingOptionsPostgres()
       fi
       _pgpass_dir=`dirname "$SPOOLING_PG_PASSFILE"`
       if [ ! -d "$_pgpass_dir" ]; then
+         $INFOTEXT -e "Cannot write .pgpass: directory %s does not exist" "$_pgpass_dir"
          $INFOTEXT -log "Cannot write .pgpass: directory %s does not exist" "$_pgpass_dir"
          MoveLog
          exit 1
       fi
-      if [ ! -w "$_pgpass_dir" ]; then
-         $INFOTEXT -log "Cannot write .pgpass: directory %s is not writable" "$_pgpass_dir"
-         MoveLog
-         exit 1
-      fi
+      # The directory is deliberately not tested with -w: the installer runs as
+      # root, but the file is written by the admin user, and on an NFS mounted
+      # $SGE_ROOT with root_squash root has no write permission there at all.
+      # A failing write is reported below instead.
+
       # libpq .pgpass format: hostname:port:database:username:password.
       # Per KTD-9 we wildcard host / port / dbname and discriminate on
       # `user` only — qmaster's runtime role is the load-bearing
@@ -540,14 +541,25 @@ SetSpoolingOptionsPostgres()
       # before writing or libpq silently misparses the file and reports
       # "no password supplied" at qmaster startup. Escape '\' first (so
       # the colon-escape that follows is not itself re-escaped).
-      ( umask 077 && \
-        _esc_user=`printf '%s' "$SPOOLING_PG_USER" | sed -e 's/\\\\/\\\\\\\\/g' -e 's/:/\\\\:/g'` && \
-        _esc_pw=`printf '%s' "$SPOOLING_PG_PASSWORD" | sed -e 's/\\\\/\\\\\\\\/g' -e 's/:/\\\\:/g'` && \
-        printf '%s\n' "*:*:*:$_esc_user:$_esc_pw" > "$SPOOLING_PG_PASSFILE" )
-      chmod 0600 "$SPOOLING_PG_PASSFILE"
-      if [ "$ADMINUSER" != default ] && [ -n "$ADMINUSER" ]; then
-         chown "$ADMINUSER" "$SPOOLING_PG_PASSFILE"
-      elif [ "`id -u`" = "0" ]; then
+      _esc_user=`printf '%s' "$SPOOLING_PG_USER" | sed -e 's/\\\\/\\\\\\\\/g' -e 's/:/\\\\:/g'`
+      _esc_pw=`printf '%s' "$SPOOLING_PG_PASSWORD" | sed -e 's/\\\\/\\\\\\\\/g' -e 's/:/\\\\:/g'`
+
+      # Written by the admin user, who owns $SGE_ROOT - see WriteFileAsAdmin().
+      # The line arrives on stdin so the password is not visible in the argument
+      # list of any process, and the file is set to 0600 while still empty.
+      printf '%s\n' "*:*:*:$_esc_user:$_esc_pw" | WriteFileAsAdmin "$SPOOLING_PG_PASSFILE" 600
+      if [ $? != 0 ]; then
+         $INFOTEXT -e "Cannot write the PostgreSQL password file %s" "$SPOOLING_PG_PASSFILE"
+         $INFOTEXT -e "Check that the admin user has write permission on %s" "$_pgpass_dir"
+         $INFOTEXT -log "Cannot write .pgpass %s as admin user %s" "$SPOOLING_PG_PASSFILE" "$ADMINUSER"
+         MoveLog
+         exit 1
+      fi
+      _esc_user=
+      _esc_pw=
+      unset _esc_user _esc_pw
+
+      if [ "$ADMINUSER" = default ] && [ "`id -u`" = "0" ]; then
          # Installer ran as root with no qmaster service user resolvable;
          # .pgpass is now root-owned. libpq's strict-perm check requires
          # the file owner to match the process EUID, so a non-root qmaster
