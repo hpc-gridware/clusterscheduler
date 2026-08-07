@@ -546,6 +546,17 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
                   /*
                    * Find CQs lists of referenced hosts before and after
                    * the hgroup modification
+                   *
+                   * Both href_list_find_all_references() calls below MUST walk
+                   * the host group tree. They must never be switched to the
+                   * resolved-host cache (HGRP_cached_hosts / HGRP_cache_version,
+                   * CS-2451): between the lDechainElem() and the rollback further
+                   * down, the temporarily inserted element has no valid cache
+                   * while the referencing groups still hold the old state. A
+                   * cached answer would hand back the pre-modification host set
+                   * as after_mod_list, the add/remove delta below would come out
+                   * empty, and the CQ would silently keep the wrong queue
+                   * instances. See the NOTES at href_list_find_all_references().
                    */
 
                   href_list = lGetList(cqueue, CQ_hostlist);

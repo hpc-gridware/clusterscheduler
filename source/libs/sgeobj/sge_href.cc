@@ -491,8 +491,34 @@ href_list_find_references(const lList *this_list, lList **answer_list,
 *     bool - error state
 *        true  - Success
 *        false - Error
+*
+*  NOTES
+*     This function walks the host group tree. It deliberately does NOT consult
+*     the resolved-host cache (HGRP_cached_hosts / HGRP_cache_version, CS-2451),
+*     even though every group carries one.
+*
+*     If that is ever changed, the two calls in hgroup_mod()'s swap block
+*     (sge_hgroup_qmaster.cc, around the lDechainElem()/lAppendElem() pair) MUST
+*     keep walking the tree. Inside that window the temporarily inserted element
+*     has no valid cache while the referencing groups still carry the old state,
+*     so a cached answer would return the PRE-modification host set as the
+*     "after" set. The cluster queue would then compute empty add/remove deltas
+*     and silently keep the wrong queue instances -- a data error, not a crash,
+*     and one no existing check would notice.
+*
+*     Add a "bool use_cache = true" parameter and pass false at those two call
+*     sites, in the same commit that starts using the cache here. Do NOT instead
+*     invalidate the caches at the start of hgroup_mod(): on rollback they would
+*     stay invalid with nothing left to rebuild them.
+*
+*     Measured 2026-08-07 (sperf_hgroup_resolution, medians above the no-RQS
+*     floor): the cache already collapsed the membership test in the hot path
+*     (qref_hgroup_rejected()), leaving 0.05-0.35 s that this function could
+*     still address, while the largest remaining item -- pattern scope at 0.54 s
+*     -- is out of its reach, because the reference side must keep matching group
+*     names as expressions (CS-2450). That is why this was left as a tree walk.
 *******************************************************************************/
-bool 
+bool
 href_list_find_all_references(const lList *this_list, lList **answer_list,
                               const lList *master_list, lList **used_hosts,
                               lList **used_groups)
