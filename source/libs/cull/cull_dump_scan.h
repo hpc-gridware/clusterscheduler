@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Writing cull data as text and reading it back
+ */
+
 #include "cull/cull_multitype.h"
 
 int lDumpElemFp(FILE *fp, const lListElem *ep, int indent);

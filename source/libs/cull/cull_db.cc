@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Bulk operations over cull lists: select, join, delete
+ */
+
 #include <cstring>
 
 /* do not compile in monitoring code */
@@ -63,31 +67,20 @@ static lListElem *lJoinCopyElem(const lDescr *dp,
                                 const lListElem *sep1,
                                 const lEnumeration *ep1);
 
-/****** cull/db/lJoinCopyElem() ***********************************************
-*  NAME
-*     lJoinCopyElem() -- Combine two elements 
-*
-*  SYNOPSIS
-*     static lListElem* lJoinCopyElem(const lDescr *dp, 
-*                                     const lListElem *src0, 
-*                                     const lEnumeration *enp0, 
-*                                     const lListElem *src1, 
-*                                     const lEnumeration *enp1) 
-*
-*  FUNCTION
-*     Returns a combined element with descriptor 'dp'. Uses 'src0'
-*     with mask 'enp0' and 'src1' with mask 'enp1' as source. 
-*
-*  INPUTS
-*     const lDescr *dp         - descriptor 
-*     const lListElem *src0    - element1 
-*     const lEnumeration *enp0 - mask1 
-*     const lListElem *src1    - element2 
-*     const lEnumeration *enp1 - mask2 
-*
-*  RESULT
-*     static lListElem* - combined element 
-******************************************************************************/
+/**
+ * @brief Combine two elements
+ *
+ * Returns a combined element with descriptor 'dp'. Uses 'src0'
+ * with mask 'enp0' and 'src1' with mask 'enp1' as source.
+ *
+ * @param dp descriptor
+ * @param src0 element1
+ * @param enp0 mask1
+ * @param src1 element2
+ * @param enp1 mask2
+ *
+ * @return combined element
+ */
 static lListElem *lJoinCopyElem(const lDescr *dp,
                                 const lListElem *src0,
                                 const lEnumeration *enp0,
@@ -123,38 +116,28 @@ static lListElem *lJoinCopyElem(const lDescr *dp,
    DRETURN(dst);
 }
 
-/****** cull/db/lJoin() *******************************************************
-*  NAME
-*     lJoin() -- Joins two lists together
-*
-*  SYNOPSIS
-*     lList* lJoin(const char *name, int nm0, const lList *lp0, 
-*                  const lCondition *cp0, const lEnumeration *enp0, 
-*                  int nm1, const lList *lp1, const lCondition *cp1, 
-*                  const lEnumeration *enp1) 
-*
-*  FUNCTION
-*     Returns a new list joining together the lists 'lp0' and 'lp1'
-*     For the join only these 'lines' described in condition 'cp0'
-*     and 'cp1' are used.
-*     The new list gets only these members described in 'enp0' and
-*     'enp1'. nullptr means every member of this list.
-*     The list gets 'name' as listname.
-*
-*  INPUTS
-*     const char *name         - name of new list 
-*     int nm0                  - 
-*     const lList *lp0         - first list 
-*     const lCondition *cp0    - selects rows of first list 
-*     const lEnumeration *enp0 - selects column of first list 
-*     int nm1                  - 
-*     const lList *lp1         - second list 
-*     const lCondition *cp1    - selects rows of second list 
-*     const lEnumeration *enp1 - selects column of seconf list 
-*
-*  RESULT
-*     lList* - Joined list 
-******************************************************************************/
+/**
+ * @brief Joins two lists together
+ *
+ * Returns a new list joining together the lists 'lp0' and 'lp1'
+ * For the join only these 'lines' described in condition 'cp0'
+ * and 'cp1' are used.
+ * The new list gets only these members described in 'enp0' and
+ * 'enp1'. nullptr means every member of this list.
+ * The list gets 'name' as listname.
+ *
+ * @param name name of new list
+ * @param nm0
+ * @param lp0 first list
+ * @param cp0 selects rows of first list
+ * @param enp0 selects column of first list
+ * @param nm1
+ * @param lp1 second list
+ * @param cp1 selects rows of second list
+ * @param enp1 selects column of seconf list
+ *
+ * @return Joined list
+ */
 lList *lJoin(const char *name, int nm0, const lList *lp0,
              const lCondition *cp0, const lEnumeration *enp0, int nm1,
              const lList *lp1, const lCondition *cp1, const lEnumeration *enp1) {
@@ -269,30 +252,20 @@ lList *lJoin(const char *name, int nm0, const lList *lp0,
    DRETURN(dlp);
 }
 
-/****** cull/db/lSplit() ******************************************************
-*  NAME
-*     lSplit() -- Splits a list into two list 
-*
-*  SYNOPSIS
-*     int lSplit(lList **slp, lList **ulp, const char *ulp_name, 
-*                const lCondition *cp) 
-*
-*  FUNCTION
-*     Unchains the list elements from the list 'slp' NOT fullfilling
-*     the condition 'cp' and returns a list containing the 
-*     unchained elements in 'ulp' 
-*
-*  INPUTS
-*     lList **slp          - source list pointer 
-*     lList **ulp          - unchained list pointer 
-*     const char *ulp_name - 'ulp' list name 
-*     const lCondition *cp - selects rows within 'slp' 
-*
-*  RESULT
-*     int - error status
-*         0 - OK
-*        -1 - Error 
-******************************************************************************/
+/**
+ * @brief Splits a list into two list
+ *
+ * Unchains the list elements from the list 'slp' NOT fullfilling
+ * the condition 'cp' and returns a list containing the
+ * unchained elements in 'ulp'
+ *
+ * @param slp source list pointer
+ * @param ulp unchained list pointer
+ * @param ulp_name 'ulp' list name
+ * @param cp selects rows within 'slp'
+ *
+ * @return error status 0 - OK -1 - Error
+ */
 int lSplit(lList **slp, lList **ulp, const char *ulp_name,
            const lCondition *cp) {
 
@@ -340,24 +313,17 @@ int lSplit(lList **slp, lList **ulp, const char *ulp_name,
    DRETURN(0);
 }
 
-/****** cull/db/lSelectDestroy() **********************************************
-*  NAME
-*     lSelectDestroy() -- Removes the not needed list elements 
-*
-*  SYNOPSIS
-*     lList* lSelectDestroy(lList *slp, const lCondition *cp) 
-*
-*  FUNCTION
-*     Removes the not needed list elements from the list 'slp' NOT
-*     fulfilling the condition 'cp' 
-*
-*  INPUTS
-*     lList *slp           - source list pointer 
-*     const lCondition *cp - selects rows 
-*
-*  RESULT
-*     lList* - List with the remaining elements 
-******************************************************************************/
+/**
+ * @brief Removes the not needed list elements
+ *
+ * Removes the not needed list elements from the list 'slp' NOT
+ * fulfilling the condition 'cp'
+ *
+ * @param slp source list pointer
+ * @param cp selects rows
+ *
+ * @return List with the remaining elements
+ */
 lList *lSelectDestroy(lList *slp, const lCondition *cp) {
 
    DENTER(CULL_LAYER);
@@ -369,31 +335,21 @@ lList *lSelectDestroy(lList *slp, const lCondition *cp) {
    DRETURN(slp);
 }
 
-/****** cull/db/lSelectElemPack() *********************************************
-*  NAME
-*     lSelectElemPack() -- Extracts some elements fulfilling a condition 
-*
-*  SYNOPSIS
-*     lListElem* 
-*     lSelectElemPack(const lListElem *slp, const lCondition *cp, 
-*                     const lEnumeration *enp, bool isHash, 
-*                     sge_pack_buffer *pb) 
-*
-*  FUNCTION
-*     Creates a new list from the list 'slp' extracting the elements
-*     fulfilling the condition 'cp' or extracts the elements and
-*     stores the contend in 'pb'. 
-*
-*  INPUTS
-*     const lListElem *slp    - source list pointer 
-*     const lCondition *cp    - selects rows 
-*     const lEnumeration *enp - selects columns 
-*     bool isHash             - create hash or not
-*     sge_pack_buffer *pb     - packbuffer
-*
-*  RESULT
-*     lListElem* - list containing the extracted elements
-******************************************************************************/
+/**
+ * @brief Extracts some elements fulfilling a condition
+ *
+ * Creates a new list from the list 'slp' extracting the elements
+ * fulfilling the condition 'cp' or extracts the elements and
+ * stores the contend in 'pb'.
+ *
+ * @param slp source list pointer
+ * @param cp selects rows
+ * @param enp selects columns
+ * @param isHash create hash or not
+ * @param pb packbuffer
+ *
+ * @return list containing the extracted elements
+ */
 lListElem *
 lSelectElemPack(const lListElem *slp, const lCondition *cp,
                 const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) {
@@ -435,34 +391,22 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
    DRETURN(new_ep);
 }
 
-/****** cull/db/lSelectElemDPack() ********************************************
-*  NAME
-*     lSelectElemDPack() -- Extracts some elements fulfilling a condition 
-*
-*  SYNOPSIS
-*     lListElem* 
-*     lSelectElemDPack(const lListelem *slp, const lCondition *cp, 
-*                      const lEnumeration *enp, bool isHash, 
-*                      sge_pack_buffer *pb) 
-*
-*  FUNCTION
-*     Creates a new list from the list 'slp' extracting the elements
-*     fulfilling the condition 'cp' or it packs those elemets into 'pb' if 
-*     it is not nullptr.
-*
-*  INPUTS
-*     const lListElem *slp     - source list pointer 
-*     const lCondition *cp     - selects rows 
-*     const lDescr *dp         - target descriptor for the element
-*     bool  isHash             - creates hash or not
-*     sge_pack_buffer *pb      - packbuffer
-*     uint32_t *elements       - increases the number of elems, if one is
-*                                added to the pb. Only, when elements is 
-*                                not nullptr (only used if pb != nullptr)
-*
-*  RESULT
-*     lListElem* - list containing the extracted elements
-******************************************************************************/
+/**
+ * @brief Extracts some elements fulfilling a condition
+ *
+ * Creates a new list from the list 'slp' extracting the elements
+ * fulfilling the condition 'cp' or it packs those elemets into 'pb' if
+ * it is not nullptr.
+ *
+ * @param slp source list pointer
+ * @param cp selects rows
+ * @param dp target descriptor for the element
+ * @param enp which fields to copy, or nullptr for all of them
+ * @param isHash creates hash or not
+ * @param pb packbuffer
+ *
+ * @return list containing the extracted elements
+ */
 lListElem *
 lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
                  const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) {
@@ -502,58 +446,40 @@ lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
    DRETURN(new_ep);
 }
 
-/****** cull/db/lSelect() *****************************************************
-*  NAME
-*     lSelect() -- Extracts some elements fulfilling a condition 
-*
-*  SYNOPSIS
-*     lList* lSelect(const char *name, const lList *slp, 
-*                    const lCondition *cp, const lEnumeration *enp) 
-*
-*  FUNCTION
-*     Creates a new list from the list 'slp' extracting the elements
-*     fulfilling the condition 'cp'. 
-*
-*  INPUTS
-*     const char *name        - name for the new list 
-*     const lList *slp        - source list pointer 
-*     const lCondition *cp    - selects rows 
-*     const lEnumeration *enp - selects columns 
-*
-*  RESULT
-*     lList* - list containing the extracted elements
-******************************************************************************/
+/**
+ * @brief Extracts some elements fulfilling a condition
+ *
+ * Creates a new list from the list 'slp' extracting the elements
+ * fulfilling the condition 'cp'.
+ *
+ * @param name name for the new list
+ * @param slp source list pointer
+ * @param cp selects rows
+ * @param enp selects columns
+ *
+ * @return list containing the extracted elements
+ */
 lList *lSelect(const char *name, const lList *slp, const lCondition *cp,
                const lEnumeration *enp) {
    return lSelectHashPack(name, slp, cp, enp, true, nullptr);
 }
 
-/****** cull/db/lSelectHashPack() *********************************************
-*  NAME
-*     lSelectHashPack() -- Extracts some elements fulfilling a condition 
-*
-*  SYNOPSIS
-*     lList* 
-*     lSelectHashPack(const char *name, const lList *slp, 
-*                     const lCondition *cp, const lEnumeration *enp, 
-*                     bool isHash, sge_pack_buffer *pb) 
-*
-*  FUNCTION
-*     Creates a new list from the list 'slp' extracting the elements
-*     fulfilling the condition 'cp' or fills the packbuffer if pb is 
-*     not nullptr.
-*
-*  INPUTS
-*     const char *name        - name for the new list 
-*     const lList *slp        - source list pointer 
-*     const lCondition *cp    - selects rows 
-*     const lEnumeration *enp - selects columns 
-*     bool  isHash            - enables/disables the hash generation
-*     sge_pack_buffer *pb     - packbuffer
-*
-*  RESULT
-*     lList* - list containing the extracted elements
-******************************************************************************/
+/**
+ * @brief Extracts some elements fulfilling a condition
+ *
+ * Creates a new list from the list 'slp' extracting the elements
+ * fulfilling the condition 'cp' or fills the packbuffer if pb is
+ * not nullptr.
+ *
+ * @param name name for the new list
+ * @param slp source list pointer
+ * @param cp selects rows
+ * @param enp selects columns
+ * @param isHash enables/disables the hash generation
+ * @param pb packbuffer
+ *
+ * @return list containing the extracted elements
+ */
 lList *lSelectHashPack(const char *name, const lList *slp,
                        const lCondition *cp, const lEnumeration *enp,
                        bool isHash, sge_pack_buffer *pb) {
@@ -646,35 +572,23 @@ lList *lSelectHashPack(const char *name, const lList *slp,
    DRETURN(ret);
 }
 
-/****** cull_db/lSelectDPack() ************************************************
-*  NAME
-*     lSelectDPack() --  Extracts some elements fulfilling a condition 
-*
-*  SYNOPSIS
-*     lList* lSelectDPack(const char *name, const lList *slp, 
-*                         const lCondition *cp, const lDescr *dp, 
-*                         bool isHash, sge_pack_buffer *pb) 
-*
-*
-*  FUNCTION
-*     Creates a new list from the list 'slp' extracting the elements
-*     fulfilling the condition 'cp' or packs the elements into the
-*     packbuffer 'pb' if it is not nullptr.
-*
-*  INPUTS
-*     const char *name        - name for the new list 
-*     const lList *slp        - source list pointer 
-*     const lCondition *cp    - selects rows 
-*     const lDescr *dp        - descriptor for the new list
-*     const lEnumeration *enp - selects columns
-*     bool  isHash            - enables/disables the hash table creation 
-*     sge_pack_buffer *pb     - packbuffer
-*     uint32_t *elements      - number of packed elements
-*                               (only used if pb != nullptr)
-*
-*  RESULT
-*     lList* - list containing the extracted elements
-*******************************************************************************/
+/**
+ * @brief Extracts some elements fulfilling a condition
+ *
+ * Creates a new list from the list 'slp' extracting the elements
+ * fulfilling the condition 'cp' or packs the elements into the
+ * packbuffer 'pb' if it is not nullptr.
+ *
+ * @param name name for the new list
+ * @param slp source list pointer
+ * @param cp selects rows
+ * @param dp descriptor for the new list
+ * @param enp selects columns
+ * @param isHash enables/disables the hash table creation
+ * @param pb packbuffer
+ *
+ * @return list containing the extracted elements
+ */
 lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
                     const lDescr *dp, const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) {
 
@@ -739,29 +653,19 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
    DRETURN(dlp);
 }
 
-/****** cull/db/lPartialDescr() ***********************************************
-*  NAME
-*     lPartialDescr() -- Extracts some fields of a descriptor 
-*
-*  SYNOPSIS
-*     int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, 
-*                       lDescr *ddp, int *indexp) 
-*
-*  FUNCTION
-*     Extracts some fields of the source descriptor 'sdp' masked
-*     by an enumeration 'ep' of needed fields 
-*
-*  INPUTS
-*     const lEnumeration *ep - mask 
-*     const lDescr *sdp      - source 
-*     lDescr *ddp            - destination 
-*     int *indexp            - 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-*******************************************************************************/
+/**
+ * @brief Extracts some fields of a descriptor
+ *
+ * Extracts some fields of the source descriptor 'sdp' masked
+ * by an enumeration 'ep' of needed fields
+ *
+ * @param ep mask
+ * @param sdp source
+ * @param ddp destination
+ * @param indexp
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
                   int *indexp) {
    int i;
@@ -838,29 +742,19 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
    DRETURN(0);
 }
 
-/****** cull/db/lJoinDescr() **************************************************
-*  NAME
-*     lJoinDescr() -- Builds new descriptor using two others 
-*
-*  SYNOPSIS
-*     lDescr* lJoinDescr(const lDescr *sdp0, 
-*                        const lDescr *sdp1, 
-*                        const lEnumeration *ep0, 
-*                        const lEnumeration *ep1) 
-*
-*  FUNCTION
-*     Bilds from two given descriptors 'sdp0' and 'sdp1' a new
-*     descriptor masked by the enumerations 'ep0' and 'ep1'. 
-*
-*  INPUTS
-*     const lDescr *sdp0      - first descriptor 
-*     const lDescr *sdp1      - second descriptor 
-*     const lEnumeration *ep0 - first mask 
-*     const lEnumeration *ep1 - second mask 
-*
-*  RESULT
-*     lDescr* - new descriptor
-******************************************************************************/
+/**
+ * @brief Builds new descriptor using two others
+ *
+ * Bilds from two given descriptors 'sdp0' and 'sdp1' a new
+ * descriptor masked by the enumerations 'ep0' and 'ep1'.
+ *
+ * @param sdp0 first descriptor
+ * @param sdp1 second descriptor
+ * @param ep0 first mask
+ * @param ep1 second mask
+ *
+ * @return new descriptor
+ */
 lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1,
                    const lEnumeration *ep0, const lEnumeration *ep1) {
    int n, m, index;
@@ -914,6 +808,13 @@ lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1,
    DRETURN(ddp);
 }
 
+/**
+ * @brief Build the reduced descriptor a field selection describes
+ *
+ * @param type the full object type
+ * @param what the fields to keep
+ * @return the reduced descriptor, owned by the caller, or nullptr on error
+ */
 lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
 
    lDescr *new_descr = nullptr;
@@ -936,31 +837,21 @@ lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
    DRETURN(new_descr);
 }
 
-/****** cull/db/lString2List() ************************************************
-*  NAME
-*     lString2List() -- Convert char* string into CULL list 
-*
-*  SYNOPSIS
-*     int lString2List(const char *s, lList **lpp, const lDescr *dp, 
-*                      int nm, const char *delimitor); 
-*
-*  FUNCTION
-*     Parses separated strings and adds them into the cull list *lpp
-*     The string is a unique key for the list and resides at field 'nm'
-*     If 'deleminator' is nullptr than isspace() is used.
-*
-*  INPUTS
-*     const char *s         - String to parse   
-*     lList **lpp           - reference to lList*      
-*     const lDescr *dp      - list Type     
-*     int nm                - list field       
-*     const char *delimitor - string delimitor        
-*
-*  RESULT
-*     int - error state
-*         1 - OK
-*         0 - On error
-******************************************************************************/
+/**
+ * @brief Convert char* string into CULL list
+ *
+ * Parses separated strings and adds them into the cull list *lpp
+ * The string is a unique key for the list and resides at field 'nm'
+ * If 'deleminator' is nullptr than isspace() is used.
+ *
+ * @param s String to parse
+ * @param lpp reference to lList*
+ * @param dp list Type
+ * @param nm list field
+ * @param dlmt the separator between entries; nullptr means any whitespace
+ *
+ * @return error state 1 - OK 0 - On error
+ */
 int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
                  const char *dlmt) {
    int pos;
@@ -1017,6 +908,16 @@ int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
    DRETURN(0);
 }
 
+/**
+ * @brief Like #lString2List, but treats `"none"` as an empty list
+ *
+ * @param s the string to parse
+ * @param[out] lpp receives the list
+ * @param dp the object type to create elements of
+ * @param nm the field the parsed string is stored in
+ * @param dlmt the separator between entries; nullptr means any whitespace
+ * @return 1 on success, 0 on error
+ */
 int lString2ListNone(const char *s, lList **lpp, const lDescr *dp,
                      int nm, const char *dlmt) {
    int pos;
@@ -1054,27 +955,18 @@ int lString2ListNone(const char *s, lList **lpp, const lDescr *dp,
    return 0;
 }
 
-/****** cull/db/lDiffListStr() ************************************************
-*  NAME
-*     lDiffListStr() -- Remove elements with the same string
-*
-*  SYNOPSIS
-*     int lDiffListStr(int nm, lList **lpp1, lList **lpp2) 
-*
-*  FUNCTION
-*     Remove elements in both lists with the same string key in 
-*     field 'nm'.
-*
-*  INPUTS
-*     int nm       - field name id 
-*     lList **lpp1 - first list 
-*     lList **lpp2 - second list 
-*
-*  RESULT
-*     int - error status
-*         0 - OK
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Remove elements with the same string
+ *
+ * Remove elements in both lists with the same string key in
+ * field 'nm'.
+ *
+ * @param nm field name id
+ * @param lpp1 first list
+ * @param lpp2 second list
+ *
+ * @return error status 0 - OK -1 - Error
+ */
 int lDiffListStr(int nm, lList **lpp1, lList **lpp2) {
    const char *key;
    const lListElem *ep, *to_check;

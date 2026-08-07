@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Packing and unpacking cull lists, elements and descriptors
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -377,15 +381,12 @@ static int cull_unpack_descr(
    DRETURN(PACK_SUCCESS);
 }
 
-/* ------------------------------------------------------------
-
-   cull_pack_descr() - packs a complete descriptor
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
-
+/**
+ * @brief Pack an object type descriptor
+ *
+ * @param pb the buffer to append to
+ * @param dp the descriptor to pack
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp) {
    int i, ret;
@@ -409,8 +410,19 @@ int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp) {
    DRETURN(PACK_SUCCESS);
 }
 
-/* TODO EB: doc is missing */
-/* TODO EB: remove not needed exit points */
+/**
+ * @brief Pack a field selection as if it were a descriptor
+ *
+ * Lets the receiver build a reduced object type from the selection alone,
+ * without the full descriptor being sent.
+ *
+ * @param pb the buffer to append to
+ * @param what the selection to pack
+ * @param descr the descriptor the selection refers to
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
+ *
+ * @todo remove not needed exit points
+ */
 int
 cull_pack_enum_as_descr(sge_pack_buffer *pb, const lEnumeration *what,
                         const lDescr *descr) {
@@ -588,15 +600,12 @@ static int cull_unpack_cont(
 
 /* ================================================================ */
 
-/* ------------------------------------------------------------
-
-   cull_pack_elem() - packs a list element
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
-
+/**
+ * @brief Pack a whole element, including its descriptor
+ *
+ * @param pb the buffer to append to
+ * @param ep the element to pack
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_pack_elem(sge_pack_buffer *pb, const lListElem *ep) {
    int ret;
@@ -607,6 +616,15 @@ int cull_pack_elem(sge_pack_buffer *pb, const lListElem *ep) {
 }
 
 
+/**
+ * @brief Pack the selected fields of an element
+ *
+ * @param pb the buffer to append to
+ * @param ep the element to pack
+ * @param what which fields to pack, or nullptr for all of them
+ * @param flags packing options
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
+ */
 int
 cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
                        const lEnumeration *what, int flags) {
@@ -645,15 +663,13 @@ cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
    DRETURN(ret);
 }
 
-/* ------------------------------------------------------------
-
-   cull_unpack_elem() - unpacks a list element
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
-
+/**
+ * @brief Read an element written by #cull_pack_elem
+ *
+ * @param pb the buffer to read from
+ * @param[out] epp receives the element, owned by the caller
+ * @param dp the expected object type, or nullptr to take it from the buffer
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_unpack_elem(
         sge_pack_buffer *pb,
@@ -668,6 +684,15 @@ int cull_unpack_elem(
    DRETURN(ret);
 }
 
+/**
+ * @brief Read an element written by #cull_pack_elem_partial
+ *
+ * @param pb the buffer to read from
+ * @param[out] epp receives the element, owned by the caller
+ * @param dp the expected object type, or nullptr to take it from the buffer
+ * @param flags unpacking options
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
+ */
 int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr *dp, int flags) {
    int ret;
    lListElem *ep = nullptr;
@@ -801,15 +826,12 @@ static int cull_pack_object(
    DRETURN(PACK_SUCCESS);
 }
 
-/* ------------------------------------------------------------
-
-   cull_pack_list() - packs a complete list
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
-
+/**
+ * @brief Pack a whole list, including its descriptor
+ *
+ * @param pb the buffer to append to
+ * @param lp the list to pack
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_pack_list(sge_pack_buffer *pb, const lList *lp) {
    int ret;
@@ -819,6 +841,15 @@ int cull_pack_list(sge_pack_buffer *pb, const lList *lp) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Pack the selected fields of every element of a list
+ *
+ * @param pb the buffer to append to
+ * @param lp the list to pack
+ * @param what which fields to pack, or nullptr for all of them
+ * @param flags packing options
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
+ */
 int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
                            lEnumeration *what, int flags) {
    DENTER(CULL_LAYER);
@@ -884,17 +915,13 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
    DRETURN(PACK_SUCCESS);
 }
 
-/* ------------------------------------------------------------
-
-   cull_unpack_list() - unpacks a list 
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
-
+/**
+ * @brief Read a list written by #cull_pack_list
+ *
+ * @param pb the buffer to read from
+ * @param[out] lpp receives the list, owned by the caller
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
-
 int cull_unpack_list(sge_pack_buffer *pb, lList **lpp) {
    int ret;
 
@@ -903,6 +930,14 @@ int cull_unpack_list(sge_pack_buffer *pb, lList **lpp) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Read a list written by #cull_pack_list_partial
+ *
+ * @param pb the buffer to read from
+ * @param[out] lpp receives the list, owned by the caller
+ * @param flags unpacking options
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
+ */
 int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
    int ret;
    lList *lp;
@@ -1035,19 +1070,17 @@ static int cull_unpack_object(
    DRETURN(PACK_SUCCESS);
 }
 
+/// How a field selection is encoded in a packbuffer
 enum {
-   PackWhatAll = 0, PackWhatNone, PackWhatArray
+   PackWhatAll = 0,/**< every field: the selection was #lWhatAll, no array follows */PackWhatNone,/**< no field at all, no array follows */PackWhatArray/**< an explicit list of fields follows */
 };
 
-/* ------------------------------------------------------------
-
-   cull_pack_enum() - packs an enumeration
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
-
+/**
+ * @brief Pack a field selection
+ *
+ * @param pb the buffer to append to
+ * @param enp the selection to pack
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_pack_enum(
         sge_pack_buffer *pb,
@@ -1121,15 +1154,12 @@ int cull_pack_enum(
    DRETURN(ret);
 }
 
-/* ------------------------------------------------------------
-
-   cull_unpack_enum() - unpacks an enumeration
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
-
+/**
+ * @brief Read a field selection written by #cull_pack_enum
+ *
+ * @param pb the buffer to read from
+ * @param[out] enpp receives the selection, owned by the caller
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_unpack_enum(
         sge_pack_buffer *pb,
@@ -1236,15 +1266,12 @@ int cull_unpack_enum(
    DRETURN(ret);
 }
 
-/* ------------------------------------------------------------
-
-   cull_pack_cond() - packs an condition
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
-
+/**
+ * @brief Pack a selection condition
+ *
+ * @param pb the buffer to append to
+ * @param cp the condition to pack
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_pack_cond(
         sge_pack_buffer *pb,
@@ -1343,15 +1370,12 @@ int cull_pack_cond(
    DRETURN(PACK_SUCCESS);
 }
 
-/* ------------------------------------------------------------
-
-   cull_unpack_cond() - unpacks an condition
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
-
+/**
+ * @brief Read a selection condition written by #cull_pack_cond
+ *
+ * @param pb the buffer to read from
+ * @param[out] cpp receives the condition, owned by the caller
+ * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_unpack_cond(
         sge_pack_buffer *pb,
@@ -1468,28 +1492,17 @@ int cull_unpack_cond(
    DRETURN(PACK_SUCCESS);
 }
 
-/****** cull_pack/setByteArray() ***********************************************
-*  NAME
-*     setByteArray() -- takes a byte array, transformes it into ASCII and sets
-*                       it as a string into an element
-*
-*  SYNOPSIS
-*     void setByteArray(const char *byteArray, int size, lListElem *elem, int 
-*     name) 
-*
-*  FUNCTION
-*     makes a string out of a byte array and sets that string into an element 
-*
-*  INPUTS
-*     const char *byteArray -  byte array
-*     int size              - size of the byte array 
-*     lListElem *elem       - target element 
-*     int name              - target attribute 
-*
-*  RESULT
-*     void - nothing 
-*
-*******************************************************************************/
+/**
+ * @brief Takes a byte array, transformes it into ASCII and sets
+ *
+ * makes a string out of a byte array and sets that string into an element
+ *
+ * @param byteArray byte array
+ * @param size size of the byte array
+ * @param elem target element
+ * @param name target attribute
+ *
+ */
 void setByteArray(const char *byteArray, int size, lListElem *elem, int name) {
    const char *numbers = {"0123456789ABCDEF"};
    int lower_part;
@@ -1581,28 +1594,19 @@ int getByteArray(char **byte, const lListElem *elem, int name) {
    return size;
 }
 
-/****** pack_job_delivery/pack_job_delivery() **********************************
-*  NAME
-*     pack_job_delivery() -- pack a job to be sent to execd
-*
-*  SYNOPSIS
-*     int pack_job_delivery(sge_pack_buffer *pb, lListElem *jep, lList *qlp,
-*     lListElem *pep)
-*
-*  FUNCTION
-*     This function is used in qmaster and by qrsh -inherit to deliver
-*     jobs to execd's.
-*
-*  INPUTS
-*     sge_pack_buffer *pb - packing buffer
-*     lListElem *jep      - JB_Type
-*
-*  RESULT
-*     int - PACK_SUCCESS on success
-*
-*  NOTES
-*     MT-NOTE: pack_job_delivery() is MT safe
-*******************************************************************************/
+/**
+ * @brief Pack a job to be sent to execd
+ *
+ * This function is used in qmaster and by qrsh -inherit to deliver
+ * jobs to execd's.
+ *
+ * @param pb packing buffer
+ * @param jep JB_Type
+ *
+ * @return PACK_SUCCESS on success
+ *
+ * @note MT-NOTE: pack_job_delivery() is MT safe
+ */
 int pack_job_delivery(sge_pack_buffer *pb, lListElem *jep)
 {
    int ret;

@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Packing and unpacking cull data structures
+ */
+
 #include "cull/cull_list.h"
 #include "cull/pack.h"
 

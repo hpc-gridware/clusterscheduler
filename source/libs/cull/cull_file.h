@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Reading and writing cull lists as files
+ */
+
 #include "cull/cull_list.h"
 #include "cull/pack.h"
 

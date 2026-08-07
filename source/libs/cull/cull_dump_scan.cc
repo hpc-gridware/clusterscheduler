@@ -34,12 +34,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Writing cull data as text and reading it back
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cctype>
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
+/// Suppresses the monitoring code in the rmon macros for this file
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
@@ -56,9 +61,8 @@
 
 #include <cinttypes>
 
-#define READ_LINE_LENGHT MAX_STRING_SIZE
-
-#define INDENT_STRING      "   "
+#define READ_LINE_LENGHT MAX_STRING_SIZE ///< buffer size for one line read back from a dump
+#define INDENT_STRING      "   " ///< the string one nesting level is indented by
 
 static int space_comment(char *s);
 
@@ -90,26 +94,17 @@ static int fGetList(FILE *fp, lList **value);
 
 static int fGetObject(FILE *fp, lListElem **value);
 
-/****** cull/dump_scan/lDumpDescr() ****************************************
-*  NAME
-*     lDumpDescr() -- Write a descriptor (for debugging purpose)
-*
-*  SYNOPSIS
-*     int lDumpDescr(FILE *fp, const lDescr *dp, int indent) 
-*
-*  FUNCTION
-*     Write a descriptor (for debugging purpose) 
-*
-*  INPUTS
-*     FILE *fp         - file pointer 
-*     const lDescr *dp - descriptor 
-*     int indent       -  
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Write a descriptor (for debugging purpose)
+ *
+ * Write a descriptor (for debugging purpose)
+ *
+ * @param fp file pointer
+ * @param dp descriptor
+ * @param indent
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lDumpDescr(FILE *fp, const lDescr *dp, int indent) {
    int i, ret = ~EOF;
    char space[256];
@@ -143,22 +138,15 @@ int lDumpDescr(FILE *fp, const lDescr *dp, int indent) {
    DRETURN((ret == EOF) ? -1 : 0);
 }
 
-/****** cull/dump_scan/lUndumpDescr() ****************************************
-*  NAME
-*     lUndumpDescr() -- Read a descriptor from file (debug) 
-*
-*  SYNOPSIS
-*     lDescr* lUndumpDescr(FILE *fp) 
-*
-*  FUNCTION
-*     Read a descriptor from file (for debugging purposes) 
-*
-*  INPUTS
-*     FILE *fp - file stream 
-*
-*  RESULT
-*     lDescr* - descriptor 
-*******************************************************************************/
+/**
+ * @brief Read a descriptor from file (debug)
+ *
+ * Read a descriptor from file (for debugging purposes)
+ *
+ * @param fp file stream
+ *
+ * @return descriptor
+ */
 lDescr *lUndumpDescr(FILE *fp) {
    int n, i;
    lDescr *dp = nullptr;
@@ -211,29 +199,19 @@ lDescr *lUndumpDescr(FILE *fp) {
    DRETURN(dp);
 }
 
-/****** cull/dump_scan/lDumpElem() ********************************************
-*  NAME
-*     lDumpElem() -- Dump a given element into a file 
-*
-*  SYNOPSIS
-*     int lDumpElem(const char *fname, const lListElem *ep, int indent) 
-*
-*  FUNCTION
-*     Dump a given element into a file 
-*
-*  INPUTS
-*     const char *fname   - filename 
-*     const lListElem *ep - element 
-*     int indent          - 
-*
-*  RESULT
-*     int - error state
-*        -1 - Error
-*         0 - OK
-*
-*  NOTES
-*     MT-NOTE: lDumpElem() is not MT safe
-******************************************************************************/
+/**
+ * @brief Dump a given element into a file
+ *
+ * Dump a given element into a file
+ *
+ * @param fname filename
+ * @param ep element
+ * @param indent
+ *
+ * @return error state -1 - Error 0 - OK
+ *
+ * @note MT-NOTE: lDumpElem() is not MT safe
+ */
 int lDumpElem(const char *fname, const lListElem *ep, int indent) {
    int ret;
    FILE *fp;
@@ -252,29 +230,19 @@ int lDumpElem(const char *fname, const lListElem *ep, int indent) {
    return -1;
 }
 
-/****** cull/dump_scan/lDumpElemFp() ******************************************
-*  NAME
-*     lDumpElemFp() -- Dump a given element into FILE stream 
-*
-*  SYNOPSIS
-*     int lDumpElemFp(FILE *fp, const lListElem *ep, int indent) 
-*
-*  FUNCTION
-*     Dump a given element into FILE stream
-*
-*  INPUTS
-*     FILE *fp            - file stream 
-*     const lListElem *ep - element 
-*     int indent          - 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error 
-*
-*  NOTES
-*     MT-NOTE: lDumpElemFp() is not MT safe
-******************************************************************************/
+/**
+ * @brief Dump a given element into FILE stream
+ *
+ * Dump a given element into FILE stream
+ *
+ * @param fp file stream
+ * @param ep element
+ * @param indent
+ *
+ * @return error state 0 - OK -1 - Error
+ *
+ * @note MT-NOTE: lDumpElemFp() is not MT safe
+ */
 int lDumpElemFp(FILE *fp, const lListElem *ep, int indent) {
    int i, ret = ~EOF;
    lList *tlp;
@@ -380,26 +348,17 @@ int lDumpElemFp(FILE *fp, const lListElem *ep, int indent) {
    DRETURN((ret == EOF) ? -1 : 0);
 }
 
-/****** cull/dump_scan/lDumpObject() ********************************************
-*  NAME
-*     lDumpObject() -- Writes an object to a FILE stream
-*
-*  SYNOPSIS
-*     int lDumpObject(FILE *fp, const lListElem *ep, int indent) 
-*
-*  FUNCTION
-*     Writes an object to a FILE stream. 
-*
-*  INPUTS
-*     FILE *fp             - file stream 
-*     const lListElem *ep  - object 
-*     int indent           - 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*******************************************************************************/
+/**
+ * @brief Writes an object to a FILE stream
+ *
+ * Writes an object to a FILE stream.
+ *
+ * @param fp file stream
+ * @param ep object
+ * @param indent
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int lDumpObject(FILE *fp, const lListElem *ep, int indent) {
    int i, ret = ~EOF;
 
@@ -432,29 +391,19 @@ int lDumpObject(FILE *fp, const lListElem *ep, int indent) {
 
 }
 
-/****** cull/dump_scan/lDumpList() ********************************************
-*  NAME
-*     lDumpList() -- Writes a list to a FILE stream
-*
-*  SYNOPSIS
-*     int lDumpList(FILE *fp, const lList *lp, int indent) 
-*
-*  FUNCTION
-*     Writes a list to a FILE stream. 
-*
-*  INPUTS
-*     FILE *fp        - file stream 
-*     const lList *lp - list 
-*     int indent      - 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*
-*  NOTES
-*     MT-NOTE: lDumpList() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Writes a list to a FILE stream
+ *
+ * Writes a list to a FILE stream.
+ *
+ * @param fp file stream
+ * @param lp list
+ * @param indent
+ *
+ * @return error state 0 - OK -1 - Error
+ *
+ * @note MT-NOTE: lDumpList() is not MT safe
+ */
 int lDumpList(FILE *fp, const lList *lp, int indent) {
    const lListElem *ep;
    int i, ret = ~EOF;
@@ -494,23 +443,16 @@ int lDumpList(FILE *fp, const lList *lp, int indent) {
 
 }
 
-/****** cull/dump_scan/lUndumpElem() ******************************************
-*  NAME
-*     lUndumpElem() -- Read element from FILE stream 
-*
-*  SYNOPSIS
-*     lListElem* lUndumpElem(FILE *fp, const lDescr *dp) 
-*
-*  FUNCTION
-*     Read element from FILE stream 
-*
-*  INPUTS
-*     FILE *fp         - file stream 
-*     const lDescr *dp - descriptor 
-*
-*  RESULT
-*     lListElem* - Read element 
-******************************************************************************/
+/**
+ * @brief Read element from FILE stream
+ *
+ * Reads an element from a file previously written by #lDumpElem.
+ *
+ * @param fname name of the file to read
+ * @param dp descriptor
+ *
+ * @return Read element
+ */
 lListElem *lUndumpElem(const char *fname, const lDescr *dp) {
    lListElem *ep = nullptr;
    FILE *fp;
@@ -527,23 +469,16 @@ lListElem *lUndumpElem(const char *fname, const lDescr *dp) {
    DRETURN(ep);
 }
 
-/****** cull/dump_scan/lUndumpElemFp() ******************************************
-*  NAME
-*     lUndumpElemFp() -- Read element from FILE stream 
-*
-*  SYNOPSIS
-*     lListElem* lUndumpElemFp(FILE *fp, const lDescr *dp) 
-*
-*  FUNCTION
-*     Read element from FILE stream 
-*
-*  INPUTS
-*     FILE *fp         - file stream 
-*     const lDescr *dp - descriptor 
-*
-*  RESULT
-*     lListElem* - Read element 
-******************************************************************************/
+/**
+ * @brief Read element from FILE stream
+ *
+ * Reads an element from a stream previously written by #lDumpElemFp.
+ *
+ * @param fp the stream to read from
+ * @param dp descriptor
+ *
+ * @return Read element
+ */
 lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp) {
    lListElem *ep;
    int n, i;
@@ -649,25 +584,15 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp) {
    DRETURN(ep);
 }
 
-/****** cull/dump_scan/lUndumpObject() ******************************************
-*  NAME
-*     lUndumpObject() -- Reads a by lDumpList dumped dump 
-*
-*  SYNOPSIS
-*     lListElem* lUndumpObject(FILE *fp) 
-*
-*  FUNCTION
-*     Reads a by lDumpList dumped dump into the memory. 
-*
-*  INPUTS
-*     FILE *fp         - file pointer 
-*
-*  RESULT
-*     lListElem* - Read list element
-*
-*  NOTES
-*
-******************************************************************************/
+/**
+ * @brief Reads a by lDumpList dumped dump
+ *
+ * Reads a by lDumpList dumped dump into the memory.
+ *
+ * @param fp file pointer
+ *
+ * @return Read list element
+ */
 lListElem *lUndumpObject(FILE *fp) {
    lListElem *ep;
    lDescr *dp = nullptr;
@@ -716,37 +641,27 @@ lListElem *lUndumpObject(FILE *fp) {
    DRETURN(ep);
 }
 
-/****** cull/dump_scan/lUndumpList() ******************************************
-*  NAME
-*     lUndumpList() -- Reads a by lDumpList dumped dump 
-*
-*  SYNOPSIS
-*     lList* lUndumpList(FILE *fp, const char *name, const lDescr *dp) 
-*
-*  FUNCTION
-*     Reads a by lDumpList dumped dump into the memory. 
-*
-*  INPUTS
-*     FILE *fp         - file pointer 
-*     const char *name - new name of list or nullptr if the old name in the
-*                        dumpfile should be used as listname 
-*     const lDescr *dp - new list descriptor or nullptr if the old list
-*                        descriptor should be used as list descriptor 
-*
-*  RESULT
-*     lList* - Read list 
-*
-*  NOTES
-*     Actually a type/name matching is only performed for the list
-*     itself and not for its sublists.
-*     If an implementation of changed sublist descriptors is desired
-*     we can probably use the following syntax for lUndumpList.
-*     lList* lUndumpList(fp, name, formatstring, ...)
-*     with formatstring like "%T(%I -> %T(%I->%T))" and the varargs 
-*     list: ".....", lDescr1, fieldname1, lDescr2, fieldname2, lDescr3
-*     or write a wrapper around lUndumpList which parses this format and 
-*     hands over the varargs list to lUndumpList
-******************************************************************************/
+/**
+ * @brief Reads a by lDumpList dumped dump
+ *
+ * Reads a by lDumpList dumped dump into the memory.
+ *
+ * @param fp file pointer
+ * @param name new name of list or nullptr if the old name in the dumpfile should be used as listname
+ * @param dp new list descriptor or nullptr if the old list descriptor should be used as list descriptor
+ *
+ * @return Read list
+ *
+ * @note Actually a type/name matching is only performed for the list
+ *       itself and not for its sublists.
+ *       If an implementation of changed sublist descriptors is desired
+ *       we can probably use the following syntax for lUndumpList.
+ *       lList* lUndumpList(fp, name, formatstring, ...)
+ *       with formatstring like "%T(%I -> %T(%I->%T))" and the varargs
+ *       list: ".....", lDescr1, fieldname1, lDescr2, fieldname2, lDescr3
+ *       or write a wrapper around lUndumpList which parses this format and
+ *       hands over the varargs list to lUndumpList
+ */
 lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp) {
    lList *lp = nullptr;
    lListElem *fep, *ep;

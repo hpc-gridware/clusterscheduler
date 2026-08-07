@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The packbuffer: a platform independent byte stream
+ */
+
 #include "cull/pack.h"
 
 #include <cstdio>
@@ -46,6 +50,7 @@
 
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
+/// Suppresses the monitoring code in the rmon macros for this file
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
@@ -64,91 +69,63 @@
 #endif
 
 
-/****** cull/pack/--CULL_Packing ***************************************
-*
-*  NAME
-*     CULL_Packing -- platform independent exchange format
-*
-*  FUNCTION
-*     The cull packing functions provide a framework for a
-*     platform independent data representation.
-*
-*     Data is written into a packbuffer. Individual data words
-*     are written in network byte order.
-*
-*     Data in the packbuffer can be compressed.
-*
-*  NOTES
-*     Other platform independent formats, like XML, should be
-*     implemented.
-*
-*  SEE ALSO
-*     cull/pack/-Versioncontrol
-****************************************************************************
-*/
+/**
+ * @defgroup cull_packing Packbuffers
+ * @brief A platform independent exchange format for cull data
+ *
+ * Data is written into a packbuffer, individual words in network byte order,
+ * so hosts of different architectures can exchange it. The contents can
+ * optionally be compressed.
+ *
+ * @note Other platform independent formats, like XML, should be implemented.
+ *
+ * @see @ref cull_pack_version
+ */
+
 
 /* -------------------------------
 
    get chunk_size
 
  */
+/**
+ * @brief The size a packbuffer grows by when it runs out of room
+ *
+ * @return the chunk size in bytes
+ */
 int pack_get_chunk() {
    return CHUNK;
 }
 
-/****** cull/pack/init_packbuffer() *******************************************
-*  NAME
-*     init_packbuffer() -- initialize packing buffer
-*
-*  SYNOPSIS
-*     int init_packbuffer(sge_pack_buffer *pb, int initial_size,
-*                         bool just_count, bool with_auth_info)
-*
-*  FUNCTION
-*     Initialize a packing buffer.
-*     Allocates the necessary memory. If more memory is needed during the use
-*     of the packbuffer, it will be reallocated increasing the size by
-*     chunk_size (see function pack_set_chunk).
-*
-*     Since version 6.0, version information is provided in the packbuffer and
-*     is included in sent messages.
-*     For best possible backward interoperability with former versions, an
-*     integer with value 0 is padded before the version information as first
-*     word in the packbuffer. This triggeres error handling in former versions.
-*
-*     Functions using packing buffers in GDI or related code should use the
-*     function ocs::gdi::Client::sge_gdi_packet_get_pb_size() to find the correct
-*     "initial_size".
-*
-*  INPUTS
-*     sge_pack_buffer *pb - the packbuffer to initialize
-*     int initial_size    - the amount of memory to be allocated at
-*                           initialization.
-*                           If a value of 0 is given as initial_size, a size
-*                           of chunk_size (global variable, see function
-*                           pack_set_chunk) will be used.
-*     bool just_count     - if true, no memory will be allocated and the
-*                           "just_count" property of the packbuffer will
-*                           be set.
-*     bool with_auth_info - if true, the packbuffer will be initialized with
-*                           authentication information (user and group information)
-*                           This is the case for all pack buffers which are used for
-*                           communication between components.
-*                           For spooling operations no auth_info is needed.
-*
-*  RESULT
-*     int - PACK_SUCCESS on success
-*           PACK_ENOMEM  if memory allocation fails
-*           PACK_FORMAT  if no valid packbuffer is passed
-*
-*  NOTES
-*     MT-NOTE: init_packbuffer() is MT safe (assumptions)
-*
-*  SEE ALSO
-*     cull/pack/-Packing-typedefs
-*     cull/pack/pack_set_chunk()
-*     gdi/request_internal/sge_gdi_packet_get_pb_size()
-*******************************************************************************/
+/**
+ * @brief Initialize packing buffer
+ *
+ * Initialize a packing buffer.
+ * Allocates the necessary memory. If more memory is needed during the use
+ * of the packbuffer, it will be reallocated increasing the size by
+ * chunk_size (see function pack_set_chunk).
+ *
+ * Since version 6.0, version information is provided in the packbuffer and
+ * is included in sent messages.
+ * For best possible backward interoperability with former versions, an
+ * integer with value 0 is padded before the version information as first
+ * word in the packbuffer. This triggeres error handling in former versions.
+ *
+ * Functions using packing buffers in GDI or related code should use the
+ * function ocs::gdi::Client::sge_gdi_packet_get_pb_size() to find the correct
+ * "initial_size".
+ *
+ * @param pb the packbuffer to initialize
+ * @param initial_size the amount of memory to be allocated at initialization. If a value of 0 is given as initial_size, a size of chunk_size (global variable, see function pack_set_chunk) will be used.
+ * @param just_count if true, no memory will be allocated and the "just_count" property of the packbuffer will be set.
+ * @param with_auth_info if true, the packbuffer will be initialized with authentication information (user and group information) This is the case for all pack buffers which are used for communication between components. For spooling operations no auth_info is needed.
+ *
+ * @return PACK_SUCCESS on success PACK_ENOMEM  if memory allocation fails PACK_FORMAT  if no valid packbuffer is passed
+ *
+ * @note MT-NOTE: init_packbuffer() is MT safe (assumptions)
+ *
+ * @see `pack_set_chunk()`, `sge_gdi_packet_get_pb_size()`
+ */
 int
 init_packbuffer(sge_pack_buffer *pb, size_t initial_size, bool just_count, bool with_auth_info) {
    DENTER(PACK_LAYER);
@@ -207,13 +184,20 @@ init_packbuffer(sge_pack_buffer *pb, size_t initial_size, bool just_count, bool 
    DRETURN(PACK_SUCCESS);
 }
 
-/**************************************************************
- initialize packing buffer out of a normal character buffer
- set read/write pointer to the beginning
-
- NOTES
-    MT-NOTE: init_packbuffer_from_buffer() is MT safe (assumptions)
- **************************************************************/
+/**
+ * @brief Wrap an existing byte block in a packbuffer for reading
+ *
+ * The read pointer is set to the beginning. @p buf is not copied and stays
+ * owned by the caller.
+ *
+ * @param pb the buffer to initialise
+ * @param buf the bytes to read from
+ * @param buflen how many bytes @p buf holds
+ * @param with_auth_info true when the block starts with authentication information
+ * @return #PACK_SUCCESS, #PACK_VERSION on a version mismatch, or #PACK_AUTHINFO
+ *
+ * @note MT-NOTE: init_packbuffer_from_buffer() is MT safe (assumptions)
+ */
 int
 init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, uint32_t buflen, bool with_auth_info) {
    DENTER(PACK_LAYER);
@@ -274,6 +258,11 @@ init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, uint32_t buflen, boo
 
 /**************************************************************/
 /* MT-NOTE: clear_packbuffer() is MT safe */
+/**
+ * @brief Release a packbuffer's memory and the identity it carries
+ *
+ * @param pb the buffer to clear; may be nullptr
+ */
 void clear_packbuffer(sge_pack_buffer *pb) {
    if (pb != nullptr) {
       sge_free(&pb->head_ptr);
@@ -282,9 +271,12 @@ void clear_packbuffer(sge_pack_buffer *pb) {
    }
 }
 
-/*************************************************************
- look whether pb is filled
- *************************************************************/
+/**
+ * @brief Does the buffer hold anything beyond its version header?
+ *
+ * @param pb the buffer to test
+ * @return non-zero when payload has been written
+ */
 int pb_filled(
         sge_pack_buffer *pb
 ) {
@@ -292,19 +284,24 @@ int pb_filled(
    return (pb_used(pb) > (2 * INTSIZE));
 }
 
-/*************************************************************
- look for the number of bytes that are unused
- i.e. that are not yet consumed
- *************************************************************/
+/**
+ * @brief How much room is left in the buffer?
+ *
+ * @param pb the buffer to measure
+ * @return the number of allocated but unused bytes
+ */
 int pb_unused(
         sge_pack_buffer *pb
 ) {
    return (pb->mem_size - pb->bytes_used);
 }
 
-/*************************************************************
- look for the number of bytes that are used
- *************************************************************/
+/**
+ * @brief How much of the buffer is filled?
+ *
+ * @param pb the buffer to measure
+ * @return the number of bytes written so far
+ */
 int pb_used(
         sge_pack_buffer *pb
 ) {
@@ -322,6 +319,13 @@ int pb_used(
    PACK_SUCCESS
    PACK_ENOMEM
    PACK_FORMAT
+ */
+/**
+ * @brief Append a 32 bit integer, in network byte order
+ *
+ * @param pb the buffer to append to
+ * @param i the value to write
+ * @return #PACK_SUCCESS, or #PACK_ENOMEM when the buffer could not grow
  */
 int packint(sge_pack_buffer *pb, uint32_t i) {
    uint32_t J = 0;
@@ -349,6 +353,13 @@ int packint(sge_pack_buffer *pb, uint32_t i) {
    DRETURN(PACK_SUCCESS);
 }
 
+/**
+ * @brief Overwrite the 32 bit integer at the current position
+ *
+ * @param pb the buffer to write into
+ * @param i the value to write
+ * @return #PACK_SUCCESS, or #PACK_ENOMEM when the buffer could not grow
+ */
 int repackint(sge_pack_buffer *pb, uint32_t i) {
    uint32_t J = 0;
 
@@ -363,6 +374,13 @@ int repackint(sge_pack_buffer *pb, uint32_t i) {
    DRETURN(PACK_SUCCESS);
 }
 
+/**
+ * @brief Append a 64 bit integer, in network byte order
+ *
+ * @param pb the buffer to append to
+ * @param i the value to write
+ * @return #PACK_SUCCESS, or #PACK_ENOMEM when the buffer could not grow
+ */
 int packint64(sge_pack_buffer *pb, uint64_t i) {
    DENTER(PACK_LAYER);
 
@@ -387,6 +405,7 @@ int packint64(sge_pack_buffer *pb, uint64_t i) {
    DRETURN(PACK_SUCCESS);
 }
 
+/// Size of a packed double, in bytes
 #define DOUBLESIZE 8
 
 /*
@@ -394,6 +413,13 @@ int packint64(sge_pack_buffer *pb, uint64_t i) {
    PACK_SUCCESS
    PACK_ENOMEM
    PACK_FORMAT
+ */
+/**
+ * @brief Append a double, in a platform independent representation
+ *
+ * @param pb the buffer to append to
+ * @param d the value to write
+ * @return #PACK_SUCCESS, or #PACK_ENOMEM when the buffer could not grow
  */
 int packdouble(sge_pack_buffer *pb, double d) {
    DENTER(PACK_LAYER);
@@ -428,6 +454,13 @@ int packdouble(sge_pack_buffer *pb, double d) {
    PACK_ENOMEM
    PACK_FORMAT
 
+ */
+/**
+ * @brief Append a string, including its terminating NUL
+ *
+ * @param pb the buffer to append to
+ * @param str the string to write; nullptr is written as an empty string
+ * @return #PACK_SUCCESS, or #PACK_ENOMEM when the buffer could not grow
  */
 int packstr(sge_pack_buffer *pb, const char *str) {
    DENTER(PACK_LAYER);
@@ -482,13 +515,13 @@ int packstr(sge_pack_buffer *pb, const char *str) {
    DRETURN(PACK_SUCCESS);
 }
 
-/* ---------------------------------------------------------
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
-
+/**
+ * @brief Append a raw block of bytes
+ *
+ * @param pb the buffer to append to
+ * @param buf_ptr the bytes to write
+ * @param buf_size how many bytes to write
+ * @return #PACK_SUCCESS, or #PACK_ENOMEM when the buffer could not grow
  */
 int packbuf(
         sge_pack_buffer *pb,
@@ -538,6 +571,13 @@ int packbuf(
    PACK_FORMAT
 
  */
+/**
+ * @brief Read a 32 bit integer written by #packint
+ *
+ * @param pb the buffer to read from
+ * @param[out] ip receives the value
+ * @return #PACK_SUCCESS, #PACK_FORMAT when the buffer is exhausted or malformed, or #PACK_ENOMEM
+ */
 int unpackint(sge_pack_buffer *pb, uint32_t *ip) {
    DENTER(PACK_LAYER);
 
@@ -567,6 +607,13 @@ int unpackint(sge_pack_buffer *pb, uint32_t *ip) {
    PACK_FORMAT
 
  */
+/**
+ * @brief Read a 64 bit integer written by #packint64
+ *
+ * @param pb the buffer to read from
+ * @param[out] ip receives the value
+ * @return #PACK_SUCCESS, #PACK_FORMAT when the buffer is exhausted or malformed, or #PACK_ENOMEM
+ */
 int unpackint64(sge_pack_buffer *pb, uint64_t *ip) {
    DENTER(PACK_LAYER);
 
@@ -595,6 +642,13 @@ int unpackint64(sge_pack_buffer *pb, uint64_t *ip) {
    (PACK_ENOMEM)
    PACK_FORMAT
 
+ */
+/**
+ * @brief Read a double written by #packdouble
+ *
+ * @param pb the buffer to read from
+ * @param[out] dp receives the value
+ * @return #PACK_SUCCESS, #PACK_FORMAT when the buffer is exhausted or malformed, or #PACK_ENOMEM
  */
 int unpackdouble(sge_pack_buffer *pb, double *dp) {
    DENTER(PACK_LAYER);
@@ -676,6 +730,14 @@ int unpackstr(sge_pack_buffer *pb, char **str) {
    PACK_ENOMEM
    PACK_FORMAT
  */
+/**
+ * @brief Read a raw byte block written by #packbuf
+ *
+ * @param pb the buffer to read from
+ * @param[out] buf_ptr receives the block, allocated by this function; the caller owns it
+ * @param buf_size number of bytes to read
+ * @return #PACK_SUCCESS, #PACK_FORMAT when the buffer is exhausted or malformed, or #PACK_ENOMEM
+ */
 int unpackbuf(sge_pack_buffer *pb, char **buf_ptr, int buf_size) {
 
    DENTER(PACK_LAYER);
@@ -702,6 +764,12 @@ int unpackbuf(sge_pack_buffer *pb, char **buf_ptr, int buf_size) {
    DRETURN(PACK_SUCCESS);
 }
 
+/**
+ * @brief The message belonging to a pack error code
+ *
+ * @param errnum one of #PACK_SUCCESS and its neighbours
+ * @return the message; static storage, do not free
+ */
 const char *cull_pack_strerror(int errnum) {
    switch (errnum) {
       case PACK_SUCCESS:
@@ -722,25 +790,16 @@ const char *cull_pack_strerror(int errnum) {
    }
 }
 
-/****** cull/pack/pb_are_equivalent() *****************************************
-*  NAME
-*     pb_are_equivalent() -- check if both buffers are equivalent
-*
-*  SYNOPSIS
-*     bool pb_are_equivalent(sge_pack_buffer *pb1, sge_pack_buffer *pb2)
-*
-*  FUNCTION
-*     Check if size and content of both packbuffers is equivalent
-*
-*  INPUTS
-*     sge_pack_buffer *pb1 - packbuffer
-*     sge_pack_buffer *pb2 - packbuffer
-*
-*  RESULT
-*     bool - equivalent?
-*        true  - yes
-*        false - no
-*******************************************************************************/
+/**
+ * @brief Check if both buffers are equivalent
+ *
+ * Check if size and content of both packbuffers is equivalent
+ *
+ * @param pb1 packbuffer
+ * @param pb2 packbuffer
+ *
+ * @return equivalent? true  - yes false - no
+ */
 bool
 pb_are_equivalent(sge_pack_buffer *pb1, sge_pack_buffer *pb2) {
    bool ret = true;
@@ -752,24 +811,16 @@ pb_are_equivalent(sge_pack_buffer *pb1, sge_pack_buffer *pb2) {
    return ret;
 }
 
-/****** cull/pack/pb_print_to() ***********************************************
-*  NAME
-*     pb_print_to() -- Print content of packbuffer
-*
-*  SYNOPSIS
-*     void pb_print_to(sge_pack_buffer *pb, FILE* file)
-*
-*  FUNCTION
-*     Print content of packbuffer into file
-*
-*  INPUTS
-*     sge_pack_buffer *pb - packbuffer pointer
-*     bool only_header    - show only summary information
-*     FILE* file          - file stream (e.g. stderr)
-*
-*  RESULT
-*     void - NONE
-*******************************************************************************/
+/**
+ * @brief Print content of packbuffer
+ *
+ * Print content of packbuffer into file
+ *
+ * @param pb packbuffer pointer
+ * @param only_header show only summary information
+ * @param file file stream (e.g. stderr)
+ *
+ */
 void
 pb_print_to(sge_pack_buffer *pb, bool only_header, FILE *file) {
    size_t i;

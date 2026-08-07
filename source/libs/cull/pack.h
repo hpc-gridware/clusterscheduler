@@ -35,6 +35,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The packbuffer and its version control
+ */
+
 
 
 #ifndef __BASIS_TYPES_H
@@ -44,76 +48,70 @@
 
 #endif
 
-#define CHUNK  (1024*1024)
+#define CHUNK  (1024*1024) ///< bytes a packbuffer grows by when it runs out of room
+/**
+ * @defgroup cull_pack_version Packbuffer version control
+ * @brief How components of different cull versions reject each other's data
+ *
+ * Enhancements may change the format in which data is represented for spooling
+ * and communication. So that components which cannot understand each other
+ * reject the data cleanly instead of misreading it, every packbuffer carries a
+ * version id, checked when the buffer is read.
+ *
+ * The two high bytes of the four byte id hold the version number. The two low
+ * bytes are reserved for a subprotocol - for example the current binary format
+ * versus an XML one.
+ *
+ * @note Grid Engine versions predating version control cannot handle messages
+ *       carrying it. The version word is therefore preceded by a zero four byte
+ *       integer, which makes every known older format fail cleanly.
+ *
+ * History of #CULL_VERSION, newest first:
+ *
+ * | Version | Change |
+ * |---|---|
+ * | `0x10021000` | current; raised for MUNGE authentication (CS-995) |
+ * | `0x10020000` | fixed packing of the `lObject` type: the descriptor was sent twice |
+ * | `0x10010000` | added information about attribute changes |
+ * | `0x10000000` | introduction of version control |
+ *
+ * @see @ref cull_packing
+ */
 
-/****** cull/pack/-Versioncontrol ***************************************
-*
-*  NAME
-*     Versioncontrol -- handling of different cull versions
-*
-*  SYNOPSIS
-*     #define CULL_VERSION 0x10010000
-*
-*  FUNCTION
-*     Enhancements of the product may make it necessary to change the
-*     way how (in which format) data is represented for spooling and  
-*     communication.
-*
-*     To ensure that components of different cull versions, that cannot
-*     communicate, cleanly reject data of a different format, a cull
-*     version check has been implemented.
-*
-*     A cull version id has been introduced that will be checked when
-*     cull packbuffers are read.
-*
-*     Currently the 2 highest bytes of the 4 byte integer used to
-*     encode version information are used for a version number.
-*     The 2 lower bytes could be used to encode for example a 
-*     subversion / subprotocol like cull binary format (the current 
-*     implementation) and XML format.
-*
-*  NOTES
-*     Older Grid Engine versions that had no version control cannot 
-*     properly handle messages with version information.
-*     Therefore the version information is preceeded by a 0 value
-*     4 byte integer, which will result in some sort of error handling
-*     for all known/used message formats.
-*
-*     Current CULL_VERSION:   0x10020000
-*                             Fixed a bug with packing of lObject type:
-*                             Descriptor was sent twice.
-*     
-*     Former  CULL_VERSIONs:  0x10010000
-*                             Added information about attribute changes.
-*                             0x10000000
-*                             Introduction of version control.
-*
-*  SEE ALSO
-*     cull/pack/--CULL_Packing
-*
-****************************************************************************
-*/
-#define CULL_VERSION 0x10021000
+#define CULL_VERSION 0x10021000 ///< format id written into every packbuffer; see @ref cull_pack_version
 #include <uti/sge_uidgid.h>
 
-#define INTSIZE     4           /* (4) 8 bit bytes */
-#define INTOFF      0           /* the rest of the world; see comments in request.c */
+#define INTSIZE     4 ///< size of a packed integer, in 8 bit bytes
+#define INTOFF      0 ///< offset of the first byte of a packed integer
 
-#define MAX_USER_GROUP 512
+#define MAX_USER_GROUP 512 ///< buffer size for a user or group name in a packbuffer
+/**
+ * @brief A byte stream that cull data is packed into and unpacked from
+ *
+ * Words go in in network byte order, so hosts of different architectures can
+ * exchange the result. The buffer grows as needed; in `just_count` mode
+ * nothing is written and only the required size is measured, which is how a
+ * caller sizes a buffer before filling it.
+ *
+ * Every buffer carries the sender's identity, so the receiver can check who
+ * sent it — see #cull_reresolve_check_user.
+ *
+ * @see @ref cull_packing
+ */
 typedef struct {
-   char *head_ptr;
-   char *cur_ptr;
-   size_t mem_size;
-   size_t bytes_used;
-   bool just_count;
-   int version;
-   char *auth_info;
-   uid_t uid;
-   gid_t gid;
-   char username[MAX_USER_GROUP];
-   char groupname[MAX_USER_GROUP];
-   int grp_amount;
-   ocs_grp_elem_t *grp_array;
+   char *head_ptr;                    ///< start of the buffer
+   char *cur_ptr;                     ///< read or write position within the buffer
+   size_t mem_size;                   ///< bytes allocated
+   size_t bytes_used;                 ///< bytes actually filled
+   bool just_count;                   ///< true to only measure the size, writing nothing
+   int version;                       ///< #CULL_VERSION this buffer was written with
+   char *auth_info;                   ///< the encoded authentication information
+   uid_t uid;                         ///< user id of the sender
+   gid_t gid;                         ///< primary group id of the sender
+   char username[MAX_USER_GROUP];     ///< user name of the sender
+   char groupname[MAX_USER_GROUP];    ///< primary group name of the sender
+   int grp_amount;                    ///< number of supplementary groups in #grp_array
+   ocs_grp_elem_t *grp_array;         ///< supplementary groups of the sender
 
 } sge_pack_buffer;
 
@@ -158,19 +156,21 @@ int unpackstr(sge_pack_buffer *, char **);
 
 int unpackbuf(sge_pack_buffer *, char **, int);
 
+/**
+ * @brief Switch tracing of every pack and unpack operation on or off
+ *
+ * @param on_off non-zero to trace, zero to stop
+ */
 void debugpack(int on_off);
 
-/*
-   these return values should be supported by all
-   un-/packing functions
-*/
+/// Result of a pack or unpack operation; every such function returns one of these
 enum {
-   PACK_SUCCESS = 0,
-   PACK_ENOMEM = -1,
-   PACK_FORMAT = -2,
-   PACK_BADARG = -3,
-   PACK_VERSION = -4,
-   PACK_AUTHINFO = -5
+   PACK_SUCCESS = 0,   ///< the operation succeeded
+   PACK_ENOMEM = -1,   ///< the buffer could not be grown
+   PACK_FORMAT = -2,   ///< the buffer is exhausted or its contents are malformed
+   PACK_BADARG = -3,   ///< an argument was invalid, e.g. a nullptr buffer
+   PACK_VERSION = -4,  ///< the buffer carries a different #CULL_VERSION
+   PACK_AUTHINFO = -5  ///< the authentication information could not be read or verified
 };
 
 const char *cull_pack_strerror(int errnum);

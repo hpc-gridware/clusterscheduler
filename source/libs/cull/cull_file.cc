@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Reading and writing cull lists as files
+ */
+
 #include <cstdio>
 #include <fcntl.h>
 #include <cstring>
@@ -56,29 +60,19 @@
 #include "cull/cull_file.h"
 #include "cull/msg_cull.h"
 
-/****** cull/file/lWriteElemToDisk() ******************************************
-*  NAME
-*     lWriteElemToDisk() -- Writes a element to file 
-*
-*  SYNOPSIS
-*     int lWriteElemToDisk(const lListElem *ep, const char *prefix, 
-*                          const char *name, const char *obj_name) 
-*
-*  FUNCTION
-*     Writes the Element 'ep' to the file named 'prefix'/'name'.
-*     Either 'prefix' or 'name can be null. 
-*
-*  INPUTS
-*     const lListElem *ep  - CULL element 
-*     const char *prefix   - Path 
-*     const char *name     - Filename 
-*     const char *obj_name - 
-*
-*  RESULT
-*     int - error state 
-*         0 - OK
-*         1 - Error
-******************************************************************************/
+/**
+ * @brief Writes a element to file
+ *
+ * Writes the Element 'ep' to the file named 'prefix'/'name'.
+ * Either 'prefix' or 'name can be null.
+ *
+ * @param ep CULL element
+ * @param prefix Path
+ * @param name Filename
+ * @param obj_name
+ *
+ * @return error state 0 - OK 1 - Error
+ */
 int lWriteElemToDisk(const lListElem *ep, const char *prefix, const char *name,
                      const char *obj_name) {
    stringT filename;
@@ -156,31 +150,21 @@ int lWriteElemToDisk(const lListElem *ep, const char *prefix, const char *name,
    DRETURN(0);
 }
 
-/****** cull/file/lReadElemFromDisk() ****************************************
-*  NAME
-*     lReadElemFromDisk() -- Reads a cull element from file 
-*
-*  SYNOPSIS
-*     lListElem* lReadElemFromDisk(const char *prefix, 
-*                                  const char *name, 
-*                                  const lDescr *type, 
-*                                  const char *obj_name) 
-*
-*  FUNCTION
-*     Reads a lListElem of the specified 'type' from the file
-*     'prefix'/'name'. Either 'prefix' or 'name' can be null.
-*     Returns a pointer to the read element or nullptr in case
-*     of an error 
-*
-*  INPUTS
-*     const char *prefix   - Path 
-*     const char *name     - Filename 
-*     const lDescr *type   - Type 
-*     const char *obj_name - 
-*
-*  RESULT
-*     lListElem* - Read CULL element
-*******************************************************************************/
+/**
+ * @brief Reads a cull element from file
+ *
+ * Reads a lListElem of the specified 'type' from the file
+ * 'prefix'/'name'. Either 'prefix' or 'name' can be null.
+ * Returns a pointer to the read element or nullptr in case
+ * of an error
+ *
+ * @param prefix Path
+ * @param name Filename
+ * @param type Type
+ * @param obj_name
+ *
+ * @return Read CULL element
+ */
 lListElem *lReadElemFromDisk(const char *prefix, const char *name,
                              const lDescr *type, const char *obj_name) {
    stringT filename;

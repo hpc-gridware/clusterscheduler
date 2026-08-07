@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Bulk operations over cull lists: select, join, delete
+ */
+
 #include "cull/cull_list.h"
 #include "cull/pack.h"
 
