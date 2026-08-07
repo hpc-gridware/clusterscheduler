@@ -39,6 +39,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_object.h"
 
+#include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_edit.h"
 #include "uti/sge_io.h"
@@ -527,6 +528,61 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
          }
       }
       lFreeList(this_list);
+
+      /*
+       * CS-2523: whatever is left in *old_list is "not in the file", which for a
+       * wholesale replace means "delete". For a BUILT-IN complex that conclusion
+       * is wrong: it cannot be deleted (sge_del_centry() refuses every name
+       * get_rsrc() knows), so asking for it aborts the whole load and leaves the
+       * cluster half restored.
+       *
+       * That is not a hypothetical: a backup written before a built-in existed
+       * has no row for it, so every restore from such a backup failed at the
+       * complex step - "devices" broke every stored fixture from 9.0.0 to 9.1.0,
+       * and backup/restore is the supported upgrade path.
+       *
+       * Retain them instead, and SAY SO. Silently ignoring the difference would
+       * hide a real edit: an administrator who removes a built-in from the file
+       * by hand has an intent, and it is not being fulfilled.
+       *
+       * Deleting a complex explicitly still fails hard, and must: "qconf -dce"
+       * goes through centry_delete() -> centry_add_del_mod_via_gdi(..., DEL),
+       * a different call site than the multi request below, so it never reaches
+       * this filter. There the intent to delete is unambiguous, and the qmaster
+       * rejects it in sge_del_centry(). That guard stays untouched - this is a
+       * second line of defence, not a replacement: the client stops asking, the
+       * server still refuses.
+       */
+      if (old_list != nullptr && *old_list != nullptr) {
+         dstring kept = DSTRING_INIT;
+         int num_kept = 0;
+         lListElem *del_elem = lFirstRW(*old_list);
+
+         while (del_elem != nullptr) {
+            lListElem *next_del_elem = lNextRW(del_elem);
+            const char *del_name = lGetString(del_elem, CE_name);
+
+            /* both spellings: get_rsrc() answers per queue and per host resource */
+            if (del_name != nullptr &&
+                (get_rsrc(del_name, true, nullptr, nullptr, nullptr, nullptr) == 0 ||
+                 get_rsrc(del_name, false, nullptr, nullptr, nullptr, nullptr) == 0)) {
+               if (num_kept > 0) {
+                  sge_dstring_append(&kept, ", ");
+               }
+               sge_dstring_append(&kept, del_name);
+               num_kept++;
+
+               lRemoveElem(*old_list, &del_elem);
+            }
+            del_elem = next_del_elem;
+         }
+
+         if (num_kept > 0) {
+            answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
+                                    MSG_CENTRY_KEPT_BUILTIN_S, sge_dstring_get_string(&kept));
+         }
+         sge_dstring_free(&kept);
+      }
 
       {
          lList *gdi_answer_list = nullptr;

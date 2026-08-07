@@ -62,6 +62,7 @@
 #define MSG_CENTRY_NULL_URGENCY                       _MESSAGE(5103, _("Complex urgency definition is missing"))
 #define MSG_CENTRY_NULL_NAME                          _MESSAGE(5104, _("Invalid complex attribute definition"))
 #define MSG_CENTRY_NULL_SHORTCUT_S                    _MESSAGE(5105, _("Complex attribute " SFQ " has no shortcut defined"))
+#define MSG_CENTRY_KEPT_BUILTIN_S                     _MESSAGE(5255, _("kept built-in complex attribute(s) " SFN " that the file does not define - built-ins cannot be deleted"))
 
 #define MSG_CQUEUE_DOESNOTEXIST_S                     _MESSAGE(5150, _("Cluster queue entry " SFQ " does not exist"))
 #define MSG_CQUEUE_FILENOTCORRECT_S                   _MESSAGE(5151, _("Cluster queue file " PFQMAX " is not correct"))

@@ -387,6 +387,17 @@ ResolveResult()
                LogIt "I" "empty output from -Mc option accepted"
                return 0
             ;;
+            *'kept built-in complex attribute'*)
+               # CS-2523: a backup written before a built-in complex existed has
+               # no row for it, so -Mc sees it as "delete this built-in". qconf
+               # keeps it instead, exits 0 and says which ones it kept. That
+               # notice is deliberately not silent - an administrator who removed
+               # a built-in from the file by hand must learn that it stayed - so
+               # it has to be matched here: this function defaults to ret=1, and
+               # ANY message without a positive match counts as a failed load.
+               LogIt "I" "$resMsg"
+               return 0
+            ;;
          esac
       ;;
    esac
