@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief GDI calls specific to the execution daemon
+ */
+
 #include "cull/cull.h"
 
 #include "gdi/ocs_gdi_Client.h"

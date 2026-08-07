@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief A GDI request: a list of tasks sent as one unit
+ */
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -29,6 +33,7 @@
 #include "msg_common.h"
 #include "ocs_gdi_Request.h"
 
+/// rmon layer the multi GDI code logs under
 #define GDI_MULTI_LAYER GDI_LAYER
 
 ocs::gdi::Request::Request() : packet(nullptr), multi_answer_list(nullptr) {

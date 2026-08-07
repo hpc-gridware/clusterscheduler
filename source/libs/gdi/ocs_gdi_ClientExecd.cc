@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief GDI calls specific to the execution daemon
+ */
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_profiling.h"
@@ -172,36 +176,21 @@ int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
 
 
 
-/****** sgeobj/sge_report/report_list_send() ******************************************
-*  NAME
-*     report_list_send() -- Send a list of reports.
-*
-*  SYNOPSIS
-*     int report_list_send(const lList *rlp, const char *rhost,
-*                          const char *commproc, int id,
-*                          int synchron, uint32_t *mid)
-*
-*  FUNCTION
-*     Send a list of reports.
-*
-*  INPUTS
-*     const lList *rlp     - REP_Type list
-*     const char *rhost    - Hostname
-*     const char *commproc - Component name
-*     int id               - Component id
-*     int synchron         - true or false
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Unexpected error
-*        -2 - No memory
-*        -3 - Format error
-*        other - see sge_send_any_request()
-*
-*  NOTES
-*     MT-NOTE: report_list_send() is not MT safe (assumptions)
-*******************************************************************************/
+/**
+ * @brief Send a list of reports
+ *
+ * Send a list of reports.
+ *
+ * @param rlp REP_Type list
+ * @param rhost Hostname
+ * @param commproc Component name
+ * @param id Component id
+ * @param synchron true or false
+ *
+ * @return error state 0 - OK -1 - Unexpected error -2 - No memory -3 - Format error other - see sge_send_any_request()
+ *
+ * @note MT-NOTE: report_list_send() is not MT safe (assumptions)
+ */
 int ocs::gdi::ClientExecd::report_list_send(const lList *rlp, const char *rhost, const char *commproc, int id, int synchron) {
    sge_pack_buffer pb;
    int ret;

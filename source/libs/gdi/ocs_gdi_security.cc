@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Authenticating a GDI request and setting its user
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <pwd.h>
@@ -84,26 +88,18 @@ static bool is_master(const char* progname);
 
 #endif
 
-/****** gdi/security/sge_security_initialize() ********************************
-*  NAME
-*     sge_security_initialize -- initialize sge security
-*
-*  SYNOPSIS
-*     int sge_security_initialize(char *name);
-*
-*  FUNCTION
-*     Initialize sge security by initializing the underlying security
-*     mechanism and setup the corresponding data structures
-*
-*  INPUTS
-*     name - name of enrolling program
-*
-*  RETURN
-*     0  in case of success, something different otherwise 
-*
-*  NOTES
-*     MT-NOTE: sge_security_initialize() is MT safe (assumptions)
-******************************************************************************/
+/**
+ * @brief Initialize sge security
+ *
+ * Initialize sge security by initializing the underlying security
+ * mechanism and setup the corresponding data structures
+ *
+ * @param name name of enrolling program
+ *
+ * @return 0  in case of success, something different otherwise
+ *
+ * @note MT-NOTE: sge_security_initialize() is MT safe (assumptions)
+ */
 
 int sge_security_initialize(const char *progname, const char *username)
 {
@@ -144,33 +140,22 @@ int sge_security_initialize(const char *progname, const char *username)
    DRETURN(0);
 }
 
-/****** gdi/security/set_sec_cred() *******************************************
-*  NAME
-*     set_sec_cred -- get credit for security system
-*
-*  SYNOPSIS
-*     int set_sec_cred(lListElem *job);
-*
-*  FUNCTION
-*     Tries to get credit for a security system (DCE or KERBEROS),
-*     sets the accordant information in the job structure
-*     If an error occurs the return value is unequal 0
-*
-*  INPUTS
-*     job - the job structure
-*
-*  RETURN
-*     0  in case of success, something different otherwise 
-*
-*  EXAMPLE
-*
-*  NOTES
-*     Hope, the above description is correct - don't know the 
-*     DCE/KERBEROS code.
-* 
-*  NOTES
-*     MT-NOTE: set_sec_cred() is MT safe (major assumptions!)
-******************************************************************************/
+/**
+ * @brief Get credit for security system
+ *
+ * Tries to get credit for a security system (DCE or KERBEROS),
+ * sets the accordant information in the job structure
+ * If an error occurs the return value is unequal 0
+ *
+ * @param job the job structure
+ *
+ * @return 0  in case of success, something different otherwise
+ *
+ * @note Hope, the above description is correct - don't know the
+ *       DCE/KERBEROS code.
+ *
+ *       MT-NOTE: set_sec_cred() is MT safe (major assumptions!)
+ */
 int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, lList **alpp)
 {
 
@@ -254,35 +239,24 @@ int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, l
    DRETURN(ret);
 } 
 
-/****** sge_security/cache_sec_cred() ******************************************
-*  NAME
-*     cache_sec_cred() -- ??? 
-*
-*  SYNOPSIS
-*     bool cache_sec_cred(lListElem *jep, const char *rhost) 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     lListElem *jep    - ??? 
-*     const char *rhost - ??? 
-*
-*  RESULT
-*     bool - true, if jep got modified
-*
-*  EXAMPLE
-*     ??? 
-*
-*  NOTES
-*     MT-NOTE:  cache_sec_cred() is MT safe (assumptions)
-*
-*  BUGS
-*     ??? 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief ???
+ *
+ * ???
+ *
+ * @code
+ * ???
+ * @endcode
+ *
+ * @param jep ???
+ * @param rhost ???
+ *
+ * @return true, if jep got modified
+ *
+ * @note MT-NOTE:  cache_sec_cred() is MT safe (assumptions)
+ *
+ * @bug ???
+ */
 bool cache_sec_cred(const char* sge_root, lListElem *jep, const char *rhost)
 {
    bool ret_value = true;

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Message exchange shared by GDI client and server
+ */
+
 #include "uti/ocs_Bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"

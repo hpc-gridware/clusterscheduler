@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Names of the GDI target lists
+ */
+
 #include "ocs_gdi_Target.h"
 
 std::string ocs::gdi::to_string(const Target target) {

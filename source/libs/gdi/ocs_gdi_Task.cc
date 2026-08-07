@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief One operation inside a GDI request
+ */
+
 #include <cinttypes>
 
 #include "uti/sge_log.h"

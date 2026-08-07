@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Per-thread data of the GDI layer
+ */
+
 #include <cinttypes>
 #include "uti/sge_csp_path.h"
 #include "uti/sge_error_class.h"

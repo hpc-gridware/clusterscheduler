@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Packing, sending and receiving GDI packets
+ */
+
 #include <pthread.h>
 
 #include <cinttypes>
@@ -191,45 +195,29 @@ ocs::gdi::Packet::create_multi_answer(lList **malpp) {
 }
 
 
-/****** gdi/request_internal/sge_gdi_packet_wait_till_handled() *************
-*  NAME
-*     ocs::gdi::Client::sge_gdi_packet_wait_till_handled() -- wait til packet is handled
-*
-*  SYNOPSIS
-*     void
-*     ocs::gdi::Client::sge_gdi_packet_wait_till_handled(ocs::gdi::Packet *packet)
-*
-*  FUNCTION
-*     This function blocks the calling thread till another one executes
-*     ocs::gdi::Client::sge_gdi_packet_broadcast_that_handled(). Mutiple threads can use
-*     this call to get response if the packet is accessed by someone
-*     else anymore.
-*
-*     This function is used to synchronize packet producers (listerner,
-*     scheduler, jvm thread ...) with packet consumers (worker threads)
-*     which all use a packet queue to synchronize the access to
-*     packet elements.
-*
-*     Packet producers store packets in the packet queue and then
-*     they call this function to wait that they can access the packet
-*     structure again.
-*
-*  INPUTS
-*     ocs::gdi::Packet *packet - packet element
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: ocs::gdi::Client::sge_gdi_packet_wait_till_handled() is MT safe
-*
-*  SEE ALSO
-*     gdi/request_internal/Master_Packet_Queue
-*     gdi/request_internal/sge_gdi_packet_queue_wait_for_new_packet()
-*     gdi/request_internal/sge_gdi_packet_queue_store_notify()
-*     gdi/request_internal/sge_gdi_packet_broadcast_that_handled()
-*     gdi/request_internal/sge_gdi_packet_is_handled()
-*******************************************************************************/
+/**
+ * @brief Wait til packet is handled
+ *
+ * This function blocks the calling thread till another one executes
+ * ocs::gdi::Client::sge_gdi_packet_broadcast_that_handled(). Mutiple threads can use
+ * this call to get response if the packet is accessed by someone
+ * else anymore.
+ *
+ * This function is used to synchronize packet producers (listerner,
+ * scheduler, jvm thread ...) with packet consumers (worker threads)
+ * which all use a packet queue to synchronize the access to
+ * packet elements.
+ *
+ * Packet producers store packets in the packet queue and then
+ * they call this function to wait that they can access the packet
+ * structure again.
+ *
+ * @return none
+ *
+ * @note MT-NOTE: ocs::gdi::Client::sge_gdi_packet_wait_till_handled() is MT safe
+ *
+ * @see `sge_gdi_packet_queue_wait_for_new_packet()`, `sge_gdi_packet_queue_store_notify()`, #sge_gdi_packet_broadcast_that_handled, #sge_gdi_packet_is_handled
+ */
 void
 ocs::gdi::Packet::wait_till_handled() {
    DENTER(TOP_LAYER);
@@ -248,38 +236,22 @@ ocs::gdi::Packet::wait_till_handled() {
    DRETURN_VOID;
 }
 
-/****** gdi/request_internal/sge_gdi_packet_is_handled() ********************
-*  NAME
-*     ocs::gdi::Client::sge_gdi_packet_is_handled() -- returns if packet was handled by worker
-*
-*  SYNOPSIS
-*     void
-*     ocs::gdi::Client::sge_gdi_packet_is_handled(ocs::gdi::Packet *packet)
-*
-*  FUNCTION
-*     Returns if the given packet was already handled by a worker thread.
-*     "true" means that the packet is completely done so that a call
-*     to ocs::gdi::Client::sge_gdi_packet_wait_till_handled() will return immediately. If
-*     "false" is returned the packet is not finished so a call to
-*     ocs::gdi::Client::sge_gdi_packet_wait_till_handled() might block when it is called
-*     afterwards.
-*
-*  INPUTS
-*     ocs::gdi::Packet *packet - packet element
-*
-*  RESULT
-*     bool - true    packet was already handled by a worker
-*            false   packet is not done.
-*
-*  NOTES
-*     MT-NOTE: ocs::gdi::Client::sge_gdi_packet_is_handled() is MT safe
-*
-*  SEE ALSO
-*     gdi/request_internal/Master_Packet_Queue
-*     gdi/request_internal/sge_gdi_packet_queue_wait_for_new_packet()
-*     gdi/request_internal/sge_gdi_packet_queue_store_notify()
-*     gdi/request_internal/sge_gdi_packet_broadcast_that_handled()
-*******************************************************************************/
+/**
+ * @brief Returns if packet was handled by worker
+ *
+ * Returns if the given packet was already handled by a worker thread.
+ * "true" means that the packet is completely done so that a call
+ * to ocs::gdi::Client::sge_gdi_packet_wait_till_handled() will return immediately. If
+ * "false" is returned the packet is not finished so a call to
+ * ocs::gdi::Client::sge_gdi_packet_wait_till_handled() might block when it is called
+ * afterwards.
+ *
+ * @return true    packet was already handled by a worker false   packet is not done.
+ *
+ * @note MT-NOTE: ocs::gdi::Client::sge_gdi_packet_is_handled() is MT safe
+ *
+ * @see `sge_gdi_packet_queue_wait_for_new_packet()`, `sge_gdi_packet_queue_store_notify()`, #sge_gdi_packet_broadcast_that_handled
+ */
 bool
 ocs::gdi::Packet::get_is_handled() {
    DENTER(TOP_LAYER);

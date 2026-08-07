@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The client side entry points of the GDI
+ */
+
 #include "cull/cull.h"
 
 #include "gdi/ocs_gdi_Command.h"

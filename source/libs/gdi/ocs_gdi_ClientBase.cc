@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Setting up and tearing down a GDI client connection
+ */
+
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -106,36 +110,26 @@ static sge_gdi_com_error_t sge_gdi_communication_error = {CL_RETVAL_OK,
                                                           false, 0, 0,
                                                           false, 0, 0};
 
-/****** sge_any_request/general_communication_error() **************************
-*  NAME
-*     general_communication_error() -- callback for communication errors
-*
-*  SYNOPSIS
-*     static void general_communication_error(int cl_error,
-*                                             const char* error_message)
-*
-*  FUNCTION
-*     This function is used by cl_com_set_error_func() to set the default
-*     application error function for communication errors. On important
-*     communication errors the communication lib will call this function
-*     with a corresponding error number (within application context).
-*
-*     This function should never block. Treat it as a kind of signal handler.
-*
-*     The error_message parameter is freed by the commlib.
-*
-*  INPUTS
-*     int cl_error              - commlib error number
-*     const char* error_message - additional error text message
-*
-*  NOTES
-*     MT-NOTE: general_communication_error() is MT safe
-*     (static struct variable "sge_gdi_communication_error" is used)
-*
-*
-*  SEE ALSO
-*     sge_any_request/sge_get_com_error_flag()
-*******************************************************************************/
+/**
+ * @brief Callback for communication errors
+ *
+ * This function is used by cl_com_set_error_func() to set the default
+ * application error function for communication errors. On important
+ * communication errors the communication lib will call this function
+ * with a corresponding error number (within application context).
+ *
+ * This function should never block. Treat it as a kind of signal handler.
+ *
+ * The error_message parameter is freed by the commlib.
+ *
+ * @param cl_error commlib error number
+ * @param error_message additional error text message
+ *
+ * @note MT-NOTE: general_communication_error() is MT safe
+ *       (static struct variable "sge_gdi_communication_error" is used)
+ *
+ * @see #sge_get_com_error_flag
+ */
 void
 ocs::gdi::ClientBase::general_communication_error(const cl_application_error_list_elem_t *commlib_error) {
    DENTER(GDI_LAYER);
@@ -334,28 +328,17 @@ ocs::gdi::ClientBase::log_flush_func(cl_raw_list_t *list_p) {
    DRETURN(CL_RETVAL_OK);
 }
 
-/****** sge_any_request/sge_get_com_error_flag() *******************************
-*  NAME
-*     sge_get_com_error_flag() -- return gdi error flag state
-*
-*  SYNOPSIS
-*     bool sge_get_com_error_flag(sge_gdi_stored_com_error_t error_type)
-*
-*  FUNCTION
-*     This function returns the error flag for the specified error type
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_stored_com_error_t error_type - error type value
-*
-*  RESULT
-*     bool - true: error has occured, false: error never occured
-*
-*  NOTES
-*     MT-NOTE: sge_get_com_error_flag() is MT safe
-*
-*  SEE ALSO
-*     sge_any_request/general_communication_error()
-*******************************************************************************/
+/**
+ * @brief Return gdi error flag state
+ *
+ * This function returns the error flag for the specified error type
+ *
+ * @return true: error has occured, false: error never occured
+ *
+ * @note MT-NOTE: sge_get_com_error_flag() is MT safe
+ *
+ * @see #general_communication_error
+ */
 bool ocs::gdi::ClientBase::sge_get_com_error_flag(uint32_t progid, sge_gdi_stored_com_error_t error_type, bool reset_error_flag) {
    DENTER(GDI_LAYER);
    bool ret_val = false;
@@ -821,20 +804,14 @@ ocs::gdi::ClientBase::setup_and_enroll(ProgName component_id, ThreadName thread_
    DRETURN(AE_OK);
 }
 
-/****** gdi/setup/sge_gdi_shutdown() ******************************************
-*  NAME
-*     ocs::gdi::Client::sge_gdi_shutdown() -- gdi shutdown.
-*
-*  SYNOPSIS
-*     int ocs::gdi::Client::sge_gdi_shutdown()
-*
-*  FUNCTION
-*     This function has to be called before quitting the program. It
-*     cancels registration at commd.
-*
-*  NOTES
-*     MT-NOTES: ocs::gdi::ClientBase::setup_and_enroll() is MT safe
-******************************************************************************/
+/**
+ * @brief Gdi shutdown
+ *
+ * This function has to be called before quitting the program. It
+ * cancels registration at commd.
+ *
+ * @note MT-NOTES: ocs::gdi::ClientBase::setup_and_enroll() is MT safe
+ */
 int ocs::gdi::ClientBase::shutdown() {
    DENTER(GDI_LAYER);
    gdi_default_exit_func(0);

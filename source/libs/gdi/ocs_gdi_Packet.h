@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The wire format a GDI request travels in
+ */
+
 #include <vector>
 
 #include <cinttypes>

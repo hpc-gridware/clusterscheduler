@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Setting up and tearing down a GDI client connection
+ */
+
 #include "uti/sge_component.h"
 
 #include "cull/cull.h"

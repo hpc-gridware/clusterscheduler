@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Names of the GDI commands
+ */
+
 #include "ocs_gdi_Command.h"
 
 std::string ocs::gdi::to_string(const Command cmd) {

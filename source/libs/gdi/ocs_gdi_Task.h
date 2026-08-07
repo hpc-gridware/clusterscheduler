@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief One operation inside a GDI request
+ */
+
 #include <string>
 
 #include <cinttypes>
@@ -29,36 +33,54 @@
 #include "gdi/ocs_gdi_Target.h"
 
 namespace ocs::gdi {
+   /**
+    * @brief One operation inside a GDI request
+    *
+    * A request carries a list of tasks, each naming what to do (@ref Command),
+    * to which object list (@ref Target) and with which data. Sending several
+    * tasks in one request is what makes a "multi GDI" — the round trip to
+    * qmaster is paid once.
+    */
    class Task {
    public:
-      Command command;
-      SubCommand sub_command;
+      Command command;         ///< what to do
+      SubCommand sub_command;  ///< modifiers refining #command
 
-      Target target;
-      lList *data_list;
-      lList *answer_list;
-      lCondition *condition;
-      lEnumeration *enumeration;
+      Target target;           ///< which object list to act on
+      lList *data_list;        ///< the objects to write, or the ones read back
+      lList *answer_list;      ///< qmaster's answer for this task
+      lCondition *condition;   ///< which objects to act on, from `lWhere()`
+      lEnumeration *enumeration; ///< which fields to transfer, from `lWhat()`
 
-      /*
-       * This flag is used in qmaster to identify if a special
-       * optimization can be done. This optimization can only be
-       * done for GDI GET requests where the client is
-       * an external GDI client (no thread using GDI).
+      /**
+       * @brief May the selection pack straight into the send buffer?
        *
-       * In that case it is possible that the lSelectHashPack()
-       * function is called with a packbuffer so that the function
-       * directly packs into this packbuffer.
-       *
-       * This avoids a copy operation
+       * Set by qmaster for @ref Command::GET requests from an *external*
+       * client — one that is not a thread using the GDI internally. Only then
+       * can `lSelectHashPack()` be given the packbuffer directly, so the
+       * selected objects are packed as they are found instead of being copied
+       * into an intermediate list first.
        */
       bool do_select_pack_simultaneous;
    public:
+      /**
+       * @brief Build a task
+       *
+       * @param target which object list to act on
+       * @param command what to do
+       * @param sub_cmd modifiers refining @p command
+       * @param lp the objects to send, consumed unless @p do_copy is true
+       * @param a_list receives qmaster's answer
+       * @param condition which objects to act on; consumed
+       * @param enumeration which fields to transfer; consumed
+       * @param do_copy true to copy the arguments instead of taking them over
+       */
       Task(Target target, Command command, SubCommand sub_cmd, lList **lp,
            lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy);
-      Task();
-      ~Task();
+      Task();  ///< Build an empty task
+      ~Task(); ///< Release the lists this task owns
 
+      /// Log this task's command, target and data at debug level
       void debug_print();
    };
 }

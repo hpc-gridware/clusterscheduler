@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Starting and controlling remote tasks of a parallel job
+ */
 #include <cstdio>
 #include <unistd.h>
 #include <cstring>
@@ -70,37 +74,24 @@ const char *qexec_last_err() {
    return lasterror;
 }
 
-/****** gdi/sge/shutdown() ************************************************
-*  NAME
-*     sge_qexecve() -- start a task in a tightly integrated par. job
-*
-*  SYNOPSIS
-*     sge_tid_t sge_qexecve(const char *hostname, const char *queuename, 
-*                           const char *cwd, const lList *environment
-*                           const lList *path_aliases)
-*
-*  FUNCTION
-*     Starts a task in a tightly integrated job.
-*     Builds a job object describing the task, 
-*     connects to the commd on the targeted execution host,
-*     deliveres the job object and waits for an answer.
-*     The answer from the execution daemon on the execution host
-*     contains a task id that is returned to the caller of the function.
-*
-*  INPUTS
-*     const char *hostname - name of the host on which to start the task
-*     const lList *environment  - list containing environment variable 
-*                            settings for the task that override the 
-*                            default environment
-*     const lList *path_aliases - optional a path alias list
-*
-*  RESULT
-*     sge_tid_t - the task id, if the task can be executed,
-*                 a value <= 0 indicates an error.
-*
-*  NOTES
-*     MT-NOTE: sge_qexecve() is not MT safe
-******************************************************************************/
+/**
+ * @brief Start a task in a tightly integrated par. job
+ *
+ * Starts a task in a tightly integrated job.
+ * Builds a job object describing the task,
+ * connects to the commd on the targeted execution host,
+ * deliveres the job object and waits for an answer.
+ * The answer from the execution daemon on the execution host
+ * contains a task id that is returned to the caller of the function.
+ *
+ * @param hostname name of the host on which to start the task
+ * @param environment list containing environment variable settings for the task that override the default environment
+ * @param path_aliases optional a path alias list
+ *
+ * @return the task id, if the task can be executed, a value <= 0 indicates an error.
+ *
+ * @note MT-NOTE: sge_qexecve() is not MT safe
+ */
 sge_tid_t
 sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const lList *environment,
             const lList *path_aliases, const char *cert) {

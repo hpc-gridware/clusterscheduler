@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Starting and controlling remote tasks of a parallel job
+ */
+
 #include "sgeobj/cull/sge_qexec_RT_L.h"
 
 typedef char *sge_tid_t;

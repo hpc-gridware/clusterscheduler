@@ -19,14 +19,24 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Whether a GDI request adds, modifies or deletes
+ */
+
 #include <cstdint>
 #include <string>
 
 namespace ocs::gdi {
+   /// Whether a request is collected for later sending or sent immediately
    enum class Mode : uint32_t {
-      RECORD,
-      SEND,
+      RECORD, ///< add the task to a multi request, to be sent later
+      SEND,   ///< send the request now and wait for the answer
    };
 
+   /**
+    * @brief The name of a mode, for logging and error messages
+    * @param mode the mode to name
+    * @return its name
+    */
    std::string to_string(Mode mode);
 }

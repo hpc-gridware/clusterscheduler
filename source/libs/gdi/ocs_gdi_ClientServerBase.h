@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Message exchange shared by GDI client and server
+ */
+
 #include "cull/cull.h"
 
 #include "gdi/ocs_gdi_Packet.h"
