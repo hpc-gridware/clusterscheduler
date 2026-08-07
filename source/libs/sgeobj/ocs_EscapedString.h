@@ -28,11 +28,27 @@
 #include <ostream>
 
 namespace ocs {
+   /**
+    * @brief A string wrapper that XML-escapes itself when streamed
+    *
+    * Streaming it replaces `<`, `>`, `&` and friends with their entities, so a
+    * value can be written into XML output without escaping it by hand.
+    */
    class EscapedString {
-      std::string escaped_string_;
+      std::string escaped_string_; ///< the unescaped text; escaping happens on output
    public:
+      /**
+       * @brief Wrap a string for escaped output
+       * @param string the text to wrap; nullptr becomes the empty string
+       */
       EscapedString(const char *string) : escaped_string_(string ? string : "") {}
 
+      /**
+       * @brief Write the wrapped string with XML entities substituted
+       * @param os the stream to write to
+       * @param es the string to escape
+       * @return `os`, so the calls can be chained
+       */
       friend std::ostream &operator<<(std::ostream &os, const EscapedString &es) {
          const size_t len = strlen(es.escaped_string_.c_str());
          for (size_t i = 0; i < len; i++){

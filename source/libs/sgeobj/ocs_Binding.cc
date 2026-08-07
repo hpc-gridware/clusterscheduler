@@ -53,6 +53,7 @@
 
 #include "sgeobj/ocs_Binding.h"
 
+/// Debug layer the core binding traces are written to
 #define BINDING_LAYER TOP_LAYER
 
 /* 
@@ -212,6 +213,13 @@ int get_execd_amount_of_sockets()
 }
 
 
+/**
+ * @brief Fetch the topology string listing every core installed on this host
+ *
+ * @param[out] topology must point at a nullptr; receives a freshly allocated string
+ * @param[out] length receives the length of that string
+ * @return true when the topology could be read
+ */
 bool get_execd_topology(char** topology, int* length)
 {
    bool success = false;
@@ -1076,7 +1084,7 @@ static bool account_job_on_topology(char** topology, const int topology_length,
 /**
  * @brief Checks if a job can be bound
  *
- * Checks if the job can bind to the given by the <socket>,<core> pairs.
+ * Checks if the job can bind to the cores given by the socket and core pairs.
  * If so these cores are marked as used and true is returned. Also an
  * topology string is returned where all cores consumed by the job are
  * marked with smaller case letters.
@@ -2242,6 +2250,22 @@ static int get_core_id_from_logical_core_number_solaris(const int** matrix,
 /* ---------------------------------------------------------------------------*/
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 
+/**
+ * @brief Pick free cores in linear order, account them and report which ones were taken
+ *
+ * Walks the topology from the first socket onwards and takes the first
+ * `amount` cores that no job holds, so a request without an explicit start
+ * position gets a compact allocation.
+ *
+ * @param amount how many cores the job needs
+ * @param[out] list_of_sockets receives the socket number of each taken core
+ * @param[out] samount receives the length of `list_of_sockets`
+ * @param[out] list_of_cores receives the core number of each taken core
+ * @param[out] camount receives the length of `list_of_cores`
+ * @param[out] topo_by_job receives a topology string with the taken cores in lower case
+ * @param[out] topo_by_job_length receives the length of `topo_by_job`
+ * @return true when enough free cores were found and accounted
+ */
 bool get_linear_automatic_socket_core_list_and_account(const int amount,
       int** list_of_sockets, int* samount, int** list_of_cores, int* camount,
       char** topo_by_job, int* topo_by_job_length)
@@ -2557,10 +2581,14 @@ static bool get_free_sockets(const char* topology, const int topology_length,
  * @param stepsize Distance of the cores to allocate.
  * @param start_at_socket First socket to begin the search with (usually at 0).
  * @param start_at_core First core to begin the search with (usually at 0).
+ * @param automatic true when the start position was not requested by the user,
+ *                  so the search may move on to a later socket
  * @param first_socket out: First socket when striding is possible (return value).
  * @param first_core out: First core when striding is possible (return value).
+ * @param accounted_topology out: topology string with the taken cores in lower case
+ * @param accounted_topology_length out: length of `accounted_topology`
  *
- * @return if true striding is possible at <first_socket, first_core>
+ * @return if true striding is possible at the reported first socket and core
  *
  * @note MT-NOTE: getStridingFirstSocketFirstCore() is not MT safe
  */
@@ -2903,6 +2931,14 @@ static int get_position_in_topology(const int socket, const int core,
    return retval;
 }
 
+/**
+ * @brief Read the host's topology once at execd startup
+ *
+ * Accounting marks cores in a copy of this string, so it has to exist before
+ * the first job is started.
+ *
+ * @return true when the topology is available afterwards
+ */
 bool initialize_topology() {
    
    /* this is done when execution daemon starts        */

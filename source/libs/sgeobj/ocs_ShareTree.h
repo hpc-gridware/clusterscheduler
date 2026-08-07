@@ -39,9 +39,11 @@
 
 #include "cull/cull.h"
 
+/// Callback #ocs::ShareTree::foreach_call_func applies to every node; a non-zero return stops the walk
 typedef int (*sge_node_func_t) (lListElem *node, void *ptr);
 
 namespace ocs {
+   /// The share tree: the hierarchy of users and projects the fair share policy distributes tickets over
    class ShareTree {
       static constexpr auto DEFAULT_NODE_NAME = "default";
 

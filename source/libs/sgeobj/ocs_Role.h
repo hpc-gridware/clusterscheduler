@@ -31,6 +31,13 @@
 #include "sgeobj/cull/sge_role_RL_L.h"
 
 namespace ocs {
+   /**
+    * @brief An RBAC role: a named set of permission rules
+    *
+    * A rule has six colon separated characteristics (see #PermRule). An
+    * authorization check builds a #MatchContext from the request and asks
+    * whether any of the user's roles has a rule matching it.
+    */
    class Role {
    public:
       /** One parsed permission rule (six colon-separated characteristics). */
@@ -42,6 +49,7 @@ namespace ocs {
          std::string object_key;       ///< object_key
          std::string value_constraint; ///< object_value_constraint
       };
+      /// All rules of one role, in the order they were configured
       using PermRuleList = std::vector<PermRule>;
 
       /** Runtime context passed to match_rule() for a single authorization check. */
@@ -55,7 +63,7 @@ namespace ocs {
          std::string request_user;                            ///< authenticated requesting user
          std::string request_group;                           ///< primary UNIX group of the requesting user
          const lList *request_grp_list{nullptr};              ///< supplementary UNIX groups (ST_Type list)
-         std::vector<std::string> source_hostgroups;          ///< @groups the source host belongs to
+         std::vector<std::string> source_hostgroups;          ///< host groups the source host belongs to
          std::vector<std::string> required_value_constraints; ///< elevated permissions required by the request
       };
 
@@ -78,10 +86,15 @@ namespace ocs {
       static bool validate(const lListElem *role, lList **answer_list, bool startup);
 
       /**
-       * Post-startup integrity scan for dangling role references.
-       * Logs a WARNING for each RL_user_list entry whose userset does not exist in
-       * userset_list and each RL_parent_role_list entry whose parent role does not
-       * exist in role_list. Does not abort startup.
+       * @brief Post-startup integrity scan for dangling role references
+       *
+       * Logs a WARNING for each `RL_user_list` entry whose userset does not
+       * exist in the userset list and each `RL_parent_role_list` entry whose
+       * parent role does not exist in the role list. Does not abort startup.
+       *
+       * @param role_list the roles to scan
+       * @param userset_list the usersets the roles may refer to
+       * @param[out] answer_list receives the warnings
        */
       static void check_integrity(const lList *role_list, const lList *userset_list, lList **answer_list);
 

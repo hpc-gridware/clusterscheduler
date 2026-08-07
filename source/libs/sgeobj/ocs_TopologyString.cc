@@ -754,7 +754,7 @@ void ocs::TopologyString::reset_topology(const std::string &topology) {
  * and refreshes internal characteristics by rebuilding the topology string.
  *
  * @param id The ID of the node to mark
- * @param do_mark_used If true, mark as used (lowercase); if false, mark as unused (uppercase)
+ * @param mark_used If true, mark as used (lowercase); if false, mark as unused (uppercase)
  */
 void
 ocs::TopologyString::mark_node_as_used_or_unused(const int id, const bool do_mark_used) {
@@ -943,7 +943,7 @@ ocs::TopologyString::is_empty() const {
  * @param bamount The number of units to find (must be greater than 0)
  * @param bunit The binding unit type (e.g., socket, core, thread)
  * @param bstart The binding start criteria (e.g., any, free, used)
- * @param bstop The binding stop criteria (e.g., any, free, used)
+ * @param stop The binding stop criteria (e.g., any, free, used)
  * @return A vector of IDs of the found packed units
  */
 std::vector<int>

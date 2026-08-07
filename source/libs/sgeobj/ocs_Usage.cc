@@ -510,15 +510,19 @@ ocs::Usage::sum_usage(lListElem *job, lListElem *ja_task, lListElem *user, lList
 }
 
 
-/** @brief Remove usage attributes that are irrelevant for share tree usage.
+/**
+ * @brief Remove usage attributes that are irrelevant for share tree usage
  *
  * Older versions accumulated all online usage attributes (vmem, rss, all
- * ru_* and acct_* values, ...) into the user/project usage lists, which made
- * those objects and their spooled representation grow huge (CS-1385). This
- * function strips a usage list down to the attributes that are actually
- * relevant for share tree usage and returns true if at least one element was
- * removed, so the caller can decide whether the owning object needs to be
- * re-spooled. A nullptr usage_list is treated as an empty list.
+ * `ru_*` and `acct_*` values, ...) into the user/project usage lists, which
+ * made those objects and their spooled representation grow huge (CS-1385).
+ * This strips a usage list down to the attributes that actually matter for
+ * share tree usage.
+ *
+ * @param usage_list the list to strip; nullptr is treated as an empty list
+ * @param usage_weight_list the weights; an attribute without a weight is irrelevant
+ * @return true when at least one element was removed, so the caller knows the
+ *         owning object has to be re-spooled
  */
 bool
 ocs::Usage::strip_irrelevant_usage(lList *usage_list, const lList *usage_weight_list) {

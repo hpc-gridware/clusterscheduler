@@ -36,7 +36,7 @@
 #include "msg_sgeobjlib.h"
 
 /** @brief Check for duplicate string entries in a list
-
+ *
  *  @param obj_list cull list to check for duplicates
  *  @param nm name of the attribute that holds the names to check for duplicates (type string)
  *  @param answer_list If not nullptr, error messages are added to this list

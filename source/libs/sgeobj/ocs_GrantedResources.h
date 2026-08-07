@@ -46,17 +46,27 @@
 #include "sgeobj/ocs_TopologyString.h"
 
 namespace ocs {
+   /// The resources a scheduling decision granted a job, per host
    class GrantedResources {
    public:
+      /// What kind of grant an entry records
       enum class Type {
-         GRU_HARD_REQUEST_TYPE = 0,
-         GRU_SOFT_REQUEST_TYPE = 1,
-         GRU_RESOURCE_MAP_TYPE = 2,
-         GRU_BINDING_TYPE = 3
+         GRU_HARD_REQUEST_TYPE = 0, ///< a hard request that had to be satisfied
+         GRU_SOFT_REQUEST_TYPE = 1, ///< a soft request that was satisfied if possible
+         GRU_RESOURCE_MAP_TYPE = 2, ///< specific instances handed out from a resource map
+         GRU_BINDING_TYPE = 3       ///< the CPU hardware the job was bound to
       };
       
+      /// Render a grant list for logging and accounting
       static std::string to_string(const lList *granted_resources);
+      /// Record the CPU hardware granted to a job on one host
       static void add_binding_to_use(lList **granted_resources_list, const char *host_name, const lList *binding_touse_list);
+      /**
+       * @brief Collect everything granted on one host into a single topology
+       *
+       * A job may hold several grants on the same host, one per slot; this
+       * merges them so the execution side sees one binding.
+       */
       static void get_combined_binding_for_host(const lList *gr_list, const char *hostname, TopologyString &binding_to_use);
    };
 }

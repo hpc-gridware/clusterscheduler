@@ -48,20 +48,114 @@
 #include "ocs_BindingInstance.h"
 
 namespace ocs {
+   /**
+    * @brief Reading a binding request out of any object that can carry one
+    *
+    * The field number makes this generic: @ref ocs::Job and
+    * @ref ocs::AdvanceReservation are thin wrappers that pass their own field.
+    */
    class Binding {
    public:
+      /**
+       * @brief The binding sub-object, created on first access
+       * @param parent the object to read or extend
+       * @param[out] answer_list receives the reason when it could not be created
+       * @param nm the field the binding sub-object lives in
+       * @return the binding sub-object, or nullptr on error
+       */
       static lListElem *binding_get_or_create_elem(lListElem *parent, lList **answer_list, int nm);
+      /**
+       * @brief Remove the binding request from an object
+       * @param parent the object to clear
+       * @param nm the field the binding sub-object lives in
+       */
       static void clear(lListElem *parent, int nm);
+      /**
+       * @brief Was a binding requested at all?
+       *
+       * @param parent the object carrying the binding request
+       * @param nm the field the binding sub-object lives in
+       * @return true when the object carries a binding request
+       */
       static bool binding_was_requested(const lListElem *parent, int nm);
+      /**
+       * @brief Who applies the binding
+       *
+       * @param parent the object carrying the binding request
+       * @param nm the field the binding sub-object lives in
+       * @return the requested @ref ocs::BindingType::Type
+       */
       static BindingType::Type binding_get_type(const lListElem *parent, int nm);
+      /**
+       * @brief The hardware unit the binding counts in
+       *
+       * @param parent the object carrying the binding request
+       * @param nm the field the binding sub-object lives in
+       * @return the requested @ref ocs::BindingUnit::Unit
+       */
       static BindingUnit::Unit binding_get_unit(const lListElem *parent, int nm);
+      /**
+       * @brief How the selected hardware is ordered
+       *
+       * @param parent the object carrying the binding request
+       * @param nm the field the binding sub-object lives in
+       * @return the sort specification, empty when none was given
+       */
       static std::string binding_get_sort(const lListElem *parent, int nm);
+      /**
+       * @brief Where on the topology the binding starts
+       *
+       * @param parent the object carrying the binding request
+       * @param nm the field the binding sub-object lives in
+       * @return the requested @ref ocs::BindingStart::Start
+       */
       static BindingStart::Start binding_get_start(const lListElem *parent, int nm);
+      /**
+       * @brief Where the binding stops
+       *
+       * @param parent the object carrying the binding request
+       * @param nm the field the binding sub-object lives in
+       * @return the requested @ref ocs::BindingStop::Stop
+       */
       static BindingStop::Stop binding_get_end(const lListElem *parent, int nm);
+      /**
+       * @brief How the binding walks the topology
+       *
+       * @param parent the object carrying the binding request
+       * @param nm the field the binding sub-object lives in
+       * @return the requested @ref ocs::BindingStrategy::Strategy
+       */
       static BindingStrategy::Strategy binding_get_strategy(const lListElem *parent, int nm);
+      /**
+       * @brief Which hardware the binding is restricted to
+       *
+       * @param parent the object carrying the binding request
+       * @param nm the field the binding sub-object lives in
+       * @return the filter expression, empty when none was given
+       */
       static std::string binding_get_filter(const lListElem *parent, int nm);
+      /**
+       * @brief How many units the binding asks for
+       *
+       * @param parent the object carrying the binding request
+       * @param nm the field the binding sub-object lives in
+       * @return the requested amount
+       */
       static uint32_t binding_get_amount(const lListElem *parent, int nm);
+      /**
+       * @brief Which instance applies the binding
+       *
+       * @param parent the object carrying the binding request
+       * @param nm the field the binding sub-object lives in
+       * @return the requested @ref ocs::BindingInstance::Instance
+       */
       static BindingInstance::Instance binding_get_instance(const lListElem *parent, int nm);
+      /**
+       * @brief Fill in the binding fields the request left out
+       * @param parent the object whose binding request is completed
+       * @param[out] answer_list receives the reason on failure
+       * @param nm the field the binding sub-object lives in
+       */
       static void binding_set_missing_defaults(lListElem *parent, lList **answer_list, int nm);
 
    };

@@ -31,6 +31,13 @@
 #include "sgeobj/sge_answer.h"
 
 namespace ocs {
+   /**
+    * @brief An exception that carries an answer list to the catching code
+    *
+    * Deep in a request handler the answer list is often the only place an
+    * error was recorded. Throwing this instead of returning an error code
+    * hands both the list and its last message to the caller unchanged.
+    */
    class AnswerException : public Exception {
       lList *m_answer_list = nullptr; //< answer list to be transferred to the catching code
 
@@ -48,6 +55,10 @@ namespace ocs {
          return message;
       }
    public:
+      /**
+       * @brief Take ownership of an answer list and carry it up to the catching code
+       * @param[in,out] answer_list the list to carry; the caller's pointer is cleared
+       */
       explicit AnswerException(lList **answer_list) : Exception(get_last_message(*answer_list)), m_answer_list(*answer_list) {
          // this class takes ownership for the CULL list
          *answer_list = nullptr;

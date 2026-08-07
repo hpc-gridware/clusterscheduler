@@ -44,6 +44,7 @@
 
 
 namespace ocs {
+   /// Rendering a binding request back into the textual form users typed it in
    class BindingIo {
    public:
       static void

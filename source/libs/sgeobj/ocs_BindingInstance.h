@@ -26,18 +26,34 @@
 #include <string>
 
 namespace ocs {
+   /**
+    * @brief Who acts on a binding once the job starts
+    *
+    * The request is the same in each case; what differs is who enforces it.
+    */
    class BindingInstance {
       BindingInstance() = default; // prevent instantiation
    public:
+      /// Who acts on the binding
       enum Instance {
-         UNINITIALIZED = 0,
-         NONE,
-         SET,
-         ENV,
-         PE,
+         UNINITIALIZED = 0, ///< not set; the request has not been parsed yet
+         NONE,              ///< nobody; no binding is applied
+         SET,               ///< the shepherd applies the cpuset itself; the default
+         ENV,               ///< only `$SGE_BINDING` is exported, and the job binds itself
+         PE,                ///< the binding is written into a rankfile for the parallel environment
       };
 
+      /**
+       * @brief The keyword for an instance, as written in a request
+       * @param mode the instance to name
+       * @return its keyword, or `"???"` for an unknown value
+       */
       static std::string to_string(Instance mode);
+      /**
+       * @brief Parse an instance keyword
+       * @param mode the keyword to parse
+       * @return the instance, or #UNINITIALIZED when it is not recognised
+       */
       static Instance from_string(const std::string& mode);
    };
 }

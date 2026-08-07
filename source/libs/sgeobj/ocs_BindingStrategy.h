@@ -26,17 +26,29 @@
 #include <string>
 
 namespace ocs {
+   /// How a binding walks the topology when selecting hardware
    class BindingStrategy {
       BindingStrategy() = default; // prevent instantiation
    public:
+      /// The order in which hardware is selected
       enum Strategy {
-         UNINITIALIZED = 0,
-         NONE,
-         PACKED
+         UNINITIALIZED = 0, ///< not set; the request has not been parsed yet
+         NONE,              ///< no strategy given
+         PACKED             ///< fill each topology object completely before moving to the next
       };
 
 
+      /**
+       * @brief The keyword for a strategy, as written in a request
+       * @param mode the strategy to name
+       * @return its keyword, or `"???"` for an unknown value
+       */
       static std::string to_string(Strategy mode);
+      /**
+       * @brief Parse a strategy keyword
+       * @param mode the keyword to parse
+       * @return the strategy, or #UNINITIALIZED when it is not recognised
+       */
       static Strategy from_string(const std::string& mode);
    };
 }

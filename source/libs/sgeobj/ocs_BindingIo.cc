@@ -52,17 +52,17 @@
 #include "ocs_BindingStrategy.h"
 
 /**
- * @brief Prints the content of a binding list to a string
+ * @brief Prints the content of a binding list element to a string
  *
- * Prints the binding type and binding strategy of a binding list element
- * into a string.
+ * Renders the binding instance and the binding strategy of a binding list
+ * element, either as the value users write in a `-binding` request or as the
+ * switch itself.
  *
- * @param this_elem Binding list element
- * @param string Output string which must be initialized.
+ * @param binding_elem the binding list element; nullptr renders as "NONE"
+ * @param[out] binding_string receives the rendered text and is overwritten
+ * @param as_switches true to render including the `-binding` switch, false for the bare value
  *
- * @return true in all cases
- *
- * @note MT-NOTE: is_starting_point() is MT safe
+ * @note MT-NOTE: is MT safe
  */
 void
 ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::string &binding_string, bool as_switches) {
