@@ -35,9 +35,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for variable lists (`VA_Type`)
+ *
+ * @see sge_var.cc
+ */
+
 #include "sgeobj/cull/sge_var_VA_L.h"
 
+/// Marks a variable that is exported to the job with the prefix replaced, e.g. `__SGE_PREFIX__O_HOME` becomes `SGE_O_HOME`
 #define VAR_PREFIX "__SGE_PREFIX__"
+/// Like #VAR_PREFIX, but for variables that are only defined when the job does not define them itself
 #define VAR_PREFIX_NR "__SGE_PREFIX2__"
 
 void var_list_dump_to_file(const lList *varl, FILE *file);

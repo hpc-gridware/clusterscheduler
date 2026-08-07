@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Range lists: compact sets of numbers such as array task ids
+ *
+ * A range is a `min`-`max`-`step` triple (`RN_Type`); a range list holds
+ * several of them and is kept sorted in descending order with no two ranges
+ * overlapping. That representation is what lets an array job with a million
+ * tasks be stored, spooled and printed as `1-1000000:1` instead of a million
+ * elements.
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -46,7 +56,9 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
+/// Characters separating two ranges in a textual range list
 #define RANGE_SEPARATOR_CHARS ","
+/// Debug layer the range list traces are written to
 #define RANGE_LAYER BASIS_LAYER
 
 
@@ -171,30 +183,21 @@ static void expand_range_list(lListElem *r, lList **rl) {
    DRETURN_VOID;
 }
 
-/****** sgeobj/range/range_correct_end() **************************************
-*  NAME
-*     range_correct_end() -- correct end of a range element 
-*
-*  SYNOPSIS
-*     static void range_correct_end(lListElem *this_range) 
-*
-*  FUNCTION
-*     This function modifies the the 'end' id of the 'this_range' 
-*     element if it is not correct. After the modification the 
-*     'end' id is the last valid id which is part of the range. 
-*
-*  INPUTS
-*     lListElem *this_range - RN_Type 
-*
-*  RESULT
-*     'this_range' will be modified 
-*
-*  EXAMPLE
-*     1-6:2 (1,3,5) will be modified to 1-5:2 
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-*******************************************************************************/
+/**
+ * @brief Correct end of a range element
+ *
+ * This function modifies the the 'end' id of the 'this_range'
+ * element if it is not correct. After the modification the
+ * 'end' id is the last valid id which is part of the range.
+ *
+ * @code
+ * 1-6:2 (1,3,5) will be modified to 1-5:2
+ * @endcode
+ *
+ * @param this_range RN_Type
+ *
+ * @note 'this_range' will be modified
+ */
 void range_correct_end(lListElem *this_range) {
    DENTER(RANGE_LAYER);
    if (this_range != nullptr) {
@@ -217,36 +220,25 @@ void range_correct_end(lListElem *this_range) {
    DRETURN_VOID;
 }
 
-/****** sgeobj/range/range_is_overlapping() ***********************************
-*  NAME
-*     range_is_overlapping() -- Do two ranges interleave? 
-*
-*  SYNOPSIS
-*     static bool range_is_overlapping(const lListElem *this_elem, 
-*                                      const lListElem *range) 
-*
-*  FUNCTION
-*     True will be returned when the given ranges interleave. This
-*     does not necessaryly mean that certain ids exist in both ranges. 
-*
-*  INPUTS
-*     const lListElem *this_elem - RN_Type 
-*     const lListElem *range - RN_Type 
-*
-*  RESULT
-*     static bool - false or true 
-*
-*  EXAMPLE
-*     1-5:3    4-10:7      => true 
-*     1-5:3    5-10:6      => true 
-*     1-5:3    6-10:4      => false 
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-*
-*  NOTES
-*     MT-NOTE: range_is_overlapping() is MT safe
-*******************************************************************************/
+/**
+ * @brief Do two ranges interleave?
+ *
+ * True will be returned when the given ranges interleave. This
+ * does not necessaryly mean that certain ids exist in both ranges.
+ *
+ * @code
+ * 1-5:3    4-10:7      => true
+ * 1-5:3    5-10:6      => true
+ * 1-5:3    6-10:4      => false
+ * @endcode
+ *
+ * @param this_elem RN_Type
+ * @param range RN_Type
+ *
+ * @return false or true
+ *
+ * @note MT-NOTE: range_is_overlapping() is MT safe
+ */
 static bool range_is_overlapping(const lListElem *this_elem,
                                  const lListElem *range) {
    bool ret = false;
@@ -265,29 +257,17 @@ static bool range_is_overlapping(const lListElem *this_elem,
    DRETURN(ret);
 }
 
-/****** sgeobj/range/range_list_initialize() **********************************
-*  NAME
-*     range_list_initialize() -- (Re)initialize a range list 
-*
-*  SYNOPSIS
-*     void range_list_initialize(lList **this_list, 
-*                                lList **answer_list) 
-*
-*  FUNCTION
-*     'this_list' will be created if it does not exist. If it already
-*     exists all elements contained in this list will be removed. 
-*
-*  INPUTS
-*     lList **this_list  - Pointer to a RN_Type-list 
-*     lList **answer_list - Pointer to a AN_Type-list or nullptr
-*
-*  RESULT
-*     *this_list will be an empty RN_Type list
-*     *answer_list may contain error messages 
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-*******************************************************************************/
+/**
+ * @brief (Re)initialize a range list
+ *
+ * 'this_list' will be created if it does not exist. If it already
+ * exists all elements contained in this list will be removed.
+ *
+ * @param this_list Pointer to a RN_Type-list
+ * @param answer_list Pointer to a AN_Type-list or nullptr
+ *
+ * @note *this_list will be an empty RN_Type list *answer_list may contain error messages
+ */
 void range_list_initialize(lList **this_list, lList **answer_list) {
    DENTER(RANGE_LAYER);
    if (this_list != nullptr) {
@@ -316,32 +296,22 @@ void range_list_initialize(lList **this_list, lList **answer_list) {
    DRETURN_VOID;
 }
 
-/****** sgeobj/range/range_list_get_number_of_ids() ***************************
-*  NAME
-*     range_list_get_number_of_ids() -- Determines the number of ids 
-*
-*  SYNOPSIS
-*     uint32_t range_list_get_number_of_ids(const lList *this_list)
-*
-*  FUNCTION
-*     This function determines the number of ids contained 
-*     in 'this_list'. If 'this_list' is nullptr then 0 will be returned.
-*
-*  INPUTS
-*     const lList *this_list - RN_Type list 
-*
-*  RESULT
-*     uint32_t - number of ids
-*
-*  EXAMPLE
-*     1-5:2, 7-10:3, 20-23:1 (1, 3, 5, 7, 10, 20, 21, 22, 23) => 9
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-*
-*  NOTE
-*     MT-NOTE: range_list_get_number_of_ids() is MT safe
-*******************************************************************************/
+/**
+ * @brief Determines the number of ids
+ *
+ * This function determines the number of ids contained
+ * in 'this_list'. If 'this_list' is nullptr then 0 will be returned.
+ *
+ * @code
+ * 1-5:2, 7-10:3, 20-23:1 (1, 3, 5, 7, 10, 20, 21, 22, 23) => 9
+ * @endcode
+ *
+ * @param this_list RN_Type list
+ *
+ * @return number of ids
+ *
+ * @note MT-NOTE: range_list_get_number_of_ids() is MT safe
+ */
 uint32_t range_list_get_number_of_ids(const lList *this_list) {
    DENTER(RANGE_LAYER);
    uint32_t ret = 0;
@@ -379,34 +349,22 @@ uint32_t range_get_number_of_ids(const lListElem *this_elem) {
    DRETURN(ret);
 }
 
-/****** sgeobj/range/range_list_print_to_string() *****************************
-*  NAME
-*     range_list_print_to_string() -- Print range list into the string 
-*
-*  SYNOPSIS
-*     void range_list_print_to_string(const lList *this_list, 
-*                                     dstring *string, bool ignore_step,
-*                                     bool comma_as_separator) 
-*
-*  FUNCTION
-*     Print all ranges given in 'this_list' into the dynamic 'string'.
-*     If 'this_list' is nullptr then the word "UNDEFINED" will be added
-*     to 'string'. If 'ignore_step' is 'true' then the stepsize of all
-*     ranges will be suppressed.
-*
-*  INPUTS
-*     const lList *this_list     - RN_Type 
-*     dstring *string            - dynamic string 
-*     bool ignore_step           - ignore step for printing
-*     bool comma_as_separator    - use the format 1,2,3 instead of 1-2:
-*     bool print_always_as_range - even if the range has only one id
-*
-*  RESULT
-*     string will be modified
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-*******************************************************************************/
+/**
+ * @brief Print range list into the string
+ *
+ * Print all ranges given in 'this_list' into the dynamic 'string'.
+ * If 'this_list' is nullptr then the word "UNDEFINED" will be added
+ * to 'string'. If 'ignore_step' is 'true' then the stepsize of all
+ * ranges will be suppressed.
+ *
+ * @param this_list RN_Type
+ * @param string dynamic string
+ * @param ignore_step ignore step for printing
+ * @param comma_as_separator use the format 1,2,3 instead of 1-2:
+ * @param print_always_as_range even if the range has only one id
+ *
+ * @note string will be modified
+ */
 void
 range_list_print_to_string(const lList *this_list,
                            dstring *string, bool ignore_step,
@@ -428,35 +386,23 @@ range_list_print_to_string(const lList *this_list,
    DRETURN_VOID;
 }
 
-/****** sgeobj/range/range_list_get_first_id() ********************************
-*  NAME
-*     range_list_get_first_id() -- First id contained in the list
-*
-*  SYNOPSIS
-*     uint32_t range_list_get_first_id(const lList *range_list,
-*                                      lList **answer_list) 
-*
-*  FUNCTION
-*     The first id of the first range element of the list will 
-*     be returned. If 'range_list' is nullptr or empty 0 will be
-*     returned and 'answer_list' will be filled with an error 
-*     message.
-*
-*  INPUTS
-*     const lList *range_list - RN_Type list  
-*     lList **answer_list     - Pointer to an AN_Type list 
-*
-*  RESULT
-*     uint32_t - First id or 0
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-*     sgeobj/range/range_list_get_last_id()
-*
-*  NOTES
-*     MT-NOTE: range_list_get_first_id() is MT safe
-
-******************************************************************************/
+/**
+ * @brief First id contained in the list
+ *
+ * The first id of the first range element of the list will
+ * be returned. If 'range_list' is nullptr or empty 0 will be
+ * returned and 'answer_list' will be filled with an error
+ * message.
+ *
+ * @param range_list RN_Type list
+ * @param answer_list Pointer to an AN_Type list
+ *
+ * @return First id or 0
+ *
+ * @note MT-NOTE: range_list_get_first_id() is MT safe
+ *
+ * @see #range_list_get_last_id
+ */
 uint32_t range_list_get_first_id(const lList *range_list, lList **answer_list) {
    uint32_t start = 0;
    const lListElem *range = nullptr;
@@ -474,31 +420,21 @@ uint32_t range_list_get_first_id(const lList *range_list, lList **answer_list) {
    DRETURN(start);
 }
 
-/****** sgeobj/range/range_list_get_last_id() *********************************
-*  NAME
-*     range_list_get_last_id() -- Returns last id contained in the list
-*
-*  SYNOPSIS
-*     uint32_t range_list_get_last_id(const lList *range_list,
-*                                    lList **answer_list) 
-*
-*  FUNCTION
-*     The last id of the last range element of the list will be 
-*     returned. If 'range_list' is nullptr or empty 0 will be
-*     returned and 'answer_list' will be filled with an error
-*     message. 
-*
-*  INPUTS
-*     const lList *range_list - RN_Type list  
-*     lList **answer_list     - Pointer to an AN_Type list 
-*
-*  RESULT
-*     uint32_t - Last id or 0
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-*     sgeobj/range/range_list_get_first_id()
-******************************************************************************/
+/**
+ * @brief Returns last id contained in the list
+ *
+ * The last id of the last range element of the list will be
+ * returned. If 'range_list' is nullptr or empty 0 will be
+ * returned and 'answer_list' will be filled with an error
+ * message.
+ *
+ * @param range_list RN_Type list
+ * @param answer_list Pointer to an AN_Type list
+ *
+ * @return Last id or 0
+ *
+ * @see #range_list_get_first_id
+ */
 uint32_t range_list_get_last_id(const lList *range_list, lList **answer_list) {
    uint32_t end = 0;
    const lListElem *range = nullptr;
@@ -515,27 +451,19 @@ uint32_t range_list_get_last_id(const lList *range_list, lList **answer_list) {
    DRETURN(end);
 }
 
-/****** sgeobj/range/range_list_get_average() *********************************
-*  NAME
-*     range_list_get_average() -- Return average of all numbers in range.
-*
-*  SYNOPSIS
-*     double range_list_get_average(const lList *this_list) 
-*
-*  FUNCTION
-*     The average of all numbers in the range is returned. For an empty 
-*     range 0 is returned.
-*
-*  INPUTS
-*     const lList *this_list - RN_Type list  
-*     uint32_t upperbound    - This is used as range upperbound if non-0
-*
-*  RESULT
-*     double - the average
-*
-*  NOTES
-*     MT-NOTES: range_list_get_average() is MT safe
-*******************************************************************************/
+/**
+ * @brief Return average of all numbers in range
+ *
+ * The average of all numbers in the range is returned. For an empty
+ * range 0 is returned.
+ *
+ * @param this_list RN_Type list
+ * @param upperbound This is used as range upperbound if non-0
+ *
+ * @return the average
+ *
+ * @note MT-NOTES: range_list_get_average() is MT safe
+ */
 double range_list_get_average(const lList *this_list, uint32_t upperbound) {
    double sum = 0.0;
    uint32_t id, min, max, step;
@@ -554,38 +482,27 @@ double range_list_get_average(const lList *this_list, uint32_t upperbound) {
    return (n > 0) ? (sum / n) : 0;
 }
 
-/******asgeobj/range/range_list_sort_uniq_compress() **************************
-*  NAME
-*     range_list_sort_uniq_compress() -- makes lists fit as a fiddle 
-*
-*  SYNOPSIS
-*     void range_list_sort_uniq_compress(lList *range_list, 
-*                                        lList **answer_list) 
-*
-*  FUNCTION
-*     After a call to this function 'range_list' fulfills 
-*     following conditions:
-*        (1) all ids are in ascending order
-*        (2) each id is contained in the list only once
-*        (3) ids are grouped so that a min of range elements exist 
-*
-*  INPUTS
-*     lList *range_list   - RN_Type list 
-*     lList **answer_list - Pointer to an AN_Type list 
-*     bool correct_end    - if true, range_list is treated as id enumeration
-*
-*  RESULT
-*     range_list will be modified 
-*
-*  EXAMPLE
-*     12-12:7,1-7:1,3-5:2,14-16:2   => 1-7:1,12-16:2
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-*
-*  NOTES
-*     MT-NOTE: range_list_sort_uniq_compress() is MT safe
-******************************************************************************/
+/**
+ * @brief Makes lists fit as a fiddle
+ *
+ * After a call to this function 'range_list' fulfills
+ * following conditions:
+ *    (1) all ids are in ascending order
+ *    (2) each id is contained in the list only once
+ *    (3) ids are grouped so that a min of range elements exist
+ *
+ * @code
+ * 12-12:7,1-7:1,3-5:2,14-16:2   => 1-7:1,12-16:2
+ * @endcode
+ *
+ * @param range_list RN_Type list
+ * @param answer_list Pointer to an AN_Type list
+ * @param correct_end if true, range_list is treated as id enumeration
+ *
+ * @note range_list will be modified
+ *
+ * @note MT-NOTE: range_list_sort_uniq_compress() is MT safe
+ */
 void range_list_sort_uniq_compress(lList *range_list, lList **answer_list, bool correct_end) {
    DENTER(RANGE_LAYER);
    if (range_list) {
@@ -646,36 +563,26 @@ void range_list_sort_uniq_compress(lList *range_list, lList **answer_list, bool 
    DRETURN_VOID;
 }
 
-/****** sgeobj/range/range_list_compress() ************************************
-*  NAME
-*     range_list_compress() -- Joins sequenced ranges within a list 
-*
-*  SYNOPSIS
-*     void range_list_compress(lList *range_list) 
-*
-*  FUNCTION
-*     Consecutive ranges within the list will be joined by this 
-*     function. Following pre-conditions have to be fulfilled, so 
-*     that this function works correctly:
-*        (1) ids have to be in ascending order
-*        (2) Only the first/last id of a range may be contained
-*            in the predecessor/successor range
-*
-*  INPUTS
-*     lList *range_list - RN_Type list 
-*
-*  RESULT
-*     'range_list' will be modified 
-*
-*  EXAMPLE
-*     1-3:1,4-5:1,6-8:2,8-10:2   => 1-5:1,6-10:2 
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-*
-*  NOTES
-*     MT-NOTE: range_list_compress() is MT safe
-******************************************************************************/
+/**
+ * @brief Joins sequenced ranges within a list
+ *
+ * Consecutive ranges within the list will be joined by this
+ * function. Following pre-conditions have to be fulfilled, so
+ * that this function works correctly:
+ *    (1) ids have to be in ascending order
+ *    (2) Only the first/last id of a range may be contained
+ *        in the predecessor/successor range
+ *
+ * @code
+ * 1-3:1,4-5:1,6-8:2,8-10:2   => 1-5:1,6-10:2
+ * @endcode
+ *
+ * @param range_list RN_Type list
+ *
+ * @note 'range_list' will be modified
+ *
+ * @note MT-NOTE: range_list_compress() is MT safe
+ */
 void range_list_compress(lList *range_list) {
    DENTER(RANGE_LAYER);
    if (range_list != nullptr) {
@@ -727,31 +634,19 @@ void range_list_compress(lList *range_list) {
    DRETURN_VOID;
 }
 
-/****** sgeobj/range/range_list_is_id_within() ********************************
-*  NAME
-*     range_list_is_id_within() -- Is id contained in range list? 
-*
-*  SYNOPSIS
-*     bool 
-*     range_list_is_id_within(const lList *range_list, uint32_t id)
-*
-*  FUNCTION
-*     True is returned by this function if 'id' is part of at least
-*     one range element of 'range_list' 
-*
-*  INPUTS
-*     const lList *range_list - RN_Type list
-*     uint32_t id             - id
-*
-*  RESULT
-*     bool - true or false 
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-*
-*  NOTES
-*     MT-NOTE: range_list_is_id_within() is MT safe
-*******************************************************************************/
+/**
+ * @brief Is id contained in range list?
+ *
+ * True is returned by this function if 'id' is part of at least
+ * one range element of 'range_list'
+ *
+ * @param range_list RN_Type list
+ * @param id id
+ *
+ * @return true or false
+ *
+ * @note MT-NOTE: range_list_is_id_within() is MT safe
+ */
 bool range_list_is_id_within(const lList *range_list, uint32_t id) {
    DENTER(RANGE_LAYER);
    bool ret = false;
@@ -765,24 +660,16 @@ bool range_list_is_id_within(const lList *range_list, uint32_t id) {
    DRETURN(ret);
 }
 
-/****** sgeobj/range/range_list_containes_id_less_than() **********************
-*  NAME
-*     range_list_containes_id_less_than() -- has id less than x 
-*
-*  SYNOPSIS
-*     bool range_list_containes_id_less_than(const lList *range_list, 
-*                                            uint32_t id)
-*
-*  FUNCTION
-*     Is at least one id in the "range_list" less than "id" 
-*
-*  INPUTS
-*     const lList *range_list - RN_Type list 
-*     uint32_t id             - number
-*
-*  RESULT
-*     bool - true or false
-*******************************************************************************/
+/**
+ * @brief Has id less than x
+ *
+ * Is at least one id in the "range_list" less than "id"
+ *
+ * @param range_list RN_Type list
+ * @param id number
+ *
+ * @return true or false
+ */
 bool range_list_containes_id_less_than(const lList *range_list, uint32_t id) {
    const lListElem *range = nullptr;
    bool ret = false;
@@ -797,25 +684,15 @@ bool range_list_containes_id_less_than(const lList *range_list, uint32_t id) {
    DRETURN(ret);
 }
 
-/****** sgeobj/range/range_list_is_empty() ************************************
-*  NAME
-*     range_list_is_empty() -- check if id lists containes ids 
-*
-*  SYNOPSIS
-*     bool range_list_is_empty(const lList *range_list) 
-*
-*  FUNCTION
-*     Returns true if "range_list" containes no ids. 
-*
-*  INPUTS
-*     const lList *range_list - RN_Type list 
-*
-*  RESULT
-*     bool - true or false
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type
-******************************************************************************/
+/**
+ * @brief Check if id lists containes ids
+ *
+ * Returns true if "range_list" containes no ids.
+ *
+ * @param range_list RN_Type list
+ *
+ * @return true or false
+ */
 bool range_list_is_empty(const lList *range_list) {
    return (range_list_get_number_of_ids(range_list) == 0 ? true : false);
 }
@@ -890,29 +767,17 @@ bool range_is_id_within(const lListElem *range, uint32_t id) {
    DRETURN(ret);
 }
 
-/****** sgeobj/range/range_list_remove_id() ***********************************
-*  NAME
-*     range_list_remove_id() -- remove an id from a range list 
-*
-*  SYNOPSIS
-*     void 
-*     range_list_remove_id(lList **range_list, lList **answer_list, 
-*                          uint32_t id)
-*
-*  FUNCTION
-*     'id' will be removed from 'range_list'. 
-*
-*  INPUTS
-*     lList **range_list  - pointer to a RN_Type list 
-*     lList **answer_list - pointer to a AN_Type list 
-*     uint32_t id         - new id
-*
-*  RESULT
-*     range_list and answer_list may be modified 
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-******************************************************************************/
+/**
+ * @brief Remove an id from a range list
+ *
+ * 'id' will be removed from 'range_list'.
+ *
+ * @param range_list pointer to a RN_Type list
+ * @param answer_list pointer to a AN_Type list
+ * @param id new id
+ *
+ * @note range_list and answer_list may be modified
+ */
 void range_list_remove_id(lList **range_list, lList **answer_list, uint32_t id) {
    lListElem *range = nullptr;
 
@@ -959,32 +824,19 @@ void range_list_remove_id(lList **range_list, lList **answer_list, uint32_t id) 
    DRETURN_VOID;
 }
 
-/****** sgeobj/range/range_list_move_first_n_ids() ****************************
-*  NAME
-*     range_list_move_first_n_ids() -- split a range list 
-*
-*  SYNOPSIS
-*     void range_list_move_first_n_ids(lList **range_list, 
-*                                      lList **answer_list, 
-*                                      lList **range_list2, 
-*                                      uint32_t n)
-*
-*  FUNCTION
-*     The first 'n' ids within 'range_list' will be moved into 
-*     'range_list2'. Error messages may be found in 'answer_list' 
-*
-*  INPUTS
-*     lList **range_list  - pointer to a RN_Type list (source) 
-*     lList **answer_list - pointer to an AN_Type list 
-*     lList **range_list2 - pointer to a RN_Type list (destination) 
-*     uint32_t n          - number of ids
-*
-*  RESULT
-*     range_list, range_list2, answer_list may be modified 
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-******************************************************************************/
+/**
+ * @brief Split a range list
+ *
+ * The first 'n' ids within 'range_list' will be moved into
+ * 'range_list2'. Error messages may be found in 'answer_list'
+ *
+ * @param range_list pointer to a RN_Type list (source)
+ * @param answer_list pointer to an AN_Type list
+ * @param range_list2 pointer to a RN_Type list (destination)
+ * @param n number of ids
+ *
+ * @note range_list, range_list2, answer_list may be modified
+ */
 void range_list_move_first_n_ids(lList **range_list, lList **answer_list,
                                  lList **range_list2, uint32_t n) {
    DENTER(RANGE_LAYER);
@@ -1015,38 +867,25 @@ void range_list_move_first_n_ids(lList **range_list, lList **answer_list,
    DRETURN_VOID;
 }
 
-/****** sgeobj/range/range_list_insert_id() ***********************************
-*  NAME
-*     range_list_insert_id() -- insert an id into a range list 
-*
-*  SYNOPSIS
-*     void range_list_insert_id(lList **range_list, lList **answer_list, 
-*                               uint32_t id)
-*
-*  FUNCTION
-*     'id' will be inserted into 'range_list'. 
-*
-*  INPUTS
-*     lList **range_list  - pointer to a RN_Type list 
-*     lList **answer_list - pointer to a AN_Type list 
-*     uint32_t id         - new id
-*
-*  NOTES
-*     It may be possible that 'id' is multiply contained in 'range_list' 
-*     after using this function. Use range_list_compress() or 
-*     range_list_sort_uniq_compress() to eliminate them.
-*
-*  RESULT
-*     range_list and answer_list may be modified 
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-*     sgeobj/range/range_list_compress()
-*     sgeobj/range/range_list_sort_uniq_compress()
-*
-*  NOTES
-*     MT-NOTE: range_list_insert_id() is MT safe
-******************************************************************************/
+/**
+ * @brief Insert an id into a range list
+ *
+ * 'id' will be inserted into 'range_list'.
+ *
+ * @param range_list pointer to a RN_Type list
+ * @param answer_list pointer to a AN_Type list
+ * @param id new id
+ *
+ * @note range_list and answer_list may be modified
+ *
+ * @note It may be possible that 'id' is multiply contained in 'range_list'
+ *       after using this function. Use range_list_compress() or
+ *       range_list_sort_uniq_compress() to eliminate them.
+ *
+ *       MT-NOTE: range_list_insert_id() is MT safe
+ *
+ * @see #range_list_compress, range_list_sort_uniq_compress()
+ */
 void range_list_insert_id(lList **range_list, lList **answer_list, uint32_t id) {
    lListElem *range, *prev_range, *next_range;
    int inserted = 0;
@@ -1214,33 +1053,19 @@ void range_set_all_ids(lListElem *range, uint32_t min, uint32_t max,
    DRETURN_VOID;
 }
 
-/****** sgeobj/range/range_list_calculate_union_set() *************************
-*  NAME
-*     range_list_calculate_union_set() -- Union set of two range lists 
-*
-*  SYNOPSIS
-*     void range_list_calculate_union_set(lList **range_list, 
-*                                         lList **answer_list, 
-*                                         const lList *range_list1, 
-*                                         const lList *range_list2) 
-*
-*  FUNCTION
-*     All ids contained in 'range_list1' and 'range_list2' will be 
-*     contained in 'range_list' after a call of this function.
-*      
-*
-*  INPUTS
-*     lList **range_list       - pointer to union set RN_Type list 
-*     lList **answer_list      - pointer to AN_Type list 
-*     const lList *range_list1 - first source RN_Type list 
-*     const lList *range_list2 - second source RN_Type list 
-*
-*  RESULT
-*     range_list and answer_list may be modified 
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-******************************************************************************/
+/**
+ * @brief Union set of two range lists
+ *
+ * All ids contained in 'range_list1' and 'range_list2' will be
+ * contained in 'range_list' after a call of this function.
+ *
+ * @param range_list pointer to union set RN_Type list
+ * @param answer_list pointer to AN_Type list
+ * @param range_list1 first source RN_Type list
+ * @param range_list2 second source RN_Type list
+ *
+ * @note range_list and answer_list may be modified
+ */
 void range_list_calculate_union_set(lList **range_list,
                                     lList **answer_list,
                                     const lList *range_list1,
@@ -1288,29 +1113,17 @@ void range_list_calculate_union_set(lList **range_list,
    DRETURN_VOID;
 }
 
-/****** sgeobj/range/range_list_calculate_difference_set() ********************
-*  NAME
-*     range_list_calculate_difference_set() -- Difference set list 
-*
-*  SYNOPSIS
-*     void range_list_calculate_difference_set(lList **range_list, 
-*                                              lList **answer_list, 
-*                                              const lList *range_list1, 
-*                                              const lList *range_list2) 
-*
-*  FUNCTION
-*     'range_list' will contain all ids part of 'range_list1' but not
-*     contained in 'range_list2' 
-*
-*  INPUTS
-*     lList **range_list       - pointer to result RN_Type list 
-*     lList **answer_list      - pointer to AN_Type list 
-*     const lList *range_list1 - first source RN_Type list 
-*     const lList *range_list2 - second source RN_Type list 
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-******************************************************************************/
+/**
+ * @brief Difference set list
+ *
+ * 'range_list' will contain all ids part of 'range_list1' but not
+ * contained in 'range_list2'
+ *
+ * @param range_list pointer to result RN_Type list
+ * @param answer_list pointer to AN_Type list
+ * @param range_list1 first source RN_Type list
+ * @param range_list2 second source RN_Type list
+ */
 void range_list_calculate_difference_set(lList **range_list,
                                          lList **answer_list,
                                          const lList *range_list1,
@@ -1354,29 +1167,17 @@ void range_list_calculate_difference_set(lList **range_list,
    DRETURN_VOID;
 }
 
-/****** sgeobj/range/range_list_calculate_intersection_set() ******************
-*  NAME
-*     range_list_calculate_intersection_set() -- Intersection set 
-*
-*  SYNOPSIS
-*     void range_list_calculate_intersection_set(lList **range_list, 
-*                                          lList **answer_list, 
-*                                          const lList *range_list1, 
-*                                          const lList *range_list2) 
-*
-*  FUNCTION
-*     'range_list' will contain all ids which are contained in 
-*     'range_list1' and also in 'range_list2'.
-*
-*  INPUTS
-*     lList **range_list       - pointer to result RN_Type list 
-*     lList **answer_list      - pointer to AN_Type list 
-*     const lList *range_list1 - first source RN_Type list 
-*     const lList *range_list2 - second source RN_Type list 
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-******************************************************************************/
+/**
+ * @brief Intersection set
+ *
+ * 'range_list' will contain all ids which are contained in
+ * 'range_list1' and also in 'range_list2'.
+ *
+ * @param range_list pointer to result RN_Type list
+ * @param answer_list pointer to AN_Type list
+ * @param range_list1 first source RN_Type list
+ * @param range_list2 second source RN_Type list
+ */
 void range_list_calculate_intersection_set(lList **range_list,
                                            lList **answer_list,
                                            const lList *range_list1,
@@ -1420,31 +1221,19 @@ void range_list_calculate_intersection_set(lList **range_list,
    DRETURN_VOID;
 }
 
-/****** sgeobj/range/range_to_dstring() **************************************
-*  NAME
-*     range_to_dstring() -- Appends a range to a dynamic string 
-*
-*  SYNOPSIS
-*     void range_to_dstring(uint32_t start,
-*                                   uint32_t end,
-*                                   int step, 
-*                                   dstring *dyn_taskrange_str) 
-*
-*  FUNCTION
-*     Appends a range to a dynamic string.
-*
-*  INPUTS
-*     uint32_t start              - min id
-*     uint32_t end                - max id
-*     int step                    - step size 
-*     dstring *dyn_taskrange_str  - dynamic string 
-*     int ignore_step             - ignore step for output
-*     bool use_comma_as_separator - use a comma instead of '-' and ':' for separation
-*     bool print_always_as_range - even if the range has only one id
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-******************************************************************************/
+/**
+ * @brief Appends a range to a dynamic string
+ *
+ * Appends a range to a dynamic string.
+ *
+ * @param start min id
+ * @param end max id
+ * @param step step size
+ * @param dyn_taskrange_str dynamic string
+ * @param ignore_step ignore step for output
+ * @param use_comma_as_separator use a comma instead of '-' and ':' for separation
+ * @param print_always_as_range even if the range has only one id
+ */
 void range_to_dstring(uint32_t start, uint32_t end, int step,
                       dstring *dyn_taskrange_str, int ignore_step,
                       bool use_comma_as_separator, bool print_always_as_range) {
@@ -1476,7 +1265,22 @@ void range_to_dstring(uint32_t start, uint32_t end, int step,
    sge_dstring_append(dyn_taskrange_str, tail);
 }
 
-/* MT-NOTE: range_parse_from_string() is MT safe */
+/**
+ * @brief Parse one range out of its textual form
+ *
+ * Accepts `n`, `min-max`, `min-max:step` and the open forms `-n` (meaning
+ * `1-n`) and `n-` (meaning `n-`#RANGE_INFINITY). The literal `UNDEFINED`
+ * yields no element at all.
+ *
+ * @param[out] range receives the new element, or nullptr for `UNDEFINED` and
+ *                   on a parse error
+ * @param[out] answer_list receives the syntax error; may be nullptr
+ * @param rstr the text to parse
+ * @param step_allowed whether a `:step` suffix may appear
+ * @param inf_allowed whether an open upper bound may appear
+ *
+ * @note MT-NOTE: range_parse_from_string() is MT safe
+ */
 void range_parse_from_string(lListElem **range,
                              lList **answer_list,
                              const char *rstr,
@@ -1688,17 +1492,24 @@ range_parse_get_ids(const char *value, int step_allowed, uint32_t &start, uint32
    return ret;
 }
 
-/* 
-
-   converts a range string into a range cull list
-
-   an undefined range return nullptr
-
-   if answer_list is delivered no exit occurs instead the function fills the 
-   answer list and returns nullptr, *answer_list must be nullptr !
-
-   MT-NOTE: range_list_parse_from_string() is MT safe
-*/
+/**
+ * @brief Parse a comma separated list of ranges into a range list
+ *
+ * The literal `UNDEFINED` yields no list, and may not be followed by further
+ * ranges.
+ *
+ * @param[out] this_list receives the parsed list; pass nullptr to only check
+ *                       the syntax
+ * @param[out] answer_list receives the syntax error instead of the function
+ *                         exiting; must point at a nullptr list
+ * @param string the text to parse
+ * @param just_parse true to validate only, without building a list
+ * @param step_allowed whether a `:step` suffix may appear
+ * @param inf_allowed whether an open upper bound may appear
+ * @return true when the whole string was a valid range list
+ *
+ * @note MT-NOTE: range_list_parse_from_string() is MT safe
+ */
 bool
 range_list_parse_from_string(lList **this_list, lList **answer_list,
                              const char *string, bool just_parse,

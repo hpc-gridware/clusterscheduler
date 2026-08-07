@@ -33,19 +33,32 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations and limits for range lists (`RN_Type`)
+ *
+ * @see sge_range.cc
+ */
+
 #include "uti/sge_dstring.h"
 
 #include "sgeobj/cull/sge_range_RN_L.h"
 
+/// Passed where a function may either only parse its input or also apply it
 #define JUST_PARSE        true
+/// The range may end in infinity, written as an open upper bound
 #define INF_ALLOWED       true
+/// The range must have a finite upper bound
 #define INF_NOT_ALLOWED   false
 
+/// How many ids are printed on one line before it is wrapped
 #define MAX_IDS_PER_LINE  8
+/// Width a printed range list is wrapped at
 #define MAX_LINE_LEN      70
 
+/// The value standing for an unbounded upper end of a range
 #define RANGE_INFINITY (9999999)
 
+/// Callback that either removes an id from a range list or inserts it into one
 typedef void (*range_remove_insert_t)(lList **, lList **, uint32_t);
 
 /*

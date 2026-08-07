@@ -32,6 +32,39 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The answer list: how errors, warnings and infos travel back to the caller
+ *
+ * An answer element (`AN_Type`) pairs a message with a status and a quality.
+ * Callees append to an answer list instead of returning an error code, so a
+ * single call can report several problems and GDI can carry them from the
+ * server to the client unchanged.
+ *
+ * @code
+ * void caller() {
+ *    lList *answer_list = nullptr;
+ *
+ *    callee(&answer_list);
+ *    if (answer_list_has_error(&answer_list)) {
+ *       try_to_handle_error();
+ *       lFreeList(&answer_list);
+ *    }
+ * }
+ *
+ * void callee(lList **answer_list) {
+ *    char *s = sge_malloc(256);
+ *
+ *    if (s == nullptr) {
+ *       answer_list_add(answer_list, "no memory",
+ *                       STATUS_ERROR, ANSWER_QUALITY_ERROR);
+ *       return;
+ *    }
+ * }
+ * @endcode
+ *
+ * @note MT-NOTE: the answer list module is MT safe
+ */
+
 #include <cstdarg>
 #include <cstring>
 
@@ -45,82 +78,24 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
+/// Debug layer the answer list traces are written to
 #define ANSWER_LAYER CULL_LAYER
 
 static bool answer_is_recoverable(const lListElem *answer);
 static bool answer_log(const lListElem *answer, bool show_info);
 
-/****** sgeobj/answer/-AnswerList *********************************************
-*  NAME
-*     AnswerList - Object used to return errors/warning/infos
-*
-*  FUNCTION
-*     Answer elements and lists are used to exchange information
-*     about the level of success of an operation between caller
-*     and callee. Especially in GDI answer element and lists are
-*     used to transfer error information from server components
-*     to clients.
-*
-*     Example:
-*
-*        void caller() {
-*           lList *answer_list = nullptr;
-*
-*           callee(&answer_list);
-*           if (answer_list_has_error(&answer_list)) {
-*              try_to_handle_error();
-*              lFreeList(&answer_list);
-*           }
-*        } 
-*
-*        void callee(lList **answer_list) {
-*           char *s = sge_malloc(256);
-*
-*           if (s == nullptr) {
-*              answer_list_add(answer_list, "no memory", 
-*                              STATUS_ERROR, ANSWER_QUALITY_ERROR);
-*              return;
-*           }
-*        }
-*
-*  SEE ALSO
-*     sgeobj/answer/answer_has_quality() 
-*     sgeobj/answer/answer_is_recoverable() 
-*     sgeobj/answer/answer_exit_if_not_recoverable() 
-*     sgeobj/answer/answer_get_quality_text() 
-*     sgeobj/answer/answer_get_status() 
-*     sgeobj/answer/answer_print_text() 
-*     sgeobj/answer/answer_list_add() 
-*     sgeobj/answer/answer_list_add_sprintf() 
-*     sgeobj/answer/answer_list_has_quality() 
-*     sgeobj/answer/answer_list_has_error() 
-*     sgeobj/answer/answer_list_on_error_print_or_exit() 
-*
-*  NOTES
-*     MT-NOTE: the answer list module is MT safe
-******************************************************************************/
-
-/****** sgeobj/answer/answer_has_quality() ************************************
-*  NAME
-*     answer_has_quality() -- Check for certain answer quality 
-*
-*  SYNOPSIS
-*     bool answer_has_quality(const lListElem *answer, 
-*                            answer_quality_t quality) 
-*
-*  FUNCTION
-*     Return true (1) if "answer" has the given "quality" 
-*
-*  INPUTS
-*     const lListElem *answer  - AN_Type element 
-*     answer_quality_t quality - Quality id 
-*
-*  RESULT
-*     bool - true or false 
-*
-*  NOTES
-*     MT-NOTE: answer_has_quality() is MT safe
-*******************************************************************************/
+/**
+ * @brief Check for certain answer quality
+ *
+ * Return true (1) if "answer" has the given "quality"
+ *
+ * @param answer AN_Type element
+ * @param quality Quality id
+ *
+ * @return true or false
+ *
+ * @note MT-NOTE: answer_has_quality() is MT safe
+ */
 bool answer_has_quality(const lListElem *answer, answer_quality_t quality) 
 {
    bool ret;
@@ -130,31 +105,23 @@ bool answer_has_quality(const lListElem *answer, answer_quality_t quality)
    DRETURN(ret);
 }
 
-/****** sgeobj/answer/answer_is_recoverable() *********************************
-*  NAME
-*     answer_is_recoverable() -- Check for recoverable error 
-*
-*  SYNOPSIS
-*     int answer_is_recoverable(const lListElem *answer) 
-*
-*  FUNCTION
-*     This function return true (1) if "answer" is an error where the
-*     calling function application may recover from.
-*     Following error are handeled as nonrecoverable:
-*
-*        STATUS_NOQMASTER
-*        STATUS_NOCOMMD
-*        STATUS_ENOKEY 
-*
-*  INPUTS
-*     const lListElem *answer - AN_Type element 
-*
-*  RESULT
-*     int - true or false
-*
-*  NOTES
-*     MT-NOTE: answer_is_recoverable() is MT safe
-******************************************************************************/
+/**
+ * @brief Check for recoverable error
+ *
+ * This function return true (1) if "answer" is an error where the
+ * calling function application may recover from.
+ * Following error are handeled as nonrecoverable:
+ *
+ *    STATUS_NOQMASTER
+ *    STATUS_NOCOMMD
+ *    STATUS_ENOKEY
+ *
+ * @param answer AN_Type element
+ *
+ * @return true or false
+ *
+ * @note MT-NOTE: answer_is_recoverable() is MT safe
+ */
 static bool answer_is_recoverable(const lListElem *answer)
 {
    bool ret = true;
@@ -181,28 +148,20 @@ static bool answer_is_recoverable(const lListElem *answer)
    DRETURN(ret);
 }
 
-/****** sgeobj/answer/answer_exit_if_not_recoverable() ************************
-*  NAME
-*     answer_exit_if_not_recoverable() -- Exit on certain errors 
-*
-*  SYNOPSIS
-*     void answer_exit_if_not_recoverable(const lListElem *answer) 
-*
-*  FUNCTION
-*     This function checks if "answer" is an unrecoverable error.
-*     (answer_is_recoverable() is used to check this.) The error
-*     text will then be printed to stderr and the calling
-*     process will be terminated with exit code 1. 
-*
-*  INPUTS
-*     const lListElem *answer - AN_Type element 
-*
-*  NOTES
-*     This function may never return. 
-*
-*  NOTES
-*     MT-NOTE: answer_exit_if_not_recoverable() is MT safe
-******************************************************************************/
+/**
+ * @brief Exit on certain errors
+ *
+ * This function checks if "answer" is an unrecoverable error.
+ * (answer_is_recoverable() is used to check this.) The error
+ * text will then be printed to stderr and the calling
+ * process will be terminated with exit code 1.
+ *
+ * @param answer AN_Type element
+ *
+ * @note This function may never return.
+ *
+ *       MT-NOTE: answer_exit_if_not_recoverable() is MT safe
+ */
 void answer_exit_if_not_recoverable(const lListElem *answer)
 {
    DENTER(ANSWER_LAYER);
@@ -214,25 +173,17 @@ void answer_exit_if_not_recoverable(const lListElem *answer)
    DRETURN_VOID;
 }
 
-/****** sgeobj/answer/answer_get_quality_text() *******************************
-*  NAME
-*     answer_get_quality_text() -- Get quality text 
-*
-*  SYNOPSIS
-*     const char* answer_get_quality_text(const lListElem *answer) 
-*
-*  FUNCTION
-*     Returns a string representation for the quality of the "answer" 
-*
-*  INPUTS
-*     const lListElem *answer - AN_Type list 
-*
-*  RESULT
-*     const char* - String
-*
-*  NOTES
-*     MT-NOTE: answer_get_quality_text() is MT safe
-******************************************************************************/
+/**
+ * @brief Get quality text
+ *
+ * Returns a string representation for the quality of the "answer"
+ *
+ * @param answer AN_Type list
+ *
+ * @return String
+ *
+ * @note MT-NOTE: answer_get_quality_text() is MT safe
+ */
 const char *answer_get_quality_text(const lListElem *answer) 
 {
    const char *quality_text[] = {
@@ -251,25 +202,17 @@ const char *answer_get_quality_text(const lListElem *answer)
    DRETURN(quality_text[quality]);
 }
 
-/****** sgeobj/answer/answer_get_status() *************************************
-*  NAME
-*     answer_get_status() -- Return the error status.
-*
-*  SYNOPSIS
-*     uint32_t answer_get_status(const lListElem *answer)
-*
-*  FUNCTION
-*     Return the error status of "answer". 
-*
-*  INPUTS
-*     const lListElem *answer - AN_Type element 
-*
-*  RESULT
-*     uint32_t - error status
-*
-*  NOTES
-*     MT-NOTE: answer_get_status() is MT safe
-******************************************************************************/
+/**
+ * @brief Return the error status
+ *
+ * Return the error status of "answer".
+ *
+ * @param answer AN_Type element
+ *
+ * @return error status
+ *
+ * @note MT-NOTE: answer_get_status() is MT safe
+ */
 uint32_t answer_get_status(const lListElem *answer)
 {
    uint32_t ret;
@@ -279,29 +222,19 @@ uint32_t answer_get_status(const lListElem *answer)
    DRETURN(ret);
 }
 
-/****** sgeobj/answer/answer_print_text() *************************************
-*  NAME
-*     answer_print_text() -- Prints error text 
-*
-*  SYNOPSIS
-*     void answer_print_text(const lListElem *answer, 
-*                            FILE *stream
-*                            const char *prefix,
-*                            const char *suffix) 
-*
-*  FUNCTION
-*     Prints "prefix", the error text of "answer" and "suffix" 
-*     to "stream".
-*
-*  INPUTS
-*     const lListElem *answer - AN_Type element 
-*     FILE *stream            - Output stream 
-*     const char *prefix      - Introductional message
-*     const char *prefix      - Final message
-*
-*  NOTES
-*     MT-NOTE: answer_print_text() is MT safe
-******************************************************************************/
+/**
+ * @brief Prints error text
+ *
+ * Prints "prefix", the error text of "answer" and "suffix"
+ * to "stream".
+ *
+ * @param answer AN_Type element
+ * @param stream Output stream
+ * @param prefix text printed before the message
+ * @param suffix text printed after the message
+ *
+ * @note MT-NOTE: answer_print_text() is MT safe
+ */
 void answer_print_text(const lListElem *answer, 
                        FILE *stream, 
                        const char *prefix,
@@ -325,28 +258,16 @@ void answer_print_text(const lListElem *answer,
    DRETURN_VOID;
 }
 
-/****** sgeobj/answer/answer_to_dstring() ************************************
-*  NAME
-*     answer_to_dstring() -- Copy answer to dstring without newline
-*
-*  SYNOPSIS
-*     void answer_to_dstring(const lListElem *answer, dstring *diag) 
-*
-*  FUNCTION
-*     Copy answer text into dstring without newline character.
-*
-*  INPUTS
-*     const lListElem *answer - AN_Type element
-*
-*  OUTPUT
-*     dstring *diag           - destination dstring
-*
-*  RESULT
-*     void - 
-*
-*  NOTES
-*     MT-NOTE: answer_to_dstring() is MT safe
-*******************************************************************************/
+/**
+ * @brief Copy answer to dstring without newline
+ *
+ * Copy answer text into dstring without newline character.
+ *
+ * @param answer AN_Type element
+ * @param diag destination dstring
+ *
+ * @note MT-NOTE: answer_to_dstring() is MT safe
+ */
 void answer_to_dstring(const lListElem *answer, dstring *diag)
 {
    if (diag) {
@@ -365,27 +286,17 @@ void answer_to_dstring(const lListElem *answer, dstring *diag)
    }
 }
 
-/****** sgeobj/answer/answer_list_to_dstring() *********************************
-*  NAME
-*     answer_list_to_dstring() -- Copy answer to dstring without newline
-*
-*  SYNOPSIS
-*     void answer_list_to_dstring(const lList *alp, dstring *diag) 
-*
-*  FUNCTION
-*     Copy answer list text into dstring with each element separated by a
-*     newline character.
-*
-*  INPUTS
-*     const lList *alp        - AN_Type list
-*     dstring *diag           - destination dstring
-*
-*  RESULT
-*     void - 
-*
-*  NOTES
-*     MT-NOTE: answer_list_to_dstring() is MT safe
-*******************************************************************************/
+/**
+ * @brief Copy answer to dstring without newline
+ *
+ * Copy answer list text into dstring with each element separated by a
+ * newline character.
+ *
+ * @param alp AN_Type list
+ * @param diag destination dstring
+ *
+ * @note MT-NOTE: answer_list_to_dstring() is MT safe
+ */
 void answer_list_to_dstring(const lList *alp, dstring *diag)
 {
    if (diag) {
@@ -406,43 +317,31 @@ void answer_list_to_dstring(const lList *alp, dstring *diag)
    }
 }
 
-/****** sgeobj/answer/answer_list_add_sprintf() *******************************
-*  NAME
-*     answer_list_add_sprintf() -- Format add an answer to an answer list
-*
-*  SYNOPSIS
-*     bool answer_list_add_sprintf(lList **answer_list, uint32_t status,
-*                                  answer_quality_t quality, const char *fmt, 
-*                                  ...) 
-*
-*  FUNCTION
-*     This function creates a new answer element having the properties
-*     "status", "quality", and a message text created from fmt and the 
-*     following variable argument list.
-*
-*     The new element will be appended to "answer_list".
-*     
-*     If "answer_list" is nullptr, no action is performed.
-*
-*     If the list pointed to by "answer_list" is nullptr, a new list will be
-*     created.
-*
-*  INPUTS
-*     lList **answer_list      - AN_Type list
-*     uint32_t status          - answer status
-*     answer_quality_t quality - answer quality
-*     const char *fmt          - format string to create message (printf)
-*     ...                      - arguments used for formatting message
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  SEE ALSO
-*     sgeobj/answer/answer_list_add()
-*
-*  NOTES
-*     MT-NOTE: answer_list_add_sprintf() is MT safe
-******************************************************************************/
+/**
+ * @brief Format add an answer to an answer list
+ *
+ * This function creates a new answer element having the properties
+ * "status", "quality", and a message text created from fmt and the
+ * following variable argument list.
+ *
+ * The new element will be appended to "answer_list".
+ *
+ * If "answer_list" is nullptr, no action is performed.
+ *
+ * If the list pointed to by "answer_list" is nullptr, a new list will be
+ * created.
+ *
+ * @param answer_list AN_Type list
+ * @param status answer status
+ * @param quality answer quality
+ * @param fmt format string to create message (printf) ...                      - arguments used for formatting message
+ *
+ * @return true on success, else false
+ *
+ * @note MT-NOTE: answer_list_add_sprintf() is MT safe
+ *
+ * @see #answer_list_add
+ */
 bool 
 answer_list_add_sprintf(lList **answer_list, uint32_t status,
                         answer_quality_t quality, const char *fmt, ...)
@@ -469,28 +368,19 @@ answer_list_add_sprintf(lList **answer_list, uint32_t status,
    DRETURN(ret);
 }
 
-/****** sgeobj/answer/answer_list_has_quality() *******************************
-*  NAME
-*     answer_list_has_quality() -- Contains list  
-*
-*  SYNOPSIS
-*     int answer_list_has_quality(lList **answer_list, 
-*                                 answer_quality_t quality) 
-*
-*  FUNCTION
-*     The function returns true (1) if the "answer_list" contains
-*     at least one answer element with the given "quality". 
-*
-*  INPUTS
-*     lList **answer_list      - AN_Type list 
-*     answer_quality_t quality - quality value 
-*
-*  RESULT
-*     bool - true or false
-*
-*  NOTES
-*     MT-NOTE: answer_list_has_quality() is MT safe
-******************************************************************************/
+/**
+ * @brief Contains list
+ *
+ * The function returns true (1) if the "answer_list" contains
+ * at least one answer element with the given "quality".
+ *
+ * @param answer_list AN_Type list
+ * @param quality quality value
+ *
+ * @return true or false
+ *
+ * @note MT-NOTE: answer_list_has_quality() is MT safe
+ */
 bool answer_list_has_quality(lList **answer_list, answer_quality_t quality)
 {
    bool ret = false;
@@ -507,27 +397,17 @@ bool answer_list_has_quality(lList **answer_list, answer_quality_t quality)
    DRETURN(ret);
 }
 
-/****** sge_answer/answer_list_remove_quality() ********************************
-*  NAME
-*     answer_list_remove_quality() -- Remove elements from list
-*
-*  SYNOPSIS
-*     void answer_list_remove_quality(lList *alp, answer_quality_t quality) 
-*
-*  FUNCTION
-*     The function removes all answer list elements with the given quality from
-*     the list.
-*
-*  INPUTS
-*     lList *answer_list       - AN_Type list   
-*     answer_quality_t quality - quality value
-*
-*  RESULT
-*     void - 
-*
-*  NOTES
-*     MT-NOTE: answer_list_remove_quality() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Remove elements from list
+ *
+ * The function removes all answer list elements with the given quality from
+ * the list.
+ *
+ * @param answer_list AN_Type list
+ * @param quality quality value
+ *
+ * @note MT-NOTE: answer_list_remove_quality() is MT safe
+ */
 void answer_list_remove_quality(lList *answer_list, answer_quality_t quality)
 {
    lListElem *aep, *nxt = lFirstRW(answer_list);
@@ -545,27 +425,19 @@ void answer_list_remove_quality(lList *answer_list, answer_quality_t quality)
 }
 
 
-/****** sge_answer/answer_list_has_status() ************************************
-*  NAME
-*     answer_list_has_status() -- status contains in list
-*
-*  SYNOPSIS
-*     bool answer_list_has_status(lList **answer_list, uint32_t status)
-*
-*  FUNCTION
-*     The function returns true if the "answer_list" contains at least
-*     one answer element with the given status
-*
-*  INPUTS
-*     lList **answer_list - AN_Type list
-*     uint32_t status     - expected status
-*
-*  RESULT
-*     bool - true or false
-*
-*  NOTES
-*     MT-NOTE: answer_list_has_status() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Status contains in list
+ *
+ * The function returns true if the "answer_list" contains at least
+ * one answer element with the given status
+ *
+ * @param answer_list AN_Type list
+ * @param status expected status
+ *
+ * @return true or false
+ *
+ * @note MT-NOTE: answer_list_has_status() is MT safe
+ */
 bool answer_list_has_status(lList **answer_list, uint32_t status)
 {
    bool ret = false;
@@ -583,26 +455,18 @@ bool answer_list_has_status(lList **answer_list, uint32_t status)
    DRETURN(ret);
 }
 
-/****** sgeobj/answer/answer_list_has_error() *********************************
-*  NAME
-*     answer_list_has_error() -- Is an "error " in the list 
-*
-*  SYNOPSIS
-*     bool answer_list_has_error(lList **answer_list) 
-*
-*  FUNCTION
-*     The function returns true (1) if the "answer_list" containes
-*     at least one error answer element 
-*
-*  INPUTS
-*     lList **answer_list - AN_Type list 
-*
-*  RESULT
-*     bool - true or false
-*
-*  NOTES
-*     MT-NOTE: answer_list_has_error() is MT safe
-******************************************************************************/
+/**
+ * @brief Is an "error " in the list
+ *
+ * The function returns true (1) if the "answer_list" containes
+ * at least one error answer element
+ *
+ * @param answer_list AN_Type list
+ *
+ * @return true or false
+ *
+ * @note MT-NOTE: answer_list_has_error() is MT safe
+ */
 bool answer_list_has_error(lList **answer_list)
 {
    bool ret = false;
@@ -615,26 +479,18 @@ bool answer_list_has_error(lList **answer_list)
    DRETURN(ret);
 }               
 
-/****** sgeobj/answer/answer_list_on_error_print_or_exit() ********************
-*  NAME
-*     answer_list_on_error_print_or_exit() -- Print and/or exit 
-*
-*  SYNOPSIS
-*     void answer_list_on_error_print_or_exit(lList **answer_list, 
-*                                             FILE *stream) 
-*
-*  FUNCTION
-*     The error texts of all answer elements within "answer_list" are
-*     printed to "stream". If an unrecoverable error is detected
-*     the calling process will be terminated. 
-*
-*  INPUTS
-*     lList **answer_list - AN_Type list 
-*     FILE *stream        - output stream 
-*
-*  NOTES
-*     MT-NOTE: answer_list_on_error_print_or_exit() is MT safe
-******************************************************************************/
+/**
+ * @brief Print and/or exit
+ *
+ * The error texts of all answer elements within "answer_list" are
+ * printed to "stream". If an unrecoverable error is detected
+ * the calling process will be terminated.
+ *
+ * @param answer_list AN_Type list
+ * @param stream output stream
+ *
+ * @note MT-NOTE: answer_list_on_error_print_or_exit() is MT safe
+ */
 void answer_list_on_error_print_or_exit(lList **answer_list, FILE *stream)
 {
    DENTER(ANSWER_LAYER);
@@ -645,38 +501,31 @@ void answer_list_on_error_print_or_exit(lList **answer_list, FILE *stream)
    DRETURN_VOID;
 }
 
-/****** sgeobj/answer/answer_list_print_err_warn() ****************************
-*  NAME
-*     answer_list_print_err_warn() -- Print and/or exit 
-*
-*  SYNOPSIS
-*     int answer_list_print_err_warn(lList **answer_list, 
-*                                    const char *err_prefix, 
-*                                    const char *warn_prefix) 
-*
-*  FUNCTION
-*     Prints all messages contained in "answer_list". All error
-*     messages will be printed to stderr with an an initial "err_prefix".
-*     All warning and info messages will be printed to stdout with
-*     the prefix "warn_prefix". 
-*
-*     If the "answer_list" contains at least one error then this
-*     function will return with a positive return value. This value
-*     is the errror status of the first error message.
-*
-*     If there is no error contained in 'answer_list' than this function 
-*     will return with a value of 0. 
-*
-*     "*answer_list" will be freed.
-*
-*  INPUTS
-*     lList **answer_list     - AN_Type list 
-*     const char *err_prefix  - e.g. "qsub: "
-*     const char *warn_prefix - e.g. MSG_WARNING
-*
-*  NOTES
-*     MT-NOTE: answer_list_print_err_warn() is MT safe
-******************************************************************************/
+/**
+ * @brief Print and/or exit
+ *
+ * Prints all messages contained in "answer_list". All error
+ * messages will be printed to stderr with an an initial "err_prefix".
+ * All warning and info messages will be printed to stdout with
+ * the prefix "warn_prefix".
+ *
+ * If the "answer_list" contains at least one error then this
+ * function will return with a positive return value. This value
+ * is the errror status of the first error message.
+ *
+ * If there is no error contained in 'answer_list' than this function
+ * will return with a value of 0.
+ *
+ * "*answer_list" will be freed.
+ *
+ * @param answer_list AN_Type list
+ * @param critical_prefix prefix for critical messages, e.g. "qsub: "
+ * @param err_prefix e.g. "qsub: "
+ * @param warn_prefix e.g. MSG_WARNING
+ * @return the status of the first error message, or 0 when there was none
+ *
+ * @note MT-NOTE: answer_list_print_err_warn() is MT safe
+ */
 int answer_list_print_err_warn(lList **answer_list, 
                                const char *critical_prefix,
                                const char *err_prefix,
@@ -710,31 +559,22 @@ int answer_list_print_err_warn(lList **answer_list,
    DRETURN((int)status);
 }
 
-/****** sgeobj/answer/answer_list_handle_request_answer_list() ****************
-*  NAME
-*     answer_list_handle_request_answer_list() -- handle res. of request
-*
-*  SYNOPSIS
-*     int answer_list_handle_request_answer_list(lList **answer_list, 
-*                                                FILE *stream) 
-*
-*  FUNCTION
-*     Processes the answer list that results from a gdi request
-*     (sge_gdi or ocs::gdi::Client::sge_gdi_multi).
-*     Outputs and errors and warnings and returns the first error
-*     or warning status code.
-*     The answer list is freed.
-*
-*  INPUTS
-*     lList **answer_list - answer list to process
-*     FILE *stream        - output stream
-*
-*  RESULT
-*     int - first error or warning status code or STATUS_OK
-*
-*  NOTES
-*     MT-NOTE: answer_list_handle_request_answer_list() is MT safe
-******************************************************************************/
+/**
+ * @brief Handle res. of request
+ *
+ * Processes the answer list that results from a gdi request
+ * (sge_gdi or ocs::gdi::Client::sge_gdi_multi).
+ * Outputs and errors and warnings and returns the first error
+ * or warning status code.
+ * The answer list is freed.
+ *
+ * @param answer_list answer list to process
+ * @param stream output stream
+ *
+ * @return first error or warning status code or STATUS_OK
+ *
+ * @note MT-NOTE: answer_list_handle_request_answer_list() is MT safe
+ */
 int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream) {
    int ret = STATUS_OK;
 
@@ -760,43 +600,29 @@ int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream) {
    DRETURN(ret);
 }
 
-/****** sgeobj/answer/answer_list_add() ***************************************
-*  NAME
-*     answer_list_add() -- Add an answer to an answer list
-*
-*  SYNOPSIS
-*     int answer_list_add(lList **answer_list,
-*                         const char *text,
-*                         uint32_t status,
-*                         answer_quality_t quality)
-*
-*  FUNCTION
-*     This function creates a new answer element (using "quality",
-*     "status" and "text"). The new element will be appended to
-*     "answer_list"
-*
-*     If "answer_list" is nullptr, no action is performed.
-*
-*     If the list pointed to by "answer_list" is nullptr, a new list will be
-*     created.
-*
-*  INPUTS
-*     lList **answer_list      - AN_Type list
-*     const char *text         - answer text
-*     uint32_t status          - answer status
-*     answer_quality_t quality - answer quality
-*
-*  RESULT
-*     int - error state
-*        true  - OK
-*        false - error occurred
-*
-*  SEE ALSO
-*     sgeobj/answer/answer_list_add_sprintf()
-*
-*  NOTES
-*     MT-NOTE: answer_list_add() is MT safe
-******************************************************************************/
+/**
+ * @brief Add an answer to an answer list
+ *
+ * This function creates a new answer element (using "quality",
+ * "status" and "text"). The new element will be appended to
+ * "answer_list"
+ *
+ * If "answer_list" is nullptr, no action is performed.
+ *
+ * If the list pointed to by "answer_list" is nullptr, a new list will be
+ * created.
+ *
+ * @param answer_list AN_Type list
+ * @param text answer text
+ * @param status answer status
+ * @param quality answer quality
+ *
+ * @return error state true  - OK false - error occurred
+ *
+ * @note MT-NOTE: answer_list_add() is MT safe
+ *
+ * @see #answer_list_add_sprintf
+ */
 bool
 answer_list_add(lList **answer_list, const char *text,
                 uint32_t status, answer_quality_t quality)
@@ -830,6 +656,17 @@ answer_list_add(lList **answer_list, const char *text,
    DRETURN(ret);
 }
 
+/**
+ * @brief Append an existing answer element to an answer list
+ *
+ * The list is created when it does not exist yet.
+ *
+ * @param[in,out] answer_list the list to append to
+ * @param answer the element to append; ownership passes to the list
+ * @return true when the element was appended
+ *
+ * @note MT-NOTE: answer_list_add_elem() is MT safe
+ */
 bool answer_list_add_elem(lList **answer_list, lListElem *answer)
 {
    bool ret = false;
@@ -847,26 +684,16 @@ bool answer_list_add_elem(lList **answer_list, lListElem *answer)
    DRETURN(ret);
 }
 
-/****** sgeobj/answer/answer_list_replace() ***********************************
-*  NAME
-*     answer_list_replace() -- replace an answer list 
-*
-*  SYNOPSIS
-*     void answer_list_replace(lList **answer_list, lList **new_list) 
-*
-*  FUNCTION
-*     free *answer_list and replace it by *new_list. 
-*
-*  INPUTS
-*     lList **answer_list - AN_Type 
-*     lList **new_list    - AN_Type 
-*
-*  RESULT
-*     void - none 
-*
-*  NOTES
-*     MT-NOTE: answer_list_replace() is MT safe
-*******************************************************************************/
+/**
+ * @brief Replace an answer list
+ *
+ * free *answer_list and replace it by *new_list.
+ *
+ * @param answer_list AN_Type
+ * @param new_list AN_Type
+ *
+ * @note MT-NOTE: answer_list_replace() is MT safe
+ */
 void answer_list_replace(lList **answer_list, lList **new_list)
 {
    DENTER(ANSWER_LAYER);
@@ -883,23 +710,14 @@ void answer_list_replace(lList **answer_list, lList **new_list)
    DRETURN_VOID;
 }
 
-/****** sgeobj/answer/answer_list_append_list() *******************************
-*  NAME
-*     answer_list_append_list() -- Append two lists 
-*
-*  SYNOPSIS
-*     void answer_list_append_list(lList **answer_list, lList **new_list) 
-*
-*  FUNCTION
-*     Append "new_list" after "answer_list". *new_list will be nullptr afterwards
-*
-*  INPUTS
-*     lList **answer_list - AN_Type list 
-*     lList **new_list    - AN_Type list 
-*
-*  RESULT
-*     void - None 
-*******************************************************************************/
+/**
+ * @brief Append two lists
+ *
+ * Append "new_list" after "answer_list". *new_list will be nullptr afterwards
+ *
+ * @param answer_list AN_Type list
+ * @param new_list AN_Type list
+ */
 void answer_list_append_list(lList **answer_list, lList **new_list)
 {
    DENTER(ANSWER_LAYER);
@@ -914,35 +732,28 @@ void answer_list_append_list(lList **answer_list, lList **new_list)
    DRETURN_VOID;
 }
 
-/****** sgeobj/answer/answer_list_log() ****************************
-*  NAME
-*     answer_list_log() -- output and free answer_list
-*
-*  SYNOPSIS
-*     bool
-*     answer_list_log(lList **answer_list, bool is_free_list, bool show_info)
-*
-*  FUNCTION
-*     Prints all messages contained in "answer_list". 
-*     The ERROR, WARNING and INFO macros will be used for output.
-*
-*     If the "answer_list" contains at least one error then this
-*     function will return true.
-*
-*     If there is no error contained in 'answer_list' then this function 
-*     will return with a value of false. 
-*
-*     "*answer_list" will only be freed and set to nullptr, if is_free_list is
-*     true.
-*
-*  INPUTS
-*     lList **answer_list     - AN_Type list 
-*     bool is_free_list       - if true, frees the answer list
-*     bool show_info          - log also info messages
-*
-*  NOTES
-*     MT-NOTE: answer_list_print_err_warn() is MT safe
-******************************************************************************/
+/**
+ * @brief Output and free answer_list
+ *
+ * Prints all messages contained in "answer_list".
+ * The ERROR, WARNING and INFO macros will be used for output.
+ *
+ * If the "answer_list" contains at least one error then this
+ * function will return true.
+ *
+ * If there is no error contained in 'answer_list' then this function
+ * will return with a value of false.
+ *
+ * "*answer_list" will only be freed and set to nullptr, if is_free_list is
+ * true.
+ *
+ * @param answer_list AN_Type list
+ * @param is_free_list if true, frees the answer list
+ * @param show_info log also info messages
+ * @return true when the list contained at least one error
+ *
+ * @note MT-NOTE: answer_list_print_err_warn() is MT safe
+ */
 bool answer_list_log(lList **answer_list, bool is_free_list, bool show_info) {
 
    bool ret = false;
@@ -962,27 +773,18 @@ bool answer_list_log(lList **answer_list, bool is_free_list, bool show_info) {
    DRETURN(ret);
 }
 
-/****** sgeobj/answer/answer_log() ****************************
-*  NAME
-*     answer_log() -- output answer
-*
-*  SYNOPSIS
-*     bool
-*     answer_log(lListElem *answer)
-*
-*  FUNCTION
-*     Prints the message contained in "answer". 
-*     The CRITICAL, ERROR, WARNING and INFO macros will be used for output.
-*
-*  INPUTS
-*     lListElem *answer       - AN_Type element 
-*
-*  RESULT
-*     bool - true if answer is an error, false otherwise and if answer == nullptr
-*
-*  NOTES
-*     MT-NOTE: answer_log() is MT safe
-******************************************************************************/
+/**
+ * @brief Output answer
+ *
+ * Prints the message contained in "answer".
+ * The CRITICAL, ERROR, WARNING and INFO macros will be used for output.
+ *
+ * @param answer AN_Type element
+ *
+ * @return true if answer is an error, false otherwise and if answer == nullptr
+ *
+ * @note MT-NOTE: answer_log() is MT safe
+ */
 static bool answer_log(const lListElem *answer, bool show_info) {
 
    bool ret = false;
@@ -1017,37 +819,38 @@ static bool answer_log(const lListElem *answer, bool show_info) {
    DRETURN(ret);
 }
 
-/****** sgeobj/answer/answer_list_output() ****************************
-*  NAME
-*     answer_list_output() -- output and free answer_list
-*
-*  SYNOPSIS
-*     bool
-*     answer_list_output(lList **answer_list)
-*
-*  FUNCTION
-*     Prints all messages contained in "answer_list". 
-*     The ERROR, WARNING and INFO macros will be used for output.
-*
-*     If the "answer_list" contains at least one error then this
-*     function will return true.
-*
-*     If there is no error contained in 'answer_list' then this function 
-*     will return with a value of false. 
-*
-*     "*answer_list" will be freed and set to nullptr.
-*
-*  INPUTS
-*     lList **answer_list     - AN_Type list 
-*
-*  NOTES
-*     MT-NOTE: answer_list_output() is MT safe
-******************************************************************************/
+/**
+ * @brief Output and free answer_list
+ *
+ * Prints all messages contained in "answer_list".
+ * The ERROR, WARNING and INFO macros will be used for output.
+ *
+ * If the "answer_list" contains at least one error then this
+ * function will return true.
+ *
+ * If there is no error contained in 'answer_list' then this function
+ * will return with a value of false.
+ *
+ * "*answer_list" will be freed and set to nullptr.
+ *
+ * @param answer_list AN_Type list
+ * @return true when the list contained at least one error
+ *
+ * @note MT-NOTE: answer_list_output() is MT safe
+ */
 bool answer_list_output(lList **answer_list) {
    return answer_list_log(answer_list, true, true);
 }
 
 
+/**
+ * @brief Print the last message of an answer list to stderr
+ *
+ * Exits first if any element reports an unrecoverable condition.
+ *
+ * @param alp AN_Type list
+ * @return 1 when any element carried a status other than `STATUS_OK`, else 0
+ */
 int show_answer(lList *alp) 
 {
    const lListElem *aep = nullptr;
@@ -1072,6 +875,14 @@ int show_answer(lList *alp)
    DRETURN(ret);
 }
 
+/**
+ * @brief Print every message of an answer list to stderr
+ *
+ * Exits first if any element reports an unrecoverable condition.
+ *
+ * @param alp AN_Type list
+ * @return 1 when any element carried a status other than `STATUS_OK`, else 0
+ */
 int show_answer_list(lList *alp) 
 {
    const lListElem *aep = nullptr;
@@ -1096,6 +907,13 @@ int show_answer_list(lList *alp)
    DRETURN(ret);
 }
 
+/**
+ * @brief Turn the errors collected in an error handler into answer elements
+ *
+ * @param eh the error handler to read; nullptr is ignored
+ * @param[out] alpp receives one element per error; nullptr is ignored
+ * @param clear_errors true to drop the errors from `eh` afterwards
+ */
 void answer_list_from_sge_error(sge_error_class_t *eh, lList **alpp, bool clear_errors) {
    sge_error_iterator_class_t *iter = nullptr;
    

@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for host reference lists (`HR_Type`)
+ *
+ * @see sge_href.cc
+ */
+
 #include "sgeobj/cull/sge_href_HR_L.h"
 
 bool 
