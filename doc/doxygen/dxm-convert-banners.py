@@ -61,6 +61,11 @@ def parse_sections(block):
     return secs
 
 
+def is_placeholder(text):
+    """Banners in this tree use '???' where the author never wrote anything."""
+    return not text or not text.strip().strip('?').strip()
+
+
 def trim(lines):
     lines = list(lines)
     while lines and not lines[0].strip():
@@ -91,16 +96,16 @@ def convert_block(block, local_symbols, returns_void=False):
         if '--' in line:
             brief = line.split('--', 1)[1].strip()
             break
-    if not brief:
-        fn = trim(s.get('FUNCTION', []))
+    if is_placeholder(brief):
+        fn = [x for x in trim(s.get('FUNCTION', [])) if not is_placeholder(x)]
         brief = fn[0] if fn else 'TODO document this'
     brief = brief.rstrip('. ')
     if brief:
         brief = brief[0].upper() + brief[1:]
     out.append(' * @brief ' + brief)
 
-    fn = trim(s.get('FUNCTION', []))
-    if fn:
+    fn = [x for x in trim(s.get('FUNCTION', [])) if not is_placeholder(x)]
+    if fn and fn[0].strip() != brief:
         out.append(' *')
         out.extend((' * ' + line).rstrip() for line in fn)
 
@@ -115,15 +120,31 @@ def convert_block(block, local_symbols, returns_void=False):
     for line in trim(s.get('INPUTS', [])) + trim(s.get('OUTPUTS', [])):
         m = re.match(r'^\s*(?:[\w \*\[\]]+?[ \*])?(\w+)\s+-\s+(.*)$', line)
         if m:
+            # "void - ???" documents the absence of parameters, not a parameter
+            # called void; @param void is a doxygen warning.
+            if m.group(1) == 'void':
+                continue
             params.append([m.group(1), m.group(2).strip()])
         elif params and line.strip():
             params[-1][1] += ' ' + line.strip()
     if params:
         out.append(' *')
         for name, desc in params:
+            desc = '' if is_placeholder(desc) else desc
             out.append((' * @param %s %s' % (name, desc)).rstrip())
 
     ret = trim(s.get('RESULT', []))
+    mt_note = None
+    if ret:
+        # Some banners put the MT-NOTE inside RESULT instead of NOTES, where it
+        # would otherwise be appended to the @return text.
+        keep = []
+        for line in ret:
+            if re.match(r'^\s*MT-NOTE\b', line):
+                mt_note = line.strip()
+            else:
+                keep.append(line)
+        ret = trim(keep)
     if ret:
         txt = ' '.join(x.strip() for x in ret if x.strip())
         # A RESULT section on a void function still describes something, but
@@ -137,9 +158,14 @@ def convert_block(block, local_symbols, returns_void=False):
                 out.append(' *')
                 out.append(' * @note ' + rest)
         else:
-            txt = re.sub(r'^[\w \*]+?\s+-\s+', '', txt)
+            txt = re.sub(r'^[\w \*]+?\s*-\s*', '', txt)
+            if is_placeholder(txt):
+                txt = 'TODO document the return value'
             out.append(' *')
             out.append(' * @return ' + txt)
+    if mt_note:
+        out.append(' *')
+        out.append(' * @note ' + mt_note)
 
     notes = trim(s.get('NOTES', []))
     if notes:
