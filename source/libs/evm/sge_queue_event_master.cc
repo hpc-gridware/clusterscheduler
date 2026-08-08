@@ -32,6 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Queueing events about cluster queues and queue instances
+ *
+ * Thin wrappers that pick the right event type and fill in the object, so
+ * callers do not have to know the `sgeE_*` values.
+ *
+ * @see sge_queue_event_master.h
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_cqueue.h"
@@ -41,6 +50,13 @@
 #include "evm/sge_event_master.h"
 #include "evm/sge_queue_event_master.h"
 
+/**
+ * @brief Queue an event about one queue instance
+ *
+ * @param this_elem the queue instance the event is about
+ * @param type the event type, one of the `sgeE_QINSTANCE_*` values
+ * @param gdi_session the session the change belongs to, for read-after-write
+ */
 void
 qinstance_add_event(lListElem *this_elem, ev_event type, uint64_t gdi_session)
 {
@@ -49,6 +65,13 @@ qinstance_add_event(lListElem *this_elem, ev_event type, uint64_t gdi_session)
    DRETURN_VOID;
 }
 
+/**
+ * @brief Queue an event about one cluster queue
+ *
+ * @param this_elem the cluster queue the event is about
+ * @param type the event type, one of the `sgeE_CQUEUE_*` values
+ * @param gdi_session the session the change belongs to, for read-after-write
+ */
 void
 cqueue_add_event(lListElem *this_elem, ev_event type, uint64_t gdi_session)
 {

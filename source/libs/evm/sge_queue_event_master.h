@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations of the queue specific event helpers
+ *
+ * @see sge_queue_event_master.cc
+ */
+
 #include "sgeobj/sge_event.h"
 
 void

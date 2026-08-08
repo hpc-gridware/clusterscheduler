@@ -18,10 +18,26 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The unique event id counter
+ *
+ * A plain atomic, so any thread may produce an event without taking a lock.
+ *
+ * @see ocs_event_master.h
+ */
+
 #include <atomic>
 
 #include "ocs_event_master.h"
 
+/**
+ * @brief Hand out the next unique event id
+ *
+ * A plain atomic counter, so any thread may produce an event without taking a
+ * lock. Ids are never reused within a qmaster lifetime.
+ *
+ * @return the next id
+ */
 uint64_t
 oge_get_next_unique_event_id() {
    static std::atomic_uint_fast64_t id = 0;

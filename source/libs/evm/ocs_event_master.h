@@ -19,7 +19,14 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Declaration of the unique event id counter
+ *
+ * @see ocs_event_master.cc
+ */
+
 #include <cinttypes>
 
+/// Hand out the next unique event id; see ocs_event_master.cc
 uint64_t
 oge_get_next_unique_event_id();
