@@ -33,6 +33,41 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Implementation of JAPI - Cluster Scheduler's API for job submission and control
+ *
+ * ## The session
+ *
+ * japi_init() opens a session and starts the **event client thread**
+ * (japi_implementation_thread()). That thread registers as an event client at
+ * qmaster, subscribes to the job events of this session - selected by the
+ * session key, see japi_open_session() - and maintains
+ * `Master_japi_job_list`, a local copy of the state of every job submitted
+ * through the session. It is that list which lets japi_wait() and
+ * japi_synchronize() block until a job has really finished instead of
+ * polling qmaster.
+ *
+ * A session can also run **without** the event client thread. japi_init()
+ * takes an `enable_wait` flag, and when it is false the submitting calls
+ * work but japi_wait() and japi_synchronize() do not; japi_enable_job_wait()
+ * starts the thread later.
+ *
+ * ## Threading
+ *
+ * All of the session state below is global and shared between the application
+ * threads and the event client thread, so each variable has a mutex and the
+ * `JAPI_LOCK_*` macros are how it is taken. `japi_threads_in_session` counts
+ * the application threads currently inside a call that depends on
+ * `Master_japi_job_list`, which is how japi_exit() knows when it may free it.
+ *
+ * ## Relation to DRMAA
+ *
+ * `drmaa.cc` implements the DRMAA specification on top of this file. Almost
+ * every `drmaa_*` function checks its arguments, calls the `japi_*` function
+ * of the same name and maps the result onto a DRMAA error code, so the
+ * behaviour is described here and the specification conformance there.
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -82,206 +117,175 @@
 #include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/ocs_gdi_Client.h"
 
-/****** JAPI/--Job_API ********************************************************
-*  NAME
-*     Job_JAPI -- Cluster Scheduler's API for job submission and control.
-*
-*  FUNCTION
-*
-*  NOTES
-*
-*  SEE ALSO
-*     JAPI/-JAPI_Session_state
-*     JAPI/-JAPI_Implementation
-*     JAPI/-JAPI_Interface
-*******************************************************************************/
-
+/** Guards the one time initialisation done by japi_once_init() */
 static pthread_once_t japi_once_control = PTHREAD_ONCE_INIT;
 
 
-/****** JAPI/-JAPI_Session_state *******************************************
-*  NAME
-*     JAPI_Session_state -- All global variables together constitute the state of a JAPI session
-*
-*  SYNOPSIS
-*     static pthread_t japi_event_client_thread;
-*     static int japi_ec_return_value;
-*     static int japi_session = JAPI_SESSION_INACTIVE;
-*     static int japi_ec_state = JAPI_EC_DOWN;
-*     static uint32_t japi_ec_id = 0;
-*     static lList *Master_japi_job_list = nullptr;
-*     static int japi_threads_in_session = 0;
-*     static char *japi_session_key = nullptr;
-*     static bool japi_delegated_file_staging_is_enabled = false;
-*
-*  FUNCTION
-*     japi_event_client_thread - the event client thread. Used by japi_init() and
-*                    japi_exit() to control start and shutdown of this implementation
-*                    thread.
-*     japi_ec_return_value - return value of the event client thread
-*     japi_session - reflects state of a JAPI session
-*                    state is set to JAPI_SESSION_ACTIVE when japi_init() succeeded
-*                    and set to JAPI_SESSION_INACTIVE by japi_exit()
-*                    Code using japi_session must be made reentrant with
-*                    the mutex japi_session_mutex.
-*     japi_ec_state - is used for synchronizing with startup of the event
-*                    client thread in japi_init() and for synchronizing
-*                    with event client thread in japi_exit(). Also it is used
-*                    to ensure blocking functions that depend upon event client
-*                    functionality finish when the event client thread finishes
-*                    as a result of a japi_exit() called by another thread.
-*                    Code using japi_ec_state must be made reentrant with
-*                    japi_ec_state_mutex. To communicate state transistions
-*                    the condition variable japi_ec_state_starting_cv is used.
-*     japi_ec_id - contains event client id written by event client thread
-*                    read by thread doing japi_exit() to unregister event client
-*                    from qmaster.
-*     Master_japi_job_list - The Master_japi_job_list contains information
-*                    about all jobs' state of this session. It is used to
-*                    allow japi_wait() and japi_synchronize() for waiting for
-*                    jobs to finish. New jobs are added into this data structure
-*                    by japi_run_job() and japi_run_bulk_jobs(), job finish
-*                    information is stored by the event client thread. Jobs are
-*                    removed by japi_wait() and japi_synchronize() each time when
-*                    a job is reaped. Code depending upon Master_japi_job_list
-*                    must be made reentrant using mutex Master_japi_job_list_mutex.
-*                    To implement synchronuous wait for job finish information
-*                    being added condition variable Master_japi_job_list_finished_cv
-*                    is used. See japi_threads_in_session on strategy to ensure
-*                    Master_japi_job_list integrity in case of multiple application
-*                    threads.
-*     japi_threads_in_session - A counter indicating the number of threads depending
-*                    upon Master_japi_job_list: Each thread entering such a JAPI call
-*                    must increase this counter and decrese it again when leaving.
-*                    Code using japi_threads_in_session must be made reentrant using
-*                    the mutex japi_threads_in_session_mutex. When decresing the
-*                    counter to 0 the condition variable japi_threads_in_session_cv
-*                    is used to notify japi_exit() that Master_japi_job_list can be
-*                    released.
-*     japi_session_key - is a string key used during event client registration
-*                    to select only those job events that are related to the JAPI
-*                    session. Code using japi_session_key must be made reentant
-*                    with mutex japi_session_mutex. It is assumed the session key
-*                    is not changed during an active session.
-*     japi_delegated_file_staging_is_enabled - An int indicating if delegated file
-*                    staging is enabled in the cluster configuration.
-*                    should always be accessed via
-*                    japi_is_delegated_file_staging_enabled() which protects the
-*                    variable with a mutex.
-*
-*
-*  NOTES
-*
-*  SEE ALSO
-*******************************************************************************/
-
+/**
+ * The event client thread. japi_init() starts it and japi_exit() joins it, so
+ * this handle is how the two control its lifetime.
+ */
 static pthread_t japi_event_client_thread;
 
 /* ---- japi_ec_return_value ------------------------------ */
+/**
+ * @brief The answer list the event client thread reports its result through
+ *
+ * The thread has no caller to return to, so it stores its diagnosis here and
+ * japi_exit() picks it up.
+ */
 struct japi_ec_alp_data_t {
-   lList*           japi_ec_alp;
-   pthread_mutex_t  mutex;
+   lList*           japi_ec_alp;   ///< Answer list produced by the event client thread
+   pthread_mutex_t  mutex;         ///< Guards `japi_ec_alp`
 };
 static struct japi_ec_alp_data_t japi_ec_alp_struct = {nullptr, PTHREAD_MUTEX_INITIALIZER };
+/** Takes the mutex guarding the event client thread's answer list */
 #define JAPI_LOCK_EC_ALP(japi_ec_alp_data_t)      sge_mutex_lock("EC_ALP", __func__, __LINE__, &(japi_ec_alp_data_t.mutex))
+/** Releases the mutex taken by #JAPI_LOCK_EC_ALP */
 #define JAPI_UNLOCK_EC_ALP(japi_ec_alp_data_t)    sge_mutex_unlock("EC_ALP", __func__, __LINE__, &(japi_ec_alp_data_t.mutex))
 
 /* ---- japi_session --------------------------------- */
 
+/**
+ * @brief State of the JAPI session
+ *
+ * Read and written only under #JAPI_LOCK_SESSION.
+ */
 enum {
-   JAPI_SESSION_ACTIVE,
-   JAPI_SESSION_INITIALIZING,
-   JAPI_SESSION_SHUTTING_DOWN,
-   JAPI_SESSION_INACTIVE
+   JAPI_SESSION_ACTIVE,          ///< japi_init() succeeded, JAPI calls are allowed
+   JAPI_SESSION_INITIALIZING,    ///< japi_init() is running, no other call may enter
+   JAPI_SESSION_SHUTTING_DOWN,   ///< japi_exit() is running, no new call may enter
+   JAPI_SESSION_INACTIVE         ///< No session, the state before japi_init() and after japi_exit()
 };
+/** State of the session, see #JAPI_SESSION_ACTIVE */
 static int japi_session = JAPI_SESSION_INACTIVE;
-/* guards access to japi_session global variable */
+/** Guards #japi_session and #japi_session_key */
 static pthread_mutex_t japi_session_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/** Takes the mutex guarding the session state */
 #define JAPI_LOCK_SESSION()      sge_mutex_lock("SESSION", __func__, __LINE__, &japi_session_mutex)
+/** Releases the mutex taken by #JAPI_LOCK_SESSION */
 #define JAPI_UNLOCK_SESSION()    sge_mutex_unlock("SESSION", __func__, __LINE__, &japi_session_mutex)
 
 /* ---- japi_ec_state ------------------------------------- */
 
+/**
+ * @brief State of the event client thread
+ *
+ * japi_init() waits here for the thread to come up and japi_exit() for it to
+ * go down, and every blocking call watches it so that it returns when the
+ * thread dies - otherwise a japi_exit() in another thread would leave a
+ * japi_wait() blocked forever.
+ */
 enum {
-   JAPI_EC_DOWN,
-   JAPI_EC_UP,
-   JAPI_EC_RESTARTING,
-   JAPI_EC_STARTING,
-   JAPI_EC_FINISHING,
-   JAPI_EC_FAILED
+   JAPI_EC_DOWN,        ///< The thread is not running
+   JAPI_EC_UP,          ///< The thread is registered at qmaster and delivering events
+   JAPI_EC_RESTARTING,  ///< The thread lost its registration and is registering again
+   JAPI_EC_STARTING,    ///< The thread was created and is registering
+   JAPI_EC_FINISHING,   ///< The thread is shutting down
+   JAPI_EC_FAILED       ///< The thread gave up, see the answer list in `japi_ec_alp_struct`
 };
 
+/** State of the event client thread, see #JAPI_EC_DOWN */
 static int japi_ec_state = JAPI_EC_DOWN;
 
-/* guards access to japi_ec_state global variable */
+/** Guards #japi_ec_state */
 static pthread_mutex_t japi_ec_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/** Takes the mutex guarding the event client thread state */
 #define JAPI_LOCK_EC_STATE()      sge_mutex_lock("japi_ec_state_mutex", __func__, __LINE__, &japi_ec_state_mutex)
+/** Releases the mutex taken by #JAPI_LOCK_EC_STATE */
 #define JAPI_UNLOCK_EC_STATE()    sge_mutex_unlock("japi_ec_state_mutex", __func__, __LINE__, &japi_ec_state_mutex)
 
-/* needed in japi_init() to allow waiting for event
-   client thread being up and running */
+/**
+ * Signalled on every transition of #japi_ec_state; japi_init() waits on it for
+ * the event client thread to be up and running.
+ */
 static pthread_cond_t japi_ec_state_starting_cv = PTHREAD_COND_INITIALIZER;
 
 /* ---- japi_ec_id ------------------------------------------ */
+/**
+ * Event client id assigned by qmaster. Written by the event client thread and
+ * read by japi_exit() to deregister the client.
+ */
 static uint32_t japi_ec_id = 0;
 
 /* ---- Master_japi_job_list -------------------------------- */
+/**
+ * @brief State of all jobs of this session
+ *
+ * japi_run_job() and japi_run_bulk_jobs() add the jobs they submit, the event
+ * client thread stores the finish information, and japi_wait() and
+ * japi_synchronize() remove a job again when it is reaped. This list is what
+ * makes waiting for a job possible without polling qmaster.
+ */
 static lList *Master_japi_job_list = nullptr;
 
-/* guards access to Master_japi_job_list global variable */
+/** Guards `Master_japi_job_list` */
 static pthread_mutex_t Master_japi_job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/** Takes the mutex guarding `Master_japi_job_list` */
 #define JAPI_LOCK_JOB_LIST()     sge_mutex_lock("Master_japi_job_list_mutex", __func__, __LINE__, &Master_japi_job_list_mutex)
+/** Releases the mutex taken by #JAPI_LOCK_JOB_LIST */
 #define JAPI_UNLOCK_JOB_LIST()   sge_mutex_unlock("Master_japi_job_list_mutex", __func__, __LINE__, &Master_japi_job_list_mutex)
 
-/* this condition is raised each time when a job/task is finshed */
+/** Signalled by the event client thread each time a job or task has finished */
 static pthread_cond_t Master_japi_job_list_finished_cv = PTHREAD_COND_INITIALIZER;
 
 /* ---- japi_threads_in_session ------------------------------ */
 
+/**
+ * @brief Number of application threads currently inside a JAPI call
+ *
+ * Every call that touches `Master_japi_job_list` raises the counter on entry
+ * and lowers it again on exit, see japi_inc_threads() and japi_dec_threads().
+ * japi_exit() waits for it to reach zero before it frees the list.
+ */
 int japi_threads_in_session = 0;
 
-/* guards access to threads_in_session global variable */
+/** Guards #japi_threads_in_session */
 static pthread_mutex_t japi_threads_in_session_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/** Takes the mutex guarding #japi_threads_in_session */
 #define JAPI_LOCK_REFCOUNTER()   sge_mutex_lock("japi_threads_in_session_mutex", __func__, __LINE__, &japi_threads_in_session_mutex)
+/** Releases the mutex taken by #JAPI_LOCK_REFCOUNTER */
 #define JAPI_UNLOCK_REFCOUNTER() sge_mutex_unlock("japi_threads_in_session_mutex", __func__, __LINE__, &japi_threads_in_session_mutex)
 
-/* this condition is raised when a threads_in_session becomes 0 */
+/** Signalled when #japi_threads_in_session drops to zero, awaited by japi_exit() */
 static pthread_cond_t japi_threads_in_session_cv = PTHREAD_COND_INITIALIZER;
 
 /* ---- globals ------------------------------------- */
+/**
+ * @brief Key identifying this session at qmaster
+ *
+ * Passed on event client registration so that the session sees only the job
+ * events of its own jobs. Guarded by `japi_session_mutex` and assumed not to
+ * change while a session is active.
+ */
 char *japi_session_key = nullptr;
+/** Session key used when the application did not ask for a persistent session */
 static const char *JAPI_SINGLE_SESSION_KEY = "JAPI_SSK";
+/** Component name this library registers with, see japi_init() */
 static volatile ProgName prog_number = JAPI;
+/** The thread that called japi_init(); only it may call japi_exit() */
 static pthread_t init_thread = 0;
+/** Callback for the error messages of the event client thread, see #error_handler_t */
 static error_handler_t error_handler = nullptr;
+/**
+ * Whether delegated file staging is enabled in the cluster configuration, -1
+ * while unknown. Read it through japi_is_delegated_file_staging_enabled(),
+ * which takes the mutex.
+ */
 static int japi_delegated_file_staging_is_enabled = -1;
-/* This variable is only used by japi_init() and hence does not need to be
- * protected by a mutex. */
+/**
+ * False once the first session of this process was opened. Only japi_init()
+ * uses it, so it needs no mutex.
+ */
 static bool virgin_session = true;
 
+/** Number of jobs japi_exit() deletes in one GDI request */
 #define MAX_JOBS_TO_DELETE 500
 
-/****** JAPI/-JAPI_Implementation *******************************************
-*  NAME
-*     JAPI_Implementation -- Functions used to implement JAPI
-*
-*  SEE ALSO
-*     JAPI/japi_open_session()
-*     JAPI/japi_close_session()
-*     JAPI/japi_implementation_thread()
-*     JAPI/japi_parse_jobid()
-*     JAPI/japi_send_job()
-*     JAPI/japi_add_job()
-*     JAPI/japi_synchronize_retry()
-*     JAPI/japi_synchronize_all_retry()
-*     JAPI/japi_synchronize_jobids_retry()
-*     JAPI/japi_wait_retry()
-*     JAPI/japi_synchronize_retry()
-*******************************************************************************/
 
 static int japi_open_session(const char *username, const char *unqualified_hostname, const char *key_in, dstring *key_out, dstring *diag);
 #ifdef ENABLE_PERSISTENT_JAPI_SESSIONS
@@ -345,26 +349,18 @@ static void japi_dec_threads(const char *func)
 
 
 
-/****** JAPI/japi_init_mt() ****************************************************
-*  NAME
-*     japi_init_mt() -- Per thread library initialization
-*
-*  SYNOPSIS
-*     int japi_init_mt(dstring *diag)
-*
-*  FUNCTION
-*     Do all per thread initialization required for libraries JAPI builds
-*     upon.
-*
-*  OUTPUT
-*     dstring *diag - returns diagnosis information - on error
-*
-*  RESULT
-*     static int - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTES: japi_init_mt() is MT safe
-*******************************************************************************/
+/**
+ * @brief Per thread library initialization
+ *
+ * Do all per thread initialization required for libraries JAPI builds
+ * upon.
+ *
+ * @param diag returns diagnosis information - on error
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTES: japi_init_mt() is MT safe
+ */
 int japi_init_mt(dstring *diag)
 {
    lList *alp = nullptr;
@@ -395,67 +391,34 @@ int japi_init_mt(dstring *diag)
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
-/****** JAPI/japi_init() ****************************************************
-*  NAME
-*     japi_init() -- Initialize JAPI library
-*
-*  SYNOPSIS
-*     int japi_init(const char *contact, const char *session_key_in,
-*           dstring *session_key_out, dstring *diag)
-*
-*  FUNCTION
-*     Initialize JAPI library and create a new JAPI session. This
-*     routine must be called before any other JAPI calls, except for
-*     japi_version(). Initializes internal data structures.  Also registers
-*     with qmaster using the event client mechanism if the enable_wait parameter
-*     is set to true.  If enable_wait is set to false, japi_enable_job_wait()
-*     must be called before calling japi_wait() or japi_synchronize().
-*     If enable_wait is set to true, a second thread is spawned as an event client,
-*     which imposes threading and synchronization overhead.  If japi_wait() and
-*     japi_synchronize() are not needed, JAPI can be made much lighter weight
-*     by setting enable_wait to false.
-*
-*  INPUTS
-*     const char *contact        - 'Contact' is an implementation dependent
-*                                  string which may be used to specify which DRM
-*                                  system to use. If 'contact' is nullptr, the
-*                                  default DRM system will be used.
-*     const char *session_key_in - if non nullptr japi_init() tries to restart
-*                                  a former session using this session key.
-*     int my_prog_num            - the index into prognames to use when
-*                                  registering with the qmaster.  See
-*                                  ocs::gdi::ClientBase::setup_and_enroll().
-*     bool enable_wait           - Whether to start up in mutli-threaded mode to
-*                                  allow japi_wait() and japi_synchronize() to
-*                                  function.
-*                                  When true, a new session is created (if
-*                                  needed), and the event client thread is
-*                                  started.  When false, no session string
-*                                  is set, and the event client is not started.
-*                                  When false, japi_synchronize() and japi_wait()
-*                                  will return DRMAA_ERRNO_NO_ACTIVE_SESSION.
-*                                  If enable_wait is set to false, job waiting
-*                                  can be explicitly enabled later by calling
-*                                  the japi_enable_job_wait() function.
-*     error_handler_t handler    - A callback to be used for error messages from
-*                                  the event client thread.  When enable_wait is
-*                                  false, handler should be set to nullptr.  The
-*                                  callback should not free the error message
-*                                  after processing it.
-*
-*  OUTPUT
-*     dstring *session_key_out   - Returns session key of new session - on success.
-*     dstring *diag              - Returns diagnosis information - on failure
-*
-*  RESULT
-*     int - DRMAA error codes
-*
-*  MUTEXES
-*      japi_session_mutex
-*
-*  NOTES
-*      MT-NOTE: japi_init() is MT safe
-*******************************************************************************/
+/**
+ * @brief Initialize JAPI library
+ *
+ * Initialize JAPI library and create a new JAPI session. This
+ * routine must be called before any other JAPI calls, except for
+ * japi_version(). Initializes internal data structures.  Also registers
+ * with qmaster using the event client mechanism if the enable_wait parameter
+ * is set to true.  If enable_wait is set to false, japi_enable_job_wait()
+ * must be called before calling japi_wait() or japi_synchronize().
+ * If enable_wait is set to true, a second thread is spawned as an event client,
+ * which imposes threading and synchronization overhead.  If japi_wait() and
+ * japi_synchronize() are not needed, JAPI can be made much lighter weight
+ * by setting enable_wait to false.
+ *
+ * @param contact 'Contact' is an implementation dependent string which may be used to specify which DRM system to use. If 'contact' is nullptr, the default DRM system will be used.
+ * @param session_key_in if non nullptr japi_init() tries to restart a former session using this session key.
+ * @param my_prog_num the index into prognames to use when registering with the qmaster.  See ocs::gdi::ClientBase::setup_and_enroll().
+ * @param enable_wait Whether to start up in mutli-threaded mode to allow japi_wait() and japi_synchronize() to function. When true, a new session is created (if needed), and the event client thread is started.  When false, no session string is set, and the event client is not started. When false, japi_synchronize() and japi_wait() will return DRMAA_ERRNO_NO_ACTIVE_SESSION. If enable_wait is set to false, job waiting can be explicitly enabled later by calling the japi_enable_job_wait() function.
+ * @param handler A callback to be used for error messages from the event client thread.  When enable_wait is false, handler should be set to nullptr.  The callback should not free the error message after processing it.
+ * @param session_key_out Returns session key of new session - on success.
+ * @param diag Returns diagnosis information - on failure
+ *
+ * @return DRMAA error codes
+ *
+ * @note japi_session_mutex
+ *
+ *       MT-NOTE: japi_init() is MT safe
+ */
 int japi_init(const char *contact, const char *session_key_in,
               dstring *session_key_out, ProgName my_prog_num, bool enable_wait,
               error_handler_t handler, dstring *diag)
@@ -560,47 +523,40 @@ int japi_init(const char *contact, const char *session_key_in,
    DRETURN(ret);
 }
 
-/****** JAPI/japi_enable_job_wait() ********************************************
-*  NAME
-*     japi_enable_job_wait() -- Do setup required for doing job waits
-*
-*  SYNOPSIS
-*     int japi_enable_job_wait(const char *session_key_in,
-*                              string *session_key_out, dstring *diag)
-*
-*  FUNCTION
-*     Does all of the required setup to be able to use the japi_wait() and
-*     japi_synchronize() calls.  This includes starting up the event client
-*     thread and establishing a session.
-*     If japi_init() was called with enable_wait set to false, this method must
-*     be called before japi_wait() or japi_synchronize() can be used.
-*     This is useful if, for example, when one doesn't know for sure whether
-*     japi_wait() will be needed at the time japi_init() is called.  The
-*     overhead associated with starting and stopping the event client thread and
-*     creating and destroying a session can thereby be avoided.
-*
-*  INPUT
-*     const char *session_key_in - if non nullptr japi_enable_job_wait() tries to restart
-*                                  a former session using this session key.
-*     error_handler_t handler    - A callback to be used for error messages from
-*                                  the event client thread.  When nullptr, no error
-*                                  messages will be generated by the event
-*                                  client thread.  The callback should not free
-*                                  the error message after processing it.
-*
-*  OUTPUT
-*     dstring *session_key_out   - Returns session key of new session - on success.
-*     dstring *diag              - Returns diagnosis information - on failure
-*
-*  RESULT
-*     int - DRMAA error codes
-*
-*  MUTEXES
-*     japi_session_mutex -> japi_ec_state_mutex
-*
-*  NOTES
-*      MT-NOTE: japi_enable_job_wait() is MT safe
-*******************************************************************************/
+/**
+ * @brief Do setup required for doing job waits
+ *
+ * Does all of the required setup to be able to use the japi_wait() and
+ * japi_synchronize() calls.  This includes starting up the event client
+ * thread and establishing a session.
+ * If japi_init() was called with enable_wait set to false, this method must
+ * be called before japi_wait() or japi_synchronize() can be used.
+ * This is useful if, for example, when one doesn't know for sure whether
+ * japi_wait() will be needed at the time japi_init() is called.  The
+ * overhead associated with starting and stopping the event client thread and
+ * creating and destroying a session can thereby be avoided.
+ *
+ * @param[in]  username             Name of the user the session belongs to
+ * @param[in]  unqualified_hostname Short name of the host the session runs on;
+ *                                  together with `username` it identifies the
+ *                                  owner of a session that is to be restarted
+ * @param[in]  session_key_in       If non nullptr japi_enable_job_wait() tries
+ *                                  to restart a former session using this
+ *                                  session key
+ * @param[in]  handler              Callback for the error messages of the
+ *                                  event client thread. When nullptr, the
+ *                                  thread generates no error messages. The
+ *                                  callback must not free the message
+ * @param[out] session_key_out      Returns the session key of the new session
+ *                                  - on success
+ * @param[out] diag                 Returns diagnosis information - on failure
+ *
+ * @return DRMAA error codes
+ *
+ * @note japi_session_mutex -> japi_ec_state_mutex
+ *
+ *       MT-NOTE: japi_enable_job_wait() is MT safe
+ */
 int japi_enable_job_wait(const char *username, const char *unqualified_hostname, const char *session_key_in, dstring *session_key_out,
                          error_handler_t handler, dstring *diag)
 {
@@ -765,33 +721,20 @@ int japi_enable_job_wait(const char *username, const char *unqualified_hostname,
 }
 
 
-/****** JAPI/japi_open_session() ***********************************************
-*  NAME
-*     japi_open_session() -- create or reopen JAPI session
-*
-*  SYNOPSIS
-*     static int japi_open_session(const char *key_in, dstring *key_out,
-*                dstring *diag)
-*
-*  FUNCTION
-*     A JAPI session is created or reopend, depending on the value of key_in.
-*     The session key of the opend session is returned.
-*
-*  INPUTS
-*     const char *key_in - If 'key' is non nullptr it is used to reopen
-*        the JAPI session. Otherwise a new session is always created.
-*
-*  OUTPUT
-*     dstring *key_out   - Returns session key of the session that was opened
-*                          on success.
-*     dstring *diag      - Diagnosis information - on failure.
-*
-*  RESULT
-*     static int - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTE: japi_open_session() is MT safe
-*******************************************************************************/
+/**
+ * @brief Create or reopen JAPI session
+ *
+ * A JAPI session is created or reopend, depending on the value of key_in.
+ * The session key of the opend session is returned.
+ *
+ * @param key_in If 'key' is non nullptr it is used to reopen the JAPI session. Otherwise a new session is always created.
+ * @param key_out Returns session key of the session that was opened on success.
+ * @param diag Diagnosis information - on failure.
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_open_session() is MT safe
+ */
 static int japi_open_session(const char *username, const char* unqualified_hostname, const char *key_in, dstring *key_out, dstring *diag)
 {
 #ifdef ENABLE_PERSISTENT_JAPI_SESSIONS
@@ -831,35 +774,25 @@ static int japi_open_session(const char *username, const char* unqualified_hostn
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
-/****** JAPI/japi_exit() ****************************************************
-*  NAME
-*     japi_exit() -- Optionally close JAPI session and shutdown JAPI library.
-*
-*  SYNOPSIS
-*     int japi_exit(bool close_session, dstring *diag)
-*
-*  FUNCTION
-*     Disengage from JAPI library and allow the JAPI library to perform
-*     any necessary internal clean up. Depending on 'close_session' this
-*     routine also ends a JAPI Session. japi_exit() has no impact on jobs
-*     (e.g., queued and running jobs remain queued and running).
-*
-*  INPUTS
-*     bool close_session - If true the JAPI session is always closed
-*        otherwise it remains and can be reopend later on.
-*
-*  OUTPUTS
-*     dstring *diag      - diagnisis information - on error
-*
-*  RESULT
-*     int - DRMAA error codes
-*
-*  MUTEXES
-*      japi_session_mutex -> japi_threads_in_session_mutex
-*
-*  NOTES
-*      MT-NOTE: japi_exit() is MT safe
-*******************************************************************************/
+/**
+ * @brief Optionally close JAPI session and shutdown JAPI library
+ *
+ * Disengage from JAPI library and allow the JAPI library to perform
+ * any necessary internal clean up, and end the JAPI session. Whether the
+ * jobs of the session survive is decided by `flag`; with
+ * #JAPI_EXIT_NO_FLAG queued and running jobs remain queued and running.
+ *
+ * @param[in]  flag What happens to the jobs of the session, one of
+ *                  #JAPI_EXIT_NO_FLAG, #JAPI_EXIT_KILL_ALL or
+ *                  #JAPI_EXIT_KILL_PENDING
+ * @param[out] diag diagnosis information - on error
+ *
+ * @return DRMAA error codes
+ *
+ * @note japi_session_mutex -> japi_threads_in_session_mutex
+ *
+ *       MT-NOTE: japi_exit() is MT safe
+ */
 int japi_exit(int flag, dstring *diag)
 {
    int cl_errno;
@@ -1007,33 +940,23 @@ int japi_exit(int flag, dstring *diag)
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
-/****** JAPI/japi_allocate_string_vector() *************************************
-*  NAME
-*     japi_allocate_string_vector() -- Allocate a string vector
-*
-*  SYNOPSIS
-*     static drmaa_attr_values_t* japi_allocate_string_vector(int type)
-*
-*  FUNCTION
-*     Allocate a string vector iterator. Two different variations are
-*     supported:
-*
-*        JAPI_ITERATOR_BULK_JOBS
-*            Provides bulk job id strings in a memory efficient fashion.
-*
-*        JAPI_ITERATOR_STRINGS
-*            Implements a simple string list.
-*
-*  INPUTS
-*     int type - JAPI_ITERATOR_BULK_JOBS or JAPI_ITERATOR_STRINGS
-*
-*  RESULT
-*     static drmaa_attr_values_t* - the iterator
-*
-*  NOTES
-*     MT-NOTE: japi_allocate_string_vector() is MT safe
-*     should be moved to drmaa.c
-*******************************************************************************/
+/**
+ * @brief Allocate a string vector
+ *
+ * Allocate a string vector iterator. Two different variations are
+ * supported:
+ *    JAPI_ITERATOR_BULK_JOBS
+ *        Provides bulk job id strings in a memory efficient fashion.
+ *    JAPI_ITERATOR_STRINGS
+ *        Implements a simple string list.
+ *
+ * @param type JAPI_ITERATOR_BULK_JOBS or JAPI_ITERATOR_STRINGS
+ *
+ * @return the iterator
+ *
+ * @note MT-NOTE: japi_allocate_string_vector() is MT safe
+ *       should be moved to drmaa.c
+ */
 drmaa_attr_values_t *japi_allocate_string_vector(int type)
 {
    drmaa_attr_values_t *iter;
@@ -1062,30 +985,19 @@ drmaa_attr_values_t *japi_allocate_string_vector(int type)
    return iter;
 }
 
-/****** JAPI/japi_string_vector_get_next() *************************************
-*  NAME
-*     japi_string_vector_get_next() -- Return next entry of a string vector
-*
-*  SYNOPSIS
-*     int japi_string_vector_get_next(drmaa_attr_values_t* iter, dstring
-*     *val)
-*
-*  FUNCTION
-*     DRMAA_ERRNO_NO_MORE_ELEMENTS is returned for an empty string
-*     vector. The next entry of a string vector is returned.
-*
-*  INPUTS
-*     drmaa_attr_values_t* iter - The string vector
-*
-*  OUTPUTS
-*     dstring *val              - Returns next string value - on success.
-*
-*  RESULT
-*     int - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTE: japi_string_vector_get_next() is MT safe
-*******************************************************************************/
+/**
+ * @brief Return next entry of a string vector
+ *
+ * DRMAA_ERRNO_NO_MORE_ELEMENTS is returned for an empty string
+ * vector. The next entry of a string vector is returned.
+ *
+ * @param iter The string vector
+ * @param val Returns next string value - on success.
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_string_vector_get_next() is MT safe
+ */
 int japi_string_vector_get_next(drmaa_attr_values_t* iter, dstring *val)
 {
 
@@ -1122,26 +1034,18 @@ int japi_string_vector_get_next(drmaa_attr_values_t* iter, dstring *val)
    }
 }
 
-/****** JAPI/japi_string_vector_get_num() *************************************
-*  NAME
-*     japi_string_vector_get_num() -- Return number of entries of a string
-*                                     vector
-*
-*  SYNOPSIS
-*     int japi_string_vector_get_num(drmaa_attr_values_t* iter)
-*
-*  FUNCTION
-*     Returns the total number of elements in the string vector.
-*
-*  INPUTS
-*     drmaa_attr_values_t* iter - The string vector
-*
-*  RESULT
-*     int - number of entries, -1 on failure
-*
-*  NOTES
-*     MT-NOTE: japi_string_vector_get_num() is MT safe
-*******************************************************************************/
+/**
+ * @brief Return number of entries of a string
+ *
+ * Returns the total number of elements in the string vector.
+ *
+ * @param[in]  values The string vector
+ * @param[out] size   Returns the number of entries
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_string_vector_get_num() is MT safe
+ */
 int japi_string_vector_get_num(drmaa_attr_values_t* values, int *size)
 {
 
@@ -1164,23 +1068,16 @@ int japi_string_vector_get_num(drmaa_attr_values_t* values, int *size)
    }
 }
 
-/****** JAPI/japi_delete_string_vector() ***************************************
-*  NAME
-*     japi_delete_string_vector() -- Release all resources of a string vector
-*
-*  SYNOPSIS
-*     void japi_delete_string_vector(drmaa_attr_values_t* iter)
-*
-*  FUNCTION
-*     Release all resources of a string vector.
-*
-*  INPUTS
-*     drmaa_attr_values_t* iter - to be released
-*
-*  NOTES
-*     MT-NOTE: japi_delete_string_vector() is MT safe
-*     should be moved to drmaa.c
-*******************************************************************************/
+/**
+ * @brief Release all resources of a string vector
+ *
+ * Release all resources of a string vector.
+ *
+ * @param iter to be released
+ *
+ * @note MT-NOTE: japi_delete_string_vector() is MT safe
+ *       should be moved to drmaa.c
+ */
 void japi_delete_string_vector(drmaa_attr_values_t* iter )
 {
    if (!iter)
@@ -1200,27 +1097,19 @@ void japi_delete_string_vector(drmaa_attr_values_t* iter )
    return;
 }
 
-/****** JAPI/japi_send_job() ***************************************************
-*  NAME
-*     japi_send_job() -- Send job to qmaster using GDI
-*
-*  SYNOPSIS
-*     static int japi_send_job(lListElem *job, uint32_t *jobid, dstring *diag)
-*
-*  FUNCTION
-*     The job passed is sent to qmaster using GDI. The jobid is returned.
-*
-*  INPUTS
-*     lListElem *job  - the job (JB_Type)
-*     uint32_t *jobid - destination for resulting jobid
-*     dstring *diag   - diagnosis information
-*
-*  RESULT
-*     int - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTE: japi_send_job() is MT safe
-*******************************************************************************/
+/**
+ * @brief Send job to qmaster using GDI
+ *
+ * The job passed is sent to qmaster using GDI. The jobid is returned.
+ *
+ * @param job the job (JB_Type)
+ * @param jobid destination for resulting jobid
+ * @param diag diagnosis information
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_send_job() is MT safe
+ */
 static int japi_send_job(lListElem **sge_job_template, uint32_t *jobid, dstring *diag)
 {
    DENTER(TOP_LAYER);
@@ -1296,31 +1185,22 @@ static int japi_send_job(lListElem **sge_job_template, uint32_t *jobid, dstring 
 }
 
 
-/****** JAPI/japi_add_job() ****************************************************
-*  NAME
-*     japi_add_job() -- Add job/bulk job to library session data
-*
-*  SYNOPSIS
-*     static int japi_add_job(uint32_t jobid, uint32_t start, uint32_t end,
-*     uint32_t incr, bool is_array, const char *func)
-*
-*  FUNCTION
-*     Add the job/bulk job to the library session data.
-*
-*  INPUTS
-*     uint32_t jobid   - the jobid
-*     uint32_t start   - start index
-*     uint32_t end     - end index
-*     uint32_t incr    - increment
-*     bool is_array    - true for array/bulk jobs false otherwise
-*
-*  RESULT
-*     static int - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTES: japi_add_job() is not MT safe due to
-*               Master_japi_job_list
-*******************************************************************************/
+/**
+ * @brief Add job/bulk job to library session data
+ *
+ * Add the job/bulk job to the library session data.
+ *
+ * @param jobid the jobid
+ * @param start start index
+ * @param end end index
+ * @param incr increment
+ * @param is_array true for array/bulk jobs false otherwise
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTES: japi_add_job() is not MT safe due to
+ *       Master_japi_job_list
+ */
 static int japi_add_job(uint32_t jobid, uint32_t start, uint32_t end, uint32_t incr,
       bool is_array, dstring *diag)
 {
@@ -1353,35 +1233,25 @@ static int japi_add_job(uint32_t jobid, uint32_t start, uint32_t end, uint32_t i
 }
 
 
-/****** JAPI/japi_run_job() ****************************************************
-*  NAME
-*     japi_run_job() -- Submit a job using a SGE job template.
-*
-*  SYNOPSIS
-*     int japi_run_job(dstring *job_id, lListElem *sge_job_template,
-*        dstring *diag)
-*
-*  FUNCTION
-*     The job described in the SGE job template is submitted. The id
-*     of the job is returned.
-*
-*  OUTPUTS
-*     lListElem **sge_job_template - SGE job template. Might be modified by JSV
-*     dstring *job_id             - SGE jobid as string - on success.
-*     dstring *diag               - diagnosis information - on error.
-*
-*  RESULT
-*     int - DRMAA error codes
-*
-*  MUTEXES
-*      japi_session_mutex -> japi_threads_in_session_mutex
-*      Master_japi_job_list_mutex
-*      japi_threads_in_session_mutex
-*
-*  NOTES
-*      MT-NOTE: japi_run_job() is MT safe
-*      Would be better to return job_id as uint32_t.
-*******************************************************************************/
+/**
+ * @brief Submit a job using a SGE job template
+ *
+ * The job described in the SGE job template is submitted. The id
+ * of the job is returned.
+ *
+ * @param sge_job_template SGE job template. Might be modified by JSV
+ * @param job_id SGE jobid as string - on success.
+ * @param diag diagnosis information - on error.
+ *
+ * @return DRMAA error codes
+ *
+ * @note japi_session_mutex -> japi_threads_in_session_mutex
+ *       Master_japi_job_list_mutex
+ *       japi_threads_in_session_mutex
+ *
+ *       MT-NOTE: japi_run_job() is MT safe
+ *       Would be better to return job_id as uint32_t.
+ */
 int japi_run_job(dstring *job_id, lListElem **sge_job_template, dstring *diag)
 {
    uint32_t jobid = 0;
@@ -1452,33 +1322,23 @@ int japi_run_job(dstring *job_id, lListElem **sge_job_template, dstring *diag)
 }
 
 
-/****** JAPI/japi_run_bulk_jobs() ****************************************************
-*  NAME
-*     japi_run_bulk_jobs() -- Submit a bulk of jobs
-*
-*  SYNOPSIS
-*     int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp,
-*           lListElem *sge_job_template, int start, int end, int incr, dstring *diag)
-*
-*  FUNCTION
-*     Submit the SGE job template as array job.
-*
-*  INPUTS
-*     lListElem *sge_job_template   - SGE job template
-*     int start                     - array job start index
-*     int end                       - array job end index
-*     int incr                      - array job increment
-*
-*  OUTPUTS
-*     drmaa_attr_values_t **jobidsp - a string array of jobids - on success
-*
-*  RESULT
-*     int - DRMAA error codes
-*
-*  NOTES
-*      MT-NOTE: japi_run_bulk_jobs() is MT safe
-*      Would be better to return job_id instead of drmaa_attr_values_t.
-*******************************************************************************/
+/**
+ * @brief Submit a bulk of jobs
+ *
+ * Submit the SGE job template as array job.
+ *
+ * @param[in]  sge_job_template SGE job template
+ * @param[in]  start            array job start index
+ * @param[in]  end              array job end index
+ * @param[in]  incr             array job increment
+ * @param[out] jobidsp          a string array of jobids - on success
+ * @param[out] diag             Returns diagnosis information - on error
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_run_bulk_jobs() is MT safe
+ *       Would be better to return job_id instead of drmaa_attr_values_t.
+ */
 int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, lListElem **sge_job_template,
       int start, int end, int incr, dstring *diag)
 {
@@ -1558,34 +1418,23 @@ int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, lListElem **sge_job_templa
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
-/****** JAPI/japi_user_hold_add_jobid() *****************************************
-*  NAME
-*     japi_user_hold_add_jobid() -- Helper function for composing GDI request
-*
-*  SYNOPSIS
-*     static int japi_user_hold_add_jobid(uint32_t gdi_action, lList **request_list,
-*     uint32_t jobid, uint32_t taskid, bool array, dstring *diag)
-*
-*  FUNCTION
-*     Adds a reduced job structure to the request list that causes the job/task
-*     be hold/released when it is used with ocs::gdi::Client::sge_gdi(SGE_JB_LIST, SGE_GDI_MOD).
-*
-*  INPUTS
-*     uint32_t gdi_action  - the GDI action to be performed
-*     lList **request_list - the request list we operate on
-*     uint32_t jobid       - the jobid
-*     uint32_t taskid      - the taskid
-*     bool array           - true in case of an arry job
-*
-*  OUTPUTS
-*     dstring *diag        - diagnosis information in case of an error
-*
-*  RESULT
-*     int - DRMAA error codes
-*
-*  NOTES
-*      MT-NOTE: japi_user_hold_add_jobid() is MT safe
-*******************************************************************************/
+/**
+ * @brief Helper function for composing GDI request
+ *
+ * Adds a reduced job structure to the request list that causes the job/task
+ * be hold/released when it is used with ocs::gdi::Client::sge_gdi(SGE_JB_LIST, SGE_GDI_MOD).
+ *
+ * @param gdi_action the GDI action to be performed
+ * @param request_list the request list we operate on
+ * @param jobid the jobid
+ * @param taskid the taskid
+ * @param array true in case of an arry job
+ * @param diag diagnosis information in case of an error
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_user_hold_add_jobid() is MT safe
+ */
 static int japi_user_hold_add_jobid(uint32_t gdi_action, lList **request_list,
                                     uint32_t jobid, uint32_t taskid, bool array,
                                     dstring *diag)
@@ -1644,41 +1493,30 @@ static int japi_user_hold_add_jobid(uint32_t gdi_action, lList **request_list,
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
-/****** JAPI/japi_control() ****************************************************
-*  NAME
-*     japi_control() -- Apply control operation on JAPI jobs.
-*
-*  SYNOPSIS
-*     int japi_control(const char *jobid, int action, dstring *diag)
-*
-*  FUNCTION
-*     Apply control operation to the job specified. If 'jobid' is
-*     DRMAA_JOB_IDS_SESSION_ALL, then this routine acts on all jobs
-*     *submitted* during this DRMAA session.
-*     This routine returns once the action has been acknowledged, but
-*     does not necessarily wait until the action has been completed.
-*
-*  INPUTS
-*     const char *jobid - The job id or DRMAA_JOB_IDS_SESSION_ALL.
-*     int action        - The action to be performed. One of
-*           DRMAA_CONTROL_SUSPEND: stop the job (qmod -s )
-*           DRMAA_CONTROL_RESUME: (re)start the job (qmod -us)
-*           DRMAA_CONTROL_HOLD: put the job on-hold (qhold)
-*           DRMAA_CONTROL_RELEASE: release the hold on the job (qrls)
-*           DRMAA_CONTROL_TERMINATE: kill the job (qdel)
-*
-*  OUTPUTS
-*     drmaa_attr_values_t **jobidsp - a string array of jobids - on success
-*
-*  RESULT
-*     int - DRMAA error codes
-*
-*
-*  NOTES
-*      MT-NOTE: japi_control() is MT safe
-*      Would be good to have japi_control() operate on a vector of jobids.
-*      Would be good to interface also operations qmod -r and qmod -c.
-*******************************************************************************/
+/**
+ * @brief Apply control operation on JAPI jobs
+ *
+ * Apply control operation to the job specified. If 'jobid' is
+ * DRMAA_JOB_IDS_SESSION_ALL, then this routine acts on all jobs
+ * *submitted* during this DRMAA session.
+ * This routine returns once the action has been acknowledged, but
+ * does not necessarily wait until the action has been completed.
+ *
+ * @param[in]  jobid_str    The job id or DRMAA_JOB_IDS_SESSION_ALL
+ * @param[in]  drmaa_action The action to be performed, one of
+ *                          #DRMAA_CONTROL_SUSPEND (stop the job, `qmod -s`),
+ *                          #DRMAA_CONTROL_RESUME (restart it, `qmod -us`),
+ *                          #DRMAA_CONTROL_HOLD (put it on hold, `qhold`),
+ *                          #DRMAA_CONTROL_RELEASE (release the hold, `qrls`) or
+ *                          #DRMAA_CONTROL_TERMINATE (kill it, `qdel`)
+ * @param[out] diag         Returns diagnosis information - on error
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_control() is MT safe
+ *       Would be good to have japi_control() operate on a vector of jobids.
+ *       Would be good to interface also operations qmod -r and qmod -c.
+ */
 int japi_control(const char *jobid_str, int drmaa_action, dstring *diag)
 {
    int drmaa_errno;
@@ -2025,12 +1863,19 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag)
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
+/**
+ * @brief Outcome of one attempt of the retry helpers to reap a task
+ *
+ * Returned by japi_wait_retry() and the japi_synchronize_*_retry() functions
+ * to tell their caller whether it has to wait for the next event or can
+ * return to the application.
+ */
 enum {
-   JAPI_WAIT_ALLFINISHED, /* there is nothing more to wait for */
-   JAPI_WAIT_UNFINISHED,  /* there are still unfinished tasks  */
-   JAPI_WAIT_FINISHED,    /* got a finished task               */
-   JAPI_WAIT_INVALID,     /* the specified task does not exist */
-   JAPI_WAIT_TIMEOUT      /* we ran into a timout before condition was met */
+   JAPI_WAIT_ALLFINISHED, ///< There is nothing more to wait for
+   JAPI_WAIT_UNFINISHED,  ///< There are still unfinished tasks
+   JAPI_WAIT_FINISHED,    ///< A finished task was found and reaped
+   JAPI_WAIT_INVALID,     ///< The specified task does not exist
+   JAPI_WAIT_TIMEOUT      ///< The timeout expired before the condition was met
 };
 
 static int japi_gdi_control_error2japi_error(lListElem *aep, dstring *diag, int drmaa_control_action)
@@ -2085,49 +1930,38 @@ static int japi_gdi_control_error2japi_error(lListElem *aep, dstring *diag, int 
    DRETURN(ret);
 }
 
-/****** JAPI/japi_synchronize() ****************************************************
-*  NAME
-*     japi_synchronize() -- Synchronize with jobs to finish w/ and w/o reaping
-*                           job finish information.
-*
-*  SYNOPSIS
-*     int japi_synchronize(const char *job_ids[], signed long timeout,
-*        bool dispose, dstring *diag)
-*
-*  FUNCTION
-*     Wait until all jobs specified by 'job_ids' have finished
-*     execution. When DRMAA_JOB_IDS_SESSION_ALL is used as jobid
-*     one can synchronize with all jobs that were submitted during this
-*     JAPI session. A timeout can be specified to prevent blocking
-*     indefinitely. If the call exits before timeout all the jobs have
-*     been waited on or there was an interrupt. If the invocation exits
-*     on timeout, the return code is DRMAA_ERRNO_EXIT_TIMEOUT. The dispose
-*     parameter specifies whether job finish information shall be reaped.
-*     This method requires the event client to have been started, either by
-*     passing enable_wait as true to japi_init() or by calling
-*     japi_enable_job_wait().
-*
-*  INPUTS
-*     const char *job_ids[] - A vector of job id strings.
-*     signed long timeout   - timeout in seconds or
-*                             DRMAA_TIMEOUT_WAIT_FOREVER for infinite waiting
-*                             DRMAA_TIMEOUT_NO_WAIT for immediate returning
-*     bool dispose          - Whether job finish information shall be reaped.
-*
-*  OUTPUTS
-*     dstring *diag         - Diagnosis information - on error.
-*
-*  RESULT
-*     int - DRMAA error codes
-*
-*  MUTEXES
-*      japi_session_mutex -> japi_threads_in_session_mutex
-*
-*  NOTES
-*     MT-NOTE: japi_synchronize() is MT safe
-*     The caller must check system time before and after this call
-*     in order to check how much time has passed. This should be improved.
-*******************************************************************************/
+/**
+ * @brief Synchronize with jobs to finish w/ and w/o reaping
+ *
+ * Wait until all jobs specified by 'job_ids' have finished
+ * execution. When DRMAA_JOB_IDS_SESSION_ALL is used as jobid
+ * one can synchronize with all jobs that were submitted during this
+ * JAPI session. A timeout can be specified to prevent blocking
+ * indefinitely. If the call exits before timeout all the jobs have
+ * been waited on or there was an interrupt. If the invocation exits
+ * on timeout, the return code is DRMAA_ERRNO_EXIT_TIMEOUT. The dispose
+ * parameter specifies whether job finish information shall be reaped.
+ * This method requires the event client to have been started, either by
+ * passing enable_wait as true to japi_init() or by calling
+ * japi_enable_job_wait().
+ *
+ * @param[in]  job_ids  nullptr terminated list of job ids to wait for, or a
+ *                      list whose only entry is DRMAA_JOB_IDS_SESSION_ALL to
+ *                      wait for all jobs of the session
+ * @param[in]  timeout  timeout in seconds, #DRMAA_TIMEOUT_WAIT_FOREVER for
+ *                      infinite waiting or #DRMAA_TIMEOUT_NO_WAIT to return
+ *                      immediately
+ * @param[in]  dispose  Whether job finish information shall be reaped
+ * @param[out] diag     Diagnosis information - on error
+ *
+ * @return DRMAA error codes
+ *
+ * @note japi_session_mutex -> japi_threads_in_session_mutex
+ *
+ *       MT-NOTE: japi_synchronize() is MT safe
+ *       The caller must check system time before and after this call
+ *       in order to check how much time has passed. This should be improved.
+ */
 int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, dstring *diag)
 {
    bool sync_all = false;
@@ -2315,34 +2149,23 @@ int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, d
    DRETURN(drmaa_errno);
 }
 
-/****** JAPI/japi_synchronize_jobids_retry() ***********************************
-*  NAME
-*     japi_synchronize_jobids_retry() --  Look whether particular jobs finished
-*
-*  SYNOPSIS
-*     static int japi_synchronize_jobids_retry(const char *job_ids[],
-*     int dispose)
-*
-*  FUNCTION
-*     The Master_japi_job_list is searched to investigate whether particular
-*     jobs specified in job_ids finshed. If dispose is true job finish
-*     information is also removed during this operation.
-*
-*  INPUTS
-*     const char *job_ids[] - the jobids
-*     bool dispose          - should job finish information be removed
-*
-*  RESULT
-*     static int - JAPI_WAIT_ALLFINISHED = there is nothing more to wait for
-*                  JAPI_WAIT_UNFINISHED  = there are still unfinished tasks
-*
-*  NOTES
-*     japi_synchronize_jobids_retry() does no error checking with the job_ids
-*     passed. Assumption is this was ensured before japi_synchronize_jobids_retry()
-*     is called.
-*     MT-NOTE: due to acess to Master_japi_job_list japi_synchronize_jobids_retry()
-*     MT-NOTE: is not MT safe; only one instance may be called at a time!
-*******************************************************************************/
+/**
+ * @brief Look whether particular jobs finished
+ *
+ * The Master_japi_job_list is searched to investigate whether particular
+ * jobs specified in job_ids finshed. If dispose is true job finish
+ * information is also removed during this operation.
+ *
+ * @param dispose should job finish information be removed
+ *
+ * @return JAPI_WAIT_ALLFINISHED = there is nothing more to wait for JAPI_WAIT_UNFINISHED  = there are still unfinished tasks
+ *
+ * @note japi_synchronize_jobids_retry() does no error checking with the job_ids
+ *       passed. Assumption is this was ensured before japi_synchronize_jobids_retry()
+ *       is called.
+ *       MT-NOTE: due to acess to Master_japi_job_list japi_synchronize_jobids_retry()
+ *       MT-NOTE: is not MT safe; only one instance may be called at a time!
+ */
 static int japi_synchronize_jobids_retry(const char *job_ids[], bool dispose)
 {
    int i;
@@ -2392,91 +2215,61 @@ static int japi_synchronize_jobids_retry(const char *job_ids[], bool dispose)
 }
 
 
-/****** JAPI/japi_wait() ****************************************************
-*  NAME
-*     japi_wait() -- Wait for job(s) to finish and reap job finish info
-*
-*  SYNOPSIS
-*     int japi_wait(const char *job_id, dstring *waited_job, int *stat,
-*        signed long timeout, drmaa_attr_values_t **rusage, dstring *diag)
-*
-*  FUNCTION
-*     This routine waits for a job with job_id to fail or finish execution. Passing a special string
-*     DRMAA_JOB_IDS_SESSION_ANY instead job_id waits for any job. If such a job was
-*     successfully waited its job_id is returned as a second parameter. This routine is
-*     modeled on wait3 POSIX routine. To prevent
-*     blocking indefinitely in this call the caller could use timeout specifying
-*     after how many seconds to time out in this call.
-*     If the call exits before timeout the job has been waited on
-*     successfully or there was an interrupt.
-*     If the invocation exits on timeout, the return code is DRMAA_ERRNO_EXIT_TIMEOUT.
-*     The caller should check system time before and after this call
-*     in order to check how much time has passed.
-*     The routine reaps jobs on a successful call, so any subsequent calls
-*     to japi_wait() should fail returning an error DRMAA_ERRNO_INVALID_JOB meaning
-*     that the job has been already reaped. This error is the same as if the job was
-*     unknown. Failing due to an elapsed timeout has an effect that it is possible to
-*     issue japi_wait() multiple times for the same job_id.
-*     This method requires the event client to have been started, either by
-*     passing enable_wait as true to japi_init() or by calling
-*     japi_enable_job_wait().
-*
-*  INPUTS
-*     const char *job_id           - job id string representation of job to wait for
-*                                    or DRMAA_JOB_IDS_SESSION_ANY to wait for any job
-*     signed long timeout          - timeout in seconds or
-*                                    DRMAA_TIMEOUT_WAIT_FOREVER for infinite waiting
-*                                    DRMAA_TIMEOUT_NO_WAIT for immediate returning
-*     dstring *waited_job          - returns job id string presentation of waited job
-*     int *wait_status             - returns job finish information about exit status/
-*                                    signal/whatever
-*     int event_mask               - Indicates what events to listen for.  Can be:
-*                                      JAPI_JOB_START
-*                                      JAPI_JOB_FINISH
-*                                    or a combination by oring them together.
-*     int *event                   - returns the actual event that occurred.  When
-*                                    the event_mask includes JAPI_JOB_START, this
-*                                    parameter must be checked to be sure that
-*                                    a JAPI_JOB_START event was received.  It is
-*                                    possible, such as in the case of a rejected
-*                                    immediate job, that japi_wait() will return
-*                                    DRMAA_ERRNO_SUCCESS for a JAPI_JOB_FINISH
-*                                    event even though the event_mask was set to
-*                                    JAPI_JOB_START.
-*     drmaa_attr_values_t **rusage - returns resource usage information about job run
-*                                    when waiting for JAPI_JOB_FINISH.
-*     dstring *diag                - diagnosis information in case japi_wait() fails
-*
-*  RESULT
-*     DRMAA_ERRNO_SUCCESS
-*        Job finished.
-*
-*     DRMAA_ERRNO_EXIT_TIMEOUT
-*        No job end within specified time.
-*
-*     DRMAA_ERRNO_INVALID_JOB
-*        The job id specified was invalid or DRMAA_JOB_IDS_SESSION_ANY has been specified
-*        and all jobs of this session have already finished.
-*
-*     DRMAA_ERRNO_NO_ACTIVE_SESSION
-*        No active session.
-*
-*     DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE
-*     DRMAA_ERRNO_AUTH_FAILURE
-*     DRMAA_ERRNO_NO_RUSAGE
-*
-*  MUTEXES
-*      japi_session_mutex -> japi_threads_in_session_mutex
-*      Master_japi_job_list_mutex -> japi_ec_state_mutex
-*
-*  NOTES
-*     MT-NOTE: japi_wait() is MT safe
-*     Would be good to also return information about job failures in
-*     JJAT_failed_text.
-*     Would be good to enhance japi_wait() in a way allowing not only to
-*     wait for job finish events but also other events that have an meaning
-*     for the end user, e.g. job scheduled, job started, job rescheduled.
-*******************************************************************************/
+/**
+ * @brief Wait for job(s) to finish and reap job finish info
+ *
+ * This routine waits for a job with job_id to fail or finish execution. Passing a special string
+ * DRMAA_JOB_IDS_SESSION_ANY instead job_id waits for any job. If such a job was
+ * successfully waited its job_id is returned as a second parameter. This routine is
+ * modeled on wait3 POSIX routine. To prevent
+ * blocking indefinitely in this call the caller could use timeout specifying
+ * after how many seconds to time out in this call.
+ * If the call exits before timeout the job has been waited on
+ * successfully or there was an interrupt.
+ * If the invocation exits on timeout, the return code is DRMAA_ERRNO_EXIT_TIMEOUT.
+ * The caller should check system time before and after this call
+ * in order to check how much time has passed.
+ * The routine reaps jobs on a successful call, so any subsequent calls
+ * to japi_wait() should fail returning an error DRMAA_ERRNO_INVALID_JOB meaning
+ * that the job has been already reaped. This error is the same as if the job was
+ * unknown. Failing due to an elapsed timeout has an effect that it is possible to
+ * issue japi_wait() multiple times for the same job_id.
+ * This method requires the event client to have been started, either by
+ * passing enable_wait as true to japi_init() or by calling
+ * japi_enable_job_wait().
+ *
+ * @param[in]  job_id     job id of the job to wait for, or
+ *                        DRMAA_JOB_IDS_SESSION_ANY to wait for any job
+ * @param[in]  timeout    timeout in seconds, #DRMAA_TIMEOUT_WAIT_FOREVER for
+ *                        infinite waiting or #DRMAA_TIMEOUT_NO_WAIT to return
+ *                        immediately
+ * @param[in]  event_mask Which events to listen for: #JAPI_JOB_START,
+ *                        #JAPI_JOB_FINISH or the two or-ed together
+ * @param[out] waited_job returns the job id of the job that was waited for
+ * @param[out] stat       returns the job finish information - exit status,
+ *                        signal and the like - to be decoded with
+ *                        japi_wifexited() and friends
+ * @param[out] event      returns the event that actually occurred. When
+ *                        `event_mask` includes #JAPI_JOB_START this has to be
+ *                        checked: a rejected immediate job makes japi_wait()
+ *                        return DRMAA_ERRNO_SUCCESS for a #JAPI_JOB_FINISH
+ *                        event even though only #JAPI_JOB_START was asked for
+ * @param[out] rusage     returns the resource usage of the job run, when
+ *                        waiting for #JAPI_JOB_FINISH
+ * @param[out] diag       diagnosis information in case japi_wait() fails
+ *
+ * @return DRMAA_ERRNO_SUCCESS Job finished. DRMAA_ERRNO_EXIT_TIMEOUT No job end within specified time. DRMAA_ERRNO_INVALID_JOB The job id specified was invalid or DRMAA_JOB_IDS_SESSION_ANY has been specified and all jobs of this session have already finished. DRMAA_ERRNO_NO_ACTIVE_SESSION No active session. DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE DRMAA_ERRNO_AUTH_FAILURE DRMAA_ERRNO_NO_RUSAGE
+ *
+ * @note japi_session_mutex -> japi_threads_in_session_mutex
+ *       Master_japi_job_list_mutex -> japi_ec_state_mutex
+ *
+ *       MT-NOTE: japi_wait() is MT safe
+ *       Would be good to also return information about job failures in
+ *       JJAT_failed_text.
+ *       Would be good to enhance japi_wait() in a way allowing not only to
+ *       wait for job finish events but also other events that have an meaning
+ *       for the end user, e.g. job scheduled, job started, job rescheduled.
+ */
 int japi_wait(const char *job_id, dstring *waited_job, int *stat,
               signed long timeout, int event_mask, int *event,
               drmaa_attr_values_t **rusage, dstring *diag)
@@ -2656,42 +2449,29 @@ int japi_wait(const char *job_id, dstring *waited_job, int *stat,
    }
 }
 
-/****** JAPI/japi_wait_retry() *************************************************
-*  NAME
-*     japi_wait_retry() -- seek for job_id in JJ_finished_jobs of all jobs
-*
-*  SYNOPSIS
-*     static int japi_wait_retry(lList *japi_job_list, int wait4any, int jobid,
-*     int taskid, bool is_array_task, uint32_t *wjobidp, uint32_t *wtaskidp,
-*     bool *wis_task_arrayp, int *wait_status)
-*
-*  FUNCTION
-*     Search the passed japi_job_list for finished jobs matching the wait4any/
-*     jobid/taskid condition.
-*
-*  INPUTS
-*     lList *japi_job_list      - The JJ_Type japi joblist that is searched.
-*     int wait4any              - 0 any finished job/task is fine
-*     uint32_t jobid            - specifies which job is searched
-*     uint32_t taskid           - specifies which task is searched
-*     bool is_array_task        - true if it is an array taskid
-*     int event_mask            - the events to wait for
-*     uint32_t *wjobidp         - destination for jobid of waited job
-*     uint32_t *wtaskidp        - destination for taskid of waited job
-*     uint32_t *wis_task_arrayp - destination for taskid of waited job
-*     int *wait_status          - destination for status that is finally returned
-*                                 by japi_wait()
-*     int *wevent               - destination for actual event received
-*     lList **rusagep           - desitnation for rusage info of waited job
-*
-*  RESULT
-*     static int - JAPI_WAIT_ALLFINISHED = there is nothing more to wait for
-*                  JAPI_WAIT_UNFINISHED  = no job/task finished, but there are still unfinished tasks
-*                  JAPI_WAIT_FINISHED    = got a finished task
-*
-*  NOTES
-*     MT-NOTE: japi_wait_retry() is MT safe
-*******************************************************************************/
+/**
+ * @brief Seek for job_id in JJ_finished_jobs of all jobs
+ *
+ * Search the passed japi_job_list for finished jobs matching the wait4any/
+ * jobid/taskid condition.
+ *
+ * @param japi_job_list The JJ_Type japi joblist that is searched.
+ * @param wait4any 0 any finished job/task is fine
+ * @param jobid specifies which job is searched
+ * @param taskid specifies which task is searched
+ * @param is_array_task true if it is an array taskid
+ * @param event_mask the events to wait for
+ * @param wjobidp destination for jobid of waited job
+ * @param wtaskidp destination for taskid of waited job
+ * @param wis_task_arrayp destination for taskid of waited job
+ * @param wait_status destination for status that is finally returned by japi_wait()
+ * @param wevent destination for actual event received
+ * @param rusagep desitnation for rusage info of waited job
+ *
+ * @return JAPI_WAIT_ALLFINISHED = there is nothing more to wait for JAPI_WAIT_UNFINISHED  = no job/task finished, but there are still unfinished tasks JAPI_WAIT_FINISHED    = got a finished task
+ *
+ * @note MT-NOTE: japi_wait_retry() is MT safe
+ */
 static int japi_wait_retry(lList *japi_job_list, int wait4any, uint32_t jobid,
                            uint32_t taskid, bool is_array_task, int event_mask,
                            uint32_t *wjobidp, uint32_t *wtaskidp,
@@ -2910,9 +2690,13 @@ static int japi_wait_retry(lList *japi_job_list, int wait4any, uint32_t jobid,
 }
 
 
-/* These bit masks below are used to assemble combined DRMAA state
- * masks
+/**
+ * @brief Bit masks used to assemble a combined DRMAA state
  *
+ * A DRMAA job state is one of these queued/running bits or-ed with the
+ * suspend bits that apply:
+ *
+ * <pre>
  *    DRMAA_PS_QUEUED_ACTIVE         DRMAA_PS_SUBSTATE_PENDING
  *
  *    DRMAA_PS_SYSTEM_ON_HOLD        DRMAA_PS_SUBSTATE_PENDING |
@@ -2936,43 +2720,32 @@ static int japi_wait_retry(lList *japi_job_list, int wait4any, uint32_t jobid,
  *    DRMAA_PS_USER_SYSTEM_SUSPENDED DRMAA_PS_SUBSTATE_RUNNING |
  *                                   DRMAA_PS_SUBSTATE_SYSTEM_SUSP |
  *                                   DRMAA_PS_SUBSTATE_USER_SUSP
+ * </pre>
  */
 enum {
-   DRMAA_PS_SUBSTATE_PENDING        = 0x10,
-   DRMAA_PS_SUBSTATE_RUNNING        = 0x20,
-   DRMAA_PS_SUBSTATE_SYSTEM_SUSP    = 0x01,
-   DRMAA_PS_SUBSTATE_USER_SUSP      = 0x02
+   DRMAA_PS_SUBSTATE_PENDING        = 0x10,   ///< The job has not started yet
+   DRMAA_PS_SUBSTATE_RUNNING        = 0x20,   ///< The job is running
+   DRMAA_PS_SUBSTATE_SYSTEM_SUSP    = 0x01,   ///< The job is held or suspended by the system
+   DRMAA_PS_SUBSTATE_USER_SUSP      = 0x02    ///< The job is held or suspended by the user
 };
 
-/****** JAPI/japi_sge_state_to_drmaa_state() ****************************************
-*  NAME
-*     japi_sge_state_to_drmaa_state() -- Map Cluster Scheduler state into DRMAA state
-*
-*  SYNOPSIS
-*     static int japi_sge_state_to_drmaa_state(lListElem *job,
-*     bool is_array_task, uint32_t jobid, uint32_t taskid, int *remote_ps,
-*     dstring *diag)
-*
-*  FUNCTION
-*     All Cluster Scheduler state information is used and combined into a DRMAA
-*     job state.
-*
-*  INPUTS
-*     lListElem *job     - the job (JB_Type)
-*     bool is_array_task - if false jobid is considered the job id of a
-*                          seq. job, if true jobid and taskid must fit
-*                          to an existing array task.
-*     uint32_t jobid     - the jobid of a seq. job or an array job
-*     uint32_t taskid    - the array task id in case of array jobs, 1 otherwise
-*     int *remote_ps     - destination of DRMAA job state
-*     dstring *diag      - diagnosis information
-*
-*  RESULT
-*     static int - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTE: japi_sge_state_to_drmaa_state() is MT safe
-*******************************************************************************/
+/**
+ * @brief Map Cluster Scheduler state into DRMAA state
+ *
+ * All Cluster Scheduler state information is used and combined into a DRMAA
+ * job state.
+ *
+ * @param job the job (JB_Type)
+ * @param is_array_task if false jobid is considered the job id of a seq. job, if true jobid and taskid must fit to an existing array task.
+ * @param jobid the jobid of a seq. job or an array job
+ * @param taskid the array task id in case of array jobs, 1 otherwise
+ * @param remote_ps destination of DRMAA job state
+ * @param diag diagnosis information
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_sge_state_to_drmaa_state() is MT safe
+ */
 static int
 japi_sge_state_to_drmaa_state(const lListElem *job, bool is_array_task, uint32_t jobid,
                               uint32_t taskid, int *remote_ps, dstring *diag)
@@ -3173,30 +2946,21 @@ japi_sge_state_to_drmaa_state(const lListElem *job, bool is_array_task, uint32_t
 
 
 
-/****** JAPI/japi_get_job() *****************************************
-*  NAME
-*     japi_get_job() -- get job and the queue via GDI for job status
-*
-*  SYNOPSIS
-*     static int japi_get_job(uint32_t jobid,
-*                             lList **retrieved_job_list, dstring *diag)
-*
-*  FUNCTION
-*     We use GDI GET to get jobs status. Additionally also the queue list
-*     must be retrieved because the (queue) system suspend state is kept in
-*     the queue where the job runs.
-*
-*  INPUTS
-*     uint32_t jobid               - the jobs id
-*     lList **retrieved_job_list   - resulting job list
-*     dstring *diag                - diagnosis info
-*
-*  RESULT
-*     static int - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTES: japi_get_job() is MT safe
-*******************************************************************************/
+/**
+ * @brief Get job and the queue via GDI for job status
+ *
+ * We use GDI GET to get jobs status. Additionally also the queue list
+ * must be retrieved because the (queue) system suspend state is kept in
+ * the queue where the job runs.
+ *
+ * @param jobid the jobs id
+ * @param retrieved_job_list resulting job list
+ * @param diag diagnosis info
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTES: japi_get_job() is MT safe
+ */
 static int japi_get_job(uint32_t jobid, lList **retrieved_job_list, dstring *diag)
 {
    lList *alp = nullptr;
@@ -3256,31 +3020,22 @@ static int japi_get_job(uint32_t jobid, lList **retrieved_job_list, dstring *dia
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
-/****** JAPI/japi_parse_jobid() ************************************************
-*  NAME
-*     japi_parse_jobid() -- Parse jobid string
-*
-*  SYNOPSIS
-*     static int japi_parse_jobid(const char *job_id_str, uint32_t *jp,
-*     uint32_t *tp, bool *ap, dstring *diag)
-*
-*  FUNCTION
-*     The string is parsed. Jobid and task id are returned, also
-*     it is returned whether the id appears to be an array taskid.
-*
-*  INPUTS
-*     const char *job_id_str - the jobid string
-*     uint32_t *jp           - destination for jobid
-*     uint32_t *tp           - destination for taskid
-*     bool *ap               - was it an array task
-*     dstring *diag          - diagnosis
-*
-*  RESULT
-*     static int - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTE: japi_parse_jobid() is MT safe
-*******************************************************************************/
+/**
+ * @brief Parse jobid string
+ *
+ * The string is parsed. Jobid and task id are returned, also
+ * it is returned whether the id appears to be an array taskid.
+ *
+ * @param job_id_str the jobid string
+ * @param jp destination for jobid
+ * @param tp destination for taskid
+ * @param ap was it an array task
+ * @param diag diagnosis
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_parse_jobid() is MT safe
+ */
 static int japi_parse_jobid(const char *job_id_str, uint32_t *jp, uint32_t *tp,
    bool *ap, dstring *diag)
 {
@@ -3317,61 +3072,51 @@ static int japi_parse_jobid(const char *job_id_str, uint32_t *jp, uint32_t *tp,
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
-/****** JAPI/japi_job_ps() ****************************************************
-*  NAME
-*     japi_job_ps() -- Get job status
-*
-*  SYNOPSIS
-*     int japi_job_ps(const char *job_id_str, int *remote_ps, dstring *diag)
-*
-*  FUNCTION
-*     Get the program status of the job identified by 'job_id'.
-*     The possible values returned in 'remote_ps' and their meanings are:
-*     DRMAA_PS_UNDETERMINED = 00H : process status cannot be determined,
-*     DRMAA_PS_QUEUED_ACTIVE = 10H : job is queued and active,
-*     DRMAA_PS_SYSTEM_ON_HOLD = 11H : job is queued and in system hold,
-*     DRMAA_PS_USER_ON_HOLD = 12H : job is queued and in user hold,
-*     DRMAA_PS_USER_SYSTEM_ON_HOLD = 13H : job is queued and in user and system hold,
-*     DRMAA_PS_RUNNING = 20H : job is running,
-*     DRMAA_PS_SYSTEM_SUSPENDED = 21H : job is system suspended,
-*     DRMAA_PS_USER_SUSPENDED = 22H : job is user suspended,
-*     DRMAA_PS_USER_SYSTEM_SUSPENDED = 23H : job is user and system suspended,
-*     DRMAA_PS_DONE = 30H : job finished normally, and
-*     DRMAA_PS_FAILED = 40H : job finished, but failed.
-*
-*  INPUTS
-*     const char *job_id_str - A job id
-*
-*  OUTPUTS
-*     int *remote_ps         - Returns the job state - on success
-*     dstring *diag          - Returns diagnosis information - on error.
-*
-*  RESULT
-*     int                    - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTE: japi_job_ps() is MT safe
-*     Would be good to enhance drmaa_job_ps() to operate on an array of
-*     jobids.
-*     Would be good to have DRMAA_JOB_IDS_SESSION_ALL supported with
-*     drama_job_ps().
-*
-*     This function should be changed in a way that local JAPI-internal
-*     information is evaluated at first and no GDI request is done if
-*     this isn't necessary:
-*
-*     (1) A GDI request isn't acutally required for argument checking
-*         to prevent "jobid" being passed for array jobs or "jobid.taskid"
-*         be passed for non-array jobs. This is true at least for jobs
-*         that were submitted during the session which can be assumed the
-*         majority. Argument checking can be done based on JJ_type.
-*
-*     (2) A GDI request isn't actually required if job finish event
-*         already arrived at JAPI.
-*
-*     in these cases GDI request could be saved. This would help
-*     improving qmaster availability.
-*******************************************************************************/
+/**
+ * @brief Get job status
+ *
+ * Get the program status of the job identified by 'job_id'.
+ * The possible values returned in 'remote_ps' and their meanings are:
+ * DRMAA_PS_UNDETERMINED = 00H : process status cannot be determined,
+ * DRMAA_PS_QUEUED_ACTIVE = 10H : job is queued and active,
+ * DRMAA_PS_SYSTEM_ON_HOLD = 11H : job is queued and in system hold,
+ * DRMAA_PS_USER_ON_HOLD = 12H : job is queued and in user hold,
+ * DRMAA_PS_USER_SYSTEM_ON_HOLD = 13H : job is queued and in user and system hold,
+ * DRMAA_PS_RUNNING = 20H : job is running,
+ * DRMAA_PS_SYSTEM_SUSPENDED = 21H : job is system suspended,
+ * DRMAA_PS_USER_SUSPENDED = 22H : job is user suspended,
+ * DRMAA_PS_USER_SYSTEM_SUSPENDED = 23H : job is user and system suspended,
+ * DRMAA_PS_DONE = 30H : job finished normally, and
+ * DRMAA_PS_FAILED = 40H : job finished, but failed.
+ *
+ * @param job_id_str A job id
+ * @param remote_ps Returns the job state - on success
+ * @param diag Returns diagnosis information - on error.
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_job_ps() is MT safe
+ *       Would be good to enhance drmaa_job_ps() to operate on an array of
+ *       jobids.
+ *       Would be good to have DRMAA_JOB_IDS_SESSION_ALL supported with
+ *       drama_job_ps().
+ *
+ *       This function should be changed in a way that local JAPI-internal
+ *       information is evaluated at first and no GDI request is done if
+ *       this isn't necessary:
+ *
+ *       (1) A GDI request isn't acutally required for argument checking
+ *       to prevent "jobid" being passed for array jobs or "jobid.taskid"
+ *       be passed for non-array jobs. This is true at least for jobs
+ *       that were submitted during the session which can be assumed the
+ *       majority. Argument checking can be done based on JJ_type.
+ *
+ *       (2) A GDI request isn't actually required if job finish event
+ *       already arrived at JAPI.
+ *
+ *       in these cases GDI request could be saved. This would help
+ *       improving qmaster availability.
+ */
 int japi_job_ps(const char *job_id_str, int *remote_ps, dstring *diag)
 {
    uint32_t jobid, taskid;
@@ -3461,33 +3206,22 @@ int japi_job_ps(const char *job_id_str, int *remote_ps, dstring *diag)
    DRETURN(drmaa_errno);
 }
 
-/****** JAPI/japi_wifaborted() *************************************************
-*  NAME
-*     japi_wifaborted() -- Did the job ever run?
-*
-*  SYNOPSIS
-*     int japi_wifaborted(int *aborted, int stat, dstring *diag)
-*
-*  FUNCTION
-*     Evaluates into 'aborted' a non-zero value if 'stat' was returned for
-*     a JAPI job that ended before entering the running state.
-*
-*  INPUTS
-*     int stat      - 'stat' value returned by japi_wait()
-*
-*  OUTPUTS
-*     int *aborted  - Returns 1 if the job was aborted, 0 otherwise - on success.
-*     dstring *diag - Returns diagnosis information - on error.
-*
-*  RESULT
-*     int - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTE: japi_wifaborted() is MT safe
-*
-*  SEE ALSO
-*     JAPI/japi_wait()
-*******************************************************************************/
+/**
+ * @brief Did the job ever run?
+ *
+ * Evaluates into 'aborted' a non-zero value if 'stat' was returned for
+ * a JAPI job that ended before entering the running state.
+ *
+ * @param stat 'stat' value returned by japi_wait()
+ * @param aborted Returns 1 if the job was aborted, 0 otherwise - on success.
+ * @param diag Returns diagnosis information - on error.
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_wifaborted() is MT safe
+ *
+ * @see #japi_wait
+ */
 int japi_wifaborted(int *aborted, int stat, dstring *diag)
 {
    *aborted = SGE_GET_NEVERRAN(stat)?1:0;
@@ -3495,67 +3229,45 @@ int japi_wifaborted(int *aborted, int stat, dstring *diag)
 }
 
 
-/****** JAPI/japi_wifexited() **************************************************
-*  NAME
-*     japi_wifexited() -- Has job exited?
-*
-*  SYNOPSIS
-*     int japi_wifexited(int *exited, int stat, dstring *diag)
-*
-*  FUNCTION
-*     Allows to investigate whether a job has exited regularly.
-*     If 'exited' returns 1 the exit status can be retrieved using
-*     japi_wexitstatus().
-*
-*  INPUTS
-*     int stat      - 'stat' value returned by japi_wait()
-*
-*  OUTPUTS
-*     int *exited   - Returns 1 if the job exited, 0 otherwise - on success.
-*     dstring *diag - Returns diagnosis information - on error.
-*
-*  RESULT
-*     int           - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTE: japi_wifexited() is MT safe
-*
-*  SEE ALSO
-*     JAPI/japi_wexitstatus()
-*******************************************************************************/
+/**
+ * @brief Has job exited?
+ *
+ * Allows to investigate whether a job has exited regularly.
+ * If 'exited' returns 1 the exit status can be retrieved using
+ * japi_wexitstatus().
+ *
+ * @param stat 'stat' value returned by japi_wait()
+ * @param exited Returns 1 if the job exited, 0 otherwise - on success.
+ * @param diag Returns diagnosis information - on error.
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_wifexited() is MT safe
+ *
+ * @see #japi_wexitstatus
+ */
 int japi_wifexited(int *exited, int stat, dstring *diag)
 {
    *exited = SGE_GET_WEXITED(stat)?1:0;
    return DRMAA_ERRNO_SUCCESS;
 }
 
-/****** JAPI/japi_wexitstatus() ************************************************
-*  NAME
-*     japi_wexitstatus() -- Get jobs exit status.
-*
-*  SYNOPSIS
-*     int japi_wexitstatus(int *exit_status, int stat, dstring *diag)
-*
-*  FUNCTION
-*     Retrieves the exit status of a job assumed it exited regularly
-*     according japi_wifexited().
-*
-*  INPUTS
-*     int stat      - 'stat' value returned by japi_wait()
-*
-*  OUTPUTS
-*     int *exit_status - Returns the jobs exit status - on success.
-*     dstring *diag    - Returns diagnosis information - on error.
-*
-*  RESULT
-*     int - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTE: japi_wexitstatus() is MT safe
-*
-*  SEE ALSO
-*     JAPI/japi_wifexited()
-*******************************************************************************/
+/**
+ * @brief Get jobs exit status
+ *
+ * Retrieves the exit status of a job assumed it exited regularly
+ * according japi_wifexited().
+ *
+ * @param stat 'stat' value returned by japi_wait()
+ * @param exit_status Returns the jobs exit status - on success.
+ * @param diag Returns diagnosis information - on error.
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_wexitstatus() is MT safe
+ *
+ * @see #japi_wifexited
+ */
 int japi_wexitstatus(int *exit_status, int stat, dstring *diag)
 {
    *exit_status = SGE_GET_WEXITSTATUS(stat);
@@ -3563,35 +3275,23 @@ int japi_wexitstatus(int *exit_status, int stat, dstring *diag)
 }
 
 
-/****** JAPI/japi_wifsignaled() **************************************************
-*  NAME
-*     japi_wifsignaled() -- Did the job die through a signal.
-*
-*  SYNOPSIS
-*     int japi_wifsignaled(int *signaled, int stat, dstring *diag)
-*
-*  FUNCTION
-*     Allows to investigate whether a job died through a signal.
-*     If 'signaled' returns 1 the signal can be retrieved using
-*     japi_wtermsig().
-*
-*  INPUTS
-*     int stat      - 'stat' value returned by japi_wait()
-*
-*  OUTPUTS
-*     int *signaled - Returns 1 if the job died through a signal,
-*        0 otherwise - on success.
-*     dstring *diag - Returns diagnosis information - on error.
-*
-*  RESULT
-*     int           - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTE: japi_wifsignaled() is MT safe
-*
-*  SEE ALSO
-*     JAPI/japi_wtermsig()
-*******************************************************************************/
+/**
+ * @brief Did the job die through a signal
+ *
+ * Allows to investigate whether a job died through a signal.
+ * If 'signaled' returns 1 the signal can be retrieved using
+ * japi_wtermsig().
+ *
+ * @param stat 'stat' value returned by japi_wait()
+ * @param signaled Returns 1 if the job died through a signal, 0 otherwise - on success.
+ * @param diag Returns diagnosis information - on error.
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_wifsignaled() is MT safe
+ *
+ * @see #japi_wtermsig
+ */
 int japi_wifsignaled(int *signaled, int stat, dstring *diag)
 {
    *signaled = SGE_GET_WSIGNALED(stat)?1:0;
@@ -3599,35 +3299,23 @@ int japi_wifsignaled(int *signaled, int stat, dstring *diag)
 }
 
 
-/****** JAPI/japi_wtermsig() ***************************************************
-*  NAME
-*     japi_wtermsig() -- Retrieve the signal a job died through.
-*
-*  SYNOPSIS
-*     int japi_wtermsig(dstring *sig, int stat, dstring *diag)
-*
-*  FUNCTION
-*     Retrieves the signal of a job assumed it died through a signal
-*     according japi_wifsignaled().
-*
-*  INPUTS
-*     int stat      - 'stat' value returned by japi_wait()
-*
-*  OUTPUTS
-*     dstring *sig  - Returns signal the job died through in string form
-*                     (e.g. "SIGKILL")
-*     dstring *diag - Returns diagnosis information - on error.
-*
-*  RESULT
-*     int - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTE: japi_wtermsig() is MT safe
-*     Would be better to directly SGE signal value, instead of a string.
-*
-*  SEE ALSO
-*     JAPI/japi_wifsignaled()
-*******************************************************************************/
+/**
+ * @brief Retrieve the signal a job died through
+ *
+ * Retrieves the signal of a job assumed it died through a signal
+ * according japi_wifsignaled().
+ *
+ * @param stat 'stat' value returned by japi_wait()
+ * @param sig Returns signal the job died through in string form (e.g. "SIGKILL")
+ * @param diag Returns diagnosis information - on error.
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_wtermsig() is MT safe
+ *       Would be better to directly SGE signal value, instead of a string.
+ *
+ * @see #japi_wifsignaled
+ */
 int japi_wtermsig(dstring *sig, int stat, dstring *diag)
 {
    uint32_t sge_sig = SGE_GET_WSIGNAL(stat);
@@ -3636,57 +3324,35 @@ int japi_wtermsig(dstring *sig, int stat, dstring *diag)
 }
 
 
-/****** JAPI/japi_wifcoredump() ************************************************
-*  NAME
-*     japi_wifcoredump() -- Did job core dump?
-*
-*  SYNOPSIS
-*     int japi_wifcoredump(int *core_dumped, int stat, dstring *diag)
-*
-*  FUNCTION
-*     If drmaa_wifsignaled() indicates a job died through a signal this function
-*     evaluates into 'core_dumped' a non-zero value if a core image of the terminated
-*     job was created.
-*
-*  INPUTS
-*     int stat         - 'stat' value returned by japi_wait()
-*
-*  OUTPUTS
-*     int *core_dumped - Returns 1 if a core image was created, 0 otherwises -
-*        on success.
-*     dstring *diag    - Returns diagnosis information - on error.
-*
-*  RESULT
-*     int - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTE: japi_wifcoredump() is MT safe
-*******************************************************************************/
+/**
+ * @brief Did job core dump?
+ *
+ * If drmaa_wifsignaled() indicates a job died through a signal this function
+ * evaluates into 'core_dumped' a non-zero value if a core image of the terminated
+ * job was created.
+ *
+ * @param stat 'stat' value returned by japi_wait()
+ * @param core_dumped Returns 1 if a core image was created, 0 otherwises - on success.
+ * @param diag Returns diagnosis information - on error.
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_wifcoredump() is MT safe
+ */
 int japi_wifcoredump(int *core_dumped, int stat, dstring *diag)
 {
    *core_dumped = SGE_GET_WCOREDUMP(stat)?1:0;
    return DRMAA_ERRNO_SUCCESS;
 }
 
-/****** JAPI/japi_standard_error() *********************************************
-*  NAME
-*     japi_standard_error() -- Provide standard diagnosis message.
-*
-*  SYNOPSIS
-*     static void japi_standard_error(int drmaa_errno, dstring *diag)
-*
-*  FUNCTION
-*
-*
-*  INPUTS
-*     int drmaa_errno - DRMAA error code
-*
-*  OUTPUT
-*     dstring *diag   - diagnosis message
-*
-*  NOTES
-*     MT-NOTE: japi_standard_error() is MT safe
-*******************************************************************************/
+/**
+ * @brief Provide standard diagnosis message
+ *
+ * @param drmaa_errno DRMAA error code
+ * @param diag diagnosis message
+ *
+ * @note MT-NOTE: japi_standard_error() is MT safe
+ */
 void japi_standard_error(int drmaa_errno, dstring *diag)
 {
    if (diag != nullptr) {
@@ -3695,26 +3361,17 @@ void japi_standard_error(int drmaa_errno, dstring *diag)
 }
 
 
-/****** JAPI/japi_strerror() ****************************************************
-*  NAME
-*     japi_strerror() -- JAPI strerror()
-*
-*  SYNOPSIS
-*     void japi_strerror(int drmaa_errno, char *error_string, int error_len)
-*
-*  FUNCTION
-*     Returns readable text version of errno (constant string)
-*
-*  INPUTS
-*     int drmaa_errno - DRMAA error code
-*
-*  RESULT
-*     A string describing the DRMAA error case for valid DRMAA error code
-*     and nullptr otherwise.
-*
-*  NOTES
-*     MT-NOTE: japi_strerror() is MT safe
-*******************************************************************************/
+/**
+ * @brief JAPI strerror()
+ *
+ * Returns readable text version of errno (constant string)
+ *
+ * @param drmaa_errno DRMAA error code
+ *
+ * @return A string describing the DRMAA error case for valid DRMAA error code and nullptr otherwise.
+ *
+ * @note MT-NOTE: japi_strerror() is MT safe
+ */
 const char *japi_strerror(int drmaa_errno)
 {
    const struct error_text_s {
@@ -3770,28 +3427,20 @@ const char *japi_strerror(int drmaa_errno)
    return nullptr;
 }
 
-/****** japi/japi_get_contact() ************************************************
-*  NAME
-*     japi_get_contact() -- Return current contact information
-*
-*  SYNOPSIS
-*     void japi_get_contact(dstring *contact)
-*
-*  FUNCTION
-*     Current contact information for DRM system
-*
-*  INPUTS
-*     dstring *contact - Returns a string simiar to 'contact' of japi_init().
-*
-*  RESULT
-*     int - DRMAA error code
-*
-*  NOTES
-*     MT-NOTES: japi_get_contact() is MT safe
-*
-*  SEE ALSO
-*     JAPI/japi_init()
-*******************************************************************************/
+/**
+ * @brief Return current contact information
+ *
+ * Current contact information for DRM system
+ *
+ * @param[out] contact Returns a string similar to the 'contact' of japi_init()
+ * @param[out] diag    Returns diagnosis information - on error
+ *
+ * @return DRMAA error code
+ *
+ * @note MT-NOTES: japi_get_contact() is MT safe
+ *
+ * @see #japi_init
+ */
 int japi_get_contact(dstring *contact, dstring *diag)
 {
    int japi_errno = DRMAA_ERRNO_SUCCESS;
@@ -3816,53 +3465,36 @@ int japi_get_contact(dstring *contact, dstring *diag)
    DRETURN(japi_errno);
 }
 
-/****** japi/japi_version() ****************************************************
-*  NAME
-*     japi_version() -- Return DRMAA version the JAPI library is compliant to.
-*
-*  SYNOPSIS
-*     void japi_version(unsigned int *major, unsigned int *minor)
-*
-*  FUNCTION
-*     Return DRMAA version the JAPI library is compliant to.
-*
-*  OUTPUTs
-*     unsigned int *major - ???
-*     unsigned int *minor - ???
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: japi_version() is MT safe
-*******************************************************************************/
+/**
+ * @brief Return DRMAA version the JAPI library is compliant to
+ *
+ * Return DRMAA version the JAPI library is compliant to.
+ *
+ * @param[out] major Returns the major version number
+ * @param[out] minor Returns the minor version number
+ *
+ * @note MT-NOTE: japi_version() is MT safe
+ *
+ * @warning The function body is empty - it writes neither `major` nor `minor`,
+ *          so both stay at whatever the caller passed in. drmaa_version() is
+ *          the only caller and sets the numbers itself before calling.
+ */
 void japi_version(unsigned int *major, unsigned int *minor)
 {
 }
 
 
-/****** JAPI/japi_get_drm_system() *********************************************
-*  NAME
-*     japi_get_drm_system() -- ???
-*
-*  SYNOPSIS
-*     int japi_get_drm_system(dstring *drm, dstring *diag)
-*
-*  FUNCTION
-*     Returns SGE system implementation information. The output contain the DRM
-*     name and release information.
-*
-*  OUTPUTS
-*     dstring *drm  - Returns DRM name - on success
-*     dstring *diag - Returns diagnssis information - on error.
-*     int me        - Me.wo progname
-*
-*  RESULT
-*     int - DRMAA error codes
-*
-*  NOTES
-*     MT-NOTE: japi_get_drm_system() is MT safe
-*******************************************************************************/
+/**
+ * @brief Returns SGE system implementation information. The output contain the DRM
+ *
+ * @param drm Returns DRM name - on success
+ * @param diag Returns diagnssis information - on error.
+ * @param me Me.wo progname
+ *
+ * @return DRMAA error codes
+ *
+ * @note MT-NOTE: japi_get_drm_system() is MT safe
+ */
 int japi_get_drm_system(dstring *drm, dstring *diag, ProgName me)
 {
    dstring buffer = DSTRING_INIT;
@@ -3882,33 +3514,23 @@ int japi_get_drm_system(dstring *drm, dstring *diag, ProgName me)
 }
 
 
-/****** japi/japi_subscribe_job_list() *****************************************
-*  NAME
-*     japi_subscribe_job_list() -- Do event subscription for job list
-*
-*  SYNOPSIS
-*     static void japi_subscribe_job_list(const char *japi_session_key,
-*     sge_evc_class_t *evc)
-*
-*  FUNCTION
-*     Event subscription for job list can be very costly. It requires
-*     qmaster to copy the entire job list temporarily at the time when
-*     an event is registered. For that reason subscribing the job list
-*     was factorized out, so that it can be done only when required.
-*     Subscribing the job list event is required only in cases
-*
-*     (a) when the client event client connection breaks down e.g.
-*         due to qmaster be shut-down and restarted
-*
-*     (b) when a JAPI session is restarted e.g when DRMAA is used
-*
-*  INPUTS
-*     const char *japi_session_key - JAPI session key
-*     sge_evc_class_t *evc         - event client object
-*
-*  NOTES
-*     MT-NOTE: japi_subscribe_job_list() is MT safe
-*******************************************************************************/
+/**
+ * @brief Do event subscription for job list
+ *
+ * Event subscription for job list can be very costly. It requires
+ * qmaster to copy the entire job list temporarily at the time when
+ * an event is registered. For that reason subscribing the job list
+ * was factorized out, so that it can be done only when required.
+ * Subscribing the job list event is required only in cases
+ * (a) when the client event client connection breaks down e.g.
+ *     due to qmaster be shut-down and restarted
+ * (b) when a JAPI session is restarted e.g when DRMAA is used
+ *
+ * @param japi_session_key JAPI session key
+ * @param evc event client object
+ *
+ * @note MT-NOTE: japi_subscribe_job_list() is MT safe
+ */
 static void japi_subscribe_job_list(const char *japi_session_key, sge_evc_class_t *evc)
 {
    const int job_nm[] = {
@@ -3953,21 +3575,11 @@ static void japi_subscribe_job_list(const char *japi_session_key, sge_evc_class_
    return;
 }
 
-/****** JAPI/japi_implementation_thread() **************************************
-*  Under construction
-*  NAME
-*     japi_implementation_thread() -- Control flow implementation thread
-*
-*  SYNOPSIS
-*
-*  FUNCTION
-*
-*  INPUTS
-*  RESULT
-*
-*  NOTES
-*     MT-NOTE: japi_implementation_thread() is MT safe
-*******************************************************************************/
+/**
+ * @brief Control flow implementation thread
+ *
+ * @note MT-NOTE: japi_implementation_thread() is MT safe
+ */
 static void *japi_implementation_thread(void * a_user_data_pointer)
 {
    lList *alp = nullptr, *event_list = nullptr;
@@ -4429,24 +4041,16 @@ SetupFailed:
 }
 
 
-/****** JAPI/japi_sync_job_tasks() *********************************************
-*  NAME
-*     japi_sync_job_tasks() -- adjusts JAPI job structure tasks to match the
-*                              state of the SGE job structure tasks
-*
-*  SYNOPSIS
-*     int japi_sync_job_tasks(lListElem *japi_job, lListElem *sge_job)
-*
-*  FUNCTION
-*     Iterates through the JAPI job structure's JJ_not_yet_finished_task_ids
-*     list and moves finished jobs into the JJ_finished_tasks list.
-*
-*  RESULT
-*     The number of finished tasks
-*
-*  NOTES
-*     MT-NOTES: japi_sync_job_tasks() is MT safe.
-*******************************************************************************/
+/**
+ * @brief Adjusts JAPI job structure tasks to match the
+ *
+ * Iterates through the JAPI job structure's JJ_not_yet_finished_task_ids
+ * list and moves finished jobs into the JJ_finished_tasks list.
+ *
+ * @return The number of finished tasks
+ *
+ * @note MT-NOTES: japi_sync_job_tasks() is MT safe.
+ */
 static int japi_sync_job_tasks(lListElem *japi_job, lListElem *sge_job)
 {
    DENTER(TOP_LAYER);
@@ -4514,23 +4118,16 @@ static int japi_sync_job_tasks(lListElem *japi_job, lListElem *sge_job)
    DRETURN(finished_tasks);
 }
 
-/****** JAPI/japi_clean_up_jobs() **********************************************
-*  NAME
-*     japi_clean_up_jobs() -- stops jobs still running in the session
-*
-*  SYNOPSIS
-*     int japi_clean_up_jobs(int flag, dstring *diag)
-*
-*  FUNCTION
-*     Deletes jobs running in the session when flag is set to JAPI_EXIT_KILL_ALL
-*     or JAPI_EXIT_KILL_PENDING.
-*
-*  RESULT
-*     int - 0 = OK, 1 = Error
-*
-*  NOTES
-*     MT-NOTES: japi_clean_up_jobs() is MT safe (assumptions)
-*******************************************************************************/
+/**
+ * @brief Stops jobs still running in the session
+ *
+ * Deletes jobs running in the session when flag is set to JAPI_EXIT_KILL_ALL
+ * or JAPI_EXIT_KILL_PENDING.
+ *
+ * @return 0 = OK, 1 = Error
+ *
+ * @note MT-NOTES: japi_clean_up_jobs() is MT safe (assumptions)
+ */
 static int japi_clean_up_jobs(int flag, dstring *diag)
 {
    const lListElem *japi_job = nullptr;
@@ -4627,27 +4224,17 @@ static int japi_clean_up_jobs(int flag, dstring *diag)
 }
 
 
-/****** japi/japi_was_init_called() *******************************************
-*  NAME
-*     japi_was_init_called() -- Return current contact information
-*
-*  SYNOPSIS
-*     int japi_was_init_called(dstring* diag)
-*
-*  FUNCTION
-*     Check if japi_init was already called.
-*
-*  OUTPUT
-*     dstring *diag - returns diagnosis information - on error
-*
-*  RESULT
-*     int - DRMAA_ERRNO_SUCCESS if japi_init was already called,
-*           DRMAA_ERRNO_NO_ACTIVE_SESSION if japi_init was not called,
-*           DRMAA_ERRNO_INTERNAL_ERROR if an unexpected error occurs.
-*
-*  NOTES
-*     MT-NOTES: japi_was_init_called() is MT safe
-*******************************************************************************/
+/**
+ * @brief Return current contact information
+ *
+ * Check if japi_init was already called.
+ *
+ * @param diag returns diagnosis information - on error
+ *
+ * @return DRMAA_ERRNO_SUCCESS if japi_init was already called, DRMAA_ERRNO_NO_ACTIVE_SESSION if japi_init was not called, DRMAA_ERRNO_INTERNAL_ERROR if an unexpected error occurs.
+ *
+ * @note MT-NOTES: japi_was_init_called() is MT safe
+ */
 int japi_was_init_called(dstring* diag)
 {
    int ret = DRMAA_ERRNO_SUCCESS;
@@ -4676,23 +4263,17 @@ int japi_was_init_called(dstring* diag)
    DRETURN(ret);
 }
 
-/****** japi/japi_is_delegated_file_staging_enabled() *************************
-*  NAME
-*     japi_is_delegated_file_staging_enabled() -- Is file staging enabled, i.e.
-*              is the "delegated_file_staging" configuration entry set to true?
-*
-*  SYNOPSIS
-*     bool japi_is_delegated_file_staging_enabled()
-*
-*  FUNCTION
-*     Returns if delegated file staging is enabled.
-*
-*  RESULT
-*     bool - true if delegated file staging is enabled, else false.
-*
-*  NOTES
-*     MT-NOTES: japi_is_delegated_file_staging_enabled() is MT safe
-*******************************************************************************/
+/**
+ * @brief Is file staging enabled, i.e
+ *
+ * Returns if delegated file staging is enabled.
+ *
+ * @param[out] diag Returns diagnosis information - on error
+ *
+ * @return true if delegated file staging is enabled, else false
+ *
+ * @note MT-NOTES: japi_is_delegated_file_staging_enabled() is MT safe
+ */
 bool japi_is_delegated_file_staging_enabled(dstring *diag)
 {
    bool ret = false;
@@ -4716,30 +4297,18 @@ bool japi_is_delegated_file_staging_enabled(dstring *diag)
    DRETURN(ret);
 }
 
-/****** japi/japi_read_dynamic_attributes() ***********************************
-*  NAME
-*     japi_read_dynamic_attributes() -- Read the 'dynamic' attributes from
-*                                       the DRM configuration.
-*
-*  SYNOPSIS
-*     static int japi_read_dynamic_attributes(dstring *diag)
-*
-*  FUNCTION
-*     Reads from the DRM configuration, which 'dynamic' attributes are enabled.
-*
-*  OUTPUT
-*     dstring *diag - returns diagnosis information - on error
-*
-*  RESULT
-*     int - DRMAA_ERRNO_SUCCES on success,
-*           DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE,
-*           DRMAA_ERRNO_INVALID_ARGUMENT
-*           on error.
-*
-*  NOTES
-*     MT-NOTES: japi_read_dynamic_attributes() is not MT safe.  It assumes that
-*               the calling thread holds the session mutex.
-*******************************************************************************/
+/**
+ * @brief Read the 'dynamic' attributes from
+ *
+ * Reads from the DRM configuration, which 'dynamic' attributes are enabled.
+ *
+ * @param diag returns diagnosis information - on error
+ *
+ * @return DRMAA_ERRNO_SUCCES on success, DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE, DRMAA_ERRNO_INVALID_ARGUMENT on error.
+ *
+ * @note MT-NOTES: japi_read_dynamic_attributes() is not MT safe.  It assumes that
+ *       the calling thread holds the session mutex.
+ */
 static int japi_read_dynamic_attributes(dstring *diag)
 {
    int        ret=0;
@@ -4798,33 +4367,21 @@ static int japi_read_dynamic_attributes(dstring *diag)
    DRETURN(drmaa_errno);
 }
 
-/****** japi/do_gdi_delete() ***************************************************
-*  NAME
-*     do_gdi_delete() -- Delete the job list
-*
-*  SYNOPSIS
-*     static int do_gdi_delete (lList **id_list, int action, bool delete_all,
-*                               dstring diag)
-*
-*  FUNCTION
-*     Deletes all the jobs in the job id list, converts and GDI errors into
-*     DRMAA errors, and frees the job id list.
-*
-*  INPUTS
-*     lList **id_list   - List of job ids to delete.  Gets freed.
-*     int action        - The action that caused this delete
-*     bool delete_all   - Whether this call is deleting all jobs in the session
-*
-*  OUTPUT
-*     dstring *diag - returns diagnosis information - on error
-*
-*  RESULT
-*     int - DRMAA_ERRNO_SUCCES on success,
-*           DRMAA error code on error.
-*
-*  NOTES
-*     MT-NOTES: do_gdi_delete() is MT safe
-*******************************************************************************/
+/**
+ * @brief Delete the job list
+ *
+ * Deletes all the jobs in the job id list, converts and GDI errors into
+ * DRMAA errors, and frees the job id list.
+ *
+ * @param id_list List of job ids to delete.  Gets freed.
+ * @param action The action that caused this delete
+ * @param delete_all Whether this call is deleting all jobs in the session
+ * @param diag returns diagnosis information - on error
+ *
+ * @return DRMAA_ERRNO_SUCCES on success, DRMAA error code on error.
+ *
+ * @note MT-NOTES: do_gdi_delete() is MT safe
+ */
 static int do_gdi_delete(lList **id_list, int action, bool delete_all, dstring *diag)
 {
    DENTER(TOP_LAYER);
@@ -4855,23 +4412,16 @@ static int do_gdi_delete(lList **id_list, int action, bool delete_all, dstring *
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
-/****** JAPI/japi_stop_event_client() ******************************************
-*  NAME
-*     japi_stop_event_client() -- stops the event client
-*
-*  SYNOPSIS
-*     int japi_stop_event_client()
-*
-*  FUNCTION
-*     Uses the Event Master interface to send a SHUTDOWN event to the event
-*     client.
-*
-*  RESULT
-*     int - 0 = OK, 1 = Error
-*
-*  NOTES
-*     MT-NOTES: japi_stop_event_client() is MT safe (assumptions)
-*******************************************************************************/
+/**
+ * @brief Stops the event client
+ *
+ * Uses the Event Master interface to send a SHUTDOWN event to the event
+ * client.
+ *
+ * @return 0 = OK, 1 = Error
+ *
+ * @note MT-NOTES: japi_stop_event_client() is MT safe (assumptions)
+ */
 static int japi_stop_event_client (const char *default_cell)
 {
    lList *alp = nullptr;

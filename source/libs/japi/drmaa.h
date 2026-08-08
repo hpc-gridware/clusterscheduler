@@ -34,247 +34,239 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The DRMAA interface - the public API for job submission and control
+ *
+ * DRMAA - Distributed Resource Management Application API - is a DRM system
+ * independent interface specified by the Open Grid Forum; see www.drmaa.org.
+ * This header is its C/C++ language binding, the only header an application
+ * linking against `libdrmaa` includes.
+ *
+ * Everything the specification prescribes is fixed and must not be changed:
+ * the numeric error codes, the job state values and the names of the job
+ * template attributes are what makes a program written against another DRMAA
+ * implementation work against this one.
+ *
+ * A typical session is drmaa_init(), drmaa_allocate_job_template() plus a
+ * number of drmaa_set_attribute() calls, drmaa_run_job() or
+ * drmaa_run_bulk_jobs(), then drmaa_wait() or drmaa_synchronize(), and
+ * finally drmaa_exit(). The implementation lives in `drmaa.cc` on top of the
+ * JAPI library in `japi.cc`.
+ *
+ * @note Every call that can fail takes an `error_diagnosis` buffer and its
+ *       length, and fills it with a human readable message. The recommended
+ *       minimum sizes are the DRMAA_*_BUFFER constants below.
+ */
+
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
 /* see www.drmaa.org for more details on the DRMAA specification */ 
-/****** DRMAA/-DRMAA_Interface *************************************************
-*  NAME
-*     DRMAA_Interface -- DRMAA interface
-*
-*  FUNCTION
-*     The enlisted functions specify the C/C++ binding of the DRMAA interface 
-*     specification.
-* 
-*  SEE ALSO
-*     DRMAA/drmaa_get_next_attr_name()
-*     DRMAA/drmaa_get_next_attr_value()
-*     DRMAA/drmaa_get_next_job_id()
-*     DRMAA/drmaa_release_attr_names()
-*     DRMAA/drmaa_release_attr_values()
-*     DRMAA/drmaa_release_job_ids()
-*     DRMAA/drmaa_init()
-*     DRMAA/drmaa_exit()
-*     DRMAA/drmaa_allocate_job_template()
-*     DRMAA/drmaa_delete_job_template()
-*     DRMAA/drmaa_set_attribute()
-*     DRMAA/drmaa_get_attribute()
-*     DRMAA/drmaa_set_vector_attribute()
-*     DRMAA/drmaa_get_vector_attribute()
-*     DRMAA/drmaa_get_attribute_names()
-*     DRMAA/drmaa_get_vector_attribute_names()
-*     DRMAA/drmaa_run_job()
-*     DRMAA/drmaa_run_bulk_jobs()
-*     DRMAA/drmaa_control()
-*     DRMAA/drmaa_synchronize()
-*     DRMAA/drmaa_wait()
-*     DRMAA/drmaa_wifexited()
-*     DRMAA/drmaa_wexitstatus()
-*     DRMAA/drmaa_wifsignaled()
-*     DRMAA/drmaa_wtermsig()
-*     DRMAA/drmaa_wcoredump()
-*     DRMAA/drmaa_wifaborted()
-*     DRMAA/drmaa_job_ps()
-*     DRMAA/drmaa_strerror()
-*     DRMAA/drmaa_get_contact()
-*     DRMAA/drmaa_version()
-*     DRMAA/drmaa_get_DRM_system()
-*******************************************************************************/
 
 /* ------------------- Constants ------------------- */
-/* 
- * some not yet agreed buffer length constants 
- * these are recommended minimum values 
+/**
+ * @name Buffer sizes not covered by the specification
+ *
+ * Recommended minimum sizes for the output buffers of the corresponding
+ * calls. They are an agreement of this implementation only, not of the DRMAA
+ * specification.
+ * @{
  */
 
-/* drmaa_get_attribute() */
+/** Minimum size of the buffer passed to drmaa_get_attribute() */
 #define DRMAA_ATTR_BUFFER 1024
 
-/* drmaa_get_contact() */
+/** Minimum size of the buffer passed to drmaa_get_contact() */
 #define DRMAA_CONTACT_BUFFER 1024
 
-/* drmaa_get_DRM_system() */
+/** Minimum size of the buffer passed to drmaa_get_DRM_system() */
 #define DRMAA_DRM_SYSTEM_BUFFER 1024
 
-/* drmaa_get_DRM_system() */
+/** Minimum size of the buffer passed to drmaa_get_DRMAA_implementation() */
 #define DRMAA_DRMAA_IMPLEMENTATION_BUFFER 1024
+/** @} */
 
-/* 
- * Agreed buffer length constants 
- * these are recommended minimum values 
- */
-#define DRMAA_ERROR_STRING_BUFFER   1024
-#define DRMAA_JOBNAME_BUFFER        1024
-#define DRMAA_SIGNAL_BUFFER         32
-
-/*
- * Agreed constants 
- */ 
-#define DRMAA_TIMEOUT_WAIT_FOREVER  -1
-#define DRMAA_TIMEOUT_NO_WAIT       0 
-
-#define DRMAA_JOB_IDS_SESSION_ANY   "DRMAA_JOB_IDS_SESSION_ANY"
-#define DRMAA_JOB_IDS_SESSION_ALL   "DRMAA_JOB_IDS_SESSION_ALL"
-
-#define DRMAA_SUBMISSION_STATE_ACTIVE "drmaa_active"
-#define DRMAA_SUBMISSION_STATE_HOLD   "drmaa_hold"
-
-/*
- * Agreed placeholder names
- */
-#define DRMAA_PLACEHOLDER_INCR       "$drmaa_incr_ph$"
-#define DRMAA_PLACEHOLDER_HD         "$drmaa_hd_ph$"
-#define DRMAA_PLACEHOLDER_WD         "$drmaa_wd_ph$"
-
-/*
- * Agreed names of job template attributes 
- */
-#define DRMAA_REMOTE_COMMAND         "drmaa_remote_command"
-#define DRMAA_JS_STATE               "drmaa_js_state"
-#define DRMAA_WD                     "drmaa_wd"
-#define DRMAA_JOB_CATEGORY           "drmaa_job_category"
-#define DRMAA_NATIVE_SPECIFICATION   "drmaa_native_specification"
-#define DRMAA_BLOCK_EMAIL            "drmaa_block_email"
-#define DRMAA_START_TIME             "drmaa_start_time"
-#define DRMAA_JOB_NAME               "drmaa_job_name"
-#define DRMAA_INPUT_PATH             "drmaa_input_path"
-#define DRMAA_OUTPUT_PATH            "drmaa_output_path"
-#define DRMAA_ERROR_PATH             "drmaa_error_path"
-#define DRMAA_JOIN_FILES             "drmaa_join_files"
-#define DRMAA_TRANSFER_FILES         "drmaa_transfer_files"
-#define DRMAA_DEADLINE_TIME          "drmaa_deadline_time"
-#define DRMAA_WCT_HLIMIT             "drmaa_wct_hlimit"
-#define DRMAA_WCT_SLIMIT             "drmaa_wct_slimit"
-#define DRMAA_DURATION_HLIMIT        "drmaa_duration_hlimit"
-#define DRMAA_DURATION_SLIMIT        "drmaa_duration_slimit"
-
-/* names of job template vector attributes */
-#define DRMAA_V_ARGV                 "drmaa_v_argv"
-#define DRMAA_V_ENV                  "drmaa_v_env"
-#define DRMAA_V_EMAIL                "drmaa_v_email"
-
-/* 
- * DRMAA errno values 
+/**
+ * @name Buffer sizes defined by the specification
  *
- * do not touch these values are agreed !!!
+ * Recommended minimum sizes for the output buffers every DRMAA implementation
+ * accepts.
+ * @{
+ */
+#define DRMAA_ERROR_STRING_BUFFER   1024   ///< Minimum size of an `error_diagnosis` buffer
+#define DRMAA_JOBNAME_BUFFER        1024   ///< Minimum size of a buffer receiving a job id
+#define DRMAA_SIGNAL_BUFFER         32     ///< Minimum size of the signal name buffer of drmaa_wifsignaled()
+/** @} */
+
+/**
+ * @name Timeout values
+ * @{
+ */
+#define DRMAA_TIMEOUT_WAIT_FOREVER  -1     ///< Block in drmaa_wait() / drmaa_synchronize() until the job ends
+#define DRMAA_TIMEOUT_NO_WAIT       0      ///< Return immediately if the job has not ended yet
+/** @} */
+
+/**
+ * @name Wildcard job ids
+ * @{
+ */
+#define DRMAA_JOB_IDS_SESSION_ANY   "DRMAA_JOB_IDS_SESSION_ANY"   ///< drmaa_wait() reaps any one job of the session
+#define DRMAA_JOB_IDS_SESSION_ALL   "DRMAA_JOB_IDS_SESSION_ALL"   ///< drmaa_synchronize() waits for all jobs of the session
+/** @} */
+
+/**
+ * @name Values of the DRMAA_JS_STATE job template attribute
+ * @{
+ */
+#define DRMAA_SUBMISSION_STATE_ACTIVE "drmaa_active"   ///< The job is eligible for scheduling right after submission
+#define DRMAA_SUBMISSION_STATE_HOLD   "drmaa_hold"     ///< The job is submitted in user hold and has to be released
+/** @} */
+
+/**
+ * @name Placeholders for path attributes
+ *
+ * They may appear in DRMAA_INPUT_PATH, DRMAA_OUTPUT_PATH and
+ * DRMAA_ERROR_PATH and are expanded by the DRM system, not by the client.
+ * @{
+ */
+#define DRMAA_PLACEHOLDER_INCR       "$drmaa_incr_ph$"   ///< Index of the task within a bulk job
+#define DRMAA_PLACEHOLDER_HD         "$drmaa_hd_ph$"     ///< Home directory of the job owner on the execution host
+#define DRMAA_PLACEHOLDER_WD         "$drmaa_wd_ph$"     ///< Working directory of the job on the execution host
+/** @} */
+
+/**
+ * @name Names of the scalar job template attributes
+ *
+ * Passed to drmaa_set_attribute() and drmaa_get_attribute().
+ * @{
+ */
+#define DRMAA_REMOTE_COMMAND         "drmaa_remote_command"        ///< Command to run on the execution host
+#define DRMAA_JS_STATE               "drmaa_js_state"              ///< Submission state, see DRMAA_SUBMISSION_STATE_ACTIVE
+#define DRMAA_WD                     "drmaa_wd"                    ///< Working directory of the job, may contain placeholders
+#define DRMAA_JOB_CATEGORY           "drmaa_job_category"          ///< Name of a site specific set of submission options
+#define DRMAA_NATIVE_SPECIFICATION   "drmaa_native_specification"  ///< Submission options in the syntax of the DRM system
+#define DRMAA_BLOCK_EMAIL            "drmaa_block_email"           ///< "1" suppresses mail even if the DRM would send it
+#define DRMAA_START_TIME             "drmaa_start_time"            ///< Earliest time the job may start
+#define DRMAA_JOB_NAME               "drmaa_job_name"              ///< Name of the job in the DRM system
+#define DRMAA_INPUT_PATH             "drmaa_input_path"            ///< Stdin path, may contain placeholders
+#define DRMAA_OUTPUT_PATH            "drmaa_output_path"           ///< Stdout path, may contain placeholders
+#define DRMAA_ERROR_PATH             "drmaa_error_path"            ///< Stderr path, may contain placeholders
+#define DRMAA_JOIN_FILES             "drmaa_join_files"            ///< "y" merges stderr into stdout
+#define DRMAA_TRANSFER_FILES         "drmaa_transfer_files"        ///< Which of the three streams the DRM transfers
+#define DRMAA_DEADLINE_TIME          "drmaa_deadline_time"         ///< Time by which the job should have ended
+#define DRMAA_WCT_HLIMIT             "drmaa_wct_hlimit"            ///< Hard wallclock time limit of the job
+#define DRMAA_WCT_SLIMIT             "drmaa_wct_slimit"            ///< Soft wallclock time limit of the job
+#define DRMAA_DURATION_HLIMIT        "drmaa_duration_hlimit"       ///< Hard limit for the execution time of the job
+#define DRMAA_DURATION_SLIMIT        "drmaa_duration_slimit"       ///< Soft limit for the execution time of the job
+/** @} */
+
+/**
+ * @name Names of the vector job template attributes
+ *
+ * Passed to drmaa_set_vector_attribute() and drmaa_get_vector_attribute().
+ * @{
+ */
+#define DRMAA_V_ARGV                 "drmaa_v_argv"    ///< Arguments of the remote command
+#define DRMAA_V_ENV                  "drmaa_v_env"     ///< Environment variables as `name=value`
+#define DRMAA_V_EMAIL                "drmaa_v_email"   ///< Addresses that receive the job mails
+/** @} */
+
+/**
+ * @brief DRMAA error codes
+ *
+ * @warning The values are fixed by the DRMAA specification. Do not renumber
+ *          them and do not insert in the middle - a binding in another
+ *          language compares against the numbers.
  */
 enum {
    /* -------------- these are relevant to all sections ---------------- */
-   DRMAA_ERRNO_SUCCESS = 0, /* Routine returned normally with success. */
-   DRMAA_ERRNO_INTERNAL_ERROR, /* Unexpected or internal DRMAA error like memory
-                                  allocation, system call failure, etc. */
-   DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE, /* Could not contact DRM system for
-                                             this request. */
-   DRMAA_ERRNO_AUTH_FAILURE, /* The specified request is not processed
-                                successfully due to authorization failure. */
-   DRMAA_ERRNO_INVALID_ARGUMENT, /* The input value for an argument is
-                                    invalid. */
-   DRMAA_ERRNO_NO_ACTIVE_SESSION, /* Exit routine failed because there is no
-                                     active session */
-   DRMAA_ERRNO_NO_MEMORY, /* failed allocating memory */
+   DRMAA_ERRNO_SUCCESS = 0,                          ///< Routine returned normally with success
+   DRMAA_ERRNO_INTERNAL_ERROR,                       ///< Unexpected or internal DRMAA error like memory allocation, system call failure, etc
+   DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE,            ///< Could not contact DRM system for this request
+   DRMAA_ERRNO_AUTH_FAILURE,                         ///< The specified request is not processed successfully due to authorization failure
+   DRMAA_ERRNO_INVALID_ARGUMENT,                     ///< The input value for an argument is invalid
+   DRMAA_ERRNO_NO_ACTIVE_SESSION,                    ///< Exit routine failed because there is no active session
+   DRMAA_ERRNO_NO_MEMORY,                            ///< failed allocating memory
 
    /* -------------- init and exit specific --------------- */
-   DRMAA_ERRNO_INVALID_CONTACT_STRING, /* Initialization failed due to invalid
-                                          contact string. */
-   DRMAA_ERRNO_DEFAULT_CONTACT_STRING_ERROR, /* DRMAA could not use the default
-                                                contact string to connect to DRM
-                                                      system. */
-   DRMAA_ERRNO_NO_DEFAULT_CONTACT_STRING_SELECTED, /* No default contact string
-                                                      was provided or selected.
-                                                      DRMAA requires that the
-                                                      default contact string is
-                                                      selected when there is
-                                                      more than one default
-                                                      contact string due to
-                                                      multiple DRMAA
-                                                      implementation contained
-                                                      in the binary module. */
-   DRMAA_ERRNO_DRMS_INIT_FAILED, /* Initialization failed due to failure to init
-                                    DRM system. */
-   DRMAA_ERRNO_ALREADY_ACTIVE_SESSION, /* Initialization failed due to existing
-                                          DRMAA session. */
-   DRMAA_ERRNO_DRMS_EXIT_ERROR, /* DRM system disengagement failed. */
+   DRMAA_ERRNO_INVALID_CONTACT_STRING,               ///< Initialization failed due to invalid contact string
+   DRMAA_ERRNO_DEFAULT_CONTACT_STRING_ERROR,         ///< DRMAA could not use the default contact string to connect to DRM system
+   DRMAA_ERRNO_NO_DEFAULT_CONTACT_STRING_SELECTED,   ///< No default contact string was provided or selected. DRMAA requires that the default contact string is selected when there is more than one default contact string due to multiple DRMAA implementation contained in the binary module
+   DRMAA_ERRNO_DRMS_INIT_FAILED,                     ///< Initialization failed due to failure to init DRM system
+   DRMAA_ERRNO_ALREADY_ACTIVE_SESSION,               ///< Initialization failed due to existing DRMAA session
+   DRMAA_ERRNO_DRMS_EXIT_ERROR,                      ///< DRM system disengagement failed
 
    /* ---------------- job attributes specific -------------- */
-   DRMAA_ERRNO_INVALID_ATTRIBUTE_FORMAT, /* The format for the job attribute
-                                            value is invalid. */
-   DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE, /* The value for the job attribute is
-                                           invalid. */
-   DRMAA_ERRNO_CONFLICTING_ATTRIBUTE_VALUES, /* The value of this attribute is
-                                                conflicting with a previously
-                                                set attributes. */
+   DRMAA_ERRNO_INVALID_ATTRIBUTE_FORMAT,             ///< The format for the job attribute value is invalid
+   DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE,              ///< The value for the job attribute is invalid
+   DRMAA_ERRNO_CONFLICTING_ATTRIBUTE_VALUES,         ///< The value of this attribute is conflicting with a previously set attributes
 
    /* --------------------- job submission specific -------------- */
-   DRMAA_ERRNO_TRY_LATER, /* Could not pass job now to DRM system. A retry may
-                             succeed however (saturation). */
-   DRMAA_ERRNO_DENIED_BY_DRM, /* The DRM system rejected the job. The job will
-                                 never be accepted due to DRM configuration or
-                                 job template settings. */
+   DRMAA_ERRNO_TRY_LATER,                            ///< Could not pass job now to DRM system. A retry may succeed however (saturation)
+   DRMAA_ERRNO_DENIED_BY_DRM,                        ///< The DRM system rejected the job. The job will never be accepted due to DRM configuration or job template settings
 
    /* ------------------------------- job control specific ---------------- */
-   DRMAA_ERRNO_INVALID_JOB, /* The job specified by the 'jobid' does not
-                               exist. */
-   DRMAA_ERRNO_RESUME_INCONSISTENT_STATE, /* The job has not been suspended. The
-                                             RESUME request will not be
-                                             processed. */
-   DRMAA_ERRNO_SUSPEND_INCONSISTENT_STATE, /* The job has not been running, and
-                                              it cannot be suspended. */
-   DRMAA_ERRNO_HOLD_INCONSISTENT_STATE, /* The job cannot be moved to a HOLD
-                                           state. */
-   DRMAA_ERRNO_RELEASE_INCONSISTENT_STATE, /* The job is not in a HOLD state. */
-   DRMAA_ERRNO_EXIT_TIMEOUT, /* We have encountered a time-out condition for
-                                drmaa_synchronize or drmaa_wait. */
-   DRMAA_ERRNO_NO_RUSAGE, /* This error code is returned by drmaa_wait() when a
-                             job has finished but no rusage and stat data could
-                             be provided. */
-   DRMAA_ERRNO_NO_MORE_ELEMENTS, /* There are no more elements in the opaque
-                                    string vector. */
+   DRMAA_ERRNO_INVALID_JOB,                          ///< The job specified by the 'jobid' does not exist
+   DRMAA_ERRNO_RESUME_INCONSISTENT_STATE,            ///< The job has not been suspended. The RESUME request will not be processed
+   DRMAA_ERRNO_SUSPEND_INCONSISTENT_STATE,           ///< The job has not been running, and it cannot be suspended
+   DRMAA_ERRNO_HOLD_INCONSISTENT_STATE,              ///< The job cannot be moved to a HOLD state
+   DRMAA_ERRNO_RELEASE_INCONSISTENT_STATE,           ///< The job is not in a HOLD state
+   DRMAA_ERRNO_EXIT_TIMEOUT,                         ///< We have encountered a time-out condition for drmaa_synchronize or drmaa_wait
+   DRMAA_ERRNO_NO_RUSAGE,                            ///< This error code is returned by drmaa_wait() when a job has finished but no rusage and stat data could be provided
+   DRMAA_ERRNO_NO_MORE_ELEMENTS,                     ///< There are no more elements in the opaque string vector
 
-   DRMAA_NO_ERRNO
+   DRMAA_NO_ERRNO   ///< Number of error codes, not an error code itself
 };
 
-/* 
- * Agreed DRMAA job states as returned by drmaa_job_ps() 
+/**
+ * @brief DRMAA job states as returned by drmaa_job_ps()
+ *
+ * The values are fixed by the DRMAA specification. The high nibble groups the
+ * states: 0x1 queued, 0x2 running, 0x3 finished, 0x4 failed.
  */
 enum {
- DRMAA_PS_UNDETERMINED          = 0x00, /* process status cannot be
-                                           determined */
- DRMAA_PS_QUEUED_ACTIVE         = 0x10, /* job is queued and active */
- DRMAA_PS_SYSTEM_ON_HOLD        = 0x11, /* job is queued and in system hold */
- DRMAA_PS_USER_ON_HOLD          = 0x12, /* job is queued and in user hold */
- DRMAA_PS_USER_SYSTEM_ON_HOLD   = 0x13, /* job is queued and in user and system
-                                           hold */
- DRMAA_PS_RUNNING               = 0x20, /* job is running */
- DRMAA_PS_SYSTEM_SUSPENDED      = 0x21, /* job is system suspended */
- DRMAA_PS_USER_SUSPENDED        = 0x22, /* job is user suspended */
- DRMAA_PS_USER_SYSTEM_SUSPENDED = 0x23, /* job is user and system suspended */
- DRMAA_PS_DONE                  = 0x30, /* job finished normally */
- DRMAA_PS_FAILED                = 0x40  /* job finished, but failed */
+ DRMAA_PS_UNDETERMINED          = 0x00, ///< The state of the job cannot be determined
+ DRMAA_PS_QUEUED_ACTIVE         = 0x10, ///< The job is queued and eligible for scheduling
+ DRMAA_PS_SYSTEM_ON_HOLD        = 0x11, ///< The job is queued and in system hold
+ DRMAA_PS_USER_ON_HOLD          = 0x12, ///< The job is queued and in user hold
+ DRMAA_PS_USER_SYSTEM_ON_HOLD   = 0x13, ///< The job is queued and in both user and system hold
+ DRMAA_PS_RUNNING               = 0x20, ///< The job is running
+ DRMAA_PS_SYSTEM_SUSPENDED      = 0x21, ///< The job is suspended by the system
+ DRMAA_PS_USER_SUSPENDED        = 0x22, ///< The job is suspended by the user
+ DRMAA_PS_USER_SYSTEM_SUSPENDED = 0x23, ///< The job is suspended by both the user and the system
+ DRMAA_PS_DONE                  = 0x30, ///< The job finished normally
+ DRMAA_PS_FAILED                = 0x40  ///< The job finished, but failed
 };
 
-/* 
- * Agreed DRMAA actions for drmaa_control() 
+/**
+ * @brief DRMAA actions for drmaa_control()
  */
 enum {
- DRMAA_CONTROL_SUSPEND = 0,
- DRMAA_CONTROL_RESUME,
- DRMAA_CONTROL_HOLD,
- DRMAA_CONTROL_RELEASE,
- DRMAA_CONTROL_TERMINATE
+ DRMAA_CONTROL_SUSPEND = 0,   ///< Suspend the job
+ DRMAA_CONTROL_RESUME,        ///< Resume a suspended job
+ DRMAA_CONTROL_HOLD,          ///< Put the job into user hold so that it is not scheduled
+ DRMAA_CONTROL_RELEASE,       ///< Release the user hold again
+ DRMAA_CONTROL_TERMINATE      ///< Terminate the job
 };
 
 /* ------------------- Data types ------------------- */
-/* 
- * Agreed opaque DRMAA job template 
- * struct drmaa_job_template_s is in japiP.h
+/**
+ * @brief Opaque DRMAA job template
+ *
+ * The attributes of a job template are only reachable through
+ * drmaa_set_attribute() and drmaa_set_vector_attribute(). The struct itself,
+ * `drmaa_job_template_s`, is defined in `japiP.h`.
  */
 typedef struct drmaa_job_template_s drmaa_job_template_t;
 
 /* ---------- C/C++ language binding specific interfaces -------- */
 
+/** @brief Opaque string vector of attribute names, read with drmaa_get_next_attr_name() */
 typedef struct drmaa_attr_names_s drmaa_attr_names_t;
+/** @brief Opaque string vector of attribute values, read with drmaa_get_next_attr_value() */
 typedef struct drmaa_attr_values_s drmaa_attr_values_t;
+/** @brief Opaque string vector of job ids, read with drmaa_get_next_job_id() */
 typedef struct drmaa_job_ids_s  drmaa_job_ids_t;
 
 /*

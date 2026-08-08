@@ -33,6 +33,24 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the JAPI library - job submission and control
+ *
+ * JAPI is the Cluster Scheduler API for submitting jobs and waiting for them
+ * to finish. It is what `libdrmaa` is built on: every `drmaa_*` entry point in
+ * `drmaa.cc` is a thin wrapper around the `japi_*` function of the same name,
+ * so JAPI carries the session, the event client thread and the job list, and
+ * DRMAA only adds the argument checking and the error codes the specification
+ * prescribes.
+ *
+ * The difference to using GDI directly is the **session**: japi_init() starts
+ * an event client thread that keeps a local list of the jobs submitted through
+ * this session, which is what makes japi_wait() and japi_synchronize() able to
+ * block until a job has actually finished.
+ *
+ * @see japi_init(), japi_run_job(), japi_wait(), japi_exit()
+ */
+
 #include "drmaa.h"
 
 #include "uti/sge_dstring.h"
@@ -43,52 +61,38 @@
 #include "sgeobj/cull/sge_japi_NSV_L.h"
 #include "cull/cull.h"
 
-/****** JAPI/-JAPI_Interface *******************************************************
-*  NAME
-*     JAPI_Interface -- The enlisted functions are the interface of the JAPI library
-* 
-*  SEE ALSO
-*     JAPI/japi_init()
-*     JAPI/japi_exit()
-*     JAPI/japi_run_job()
-*     JAPI/japi_run_bulk_jobs()
-*     JAPI/japi_control()
-*     JAPI/japi_synchronize()
-*     JAPI/japi_wait()
-*     JAPI/japi_wifexited()
-*     JAPI/japi_wexitstatus()
-*     JAPI/japi_wifsignaled()
-*     JAPI/japi_wtermsig()
-*     JAPI/japi_wifcoredump()
-*     JAPI/japi_wifaborted()
-*     JAPI/japi_job_ps()
-*     JAPI/japi_strerror()
-*     JAPI/japi_get_contact()
-*     JAPI/japi_version()
-*     JAPI/japi_get_drm_system()
-*     JAPI/japi_allocate_string_vector()
-*     JAPI/japi_string_vector_get_next()
-*     JAPI/japi_delete_string_vector()
-*     JAPI/japi_standard_error()
-*     JAPI/japi_init_mt()
-*******************************************************************************/
-
-/* Bitfield for japi_wait() event flag */
+/**
+ * @brief Job events a JAPI session can be interested in
+ *
+ * A bitfield - the values are combined and passed to japi_init() as the event
+ * mask, and only the events named there are collected by the event client
+ * thread.
+ */
 enum japi_events {
-   JAPI_JOB_FINISH = 0x01,
-   JAPI_JOB_START = 0x02
+   JAPI_JOB_FINISH = 0x01,   ///< A job or array task of the session has finished
+   JAPI_JOB_START = 0x02     ///< A job or array task of the session has started running
 /* JAPI_NEW_EVENT = 0x04 */
 };
 
-/* values for japi_exit() job exit flag */
+/**
+ * @brief What japi_exit() does with the jobs of the session
+ */
 enum japi_flags {
-   JAPI_EXIT_NO_FLAG,
-   JAPI_EXIT_KILL_ALL,
-   JAPI_EXIT_KILL_PENDING
+   JAPI_EXIT_NO_FLAG,        ///< Leave the jobs of the session running
+   JAPI_EXIT_KILL_ALL,       ///< Delete all jobs of the session, running ones included
+   JAPI_EXIT_KILL_PENDING    ///< Delete only the jobs of the session that have not started yet
 };
 
-/* Type for japi_int()/japi_enable_job_wait() error handler callback.  The
- * callback function should not free the const char* parameter. */
+/**
+ * @brief Callback that receives error messages of the event client thread
+ *
+ * Installed with japi_init() and japi_enable_job_wait(). The thread reports
+ * asynchronously and has no return value to carry a diagnosis, which is what
+ * this callback is for.
+ *
+ * The message passed to the callback stays owned by JAPI - the callback must
+ * not free it.
+ */
 typedef void (*error_handler_t)(const char *);
 
 /* init/exit routines ------------------- */
