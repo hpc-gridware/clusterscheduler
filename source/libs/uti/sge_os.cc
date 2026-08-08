@@ -35,6 +35,7 @@
 /** @file
  * @brief Operating system helpers: process groups, file descriptors, daemonising
  */
+#include <algorithm>
 #include <filesystem>
 #include <string>
 
@@ -77,8 +78,10 @@ static void sge_close_fd(int fd);
  * Only first 8 characters of "name" are significant.
  * Checks only basename of command after "/".
  *
- * @param pids pid array
- * @param max_pids size of pid array
+ * @param pids receives the pids that were found; cleared first and grown as
+ *             needed, so the caller does not have to guess an upper bound. It
+ *             used to be a fixed array plus an element count, which invited
+ *             passing sizeof() instead of the count (CS-2531).
  * @param name name
  * @param pscommand ps commandline
  *
@@ -86,14 +89,15 @@ static void sge_close_fd(int fd);
  *
  * @note MT-NOTES: sge_get_pids() is not MT safe
  */
-int sge_get_pids(pid_t *pids, int max_pids, const char *name,
-                 const char *pscommand) {
+int sge_get_pids(std::vector<pid_t> &pids, const char *name, const char *pscommand) {
    FILE *fp_in, *fp_out, *fp_err;
    char buf[10000], *ptr;
-   int num_of_pids = 0, last, len;
+   int last, len;
    pid_t pid, command_pid;
 
    DENTER(TOP_LAYER);
+
+   pids.clear();
 
    command_pid = sge_peopen("/bin/sh", 0, pscommand, nullptr, nullptr,
                             &fp_in, &fp_out, &fp_err, false);
@@ -102,7 +106,7 @@ int sge_get_pids(pid_t *pids, int max_pids, const char *name,
       DRETURN(-1);
    }
 
-   while (!feof(fp_out) && num_of_pids < max_pids) {
+   while (!feof(fp_out)) {
       if ((fgets(buf, sizeof(buf), fp_out))) {
          if ((len = strlen(buf))) {
 
@@ -133,13 +137,13 @@ int sge_get_pids(pid_t *pids, int max_pids, const char *name,
 
             /* check if process has given name */
             if (!strncmp(ptr, name, 8))
-               pids[num_of_pids++] = pid;
+               pids.push_back(pid);
          }
       }
    }
 
    sge_peclose(command_pid, fp_in, fp_out, fp_err, nullptr);
-   DRETURN(num_of_pids);
+   DRETURN(static_cast<int>(pids.size()));
 }
 
 /**
@@ -148,22 +152,14 @@ int sge_get_pids(pid_t *pids, int max_pids, const char *name,
  * whether pid array contains pid
  *
  * @param pid process id
- * @param pids pid array
- * @param npids number of pids in array
+ * @param pids pid list
  *
- * @return result state 0 - pid was not found 1 - pid was found
+ * @return true if pid was found
  *
  * @note MT-NOTES: sge_contains_pid() is MT safe
  */
-int sge_contains_pid(pid_t pid, pid_t *pids, int npids) {
-   int i;
-
-   for (i = 0; i < npids; i++) {
-      if (pids[i] == pid) {
-         return 1;
-      }
-   }
-   return 0;
+bool sge_contains_pid(pid_t pid, const std::vector<pid_t> &pids) {
+   return std::find(pids.begin(), pids.end(), pid) != pids.end();
 }
 
 /**

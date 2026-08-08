@@ -113,7 +113,7 @@ static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem 
 static int read_dusage(lListElem *jr, const char *jobdir, uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id, int failed);
 static void build_derived_final_usage(lListElem *jr, uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id);
 
-static void examine_job_task_from_file(int startup, char *dir, lListElem *jep, lListElem *jatep, lListElem *petep, pid_t *pids, int npids);
+static void examine_job_task_from_file(int startup, char *dir, lListElem *jep, lListElem *jatep, lListElem *petep, const std::vector<pid_t> &pids);
 
 static void clean_up_binding(char* binding);
 /* TODO: global c file with #define JAPI_SINGLE_SESSION_KEY "JAPI_SSK" */
@@ -1216,12 +1216,11 @@ void job_unknown(uint32_t jobid, uint32_t jataskid, char *qname)
  * @brief Triggers the cleanup of the active jobs directory and triggers sync of job states with qmaster.
  *
  * @param startup true if execd is in startup phase
- * @param number_of_shpeherd number of shepherds that have been found
- * @param shepherd_pids array of pids of the shepherds
+ * @param shepherd_pids pids of the shepherds that have been found
  * @return true if the cleanup was successful
  */
 static bool
-cleanup_jobs_and_states(bool startup, int number_of_shpeherd, pid_t *shepherd_pids) {
+cleanup_jobs_and_states(bool startup, const std::vector<pid_t> &shepherd_pids) {
    DENTER(TOP_LAYER);
 
    // check if keep_active is set.
@@ -1299,12 +1298,12 @@ cleanup_jobs_and_states(bool startup, int number_of_shpeherd, pid_t *shepherd_pi
          char dir[SGE_PATH_MAX];
          if (lGetUlong(ja_task, JAT_status) != JSLAVE) {
             snprintf(dir, sizeof(dir), "%s/%s", ACTIVE_DIR, job_directory);
-            examine_job_task_from_file(startup, dir, jep, ja_task, nullptr, shepherd_pids, number_of_shpeherd);
+            examine_job_task_from_file(startup, dir, jep, ja_task, nullptr, shepherd_pids);
          }
          lListElem *pe_task;
          for_each_rw (pe_task, lGetList(ja_task, JAT_task_list)) {
             snprintf(dir, sizeof(dir), "%s/%s/%s", ACTIVE_DIR, job_directory, lGetString(pe_task, PET_id));
-            examine_job_task_from_file(startup, dir, jep, ja_task, pe_task, shepherd_pids, number_of_shpeherd);
+            examine_job_task_from_file(startup, dir, jep, ja_task, pe_task, shepherd_pids);
          }
       }
    }
@@ -1403,11 +1402,8 @@ clean_up_old_jobs(bool startup) {
    }
 
    // expensive operation: find all shepherd processes via ps command
-   // @todo EB: the array size is fixed to 10000, we should use a dynamic data structure instead
-   //           a fixed size is no good idea. Also the gid-range is no good indicator because
-   //           in case of multiple execds on one host (side by side upgrade)
-   pid_t shepherd_pids[10000];
-   int number_of_shepherd = sge_get_pids(shepherd_pids, sizeof(shepherd_pids), SGE_SHEPHERD, PSCMD);
+   std::vector<pid_t> shepherd_pids;
+   int number_of_shepherd = sge_get_pids(shepherd_pids, SGE_SHEPHERD, PSCMD);
    if (number_of_shepherd == -1) {
       ERROR(SFNMAX, MSG_SHEPHERD_CANTGETPROCESSESFROMPSCOMMAND);
       DRETURN(false);
@@ -1415,18 +1411,18 @@ clean_up_old_jobs(bool startup) {
    INFO(MSG_EXECD_FOUND_N_SHEPHERD_PROCS_I, number_of_shepherd);
 
    // Check for old jobs. Either remove them or report them to the qmaster depending on the state.
-   cleanup_jobs_and_states(startup, number_of_shepherd, shepherd_pids);
+   cleanup_jobs_and_states(startup, shepherd_pids);
 
    DRETURN(true);
 }
 
 static void 
 examine_job_task_from_file(int startup, char *dir, lListElem *jep,
-                           lListElem *jatep, lListElem *petep, pid_t *pids, 
-                           int npids) 
+                           lListElem *jatep, lListElem *petep,
+                           const std::vector<pid_t> &pids)
 {
    lListElem *jr = nullptr;
-   int shepherd_alive;  /* =1 -> this shepherd is in the process table */
+   bool shepherd_alive;  /* true -> this shepherd is in the process table */
    FILE *fp = nullptr;
    SGE_STRUCT_STAT statbuf;
    char fname[SGE_PATH_MAX];
@@ -1500,7 +1496,7 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
    FCLOSE_IGNORE_ERROR(fp);
 
    /* look whether shepherd is still alive */ 
-   shepherd_alive = sge_contains_pid(pid, pids, npids);
+   shepherd_alive = sge_contains_pid(pid, pids);
 
    /* report this information */
    if (shepherd_alive) {

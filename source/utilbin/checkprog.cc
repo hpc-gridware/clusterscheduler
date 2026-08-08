@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 {
    int res;
    pid_t pid = 0;
-   pid_t pids[10000];
+   std::vector<pid_t> pids;
    char *ptr;
    int checkit, i;
 
@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
 		}
    }
    else {
-      res = sge_get_pids(pids, 10000, argv[1], PSCMD);
+      res = sge_get_pids(pids, argv[1], PSCMD);
       if (res == -1)
          printf(MSG_COMMAND_RUNPSCMDFAILED_S , PSCMD);
       else if (res == 0)
