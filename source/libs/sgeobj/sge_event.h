@@ -186,10 +186,12 @@ typedef enum {
  * Most objects contribute four values: a `_LIST` sent once at registration to
  * seed the client's copy, and `_ADD` / `_DEL` / `_MOD` for each later change.
  *
- * @warning The value is an index. These arrays in
- *          `libs/evm/sge_event_master.cc` are indexed by this enum and have to
- *          be adapted whenever a value is added or removed:
- *          `block_events`, `total_update_events`, `EVENT_LIST`, `FIELD_LIST`,
+ * @warning Adding or removing a value means adapting the tables in
+ *          `libs/evm/sge_event_master.cc` as well. Only the per client
+ *          subscription array is indexed by this enum - it is sized
+ *          #sgeE_EVENTSIZE. The others are lists *of* event values and are
+ *          index-parallel in pairs or triples: `total_update_events` with
+ *          `block_events`, and `EVENT_LIST` with `FIELD_LIST` and
  *          `SOURCE_LIST`.
  *
  * @see @ref evc
