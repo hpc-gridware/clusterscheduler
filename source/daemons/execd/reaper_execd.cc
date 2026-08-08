@@ -1331,7 +1331,8 @@ void set_enforce_cleanup_old_jobs() {
 /**
  * \brief Cleans up old jobs and reports them to the qmaster.
  *
- * This function is called at execd startup time and also in regular intervals to
+ * The work itself is a reconciliation between what is on disk and what the execd has
+ * in memory:
  *
  * - look for old jobs hanging around in the active jobs directory on disk
  * - to check if the shepherd is still running for jobs
@@ -1339,7 +1340,18 @@ void set_enforce_cleanup_old_jobs() {
  * - to report the updated job state to the qmaster
  *
  * All this needs only to be done once during the lifetime of the execd process and should be repeated
- * in situations where set_enforce_cleanup_old_jobs() is called.
+ * in situations where set_enforce_cleanup_old_jobs() is called. There are two of them:
+ *
+ * - a KEEP_ACTIVE change (execd_get_new_conf.cc:99). While KEEP_ACTIVE was on, finished jobs
+ *   deliberately left their active job directory behind. Switching it off makes those directories
+ *   garbage that nothing else will collect, so the reconciliation has to run once more --
+ *   this is a second entry point besides startup, not a variant of it.
+ * - state changes (delete, reschedule) that a job went through while the execd was down.
+ *
+ * The function is nevertheless *called* once per OLD_JOB_INTERVAL (execd_ck_to_do.cc:601)
+ * and returns immediately unless a cleanup is due. That periodic call is only the poll that
+ * picks up such a later set_enforce_cleanup_old_jobs(), so it has to stay -- but it must not
+ * be mistaken for the cleanup itself running periodically. See CS-2532.
  *
  * During startup, the function produces more output.
  *
@@ -1350,24 +1362,39 @@ bool
 clean_up_old_jobs(bool startup) {
    DENTER(TOP_LAYER);
 
-   // No early exit when
-   // - enforce_cleanup_old_jobs is set
-   //    - during startup
-   //    - when KEEP_ACTIVE has been changed
-   // - simulate_jobs is set
-   // - there are no jobs in the job list
-   if (enforce_cleanup_old_jobs) {
-      enforce_cleanup_old_jobs = false;
-   } else if (mconf_get_simulate_jobs() ||
-       lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)) == 0) {
-      // Do early exit:
-      // - if cleanup was already done
-      // - if there are no jobs to process (0 jobs or only simulated jobs)
-      // @todo do we actually want to do the cleanup if there are (only) running jobs?
-      //       and even with finished jobs, cleanup could get between the job having finished and the ack from qmaster
-      //       triggering deletion of the active job directory
+   // Simulated jobs have no shepherd and no active job directory -- there is nothing
+   // to reconcile, whether or not the cleanup is due.
+   if (mconf_get_simulate_jobs()) {
       DRETURN(true);
    }
+
+   // Run only when the cleanup is actually due: at startup, and whenever
+   // set_enforce_cleanup_old_jobs() marks it due again (a KEEP_ACTIVE change, or
+   // state changes that happened while the execd was down). The flag is consumed
+   // here, so a due cleanup runs exactly once.
+   //
+   // This used to fall through to the scan whenever the job list was NOT empty
+   // (CS-2532), which inverted the intent: the scan was skipped on an idle execd
+   // and performed once per OLD_JOB_INTERVAL on a busy one. Each pass forks a
+   // shell and a `ps` over the host's entire process table, and with several
+   // execds per host they all do it, every minute, counting each other's
+   // shepherds -- measured at up to 392 on a host running 34 of them.
+   //
+   // Running it periodically is not needed for correctness. A shepherd that exits
+   // is reaped through SIGCHLD via sge_reap_children_execd() (waitpid, :141), and
+   // the case of a lost SIGCHLD has its own remedy: execd_signal_queue.cc:607
+   // sets sge_sig_handler_dead_children when a signal cannot be delivered while
+   // the active job directory is still there. Reconciling against `ps` is a
+   // startup concern -- it answers "what survived my downtime", which is a
+   // question only the startup (or an enforced re-check) has.
+   //
+   // The job list is deliberately NOT consulted: at startup it may be empty while
+   // active job directories from before the restart are still on disk, and those
+   // are exactly what has to be cleaned up.
+   if (!enforce_cleanup_old_jobs) {
+      DRETURN(true);
+   }
+   enforce_cleanup_old_jobs = false;
 
    if (startup) {
       INFO(SFNMAX, MSG_SHEPHERD_CKECKINGFOROLDJOBS);
