@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Tasks of a tightly integrated parallel job
+ *
+ * A parallel job may run many short tasks. Keeping one element per finished
+ * task would grow the job without bound, so their usage is summed into one
+ * container - see #PE_TASK_PAST_USAGE_CONTAINER.
+ *
+ * @see sge_pe_task.h
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "cull/cull_list.h"
@@ -47,32 +57,21 @@
 
 #include "msg_common.h"
 
-/****** sgeobj/pe_task/pe_task_sum_past_usage() *******************************
-*  NAME
-*     pe_task_sum_past_usage() -- sum up pe tasks past usage
-*
-*  SYNOPSIS
-*     lListElem* pe_task_sum_past_usage(lListElem *container, 
-*                                       const lListElem *pe_task) 
-*
-*  FUNCTION
-*     The pe task list of a ja task can contain one container 
-*     element to hold the usage of finished pe tasks no longer 
-*     stored in the task list.
-*
-*     This function adds the usage of pe_task to the usage of container.
-*
-*  INPUTS
-*     lListElem *container     - container object to hold past usage
-*     const lListElem *pe_task - the pe task from which to copy usage
-*
-*  RESULT
-*     lListElem* - the container object
-*
-*  SEE ALSO
-*     sgeobj/pe_task/pe_task_sum_past_usage_all()
-*     sgeobj/pe_task/pe_task_sum_past_usage_list()
-*******************************************************************************/
+/**
+ * @brief Sum up pe tasks past usage
+ *
+ * The pe task list of a ja task can contain one container
+ * element to hold the usage of finished pe tasks no longer
+ * stored in the task list.
+ * This function adds the usage of pe_task to the usage of container.
+ *
+ * @param container container object to hold past usage
+ * @param pe_task the pe task from which to copy usage
+ *
+ * @return the container object
+ *
+ * @see #pe_task_sum_past_usage_all, #pe_task_sum_past_usage_list
+ */
 lListElem *
 pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task)
 {
@@ -113,29 +112,19 @@ pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task)
    DRETURN(container);
 }
 
-/****** sgeobj/pe_task/pe_task_sum_past_usage_all() ***************************
-*  NAME
-*     pe_task_sum_past_usage_all() -- sum up all pe tasks past usage
-*
-*  SYNOPSIS
-*     lListElem* pe_task_sum_past_usage_all(lList *pe_task_list)
-*
-*  FUNCTION
-*     Similar to pe_task_sum_past_usage, but will sum up the usage of 
-*     all pe tasks in a task list to the container object in this list.
-*
-*     If the container object does not yet exist, it will be created.
-*
-*  INPUTS
-*     lList *pe_task_list - the pe task list to process
-*
-*  RESULT
-*     lListElem* - the container object
-*
-*  SEE ALSO
-*     sgeobj/pe_task/pe_task_sum_past_usage()
-*     sgeobj/pe_task/pe_task_sum_past_usage_list()
-*******************************************************************************/
+/**
+ * @brief Sum up all pe tasks past usage
+ *
+ * Similar to pe_task_sum_past_usage, but will sum up the usage of
+ * all pe tasks in a task list to the container object in this list.
+ * If the container object does not yet exist, it will be created.
+ *
+ * @param pe_task_list the pe task list to process
+ *
+ * @return the container object
+ *
+ * @see #pe_task_sum_past_usage, #pe_task_sum_past_usage_list
+ */
 lListElem *pe_task_sum_past_usage_all(lList *pe_task_list)
 {
    DENTER(TOP_LAYER);
@@ -158,32 +147,21 @@ lListElem *pe_task_sum_past_usage_all(lList *pe_task_list)
    DRETURN(container);
 }
 
-/****** sgeobj/pe_task/pe_task_sum_past_usage_list() **************************
-*  NAME
-*     pe_task_sum_past_usage_list() -- sum up pe tasks past usage
-*
-*  SYNOPSIS
-*     lListElem* 
-*     pe_task_sum_past_usage_list(lList *pe_task_list, 
-*                                 const lListElem *pe_task) 
-*
-*  FUNCTION
-*     Similar to pe_task_sum_past_usage.
-*     The container is retrieved from pe_task_list, if it does not 
-*     yet exist it is created and inserted into pe_task_list as 
-*     first element.
-*
-*  INPUTS
-*     lList *pe_task_list      - list containing the container object
-*     const lListElem *pe_task - the pe task from which to copy usage
-*
-*  RESULT
-*     lListElem* - the container object
-*
-*  SEE ALSO
-*     sgeobj/pe_task/pe_task_sum_past_usage()
-*     sgeobj/pe_task/pe_task_sum_past_usage_all()
-******************************************************************************/
+/**
+ * @brief Sum up pe tasks past usage
+ *
+ * Similar to pe_task_sum_past_usage.
+ * The container is retrieved from pe_task_list, if it does not
+ * yet exist it is created and inserted into pe_task_list as
+ * first element.
+ *
+ * @param pe_task_list list containing the container object
+ * @param pe_task the pe task from which to copy usage
+ *
+ * @return the container object
+ *
+ * @see #pe_task_sum_past_usage, #pe_task_sum_past_usage_all
+ */
 lListElem *
 pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task)
 {
@@ -211,36 +189,24 @@ pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task)
    DRETURN(container);
 }
 
-/****** sge_pe_task/pe_task_verify_request() ***********************************
-*  NAME
-*     pe_task_verify_request() -- verify a pe task request object
-*
-*  SYNOPSIS
-*     bool 
-*     pe_task_verify_request(const lListElem *petr, lList **answer_list) 
-*
-*  FUNCTION
-*     Verifies structure and contents of a pe task request.
-*     A pe task request is sent to sge_execd by qrsh -inherit.
-*
-*  INPUTS
-*     const lListElem *petr - the object to verify
-*     lList **answer_list   - answer list to pass back error messages
-*
-*  RESULT
-*     bool - true on success,
-*            false on error with error message in answer_list
-*
-*  NOTES
-*     MT-NOTE: pe_task_verify_request() is MT safe 
-*
-*  BUGS
-*     The function is far from being complete.
-*     Currently, only the CULL structure is verified, not the contents.
-*
-*  SEE ALSO
-*     sge_object/object_verify_cull()
-*******************************************************************************/
+/**
+ * @brief Verify a pe task request object
+ *
+ * Verifies structure and contents of a pe task request.
+ * A pe task request is sent to sge_execd by qrsh -inherit.
+ *
+ * @param petr the object to verify
+ * @param answer_list answer list to pass back error messages
+ *
+ * @return true on success, false on error with error message in answer_list
+ *
+ * @note MT-NOTE: pe_task_verify_request() is MT safe
+ *
+ * @bug The function is far from being complete.
+ *      Currently, only the CULL structure is verified, not the contents.
+ *
+ * @see `object_verify_cull()`
+ */
 bool 
 pe_task_verify_request(const lListElem *petr, lList **answer_list) {
    bool ret = true;

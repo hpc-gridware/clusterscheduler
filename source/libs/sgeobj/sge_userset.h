@@ -33,23 +33,51 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for usersets: access lists and departments
+ *
+ * @see sge_userset.cc
+ */
+
 #include "sgeobj/cull/sge_userset_US_L.h"
 #include "sgeobj/cull/sge_userset_UE_L.h"
 #include "sgeobj/cull/sge_userset_JC_L.h"
 
-#define US_ACL       (1<<0)
-#define US_DEPT      (1<<1)
+/**
+ * @name Userset types, stored in `US_type`
+ *
+ * A userset can be both at once: an access list decides who may use a queue,
+ * a department carries the share tree and ticket configuration for its
+ * members.
+ * @{
+ */
+#define US_ACL       (1<<0) ///< the userset is an access list
+#define US_DEPT      (1<<1) ///< the userset is a department
+/** @} */
 
-/* special list element */
-#define DEADLINE_USERS     "deadlineusers"
-#define DEFAULT_DEPARTMENT "defaultdepartment"
-#define AR_USERS           "arusers"
+/**
+ * @name Reserved userset names
+ * @{
+ */
+#define DEADLINE_USERS     "deadlineusers"     ///< users allowed to submit deadline jobs
+#define DEFAULT_DEPARTMENT "defaultdepartment" ///< the department a user without one belongs to
+#define AR_USERS           "arusers"           ///< users allowed to create advance reservations
 
-/* reserved usersets backing the manager/operator lists (CS-2394); managed via
- * the manager/operator interface (qconf -am/-dm/-ao/-do), not the userset CLI */
+/**
+ * @brief The userset backing the manager list (CS-2394)
+ *
+ * Managed through `qconf -am` / `-dm`, not through the userset commands.
+ */
 #define MANAGER_USERSET    "manager"
+/**
+ * @brief The userset backing the operator list (CS-2394)
+ *
+ * Managed through `qconf -ao` / `-do`, not through the userset commands.
+ */
 #define OPERATOR_USERSET   "operator"
+/** @} */
 
+/// The userset type names, indexed by their `US_type` bit
 extern const char *userset_types[];
 
 int

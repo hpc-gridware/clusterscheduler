@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Load values an execution host reports
+ *
+ * @see sge_load.h
+ */
+
 #include <cstring>
 
 #include "uti/sge_rmon_macros.h"
@@ -39,6 +45,15 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_load.h"
 
+/**
+ * @brief Is this a load value that never changes while the host runs?
+ *
+ * Static values - the architecture, the processor count - are reported once
+ * rather than with every load report.
+ *
+ * @param name the load value name
+ * @return true when the value is static
+ */
 bool
 sge_is_static_load_value(const char *name) 
 {
@@ -59,6 +74,12 @@ sge_is_static_load_value(const char *name)
    DRETURN(ret);
 }
 
+/**
+ * @brief The processor count a host reported
+ *
+ * @param load_list the host's load values
+ * @return the count, or 1 when the host did not report one
+ */
 int
 load_list_get_nproc(const lList *load_list) {
    int nproc = 1;

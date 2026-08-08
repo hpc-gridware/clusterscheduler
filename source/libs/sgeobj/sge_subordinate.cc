@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Subordinate queues: one queue suspends another when busy
+ *
+ * The relation may be queue wise - the whole subordinate queue is suspended -
+ * or slot wise, where only as many jobs are suspended as the superordinate
+ * queue needs slots for.
+ *
+ * @see sge_subordinate.h
+ */
+
 #include <cstring>
 
 #include "uti/sge_dstring.h"
@@ -72,6 +82,18 @@ lListElem *so  SO_Type referencing to a queue C
 Return value: true if queue C is to be suspended,
               false else.
 */
+/**
+ * @brief Is a subordinate queue's suspend threshold reached?
+ *
+ * A subordinate relation suspends the subordinate queue once the
+ * superordinate one is busy enough. The threshold is a slot count, and 0 means
+ * "all slots".
+ *
+ * @param used slots in use in the superordinate queue
+ * @param total slots the superordinate queue has
+ * @param so the subordinate relation, holding the threshold
+ * @return true when the subordinate queue should be suspended
+ */
 bool
 tst_sos(int used, int total, const lListElem *so)
 {
@@ -96,6 +118,13 @@ tst_sos(int used, int total, const lListElem *so)
    DRETURN(ret);
 }
 
+/**
+ * @brief Render a subordinate list as an administrator writes it
+ *
+ * @param this_list the subordinate relations to render
+ * @param[out] string receives the text, appended
+ * @return the resulting text
+ */
 const char *
 so_list_append_to_dstring(const lList *this_list, dstring *string)
 {
@@ -163,6 +192,18 @@ so_list_append_to_dstring(const lList *this_list, dstring *string)
    if element already exists then possibly overwrite threshold value
    (lower values are prefered)
 */
+/**
+ * @brief Add one subordinate relation to a list
+ *
+ * @param[in,out] this_list the list to extend; created when it is nullptr
+ * @param[out] answer_list receives error messages
+ * @param so_name the subordinate queue's name
+ * @param threshold slots that have to be in use before it is suspended; 0 means all
+ * @param slots_sum for a slot wise relation, how many slots the two queues share
+ * @param seq_no the order the relations are evaluated in
+ * @param action one of the `SO_ACTION_*` values
+ * @return true when the relation was added
+ */
 bool
 so_list_add(lList **this_list, lList **answer_list, const char *so_name,
             uint32_t threshold, uint32_t slots_sum, uint32_t seq_no,
@@ -208,37 +249,24 @@ so_list_add(lList **this_list, lList **answer_list, const char *so_name,
    DRETURN(true);
 }
 
-/****** sgeobj/subordinate/so_list_resolve() ***********************************
-*  NAME
-*     so_list_resolve() -- Resolve a generic list of subordinates into their
-*                          full names.
-*
-*  SYNOPSIS
-*     bool so_list_resolve(const lList *so_list, lList **answer_list,
-*                          lList **resolved_so_list, const char *cq_name,
-*                          const char *hostname)
-*
-*  FUNCTION
-*     Goes through every entry in the so_list, retrieves the corresponding
-*     cqueue, gets the qinstance for hostname from the cqueue, and adds the
-*     qinstance's full name to the resolved_so_list.  If qi_name is given, the
-*     subordinate list will be checked to make sure that it doesn't contain the
-*     queue to which the list is subordinate.
-*
-*  INPUTS
-*     const lList *so_list     - the list of subordinates to resolve
-*     lList **answer_list      - answer list for errors
-*     lList **resolved_so_list - the destination list for resolved subordinates
-*     const char *cq_name      - the queue name of the qinstance to which the
-*                                subordinate list is subordinate
-*     const char *hostname     - the hostname for the queue to which the
-*                                subordinate list is subordinate
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*******************************************************************************/
+/**
+ * @brief Resolve a generic list of subordinates into their
+ *
+ * Goes through every entry in the so_list, retrieves the corresponding
+ * cqueue, gets the qinstance for hostname from the cqueue, and adds the
+ * qinstance's full name to the resolved_so_list.  If qi_name is given, the
+ * subordinate list will be checked to make sure that it doesn't contain the
+ * queue to which the list is subordinate.
+ *
+ * @param so_list the list of subordinates to resolve
+ * @param answer_list answer list for errors
+ * @param resolved_so_list the destination list for resolved subordinates
+ * @param cq_name the queue name of the qinstance to which the subordinate list is subordinate
+ * @param hostname the hostname for the queue to which the subordinate list is subordinate
+ * @param master_cqueue_list the cluster queues a relation may name
+ *
+ * @return error state true  - success false - error
+ */
 bool
 so_list_resolve(const lList *so_list, lList **answer_list,
                 lList **resolved_so_list, const char *cq_name,

@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Resource quota sets: limits that cut across the object model
+ *
+ * A rule filters on up to five characteristics - user, project, PE, queue,
+ * host - and applies a limit to whatever matches. `RQR_level` decides whether
+ * that limit is one shared pool or one per host, queue or queue instance.
+ *
+ * @see sge_resource_quota.h
+ */
+
 #include <cstring>
 #include <fnmatch.h>
 
@@ -66,30 +76,19 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                           const lList *master_userset_list, const lList *master_hgroup_list,
                           const char *group, bool is_xscope, const lList *grp_list);
 
-/****** sge_resource_quota/rqs_parse_filter_from_string() *************************
-*  NAME
-*     rqs_parse_filter_from_string() -- parse a RQRF Object from string
-*
-*  SYNOPSIS
-*     bool rqs_parse_filter_from_string(lListElem **filter, const char* buffer, 
-*     lList **alp) 
-*
-*  FUNCTION
-*     Converts a spooled RQRF Object to a CULL Element
-*
-*  INPUTS
-*     lListElem **filter - resulting RQRF object
-*     const char* buffer - string to be converted
-*     lList **alp        - answer_list
-*
-*  RESULT
-*     bool - true on success
-*            false on error
-*
-*  NOTES
-*     MT-NOTE: rqs_parse_filter_from_string() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Parse a RQRF Object from string
+ *
+ * Converts a spooled RQRF Object to a CULL Element
+ *
+ * @param filter resulting RQRF object
+ * @param buffer string to be converted
+ * @param alp answer_list
+ *
+ * @return true on success false on error
+ *
+ * @note MT-NOTE: rqs_parse_filter_from_string() is MT safe
+ */
 bool rqs_parse_filter_from_string(lListElem **filter, const char* buffer, lList **alp) {
    lListElem *tmp_filter = nullptr;
    const lListElem *scope = nullptr;
@@ -139,30 +138,19 @@ bool rqs_parse_filter_from_string(lListElem **filter, const char* buffer, lList 
    DRETURN(true);
 }
 
-/****** sge_resource_quota/rqs_append_filter_to_dstring() *************************
-*  NAME
-*    rqs_append_filter_to_dstringRQRF_object_append_to_dstring() -- RQRF Element to string
-*
-*  SYNOPSIS
-*     bool rqs_append_filter_to_dstring(lListElem *filter, dstring *buffer, 
-*     lList **alp) 
-*
-*  FUNCTION
-*     Converts a RQRF element to string for spooling 
-*
-*  INPUTS
-*     lListElem *filter - Element to be converted
-*     dstring *buffer   - buffer for the element string
-*     lList **alp       - answer_list
-*
-*  RESULT
-*     bool - true on success
-*            false on error
-*
-*  NOTES
-*     MT-NOTE: rqs_append_filter_to_dstring() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief RQRF Element to string
+ *
+ * Converts a RQRF element to string for spooling
+ *
+ * @param filter Element to be converted
+ * @param buffer buffer for the element string
+ * @param alp answer_list
+ *
+ * @return true on success false on error
+ *
+ * @note MT-NOTE: rqs_append_filter_to_dstring() is MT safe
+ */
 bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer, lList **alp){
    const lList *tlp = nullptr;
    const lListElem *scope = nullptr;
@@ -210,31 +198,23 @@ bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer, lLis
    return ret; 
 }
 
-/****** sge_resource_quota/rqs_set_defaults() *******************************
-*  NAME
-*     rqs_set_defaults() -- set default values to given rqs
-*
-*  SYNOPSIS
-*     lListElem* rqs_set_defaults(lListElem* rqs) 
-*
-*  FUNCTION
-*     This function sets the default values to a resource quota set.
-*     The default rule set is:
-*     {
-*       name = <must be already set>
-*       enabled = true
-*       limit to slots=0
-*     }
-*
-*  INPUTS
-*     lListElem* rqs - Already created object to be modified.
-*
-*  RESULT
-*     lListElem* - modified Object
-*
-*  NOTES
-*     MT-NOTE: rqs_set_defaults() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Set default values to given rqs
+ *
+ * This function sets the default values to a resource quota set.
+ * The default rule set is:
+ * {
+ *   name = `must be already set`
+ *   enabled = true
+ *   limit to slots=0
+ * }
+ *
+ * @param rqs Already created object to be modified.
+ *
+ * @return modified Object
+ *
+ * @note MT-NOTE: rqs_set_defaults() is MT safe
+ */
 lListElem* rqs_set_defaults(lListElem* rqs)
 {
    DENTER(TOP_LAYER);
@@ -269,35 +249,24 @@ lListElem* rqs_set_defaults(lListElem* rqs)
    DRETURN(rqs);
 }
 
-/****** sge_resource_quota/rqs_verify_filter() *********************************
-*  NAME
-*     rqs_verify_filter() -- verify a filter in rqs rule
-*
-*  SYNOPSIS
-*     static bool
-*     rqs_verify_filter(const lListElem *rule, lList **answer_list, 
-*                       int nm, const char *message) 
-*
-*  FUNCTION
-*     Checks validity of a filter rule.
-*     The object names referenced in the scope and xscope parts of the rule
-*     are verified.
-*
-*  INPUTS
-*     const lListElem *rule - the rule to check
-*     lList **answer_list  - to pass back error messages
-*     int nm               - nm of the filter to check, e.g. RQR_filter_users
-*     const char *message  - error message to add to anwer_list in case of error
-*
-*  RESULT
-*     static bool - true if everything is OK, else false
-*
-*  NOTES
-*     MT-NOTE: rqs_verify_filter() is MT safe 
-*
-*  SEE ALSO
-*     sge_resource_quota/rqs_verify_attributes()
-*******************************************************************************/
+/**
+ * @brief Verify a filter in rqs rule
+ *
+ * Checks validity of a filter rule.
+ * The object names referenced in the scope and xscope parts of the rule
+ * are verified.
+ *
+ * @param rule the rule to check
+ * @param answer_list to pass back error messages
+ * @param nm nm of the filter to check, e.g. RQR_filter_users
+ * @param message error message to add to anwer_list in case of error
+ *
+ * @return true if everything is OK, else false
+ *
+ * @note MT-NOTE: rqs_verify_filter() is MT safe
+ *
+ * @see #rqs_verify_attributes
+ */
 static bool
 rqs_verify_filter(const lListElem *rule, lList **answer_list, int nm, const char *message)
 {
@@ -330,32 +299,23 @@ rqs_verify_filter(const lListElem *rule, lList **answer_list, int nm, const char
    return ret;
 }
 
-/****** sge_resource_quota/rqs_verify_attributes() **********************
-*  NAME
-*     rqs_verify_attributes() -- verify the attributes of a rqs Object 
-*
-*  SYNOPSIS
-*     bool rqs_verify_attributes(lListElem *rqs, lList 
-*     **answer_list, bool in_master) 
-*
-*  FUNCTION
-*     This function verifies the attributes of a given rqs object. A valid rqs
-*     object has a name and at least one rule set. After verification it sets the
-*     double limit value.
-*     Addition checks are done if in_master is true.
-*
-*  INPUTS
-*     lListElem *rqs     - Object that should be verified
-*     lList **answer_list - answer list in case of errors
-*     bool in_master      - flag if called by qmaster or by qconf
-*
-*  RESULT
-*     bool - true on success
-*            false on error
-*
-*  NOTES
-*     MT-NOTE: rqs_verify_attributes() is MT safe
-*******************************************************************************/
+/**
+ * @brief Verify the attributes of a rqs Object
+ *
+ * This function verifies the attributes of a given rqs object. A valid rqs
+ * object has a name and at least one rule set. After verification it sets the
+ * double limit value.
+ * Addition checks are done if in_master is true.
+ *
+ * @param rqs Object that should be verified
+ * @param answer_list answer list in case of errors
+ * @param in_master flag if called by qmaster or by qconf
+ * @param master_centry_list the complex entries a limit may name
+ *
+ * @return true on success false on error
+ *
+ * @note MT-NOTE: rqs_verify_attributes() is MT safe
+ */
 bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, const lList *master_centry_list)
 {
    bool ret = true;
@@ -498,31 +458,22 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, 
    DRETURN(ret);
 }
 
-/****** sge_resource_quota/rqs_list_verify_attributes() *********************
-*  NAME
-*     rqs_list_verify_attributes() -- verifies the attributes of a rqs list
-*
-*  SYNOPSIS
-*     bool rqs_list_verify_attributes(lList *rqs_list, lList 
-*     **answer_list, bool in_master) 
-*
-*  FUNCTION
-*     This function iterates over a rqs list and checks for every rqs the attributes
-*
-*  INPUTS
-*     lList *rqs_list    - List that should be verified
-*     lList **answer_list - answer list 
-*     bool in_master      - flag if called by qmaster or qconf
-*
-*  RESULT
-*     bool - true on success
-*            false on error
-*  NOTES
-*     MT-NOTE: rqs_list_verify_attributes() is MT safe 
-*
-*  SEE ALSO
-*     sge_resource_quota/rqs_verify_attributes()
-*******************************************************************************/
+/**
+ * @brief Verifies the attributes of a rqs list
+ *
+ * This function iterates over a rqs list and checks for every rqs the attributes
+ *
+ * @param rqs_list List that should be verified
+ * @param answer_list answer list
+ * @param in_master flag if called by qmaster or qconf
+ * @param master_centry_list the complex entries a limit may name
+ *
+ * @return true on success false on error
+ *
+ * @note MT-NOTE: rqs_list_verify_attributes() is MT safe
+ *
+ * @see #rqs_verify_attributes
+ */
 bool rqs_list_verify_attributes(lList *rqs_list, lList **answer_list, bool in_master, const lList *master_centry_list)
 {
    DENTER(TOP_LAYER);
@@ -539,27 +490,19 @@ bool rqs_list_verify_attributes(lList *rqs_list, lList **answer_list, bool in_ma
    DRETURN(ret);
 }
 
-/****** sge_resource_quota/rqs_list_locate() ****************************
-*  NAME
-*     rqs_list_locate() -- locate a specific resource quota set by name
-*
-*  SYNOPSIS
-*     lListElem* rqs_list_locate(lList *lp, const char *name) 
-*
-*  FUNCTION
-*     This function searches the rule set list for a specific resource quota
-*     set. The search criteria is the name of the resource quota set.
-*
-*  INPUTS
-*     lList *lp        - rule set list to be searched in
-*     const char *name - rule set name of interest
-*
-*  RESULT
-*     lListElem* - if found the reference to the resource quota set, else nullptr
-*
-*  NOTES
-*     MT-NOTE: rqs_list_locate() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Locate a specific resource quota set by name
+ *
+ * This function searches the rule set list for a specific resource quota
+ * set. The search criteria is the name of the resource quota set.
+ *
+ * @param lp rule set list to be searched in
+ * @param name rule set name of interest
+ *
+ * @return if found the reference to the resource quota set, else nullptr
+ *
+ * @note MT-NOTE: rqs_list_locate() is MT safe
+ */
 lListElem *rqs_list_locate(lList *lp, const char *name)
 {
    lListElem *ep = nullptr;
@@ -571,31 +514,22 @@ lListElem *rqs_list_locate(lList *lp, const char *name)
    DRETURN(ep);
 }
 
-/****** sge_resource_quota/rqs_rule_locate() *************************************
-*  NAME
-*     rqs_rule_locate() -- locate a specific rule by name 
-*
-*  SYNOPSIS
-*     lListElem* rqs_rule_locate(lList *lp, const char *name) 
-*
-*  FUNCTION
-*     This function searches a rule list for a specific rule. The search criteria
-*     is the name or the index of the rule.
-*     The index is used if the name was successfully converted to an integer by
-*     the atoi() function. If atoi() was not able to convert the name the rule is
-*     searched by a sting compare.
-*
-*  INPUTS
-*     lList *lp        - list to be searched in
-*     const char *name - rule name of interest
-*
-*  RESULT
-*     lListElem* - reference to found rule
-*                  nullptr if rule was not found
-*
-*  NOTES
-*     MT-NOTE: rqs_rule_locate() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Locate a specific rule by name
+ *
+ * This function searches a rule list for a specific rule. The search criteria
+ * is the name or the index of the rule.
+ * The index is used if the name was successfully converted to an integer by
+ * the atoi() function. If atoi() was not able to convert the name the rule is
+ * searched by a sting compare.
+ *
+ * @param lp list to be searched in
+ * @param name rule name of interest
+ *
+ * @return reference to found rule nullptr if rule was not found
+ *
+ * @note MT-NOTE: rqs_rule_locate() is MT safe
+ */
 lListElem* rqs_rule_locate(lList *lp, const char *name)
 {
    DENTER(TOP_LAYER);
@@ -623,31 +557,22 @@ lListElem* rqs_rule_locate(lList *lp, const char *name)
    DRETURN(ep);
 }
 
-/****** sge_resource_quota/rqs_xattr_pre_gdi() *************************************
-*  NAME
-*     rqs_xattr_pre_gdi() -- qconf xattr list preformat
-*
-*  SYNOPSIS
-*     bool rqs_xattr_pre_gdi(lList *this_list, lList **answer_list) 
-*
-*  FUNCTION
-*     This function preformates the given list created by xattr. The xattr switch
-*     allows to address single rules by using the special rule set name "rule_set_name/rule_name".
-*     The rule name can be the name for named rules or the index of the rule.
-*     This function splits such a name into the single rule set name and set the correct
-*     rule name.
-*
-*  INPUTS
-*     lList *this_list    - list to be modified
-*     lList **answer_list - answer list
-*
-*  RESULT
-*     bool - true on success
-*            false on error
-*
-*  NOTES
-*     MT-NOTE: rqs_xattr_pre_gdi() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Qconf xattr list preformat
+ *
+ * This function preformates the given list created by xattr. The xattr switch
+ * allows to address single rules by using the special rule set name "rule_set_name/rule_name".
+ * The rule name can be the name for named rules or the index of the rule.
+ * This function splits such a name into the single rule set name and set the correct
+ * rule name.
+ *
+ * @param this_list list to be modified
+ * @param answer_list answer list
+ *
+ * @return true on success false on error
+ *
+ * @note MT-NOTE: rqs_xattr_pre_gdi() is MT safe
+ */
 bool rqs_xattr_pre_gdi(lList *this_list, lList **answer_list) 
 {
    DENTER(TOP_LAYER);
@@ -677,43 +602,31 @@ bool rqs_xattr_pre_gdi(lList *this_list, lList **answer_list)
    DRETURN(ret);
 }
 
-/****** sge_resource_quota/rqs_get_rue_string() *****************************
-*  NAME
-*     rqs_get_rue_string() -- creates a rue name
-*
-*  SYNOPSIS
-*     bool rqs_get_rue_string(dstring *name, lListElem *rule, const char 
-*     *user, const char *project, const char *host, const char *queue, const 
-*     char* pe) 
-*
-*  FUNCTION
-*     Creates the rue name used for debiting a specific job request. The name 
-*     consists of the five touples devided by a /. The order is user, project,
-*     pe, queue, host.
-*     Filters that count for a sum
-*     of hosts are saved as a empty string because they don't need to be matched.
-*
-*     For example the rule
-*       limit users `*` queues `all.q,my.q` to slots=10
-*     may result in the rue name
-*       user1///all.q//
-*
-*  INPUTS
-*     dstring *name       - out: rue_name
-*     lListElem *rule     - resource quota rule (RQR_Type)
-*     const char *user    - user name
-*     const char *project - project name
-*     const char *host    - host name
-*     const char *queue   - queue name
-*     const char* pe      - pe name
-*
-*  RESULT
-*     bool - always true
-*
-*  NOTES
-*     MT-NOTE: rqs_get_rue_string() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Creates a rue name
+ *
+ * Creates the rue name used for debiting a specific job request. The name
+ * consists of the five touples devided by a /. The order is user, project,
+ * pe, queue, host.
+ * Filters that count for a sum
+ * of hosts are saved as a empty string because they don't need to be matched.
+ * For example the rule
+ *   limit users `*` queues `all.q,my.q` to slots=10
+ * may result in the rue name
+ *   user1///all.q//
+ *
+ * @param name out: rue_name
+ * @param rule resource quota rule (RQR_Type)
+ * @param user user name
+ * @param project project name
+ * @param host host name
+ * @param queue queue name
+ * @param pe pe name
+ *
+ * @return always true
+ *
+ * @note MT-NOTE: rqs_get_rue_string() is MT safe
+ */
 bool
 rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user, 
                               const char *project, const char *host, const char *queue,
@@ -771,33 +684,27 @@ rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user,
    DRETURN(true);
 }
 
-/****** sge_resource_quota/rqs_debit_consumable() *********************************
-*  NAME
-*     rqs_debit_consumable() -- debit slots in all relevant rule sets
-*
-*  SYNOPSIS
-*     int rqs_debit_consumable(lListElem *rqs, lListElem *job, lListElem 
-*     *granted, lListElem *pe, lList *centry_list, int slots) 
-*
-*  FUNCTION
-*     iterater over all rules in the given rule set and debit the amount of slots
-*     in the relevant rule
-*
-*  INPUTS
-*     lListElem *rqs     - resource quota set (RQS_Type)
-*     lListElem *job     - job request (JB_Type)
-*     lListElem *granted - granted destination identifier (JG_Type)
-*     lListElem *pe      - granted pe (PE_Type)
-*     lList *centry_list - consumable resouces list (CE_Type)
-*     int slots          - slot amount
-*
-*  RESULT
-*     int - amount of modified rule
-*
-*  NOTES
-*     MT-NOTE: rqs_debit_consumable() is not MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Debit slots in all relevant rule sets
+ *
+ * iterater over all rules in the given rule set and debit the amount of slots
+ * in the relevant rule
+ *
+ * @param rqs resource quota set (RQS_Type)
+ * @param job job request (JB_Type)
+ * @param granted granted destination identifier (JG_Type)
+ * @param pe granted pe (PE_Type)
+ * @param centry_list consumable resouces list (CE_Type)
+ * @param acl_list the usersets a rule's filter may name
+ * @param hgrp_list the host groups a rule's filter may name
+ * @param slots slot amount
+ * @param is_master_task true when this booking includes the job's master task
+ * @param do_per_host_booking true when a per host consumable still has to be booked on this host
+ *
+ * @return amount of modified rule
+ *
+ * @note MT-NOTE: rqs_debit_consumable() is not MT safe
+ */
 int
 rqs_debit_consumable(lListElem *rqs, const lListElem *job, const lListElem *granted, const lListElem *pe,
                      const lList *centry_list, const lList *acl_list, const lList *hgrp_list, int slots,
@@ -848,36 +755,27 @@ rqs_debit_consumable(lListElem *rqs, const lListElem *job, const lListElem *gran
    DRETURN(mods); 
 }
 
-/****** sge_resource_quota/rqs_get_matching_rule() ********************************
-*  NAME
-*     rqs_get_matching_rule() -- found relevant rule for job request
-*
-*  SYNOPSIS
-*     lListElem* rqs_get_matching_rule(lListElem *rqs, const char *user, 
-*     const char *project, const char* pe, const char *host, const char *queue, 
-*     lList *userset_list, lList* hgroup_list, dstring *rule_name) 
-*
-*  FUNCTION
-*     This function searches in a resource quota set the relevant rule.
-*
-*  INPUTS
-*     lListElem *rqs     - rule set (RQS_Type)
-*     const char *user    - user name
-*     const char *project - project name
-*     const char* pe      - pe name
-*     const char *host    - host name
-*     const char *queue   - queue name
-*     lList *userset_list - master user set list (US_Type)
-*     lList* hgroup_list  - master host group list (HG_Type);
-*     dstring *rule_name  - out: name or matching rule
-*
-*  RESULT
-*     lListElem* - pointer to matching rule
-*
-*  NOTES
-*     MT-NOTE: rqs_get_matching_rule() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Found relevant rule for job request
+ *
+ * This function searches in a resource quota set the relevant rule.
+ *
+ * @param rqs rule set (RQS_Type)
+ * @param user user name
+ * @param group the user's primary group
+ * @param grp_list the user's supplementary groups
+ * @param project project name
+ * @param pe pe name
+ * @param host host name
+ * @param queue queue name
+ * @param userset_list master user set list (US_Type)
+ * @param hgroup_list master host group list (HG_Type);
+ * @param rule_name out: name or matching rule
+ *
+ * @return pointer to matching rule
+ *
+ * @note MT-NOTE: rqs_get_matching_rule() is MT safe
+ */
 lListElem *
 rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group, const lList *grp_list,
                       const char *project, const char* pe, const char *host, const char *queue,
@@ -907,31 +805,25 @@ rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group,
    DRETURN(rule);
 }
 
-/****** sge_resource_quota/rqs_debit_rule_usage() *********************************
-*  NAME
-*     rqs_debit_rule_usage() -- debit usage in a resource quota rule 
-*
-*  SYNOPSIS
-*     int rqs_debit_rule_usage(lListElem *job, lListElem *rule, dstring 
-*     *rue_name, int slots, lList *centry_list, const char *obj_name) 
-*
-*  FUNCTION
-*     Debit an amount of slots in all limits of one resource quota rule
-*
-*  INPUTS
-*     lListElem *job       - job request (JG_Type)
-*     lListElem *rule      - resource quota rule (RQR_Type)
-*     dstring *rue_name    - rue name that counts
-*     int slots            - amount of slots to debit
-*     lList *centry_list   - consumable resource list (CE_Type)
-*     const char *obj_name - name of the limit
-*
-*  RESULT
-*     int - amount of debited limits
-*
-*  NOTES
-*     MT-NOTE: rqs_debit_rule_usage() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Debit usage in a resource quota rule
+ *
+ * Debit an amount of slots in all limits of one resource quota rule
+ *
+ * @param job job request (JG_Type)
+ * @param rule resource quota rule (RQR_Type)
+ * @param pe the job's parallel environment; may be nullptr
+ * @param rue_name rue name that counts
+ * @param slots amount of slots to debit
+ * @param centry_list consumable resource list (CE_Type)
+ * @param obj_name name of the limit
+ * @param is_master_task true when this booking includes the job's master task
+ * @param do_per_host_booking true when a per host consumable still has to be booked on this host
+ *
+ * @return amount of debited limits
+ *
+ * @note MT-NOTE: rqs_debit_rule_usage() is MT safe
+ */
 // @todo: pass rue_name as const char *
 int
 rqs_debit_rule_usage(const lListElem *job, const lListElem *pe, lListElem *rule, dstring *rue_name, int slots,
@@ -1051,37 +943,25 @@ rqs_debit_rule_usage(const lListElem *job, const lListElem *pe, lListElem *rule,
    DRETURN(mods);
 }
 
-/****** sge_resource_quota/rqs_match_user_host_scope() ****************************
-*  NAME
-*     rqs_match_user_host_scope() -- match user or host scope
-*
-*  SYNOPSIS
-*     static bool rqs_match_user_host_scope(lList *scope, int filter_type, 
-*     const char *value, lList *master_userset_list, lList *master_hgroup_list) 
-*
-*  FUNCTION
-*     This function verifies a user or host scope. The function allows for every
-*     scope entry and for the value a wildcard definition. Hostgroups and Usergroups
-*     are resolved and matched against the value
-*     
-*
-*  INPUTS
-*     lList *scope               - Scope to match (ST_Type)
-*     int filter_type            - filter type (FILTER_USERS or FILTER_HOSTS)
-*     const char *value          - value to match
-*     lList *master_userset_list - master userset list (US_Type)
-*     lList *master_hgroup_list  - master hostgroup list (HG_Type)
-*
-*  RESULT
-*     static bool - true, if value was found in scope 
-*                   false, if value was not found in scope
-*
-*  NOTES
-*     MT-NOTE: rqs_match_user_host_scope() is MT safe 
-*
-*  SEE ALSO
-*     sge_resource_quota/rqs_match_user_host_scope()
-*******************************************************************************/
+/**
+ * @brief Match user or host scope
+ *
+ * This function verifies a user or host scope. The function allows for every
+ * scope entry and for the value a wildcard definition. Hostgroups and Usergroups
+ * are resolved and matched against the value
+ *
+ * @param scope Scope to match (ST_Type)
+ * @param filter_type filter type (FILTER_USERS or FILTER_HOSTS)
+ * @param value value to match
+ * @param master_userset_list master userset list (US_Type)
+ * @param master_hgroup_list master hostgroup list (HG_Type)
+ *
+ * @return true, if value was found in scope false, if value was not found in scope
+ *
+ * @note MT-NOTE: rqs_match_user_host_scope() is MT safe
+ *
+ * @see #rqs_match_user_host_scope
+ */
 static bool 
 rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value,
                           const lList *master_userset_list, const lList *master_hgroup_list,
@@ -1278,38 +1158,28 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
    DRETURN(found);
 }
 
-/****** sge_resource_quota/rqs_is_matching_rule() *********************************
-*  NAME
-*     rqs_is_matching_rule() -- matches a rule with the filter touples
-*
-*  SYNOPSIS
-*     bool rqs_is_matching_rule(lListElem *rule, const char *user, const char 
-*     *project, const char *pe, const char *host, const char *queue, lList 
-*     *master_userset_list, lList *master_hgroup_list) 
-*
-*  FUNCTION
-*     The function verifies for every filter touple if the request matches
-*     the configured resource quota rule. If only one touple does not match
-*     the whole rule will not match
-*
-*  INPUTS
-*     lListElem *rule            - resource quota rule (RQR_Type)
-*     const char *user           - user name
-*     const char *project        - project name
-*     const char *pe             - pe name
-*     const char *host           - host name
-*     const char *queue          - queue name
-*     lList *master_userset_list - master user set list (US_Type)
-*     lList *master_hgroup_list  - master hostgroup list (HG_Type)
-*
-*  RESULT
-*     bool - true if the rule does match
-*            false if the rule does not match
-*
-*  NOTES
-*     MT-NOTE: rqs_is_matching_rule() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Matches a rule with the filter touples
+ *
+ * The function verifies for every filter touple if the request matches
+ * the configured resource quota rule. If only one touple does not match
+ * the whole rule will not match
+ *
+ * @param rule resource quota rule (RQR_Type)
+ * @param user user name
+ * @param group the user's primary group
+ * @param grp_list the user's supplementary groups
+ * @param project project name
+ * @param pe pe name
+ * @param host host name
+ * @param queue queue name
+ * @param master_userset_list master user set list (US_Type)
+ * @param master_hgroup_list master hostgroup list (HG_Type)
+ *
+ * @return true if the rule does match false if the rule does not match
+ *
+ * @note MT-NOTE: rqs_is_matching_rule() is MT safe
+ */
 bool
 rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const lList *grp_list,
                      const char *project, const char *pe, const char *host, const char *queue,
@@ -1337,31 +1207,22 @@ rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const
 
 
 
-/****** sge_resource_quota/rqs_match_host_scope() ******************************
-*  NAME
-*     rqs_match_host_scope() -- Match name with host scope
-*
-*  SYNOPSIS
-*     static bool rqs_match_host_scope(lList *scope, const char *name, lList 
-*     *master_hgroup_list) 
-*
-*  FUNCTION
-*     The function matches the passed name with the host scope. Name
-*     may not only be a hostname, but also host group name or a wildcard
-*     expression. For performance reasons qref_list_host_rejected() is
-*     used for matching, if we got no pattern and no hostgroup.
-*
-*  INPUTS
-*     lList *scope              - A scope list (ST_Type)
-*     const char *name          - hostname/hostgroup name/wildcard expression
-*     lList *master_hgroup_list - the host group list (HGRP_Type)
-*
-*  RESULT
-*     bool - Returns true if 'name' matches
-*
-*  NOTES
-*     MT-NOTE: rqs_match_host_scope() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Match name with host scope
+ *
+ * The function matches the passed name with the host scope. Name
+ * may not only be a hostname, but also host group name or a wildcard
+ * expression. For performance reasons qref_list_host_rejected() is
+ * used for matching, if we got no pattern and no hostgroup.
+ *
+ * @param scope A scope list (ST_Type)
+ * @param name hostname/hostgroup name/wildcard expression
+ * @param master_hgroup_list the host group list (HGRP_Type)
+ *
+ * @return Returns true if 'name' matches
+ *
+ * @note MT-NOTE: rqs_match_host_scope() is MT safe
+ */
 static bool 
 rqs_match_host_scope(const lList *scope, const char *name, const lList *master_hgroup_list, bool is_xscope, const lList *grp_list)
 {
@@ -1388,34 +1249,25 @@ rqs_match_host_scope(const lList *scope, const char *name, const lList *master_h
 
 
 
-/****** sge_resource_quota/rqs_filter_match() *******************************
-*  NAME
-*     rqs_filter_match() -- compares value with configured filter
-*
-*  SYNOPSIS
-*     bool rqs_filter_match(lListElem *filter, int filter_type, const 
-*     char *value, lList *master_userset_list, lList *master_hgroup_list) 
-*
-*  FUNCTION
-*     This function compares for the given filter if the value does match
-*     the configured one. Wildcards are allowed for the filter as well as for
-*     the value.
-*
-*  INPUTS
-*     lListElem *filter          - filter element (RQRF_Type)
-*     int filter_type            - filter type
-*     const char *value          - value to match
-*     lList *master_userset_list - master userset list (US_Type)
-*     lList *master_hgroup_list  - master hostgroup list (HG_Type)
-*
-*  RESULT
-*     bool - true if the value does match
-*            false if the value does not match
-*
-*  NOTES
-*     MT-NOTE: rqs_filter_match() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Compares value with configured filter
+ *
+ * This function compares for the given filter if the value does match
+ * the configured one. Wildcards are allowed for the filter as well as for
+ * the value.
+ *
+ * @param filter filter element (RQRF_Type)
+ * @param filter_type filter type
+ * @param value value to match
+ * @param master_userset_list master userset list (US_Type)
+ * @param master_hgroup_list master hostgroup list (HG_Type)
+ * @param group the user's primary group
+ * @param grp_list the user's supplementary groups
+ *
+ * @return true if the value does match false if the value does not match
+ *
+ * @note MT-NOTE: rqs_filter_match() is MT safe
+ */
 bool 
 rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lList *master_userset_list,
                  const lList *master_hgroup_list, const char *group, const lList *grp_list) {
@@ -1502,30 +1354,18 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
    DRETURN(ret);
 }
 
-/****** sge_resource_quota/sge_centry_referenced_in_rqs() *************************
-*  NAME
-*     sge_centry_referenced_in_rqs() -- search for a centry reference in
-*                                        a resource quota set
-*
-*  SYNOPSIS
-*     bool sge_centry_referenced_in_rqs(const lListElem *rqs, const lListElem 
-*     *centry) 
-*
-*  FUNCTION
-*     This function search a centry reference in a resource quota set
-*
-*  INPUTS
-*     const lListElem *rqs   - resource quota set
-*     const lListElem *centry - complex entry
-*
-*  RESULT
-*     bool - true if found
-*            false if not found
-*
-*  NOTES
-*     MT-NOTE: sge_centry_referenced_in_rqs() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Search for a centry reference in
+ *
+ * This function search a centry reference in a resource quota set
+ *
+ * @param rqs resource quota set
+ * @param centry complex entry
+ *
+ * @return true if found false if not found
+ *
+ * @note MT-NOTE: sge_centry_referenced_in_rqs() is MT safe
+ */
 bool sge_centry_referenced_in_rqs(const lListElem *rqs, const lListElem *centry)
 {
    bool ret = false;
@@ -1561,28 +1401,19 @@ bool sge_centry_referenced_in_rqs(const lListElem *rqs, const lListElem *centry)
    DRETURN(ret);
 }
 
-/****** sge_resource_quota/rqs_replace_request_verify() ************************
-*  NAME
-*     rqs_replace_request_verify() -- verify a rqs replace request
-*
-*  SYNOPSIS
-*     bool rqs_replace_request_verify(lList **answer_list, const lList 
-*     *request) 
-*
-*  FUNCTION
-*     Verify a rqs replace request (e.g. coming from a qconf -mrqs).
-*     We make sure, that no duplicate names appear in the request.
-*
-*  INPUTS
-*     lList **answer_list  - answer list to report errors
-*     const lList *request - the request to check
-*
-*  RESULT
-*     bool - true, if it is ok, false on error
-*
-*  NOTES
-*     MT-NOTE: rqs_replace_request_verify() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Verify a rqs replace request
+ *
+ * Verify a rqs replace request (e.g. coming from a qconf -mrqs).
+ * We make sure, that no duplicate names appear in the request.
+ *
+ * @param answer_list answer list to report errors
+ * @param request the request to check
+ *
+ * @return true, if it is ok, false on error
+ *
+ * @note MT-NOTE: rqs_replace_request_verify() is MT safe
+ */
 bool rqs_replace_request_verify(lList **answer_list, const lList *request)
 {
    const lListElem *ep;

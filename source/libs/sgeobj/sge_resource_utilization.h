@@ -19,5 +19,12 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Declarations for resource utilization, i.e. what is booked right now
+ *
+ * A consumable's capacity lives in the configuration; what is actually in use
+ * lives in a `RUE_Type` element beside it.
+ */
+
 #include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"

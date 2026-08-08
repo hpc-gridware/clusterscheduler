@@ -33,10 +33,23 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for tasks of a tightly integrated parallel job
+ *
+ * @see sge_pe_task.cc
+ */
+
 #include "sgeobj/cull/sge_pe_task_PET_L.h"
 #include "sgeobj/cull/sge_pe_task_PETR_L.h"
 #include "sgeobj/cull/sge_pe_task_FPET_L.h"
 
+/**
+ * @brief Name of the element collecting the usage of already finished parallel tasks
+ *
+ * A parallel job may run thousands of short tasks; keeping one element per
+ * finished task would grow the job without bound, so their usage is summed
+ * into this one container instead.
+ */
 #define PE_TASK_PAST_USAGE_CONTAINER "past_usage"
 
 lListElem *pe_task_sum_past_usage(lListElem *container, 

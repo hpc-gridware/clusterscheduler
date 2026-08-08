@@ -32,6 +32,12 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Declarations for submit users: the per user job counter behind `max_u_jobs`
+ *
+ * @see sge_suser.cc
+ */
  
 #include "sgeobj/cull/sge_suser_SU_L.h"
 

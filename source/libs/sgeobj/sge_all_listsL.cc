@@ -32,6 +32,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Pulls in every generated CULL header
+ *
+ * Exists so the generated descriptors have exactly one translation unit that
+ * defines them.
+ */
+
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
 #include "cull/cull_list.h"

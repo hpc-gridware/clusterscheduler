@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for mail recipients and the occasions mail is sent on
+ *
+ * @see sge_mailrec.cc
+ */
+
 #include "sgeobj/cull/sge_mailrec_MR_L.h"
 
 int mailrec_parse(lList **lpp, const char *mail_str);

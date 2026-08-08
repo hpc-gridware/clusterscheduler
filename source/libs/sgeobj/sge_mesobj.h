@@ -34,6 +34,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for message lists: why an object is in the state it is in
+ *
+ * @see sge_mesobj.cc
+ */
+
 #include "uti/sge_dstring.h"
 
 #include "cull/cull.h"

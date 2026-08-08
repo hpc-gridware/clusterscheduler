@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for queries against the resource quota sets
+ *
+ * @see sge_resource_quota_service.cc
+ */
+
 bool is_cqueue_global(const lListElem *rule);
 bool is_host_global(const lListElem *rule);
 

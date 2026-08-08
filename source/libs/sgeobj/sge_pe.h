@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for parallel environments
+ *
+ * @see sge_pe.cc
+ */
+
 #include "sgeobj/cull/sge_pe_PE_L.h"
 
 bool

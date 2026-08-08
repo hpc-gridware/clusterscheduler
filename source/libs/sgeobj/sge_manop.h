@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for managers and operators
+ *
+ * @see sge_manop.cc
+ */
+
 #include "gdi/ocs_gdi_Packet.h"
 
 bool user_list_is_user_grp_sgrp_in_list(const ocs::gdi::Packet *packet, const lList *usr_grp_sgrp_list, int nm);

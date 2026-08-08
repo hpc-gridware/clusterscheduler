@@ -32,6 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Array tasks: one task of a job array
+ *
+ * A pending task usually has no element at all - tasks live as id ranges
+ * until they are about to run. This is the object the enrolled ones get.
+ *
+ * @see sge_ja_task.h
+ */
+
 #include <cstring>
 #include <cstdlib>
 #include <cctype>
@@ -62,24 +71,16 @@
 
 #include "ocs_GrantedResources.h"
 
-/****** sgeobj/ja_task/ja_task_search_pe_task()*********************************
-*  NAME
-*     ja_task_search_pe_task() -- Find a certain PE Task
-*
-*  SYNOPSIS
-*     lListElem* ja_task_search_pe_task(const lListElem *ja_task,
-*                                       const char **pe_task_id)
-*
-*  FUNCTION
-*     Find a certain PE Task with "pe_task_id" in "ja_task"
-*
-*  INPUTS
-*     const lListElem *ja_task - JAT_Type element
-*     const char *pe_task_id   - PE task id string (e.g. "1.speedy")
-*
-*  RESULT
-*     lListElem* - PET_Type
-*******************************************************************************/
+/**
+ * @brief Find a certain PE Task
+ *
+ * Find a certain PE Task with "pe_task_id" in "ja_task"
+ *
+ * @param ja_task JAT_Type element
+ * @param pe_task_id PE task id string (e.g. "1.speedy")
+ *
+ * @return PET_Type
+ */
 lListElem *ja_task_search_pe_task(const lListElem *ja_task,
                                   const char *pe_task_id) {
    if (ja_task != nullptr) {
@@ -93,22 +94,15 @@ lListElem *ja_task_search_pe_task(const lListElem *ja_task,
    return nullptr;
 }
 
-/****** sgeobj/ja_task/ja_task_list_print_to_string() **************************
-*  NAME
-*     ja_task_list_print_to_string() -- print task id ranges into string
-*
-*  SYNOPSIS
-*     void ja_task_list_print_to_string(const lList *ja_task_list,
-*                                       dstring *range_string)
-*
-*  FUNCTION
-*     The ids of all tasks contained in 'ja_task_list' will be printed
-*     into 'range_string'.
-*
-*  INPUTS
-*     const lList *ja_task_list - JAT_Type list
-*     dstring *range_string     - dynamic string
-******************************************************************************/
+/**
+ * @brief Print task id ranges into string
+ *
+ * The ids of all tasks contained in 'ja_task_list' will be printed
+ * into 'range_string'.
+ *
+ * @param ja_task_list JAT_Type list
+ * @param range_string dynamic string
+ */
 void ja_task_list_print_to_string(const lList *ja_task_list,
                                   dstring *range_string) {
    lList *range_list = nullptr;     /* RN_Type */
@@ -159,39 +153,25 @@ lList *ja_task_list_split_group(lList **ja_task_list) {
    return ret_list;
 }
 
-/****** sgeobj/ja_task/ja_task_add_finished_pe_task() **************************
-*  NAME
-*     ja_task_add_finished_pe_task() -- remember finished parallel task
-*
-*  SYNOPSIS
-*     bool
-*     ja_task_add_finished_pe_task(lListElem *ja_task,
-*                                  const char *pe_task_id)
-*
-*  FUNCTION
-*     To avoid duplicate handling of finished parallel tasks (which
-*     could be triggered by sge_execd sending task end reports multiple
-*     times until it receives an ack from qmaster), the ja_task object
-*     (JAT_Type) contains a list of finished parallel tasks.
-*
-*     ja_task_add_finished_pe_task tries to add a new parallel task to
-*     this list.
-*
-*     If an entry with the given pe_task_id already exists, the function
-*     returns false, else true.
-*
-*  INPUTS
-*     lListElem *ja_task     - the ja_task to check/modify
-*     const char *pe_task_id - the pe_task_id to check/insert
-*
-*  RESULT
-*     bool - error state
-*        true  - if the pe_task_id did not yet exist and could be inserted,
-*        false - if the pe_task_id already existed.
-*
-*  SEE ALSO
-*     sgeobj/ja_task/ja_task_clear_finished_pe_tasks()
-*******************************************************************************/
+/**
+ * @brief Remember finished parallel task
+ *
+ * To avoid duplicate handling of finished parallel tasks (which
+ * could be triggered by sge_execd sending task end reports multiple
+ * times until it receives an ack from qmaster), the ja_task object
+ * (JAT_Type) contains a list of finished parallel tasks.
+ * ja_task_add_finished_pe_task tries to add a new parallel task to
+ * this list.
+ * If an entry with the given pe_task_id already exists, the function
+ * returns false, else true.
+ *
+ * @param ja_task the ja_task to check/modify
+ * @param pe_task_id the pe_task_id to check/insert
+ *
+ * @return error state true  - if the pe_task_id did not yet exist and could be inserted, false - if the pe_task_id already existed.
+ *
+ * @see #ja_task_clear_finished_pe_tasks
+ */
 bool ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id)
 {
    DENTER(TOP_LAYER);
@@ -207,34 +187,22 @@ bool ja_task_add_finished_pe_task(lListElem *ja_task, const char *pe_task_id)
    DRETURN(true);
 }
 
-/****** sgeobj/ja_task/ja_task_clear_finished_pe_tasks() ***********************
-*  NAME
-*     ja_task_clear_finished_pe_tasks() -- clear finished task list
-*
-*  SYNOPSIS
-*     bool
-*     ja_task_clear_finished_pe_tasks(lListElem *ja_task)
-*
-*  FUNCTION
-*     A ja_task contains a list of all finished parallel tasks (see also
-*     sgeobj/ja_task/ja_task_add_finished_pe_task()).
-*
-*     In certain circumstances (e.g. if a ja_task is rescheduled), it is
-*     necessary to clear this list.
-*
-*     ja_task_clear_finished_pe_tasks removes the complete sublist including
-*     the contained task ids.
-*
-*  INPUTS
-*     lListElem *ja_task - the ja_task to modify
-*
-*  RESULT
-*     bool - true, if the list could be cleared,
-*            false, if no list of finished pe_tasks existed.
-*
-*  SEE ALSO
-*     sgeobj/ja_task/ja_task_add_finished_pe_task()
-*******************************************************************************/
+/**
+ * @brief Clear finished task list
+ *
+ * A ja_task contains a list of all finished parallel tasks (see also
+ * sgeobj/ja_task/ja_task_add_finished_pe_task()).
+ * In certain circumstances (e.g. if a ja_task is rescheduled), it is
+ * necessary to clear this list.
+ * ja_task_clear_finished_pe_tasks removes the complete sublist including
+ * the contained task ids.
+ *
+ * @param ja_task the ja_task to modify
+ *
+ * @return true, if the list could be cleared, false, if no list of finished pe_tasks existed.
+ *
+ * @see #ja_task_add_finished_pe_task
+ */
 bool ja_task_clear_finished_pe_tasks(lListElem *ja_task) {
    const lList *pe_task_list;
 
@@ -255,41 +223,28 @@ bool ja_task_clear_finished_pe_tasks(lListElem *ja_task) {
    DRETURN(true);
 }
 
-/****** parse/sge_parse_jobtasks() *********************************************
-*  NAME
-*     sge_parse_jobtasks() -- parse array task ranges
-*
-*  SYNOPSIS
-*     int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char
-*     *str_jobtask, lList **alpp, bool include_names, lList *arrayDefList)
-*
-*  FUNCTION
-*    parses a job ids with or without task ranges following this pattern:
-*     Digit = '0' | '1' | ... | '9' .
-*     JobId = Digit { Digit } .
-*     TaskIdRange = TaskId [ '-' TaskId [  ':' Digit ] ] .
-*     JobTasks = JobId [ '.' TaskIdRange ] .
-*
-*   in case of a job name, the task range has to be specified extra. This
-*   will be colleced in an extra list and handed in as the arrayDefList
-*
-*  INPUTS
-*     lList **ipp             - ID_Type List, target list
-*     lListElem **idp         - New ID_Type-Elem parsed from str_jobtask
-*     const char *str_jobtask - job id with task range or job name
-*     lList **alpp            - answer list
-*     bool include_names      - true: job names are allowed
-*     lList *arrayDefList     - in case of job names, a list of array taskes
-*
-*  RESULT
-*     int - -1 no valid JobTask-Identifier
-*           0 everything went fine
-*
-*
-*  NOTES
-*     MT-NOTE: sge_parse_jobtasks() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Parse array task ranges
+ *
+ * parses a job ids with or without task ranges following this pattern:
+ * Digit = '0' | '1' | ... | '9' .
+ * JobId = Digit { Digit } .
+ * TaskIdRange = TaskId [ '-' TaskId [  ':' Digit ] ] .
+ * JobTasks = JobId [ '.' TaskIdRange ] .
+ * in case of a job name, the task range has to be specified extra. This
+ * will be colleced in an extra list and handed in as the arrayDefList
+ *
+ * @param ipp ID_Type List, target list
+ * @param idp New ID_Type-Elem parsed from str_jobtask
+ * @param str_jobtask job id with task range or job name
+ * @param alpp answer list
+ * @param include_names true: job names are allowed
+ * @param arrayDefList in case of job names, a list of array taskes
+ *
+ * @return -1 no valid JobTask-Identifier 0 everything went fine
+ *
+ * @note MT-NOTE: sge_parse_jobtasks() is MT safe
+ */
 int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
                        lList **alpp, bool include_names, const lList *arrayDefList) {
    char *token;
@@ -360,36 +315,23 @@ int sge_parse_jobtasks(lList **ipp, lListElem **idp, const char *str_jobtask,
    DRETURN(ret);
 }
 
-/****** sgeobj/ja_task/ja_task_message_add() **********************************
-*  NAME
-*     ja_task_message_add() -- add a message to the message list of a task
-*
-*  SYNOPSIS
-*     bool
-*     ja_task_message_add(lListElem *this_elem, uint32_t type,
-*                         const char *message)
-*
-*  FUNCTION
-*     Adds a message in the "JAT_message_list"-message list of "this_elem"
-*     "type" will be the message type. "message" is the text string stored
-*     int the new element of the sublist.
-*
-*  INPUTS
-*     lListElem *this_elem - JAT_Type element
-*     uint32_t type        - message type id
-*     const char *message  - message
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: ja_task_message_add() is MT safe
-*
-*  SEE ALSO
-*     sgeobj/ja_task/ja_task_message_trash_all_of_type_X()
-*******************************************************************************/
+/**
+ * @brief Add a message to the message list of a task
+ *
+ * Adds a message in the "JAT_message_list"-message list of "this_elem"
+ * "type" will be the message type. "message" is the text string stored
+ * int the new element of the sublist.
+ *
+ * @param this_elem JAT_Type element
+ * @param type message type id
+ * @param message message
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: ja_task_message_add() is MT safe
+ *
+ * @see #ja_task_message_trash_all_of_type_X
+ */
 bool
 ja_task_message_add(lListElem *this_elem, uint32_t type, const char *message) {
    bool ret = true;
@@ -399,32 +341,19 @@ ja_task_message_add(lListElem *this_elem, uint32_t type, const char *message) {
    DRETURN(ret);
 }
 
-/****** sgeobj/ja_task/ja_task_message_trash_all_of_type_X() ******************
-*  NAME
-*     ja_task_message_trash_all_of_type_X() -- Trash messages of certain type
-*
-*  SYNOPSIS
-*     bool
-*     ja_task_message_trash_all_of_type_X(lListElem *this_elem,
-*                                         uint32_t type)
-*
-*  FUNCTION
-*     Trash all messages from the sublist of JAT_message_list which are of
-*     the given "type".
-*
-*
-*  INPUTS
-*     lListElem *this_elem - JAT_Type element
-*     uint32_t type        - type id
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: ja_task_message_trash_all_of_type_X() is MT safe
-*******************************************************************************/
+/**
+ * @brief Trash messages of certain type
+ *
+ * Trash all messages from the sublist of JAT_message_list which are of
+ * the given "type".
+ *
+ * @param this_elem JAT_Type element
+ * @param type type id
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: ja_task_message_trash_all_of_type_X() is MT safe
+ */
 bool
 ja_task_message_trash_all_of_type_X(lListElem *this_elem, uint32_t type) {
    bool ret = true;
@@ -434,30 +363,20 @@ ja_task_message_trash_all_of_type_X(lListElem *this_elem, uint32_t type) {
    DRETURN(ret);
 }
 
-/****** sge_ja_task/ja_task_verify() *******************************************
-*  NAME
-*     ja_task_verify() -- verify a ja_task object
-*
-*  SYNOPSIS
-*     bool
-*     ja_task_verify(const lListElem *ja_task, lList **answer_list)
-*
-*  FUNCTION
-*     Verify correctness of a ja_task object.
-*
-*  INPUTS
-*     const lListElem *ja_task - the ja_task to verify
-*     lList **answer_list      - answer list to pass back error messages
-*
-*  RESULT
-*     bool - true: everything ok, else false
-*
-*  NOTES
-*     MT-NOTE: ja_task_verify() is MT safe
-*
-*  SEE ALSO
-*     sge_ja_task/ja_task_verify_execd_job()
-*******************************************************************************/
+/**
+ * @brief Verify a ja_task object
+ *
+ * Verify correctness of a ja_task object.
+ *
+ * @param ja_task the ja_task to verify
+ * @param answer_list answer list to pass back error messages
+ *
+ * @return true: everything ok, else false
+ *
+ * @note MT-NOTE: ja_task_verify() is MT safe
+ *
+ * @see #ja_task_verify_execd_job
+ */
 bool
 ja_task_verify(const lListElem *ja_task, lList **answer_list) {
    bool ret = true;
@@ -510,30 +429,20 @@ ja_task_verify(const lListElem *ja_task, lList **answer_list) {
    DRETURN(ret);
 }
 
-/****** sge_ja_task/ja_task_verify_execd_job() *********************************
-*  NAME
-*     ja_task_verify_execd_job() -- verify a ja_task object for execd
-*
-*  SYNOPSIS
-*     bool
-*     ja_task_verify_execd_job(const lListElem *ja_task, lList **answer_list)
-*
-*  FUNCTION
-*     Verify a ja_task object that has been sent to execd.
-*
-*  INPUTS
-*     const lListElem *ja_task - the ja_task object to verify
-*     lList **answer_list      - answer list to pass back error messages
-*
-*  RESULT
-*     bool - true: everything ok, else false
-*
-*  NOTES
-*     MT-NOTE: ja_task_verify_execd_job() is MT safe
-*
-*  SEE ALSO
-*     sge_ja_task/ja_task_verify()
-*******************************************************************************/
+/**
+ * @brief Verify a ja_task object for execd
+ *
+ * Verify a ja_task object that has been sent to execd.
+ *
+ * @param ja_task the ja_task object to verify
+ * @param answer_list answer list to pass back error messages
+ *
+ * @return true: everything ok, else false
+ *
+ * @note MT-NOTE: ja_task_verify_execd_job() is MT safe
+ *
+ * @see #ja_task_verify
+ */
 bool
 ja_task_verify_execd_job(const lListElem *ja_task, lList **answer_list) {
    bool ret = true;
@@ -550,32 +459,21 @@ ja_task_verify_execd_job(const lListElem *ja_task, lList **answer_list) {
    DRETURN(ret);
 }
 
-/****** sge_ja_task/ja_task_verify_granted_destin_identifier_list() ************
-*  NAME
-*     ja_task_verify_granted_destin_identifier_list() -- verify granted destination identifier list
-*
-*  SYNOPSIS
-*     bool
-*     ja_task_verify_granted_destin_identifier_list(const lList *gdil,
-*                                                   lList **answer_list)
-*
-*  FUNCTION
-*     Verify correctness of a granted destination identifier list being part
-*     of a scheduled ja_task.
-*
-*  INPUTS
-*     const lList *gdil   - the list to verify
-*     lList **answer_list - answer list to pass back error messages
-*
-*  RESULT
-*     bool - true: everything ok, else false
-*
-*  NOTES
-*     MT-NOTE: ja_task_verify_granted_destin_identifier_list() is MT safe
-*
-*  SEE ALSO
-*     sge_ja_task/ja_task_verify_granted_destin_identifier()
-*******************************************************************************/
+/**
+ * @brief Verify granted destination identifier list
+ *
+ * Verify correctness of a granted destination identifier list being part
+ * of a scheduled ja_task.
+ *
+ * @param gdil the list to verify
+ * @param answer_list answer list to pass back error messages
+ *
+ * @return true: everything ok, else false
+ *
+ * @note MT-NOTE: ja_task_verify_granted_destin_identifier_list() is MT safe
+ *
+ * @see #ja_task_verify_granted_destin_identifier
+ */
 bool
 ja_task_verify_granted_destin_identifier_list(const lList *gdil, lList **answer_list) {
    bool ret = true;
@@ -600,32 +498,21 @@ ja_task_verify_granted_destin_identifier_list(const lList *gdil, lList **answer_
    DRETURN(ret);
 }
 
-/****** sge_ja_task/ja_task_verify_granted_destin_identifier() *****************
-*  NAME
-*     ja_task_verify_granted_destin_identifier() -- verify a granted destination identifier
-*
-*  SYNOPSIS
-*     bool
-*     ja_task_verify_granted_destin_identifier(const lListElem *ep,
-*                                              lList **answer_list)
-*
-*  FUNCTION
-*     Verify a single element of a granted destination identifier list
-*     (a granted queue with a certain number of slots).
-*
-*  INPUTS
-*     const lListElem *ep - the element to verify
-*     lList **answer_list - answer list to pass back error messages
-*
-*  RESULT
-*     bool - true: everything ok, else false
-*
-*  NOTES
-*     MT-NOTE: ja_task_verify_granted_destin_identifier() is MT safe
-*
-*  SEE ALSO
-*     sge_ja_task/ja_task_verify_granted_destin_identifier_list()
-*******************************************************************************/
+/**
+ * @brief Verify a granted destination identifier
+ *
+ * Verify a single element of a granted destination identifier list
+ * (a granted queue with a certain number of slots).
+ *
+ * @param ep the element to verify
+ * @param answer_list answer list to pass back error messages
+ *
+ * @return true: everything ok, else false
+ *
+ * @note MT-NOTE: ja_task_verify_granted_destin_identifier() is MT safe
+ *
+ * @see #ja_task_verify_granted_destin_identifier_list
+ */
 bool
 ja_task_verify_granted_destin_identifier(const lListElem *ep, lList **answer_list) {
    bool ret = true;
@@ -661,27 +548,20 @@ ja_task_verify_granted_destin_identifier(const lListElem *ep, lList **answer_lis
    DRETURN(ret);
 }
 
-/****** sge_ja_task/ja_task_is_tightly_integrated() ****************************
-*  NAME
-*     ja_task_is_tightly_integrated() -- is this a tightly integrated job?
-*
-*  SYNOPSIS
-*     bool ja_task_is_tightly_integrated(const lListElem *ja_task)
-*
-*  FUNCTION
-*     Figures out, if a running ja task belongs to a tightly integrated
-*     parallel job.
-*
-*  INPUTS
-*     const lListElem *ja_task - the ja task to test
-*
-*  RESULT
-*     bool - true if it is a tightly integrated parallel job, else false
-*
-*  NOTES
-*     MT-NOTE: ja_task_is_tightly_integrated() is MT safe, the caller must
-*              hold a read lock on the SGE_TYPE_PE list.
-*******************************************************************************/
+/**
+ * @brief Is this a tightly integrated job?
+ *
+ * Figures out, if a running ja task belongs to a tightly integrated
+ * parallel job.
+ *
+ * @param ja_task the ja task to test
+ * @param master_pe_list the parallel environments, to look up the task's PE
+ *
+ * @return true if it is a tightly integrated parallel job, else false
+ *
+ * @note MT-NOTE: ja_task_is_tightly_integrated() is MT safe, the caller must
+ *       hold a read lock on the SGE_TYPE_PE list.
+ */
 bool ja_task_is_tightly_integrated(const lListElem *ja_task, const lList *master_pe_list) {
    bool ret = false;
 
@@ -717,7 +597,7 @@ ja_task_debit_host_rsmap(const lListElem *granted_resource, lListElem *host, int
 /**
  * @brief debit / undebit RSMAP ids of a newly scheduled ja_task
  *
- * @param ja_task debit this ja_task
+ * @param granted_resources_list the resources granted to the task
  * @param host  from this host
  * @param slots this is the amount of slots to debit
  * @param just_check if != nullptr then do not do booking but just check if the job would fit on the resources and return the result here
@@ -761,6 +641,18 @@ ja_task_debit_host_binding(const lListElem *granted_resource, lListElem *host, i
    DRETURN(mods);
 }
 
+/**
+ * @brief Debit or undebit the cores a newly scheduled task was bound to
+ *
+ * The counterpart of #ja_task_debit_host_rsmaps for core bindings: what is
+ * booked is a topology string rather than a count.
+ *
+ * @param granted_resources_list the resources granted to the task
+ * @param host the host to book on
+ * @param slots positive to debit, negative to undebit
+ * @param[out] just_check if != nullptr do not book, only report whether it would fit
+ * @return the number of modifications done
+ */
 int ja_task_debit_host_bindings(const lList *granted_resources_list, lListElem *host, int slots, bool *just_check) {
    int mods = 0;
    const char *host_name = lGetHost(host, EH_name);
@@ -811,10 +703,13 @@ ja_task_is_running(const lListElem *ja_task) {
 }
 
 /**
- * Records who deleted a job array task in its JAT_deleted_by attribute.
+ * @brief Record who deleted a job array task
  *
- * The information is stored so it survives spooling and is available when
- * the accounting record is written. An already existing value is overwritten.
+ * Stored in `JAT_deleted_by`, so it survives spooling and is available when the
+ * accounting record is written. An already existing value is overwritten.
+ *
+ * @param[in,out] ja_task the task to mark
+ * @param deleted_by the name to record
  */
 void
 ja_task_set_deleted_by(lListElem *ja_task, const char *deleted_by) {
@@ -822,8 +717,11 @@ ja_task_set_deleted_by(lListElem *ja_task, const char *deleted_by) {
 }
 
 /**
- * Returns the "who deleted the job" string stored in JAT_deleted_by,
- * or nullptr if the task was not deleted via this mechanism.
+ * @brief Who deleted this job array task?
+ *
+ * @param ja_task the task to ask about
+ * @return the recorded name, or nullptr when the task was not deleted through
+ *         this mechanism
  */
 const char *
 ja_task_get_deleted_by(const lListElem *ja_task) {

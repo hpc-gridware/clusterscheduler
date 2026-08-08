@@ -18,6 +18,14 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief A tool that dumps the CULL object model as a JSON schema
+ *
+ * Standalone program, not part of any library. It walks the registered object
+ * types and writes their attributes, which is how the object model is made
+ * available to anything outside the C++ code.
+ */
+
 #include <cstdio>
 #include <cstdlib>
 
@@ -233,6 +241,13 @@ walk_nmv(const char *target_dir)
    cJSON_Delete(json_all);
 }
 
+/**
+ * @brief Write the CULL object model as a JSON schema to stdout
+ *
+ * @param argc argument count
+ * @param argv argument vector
+ * @return 0 on success
+ */
 int main(int argc, char *argv[])
 {
    bool ret = true;

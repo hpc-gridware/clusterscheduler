@@ -33,11 +33,18 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
+/** @file
+ * @brief Declarations for job submission verifiers: the instances and their life cycle
+ *
+ * @see sge_jsv.cc
+ */
+
 
 #include "uti/sge_dstring.h"
 
 #include "sgeobj/cull/sge_jsv_JSV_L.h"
 
+/// The JSV runs in a submit client rather than in qmaster
 #define JSV_CONTEXT_CLIENT "client"
 
 bool        

@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for queue references: `cqueue`, `@hostgroup` or `cqueue@host`
+ *
+ * @see sge_qref.cc
+ */
+
 #include "sgeobj/cull/sge_qref_QR_L.h"
 
 bool

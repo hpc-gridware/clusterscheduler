@@ -33,12 +33,25 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for subordinate queues: one queue suspends another when busy
+ *
+ * @see sge_subordinate.cc
+ */
+
 #include "uti/sge_dstring.h"
 #include "sgeobj/cull/sge_subordinate_SO_L.h"
 
-/* SO_action defines */
-#define SO_ACTION_SR 0x00000001
-#define SO_ACTION_LR 0x00000010
+/**
+ * @name What a slot wise subordinate relation does to a job
+ *
+ * Stored in `SO_action`. Suspending frees the slot for the superordinate queue
+ * but keeps the job's state; rescheduling puts it back into the pending list.
+ * @{
+ */
+#define SO_ACTION_SR 0x00000001 ///< suspend the job and reschedule it
+#define SO_ACTION_LR 0x00000010 ///< suspend the job and leave it where it is
+/** @} */
 
 bool
 tst_sos(int used, int total, const lListElem *so);

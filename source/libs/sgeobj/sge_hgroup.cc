@@ -31,6 +31,16 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Host groups: named sets of hosts, written with a leading `@`
+ *
+ * A group may contain other groups, so resolving one is recursive. Three
+ * group names are reserved and maintained by the daemons rather than by an
+ * administrator - see #ADMIN_HOSTGROUP and its siblings.
+ *
+ * @see sge_hgroup.h
+ */
 /*
   This module is used for group building
  */
@@ -56,37 +66,30 @@
 #include <cinttypes>
 #include "msg_common.h"
 
+/// Debug layer the host group traces are written to
 #define HGROUP_LAYER TOP_LAYER
 
-/****** sgeobj/hgroup/hgroup_update_cache() ***********************************
-*  NAME
-*     hgroup_update_cache() -- refresh the resolved host list of one group
-*
-*  FUNCTION
-*     CS-2451: resolves the nested references of @p hgroup once and stores the
-*     flat result in HGRP_cached_hosts, so a membership test becomes a hash
-*     lookup on HR_name instead of a walk of the tree.
-*
-*     Qmaster-side maintenance only. Readers never compute a cache; they use it
-*     when HGRP_cache_version is non-zero and fall back to the walk when it is 0.
-*
-*     The version counter is a PRESENCE FLAG, not a stamp to compare against
-*     anything (see HGRP.json). It only has to be non-zero and never 0, which is
-*     why the counter starts at 1 and skips 0 on wrap.
-*
-*  INPUTS
-*     lListElem *hgroup             - the group to refresh (HGRP_Type)
-*     lList **answer_list           - for returning errors
-*     const lList *master_hgroup_list - list the references are resolved against
-*
-*  RESULT
-*     bool - true on success; on failure the cache is left INVALID (version 0)
-*            rather than stale, so consumers fall back to the walk
-*
-*  NOTES
-*     MT-NOTE: hgroup_update_cache() is not MT safe -- call it under the write
-*              lock, like every other writer of the HGRP master list
-*******************************************************************************/
+/**
+ * @brief Refresh the resolved host list of one group
+ *
+ * CS-2451: resolves the nested references of @p hgroup once and stores the
+ * flat result in HGRP_cached_hosts, so a membership test becomes a hash
+ * lookup on HR_name instead of a walk of the tree.
+ * Qmaster-side maintenance only. Readers never compute a cache; they use it
+ * when HGRP_cache_version is non-zero and fall back to the walk when it is 0.
+ * The version counter is a PRESENCE FLAG, not a stamp to compare against
+ * anything (see HGRP.json). It only has to be non-zero and never 0, which is
+ * why the counter starts at 1 and skips 0 on wrap.
+ *
+ * @param hgroup the group to refresh (HGRP_Type)
+ * @param answer_list for returning errors
+ * @param master_hgroup_list list the references are resolved against
+ *
+ * @return true on success; on failure the cache is left INVALID (version 0) rather than stale, so consumers fall back to the walk
+ *
+ * @note MT-NOTE: hgroup_update_cache() is not MT safe -- call it under the write
+ *       lock, like every other writer of the HGRP master list
+ */
 bool
 hgroup_update_cache(lListElem *hgroup, lList **answer_list, const lList *master_hgroup_list)
 {
@@ -120,25 +123,20 @@ hgroup_update_cache(lListElem *hgroup, lList **answer_list, const lList *master_
    DRETURN(ret);
 }
 
-/****** sgeobj/hgroup/hgroup_list_update_caches() *****************************
-*  NAME
-*     hgroup_list_update_caches() -- refresh every group's resolved host list
-*
-*  FUNCTION
-*     Used at qmaster startup, after the host group list has been read from the
-*     spool area. Every group is resolved independently, so the order in the
-*     list does not matter.
-*
-*  INPUTS
-*     lList *master_hgroup_list - the list to refresh in place
-*     lList **answer_list       - for returning errors
-*
-*  RESULT
-*     bool - true if every group could be resolved
-*
-*  NOTES
-*     MT-NOTE: hgroup_list_update_caches() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Refresh every group's resolved host list
+ *
+ * Used at qmaster startup, after the host group list has been read from the
+ * spool area. Every group is resolved independently, so the order in the
+ * list does not matter.
+ *
+ * @param master_hgroup_list the list to refresh in place
+ * @param answer_list for returning errors
+ *
+ * @return true if every group could be resolved
+ *
+ * @note MT-NOTE: hgroup_list_update_caches() is not MT safe
+ */
 bool
 hgroup_list_update_caches(lList *master_hgroup_list, lList **answer_list)
 {
@@ -152,68 +150,56 @@ hgroup_list_update_caches(lList *master_hgroup_list, lList **answer_list)
    DRETURN(ret);
 }
 
-/****** sgeobj/hgroup/hgroup_has_host_cache() *********************************
-*  NAME
-*     hgroup_has_host_cache() -- does this group carry a usable resolved list?
-*
-*  FUNCTION
-*     CS-2451. True when HGRP_cache_version is non-zero, i.e. qmaster has
-*     resolved this group and the result travelled with the element.
-*
-*     The version is what makes the answer possible at all: cull stores an empty
-*     list as nullptr, so HGRP_cached_hosts alone cannot distinguish a group that
-*     resolves to no hosts from one that was never resolved.
-*
-*  INPUTS
-*     const lListElem *hgroup - HGRP_Type object, may be nullptr
-*
-*  RESULT
-*     bool - true if hgroup_cache_contains_host() may be used on this element
-*
-*  NOTES
-*     MT-NOTE: hgroup_has_host_cache() is MT safe
-*
-*     HGRP_cached_hosts and HGRP_cache_version are a UNIT. A GDI "what" filter
-*     that selects the version without the list would present an empty cache as
-*     valid, and every membership test against that group would answer "no".
-*     Every descriptor in the tree is currently lWhat("%T(ALL)"); if a reduced
-*     one is ever introduced -- RBAC output reduction is the likely reason --
-*     it must take both fields or neither.
-*******************************************************************************/
+/**
+ * @brief Does this group carry a usable resolved list?
+ *
+ * CS-2451. True when HGRP_cache_version is non-zero, i.e. qmaster has
+ * resolved this group and the result travelled with the element.
+ * The version is what makes the answer possible at all: cull stores an empty
+ * list as nullptr, so HGRP_cached_hosts alone cannot distinguish a group that
+ * resolves to no hosts from one that was never resolved.
+ *
+ * @param hgroup HGRP_Type object, may be nullptr
+ *
+ * @return true if hgroup_cache_contains_host() may be used on this element
+ *
+ * @note MT-NOTE: hgroup_has_host_cache() is MT safe
+ *
+ *       HGRP_cached_hosts and HGRP_cache_version are a UNIT. A GDI "what" filter
+ *       that selects the version without the list would present an empty cache as
+ *       valid, and every membership test against that group would answer "no".
+ *       Every descriptor in the tree is currently lWhat("%T(ALL)"); if a reduced
+ *       one is ever introduced -- RBAC output reduction is the likely reason --
+ *       it must take both fields or neither.
+ */
 bool
 hgroup_has_host_cache(const lListElem *hgroup)
 {
    return hgroup != nullptr && lGetUlong(hgroup, HGRP_cache_version) != 0;
 }
 
-/****** sgeobj/hgroup/hgroup_cache_contains_host() ****************************
-*  NAME
-*     hgroup_cache_contains_host() -- is host a member, according to the cache?
-*
-*  FUNCTION
-*     CS-2451. Answers the membership question with a single hash lookup instead
-*     of a walk of the nested group tree.
-*
-*     The lookup is equivalent to the walk's sge_hostcmp() comparison, not merely
-*     similar: cull normalises host keys with sge_hostcpy() + sge_strtoupper()
-*     (cull_multitype.cc), and sge_hostcpy() honours the same ignore_fqdn and
-*     default_domain rules as sge_hostcmp() (sge_hostname.cc). HR_name carries
-*     the HASH flag, so the lookup is O(1).
-*
-*  INPUTS
-*     const lListElem *hgroup - HGRP_Type object with a valid cache
-*     const char *hostname    - host to look for
-*
-*  RESULT
-*     bool - true if the host is in the group, directly or through nesting
-*
-*  NOTES
-*     MT-NOTE: hgroup_cache_contains_host() is MT safe
-*
-*     Only meaningful when hgroup_has_host_cache() is true; on an element without
-*     a cache it reports false, which is the WRONG answer rather than a safe one.
-*     Always guard the call.
-*******************************************************************************/
+/**
+ * @brief Is host a member, according to the cache?
+ *
+ * CS-2451. Answers the membership question with a single hash lookup instead
+ * of a walk of the nested group tree.
+ * The lookup is equivalent to the walk's sge_hostcmp() comparison, not merely
+ * similar: cull normalises host keys with sge_hostcpy() + sge_strtoupper()
+ * (cull_multitype.cc), and sge_hostcpy() honours the same ignore_fqdn and
+ * default_domain rules as sge_hostcmp() (sge_hostname.cc). HR_name carries
+ * the HASH flag, so the lookup is O(1).
+ *
+ * @param hgroup HGRP_Type object with a valid cache
+ * @param hostname host to look for
+ *
+ * @return true if the host is in the group, directly or through nesting
+ *
+ * @note MT-NOTE: hgroup_cache_contains_host() is MT safe
+ *
+ *       Only meaningful when hgroup_has_host_cache() is true; on an element without
+ *       a cache it reports false, which is the WRONG answer rather than a safe one.
+ *       Always guard the call.
+ */
 bool
 hgroup_cache_contains_host(const lListElem *hgroup, const char *hostname)
 {
@@ -223,36 +209,30 @@ hgroup_cache_contains_host(const lListElem *hgroup, const char *hostname)
    return lGetElemHost(lGetList(hgroup, HGRP_cached_hosts), HR_name, hostname) != nullptr;
 }
 
-/****** sgeobj/hgroup/hgroup_contains_host() **********************************
-*  NAME
-*     hgroup_contains_host() -- is the host a member, directly or through nesting?
-*
-*  FUNCTION
-*     CS-2438. The two functions above composed the way consumers actually want
-*     them: use the cache when the element carries one, resolve the nested tree
-*     when it does not.
-*
-*     This exists so that the guard is written once. hgroup_cache_contains_host()
-*     on an element without a cache answers "no", which is the wrong answer
-*     rather than a safe one -- and its callers are the GDI permission path
-*     (host_is_admin_host()) and the delete-semantics check in the qmaster, where
-*     a wrong "no" denies a request or reports a member as absent.
-*
-*  INPUTS
-*     const lListElem *hgroup         - HGRP_Type object, may be nullptr
-*     const char *hostname            - host to look for
-*     const lList *master_hgroup_list - list the nested references resolve against
-*
-*  RESULT
-*     bool - true if the host is in the group, directly or transitively
-*
-*  NOTES
-*     MT-NOTE: hgroup_contains_host() is MT safe
-*
-*     The fallback allocates and walks; it is not the hot path and must not
-*     become one. If a caller finds itself here on every request, the cache is
-*     not being maintained -- fix that rather than optimising this.
-*******************************************************************************/
+/**
+ * @brief Is the host a member, directly or through nesting?
+ *
+ * CS-2438. The two functions above composed the way consumers actually want
+ * them: use the cache when the element carries one, resolve the nested tree
+ * when it does not.
+ * This exists so that the guard is written once. hgroup_cache_contains_host()
+ * on an element without a cache answers "no", which is the wrong answer
+ * rather than a safe one -- and its callers are the GDI permission path
+ * (host_is_admin_host()) and the delete-semantics check in the qmaster, where
+ * a wrong "no" denies a request or reports a member as absent.
+ *
+ * @param hgroup HGRP_Type object, may be nullptr
+ * @param hostname host to look for
+ * @param master_hgroup_list list the nested references resolve against
+ *
+ * @return true if the host is in the group, directly or transitively
+ *
+ * @note MT-NOTE: hgroup_contains_host() is MT safe
+ *
+ *       The fallback allocates and walks; it is not the hot path and must not
+ *       become one. If a caller finds itself here on every request, the cache is
+ *       not being maintained -- fix that rather than optimising this.
+ */
 bool
 hgroup_contains_host(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list)
 {
@@ -279,28 +259,22 @@ hgroup_contains_host(const lListElem *hgroup, const char *hostname, const lList 
    DRETURN(ret);
 }
 
-/****** sgeobj/hgroup/hgroup_is_reserved() ************************************
-*  NAME
-*     hgroup_is_reserved() -- is this one of the reserved host groups?
-*
-*  FUNCTION
-*     True for @admin_hosts, @submit_hosts and @exec_hosts (CS-2438). These
-*     back what used to be the AH_LIST/SH_LIST data models and the execution
-*     host list, so they may not be deleted and carry extra rules on write.
-*
-*     Comparison is case-sensitive, matching how the reserved usersets are
-*     compared in sge_userset_qmaster.cc: the names are fixed literals the
-*     product creates itself, not something a user types in a locale.
-*
-*  INPUTS
-*     const char *name - host group name including the leading '@'
-*
-*  RESULT
-*     bool - true if reserved
-*
-*  NOTES
-*     MT-NOTE: hgroup_is_reserved() is MT safe
-*******************************************************************************/
+/**
+ * @brief Is this one of the reserved host groups?
+ *
+ * True for `@admin_hosts`, `@submit_hosts` and `@exec_hosts` (CS-2438). These
+ * back what used to be the AH_LIST/SH_LIST data models and the execution
+ * host list, so they may not be deleted and carry extra rules on write.
+ * Comparison is case-sensitive, matching how the reserved usersets are
+ * compared in sge_userset_qmaster.cc: the names are fixed literals the
+ * product creates itself, not something a user types in a locale.
+ *
+ * @param name host group name including the leading '@'
+ *
+ * @return true if reserved
+ *
+ * @note MT-NOTE: hgroup_is_reserved() is MT safe
+ */
 bool hgroup_is_reserved(const char *name)
 {
    return name != nullptr &&
@@ -309,57 +283,39 @@ bool hgroup_is_reserved(const char *name)
            strcmp(name, EXEC_HOSTGROUP) == 0);
 }
 
-/****** sgeobj/hgroup/hgroup_is_system_maintained() ***************************
-*  NAME
-*     hgroup_is_system_maintained() -- may nobody write this group?
-*
-*  FUNCTION
-*     True only for @exec_hosts, which the qmaster derives from the execution
-*     host list. Write access is refused for every role including manager --
-*     the spec states this independently of RBAC (04_Logical_View.md, "Protected
-*     Object Keys"), because a hand-edited copy would silently disagree with the
-*     exec host list it is supposed to mirror.
-*
-*  INPUTS
-*     const char *name - host group name including the leading '@'
-*
-*  RESULT
-*     bool - true if the group is maintained by the system
-*
-*  NOTES
-*     MT-NOTE: hgroup_is_system_maintained() is MT safe
-*******************************************************************************/
+/**
+ * @brief May nobody write this group?
+ *
+ * True only for `@exec_hosts`, which the qmaster derives from the execution
+ * host list. Write access is refused for every role including manager --
+ * the spec states this independently of RBAC (04_Logical_View.md, "Protected
+ * Object Keys"), because a hand-edited copy would silently disagree with the
+ * exec host list it is supposed to mirror.
+ *
+ * @param name host group name including the leading '@'
+ *
+ * @return true if the group is maintained by the system
+ *
+ * @note MT-NOTE: hgroup_is_system_maintained() is MT safe
+ */
 bool hgroup_is_system_maintained(const char *name)
 {
    return name != nullptr && strcmp(name, EXEC_HOSTGROUP) == 0;
 }
 
-/****** sgeobj/hgroup/hgroup_check_name() *************************************
-*  NAME
-*    hgroup_check_name() -- determine if the name is a valid hgroup name
-*
-*  SYNOPSIS
-*     void check_hgroup_name(lList **answer_list, const char* name) 
-*
-*  FUNCTION
-*     Determine if the given name is a valid hostgroup name. If not
-*     add an approbiate error to the answer_list
-*
-*  INPUTS
-*     lList **answer_list - answer list where errors are stored 
-*     const char* name    - name of the hostgroup 
-*
-*  RESULT
-*     bool - result 
-*        true  -  name contains a valid name for a hostgroup
-*        false - name is not a valid name for a hostrgroup
-*
-*  NOTES
-*     MT-NOTE: check_hgroup_name() is not MT safe 
-*
-*  SEE ALSO
-*     sgeobj/hgroup/is_hgroup_name
-*******************************************************************************/
+/**
+ * @brief Determine if the name is a valid hgroup name
+ *
+ * Determine if the given name is a valid hostgroup name. If not
+ * add an approbiate error to the answer_list
+ *
+ * @param answer_list answer list where errors are stored
+ * @param name name of the hostgroup
+ *
+ * @return result true  -  name contains a valid name for a hostgroup false - name is not a valid name for a hostrgroup
+ *
+ * @note MT-NOTE: check_hgroup_name() is not MT safe
+ */
 bool hgroup_check_name(lList **answer_list, const char* name)
 {
    if (!ocs::is_hgroup_name(name)) {
@@ -376,24 +332,16 @@ bool hgroup_check_name(lList **answer_list, const char* name)
    return true;
 }
 
-/****** sgeobj/hgroup/hgroup_list_locate() ************************************
-*  NAME
-*     hgroup_list_locate() -- Find a group by name 
-*
-*  SYNOPSIS
-*     lListElem* hgroup_list_locate(const lList *this_list, 
-*                                      const char *group) 
-*
-*  FUNCTION
-*     Find a 'group' in 'this_list'. 
-*
-*  INPUTS
-*     const lList *this_list - HGRP_Type list 
-*     const char *group      - group name 
-*
-*  RESULT
-*     lListElem* - found element or nullptr
-******************************************************************************/
+/**
+ * @brief Find a group by name
+ *
+ * Find a 'group' in 'this_list'.
+ *
+ * @param this_list HGRP_Type list
+ * @param group group name
+ *
+ * @return found element or nullptr
+ */
 lListElem *
 hgroup_list_locate(const lList *this_list, const char *group) 
 {
@@ -405,28 +353,18 @@ hgroup_list_locate(const lList *this_list, const char *group)
 }
 
 
-/****** sgeobj/hgroup/hgroup_create() *****************************************
-*  NAME
-*     hgroup_create() -- Create a new hgroup. 
-*
-*  SYNOPSIS
-*     lListElem* 
-*     hgroup_create(lList **answer_list, const char *name, 
-*                   lList *href_or_groupref) 
-*
-*  FUNCTION
-*     Create a new hostgroup.
-*
-*  INPUTS
-*     lList **answer_list     - AN_Type list 
-*     const char *name        - name 
-*     lList *href_or_groupref - list of hosts for this hgroup 
-*     bool is_name_validate   - if true, the hgrp name is validated. Should be done all the time,
-*                               there is only one case in qconf in that the name has to be ignored.
-*
-*  RESULT
-*     lListElem* - new element or nullptr
-*******************************************************************************/
+/**
+ * @brief Create a new hgroup
+ *
+ * Create a new hostgroup.
+ *
+ * @param answer_list AN_Type list
+ * @param name name
+ * @param href_or_groupref list of hosts for this hgroup
+ * @param is_name_validate if true, the hgrp name is validated. Should be done all the time, there is only one case in qconf in that the name has to be ignored.
+ *
+ * @return new element or nullptr
+ */
 lListElem *
 hgroup_create(lList **answer_list, const char *name, lList *href_or_groupref, bool is_name_validate)
 {
@@ -451,28 +389,17 @@ hgroup_create(lList **answer_list, const char *name, lList *href_or_groupref, bo
    DRETURN(ret); 
 }
 
-/****** sgeobj/hgroup/hgroup_add_references() *********************************
-*  NAME
-*     hgroup_add_references() -- Add a host or group reference 
-*
-*  SYNOPSIS
-*     bool hgroup_add_references(lListElem *this_elem, 
-*                                lList **answer_list, 
-*                                const lList *href_or_groupref) 
-*
-*  FUNCTION
-*     Add a host or group reference. 
-*
-*  INPUTS
-*     lListElem *this_elem          - HGRP_Type elem
-*     lList **answer_list           - AN_Type list 
-*     const lList *href_or_groupref - HR_Type list
-*
-*  RESULT
-*     bool - error state
-*        true  - Success
-*        false - Error 
-******************************************************************************/
+/**
+ * @brief Add a host or group reference
+ *
+ * Add a host or group reference.
+ *
+ * @param this_elem HGRP_Type elem
+ * @param answer_list AN_Type list
+ * @param href_or_groupref HR_Type list
+ *
+ * @return error state true  - Success false - Error
+ */
 bool 
 hgroup_add_references(lListElem *this_elem, lList **answer_list, 
                       const lList *href_or_groupref) 
@@ -501,37 +428,22 @@ hgroup_add_references(lListElem *this_elem, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/hgroup/hgroup_find_all_references() ****************************
-*  NAME
-*     hgroup_find_all_references() -- Find referenced host and groups 
-*
-*  SYNOPSIS
-*     bool 
-*     hgroup_find_all_references(const lListElem *this_elem, 
-*                                lList **answer_list, lList *master_list, 
-*                                lList **used_hosts, lList **used_groups) 
-*
-*  FUNCTION
-*     Find directly or indirectly referenced hgroup names. 
-*     'master_list' has to be the list of all existing hgroups.
-*     'used_hosts' and 'used_groups' will contain the names of
-*     hosts and groups referenced by 'this_elem'.
-*
-*  INPUTS
-*     const lListElem *this_elem - HGRP_Type 
-*     lList **answer_list        - AN_Type list 
-*     const lList *master_list   - HGRP_Type list 
-*     lList **used_hosts         - HR_Type list 
-*     lList **used_groups        - HR_Type list 
-*
-*  RESULT
-*     bool - error state
-*        true  - Success
-*        false - Error
-*
-* BUGS
-*     Extremely poor performance. Try not to use this function.
-******************************************************************************/
+/**
+ * @brief Find referenced host and groups
+ *
+ * Find directly or indirectly referenced hgroup names.
+ * 'master_list' has to be the list of all existing hgroups.
+ * 'used_hosts' and 'used_groups' will contain the names of
+ * hosts and groups referenced by 'this_elem'.
+ *
+ * @param this_elem HGRP_Type
+ * @param answer_list AN_Type list
+ * @param master_list HGRP_Type list
+ * @param used_hosts HR_Type list
+ * @param used_groups HR_Type list
+ *
+ * @return error state true  - Success false - Error BUGS Extremely poor performance. Try not to use this function.
+ */
 bool 
 hgroup_find_all_references(const lListElem *this_elem, lList **answer_list,
                            const lList *master_list, lList **used_hosts,
@@ -554,36 +466,22 @@ hgroup_find_all_references(const lListElem *this_elem, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/hgroup/hgroup_find_references() ********************************
-*  NAME
-*     hgroup_find_references() -- find directly referenced hosts and groups 
-*
-*  SYNOPSIS
-*     bool 
-*     hgroup_find_references(const lListElem *this_elem, 
-*                            lList **answer_list, 
-*                            lList *master_list, 
-*                            lList **used_hosts, 
-*                            lList **used_groups) 
-*
-*  FUNCTION
-*     Find all hgroups which are directly referenced by 'this_elem'
-*     'master_list' has to be the list of all existing hgroups.
-*     'used_hosts' and 'used_groups' will contain the names of
-*     hosts and groups after a call to this function.
-*
-*  INPUTS
-*     const lListElem *this_elem - HGRP_Type 
-*     lList **answer_list        - AN_Type 
-*     const lList *master_list   - HGRP_Type 
-*     lList **used_hosts         - HR_Type 
-*     lList **used_groups        - HR_Type 
-*
-*  RESULT
-*     bool - Error state
-*        true  - Success
-*        false - Error
-*******************************************************************************/
+/**
+ * @brief Find directly referenced hosts and groups
+ *
+ * Find all hgroups which are directly referenced by 'this_elem'
+ * 'master_list' has to be the list of all existing hgroups.
+ * 'used_hosts' and 'used_groups' will contain the names of
+ * hosts and groups after a call to this function.
+ *
+ * @param this_elem HGRP_Type
+ * @param answer_list AN_Type
+ * @param master_list HGRP_Type
+ * @param used_hosts HR_Type
+ * @param used_groups HR_Type
+ *
+ * @return Error state true  - Success false - Error
+ */
 bool 
 hgroup_find_references(const lListElem *this_elem, lList **answer_list,
                        const lList *master_list, lList **used_hosts,
@@ -607,36 +505,22 @@ hgroup_find_references(const lListElem *this_elem, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/hgroup/hgroup_find_all_referencees() ***************************
-*  NAME
-*     hgroup_find_all_referencees() -- find groups refering to this group 
-*
-*  SYNOPSIS
-*     bool 
-*     hgroup_find_all_referencees(const lListElem *this_elem, 
-*                                 lList **answer_list, 
-*                                 lList *master_list, 
-*                                 lList **occupants_groups) 
-*
-*  FUNCTION
-*     Find all hostgroups from 'master_list' which reference the
-*     hostgroup 'this_elem'. The name of these hostgroups will be
-*     returned in the hreference list 'occupants_groups'.
-*     'answer_list' will contain error messages if the function is
-*     not successful
-*      
-*
-*  INPUTS
-*     const lListElem *this_elem - HGRP_Type element 
-*     lList **answer_list        - AN_Type list 
-*     const lList *master_list   - list of all existing HGRP_Type elements 
-*     lList **occupants_groups   - HR_Type list 
-*
-*  RESULT
-*     bool - exit state
-*        true  - Success
-*        false - Error 
-*******************************************************************************/
+/**
+ * @brief Find groups refering to this group
+ *
+ * Find all hostgroups from 'master_list' which reference the
+ * hostgroup 'this_elem'. The name of these hostgroups will be
+ * returned in the hreference list 'occupants_groups'.
+ * 'answer_list' will contain error messages if the function is
+ * not successful
+ *
+ * @param this_elem HGRP_Type element
+ * @param answer_list AN_Type list
+ * @param master_list list of all existing HGRP_Type elements
+ * @param occupants_groups HR_Type list
+ *
+ * @return exit state true  - Success false - Error
+ */
 bool 
 hgroup_find_all_referencees(const lListElem *this_elem, 
                             lList **answer_list, const lList *master_list, 
@@ -661,38 +545,24 @@ hgroup_find_all_referencees(const lListElem *this_elem,
    DRETURN(ret);
 }
 
-/****** sgeobj/hgroup/hgroup_find_referencees() *********************************
-*  NAME
-*     hgroup_find_referencees() -- Find groups refering to this group 
-*
-*  SYNOPSIS
-*     bool 
-*     hgroup_find_referencees(const lListElem *this_elem, 
-*                             lList **answer_list, 
-*                             lList *master_list, 
-*                             lList **occupants_groups
-*                             lList **occupants_queues)
-*
-*  FUNCTION
-*     Find all hostgroups from 'master_list' which reference the
-*     hostgroup 'this_elem'. The name of these hostgroups will be
-*     returned in the hreference list 'occupants_groups'.
-*     'answer_list' will contain error messages if the function is
-*     not successful
-*
-*  INPUTS
-*     const lListElem *this_elem        - HGRP_Type 
-*     lList **answer_list               - AN_Type 
-*     const lList *master_hgroup_list   - HGRP_Type master list 
-*     const lList *master_cqueue_list   - CQ_Type
-*     lList **occupants_groups          - HR_Type 
-*     lList **occupants_queues          - ST_Type
-*
-*  RESULT
-*     bool - Error state
-*        true  - Success
-*        false - Error
-*******************************************************************************/
+/**
+ * @brief Find groups refering to this group
+ *
+ * Find all hostgroups from 'master_list' which reference the
+ * hostgroup 'this_elem'. The name of these hostgroups will be
+ * returned in the hreference list 'occupants_groups'.
+ * 'answer_list' will contain error messages if the function is
+ * not successful
+ *
+ * @param this_elem HGRP_Type
+ * @param answer_list AN_Type
+ * @param master_hgroup_list HGRP_Type master list
+ * @param master_cqueue_list CQ_Type
+ * @param occupants_groups HR_Type
+ * @param occupants_queues ST_Type
+ *
+ * @return Error state true  - Success false - Error
+ */
 bool 
 hgroup_find_referencees(const lListElem *this_elem, 
                         lList **answer_list,
@@ -727,29 +597,19 @@ hgroup_find_referencees(const lListElem *this_elem,
    DRETURN(ret);
 }
 
-/****** sgeobj/hgroup/hgroup_list_exists() *************************************
-*  NAME
-*     hgroup_list_exists() -- Do hostgroups really exist. 
-*
-*  SYNOPSIS
-*     bool 
-*     hgroup_list_exists(const lList *this_list, 
-*                        lList **answer_list, 
-*                        const lList *href_list) 
-*
-*  FUNCTION
-*     This functions returns true if all hostgroups given by the parameter
-*     "href_list" exist in "this_list". If one or more objects are missing
-*     a corresponding error message will be returned via "answer_list".
-*
-*  INPUTS
-*     const lList *this_list - HGRP_Type
-*     lList **answer_list    - AN_Type 
-*     const lList *href_list - HR_Type 
-*
-*  RESULT
-*     bool - true or false
-*******************************************************************************/
+/**
+ * @brief Do hostgroups really exist
+ *
+ * This functions returns true if all hostgroups given by the parameter
+ * "href_list" exist in "this_list". If one or more objects are missing
+ * a corresponding error message will be returned via "answer_list".
+ *
+ * @param this_list HGRP_Type
+ * @param answer_list AN_Type
+ * @param href_list HR_Type
+ *
+ * @return true or false
+ */
 bool
 hgroup_list_exists(const lList *this_list, lList **answer_list,
                    const lList *href_list)
@@ -776,33 +636,20 @@ hgroup_list_exists(const lList *this_list, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/hgroup/hgroup_list_find_matching_and_resolve() *****************
-*  NAME
-*     hgroup_list_find_matching_and_resolve() -- Finds hostnames 
-*
-*  SYNOPSIS
-*     bool 
-*     hgroup_list_find_matching_and_resolve(const lList *this_list, 
-*                                           lList **answer_list, 
-*                                           const char *hgroup_pattern, 
-*                                           lList **used_hosts) 
-*
-*  FUNCTION
-*    Selects all hostgroups of "this_list" which match the pattern 
-*    "hgroup_pattern". All hostnames which are directly or indirectly
-*     referenced will be added to "used_hosts"
-*
-*  INPUTS
-*     const lList *this_list     - HGRP_Type 
-*     lList **answer_list        - AN_Type 
-*     const char *hgroup_pattern - fnmatch pattern 
-*     lList **used_hosts         - HR_Type 
-*
-*  RESULT
-*     bool - error state
-*        true  - Success
-*        false - Error
-*******************************************************************************/
+/**
+ * @brief Finds hostnames
+ *
+ * Selects all hostgroups of "this_list" which match the pattern
+ * "hgroup_pattern". All hostnames which are directly or indirectly
+ * referenced will be added to "used_hosts"
+ *
+ * @param this_list HGRP_Type
+ * @param answer_list AN_Type
+ * @param hgroup_pattern fnmatch pattern
+ * @param used_hosts HR_Type
+ *
+ * @return error state true  - Success false - Error
+ */
 bool
 hgroup_list_find_matching_and_resolve(const lList *this_list,
                                       lList **answer_list,
@@ -837,33 +684,20 @@ hgroup_list_find_matching_and_resolve(const lList *this_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/hgroup/hgroup_list_find_matching() *****************************
-*  NAME
-*     hgroup_list_find_matching() -- Find hgroups which match pattern 
-*
-*  SYNOPSIS
-*     bool 
-*     hgroup_list_find_matching(const lList *this_list, 
-*                               lList **answer_list, 
-*                               const char *hgroup_pattern, 
-*                               lList **href_list) 
-*
-*  FUNCTION
-*    Selects all hostgroups of "this_list" which match the pattern 
-*    "hgroup_pattern". All matching hostgroup names will be added to
-*    "href_list"
-*
-*  INPUTS
-*     const lList *this_list     - HGRP_Type list 
-*     lList **answer_list        - AN_Type list 
-*     const char *hgroup_pattern - hostgroup pattern 
-*     lList **used_hosts         - HR_Type list  
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*******************************************************************************/
+/**
+ * @brief Find hgroups which match pattern
+ *
+ * Selects all hostgroups of "this_list" which match the pattern
+ * "hgroup_pattern". All matching hostgroup names will be added to
+ * "href_list"
+ *
+ * @param this_list HGRP_Type list
+ * @param answer_list AN_Type list
+ * @param hgroup_pattern hostgroup pattern
+ * @param[out] href_list HR_Type list receiving the matching names
+ *
+ * @return error state true  - success false - error
+ */
 bool
 hgroup_list_find_matching(const lList *this_list, lList **answer_list,
                           const char *hgroup_pattern, lList **href_list) 

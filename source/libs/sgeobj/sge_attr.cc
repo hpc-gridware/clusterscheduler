@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Per host attributes: one value per host or host group
+ *
+ * A cluster queue stores most of its attributes as a list of host specific
+ * values. Every value type needs the same set of operations, which is why
+ * they are emitted from one macro rather than written out.
+ *
+ * @see sge_attr.h
+ */
+
 #include <math.h>
 #include <cstring>
 #include <sys/types.h>
@@ -54,8 +64,17 @@
 #include <cinttypes>
 #include "msg_common.h"
 
+/// Debug layer the per host attribute traces are written to
 #define HOSTATTR_LAYER BASIS_LAYER
 
+/**
+ * @brief Define the whole function family for one per host attribute type
+ *
+ * Every attribute type needs the same set of functions - create, add, find,
+ * remove, render - differing only in the value's C type and the CULL
+ * descriptor. This emits them; #TEMPLATE_ATTR_PROTO declares the same set in
+ * the header.
+ */
 #define TEMPLATE_ATTR_IMPL(PREFIX, TYPE, INTERNAL_TYPE,                       \
                            DESCRIPTOR, HREF_NM, VALUE_NM)                     \
                                                                               \
@@ -171,48 +190,38 @@ static lListElem *
 attr_list_locate(const lList *this_list, const char *host_or_group, 
                  int href_nm);
 
-/****** sgeobj/attr/attr_create() *********************************************
-*  NAME
-*     attr_create() -- Returns a new attribute element 
-*
-*  SYNOPSIS
-*     static lListElem *
-*     attr_create(lList **answer_list, const char *href, void *value, 
-*                 const lDescr *descriptor, int href_nm, int value_nm) 
-*
-*  FUNCTION
-*     If an error occures "answer_list" will be filled with an error
-*     message. "href" is the hostname or hgroupname of the new element.
-*     "value" is a pointer to the new value for that attribute. "descriptor"
-*     is the CULL descriptor wich will be used to create the new element.
-*     "href_nm" is the CULL name of the field where the "href" name will
-*     be stored and "value_nm" defines the value of the field which 
-*     will be filled with the "value".
-*
-*  INPUTS
-*     lList **answer_list      - AN_Type list 
-*     const char *href         - host oder hgroupname 
-*     void *value              - pointer to the attributes value 
-*     const lDescr *descriptor - CULL descriptor 
-*     int href_nm              - CULL field name host or hgroupname
-*     int value_nm             - CULL field name for the value 
-*
-*  RESULT
-*     lListElem * - new CULL element or nullptr in case on an error
-*
-*  NOTES
-*     There are typesafe versions of this function. Have a look into 
-*     the headerfile and look for TEMPLATE_ATTR_PROTO. These macro
-*     creates the typesafe versions. E.g.
-*
-*        str_attr_create()
-*        ulng_attr_create()
-*        bool_attr_create()
-*        ...
-*        strlist_attr_create()
-*
-*     MT-NOTE: attr_create() is MT safe 
-******************************************************************************/
+/**
+ * @brief Returns a new attribute element
+ *
+ * If an error occures "answer_list" will be filled with an error
+ * message. "href" is the hostname or hgroupname of the new element.
+ * "value" is a pointer to the new value for that attribute. "descriptor"
+ * is the CULL descriptor wich will be used to create the new element.
+ * "href_nm" is the CULL name of the field where the "href" name will
+ * be stored and "value_nm" defines the value of the field which
+ * will be filled with the "value".
+ *
+ * @param answer_list AN_Type list
+ * @param href host oder hgroupname
+ * @param value pointer to the attributes value
+ * @param descriptor CULL descriptor
+ * @param href_nm CULL field name host or hgroupname
+ * @param value_nm CULL field name for the value
+ *
+ * @return new CULL element or nullptr in case on an error
+ *
+ * @note There are typesafe versions of this function. Have a look into
+ *       the headerfile and look for TEMPLATE_ATTR_PROTO. These macro
+ *       creates the typesafe versions. E.g.
+ *
+ *       str_attr_create()
+ *       ulng_attr_create()
+ *       bool_attr_create()
+ *       ...
+ *       strlist_attr_create()
+ *
+ *       MT-NOTE: attr_create() is MT safe
+ */
 static lListElem *
 attr_create(lList **answer_list, const char *href, void *value,
             const lDescr *descriptor, int href_nm, int value_nm)
@@ -242,60 +251,36 @@ attr_create(lList **answer_list, const char *href, void *value,
    DRETURN(ret);
 }
 
-/****** sgeobj/attr/attr_list_add() *******************************************
-*  NAME
-*     attr_list_add() -- Add a new attribute entry to a list 
-*
-*  SYNOPSIS
-*     static bool 
-*     attr_list_add(lList **this_list, lList **answer_list, lListElem **attr, 
-*                   int flags, lList **ambiguous_href_list, 
-*                   const lDescr *descriptor, int href_nm, int value_nm) 
-*
-*  FUNCTION
-*     "this_list" and "attr" must have the same "descriptor". "href_nm"
-*     defines one cull field within "attr" which containes a hostname 
-*     or hgroup-name. "value_nm" containes the value of that concerned 
-*     attribute.
-*     "answer_list" will be filled in case of an error.
-*     "flags" can be used to influence the behaviour of this function
-*     in case of duplicates or other ambiguities within the resulting
-*     list.
-*     "ambiguous_href_list" might be used as output parameter for this
-*     function. Find more detailes in the description of the flags
-*     parameter below.
-*
-*  INPUTS
-*     lList **this_list           - attribute list 
-*     lList **answer_list         - AN_Type list 
-*     lListElem **attr            - attribute pointer 
-*     int flags                   - behaviour bitmask
-*
-*        HOSTATTR_OVERWRITE - If there is already an element in "this_list"
-*           which has the same hostname or hgroup, then the value of this
-*           element will be overwritten if this flag is set. 
-*           If this flag is not given and the function should add a
-*           duplicate, then this will be counted as function error.
-*
-*        HOSTATTR_ALLOW_AMBIGUITY - If the resulting "this_list" would 
-*           result in an ambigous configuration for a ceratin host then 
-*           this is allowed if the flag is given. Otherwise it will
-*           be rejected. In that case "ambiguous_href_list" will be
-*           filled with the conflicting hostnames.
-*
-*     lList **ambiguous_href_list - HR_Type list 
-*     const lDescr *descriptor    - CULL descriptor 
-*     int href_nm                 - CULL field name 
-*     int value_nm                - CULL value name 
-*
-*  RESULT
-*     static bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: attr_list_add() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Add a new attribute entry to a list
+ *
+ * "this_list" and "attr" must have the same "descriptor". "href_nm"
+ * defines one cull field within "attr" which containes a hostname
+ * or hgroup-name. "value_nm" containes the value of that concerned
+ * attribute.
+ * "answer_list" will be filled in case of an error.
+ * "flags" can be used to influence the behaviour of this function
+ * in case of duplicates or other ambiguities within the resulting
+ * list.
+ * "ambiguous_href_list" might be used as output parameter for this
+ * function. Find more detailes in the description of the flags
+ * parameter below.
+ *
+ * @param this_list attribute list
+ * @param answer_list AN_Type list
+ * @param attr attribute pointer
+ * @param flags behaviour bitmask
+ * @param HOSTATTR_OVERWRITE If there is already an element in "this_list" which has the same hostname or hgroup, then the value of this element will be overwritten if this flag is set. If this flag is not given and the function should add a duplicate, then this will be counted as function error.
+ * @param HOSTATTR_ALLOW_AMBIGUITY If the resulting "this_list" would result in an ambigous configuration for a ceratin host then this is allowed if the flag is given. Otherwise it will be rejected. In that case "ambiguous_href_list" will be filled with the conflicting hostnames.
+ * @param ambiguous_href_list HR_Type list
+ * @param descriptor CULL descriptor
+ * @param href_nm CULL field name
+ * @param value_nm CULL value name
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: attr_list_add() is not MT safe
+ */
 static bool 
 attr_list_add(lList **this_list, lList **answer_list, lListElem **attr, 
               int flags, lList **ambiguous_href_list,
@@ -424,43 +409,28 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
    DRETURN(ret);
 }
 
-/****** sgeobj/attr/attr_list_add_set_del() ***********************************
-*  NAME
-*     attr_list_add_set_del() -- add/replace/delete an attribute entry 
-*
-*  SYNOPSIS
-*     static bool 
-*     attr_list_add_set_del(lList **this_list, lList **answer_list, 
-*                           const char *hostname, void *value, 
-*                           bool remove, const lDescr *descriptor, 
-*                           int href_nm, int value_nm) 
-*
-*  FUNCTION
-*     This function can be used to remove an entry from "this_list"
-*     or it can add a new entry or replace an existing one. Find a
-*     more detailed description in sgeobj/attr/attr_create()
-*
-*  INPUTS
-*     lList **this_list        - cull list of type "descriptor" 
-*     lList **answer_list      - AN_Type list 
-*     const char *hostname     - hostname or hgroup name 
-*     void *value              - pointer to value 
-*     bool remove              - true -> remove the element 
-*     const lDescr *descriptor - CULL descriptor 
-*     int href_nm              - CULL field name 
-*     int value_nm             - CULL value name 
-*
-*  RESULT
-*     static bool - error status
-*        true  - success
-*        false - error 
-*
-*  NOTES
-*     MT-NOTE: attr_list_add_set_del() is MT safe 
-*
-*  SEE ALSO
-*     sgeobj/attr/attr_create()
-*******************************************************************************/
+/**
+ * @brief Add/replace/delete an attribute entry
+ *
+ * This function can be used to remove an entry from "this_list"
+ * or it can add a new entry or replace an existing one. Find a
+ * more detailed description in sgeobj/attr/attr_create()
+ *
+ * @param this_list cull list of type "descriptor"
+ * @param answer_list AN_Type list
+ * @param hostname hostname or hgroup name
+ * @param value pointer to value
+ * @param remove true -> remove the element
+ * @param descriptor CULL descriptor
+ * @param href_nm CULL field name
+ * @param value_nm CULL value name
+ *
+ * @return error status true  - success false - error
+ *
+ * @note MT-NOTE: attr_list_add_set_del() is MT safe
+ *
+ * @see #attr_create
+ */
 static bool 
 attr_list_add_set_del(lList **this_list, lList **answer_list, 
               const char *hostname, void *value, bool remove,
@@ -643,6 +613,16 @@ descriptor        ASTR_Type
 href_nm           ASTR_href
 value_nm          ASTR_value
 */
+/**
+ * @brief Render a per host attribute list as an administrator writes it
+ *
+ * @param this_list the attribute list to render
+ * @param[out] string receives the text, appended
+ * @param descriptor the descriptor of the list elements
+ * @param href_nm the attribute holding an entry's host reference
+ * @param value_nm the attribute holding its value
+ * @return the resulting text
+ */
 bool
 attr_list_append_to_dstring(const lList *this_list, dstring *string,
                             const lDescr *descriptor, int href_nm, int value_nm)

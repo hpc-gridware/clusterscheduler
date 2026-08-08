@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
+/** @file
+ * @brief Declarations for the process table, as the execution daemon reads it
+ *
+ * @see sge_proc.cc
+ */
+
 #include "sgeobj/cull/sge_proc_PRO_L.h"
 #include "sgeobj/cull/sge_proc_GR_L.h"
 
@@ -40,6 +46,12 @@ lListElem *get_pr (int pid);
 void append_pr (lListElem *pr);
 void gen_procList ();
 void free_procList ();
+/**
+ * @brief Read the operating system's process table into the process list
+ *
+ * The execution daemon uses it to attribute processes to jobs.
+ */
 void fill_procList ();
+/// Drop the process list built by #fill_procList
 void clear_procList ();
 void clean_procList ();

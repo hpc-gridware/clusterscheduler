@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Talking to a job submission verifier script
+ *
+ * The protocol is line based and synchronous: qmaster or the client sends a
+ * command, the script answers, and a script that stays silent past its
+ * timeout is killed.
+ *
+ * @see sge_jsv_script.h
+ */
+
 #include <ctime>
 #include <cctype>
 #include <vector>
@@ -81,7 +91,17 @@
  * defines the timeout how long a client/qmaster would wait maximally for
  * a response from a JSV script after a command string has been send
  */
+/// Seconds to wait for a JSV script to answer one command
 #define JSV_CMD_TIMEOUT (10) 
+
+/**
+ * @def JOB_NAME_DEL
+ * @brief Separates the job name from what follows it in a JSV parameter
+ *
+ * Defined inside `jsv_cull_attr2switch_name` rather than at file scope, so it
+ * is documented here explicitly - doxygen does not attach a preceding comment
+ * to a macro defined in a function body.
+ */
 
 /**
  * @brief Handles one command a JSV script sent back
@@ -95,6 +115,7 @@
  */
 typedef bool (*jsv_command_f)(lListElem *jsv, lList **answer_list, const dstring *c, const dstring *s, const dstring *a);
 
+/// One entry of the table mapping a JSV command name onto its handler
 typedef struct jsv_command_t_ jsv_command_t;
 
 /// One entry of the table mapping a JSV command name onto its handler
@@ -1881,35 +1902,22 @@ jsv_handle_env_command(lListElem *jsv, lList **answer_list, const dstring *c, co
    DRETURN(ret);
 }
 
-/****** sgeobj/jsv/jsv_do_communication() **************************************
-*  NAME
-*     jsv_do_communication() -- Starts communicating with a JSV script 
-*
-*  SYNOPSIS
-*     bool 
-*     jsv_do_communication(sge_gdi_ctx_class_t *ctx, lListElem *jsv, 
-*                          lList **answer_list) 
-*
-*  FUNCTION
-*     Start a communication cycle to verify one job. The job to
-*     be verified has to be store in 'jsv' as attribute 'JSV_new_job'.
-*     Depending on the response of the JSV instance certain attributes
-*     in the 'jsv' will be changes (JSV_restart, JSV_soft_shutdown, 
-*     JSV_done, JSV_new_job)
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - GE context
-*     lListElem *jsv           - JSV_Type instance
-*     lList **answer_list      - AN_Type list 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: jsv_do_communication() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Starts communicating with a JSV script
+ *
+ * Start a communication cycle to verify one job. The job to
+ * be verified has to be store in 'jsv' as attribute 'JSV_new_job'.
+ * Depending on the response of the JSV instance certain attributes
+ * in the 'jsv' will be changes (JSV_restart, JSV_soft_shutdown,
+ * JSV_done, JSV_new_job)
+ *
+ * @param jsv JSV_Type instance
+ * @param answer_list AN_Type list
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: jsv_do_communication() is MT safe
+ */
 bool 
 jsv_do_communication(lListElem *jsv, lList **answer_list)
 {

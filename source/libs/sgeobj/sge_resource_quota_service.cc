@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Queries against the resource quota sets
+ *
+ * @see sge_resource_quota_service.h
+ */
+
 #include <cstring>
 #include <climits>
 
@@ -58,47 +64,32 @@ static bool is_global(const lListElem *rule, int nm)
    return false;
 }
 
-/****** sge_resource_quota_schedd/is_cqueue_global() ***************************
-*  NAME
-*     is_cqueue_global() -- Global rule with regards to cluster queues?
-*
-*  SYNOPSIS
-*     bool is_cqueue_global(const lListElem *rule)
-*
-*  INPUTS
-*     const lListElem *rule - RQR_Type
-*
-*  RESULT
-*     bool - True if cluster queues play no role with the rule
-*
-*  NOTES
-*     MT-NOTE: is_cqueue_global() is MT safe
-*******************************************************************************/
+/**
+ * @brief Global rule with regards to cluster queues?
+ *
+ * @param rule RQR_Type
+ *
+ * @return True if cluster queues play no role with the rule
+ *
+ * @note MT-NOTE: is_cqueue_global() is MT safe
+ */
 bool is_cqueue_global(const lListElem *rule)
 {
    return is_global(rule, RQR_filter_queues);
 }
 
 
-/****** sge_resource_quota_schedd/is_host_global() *****************************
-*  NAME
-*     is_host_global() -- Global rule with regards to hosts?
-*
-*  SYNOPSIS
-*     bool is_host_global(const lListElem *rule)
-*
-*  FUNCTION
-*     Return true if hosts play no role with the rule
-*
-*  INPUTS
-*     const lListElem *rule - RQR_Type
-*
-*  RESULT
-*     bool - True if hosts play no role with the rule
-*
-*  NOTES
-*     MT-NOTE: is_host_global() is MT safe
-*******************************************************************************/
+/**
+ * @brief Global rule with regards to hosts?
+ *
+ * Return true if hosts play no role with the rule
+ *
+ * @param rule RQR_Type
+ *
+ * @return True if hosts play no role with the rule
+ *
+ * @note MT-NOTE: is_host_global() is MT safe
+ */
 bool is_host_global(const lListElem *rule)
 {
    return is_global(rule, RQR_filter_hosts);
@@ -114,88 +105,64 @@ static bool is_expand(const lListElem *rule, int nm)
 }
 
 
-/****** sge_resource_quota_schedd/is_host_expand() *****************************
-*  NAME
-*     is_host_expand() -- Returns true if rule expands on hosts
-*
-*  SYNOPSIS
-*     bool is_host_expand(const lListElem *rule)
-*
-*  FUNCTION
-*     Returns true if rule expands on hosts.
-*
-*  INPUTS
-*     const lListElem *rule - RQR_Type
-*
-*  RESULT
-*     bool - True if rule expands on hosts
-*
-*  EXAMPLE
-*      "hosts {*}" returns true
-*      "hosts @allhosts" returns false
-*
-*  NOTES
-*     MT-NOTE: is_host_expand() is MT safe
-*******************************************************************************/
+/**
+ * @brief Returns true if rule expands on hosts
+ *
+ * Returns true if rule expands on hosts.
+ *
+ * @code
+ *  "hosts {*}" returns true
+ *  "hosts @allhosts" returns false
+ * @endcode
+ *
+ * @param rule RQR_Type
+ *
+ * @return True if rule expands on hosts
+ *
+ * @note MT-NOTE: is_host_expand() is MT safe
+ */
 bool is_host_expand(const lListElem *rule)
 {
    return is_expand(rule, RQR_filter_hosts);
 }
 
-/****** sge_resource_quota_schedd/is_cqueue_expand() ***************************
-*  NAME
-*     is_cqueue_expand() -- Returns true if rule expands on cluster queues
-*
-*  SYNOPSIS
-*     bool is_cqueue_expand(const lListElem *rule)
-*
-*  FUNCTION
-*     Returns true if rule expands on cluster queues.
-*
-*  INPUTS
-*     const lListElem *rule - RQR_Type
-*
-*  RESULT
-*     bool - True if rule expands on hosts
-*
-*  EXAMPLE
-*      "queues {*}" returns true
-*      "queues Q001,Q002" returns false
-*
-*  NOTES
-*     MT-NOTE: is_cqueue_expand() is MT safe
-*******************************************************************************/
+/**
+ * @brief Returns true if rule expands on cluster queues
+ *
+ * Returns true if rule expands on cluster queues.
+ *
+ * @code
+ *  "queues {*}" returns true
+ *  "queues Q001,Q002" returns false
+ * @endcode
+ *
+ * @param rule RQR_Type
+ *
+ * @return True if rule expands on hosts
+ *
+ * @note MT-NOTE: is_cqueue_expand() is MT safe
+ */
 bool is_cqueue_expand(const lListElem *rule)
 {
    return is_expand(rule, RQR_filter_queues);
 }
 
 
-/****** sge_resource_quota_schedd/sge_user_is_referenced_in_rqs() ********************
-*  NAME
-*     sge_user_is_referenced_in_rqs() -- search for user reference in rqs
-*
-*  SYNOPSIS
-*     bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user,
-*     lList *acl_list)
-*
-*  FUNCTION
-*     Search for a user reference in the resource quota sets
-*
-*  INPUTS
-*     const lList *rqs - resource quota set list
-*     const char *user  - user to search
-*     const char *group - user's group
-*     lList *acl_list   - acl list for user resolving
-*
-*  RESULT
-*     bool - true if user was found
-*            false if user was not found
-*
-*  NOTES
-*     MT-NOTE: sge_user_is_referenced_in_rqs() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Search for user reference in rqs
+ *
+ * Search for a user reference in the resource quota sets
+ *
+ * @param rqs resource quota set list
+ * @param user user to search
+ * @param group user's group
+ * @param grp_list the user's supplementary groups
+ * @param acl_list acl list for user resolving
+ *
+ * @return true if user was found false if user was not found
+ *
+ * @note MT-NOTE: sge_user_is_referenced_in_rqs() is MT safe
+ */
 bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, const lList *grp_list, const lList *acl_list)
 {
    bool ret = false;

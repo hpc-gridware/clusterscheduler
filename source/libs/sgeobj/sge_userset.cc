@@ -31,6 +31,15 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Usersets: access lists and departments
+ *
+ * The same object serves both purposes, told apart by `US_type`. An entry
+ * names either a user or, with a leading `@`, a UNIX group.
+ *
+ * @see sge_userset.h
+ */
 #include <cstdio>
 #include <fnmatch.h>
 
@@ -59,25 +68,18 @@ const char* userset_types[] = {
    nullptr
 };
 
-/****** sgeobj/userset/userset_list_validate_acl_list() ***********************
-*  NAME
-*     userset_list_validate_acl_list() -- validate an acl list 
-*
-*  SYNOPSIS
-*     int 
-*     userset_list_validate_acl_list(lList *acl_list, lList **alpp)
-*
-*  FUNCTION
-*     Checks if all entries of an acl list (e.g. user list of a pe) 
-*     are contained in the master userset list.
-*
-*  INPUTS
-*     lList *acl_list       - the acl list to check
-*     lList **alpp          - answer list pointer
-*
-*  RESULT
-*     int - STATUS_OK, if everything is OK
-*******************************************************************************/
+/**
+ * @brief Validate an acl list
+ *
+ * Checks if all entries of an acl list (e.g. user list of a pe)
+ * are contained in the master userset list.
+ *
+ * @param acl_list the acl list to check
+ * @param alpp answer list pointer
+ * @param master_userset_list the defined usersets to check against
+ *
+ * @return STATUS_OK, if everything is OK
+ */
 int 
 userset_list_validate_acl_list(const lList *acl_list, lList **alpp, const lList *master_userset_list) {
    DENTER(TOP_LAYER);
@@ -94,29 +96,21 @@ userset_list_validate_acl_list(const lList *acl_list, lList **alpp, const lList 
 }
 
 
-/****** sge_userset/userset_list_validate_access() *****************************
-*  NAME
-*     userset_list_validate_access() -- all user sets names in list must exist  
-*
-*  SYNOPSIS
-*     int userset_list_validate_access(lList *acl_list, int nm, lList **alpp) 
-*
-*  FUNCTION
-*     All the user set names in the acl_list must be defined in the qmaster
-*     user set lists. The user set is diferentiated from user names by @ sign
-*
-*  INPUTS
-*     lList *acl_list - the acl list to check
-*     int nm          - field name
-*     lList **alpp    - answer list pointer
-*
-*  RESULT
-*     int - STATUS_OK if no error,  STATUS_EUNKNOWN otherwise
-*
-*  NOTES
-*     MT-NOTE: userset_list_validate_access() is not MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief All user sets names in list must exist
+ *
+ * All the user set names in the acl_list must be defined in the qmaster
+ * user set lists. The user set is diferentiated from user names by @ sign
+ *
+ * @param acl_list the acl list to check
+ * @param nm field name
+ * @param alpp answer list pointer
+ * @param master_userset_list the defined usersets to check against
+ *
+ * @return STATUS_OK if no error,  STATUS_EUNKNOWN otherwise
+ *
+ * @note MT-NOTE: userset_list_validate_access() is not MT safe
+ */
 int
 userset_list_validate_access(const lList *acl_list, int nm, lList **alpp, const lList *master_userset_list) {
    DENTER(TOP_LAYER);
@@ -136,26 +130,16 @@ userset_list_validate_access(const lList *acl_list, int nm, lList **alpp, const 
 
    DRETURN(STATUS_OK);
 }
-/****** sgeobj/userset/userset_validate_entries() *******************************
-*  NAME
-*     userset_validate_entries() -- verify entries of a user set
-*
-*  SYNOPSIS
-*     int userset_validate_entries(lListElem *userset, lList **alpp, 
-*                                  int start_up) 
-*
-*  FUNCTION
-*     Validates all entries of a userset.
-*
-*  INPUTS
-*     lListElem *userset - the userset to check
-*     lList **alpp       - answer list pointer, if answer is expected. 
-*                          In any case, errors are output using the 
-*                          ERROR macro.
-*
-*  RESULT
-*     int - STATUS_OK, if everything is OK
-*******************************************************************************/
+/**
+ * @brief Verify entries of a user set
+ *
+ * Validates all entries of a userset.
+ *
+ * @param userset the userset to check
+ * @param alpp answer list pointer, if answer is expected. In any case, errors are output using the ERROR macro.
+ *
+ * @return STATUS_OK, if everything is OK
+ */
 int userset_validate_entries(lListElem *userset, lList **alpp) {
    DENTER(TOP_LAYER);
 
@@ -171,29 +155,19 @@ int userset_validate_entries(lListElem *userset, lList **alpp) {
    DRETURN(STATUS_OK);
 }
 
-/****** sgeobj/userset/userset_get_type_string() **********************************
-*  NAME
-*     userset_get_type_string() -- get readable type definition
-*
-*  SYNOPSIS
-*     const char* 
-*     userset_get_type_string(const lListElem *userset, lList **answer_list,
-*                           dstring *buffer) 
-*
-*  FUNCTION
-*     Returns a readable string of the userset type bitfield.
-*
-*  INPUTS
-*     const lListElem *userset - the userset containing the requested 
-*                                information
-*     dstring *buffer          - string buffer to hold the result string
-*
-*  RESULT
-*     const char* - resulting string
-*
-*  SEE ALSO
-*     sgeobj/userset/userset_set_type_string()
-*******************************************************************************/
+/**
+ * @brief Get readable type definition
+ *
+ * Returns a readable string of the userset type bitfield.
+ *
+ * @param userset the userset containing the requested information
+ * @param buffer string buffer to hold the result string
+ * @param answer_list errors will be reported here
+ *
+ * @return resulting string
+ *
+ * @see #userset_set_type_string
+ */
 const char *
 userset_get_type_string(const lListElem *userset, lList **answer_list, dstring *buffer) {
    DENTER(TOP_LAYER);
@@ -217,30 +191,19 @@ userset_get_type_string(const lListElem *userset, lList **answer_list, dstring *
    DRETURN(sge_dstring_get_string(buffer));
 }
 
-/****** sgeobj/userset/userset_set_type_string() ******************************
-*  NAME
-*     userset_set_type_string() -- set userset type from string 
-*
-*  SYNOPSIS
-*     bool 
-*     userset_set_type_string(lListElem *userset, lList **answer_list, 
-*                           const char *value) 
-*
-*  FUNCTION
-*     Takes a string representation for the userset type, 
-*
-*  INPUTS
-*     lListElem *userset    - the userset to change
-*     lList **answer_list - errors will be reported here
-*     const char *value   - new value for userset type
-*
-*  RESULT
-*     bool - true on success, 
-*            false on error, error message will be in answer_list
-*
-*  SEE ALSO
-*     sgeobj/userset/userset_get_type_string()
-******************************************************************************/
+/**
+ * @brief Set userset type from string
+ *
+ * Takes a string representation for the userset type,
+ *
+ * @param userset the userset to change
+ * @param answer_list errors will be reported here
+ * @param value new value for userset type
+ *
+ * @return true on success, false on error, error message will be in answer_list
+ *
+ * @see #userset_get_type_string
+ */
 bool 
 userset_set_type_string(lListElem *userset, lList **answer_list, const char *value) {
    DENTER(TOP_LAYER);
@@ -266,6 +229,13 @@ userset_set_type_string(lListElem *userset, lList **answer_list, const char *val
    DRETURN(ret);
 }
 
+/**
+ * @brief Render a userset list as a comma separated list of names
+ *
+ * @param this_list the usersets to render
+ * @param[out] string receives the text, appended
+ * @return the resulting text
+ */
 const char *
 userset_list_append_to_dstring(const lList *this_list, dstring *string) {
    const char *ret = nullptr;
@@ -289,6 +259,16 @@ userset_list_append_to_dstring(const lList *this_list, dstring *string) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Find a group name in a userset's entry list
+ *
+ * A userset entry naming a UNIX group is written with a leading `@`; the
+ * caller strips it before calling this.
+ *
+ * @param group_name_without_prefix the group name, without the `@`
+ * @param user_group_list the userset's entries
+ * @return the matching entry, or nullptr
+ */
 bool
 find_name_as_group(const char *group_name_without_prefix, const lList *user_group_list) {
    DENTER(TOP_LAYER);
@@ -311,6 +291,13 @@ find_name_as_group(const char *group_name_without_prefix, const lList *user_grou
    DRETURN(found);
 }
 
+/**
+ * @brief Find a user name in a userset's entry list
+ *
+ * @param user_name the user to look for
+ * @param user_group_list the userset's entries
+ * @return the matching entry, or nullptr
+ */
 bool
 find_name_as_user(const char *user_name, const lList *user_group_list) {
    DENTER(TOP_LAYER);
@@ -329,6 +316,18 @@ find_name_as_user(const char *user_name, const lList *user_group_list) {
    DRETURN(found);
 }
 
+/**
+ * @brief Is a user covered by one access list?
+ *
+ * An entry matches either the user name or one of the user's groups, the
+ * latter written with a leading `@`.
+ *
+ * @param user the user name
+ * @param group the user's primary group
+ * @param grp_list the user's supplementary groups
+ * @param acl the access list to check
+ * @return 1 when the user is contained, 0 when not
+ */
 int
 sge_contained_in_access_list(const char *user, const char *group, const lList *grp_list, const lListElem *acl) {
    DENTER(TOP_LAYER);
@@ -358,13 +357,17 @@ sge_contained_in_access_list(const char *user, const char *group, const lList *g
    DRETURN(found ? 1 : 0);
 }
 
-/* sge_contained_in_access_list_() returns
-   1  yes it is contained in the acl
-   0  no
-   -1 got nullptr for user/group
-
-   user, group: may be nullptr
-*/
+/**
+ * @brief Is a user covered by any of several access lists?
+ *
+ * @param user the user name; may be nullptr
+ * @param group the user's primary group; may be nullptr
+ * @param grp_list the user's supplementary groups
+ * @param acl the access lists to check, by name
+ * @param acl_list the defined usersets the names resolve against
+ * @return 1 when the user is contained in at least one, 0 when not, -1 when
+ *         both `user` and `group` were nullptr
+ */
 int
 sge_contained_in_access_list_(const char *user, const char *group, const lList *grp_list,
                               const lList *acl, const lList *acl_list) {

@@ -18,6 +18,12 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The resources a scheduling decision granted
+ *
+ * @see sge_grantedres.h
+ */
+
 #include "sgeobj/sge_host.h"
 
 #include "uti/sge_string.h"
