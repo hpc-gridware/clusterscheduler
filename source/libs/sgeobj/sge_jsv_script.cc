@@ -83,13 +83,24 @@
  */
 #define JSV_CMD_TIMEOUT (10) 
 
+/**
+ * @brief Handles one command a JSV script sent back
+ *
+ * @param jsv the JSV instance the command came from
+ * @param answer_list receives error messages
+ * @param c the command
+ * @param s its subcommand, if any
+ * @param a the remaining arguments
+ * @return true when the command was handled
+ */
 typedef bool (*jsv_command_f)(lListElem *jsv, lList **answer_list, const dstring *c, const dstring *s, const dstring *a);
 
 typedef struct jsv_command_t_ jsv_command_t;
 
+/// One entry of the table mapping a JSV command name onto its handler
 struct jsv_command_t_ {
-   const char *command;
-   jsv_command_f func;
+   const char *command; ///< the command name a JSV script sends
+   jsv_command_f func;  ///< the handler for it
 };
 
 static bool

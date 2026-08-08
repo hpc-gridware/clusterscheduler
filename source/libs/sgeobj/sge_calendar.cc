@@ -68,9 +68,10 @@ enum {
    ERR_TOKEN
 };
 
+/// One entry of the calendar parser's token table
 typedef struct {
-   int token;
-   const char *text;
+   int token;         ///< the token id the text stands for
+   const char *text;  ///< the text an administrator writes
 } token_set_t;
 
 

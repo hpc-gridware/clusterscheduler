@@ -33,7 +33,13 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Generic access to any CULL object, without knowing its type
+ *
+ * The implementation behind `sge_object.h`: the type table, the attribute
+ * conversion helpers, and the verification the GDI layer runs on incoming
+ * objects.
+ *
+ * @see sge_object.h
  */
 
 #include <cstdlib>

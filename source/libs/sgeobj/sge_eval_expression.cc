@@ -49,17 +49,24 @@
 #include "ocs_CEntry.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-/* Local variables and definitions  */
+/**
+ * @brief The state of one expression evaluation
+ *
+ * A resource request may be an expression rather than a plain value, e.g.
+ * `arch=lx*|sol*`. This carries everything the recursive descent evaluation
+ * needs: what is being compared, where in the expression it currently is, and
+ * where errors go.
+ */
 typedef struct _s_token {
-   ocs::CEntry::Type type;       /* resource type, how to be compared */
-   const char *value;   /* Pointer to tested value */
-   const char *expr;    /* Pointer to tested expression */
-   const char *s;       /* Index pointer to expression */
-         char *pattern; /* regular expression subpattern */
-   bool has_patterns;   /* pattern has patterns switch, to help be more effective */
-   int  tt;             /* Type of token */
-   int  et;             /* Expected Token type */
-   lList **answer_list; /* Anwser list, or null */
+   ocs::CEntry::Type type; ///< resource type, how to be compared
+   const char *value;   ///< Pointer to tested value
+   const char *expr;    ///< Pointer to tested expression
+   const char *s;       ///< Index pointer to expression
+         char *pattern; ///< regular expression subpattern
+   bool has_patterns;   ///< whether the pattern really contains wildcards, so the cheap compare can be used
+   int  tt;             ///< Type of token
+   int  et;             ///< Expected Token type
+   lList **answer_list; ///< Answer list, or nullptr
 } s_token;
 
 

@@ -32,6 +32,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Resource usage: reading, writing and scaling usage attributes
+ *
+ * Usage is stored as a list of name/value pairs, with the value always a
+ * double; the typed accessors convert on read and write. A custom attribute
+ * arriving through the shepherd may instead carry a string - see
+ * #usage_parse_value.
+ *
+ * @see sge_usage.h
+ */
+
 #include <cctype>
 #include <cerrno>
 #include <cstdlib>
@@ -43,32 +54,22 @@
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_host.h"
 
-/****** sgeobj/usage/usage_list_get_ulong_usage() *****************************
-*  NAME
-*     usage_list_get_ulong_usage() -- return ulong usage value
-*
-*  SYNOPSIS
-*     uint32_t
-*     usage_list_get_ulong_usage(const lList *usage_list, const char *name,
-*                                uint32_t def)
-*
-*  FUNCTION
-*     Searches a usage object with the given name in the given usage
-*     list. If such an element is found, returns the value of the
-*     usage object as uint32_t value.
-*     If no such element is found, return the given default value.
-*
-*  INPUTS
-*     const lList *usage_list - the usage list
-*     const char *name        - name of the element to search
-*     uint32_t def            - default value
-*
-*  RESULT
-*     uint32_t - value of found object or default
-*
-*  SEE ALSO
-*     gdi/usage/usage_list_get_double_usage()
-*******************************************************************************/
+/**
+ * @brief Return ulong usage value
+ *
+ * Searches a usage object with the given name in the given usage
+ * list. If such an element is found, returns the value of the
+ * usage object as uint32_t value.
+ * If no such element is found, return the given default value.
+ *
+ * @param usage_list the usage list
+ * @param name name of the element to search
+ * @param def default value
+ *
+ * @return value of found object or default
+ *
+ * @see #usage_list_get_double_usage
+ */
 int
 usage_list_get_int_usage(const lList *usage_list, const char *name, int def) {
    const lListElem *ep = lGetElemStr(usage_list, UA_name, name);
@@ -79,6 +80,18 @@ usage_list_get_int_usage(const lList *usage_list, const char *name, int def) {
    }
 }
 
+/**
+ * @brief Read a usage value as a 32 bit unsigned integer
+ *
+ * Usage is stored as a double throughout; this converts on read.
+ *
+ * @param usage_list list to search
+ * @param name name of the element to search
+ * @param def default value returned when the list has no such element
+ * @return value of found object or default
+ *
+ * @note MT-NOTE: usage_list_get_ulong_usage() is MT safe
+ */
 uint32_t
 usage_list_get_ulong_usage(const lList *usage_list, const char *name, uint32_t def) {
    const lListElem *ep = lGetElemStr(usage_list, UA_name, name);
@@ -89,6 +102,16 @@ usage_list_get_ulong_usage(const lList *usage_list, const char *name, uint32_t d
    }
 }
 
+/**
+ * @brief Read a usage value as a 64 bit unsigned integer
+ *
+ * @param usage_list list to search
+ * @param name name of the element to search
+ * @param def default value returned when the list has no such element
+ * @return value of found object or default
+ *
+ * @note MT-NOTE: usage_list_get_ulong64_usage() is MT safe
+ */
 uint64_t
 usage_list_get_ulong64_usage(const lList *usage_list, const char *name, uint64_t def) {
    const lListElem *ep = lGetElemStr(usage_list, UA_name, name);
@@ -99,32 +122,22 @@ usage_list_get_ulong64_usage(const lList *usage_list, const char *name, uint64_t
    }
 }
 
-/****** sgeobj/usage/usage_list_get_double_usage() ****************************
-*  NAME
-*     usage_list_get_double_usage() -- return double usage value
-*
-*  SYNOPSIS
-*     double
-*     usage_list_get_double_usage(const lList *usage_list, const char *name,
-*                                 double def)
-*
-*  FUNCTION
-*     Searches a usage object with the given name in the given usage
-*     list. If such an element is found, returns the value of the
-*     usage object as double value.
-*     If no such element is found, return the given default value.
-*
-*  INPUTS
-*     const lList *usage_list - the usage list
-*     const char *name        - name of the element to search
-*     double def              - default value
-*
-*  RESULT
-*     double - value of found object or default
-*
-*  SEE ALSO
-*     gdi/usage/usage_list_get_ulong_usage()
-*******************************************************************************/
+/**
+ * @brief Return double usage value
+ *
+ * Searches a usage object with the given name in the given usage
+ * list. If such an element is found, returns the value of the
+ * usage object as double value.
+ * If no such element is found, return the given default value.
+ *
+ * @param usage_list the usage list
+ * @param name name of the element to search
+ * @param def default value
+ *
+ * @return value of found object or default
+ *
+ * @see #usage_list_get_ulong_usage
+ */
 double
 usage_list_get_double_usage(const lList *usage_list, const char *name,
                             double def)
@@ -137,71 +150,56 @@ usage_list_get_double_usage(const lList *usage_list, const char *name,
    }
 }
 
-/****** sgeobj/usage/usage_list_set_ulong_usage() ******************************
-*  NAME
-*     usage_list_set_ulong_usage() -- create/update a usage record
-*
-*  SYNOPSIS
-*     void
-*     usage_list_set_ulong_usage(lList *usage_list, const char *name,
-*                                uint32_t value)
-*
-*  FUNCTION
-*     Updates the value of a usage record. If no usage record exists with the
-*     given name in usage_list, a new record is created.
-*
-*  INPUTS
-*     lList *usage_list - list containing the usage record to update
-*     const char *name  - name of the usage record to update
-*     uint32_t value    - the new value
-*
-*  NOTES
-*     MT-NOTE: usage_list_set_ulong_usage() is MT safe
-*
-*  SEE ALSO
-*     sgeobj/usage/usage_list_set_double_usage()
-*     sgeobj/usage/usage_list_get_ulong_usage()
-*     sgeobj/usage/usage_list_get_double_usage()
-*******************************************************************************/
+/**
+ * @brief Create/update a usage record
+ *
+ * Updates the value of a usage record. If no usage record exists with the
+ * given name in usage_list, a new record is created.
+ *
+ * @param usage_list list containing the usage record to update
+ * @param name name of the usage record to update
+ * @param value the new value
+ *
+ * @note MT-NOTE: usage_list_set_ulong_usage() is MT safe
+ *
+ * @see #usage_list_set_double_usage, #usage_list_get_ulong_usage, #usage_list_get_double_usage
+ */
 void
 usage_list_set_ulong_usage(lList *usage_list, const char *name, uint32_t value)
 {
    usage_list_set_double_usage(usage_list, name, value);
 }
 
+/**
+ * @brief Create or update a usage record from a 64 bit unsigned integer
+ *
+ * @param usage_list list containing the usage record to update
+ * @param name name of the usage record to update
+ * @param value the new value
+ *
+ * @note MT-NOTE: usage_list_set_ulong64_usage() is MT safe
+ */
 void
 usage_list_set_ulong64_usage(lList *usage_list, const char *name, uint64_t value)
 {
    usage_list_set_double_usage(usage_list, name, value);
 }
 
-/****** sgeobj/usage/usage_list_set_double_usage() ******************************
-*  NAME
-*     usage_list_set_double_usage() -- create/update a usage record
-*
-*  SYNOPSIS
-*     void
-*     usage_list_set_double_usage(lList *usage_list, const char *name,
-*                                 double value)
-*
-*  FUNCTION
-*     Updates the value of a usage record. If no usage record exists with the
-*     given name in usage_list, a new record is created.
-*
-*  INPUTS
-*     lList *usage_list - list containing the usage record to update
-*     const char *name  - name of the usage record to update
-*     double value      - the new value
-*     bool create_usage - create the usage element if it does not exist? Default: yes.
-*
-*  NOTES
-*     MT-NOTE: usage_list_set_double_usage() is MT safe
-*
-*  SEE ALSO
-*     sgeobj/usage/usage_list_set_ulong_usage()
-*     sgeobj/usage/usage_list_get_ulong_usage()
-*     sgeobj/usage/usage_list_get_double_usage()
-*******************************************************************************/
+/**
+ * @brief Create/update a usage record
+ *
+ * Updates the value of a usage record. If no usage record exists with the
+ * given name in usage_list, a new record is created.
+ *
+ * @param usage_list list containing the usage record to update
+ * @param name name of the usage record to update
+ * @param value the new value
+ * @param create_usage create the usage element if it does not exist? Default: yes.
+ *
+ * @note MT-NOTE: usage_list_set_double_usage() is MT safe
+ *
+ * @see #usage_list_set_ulong_usage, #usage_list_get_ulong_usage, #usage_list_get_double_usage
+ */
 void
 usage_list_set_double_usage(lList *usage_list, const char *name, double value, bool create_usage)
 {
@@ -241,32 +239,24 @@ usage_list_max_double_usage(lList *usage_list, const char *name, double value, b
    }
 }
 
-/****** sge_usage/usage_list_sum() *********************************************
-*  NAME
-*     usage_list_sum() -- sum up usage of two lists
-*
-*  SYNOPSIS
-*     void
-*     usage_list_sum(lList *usage_list, const lList *add_usage_list)
-*
-*  FUNCTION
-*     Add the usage reported in add_usage_list to usage_list.
-*     Summing up of usage will only be done for certain attributes:
-*        - cpu
-*        - io
-*        - iow
-*        - mem
-*        - vmem
-*        - maxvmem
-*        - all ru_* attributes (see man getrusage.2)
-*
-*  INPUTS
-*     lList *usage_list           - the usage list to contain all usage
-*     const lList *add_usage_list - usage to add to usage_list
-*
-*  NOTES
-*     MT-NOTE: usage_list_sum() is MT safe
-*******************************************************************************/
+/**
+ * @brief Sum up usage of two lists
+ *
+ * Add the usage reported in add_usage_list to usage_list.
+ * Summing up of usage will only be done for certain attributes:
+ *    - cpu
+ *    - io
+ *    - iow
+ *    - mem
+ *    - vmem
+ *    - maxvmem
+ *    - all ru_* attributes (see man getrusage.2)
+ *
+ * @param usage_list the usage list to contain all usage
+ * @param add_usage_list usage to add to usage_list
+ *
+ * @note MT-NOTE: usage_list_sum() is MT safe
+ */
 void
 usage_list_sum(lList *usage_list, const lList *add_usage_list)
 {
@@ -295,6 +285,18 @@ usage_list_sum(lList *usage_list, const lList *add_usage_list)
 }
 
 /* if the scaled usage list does not yet exist, it is created and returned */
+/**
+ * @brief Apply an execution host's usage scaling factors
+ *
+ * A slow host can be configured to report its usage scaled, so that jobs are
+ * charged comparably across a heterogeneous cluster. The scaling applies to
+ * the usage accumulated *since* `prev_usage`, not to the total.
+ *
+ * @param scaling the host's scaling factors, one per usage attribute
+ * @param prev_usage the usage already accounted for
+ * @param[in,out] scaled_usage the usage to scale in place
+ * @return the scaled list
+ */
 lList *scale_usage(
 const lList *scaling,     /* HS_Type */
 const lList *prev_usage,  /* HS_Type */
@@ -425,9 +427,12 @@ str_iequal(const char *value, const char *literal) {
 }
 
 /**
- * Try to parse @p value as a full double. Returns true and sets @p out when
- * the entire string was consumed as a valid finite double; false otherwise
- * (including leading/trailing whitespace, partial parse, NaN/Infinity).
+ * @brief Try to parse a string as a full double
+ *
+ * @param value the text to parse
+ * @param[out] out receives the number when the whole string was consumed
+ * @return true only when the entire string was a valid finite double; false
+ *         for leading or trailing whitespace, a partial parse, NaN and Infinity
  */
 static bool
 parse_full_double(const char *value, double &out) {
@@ -445,7 +450,8 @@ parse_full_double(const char *value, double &out) {
 }
 
 /**
- * Parse a raw shepherd-usage-file value into a fresh UA_Type element.
+ * @brief Parse a raw shepherd usage file value into a fresh `UA_Type` element
+ *
  * Discrimination rule (CS-849, origin AE3):
  *   1. length >= 2 && value starts and ends with the same quote character
  *      ('"' or '\''): strip both quotes, UA_svalue = interior, no escape processing.
@@ -454,8 +460,12 @@ parse_full_double(const char *value, double &out) {
  *   3. Else case-insensitively equals "true" (UA_value = 1) or "false" (UA_value = 0).
  *   4. Else raw string: UA_svalue = the value as-is, including any stray
  *      leading quote (unmatched, mismatched, or single-character).
- * Standard USAGE_ATTR_* code paths never invoke this helper; UA_svalue is
+ * Standard `USAGE_ATTR_*` code paths never invoke this helper; `UA_svalue` is
  * reserved for custom usage values that arrive through the shepherd path.
+ *
+ * @param name the usage attribute name; nullptr yields no element
+ * @param value the raw text; nullptr is treated as the empty string
+ * @return the new element, or nullptr when `name` was nullptr
  */
 lListElem *
 usage_parse_value(const char *name, const char *value) {

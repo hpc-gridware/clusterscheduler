@@ -32,58 +32,52 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Orders: what the scheduler asks qmaster to do
+ *
+ * The scheduler does not change the object model. It produces a list of
+ * orders - start this job, give that job these tickets - and qmaster executes
+ * them. Ticket orders carry a *reduced* job and array task holding only the
+ * changed attributes, which is why the attribute positions of both the real
+ * and the reduced element are cached in #order_pos_t.
+ *
+ * @see sge_order.h
+ */
+
 #include "uti/sge_stdlib.h"
 
 #include "sgeobj/sge_order.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_job.h"
 
-/****** sge_order/sge_free_cull_order_pos() ************************************
-*  NAME
-*     sge_free_cull_order_pos() -- frees a cull order struct
-*
-*  SYNOPSIS
-*     void sge_free_cull_order_pos(order_pos_t **cull_order_pos) 
-*
-*  FUNCTION
-*     frees a cull order struct
-*
-*  INPUTS
-*     order_pos_t **cull_order_pos - a douple pointer to the struct. Will be
-*                                    set to nullptr
-*
-*  NOTES
-*     MT-NOTE: sge_free_cull_order_pos() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Frees a cull order struct
+ *
+ * frees a cull order struct
+ *
+ * @param cull_order_pos a douple pointer to the struct. Will be set to nullptr
+ *
+ * @note MT-NOTE: sge_free_cull_order_pos() is MT safe
+ */
 void
 sge_free_cull_order_pos(order_pos_t **cull_order_pos)
 {
    sge_free(cull_order_pos);
 }
 
-/****** sge_order/sge_create_cull_order_pos() **********************************
-*  NAME
-*     sge_create_cull_order_pos() -- generates a cull order position struct
-*
-*  SYNOPSIS
-*     void sge_create_cull_order_pos(order_pos_t **cull_order_pos, lListElem 
-*     *jep, lListElem *jatp, lListElem *joker, lListElem *joker_task) 
-*
-*  FUNCTION
-*     generates a cull order position struct
-*
-*  INPUTS
-*     order_pos_t **cull_order_pos - struct to init. if not nullptr, the old struct will be freed
-*     lListElem *jep               - job structure
-*     lListElem *jatp              - ja task structure
-*     lListElem *joker             - job order structure
-*     lListElem *joker_task        - ja task order structure
-*
-*  NOTES
-*     MT-NOTE: sge_create_cull_order_pos() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Generates a cull order position struct
+ *
+ * generates a cull order position struct
+ *
+ * @param cull_order_pos struct to init. if not nullptr, the old struct will be freed
+ * @param jep job structure
+ * @param jatp ja task structure
+ * @param joker job order structure
+ * @param joker_task ja task order structure
+ *
+ * @note MT-NOTE: sge_create_cull_order_pos() is MT safe
+ */
 void 
 sge_create_cull_order_pos(order_pos_t **cull_order_pos, const lListElem *jep, const lListElem *jatp,
                           const lListElem *joker, const lListElem *joker_task) 
