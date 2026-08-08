@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Reading directory entries, for the file based spooling backends
+ */
+
 #include <cstring>
 #include <cerrno>
 
@@ -49,14 +53,23 @@
 
 #include "msg_common.h"
 
-/****
- **** sge_get_dirents
- ****
- **** Returns the entries of the specified directory
- **** (without . and ..) as lList of type ST_Type.
- **** The lList has to be freed from the caller.
- **** On any error, nullptr is returned.
- ****/
+/**
+ * @brief Read the entries of a directory
+ *
+ * `.` and `..` are left out. Used by the classic and flatfile backends to
+ * walk a spool directory, and by `spooldefaults`.
+ *
+ * @param path the directory to read
+ *
+ * @return the entries as an `ST_Type` list, to be freed by the caller, or
+ *         nullptr on any error and for an empty directory - the two cases
+ *         are not distinguishable from the return value
+ *
+ * @warning The `opendir()` error path leaves through a plain `return` rather
+ *          than `DRETURN`, so it skips the `rmon_mexit()` that #DENTER's
+ *          `rmon_menter()` paired with. With tracing enabled the trace
+ *          indentation never comes back down after a failed open.
+ */
 lList *sge_get_dirents(const char *path) {
    lList *entries = nullptr;
    DIR *cwd;
@@ -84,6 +97,17 @@ lList *sge_get_dirents(const char *path) {
    DRETURN(entries);
 }
 
+/**
+ * @brief Count the entries of a directory
+ *
+ * @param directory_name the directory to count
+ *
+ * @return the number of entries, 0 for an empty or unreadable directory
+ *
+ * @warning No caller in the source tree.
+ * @note The loop skips `.` and `..` again, although #sge_get_dirents has
+ *       already dropped both - the condition is always true.
+ */
 uint32_t sge_count_dirents(char *directory_name)
 {
    uint32_t entries = 0;
@@ -98,6 +122,21 @@ uint32_t sge_count_dirents(char *directory_name)
    return entries;
 }
 
+/**
+ * @brief Ask whether a directory holds more than a given number of entries
+ *
+ * Stops as soon as the answer is known, so it is cheaper than
+ * #sge_count_dirents for large directories - except that it builds the full
+ * entry list first anyway.
+ *
+ * @param directory_name  the directory to look at
+ * @param number_of_entries the number to compare against
+ *
+ * @return 1 if the directory holds more than `number_of_entries` entries,
+ *         else 0
+ *
+ * @warning No caller in the source tree.
+ */
 int has_more_dirents(char *directory_name, uint32_t number_of_entries)
 {
    uint32_t entries = 0;

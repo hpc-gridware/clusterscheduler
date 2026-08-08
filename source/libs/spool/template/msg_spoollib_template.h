@@ -32,3 +32,7 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Message catalogue of the template spooling backend
+ */

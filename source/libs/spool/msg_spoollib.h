@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Message catalogue of the spooling framework
+ */
+
 #include <cinttypes>
 
 // clang-format off

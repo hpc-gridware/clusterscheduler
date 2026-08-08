@@ -33,33 +33,58 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
+/** @file
+ * @brief Choosing the spooling method at runtime, by loading a shared library
+ */
+
 #include "cull/cull_list.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/sge_spooling_utilities.h"
 
-/****** spool/dynamic/--Spooling-Dynamic ********************************
-*
-*  NAME
-*     dynamic spooling - spooling of data into method specified at runtime
-*
-*  FUNCTION
-*     This module provides functions necessary to setup the spooling framework
-*     in a way, that the spooling method to use is determined at runtime
-*     by loading a certain shared library containing the spooling method.
-*
-*  SEE ALSO
-*     spool/berkeleydb/--Spooling-Berkeley-DB
-*     spool/classic/--Spooling-Classic
-****************************************************************************
-*/
+/** @defgroup spool_dynamic Dynamic spooling
+ * @brief Pick the storage backend at runtime instead of at link time
+ *
+ * The qmaster does not know at build time whether the site spools to flat
+ * files or to a Berkeley DB. This backend defers the decision: it `dlopen()`s
+ * the `libspool<method>` shared library named in the configuration, asks it
+ * for its #spooling_get_method_func, checks the answer against the method
+ * that was requested, and then hands over to that library's
+ * #spooling_create_context_func.
+ *
+ * Everything above the framework is unaffected - the result is an ordinary
+ * spooling context.
+ * @{
+ */
 
+/** @brief Report `"dynamic"` as this library's spooling method
+ *
+ * @return the string `"dynamic"`
+ *
+ * @note When the library is built *as* the dynamic spooling library
+ *       (`SPOOLING_dynamic`) this is the exported `get_spooling_method()`
+ *       the loader looks for; otherwise it carries the longer name so that
+ *       it does not collide with the backend actually linked in.
+ */
 #ifdef SPOOLING_dynamic
 const char *get_spooling_method();
 #else
 const char *get_dynamic_spooling_method();
 #endif
 
+/** @brief Load a spooling shared library and build its context
+ *
+ * @param answer_list to return error messages
+ * @param method      the spooling method the library must report
+ * @param shlib_name  the library to load, without the platform suffix
+ * @param args        the argument string handed on to the library's own
+ *                    create-context function
+ *
+ * @return the new spooling context, or nullptr if the library could not be
+ *         loaded, lacks the expected symbols, or implements another method
+ */
 lListElem *
 spool_dynamic_create_context(lList **answer_list, const char *method,
                              const char *shlib_name, const char *args);
+
+/** @} */

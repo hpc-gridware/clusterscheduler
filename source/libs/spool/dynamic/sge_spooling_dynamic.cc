@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
+/** @file
+ * @brief Choosing the spooling method at runtime, by loading a shared library
+ */
+
 #if defined (ULINUXAMD64)
 // required on CentOS 6 to fix a compiler error about ::quick_exit
 #include <cstdlib>

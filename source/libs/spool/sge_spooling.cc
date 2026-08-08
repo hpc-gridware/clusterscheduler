@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The public interface of the spooling framework
+ */
+
 #include "uti/sge_profiling.h"
 #include "uti/sge_string.h"
 #include "uti/sge_rmon_macros.h"
@@ -45,41 +49,29 @@ static lList *Default_Spool_Context_List;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-/****** spool/spool_create_context() ************************************
-*  NAME
-*     spool_create_context() -- create a new spooing context
-*
-*  SYNOPSIS
-*     lListElem *
-*     spool_create_context(lList **answer_list, const char *name);
-*
-*  FUNCTION
-*     Create a new spooling context.
-*
-*  INPUTS
-*     lList **answer_list  - to return error messages
-*     const char *name     - name of the context
-*
-*  RESULT
-*     lListElem* - the new spooling context
-*
-*  EXAMPLE
-*     lListElem *context;
-*     
-*     context = spool_create_context(answer_list, "my spooling context");
-*     ...
-*
-*
-*  NOTES
-*     Usually, a service function creating a spooling context
-*     for a certain storage system will be called, e.g. 
-*     spool_classic_create_context().
-*
-*  SEE ALSO
-*     spool/--Spooling
-*     spool/spool_free_context()
-*     spool/classic/spool_classic_create_context()
-*******************************************************************************/
+/**
+ * @brief Create a new spooing context
+ *
+ * Create a new spooling context.
+ *
+ * @code
+ * lListElem *context;
+ * context = spool_create_context(answer_list, "my spooling context");
+ * ...
+ * @endcode
+ *
+ * @param answer_list to return error messages
+ * @param name name of the context
+ *
+ * @return the new spooling context
+ *
+ * @note Callers do not normally use this directly. Each backend provides a
+ *       service function that creates its own context and fills it with the
+ *       rules and types it needs, e.g. `spool_classic_create_context()` in
+ *       `flatfile/sge_spooling_flatfile.h`.
+ *
+ * @see #spool_free_context
+ */
 lListElem *
 spool_create_context(lList **answer_list, const char *name)
 {
@@ -100,35 +92,25 @@ spool_create_context(lList **answer_list, const char *name)
    DRETURN(ep);
 }
 
-/****** spool/spool_free_context() **************************************
-*  NAME
-*     spool_free_context() -- free resources of a spooling context
-*
-*  SYNOPSIS
-*     lListElem* 
-*     spool_free_context(lList **answer_list, lListElem *context) 
-*
-*  FUNCTION
-*     Performs a shutdown of the spooling context and releases
-*     all allocated resources.
-*
-*  INPUTS
-*     lList **answer_list  - to return error messages
-*     lListElem *context   - the context to free
-*
-*  RESULT
-*     lListElem* - nullptr
-*
-*  EXAMPLE
-*     lListElem *context;
-*     ...
-*     context = spool_free_context(answer_list, context);
-*
-*  SEE ALSO
-*     spool/--Spooling
-*     spool/spool_create_context()
-*     spool/spool_shutdown_context()
-*******************************************************************************/
+/**
+ * @brief Free resources of a spooling context
+ *
+ * Performs a shutdown of the spooling context and releases
+ * all allocated resources.
+ *
+ * @code
+ * lListElem *context;
+ * ...
+ * context = spool_free_context(answer_list, context);
+ * @endcode
+ *
+ * @param answer_list to return error messages
+ * @param context the context to free
+ *
+ * @return nullptr
+ *
+ * @see #spool_create_context, #spool_shutdown_context
+ */
 lListElem *
 spool_free_context(lList **answer_list, lListElem *context)
 {
@@ -148,6 +130,18 @@ spool_free_context(lList **answer_list, lListElem *context)
    DRETURN(context);
 }
 
+/**
+ * @brief Pass a backend specific option to every rule of a context
+ *
+ * Stops at the first rule whose #spooling_option_func rejects the option.
+ * Rules that registered no option callback are skipped.
+ *
+ * @param answer_list to return error messages
+ * @param context     the context whose rules get the option
+ * @param option      the option string, interpreted by the backend
+ *
+ * @return true if no rule rejected the option, else false
+ */
 bool
 spool_set_option(lList **answer_list, lListElem *context, const char *option)
 {
@@ -181,45 +175,29 @@ spool_set_option(lList **answer_list, lListElem *context, const char *option)
    DRETURN(ret);
 }
 
-/****** spool/spool_startup_context() ***********************************
-*  NAME
-*     spool_startup_context() -- startup a spooling context
-*
-*  SYNOPSIS
-*     bool 
-*     spool_startup_context(lList **answer_list, lListElem *context, bool check)
-*
-*  FUNCTION
-*     Starts up the spooling context.
-*     Checks consistency of the spooling context.
-*
-*     Then the startup callback for all rules will be called, which will 
-*     startup the different rules.
-*
-*     For file based spooling, this can been to chdir into the spool directory,
-*     for database spooling it means opening the database connection.
-*
-*     If the parameter check is set to true, the startup callbacks
-*     check the data base, e.g. if the spooling database
-*     was created for the current Cluster Scheduler version.
-*     This check shall be done for all operations, except when creating the
-*     database.
-*
-*
-*  INPUTS
-*     lList **answer_list  - to return error messages
-*     lListElem *context   - the context to startup
-*     bool check           - check database?
-*
-*  RESULT
-*     bool - true, if the context is OK and all startup callbacks reported
-*                 success,
-*            else false
-*
-*  SEE ALSO
-*     spool/--Spooling
-*     spool/spool_shutdown_context()
-*******************************************************************************/
+/**
+ * @brief Startup a spooling context
+ *
+ * Starts up the spooling context.
+ * Checks consistency of the spooling context.
+ * Then the startup callback for all rules will be called, which will
+ * startup the different rules.
+ * For file based spooling, this can been to chdir into the spool directory,
+ * for database spooling it means opening the database connection.
+ * If the parameter check is set to true, the startup callbacks
+ * check the data base, e.g. if the spooling database
+ * was created for the current Cluster Scheduler version.
+ * This check shall be done for all operations, except when creating the
+ * database.
+ *
+ * @param answer_list to return error messages
+ * @param context the context to startup
+ * @param check check database?
+ *
+ * @return true, if the context is OK and all startup callbacks reported success, else false
+ *
+ * @see #spool_shutdown_context
+ */
 bool 
 spool_startup_context(lList **answer_list, lListElem *context, bool check)
 {
@@ -315,38 +293,26 @@ error:
    DRETURN(ret);
 }
 
-/****** spool/spool_maintain_context() **********************************
-*  NAME
-*     spool_maintain_context() -- maintain a context
-*
-*  SYNOPSIS
-*     bool 
-*     spool_maintain_context(lList **answer_list, lListElem *context,
-*                            const spooling_maintenance_command cmd,
-*                            const char *args) 
-*
-*  FUNCTION
-*     Do maintenance on spooling context's database.
-*     Calls the maintenance callback for all defined spooling rules.
-*     These callbacks will
-*        - initialize the database
-*        - backup
-*        - switch between spooling with/without history
-*        - etc.
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     lListElem *context  - the context to maintain
-*     const char *args    - arguments to maintenance callback
-*
-*  RESULT
-*     bool - true, if all maintenance callbacks reported success,
-*            else false
-*
-*  SEE ALSO
-*     spool/--Spooling
-*     spool/spool_startup_context()
-*******************************************************************************/
+/**
+ * @brief Maintain a context
+ *
+ * Do maintenance on spooling context's database.
+ * Calls the maintenance callback for all defined spooling rules.
+ * These callbacks will
+ *    - initialize the database
+ *    - backup
+ *    - switch between spooling with/without history
+ *    - etc.
+ *
+ * @param answer_list to return error messages
+ * @param context the context to maintain
+ * @param cmd what to do - see #spooling_maintenance_command
+ * @param args arguments to the maintenance callback, e.g. the backup path
+ *
+ * @return true, if all maintenance callbacks reported success, else false
+ *
+ * @see #spool_startup_context
+ */
 bool 
 spool_maintain_context(lList **answer_list, lListElem *context, 
                        const spooling_maintenance_command cmd,
@@ -384,35 +350,23 @@ spool_maintain_context(lList **answer_list, lListElem *context,
 }
 
 
-/****** spool/spool_shutdown_context() **********************************
-*  NAME
-*     spool_shutdown_context() -- shutdown a context
-*
-*  SYNOPSIS
-*     bool 
-*     spool_shutdown_context(lList **answer_list, lListElem *context) 
-*
-*  FUNCTION
-*     Shut down a spooling context.
-*     Calls the shutdown callback for all defined spooling rules.
-*     Usually these callbacks will flush unwritten data, close
-*     file handles, close database connections etc.
-*
-*     A context that has been shutdown can be reused by calling
-*     spool_startup_context()
-*
-*  INPUTS
-*     lList **answer_list  - to return error messages
-*     lListElem *context - the context to shutdown
-*
-*  RESULT
-*     bool - true, if all shutdown callbacks reported success,
-*            else false
-*
-*  SEE ALSO
-*     spool/--Spooling
-*     spool/spool_startup_context()
-*******************************************************************************/
+/**
+ * @brief Shutdown a context
+ *
+ * Shut down a spooling context.
+ * Calls the shutdown callback for all defined spooling rules.
+ * Usually these callbacks will flush unwritten data, close
+ * file handles, close database connections etc.
+ * A context that has been shutdown can be reused by calling
+ * spool_startup_context()
+ *
+ * @param answer_list to return error messages
+ * @param context the context to shutdown
+ *
+ * @return true, if all shutdown callbacks reported success, else false
+ *
+ * @see #spool_startup_context
+ */
 bool 
 spool_shutdown_context(lList **answer_list, const lListElem *context)
 {
@@ -447,6 +401,21 @@ spool_shutdown_context(lList **answer_list, const lListElem *context)
    DRETURN(ret);
 }
 
+/**
+ * @brief Let every rule do its recurring housekeeping
+ *
+ * Called from the qmaster's periodic task. Each rule's
+ * #spooling_trigger_func writes into `next_trigger` when it wants to be
+ * called again - so with more than one rule registered, the last one to run
+ * decides.
+ *
+ * @param answer_list  to return error messages
+ * @param context      the context whose rules are triggered
+ * @param trigger      the time this call was due
+ * @param next_trigger receives the time of the next call
+ *
+ * @return true if every trigger callback succeeded, else false
+ */
 bool
 spool_trigger_context(lList **answer_list, const lListElem *context,
                       uint64_t trigger, uint64_t *next_trigger)
@@ -482,6 +451,20 @@ spool_trigger_context(lList **answer_list, const lListElem *context,
    DRETURN(ret);
 }
 
+/**
+ * @brief Begin, commit or roll back a transaction over the whole context
+ *
+ * @param answer_list to return error messages
+ * @param context     the context to run the transaction on
+ * @param cmd         begin, commit or rollback
+ *
+ * @return true if every rule accepted the command, else false
+ *
+ * @note A rule without a #spooling_transaction_func is skipped and the call
+ *       still reports success, so the qmaster can bracket its modifications
+ *       in transactions regardless of the configured spooling method. Only a
+ *       transactional backend actually makes them atomic.
+ */
 bool spool_transaction(lList **answer_list, const lListElem *context, 
                        spooling_transaction_command cmd)
 {
@@ -517,27 +500,19 @@ bool spool_transaction(lList **answer_list, const lListElem *context,
 }
 
 
-/****** spool/spool_set_default_context() *******************************
-*  NAME
-*     spool_set_default_context() -- set a default context
-*
-*  SYNOPSIS
-*     void spool_set_default_context(lListElem *context) 
-*
-*  FUNCTION
-*     The spooling framework can have a default context.
-*     A context that has been created before can be set as 
-*     default context using this function.
-*     The default context can be retrieved later with the function
-*     spool_get_default_context().
-*
-*  INPUTS
-*     lListElem *context - the context to be the default context
-*
-*  SEE ALSO
-*     spool/--Spooling
-*     spool/spool_get_default_context()
-*******************************************************************************/
+/**
+ * @brief Set a default context
+ *
+ * The spooling framework can have a default context.
+ * A context that has been created before can be set as
+ * default context using this function.
+ * The default context can be retrieved later with the function
+ * spool_get_default_context().
+ *
+ * @param context the context to be the default context
+ *
+ * @see #spool_get_default_context
+ */
 void spool_set_default_context(lListElem *context)
 {
    if (Default_Spool_Context_List == nullptr) {
@@ -546,108 +521,63 @@ void spool_set_default_context(lListElem *context)
    lAppendElem(Default_Spool_Context_List, context);
 }
 
-/****** spool/spool_get_default_context() *******************************
-*  NAME
-*     spool_get_default_context() -- retrieve the default spooling context 
-*
-*  SYNOPSIS
-*     lListElem* 
-*     spool_get_default_context() 
-*
-*  FUNCTION
-*     Retrieves a spooling context that has been set earlier using the function
-*     spool_set_default_context()
-*
-*  RESULT
-*     lListElem* - the spooling context, or nullptr, if no default context
-*                  has been set.
-*
-*  SEE ALSO
-*     spool/--Spooling
-*     spool/spool_set_default_context()
-*******************************************************************************/
+/**
+ * @brief Retrieve the default spooling context
+ *
+ * Retrieves a spooling context that has been set earlier using the function
+ * spool_set_default_context()
+ *
+ * @return the spooling context, or nullptr, if no default context has been set.
+ *
+ * @see #spool_set_default_context
+ */
 lListElem *
 spool_get_default_context()
 {
    return lFirstRW(Default_Spool_Context_List);
 }
 
-/****** spool/spool_context_search_rule() *******************************
-*  NAME
-*     spool_context_search_rule() -- search a certain rule 
-*
-*  SYNOPSIS
-*     lListElem* 
-*     spool_context_search_rule(const lListElem *context, const char *name) 
-*
-*  FUNCTION
-*     Searches a certain rule (given by its name) in a given spooling context.
-*
-*  INPUTS
-*     const lListElem *context - the context to search
-*     const char *name         - name of the rule
-*
-*  RESULT
-*     lListElem* - the rule, if it exists, else nullptr
-*
-*  SEE ALSO
-*     spool/--Spooling
-*******************************************************************************/
+/**
+ * @brief Search a certain rule
+ *
+ * Searches a certain rule (given by its name) in a given spooling context.
+ *
+ * @param context the context to search
+ * @param name name of the rule
+ *
+ * @return the rule, if it exists, else nullptr
+ */
 lListElem *
 spool_context_search_rule(const lListElem *context, const char *name)
 {
    return lGetElemStrRW(lGetList(context, SPC_rules), SPR_name, name);
 }
 
-/****** spool/spool_context_create_rule() *******************************
-*  NAME
-*     spool_context_create_rule() -- create a rule in a spooling context
-*
-*  SYNOPSIS
-*     lListElem* 
-*     spool_context_create_rule(lList **answer_list, lListElem *context, 
-*                               const char *name, const char *url, 
-*                               spooling_option_func option_func, 
-*                               spooling_startup_func startup_func, 
-*                               spooling_shutdown_func shutdown_func,
-*                               spooling_maintenance_func maintenance_func,
-*                               spooling_list_func list_func, 
-*                               spooling_read_func read_func, 
-*                               spooling_write_func write_func, 
-*                               spooling_delete_func delete_func) 
-*                               spooling_validate_func validate_func) 
-*
-*  FUNCTION
-*     Creates a rule in the given context and assigns it the given attributes.
-*
-*  INPUTS
-*     lList **answer_list  - to return error messages
-*     lListElem *context                   - the context to contain the new rule
-*     const char *name                     - the name of the rule
-*     const char *url                      - the name of the url
-*     spooling_option_func option_func     - function to set options for the rule
-*     spooling_startup_func startup_func   - startup function for the rule
-*     spooling_shutdown_func shutdown_func - shutdown function
-*     spooling_maintenance_func shutdown_func - maintenance function 
-*                                               (initializaion, backup, etc.)
-*     spooling_list_func list_func         - function reading a list of objects
-*     spooling_read_func read_func         - function reading an individual 
-*                                            object 
-*     spooling_write_func write_func       - function writing an individual 
-*                                            object
-*     spooling_delete_func delete_func     - function deleting an individual 
-*                                            object
-*     spooling_validate_func validate_func     - function validateing an individual 
-*                                                object
-*     spooling validate_list_func validate_list_func - function for validating 
-*                                                      the new list
-*
-*  RESULT
-*     lListElem* - the new rule, if it could be created, else nullptr
-*
-*  SEE ALSO
-*     spool/--Spooling
-*******************************************************************************/
+/**
+ * @brief Create a rule in a spooling context
+ *
+ * Creates a rule in the given context and assigns it the given attributes.
+ *
+ * @param answer_list to return error messages
+ * @param context the context to contain the new rule
+ * @param name the name of the rule
+ * @param url the name of the url
+ * @param option_func function to set options for the rule
+ * @param startup_func startup function for the rule
+ * @param shutdown_func shutdown function
+ * @param maintenance_func maintenance function (initialization, backup, etc.)
+ * @param trigger_func function for recurring housekeeping
+ * @param transaction_func function beginning, committing and rolling back
+ * @param list_func function reading a list of objects
+ * @param read_func function reading an individual object
+ * @param read_keys_func function listing the keys below a key
+ * @param write_func function writing an individual object
+ * @param delete_func function deleting an individual object
+ * @param validate_func function validateing an individual object
+ * @param validate_list_func function for validating the new list
+ *
+ * @return the new rule, if it could be created, else nullptr
+ */
 lListElem *
 spool_context_create_rule(lList **answer_list, lListElem *context, 
                           const char *name, const char *url,
@@ -716,32 +646,20 @@ spool_context_create_rule(lList **answer_list, lListElem *context,
    DRETURN(ep);
 }
 
-/****** spool/spool_context_search_type() *******************************
-*  NAME
-*     spool_context_search_type() -- search an object type description
-*
-*  SYNOPSIS
-*     lListElem* 
-*     spool_context_search_type(const lListElem *context, 
-*                               const  sge_object_type object_type) 
-*
-*  FUNCTION
-*     Searches the object type description with the given type in the 
-*     given context.
-*     If no specific description for the given type is found, but a 
-*     default type description (for all object types) exists, this
-*     default type description is returned.
-*
-*  INPUTS
-*     const lListElem *context        - the context to search
-*     const sge_object_type object_type - the object type to search
-*
-*  RESULT
-*     lListElem* - an object type description or nullptr, if none was found.
-*
-*  SEE ALSO
-*     spool/--Spooling
-*******************************************************************************/
+/**
+ * @brief Search an object type description
+ *
+ * Searches the object type description with the given type in the
+ * given context.
+ * If no specific description for the given type is found, but a
+ * default type description (for all object types) exists, this
+ * default type description is returned.
+ *
+ * @param context the context to search
+ * @param object_type the object type to search
+ *
+ * @return an object type description or nullptr, if none was found.
+ */
 lListElem *
 spool_context_search_type(const lListElem *context, 
                           sge_object_type object_type)
@@ -759,35 +677,21 @@ spool_context_search_type(const lListElem *context,
    return ep;
 }
 
-/****** spool/spool_context_create_type() *******************************
-*  NAME
-*     spool_context_create_type() -- create an object type description 
-*
-*  SYNOPSIS
-*     lListElem* 
-*     spool_context_create_type(lList **answer_list, lListElem *context, 
-*                               const sge_object_type object_type) 
-*
-*  FUNCTION
-*     Creates a new description how a certain object type shall be 
-*     spooled.
-*
-*     If the given object_type is SGE_TYPE_ALL, the description will
-*     be the default for object types that are not individually
-*     handled.
-*
-*  INPUTS
-*     lList **answer_list  - to return error messages
-*     lListElem *context              - the context to contain the new 
-*                                       description
-*     const sge_object_type object_type - the object type
-*
-*  RESULT
-*     lListElem* - the new object type description
-*
-*  SEE ALSO
-*     spool/--Spooling
-*******************************************************************************/
+/**
+ * @brief Create an object type description
+ *
+ * Creates a new description how a certain object type shall be
+ * spooled.
+ * If the given object_type is SGE_TYPE_ALL, the description will
+ * be the default for object types that are not individually
+ * handled.
+ *
+ * @param answer_list to return error messages
+ * @param context the context to contain the new description
+ * @param object_type the object type
+ *
+ * @return the new object type description
+ */
 lListElem *
 spool_context_create_type(lList **answer_list, lListElem *context, 
                           sge_object_type object_type)
@@ -823,26 +727,15 @@ spool_context_create_type(lList **answer_list, lListElem *context,
    DRETURN(ep);
 }
 
-/****** spool/spool_type_search_default_rule() **************************
-*  NAME
-*     spool_type_search_default_rule() -- search the default rule
-*
-*  SYNOPSIS
-*     lListElem* 
-*     spool_type_search_default_rule(const lListElem *spool_type) 
-*
-*  FUNCTION
-*     Searches and returns the default spooling rule for a certain object type.
-*
-*  INPUTS
-*     const lListElem *spool_type - the object type
-*
-*  RESULT
-*     lListElem* - the default rule, or nullptr, if no rule could be found.
-*
-*  SEE ALSO
-*     spool/--Spooling
-*******************************************************************************/
+/**
+ * @brief Search the default rule
+ *
+ * Searches and returns the default spooling rule for a certain object type.
+ *
+ * @param spool_type the object type
+ *
+ * @return the default rule, or nullptr, if no rule could be found.
+ */
 lListElem *
 spool_type_search_default_rule(const lListElem *spool_type)
 {  
@@ -859,34 +752,21 @@ spool_type_search_default_rule(const lListElem *spool_type)
    return rule;
 }
 
-/****** spool/spool_type_add_rule() *************************************
-*  NAME
-*     spool_type_add_rule() -- adds a rule for a spooling object type 
-*
-*  SYNOPSIS
-*     lListElem* 
-*     spool_type_add_rule(lList **answer_list, lListElem *spool_type, 
-*                         const lListElem *rule, lBool is_default) 
-*
-*  FUNCTION
-*     Adds a spooling rule to an object type description.
-*     The rule can be installed as default rule for this object type.
-*
-*  INPUTS
-*     lList **answer_list  - to return error messages
-*     lListElem *spool_type - the object type description
-*     const lListElem *rule - the rule to add 
-*     lBool is_default      - is the rule the default rule?
-*
-*  RESULT
-*     lListElem* - the newly created mapping object between type and rule 
-*                  (SPTR_Type), or nullptr, if an error occurred.
-*
-*  SEE ALSO
-*     spool/--Spooling
-*     spool/spool_context_create_type()
-*     spool/spool_context_create_rule()
-*******************************************************************************/
+/**
+ * @brief Adds a rule for a spooling object type
+ *
+ * Adds a spooling rule to an object type description.
+ * The rule can be installed as default rule for this object type.
+ *
+ * @param answer_list to return error messages
+ * @param spool_type the object type description
+ * @param rule the rule to add
+ * @param is_default is the rule the default rule?
+ *
+ * @return the newly created mapping object between type and rule (SPTR_Type), or nullptr, if an error occurred.
+ *
+ * @see #spool_context_create_type, #spool_context_create_rule
+ */
 lListElem *
 spool_type_add_rule(lList **answer_list, lListElem *spool_type, 
                     const lListElem *rule, lBool is_default)
@@ -932,34 +812,21 @@ spool_type_add_rule(lList **answer_list, lListElem *spool_type,
    DRETURN(ep);
 }
 
-/****** spool/spool_read_list() *****************************************
-*  NAME
-*     spool_read_list() -- read a list of objects from spooled data
-*
-*  SYNOPSIS
-*     bool
-*     spool_read_list(lList **answer_list, const lListElem *context, 
-*                     lList **list, const sge_object_type object_type) 
-*
-*  FUNCTION
-*     Read the list of objects associated with a certain object type
-*     from the spooled data and store it into the given list.
-*
-*     The function will call the read_list callback from the default rule
-*     for the given object type.
-*
-*  INPUTS
-*     lList **answer_list  - to return error messages
-*     const lListElem *context        - the context to use for reading
-*     lList **list                    - the target list
-*     const sge_object_type object_type - the object type
-*
-*  RESULT
-*     int - true, on success, false, if an error occurred
-*
-*  SEE ALSO
-*     spool/--Spooling
-*******************************************************************************/
+/**
+ * @brief Read a list of objects from spooled data
+ *
+ * Read the list of objects associated with a certain object type
+ * from the spooled data and store it into the given list.
+ * The function will call the read_list callback from the default rule
+ * for the given object type.
+ *
+ * @param answer_list to return error messages
+ * @param context the context to use for reading
+ * @param list the target list
+ * @param object_type the object type
+ *
+ * @return true, on success, false, if an error occurred
+ */
 bool 
 spool_read_list(lList **answer_list, const lListElem *context, 
                 lList **list, const sge_object_type object_type)
@@ -1018,34 +885,21 @@ spool_read_list(lList **answer_list, const lListElem *context,
    DRETURN(ret);
 }
 
-/****** spool/spool_read_object() ***************************************
-*  NAME
-*     spool_read_object() -- read a single object from spooled data
-*
-*  SYNOPSIS
-*     lListElem* 
-*     spool_read_object(lList **answer_list, const lListElem *context, 
-*                       const  sge_object_type object_type, const char *key) 
-*
-*  FUNCTION
-*     Read an objects characterized by its type and a unique key
-*     from the spooled data.
-*
-*     The function will call the read callback from the default rule
-*     for the given object type.
-*
-*  INPUTS
-*     lList **answer_list  - to return error messages
-*     const lListElem *context        - the context to use
-*     const sge_object_type object_type - object type
-*     const char *key                 - unique key
-*
-*  RESULT
-*     lListElem* - the object, if it could be read, else nullptr
-*
-*  SEE ALSO
-*     spool/--Spooling
-*******************************************************************************/
+/**
+ * @brief Read a single object from spooled data
+ *
+ * Read an objects characterized by its type and a unique key
+ * from the spooled data.
+ * The function will call the read callback from the default rule
+ * for the given object type.
+ *
+ * @param answer_list to return error messages
+ * @param context the context to use
+ * @param object_type object type
+ * @param key unique key
+ *
+ * @return the object, if it could be read, else nullptr
+ */
 lListElem *
 spool_read_object(lList **answer_list, const lListElem *context, 
                   const sge_object_type object_type, const char *key)
@@ -1105,6 +959,23 @@ spool_read_object(lList **answer_list, const lListElem *context,
 }
 
 bool
+/**
+ * @brief Read the keys the storage holds below a given key
+ *
+ * @param answer_list to return error messages
+ * @param context     the context to read from
+ * @param list        receives the keys (`STU_Type`)
+ * @param key         the key to list below
+ *
+ * @return true on success, else false
+ *
+ * @warning A rule without a #spooling_read_keys_func puts a *"corrupt rule"*
+ *          error into `answer_list` but does **not** make the function return
+ *          false - `result` keeps the `true` it started with. Flatfile
+ *          spooling registers no such callback, so `spooledit list` against a
+ *          flatfile spool takes this path: an error message and a success
+ *          return, with `list` left empty.
+ */
 spool_read_keys(lList **answer_list, const lListElem *context, 
                 lList **list, const char *key)
 {
@@ -1143,36 +1014,22 @@ spool_read_keys(lList **answer_list, const lListElem *context,
 }
 
 
-/****** spool/spool_write_object() **************************************
-*  NAME
-*     spool_write_object() -- write (spool) a single object 
-*
-*  SYNOPSIS
-*     bool 
-*     spool_write_object(lList **answer_list, const lListElem *context, 
-*                             const lListElem *object, const char *key, 
-*                             const sge_object_type object_type,
-*                             bool do_job_spooling) 
-*
-*  FUNCTION
-*     Writes a single object using the given spooling context.
-*     The function calls all rules associated with the object type
-*     description for the given object type.
-*
-*  INPUTS
-*     lList **answer_list  - to return error messages
-*     const lListElem *context        - context to use
-*     const lListElem *object         - object to spool
-*     const char *key                 - unique key
-*     const sge_object_type object_type - type of the object
-*     bool  do_job_spooling - flag whether job_spooling shall be done
-*
-*  RESULT
-*     bool - true, if writing was successful, else false
-*
-*  SEE ALSO
-*     spool/--Spooling
-*******************************************************************************/
+/**
+ * @brief Write (spool) a single object
+ *
+ * Writes a single object using the given spooling context.
+ * The function calls all rules associated with the object type
+ * description for the given object type.
+ *
+ * @param answer_list to return error messages
+ * @param context context to use
+ * @param object object to spool
+ * @param key unique key
+ * @param object_type type of the object
+ * @param do_job_spooling flag whether job_spooling shall be done
+ *
+ * @return true, if writing was successful, else false
+ */
 bool 
 spool_write_object(lList **answer_list, const lListElem *context, 
                    const lListElem *object, const char *key, 
@@ -1259,35 +1116,22 @@ spool_write_object(lList **answer_list, const lListElem *context,
    DRETURN(ret);
 }
 
-/****** spool/spool_delete_object() *************************************
-*  NAME
-*     spool_delete_object() -- delete a single object 
-*
-*  SYNOPSIS
-*     bool 
-*     spool_delete_object(lList **answer_list, const lListElem *context, 
-*                         const sge_object_type object_type, const char *key,
-*                         bool do_job_spooling) 
-*
-*  FUNCTION
-*     Deletes a certain object characterized by type and a unique key
-*     in the spooled data.
-*     Calls the delete callback in all rules defined for the given
-*     object type.
-*
-*  INPUTS
-*     lList **answer_list  - to return error messages
-*     const lListElem *context        - the context to use
-*     const sge_object_type object_type - object type
-*     const char *key                 - unique key
-*     bool  do_job_spooling - flag if job_spooling shall be done
-*
-*  RESULT
-*     bool - true, if all rules reported success, else false
-*
-*  SEE ALSO
-*     spool/--Spooling
-*******************************************************************************/
+/**
+ * @brief Delete a single object
+ *
+ * Deletes a certain object characterized by type and a unique key
+ * in the spooled data.
+ * Calls the delete callback in all rules defined for the given
+ * object type.
+ *
+ * @param answer_list to return error messages
+ * @param context the context to use
+ * @param object_type object type
+ * @param key unique key
+ * @param do_job_spooling flag if job_spooling shall be done
+ *
+ * @return true, if all rules reported success, else false
+ */
 bool 
 spool_delete_object(lList **answer_list, const lListElem *context, 
                     const sge_object_type object_type, const char *key,
@@ -1373,38 +1217,24 @@ spool_delete_object(lList **answer_list, const lListElem *context,
    DRETURN(ret);
 }
 
-/****** spool/spool_compare_objects() ***********************************
-*  NAME
-*     spool_compare_objects() -- compare objects by spooled data
-*
-*  SYNOPSIS
-*     bool
-*     spool_compare_objects(lList **answer_list, const lListElem *context, 
-*                           const sge_object_type object_type, 
-*                           const lListElem *ep1, const lListElem *ep2) 
-*
-*  FUNCTION
-*     Compares two objects by comparing only the attributes that shall be 
-*     spooled.
-*
-*  INPUTS
-*     lList **answer_list  - to return error messages
-*     const lListElem *context        - context to use
-*     const sge_object_type object_type - type of the object
-*     const lListElem *ep1            - object 1
-*     const lListElem *ep2            - object 2
-*
-*  RESULT
-*     bool - false, if the objects have no differences, else true
-*
-*  NOTES
-*     Not yet implemented. 
-*     First the attributes to be spooled have to be defined in the 
-*     object definitions (libs/gdi/sge_*L.h).
-*
-*  SEE ALSO
-*     spool/--Spooling
-*******************************************************************************/
+/**
+ * @brief Compare objects by spooled data
+ *
+ * Compares two objects by comparing only the attributes that shall be
+ * spooled.
+ *
+ * @param answer_list to return error messages
+ * @param context context to use
+ * @param object_type type of the object
+ * @param ep1 object 1
+ * @param ep2 object 2
+ *
+ * @return false, if the objects have no differences, else true
+ *
+ * @note Not yet implemented.
+ *       First the attributes to be spooled have to be defined in the
+ *       object definitions (libs/gdi/sge_*L.h).
+ */
 bool
 spool_compare_objects(lList **answer_list, const lListElem *context, 
                       const sge_object_type object_type, 
