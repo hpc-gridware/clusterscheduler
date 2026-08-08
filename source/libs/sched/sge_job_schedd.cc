@@ -31,6 +31,17 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Splitting the job list into the categories a scheduling run needs
+ *
+ * A scheduling run is only interested in the jobs that could actually start.
+ * split_jobs() walks the job list **once** and distributes the jobs over an
+ * array of result lists indexed by the SPLIT_* values - pending, running,
+ * suspended, in error, in hold, waiting for a predecessor, waiting for their
+ * start time. Everything that is not a candidate is then thrown away by
+ * trash_splitted_jobs(), after a scheduling message has been produced for it.
+ */
 #include <cstring>
 
 #include "uti/sge_rmon_macros.h"
@@ -54,30 +65,23 @@
 
 #include "msg_schedd.h"
 
+/** Value of a job counter entry that means "no jobs of this user are running" */
 #define IDLE 0
 
-/****** sched/sge_job_schedd/job_get_duration() *******************************************
-*  NAME
-*     job_get_duration() -- Determine a jobs runtime duration
-*
-*  SYNOPSIS
-*     bool job_get_duration(uint64_t *duration, const lListElem *jep)
-*
-*  FUNCTION
-*     The minimum of the time values the user specified with -l h_rt=<time> 
-*     and -l s_rt=<time> is returned in 'duration'. If neither of these 
-*     time values were specified the default duration is used.
-*
-*  INPUTS
-*     uint64_t *duration   - Returns duration on success
-*     const lListElem *jep - The job (JB_Type)
-*
-*  RESULT
-*     bool - true on success
-*
-*  NOTES
-*     MT-NOTE: job_get_duration() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Determine a jobs runtime duration
+ *
+ * The minimum of the time values the user specified with -l h_rt=`time`
+ * and -l s_rt=`time` is returned in 'duration'. If neither of these
+ * time values were specified the default duration is used.
+ *
+ * @param duration Returns duration on success
+ * @param jep The job (JB_Type)
+ *
+ * @return true on success
+ *
+ * @note MT-NOTE: job_get_duration() is MT safe
+ */
 bool job_get_duration(uint64_t *duration, const lListElem *jep)
 {
    DENTER(TOP_LAYER);
@@ -89,27 +93,19 @@ bool job_get_duration(uint64_t *duration, const lListElem *jep)
    DRETURN(true);
 }
 
-/****** sge_job_schedd/task_get_duration() *************************************
-*  NAME
-*     task_get_duration() -- Determin tasks effective runtime limit
-*
-*  SYNOPSIS
-*     bool task_get_duration(uint32_t *duration, const lListElem *ja_task)
-*
-*  FUNCTION
-*     Determines the effictive runtime limit got by requested h_rt/s_rt or
-*     by the resulting queues h_rt/s_rt
-*
-*  INPUTS
-*     uint32_t *duration       - tasks duration in seconds
-*     const lListElem *ja_task - task element
-*
-*  RESULT
-*     bool - true
-*
-*  NOTES
-*     MT-NOTE: task_get_duration() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Determin tasks effective runtime limit
+ *
+ * Determines the effictive runtime limit got by requested h_rt/s_rt or
+ * by the resulting queues h_rt/s_rt
+ *
+ * @param duration tasks duration in seconds
+ * @param ja_task task element
+ *
+ * @return true
+ *
+ * @note MT-NOTE: task_get_duration() is MT safe
+ */
 bool task_get_duration(uint64_t *duration, const lListElem *ja_task) {
 
    DENTER(TOP_LAYER);
@@ -126,26 +122,16 @@ bool task_get_duration(uint64_t *duration, const lListElem *ja_task) {
    DRETURN(true);
 }
 
-/****** sched/sge_job_schedd/get_name_of_split_value() ************************
-*  NAME
-*     get_name_of_split_value() -- Constant to name transformation 
-*
-*  SYNOPSIS
-*     const char* get_name_of_split_value(int value) 
-*
-*  FUNCTION
-*     This function transforms a constant value in its internal
-*     name. (Used for debug output) 
-*
-*  INPUTS
-*     int value - SPLIT_-Constant 
-*
-*  RESULT
-*     const char* - string representation of 'value' 
-*
-*  SEE ALSO
-*     sched/sge_job_schedd/SPLIT_-Constants 
-*******************************************************************************/
+/**
+ * @brief Constant to name transformation
+ *
+ * This function transforms a constant value in its internal
+ * name. (Used for debug output)
+ *
+ * @param value SPLIT_-Constant
+ *
+ * @return string representation of 'value'
+ */
 const char *get_name_of_split_value(int value) 
 {
    const char *name;
@@ -187,31 +173,23 @@ const char *get_name_of_split_value(int value)
    return name;
 }
 
-/****** sched/sge_job_schedd/job_move_first_pending_to_running() **************
-*  NAME
-*     job_move_first_pending_to_running() -- Move a job 
-*
-*  SYNOPSIS
-*     void job_move_first_pending_to_running(lListElem **pending_job, 
-*                                            lList **splitted_jobs[]) 
-*
-*  FUNCTION
-*     Move the 'pending_job' from 'splitted_jobs[SPLIT_PENDING]'
-*     into 'splitted_jobs[SPLIT_RUNNING]'. If 'pending_job' is an 
-*     array job, than the first task (task id) will be moved into 
-*     'pending_job[SPLIT_RUNNING]' 
-*
-*  INPUTS
-*     lListElem **pending_job - Pointer to a pending job (JB_Type) 
-*     lList **splitted_jobs[] - (JB_Type) array of job lists 
-*
-*  RETURNS
-*      bool - true, if the pending job was removed
-*
-*  SEE ALSO
-*     sched/sge_job_schedd/SPLIT_-Constants 
-*     sched/sge_job_schedd/split_jobs()
-*******************************************************************************/
+/**
+ * @brief Moves a job from the pending list to the running list
+ *
+ * Move the 'pending_job' from 'splitted_jobs[SPLIT_PENDING]'
+ * into 'splitted_jobs[SPLIT_RUNNING]'. If 'pending_job' is an
+ * array job, than the first task (task id) will be moved into
+ * 'pending_job[SPLIT_RUNNING]'
+ *
+ * @param[in,out] pending_job    the pending job (`JB_Type`); set to nullptr
+ *                               when the whole job was moved
+ * @param[in,out] splitted_jobs  the array of job lists, indexed by the
+ *                               SPLIT_* values
+ *
+ * @return true if the pending job was removed
+ *
+ * @see #split_jobs
+ */
 bool
 job_move_first_pending_to_running(lListElem **pending_job, lList **splitted_jobs[]) 
 {
@@ -314,6 +292,18 @@ job_move_first_pending_to_running(lListElem **pending_job, lList **splitted_jobs
    DRETURN(ret);
 }
 
+/**
+ * @brief Returns the next task of a job that is a candidate for dispatching
+ *
+ * Prefers an enrolled task; if the job has none, the first not enrolled id of
+ * `JB_ja_n_h_ids` is taken and a pending task template is built for it.
+ *
+ * @param[in]  job      the job to take the task from
+ * @param[out] task_ret receives the task
+ * @param[out] id_ret   receives the id of the task
+ *
+ * @return 0 on success, -1 if the job has no task left
+ */
 int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret)
 {
    lListElem *ja_task;
@@ -342,25 +332,17 @@ int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret)
 }
 
 
-/****** sched/sge_job_schedd/user_list_init_jc() ******************************
-*  NAME
-*     user_list_init_jc() -- inc. the # of jobs a user has running 
-*
-*  SYNOPSIS
-*     void user_list_init_jc(lList **user_list, 
-*                            const lList *running_list) 
-*
-*  FUNCTION
-*     Initialize "user_list" and JC_jobs attribute for each user according
-*     to the list of running jobs.
-*
-*  INPUTS
-*     lList **user_list          - JC_Type list 
-*     const lList *running_list - JB_Type list 
-*
-*  RESULT
-*     void - None
-*******************************************************************************/
+/**
+ * @brief Inc. the # of jobs a user has running
+ *
+ * Initialize "user_list" and JC_jobs attribute for each user according
+ * to the list of running jobs.
+ *
+ * @param[in,out] user_list           the job counters per user (`JC_Type`)
+ * @param[in]     splitted_job_lists   the array of job lists, indexed by the
+ *                                     SPLIT_* values; the running and the
+ *                                     suspended list are counted
+ */
 void user_list_init_jc(lList **user_list, lList **splitted_job_lists[])
 {
    if (splitted_job_lists[SPLIT_RUNNING] != nullptr) {
@@ -376,41 +358,27 @@ void user_list_init_jc(lList **user_list, lList **splitted_job_lists[])
    }
 }
 
-/****** sched/sge_job_schedd/job_lists_split_with_reference_to_max_running() **
-*  NAME
-*     job_lists_split_with_reference_to_max_running() 
-*
-*  SYNOPSIS
-*     void job_lists_split_with_reference_to_max_running(
-*              lList **job_lists[], 
-*              lList **user_list, 
-*              const char* user_name,
-*              int max_jobs_per_user) 
-*
-*  FUNCTION
-*     Move those jobs which would exceed the configured 
-*     'max_u_jobs' limit (schedd configuration) from 
-*     job_lists[SPLIT_PENDING] into job_lists[SPLIT_PENDING_EXCLUDED]. 
-*     Only the jobs of the given 'user_name' will be handled. If
-*     'user_name' is nullptr than all jobs will be handled whose job owner
-*     is mentioned in 'user_list'.
-*
-*  INPUTS
-*     lList **job_lists[]   - Array of JB_Type lists 
-*     lList **user_list     - User list of Type JC_Type 
-*     const char* user_name - user name
-*     int max_jobs_per_user - "max_u_jobs" 
-*
-*  NOTE
-*     JC_jobs of the user elements contained in "user_list" has to be 
-*     initialized properly before this function might be called.
-*
-*  SEE ALSO
-*     sched/sge_job_schedd/SPLIT_-Constants
-*     sched/sge_job_schedd/trash_splitted_jobs()
-*     sched/sge_job_schedd/split_jobs()     
-*     sched/sge_job_schedd/user_list_init_jc()
-*******************************************************************************/
+/**
+ * @brief Moves the jobs that would exceed the per user job limit
+ *
+ * Every pending job beyond `max_jobs_per_user` is moved into
+ * `job_lists[SPLIT_PENDING_EXCLUDED]` and gets a scheduling message saying
+ * why.
+ *
+ * @param[in]     monitor_next_run  whether the messages also go into the
+ *                                  scheduler run log
+ * @param[in,out] job_lists         the array of job lists, indexed by the
+ *                                  SPLIT_* values
+ * @param[in,out] user_list         the job counters per user (`JC_Type`)
+ * @param[in]     user_name         the user to limit, or nullptr for all users
+ * @param[in]     max_jobs_per_user the limit, the `max_u_jobs` of the
+ *                                  scheduler configuration
+ *
+ * @note JC_jobs of the user elements contained in "user_list" has to be
+ *       initialized properly before this function might be called.
+ *
+ * @see #trash_splitted_jobs, #split_jobs, #user_list_init_jc
+ */
 void job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList **job_lists[],
                                                    lList **user_list,
                                                    const char* user_name,
@@ -484,55 +452,48 @@ void job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList 
    DRETURN_VOID;
 }      
 
-/****** sched/sge_job_schedd/split_jobs() *************************************
-*  NAME
-*     split_jobs() -- Split list of jobs according to their state
-*
-*  SYNOPSIS
-*     void split_jobs(lList **job_list, lList **answer_list, 
-*                     uint32_t max_aj_instances,
-*                     lList **result_list[]) 
-*
-*  FUNCTION
-*     Split a list of jobs according to their state. 
-*     'job_list' is the input list of jobs. The jobs in this list 
-*     have different job states. For the dispatch algorithm only
-*     those jobs are of interest which are really pending. Jobs
-*     which are pending and in error state or jobs which have a
-*     hold applied (start time in future, administrator hold, ...)
-*     are not necessary for the dispatch algorithm. 
-*     After a call to this function the jobs of 'job_list' may
-*     have been moved into one of the 'result_list's. 
-*     Each of those lists containes jobs which have a certain state.
-*     (e.g. result_list[SPLIT_WAITING_DUE_TO_TIME] will contain
-*     all jobs which have to wait according to their start time. 
-*     'max_aj_instances' are the maximum number of tasks of an 
-*     array job which may be instantiated at the same time.
-*     'max_aj_instances' is used for the split decitions. 
-*     In case of any error the 'answer_list' will be used to report
-*     errors (It is not used in the moment)
-*
-*  INPUTS
-*     lList **job_list          - JB_Type input list 
-*     uint32_t max_aj_instances - max. num. of task instances
-*     lList **result_list[]     - Array of result list (JB_Type)
-*
-*  NOTES
-*     In former versions of SGE/EE we had 8 split functions.
-*     Each of those functions walked twice over the job list.
-*     This was time consuming in case of x thousand of jobs. 
-*
-*     We tried to improve this:
-*        - loop over all jobs only once
-*        - minimize copy operations where possible
-*
-*     Unfortunately this function is heavy to understand now. Sorry! 
-*
-*  SEE ALSO
-*     sched/sge_job_schedd/SPLIT_-Constants 
-*     sched/sge_job_schedd/trash_splitted_jobs()
-*     sched/sge_job_schedd/job_lists_split_with_reference_to_max_running()
-*******************************************************************************/
+/**
+ * @brief Split list of jobs according to their state
+ *
+ * Split a list of jobs according to their state.
+ * 'job_list' is the input list of jobs. The jobs in this list
+ * have different job states. For the dispatch algorithm only
+ * those jobs are of interest which are really pending. Jobs
+ * which are pending and in error state or jobs which have a
+ * hold applied (start time in future, administrator hold, ...)
+ * are not necessary for the dispatch algorithm.
+ * After a call to this function the jobs of 'job_list' may
+ * have been moved into one of the 'result_list's.
+ * Each of those lists containes jobs which have a certain state.
+ * (e.g. result_list[SPLIT_WAITING_DUE_TO_TIME] will contain
+ * all jobs which have to wait according to their start time.
+ * 'max_aj_instances' are the maximum number of tasks of an
+ * array job which may be instantiated at the same time.
+ * 'max_aj_instances' is used for the split decitions.
+ * In case of any error the 'answer_list' will be used to report
+ * errors (It is not used in the moment)
+ *
+ * @param[in,out] job_list         the input list of jobs (`JB_Type`); the
+ *                                 jobs are moved out of it unless `do_copy`
+ * @param[in]     max_aj_instances maximum number of tasks of an array job
+ *                                 that may be instantiated at the same time
+ * @param[out]    result_list      the array of result lists (`JB_Type`),
+ *                                 indexed by the SPLIT_* values
+ * @param[in]     do_copy          true to copy the jobs instead of moving
+ *                                 them, leaving `job_list` intact
+ *
+ * @note In former versions of SGE/EE we had 8 split functions.
+ *       Each of those functions walked twice over the job list.
+ *       This was time consuming in case of x thousand of jobs.
+ *
+ *       We tried to improve this:
+ *       - loop over all jobs only once
+ *       - minimize copy operations where possible
+ *
+ *       Unfortunately this function is heavy to understand now. Sorry!
+ *
+ * @see #trash_splitted_jobs, #job_lists_split_with_reference_to_max_running
+ */
 void split_jobs(lList **job_list, uint32_t max_aj_instances,
                 lList **result_list[], bool do_copy)
 {
@@ -879,34 +840,28 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
    DRETURN_VOID;
 } 
 
-/****** sched/sge_job_schedd/trash_splitted_jobs() ****************************
-*  NAME
-*     trash_splitted_jobs() -- Trash all not needed job lists
-*
-*  SYNOPSIS
-*     void trash_splitted_jobs(lList **splitted_job_lists[]) 
-*
-*  FUNCTION
-*     Trash all job lists which are not needed for scheduling decisions.
-*     Before jobs and lists are trashed, scheduling messages will
-*     be generated. 
-*
-*     Following lists will be trashed:
-*        splitted_job_lists[SPLIT_ERROR]
-*        splitted_job_lists[SPLIT_HOLD]
-*        splitted_job_lists[SPLIT_WAITING_DUE_TO_TIME]
-*        splitted_job_lists[SPLIT_WAITING_DUE_TO_PREDECESSOR]
-*        splitted_job_lists[SPLIT_PENDING_EXCLUDED_INSTANCES]
-*        splitted_job_lists[SPLIT_PENDING_EXCLUDED]
-*
-*  INPUTS
-*     lList **splitted_job_lists[] - list of job lists 
-*
-*  SEE ALSO
-*     sched/sge_job_schedd/SPLIT_-Constants 
-*     sched/sge_job_schedd/split_jobs() 
-*     sched/sge_job_schedd/job_lists_split_with_reference_to_max_running()
-*******************************************************************************/
+/**
+ * @brief Trash all not needed job lists
+ *
+ * Trash all job lists which are not needed for scheduling decisions.
+ * Before jobs and lists are trashed, scheduling messages will
+ * be generated.
+ * Following lists will be trashed:
+ *    splitted_job_lists[SPLIT_ERROR]
+ *    splitted_job_lists[SPLIT_HOLD]
+ *    splitted_job_lists[SPLIT_WAITING_DUE_TO_TIME]
+ *    splitted_job_lists[SPLIT_WAITING_DUE_TO_PREDECESSOR]
+ *    splitted_job_lists[SPLIT_PENDING_EXCLUDED_INSTANCES]
+ *    splitted_job_lists[SPLIT_PENDING_EXCLUDED]
+ *
+ * @param[in]     monitor_next_run   whether the messages also go into the
+ *                                   scheduler run log
+ * @param[in,out] splitted_job_lists the array of job lists, indexed by the
+ *                                   SPLIT_* values; the lists named above are
+ *                                   freed
+ *
+ * @see #split_jobs, #job_lists_split_with_reference_to_max_running
+ */
 void trash_splitted_jobs(bool monitor_next_run, lList **splitted_job_lists[]) 
 {
    int split_id_a[] = {
@@ -990,6 +945,11 @@ void trash_splitted_jobs(bool monitor_next_run, lList **splitted_job_lists[])
    }
 } 
 
+/**
+ * @brief Writes the sizes of all split result lists to the debug output
+ *
+ * @param[in] job_list the array of result lists, indexed by the SPLIT_* values
+ */
 void job_lists_print(lList **job_list[]) 
 {
    DENTER(TOP_LAYER);
@@ -1010,7 +970,16 @@ void job_lists_print(lList **job_list[])
    DRETURN_VOID;
 } 
 
-/* jcpp: JC_Type */
+/**
+ * @brief Lowers the job counter of one user
+ *
+ * The entry is removed once its count reaches zero, so the list only ever
+ * holds users that actually have jobs.
+ *
+ * @param[in,out] jcpp  the job counter list (`JC_Type`)
+ * @param[in]     name  the user the counter belongs to
+ * @param[in]     slots how much to subtract
+ */
 void sge_dec_jc(lList **jcpp, const char *name, int slots) 
 {
    int n = 0;
@@ -1030,7 +999,13 @@ void sge_dec_jc(lList **jcpp, const char *name, int slots)
    DRETURN_VOID;
 }
 
-/* jcpp: JC_Type */
+/**
+ * @brief Raises the job counter of one user, creating the entry if needed
+ *
+ * @param[in,out] jcpp  the job counter list (`JC_Type`)
+ * @param[in]     name  the user the counter belongs to
+ * @param[in]     slots how much to add
+ */
 void sge_inc_jc(lList **jcpp, const char *name, int slots) 
 {
    int n = 0;
@@ -1052,7 +1027,14 @@ void sge_inc_jc(lList **jcpp, const char *name, int slots)
 }
 
 
-/*---------------------------------------------------------*/
+/**
+ * @brief Counts the slots granted to a job, optionally on one host
+ *
+ * @param[in] granted   the granted destination identifier list (`JG_Type`)
+ * @param[in] qhostname the host to count on, or nullptr for all hosts
+ *
+ * @return the number of granted slots
+ */
 int nslots_granted(const lList *granted, const char *qhostname)
 {
    int nslots = 0;
@@ -1074,11 +1056,17 @@ int nslots_granted(const lList *granted, const char *qhostname)
    return nslots;
 }
 
-/*
-   active_subtasks returns 1 if there are active subtasks for the queue
-   and 0 if there are not.
-*/
-
+/**
+ * @brief Does the job have active tasks in this queue?
+ *
+ * The master queue always counts as active, even when no task of the job is
+ * currently running in it.
+ *
+ * @param[in] job   the job to look at
+ * @param[in] qname the queue instance to look for
+ *
+ * @return 1 if the queue holds an active task of the job, 0 otherwise
+ */
 int active_subtasks(
 lListElem *job,
 const char *qname 
@@ -1108,6 +1096,19 @@ const char *qname
 }
 
 
+/**
+ * @brief Counts the granted slots that still carry active tasks
+ *
+ * Like nslots_granted(), but a host only contributes while the job has active
+ * tasks there - see active_subtasks(). A job whose tasks have all finished on
+ * a host no longer occupies its slots.
+ *
+ * @param[in] job       the job to look at
+ * @param[in] granted   the granted destination identifier list (`JG_Type`)
+ * @param[in] qhostname the host to count on, or nullptr for all hosts
+ *
+ * @return the number of granted slots that are still in use
+ */
 int 
 active_nslots_granted(lListElem *job, const lList *granted, const char *qhostname) {
    int nslots = 0;
@@ -1139,10 +1140,13 @@ active_nslots_granted(lListElem *job, const lList *granted, const char *qhostnam
 }
 
 
-/*---------------------------------------------------
- * sge_granted_slots
- * return number of granted slots for a (parallel(
- *---------------------------------------------------*/
+/**
+ * @brief Returns the total number of slots granted to a parallel job
+ *
+ * @param[in] gdil the granted destination identifier list (`JG_Type`)
+ *
+ * @return the sum of the slots of all entries
+ */
 int sge_granted_slots(const lList *gdil) {
    int slots = 0;
 

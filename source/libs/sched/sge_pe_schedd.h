@@ -33,13 +33,30 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The scheduler's side of parallel environments
+ *
+ * A parallel job asks for a PE and a slot range, and the PE's **allocation
+ * rule** decides how those slots may be spread over hosts. The rule is a
+ * string in the PE configuration; pe_allocation_rule_slots() turns it into
+ * either a fixed number of slots per host or one of the two special values
+ * below.
+ */
+
 #include "sched/sge_select_queue.h"
 
+/**
+ * @brief The allocation rules that are not a fixed slot count
+ *
+ * Negative so they cannot collide with a real number of slots per host, which
+ * is what #ALLOC_RULE_IS_FIXED tests for.
+ */
 enum {
-   ALLOC_RULE_FILLUP = -1,
-   ALLOC_RULE_ROUNDROBIN = -2
+   ALLOC_RULE_FILLUP = -1,      ///< `$fill_up`: fill each host before using the next
+   ALLOC_RULE_ROUNDROBIN = -2   ///< `$round_robin`: one slot per host in turn
 };
 
+/** Is this allocation rule a fixed number of slots per host? */
 #define ALLOC_RULE_IS_FIXED(x) (x>0)
 
 int pe_allocation_rule_slots(const char *allocation_rule, int slots, bool strict_fixed_modulo = true);

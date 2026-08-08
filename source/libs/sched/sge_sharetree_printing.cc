@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Rendering a share tree, for `qconf -sst` and friends
+ *
+ * The share tree of the fair share policy is a tree of users and projects
+ * with configured shares and accumulated usage. This module renders it - as
+ * plain text or as JSON - with the field selection and the delimiters the
+ * caller asks for, which is how the same data feeds a human readable table
+ * and a machine readable dump.
+ */
+
 #include <cstring>
 #include <pthread.h>
 
@@ -48,17 +58,19 @@
 
 #include "sge_sharetree_printing.h"
 
+/** @brief Type of one printable field of a share tree node */
 typedef enum {
-   ULONG_T=0,
-   DATE_T,
-   STRING_T,
-   DOUBLE_T
+   ULONG_T=0,   ///< Unsigned integer
+   DATE_T,      ///< Time value, printed as a date when `format_times` is set
+   STRING_T,    ///< String
+   DOUBLE_T     ///< Floating point value
 } item_type_t;
 
+/** @brief One printable field of a share tree node */
 typedef struct {
-   const char *name;
-   item_type_t type;
-   void *val;
+   const char *name;   ///< Field name, as it appears in the header and in `field_names`
+   item_type_t type;   ///< How to render `val`
+   void *val;          ///< Pointer to the value, interpreted according to `type`
 } item_t;
 
 
@@ -401,27 +413,18 @@ print_nodes(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *
 
 /* ------------- public functions ---------------- */
 
-/****** sge_sharetree_printing/print_hdr() *************************************
-*  NAME
-*     print_hdr() -- print a header for the sharetree dump
-*
-*  SYNOPSIS
-*     void 
-*     print_hdr(dstring *out, const format_t *format) 
-*
-*  FUNCTION
-*     Prints a header for data output using the sge_sharetree_print function.
-*
-*  INPUTS
-*     dstring *out           - dstring into which data will be written
-*     const format_t *format - format description
-*
-*  NOTES
-*     MT-NOTE: print_hdr() is MT-safe
-*
-*  SEE ALSO
-*     sge_sharetree_printing/sge_sharetree_print()
-*******************************************************************************/
+/**
+ * @brief Print a header for the sharetree dump
+ *
+ * Prints a header for data output using the sge_sharetree_print function.
+ *
+ * @param out dstring into which data will be written
+ * @param format format description
+ *
+ * @note MT-NOTE: print_hdr() is MT-safe
+ *
+ * @see #sge_sharetree_print
+ */
 void
 print_hdr(dstring *out, const format_t *format)
 {
@@ -459,45 +462,36 @@ print_hdr(dstring *out, const format_t *format)
    DRETURN_VOID;
 }
 
-/****** sge_sharetree_printing/sge_sharetree_print() ***************************
-*  NAME
-*     sge_sharetree_print() -- dump sharetree information to a dstring
-*
-*  SYNOPSIS
-*     void sge_sharetree_print(dstring *out, lList *sharetree, lList *users, 
-*                              lList *projects, lList *config, 
-*                              bool group_nodes, bool decay_usage, 
-*                              const char **names, const format_t *format) 
-*
-*  FUNCTION
-*     Dumps information about a sharetree into a given dstring. Information
-*     is appended.
-*
-*     Outputs information like times, node (user/project) names, configured
-*     shares, actually received shares, targeted shares, usage information
-*     like cpu, memory and io.
-*
-*     It is possible to restrict the number of fields that are output.
-*
-*     Header information and formatting can be configured.
-*
-*  INPUTS
-*     dstring *out           - dstring into which data will be written
-*     lList *sharetree       - the sharetree to dump
-*     lList *users           - the user list
-*     lList *projects        - the project list
-*     lList *config          - the scheduler configuration list
-*     bool group_nodes       - ??? 
-*     bool decay_usage       - ??? 
-*     const char **names     - fields to output
-*     const format_t *format - format description
-*
-*  NOTES
-*     MT-NOTE: sge_sharetree_print() is  MT-safe 
-*
-*  SEE ALSO
-*     sge_sharetree_printing/print_hdr()
-*******************************************************************************/
+/**
+ * @brief Dump sharetree information to a dstring
+ *
+ * Dumps information about a sharetree into a given dstring. Information
+ * is appended.
+ * Outputs information like times, node (user/project) names, configured
+ * shares, actually received shares, targeted shares, usage information
+ * like cpu, memory and io.
+ * It is possible to restrict the number of fields that are output.
+ * Header information and formatting can be configured.
+ *
+ * @param[out] out          dstring into which the text form is written
+ * @param[out] jsonBuffer    buffer receiving the JSON form, or nullptr
+ * @param[in]  sharetree_in  the share tree to dump
+ * @param[in]  users         the user list
+ * @param[in]  projects      the project list
+ * @param[in]  usersets      the userset list, to resolve the members of a
+ *                           node that stands for a userset
+ * @param[in]  group_nodes   sum the usage of a node's children into the node
+ *                           instead of printing them separately
+ * @param[in]  decay_usage   apply the configured usage decay before printing,
+ *                           so the values are the ones the policy currently
+ *                           works with
+ * @param[in]  names         fields to output
+ * @param[in]  format        format description
+ *
+ * @note MT-NOTE: sge_sharetree_print() is  MT-safe
+ *
+ * @see #print_hdr
+ */
 void
 sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lList *sharetree_in,
                     const lList *users, const lList *projects, const lList *usersets, bool group_nodes,

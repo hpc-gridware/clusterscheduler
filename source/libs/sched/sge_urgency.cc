@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Job urgency - the part of the priority that does not depend on the policies
+ *
+ * A job's priority has three contributions: the ticket policies, the POSIX
+ * priority set with `-p`, and the **urgency**, which comes from the job
+ * itself - its resource requests, its deadline, and how long it has been
+ * waiting. This module computes the urgency part before the ticket policies
+ * run.
+ */
+
 #include <cfloat>
 
 #include "uti/ocs_Pattern.h"
@@ -57,28 +67,19 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
                lList *job_list, const lList *centry_list, lList *pe_list);
 
 
-/****** sge_urgency/sge_do_urgency() *****************************
-*  NAME
-*     sge_do_urgency() -- Compute normalized urgency
-*
-*  SYNOPSIS
-*     void sge_do_urgency(uint32_t now, lList *running_jobs, lList
-*     *pending_jobs, sge_Sdescr_t *lists) 
-*
-*  FUNCTION
-*     Determine normalized urgency for all job lists passed:
-*     * for the pending jobs we need it for determine dispatch order 
-*     * for the running jobs it is needed when running jobs priority must
-*       be compared with pending jobs (preemption only)
-*
-*  INPUTS
-*     uint32_t now        - Current time
-*     lList *running_jobs - The running jobs list
-*     lList *pending_jobs - The pending jobs list
-*     sge_Sdescr_t *lists - Additional config information
-*
-*  NOTES
-*******************************************************************************/
+/**
+ * @brief Compute normalized urgency
+ *
+ * Determine normalized urgency for all job lists passed:
+ * * for the pending jobs we need it for determine dispatch order
+ * * for the running jobs it is needed when running jobs priority must
+ *   be compared with pending jobs (preemption only)
+ *
+ * @param now Current time
+ * @param running_jobs The running jobs list
+ * @param pending_jobs The pending jobs list
+ * @param lists Additional config information
+ */
 void sge_do_urgency(uint64_t now, lList *running_jobs, lList *pending_jobs,
                     scheduler_all_data_t *lists)
 {
@@ -100,36 +101,26 @@ void sge_do_urgency(uint64_t now, lList *running_jobs, lList *pending_jobs,
    }   
 }
 
-/****** sge_urgency/sge_urgency() ********************************
-*  NAME
-*     sge_urgency() -- Determine urgency value for a list of jobs
-*
-*  SYNOPSIS
-*     static void sge_urgency(uint32_t now, double *min_urgency,
-*     double *max_urgency, lList *job_list, const lList *centry_list, 
-*     const lList *pe_list) 
-*
-*  FUNCTION
-*     The urgency value is determined for all jobs in job_list. The urgency 
-*     value has two time dependent components (waiting time contribution and
-*     deadline contribution) and a resource request dependent component. Only 
-*     resource requests that apply to the job irrespective what resources it 
-*     gets assigned finally are considered. Default requests specified for 
-*     consumable resources are not considered as they are placement dependent.
-*     For the same reason soft request do not contribute to the urgency value.
-*     The urgency value range is tracked via min/max urgency. Category-based
-*     caching is used for the resource request urgency contribution.
-*
-*  INPUTS
-*     uint32_t now               - Current time
-*     double *min_urgency - For tracking minimum urgency value
-*     double *max_urgency - For tracking minimum urgency value
-*     lList *job_list            - The jobs.
-*     const lList *centry_list   - Needed for per resource urgency setting.
-*     const lList *pe_list       - Needed to determine urgency slot setting.
-*
-*  NOTES
-*******************************************************************************/
+/**
+ * @brief Determine urgency value for a list of jobs
+ *
+ * The urgency value is determined for all jobs in job_list. The urgency
+ * value has two time dependent components (waiting time contribution and
+ * deadline contribution) and a resource request dependent component. Only
+ * resource requests that apply to the job irrespective what resources it
+ * gets assigned finally are considered. Default requests specified for
+ * consumable resources are not considered as they are placement dependent.
+ * For the same reason soft request do not contribute to the urgency value.
+ * The urgency value range is tracked via min/max urgency. Category-based
+ * caching is used for the resource request urgency contribution.
+ *
+ * @param now Current time
+ * @param min_urgency For tracking minimum urgency value
+ * @param max_urgency For tracking minimum urgency value
+ * @param job_list The jobs.
+ * @param centry_list Needed for per resource urgency setting.
+ * @param pe_list Needed to determine urgency slot setting.
+ */
 static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
                lList *job_list, const lList *centry_list, lList *pe_list)
 {
@@ -218,26 +209,18 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
    DRETURN_VOID;
 }
 
-/****** sge_urgency/sge_normalize_urgency() **********************
-*  NAME
-*     sge_normalize_urgency() -- Computes normalized urgency for job list
-*
-*  SYNOPSIS
-*     static void sge_normalize_urgency(lList *job_list, double 
-*     min_urgency, double max_urgency) 
-*
-*  FUNCTION
-*     The normalized urgency is determined for a list of jobs based on the
-*     min/max urgency values passed and the JB_urg value of each job.
-*
-*  INPUTS
-*     lList *job_list           - The job list
-*     double min_urgency - minimum urgency value
-*     double max_urgency - maximum urgency value
-*
-*  NOTES
-*     MT-NOTES: sge_normalize_urgency() is MT safe
-*******************************************************************************/
+/**
+ * @brief Computes normalized urgency for job list
+ *
+ * The normalized urgency is determined for a list of jobs based on the
+ * min/max urgency values passed and the JB_urg value of each job.
+ *
+ * @param job_list The job list
+ * @param min_urgency minimum urgency value
+ * @param max_urgency maximum urgency value
+ *
+ * @note MT-NOTES: sge_normalize_urgency() is MT safe
+ */
 static void sge_normalize_urgency(lList *job_list, double min_urgency, double max_urgency)
 {
    DENTER(TOP_LAYER);
@@ -253,30 +236,22 @@ static void sge_normalize_urgency(lList *job_list, double min_urgency, double ma
 }
 
 
-/****** sge_job_schedd/sge_job_slot_request() **********************************
-*  NAME
-*     sge_job_slot_request() -- return static urgency jobs slot request
-*
-*  SYNOPSIS
-*     int sge_job_slot_request(lListElem *job, lList *pe_list)
-*
-*  FUNCTION
-*     For sequential jobs the static urgency job slot request is always 1.
-*     For parallel jobs the static urgency job slot request depends on
-*     static urgency slots as defined with sge_pe(5).
-*
-*  INPUTS
-*     lListElem *job - the job (JB_Type)
-*     lList *pe_list - the PE list (PE_Type)
-*
-*  RESULT
-*     int - Number of slots
-*
-*  NOTES
-*     In case of a wildcard parallel environment request the setting of the 
-*     first matching is used. Behaviour is undefined if multiple parallel 
-*     environments specify different settings!
-*******************************************************************************/
+/**
+ * @brief Return static urgency jobs slot request
+ *
+ * For sequential jobs the static urgency job slot request is always 1.
+ * For parallel jobs the static urgency job slot request depends on
+ * static urgency slots as defined with sge_pe(5).
+ *
+ * @param job the job (JB_Type)
+ * @param pe_list the PE list (PE_Type)
+ *
+ * @return Number of slots
+ *
+ * @note In case of a wildcard parallel environment request the setting of the
+ *       first matching is used. Behaviour is undefined if multiple parallel
+ *       environments specify different settings!
+ */
 int sge_job_slot_request(const lListElem *job, const lList *pe_list)
 {
    const char *pe_name;

@@ -33,6 +33,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Job urgency - the part of the priority that does not depend on the policies
+ *
+ * A job's priority has three contributions: the ticket policies, the POSIX
+ * priority set with `-p`, and the **urgency**, which comes from the job
+ * itself - its resource requests, its deadline, and how long it has been
+ * waiting. This module computes the urgency part before the ticket policies
+ * run.
+ */
+
 #include "sge_sched_thread.h"
 
 void sge_do_urgency(uint64_t now, lList *running_jobs, lList *pending_jobs,

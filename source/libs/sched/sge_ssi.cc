@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of SSI, the simple scheduler interface
+ */
+
 #include <cstdlib>
 #include <cstring>
 
@@ -72,34 +76,25 @@ static bool parse_job_identifier(const char *id, uint32_t *job_id, uint32_t *ja_
    DRETURN(false);
 }
 
-/****** schedlib/ssi/sge_ssi_job_cancel() **************************************
-*  NAME
-*     sge_ssi_job_cancel() -- delete or restart a job
-*
-*  SYNOPSIS
-*     bool sge_ssi_job_cancel(const char *job_identifier, bool reschedule) 
-*
-*  FUNCTION
-*     Delete the given job.
-*     If reschedule is set to true, reschedule the job.
-*
-*  INPUTS
-*     const char *job_identifier - job identifier in the form 
-*                                  <jobid>.<ja_task_id>, e.g. 123.1
-*     bool reschedule            - if true, reschedule job
-*
-*  RESULT
-*     bool - true, if the job could be successfully deleted (rescheduled),
-*           else false.
-*
-*  NOTES
-*     The reschedule parameter is igored in the current implementation.
-*
-*  SEE ALSO
-*     schedlib/ssi/sge_ssi/job_start()
-*
-*  MT-NOTE: sge_ssi_job_cancel() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Delete or restart a job
+ *
+ * Delete the given job.
+ * If reschedule is set to true, reschedule the job.
+ *
+ * @param[in] evc             the event client the custom scheduler runs on,
+ *                            used for the GDI connection
+ * @param[in] job_identifier  job identifier in the form
+ *                            `job_id`.`ja_task_id`, e.g. `123.1`
+ * @param[in] reschedule      if true, reschedule the job instead of deleting
+ *                            it
+ *
+ * @return true, if the job could be successfully deleted (rescheduled), else false.
+ *
+ * @note The reschedule parameter is igored in the current implementation.
+ *
+ * @see `job_start()`
+ */
 bool sge_ssi_job_cancel(sge_evc_class_t *evc, const char *job_identifier, bool reschedule) 
 {
    DENTER(TOP_LAYER);
@@ -135,37 +130,27 @@ bool sge_ssi_job_cancel(sge_evc_class_t *evc, const char *job_identifier, bool r
 }
 
 
-/****** schedlib/ssi/sge_ssi_job_start() ***************************************
-*  NAME
-*     sge_ssi_job_start() -- start a job
-*
-*  SYNOPSIS
-*     bool sge_ssi_job_start(const char *job_identifier, const char *pe, 
-*                           task_map tasks[]) 
-*
-*  FUNCTION
-*     Start the job described by job_identifier, pe and tasks.
-*     job_identifier has to be given in the form "<job_id>.<ja_task_id>",
-*     e.g. "123.1" and must reference a pending job/array task.
-*     For parallel jobs, pe has to be the name of an existing parallel
-*     environment.
-*     tasks describes how many tasks are to be started per host.
-*
-*     The function creates a scheduling order and sends it to qmaster.
-*
-*  INPUTS
-*     const char *job_identifier - unique job identifier
-*     const char *pe             - name of a parallel environment 
-*                                  or nullptr for sequential jobs
-*     task_map tasks[]           - mapping host->number of tasks
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  SEE ALSO
-*     libsched/ssi/--Simple-Scheduler-Interface
-*     libsched/ssi/-Simple-Scheduler-Interface-Typedefs
-*******************************************************************************/
+/**
+ * @brief Start a job
+ *
+ * Start the job described by job_identifier, pe and tasks.
+ * job_identifier has to be given in the form "`job_id`.`ja_task_id`",
+ * e.g. "123.1" and must reference a pending job/array task.
+ * For parallel jobs, pe has to be the name of an existing parallel
+ * environment.
+ * tasks describes how many tasks are to be started per host.
+ * The function creates a scheduling order and sends it to qmaster.
+ *
+ * @param[in] evc            the event client the custom scheduler runs on,
+ *                           used for the GDI connection
+ * @param[in] job_identifier unique job identifier, `job_id`.`ja_task_id`
+ * @param[in] pe             name of a parallel environment, or nullptr for
+ *                           sequential jobs
+ * @param[in] tasks          the layout: how many tasks on which host, see
+ *                           #task_map; terminated by an entry with `procs` 0
+ *
+ * @return true on success, else false
+ */
 bool sge_ssi_job_start(sge_evc_class_t *evc, const char *job_identifier, const char *pe, task_map tasks[])
 {
    DENTER(TOP_LAYER);

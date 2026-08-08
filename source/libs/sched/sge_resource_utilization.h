@@ -33,6 +33,21 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The resource utilization diagram - what is booked, and when
+ *
+ * A consumable is not just "so much free right now". The scheduler keeps, per
+ * resource and per object, a **diagram** over time: a list of points at which
+ * the booked amount changes, so it can answer "how much of this is free
+ * between t and t+d" - which is what resource reservation and advance
+ * reservations need.
+ *
+ * utilization_add() books an interval into a diagram, utilization_max()
+ * answers the maximum booking within an interval, and
+ * prepare_resource_schedules() fills the diagrams of a whole scheduling run
+ * from the running and suspended jobs.
+ */
+
 #include "sge_select_queue.h"
 #include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
 #include "sgeobj/cull/sge_resource_utilization_RUE_L.h"

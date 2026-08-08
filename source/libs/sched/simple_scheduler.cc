@@ -32,6 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief A minimal example scheduler built on the event mirror and SSI
+ *
+ * Not the production scheduler - this is the worked example of how a custom
+ * scheduler is written: register as an event client, let the mirror maintain
+ * a local copy of the cluster state, and use the simple scheduler interface
+ * of `sge_ssi.h` to start and cancel jobs.
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <strings.h>
@@ -564,6 +573,14 @@ static void register_scheduler(sge_evc_class_t *evc)
    DRETURN_VOID;
 }
 
+/**
+ * @brief Entry point of the example scheduler
+ *
+ * @param[in] argc number of command line arguments
+ * @param[in] argv the command line arguments
+ *
+ * @return the exit code of the process
+ */
 int main(int argc, char *argv[])
 {
    DENTER_MAIN(TOP_LAYER, "simple_scheduler");

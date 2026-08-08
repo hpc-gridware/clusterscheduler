@@ -33,21 +33,35 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The orders the scheduler sends back to qmaster
+ *
+ * The scheduler never changes the cluster itself - it only decides, and every
+ * decision leaves as an **order** to qmaster: start this job here, set these
+ * tickets, suspend that queue. The orders of one scheduling run are collected
+ * in an #order_t, split by kind because they are sent in that order and
+ * counted separately for the profiling.
+ */
+
 #include "cull/cull.h"
 #include "evc/sge_event_client.h"
 
+/** @brief The orders of one scheduling run, grouped by kind */
 typedef struct {
-   lList *configOrderList;   /* Type: ORT_unsuspend_on_threshold, ORT_suspend_on_threshold */
-   lList *pendingOrderList;  /* Type: ORT_tickets, ORT_ptickets, ORT_sched_conf */
-   lList *jobStartOrderList; /* Type: ORT_remove_immediate_job, job start orders, job info orders */
-   lList *sentOrderList;     /* already send job start orders, need to get a correct order 
-                                amount for the profiling. It is also needed for a warring
-                                message, which informs about policy conflict:
-                                MSG_SUBORDPOLICYCONFLICT_UUSS */
-   uint32_t numberSendOrders; /* number of send orders */
-   uint32_t numberSendPackages; /* number sends inbetween */
+   lList *configOrderList;   ///< Suspend and unsuspend on threshold orders
+   lList *pendingOrderList;  ///< Ticket and scheduler configuration orders
+   lList *jobStartOrderList; ///< Job start, job info and remove-immediate-job orders
+   /**
+    * Job start orders that were already sent. Kept so the profiling reports
+    * the correct total, and so a subordinate policy conflict can still be
+    * warned about after the order left.
+    */
+   lList *sentOrderList;
+   uint32_t numberSendOrders;   ///< Number of orders sent so far
+   uint32_t numberSendPackages; ///< Number of sends done in between
 }order_t;
 
+/** Initializer for an empty #order_t */
 #define ORDER_INIT {nullptr, nullptr, nullptr, nullptr, 0, 0}
 
 lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_count);

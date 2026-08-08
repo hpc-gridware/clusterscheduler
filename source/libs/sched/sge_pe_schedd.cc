@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief The scheduler's side of parallel environments
+ */
 #include <cstdio>
 #include <cctype>
 #include <cstdlib>
@@ -123,31 +127,20 @@ pe_allocation_rule_slots(const char *allocation_rule, int slots, bool strict_fix
    DRETURN(0);
 }
 
-/****** sge_pe_schedd/pe_restricted() ******************************************
-*  NAME
-*     pe_match_static() -- Why not job to PE?
-*
-*  SYNOPSIS
-*     int pe_match_static(lListElem *job, lListElem *pe, lList *acl_list, bool 
-*     only_static_checks) 
-*
-*  FUNCTION
-*     Checks if PE is suited for the job.
-*
-*  INPUTS
-*     lListElem *job          - ??? 
-*     lListElem *pe           - ??? 
-*     lList *acl_list         - ??? 
-*     bool only_static_checks - ??? 
-*
-*  RESULT
-*     dispatch_t - DISPATCH_OK        ok 
-*                  DISPATCH_NEVER_CAT assignment will never be possible for all
-*                                     jobs of that category
-*
-*  NOTES
-*     MT-NOTE: pe_restricted() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Is this PE suited for the job at all?
+ *
+ * Only the checks that cannot change during a scheduling run are made here -
+ * access lists, the slot range, the job's requests against the PE. A PE that
+ * fails one of them fails it for every job of the same category, which is
+ * what the DISPATCH_NEVER_CAT result says.
+ *
+ * @param[in] a the assignment, carrying the job, the PE and the access lists
+ *
+ * @return DISPATCH_OK        ok DISPATCH_NEVER_CAT assignment will never be possible for all jobs of that category
+ *
+ * @note MT-NOTE: pe_restricted() is not MT safe
+ */
 dispatch_t pe_match_static(const sge_assignment_t *a) 
 {
    int total_slots;

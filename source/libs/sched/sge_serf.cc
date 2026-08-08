@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of SERF, the schedule entry recording facility
+ */
+
 #include <cstring>
 
 #include "uti/sge_rmon_macros.h"
@@ -44,37 +48,26 @@
 
 #include "sge_serf.h"
 
-/****** SERF/-SERF_Implementation *******************************************
-*  NAME
-*     SERF_Implementation -- Functions that implement a generic schedule 
-*                             entry recording facility (SERF)
-*
-*  SEE ALSO
-*     SERF/serf_init()
-*     SERF/serf_record_entry()
-*     SERF/serf_new_interval()
-*     SERF/serf_get_active()
-*     SERF/serf_set_active()
-*     SERF/serf_exit()
-*******************************************************************************/
+/** @brief The callbacks the current recorder registered */
 typedef struct {
-   record_schedule_entry_func_t record_schedule_entry;   
-   new_schedule_func_t new_schedule;   
+   record_schedule_entry_func_t record_schedule_entry;   ///< Called once per schedule entry
+   new_schedule_func_t new_schedule;                     ///< Called once per scheduling interval
 } sge_serf_t;
 static sge_serf_t current_serf = { nullptr, nullptr }; /* thread local */
 
 
-/****** sge_resource_utilization/serf_init() ***********************************
-*  NAME
-*     serf_init() -- Initializes SERF
-*
-*  SYNOPSIS
-*     void serf_init(record_schedule_entry_func_t write, new_schedule_func_t 
-*     newline) 
-*
-*  NOTES
-*     MT-NOTE: serf_init() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Registers the callbacks of a schedule recorder
+ *
+ * Passing nullptr for both switches recording off again.
+ *
+ * @param[in] write   called once per schedule entry, see
+ *                    #record_schedule_entry_func_t
+ * @param[in] newline called once per scheduling interval, see
+ *                    #new_schedule_func_t
+ *
+ * @note MT-NOTE: serf_init() is not MT safe
+ */
 void serf_init(record_schedule_entry_func_t write, new_schedule_func_t newline)
 {
    current_serf.record_schedule_entry = write;
@@ -82,56 +75,34 @@ void serf_init(record_schedule_entry_func_t write, new_schedule_func_t newline)
 }
 
 
-/****** sge_resource_utilization/serf_record_entry() ***************************
-*  NAME
-*     serf_record_entry() -- Add a new schedule entry record
-*
-*  SYNOPSIS
-*     void serf_record_entry(uint32_t job_id, uint32_t ja_taskid, const char
-*     *state, uint32_t start_time, uint32_t end_time, uint32_t level, const
-*     char *object_name, const char *name, double utilization) 
-*
-*  FUNCTION
-*     The entirety of all information passed to this function describes
-*     the schedule that was created during a scheduling interval of a
-*     Cluster Scheduler scheduler. To reflect multiple resource debitations 
-*     of a job multiple calls to serf_record_entry() are required. For
-*     parallel jobs the serf_record_entry() is called one times with a
-*     'P' as level_char.
-*
-*  INPUTS
-*     uint32_t job_id         - The job id
-*     uint32_t ja_taskid      - The task id
-*     const char *type        - A string indicating the reason why the 
-*                               utilization was put into the schedule:
-*
-*                               RUNNING    - Job was running before scheduling run
-*                               SUSPENDED  - Job was suspended before scheduling run
-*                               PREEMPTING - Job gets preempted currently 
-*                               STARTING   - Job will be started 
-*                               RESERVING  - Job reserves resources
-*
-*     uint32_t start_time     - Start of the resource utilization
-*
-*     uint32_t end_time       - End of the resource utilization
-*
-*     char level_char         - Q - Queue 
-*                               H - Host
-*                               G - Global
-*                               P - Parallel Environment (PE)
-*
-*     const char *object_name - Name of Queue/Host/Global/PE
-*
-*     const char *name        - Resource name
-*
-*     double utilization      - Utilization amount
-*
-*  NOTES
-*     MT-NOTE: (1) serf_record_entry() is MT safe if no recording function
-*     MT-NOTE:     was registered via serf_init(). 
-*     MT-NOTE: (2) Otherwise MT safety of serf_record_entry() depends on 
-*     MT-NOTE:     MT safety of registered recording function
-*******************************************************************************/
+/**
+ * @brief Add a new schedule entry record
+ *
+ * The entirety of all information passed to this function describes
+ * the schedule that was created during a scheduling interval of a
+ * Cluster Scheduler scheduler. To reflect multiple resource debitations
+ * of a job multiple calls to serf_record_entry() are required. For
+ * parallel jobs the serf_record_entry() is called one times with a
+ * 'P' as level_char.
+ *
+ * @param[in] job_id      The job id
+ * @param[in] ja_taskid    The task id
+ * @param[in] type         Why the utilization is in the schedule, one of the
+ *                         SCHEDULING_RECORD_ENTRY_TYPE_* strings
+ * @param[in] start_time   Start of the resource utilization
+ * @param[in] end_time     End of the resource utilization
+ * @param[in] level        The level the resource sits at - queue, host,
+ *                         global or parallel environment; converted to the
+ *                         `level_char` the callback receives
+ * @param[in] object_name  Name of the queue, host, global or PE
+ * @param[in] name         Resource name
+ * @param[in] utilization  Utilization amount
+ *
+ * @note MT-NOTE: (1) serf_record_entry() is MT safe if no recording function
+ *       MT-NOTE:     was registered via serf_init().
+ *       MT-NOTE: (2) Otherwise MT safety of serf_record_entry() depends on
+ *       MT-NOTE:     MT safety of registered recording function
+ */
 void serf_record_entry(uint32_t job_id, uint32_t ja_taskid,
                        const char *type, uint64_t start_time, uint64_t end_time, uint32_t level,
                        const char *object_name, const char *name, double utilization)
@@ -157,24 +128,18 @@ void serf_record_entry(uint32_t job_id, uint32_t ja_taskid,
 }
 
 
-/****** sge_resource_utilization/serf_new_interval() ***************************
-*  NAME
-*     serf_new_interval() -- Indicate the end of a  scheduling run
-*
-*  SYNOPSIS
-*     void serf_new_interval(uint32_t time)
-*
-*  FUNCTION
-*     When a new scheduling run ended serf_new_interval() shall be
-*     called to indicate this. This allows assigning of schedule entry
-*     records to different schedule runs.
-*
-*  NOTES
-*     MT-NOTE: (1) serf_new_interval() is MT safe if no recording function
-*     MT-NOTE:     was registered via serf_init(). 
-*     MT-NOTE: (2) Otherwise MT safety of serf_new_interval() depends on 
-*     MT-NOTE:     MT safety of registered recording function
-*******************************************************************************/
+/**
+ * @brief Indicate the end of a  scheduling run
+ *
+ * When a new scheduling run ended serf_new_interval() shall be
+ * called to indicate this. This allows assigning of schedule entry
+ * records to different schedule runs.
+ *
+ * @note MT-NOTE: (1) serf_new_interval() is MT safe if no recording function
+ *       MT-NOTE:     was registered via serf_init().
+ *       MT-NOTE: (2) Otherwise MT safety of serf_new_interval() depends on
+ *       MT-NOTE:     MT safety of registered recording function
+ */
 void serf_new_interval()
 {
    DENTER(TOP_LAYER);
@@ -189,19 +154,13 @@ void serf_new_interval()
 }
 
 
-/****** sge_resource_utilization/serf_exit() ***********************************
-*  NAME
-*     serf_exit() -- Closes SERF
-*
-*  SYNOPSIS
-*     void serf_exit() 
-*
-*  FUNCTION
-*     All operations requited to cleanly shutdown the SERF are done.
-*
-*  NOTES
-*     MT-NOTE: serf_exit() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Closes SERF
+ *
+ * All operations requited to cleanly shutdown the SERF are done.
+ *
+ * @note MT-NOTE: serf_exit() is MT safe
+ */
 void serf_exit()
 {
    memset(&current_serf, 0, sizeof(sge_serf_t)); 
