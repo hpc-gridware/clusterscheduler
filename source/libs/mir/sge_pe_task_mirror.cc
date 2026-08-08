@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Mirroring the tasks of a parallel job
+ *
+ * Parallel tasks are a sublist of an array task, one level deeper than
+ * sge_ja_task_mirror.cc.
+ *
+ * @see sge_pe_task_mirror.h
+ * @see sge_mirror.h
+ */
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -43,28 +53,18 @@
 #include "mir/msg_mirlib.h"
 #include "mir/sge_pe_task_mirror.h"
 
-/****** Eventmirror/pe_task/pe_task_update_master_list_usage() *****************
-*  NAME
-*     pe_task_update_master_list_usage() -- update a parallel tasks usage
-*
-*  SYNOPSIS
-*     bool 
-*     pe_task_update_master_list_usage(lList *job_list, lListElem *event) 
-*
-*  FUNCTION
-*     Updates the scaled usage of a parallel task.
-*
-*  INPUTS
-*     lListElem *job_list - the master job list
-*     lListElem *event    - event object containing the new usage list
-*
-*  RESULT
-*     bool - true, if the operation succeeds, else false
-*
-*  SEE ALSO
-*     Eventmirror/job/job_update_master_list_usage()
-*     Eventmirror/ja_task/ja_task_update_master_list_usage()
-*******************************************************************************/
+/**
+ * @brief Update a parallel tasks usage
+ *
+ * Updates the scaled usage of a parallel task.
+ *
+ * @param job_list the master job list
+ * @param event event object containing the new usage list
+ *
+ * @return true, if the operation succeeds, else false
+ *
+ * @see `job_update_master_list_usage()`, `ja_task_update_master_list_usage()`
+ */
 sge_callback_result
 pe_task_update_master_list_usage(lList *job_list, lListElem *event)
 {
@@ -110,40 +110,28 @@ pe_task_update_master_list_usage(lList *job_list, lListElem *event)
    DRETURN(SGE_EMA_OK);
 }
 
-/****** Eventmirror/pe_task/pe_task_update_master_list() ***********************
-*  NAME
-*     pe_task_update_master_list() -- update parallel tasks of an array task
-*
-*  SYNOPSIS
-*     bool 
-*     pe_task_update_master_list(sge_object_type type, sge_event_action action, 
-*                                lListElem *event, void *clientdata) 
-*
-*  FUNCTION
-*     Update the list of parallel tasks of an array task
-*     based on an event.
-*     The function is called from the event mirroring interface.
-*
-*     The scaled usage list of a parallel task is not updated
-*     by this function, as this data is maintained by a 
-*     separate event.
-*
-*  INPUTS
-*     sge_object_type type     - event type
-*     sge_event_action action - action to perform
-*     lListElem *event        - the raw event
-*     void *clientdata        - client data
-*
-*  RESULT
-*     bool - true, if update is successful, else false
-*
-*  NOTES
-*     The function should only be called from the event mirror interface.
-*
-*  SEE ALSO
-*     Eventmirror/--Eventmirror
-*     Eventmirror/sge_mirror_update_master_list()
-*******************************************************************************/
+/**
+ * @brief Update parallel tasks of an array task
+ *
+ * Update the list of parallel tasks of an array task
+ * based on an event.
+ * The function is called from the event mirroring interface.
+ * The scaled usage list of a parallel task is not updated
+ * by this function, as this data is maintained by a
+ * separate event.
+ *
+ * @param evc the event client the event arrived on
+ * @param type event type
+ * @param action action to perform
+ * @param event the raw event
+ * @param clientdata client data
+ *
+ * @return true, if update is successful, else false
+ *
+ * @note The function should only be called from the event mirror interface.
+ *
+ * @see `sge_mirror_update_master_list()`
+ */
 sge_callback_result
 pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                            sge_event_action action, lListElem *event, void *clientdata)

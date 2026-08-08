@@ -19,6 +19,12 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Declarations for mirroring one mirroring thread per snapshot data store
+ *
+ * @see ocs_MirrorDataStore.cc
+ */
+
 #include <string>
 #include "pthread.h"
 
@@ -32,6 +38,17 @@
 #include "ocs_thread_mirror.h"
 
 namespace ocs {
+   /**
+    * @brief One thread mirroring the master lists into one data store
+    *
+    * qmaster keeps several snapshots of the object model so readers do not
+    * block writers. Each snapshot is fed by its own instance of this: the
+    * thread registers as an event client, applies what arrives, and takes the
+    * data store's lock only while it does so.
+    *
+    * The four pure virtual methods are what a concrete store has to supply -
+    * how it connects, which events it wants, and what it does with sessions.
+    */
    class MirrorDataStore {
    private:
       pthread_cond_t cond_var;                     ///< used to wait for new events and to wake up this thread
@@ -57,9 +74,21 @@ namespace ocs {
       virtual void block_till_initial_events_handled();
 
       [[noreturn]] virtual void *main([[maybe_unused]] void *arg);
+      /// Establish this thread's connection to qmaster
       virtual void init_connection() = 0;
+      /// Set up the event mirror for this data store
       virtual void init_event_mirror() = 0;
+      /// Subscribe the object types this data store needs
       virtual void subscribe_events() = 0;
+      /**
+       * @brief Release the requests that were waiting for this snapshot to catch up
+       *
+       * A client that just wrote may not be answered from a snapshot older than
+       * its write; those requests wait until the snapshot reaches the id they
+       * need.
+       *
+       * @param unique_id the write id this snapshot has now reached
+       */
       virtual void update_sessions_and_move_requests(uint64_t unique_id) = 0;
       virtual bool lock();
       virtual void unlock();
@@ -70,7 +99,9 @@ namespace ocs {
       static void thread_cleanup_event_client(void *arg);
       static void thread_cleanup_data_store([[maybe_unused]] void *unused);
 
+      /// Creates the mirror threads; needs access to the private members
       friend void event_mirror_initialize();
+      /// Stops the mirror threads; needs access to the private members
       friend void event_mirror_terminate();
    };
 }

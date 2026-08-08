@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for mirroring the cluster queues and their instances
+ *
+ * @see sge_queue_mirror.cc
+ */
+
 #include "sgeobj/sge_object.h"
 
 sge_callback_result

@@ -32,6 +32,19 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The event mirror: applying events to a local copy of the master lists
+ *
+ * One `mirror_description` per object type says what happens to an event: the
+ * component's `before` callback, then the built in mirroring, then its `after`
+ * callback. The `before` one may stop the event from being applied.
+ *
+ * The state is thread local, so several threads can each mirror into their own
+ * data store - which is what @ref ocs::MirrorDataStore uses.
+ *
+ * @see sge_mirror.h
+ */
+
 #include <cstdlib>
 #include <pthread.h>
 #include <cstdio>
@@ -63,15 +76,19 @@
 
 #include "sig_handlers.h"
 
-/* Datastructure for internal storage of subscription information
- * and callbacks.
+/**
+ * @brief What one subscribed object type is mirrored with
+ *
+ * Three callbacks run per event, in order: the component's own `before`, the
+ * built in mirroring, then the component's `after`. The `before` one can stop
+ * the event from being applied at all.
  */
 typedef struct {
-   sge_mirror_callback callback_before;   /* callback before mirroring      */
-   sge_mirror_callback callback_default;  /* default mirroring function     */
-   sge_mirror_callback callback_after;    /* callback after mirroring       */
-   void *client_data;                      /* client data passed to callback */
-   bool filtered;                          /* subscribed with a where-filter -> local list is a subset */
+   sge_mirror_callback callback_before;   ///< callback before mirroring
+   sge_mirror_callback callback_default;  ///< default mirroring function
+   sge_mirror_callback callback_after;    ///< callback after mirroring
+   void *client_data;                     ///< client data passed to callback
+   bool filtered;                         ///< subscribed with a where-filter, so the local list is a subset
 } mirror_description;
 
 static sge_mirror_error 
@@ -175,11 +192,14 @@ static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
 /* multithreading support. */
 /*-------------------------*/
 
+/**
+ * @brief The mirror state of one thread
+ *
+ * Thread local, so several threads can each mirror into their own data store.
+ */
 typedef struct {
-   bool produce_qmaster_alive_timeout; /* used to produce qmaster alive timeout when
-                                        * SGE_PRODUCE_ALIVE_TIMEOUT_ERROR environment
-                                        * variable is set. */
-   mirror_description mirror_base[SGE_TYPE_ALL]; /* subscription handlers */
+   bool produce_qmaster_alive_timeout; ///< test hook: produce a qmaster alive timeout when `SGE_PRODUCE_ALIVE_TIMEOUT_ERROR` is set in the environment
+   mirror_description mirror_base[SGE_TYPE_ALL]; ///< subscription handlers, indexed by @ref sge_object_type
 } mir_state_t;
 
 static pthread_key_t   mir_state_key;
@@ -231,6 +251,15 @@ static mirror_description *mir_get_mirror_base()
    return mir_state->mirror_base;
 }
 
+/**
+ * @brief Is the local copy of this object type only a subset?
+ *
+ * A component may subscribe with a `where` filter, in which case its list holds
+ * only the matching elements. Anything that iterates the list has to know that.
+ *
+ * @param type the object type to ask about
+ * @return true when the type was subscribed with a filter
+ */
 bool sge_mirror_type_is_partial(sge_object_type type)
 {
    if (type < 0 || type >= SGE_TYPE_ALL) {
@@ -243,40 +272,27 @@ bool sge_mirror_type_is_partial(sge_object_type type)
 /* End multithreading support */
 /*----------------------------*/
 
-/****** Eventmirror/sge_mirror_initialize() ********************************************
-*  NAME
-*     sge_mirror_initialize() -- initialize a process local event mirror interface
-*
-*  SYNOPSIS
-*     sge_mirror_error sge_mirror_initialize(ev_registration_id id,
-*                                            const char *name)
-*
-*  FUNCTION
-*     Initializes internal data structures and registers with qmaster
-*     using the event client mechanisms.
-*
-*     Events covering shutdown requests and qmaster shutdown notification
-*     are subscribed.
-*
-*  INPUTS
-*     bool use_global_date  - if that to true, the implemenation is not thread
-*                             save anymore. This setting is to ensure, that
-*                             old code is still working, without beeing rewritten.
-*                             if false is put inhere, the mirror interface is
-*                             thread save. The current implementation has a limit,
-*                             which is, that only one thread can work on the mirror
-*                             data at a time, since it is stored as thread global.
-*     event_client_update_func_t - a function which knows on how to handle new events.
-*                                  The events are stored by this function and not send
-*                                  out.
-*
-*  RESULT
-*     sge_mirror_error - SGE_EM_OK or an error code
-*
-*  SEE ALSO
-*     Eventmirror/sge_mirror_shutdown()
-*     Eventclient/-ID-numbers
-*******************************************************************************/
+/**
+ * @brief Initialize a process local event mirror interface
+ *
+ * Initializes internal data structures and registers with qmaster
+ * using the event client mechanisms.
+ * Events covering shutdown requests and qmaster shutdown notification
+ * are subscribed.
+ *
+ * @param evc the event client to mirror into this process
+ * @param update_func a function which knows how to handle new events; it stores
+ *                    them rather than sending them out
+ * @param mod_func changes an existing event client registration
+ * @param add_func registers a new event client
+ * @param remove_func deregisters an event client
+ * @param ack_func acknowledges delivered events
+ * @param update_func_arg additional argument passed to `update_func`
+ *
+ * @return SGE_EM_OK or an error code
+ *
+ * @see #sge_mirror_shutdown
+ */
 sge_mirror_error
 sge_mirror_initialize(sge_evc_class_t *evc, event_client_update_func_t update_func,
                       evm_mod_func_t mod_func, evm_add_func_t add_func, evm_remove_func_t remove_func,
@@ -304,24 +320,19 @@ sge_mirror_initialize(sge_evc_class_t *evc, event_client_update_func_t update_fu
    DRETURN(SGE_EM_OK);
 }
 
-/****** Eventmirror/sge_mirror_shutdown() ***************************************
-*  NAME
-*     sge_mirror_shutdown() -- shutdown mirroring
-*
-*  SYNOPSIS
-*     sge_mirror_error sge_mirror_shutdown()
-*
-*  FUNCTION
-*     Shuts down the event mirroring mechanism:
-*     Unsubscribes all events, deletes contents of the corresponding
-*     object lists and deregisteres from qmaster.
-*
-*  RESULT
-*     sge_mirror_error - SGE_EM_OK or error code
-*
-*  SEE ALSO
-*     Eventmirror/sge_mirror_initialize()
-*******************************************************************************/
+/**
+ * @brief Shutdown mirroring
+ *
+ * @param evc the event client to shut down
+ *
+ * Shuts down the event mirroring mechanism:
+ * Unsubscribes all events, deletes contents of the corresponding
+ * object lists and deregisteres from qmaster.
+ *
+ * @return SGE_EM_OK or error code
+ *
+ * @see #sge_mirror_initialize
+ */
 sge_mirror_error sge_mirror_shutdown(sge_evc_class_t *evc)
 {
    DENTER(TOP_LAYER);
@@ -348,45 +359,28 @@ sge_mirror_error sge_mirror_shutdown(sge_evc_class_t *evc)
    DRETURN(SGE_EM_OK);
 }
 
-/****** Eventmirror/sge_mirror_subscribe() **************************************
-*  NAME
-*     sge_mirror_subscribe() -- subscribe certain event types
-*
-*  SYNOPSIS
-*     sge_mirror_error sge_mirror_subscribe(sge_object_type type,
-*                                           sge_mirror_callback callback_before,
-*                                           sge_mirror_callback callback_after,
-*                                           void *clientdata)
-*
-*  FUNCTION
-*     Subscribe a certain event type.
-*     Callback functions can be specified, that can be executed before the
-*     mirroring action and/or after the mirroring action.
-*
-*     The corresponding data structures are initialized,
-*     the events associated with the event type are subscribed with the
-*     event client interface.
-*
-*  INPUTS
-*     lListElem *event client              - event client to work with
-*     sge_object_type type                 - event type to subscribe or
-*                                           SGE_TYPE_ALL
-*     sge_mirror_callback callback_before - callback to be executed before
-*                                           mirroring
-*     sge_mirror_callback callback_after  - callback to be executed after
-*                                           mirroring
-*     void *clientdata                    - clientdata to be passed to the
-*                                           callback functions
-*
-*  RESULT
-*     sge_mirror_error - SGE_EM_OK or an error code
-*
-*  SEE ALSO
-*     Eventmirror/-Eventmirror-Typedefs
-*     Eventclient/-Subscription
-*     Eventclient/-Events
-*     Eventmirror/sge_mirror_unsubscribe()
-*******************************************************************************/
+/**
+ * @brief Subscribe certain event types
+ *
+ * Subscribe a certain event type.
+ * Callback functions can be specified, that can be executed before the
+ * mirroring action and/or after the mirroring action.
+ * The corresponding data structures are initialized,
+ * the events associated with the event type are subscribed with the
+ * event client interface.
+ *
+ * @param evc event client to work with
+ * @param type event type to subscribe or SGE_TYPE_ALL
+ * @param callback_before callback to be executed before mirroring
+ * @param callback_after callback to be executed after mirroring
+ * @param client_data client data to be passed to the callback functions
+ * @param where filter deciding which elements are mirrored at all
+ * @param what field selection limiting what is mirrored of each element
+ *
+ * @return SGE_EM_OK or an error code
+ *
+ * @see #sge_mirror_unsubscribe
+ */
 sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc,
                                       sge_object_type type,
                                       sge_mirror_callback callback_before,
@@ -730,30 +724,20 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
    return ret;
 }
 
-/****** Eventmirror/sge_mirror_unsubscribe() ************************************
-*  NAME
-*     sge_mirror_unsubscribe() -- unsubscribe event types
-*
-*  SYNOPSIS
-*     sge_mirror_error sge_mirror_unsubscribe(sge_object_type type)
-*
-*  FUNCTION
-*     Unsubscribes a certain event type or all if SGE_TYPE_ALL is given as type.
-*
-*     Unsubscribes the corresponding events in the underlying event client
-*     interface and frees data stored in the corresponding mirrored list(s).
-*  INPUTS
-*     sge_object_type type - the event type to unsubscribe or SGE_TYPE_ALL
-*
-*  RESULT
-*     sge_mirror_error - SGE_EM_OK or an error code
-*
-*  SEE ALSO
-*     Eventmirror/-Eventmirror-Typedefs
-*     Eventclient/-Subscription
-*     Eventclient/-Events
-*     Eventmirror/sge_mirror_subscribe()
-*******************************************************************************/
+/**
+ * @brief Unsubscribe event types
+ *
+ * Unsubscribes a certain event type or all if SGE_TYPE_ALL is given as type.
+ * Unsubscribes the corresponding events in the underlying event client
+ * interface and frees data stored in the corresponding mirrored list(s).
+ *
+ * @param evc the event client to work with
+ * @param type the event type to unsubscribe or SGE_TYPE_ALL
+ *
+ * @return SGE_EM_OK or an error code
+ *
+ * @see #sge_mirror_subscribe
+ */
 sge_mirror_error sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object_type type)
 {
    sge_mirror_error ret = SGE_EM_OK;
@@ -945,35 +929,27 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
    DRETURN(SGE_EM_OK);
 }
 
-/****** Eventmirror/sge_mirror_process_events() *********************************
-*  NAME
-*     sge_mirror_process_events() -- retrieve and process events
-*
-*  SYNOPSIS
-*     sge_mirror_error sge_mirror_process_events()
-*
-*  FUNCTION
-*     Retrieves new events from qmaster.
-*     If new events have arrived from qmaster, they are processed,
-*     that means, for each event
-*     - if installed, a "before mirroring" callback is called
-*     - the event is mirrored into the corresponding master list
-*     - if installed, a "after mirroring" callback is called
-*
-*     If retrieving new events from qmaster fails over a time period
-*     of 10 times the configured event delivery interval (see event
-*     client interface, function ec_get_edtime), a timeout warning
-*     is generated and a new registration of the event client is
-*     prepared.
-*
-*  RESULT
-*     sge_mirror_error - SGE_EM_OK or an error code
-*
-*  SEE ALSO
-*     Eventmirror/--Eventmirror
-*     Eventclient/Client/ec_get_edtime()
-*     Eventclient/Client/ec_set_edtime()
-*******************************************************************************/
+/**
+ * @brief Retrieve and process events
+ *
+ * Retrieves new events from qmaster.
+ * If new events have arrived from qmaster, they are processed,
+ * that means, for each event
+ * - if installed, a "before mirroring" callback is called
+ * - the event is mirrored into the corresponding master list
+ * - if installed, a "after mirroring" callback is called
+ * If retrieving new events from qmaster fails over a time period
+ * of 10 times the configured event delivery interval (see event
+ * client interface, function ec_get_edtime), a timeout warning
+ * is generated and a new registration of the event client is
+ * prepared.
+ *
+ * @param evc the event client to fetch events for
+ *
+ * @return SGE_EM_OK or an error code
+ *
+ * @see `ec_get_edtime()`, `ec_set_edtime()`
+ */
 sge_mirror_error sge_mirror_process_events(sge_evc_class_t *evc)
 {
    lList *event_list = nullptr;
@@ -1007,27 +983,17 @@ sge_mirror_error sge_mirror_process_events(sge_evc_class_t *evc)
    DRETURN(ret);
 }
 
-/****** Eventmirror/sge_mirror_strerror() ***************************************
-*  NAME
-*     sge_mirror_strerror() -- map errorcode to error message 
-*
-*  SYNOPSIS
-*     const char* sge_mirror_strerror(sge_mirror_error num) 
-*
-*  FUNCTION
-*     Returns a string describing a given error number.
-*     This function can be used to output error messages
-*     if a function of the event mirror interface fails.
-*
-*  INPUTS
-*     sge_mirror_error num - error number
-*
-*  RESULT
-*     const char* - corresponding error message
-*
-*  SEE ALSO
-*     Eventmirror/-Eventmirror-Typedefs
-*******************************************************************************/
+/**
+ * @brief Map errorcode to error message
+ *
+ * Returns a string describing a given error number.
+ * This function can be used to output error messages
+ * if a function of the event mirror interface fails.
+ *
+ * @param num error number
+ *
+ * @return corresponding error message
+ */
 const char *sge_mirror_strerror(sge_mirror_error num)
 {
    switch (num) {
@@ -1388,6 +1354,13 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
  * pid providers when function pointers are used
  */
 sge_mirror_error
+/**
+ * @brief Apply a list of events to the mirrored lists
+ *
+ * @param evc the event client the events arrived on
+ * @param event_list the events to apply
+ * @return SGE_EM_OK or an error code
+ */
 sge_mirror_process_event_list(sge_evc_class_t *evc, lList *event_list)
 {
    return sge_mirror_process_event_list_(evc, event_list);
@@ -1573,36 +1546,23 @@ generic_update_master_list( [[maybe_unused]] sge_evc_class_t *evc, sge_object_ty
 }
 
 
-/****** Eventmirror/sge_mirror_update_master_list_str_key() *********************
-*  NAME
-*     sge_mirror_update_master_list_str_key() -- update a master list
-*
-*  SYNOPSIS
-*     sge_mirror_error sge_mirror_update_master_list_str_key(lList **list,
-*                                                            const lDescr *list_descr,
-*                                                            int key_nm,
-*                                                            const char *key,
-*                                                            sge_event_action action,
-*                                                            lListElem *event)
-*
-*  FUNCTION
-*     Updates a certain element in a certain mirrored list.
-*     Which element to update is specified by a given string key.
-*
-*  INPUTS
-*     lList **list            - the master list to update
-*     lDescr *list_descr      - descriptor of the master list
-*     int key_nm              - field identifier of the key
-*     const char *key         - value of the key
-*     sge_event_action action - action to perform on list
-*     lListElem *event        - raw event element
-*
-*  RESULT
-*     sge_mirror_error - SGE_EM_OK or an error code
-*
-*  SEE ALSO
-*     Eventmirror/sge_mirror_update_master_list()
-*******************************************************************************/
+/**
+ * @brief Update a master list
+ *
+ * Updates a certain element in a certain mirrored list.
+ * Which element to update is specified by a given string key.
+ *
+ * @param list the master list to update
+ * @param list_descr descriptor of the master list
+ * @param key_nm field identifier of the key
+ * @param key value of the key
+ * @param action action to perform on list
+ * @param event raw event element
+ *
+ * @return SGE_EM_OK or an error code
+ *
+ * @see #sge_mirror_update_master_list
+ */
 sge_mirror_error
 sge_mirror_update_master_list_str_key(lList **list, const lDescr *list_descr,
                                       int key_nm, const char *key,
@@ -1621,36 +1581,23 @@ sge_mirror_update_master_list_str_key(lList **list, const lDescr *list_descr,
    DRETURN(ret);
 }
 
-/****** Eventmirror/sge_mirror_update_master_list_host_key() *********************
-*  NAME
-*     sge_mirror_update_master_list_host_key() -- update a master list
-*
-*  SYNOPSIS
-*     sge_mirror_error sge_mirror_update_master_list_host_key(lList **list,
-*                                                            const lDescr *list_descr,
-*                                                            int key_nm,
-*                                                            const char *key,
-*                                                            sge_event_action action,
-*                                                            lListElem *event)
-*
-*  FUNCTION
-*     Updates a certain element in a certain mirrored list.
-*     Which element to update is specified by a given hostname.
-*
-*  INPUTS
-*     lList **list            - the master list to update
-*     lDescr *list_descr      - descriptor of the master list
-*     int key_nm              - field identifier of the key
-*     const char *key         - value of the key (a hostname)
-*     sge_event_action action - action to perform on list
-*     lListElem *event        - raw event element
-*
-*  RESULT
-*     sge_mirror_error - SGE_EM_OK or an error code
-*
-*  SEE ALSO
-*     Eventmirror/sge_mirror_update_master_list()
-*******************************************************************************/
+/**
+ * @brief Update a master list
+ *
+ * Updates a certain element in a certain mirrored list.
+ * Which element to update is specified by a given hostname.
+ *
+ * @param list the master list to update
+ * @param list_descr descriptor of the master list
+ * @param key_nm field identifier of the key
+ * @param key value of the key (a hostname)
+ * @param action action to perform on list
+ * @param event raw event element
+ *
+ * @return SGE_EM_OK or an error code
+ *
+ * @see #sge_mirror_update_master_list
+ */
 sge_mirror_error sge_mirror_update_master_list_host_key(lList **list, const lDescr *list_descr,
                                                         int key_nm, const char *key,
                                                         sge_event_action action, lListElem *event)
@@ -1666,41 +1613,27 @@ sge_mirror_error sge_mirror_update_master_list_host_key(lList **list, const lDes
    DRETURN(ret);
 }
 
-/****** Eventmirror/sge_mirror_update_master_list() *****************************
-*  NAME
-*     sge_mirror_update_master_list() -- update a master list
-*
-*  SYNOPSIS
-*     sge_mirror_error sge_mirror_update_master_list(lList **list,
-*                                                    const lDescr *list_descr,
-*                                                    lListElem *ep,
-*                                                    const char *key,
-*                                                    sge_event_action action,
-*                                                    lListElem *event)
-*
-*  FUNCTION
-*     Updates a given master list according to the given event information.
-*     The following actions are performed (depending on parameter action):
-*     - SGE_EMA_LIST: an existing mirrored list is completely replaced
-*     - SGE_EMA_ADD:  a new element is added to the mirrored list
-*     - SGE_EMA_MOD:  a given element is modified
-*     - SGE_EMA_DEL:  a given element is deleted
-*
-*  INPUTS
-*     lList **list            - mirrored list to manipulate
-*     lDescr *list_descr      - descriptor of mirrored list
-*     lListElem *ep           - element to manipulate or nullptr
-*     const char *key         - key of an element to manipulate
-*     sge_event_action action - action to perform
-*     lListElem *event        - raw event
-*
-*  RESULT
-*     sge_mirror_error - SGE_EM_OK, or an error code
-*
-*  SEE ALSO
-*     Eventmirror/sge_mirror_update_master_list_str_key()
-*     Eventmirror/sge_mirror_update_master_list_host_key()
-*******************************************************************************/
+/**
+ * @brief Update a master list
+ *
+ * Updates a given master list according to the given event information.
+ * The following actions are performed (depending on parameter action):
+ * - SGE_EMA_LIST: an existing mirrored list is completely replaced
+ * - SGE_EMA_ADD:  a new element is added to the mirrored list
+ * - SGE_EMA_MOD:  a given element is modified
+ * - SGE_EMA_DEL:  a given element is deleted
+ *
+ * @param list mirrored list to manipulate
+ * @param list_descr descriptor of mirrored list
+ * @param ep element to manipulate or nullptr
+ * @param key key of an element to manipulate
+ * @param action action to perform
+ * @param event raw event
+ *
+ * @return SGE_EM_OK, or an error code
+ *
+ * @see #sge_mirror_update_master_list_str_key, #sge_mirror_update_master_list_host_key
+ */
 sge_mirror_error
 sge_mirror_update_master_list(lList **list, const lDescr *list_descr, lListElem *ep, const char *key,
                               sge_event_action action, lListElem *event) {
@@ -1758,33 +1691,23 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr, lListElem 
    DRETURN(SGE_EM_OK);
 }
 
-/****** sge_mirror/ar_update_master_list() *************************************
-*  NAME
-*     ar_update_master_list() -- update the master advance reservation list
-*
-*  SYNOPSIS
-*     static sge_callback_result ar_update_master_list(sge_evc_class_t *evc,
-*     sge_object_type type, sge_event_action
-*     action, lListElem *event, void *clientdata)
-*
-*  FUNCTION
-*     Updates the global master list of advance reservations based on an event.
-*     The function is called from the event mirroring interface.
-*
-*  INPUTS
-*     sge_evc_class_t *evc            - event client class
-*     sge_object_type type            - event type
-*     sge_event_action action         - action to perform
-*     lListElem *event                - the raw event
-*     void *clientdata                - client data
-*
-*  RESULT
-*     static sge_callback_result - true, if update is successful
-*                                  false if an error occurred
-*
-*  NOTES
-*     MT-NOTE: ar_update_master_list() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Update the master advance reservation list
+ *
+ * Updates the global master list of advance reservations based on an event.
+ * The function is called from the event mirroring interface.
+ *
+ * @param evc event client class
+ * @param evc the event client the event arrived on
+ * @param type event type
+ * @param action action to perform
+ * @param event the raw event
+ * @param clientdata client data
+ *
+ * @return true, if update is successful false if an error occurred
+ *
+ * @note MT-NOTE: ar_update_master_list() is not MT safe
+ */
 static sge_callback_result
 ar_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
                       sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data)
@@ -1801,34 +1724,23 @@ ar_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type typ
    DRETURN(SGE_EMA_OK);
 }
 
-/****** sge_mirror/sge_mirror_update_master_list_ar_key() **********************
-*  NAME
-*     sge_mirror_update_master_list_ar_key() -- updates the advance reservation
-*                                               master list
-*
-*  SYNOPSIS
-*     static sge_mirror_error sge_mirror_update_master_list_ar_key(lList
-*     **list, const lDescr *list_descr, int key_nm, const char *key,
-*     sge_event_action action, lListElem *event)
-*
-*  FUNCTION
-*     Updates a certain element in the advance reservation mirrored list. Which
-*     element to update is specified by the given AR_id as string value
-*
-*  INPUTS
-*     lList **list             - the master list to update
-*     const lDescr *list_descr - descriptor of the master list (AR_Type)
-*     int key_nm               - field identifies of the key (AR_name)
-*     const char *key          - AR_id as string value
-*     sge_event_action action  - action to perform on this list
-*     lListElem *event         - raw event element
-*
-*  RESULT
-*     static sge_mirror_error - SGE_EM_OK or an error code
-*
-*  NOTES
-*     MT-NOTE: sge_mirror_update_master_list_ar_key() is MT safe, needs GLOBAL_LOCK 
-*******************************************************************************/
+/**
+ * @brief Updates the advance reservation
+ *
+ * Updates a certain element in the advance reservation mirrored list. Which
+ * element to update is specified by the given AR_id as string value
+ *
+ * @param list the master list to update
+ * @param list_descr descriptor of the master list (AR_Type)
+ * @param key_nm field identifies of the key (AR_name)
+ * @param key AR_id as string value
+ * @param action action to perform on this list
+ * @param event raw event element
+ *
+ * @return SGE_EM_OK or an error code
+ *
+ * @note MT-NOTE: sge_mirror_update_master_list_ar_key() is MT safe, needs GLOBAL_LOCK
+ */
 static sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const lDescr *list_descr,
                                                              int key_nm, uint32_t key,
                                                              sge_event_action action, lListElem *event)

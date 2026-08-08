@@ -32,6 +32,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Mirroring the scheduler configuration
+ *
+ * @see sge_sched_conf_mirror.h
+ * @see sge_mirror.h
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_schedd_conf.h"
@@ -40,38 +47,25 @@
 #include "mir/sge_mirror.h"
 #include "mir/sge_sched_conf_mirror.h"
 
-/****** Eventmirror/schedd_conf/schedd_conf_update_master_list() ***************
-*  NAME
-*     schedd_conf_update_master_list() -- update the scheduler configuration
-*
-*  SYNOPSIS
-*     bool 
-*     schedd_conf_update_master_list(sge_object_type type, 
-*                                    sge_event_action action,
-*                                    lListElem *event, void *clientdata)
-*
-*  FUNCTION
-*     Update the global master list of scheduler configurations
-*     based on an event.
-*     The function is called from the event mirroring interface.
-*     The list only contains one element that is replaced when a
-*     modify event arrives.
-*
-*  INPUTS
-*     sge_object_type type     - event type
-*     sge_event_action action - action to perform
-*     lListElem *event        - the raw event
-*     void *clientdata        - client data
-*
-*  RESULT
-*     bool - true, if update is successful, else false
-*
-*  NOTES
-*     The function should only be called from the event mirror interface.
-*
-*  SEE ALSO
-*     Eventmirror/--Eventmirror
-*******************************************************************************/
+/**
+ * @brief Update the scheduler configuration
+ *
+ * Update the global master list of scheduler configurations
+ * based on an event.
+ * The function is called from the event mirroring interface.
+ * The list only contains one element that is replaced when a
+ * modify event arrives.
+ *
+ * @param evc the event client the event arrived on
+ * @param type event type
+ * @param action action to perform
+ * @param event the raw event
+ * @param clientdata client data
+ *
+ * @return true, if update is successful, else false
+ *
+ * @note The function should only be called from the event mirror interface.
+ */
 sge_callback_result
 schedd_conf_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                                sge_event_action action, lListElem *event, void *clientdata)

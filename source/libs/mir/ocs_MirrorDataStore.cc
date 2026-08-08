@@ -18,6 +18,16 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Mirroring one mirroring thread per snapshot data store
+ *
+ * qmaster keeps several snapshots so readers do not block writers; each is fed
+ * by its own thread, registered as its own event client.
+ *
+ * @see ocs_MirrorDataStore.h
+ * @see sge_mirror.h
+ */
+
 #include <functional>
 #include <iostream>
 
@@ -224,9 +234,7 @@ ocs::MirrorDataStore::lock() {
    }
 }
 
-/** @brief Unlock the data store.
- * @return
- */
+/** @brief Unlock the data store. */
 void
 ocs::MirrorDataStore::unlock() {
    SGE_UNLOCK(lock_type, LOCK_WRITE);

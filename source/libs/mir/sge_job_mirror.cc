@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Mirroring the job list
+ *
+ * Also carries the scheduler job info - the reason messages for pending jobs -
+ * which is a list of its own.
+ *
+ * @see sge_job_mirror.h
+ * @see sge_mirror.h
+ */
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -46,32 +56,23 @@
 
 static bool job_update_master_list_usage(lList *job_list, lListElem *event);
 
-/****** Eventmirror/job/job_update_master_list_usage() *************************
-*  NAME
-*     job_update_master_list_usage() -- update usage for a jobs tasks
-*
-*  SYNOPSIS
-*     int job_update_master_list_usage(lListElem *event)
-*
-*  FUNCTION
-*     Events containing usage reports are sent for a jobs tasks.
-*     This can be array tasks (where a non array job has a single
-*     array task) or tasks of a parallel job.
-*     This function decides which type of task has to receive
-*     the updated usage report and passes the event
-*     information to the corresponding update functions.
-*
-*  INPUTS
-*     lListElem *event - event object containing the new usage list
-*     lList *job_list  - master job list
-*
-*  RESULT
-*     bool - true, if the operation succeeds, else false
-*
-*  SEE ALSO
-*     Eventmirror/ja_task/pe_task_update_master_list_usage()
-*     Eventmirror/pe_task/pe_task_update_master_list_usage()
-*******************************************************************************/
+/**
+ * @brief Update usage for a jobs tasks
+ *
+ * Events containing usage reports are sent for a jobs tasks.
+ * This can be array tasks (where a non array job has a single
+ * array task) or tasks of a parallel job.
+ * This function decides which type of task has to receive
+ * the updated usage report and passes the event
+ * information to the corresponding update functions.
+ *
+ * @param event event object containing the new usage list
+ * @param job_list master job list
+ *
+ * @return true, if the operation succeeds, else false
+ *
+ * @see `pe_task_update_master_list_usage()`
+ */
 static bool job_update_master_list_usage(lList *job_list, lListElem *event)
 {
    bool ret = true;
@@ -100,42 +101,29 @@ static bool job_update_master_list_usage(lList *job_list, lListElem *event)
    DRETURN(ret);
 }
 
-/****** Eventmirror/job/job_update_master_list() *****************************
-*  NAME
-*     job_update_master_list() -- update the master list of jobs
-*
-*  SYNOPSIS
-*     bool job_update_master_list(sge_object_type type,
-*                                     sge_event_action action,
-*                                     lListElem *event, void *clientdata)
-*
-*  FUNCTION
-*     Update the global master list of jobs
-*     based on an event.
-*     The function is called from the event mirroring interface.
-*
-*     A jobs array tasks are not updated by this function,
-*     as they are maintained by separate events.
-*     In addition, some scheduler specific attributes, that
-*     are only used in scheduler, are not updated.
-*
-*  INPUTS
-*     sge_object_type type     - event type
-*     sge_event_action action - action to perform
-*     lListElem *event        - the raw event
-*     void *clientdata        - client data
-*
-*  RESULT
-*     bool - true, if update is successful, else false
-*
-*  NOTES
-*     The function should only be called from the event mirror interface.
-*
-*  SEE ALSO
-*     Eventmirror/--Eventmirror
-*     Eventmirror/sge_mirror_update_master_list()
-*     Eventmirror/job/job_update_master_list_usage()
-*******************************************************************************/
+/**
+ * @brief Update the master list of jobs
+ *
+ * Update the global master list of jobs
+ * based on an event.
+ * The function is called from the event mirroring interface.
+ * A jobs array tasks are not updated by this function,
+ * as they are maintained by separate events.
+ * In addition, some scheduler specific attributes, that
+ * are only used in scheduler, are not updated.
+ *
+ * @param evc the event client the event arrived on
+ * @param type event type
+ * @param action action to perform
+ * @param event the raw event
+ * @param clientdata client data
+ *
+ * @return true, if update is successful, else false
+ *
+ * @note The function should only be called from the event mirror interface.
+ *
+ * @see `sge_mirror_update_master_list()`, `job_update_master_list_usage`
+ */
 sge_callback_result
 job_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                        sge_event_action action, lListElem *event, void *clientdata)
@@ -234,6 +222,21 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    DRETURN(SGE_EMA_OK);
 }
 
+/**
+ * @brief Update the master list of scheduler job info
+ *
+ * The reason messages the scheduler produced for pending jobs.
+ *
+ * @param evc the event client the event arrived on
+ * @param type event type
+ * @param action action to perform
+ * @param event the raw event
+ * @param clientdata client data
+ *
+ * @return whether the mirror should apply the event
+ *
+ * @note The function should only be called from the event mirror interface.
+ */
 sge_callback_result
 job_schedd_info_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                                    sge_event_action action, lListElem *event, void *clientdata)

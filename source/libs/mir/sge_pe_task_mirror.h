@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for mirroring the tasks of a parallel job
+ *
+ * @see sge_pe_task_mirror.cc
+ */
+
 #include "sgeobj/sge_object.h"
 
 sge_callback_result

@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Mirroring the cluster queues and their instances
+ *
+ * Queue instances are a sublist of their cluster queue, which is why both live
+ * in one file.
+ *
+ * @see sge_queue_mirror.h
+ * @see sge_mirror.h
+ */
+
 #include "uti/sge.h"
 
 #include "uti/sge_log.h"
@@ -47,6 +57,19 @@
 #include "mir/sge_mirror.h"
 #include "mir/sge_queue_mirror.h"
 
+/**
+ * @brief Update the master list of cluster queues
+ *
+ * @param evc the event client the event arrived on
+ * @param type event type
+ * @param action action to perform
+ * @param event the raw event
+ * @param clientdata client data
+ *
+ * @return whether the mirror should apply the event
+ *
+ * @note The function should only be called from the event mirror interface.
+ */
 sge_callback_result
 cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                           sge_event_action action, lListElem *event, void *clientdata)
@@ -93,6 +116,22 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    DRETURN(ret);
 }
 
+/**
+ * @brief Apply a queue instance event to the cluster queue that owns it
+ *
+ * Queue instances are a sublist of their cluster queue, so an event about one
+ * is applied by finding its cluster queue first.
+ *
+ * @param evc the event client the event arrived on
+ * @param type event type
+ * @param action action to perform
+ * @param event the raw event
+ * @param clientdata client data
+ *
+ * @return whether the mirror should apply the event
+ *
+ * @note The function should only be called from the event mirror interface.
+ */
 sge_callback_result
 qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type, 
                              sge_event_action action, lListElem *event, void *clientdata)
