@@ -32,6 +32,27 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief SGEEE - the ticket policies that turn shares into a job priority
+ *
+ * Three policies hand out **tickets** to a job, and the sum decides the order
+ * in which pending jobs are considered:
+ *
+ * - the **share tree** policy, which distributes tickets along a tree of
+ *   users and projects according to configured shares and accumulated usage,
+ * - the **functional** policy, which distributes them by fixed weights per
+ *   user, project, department and job, and
+ * - the **override** policy, which is what an administrator adds by hand.
+ *
+ * The computation runs over an array of #sge_ref_t, one per job or array
+ * task, each holding references to everything the policies need - the job,
+ * the task, the user, the project, the department and the share tree node.
+ * Tasks that are not enrolled in `JB_ja_tasks` have no cull element to write
+ * to, which is what #sge_task_ref_t and the `REF_*` accessor macros exist
+ * for.
+ */
+
+/** Include queued jobs in the ticket calculation, not only the running ones */
 #define SGE_INCLUDE_QUEUED_JOBS
 
 #include <cstdio>
@@ -70,15 +91,23 @@
  * enrolled in the JB_ja_tasks-list. For these jobs we have no
  * reference to the 'ja_task'-CULL-element.
  */
+/**
+ * @brief The ticket values of an array task that is not enrolled
+ *
+ * A task that has no element in `JB_ja_tasks` has no cull element the
+ * policies could write into, so its values are kept here instead. The `REF_*`
+ * macros hide the difference: they write to the task element when there is
+ * one and into this struct otherwise.
+ */
 typedef struct {
-   uint32_t job_number;       /* job number */
-   uint32_t ja_task_number;   /* ja task id */
-   double ja_task_fticket;    /* ftickets for task 'ja_task_id' */
-   double ja_task_sticket;    /* stickets for task 'ja_task_id' */
-   double ja_task_oticket;    /* otickets for task 'ja_task_id' */
-   double ja_task_ticket;     /* tickets for task 'ja_task_id' */
-   double ja_task_share;      /* share for task 'ja_task_id' */
-   uint32_t ja_task_fshare;   /* fshare for task 'ja_task_id' */
+   uint32_t job_number;       ///< Job number
+   uint32_t ja_task_number;   ///< Array task id
+   double ja_task_fticket;    ///< Functional tickets of the task
+   double ja_task_sticket;    ///< Share tree tickets of the task
+   double ja_task_oticket;    ///< Override tickets of the task
+   double ja_task_ticket;     ///< Total tickets of the task
+   double ja_task_share;      ///< Share of the task
+   uint32_t ja_task_fshare;   ///< Functional share of the task
 } sge_task_ref_t;
 
 /*
@@ -89,21 +118,28 @@ typedef struct {
  * are scheduling.
  */
 
+/**
+ * @brief Everything the ticket policies need for one job or array task
+ *
+ * The scheduler builds an array of these, one entry per job or array task it
+ * is scheduling, so that each policy can walk the array instead of resolving
+ * the user, project, department and share tree node again for every job.
+ */
 typedef struct {
-   lListElem *job;		      /* job reference */
-   lListElem *ja_task;        /* task reference */
-   lListElem *user;		      /* user reference */
-   lListElem *project;		   /* project reference */
-   lListElem *dept;		      /* department reference */
-   lListElem *node;		      /* node reference */
-   int queued;                /* =1 if job is a queued job */
-   uint32_t  share_tree_type; /* share tree type */
-   double user_fshare;        /* job's share of user functional shares */
-   double dept_fshare;        /* job's share of department functional shares */
-   double project_fshare;     /* job's share of project functional shares */
-   double job_fshare;         /* job's share of job functional shares */
-   double tickets;            /* job's pending tickets from hierarchical policies */
-   sge_task_ref_t *tref;
+   lListElem *job;		      ///< The job (`JB_Type`)
+   lListElem *ja_task;        ///< The array task (`JAT_Type`), nullptr if not enrolled
+   lListElem *user;		      ///< The job owner
+   lListElem *project;		   ///< The project of the job
+   lListElem *dept;		      ///< The department of the job owner
+   lListElem *node;		      ///< The share tree node the job belongs to
+   int queued;                ///< 1 if this is a queued job
+   uint32_t  share_tree_type; ///< Which share tree the node comes from
+   double user_fshare;        ///< The job's share of the user functional shares
+   double dept_fshare;        ///< The job's share of the department functional shares
+   double project_fshare;     ///< The job's share of the project functional shares
+   double job_fshare;         ///< The job's share of the job functional shares
+   double tickets;            ///< The job's pending tickets from the hierarchical policies
+   sge_task_ref_t *tref;      ///< Ticket values of a task that is not enrolled, see #sge_task_ref_t
 } sge_ref_t;
 
 /*
@@ -111,10 +147,13 @@ typedef struct {
  * the the ref structure. This is need
  * to build the functional categories
  */
+/**
+ * @brief Doubly linked list of #sge_ref_t, used to build the functional categories
+ */
 typedef struct sge_ref_list_t{
-   sge_ref_t *ref;            /* ref reference */
-   struct sge_ref_list_t *next;        /* next list item */
-   struct sge_ref_list_t *prev;        /* previous list itme */
+   sge_ref_t *ref;                     ///< The entry this list item refers to
+   struct sge_ref_list_t *next;        ///< Next list item
+   struct sge_ref_list_t *prev;        ///< Previous list item
 } sge_ref_list_t;
 
 static void tix_range_set(double min_tix, double max_tix);
@@ -197,46 +236,32 @@ static double Master_max_tix = 0.0;     /* thread local */
 static int last_seqno = 0;              /* stores the last used seqno for the orders  thread_local*/
 static uint64_t past = 0;               /* stores the last re-order send time thread local */
 
-/****** sgeee/tix_range_set() **************************************************
-*  NAME
-*     tix_range_set() -- Store ticket range.
-*
-*  SYNOPSIS
-*     static void tix_range_set(double min_tix, double max_tix)
-*
-*  FUNCTION
-*     Stores ticket range in the global variables.
-*
-*  INPUTS
-*     double min_tix - Minimum ticket value.
-*     double max_tix - Maximum ticket value.
-*
-*  NOTES
-*     MT-NOTES: tix_range_set() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Store ticket range
+ *
+ * Stores ticket range in the global variables.
+ *
+ * @param min_tix Minimum ticket value.
+ * @param max_tix Maximum ticket value.
+ *
+ * @note MT-NOTES: tix_range_set() is not MT safe
+ */
 static void tix_range_set(double min_tix, double max_tix)
 {
    Master_min_tix = min_tix;
    Master_max_tix = max_tix;
 }
 
-/****** sgeee/tix_range_get() **************************************************
-*  NAME
-*     tix_range_get() -- Get stored ticket range.
-*
-*  SYNOPSIS
-*     static void tix_range_get(double *min_tix, double *max_tix)
-*
-*  FUNCTION
-*     Get stored ticket range from global variables.
-*
-*  INPUTS
-*     double *min_tix - Target for minimum value.
-*     double *max_tix - Target for maximum value.
-*
-*  NOTES
-*     MT-NOTES: tix_range_get() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Get stored ticket range
+ *
+ * Get stored ticket range from global variables.
+ *
+ * @param min_tix Target for minimum value.
+ * @param max_tix Target for maximum value.
+ *
+ * @note MT-NOTES: tix_range_get() is not MT safe
+ */
 static void tix_range_get(double *min_tix, double *max_tix) {
    if (min_tix)
       *min_tix = Master_min_tix;
@@ -390,8 +415,20 @@ static void task_ref_copy_to_ja_task(sge_task_ref_t *tref, lListElem *ja_task)
 }
 
 
+/** Usage assumed for a job that has reported none yet, so it never gets an unlimited share */
 #define SGE_MIN_USAGE 1.0
 
+/**
+ * @name Accessors for the ticket values of a job
+ *
+ * Every one of these writes to the array task element when the task is
+ * enrolled, and into the #sge_task_ref_t of the entry otherwise - which is
+ * the whole point: the policies do not have to know which of the two cases
+ * they are in.
+ * @{
+ */
+
+/** Sets one value, on the task element or in the task reference */
 #define __REF_SET_TYPE(ref, cull_attr, ref_attr, value, function) \
 { \
    if ((ref)->ja_task) { \
@@ -401,95 +438,102 @@ static void task_ref_copy_to_ja_task(sge_task_ref_t *tref, lListElem *ja_task)
    } \
 }
 
+/** Reads one value, from the task element or from the task reference */
 #define __REF_GET_TYPE(ref, cull_attr, ref_attr, function) \
    ((ref)->ja_task ? (function)((ref)->ja_task, cull_attr) : (ref_attr))
 
+/** Sets an unsigned value, see #__REF_SET_TYPE */
 #define __REF_SET_ULONG(ref, cull_attr, ref_attr, value) \
    __REF_SET_TYPE(ref, cull_attr, ref_attr, value, lSetUlong)
 
+/** Sets a floating point value, see #__REF_SET_TYPE */
 #define __REF_SET_DOUBLE(ref, cull_attr, ref_attr, value) \
    __REF_SET_TYPE(ref, cull_attr, ref_attr, value, lSetDouble)
 
+/** Reads an unsigned value, see #__REF_GET_TYPE */
 #define __REF_GET_ULONG(ref, cull_attr, ref_attr) \
    __REF_GET_TYPE(ref, cull_attr, ref_attr, lGetUlong)
 
+/** Reads a floating point value, see #__REF_GET_TYPE */
 #define __REF_GET_DOUBLE(ref, cull_attr, ref_attr) \
    __REF_GET_TYPE(ref, cull_attr, ref_attr, lGetDouble)
 
-/* uint32_t REF_GET_JA_TASK_NUMBER(sge_ref_t *ref) */
-
+/** Array task id of the job */
 #define REF_GET_JA_TASK_NUMBER(ref) \
    __REF_GET_ULONG((ref), JAT_task_number, (ref)->tref->ja_task_number)
 
-/* void REF_SET_JA_TASK_NUMBER(sge_ref_t *ref, uint32_t ja_task_number) */
+/** Sets the array task id of the job */
 #define REF_SET_JA_TASK_NUMBER(ref, ja_task_id) \
    __REF_SET_ULONG((ref), JAT_task_number, (ref)->tref->ja_task_number, \
                    (ja_task_id))
 
+/** Functional tickets of the job */
 #define REF_GET_FTICKET(ref) \
    __REF_GET_DOUBLE((ref), JAT_fticket, (ref)->tref->ja_task_fticket)
 
+/** Share tree tickets of the job */
 #define REF_GET_STICKET(ref) \
    __REF_GET_DOUBLE((ref), JAT_sticket, (ref)->tref->ja_task_sticket)
 
+/** Override tickets of the job */
 #define REF_GET_OTICKET(ref) \
    __REF_GET_DOUBLE((ref), JAT_oticket, (ref)->tref->ja_task_oticket)
 
+/** Total tickets of the job */
 #define REF_GET_TICKET(ref) \
    __REF_GET_DOUBLE((ref), JAT_tix, (ref)->tref->ja_task_ticket)
 
+/** Share of the job */
 #define REF_GET_SHARE(ref) \
    __REF_GET_DOUBLE((ref), JAT_share, (ref)->tref->ja_task_share)
 
+/** Functional share of the job */
 #define REF_GET_FSHARE(ref) \
    __REF_GET_ULONG((ref), JAT_fshare, (ref)->tref->ja_task_fshare)
 
 
+/** Sets the functional tickets of the job */
 #define REF_SET_FTICKET(ref, ticket) \
    __REF_SET_DOUBLE((ref), JAT_fticket, (ref)->tref->ja_task_fticket, (ticket))
 
+/** Sets the share tree tickets of the job */
 #define REF_SET_STICKET(ref, ticket) \
    __REF_SET_DOUBLE((ref), JAT_sticket, (ref)->tref->ja_task_sticket, (ticket))
 
+/** Sets the override tickets of the job */
 #define REF_SET_OTICKET(ref, ticket) \
    __REF_SET_DOUBLE((ref), JAT_oticket, (ref)->tref->ja_task_oticket, (ticket))
 
+/** Sets the total tickets of the job */
 #define REF_SET_TICKET(ref, ticket) \
    __REF_SET_DOUBLE((ref), JAT_tix, (ref)->tref->ja_task_ticket, (ticket))
 
+/** Sets the share of the job */
 #define REF_SET_SHARE(ref, share) \
    __REF_SET_DOUBLE((ref), JAT_share, (ref)->tref->ja_task_share, (share))
 
+/** Sets the functional share of the job */
 #define REF_SET_FSHARE(ref, fshare) \
    __REF_SET_ULONG((ref), JAT_fshare, (ref)->tref->ja_task_fshare, (fshare))
+/** @} */
 
 
 
-/****** sgeee/sgeee_resort_pending_jobs() **************************************
-*  NAME
-*     sgeee_resort_pending_jobs() -- Resort pending jobs after assignment
-*
-*  SYNOPSIS
-*     void sgeee_resort_pending_jobs(lList **job_list, lList *orderlist)
-*
-*  FUNCTION
-*     Update pending jobs order upon assignement and change ticket amounts
-*     in orders previously created.
-*     If we dispatch a job sub-task and the job has more sub-tasks, then
-*     the job is still first in the job list.
-*     We need to remove and reinsert the job back into the sorted job
-*     list in case another job is higher priority (i.e. has more tickets)
-*     Additionally it is neccessary to update the number of pending tickets
-*     for the following pending array task. (The next task will get less
-*     tickets than the current one)
-*
-*  INPUTS
-*     lList **job_list - The pending job list. The first job in the list was
-*                        assigned right before.
-*
-*  NOTES
-*
-*******************************************************************************/
+/**
+ * @brief Resort pending jobs after assignment
+ *
+ * Update pending jobs order upon assignement and change ticket amounts
+ * in orders previously created.
+ * If we dispatch a job sub-task and the job has more sub-tasks, then
+ * the job is still first in the job list.
+ * We need to remove and reinsert the job back into the sorted job
+ * list in case another job is higher priority (i.e. has more tickets)
+ * Additionally it is neccessary to update the number of pending tickets
+ * for the following pending array task. (The next task will get less
+ * tickets than the current one)
+ *
+ * @param job_list The pending job list. The first job in the list was assigned right before.
+ */
 void sgeee_resort_pending_jobs(lList **job_list)
 {
    DENTER(TOP_LAYER);
@@ -593,27 +637,18 @@ void sgeee_resort_pending_jobs(lList **job_list)
 }
 
 
-/****** sgeee/recompute_prio() *************************************************
-*  NAME
-*     recompute_prio() -- Recompute JAT prio based on changed ticket amount
-*
-*  SYNOPSIS
-*     static void recompute_prio(sge_task_ref_t *tref, lListElem *task, double
-*     nurg)
-*
-*  FUNCTION
-*     Each time when the ticket amount for in a JAT_Type element is changed
-*     the JAT_prio needs to be updated. The new ticket value is normalized
-*     and the priorty value is computed.
-*
-*  INPUTS
-*     sge_task_ref_t *tref - The tref element that is related to the ticket change
-*     lListElem *task      - The JAT_Type task element.
-*     double nurg          - The normalized urgency assumed for the job.
-*     double npri          - The normalized POSIX priority assumed for the job.
-*
-*  NOTES
-*******************************************************************************/
+/**
+ * @brief Recompute JAT prio based on changed ticket amount
+ *
+ * Each time when the ticket amount for in a JAT_Type element is changed
+ * the JAT_prio needs to be updated. The new ticket value is normalized
+ * and the priorty value is computed.
+ *
+ * @param tref The tref element that is related to the ticket change
+ * @param task The JAT_Type task element.
+ * @param nurg The normalized urgency assumed for the job.
+ * @param npri The normalized POSIX priority assumed for the job.
+ */
 static void recompute_prio(sge_task_ref_t *tref, lListElem *task, double nurg, double npri)
 {
    double min_tix, max_tix, prio;
@@ -825,18 +860,17 @@ sge_unset_job_cnts(sge_ref_t *ref, int queued) {
 }
 
 
-/*--------------------------------------------------------------------
- * calculate_m_shares - calculate m_share for share tree node
- *      descendants
+/**
+ * @brief Calculates the modified share of a share tree node and its descendants
  *
- * Calling calculate_m_shares(root_node) will calculate shares for
- * every active node in the share tree.
+ * Called with the root node it covers every active node of the tree. The
+ * value is deliberately **not** recomputed every scheduling interval: it is
+ * computed when the scheduler comes up and whenever the share tree changes,
+ * and adjusted incrementally in `adjust_m_shares()` whenever a job becomes
+ * active or inactive.
  *
- * Rather than having to recalculate m_shares on every scheduling
- * interval, we calculate it whenever the scheduler comes up or
- * whenever the share tree itself changes and make adjustments
- * every time a job becomes active or inactive (in adjust_m_shares).
- *--------------------------------------------------------------------*/
+ * @param[in,out] parent_node the node whose subtree is recalculated
+ */
 
 void
 calculate_m_shares( lListElem *parent_node )
@@ -884,9 +918,13 @@ calculate_m_shares( lListElem *parent_node )
 }
 
 
-/*--------------------------------------------------------------------
- * update_job_ref_count - update job_ref_count for node and descendants
- *--------------------------------------------------------------------*/
+/**
+ * @brief Recomputes the job reference count of a node and its descendants
+ *
+ * @param[in,out] node the node whose subtree is recounted
+ *
+ * @return the number of jobs below and at the node
+ */
 
 u_long
 update_job_ref_count( lListElem *node )
@@ -905,9 +943,13 @@ update_job_ref_count( lListElem *node )
    return lGetUlong(node, STN_job_ref_count);
 }
 
-/*--------------------------------------------------------------------
- * update_active_job_ref_count - update active_job_ref_count for node and descendants
- *--------------------------------------------------------------------*/
+/**
+ * @brief Recomputes the active job reference count of a node and its descendants
+ *
+ * @param[in,out] node the node whose subtree is recounted
+ *
+ * @return the number of active jobs below and at the node
+ */
 
 u_long
 update_active_job_ref_count( lListElem *node )
@@ -981,10 +1023,16 @@ sge_init_share_tree_node_fields( lListElem *node,
    return 0;
 }
 
-/*--------------------------------------------------------------------
- * sge_init_share_tree_nodes - zero out the share tree node fields
- * that will be set and used during sge_calc_tickets
- *--------------------------------------------------------------------*/
+/**
+ * @brief Zeroes the share tree node fields that a ticket calculation fills
+ *
+ * Has to run before `sge_calc_tickets()`, otherwise the values of the
+ * previous run would be added to.
+ *
+ * @param[in,out] root the root of the share tree
+ *
+ * @return 0 on success
+ */
 
 int
 sge_init_share_tree_nodes( lListElem *root )
@@ -1124,24 +1172,17 @@ calc_job_share_tree_tickets_pass2( sge_ref_t *ref, double total_share_tree_ticke
    }
 }
 
-/****** sgeee/copy_ftickets() **************************************************
-*  NAME
-*     copy_ftickets() -- copy the ftix from one job to an other one
-*
-*  SYNOPSIS
-*     void copy_ftickets(sge_ref_list_t *source, sge_ref_list_t *dest)
-*
-*  FUNCTION
-*     Copy the functional tickets and ref fields used for ftix calculation
-*     from one job to an other job.
-*
-*  INPUTS
-*     sge_ref_list_t *source - source job
-*     sge_ref_list_t *dest   - dest job
-*
-*  BUGS
-*     ???
-*******************************************************************************/
+/**
+ * @brief Copy the ftix from one job to an other one
+ *
+ * Copy the functional tickets and ref fields used for ftix calculation
+ * from one job to an other job.
+ *
+ * @param source source job
+ * @param dest dest job
+ *
+ * @bug ???
+ */
 static void copy_ftickets(sge_ref_list_t *source, sge_ref_list_t *dest){
    if (source != nullptr && dest != nullptr) {
       sge_ref_t *dest_r = dest->ref;
@@ -1157,30 +1198,20 @@ static void copy_ftickets(sge_ref_list_t *source, sge_ref_list_t *dest){
    }
 }
 
-/****** sgeee/destribute_ftickets() ********************************************
-*  NAME
-*     destribute_ftickets() -- ensures, that all jobs have ftix asoziated with them.
-*
-*  SYNOPSIS
-*     void destribute_ftickets(sge_fcategory_t *root, int dependent)
-*
-*  FUNCTION
-*     After the functional tickets are calculated, only the first job in the fcategory
-*     job list has ftix. This function copies the result from the first job to all
-*     other jobs in the same list and sums the job ticket count with the ftix.
-*
-*  INPUTS
-*     sge_fcategory_t *root - fcategory list
-*     int dependent         - does the final ticket count depend on ftix?
-*
-*
-*
-*  NOTES
-*     - This function is only needed, because not all functional tickets are calculated
-*       and to give a best guess result, all jobs in one category with no ftix get the
-*       same amount of ftix.
-*
-*******************************************************************************/
+/**
+ * @brief Ensures, that all jobs have ftix asoziated with them
+ *
+ * After the functional tickets are calculated, only the first job in the fcategory
+ * job list has ftix. This function copies the result from the first job to all
+ * other jobs in the same list and sums the job ticket count with the ftix.
+ *
+ * @param root fcategory list
+ * @param dependent does the final ticket count depend on ftix?
+ *
+ * @note - This function is only needed, because not all functional tickets are calculated
+ *       and to give a best guess result, all jobs in one category with no ftix get the
+ *       same amount of ftix.
+ */
 static void destribute_ftickets(lList *root, int dependent) {
    sge_ref_list_t *current = nullptr;
    sge_ref_list_t *first = nullptr;
@@ -1203,55 +1234,41 @@ static void destribute_ftickets(lList *root, int dependent) {
 /*
  * job classes are ignored.
  */
-/****** sgeee/build_functional_categories() ************************************
-*  NAME
-*     build_functional_categories() --  sorts the pending jobs into functional categories
-*
-*  SYNOPSIS
-*     void build_functional_categories(sge_ref_t *job_ref, uint32_t num_jobs,
-*     sge_fcategory_t **root, int dependent)
-*
-*  FUNCTION
-*     Generates a list of functional categories. Each category contains a list of jobs
-*     which belongs to this category. A functional category is assembled of:
-*     - job shares
-*     - user shares
-*     - department shares
-*     - project shares
-*     Alljobs with the same job, user,... shares are put in the same fcategory.
-*
-*  INPUTS
-*     sge_ref_t *job_ref     - array of pointers to the job reference structure
-*     int num_jobs           - amount of elements in the job_ref array
-*     sge_fcategory_t **root - root pointer to the functional category list
-*     sge_ref_list_t ** ref_array - has to be a pointer to nullptr pointer. The memory
-*                                   will be allocated
-*                                   in this function and freed with free_fcategories.
-*     int dependent          - does the functional tickets depend on prior computed tickets?
-*     uint32_t job_tickets   - job field, which has the tickets ( JB>_jobshare, JB_override_tickets)
-*     uint32_t up_tickets    - source for the user/department tickets/shares (UP_fshare, UP_otickets)
-*     uint32_t dp_tickets    - source for the department tickets/shares (US_fshare, US_oticket)
-*
-*  OUTPUT
-*     uint32_t - number of jobs in the categories
-*
-*  NOTES
-*     - job classes are ignored.
-*
-*  IMPROVEMENTS:
-*     - the stored values in the functional category structure can be used to speed up the
-*       ticket calculation. This will avoid unnecessary CULL accesses in the function
-*       calc_job_functional_tickets_pass1
-*     - A further improvement can be done by:
-*        - limiting the job list length in each category to the max nr of jobs calculated
-*        - Sorting the jobs in each functional category by its job category. Each resulting
-*          job list can be of max size of open slots. This will result in a correct ftix result
-*          for all jobs, which might be scheduled.
-*
-*  BUGS
-*     ???
-*
-*******************************************************************************/
+/**
+ * @brief Sorts the pending jobs into functional categories
+ *
+ * Generates a list of functional categories. Each category contains a list of jobs
+ * which belongs to this category. A functional category is assembled of:
+ * - job shares
+ * - user shares
+ * - department shares
+ * - project shares
+ * Alljobs with the same job, user,... shares are put in the same fcategory.
+ *
+ * @param job_ref array of pointers to the job reference structure
+ * @param num_jobs amount of elements in the job_ref array
+ * @param root root pointer to the functional category list
+ * @param ref_array has to be a pointer to nullptr pointer. The memory will be allocated in this function and freed with free_fcategories.
+ * @param dependent does the functional tickets depend on prior computed tickets?
+ * @param job_tickets job field, which has the tickets ( JB>_jobshare, JB_override_tickets)
+ * @param up_tickets source for the user/department tickets/shares (UP_fshare, UP_otickets)
+ * @param dp_tickets source for the department tickets/shares (US_fshare, US_oticket)
+ * @param uint32_t number of jobs in the categories
+ *
+ * @note - job classes are ignored.
+ *
+ *       IMPROVEMENTS:
+ *       - the stored values in the functional category structure can be used to speed up the
+ *       ticket calculation. This will avoid unnecessary CULL accesses in the function
+ *       calc_job_functional_tickets_pass1
+ *       - A further improvement can be done by:
+ *       - limiting the job list length in each category to the max nr of jobs calculated
+ *       - Sorting the jobs in each functional category by its job category. Each resulting
+ *       job list can be of max size of open slots. This will result in a correct ftix result
+ *       for all jobs, which might be scheduled.
+ *
+ * @bug ???
+ */
 static uint32_t build_functional_categories(sge_ref_t *job_ref, uint32_t num_jobs, lList **fcategories,
                                         sge_ref_list_t ** ref_array, int dependent,
                                         uint32_t job_tickets, uint32_t user_tickets, uint32_t project_tickets, uint32_t dp_tickets) {
@@ -1412,26 +1429,16 @@ static uint32_t build_functional_categories(sge_ref_t *job_ref, uint32_t num_job
    DRETURN(job_counter);
 }
 
-/****** sgeee/free_fcategories() ***********************************************
-*  NAME
-*     free_fcategories() -- frees all fcategories and their job lists.
-*
-*  SYNOPSIS
-*     void free_fcategories(sge_fcategory_t **fcategories)
-*
-*  FUNCTION
-*     frees all fcategories and their job lists.
-*
-*  INPUTS
-*     sge_fcategory_t **fcategories /- pointer to a pointer of the first fcategory
-*     sge_ref_list_t **ref_array - memory for internal structures, allocated with
-*     build_functional_categories. Needs to be freed as well.
-*
-*  NOTES
-*     - it does not delete the sge_ref_t structures, which are stored in
-*       in the job lists.
-*
-*******************************************************************************/
+/**
+ * @brief Frees all fcategories and their job lists
+ *
+ * frees all fcategories and their job lists.
+ *
+ * @param ref_array memory for internal structures, allocated with build_functional_categories. Needs to be freed as well.
+ *
+ * @note - it does not delete the sge_ref_t structures, which are stored in
+ *       in the job lists.
+ */
 static void free_fcategories(lList **fcategories, sge_ref_list_t **ref_array) {
 
    for_each_rw_lv(fcategory, *fcategories) {
@@ -1511,12 +1518,18 @@ static void calc_job_functional_tickets_pass1( sge_ref_t *ref,
    *sum_of_job_functional_shares += REF_GET_FSHARE(ref);
 }
 
+/**
+ * @brief The four categories the functional policy weights against each other
+ *
+ * Index into the array of weighting parameters; #k_last is the number of
+ * categories and the loop bound.
+ */
 enum {
-   k_user=0,
-   k_department,
-   k_project,
-   k_job,
-   k_last
+   k_user=0,        ///< Weight of the user category
+   k_department,    ///< Weight of the department category
+   k_project,       ///< Weight of the project category
+   k_job,           ///< Weight of the job category
+   k_last           ///< Number of categories
 };
 
 
@@ -1829,9 +1842,13 @@ calc_job_tickets ( sge_ref_t *ref )
 }
 
 
-/*--------------------------------------------------------------------
- * sge_clear_job - clear tickets for job
- *--------------------------------------------------------------------*/
+/**
+ * @brief Clears the ticket values of a job
+ *
+ * @param[in,out] job          the job (`JB_Type`)
+ * @param[in]     is_clear_all true to also clear the urgency contributions,
+ *                             not only the tickets
+ */
 
 void sge_clear_job(lListElem *job, bool is_clear_all) {
    if (is_clear_all) {
@@ -1875,41 +1892,19 @@ sge_clear_ja_task( lListElem *ja_task )
    }
 }
 
-/****** sgeee/calc_intern_pending_job_functional_tickets() *********************
-*  NAME
-*     calc_intern_pending_job_functional_tickets() -- calc ftix for pending jobs
-*
-*  SYNOPSIS
-*     void calc_intern_pending_job_functional_tickets(sge_fcategory_t *current,
-*                                    double sum_of_user_functional_shares,
-*                                    double sum_of_project_functional_shares,
-*                                    double sum_of_department_functional_shares,
-*                                    double sum_of_job_functional_shares,
-*                                    double total_functional_tickets,
-*                                    double weight[])
-*
-*  FUNCTION
-*     This is an optimized and incomplete version of calc_pending_job_functional_tickets.
-*     It is good enough to get the order right within the inner loop of the ftix
-*     calculation.
-*
-*  INPUTS
-*     sge_fcategory_t *current                   - current fcategory
-*     double sum_of_user_functional_shares
-*     double sum_of_project_functional_shares
-*     double sum_of_department_functional_shares
-*     double sum_of_job_functional_shares
-*     double total_functional_tickets
-*     double weight[]                            - destribution of the shares to each other
-*
-*
-*  NOTES
-*     be carefull using it
-*
-*  BUGS
-*     ???
-*
-*******************************************************************************/
+/**
+ * @brief Calc ftix for pending jobs
+ *
+ * This is an optimized and incomplete version of calc_pending_job_functional_tickets.
+ * It is good enough to get the order right within the inner loop of the ftix
+ * calculation.
+ *
+ * @param current current fcategory double sum_of_user_functional_shares double sum_of_project_functional_shares double sum_of_department_functional_shares double sum_of_job_functional_shares double total_functional_tickets double weight[]                            - destribution of the shares to each other
+ *
+ * @note be carefull using it
+ *
+ * @bug ???
+ */
 static void calc_intern_pending_job_functional_tickets(
                                     lListElem *current,
                                     double sum_of_user_functional_shares,
@@ -2527,7 +2522,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
 
             /* Loop through all the jobs calculating the functional tickets and
                find the job with the most functional tickets.  Move it to the
-               top of the list� and start the process all over again with the
+               top of the list and start the process all over again with the
                remaining jobs. */
 
             for(i=0; i<max; i++) {
@@ -2919,10 +2914,18 @@ sge_calc_sharetree_targets( lListElem *root,
 }
 
 
-/*--------------------------------------------------------------------
- * sge_calc_node_targets - calculate the targeted proportions
- * for the sub-tree rooted at this node
- *--------------------------------------------------------------------*/
+/**
+ * @brief Calculates the targeted proportions of the subtree below a node
+ *
+ * The target is what the node *should* get according to its shares; the
+ * difference to what it actually got is what the compensation factor works
+ * against.
+ *
+ * @param[in]     root the root of the share tree
+ * @param[in,out] node the node whose subtree is calculated
+ *
+ * @return 0 on success
+ */
 
 int
 sge_calc_node_targets( lListElem *root,
@@ -3117,41 +3120,30 @@ sge_calc_node_targets( lListElem *root,
    DRETURN(0);
 }
 
-/****** sgeee/sge_build_sgeee_orders() *******************************************
-*  NAME
-*     sge_build_sgeee_orders() -- build orders for updating qmaster
-
-*
-*  SYNOPSIS
-*     void sge_build_sgeee_orders(sge_Sdescr_t *lists, lList *running_jobs,
-*     lList *queued_jobs, lList *finished_jobs, order_t *orders, int
-*     update_usage_and_configuration, int seqno)
-*
-*  FUNCTION
-*     Builds generates the orderlist for sending the scheduling decisions
-*     to the qmaster. The following orders are generated:
-*     - running job tickets (ORT_tickets)
-*     - pending job tickets (ORT_ptickets / ORT_clear_pri_info)
-*     - update scheduler configuration order (ORT_sched_conf)
-*     Most orders are generated by using the sge_create_orders function.
-*
-*  INPUTS
-*     sge_Sdescr_t *lists                 - ???
-*     lList *running_jobs                 - list of running jobs
-*     lList *queued_jobs                  - list of queued jobs (should be sorted by ticktes)
-*     lList *finished_jobs                - list of finished jobs
-*     order_t *orders                     - existing order list (new orders will be added to it
-*     bool update_usage_and_configuration - if true, the update usage orders are generated
-*     int seqno                           - a seqno, changed with each scheduling run
-*     bool max_queued_ticket_orders       - if true, pending tickets are submited to the
-*                                           qmaster
-*     bool updated_execd                  - if true, the queue information is send with
-*                                           the running job tickets
-*
-*  RESULT
-*     void
-*
-*******************************************************************************/
+/**
+ * @brief Build orders for updating qmaster
+ *
+ * Builds generates the orderlist for sending the scheduling decisions
+ * to the qmaster. The following orders are generated:
+ * - running job tickets (ORT_tickets)
+ * - pending job tickets (ORT_ptickets / ORT_clear_pri_info)
+ * - update scheduler configuration order (ORT_sched_conf)
+ * Most orders are generated by using the sge_create_orders function.
+ *
+ * @param lists all the lists of this scheduling run
+ * @param running_jobs list of running jobs
+ * @param queued_jobs list of queued jobs (should be sorted by tickets)
+ * @param finished_jobs list of finished jobs
+ * @param orders existing order list; the new orders are added to it
+ * @param update_usage_and_configuration if true, the update usage orders are generated
+ * @param seqno a seqno, changed with each scheduling run
+ * @param update_execd if true, the queue information is sent along with the
+ *                     running job tickets
+ *
+ * @note Whether the pending tickets are reported to qmaster is not a
+ *       parameter - it is read from the scheduler configuration inside, see
+ *       `sconf_get_report_pjob_tickets()`.
+ */
 void
 sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *queued_jobs,
                        lList *finished_jobs, order_t *orders,
@@ -3289,41 +3281,30 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
  *--------------------------------------------------------------------*/
 
 
-/****** sgeee/sgeee_scheduler() ************************************************
-*  NAME
-*     sgeee_scheduler() -- calc tickets, send orders, and sort job list
-*
-*  SYNOPSIS
-*     int sgeee_scheduler(sge_Sdescr_t *lists, lList *running_jobs, lList
-*     *finished_jobs, lList *pending_jobs, lList **orderlist)
-*
-*  FUNCTION
-*     - calculates the running and pending job tickets.
-*     - send the orders to the qmaster about the job tickets
-*     - order the pending job list according the the job tickets
-*
-*    On a "normal" scheduling interval:
-*	   - calculate tickets for new and running jobs
-*	   - don't decay and sum usage
-*	   - don't update qmaster
-*
-*    On a SGEEE scheduling interval:
-*	   - calculate tickets for new and running jobs
-*	   - decay and sum usage
-*	   - handle finished jobs
-*	   - update qmaster
-*
-*  INPUTS
-*     sge_Sdescr_t *lists  - a ref to all lists in this scheduler
-*     lList *running_jobs  - a list of all running jobs
-*     lList *finished_jobs -  a list of all finished jobs
-*     lList *pending_jobs  -  a list of all pending jobs
-*     lList **orderlist    -  the order list
-*
-*  RESULT
-*     int - 0 if everthing went fine, -1 if not
-*
-*******************************************************************************/
+/**
+ * @brief Calc tickets, send orders, and sort job list
+ *
+ * - calculates the running and pending job tickets.
+ * - send the orders to the qmaster about the job tickets
+ * - order the pending job list according the the job tickets
+ * On a "normal" scheduling interval:
+ * - calculate tickets for new and running jobs
+ * - don't decay and sum usage
+ * - don't update qmaster
+ * On a SGEEE scheduling interval:
+ * - calculate tickets for new and running jobs
+ * - decay and sum usage
+ * - handle finished jobs
+ * - update qmaster
+ *
+ * @param lists a ref to all lists in this scheduler
+ * @param running_jobs a list of all running jobs
+ * @param finished_jobs a list of all finished jobs
+ * @param pending_jobs a list of all pending jobs
+ * @param orders the orders produced by this run are added here
+ *
+ * @return 0 if everthing went fine, -1 if not
+ */
 int sgeee_scheduler(scheduler_all_data_t *lists,
                lList *running_jobs,
                lList *finished_jobs,
@@ -3438,30 +3419,22 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
    DRETURN(0);
 }
 
-/****** sgeee/sge_do_sgeee_priority() ******************************************
-*  NAME
-*     sge_do_sgeee_priority() -- determine GEEE priority for a list of jobs
-*
-*  SYNOPSIS
-*     static void sge_do_sgeee_priority(lList *job_list, double min_tix, double
-*     max_tix)
-*
-*  FUNCTION
-*     Determines for a list of jobs the GEEE priority. Prior
-*     sge_do_sgeee_priority() can be called the normalized urgency value must
-*     already be known for each job. The ticket range passed is used for
-*     normalizing ticket amount.
-*
-*  INPUTS
-*     lList *job_list - The job list
-*     double min_tix  - Minumum ticket amount
-*     double max_tix  - Maximum ticket amount
-*     bool do_nprio   - Needs norm. priority be determined
-*     bool do_nurg    - Needs norm. urgency be determined
-*
-*  NOTES
-*     MT-NOTE: sge_do_sgeee_priority() is MT safe
-*******************************************************************************/
+/**
+ * @brief Determine GEEE priority for a list of jobs
+ *
+ * Determines for a list of jobs the GEEE priority. Prior
+ * sge_do_sgeee_priority() can be called the normalized urgency value must
+ * already be known for each job. The ticket range passed is used for
+ * normalizing ticket amount.
+ *
+ * @param job_list The job list
+ * @param min_tix Minumum ticket amount
+ * @param max_tix Maximum ticket amount
+ * @param do_nprio Needs norm. priority be determined
+ * @param do_nurg Needs norm. urgency be determined
+ *
+ * @note MT-NOTE: sge_do_sgeee_priority() is MT safe
+ */
 static void sge_do_sgeee_priority(lList *job_list, double min_tix, double max_tix,
                bool do_nprio, bool do_nurg)
 {
@@ -3491,31 +3464,22 @@ static void sge_do_sgeee_priority(lList *job_list, double min_tix, double max_ti
    }
 }
 
-/****** sgeee/sgeee_priority() *************************************************
-*  NAME
-*     sgeee_priority() -- Compute final GEEE priority
-*
-*  SYNOPSIS
-*     static void sgeee_priority(lListElem *task, uint32_t jobid, double nsu,
-*     double min_tix, double max_tix)
-*
-*  FUNCTION
-*     The GEEE priority is computed for the task based on the already known
-*     ticket amount and already normalized urgency value. The ticket amount
-*     is normalized based on the ticket range passed. The weights for
-*     ticket and urgency value are applied.
-*
-*  INPUTS
-*     lListElem *task - The task whose priority is computed
-*     uint32_t jobid  - The jobs id
-*     double nsu      - The normalized urgency value that applies to all
-*                       tasks of the job.
-*     double min_tix  - minimum ticket amount
-*     double max_tix  - maximum ticket amount
-*
-*  NOTES
-*     MT-NOTE: sgeee_priority() is MT safe
-*******************************************************************************/
+/**
+ * @brief Compute final GEEE priority
+ *
+ * The GEEE priority is computed for the task based on the already known
+ * ticket amount and already normalized urgency value. The ticket amount
+ * is normalized based on the ticket range passed. The weights for
+ * ticket and urgency value are applied.
+ *
+ * @param task The task whose priority is computed
+ * @param jobid The jobs id
+ * @param nsu The normalized urgency value that applies to all tasks of the job.
+ * @param min_tix minimum ticket amount
+ * @param max_tix maximum ticket amount
+ *
+ * @note MT-NOTE: sgeee_priority() is MT safe
+ */
 static void sgeee_priority(lListElem *task, uint32_t jobid, double nsu,
       double npri, double min_tix, double max_tix)
 {
@@ -3549,64 +3513,43 @@ static void sgeee_priority(lListElem *task, uint32_t jobid, double nsu,
 }
 
 
-/****** sgeee/calculate_pending_shared_override_tickets() **********************
-*  NAME
-*     calculate_pending_shared_override_tickets() -- calculate shared override tickets
-*
-*  SYNOPSIS
-*     static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref,
-*     uint32_t num_jobs, int dependent)
-*
-*  FUNCTION
-*     We calculate the override tickets for pending jobs, which are shared. The basic
-*     algorithm looks like this:
-*
-*     do for each pending job
-*        do for each pending job which isn't yet considered active
-*              consider the job active
-*              calculate override tickets for that job
-*              consider the job not active
-*          end do
-*          consider the job with the highest priority (taking into account all previous polices + override tickets) as active
-*     end do
-*
-*     set all pending jobs none active
-*
-*  Since this algorithm is very expensive, we split all pending jobs into fcategories. The algorithm changes to:
-*
-*    max_jobs = build fcategories and ignore jobs, which would get 0 override tickets
-*
-*     do for max_jobs pending job
-*        do for each fcategory
-*
-*           take take first job from category
-*           consider the job active
-*           calculate override tickets for that job
-*           consider the job not active
-*           store job with the most override tickets = job_max
-*
-*        end do
-*        set job_max active and remove it from its fcategory.
-*        remove job_max fcategory, if job_max was the last job
-*     end;
-*
-*     set all pending jobs none active
-*
-*
-*  That's it. It is very simillar to the functional ticket calculation, except, that we are working with tickts and
-*  not with shares.
-*
-*  INPUTS
-*     sge_ref_t *job_ref - an array of job structures (first running, than pennding)
-*     int num_jobs       - number of jobs in the array
-*     int dependent      - do other ticket policies depend on this one?
-*
-*  NOTES
-*     MT-NOTE: calculate_pending_shared_override_tickets() is MT safe
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief Calculate shared override tickets
+ *
+ * We calculate the override tickets for pending jobs, which are shared. The basic
+ * algorithm looks like this:
+ * do for each pending job
+ *    do for each pending job which isn't yet considered active
+ *          consider the job active
+ *          calculate override tickets for that job
+ *          consider the job not active
+ *      end do
+ *      consider the job with the highest priority (taking into account all previous polices + override tickets) as active
+ * end do
+ * set all pending jobs none active
+ * Since this algorithm is very expensive, we split all pending jobs into fcategories. The algorithm changes to:
+ * max_jobs = build fcategories and ignore jobs, which would get 0 override tickets
+ * do for max_jobs pending job
+ *    do for each fcategory
+ *       take take first job from category
+ *       consider the job active
+ *       calculate override tickets for that job
+ *       consider the job not active
+ *       store job with the most override tickets = job_max
+ *    end do
+ *    set job_max active and remove it from its fcategory.
+ *    remove job_max fcategory, if job_max was the last job
+ * end;
+ * set all pending jobs none active
+ * That's it. It is very simillar to the functional ticket calculation, except, that we are working with tickts and
+ * not with shares.
+ *
+ * @param job_ref an array of job structures (first running, than pennding)
+ * @param num_jobs number of jobs in the array
+ * @param dependent do other ticket policies depend on this one?
+ *
+ * @note MT-NOTE: calculate_pending_shared_override_tickets() is MT safe
+ */
 static void calculate_pending_shared_override_tickets(sge_ref_t *job_ref, uint32_t num_jobs, int dependent) {
          DENTER(TOP_LAYER);
 

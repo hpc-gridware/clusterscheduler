@@ -31,6 +31,14 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Matching a job against queues and hosts - the core of the scheduler
+ *
+ * The implementation behind `sge_select_queue.h`: the layered static and
+ * dynamic matching, the assignment lifecycle, the load alarm checks and the
+ * queue list splitting the scheduler does before it starts matching at all.
+ */
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -103,29 +111,58 @@
 
 /* -- these implement helpers for the category optimization -------- */
 
-/* make sure that this is in sync with libs/sgeobj/json/LDR.json */
+/**
+ * @def STR_LC_DIAGNOSIS
+ * @brief Size of the buffers holding the load alarm diagnosis
+ *
+ * Defined inside the body of the load comparison, which is why it is
+ * documented here.
+ */
+
+/**
+ * @brief Field positions of the `LDR_Type` cull element
+ *
+ * Used to read the load threshold entries by position instead of by name,
+ * which matters because the load alarm check runs per queue instance.
+ *
+ * @warning Must stay in sync with `libs/sgeobj/json/LDR.json` - the positions
+ *          are the order of the fields there.
+ */
 enum {
-   LDR_queue_ref_list_pos = 0,
-   LDR_limit_pos,
-   LDR_global_pos,
-   LDR_host_pos,
-   LDR_queue_pos
+   LDR_queue_ref_list_pos = 0,   ///< The queues this load value applies to
+   LDR_limit_pos,                ///< The configured threshold
+   LDR_global_pos,               ///< The value at global level
+   LDR_host_pos,                 ///< The value at host level
+   LDR_queue_pos                 ///< The value at queue level
 };
 
+/**
+ * @brief What one matching run may reuse from, and contribute to, its category
+ *
+ * Jobs with identical requests share a category, so what was learned matching
+ * one of them - which hosts and queues to skip, which messages were produced
+ * - is valid for the next one. The two flags say in which direction the
+ * category is used in this run.
+ */
 typedef struct {
-   lListElem *category;           /* ref to the category */
-   lListElem *cache;              /* ref to the cache object in the category */
-   bool       use_category;       /* if true: use the category
-                                   * with immediate dispatch runs only and only if there is more than a single job of that category
-                                   * prevents 'skip_host_list' and 'skip_queue_list' be used with reservation
-                                   */
-   bool       mod_category;       /* if true: update the category with new messages, queues, and hosts */
-   uint32_t  *possible_pe_slots;  /* stores all possible slots settings for a pe job with ranges
-                                   * it is stored in the job category cache, attribute CCT_pe_job_slots
-                                   * and is *not* freed with the category_use_t object
-                                   * (unless is_pe_slots_rev == false which means: it is not referenced in the cache)
-                                   */
-   bool      is_pe_slots_rev;     /* if it is true, the possible_pe_slots are stored in the category */
+   lListElem *category;           ///< Reference to the category
+   lListElem *cache;              ///< Reference to the cache object inside the category
+   /**
+    * Use what the category already knows. Only set for immediate dispatch
+    * runs and only when the category holds more than a single job, which is
+    * what keeps `skip_host_list` and `skip_queue_list` out of reservation
+    * scheduling - there a rejection is only true for one point in time.
+    */
+   bool       use_category;
+   bool       mod_category;       ///< Update the category with new messages, queues and hosts
+   /**
+    * All slot counts a parallel job with a range could get. Stored in the job
+    * category cache as `CCT_pe_job_slots` and therefore **not** freed with
+    * this struct - unless `is_pe_slots_rev` is false, which means it is not
+    * referenced by the cache.
+    */
+   uint32_t  *possible_pe_slots;
+   bool      is_pe_slots_rev;     ///< The `possible_pe_slots` are stored in the category
 } category_use_t;
 
 static void
@@ -277,6 +314,18 @@ print_tagged4schedule(const lListElem *qinstance) {
 
 /* ---- Implementation ------------------------------------------------------------------------- */
 
+/**
+ * @brief Initializes an assignment for one job
+ *
+ * Fills in the job, the task and the values cached from the configuration.
+ * The lists to match against are set by the caller afterwards; for an
+ * advance reservation job assignment_init_ar() has to follow.
+ *
+ * @param[out] a                the assignment to initialize
+ * @param[in]  job              the job (`JB_Type`)
+ * @param[in]  ja_task          the array task (`JAT_Type`), may be nullptr
+ * @param[in]  load_adjustments the load adjustments to apply
+ */
 void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments)
 {
    if (job != nullptr) {
@@ -441,6 +490,18 @@ assignment_init_pe(sge_assignment_t *a, lListElem *pe) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Copies an assignment, optionally moving the owned lists along
+ *
+ * The struct is copied bitwise, so the lists it owns would end up referenced
+ * twice. `move_gdil` decides who keeps them: with true they move to `dst` and
+ * are cleared in `src`, with false they stay in `src` and are cleared in
+ * `dst`. Either way exactly one of the two owns them.
+ *
+ * @param[out]    dst        the assignment to copy into
+ * @param[in,out] src        the assignment to copy from
+ * @param[in]     move_gdil  move the granted list and the caches to `dst`
+ */
 void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdil)
 {
    if (dst == nullptr || src == nullptr) {
@@ -468,6 +529,11 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
    }
 }
 
+/**
+ * @brief Frees everything an assignment owns
+ *
+ * @param[in,out] a the assignment
+ */
 void assignment_release(sge_assignment_t *a)
 {
    lFreeList(&(a->gdil));
@@ -477,6 +543,14 @@ void assignment_release(sge_assignment_t *a)
    lFreeList(&(a->skip_host_list));
 }
 
+/**
+ * @brief Drops the cached intermediate results of an assignment
+ *
+ * The limit list and the two skip lists are only valid for one point in time,
+ * so they have to go whenever the assignment is retried at a different one.
+ *
+ * @param[in,out] a the assignment
+ */
 void assignment_clear_cache(sge_assignment_t *a)
 {
    lFreeList(&(a->limit_list));
@@ -562,40 +636,27 @@ is_acceptable_result(sge_assignment_t *a) {
 }
 #endif
 
-/****** scheduler/sge_select_parallel_environment() ****************************
-*  NAME
-*     sge_select_parallel_environment() -- Decide about a PE assignment
-*
-*  SYNOPSIS
-*     static dispatch_t sge_select_parallel_environment(sge_assignment_t *best, lList
-*     *pe_list)
-*
-*  FUNCTION
-*     When users use wildcard PE request such as -pe <pe_range> 'mpi8_*'
-*     more than a single parallel environment can match the wildcard expression.
-*     In case of 'now' assignments the PE that gives us the largest assignment
-*     is selected. When scheduling a reservation we search for the earliest
-*     assignment for each PE and then choose that one that finally gets us the
-*     maximum number of slots.
-*
-* IMPORTANT
-*     The scheduler info messages are not cached. They are added globally and have
-*     to be added for each job in the category. When the messages are updated
-*     this has to be changed.
-*
-*  INPUTS
-*     sge_assignment_t *best - herein we keep all important in/out information
-*     lList *pe_list         - the list of all parallel environments (PE_Type)
-*
-*  RESULT
-*     dispatch_t - 0 ok got an assignment
-*                  1 no assignment at the specified time (???)
-*                 -1 assignment will never be possible for all jobs of that category
-*                 -2 assignment will never be possible for that particular job
-*
-*  NOTES
-*     MT-NOTE: sge_select_parallel_environment() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Decide about a PE assignment
+ *
+ * When users use wildcard PE request such as -pe `pe_range` 'mpi8_*'
+ * more than a single parallel environment can match the wildcard expression.
+ * In case of 'now' assignments the PE that gives us the largest assignment
+ * is selected. When scheduling a reservation we search for the earliest
+ * assignment for each PE and then choose that one that finally gets us the
+ * maximum number of slots.
+ * IMPORTANT
+ * The scheduler info messages are not cached. They are added globally and have
+ * to be added for each job in the category. When the messages are updated
+ * this has to be changed.
+ *
+ * @param best herein we keep all important in/out information
+ * @param pe_list the list of all parallel environments (PE_Type)
+ *
+ * @return 0 ok got an assignment 1 no assignment at the specified time (???) -1 assignment will never be possible for all jobs of that category -2 assignment will never be possible for that particular job
+ *
+ * @note MT-NOTE: sge_select_parallel_environment() is not MT safe
+ */
 dispatch_t
 sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
 {
@@ -818,59 +879,38 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
    DRETURN(best_result);
 }
 
-/****** sge_select_queue/clean_up_parallel_job() *******************************
-*  NAME
-*     clean_up_parallel_job() -- removes tags
-*
-*  SYNOPSIS
-*     static void clean_up_parallel_job(sge_assignment_t *a)
-*
-*  FUNCTION
-*     during pe job dispatch are man queues and hosts tagged. This
-*     function removes the tags.
-*
-*  INPUTS
-*     sge_assignment_t *a - the resource structure
-*
-*
-*
-*  NOTES
-*     MT-NOTE: clean_up_parallel_job() is not MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Removes tags
+ *
+ * during pe job dispatch are man queues and hosts tagged. This
+ * function removes the tags.
+ *
+ * @param a the resource structure
+ *
+ * @note MT-NOTE: clean_up_parallel_job() is not MT safe
+ */
 static
 void clean_up_parallel_job(sge_assignment_t *a)
 {
    qinstance_list_set_tag(a->queue_list, 0);
 }
 
-/****** scheduler/parallel_reservation_max_time_slots() *****************************************
-*  NAME
-*     parallel_reservation_max_time_slots() -- Search earliest possible assignment
-*
-*  SYNOPSIS
-*     static dispatch_t parallel_reservation_max_time_slots(sge_assignment_t *best)
-*
-*  FUNCTION
-*     The earliest possible assignment is searched for a job assuming a
-*     particular parallel environment be used with a particular slot
-*     number. If the slot number passed is 0 we start with the minimum
-*     possible slot number for that job. The search starts with the
-*     latest queue end time if DISPATCH_TIME_QUEUE_END was specified
-*     rather than a real time value.
-*
-*  INPUTS
-*     sge_assignment_t *best - herein we keep all important in/out information
-*
-*  RESULT
-*     dispatch_t - 0 ok got an assignment
-*                  1 no assignment at the specified time (???)
-*                 -1 assignment will never be possible for all jobs of that category
-*                 -2 assignment will never be possible for that particular job
-*
-*  NOTES
-*     MT-NOTE: parallel_reservation_max_time_slots() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Search earliest possible assignment
+ *
+ * The earliest possible assignment is searched for a job assuming a
+ * particular parallel environment be used with a particular slot
+ * number. If the slot number passed is 0 we start with the minimum
+ * possible slot number for that job. The search starts with the
+ * latest queue end time if DISPATCH_TIME_QUEUE_END was specified
+ * rather than a real time value.
+ *
+ * @param best herein we keep all important in/out information
+ *
+ * @return 0 ok got an assignment 1 no assignment at the specified time (???) -1 assignment will never be possible for all jobs of that category -2 assignment will never be possible for that particular job
+ *
+ * @note MT-NOTE: parallel_reservation_max_time_slots() is not MT safe
+ */
 static dispatch_t
 parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots)
 {
@@ -970,61 +1010,44 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
    DRETURN(result);
 }
 
-/****** scheduler/parallel_maximize_slots_pe() *****************************************
-*  NAME
-*     parallel_maximize_slots_pe() -- Maximize number of slots for an assignment
-*
-*  SYNOPSIS
-*     static int parallel_maximize_slots_pe(sge_assignment_t *best, lList *host_list,
-*     lList *queue_list, lList *centry_list, lList *acl_list)
-*
-*  FUNCTION
-*     The largest possible slot amount is searched for a job assuming a
-*     particular parallel environment be used at a particular start time.
-*     If the slot number passed is 0 we start with the minimum
-*     possible slot number for that job.
-*
-*     To search most efficiently for the right slot value, it has three search
-*     strategies implemented:
-*     - binary search
-*     - least slot value first
-*     - highest slot value first
-*
-*     To be able to use binary search all possible slot values are stored in
-*     one array. The slot values in this array are sorted ascending. After the
-*     right slot value was found, it is very easy to compute the best strategy
-*     from the result. For each strategy it will compute how many iterations
-*     would have been needed to compute the correct result. These steps will
-*     be stored for the next run and used to figure out the best algorithm.
-*     To ensure that we can adapt to rapid changes and also ignore spikes we
-*     are using the running average algorithm in a 80-20 setting. This means
-*     that the algorithm will need 4 (max 5) iterations to adopt to a new
-*     scenario.
-*
-*  Further enhancements:
-*     It might be a good idea to store the derived values with the job categories
-*     and allow to find the best strategy per category.
-*
-*  INPUTS
-*     sge_assignment_t *best - herein we keep all important in/out information
-*     int *available_slots   -
-*
-*  RESULT
-*     int - 0 ok got an assignment (maybe without maximizing it)
-*           1 no assignment at the specified time
-*          -1 assignment will never be possible for all jobs of that category
-*          -2 assignment will never be possible for that particular job
-*
-*  NOTES
-*     MT-NOTE: parallel_maximize_slots_pe() is MT safe as long as the provided
-*              lists are owned be the caller
-*
-*  SEE ALSO:
-*     sconf_best_pe_alg
-*     sconf_update_pe_alg
-*     add_pe_slots_to_category
-*
-*******************************************************************************/
+/**
+ * @brief Maximize number of slots for an assignment
+ *
+ * The largest possible slot amount is searched for a job assuming a
+ * particular parallel environment be used at a particular start time.
+ * If the slot number passed is 0 we start with the minimum
+ * possible slot number for that job.
+ * To search most efficiently for the right slot value, it has three search
+ * strategies implemented:
+ * - binary search
+ * - least slot value first
+ * - highest slot value first
+ * To be able to use binary search all possible slot values are stored in
+ * one array. The slot values in this array are sorted ascending. After the
+ * right slot value was found, it is very easy to compute the best strategy
+ * from the result. For each strategy it will compute how many iterations
+ * would have been needed to compute the correct result. These steps will
+ * be stored for the next run and used to figure out the best algorithm.
+ * To ensure that we can adapt to rapid changes and also ignore spikes we
+ * are using the running average algorithm in a 80-20 setting. This means
+ * that the algorithm will need 4 (max 5) iterations to adopt to a new
+ * scenario.
+ * Further enhancements:
+ * It might be a good idea to store the derived values with the job categories
+ * and allow to find the best strategy per category.
+ *
+ * @param best herein we keep all important in/out information int *available_slots   -
+ *
+ * @return 0 ok got an assignment (maybe without maximizing it) 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category -2 assignment will never be possible for that particular job
+ *
+ * @note MT-NOTE: parallel_maximize_slots_pe() is MT safe as long as the provided
+ *       lists are owned be the caller
+ *
+ *       SEE ALSO:
+ *       sconf_best_pe_alg
+ *       sconf_update_pe_alg
+ *       add_pe_slots_to_category
+ */
 static dispatch_t
 parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
 {
@@ -1245,45 +1268,33 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
    DRETURN(result);
 }
 
-/****** sge_select_queue/sge_select_queue() ************************************
-*  NAME
-*     sge_select_queue() -- checks whether a job matches a given queue or host
-*
-*  SYNOPSIS
-*     int sge_select_queue(lList *requested_attr, lListElem *queue, lListElem
-*     *host, lList *exechost_list, lList *centry_list, bool
-*     allow_non_requestable, int slots)
-*
-*  FUNCTION
-*     Takes the requested attributes from a job and checks if it matches the given
-*     host or queue. One and only one should be specified. If both, the function
-*     assumes, that the queue belongs to the given host.
-*
-*  INPUTS
-*     lList *requested_attr     - list of requested attributes
-*     lListElem *queue          - current queue or null if host is set
-*     lListElem *host           - current host or null if queue is set
-*     lList *exechost_list      - list of all hosts in the system
-*     lList *centry_list        - system wide attribute config list
-*     bool allow_non_requestable - allow non requestable?
-*     int slots                 - number of requested slots
-*     lList *queue_user_list    - list of users or null
-*     lList *acl_list           - acl_list or null
-*     lListElem *job            - job or null
-*
-*  RESULT
-*     int - 1, if okay, QU_tag will be set if a queue is selected
-*           0, if not okay
-*
-*  NOTES
-*   The caller is responsible for cleaning tags.
-*
-*   No range is used. For serial jobs we will need a call for hard and one
-*    for soft requests. For parallel jobs we will call this function for each
-*   -l request. Because of in serial jobs requests can be simply added.
-*   In Parallel jobs each -l requests a different set of queues.
-*
-*******************************************************************************/
+/**
+ * @brief Checks whether a job matches a given queue or host
+ *
+ * Takes the requested attributes from a job and checks if it matches the given
+ * host or queue. One and only one should be specified. If both, the function
+ * assumes, that the queue belongs to the given host.
+ *
+ * @param requested_attr list of requested attributes
+ * @param queue current queue or null if host is set
+ * @param host current host or null if queue is set
+ * @param exechost_list list of all hosts in the system
+ * @param centry_list system wide attribute config list
+ * @param allow_non_requestable allow non requestable?
+ * @param slots number of requested slots
+ * @param queue_user_list list of users or null
+ * @param acl_list acl_list or null
+ * @param job job or null
+ *
+ * @return 1, if okay, QU_tag will be set if a queue is selected 0, if not okay
+ *
+ * @note The caller is responsible for cleaning tags.
+ *
+ *       No range is used. For serial jobs we will need a call for hard and one
+ *       for soft requests. For parallel jobs we will call this function for each
+ *       -l request. Because of in serial jobs requests can be simply added.
+ *       In Parallel jobs each -l requests a different set of queues.
+ */
 bool
 sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
                  lList *exechost_list, lList *centry_list, bool allow_non_requestable,
@@ -1439,53 +1450,42 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
    DRETURN((ret == DISPATCH_OK) ? true : false);
 }
 
-/****** sge_select_queue/rc_time_by_slots() **********************************
-*  NAME
-*     rc_time_by_slots() -- checks weather all resource requests on one level
-*                             are fulfilled
-*
-*  SYNOPSIS
-*     static int rc_time_by_slots(lList *requested, lList *load_attr, lList
-*     *config_attr, lList *actual_attr, lList *centry_list, lListElem *queue,
-*     bool allow_non_requestable, char *reason, int reason_size, int slots,
-*     uint32_t layer, double lc_factor, uint32_t tag)
-*
-*  FUNCTION
-*     Checks, weather all requests, default requests and implicit requests on this
-*     level are fulfilled.
-*
-*     With reservation scheduling the earliest start time due to resources of the
-*     resource container is the maximum of the earliest start times for all
-*     resources comprised by the resource container that requested by a job.
-*
-*  INPUTS
-*     lList *requested          - list of attribute requests
-*     lList *load_attr          - list of load attributes or null on queue level
-*     lList *config_attr        - list of user defined attributes
-*     lList *actual_attr        - usage of all consumables (RUE_Type)
-*     lList *centry_list        - system-wide attribute config. list (CE_Type)
-*     lListElem *host           - current host or nullptr on queue level
-*     lListElem *queue          - current queue or nullptr on global/host level
-*     bool allow_non_requestable - allow none requestable?
-*     char *reason              - error message
-*     int reason_size           - max error message size
-*     int slots                 - number of slots the job is looking for
-*     uint32_t layer            - current layer flag
-*     double lc_factor          - load correction factor
-*     uint32_t tag              - current layer tag
-*     uint32_t *start_time      - in/out argument for start time
-*     uint32_t duration         - jobs estimated total run time
-*     const char *object_name   - name of the object used for monitoring purposes
-*
-*  RESULT
-*     dispatch_t -
-*
-*  NOTES
-*     MT-NOTES: is not thread save. uses a static buffer
-*
-*  Important:
-*     we have some special behavior, when slots is set to -1.
-*******************************************************************************/
+/**
+ * @brief Checks weather all resource requests on one level
+ *
+ * Checks, weather all requests, default requests and implicit requests on this
+ * level are fulfilled.
+ * With reservation scheduling the earliest start time due to resources of the
+ * resource container is the maximum of the earliest start times for all
+ * resources comprised by the resource container that requested by a job.
+ *
+ * @param requested list of attribute requests
+ * @param load_attr list of load attributes or null on queue level
+ * @param config_attr list of user defined attributes
+ * @param actual_attr usage of all consumables (RUE_Type)
+ * @param centry_list system-wide attribute config. list (CE_Type)
+ * @param host current host or nullptr on queue level
+ * @param queue current queue or nullptr on global/host level
+ * @param allow_non_requestable allow none requestable?
+ * @param reason error message
+ * @param reason_size max error message size
+ * @param slots number of slots the job is looking for
+ * @param layer current layer flag
+ * @param lc_factor load correction factor
+ * @param tag current layer tag
+ * @param start_time in/out argument for start time
+ * @param duration jobs estimated total run time
+ * @param object_name name of the object used for monitoring purposes
+ *
+ * @return #DISPATCH_OK when all requests are fulfilled at `start_time`,
+ *         #DISPATCH_NOT_AT_TIME when they are not fulfilled at that time, or
+ *         #DISPATCH_NEVER_CAT when they can never be fulfilled here
+ *
+ * @note MT-NOTES: is not thread save. uses a static buffer
+ *
+ *       Important:
+ *       we have some special behavior, when slots is set to -1.
+ */
 static dispatch_t
 rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, const lList *config_attr,
                  const lList *actual_attr, const lListElem *host, lListElem *queue, bool allow_non_requestable,
@@ -1681,24 +1681,17 @@ match_static_resource(int slots, lListElem *req_cplx, lListElem *src_cplx, dstri
    DRETURN(ret);
 }
 
-/****** sge_select_queue/clear_resource_tags() *********************************
-*  NAME
-*     clear_resource_tags() -- removes the tags from a resource request.
-*
-*  SYNOPSIS
-*     static void clear_resource_tags(lList *resources, uint32_t max_tag)
-*
-*  FUNCTION
-*     Removes the tags from the given resource list. A tag is only removed
-*     if it is smaller or equal to the given tag value. The tag value "MAX_TAG" results
-*     in removing all existing tags, or the value "HOST_TAG" removes queue and host
-*     tags but keeps the global tags.
-*
-*  INPUTS
-*     lList *resources  - list of job requests.
-*     uint32_t max_tag - max tag element
-*
-*******************************************************************************/
+/**
+ * @brief Removes the tags from a resource request
+ *
+ * Removes the tags from the given resource list. A tag is only removed
+ * if it is smaller or equal to the given tag value. The tag value "MAX_TAG" results
+ * in removing all existing tags, or the value "HOST_TAG" removes queue and host
+ * tags but keeps the global tags.
+ *
+ * @param resources list of job requests.
+ * @param max_tag max tag element
+ */
 static void clear_resource_tags(lList *resources, uint32_t max_tag) {
    for_each_rw_lv(attr, resources) {
       if (lGetUlong(attr, CE_tagged) <= max_tag) {
@@ -1741,35 +1734,23 @@ get_soft_queue_list(const lListElem *job, const lList *&soft_queue_list) {
       soft_queue_list = job_get_soft_queue_list(job, JRS_SCOPE_GLOBAL);
    }
 }
-/****** sge_select_queue/sge_queue_match_static() ************************
-*  NAME
-*     sge_queue_match_static() -- Do matching that depends not on time.
-*
-*  SYNOPSIS
-*     static int sge_queue_match_static(lListElem *queue, lListElem *job,
-*     const lListElem *pe, const lListElem *ckpt, lList *centry_list, lList
-*     *host_list, lList *acl_list)
-*
-*  FUNCTION
-*     Checks if a job fits on a queue or not. All checks that depend on the
-*     current load and resource situation must get handled outside.
-*     The queue also gets tagged in QU_tagged4schedule to indicate whether it
-*     is specified using -masterq queue_list.
-*
-*  INPUTS
-*     lListElem *queue      - The queue we're matching
-*     lListElem *job        - The job
-*     const lListElem *pe   - The PE object
-*     const lListElem *ckpt - The ckpt object
-*     lList *centry_list    - The centry list
-*     lList *acl_list       - The ACL list
-*
-*  RESULT
-*     dispatch_t - DISPATCH_OK, ok
-*                  DISPATCH_NEVER_CAT, assignment will never be possible for all jobs of that category
-*
-*  NOTES
-*******************************************************************************/
+/**
+ * @brief Do matching that depends not on time
+ *
+ * Checks if a job fits on a queue or not. All checks that depend on the
+ * current load and resource situation must get handled outside.
+ * The queue also gets tagged in QU_tagged4schedule to indicate whether it
+ * is specified using -masterq queue_list.
+ *
+ * @param[in]     a           the assignment, carrying the job, the PE, the
+ *                            checkpointing interface and the lists
+ * @param[in,out] queue       the queue instance being matched; its
+ *                            `QU_tagged4schedule` is set
+ * @param[in]     need_master true when matching for the master task of a
+ *                            parallel job
+ *
+ * @return DISPATCH_OK, ok DISPATCH_NEVER_CAT, assignment will never be possible for all jobs of that category
+ */
 
 dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue, bool need_master)
 {
@@ -2034,33 +2015,24 @@ job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_o
    DRETURN(ret);
 }
 
-/****** sge_select_queue/compute_soft_violations() ********************************
-*  NAME
-*     compute_soft_violations() -- counts the violations in the request for a given host or queue
-*
-*  SYNOPSIS
-*     static int compute_soft_violations(lListElem *queue, int violation, lListElem *job,lList *load_attr, lList *config_attr,
-*                               lList *actual_attr, lList *centry_list, uint32_t layer, double lc_factor, uint32_t tag)
-*
-*  FUNCTION
-*     this function checks if the current resources can satisfy the requests. The resources come from the global host, a
-*     given host or the queue. The function returns the number of violations.
-*
-*  INPUTS
-*     const sge_assignment_t *a - job info structure
-*     lListElem *queue     - should only be set, when one using this method on queue level
-*     int violation        - the number of previous violations. This is needed to get a correct result on queue level.
-*     lList *load_attr     - the load attributes, only when used on hosts or global
-*     lList *config_attr   - a list of custom attributes  (CE_Type)
-*     lList *actual_attr   - a list of custom consumables, they contain the current usage of these attributes (RUE_Type)
-*     uint32_t layer       - the current layer flag
-*     double lc_factor     - should be set, when load correction has to be done.
-*     uint32_t tag         - the current layer tag. (GLOBAL_TAG, HOST_TAG, QUEUE_TAG)
-*
-*  RESULT
-*     static int - the number of violations ( = (prev. violations) + (new violations in this run)).
-*
-*******************************************************************************/
+/**
+ * @brief Counts the violations in the request for a given host or queue
+ *
+ * this function checks if the current resources can satisfy the requests. The resources come from the global host, a
+ * given host or the queue. The function returns the number of violations.
+ *
+ * @param a job info structure
+ * @param queue should only be set, when one using this method on queue level
+ * @param violation the number of previous violations. This is needed to get a correct result on queue level.
+ * @param load_attr the load attributes, only when used on hosts or global
+ * @param config_attr a list of custom attributes  (CE_Type)
+ * @param actual_attr a list of custom consumables, they contain the current usage of these attributes (RUE_Type)
+ * @param layer the current layer flag
+ * @param lc_factor should be set, when load correction has to be done.
+ * @param tag the current layer tag. (GLOBAL_TAG, HOST_TAG, QUEUE_TAG)
+ *
+ * @return the number of violations ( = (prev. violations) + (new violations in this run)).
+ */
 static int
 compute_soft_violations(const sge_assignment_t *a, const lListElem *host, lListElem *queue, int violation,
                         const lList *load_attr, const lList *config_attr,
@@ -2132,28 +2104,19 @@ compute_soft_violations(const sge_assignment_t *a, const lListElem *host, lListE
    DRETURN(soft_violation);
 }
 
-/****** sge_select_queue/sge_host_match_static() ********************************
-*  NAME
-*     sge_host_match_static() -- Static test whether job fits to host
-*
-*  SYNOPSIS
-*     static int sge_host_match_static(lListElem *job, lListElem *ja_task,
-*     lListElem *host, lList *centry_list, lList *acl_list)
-*
-*  FUNCTION
-*
-*  INPUTS
-*     lListElem *job     - ???
-*     lListElem *ja_task - ???
-*     lListElem *host    - ???
-*     lList *centry_list - ???
-*     lList *acl_list    - ???
-*
-*  RESULT
-*     int - 0 ok
-*          -1 assignment will never be possible for all jobs of that category
-*          -2 assignment will never be possible for that particular job
-*******************************************************************************/
+/**
+ * @brief Static test whether the job fits on a host
+ *
+ * Like sge_queue_match_static(), only the checks that cannot change during a
+ * scheduling run.
+ *
+ * @param[in] a    the assignment, carrying the job and the lists
+ * @param[in] host the execution host being matched
+ *
+ * @return #DISPATCH_OK, #DISPATCH_NEVER_CAT if no job of that category can
+ *         ever run here, or #DISPATCH_NEVER_JOB if only this job cannot -
+ *         it is on the host's reschedule unknown list
+ */
 dispatch_t
 sge_host_match_static(const sge_assignment_t *a, const lListElem *host)
 {
@@ -2245,27 +2208,19 @@ sge_host_match_static(const sge_assignment_t *a, const lListElem *host)
    DRETURN(DISPATCH_OK);
 }
 
-/****** sge_select_queue/is_requested() ****************************************
-*  NAME
-*     is_requested() -- Returns true if specified resource is requested.
-*
-*  SYNOPSIS
-*     bool is_requested(lList *req, const char *attr)
-*
-*  FUNCTION
-*     Returns true if specified resource is requested. Both long name
-*     and shortcut name are checked.
-*
-*  INPUTS
-*     lList *req       - The request list (CE_Type)
-*     const char *attr - The resource name.
-*
-*  RESULT
-*     bool - true if requested, otherwise false
-*
-*  NOTES
-*     MT-NOTE: is_requested() is MT safe
-*******************************************************************************/
+/**
+ * @brief Returns true if specified resource is requested
+ *
+ * Returns true if specified resource is requested. Both long name
+ * and shortcut name are checked.
+ *
+ * @param req The request list (CE_Type)
+ * @param attr The resource name.
+ *
+ * @return true if requested, otherwise false
+ *
+ * @note MT-NOTE: is_requested() is MT safe
+ */
 bool is_requested(const lList *req, const char *attr)
 {
    if (req != nullptr) {
@@ -2279,6 +2234,19 @@ bool is_requested(const lList *req, const char *attr)
 }
 
 
+/**
+ * @brief Is the attribute requested by the job, in any scope?
+ *
+ * Checks the global, master and slave hard resource lists, so a request made
+ * only for the master task of a parallel job counts as requested.
+ *
+ * @param[in] job  the job (`JB_Type`)
+ * @param[in] attr the attribute name or its shortcut
+ *
+ * @return true if the job requests the attribute
+ *
+ * @note MT-NOTE: is_requested() is MT safe
+ */
 bool is_requested(const lListElem *job, const char *attr)
 {
    bool ret = false;
@@ -2417,31 +2385,21 @@ load_check_alarm(char *reason, size_t reason_size, const char *name, const char 
    DRETURN(0);
 }
 
-/****** sge_select_queue/load_np_value_adjustment() ****************************
-*  NAME
-*     load_np_value_adjustment() -- adjusts np load values for the number of processors
-*
-*  SYNOPSIS
-*     static int load_np_value_adjustment(const char* name, lListElem *hep,
-*     double *load_correction)
-*
-*  FUNCTION
-*     Tests the load value name for "np_*". If this pattern is found, it will
-*     retrieve the number of processors and adjusts the load_correction accordingly.
-*     If the pattern is not found, it does nothing and returns 0 for number of processors.
-*
-*  INPUTS
-*     const char* name        - load value name
-*     lListElem *hep          - host object
-*     double *load_correction - current load_correction for further corrections
-*
-*  RESULT
-*     static int - number of processors, or 0 if it was called on a none np load value
-*
-*  NOTES
-*     MT-NOTE: load_np_value_adjustment() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Adjusts np load values for the number of processors
+ *
+ * Tests the load value name for "np_*". If this pattern is found, it will
+ * retrieve the number of processors and adjusts the load_correction accordingly.
+ * If the pattern is not found, it does nothing and returns 0 for number of processors.
+ *
+ * @param name load value name
+ * @param hep host object
+ * @param load_correction current load_correction for further corrections
+ *
+ * @return number of processors, or 0 if it was called on a none np load value
+ *
+ * @note MT-NOTE: load_np_value_adjustment() is MT safe
+ */
 static int load_np_value_adjustment(const char* name, lListElem *hep, double *load_correction) {
 
    int nproc = 1;
@@ -2495,18 +2453,23 @@ static int resource_cmp(uint32_t relop, double req, double src_dl)
    return match;
 }
 
-/* ----------------------------------------
-
-   sge_load_alarm()
-
-   checks given threshold of the queue;
-   centry_list and exechost_list get used
-   therefore
-
-   returns boolean:
-      1 yes, the threshold is exceeded
-      0 no
-*/
+/**
+ * @brief Is a load threshold of the queue exceeded?
+ *
+ * The threshold list is evaluated against the load values of the queue's host
+ * and of the global host, with the load adjustments applied.
+ *
+ * @param[out] reason              buffer receiving the reason, may be nullptr
+ * @param[in]  reason_size         size of the `reason` buffer
+ * @param[in]  qep                 the queue instance (`QU_Type`)
+ * @param[in]  threshold           the thresholds to check (`CE_Type`)
+ * @param[in]  exechost_list       the execution hosts, for the load values
+ * @param[in]  centry_list         the system wide attribute configuration
+ * @param[in]  load_adjustments    the load adjustments to apply
+ * @param[in]  is_check_consumable whether consumables count as load values
+ *
+ * @return 1 if a threshold is exceeded, 0 otherwise
+ */
 
 int
 sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const lList *threshold,
@@ -2625,16 +2588,22 @@ sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const lLi
    DRETURN(0);
 }
 
-/* ----------------------------------------
-
-   sge_load_alarm_reasons()
-
-   checks given threshold of the queue;
-   centry_list and exechost_list get used
-   therefore
-
-   fills and returns string buffer containing reasons for alarm states
-*/
+/**
+ * @brief Renders the reasons a queue is in load alarm
+ *
+ * Same checks as sge_load_alarm(), but it reports every exceeded threshold
+ * rather than stopping at the first - this is what `qstat -explain a` prints.
+ *
+ * @param[in]  qep            the queue instance (`QU_Type`)
+ * @param[in]  threshold      the thresholds to check (`CE_Type`)
+ * @param[in]  exechost_list  the execution hosts, for the load values
+ * @param[in]  centry_list    the system wide attribute configuration
+ * @param[out] reason         buffer receiving the reasons
+ * @param[in]  reason_size    size of the `reason` buffer
+ * @param[in]  threshold_type name of the threshold kind, used in the text
+ *
+ * @return `reason`
+ */
 
 char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
                             const lList *exechost_list, const lList *centry_list,
@@ -2714,20 +2683,33 @@ char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
    DRETURN(reason);
 }
 
-/* ----------------------------------------
-
-   sge_split_queue_load()
-
-   splits the incoming queue list (1st arg) into an unloaded and
-   overloaded (2nd arg) list according to the load values contained in
-   the execution host list (3rd arg) and with respect to the definitions
-   in the complex list (4th arg).
-
-   returns:
-      0 successful
-     -1 errors in functions called by sge_split_queue_load
-
-*/
+/**
+ * @brief Splits the queue list into unloaded and overloaded queues
+ *
+ * The overloaded ones are taken out of `unloaded`, so what remains there is
+ * what the scheduler may still dispatch to.
+ *
+ * @param[in]     monitor_next_run       whether the messages also go into the
+ *                                       scheduler run log
+ * @param[in,out] unloaded               the queue list; the overloaded queues
+ *                                       are removed from it (`QU_Type`)
+ * @param[out]    overloaded             receives the overloaded queues, may
+ *                                       be nullptr to drop them
+ * @param[in]     exechost_list          the execution hosts, for the load
+ *                                       values (`EH_Type`)
+ * @param[in]     centry_list            the system wide attribute
+ *                                       configuration (`CE_Type`)
+ * @param[in]     load_adjustments       the load adjustments to apply
+ * @param[in]     granted                the already granted assignments,
+ *                                       whose load adjustment counts
+ * @param[in]     is_consumable_load_alarm whether consumables count as load
+ *                                       values
+ * @param[in]     is_comprehensive       check every queue instead of stopping
+ *                                       at the first alarm per host
+ * @param[in]     ttype                  which threshold list to check
+ *
+ * @return 0 on success, -1 on an error in a called function
+ */
 int sge_split_queue_load(
 bool monitor_next_run,
 lList **unloaded,               /* QU_Type */
@@ -2802,26 +2784,15 @@ uint32_t ttype
 }
 
 
-/****** sge_select_queue/sge_split_queue_slots_free() **************************
-*  NAME
-*     sge_split_queue_slots_free() -- ???
-*
-*  SYNOPSIS
-*     int sge_split_queue_slots_free(lList **free, lList **full)
-*
-*  FUNCTION
-*     Split queue list into queues with at least one slots and queues with
-*     less than one free slot. The list optioally returned in full gets the
-*     QNOSLOTS queue instance state set.
-*
-*  INPUTS
-*     lList **free - Input queue instance list and return free slots.
-*     lList **full - If non-nullptr the full queue instances get returned here.
-*
-*  RESULT
-*     int - 0 success
-*          -1 error
-*******************************************************************************/
+/**
+ * @brief Splits the queue list into queues with free slots and full ones
+ *
+ * @param monitor_next_run whether the messages also go into the scheduler run log
+ * @param free Input queue instance list and return free slots.
+ * @param full If non-nullptr the full queue instances get returned here.
+ *
+ * @return 0 success -1 error
+ */
 int sge_split_queue_slots_free(bool monitor_next_run, lList **free, lList **full)
 {
    lList *full_queues = nullptr;
@@ -2880,18 +2851,18 @@ int sge_split_queue_slots_free(bool monitor_next_run, lList **free, lList **full
 }
 
 
-/* ----------------------------------------
-
-   sge_split_suspended()
-
-   splits the incoming queue list (1st arg) into non suspended queues and
-   suspended queues (2nd arg)
-
-   returns:
-      0 successful
-     -1 error
-
-*/
+/**
+ * @brief Splits the queue list into running and suspended queues
+ *
+ * @param[in]     monitor_next_run whether the messages also go into the
+ *                                 scheduler run log
+ * @param[in,out] queue_list       the queue list; the suspended queues are
+ *                                 removed from it (`QU_Type`)
+ * @param[out]    suspended        receives the suspended queues, may be
+ *                                 nullptr to drop them
+ *
+ * @return 0 on success, -1 on error
+ */
 int sge_split_suspended(
 bool monitor_next_run,
 lList **queue_list,        /* QU_Type */
@@ -2942,21 +2913,21 @@ lList **suspended         /* QU_Type */
    DRETURN(ret);
 }
 
-/* ----------------------------------------
-
-   sge_split_cal_disabled()
-
-   splits the incoming queue list (1st arg) into non disabled queues and
-   cal_disabled queues (2nd arg)
-
-   lList **queue_list,       QU_Type
-   lList **disabled          QU_Type
-
-   returns:
-      0 successful
-     -1 errors in functions called by sge_split_queue_load
-
-*/
+/**
+ * @brief Splits off the queues disabled by their calendar
+ *
+ * Unlike sge_split_disabled(), this is the state a calendar put the queue in,
+ * which will end again by itself.
+ *
+ * @param[in]     monitor_next_run whether the messages also go into the
+ *                                 scheduler run log
+ * @param[in,out] queue_list       the queue list; the disabled queues are
+ *                                 removed from it (`QU_Type`)
+ * @param[out]    disabled         receives the disabled queues, may be
+ *                                 nullptr to drop them
+ *
+ * @return 0 on success, -1 on an error in a called function
+ */
 int
 sge_split_cal_disabled(bool monitor_next_run, lList **queue_list, lList **disabled)
 {
@@ -2997,21 +2968,18 @@ sge_split_cal_disabled(bool monitor_next_run, lList **queue_list, lList **disabl
    DRETURN(ret);
 }
 
-/* ----------------------------------------
-
-   sge_split_disabled()
-
-   splits the incoming queue list (1st arg) into non disabled queues and
-   disabled queues (2nd arg)
-
-   lList **queue_list,       QU_Type
-   lList **disabled          QU_Type
-
-   returns:
-      0 successful
-     -1 errors in functions called by sge_split_queue_load
-
-*/
+/**
+ * @brief Splits off the administratively disabled queues
+ *
+ * @param[in]     monitor_next_run whether the messages also go into the
+ *                                 scheduler run log
+ * @param[in,out] queue_list       the queue list; the disabled queues are
+ *                                 removed from it (`QU_Type`)
+ * @param[out]    disabled         receives the disabled queues, may be
+ *                                 nullptr to drop them
+ *
+ * @return 0 on success, -1 on an error in a called function
+ */
 int
 sge_split_disabled(bool monitor_next_run, lList **queue_list, lList **disabled)
 {
@@ -3052,27 +3020,19 @@ sge_split_disabled(bool monitor_next_run, lList **queue_list, lList **disabled)
    DRETURN(ret);
 }
 
-/****** sge_select_queue/pe_cq_rejected() **************************************
-*  NAME
-*     pe_cq_rejected() -- Check, if -pe pe_name rejects cluster queue
-*
-*  SYNOPSIS
-*     static bool pe_cq_rejected(const char *pe_name, const lListElem *cq)
-*
-*  FUNCTION
-*     Match a jobs -pe 'pe_name' with pe_list cluster queue configuration.
-*     True is returned if the parallel environment has no access.
-*
-*  INPUTS
-*     const char *project - the pe request of a job (no wildcard)
-*     const lListElem *cq - cluster queue (CQ_Type)
-*
-*  RESULT
-*     static bool - True, if rejected
-*
-*  NOTES
-*     MT-NOTE: pe_cq_rejected() is MT safe
-*******************************************************************************/
+/**
+ * @brief Check, if -pe pe_name rejects cluster queue
+ *
+ * Match a jobs -pe 'pe_name' with pe_list cluster queue configuration.
+ * True is returned if the parallel environment has no access.
+ *
+ * @param project the pe request of a job (no wildcard)
+ * @param cq cluster queue (CQ_Type)
+ *
+ * @return True, if rejected
+ *
+ * @note MT-NOTE: pe_cq_rejected() is MT safe
+ */
 static bool pe_cq_rejected(const char *pe_name, const lListElem *cq)
 {
    DENTER(TOP_LAYER);
@@ -3092,27 +3052,19 @@ static bool pe_cq_rejected(const char *pe_name, const lListElem *cq)
    DRETURN(rejected);
 }
 
-/****** sge_select_queue/project_cq_rejected() *********************************
-*  NAME
-*     project_cq_rejected() -- Check, if -P project rejects cluster queue
-*
-*  SYNOPSIS
-*     static bool project_cq_rejected(const char *project, const lListElem *cq)
-*
-*  FUNCTION
-*     Match a jobs -P 'project' with project/xproject cluster queue configuration.
-*     True is returned if the project has no access.
-*
-*  INPUTS
-*     const char *project - the project of a job or nullptr
-*     const lListElem *cq - cluster queue (CQ_Type)
-*
-*  RESULT
-*     static bool - True, if rejected
-*
-*  NOTES
-*     MT-NOTE: project_cq_rejected() is MT safe
-*******************************************************************************/
+/**
+ * @brief Check, if -P project rejects cluster queue
+ *
+ * Match a jobs -P 'project' with project/xproject cluster queue configuration.
+ * True is returned if the project has no access.
+ *
+ * @param project the project of a job or nullptr
+ * @param cq cluster queue (CQ_Type)
+ *
+ * @return True, if rejected
+ *
+ * @note MT-NOTE: project_cq_rejected() is MT safe
+ */
 static bool project_cq_rejected(const char *project, const lListElem *cq)
 {
    DENTER(TOP_LAYER);
@@ -3159,25 +3111,17 @@ static bool project_cq_rejected(const char *project, const lListElem *cq)
    DRETURN(false);
 }
 
-/****** sge_select_queue/interactive_cq_rejected() *****************************
-*  NAME
-*     interactive_cq_rejected() --  Check, if -now yes rejects cluster queue
-*
-*  SYNOPSIS
-*     static bool interactive_cq_rejected(const lListElem *cq)
-*
-*  FUNCTION
-*     Returns true if -now yes jobs can not be run in cluster queue
-*
-*  INPUTS
-*     const lListElem *cq - cluster queue (CQ_Type)
-*
-*  RESULT
-*     static bool - True, if rejected
-*
-*  NOTES
-*     MT-NOTE: interactive_cq_rejected() is MT safe
-*******************************************************************************/
+/**
+ * @brief Check, if -now yes rejects cluster queue
+ *
+ * Returns true if -now yes jobs can not be run in cluster queue
+ *
+ * @param cq cluster queue (CQ_Type)
+ *
+ * @return True, if rejected
+ *
+ * @note MT-NOTE: interactive_cq_rejected() is MT safe
+ */
 static bool interactive_cq_rejected(const lListElem *cq)
 {
    DENTER(TOP_LAYER);
@@ -3193,30 +3137,36 @@ static bool interactive_cq_rejected(const lListElem *cq)
    DRETURN(rejected);
 }
 
+/**
+ * @brief Is the user or group contained in the access list?
+ *
+ * @param[in] user     the user name
+ * @param[in] group    the primary group name
+ * @param[in] grp_list the supplementary groups
+ * @param[in] acl      the access list to search
+ * @param[in] list     a second access list to search
+ * @param[in] acl_list all userset definitions, to resolve the names
+ *
+ * @return true if the user or one of the groups is contained
+ *
+ * @warning This declares a **second, six parameter** overload that is defined
+ *          nowhere and called nowhere. The function actually used is the five
+ *          parameter one from `sgeobj/sge_userset.h`, which returns `int` -
+ *          the calls below resolve to that one.
+ */
 bool sge_contained_in_access_list_(const char * user, const char * group, const lList *grp_list,  const lList * acl, const lList * list, const lList * acl_list);
-/****** sge_select_queue/access_cq_rejected() **********************************
-*  NAME
-*     access_cq_rejected() -- Check, if cluster queue rejects user/project
-*
-*  SYNOPSIS
-*     static bool access_cq_rejected(const char *user, const char *group, const
-*     lList *acl_list, const lListElem *cq)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     const char *user      - Username
-*     const char *group     - Groupname
-*     const lList *acl_list - List of access list definitions
-*     const lListElem *cq   - Cluster queue
-*
-*  RESULT
-*     static bool - True, if rejected
-*
-*  NOTES
-*     MT-NOTE: access_cq_rejected() is MT safe
-*******************************************************************************/
+/**
+ * @brief Check, if cluster queue rejects user/project
+ *
+ * @param user Username
+ * @param group Groupname
+ * @param acl_list List of access list definitions
+ * @param cq Cluster queue
+ *
+ * @return True, if rejected
+ *
+ * @note MT-NOTE: access_cq_rejected() is MT safe
+ */
 static bool
 access_cq_rejected(const char *user, const char *group, const lList *grp_list,
                    const lList *acl_list, const lListElem *cq)
@@ -3248,6 +3198,22 @@ access_cq_rejected(const char *user, const char *group, const lList *grp_list,
    DRETURN(rejected);
 }
 
+/**
+ * @brief Can the whole cluster queue be ruled out by the `-l` requests?
+ *
+ * Only a fixed value in the cluster queue profile can rule out the queue for
+ * every one of its instances, which is what makes this worth doing before
+ * descending into the instances.
+ *
+ * @param[in,out] a                  the assignment; a rejection is recorded
+ *                                   as a scheduling message
+ * @param[in]     cqname             name of the cluster queue
+ * @param[in]     cq                 the cluster queue (`CQ_Type`)
+ * @param[in]     hard_resource_list the `-l` requests to check (`CE_Type`)
+ * @param[in]     scope_name         name of the request scope, for the message
+ *
+ * @return true if the cluster queue is ruled out
+ */
 bool cqueue_match_static_resource_list_rejected(sge_assignment_t *a, const char *cqname, const lListElem *cq,
                                                 const lList *hard_resource_list, const char *scope_name) {
    DENTER(TOP_LAYER);
@@ -3270,28 +3236,19 @@ bool cqueue_match_static_resource_list_rejected(sge_assignment_t *a, const char 
    DRETURN(rejected);
 }
 
-/****** sge_select_queue/cqueue_match_static() *********************************
-*  NAME
-*     cqueue_match_static() -- Does cluster queue match the job?
-*
-*  SYNOPSIS
-*     static dispatch_t cqueue_match_static(const char *cqname,
-*     sge_assignment_t *a)
-*
-*  FUNCTION
-*     The function tries to find reasons (-q, -l and -P) why the
-*     entire cluster is not suited for the job.
-*
-*  INPUTS
-*     const char *cqname  - Cluster queue name
-*     sge_assignment_t *a - ???
-*
-*  RESULT
-*     static dispatch_t - Returns DISPATCH_OK  or DISPATCH_NEVER_CAT
-*
-*  NOTES
-*     MT-NOTE: cqueue_match_static() is MT safe
-*******************************************************************************/
+/**
+ * @brief Does cluster queue match the job?
+ *
+ * The function tries to find reasons (-q, -l and -P) why the
+ * entire cluster is not suited for the job.
+ *
+ * @param cqname Cluster queue name
+ * @param a
+ *
+ * @return Returns DISPATCH_OK  or DISPATCH_NEVER_CAT
+ *
+ * @note MT-NOTE: cqueue_match_static() is MT safe
+ */
 dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a) {
    DENTER(TOP_LAYER);
 
@@ -3389,49 +3346,15 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a) {
 }
 
 
-/****** sge_select_queue/sequential_tag_queues_suitable4job() **************
-*  NAME
-*     sequential_tag_queues_suitable4job() -- ???
-*
-*  SYNOPSIS
-*
-*  FUNCTION
-*     The start time of a queue is always returned using the QU_available_at
-*     field.
-*
-*     The overall behaviour of this function is somewhat dependent on the
-*     value that gets passed to assignment->start and whether soft requests
-*     were specified with the job:
-*
-*     (1) In case of now assignments (DISPATCH_TIME_NOW) only the first queue
-*         suitable for jobs without soft requests is tagged. When soft requests
-*         are specified all queues must be verified and tagged in order to find
-*         the queue that fits best.
-*
-*     (2) In case of reservation assignments (DISPATCH_TIME_QUEUE_END) the earliest
-*         time is searched when the resources of global/host/queue are sufficient
-*         for the job. The time-wise iteration is then done for each single resources
-*         instance.
-*
-*         Actually there are cases when iterating through all queues were not
-*         needed: (a) if there was a global limitation search could stop once
-*         a queue is found that causes no further delay (b) if job has
-*         a soft request search could stop once a queue is found with minimum (=0)
-*         soft violations.
-*
-*  INPUTS
-*     sge_assignment_t *assignment - job info structure
-*
-*  RESULT
-*     dispatch_t - 0 ok got an assignment
-*                    start time(s) and slots are tagged
-*                  1 no assignment at the specified time
-*                 -1 assignment will never be possible for all jobs of that category
-*                 -2 assignment will never be possible for that particular job
-*
-*  NOTES
-*     MT-NOTE: sequential_tag_queues_suitable4job() is not MT safe
-*******************************************************************************/
+/**
+ * @brief The start time of a queue is always returned using the QU_available_at
+ *
+ * @param assignment job info structure
+ *
+ * @return 0 ok got an assignment start time(s) and slots are tagged 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category -2 assignment will never be possible for that particular job
+ *
+ * @note MT-NOTE: sequential_tag_queues_suitable4job() is not MT safe
+ */
 static dispatch_t
 sequential_tag_queues_suitable4job(sge_assignment_t *a)
 {
@@ -3723,34 +3646,23 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
 
 
 
-/****** sge_select_queue/add_pe_slots_to_category() ****************************
-*  NAME
-*     add_pe_slots_to_category() -- defines an array of valid slot values
-*
-*  SYNOPSIS
-*     static bool add_pe_slots_to_category(category_use_t *use_category,
-*     uint32_t *max_slotsp, lListElem *pe, int min_slots, int max_slots, lList
-*     *pe_range)
-*
-*  FUNCTION
-*     In case of pe ranges does this function alocate memory and filles it wil
-*     valid pe slot values. If a category is set, it stores them the category
-*     for further jobs.
-*
-*  INPUTS
-*     category_use_t *use_category - category caching structure, must not be nullptr
-*     uint32_t *max_slotsp         - number of different slot settings
-*     int min_slots                - min slot setting (pe range)
-*     int max_slots                - max slot setting (pe range)
-*     lList *pe_range              - pe range, must not be nullptr
-*
-*  RESULT
-*     static bool - true, if successful
-*
-*  NOTES
-*     MT-NOTE: add_pe_slots_to_category() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Defines an array of valid slot values
+ *
+ * In case of pe ranges does this function alocate memory and filles it wil
+ * valid pe slot values. If a category is set, it stores them the category
+ * for further jobs.
+ *
+ * @param use_category category caching structure, must not be nullptr
+ * @param max_slotsp number of different slot settings
+ * @param min_slots min slot setting (pe range)
+ * @param max_slots max slot setting (pe range)
+ * @param pe_range pe range, must not be nullptr
+ *
+ * @return true, if successful
+ *
+ * @note MT-NOTE: add_pe_slots_to_category() is MT safe
+ */
 static bool
 add_pe_slots_to_category(sge_assignment_t *a, category_use_t *use_category, uint32_t *max_slotsp,
                          int min_slots, int max_slots, lList *pe_range) {
@@ -3803,26 +3715,18 @@ add_pe_slots_to_category(sge_assignment_t *a, category_use_t *use_category, uint
    DRETURN(true);
 }
 
-/****** sge_select_queue/fill_category_use_t() **************
-*  NAME
-*     fill_category_use_t() -- fills the category_use_t structure.
-*
-*  SYNOPSIS
-*     void fill_category_use_t(sge_assignment_t *a, category_use_t
-*     *use_category, const char *pe_name)
-*
-*  FUNCTION
-*     If a cache structure for the given PE does not exist, it
-*     will generate the necessary data structures.
-*
-*  INPUTS
-*     sge_assignment_t *a          - job info structure (in)
-*     category_use_t *use_category - category info structure (out)
-*     const char* pe_name          - the current pe name or "NONE"
-*
-*  NOTES
-*     MT-NOTE: fill_category_use_t() is MT safe
-*******************************************************************************/
+/**
+ * @brief Fills the category_use_t structure
+ *
+ * If a cache structure for the given PE does not exist, it
+ * will generate the necessary data structures.
+ *
+ * @param a job info structure (in)
+ * @param use_category category info structure (out)
+ * @param pe_name the current pe name or "NONE"
+ *
+ * @note MT-NOTE: fill_category_use_t() is MT safe
+ */
 static void fill_category_use_t(const sge_assignment_t *a, category_use_t *use_category, const char *pe_name)
 {
    lListElem *job = a->job;
@@ -3939,10 +3843,10 @@ parallel_add_queue_to_gdil(sge_assignment_t *a, const char *qname, const char *e
  * @brief queue_slots struct used to temporarily store per queue scheduling information
  */
 typedef struct {
-   bool is_master_queue;      // is it the master queue (instance)
-   const char *qname;         // the queue name
-   int slots;                 // number of slots we allocate in this queue instance
-   int soft_violations;       // number of soft violations that would result from allocating this queue
+   bool is_master_queue;      ///< Is this the queue instance of the master task?
+   const char *qname;         ///< The queue name
+   int slots;                 ///< Number of slots allocated in this queue instance
+   int soft_violations;       ///< Soft violations that allocating this queue would cause
 } queue_slots_t;
 
 /**
@@ -4264,43 +4168,29 @@ parallel_allocate_queue_slots(sge_assignment_t *a, const char *eh_name, bool hav
    DRETURN(rqs_hslots);
 }
 
-/****** sge_select_queue/parallel_tag_queues_suitable4job() *********
-*  NAME
-*     parallel_tag_queues_suitable4job() -- Tag queues/hosts for
-*        a comprehensive/parallel assignment
-*
-*  SYNOPSIS
-*     static int parallel_tag_queues_suitable4job(sge_assignment_t
-*                *assignment)
-*
-*  FUNCTION
-*     We tag the amount of available slots for that job at global, host and
-*     queue level under consideration of all constraints of the job. We also
-*     mark those queues that are suitable as a master queue as possible master
-*     queues and count the number of violations of the job's soft request.
-*     The method below is named comprehensive since it does the tagging game
-*     for the whole parallel job and under consideration of all available
-*     resources that could help to suffice the jobs request. This is necessary
-*     to prevent consumable resource limited at host/global level multiple
-*     times.
-*
-*     While tagging we also set queues QU_host_seq_no based on the sort
-*     order of each host. Assumption is the host list passed is sorted
-*     according the load formula.
-*
-*  INPUTS
-*     sge_assignment_t *assignment - ???
-*     category_use_t use_category - information on how to use the job category
-*
-*  RESULT
-*     static dispatch_t - 0 ok got an assignment
-*                         1 no assignment at the specified time
-*                        -1 assignment will never be possible for all jobs of that category
-*                        -2 assignment will never be possible for that particular job
-*
-*  NOTES
-*     MT-NOTE: parallel_tag_queues_suitable4job() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Tag queues/hosts for
+ *
+ * We tag the amount of available slots for that job at global, host and
+ * queue level under consideration of all constraints of the job. We also
+ * mark those queues that are suitable as a master queue as possible master
+ * queues and count the number of violations of the job's soft request.
+ * The method below is named comprehensive since it does the tagging game
+ * for the whole parallel job and under consideration of all available
+ * resources that could help to suffice the jobs request. This is necessary
+ * to prevent consumable resource limited at host/global level multiple
+ * times.
+ * While tagging we also set queues QU_host_seq_no based on the sort
+ * order of each host. Assumption is the host list passed is sorted
+ * according the load formula.
+ *
+ * @param assignment
+ * @param use_category information on how to use the job category
+ *
+ * @return 0 ok got an assignment 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category -2 assignment will never be possible for that particular job
+ *
+ * @note MT-NOTE: parallel_tag_queues_suitable4job() is not MT safe
+ */
 static dispatch_t
 parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_category, int *available_slots)
 {
@@ -4738,20 +4628,12 @@ host_or_queue_clear_tags(const char *object_name, lListElem *queue, lList *queue
    }
 }
 
-/****** sge_select_queue/parallel_host_slots() ******************************
-*  NAME
-*     parallel_host_slots() -- Return host slots available at time period
-*
-*  SYNOPSIS
-*  FUNCTION
-*     The maximum amount available at the host for the specified time period
-*     is determined.
-*
-*
-*  INPUTS
-*
-*  RESULT
-*******************************************************************************/
+/**
+ * @brief Return host slots available at time period
+ *
+ * The maximum amount available at the host for the specified time period
+ * is determined.
+ */
 // @todo there is a single call to parallel_host_slots() in parallel_tag_hosts_queues() where we pass false as/
 //       allow_non_requestable - should we remove this parameter?
 // found_master_host: we just found a candidate for the master host
@@ -4835,58 +4717,44 @@ parallel_host_slots(sge_assignment_t *a, int *slots, lListElem *hep, bool need_m
    DRETURN(result);
 }
 
-/****** sge_select_queue/parallel_tag_hosts_queues() **********************************
-*  NAME
-*     parallel_tag_hosts_queues() -- Determine host slots and tag queue(s) accordingly
-*
-*  SYNOPSIS
-*
-*  FUNCTION
-*     For a particular job the maximum number of slots that could be served
-*     at that host is determined in accordance with the allocation rule and
-*     returned. The time of the assignment can be either DISPATCH_TIME_NOW
-*     or a specific time, but never DISPATCH_TIME_QUEUE_END.
-*
-*     In those cases when the allocation rule allows more than one slot be
-*     served per host it is necessary to also consider per queue possibly
-*     specified load thresholds. This is because load is global/per host
-*     concept while load thresholds are a queue attribute.
-*
-*     In those cases when the allocation rule gives us neither a fixed amount
-*     of slots required nor an upper limit for the number per host slots (i.e.
-*     $fill_up and $round_robin) we must iterate through all slot numbers from
-*     1 to the maximum number of slots "total_slots" and check with each slot
-*     amount whether we can get it or not. Iteration stops when we can't get
-*     more slots the host based on the queue limitations and load thresholds.
-*
-*     As long as only one single queue at the host is eligible for the job
-*     it is sufficient to check with each iteration whether the corresponding
-*     number of slots can be served by the host and it's queue or not. The
-*     really sick case however is when multiple queues are eligible for a host:
-*     Here we have to determine in each iteration step also the maximum number
-*     of slots each queue could get us by doing a per queue iteration from the
-*     1 up to the maximum number of slots we're testing. The optimization in
-*     effect here is to check always only if we could get more slots than with
-*     the former per host slot amount iteration.
-*
-*  INPUTS
-*     sge_assignment_t *a          -
-*     lListElem *hep               - current host
-*     lListElem *global            - global host
-*     int *slots                   - out: # free slots
-*     int global_soft_violations   - # of global soft violations
-*     bool *master_host            - out: if true, found a master host
-*     category_use_t *use_category - int/out : how to use the job category
-*
-*  RESULT
-*     static dispatch_t -  0 ok got an assignment
-*                          1 no assignment at the specified time
-*                         -1 assignment will never be possible for all jobs of that category
-*                         -2 assignment will never be possible for that particular job
-*
-*  NOTES
-*     MT-NOTE: parallel_tag_hosts_queues() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Determine host slots and tag queue(s) accordingly
+ *
+ * For a particular job the maximum number of slots that could be served
+ * at that host is determined in accordance with the allocation rule and
+ * returned. The time of the assignment can be either DISPATCH_TIME_NOW
+ * or a specific time, but never DISPATCH_TIME_QUEUE_END.
+ * In those cases when the allocation rule allows more than one slot be
+ * served per host it is necessary to also consider per queue possibly
+ * specified load thresholds. This is because load is global/per host
+ * concept while load thresholds are a queue attribute.
+ * In those cases when the allocation rule gives us neither a fixed amount
+ * of slots required nor an upper limit for the number per host slots (i.e.
+ * $fill_up and $round_robin) we must iterate through all slot numbers from
+ * 1 to the maximum number of slots "total_slots" and check with each slot
+ * amount whether we can get it or not. Iteration stops when we can't get
+ * more slots the host based on the queue limitations and load thresholds.
+ * As long as only one single queue at the host is eligible for the job
+ * it is sufficient to check with each iteration whether the corresponding
+ * number of slots can be served by the host and it's queue or not. The
+ * really sick case however is when multiple queues are eligible for a host:
+ * Here we have to determine in each iteration step also the maximum number
+ * of slots each queue could get us by doing a per queue iteration from the
+ * 1 up to the maximum number of slots we're testing. The optimization in
+ * effect here is to check always only if we could get more slots than with
+ * the former per host slot amount iteration.
+ *
+ * @param hep current host
+ * @param global global host
+ * @param slots out: # free slots
+ * @param global_soft_violations # of global soft violations
+ * @param master_host out: if true, found a master host
+ * @param use_category int/out : how to use the job category
+ *
+ * @return 0 ok got an assignment 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category -2 assignment will never be possible for that particular job
+ *
+ * @note MT-NOTE: parallel_tag_hosts_queues() is not MT safe
+ */
 static dispatch_t
 parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool need_master,
                           bool is_master_host, bool *master_host, category_use_t *use_category,
@@ -5132,43 +5000,30 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
    DRETURN(avail_h);
 }
 
-/****** sge_select_queue/sge_sequential_assignment() ***************************
-*  NAME
-*     sge_sequential_assignment() -- Make an assignment for a sequential job.
-*
-*  SYNOPSIS
-*     int sge_sequential_assignment(sge_assignment_t *assignment)
-*
-*  FUNCTION
-*     For sequential job assignments all the earliest job start time
-*     is determined with each queue instance and the earliest one gets
-*     chosen. Secondary criterion for queue selection minimizing jobs
-*     soft requests.
-*
-*     The overall behaviour of this function is somewhat dependent on the
-*     value that gets passed to assignment->start and whether soft requests
-*     were specified with the job:
-*
-*     (1) In case of now assignemnts (DISPATCH_TIME_NOW) only the first queue
-*         suitable for jobs without soft requests is tagged. When soft requests
-*         are specified all queues must be verified and tagged in order to find
-*         the queue that fits best. On success the start time is set
-*
-*     (2) In case of queue end assignments (DISPATCH_TIME_QUEUE_END)
-*
-*
-*  INPUTS
-*     sge_assignment_t *assignment - ???
-*
-*  RESULT
-*     int - 0 ok got an assignment + time (DISPATCH_TIME_NOW and DISPATCH_TIME_QUEUE_END)
-*           1 no assignment at the specified time
-*          -1 assignment will never be possible for all jobs of that category
-*          -2 assignment will never be possible for that particular job
-*
-*  NOTES
-*     MT-NOTE: sge_sequential_assignment() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Make an assignment for a sequential job
+ *
+ * For sequential job assignments all the earliest job start time
+ * is determined with each queue instance and the earliest one gets
+ * chosen. Secondary criterion for queue selection minimizing jobs
+ * soft requests.
+ * The overall behaviour of this function is somewhat dependent on the
+ * value that gets passed to assignment->start and whether soft requests
+ * were specified with the job:
+ * (1) In case of now assignemnts (DISPATCH_TIME_NOW) only the first queue
+ *     suitable for jobs without soft requests is tagged. When soft requests
+ *     are specified all queues must be verified and tagged in order to find
+ *     the queue that fits best. On success the start time is set
+ * (2) In case of queue end assignments (DISPATCH_TIME_QUEUE_END)
+ *
+ * @param[in,out] a the assignment; on success it carries the granted list and
+ *                  the start time
+ *
+ * @return #DISPATCH_OK with the time set, #DISPATCH_NOT_AT_TIME,
+ *         #DISPATCH_NEVER_CAT or #DISPATCH_NEVER_JOB
+ *
+ * @note MT-NOTE: sge_sequential_assignment() is not MT safe
+ */
 dispatch_t sge_sequential_assignment(sge_assignment_t *a)
 {
    dispatch_t result;
@@ -5387,30 +5242,18 @@ static int sequential_update_host_order(lList *host_list, lList *queues)
    DRETURN(0);
 }
 
-/****** sge_select_queue/parallel_assignment() *****************************
-*  NAME
-*     parallel_assignment() -- Can we assign with a fixed PE/slot/time
-*
-*  SYNOPSIS
-*     int parallel_assignment(sge_assignment_t *assignment)
-*
-*  FUNCTION
-*     Returns if possible an assignment for a particular PE with a
-*     fixed slot at a fixed time.
-*
-*  INPUTS
-*     sge_assignment_t *a -
-*     category_use_t *use_category - has information on how to use the job category
-*
-*  RESULT
-*     dispatch_t -  0 ok got an assignment
-*                   1 no assignment at the specified time
-*                  -1 assignment will never be possible for all jobs of that category
-*                  -2 assignment will never be possible for that particular job
-*
-*  NOTES
-*     MT-NOTE: parallel_assignment() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Can we assign with a fixed PE/slot/time
+ *
+ * Returns if possible an assignment for a particular PE with a
+ * fixed slot at a fixed time.
+ *
+ * @param use_category has information on how to use the job category
+ *
+ * @return 0 ok got an assignment 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category -2 assignment will never be possible for that particular job
+ *
+ * @note MT-NOTE: parallel_assignment() is not MT safe
+ */
 static dispatch_t
 parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *available_slots)
 {
@@ -5456,16 +5299,17 @@ parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *avai
 
 
 
-/****** sched/select_queue/parallel_queue_slots() *************************
-*  NAME
-*     parallel_queue_slots() --
-*
-*  RESULT
-*     int - 0 ok got an assignment + set time for DISPATCH_TIME_NOW and
-*             DISPATCH_TIME_QUEUE_END (only with fixed_slot equals true)
-*           1 no assignment at the specified time
-*          -1 assignment will never be possible for all jobs of that category
-******************************************************************************/
+/**
+ * @brief Return queue slots available at time period
+ *
+ * The maximum amount of slots the queue instance can contribute for the
+ * specified time period is determined: the static queue match first, then
+ * the resource quota limits, then the dynamic consumables at queue level.
+ * Slots this job already holds on the queue instance are subtracted, so
+ * that a round robin pass does not count them twice.
+ *
+ * @return 0 ok got an assignment + set time for DISPATCH_TIME_NOW and DISPATCH_TIME_QUEUE_END (only with fixed_slot equals true) 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category
+ */
 static dispatch_t
 parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, bool need_master,
                      bool is_master_queue, bool &found_master_host, bool allow_non_requestable)
@@ -5515,16 +5359,15 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, bool need_
    DRETURN(result);
 }
 
-/****** sched/select_queue/sequential_queue_time() *************************
-*  NAME
-*     sequential_queue_time() --
-*
-*  RESULT
-*      dispatch_t - 0 ok got an assignment + set time for DISPATCH_TIME_NOW and
-*                     DISPATCH_TIME_QUEUE_END (only with fixed_slot equals true)
-*                   1 no assignment at the specified time
-*                  -1 assignment will never be possible for all jobs of that category
-******************************************************************************/
+/**
+ * @brief Return time when the queue can run the job
+ *
+ * The hard resource requests of a sequential job are matched against the
+ * consumables of the queue instance, at queue level only. The reason for a
+ * rejection is added to the scheduling info of the job.
+ *
+ * @return 0 ok got an assignment + set time for DISPATCH_TIME_NOW and DISPATCH_TIME_QUEUE_END (only with fixed_slot equals true) 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category
+ */
 static dispatch_t
 sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations, lListElem *qep)
 {
@@ -5577,49 +5420,36 @@ sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations, lLi
 
 
 
-/****** sge_select_queue/sequential_host_time() ******************************
-*  NAME
-*     sequential_host_time() -- Return time when host slots are available
-*
-*  SYNOPSIS
-*     int sequential_host_time(int slots, uint32_t *start, uint32_t duration,
-*     int *host_soft_violations, lListElem *job, lListElem *ja_task, lListElem
-*     *hep, lList *centry_list, lList *acl_list)
-*
-*  FUNCTION
-*     The time when the specified slot amount is available at the host
-*     is determined. Behaviour depends on input/output parameter start
-*
-*     DISPATCH_TIME_NOW
-*           0 an assignment is possible now
-*           1 no assignment now but later
-*          -1 assignment never possible for all jobs of the same category
-*          -2 assignment never possible for that particular job
-*
-*     <any other time>
-*           0 an assignment is possible at the specified time
-*           1 no assignment at specified time but later
-*          -1 assignment never possible for all jobs of the same category
-*          -2 assignment never possible for that particular job
-*
-*     DISPATCH_TIME_QUEUE_END
-*           0 an assignment is possible and the start time is returned
-*          -1 assignment never possible for all jobs of the same category
-*          -2 assignment never possible for that particular job
-*
-*  INPUTS
-*     int slots                 - ???
-*     uint32_t *start           - ???
-*     uint32_t duration         - ???
-*     int *host_soft_violations - ???
-*     lListElem *job            - ???
-*     lListElem *ja_task        - ???
-*     lListElem *hep            - ???
-*     lList *centry_list        - ???
-*     lList *acl_list           - ???
-*
-*  RESULT
-*******************************************************************************/
+/**
+ * @brief Return time when host slots are available
+ *
+ * The time when the specified slot amount is available at the host
+ * is determined. Behaviour depends on input/output parameter start
+ * DISPATCH_TIME_NOW
+ *       0 an assignment is possible now
+ *       1 no assignment now but later
+ *      -1 assignment never possible for all jobs of the same category
+ *      -2 assignment never possible for that particular job
+ * <any other time>
+ *       0 an assignment is possible at the specified time
+ *       1 no assignment at specified time but later
+ *      -1 assignment never possible for all jobs of the same category
+ *      -2 assignment never possible for that particular job
+ * DISPATCH_TIME_QUEUE_END
+ *       0 an assignment is possible and the start time is returned
+ *      -1 assignment never possible for all jobs of the same category
+ *      -2 assignment never possible for that particular job
+ *
+ * @param slots
+ * @param start
+ * @param duration
+ * @param host_soft_violations
+ * @param job
+ * @param ja_task
+ * @param hep
+ * @param centry_list
+ * @param acl_list
+ */
 static dispatch_t
 sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, const lListElem *hep)
 {
@@ -5679,15 +5509,15 @@ sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, cons
    DRETURN(result);
 }
 
-/****** sched/select_queue/sequential_global_time() ***************************
-*  NAME
-*     sequential_global_time() --
-*
-*  RESULT
-*     int - 0 ok got an assignment + set time for DISPATCH_TIME_QUEUE_END
-*           1 no assignment at the specified time
-*          -1 assignment will never be possible for all jobs of that category
-******************************************************************************/
+/**
+ * @brief Return time when the global layer can run the job
+ *
+ * The counterpart of sequential_host_time() and sequential_queue_time() for
+ * the global host: access to any host, the global load values corrected by
+ * the load correction factor, and the global consumables.
+ *
+ * @return 0 ok got an assignment + set time for DISPATCH_TIME_QUEUE_END 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category
+ */
 static dispatch_t
 sequential_global_time(uint64_t *start, sge_assignment_t *a, int *violations)
 {
@@ -5752,15 +5582,15 @@ sequential_global_time(uint64_t *start, sge_assignment_t *a, int *violations)
    DRETURN(result);
 }
 
-/****** sched/select_queue/parallel_global_slots() ***************************
-*  NAME
-*     parallel_global_slots() --
-*
-*  RESULT
-*     dispatch_t -  0 ok got an assignment + set time for DISPATCH_TIME_QUEUE_END
-*                   1 no assignment at the specified time
-*                  -1 assignment will never be possible for all jobs of that category
-******************************************************************************/
+/**
+ * @brief Return global slots available at time period
+ *
+ * The counterpart of parallel_host_slots() and parallel_queue_slots() for
+ * the global host: how many slots the global load values and consumables
+ * permit, with the load correction factor applied.
+ *
+ * @return 0 ok got an assignment + set time for DISPATCH_TIME_QUEUE_END 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category
+ */
 static dispatch_t
 parallel_global_slots(sge_assignment_t *a, int *slots)
 {
@@ -5804,24 +5634,13 @@ parallel_global_slots(sge_assignment_t *a, int *slots)
    DRETURN(result);
 }
 
-/****** sge_select_queue/parallel_available_slots() **********************************
-*  NAME
-*     parallel_available_slots() -- Check if number of PE slots is available
-*
-*  SYNOPSIS
-*
-*  FUNCTION
-*
-*  INPUTS
-*
-*  RESULT
-*     dispatch_t - 0 ok got an assignment
-*                  1 no assignment at the specified time
-*                 -1 assignment will never be possible for all jobs of that category
-*
-*  NOTES
-*     MT-NOTE: parallel_available_slots() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Check if number of PE slots is available
+ *
+ * @return 0 ok got an assignment 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category
+ *
+ * @note MT-NOTE: parallel_available_slots() is not MT safe
+ */
 static dispatch_t
 parallel_available_slots(const sge_assignment_t *a, int *slots)
 {
@@ -5879,18 +5698,21 @@ parallel_available_slots(const sge_assignment_t *a, int *slots)
 }
 
 
-/* ----------------------------------------
-
-   sge_get_double_qattr()
-
-   writes actual value of the queue attriute into *uvalp
-
-   returns:
-      0 ok, value in *uvalp is valid
-      -1 the queue has no such attribute
-      -2 type error: cant compute uval from actual string value
-
-*/
+/**
+ * @brief Reads a numeric queue attribute, resolved over all three layers
+ *
+ * @param[out] dvalp                 receives the value
+ * @param[in]  attrname              name of the attribute
+ * @param[in]  q                     the queue instance (`QU_Type`)
+ * @param[in]  exechost_list         the execution hosts, for the host and
+ *                                   global values
+ * @param[in]  centry_list           the system wide attribute configuration
+ * @param[out] has_value_from_object true if the value came from the object
+ *                                   rather than from a load value
+ *
+ * @return 0 on success, -1 if the queue has no such attribute, -2 if the
+ *         value cannot be converted to a number
+ */
 int
 sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q,
                      const lList *exechost_list, const lList *centry_list,
@@ -5937,16 +5759,19 @@ sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q,
 }
 
 
-/* ----------------------------------------
-
-   sge_get_string_qattr()
-
-   writes string value into dst
-
-   returns:
-      -1    if the queue has no such attribute
-      0
-*/
+/**
+ * @brief Reads a string queue attribute, resolved over all three layers
+ *
+ * @param[out] dst           buffer receiving the value
+ * @param[in]  dst_len       size of the `dst` buffer
+ * @param[in]  attrname      name of the attribute
+ * @param[in]  q             the queue instance (`QU_Type`)
+ * @param[in]  exechost_list the execution hosts, for the host and global
+ *                           values
+ * @param[in]  centry_list   the system wide attribute configuration
+ *
+ * @return 0 on success, -1 if the queue has no such attribute
+ */
 int sge_get_string_qattr(
 char *dst,
 int dst_len,
@@ -5979,44 +5804,38 @@ const lList *centry_list
    DRETURN(ret);
 }
 
-/****** sge_select_queue/ri_time_by_slots() ******************************************
-*  NAME
-*     ri_time_by_slots() -- Determine availability time through slot number
-*
-*  SYNOPSIS
-*     int ri_time_by_slots(lListElem *rep, lList *load_attr, lList
-*     *config_attr, lList *actual_attr, lList *centry_list, lListElem *queue,
-*     char *reason, int reason_size, bool allow_non_requestable, int slots,
-*     uint32_t layer, double lc_factor)
-*
-*  FUNCTION
-*     Checks for one level, if one request is fulfilled or not.
-*
-*     With reservation scheduling the earliest start time due to
-*     availability of the resource instance is determined by ensuring
-*     non-consumable resource requests are fulfilled or by finding the
-*     earliest time utilization of a consumable resource is below the
-*     threshold required for the request.
-*
-*  INPUTS
-*     sge_assignment_t *a       - assignment object that holds job specific scheduling relevant data
-*     lListElem *rep            - requested attribute
-*     lList *load_attr          - list of load attributes or null on queue level
-*     lList *config_attr        - list of user defined attributes (CE_Type)
-*     lList *actual_attr        - usage of user consumables (RUE_Type)
-*     lListElem *queue          - the current queue, or null on host level
-*     dstring *reason           - target for error message
-*     bool allow_non_requestable - allow none requestable attributes?
-*     int slots                 - the number of slotes the job is looking for?
-*     uint32_t layer            - the current layer
-*     double lc_factor          - load correction factor
-*     uint64_t *start_time      - in/out argument for start time
-*     const char *object_name   - name of the object used for monitoring purposes
-*
-*  RESULT
-*     dispatch_t -
-*
-*******************************************************************************/
+/**
+ * @brief Determine availability time through slot number
+ *
+ * Checks for one level, if one request is fulfilled or not.
+ * With reservation scheduling the earliest start time due to
+ * availability of the resource instance is determined by ensuring
+ * non-consumable resource requests are fulfilled or by finding the
+ * earliest time utilization of a consumable resource is below the
+ * threshold required for the request.
+ *
+ * @param a assignment object that holds job specific scheduling relevant data
+ * @param rep requested attribute
+ * @param load_attr list of load attributes or null on queue level
+ * @param config_attr list of user defined attributes (CE_Type)
+ * @param actual_attr usage of user consumables (RUE_Type)
+ * @param host the current host, or nullptr on global level
+ * @param queue the current queue, or nullptr on host level
+ * @param reason target for error message
+ * @param allow_non_requestable allow non requestable attributes?
+ * @param slots the number of slots the job is looking for
+ * @param layer the current layer
+ * @param lc_factor load correction factor
+ * @param start_time in/out argument for the start time
+ * @param object_name name of the object, used for monitoring purposes
+ * @param binding_inuse the topology units in use, updated when the request is
+ *                      for slots at host level
+ *
+ * @return #DISPATCH_OK when the request is fulfilled at `start_time`,
+ *         #DISPATCH_NOT_AT_TIME when it is not fulfilled at that time,
+ *         #DISPATCH_MISSING_ATTR when the attribute does not exist, or
+ *         #DISPATCH_NEVER_CAT when it can never be fulfilled
+ */
 dispatch_t
 ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_attr, const lList *config_attr,
                  const lList *actual_attr, const lListElem *host, const lListElem *queue, dstring *reason, bool allow_non_requestable,
@@ -6196,45 +6015,35 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
    DRETURN(ret);
 }
 
-/****** sge_select_queue/ri_slots_by_time() ************************************
-*  NAME
-*     ri_slots_by_time() -- Determine number of slots avail. within time frame
-*
-*  SYNOPSIS
-*     static dispatch_t ri_slots_by_time(const sge_assignment_t *a, int *slots,
-*     lList *rue_list, lListElem *request, lList *load_attr,
-*     lList *total_list, lListElem *queue, uint32_t layer, double lc_factor,
-*     dstring *reason, bool allow_non_requestable, bool no_centry, const char
-*     *object_name)
-*
-*  FUNCTION
-*     The number of slots available with a resource can be zero for static
-*     resources or is determined based on maximum utilization within the
-*     specific time frame, the total amount of the resource and the per
-*     task request of the parallel job (ri_slots_by_time())
-*
-*  INPUTS
-*     const sge_assignment_t *a  - ???
-*     int *slots                 - Returns maximum slots that can be served
-*                                  within the specified time frame.
-*     lList *rue_list            - Resource utilization (RUE_Type)
-*     lListElem *request         - Job request (CE_Type)
-*     lList *load_attr           - Load information for the resource
-*     lList *total_list          - Total resource amount (CE_Type)
-*     lListElem *queue           - Queue instance (QU_Type) for queue-based resources
-*     uint32_t layer             - DOMINANT_LAYER_{GLOBAL|HOST|QUEUE}
-*     double lc_factor           - load correction factor
-*     dstring *reason            - diagnosis information if no rsrc available
-*     bool allow_non_requestable - ???
-*     bool no_centry             - ???
-*     const char *object_name    - ???
-*
-*  RESULT
-*     static dispatch_t -
-*
-*  NOTES
-*     MT-NOTE: ri_slots_by_time() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Determine number of slots avail. within time frame
+ *
+ * The number of slots available with a resource can be zero for static
+ * resources or is determined based on maximum utilization within the
+ * specific time frame, the total amount of the resource and the per
+ * task request of the parallel job.
+ *
+ * @param a the assignment being built
+ * @param slots Returns maximum slots that can be served within the specified time frame.
+ * @param rue_list Resource utilization (RUE_Type)
+ * @param request Job request (CE_Type)
+ * @param load_attr Load information for the resource
+ * @param total_list Total resource amount (CE_Type)
+ * @param queue Queue instance (QU_Type) for queue-based resources
+ * @param layer DOMINANT_LAYER_{GLOBAL|HOST|QUEUE}
+ * @param lc_factor load correction factor
+ * @param reason diagnosis information if no resource is available
+ * @param allow_non_requestable allow non requestable attributes
+ * @param no_centry set when the attribute is not configured at all, which is
+ *                  not the same as it being exhausted
+ * @param object_name name of the object, used for monitoring purposes
+ *
+ * @return #DISPATCH_OK when slots could be determined, #DISPATCH_NOT_AT_TIME
+ *         when none are available in the time frame, or
+ *         #DISPATCH_MISSING_ATTR when the attribute does not exist
+ *
+ * @note MT-NOTE: ri_slots_by_time() is not MT safe
+ */
 static dispatch_t
 ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, lListElem *request,
                  const lList *load_attr, const lList *total_list, const lList *additional_usage, lListElem *host, lListElem *queue,
@@ -6408,17 +6217,39 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
 }
 
 
-/* Determine maximum number of host_slots as limited
-   by job request to this host
-
-   for each resource at this host requested by the job {
-      avail(R) = (total - used) / request
-   }
-   host_slot_max_by_R = std::min(all avail(R))
-
-   host_slot = std::min(host_slot_max_by_T, host_slot_max_by_R)
-
-*/
+/**
+ * @brief How many slots one object can offer, over all requested resources
+ *
+ * For every resource the job requests at this object the available slot count
+ * is `(total - used) / request`, and the object can offer the minimum over
+ * all of them:
+ *
+ *     host_slot_max_by_R = min over all requested R of avail(R)
+ *     host_slot          = min(host_slot_max_by_T, host_slot_max_by_R)
+ *
+ * @param[in,out] a                 the assignment
+ * @param[in,out] slots             in: the slots wanted, out: the slots
+ *                                  actually available
+ * @param[in]     total_list        the configured capacities (`CE_Type`)
+ * @param[in]     rue_list          the current utilization (`RUE_Type`)
+ * @param[in]     load_attr         the load values, nullptr at queue level
+ * @param[in]     force_slots       evaluate the slots attribute even when the
+ *                                  job did not request it
+ * @param[in]     host              the execution host, nullptr at global level
+ * @param[in]     queue             the queue instance, nullptr above it
+ * @param[in]     layer             the layer being matched
+ * @param[in]     lc_factor         load correction factor
+ * @param[in]     tag               which task the match is for, see
+ *                                  #TAG4SCHED_MASTER
+ * @param[in]     need_master       a master task still has to be placed
+ * @param[in]     is_master_host    this host already carries the master task
+ * @param[out]    found_master_host set when the master task can be placed here
+ * @param[in]     allow_non_requestable allow non requestable attributes
+ * @param[in]     object_name       name of the object, for monitoring
+ * @param[in]     isRQ              the match is made for a resource quota
+ *
+ * @return #DISPATCH_OK, #DISPATCH_NOT_AT_TIME or #DISPATCH_NEVER_CAT
+ */
 
 
 // @todo CS-601 we should also clear the SLAVE tags in QU_tagged4schedule - we might need this for detecting disjoint
@@ -6781,38 +6612,21 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
    DRETURN(ret);
 }
 
-/****** sge_select_queue/sge_create_load_list() ********************************
-*  NAME
-*     sge_create_load_list() -- create the controll structure for consumables as
-*                               load thresholds
-*
-*  SYNOPSIS
-*     void sge_create_load_list(const lList *queue_list, const lList
-*     *host_list, const lList *centry_list, lList **load_list)
-*
-*  FUNCTION
-*     scanes all queues for consumables as load thresholds. It builds a
-*     consumable category for each queue which is using consumables as a load
-*     threshold.
-*     If no consumables are used, the *load_list is set to nullptr.
-*
-*  INPUTS
-*     const lList *queue_list  - a list of queue instances
-*     const lList *host_list   - a list of hosts
-*     const lList *centry_list - a list of complex entries
-*     lList **load_list        - a ref to the target load list
-*
-*  NOTES
-*     MT-NOTE: sge_create_load_list() is MT safe
-*
-*  SEE ALSO
-*     sge_create_load_list
-*     load_locate_elem
-*     sge_load_list_alarm
-*     sge_remove_queue_from_load_list
-*     sge_free_load_list
-*
-*******************************************************************************/
+/**
+ * @brief Create the controll structure for consumables as
+ *
+ * scanes all queues for consumables as load thresholds. It builds a
+ * consumable category for each queue which is using consumables as a load
+ * threshold.
+ * If no consumables are used, the *load_list is set to nullptr.
+ *
+ * @param queue_list a list of queue instances
+ * @param host_list a list of hosts
+ * @param centry_list a list of complex entries
+ * @param load_list a ref to the target load list
+ *
+ * @note MT-NOTE: sge_create_load_list() is MT safe
+ */
 void sge_create_load_list(const lList *queue_list, const lList *host_list,
                           const lList *centry_list, lList **load_list) {
    DENTER(TOP_LAYER);
@@ -6918,35 +6732,18 @@ error:
 
 }
 
-/****** sge_select_queue/load_locate_elem() ************************************
-*  NAME
-*     load_locate_elem() -- locates a consumable category in the given load list
-*
-*  SYNOPSIS
-*     static lListElem* load_locate_elem(lList *load_list, lListElem
-*     *global_consumable, lListElem *host_consumable, lListElem
-*     *queue_consumable)
-*
-*  INPUTS
-*     lList *load_list             - the load list to work on
-*     lListElem *global_consumable - a ref to the global consumable
-*     lListElem *host_consumable   - a ref to the host consumable
-*     lListElem *queue_consumable  - a ref to the qeue consumable
-*
-*  RESULT
-*     static lListElem* - nullptr, or the category element from the load list
-*
-*  NOTES
-*     MT-NOTE: load_locate_elem() is MT safe
-*
-*  SEE ALSO
-*     sge_create_load_list
-*     load_locate_elem
-*     sge_load_list_alarm
-*     sge_remove_queue_from_load_list
-*     sge_free_load_list
-*
-*******************************************************************************/
+/**
+ * @brief Locates a consumable category in the given load list
+ *
+ * @param load_list the load list to work on
+ * @param global_consumable a ref to the global consumable
+ * @param host_consumable a ref to the host consumable
+ * @param queue_consumable a ref to the qeue consumable
+ *
+ * @return nullptr, or the category element from the load list
+ *
+ * @note MT-NOTE: load_locate_elem() is MT safe
+ */
 static lListElem *load_locate_elem(lList *load_list, lListElem *global_consumable,
                             lListElem *host_consumable, lListElem *queue_consumable,
                             const char *limit) {
@@ -6965,39 +6762,23 @@ static lListElem *load_locate_elem(lList *load_list, lListElem *global_consumabl
    return load_elem;
 }
 
-/****** sge_select_queue/sge_load_list_alarm() *********************************
-*  NAME
-*     sge_load_list_alarm() -- checks if queues went into an alarm state
-*
-*  SYNOPSIS
-*     bool sge_load_list_alarm(lList *load_list, const lList *host_list, const
-*     lList *centry_list)
-*
-*  FUNCTION
-*     The function uses the cull bitfield to identify modifications in one of
-*     the consumable elements. If the consumption has changed, the load for all
-*     queue referencing the consumable is recomputed. If a queue exceeds it
-*     load threshold, QU_tagged4schedule is set to 1.
-*
-*  INPUTS
-*     lList *load_list         - ???
-*     const lList *host_list   - ???
-*     const lList *centry_list - ???
-*
-*  RESULT
-*     bool - true, if at least one queue was set into alarm state
-*
-*  NOTES
-*     MT-NOTE: sge_load_list_alarm() is MT safe
-*
-*  SEE ALSO
-*     sge_create_load_list
-*     load_locate_elem
-*     sge_load_list_alarm
-*     sge_remove_queue_from_load_list
-*     sge_free_load_list
-*
-*******************************************************************************/
+/**
+ * @brief Checks if queues went into an alarm state
+ *
+ * The function uses the cull bitfield to identify modifications in one of
+ * the consumable elements. If the consumption has changed, the load for all
+ * queue referencing the consumable is recomputed. If a queue exceeds it
+ * load threshold, QU_tagged4schedule is set to 1.
+ *
+ * @param monitor_next_run whether the messages also go into the scheduler run log
+ * @param load_list the cached load values per consumable (`LDR_Type`)
+ * @param host_list the execution hosts
+ * @param centry_list the system wide attribute configuration
+ *
+ * @return true, if at least one queue was set into alarm state
+ *
+ * @note MT-NOTE: sge_load_list_alarm() is MT safe
+ */
 bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *host_list,
                          const lList *centry_list) {
    lListElem *load;
@@ -7041,29 +6822,14 @@ bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *h
    DRETURN(is_alarm);
 }
 
-/****** sge_select_queue/sge_remove_queue_from_load_list() *********************
-*  NAME
-*     sge_remove_queue_from_load_list() -- removes queues from the load list
-*
-*  SYNOPSIS
-*     void sge_remove_queue_from_load_list(lList **load_list, const lList
-*     *queue_list)
-*
-*  INPUTS
-*     lList **load_list       - load list structure
-*     const lList *queue_list - queues to be removed from it.
-*
-*  NOTES
-*     MT-NOTE: sge_remove_queue_from_load_list() is MT safe
-*
-*  SEE ALSO
-*     sge_create_load_list
-*     load_locate_elem
-*     sge_load_list_alarm
-*     sge_remove_queue_from_load_list
-*     sge_free_load_list
-*
-*******************************************************************************/
+/**
+ * @brief Removes queues from the load list
+ *
+ * @param load_list load list structure
+ * @param queue_list queues to be removed from it.
+ *
+ * @note MT-NOTE: sge_remove_queue_from_load_list() is MT safe
+ */
 void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list){
    const lListElem* queue = nullptr;
    lListElem *load = nullptr;
@@ -7112,27 +6878,13 @@ void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list)
 }
 
 
-/****** sge_select_queue/sge_free_load_list() **********************************
-*  NAME
-*     sge_free_load_list() -- frees the load list and sets it to nullptr
-*
-*  SYNOPSIS
-*     void sge_free_load_list(lList **load_list)
-*
-*  INPUTS
-*     lList **load_list - the load list
-*
-*  NOTES
-*     MT-NOTE: sge_free_load_list() is MT safe
-*
-*  SEE ALSO
-*     sge_create_load_list
-*     load_locate_elem
-*     sge_load_list_alarm
-*     sge_remove_queue_from_load_list
-*     sge_free_load_list
-*
-*******************************************************************************/
+/**
+ * @brief Frees the load list and sets it to nullptr
+ *
+ * @param load_list the load list
+ *
+ * @note MT-NOTE: sge_free_load_list() is MT safe
+ */
 void sge_free_load_list(lList **load_list)
 {
    DENTER(TOP_LAYER);
@@ -7142,29 +6894,18 @@ void sge_free_load_list(lList **load_list)
    DRETURN_VOID;
 }
 
-/****** sge_select_queue/match_static_advance_reservation() ********************
-*  NAME
-*     match_static_advance_reservation() -- Do matching that depends not on queue
-*                                           or host
-*
-*  SYNOPSIS
-*     static dispatch_t match_static_advance_reservation(const sge_assignment_t
-*     *a)
-*
-*  FUNCTION
-*     Checks whether a job that requests a advance reservation can be scheduled.
-*     The job can be scheduled if the advance reservation is in state "running".
-*
-*  INPUTS
-*     const sge_assignment_t *a - assignment to match
-*
-*  RESULT
-*     static dispatch_t - DISPATCH_OK on success
-*                         DISPATCH_NEVER_CAT on error
-*
-*  NOTES
-*     MT-NOTE: match_static_advance_reservation() is MT safe
-*******************************************************************************/
+/**
+ * @brief Do matching that depends not on queue
+ *
+ * Checks whether a job that requests a advance reservation can be scheduled.
+ * The job can be scheduled if the advance reservation is in state "running".
+ *
+ * @param a assignment to match
+ *
+ * @return DISPATCH_OK on success DISPATCH_NEVER_CAT on error
+ *
+ * @note MT-NOTE: match_static_advance_reservation() is MT safe
+ */
 static dispatch_t match_static_advance_reservation(const sge_assignment_t *a)
 {
    DENTER(TOP_LAYER);
@@ -7306,38 +7047,22 @@ sge_ar_swap_resource_lists(sge_assignment_t &a) {
    DRETURN_VOID;
 }
 
-/****** sge_resource_quota_schedd/parallel_limit_slots_by_time() ********************
-*  NAME
-*     parallel_limit_slots_by_time() -- Determine number of slots avail. within
-*                                       time frame
-*
-*  SYNOPSIS
-*     static dispatch_t parallel_limit_slots_by_time(const sge_assignment_t *a,
-*     lList *requests, int *slots, lListElem *centry, lListElem
-*     *limit, dstring rue_name)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     const sge_assignment_t *a - job info structure (in)
-*     lList *requests           - Job request list (CE_Type)
-*     int *slots                - out: free slots
-*     lListElem *centry         - Load information for the resource
-*     lListElem *limit          - limitation (RQRL_Type)
-*     dstring rue_name          - rue_name saved in limit sublist RQRL_usage
-*     lListElem *qep            - queue instance (QU_Type)
-*
-*  RESULT
-*     static dispatch_t - DISPATCH_OK        got an assignment
-*                       - DISPATCH_NEVER_CAT no assignment for all jobs af that category
-*
-*  NOTES
-*     MT-NOTE: parallel_limit_slots_by_time() is not MT safe
-*
-*  SEE ALSO
-*     parallel_rc_slots_by_time
-*******************************************************************************/
+/**
+ * @brief Determine number of slots avail. within
+ *
+ * @param a job info structure (in)
+ * @param slots out: free slots
+ * @param centry Load information for the resource
+ * @param limit limitation (`RQRL_Type`)
+ * @param rue_name rue_name saved in the limit sublist `RQRL_usage`
+ * @param qep queue instance (`QU_Type`)
+ * @param need_master a master task still has to be placed
+ * @param is_master_queue this queue instance already carries the master task
+ *
+ * @return DISPATCH_OK        got an assignment - DISPATCH_NEVER_CAT no assignment for all jobs af that category
+ *
+ * @note MT-NOTE: parallel_limit_slots_by_time() is not MT safe
+ */
 dispatch_t
 parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
                              lListElem *limit, dstring *rue_name, lListElem *qep, bool need_master,

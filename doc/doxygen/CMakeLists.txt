@@ -68,6 +68,7 @@ if (DOXYGEN_FOUND)
          source/libs/evm
          source/libs/mir
          source/libs/japi
+         source/libs/sched
    )
 
    if (DXM_FINISHED_MODULES)
