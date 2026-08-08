@@ -32,6 +32,25 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The scheduler configuration: cached access to what `qconf -msconf` sets
+ *
+ * The configuration itself lives in the master list as a single CULL element.
+ * Reading an attribute by name would cost a search on every dispatch decision,
+ * so #config_pos_type caches each attribute's field position, plus the parsed
+ * form of the attributes that would otherwise be re-parsed every time.
+ *
+ * Two kinds of state live here and must not be confused:
+ *
+ * - the configuration, guarded by the `Sched_Conf_Lock` mutex and shared by
+ *   every thread, and
+ * - #sc_state_t, which is **thread local** and holds what one scheduling run
+ *   accumulates - counters, the message stores, and per run overrides such as
+ *   the one #sconf_enable_schedd_job_info sets.
+ *
+ * @see sge_schedd_conf.h
+ */
+
 #include <cstring>
 #include <pthread.h>
 #include <limits>
@@ -105,22 +124,29 @@
 
 
 
-/* default values for scheduler configuration
- * not all defaults are defined here :-)
+/**
+ * @name Compiled in defaults of the scheduler configuration
+ *
+ * Not every attribute has its default here. The pairs whose second member
+ * starts with `_` are the same value twice: once as the text an administrator
+ * sees and once as the number the code computes with. **They have to be kept
+ * in sync by hand.**
+ * @{
  */
-#define DEFAULT_LOAD_ADJUSTMENTS_DECAY_TIME "0:7:30"
-#define _DEFAULT_LOAD_ADJUSTMENTS_DECAY_TIME 7*60+30
-#define DEFAULT_LOAD_FORMULA                "np_load_avg"
-#define SCHEDULE_TIME                       "0:0:15"
-#define _SCHEDULE_TIME                      15
-#define REPRIORITIZE_INTERVAL               "0:0:0"
-#define REPRIORITIZE_INTERVAL_I             0
-#define MAXUJOBS                            0
-#define MAXGJOBS                            0
-#define SCHEDD_JOB_INFO                     "true"
-#define DEFAULT_DURATION                    INFINITY_STR   // the default_duration and default_duration_I have to be
-#define DEFAULT_DURATION_I                  600            // in sync. On is the string version of the other (based on seconds)
-#define DEFAULT_DURATION_OFFSET             60
+#define DEFAULT_LOAD_ADJUSTMENTS_DECAY_TIME "0:7:30"        ///< `load_adjustment_decay_time`, as text
+#define _DEFAULT_LOAD_ADJUSTMENTS_DECAY_TIME 7*60+30        ///< the same, in seconds
+#define DEFAULT_LOAD_FORMULA                "np_load_avg"   ///< `load_formula`: sort hosts by normalised load average
+#define SCHEDULE_TIME                       "0:0:15"        ///< `schedule_interval`, as text
+#define _SCHEDULE_TIME                      15              ///< the same, in seconds
+#define REPRIORITIZE_INTERVAL               "0:0:0"         ///< `reprioritize_interval`, as text; 0 switches it off
+#define REPRIORITIZE_INTERVAL_I             0               ///< the same, in seconds
+#define MAXUJOBS                            0               ///< `maxujobs`: jobs per user; 0 is unlimited
+#define MAXGJOBS                            0               ///< jobs in the cluster; 0 is unlimited
+#define SCHEDD_JOB_INFO                     "true"          ///< `schedd_job_info`: keep a reason message per pending job
+#define DEFAULT_DURATION                    INFINITY_STR    ///< `default_duration`, as text; must stay in sync with #DEFAULT_DURATION_I
+#define DEFAULT_DURATION_I                  600             ///< the same, in seconds
+#define DEFAULT_DURATION_OFFSET             60              ///< seconds added to a job's duration when reserving
+/** @} */
 
 /**
  * multithreading support, thread local
@@ -131,43 +157,38 @@ static pthread_key_t sc_state_key;
 static pthread_once_t sc_once = PTHREAD_ONCE_INIT;
 
 /* a scheduling configuration structure which is stored thread local */
+/**
+ * @brief What one scheduling thread accumulates during a run
+ *
+ * Thread local, so several scheduler threads never share it. `sc_state_init`
+ * resets it at the start of a run.
+ */
 typedef struct {
-   qs_state_t queue_state;
-   bool       global_load_correction;
-   int        schedd_job_info;
-   bool       host_order_changed;
-   int        last_dispatch_type;
-   int        search_alg[SCHEDD_PE_ALG_MAX]; /* stores the weighting for the different algorithms*/
-   int        scheduled_pe_jobs;        /* counts the dispatched pe jobs */
-   int        scheduled_fast_jobs;           /* counts the dispatched sequential jobs */
-   double     decay_constant;            /* used in the share tree */
-   /* temporary data used for scheduling messages */
-   lListElem *sme; /* Job scheduling informations store if not disabled */
-   lListElem *tmp_sme; /* Job scheduling informations store if not disabled */
-   bool mes_schedd_info; /* write scheduling information into logfile */
-   int log_schedd_info; /* write scheduling information into logfile */
+   qs_state_t queue_state;              ///< whether queue state is fully evaluated or only approximated
+   bool       global_load_correction;   ///< apply load correction for jobs that just started
+   int        schedd_job_info;          ///< thread local override of `schedd_job_info`; see #sconf_get_schedd_job_info
+   bool       host_order_changed;       ///< the host sort order has to be recomputed
+   int        last_dispatch_type;       ///< what the previous dispatch was, so the next can reuse work
+   int        search_alg[SCHEDD_PE_ALG_MAX]; ///< stores the weighting for the different algorithms
+   int        scheduled_pe_jobs;        ///< counts the dispatched pe jobs
+   int        scheduled_fast_jobs;      ///< counts the dispatched sequential jobs
+   double     decay_constant;           ///< used in the share tree
+   lListElem *sme;                      ///< Job scheduling informations store if not disabled
+   lListElem *tmp_sme;                  ///< the same, for the run in progress
+   bool mes_schedd_info;                ///< write scheduling information into logfile
+   int log_schedd_info;                 ///< write scheduling information into logfile
 }  sc_state_t;
 
-/****** sge_schedd_conf/sc_state_init() ****************************************
-*  NAME
-*     sc_state_init() -- resets the thread local structure
-*
-*  SYNOPSIS
-*     static void sc_state_init(sc_state_t* state)
-*
-*  FUNCTION
-*     resets the thread local structure, which collects information during
-*     a scheduling run.
-*
-*  INPUTS
-*     sc_state_t* state - the thread local structure
-*
-*  NOTES
-*     MT-NOTE: sc_state_init() is MT safe
-*
-*  SEE ALSO
-*     sc_state_destroy
-*******************************************************************************/
+/**
+ * @brief Resets the thread local structure
+ *
+ * resets the thread local structure, which collects information during
+ * a scheduling run.
+ *
+ * @param state the thread local structure
+ *
+ * @note MT-NOTE: sc_state_init() is MT safe
+ */
 static void sc_state_init(sc_state_t* state)
 {
    state->queue_state = QS_STATE_FULL;
@@ -205,8 +226,10 @@ static void sc_mt_init()
    pthread_once(&sc_once, sc_thread_local_once_init);
 }
 
+/// Runs the one time initialiser from its constructor, so the pthread key exists before main()
 class ScThreadInit {
 public:
+   /// Triggers the one time initialiser
    ScThreadInit() {
       sc_mt_init();
    }
@@ -219,19 +242,13 @@ static ScThreadInit sc_obj{};
 /* end */
 /*-----*/
 
-/*
- * addes a parameter to the config_pos.params list and evaluates the settings
+/**
+ * @brief Parses one entry of the scheduler `params` attribute
  *
- * Parameters:
- * - lList *param_list : target list
- * - lList ** answer_list : error messages
- * - const char* param :  the character version of the parameter
+ * Adds the parsed setting to `param_list` and validates it. Returns true when
+ * the entry was understood, false with a message in `answer_list` otherwise.
  *
- * Return:
- * - bool : true, when everything was fine, otherwise false
- *
- * See:
- * - sconf_eval_set_profiling
+ * @see `sconf_eval_set_profiling`
  */
 typedef bool (*setParam_func)(lList *param_list, lList **answer_list, const char* param);
 
@@ -239,66 +256,73 @@ typedef bool (*setParam_func)(lList *param_list, lList **answer_list, const char
  * specifies an array of valid parameters and its validation functions
  */
 typedef struct {
-      const char* name;
-      setParam_func setParam;
+      const char* name;       ///< the key as it is written in `params`, e.g. `PROFILE`
+      setParam_func setParam; ///< the function that parses and validates its value
 }parameters_t;
 
 /**
- * stores the positions of all structure elemens and some
- * precalculated settings.
+ * @brief Cached CULL field positions and precomputed settings
+ *
+ * Looking a field up by name costs a search, and the scheduler reads these on
+ * every dispatch decision. The `int` members hold the position of each
+ * attribute in the scheduler configuration element; the `c_*` members hold
+ * values that would otherwise be parsed again on every read.
+ *
+ * @note Add a default here whenever a member is added, or `calc_pos` leaves it
+ *       uninitialised.
  */
 typedef struct{
-   pthread_mutex_t  mutex;
-   bool empty;          /* marks this structure as empty or set */
+   pthread_mutex_t  mutex;                           ///< guards every member below; the accessors take it, never the caller
+   bool empty;                                       ///< marks this structure as empty or set
 
-   int algorithm;       /* pos settings */
-   int schedule_interval;
-   int maxujobs;
-   int queue_sort_method;
-   int job_load_adjustments;
-   int load_adjustment_decay_time;
-   int load_formula;
-   int schedd_job_info;
-   int flush_submit_sec;
-   int flush_finish_sec;
-   int params;
+   int algorithm;                                    ///< position of the `algorithm` attribute in the scheduler configuration element
+   int schedule_interval;                            ///< position of the `schedule_interval` attribute in the scheduler configuration element
+   int maxujobs;                                     ///< position of the `maxujobs` attribute in the scheduler configuration element
+   int queue_sort_method;                            ///< position of the `queue_sort_method` attribute in the scheduler configuration element
+   int job_load_adjustments;                         ///< position of the `job_load_adjustments` attribute in the scheduler configuration element
+   int load_adjustment_decay_time;                   ///< position of the `load_adjustment_decay_time` attribute in the scheduler configuration element
+   int load_formula;                                 ///< position of the `load_formula` attribute in the scheduler configuration element
+   int schedd_job_info;                              ///< position of the `schedd_job_info` attribute in the scheduler configuration element
+   int flush_submit_sec;                             ///< position of the `flush_submit_sec` attribute in the scheduler configuration element
+   int flush_finish_sec;                             ///< position of the `flush_finish_sec` attribute in the scheduler configuration element
+   int params;                                       ///< position of the `params` attribute in the scheduler configuration element
 
-   int reprioritize_interval;
-   int halftime;
-   int usage_weight_list;
-   int compensation_factor;
-   int weight_user;
-   int weight_project;
-   int weight_department;
-   int weight_job;
-   int weight_tickets_functional;
-   int weight_tickets_share;
+   int reprioritize_interval;                        ///< position of the `reprioritize_interval` attribute in the scheduler configuration element
+   int halftime;                                     ///< position of the `halftime` attribute in the scheduler configuration element
+   int usage_weight_list;                            ///< position of the `usage_weight_list` attribute in the scheduler configuration element
+   int compensation_factor;                          ///< position of the `compensation_factor` attribute in the scheduler configuration element
+   int weight_user;                                  ///< position of the `weight_user` attribute in the scheduler configuration element
+   int weight_project;                               ///< position of the `weight_project` attribute in the scheduler configuration element
+   int weight_department;                            ///< position of the `weight_department` attribute in the scheduler configuration element
+   int weight_job;                                   ///< position of the `weight_job` attribute in the scheduler configuration element
+   int weight_tickets_functional;                    ///< position of the `weight_tickets_functional` attribute in the scheduler configuration element
+   int weight_tickets_share;                         ///< position of the `weight_tickets_share` attribute in the scheduler configuration element
 
-   int weight_tickets_override;
-   int share_override_tickets;
-   int share_functional_shares;
-   int max_functional_jobs_to_schedule;
-   int report_pjob_tickets;
-   int max_pending_tasks_per_job;
-   int halflife_decay_list;
-   int policy_hierarchy;
+   int weight_tickets_override;                      ///< position of the `weight_tickets_override` attribute in the scheduler configuration element
+   int share_override_tickets;                       ///< position of the `share_override_tickets` attribute in the scheduler configuration element
+   int share_functional_shares;                      ///< position of the `share_functional_shares` attribute in the scheduler configuration element
+   int max_functional_jobs_to_schedule;              ///< position of the `max_functional_jobs_to_schedule` attribute in the scheduler configuration element
+   int report_pjob_tickets;                          ///< position of the `report_pjob_tickets` attribute in the scheduler configuration element
+   int max_pending_tasks_per_job;                    ///< position of the `max_pending_tasks_per_job` attribute in the scheduler configuration element
+   int halflife_decay_list;                          ///< position of the `halflife_decay_list` attribute in the scheduler configuration element
+   int policy_hierarchy;                             ///< position of the `policy_hierarchy` attribute in the scheduler configuration element
 
-   int weight_ticket;
-   int weight_waiting_time;
-   int weight_deadline;
-   int weight_urgency;
-   int max_reservation;
-   int weight_priority;
-   int default_duration;
+   int weight_ticket;                                ///< position of the `weight_ticket` attribute in the scheduler configuration element
+   int weight_waiting_time;                          ///< position of the `weight_waiting_time` attribute in the scheduler configuration element
+   int weight_deadline;                              ///< position of the `weight_deadline` attribute in the scheduler configuration element
+   int weight_urgency;                               ///< position of the `weight_urgency` attribute in the scheduler configuration element
+   int max_reservation;                              ///< position of the `max_reservation` attribute in the scheduler configuration element
+   int weight_priority;                              ///< position of the `weight_priority` attribute in the scheduler configuration element
+   int default_duration;                             ///< position of the `default_duration` attribute in the scheduler configuration element
 
-   int c_is_schedd_job_info;       /* cached configuration */
-   uint32_t s_duration_offset;
-   lList *c_schedd_job_info_range;
-   lList *c_halflife_decay_list;
-   lList *c_params;
-   uint32_t c_default_duration;
+   int c_is_schedd_job_info;                         ///< cached `schedd_job_info` mode, so the common case needs no parsing
+   uint32_t s_duration_offset;                       ///< cached `DURATION_OFFSET` from `params`, in seconds
+   lList *c_schedd_job_info_range;                   ///< cached parsed range of `schedd_job_info`
+   lList *c_halflife_decay_list;                     ///< cached parsed `halflife_decay_list`
+   lList *c_params;                                  ///< cached parsed `params`
+   uint32_t c_default_duration;                      ///< cached `default_duration`, in seconds
 
-   bool new_config;     /* identifies an update in the configuration */
+   bool new_config;                                  ///< identifies an update in the configuration
 }config_pos_type;
 
 static bool schedd_profiling = false;
@@ -357,6 +381,7 @@ static config_pos_type pos = {PTHREAD_MUTEX_INITIALIZER, true,
  * changed, but it should be turned off. This means we have to turn everything off,
  * before we work on the params
  */
+/// The keys the scheduler `params` attribute accepts, and what parses each
 const parameters_t params[] = {
    {"PROFILE",         sconf_eval_set_profiling},
    {"MONITOR",         sconf_eval_set_monitoring},
@@ -366,27 +391,24 @@ const parameters_t params[] = {
    {nullptr,           nullptr}
 };
 
+/// The letters a `policy_hierarchy` value is spelled with: override, functional, share tree
 const char *const policy_hierarchy_chars = "OFS";
 
 /* SG: TODO: should be const */
+/// The two attributes a `job_load_adjustments` entry is parsed into
 int load_adjustment_fields[] = { CE_name, CE_stringval, 0 };
 /* SG: TODO: should be const */
+/// The two attributes a `usage_weight_list` entry is parsed into
 int usage_fields[] = { UA_name, UA_value, 0 };
+/// Delimiters of the `name=value,name=value` lists parsed here
 const char *delis[] = {"=", ",", ""};
 
-/****** sge_schedd_conf/clear_pos() ********************************************
-*  NAME
-*     clear_pos() -- resets the position information
-*
-*  SYNOPSIS
-*     static void clear_pos()
-*
-*  FUNCTION
-*     is needed, when a new configuration is set
-*
-* MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
-*
-*******************************************************************************/
+/**
+ * @brief Resets the position information
+ *
+ * is needed, when a new configuration is set
+ * MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
+ */
 static void sconf_clear_pos(){
 
 /* set config empty */
@@ -440,18 +462,9 @@ static void sconf_clear_pos(){
 
 }
 
-/****** sge_schedd_conf/calc_pos() ********************************************
-*  NAME
-*     calc_pos() --
-*
-*  SYNOPSIS
-*     static void calc_pos()
-*
-*  FUNCTION
-*
-* MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
-*
-*******************************************************************************/
+/**
+ * @brief MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
+ */
 static bool calc_pos()
 {
    bool ret = true;
@@ -515,35 +528,23 @@ static bool calc_pos()
    DRETURN(ret);
 }
 
-/****** sge_schedd_conf/schedd_conf_set_config() *******************************
-*  NAME
-*     schedd_conf_set_config() -- overwrites the existing configuration
-*
-*  SYNOPSIS
-*     bool schedd_conf_set_config(lList **config, lList **answer_list)
-*
-*  FUNCTION
-*    - validates the new configuration
-*    - precalculates some values and caches them
-*    - stores the position of each attribute in the structure
-*    - and sets the new configuration, if the validation worked
-*
-*    If the new configuration is a nullptr pointer, the current configuration
-*    if deleted.
-*
-*  INPUTS
-*     lList **config      - new configuration (SC_Type)
-*     lList **answer_list - error messages
-*
-*  RESULT
-*     bool - true, if it worked
-*
-*  MT-NOTE: is MT-safe, uses LOCK_SCHED_CONF(write)
-*
-*
-*  SG TODO: use a internal eval config function and not the external one.
-*
-*******************************************************************************/
+/**
+ * @brief Overwrites the existing configuration
+ *
+ * - validates the new configuration
+ * - precalculates some values and caches them
+ * - stores the position of each attribute in the structure
+ * - and sets the new configuration, if the validation worked
+ * If the new configuration is a nullptr pointer, the current configuration
+ * if deleted.
+ *
+ * @param config new configuration (SC_Type)
+ * @param answer_list error messages
+ *
+ * @return true, if it worked SG TODO: use a internal eval config function and not the external one.
+ *
+ * @note MT-NOTE: is MT-safe, uses LOCK_SCHED_CONF(write)
+ */
 bool sconf_set_config(lList **config, lList **answer_list)
 {
    lList *store = nullptr;
@@ -597,24 +598,16 @@ bool sconf_set_config(lList **config, lList **answer_list)
    DRETURN(ret);
 }
 
-/****** sge_schedd_conf/sconf_is_valid_load_formula() *******************
-*  NAME
-*     sconf_is_valid_load_formula() -- ???
-*
-*  SYNOPSIS
-*     bool sconf_is_valid_load_formula_(lList **answer_list, lList
-*     *centry_list)
-*
-*  INPUTS
-*     lList **answer_list - ???
-*     lList *centry_list  - ???
-*
-*  RESULT
-*     bool -
-*
-*  MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief Does the configured `load_formula` name only existing complex entries?
+ *
+ * @param[out] answer_list receives the reason the formula was rejected
+ * @param centry_list the complex entries the formula may refer to
+ *
+ * @return true when the formula is usable
+ *
+ * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
+ */
 bool sconf_is_valid_load_formula(lList **answer_list, const lList *centry_list)
 {
    DENTER(TOP_LAYER);
@@ -630,24 +623,17 @@ bool sconf_is_valid_load_formula(lList **answer_list, const lList *centry_list)
    DRETURN(is_valid);
 }
 
-/****** sge_schedd_conf/sconf_create_default() ***************************
-*  NAME
-*     sconf_create_default() -- returns a default configuration
-*
-*  SYNOPSIS
-*     lListElem* sconf_create_default()
-*
-*  FUNCTION
-*     Creates a default configuration, but does not change the current
-*     active configuration. A set config has to be used to make the
-*     current configuration the active one.
-*
-*  RESULT
-*     lListElem* - default configuration (SC_Type)
-*
-* MT-NOTE: is MT-safe, does not use global variables
-*
-*******************************************************************************/
+/**
+ * @brief Returns a default configuration
+ *
+ * Creates a default configuration, but does not change the current
+ * active configuration. A set config has to be used to make the
+ * current configuration the active one.
+ *
+ * @return default configuration (SC_Type)
+ *
+ * @note MT-NOTE: is MT-safe, does not use global variables
+ */
 lListElem *sconf_create_default()
 {
    lListElem *ep, *added;
@@ -710,26 +696,18 @@ lListElem *sconf_create_default()
    DRETURN(ep);
 }
 
-/****** sge_schedd_conf/sconf_is_centry_referenced() ***************************
-*  NAME
-*     sconf_is_centry_referenced() -- ???
-*
-*  SYNOPSIS
-*     bool sconf_is_centry_referenced(const lListElem *this_elem, const
-*     lListElem *centry)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     const lListElem *centry    - ???
-*
-*  RESULT
-*     bool -
-*
-*  MT-NOTE:   is MT save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief Does the scheduler configuration refer to a complex entry?
+ *
+ * Checks both `job_load_adjustments` and `load_formula`. Callers use it to
+ * refuse deleting a complex entry that the scheduler still needs.
+ *
+ * @param centry the complex entry to look for
+ *
+ * @return true when either attribute refers to it
+ *
+ * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
+ */
 bool sconf_is_centry_referenced(const lListElem *centry)
 {
    bool ret = false;
@@ -757,24 +735,15 @@ bool sconf_is_centry_referenced(const lListElem *centry)
    return ret;
 }
 
-/****** sge_schedd_conf/get_load_adjustment_decay_time_str() *************
-*  NAME
-*     get_load_adjustment_decay_time_str() -- ???
-*
-*  SYNOPSIS
-*     const char * get_load_adjustment_decay_time_str()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*
-*  RESULT
-*     const char * -
-*
-*  MT-NOTE:  is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `load_adjustment_decay_time` attribute of the scheduler configuration
+ *
+ * That is how long a load adjustment keeps decaying.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE:  is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
+ */
 static const char * get_load_adjustment_decay_time_str()
 {
    const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
@@ -787,24 +756,15 @@ static const char * get_load_adjustment_decay_time_str()
    }
 }
 
-/****** sge_schedd_conf/sconf_get_load_adjustment_decay_time() *****************
-*  NAME
-*     sconf_get_load_adjustment_decay_time() -- ???
-*
-*  SYNOPSIS
-*     uint32_t sconf_get_load_adjustment_decay_time()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*
-*  RESULT
-*     uint32_t -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `load_adjustment_decay_time` attribute of the scheduler configuration
+ *
+ * That is how long a load adjustment keeps decaying.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 uint32_t sconf_get_load_adjustment_decay_time()
 {
    uint32_t uval;
@@ -822,25 +782,15 @@ uint32_t sconf_get_load_adjustment_decay_time()
    return uval;
 }
 
-/****** sge_schedd_conf/sconf_get_job_load_adjustments() ***********************
-*  NAME
-*     sconf_get_job_load_adjustments() -- ???
-*
-*  SYNOPSIS
-*     const lList* sconf_get_job_load_adjustments()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     const lList* - returns a copy, needs to be freed
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `job_load_adjustments` attribute of the scheduler configuration
+ *
+ * That is load values a newly dispatched job is assumed to add.
+ *
+ * @return returns a copy, needs to be freed
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 lList *sconf_get_job_load_adjustments() {
    lList *load_adjustments = nullptr;
 
@@ -852,25 +802,15 @@ lList *sconf_get_job_load_adjustments() {
    return load_adjustments;
 }
 
-/****** sge_schedd_conf/get_job_load_adjustments() ***********************
-*  NAME
-*     get_job_load_adjustments() -- ???
-*
-*  SYNOPSIS
-*     const lList* get_job_load_adjustments()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     const lList* -
-*
-*  MT-NOTE:  is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `load_formula` attribute of the scheduler configuration
+ *
+ * That is expression the hosts are sorted by.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE:  is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
+ */
 static const lList *get_job_load_adjustments()
 {
    const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
@@ -883,25 +823,15 @@ static const lList *get_job_load_adjustments()
 }
 
 
-/****** sge_schedd_conf/sconf_get_load_formula() *******************************
-*  NAME
-*     sconf_get_load_formula() -- ???
-*
-*  SYNOPSIS
-*     const char* sconf_get_load_formula()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     const char* - this is a copy of the load formula, the caller has to free it
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `load_formula` attribute of the scheduler configuration
+ *
+ * That is the expression the hosts are sorted by.
+ *
+ * @return this is a copy of the load formula, the caller has to free it
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 char* sconf_get_load_formula() {
    char *formula = nullptr;
 
@@ -913,25 +843,15 @@ char* sconf_get_load_formula() {
    return formula;
 }
 
-/****** sge_schedd_conf/get_load_formula() *******************************
-*  NAME
-*     get_load_formula() -- ???
-*
-*  SYNOPSIS
-*     const char* get_load_formula()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     const char* -
-*
-*     MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `queue_sort_method` attribute of the scheduler configuration
+ *
+ * That is in which order queues are tried when a job is dispatched.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
+ */
 static const char* get_load_formula()
 {
    const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
@@ -944,25 +864,15 @@ static const char* get_load_formula()
    }
 }
 
-/****** sge_schedd_conf/sconf_get_queue_sort_method() **************************
-*  NAME
-*     sconf_get_queue_sort_method() -- ???
-*
-*  SYNOPSIS
-*     uint32_t sconf_get_queue_sort_method()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     uint32_t -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `queue_sort_method` attribute of the scheduler configuration
+ *
+ * That is in which order queues are tried when a job is dispatched.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 uint32_t sconf_get_queue_sort_method()
 {
    const lListElem *sc_ep =  nullptr;
@@ -979,25 +889,15 @@ uint32_t sconf_get_queue_sort_method()
    return sort_method;
 }
 
-/****** sge_schedd_conf/sconf_get_maxujobs() ***********************************
-*  NAME
-*     sconf_get_maxujobs() -- ???
-*
-*  SYNOPSIS
-*     uint32_t sconf_get_maxujobs()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     uint32_t -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `maxujobs` attribute of the scheduler configuration
+ *
+ * That is how many jobs one user may have running at a time; 0 is unlimited.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 uint32_t sconf_get_maxujobs()
 {
    uint32_t jobs = MAXUJOBS;
@@ -1013,25 +913,15 @@ uint32_t sconf_get_maxujobs()
    return jobs;
 }
 
-/****** sge_schedd_conf/get_schedule_interval_str() **********************
-*  NAME
-*     get_schedule_interval_str() -- ???
-*
-*  SYNOPSIS
-*     const char* get_schedule_interval_str()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     const char* -
-*
-*  MT-NOTE: is not MT-safe, the caller needs to hold the LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `schedule_interval` attribute of the scheduler configuration
+ *
+ * That is how often the scheduler runs.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is not MT-safe, the caller needs to hold the LOCK_SCHED_CONF(read)
+ */
 static const char *get_schedule_interval_str()
 {
    if (pos.schedule_interval != -1) {
@@ -1047,25 +937,15 @@ static const char *get_schedule_interval_str()
    }
 }
 
-/****** sge_schedd_conf/sconf_get_schedule_interval() **************************
-*  NAME
-*     sconf_get_schedule_interval() -- ???
-*
-*  SYNOPSIS
-*     uint32_t sconf_get_schedule_interval()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     uint32_t -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `schedule_interval` attribute of the scheduler configuration
+ *
+ * That is how often the scheduler runs.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 uint32_t sconf_get_schedule_interval() {
    uint32_t uval = _SCHEDULE_TIME;
    const char *time = nullptr;
@@ -1082,25 +962,15 @@ uint32_t sconf_get_schedule_interval() {
 }
 
 
-/****** sge_schedd_conf/reprioritize_interval_str() ********************
-*  NAME
-*     reprioritize_interval_str() -- ???
-*
-*  SYNOPSIS
-*     const char* reprioritize_interval_str()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     const char* -
-*
-*  MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `reprioritize_interval` attribute of the scheduler configuration
+ *
+ * That is how often running jobs are repriorized.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
+ */
 static const char *reprioritize_interval_str()
 {
    if (pos.reprioritize_interval!= -1) {
@@ -1112,25 +982,15 @@ static const char *reprioritize_interval_str()
    }
 }
 
-/****** sge_schedd_conf/sconf_get_reprioritize_interval() ********************
-*  NAME
-*     sconf_get_reprioritize_interval() -- ???
-*
-*  SYNOPSIS
-*     uint32_t sconf_get_reprioritize_interval()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     uint32_t -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `reprioritize_interval` attribute of the scheduler configuration
+ *
+ * That is how often running jobs are repriorized.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 uint32_t sconf_get_reprioritize_interval() {
    uint32_t uval = REPRIORITIZE_INTERVAL_I;
    const char *time = nullptr;
@@ -1147,75 +1007,41 @@ uint32_t sconf_get_reprioritize_interval() {
    return uval;
 }
 
-/****** sge_schedd_conf/sconf_enable_schedd_job_info() *************************
-*  NAME
-*     sconf_enable_schedd_job_info() -- ???
-*
-*  SYNOPSIS
-*     void sconf_enable_schedd_job_info()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*
-*  RESULT
-*     void -
-*
-*  MT-NOTE: is thread save, uses local storage
-*
-*******************************************************************************/
+/**
+ * @brief Start collecting scheduler reason messages on this thread
+ *
+ * The setting is thread local, so one scheduling run can collect messages
+ * without changing what any other thread does.
+ *
+ * @note MT-NOTE: is thread save, uses thread local storage
+ */
 void sconf_enable_schedd_job_info()
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->schedd_job_info = SCHEDD_JOB_INFO_TRUE;
 }
 
-/****** sge_schedd_conf/sconf_disable_schedd_job_info() ************************
-*  NAME
-*     sconf_disable_schedd_job_info() -- ???
-*
-*  SYNOPSIS
-*     void sconf_disable_schedd_job_info()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*
-*  RESULT
-*     void -
-*
-*  MT-NOTE: is thread save, uses local storage
-*
-*******************************************************************************/
+/**
+ * @brief Stop collecting scheduler reason messages on this thread
+ *
+ * @note MT-NOTE: is thread save, uses thread local storage
+ */
 void sconf_disable_schedd_job_info()
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->schedd_job_info = SCHEDD_JOB_INFO_FALSE;
 }
 
-/****** sge_schedd_conf/sconf_best_pe_alg() ************************************
-*  NAME
-*     sconf_best_pe_alg() -- returns the alg to use for pe-range jobs
-*
-*  SYNOPSIS
-*     schedd_pe_algorithm sconf_best_pe_alg()
-*
-*  FUNCTION
-*     It checks for the alg. to use. If the user did not set a custom one, it
-*     will evaluate the weights and return the most successful one.
-*
-*  RESULT
-*     schedd_pe_algorithm - pe-range alg.
-*
-*  NOTES
-*     MT-NOTE: sconf_best_pe_alg() is MT safe
-*
-*  SEE ALSO
-*     sconf_best_pe_alg
-
-*******************************************************************************/
+/**
+ * @brief Returns the alg to use for pe-range jobs
+ *
+ * It checks for the alg. to use. If the user did not set a custom one, it
+ * will evaluate the weights and return the most successful one.
+ *
+ * @return pe-range alg.
+ *
+ * @note MT-NOTE: sconf_best_pe_alg() is MT safe
+ */
 schedd_pe_algorithm sconf_best_pe_alg()
 {
    schedd_pe_algorithm alg;
@@ -1243,32 +1069,20 @@ schedd_pe_algorithm sconf_best_pe_alg()
    }
 }
 
-/****** sge_schedd_conf/sconf_update_pe_alg() **********************************
-*  NAME
-*     sconf_update_pe_alg() -- updates the weights for the different algorithms
-*
-*  SYNOPSIS
-*     void sconf_update_pe_alg(int runs, int current, int max)
-*
-*  FUNCTION
-*     updates the weights for the different algorithms. Since the alg. with
-*     the bigest number is taken, the numbers are negative. It uses the running
-*     averages to ensure, that the numbers are not getting to big and that the
-*     scheduler can reakt to changes.
-*
-*
-*  INPUTS
-*     int runs    - number of runs it would have taken with the bin search alg.
-*     int current - number of runs it took
-*     int max     - max runs
-*
-*  NOTES
-*     MT-NOTE: sconf_update_pe_alg() is MT safe
-*
-*  SEE ALSO
-*     sconf_best_pe_alg
-*
-*******************************************************************************/
+/**
+ * @brief Updates the weights for the different algorithms
+ *
+ * updates the weights for the different algorithms. Since the alg. with
+ * the bigest number is taken, the numbers are negative. It uses the running
+ * averages to ensure, that the numbers are not getting to big and that the
+ * scheduler can reakt to changes.
+ *
+ * @param runs number of runs it would have taken with the bin search alg.
+ * @param current number of runs it took
+ * @param max max runs
+ *
+ * @note MT-NOTE: sconf_update_pe_alg() is MT safe
+ */
 void sconf_update_pe_alg(int runs, int current, int max)
 {
    const int HISTORY = 66;
@@ -1294,36 +1108,74 @@ void sconf_update_pe_alg(int runs, int current, int max)
    }
 }
 
+/**
+ * @brief Current weighting of one parallel job search algorithm
+ *
+ * The counter is thread local, so each scheduling thread sees its own.
+ *
+ * @param alg the algorithm to ask about
+ *
+ * @return its weight; the scheduler picks the algorithm with the highest one
+ */
 int sconf_get_pe_alg_value(schedd_pe_algorithm alg)
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->search_alg[alg];
 }
 
+/**
+ * @brief Count one dispatched sequential job
+ *
+ * The counter is thread local, so each scheduling thread sees its own.
+ */
 void sconf_inc_fast_jobs()
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->scheduled_fast_jobs++;
 }
 
+/**
+ * @brief Sequential jobs dispatched in this scheduling run
+ *
+ * The counter is thread local, so each scheduling thread sees its own.
+ *
+ * @return the count since the last #sconf_reset_jobs
+ */
 int sconf_get_fast_jobs()
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->scheduled_fast_jobs;
 }
 
+/**
+ * @brief Count one dispatched parallel job
+ *
+ * The counter is thread local, so each scheduling thread sees its own.
+ */
 void sconf_inc_pe_jobs()
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->scheduled_pe_jobs++;
 }
 
+/**
+ * @brief Parallel jobs dispatched in this scheduling run
+ *
+ * The counter is thread local, so each scheduling thread sees its own.
+ *
+ * @return the count since the last #sconf_reset_jobs
+ */
 int sconf_get_pe_jobs()
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->scheduled_pe_jobs;
 }
 
+/**
+ * @brief Start counting dispatched jobs from zero again
+ *
+ * The counter is thread local, so each scheduling thread sees its own.
+ */
 void sconf_reset_jobs()
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
@@ -1331,25 +1183,18 @@ void sconf_reset_jobs()
    sc_state->scheduled_pe_jobs = 0;
 }
 
-/****** sge_schedd_conf/sconf_get_schedd_job_info() ****************************
-*  NAME
-*     sconf_get_schedd_job_info() -- ???
-*
-*  SYNOPSIS
-*     uint32_t sconf_get_schedd_job_info()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     uint32_t -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read) and local storage
-*
-*******************************************************************************/
+/**
+ * @brief Whether scheduler reason messages are collected, and for which jobs
+ *
+ * The configured `schedd_job_info` wins. Only when it is
+ * `SCHEDD_JOB_INFO_FALSE` does the thread local setting - what
+ * #sconf_enable_schedd_job_info changed - take effect, so a single scheduling
+ * run can collect messages even though the cluster has them switched off.
+ *
+ * @return one of the `SCHEDD_JOB_INFO_*` values
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read) and local storage
+ */
 uint32_t sconf_get_schedd_job_info() {
    uint32_t info = 0;
 
@@ -1367,25 +1212,15 @@ uint32_t sconf_get_schedd_job_info() {
    return info;
 }
 
-/****** sge_schedd_conf/sconf_get_schedd_job_info_range() **********************
-*  NAME
-*     sconf_get_schedd_job_info_range() -- ???
-*
-*  SYNOPSIS
-*     const lList* sconf_get_schedd_job_info_range()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     const lList* -  returns a copy, needs to be freed
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `schedd_job_info` attribute of the scheduler configuration
+ *
+ * That is jobs the scheduler keeps a reason message for.
+ *
+ * @return returns a copy, needs to be freed
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 lList *sconf_get_schedd_job_info_range() {
    lList *range_copy = nullptr;
 
@@ -1397,25 +1232,15 @@ lList *sconf_get_schedd_job_info_range() {
    return range_copy;
 }
 
-/****** sge_schedd_conf/sconf_is_id_in_schedd_job_info_range() **********************
-*  NAME
-*     sconf_is_id_in_schedd_job_info_range() -- ???
-*
-*  SYNOPSIS
-*     const lList* sconf_is_id_in_schedd_job_info_range()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     bool -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief Does `schedd_job_info` ask for reason messages for this job?
+ *
+ * @param job_number the job to ask about
+ *
+ * @return true when the configured range contains it
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 bool sconf_is_id_in_schedd_job_info_range(uint32_t job_number)
 {
    bool is_in_range = false;
@@ -1428,25 +1253,15 @@ bool sconf_is_id_in_schedd_job_info_range(uint32_t job_number)
    return is_in_range;
 }
 
-/****** sge_schedd_conf/get_algorithm() **********************************
-*  NAME
-*     get_algorithm() -- ???
-*
-*  SYNOPSIS
-*     const char* get_algorithm()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     const char* -
-*
-*  MT-NOTE: is not MT-safe, the caller needs the LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `usage_weight_list` attribute of the scheduler configuration
+ *
+ * That is weight of each usage attribute in the share tree policy.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is not MT-safe, the caller needs the LOCK_SCHED_CONF(read)
+ */
 static const char * get_algorithm()
 {
    if (pos.algorithm!= -1) {
@@ -1459,25 +1274,15 @@ static const char * get_algorithm()
 }
 
 
-/****** sge_schedd_conf/sconf_get_usage_weight_list() **************************
-*  NAME
-*     sconf_get_usage_weight_list() -- ???
-*
-*  SYNOPSIS
-*     const lList* sconf_get_usage_weight_list()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     lList* - returns a copy, needs to be freed
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `usage_weight_list` attribute of the scheduler configuration
+ *
+ * That is the weight of each usage attribute in the share tree policy.
+ *
+ * @return returns a copy, needs to be freed
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 lList *sconf_get_usage_weight_list()
 {
    lList *weight_list = nullptr;
@@ -1491,25 +1296,15 @@ lList *sconf_get_usage_weight_list()
 }
 
 
-/****** sge_schedd_conf/get_usage_weight_list() **************************
-*  NAME
-*     get_usage_weight_list() -- ???
-*
-*  SYNOPSIS
-*     const lList* get_usage_weight_list()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     const lList* -
-*
-*  MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `weight_user` attribute of the scheduler configuration
+ *
+ * That is weight of the user share in the functional policy.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
+ */
 static const lList *get_usage_weight_list()
 {
    const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
@@ -1524,25 +1319,15 @@ static const lList *get_usage_weight_list()
 
 
 
-/****** sge_schedd_conf/sconf_get_weight_user() ********************************
-*  NAME
-*     sconf_get_weight_user() -- ???
-*
-*  SYNOPSIS
-*     double sconf_get_weight_user()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     double -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `weight_user` attribute of the scheduler configuration
+ *
+ * That is the weight of the user share in the functional policy.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 double sconf_get_weight_user()
 {
    double weight = 0;
@@ -1558,25 +1343,15 @@ double sconf_get_weight_user()
    return weight;
 }
 
-/****** sge_schedd_conf/sconf_get_weight_department() **************************
-*  NAME
-*     sconf_get_weight_department() -- ???
-*
-*  SYNOPSIS
-*     double sconf_get_weight_department()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     double -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `weight_department` attribute of the scheduler configuration
+ *
+ * That is weight of the department share in the functional policy.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 double sconf_get_weight_department()
 {
    double weight = 0;
@@ -1592,25 +1367,15 @@ double sconf_get_weight_department()
    return weight;
 }
 
-/****** sge_schedd_conf/sconf_get_weight_project() *****************************
-*  NAME
-*     sconf_get_weight_project() -- ???
-*
-*  SYNOPSIS
-*     double sconf_get_weight_project()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     double -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `weight_project` attribute of the scheduler configuration
+ *
+ * That is weight of the project share in the functional policy.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 double sconf_get_weight_project()
 {
    double weight = 0;
@@ -1626,25 +1391,15 @@ double sconf_get_weight_project()
    return weight;
 }
 
-/****** sge_schedd_conf/sconf_get_weight_job() *********************************
-*  NAME
-*     sconf_get_weight_job() -- ???
-*
-*  SYNOPSIS
-*     double sconf_get_weight_job()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     double -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `weight_job` attribute of the scheduler configuration
+ *
+ * That is weight of the job share in the functional policy.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 double sconf_get_weight_job()
 {
    double weight = 0;
@@ -1660,25 +1415,15 @@ double sconf_get_weight_job()
    return weight;
 }
 
-/****** sge_schedd_conf/sconf_get_weight_tickets_share() ***********************
-*  NAME
-*     sconf_get_weight_tickets_share() -- ???
-*
-*  SYNOPSIS
-*     uint32_t sconf_get_weight_tickets_share()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     uint32_t -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `weight_tickets_share` attribute of the scheduler configuration
+ *
+ * That is total number of share tree tickets.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 uint32_t sconf_get_weight_tickets_share()
 {
    double weight = 0;
@@ -1694,25 +1439,15 @@ uint32_t sconf_get_weight_tickets_share()
    return weight;
 }
 
-/****** sge_schedd_conf/sconf_get_weight_tickets_functional() ******************
-*  NAME
-*     sconf_get_weight_tickets_functional() -- ???
-*
-*  SYNOPSIS
-*     uint32_t sconf_get_weight_tickets_functional()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     uint32_t -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `weight_tickets_functional` attribute of the scheduler configuration
+ *
+ * That is total number of functional tickets.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 uint32_t sconf_get_weight_tickets_functional()
 {
    double weight = 0;
@@ -1728,25 +1463,15 @@ uint32_t sconf_get_weight_tickets_functional()
    return weight;
 }
 
-/****** sge_schedd_conf/sconf_get_halftime() ***********************************
-*  NAME
-*     sconf_get_halftime() -- ???
-*
-*  SYNOPSIS
-*     uint32_t sconf_get_halftime()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     uint32_t -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `halftime` attribute of the scheduler configuration
+ *
+ * That is half life of accumulated usage in the share tree policy, in hours.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 uint32_t sconf_get_halftime()
 {
    const lListElem *sc_ep = nullptr;
@@ -1764,25 +1489,15 @@ uint32_t sconf_get_halftime()
 }
 
 
-/****** sge_schedd_conf/sconf_set_weight_tickets_override() ********************
-*  NAME
-*     sconf_set_weight_tickets_override() -- ???
-*
-*  SYNOPSIS
-*     void sconf_set_weight_tickets_override(uint32_t active)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     uint32_t active - ???
-*
-*  RESULT
-*     void -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(write)
-*
-*******************************************************************************/
+/**
+ * @brief Set the `weight_tickets_override` attribute of the scheduler configuration
+ *
+ * That is total number of override tickets.
+ *
+ * @param active
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(write)
+ */
 void sconf_set_weight_tickets_override(uint32_t active)
 {
    lListElem *sc_ep = nullptr;
@@ -1799,22 +1514,15 @@ void sconf_set_weight_tickets_override(uint32_t active)
    return;
 }
 
-/****** sge_schedd_conf/sconf_get_weight_tickets_override() ********************
-*  NAME
-*     sconf_get_weight_tickets_override() -- ???
-*
-*  SYNOPSIS
-*     void sconf_get_weight_tickets_override(uint32_t active)
-*
-*  FUNCTION
-*     ???
-*
-*  RESULT
-*     uint32_t -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `weight_tickets_override` attribute of the scheduler configuration
+ *
+ * That is total number of override tickets.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 uint32_t sconf_get_weight_tickets_override()
 {
    uint32_t tickets = 0;
@@ -1831,25 +1539,15 @@ uint32_t sconf_get_weight_tickets_override()
 
 }
 
-/****** sge_schedd_conf/sconf_get_compensation_factor() ************************
-*  NAME
-*     sconf_get_compensation_factor() -- ???
-*
-*  SYNOPSIS
-*     double sconf_get_compensation_factor()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     double -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `compensation_factor` attribute of the scheduler configuration
+ *
+ * That is how strongly the share tree policy compensates for past under-use.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 double sconf_get_compensation_factor()
 {
    double factor = 1;
@@ -1865,25 +1563,15 @@ double sconf_get_compensation_factor()
    return factor;
 }
 
-/****** sge_schedd_conf/sconf_get_weight_ticket() ****************************
-*  NAME
-*     sconf_get_weight_ticket() -- ???
-*
-*  SYNOPSIS
-*     double sconf_get_weight_ticket()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     double -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `weight_ticket` attribute of the scheduler configuration
+ *
+ * That is weight of the ticket term in the job priority.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 double sconf_get_weight_ticket()
 {
    double  weight = 0;
@@ -1899,6 +1587,21 @@ double sconf_get_weight_ticket()
    return weight;
 }
 
+/**
+ * @brief The three job priority weights, read in one lock
+ *
+ * Reading them separately would take the lock three times and could mix
+ * weights from two configurations.
+ *
+ * @param[out] ticket weight of the ticket term
+ * @param[out] urgency weight of the urgency term
+ * @param[out] priority weight of the POSIX priority term
+ *
+ * @note All three are left untouched when the configuration does not have all
+ *       three attributes.
+ *
+ * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
+ */
 void sconf_get_weight_ticket_urgency_priority(double *ticket, double *urgency, double *priority)
 {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1913,25 +1616,15 @@ void sconf_get_weight_ticket_urgency_priority(double *ticket, double *urgency, d
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 }
 
-/****** sge_schedd_conf/sconf_get_weight_waiting_time() ************************
-*  NAME
-*     sconf_get_weight_waiting_time() -- ???
-*
-*  SYNOPSIS
-*     double sconf_get_weight_waiting_time()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     double -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `weight_waiting_time` attribute of the scheduler configuration
+ *
+ * That is weight of the waiting time term in the job priority.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 double sconf_get_weight_waiting_time()
 {
    double weight = 0;
@@ -1947,25 +1640,15 @@ double sconf_get_weight_waiting_time()
    return weight;
 }
 
-/****** sge_schedd_conf/sconf_get_weight_deadline() ****************************
-*  NAME
-*     sconf_get_weight_deadline() -- ???
-*
-*  SYNOPSIS
-*     double sconf_get_weight_deadline()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     double -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `weight_deadline` attribute of the scheduler configuration
+ *
+ * That is weight of the deadline term in the job priority.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 double sconf_get_weight_deadline()
 {
    double weight = 0;
@@ -1981,25 +1664,15 @@ double sconf_get_weight_deadline()
    return weight;
 }
 
-/****** sge_schedd_conf/sconf_get_weight_urgency() ****************************
-*  NAME
-*     sconf_get_weight_urgency() -- ???
-*
-*  SYNOPSIS
-*     double sconf_get_weight_urgency()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     double -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `weight_urgency` attribute of the scheduler configuration
+ *
+ * That is weight of the urgency term in the job priority.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 double sconf_get_weight_urgency()
 {
    double weight = 0;
@@ -2015,25 +1688,18 @@ double sconf_get_weight_urgency()
    return weight;
 }
 
-/****** sge_schedd_conf/sconf_get_max_reservations() ***************************
-*  NAME
-*     sconf_get_max_reservations() -- Max reservation tuning parameter
-*
-*  SYNOPSIS
-*     int sconf_get_max_reservations()
-*
-*  FUNCTION
-*     Tuning parameter.
-*     Returns maximum number of reservations that should be done by
-*     scheduler. If 0 is returned this no single job shall get a reservation
-*     and assignments are to be made for 'now' only.
-*
-*  RESULT
-*     int - Max. number of reservations
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief Max reservation tuning parameter
+ *
+ * Tuning parameter.
+ * Returns maximum number of reservations that should be done by
+ * scheduler. If 0 is returned this no single job shall get a reservation
+ * and assignments are to be made for 'now' only.
+ *
+ * @return Max. number of reservations
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 uint32_t sconf_get_max_reservations() {
    uint32_t max_res = 0;
 
@@ -2048,22 +1714,15 @@ uint32_t sconf_get_max_reservations() {
    return max_res;
 }
 
-/****** sge_schedd_conf/get_default_duration_str() **********************
-*  NAME
-*     get_default_duration_str() -- Return default_duration string
-*
-*  SYNOPSIS
-*     const char* get_default_duration_str()
-*
-*  FUNCTION
-*     Returns default duration string from scheduler configuration.
-*
-*  RESULT
-*     const char* -
-*
-*  MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief Return default_duration string
+ *
+ * Returns default duration string from scheduler configuration.
+ *
+ * @return the raw attribute text, not the parsed number
+ *
+ * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
+ */
 static const char *get_default_duration_str()
 {
    const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
@@ -2075,25 +1734,15 @@ static const char *get_default_duration_str()
       return DEFAULT_DURATION;
    }
 }
-/****** sge_schedd_conf/sconf_get_weight_priority() ****************************
-*  NAME
-*     sconf_get_weight_priority() -- ???
-*
-*  SYNOPSIS
-*     double sconf_get_weight_priority()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     double -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `weight_priority` attribute of the scheduler configuration
+ *
+ * That is weight of the POSIX priority term in the job priority.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 double sconf_get_weight_priority()
 {
    double weight = 0;
@@ -2110,25 +1759,15 @@ double sconf_get_weight_priority()
 }
 
 
-/****** sge_schedd_conf/sconf_get_share_override_tickets() *********************
-*  NAME
-*     sconf_get_share_override_tickets() -- ???
-*
-*  SYNOPSIS
-*     bool sconf_get_share_override_tickets()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     bool -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `share_override_tickets` attribute of the scheduler configuration
+ *
+ * That is whether override tickets are shared among a job array.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 bool sconf_get_share_override_tickets()
 {
    bool is_share = false;
@@ -2143,22 +1782,13 @@ bool sconf_get_share_override_tickets()
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    return is_share;
 }
-/****** sge_schedd_conf/sconf_get_share_functional_shares() ********************
-*  NAME
-*     sconf_get_share_functional_shares() -- ???
-*
-*  SYNOPSIS
-*     bool sconf_get_share_functional_shares()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     bool -
-*******************************************************************************/
+/**
+ * @brief The `share_functional_shares` attribute of the scheduler configuration
+ *
+ * That is whether functional shares are shared among a job array.
+ *
+ * @return the configured value
+ */
 bool sconf_get_share_functional_shares()
 {
    bool is_share = true;
@@ -2174,25 +1804,15 @@ bool sconf_get_share_functional_shares()
    return is_share;
 }
 
-/****** sge_schedd_conf/sconf_get_report_pjob_tickets() *************************
-*  NAME
-*     sconf_get_report_pjob_tickets() -- ???
-*
-*  SYNOPSIS
-*     bool sconf_get_report_pjob_tickets()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     bool -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `report_pjob_tickets` attribute of the scheduler configuration
+ *
+ * That is whether per job ticket values are reported to the master.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 bool sconf_get_report_pjob_tickets()
 {
    bool is_report = true;
@@ -2208,25 +1828,15 @@ bool sconf_get_report_pjob_tickets()
    return is_report;
 }
 
-/****** sge_schedd_conf/sconf_get_flush_submit_sec() ***************************
-*  NAME
-*     sconf_get_flush_submit_sec() -- ???
-*
-*  SYNOPSIS
-*     int sconf_get_flush_submit_sec()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     int -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `flush_submit_sec` attribute of the scheduler configuration
+ *
+ * That is seconds the scheduler waits after a submit before it runs.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 uint32_t sconf_get_flush_submit_sec()
 {
    const lListElem *sc_ep = nullptr;
@@ -2245,25 +1855,15 @@ uint32_t sconf_get_flush_submit_sec()
    return flush_sec;
 }
 
-/****** sge_schedd_conf/sconf_get_flush_finish_sec() ***************************
-*  NAME
-*     sconf_get_flush_finish_sec() -- ???
-*
-*  SYNOPSIS
-*     int sconf_get_flush_finish_sec()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     int -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `flush_finish_sec` attribute of the scheduler configuration
+ *
+ * That is seconds the scheduler waits after a job finished before it runs.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 uint32_t sconf_get_flush_finish_sec()
 {
    const lListElem *sc_ep = nullptr;
@@ -2283,25 +1883,15 @@ uint32_t sconf_get_flush_finish_sec()
 }
 
 
-/****** sge_schedd_conf/sconf_get_max_functional_jobs_to_schedule() ************
-*  NAME
-*     sconf_get_max_functional_jobs_to_schedule() -- ???
-*
-*  SYNOPSIS
-*     uint32_t sconf_get_max_functional_jobs_to_schedule()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     uint32_t -
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `max_functional_jobs_to_schedule` attribute of the scheduler configuration
+ *
+ * That is how many pending jobs the functional policy ranks.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 uint32_t sconf_get_max_functional_jobs_to_schedule()
 {
    uint32_t amount = 200;
@@ -2317,25 +1907,15 @@ uint32_t sconf_get_max_functional_jobs_to_schedule()
    return amount;
 }
 
-/****** sge_schedd_conf/sconf_get_max_pending_tasks_per_job() ******************
-*  NAME
-*     sconf_get_max_pending_tasks_per_job() -- ???
-*
-*  SYNOPSIS
-*     uint32_t sconf_get_max_pending_tasks_per_job()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     uint32_t -
-*
-*  MT-NOTE:   is MT save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `max_pending_tasks_per_job` attribute of the scheduler configuration
+ *
+ * That is how many tasks of one array job the scheduler considers.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE:   is MT save, uses LOCK_SCHED_CONF(read)
+ */
 uint32_t sconf_get_max_pending_tasks_per_job()
 {
    uint32_t max_pending = 50;
@@ -2351,25 +1931,15 @@ uint32_t sconf_get_max_pending_tasks_per_job()
    return max_pending;
 }
 
-/****** sge_schedd_conf/get_halflife_decay_list_str() ********************
-*  NAME
-*     get_halflife_decay_list_str() -- ???
-*
-*  SYNOPSIS
-*     const char* get_halflife_decay_list_str()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     const char* -
-*
-* MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `halflife_decay_list` attribute of the scheduler configuration
+ *
+ * That is per attribute half life overriding `halftime`.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
+ */
 static const char *get_halflife_decay_list_str()
 {
    const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
@@ -2382,25 +1952,15 @@ static const char *get_halflife_decay_list_str()
    }
 }
 
-/****** sge_schedd_conf/sconf_get_halflife_decay_list() ************************
-*  NAME
-*     sconf_get_halflife_decay_list() -- ???
-*
-*  SYNOPSIS
-*     const lList* sconf_get_halflife_decay_list()
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     void - ???
-*
-*  RESULT
-*     const lList* -
-*
-*  MT-NOTE:   is MT save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief The `halflife_decay_list` attribute of the scheduler configuration
+ *
+ * That is a per attribute half life overriding `halftime`.
+ *
+ * @return the configured value
+ *
+ * @note MT-NOTE:   is MT save, uses LOCK_SCHED_CONF(read)
+ */
 lList* sconf_get_halflife_decay_list(){
    lList *decay_list = nullptr;
 
@@ -2412,19 +1972,13 @@ lList* sconf_get_halflife_decay_list(){
    return decay_list;
 }
 
-/****** sge_schedd_conf/is_config_set() *********************************************
-*  NAME
-*     is_config_set() -- checks, if a configuration exists
-*
-*  SYNOPSIS
-*     bool is_config_set()
-*
-*  RESULT
-*     bool - true, if a configuration exists
-*
-*  MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief Checks, if a configuration exists
+ *
+ * @return true, if a configuration exists
+ *
+ * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
+ */
 static bool is_config_set()
 {
    const lListElem *sc_ep = nullptr;
@@ -2436,20 +1990,13 @@ static bool is_config_set()
    return ((sc_ep != nullptr) ? true : false);
 }
 
-/****** sge_schedd_conf/sconf_is() *********************************************
-*  NAME
-*     sconf_is() -- checks, if a configuration exists
-*
-*  SYNOPSIS
-*     bool sconf_is()
-*
-*  RESULT
-*     bool - true, if a configuration exists
-*
-*
-*  MT-NOTE:   is MT save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief Checks, if a configuration exists
+ *
+ * @return true, if a configuration exists
+ *
+ * @note MT-NOTE:   is MT save, uses LOCK_SCHED_CONF(read)
+ */
 bool sconf_is()
 {
    bool is = false;
@@ -2463,23 +2010,13 @@ bool sconf_is()
 }
 
 
-/****** sge_schedd_conf/sconf_get_config() *************************************
-*  NAME
-*     sconf_get_config() -- returns a config object.
-*
-*  SYNOPSIS
-*     const lListElem* sconf_get_config()
-*
-*  RESULT
-*     const lListElem* - a copy of the current config object
-*
-* NOTE
-*  DO NOT USE this method. ONLY when there is NO OTHER way. All config
-*  settings can be accessed via access function.
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief Returns a config object
+ *
+ * @return a copy of the current config object NOTE DO NOT USE this method. ONLY when there is NO OTHER way. All config settings can be accessed via access function.
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 lListElem *sconf_get_config()
 {
    lListElem *config = nullptr;
@@ -2492,31 +2029,13 @@ lListElem *sconf_get_config()
    return config;
 }
 
-/****** sge_schedd_conf/sconf_get_config_list() ********************************
-*  NAME
-*     sconf_get_config_list() -- returns a pointer to the list, which contains
-*                                the configuration
-*
-*  SYNOPSIS
-*     lList* sconf_get_config_list()
-*
-*  RESULT
-*     lList* - a copy of the config list
-*
-*  MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
-*
-* NOTE
-*  DO NOT USE this method. ONLY when there is NO OTHER way. All config
-*  settings can be accessed via access function. The config can be set
-*  via sconf_set_config(...)
-*
-* IMPORTANT
-*
-*  If you modify the configuration by directly accessing, you have to call
-*  sconf_validate_config_ afterwards to ensure, that the caches reflect
-*  your changes.
-*
-*******************************************************************************/
+/**
+ * @brief Returns a pointer to the list, which contains
+ *
+ * @return a copy of the config list NOTE DO NOT USE this method. ONLY when there is NO OTHER way. All config settings can be accessed via access function. The config can be set via sconf_set_config(...) IMPORTANT If you modify the configuration by directly accessing, you have to call sconf_validate_config_ afterwards to ensure, that the caches reflect your changes.
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 lList *sconf_get_config_list()
 {
    lList *copy_list = nullptr;
@@ -2530,16 +2049,9 @@ lList *sconf_get_config_list()
    DRETURN(copy_list);
 }
 
-/****** sge_schedd_conf/sconf_print_config() ***********************************
-*  NAME
-*     sconf_print_config() -- prints the current configuration to the INFO stream
-*
-*  SYNOPSIS
-*     void sconf_print_config()
-*
-*  MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read/write)
-*
-*******************************************************************************/
+/**
+ * @brief Prints the current configuration to the INFO stream
+ */
 void sconf_print_config(){
 
    char tmp_buffer[1024];
@@ -2699,21 +2211,13 @@ void sconf_print_config(){
    DRETURN_VOID;
 }
 
-/****** sge_schedd_conf/sconf_is_new_config() *******************************
-*  NAME
-*     sconf_is_new_config() --
-*
-*  SYNOPSIS
-*     bool sconf_is_new_config()
-*
-*  FUNCTION
-*
-*  RESULT
-*     bool -
-*
-*  MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
-*
-*******************************************************************************/
+/**
+ * @brief Has the scheduler configuration changed since it was last read?
+ *
+ * @return true while a new configuration has not been picked up yet
+ *
+ * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
+ */
 bool sconf_is_new_config() {
    bool is_new_config = false;
 
@@ -2725,18 +2229,9 @@ bool sconf_is_new_config() {
    return is_new_config;
 }
 
-/****** sge_schedd_conf/sconf_reset_new_config() *******************************
-*  NAME
-*     sconf_reset_new_config() --
-*
-*  SYNOPSIS
-*     bool sconf_reset_new_config()
-*
-*  FUNCTION
-*
-*  MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(write)
-*
-*******************************************************************************/
+/**
+ * @brief MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(write)
+ */
 void sconf_reset_new_config()
 {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -2746,25 +2241,17 @@ void sconf_reset_new_config()
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 }
 
-/****** sge_schedd_conf/sconf_validate_config_() *******************************
-*  NAME
-*     sconf_validate_config_() -- validates the current config
-*
-*  SYNOPSIS
-*     bool sconf_validate_config_(lList **answer_list)
-*
-*  FUNCTION
-*     validates the current config and updates the caches.
-*
-*  INPUTS
-*     lList **answer_list - error messages
-*
-*  RESULT
-*     bool - false for invalid scheduler configuration
-*
-*  MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read/write)
-*
-*******************************************************************************/
+/**
+ * @brief Validates the current config
+ *
+ * validates the current config and updates the caches.
+ *
+ * @param answer_list error messages
+ *
+ * @return false for invalid scheduler configuration
+ *
+ * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read/write)
+ */
 bool sconf_validate_config_(lList **answer_list)
 {
    char tmp_buffer[1024], tmp_error[1024];
@@ -3059,25 +2546,16 @@ bool sconf_validate_config_(lList **answer_list)
 }
 
 
-/****** sge_schedd_conf/sconf_validate_config() ********************************
-*  NAME
-*     sconf_validate_config() -- validate a given configuration
-*
-*  SYNOPSIS
-*     bool sconf_validate_config(lList **answer_list, lList *config)
-*
-*  INPUTS
-*     lList **answer_list - error messages
-*     lList *config       - config to validate
-*
-*  RESULT
-*     bool - true, if the config is valid
-*
-*  MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(write)
-*
-* SG TODO: needs cleanup!!
-*
-*******************************************************************************/
+/**
+ * @brief Validate a given configuration
+ *
+ * @param answer_list error messages
+ * @param config config to validate
+ *
+ * @return true, if the config is valid SG TODO: needs cleanup!!
+ *
+ * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(write)
+ */
 bool sconf_validate_config(lList **answer_list, lList *config){
    const lList *store = nullptr;
    bool ret = true;
@@ -3102,29 +2580,18 @@ bool sconf_validate_config(lList **answer_list, lList *config){
    DRETURN(ret);
 }
 
-/****** sgeobj/conf/policy_hierarchy_verify_value() ***************************
-*  NAME
-*     policy_hierarchy_verify_value() -- verify a policy string
-*
-*  SYNOPSIS
-*     int policy_hierarchy_verify_value(const char* value)
-*
-*  FUNCTION
-*     The function tests whether the given policy string (value) is i
-*     valid.
-*
-*  INPUTS
-*     const char* value - policy string
-*
-*  RESULT
-*     int - 0 -> OK
-*           1 -> ERROR: one char is at least twice in "value"
-*           2 -> ERROR: invalid char in "value"
-*           3 -> ERROR: value == nullptr
-*
-*  MT-NOTE:  is MT safe, uses only the given data.
-*
-******************************************************************************/
+/**
+ * @brief Verify a policy string
+ *
+ * The function tests whether the given policy string (value) is i
+ * valid.
+ *
+ * @param value policy string
+ *
+ * @return 0 -> OK 1 -> ERROR: one char is at least twice in "value" 2 -> ERROR: invalid char in "value" 3 -> ERROR: value == nullptr
+ *
+ * @note MT-NOTE:  is MT safe, uses only the given data.
+ */
 static int policy_hierarchy_verify_value(const char* value)
 {
    int ret = 0;
@@ -3167,63 +2634,49 @@ static int policy_hierarchy_verify_value(const char* value)
    DRETURN(ret);
 }
 
-/****** sgeobj/conf/sconf_ph_fill_array() *****************************
-*  NAME
-*     sconf_ph_fill_array() -- fill the policy array
-*
-*  SYNOPSIS
-*     void sconf_ph_fill_array(policy_hierarchy_t array[],
-*                                      const char *value)
-*
-*  FUNCTION
-*     Fill the policy "array" according to the characters given by
-*     "value".
-*
-*     value == "FODS":
-*        policy_hierarchy_t array[4] = {
-*            {FUNCTIONAL_POLICY, 1},
-*            {OVERRIDE_POLICY, 1},
-*            {DEADLINE_POLICY, 1},
-*            {SHARE_TREE_POLICY, 1}
-*        };
-*
-*     value == "FS":
-*        policy_hierarchy_t array[4] = {
-*            {FUNCTIONAL_POLICY, 1},
-*            {SHARE_TREE_POLICY, 1},
-*            {OVERRIDE_POLICY, 0},
-*            {DEADLINE_POLICY, 0}
-*        };
-*
-*     value == "OFS":
-*        policy_hierarchy_t hierarchy[4] = {
-*            {OVERRIDE_POLICY, 1},
-*            {FUNCTIONAL_POLICY, 1},
-*            {SHARE_TREE_POLICY, 1},
-*            {DEADLINE_POLICY, 0}
-*        };
-*
-*     value == "NONE":
-*        policy_hierarchy_t hierarchy[4] = {
-*            {OVERRIDE_POLICY, 0},
-*            {FUNCTIONAL_POLICY, 0},
-*            {SHARE_TREE_POLICY, 0},
-*            {DEADLINE_POLICY, 0}
-*        };
-*
-*  INPUTS
-*     policy_hierarchy_t array[] - array with at least POLICY_VALUES
-*                                  values
-*     const char* value          - "NONE" or any combination
-*                                  of the first letters of the policy
-*                                  names (e.g. "OFSD")
-*
-*  RESULT
-*     "array" will be modified
-*
-*  MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
-*
-******************************************************************************/
+/**
+ * @brief Fill the policy array
+ *
+ * Fill the policy "array" according to the characters given by
+ * "value".
+ * value == "FODS":
+ *    policy_hierarchy_t array[4] = {
+ *        {FUNCTIONAL_POLICY, 1},
+ *        {OVERRIDE_POLICY, 1},
+ *        {DEADLINE_POLICY, 1},
+ *        {SHARE_TREE_POLICY, 1}
+ *    };
+ * value == "FS":
+ *    policy_hierarchy_t array[4] = {
+ *        {FUNCTIONAL_POLICY, 1},
+ *        {SHARE_TREE_POLICY, 1},
+ *        {OVERRIDE_POLICY, 0},
+ *        {DEADLINE_POLICY, 0}
+ *    };
+ * value == "OFS":
+ *    policy_hierarchy_t hierarchy[4] = {
+ *        {OVERRIDE_POLICY, 1},
+ *        {FUNCTIONAL_POLICY, 1},
+ *        {SHARE_TREE_POLICY, 1},
+ *        {DEADLINE_POLICY, 0}
+ *    };
+ * value == "NONE":
+ *    policy_hierarchy_t hierarchy[4] = {
+ *        {OVERRIDE_POLICY, 0},
+ *        {FUNCTIONAL_POLICY, 0},
+ *        {SHARE_TREE_POLICY, 0},
+ *        {DEADLINE_POLICY, 0}
+ *    };
+ *
+ * @param[out] array receives one entry per policy, in the configured order;
+ *                   it must have `POLICY_VALUES` entries
+ *
+ * @note The hierarchy is read from the `policy_hierarchy` attribute - `"NONE"`
+ *       or any combination of the policy names' first letters, e.g. `"OFSD"`.
+ *       An earlier version took it as a parameter instead.
+ *
+ * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
+ */
 void sconf_ph_fill_array(policy_hierarchy_t array[])
 {
    int is_contained[POLICY_VALUES];
@@ -3268,27 +2721,18 @@ void sconf_ph_fill_array(policy_hierarchy_t array[])
    DRETURN_VOID;
 }
 
-/****** sgeobj/conf/policy_hierarchy_char2enum() ******************************
-*  NAME
-*     policy_hierarchy_char2enum() -- Return value for a policy char
-*
-*  SYNOPSIS
-*     policy_type_t policy_hierarchy_char2enum(char character)
-*
-*  FUNCTION
-*     This function returns a enum value for the first letter of a
-*     policy name.
-*
-*  INPUTS
-*     char character - "O", "F" or "S"
-*
-*  RESULT
-*     policy_type_t - enum value
-*
-*  MT-NOTE:
-*     not thread safe, needs LOCK_SCHED_CONF(read)
-*
-******************************************************************************/
+/**
+ * @brief Return value for a policy char
+ *
+ * This function returns a enum value for the first letter of a
+ * policy name.
+ *
+ * @param character "O", "F" or "S"
+ *
+ * @return enum value not thread safe, needs LOCK_SCHED_CONF(read)
+ *
+ * @note MT-NOTE:
+ */
 static policy_type_t policy_hierarchy_char2enum(char character)
 {
    const char *pointer;
@@ -3304,23 +2748,11 @@ static policy_type_t policy_hierarchy_char2enum(char character)
 }
 
 
-/****** sgeobj/conf/sconf_ph_print_array() ****************************
-*  NAME
-*     sconf_ph_print_array() -- print hierarchy array
-*
-*  SYNOPSIS
-*     void sconf_ph_print_array(policy_hierarchy_t array[])
-*
-*  FUNCTION
-*     Print hierarchy array in the debug output
-*
-*  INPUTS
-*     policy_hierarchy_t array[] - array with at least
-*                                  POLICY_VALUES values
-*
-*  MT-NOTE: is MT save, no lock needed, works on the passed in data
-*
-******************************************************************************/
+/**
+ * @brief Print hierarchy array in the debug output
+ *
+ * @param array the hierarchy to print, as #sconf_ph_fill_array filled it
+ */
 void sconf_ph_print_array(policy_hierarchy_t array[])
 {
    int i;
@@ -3336,55 +2768,36 @@ void sconf_ph_print_array(policy_hierarchy_t array[])
    DRETURN_VOID;
 }
 
-/****** sgeobj/conf/policy_hierarchy_enum2char() ******************************
-*  NAME
-*     policy_hierarchy_enum2char() -- Return policy char for a value
-*
-*  SYNOPSIS
-*     char policy_hierarchy_enum2char(policy_type_t value)
-*
-*  FUNCTION
-*     Returns the first letter of a policy name corresponding to the
-*     enum "value".
-*
-*  INPUTS
-*     policy_type_t value - enum value
-*
-*  RESULT
-*     char - "O", "F", "S", "D"
-*
-*  MT-NOTE:
-*     not thread safe, needs LOCK_SCHED_CONF(read)
-*
-******************************************************************************/
+/**
+ * @brief Return policy char for a value
+ *
+ * Returns the first letter of a policy name corresponding to the
+ * enum "value".
+ *
+ * @param value enum value
+ *
+ * @return "O", "F", "S", "D" not thread safe, needs LOCK_SCHED_CONF(read)
+ *
+ * @note MT-NOTE:
+ */
 static char policy_hierarchy_enum2char(policy_type_t value)
 {
    return policy_hierarchy_chars[value - 1];
 }
 
-/****** sge_schedd_conf/sconf_eval_set_profiling() *****************************
-*  NAME
-*     sconf_eval_set_profiling() -- ???
-*
-*  SYNOPSIS
-*     static bool sconf_eval_set_profiling(lList *param_list, lList
-*     **answer_list, const char* param)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     lList *param_list   - ???
-*     lList **answer_list - ???
-*     const char* param   - ???
-*
-*  RESULT
-*     static bool -
-*
-*  MT-NOTE:
-*     not thread safe, needs LOCK_SCHED_CONF(write)
-*
-*******************************************************************************/
+/**
+ * @brief Parse the `PROFILE=` entry of the scheduler `params` attribute
+ *
+ * Accepts `1`/`TRUE` and `0`/`FALSE`, case insensitively, and records the
+ * result as a `profile` entry in the parsed parameter list. Anything else is
+ * rejected.
+ *
+ * @param[in,out] param_list the parsed parameters, extended by one entry
+ * @param[out] answer_list receives the message naming the bad setting
+ * @param param the raw `PROFILE=...` text
+ *
+ * @return true when the setting was understood
+ */
 static bool sconf_eval_set_profiling(lList *param_list, lList **answer_list, const char* param){
    bool ret = true;
    lListElem *elem = nullptr;
@@ -3417,30 +2830,20 @@ static bool sconf_eval_set_profiling(lList *param_list, lList **answer_list, con
    DRETURN(ret);
 }
 
-/****** sge_schedd_conf/sconf_eval_set_monitoring() ****************************
-*  NAME
-*     sconf_eval_set_monitoring() -- Control SERF on/off via MONITOR param
-*
-*  SYNOPSIS
-*     static bool sconf_eval_set_monitoring(lList *param_list, lList
-*     **answer_list, const char* param)
-*
-*  FUNCTION
-*     The MONITOR param allows schedule entry recording facility module
-*     be switched on/off.
-*
-*  INPUTS
-*     lList *param_list   - ???
-*     lList **answer_list - ???
-*     const char* param   - ???
-*
-*  RESULT
-*     static bool - parsing error
-*
-*  NOTES
-*     MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
-*
-*******************************************************************************/
+/**
+ * @brief Control SERF on/off via MONITOR param
+ *
+ * The MONITOR param allows schedule entry recording facility module
+ * be switched on/off.
+ *
+ * @param param_list
+ * @param answer_list
+ * @param param
+ *
+ * @return parsing error
+ *
+ * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
+ */
 static bool sconf_eval_set_monitoring(lList *param_list, lList **answer_list, const char* param){
    bool ret = true;
    lListElem *elem = nullptr;
@@ -3492,21 +2895,13 @@ static bool sconf_eval_set_duration_offset(lList *param_list, lList **answer_lis
    return true;
 }
 
-/****** sge_schedd_conf/sconf_eval_set_pe_range_alg() **************************
-*  NAME
-*     sconf_eval_set_pe_range_alg() -- parses the sched. param
-*
-*  SYNOPSIS
-*     static bool sconf_eval_set_pe_range_alg(lList *param_list, lList
-*     **answer_list, const char* param)
-*
-*  RESULT
-*     static bool - true, if successful
-*
-*  NOTES
-*     MT-NOTE: sconf_eval_set_pe_range_alg() is not MT safe, caller needs LOCK_SCHED_CONF(write)
-*
-*******************************************************************************/
+/**
+ * @brief Parses the sched. param
+ *
+ * @return true, if successful
+ *
+ * @note MT-NOTE: sconf_eval_set_pe_range_alg() is not MT safe, caller needs LOCK_SCHED_CONF(write)
+ */
 static bool sconf_eval_set_pe_range_alg(lList *param_list, lList **answer_list, const char* param)
 {
    char *s;
@@ -3543,68 +2938,155 @@ static bool sconf_eval_set_pe_range_alg(lList *param_list, lList **answer_list, 
       We ignore all debitations caused by running jobs.
       Ignore all but static load values.
 */
+/**
+ * @brief Set how the queue state is evaluated during this run
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @param qs_state `QS_STATE_FULL` counts every debitation of running jobs;
+ *                 `QS_STATE_EMPTY` ignores them and all but static load values
+ */
 void sconf_set_qs_state(qs_state_t qs_state)
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->queue_state = qs_state;
 }
 
+/**
+ * @brief How the queue state is evaluated during this run
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @return the current setting
+ */
 qs_state_t sconf_get_qs_state()
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->queue_state;
 }
+/**
+ * @brief Switch load correction for just started jobs on or off
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @param flag true to apply the correction
+ */
 void sconf_set_global_load_correction(bool flag)
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->global_load_correction = flag;
 }
+/**
+ * @brief Is load correction for just started jobs applied?
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @return the current setting
+ */
 bool sconf_get_global_load_correction()
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->global_load_correction;
 }
 
+/**
+ * @brief The cached `default_duration`, in seconds
+ *
+ * Read from the cache rather than the configuration element, so a dispatch
+ * decision does not have to parse the attribute again.
+ *
+ * @return the duration in seconds
+ */
 uint32_t sconf_get_default_duration()
 {
    return pos.c_default_duration;
 }
 
+/**
+ * @brief Does the host sort order have to be recomputed?
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @return true when it is stale
+ */
 bool sconf_get_host_order_changed()
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->host_order_changed;
 }
 
+/**
+ * @brief Record whether the host sort order became stale
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @param changed true when it has to be recomputed
+ */
 void sconf_set_host_order_changed(bool changed)
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->host_order_changed = changed;
 }
 
+/**
+ * @brief What the previous dispatch was
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @return the recorded type, which lets the next dispatch reuse work
+ */
 int sconf_get_last_dispatch_type()
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->last_dispatch_type;
 }
 
+/**
+ * @brief Record what this dispatch was
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @param last the type to record
+ */
 void sconf_set_last_dispatch_type(int last)
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->last_dispatch_type = last;
 }
 
+/**
+ * @brief Set the share tree decay constant for this run
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @param decay the constant, derived from `halftime`
+ */
 void sconf_set_decay_constant(double decay)
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->decay_constant = decay;
 }
+/**
+ * @brief The share tree decay constant of this run
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @return the constant
+ */
 double sconf_get_decay_constant()
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->decay_constant;
 }
 
+/**
+ * @brief Start or stop collecting scheduler reason messages on this thread
+ *
+ * Switching collection **on** is ignored while the messaging framework is not
+ * initialised, i.e. while either message store is still nullptr.
+ *
+ * @param newval true to collect messages
+ */
 void sconf_set_mes_schedd_info(bool newval)
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
@@ -3618,42 +3100,101 @@ void sconf_set_mes_schedd_info(bool newval)
    sc_state->mes_schedd_info = newval;
 }
 
+/**
+ * @brief Are scheduler messages being collected?
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @return the current setting
+ */
 bool sconf_get_mes_schedd_info()
 {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->mes_schedd_info;
 }
 
+/**
+ * @brief Switch writing scheduler messages to the log file on or off
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @param bval non-zero to log them
+ */
 void schedd_mes_set_logging(int bval) {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->log_schedd_info = bval;
 }
 
+/**
+ * @brief Are scheduler messages written to the log file?
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @return non-zero when they are
+ */
 int schedd_mes_get_logging() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->log_schedd_info;
 }
 
+/**
+ * @brief The store the scheduler reason messages are collected in
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @return the element, or nullptr when messaging is not initialised
+ */
 lListElem *sconf_get_sme() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->sme;
 }
 
+/**
+ * @brief Set the store the scheduler reason messages are collected in
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @param sme the element to use
+ */
 void sconf_set_sme(lListElem *sme) {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->sme = sme;
 }
 
+/**
+ * @brief The message store of the run in progress
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @return the element, or nullptr when messaging is not initialised
+ */
 lListElem *sconf_get_tmp_sme() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->tmp_sme;
 }
 
+/**
+ * @brief Set the message store of the run in progress
+ *
+ * The setting is thread local, so each scheduling thread has its own.
+ *
+ * @param sme the element to use
+ */
 void sconf_set_tmp_sme(lListElem *sme) {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->tmp_sme = sme;
 }
 
+/**
+ * @brief The cached `DURATION_OFFSET` from the scheduler `params`
+ *
+ * Seconds added to a job's duration when the scheduler reserves resources for
+ * it, to absorb the time between the decision and the job actually starting.
+ *
+ * @return the offset in seconds
+ *
+ * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
+ */
 uint32_t sconf_get_duration_offset()
 {
    uint32_t offset = 0;
@@ -3666,26 +3207,18 @@ uint32_t sconf_get_duration_offset()
    return offset;
 }
 
-/****** sge_resource_utilization/serf_control() ********************************
-*  NAME
-*     serf_get_active() -- Retrieve whether SERF is active or not
-*
-*  SYNOPSIS
-*     bool serf_get_active();
-*
-*  FUNCTION
-*     Returns whether SERF is active or not
-*
-*  RETURN
-*     bool - true = on
-*            false = off
-*
-*  MT-NOTE: is MT safe, uses LOCK_SCHED_CONF(read)
-*
-*  NOTES
-*     Actually belongs to sge_serf.c but this would cause a link dependency
-*     libsgeobj -> libschedd !!
-*******************************************************************************/
+/**
+ * @brief Retrieve whether SERF is active or not
+ *
+ * Returns whether SERF is active or not
+ *
+ * @return true = on false = off
+ *
+ * @note MT-NOTE: is MT safe, uses LOCK_SCHED_CONF(read)
+ *
+ * @note Actually belongs to sge_serf.c but this would cause a link dependency
+ *       libsgeobj -> libschedd !!
+ */
 bool serf_get_active()
 {
    bool is = false;
@@ -3698,6 +3231,15 @@ bool serf_get_active()
    return is;
 }
 
+/**
+ * @brief Is scheduler profiling switched on?
+ *
+ * Set through the `PROFILE=` entry of the scheduler `params`.
+ *
+ * @return true while profiling is on
+ *
+ * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
+ */
 bool sconf_get_profiling()
 {
    bool profiling = false;

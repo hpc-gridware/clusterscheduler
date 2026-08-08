@@ -33,62 +33,82 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for the scheduler configuration
+ *
+ * @see sge_schedd_conf.cc
+ */
+
 #include "cull/cull.h"
 
 #include "sgeobj/cull/sge_schedd_conf_PARA_L.h"
 #include "sgeobj/cull/sge_schedd_conf_SC_L.h"
 
-/* 
- * valid values for SC_queue_sort_method 
+/// Valid values for `SC_queue_sort_method`
+enum {
+   QSM_LOAD = 0,   ///< try the least loaded queue first
+   QSM_SEQNUM = 1  ///< try queues in the order of their sequence number
+};
+
+/**
+ * @brief What the previous dispatch was
+ *
+ * Recorded so the next dispatch can reuse work the previous one did.
  */
 enum {
-   QSM_LOAD = 0,
-   QSM_SEQNUM = 1
+    DISPATCH_TYPE_NONE = 0,      ///< did not dispatch a job
+    DISPATCH_TYPE_FAST,          ///< dispatched a sequential job
+    DISPATCH_TYPE_FAST_SOFT_REQ, ///< dispatched a sequential job with soft requests
+    DISPATCH_TYPE_PE,            ///< dispatched a pe job
+    DISPATCH_TYPE_PE_SOFT_REQ    ///< dispatched a pe job with soft requests
 };
 
-/* defines the last dispatched job */
-enum {
-    DISPATCH_TYPE_NONE = 0,      /* did not dispatch a job */
-    DISPATCH_TYPE_FAST,          /* dispatched a sequential job */
-    DISPATCH_TYPE_FAST_SOFT_REQ, /* dispatch a sequential job with soft requests */
-    DISPATCH_TYPE_PE,            /* dispatched a pe job*/
-    DISPATCH_TYPE_PE_SOFT_REQ    /* dispatched a pe job*/
-};
-
+/// For which jobs the scheduler keeps a reason message
 enum schedd_job_info_key {
-   SCHEDD_JOB_INFO_FALSE=0,
-   SCHEDD_JOB_INFO_TRUE,
-   SCHEDD_JOB_INFO_JOB_LIST,
-   SCHEDD_JOB_INFO_UNDEF
+   SCHEDD_JOB_INFO_FALSE=0,    ///< for none
+   SCHEDD_JOB_INFO_TRUE,       ///< for every pending job
+   SCHEDD_JOB_INFO_JOB_LIST,   ///< only for the jobs in the configured range
+   SCHEDD_JOB_INFO_UNDEF       ///< the attribute could not be interpreted
 };
 
-/* defines the algorithm that should be used to compute pe-ranges */
+/**
+ * @brief How the slot count of a parallel job's range is searched
+ *
+ * A parallel job may ask for a range of slots. Which end of the range to try
+ * first decides how many attempts the scheduler needs, and the best choice
+ * depends on how full the cluster is - hence #SCHEDD_PE_AUTO, which lets the
+ * scheduler weigh the alternatives itself.
+ */
 typedef enum {
-   SCHEDD_PE_AUTO=-1,      /* automatic, the scheduler will decide */
-   SCHEDD_PE_LOW_FIRST=0,  /* least slot first */
-   SCHEDD_PE_HIGH_FIRST,   /* highest slot first */
-   SCHEDD_PE_BINARY,       /* binary search */
-   SCHEDD_PE_ALG_MAX       /* number of algorithms */    /* number of algorithms */
+   SCHEDD_PE_AUTO=-1,      ///< automatic, the scheduler will decide
+   SCHEDD_PE_LOW_FIRST=0,  ///< least slot first
+   SCHEDD_PE_HIGH_FIRST,   ///< highest slot first
+   SCHEDD_PE_BINARY,       ///< binary search
+   SCHEDD_PE_ALG_MAX       ///< number of algorithms; not an algorithm itself
 } schedd_pe_algorithm;
 
+/**
+ * @brief The ticket policies, in the order `policy_hierarchy` names them
+ *
+ * @todo Should `LAST_POLICY_VALUE` equal `SHARE_TREE_POLICY`? `POLICY_VALUES`
+ *       is 4 and should probably be 3.
+ */
 typedef enum {
-   FIRST_POLICY_VALUE,
-   INVALID_POLICY = FIRST_POLICY_VALUE,
+   FIRST_POLICY_VALUE,                 ///< lowest valid value, for iteration
+   INVALID_POLICY = FIRST_POLICY_VALUE, ///< not a policy; an unparsable letter yields this
 
-   OVERRIDE_POLICY,
-   FUNCTIONAL_POLICY,
-   SHARE_TREE_POLICY,
+   OVERRIDE_POLICY,                    ///< override tickets, set by an administrator
+   FUNCTIONAL_POLICY,                  ///< functional tickets, from the configured shares
+   SHARE_TREE_POLICY,                  ///< share tree tickets, from past usage
 
-   /* TODO: shouldn't LAST_POLICY_VALUE equal SHARE_TREE_POLICY? 
-    * POLICY_VALUES = 4, should probably be 3
-    */
-   LAST_POLICY_VALUE,
-   POLICY_VALUES = (LAST_POLICY_VALUE - FIRST_POLICY_VALUE)
+   LAST_POLICY_VALUE,                  ///< not a policy; one past the last one
+   POLICY_VALUES = (LAST_POLICY_VALUE - FIRST_POLICY_VALUE) ///< how many entries a hierarchy array needs
 } policy_type_t;
 
+/// One step of the configured policy hierarchy
 typedef struct {
-   policy_type_t policy;
-   int dependent;
+   policy_type_t policy; ///< which policy this step applies
+   int dependent;        ///< non-zero when this policy's result feeds the next one
 } policy_hierarchy_t;
 
 void sconf_ph_fill_array(policy_hierarchy_t array[]);
@@ -189,9 +209,10 @@ bool sconf_get_profiling();
 
 uint32_t sconf_get_default_duration();
 
+/// How thoroughly the queue state is evaluated during a scheduling run
 typedef enum {
-   QS_STATE_EMPTY,
-   QS_STATE_FULL
+   QS_STATE_EMPTY, ///< ignore all debitations of running jobs, and all but static load values
+   QS_STATE_FULL   ///< every debitation caused by a running job is in effect
 } qs_state_t;
 
 uint32_t sconf_get_schedd_job_info();
