@@ -109,7 +109,7 @@ def convert_block(block, local_symbols, returns_void=False):
         out.append(' *')
         out.extend((' * ' + line).rstrip() for line in fn)
 
-    ex = trim(s.get('EXAMPLE', []))
+    ex = [x for x in trim(s.get('EXAMPLE', [])) if not is_placeholder(x)]
     if ex:
         out.append(' *')
         out.append(' * @code')
