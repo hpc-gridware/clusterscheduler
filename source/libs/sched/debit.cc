@@ -33,6 +33,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Debiting a scheduled job on the objects it consumes
+ */
 #include <cstdio>
 
 #include "uti/sge_log.h"
@@ -76,77 +80,50 @@ debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem *p
 static int
 debit_job_from_ar(lListElem *ar, lListElem *job, lListElem *ja_task, const lListElem *pe, lList *granted, lList *ar_list, const lList *centry_list);
 
-/* -------------------------------------------------------------
-
-   debit_scheduled_job()
-
-   The following objects will get changed to represent the debitations:
-
-      host_list
-         - the load gets increased according the granted list 
-         - changes sort order of host list 
-           (this sort order is used to get positions for the queues)
-
-      queue_list 
-         - the number of free slots gets reduced
-         - subordinated queues that will get suspended by 
-           the qmaster get marked as suspended
-
-      pe
-         - the number of free slots gets reduced
-      
-      sort_hostlist
-         - if the sort order of the host_list is changed, 
-           sort_hostlist is set to 1
-
-      orders_list
-         - needed to warn on jobs that were dispatched into 
-           queues and get suspended on subordinate in the very 
-           same interval
-
-      limitation_rule_set_list
-         - the load gets increased according the granted list
-
-   The other objects get not changed and are needed to present
-   and interprete the debitations on the upper objects:
-
-      job
-      granted
-         - list that contains one element for each queue
-           describing what has to be debited
-      complex_list
-         - needed to interprete the jobs -l requests and 
-           the load correction
-
-   1st NOTE: 
-      The debitations will be lost if you pass local copies
-      of the global lists to this function and your scheduler
-      will try to put all jobs on one queue (or other funny 
-      decisions).
-
-      But this can be a feature if you use local copies to
-      test what happens if you schedule a job to a specific
-      queue (not tested). 
-
-   2nd NOTE: 
-      This function is __not__ responsible for any consistency 
-      checking of your slot allocation! E.g. you will get no 
-      error if you try to debit a job from a queue where the 
-      jobs user has no access.
-
-const sge_assignment_t *a - all information describing the assignemnt 
-int *sort_hostlist,       - do we have to resort the hostlist? 
-order_t *orders,          - needed to warn on jobs that were dispatched into
-                            queues and get suspended on subordinate in the very
-                            same interval 
-bool now,                 - if true this is or will be a running job
-                            false for all jobs that must only be put into the
-                            resource schedule 
-const char *type          - a string as forseen with serf_record_entry() 
-                            'type' parameter (may be nullptr)
-bool for_job_scheduling   - true if debiting job, false if advance_reservation
-      
-*/
+/**
+ * @brief Debits a scheduled job on everything the assignment touched
+ *
+ * These objects are changed to represent the debitation:
+ *
+ * - **host list** - the load is increased according to the granted list, which
+ *   also changes the sort order of the hosts. That order is what gives the
+ *   queues their position, so `sort_hostlist` is set when it changed.
+ * - **queue list** - the number of free slots is reduced, and subordinated
+ *   queues that qmaster will suspend are marked as suspended.
+ * - **PE** - the number of free slots is reduced.
+ * - **resource quota set list** - the usage is increased according to the
+ *   granted list.
+ *
+ * The job, the granted list and the complex list are only read: the granted
+ * list says what has to be debited per queue, and the complex list is needed
+ * to interpret the job's `-l` requests and the load correction.
+ *
+ * @param[in]     a                  everything describing the assignment
+ * @param[in,out] sort_hostlist      set to 1 if the host list has to be
+ *                                   resorted
+ * @param[in,out] orders             needed to warn about jobs that are
+ *                                   dispatched into a queue and suspended on
+ *                                   subordinate within the same interval
+ * @param[in]     now                true if this is or will be a running job,
+ *                                   false for jobs that only go into the
+ *                                   resource schedule
+ * @param[in]     type               a string as foreseen for the `type`
+ *                                   parameter of serf_record_entry(), may be
+ *                                   nullptr
+ * @param[in]     for_job_scheduling true when debiting a job, false for an
+ *                                   advance reservation
+ *
+ * @return 0, or -1 if no assignment was passed
+ *
+ * @warning The debitation is lost if local copies of the global lists are
+ *          passed in - the scheduler will then put every job on one queue.
+ *          That can be used deliberately to test what scheduling a job to a
+ *          specific queue would do.
+ *
+ * @warning This function does **not** check the consistency of the slot
+ *          allocation. Debiting a job from a queue its user has no access to
+ *          produces no error.
+ */
 int
 debit_scheduled_job(const sge_assignment_t *a, int *sort_hostlist,
                     order_t *orders, bool now, const char *type,
@@ -328,17 +305,34 @@ debit_job_from_hosts(lListElem *job, lListElem *ja_task, const lListElem *pe, lL
    DRETURN(0);
 }
 
-/*
- * jep: JB_Type
- * jatep: JAT_Type
- * hep: EH_Type
- * centry_list: CE_Type
+/**
+ * @brief Debits the consumables of a job on one host
  *
- * If jep and jatep are not given (nullptr) then for all consumables which are
- * defined in hep's complex_values list (EH_consumable_config_list)
- * entries are generated in hep's EH_resource_utilization list
- * @todo: anything to do for RSMAPs?
- *        Do we want to initialize the RUE_utilized_now_resource_map_list?
+ * If `jep` and `jatep` are not given (nullptr), then an entry is generated in
+ * the host's `EH_resource_utilization` list for every consumable defined in
+ * its `EH_consumable_config_list` - that is how the utilization of a host is
+ * initialized.
+ *
+ * @param[in]     jep                     the job (`JB_Type`), or nullptr to
+ *                                        only initialize the utilization
+ * @param[in]     jatep                   the array task (`JAT_Type`), or
+ *                                        nullptr
+ * @param[in]     granted_resources_list  the granted resources, used for the
+ *                                        RSMAP and binding bookings
+ * @param[in]     pe                      the granted PE (`PE_Type`)
+ * @param[in,out] hep                     the host to debit on (`EH_Type`)
+ * @param[in]     centry_list             the complex entries (`CE_Type`)
+ * @param[in]     slots                   number of slots granted on this host
+ * @param[in]     is_master_task          whether the master task runs here
+ * @param[in]     do_per_host_booking     whether the per host consumables have
+ *                                        to be booked in this call
+ * @param[in,out] just_check              if given, nothing is booked and the
+ *                                        flag reports whether it would fit
+ *
+ * @return the number of modifications made
+ *
+ * @todo Anything to do for RSMAPs? Do we want to initialize the
+ *       `RUE_utilized_now_resource_map_list`?
  */
 int
 debit_host_consumable(const lListElem *jep, const lListElem *jatep, const lList *granted_resources_list, const lListElem *pe, lListElem *hep,
@@ -355,30 +349,20 @@ debit_host_consumable(const lListElem *jep, const lListElem *jatep, const lList 
    DRETURN(mods);
 }
 
-/****** sge_resource_quota_schedd/debit_job_from_rqs() **********************************
-*  NAME
-*     debit_job_from_rqs() -- debits job in all relevant resource quotas
-*
-*  SYNOPSIS
-*     int debit_job_from_rqs(lListElem *job, lList *granted, lListElem* pe, 
-*     lList *centry_list) 
-*
-*  FUNCTION
-*     The function debits in all relevant rule the requested amout of resources.
-*
-*  INPUTS
-*     lListElem *job     - job request (JB_Type)
-*     lList *granted     - granted list (JG_Type)
-*     lListElem* pe      - granted pe (PE_Type)
-*     lList *centry_list - consumable resouces list (CE_Type)
-*
-*  RESULT
-*     int - always 0
-*
-*  NOTES
-*     MT-NOTE: debit_job_from_rqs() is not MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Debits job in all relevant resource quotas
+ *
+ * The function debits in all relevant rule the requested amout of resources.
+ *
+ * @param job job request (JB_Type)
+ * @param granted granted list (JG_Type)
+ * @param pe granted pe (PE_Type)
+ * @param centry_list consumable resouces list (CE_Type)
+ *
+ * @return always 0
+ *
+ * @note MT-NOTE: debit_job_from_rqs() is not MT safe
+ */
 static int
 debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem *pe,
                    const lList *centry_list, const lList *acl_list, const lList *hgrp_list) {

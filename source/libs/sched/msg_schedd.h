@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Message definitions of the scheduler
+ */
+
 #include "uti/sge_string.h"
 
 // clang-format off

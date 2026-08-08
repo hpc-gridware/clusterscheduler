@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The scheduler's use of job categories
+ */
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 

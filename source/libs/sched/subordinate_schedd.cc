@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The scheduler's side of suspend on subordinate
+ */
+
 #include <cstdio>
 
 #include "uti/sge_rmon_macros.h"
@@ -43,10 +47,22 @@
 
 #include "subordinate_schedd.h"
 
-/*
-qname: name of a queue that needs suspension on subordinate
-qlist: complete queue list for recursivly suspension of other queues
-*/
+/**
+ * @brief Marks a queue as suspended on subordinate, recursively
+ *
+ * Raises the queue's suspend-on-subordinate counter and, when it goes from 0
+ * to 1, sets the state. Since the queue may itself have subordinates, the
+ * function then descends into them, which is why the complete queue list has
+ * to be passed.
+ *
+ * @param[in]     qname name of the queue that needs suspension on subordinate
+ * @param[in,out] qlist the complete queue list, needed to descend into the
+ *                      subordinates of `qname`
+ *
+ * @return 0 on success, 1 if the queue is not in `qlist` - which is not an
+ *         error: the list may be a subset, and a queue that is not in it is
+ *         already suspended
+ */
 int sos_schedd(const char *qname, lList *qlist) 
 {
    lListElem *q;

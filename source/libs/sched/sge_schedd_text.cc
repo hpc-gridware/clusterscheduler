@@ -32,6 +32,14 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Maps a scheduler job information id onto its message text
+ *
+ * The ids are defined in `sge_schedd_text.h` and the texts in `msg_schedd.h`;
+ * this file is the switch between them. See the enum in the header for what
+ * has to be edited when a message is added.
+ */
+
 #include <cstring>
 
 #include "uti/sge_rmon_macros.h"
@@ -41,35 +49,20 @@
 
 #include <cinttypes>
 
-/*
-** Prototype for internationalized messages
-** translation (used in sge_schedd_text() )
-*/
+/* Prototype for the internationalized message translation, used in sge_schedd_text() */
 const char* sge_get_schedd_text(int number);
 
-/****** sge_schedd_text/sge_get_schedd_text() **********************************
-*  NAME
-*     sge_get_schedd_text() -- transformes a id into a info message
-*
-*  SYNOPSIS
-*     const char* sge_get_schedd_text(int nr) 
-*
-*  FUNCTION
-*    transformes a id into a info message
-*
-*  INPUTS
-*     int nr - info id
-*
-*  RESULT
-*     const char* -  info message
-*
-*  NOTES
-*     MT-NOTE: sge_get_schedd_text() is MT safe 
-*
-*  SEE ALSO
-*     sge_schedd_text.h for a detailed description on how to extend this.
-*
-*******************************************************************************/
+/**
+ * @brief Transforms an id into an info message
+ *
+ * @param[in] nr info id, one of the SCHEDD_INFO_* values
+ *
+ * @return the message text, or the empty string if the id is unknown
+ *
+ * @note MT-NOTE: sge_get_schedd_text() is MT safe
+ *
+ * @see `sge_schedd_text.h` for how to add a message
+ */
 const char* sge_get_schedd_text( int nr ) 
 {
  
@@ -418,6 +411,19 @@ const char* sge_get_schedd_text( int nr )
    }
 }
 
+/**
+ * @brief Transforms an id into an info message, with a text for every failure
+ *
+ * Like sge_get_schedd_text(), but never returns nullptr or an empty string -
+ * an unknown id yields a message saying so, so the caller can print the
+ * result unconditionally.
+ *
+ * @param[in] number info id, one of the SCHEDD_INFO_* values
+ *
+ * @return the message text
+ *
+ * @note MT-NOTE: sge_schedd_text() is MT safe
+ */
 const char *sge_schedd_text(int number) {
    const char *error_text = nullptr;
 

@@ -31,6 +31,16 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Sorting the execution hosts by the load formula
+ *
+ * The load formula of the scheduler configuration is an expression over load
+ * values and complex attributes, e.g. `np_load_avg` or
+ * `np_load_avg+0.5*mem_used`. scaled_mixed_load() evaluates it for one host
+ * and sort_host_list() sorts the host list by the result, which is the order
+ * in which hosts are then offered to a job.
+ */
 #include <cstring>
 #include <cstdlib>
 
@@ -52,6 +62,7 @@
 #include "sort_hosts.h"
 #include "uti/sge.h"
 
+/** The operators the load formula parser knows, in the order of the LOAD_OP_* values */
 static const char load_ops[]={
         '+',
         '-',
@@ -64,39 +75,38 @@ static const char load_ops[]={
 };
 
 
+/**
+ * @brief The operators of the load formula
+ *
+ * The values other than #LOAD_OP_NONE are indices into `load_ops`, which holds
+ * the character of each operator.
+ */
 enum {
-        LOAD_OP_NONE=-1,
-        LOAD_OP_PLUS,
-        LOAD_OP_MINUS,
-        LOAD_OP_TIMES,
-        LOAD_OP_DIV,
-        LOAD_OP_AND,
-        LOAD_OP_OR,
-        LOAD_OP_XOR
+        LOAD_OP_NONE=-1,   ///< No operator seen yet
+        LOAD_OP_PLUS,      ///< Addition, `+`
+        LOAD_OP_MINUS,     ///< Subtraction, `-`
+        LOAD_OP_TIMES,     ///< Multiplication, `*`
+        LOAD_OP_DIV,       ///< Division, `/`
+        LOAD_OP_AND,       ///< Bitwise and, `&`
+        LOAD_OP_OR,        ///< Bitwise or, `|`
+        LOAD_OP_XOR        ///< Bitwise exclusive or, `^`
 };
 
 /* prototypes */
 static int get_load_value(double *dvalp, lListElem *global, lListElem *host, const lList *centry_list, const char *attrname);
 
-/*************************************************************************
-
-   sort_host_list
-
-   purpose:
-      sort host list according to a load evaluation formula.
-
-   return values:
-      0 on success; -1 otherwise
-
-   input parameters:
-      hl             :  the host list to be sorted (EH_Type)
-      centry_list    :  the complex entry list (CE_Type)
-      formula        :  the load evaluation formula (containing no blanks)
-
-   output parameters:
-      hl             :  the sorted host list
-
-*************************************************************************/
+/**
+ * @brief Sorts the host list by the load evaluation formula
+ *
+ * The formula is taken from the scheduler configuration. The global host is
+ * left where it is - it is not a candidate for a job.
+ *
+ * @param[in,out] hl          the host list to be sorted (`EH_Type`), sorted
+ *                            in place
+ * @param[in]     centry_list the complex entry list (`CE_Type`)
+ *
+ * @return 0 on success, -1 otherwise
+ */
 int sort_host_list(lList *hl, const lList *centry_list)
 {
    DENTER(TOP_LAYER);
@@ -123,29 +133,23 @@ int sort_host_list(lList *hl, const lList *centry_list)
 }
 
 
-/*************************************************************************
-   scaled_mixed_load:
-
-   purpose:
-      compute scaled and weighted load for a particular host according
-      to a load formula and that host's load and load scaling lists.
-
-   return value:
-      load value to be used for sorting the host list. in case of
-      errors, a value of ERROR_LOAD_VAL is returned thereby ensuring
-      that hosts with incorrect load reporting are considered heavily
-      loaded.
-
-   input parameters:
-      load_list      : the host's load list  -> to be passed further
-      scaling_list   : the host's load scaling list   -> to be passed
-                       further
-      host_cplx      : the entries list of the host complex -> to be
-                       passed further
-      lc_factor      : factor that is used to implement load correction: 
-                       0 means no load correction, 
-                       n load correction for n new jobs
-*************************************************************************/
+/**
+ * @brief Computes the scaled and weighted load of one host
+ *
+ * The load formula is evaluated against the host's load values and its load
+ * scaling list, so the result is comparable between hosts of different size.
+ * The load correction of correct_load() is already contained in the values
+ * this reads.
+ *
+ * @param[in] load_formula the load evaluation formula, without blanks
+ * @param[in] global       the global host, for the globally reported values
+ * @param[in] host         the host to compute the load for (`EH_Type`)
+ * @param[in] centry_list  the complex entry list (`CE_Type`)
+ *
+ * @return the load value the host list is sorted by, or #ERROR_LOAD_VAL on
+ *         error - which sorts a host with incorrect load reporting to the end
+ *         instead of to the front
+ */
 double scaled_mixed_load(const char* load_formula, lListElem *global,
                          lListElem *host, const lList *centry_list)
 {

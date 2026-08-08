@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Implementation of the scheduler run log
+ */
 #include <cstdio>
 #include <cstring>
 #include <ctime>
@@ -91,6 +95,7 @@ FCLOSE_ERROR:
 }
 
 
+/** How many items schedd_log_list() puts on one log line */
 #define NUM_ITEMS_ON_LINE 10
 
 int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *logstr, lList *lp, int nm) {

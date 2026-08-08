@@ -19,17 +19,54 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The scheduler's use of job categories
+ *
+ * Jobs whose requests are identical form a **category**. If one job of a
+ * category cannot be dispatched, no other job of it can either, so the
+ * scheduler marks the category as rejected and skips the rest of its jobs
+ * without evaluating them again. That is what keeps a scheduling run over
+ * thousands of identical jobs affordable.
+ *
+ * Rejection is tracked twice, because a job may be dispatchable now but not
+ * reservable, or the other way round.
+ */
+
 #include "cull/cull.h"
 
 namespace ocs {
+   /** @brief Marks and queries the rejected state of a job's category */
    class CategorySchedd {
    public:
+      /**
+       * @brief Marks the category of a job as rejected
+       *
+       * @param[in] job              the job whose category is rejected
+       * @param[in] with_reservation true to also reject the category for
+       *                             reservation, not only for dispatching now
+       */
       static void
       job_reject_category(const lListElem *job, bool with_reservation);
 
+      /**
+       * @brief Was the category of this job already rejected?
+       *
+       * @param[in] job the job to look at
+       *
+       * @return non-zero if no job of this category can be dispatched in this
+       *         scheduling run
+       */
       static int
       job_is_category_rejected(const lListElem *job);
 
+      /**
+       * @brief Was the category of this job already rejected for reservation?
+       *
+       * @param[in] job the job to look at
+       *
+       * @return non-zero if no job of this category can get a reservation in
+       *         this scheduling run
+       */
       static int
       job_is_category_reservation_rejected(const lListElem *job);
    };

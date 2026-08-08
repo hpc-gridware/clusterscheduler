@@ -18,6 +18,16 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The scheduler's side of core binding
+ *
+ * A job may ask to be bound to a number of topology units - cores, sockets,
+ * threads. The scheduler has to answer two questions per host: how many of
+ * the offered slots can actually be bound, and which units the job gets. The
+ * first is test_strategy(), which only reports a count, the second is
+ * apply_strategy(), which records the decision in the assignment.
+ */
+
 #include <sstream>
 #include <string>
 #include <vector>
@@ -287,7 +297,21 @@ ocs::BindingSchedd::slots_reduced_to_available_maximum(const sge_assignment_t *a
    DRETURN(slots_max_available);
 }
 
-// @brief Tries a binding for `slots` and returns the number of slots where a binding could be found
+/**
+ * @brief Tries a binding and reports how many slots could be bound
+ *
+ * Nothing is booked - this only answers whether and how far the host can
+ * satisfy the binding request, so the scheduler can compare hosts. The
+ * counterpart that commits the decision is apply_strategy().
+ *
+ * @param[in] a               the assignment being built
+ * @param[in] host            the execution host (`EH_Type`)
+ * @param[in] slots           number of slots offered on this host
+ * @param[in] binding_in_use  topology units already taken on this host
+ *
+ * @return the number of slots a binding could be found for; `slots` when
+ *         binding is not requested or has to be ignored, 0 when none fits
+ */
 double
 ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *host, double slots, const TopologyString &binding_in_use) {
    DENTER(TOP_LAYER);
@@ -365,6 +389,13 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *ho
    DRETURN(0.0);
 }
 
+/**
+ * @brief Renders a vector of integers for a debug message
+ *
+ * @param[in] vec the vector to render
+ *
+ * @return the elements as `[a, b, c]`
+ */
 std::string vector_to_string(const std::vector<int>& vec) {
     std::ostringstream oss;
     oss << "[";
@@ -377,7 +408,21 @@ std::string vector_to_string(const std::vector<int>& vec) {
 }
 
 
-/** @brief Apply the binding strategy and store the decision in the assignment structure
+/**
+ * @brief Applies the binding strategy and stores the decision in the assignment
+ *
+ * Unlike test_strategy(), this actually books the topology units the job gets
+ * into `a->binding_to_use`, from where copy_strategy() moves them onto the
+ * granted destination identifiers.
+ *
+ * @param[in,out] a            the assignment, receives the chosen binding
+ * @param[in]     slots        number of slots to bind on this host
+ * @param[in]     host         the execution host (`EH_Type`)
+ * @param[in,out] topo_in_use  topology units already taken; the units this
+ *                             call books are added
+ *
+ * @return the number of slots a binding could be found for, which is `slots`
+ *         when binding is not requested or has to be ignored
  */
 int
 ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListElem *host, TopologyString& topo_in_use) {
@@ -531,7 +576,16 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
    DRETURN(slots);
 }
 
-/** @brief Copy the binding decision from the assignment structure to the gdil element
+/**
+ * @brief Copies the binding decision from the assignment onto the gdil
+ *
+ * apply_strategy() leaves the decision in the assignment; this writes it into
+ * the granted destination identifier list, which is what is sent to qmaster
+ * and ends up at the execution host.
+ *
+ * @param[in] a the assignment carrying the binding decision
+ *
+ * @return true on success, false if the decision could not be copied
  */
 bool
 ocs::BindingSchedd::copy_strategy(const sge_assignment_t *a) {
