@@ -125,27 +125,17 @@ void ja_task_list_print_to_string(const lList *ja_task_list,
    DRETURN_VOID;
 }
 
-/****** sgeobj/ja_task/ja_task_list_split_group() ******************************
-*  NAME
-*     ja_task_list_split_group() -- Splits a list into two parts
-*
-*  SYNOPSIS
-*     lList* ja_task_list_split_group(lList **ja_task_list)
-*
-*  FUNCTION
-*     All tasks which have the same state (JAT_status, JAT_state) like
-*     the first element of 'ja_task_list' will be removed from i
-*     'ja_task_list' and returned by this function.
-*
-*  INPUTS
-*     lList **ja_task_list - JAT_Type list
-*
-*  RESULT
-*     lList* - JAT_Type list (elements with equivalent state)
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type
-******************************************************************************/
+/**
+ * @brief Split off the leading group of equally stated tasks
+ *
+ * All tasks at the front of the list that share the first task's `JAT_status`,
+ * `JAT_state` and `JAT_hold` are moved into a new list. Callers use this to
+ * render one qstat line per group rather than per task.
+ *
+ * @param[in,out] ja_task_list the list to split; the moved tasks are removed
+ *                             from it
+ * @return the tasks that were split off, or nullptr when the list was empty
+ */
 lList *ja_task_list_split_group(lList **ja_task_list) {
    lList *ret_list = nullptr;
 

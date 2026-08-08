@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations, state bits and job type flags of the job object
+ *
+ * @see sge_job.cc
+ */
+
 #include "uti/sge_htable.h"
 #include "uti/sge_dstring.h"
 
@@ -44,243 +50,289 @@
 #include "sgeobj/cull/sge_job_PN_L.h"
 #include "sgeobj/cull/sge_job_ref_JRE_L.h"
 
-/* Job states moved in from def.h */
-#define JIDLE                                0x00000000
-/* #define JENABLED                             0x00000008 */
-#define JHELD                                0x00000010
-#define JMIGRATING                           0x00000020
-#define JQUEUED                              0x00000040
-#define JRUNNING                             0x00000080
-#define JSUSPENDED                           0x00000100
-#define JTRANSFERING                         0x00000200
-#define JDELETED                             0x00000400
-#define JWAITING                             0x00000800
-#define JEXITING                             0x00001000
-#define JWRITTEN                             0x00002000
-/* used in execd - job waits for getting its ASH/JOBID */
-#define JWAITING4OSJID                       0x00004000
-/* used in execd - shepherd reports job exit but there are still processes */
-#define JERROR                               0x00008000
-
-/*
- * JSUSPEND_ON_THRESHOLD and JFINISHED have the same value, but
- * JSUSPEND_ON_THRESHOLD is only set in the JAT_state filed,
- * where JFINISHED is set in the JAT_status and PET_status fields.
+/**
+ * @name Job states
+ *
+ * Bits of `JAT_state`, and of `JAT_status` / `PET_status`. Which field a bit
+ * belongs to matters: #JSUSPENDED_ON_THRESHOLD and #JFINISHED share a value
+ * and are told apart only by the field they appear in.
+ * @{
  */
+#define JIDLE                                0x00000000 ///< no state bit set at all
+/* #define JENABLED                             0x00000008 */
+#define JHELD                                0x00000010 ///< a hold keeps the job from being scheduled
+#define JMIGRATING                           0x00000020 ///< the job is being moved to another queue
+#define JQUEUED                              0x00000040 ///< the job is waiting to be dispatched
+#define JRUNNING                             0x00000080 ///< the job is running
+#define JSUSPENDED                           0x00000100 ///< the job was suspended
+#define JTRANSFERING                         0x00000200 ///< the job was dispatched and is starting up
+#define JDELETED                             0x00000400 ///< a delete request was accepted for the job
+#define JWAITING                             0x00000800 ///< the job waits for something, e.g. its start time
+#define JEXITING                             0x00001000 ///< the job finished and is being cleaned up
+#define JWRITTEN                             0x00002000 ///< the job was written to the spool
+#define JWAITING4OSJID                       0x00004000 ///< execd: job waits for getting its ASH/JOBID
+#define JERROR                               0x00008000 ///< execd: shepherd reports job exit but there are still processes
+
+/// The job was suspended because a load threshold was exceeded; only ever in `JAT_state`
 #define JSUSPENDED_ON_THRESHOLD              0x00010000
-/*
- * SGEEE: qmaster delays job removal till schedd
- * does no longer need this finished job
+/**
+ * @brief The job finished; only ever in `JAT_status` and `PET_status`
+ *
+ * qmaster delays removing the job until the scheduler no longer needs it.
+ *
+ * @note Shares its value with #JSUSPENDED_ON_THRESHOLD. The two are told apart
+ *       purely by which field they appear in.
  */
 #define JFINISHED                            0x00010000
-/* used in execd to prevent slave jobs from getting started */
+/// execd: prevents slave jobs from getting started
 #define JSLAVE                               0x00020000
 
-/* CS-1908 finished-job retention: display-only state bit set by
- * jatask_combine_state_and_status_for_output when JAT_status is JFINISHED,
- * so the state character renders as FINISHED_SYM ('f') for retention rows
- * instead of the pre-CS-1908 JEXITING ('x') symbol. Do NOT persist this
- * bit onto JAT_state — it exists only inside the transient value the
- * combine helper returns for rendering. The bit value is disjoint from
- * every real JAT_state bit, so any accidental persistence would still be
- * invisible to code that masks against the real state bits. */
+/**
+ * @brief Display-only bit marking a retained finished task (CS-1908)
+ *
+ * Set by #jatask_combine_state_and_status_for_output when `JAT_status` is
+ * #JFINISHED, so the state character renders as `f` rather than the `x` a
+ * retention row got before CS-1908 - `x` means "in the process of exiting",
+ * which a retained row is not.
+ *
+ * @warning Never persist this bit onto `JAT_state`. It exists only inside the
+ *          transient value the combine helper returns for rendering. Its value
+ *          is disjoint from every real state bit, so an accidental write would
+ *          stay invisible to code masking against the real ones - and
+ *          therefore hard to find.
+ */
 #define JFINISHED_DISPLAY                    0x00040000
 
+/// A request for the job was deferred and will be applied when it is rescheduled
 #define JDEFERRED_REQ                        0x00100000
+/** @} */
 
-/*
-   GDI request syntax for JB_hold
-
-   Example:
-
-   qalter -h {u|s|o|n}
-
-  POSIX (overwriting):
-  u: SET|USER
-  o: SET|OPERATOR
-  s: SET|SYSTEM
-  n: SUB|USER|SYSTEM|OPERATOR
-
-  SGE (adding):
-  +u: ADD|USER
-  +o: ADD|OPERATOR
-  +s: ADD|SYSTEM
-
-  SGE (removing):
-  -u: SUB|USER
-  -o: SUB|OPERATOR
-  -s: SUB|SYSTEM
-
-*/
+/**
+ * @brief What a `qalter -h` request does to `JB_hold`
+ *
+ * One value combines a target - which hold types are addressed - with a
+ * command - whether they are added, removed or set. The low four bits carry
+ * the target, the bits from #MINUS_H_CMD_SUB upwards the command.
+ *
+ * `qalter -h {u|s|o|n}` maps onto it like this:
+ *
+ * | Written | Means |
+ * |---|---|
+ * | `u` | `SET\|USER` |
+ * | `o` | `SET\|OPERATOR` |
+ * | `s` | `SET\|SYSTEM` |
+ * | `n` | `SUB\|USER\|SYSTEM\|OPERATOR` |
+ * | `+u` `+o` `+s` | `ADD\|`the matching target |
+ * | `-u` `-o` `-s` | `SUB\|`the matching target |
+ *
+ * The first four are the POSIX spelling and overwrite; the `+`/`-` forms are
+ * the Grid Engine extension and add or remove.
+ */
 enum {
-   MINUS_H_TGT_USER     = 1, /* remove needs at least job owner */
-   MINUS_H_TGT_OPERATOR = 2, /* remove needs at least operator  */
-   MINUS_H_TGT_SYSTEM   = 4, /* remove needs at least manager   */
-   MINUS_H_TGT_JA_AD    = 8, /* removed automatically */
+   MINUS_H_TGT_USER     = 1, ///< the user hold; removing it needs at least the job owner
+   MINUS_H_TGT_OPERATOR = 2, ///< the operator hold; removing it needs at least an operator
+   MINUS_H_TGT_SYSTEM   = 4, ///< the system hold; removing it needs at least a manager
+   MINUS_H_TGT_JA_AD    = 8, ///< the array dependency hold; removed automatically
 
-   MINUS_H_TGT_ALL      = 15,
-   MINUS_H_TGT_NONE     = 31,
+   MINUS_H_TGT_ALL      = 15, ///< all four targets at once
+   MINUS_H_TGT_NONE     = 31, ///< not a target; marks a request that names none
 
-   /* need place for tree bits */
-   MINUS_H_CMD_ADD = (0<<4), /* adds targetted flags */
-   MINUS_H_CMD_SUB = (1<<4), /* remove targetted flags */
-   MINUS_H_CMD_SET = (2<<4)  /* overwrites using targetted flags */
+   MINUS_H_CMD_ADD = (0<<4), ///< adds the targetted flags
+   MINUS_H_CMD_SUB = (1<<4), ///< removes the targetted flags
+   MINUS_H_CMD_SET = (2<<4)  ///< overwrites the hold state with the targetted flags
 };
 
-/* values for JB_verify_suitable_queues */
+/// The `-w` letters, in the order of the values below
 #define OPTION_VERIFY_STR "nwevp"
+/**
+ * @brief Values for `JB_verify_suitable_queues`, i.e. how far `qsub -w` goes
+ *
+ * The index of a value in #OPTION_VERIFY_STR is the letter the user writes.
+ */
 enum {
-   SKIP_VERIFY = 0,     /* -w n no expendable verifications will be done */
-   WARNING_VERIFY,      /* -w w qmaster will warn about these jobs - but submit will succeed */
-   ERROR_VERIFY,        /* -w e qmaster will make expendable verifications to reject
-                            jobs that are not schedulable (default) */
-   JUST_VERIFY,         /* -w v just verify at qmaster but do not submit */
-   POKE_VERIFY          /* -w p do verification with all resource utilizations in place (poke) */
+   SKIP_VERIFY = 0,     ///< `-w n` no expendable verifications will be done
+   WARNING_VERIFY,      ///< `-w w` qmaster will warn about these jobs, but submit will succeed
+   ERROR_VERIFY,        ///< `-w e` qmaster rejects jobs that are not schedulable (default)
+   JUST_VERIFY,         ///< `-w v` just verify at qmaster but do not submit
+   POKE_VERIFY          ///< `-w p` verify with all resource utilizations in place (poke)
 };
 
+/// What `qsub -sync` makes the submitting client wait for
 typedef enum {
-   SYNC_UNINITIALIZED = 0x00000000,
-   SYNC_NO            = 0x00000001,
-   SYNC_JOB_END       = 0x00000002,
-   SYNC_JOB_START     = 0x00000004,
+   SYNC_UNINITIALIZED = 0x00000000, ///< the switch was not given
+   SYNC_NO            = 0x00000001, ///< do not wait at all
+   SYNC_JOB_END       = 0x00000002, ///< wait until the job finished
+   SYNC_JOB_START     = 0x00000004, ///< wait until the job started
 } sync_switch_t;
 
+/// When a `qalter` change takes effect
 typedef enum {
-   QALTER_WHEN_ON_RESCHEDULE = 0,
-   QALTER_WHEN_NOW
+   QALTER_WHEN_ON_RESCHEDULE = 0, ///< only once the job is rescheduled
+   QALTER_WHEN_NOW                ///< immediately, on the running job
 } qalter_when_t;
 
-/************    scheduling constants   *****************************************/
-/* priorities are in the range from -1023 to 1024 */
-/* to put them in into u_long we need to add 1024 */
-#define BASE_PRIORITY  1024
+/**
+ * @name Scheduling constants
+ *
+ * A POSIX priority runs from -1023 to 1024, but the object model stores it in
+ * an unsigned field, so #BASE_PRIORITY is added on the way in and subtracted
+ * on the way out.
+ * @{
+ */
+#define BASE_PRIORITY  1024   ///< added to a signed priority to make it storable unsigned
 
-/* int -> u_long */
-#define PRI_ITOU(x) ((x)+BASE_PRIORITY)
-/* u_long -> int */
-#define PRI_UTOI(x) ((x)-BASE_PRIORITY)
+#define PRI_ITOU(x) ((x)+BASE_PRIORITY) ///< signed priority to the stored unsigned form
+#define PRI_UTOI(x) ((x)-BASE_PRIORITY) ///< stored unsigned form back to the signed priority
 
-#define PRIORITY_OFFSET 8
-#define NEWCOMER_FLAG     0x1000000
+#define PRIORITY_OFFSET 8         ///< bit position the priority starts at within the sort key
+#define NEWCOMER_FLAG     0x1000000 ///< marks a job that has not been through a scheduling run yet
 
-/* forced negative sign bit  */
-#define MAX_JOBS_EXCEEDED 0x8000000
-#define ALREADY_SCANNED   0x4000000
-#define PRIORITY_MASK     0xffff00
-#define SUBPRIORITY_MASK  0x0000ff
-#define JOBS_SCANNED_PER_PASS 10
+#define MAX_JOBS_EXCEEDED 0x8000000 ///< forced negative sign bit: the job limit was hit
+#define ALREADY_SCANNED   0x4000000 ///< the job was already looked at in this pass
+#define PRIORITY_MASK     0xffff00  ///< the priority bits of the sort key
+#define SUBPRIORITY_MASK  0x0000ff  ///< the tie breaking bits below the priority
+#define JOBS_SCANNED_PER_PASS 10    ///< how many jobs one pass looks at before yielding
+/** @} */
 
-/*
-   used in qstat:
-
-   JSUSPENDED_ON_SUBORDINATE means that the job is
-   suspended because its queue is suspended
-
-*/
+/// qstat: the job is suspended because its queue was suspended by a subordinate relation
 #define JSUSPENDED_ON_SUBORDINATE            0x00002000
+/// qstat: the same, but through a slot wise subordinate relation
 #define JSUSPENDED_ON_SLOTWISE_SUBORDINATE   0x00004000
 
-/* reserved names for JB_context */
+/// Reserved `JB_context` key holding the interoperable object reference of an interactive job
 #define CONTEXT_IOR "IOR"
+/// Reserved `JB_context` key naming the job this one was started from
 #define CONTEXT_PARENT "PARENT"
 
-/****** sgeobj/job/jb_now *****************************************************
-*  NAME
-*     jb_now -- macros to handle flag JB_type
-*
-*  SYNOPSIS
-*
-*     JOB_TYPE_IMMEDIATE
-*     JOB_TYPE_QSH
-*     JOB_TYPE_QLOGIN
-*     JOB_TYPE_QRSH
-*     JOB_TYPE_QRLOGIN
-*
-*     JOB_TYPE_NO_ERROR
-*        When a job of this type fails and the error condition usually
-*        would result in the job error state the job is finished. Thus
-*        no qmod -c "*" is supported.
-*******************************************************************************/
+/**
+ * @name Macros to handle flag JB_type
+ *
+ * `JB_type` is a bit field. The `JOB_TYPE_*` values are the bits, the
+ * `JOB_TYPE_SET_*` / `_CLEAR_*` / `_IS_*` macros are how the bits are written
+ * and read, and the `JOB_TYPE_STR_*` values are how each appears in output.
+ *
+ * The four interactive kinds are mutually exclusive, which is what
+ * #JOB_TYPE_QXXX_MASK is for: setting one clears the others.
+ * @{
+ */
 
+/// submitted with `-now y`, so it runs at once or not at all
 #define JOB_TYPE_IMMEDIATE  0x01UL
+/// an interactive job started by `qsh`
 #define JOB_TYPE_QSH        0x02UL
+/// an interactive login session started by `qlogin`
 #define JOB_TYPE_QLOGIN     0x04UL
+/// a remote command started by `qrsh`
 #define JOB_TYPE_QRSH       0x08UL
+/// a remote login started by `qrsh` without a command
 #define JOB_TYPE_QRLOGIN    0x10UL
+/// do not put the job in error state when it fails to start
 #define JOB_TYPE_NO_ERROR   0x20UL
 
-/* submitted via "qsub -b y" or "qrsh [-b y]" */
+/// submitted via `qsub -b y` or `qrsh [-b y]`: the job is a binary, not a script
 #define JOB_TYPE_BINARY     0x40UL
 
-/* array job (qsub -t ...) */
+/// an array job, submitted with `qsub -t`
 #define JOB_TYPE_ARRAY      0x80UL
-/* Do a raw exec (qsub -noshell) */
+/// do a raw exec, submitted with `qsub -noshell`
 #define JOB_TYPE_NO_SHELL   0x100UL
 
+/// The mutually exclusive interactive kinds; setting one clears the rest
 #define JOB_TYPE_QXXX_MASK \
    (JOB_TYPE_QSH | JOB_TYPE_QLOGIN | JOB_TYPE_QRSH | JOB_TYPE_QRLOGIN | JOB_TYPE_NO_ERROR)
 
+/// How #JOB_TYPE_IMMEDIATE is written in qstat and accounting output
 #define JOB_TYPE_STR_IMMEDIATE  "IMMEDIATE"
+/// How #JOB_TYPE_QSH is written in qstat and accounting output
 #define JOB_TYPE_STR_QSH        "INTERACTIVE"
+/// How #JOB_TYPE_QLOGIN is written in qstat and accounting output
 #define JOB_TYPE_STR_QLOGIN     "QLOGIN"
+/// How #JOB_TYPE_QRSH is written in qstat and accounting output
 #define JOB_TYPE_STR_QRSH       "QRSH"
+/// How #JOB_TYPE_QRLOGIN is written in qstat and accounting output
 #define JOB_TYPE_STR_QRLOGIN    "QRLOGIN"
+/// How #JOB_TYPE_NO_ERROR is written in qstat and accounting output
 #define JOB_TYPE_STR_NO_ERROR   "NO_ERROR"
 
+/// Clear #JOB_TYPE_IMMEDIATE in `jb_now`
 #define JOB_TYPE_CLEAR_IMMEDIATE(jb_now) \
    jb_now = jb_now & ~JOB_TYPE_IMMEDIATE
 
+/// Set #JOB_TYPE_IMMEDIATE in `jb_now`
 #define JOB_TYPE_SET_IMMEDIATE(jb_now) \
    jb_now =  jb_now | JOB_TYPE_IMMEDIATE
 
+/// Make `jb_now` #JOB_TYPE_QSH, clearing the other interactive kinds
 #define JOB_TYPE_SET_QSH(jb_now) \
    jb_now = (jb_now & (~JOB_TYPE_QXXX_MASK)) | JOB_TYPE_QSH
 
+/// Make `jb_now` #JOB_TYPE_QLOGIN, clearing the other interactive kinds
 #define JOB_TYPE_SET_QLOGIN(jb_now) \
    jb_now = (jb_now & (~JOB_TYPE_QXXX_MASK)) | JOB_TYPE_QLOGIN
 
+/// Make `jb_now` #JOB_TYPE_QRSH, clearing the other interactive kinds
 #define JOB_TYPE_SET_QRSH(jb_now) \
    jb_now = (jb_now & ~JOB_TYPE_QXXX_MASK) | JOB_TYPE_QRSH
 
+/// Make `jb_now` #JOB_TYPE_QRLOGIN, clearing the other interactive kinds
 #define JOB_TYPE_SET_QRLOGIN(jb_now) \
    jb_now = (jb_now & ~JOB_TYPE_QXXX_MASK) | JOB_TYPE_QRLOGIN
 
+/// Set #JOB_TYPE_BINARY in `jb_now`
 #define JOB_TYPE_SET_BINARY(jb_now) \
    jb_now = jb_now | JOB_TYPE_BINARY
 
+/// Clear #JOB_TYPE_BINARY in `jb_now`
 #define JOB_TYPE_CLEAR_BINARY(jb_now) \
    jb_now = jb_now & ~JOB_TYPE_BINARY
 
+/// Set #JOB_TYPE_ARRAY in `jb_now`
 #define JOB_TYPE_SET_ARRAY(jb_now) \
    jb_now = jb_now | JOB_TYPE_ARRAY
 
+/// Clear #JOB_TYPE_NO_ERROR in `jb_now`
 #define JOB_TYPE_CLEAR_NO_ERROR(jb_now) \
    jb_now = jb_now & ~JOB_TYPE_NO_ERROR
 
+/// Set #JOB_TYPE_NO_ERROR in `jb_now`
 #define JOB_TYPE_SET_NO_ERROR(jb_now) \
    jb_now =  jb_now | JOB_TYPE_NO_ERROR
 
+/// Set #JOB_TYPE_NO_SHELL in `jb_now`
 #define JOB_TYPE_SET_NO_SHELL(jb_now) \
    jb_now =  jb_now | JOB_TYPE_NO_SHELL
 
+/// Clear #JOB_TYPE_NO_SHELL in `jb_now`
 #define JOB_TYPE_CLEAR_NO_SHELL(jb_now) \
    jb_now =  jb_now & ~JOB_TYPE_NO_SHELL
 
+/// Clear #JOB_TYPE_BINARY in `jb_now`
 #define JOB_TYPE_UNSET_BINARY(jb_now) \
    jb_now = jb_now & ~JOB_TYPE_BINARY
 
+/// Clear #JOB_TYPE_NO_SHELL in `jb_now`
 #define JOB_TYPE_UNSET_NO_SHELL(jb_now) \
    jb_now =  jb_now & ~JOB_TYPE_NO_SHELL
 
+/// Is #JOB_TYPE_IMMEDIATE set in `jb_now`?
 #define JOB_TYPE_IS_IMMEDIATE(jb_now)      (jb_now & JOB_TYPE_IMMEDIATE)
+/// Is #JOB_TYPE_QSH set in `jb_now`?
 #define JOB_TYPE_IS_QSH(jb_now)            (jb_now & JOB_TYPE_QSH)
+/// Is #JOB_TYPE_QLOGIN set in `jb_now`?
 #define JOB_TYPE_IS_QLOGIN(jb_now)         (jb_now & JOB_TYPE_QLOGIN)
+/// Is #JOB_TYPE_QRSH set in `jb_now`?
 #define JOB_TYPE_IS_QRSH(jb_now)           (jb_now & JOB_TYPE_QRSH)
+/// Is #JOB_TYPE_QRLOGIN set in `jb_now`?
 #define JOB_TYPE_IS_QRLOGIN(jb_now)        (jb_now & JOB_TYPE_QRLOGIN)
+/// Is #JOB_TYPE_BINARY set in `jb_now`?
 #define JOB_TYPE_IS_BINARY(jb_now)         (jb_now & JOB_TYPE_BINARY)
+/// Is #JOB_TYPE_ARRAY set in `jb_now`?
 #define JOB_TYPE_IS_ARRAY(jb_now)          (jb_now & JOB_TYPE_ARRAY)
+/// Is #JOB_TYPE_NO_ERROR set in `jb_now`?
 #define JOB_TYPE_IS_NO_ERROR(jb_now)       (jb_now & JOB_TYPE_NO_ERROR)
+/// Is #JOB_TYPE_NO_SHELL set in `jb_now`?
 #define JOB_TYPE_IS_NO_SHELL(jb_now)       (jb_now & JOB_TYPE_NO_SHELL)
+/** @} */
 
 
 bool job_is_enrolled(const lListElem *job,
@@ -316,6 +368,13 @@ uint32_t job_get_hold_state(lListElem *job, uint32_t ja_task_id);
 /* int job_add_job(lList **job_list, char *name, lListElem *job, int check,
                  int hash, htable* Job_Hash_Table); */
 
+/**
+ * @brief Print a job list for debugging
+ *
+ * @param job_list the list to print
+ *
+ * @warning Declared here but defined nowhere in the tree, and never called.
+ */
 void job_list_print(lList *job_list);
 
 lListElem *job_get_ja_task_template(const lListElem *job, uint32_t ja_task_id);
@@ -367,6 +426,14 @@ uint32_t job_get_biggest_enrolled_task_id(const lListElem *job);
 int job_list_register_new_job(const lList *job_list, uint32_t max_jobs,
                               int force_registration);
 
+/**
+ * @brief Render an array task list as a range string
+ *
+ * @param task_list the tasks to render
+ * @param[out] range_string receives the rendered ranges
+ *
+ * @warning Declared here but defined nowhere in the tree, and never called.
+ */
 void jatask_list_print_to_string(const lList *task_list, dstring *range_string);
 
 lList* ja_task_list_split_group(lList **task_list);
@@ -491,15 +558,38 @@ job_parse_validation_level(int *level, const char *input, int prog_number, lList
 bool
 job_is_requesting_consumable(lListElem *jep, const char *resource_name);
 
+/**
+ * @brief Give a job a default binding element
+ *
+ * @param jep the job to initialise
+ * @return true when the element was created
+ *
+ * @warning Declared here but defined nowhere in the tree, and never called.
+ */
 bool
 job_init_binding_elem(lListElem *jep);
 
 // Defines and Functions for Job Resource Sets (JRS_Type)
 
-#define JRS_SCOPE_GLOBAL 0
-#define JRS_SCOPE_MASTER 1
-#define JRS_SCOPE_SLAVE  2
+/**
+ * @name Job resource set scopes
+ *
+ * A job may state different requests for its parts. A sequential job only has
+ * the global scope; a parallel job may additionally request something specific
+ * for its master task and something else for its slave tasks.
+ * @{
+ */
+#define JRS_SCOPE_GLOBAL 0 ///< requests that apply to the whole job
+#define JRS_SCOPE_MASTER 1 ///< requests that apply to a parallel job's master task
+#define JRS_SCOPE_SLAVE  2 ///< requests that apply to a parallel job's slave tasks
+/** @} */
 
+/**
+ * @brief The name of a scope, usable in a constant expression
+ *
+ * @param scope one of the `JRS_SCOPE_*` values
+ * @return `global`, `master`, `slave`, or `unknown`
+ */
 constexpr const char *scope_to_string(const int scope) {
    switch (scope) {
       case JRS_SCOPE_GLOBAL:
