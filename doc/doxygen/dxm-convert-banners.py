@@ -197,7 +197,11 @@ def placeholders(line):
     left alone - that is a template argument such as vector<int>, not a
     placeholder.
     """
-    return re.sub(r'(?<![\w>])<([A-Za-z_]\w*)>', r'`\1`', line)
+    line = re.sub(r'(?<![\w>])<([A-Za-z_]\w*)>', r'`\1`', line)
+    # A queue instance is written cqueue@host, a mail address user@host - in
+    # both cases doxygen reads the @word as a command it does not know. The
+    # token is always a name here, so inline code is the right rendering.
+    return re.sub(r'(?<![`\w])([\w.*]+@+[\w.*]+)(?![`\w])', r'`\1`', line)
 
 
 def local_symbol_names(text):
