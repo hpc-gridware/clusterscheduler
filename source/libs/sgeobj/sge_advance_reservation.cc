@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Advance reservations: resources held for a time window
+ *
+ * A reservation is granted once and then moves through the states in
+ * @ref ar_state_t as its start and end times pass; jobs submitted into it run
+ * against the resources it already holds.
+ *
+ * @see sge_advance_reservation.h
+ */
+
 #include <cstring>
 
 #include "uti/sge_log.h"
@@ -54,27 +64,19 @@
 #include "msg_qmaster.h"
 #include "uti/sge.h"
 
-/****** sge_advance_reservation/ar_list_locate() *******************************
-*  NAME
-*     ar_list_locate() -- locate a advance reservation by id
-*
-*  SYNOPSIS
-*     lListElem* ar_list_locate(lList *ar_list, uint32_t ar_id)
-*
-*  FUNCTION
-*     This function returns a ar object with the selected id from the
-*     given list.
-*
-*  INPUTS
-*     lList *ar_list - list to be searched in
-*     uint32_t ar_id - id of interest
-*
-*  RESULT
-*     lListElem* - if found the reference to the ar object, else nullptr
-*
-*  NOTES
-*     MT-NOTE: ar_list_locate() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Locate a advance reservation by id
+ *
+ * This function returns a ar object with the selected id from the
+ * given list.
+ *
+ * @param ar_list list to be searched in
+ * @param ar_id id of interest
+ *
+ * @return if found the reference to the ar object, else nullptr
+ *
+ * @note MT-NOTE: ar_list_locate() is MT safe
+ */
 lListElem *ar_list_locate(const lList *ar_list, uint32_t ar_id)
 {
    lListElem *ep = nullptr;
@@ -86,28 +88,26 @@ lListElem *ar_list_locate(const lList *ar_list, uint32_t ar_id)
    DRETURN(ep);
 }
 
-/****** sge_advance_reservation/ar_validate() **********************************
-*  NAME
-*     ar_validate() -- validate a advance reservation
-*
-*  SYNOPSIS
-*     bool ar_validate(lListElem *ar, lList **alpp, bool in_master)
-*
-*  FUNCTION
-*     Ensures a new ar has valid start and end times
-*
-*  INPUTS
-*     lListElem *ar   - the ar to check
-*     lList **alpp    - answer list pointer
-*     bool in_master  - are we in qmaster?
-*     bool is_spool   - do we validate for spooling? 
-*
-*  RESULT
-*     bool - true if OK, else false
-*
-*  NOTES
-*     MT-NOTE: ar_validate() is MT safe
-*******************************************************************************/
+/**
+ * @brief Validate a advance reservation
+ *
+ * Ensures a new ar has valid start and end times
+ *
+ * @param ar the ar to check
+ * @param alpp answer list pointer
+ * @param in_master are we in qmaster?
+ * @param is_spool do we validate for spooling?
+ * @param master_cqueue_list the cluster queues the reservation may name
+ * @param master_hgroup_list the host groups it may name
+ * @param master_centry_list the complex entries its requests may name
+ * @param master_ckpt_list the checkpointing environments it may name
+ * @param master_pe_list the parallel environments it may name
+ * @param master_userset_list the usersets its access lists may name
+ *
+ * @return true if OK, else false
+ *
+ * @note MT-NOTE: ar_validate() is MT safe
+ */
 bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, const lList *master_cqueue_list, 
                  const lList *master_hgroup_list, const lList *master_centry_list, const lList *master_ckpt_list,
                  const lList *master_pe_list, const lList *master_userset_list)
@@ -286,26 +286,18 @@ ERROR:
    DRETURN(false);
 }
 
-/****** libs/sge_obj/ar_get_event_from_string() ******************************
-*  NAME
-*     ar_get_event_from_string() -- converts a string to a event id 
-*
-*  SYNOPSIS
-*     ar_state_event_t ar_get_event_from_string(const char *string) 
-*
-*  FUNCTION
-*     Converts a human readable event string to the corresponding
-*     event if. 
-*
-*  INPUTS
-*     const char *string - string 
-*
-*  RESULT
-*     ar_state_event_t - the event id 
-*
-*  NOTES
-*     MT-NOTE: ar_get_event_from_string() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Converts a string to a event id
+ *
+ * Converts a human readable event string to the corresponding
+ * event if.
+ *
+ * @param string string
+ *
+ * @return the event id
+ *
+ * @note MT-NOTE: ar_get_event_from_string() is not MT safe
+ */
 ar_state_event_t
 ar_get_event_from_string(const char *string)
 {
@@ -332,25 +324,17 @@ ar_get_event_from_string(const char *string)
    DRETURN(ret);
 }
 
-/****** libs/sgeobj/ar_get_string_from_event() ********************************
-*  NAME
-*     ar_get_string_from_event() -- converts a state event to a string 
-*
-*  SYNOPSIS
-*     const char * ar_get_string_from_event(ar_state_event_t event) 
-*
-*  FUNCTION
-*     Converts a state event id to a human readable string. 
-*
-*  INPUTS
-*     ar_state_event_t event - state event id 
-*
-*  RESULT
-*     const char * - string
-*
-*  NOTES
-*     MT-NOTE: ar_get_string_from_event() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Converts a state event to a string
+ *
+ * Converts a state event id to a human readable string.
+ *
+ * @param event state event id
+ *
+ * @return string
+ *
+ * @note MT-NOTE: ar_get_string_from_event() is not MT safe
+ */
 const char *
 ar_get_string_from_event(ar_state_event_t event)
 {
@@ -389,27 +373,17 @@ ar_get_string_from_event(ar_state_event_t event)
    DRETURN(ret);
 }
 
-/****** libs/sgeobj/ar_state2dstring() ***************************************
-*  NAME
-*     ar_state2dstring() -- writes the ar state as letter combination
-*
-*  SYNOPSIS
-*     void ar_state2dstring(ar_state_t state, dstring *state_as_string) 
-*
-*  FUNCTION
-*     This function writes the given state of a advance reservation as
-*     letter into the given dstring. The letter will be appended at the and.
-*
-*  INPUTS
-*     ar_state_t state         - ar state 
-*     dstring *state_as_string - dstring
-*
-*  RESULT
-*     void 
-*
-*  NOTES
-*     MT-NOTE: ar_get_string_from_event() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Writes the ar state as letter combination
+ *
+ * This function writes the given state of a advance reservation as
+ * letter into the given dstring. The letter will be appended at the and.
+ *
+ * @param state ar state
+ * @param state_as_string dstring
+ *
+ * @note MT-NOTE: ar_get_string_from_event() is MT safe
+ */
 void 
 ar_state2dstring(ar_state_t state, dstring *state_as_string)
 {
@@ -439,27 +413,18 @@ ar_state2dstring(ar_state_t state, dstring *state_as_string)
    sge_dstring_append(state_as_string, letter);
 }
 
-/****** sge_advance_reservation/sge_ar_has_errors() ****************************
-*  NAME
-*     sge_ar_has_errors() -- Has AR errors?
-*
-*  SYNOPSIS
-*     bool sge_ar_has_errors(lListElem *ar) 
-*
-*  FUNCTION
-*     Check if one of the reserved queues is in state where jobs can not be
-*     running
-*
-*  INPUTS
-*     lListElem *ar - advance reservation object (AR_Type)
-*
-*  RESULT
-*     bool - true if has errors
-*            false if has no errors
-*
-*  NOTES
-*     MT-NOTE: sge_ar_has_errors() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Has AR errors?
+ *
+ * Check if one of the reserved queues is in state where jobs can not be
+ * running
+ *
+ * @param ar advance reservation object (AR_Type)
+ *
+ * @return true if has errors false if has no errors
+ *
+ * @note MT-NOTE: sge_ar_has_errors() is MT safe
+ */
 bool sge_ar_has_errors(lListElem *ar) {
    bool ret = false;
 

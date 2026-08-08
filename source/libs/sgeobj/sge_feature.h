@@ -33,12 +33,19 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for the product name and feature set
+ *
+ * @see sge_feature.cc
+ */
+
+/// Which form of the product name is wanted
 typedef enum {
-   FS_SHORT,
-   FS_LONG,
-   FS_VERSION,
-   FS_SHORT_VERSION,
-   FS_LONG_VERSION
+   FS_SHORT,         ///< the abbreviated name
+   FS_LONG,          ///< the full name
+   FS_VERSION,       ///< the version alone
+   FS_SHORT_VERSION, ///< the abbreviated name with the version
+   FS_LONG_VERSION   ///< the full name with the version
 } featureset_product_name_id_t;
 
 const char*     feature_get_product_name(featureset_product_name_id_t style, dstring *buffer);

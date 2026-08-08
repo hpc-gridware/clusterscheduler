@@ -32,6 +32,18 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Verifying one cluster queue attribute each
+ *
+ * Every function here is a `verify_function` entry of
+ * `cqueue_attribute_array`; qmaster calls the one belonging to an attribute
+ * before it accepts a changed cluster queue. They all share a signature so the
+ * table can hold them, which means several of them ignore the `master_list`
+ * argument.
+ *
+ * @see sge_cqueue_verify.h
+ */
+
 #include <cstring>
 #include <limits>
 
@@ -57,9 +69,22 @@
 #include "sgeobj/msg_sgeobjlib.h"
 
 
+/// Debug layer the cluster queue verification traces are written to
 #define CQUEUE_VERIFY_LAYER TOP_LAYER
 
 bool
+/**
+ * @brief Verify that the calendar a queue refers to exists
+ *
+ * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
+ * calls it for the attribute before accepting a changed cluster queue.
+ *
+ * @param cqueue the cluster queue being verified
+ * @param[out] answer_list receives the reason the value was rejected
+ * @param attr_elem the attribute value to verify
+ * @param master_calendar_list the defined calendars
+ * @return true when the value is acceptable
+ */
 cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_calendar_list)
 {
    bool ret = true;
@@ -81,6 +106,18 @@ cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_e
 }
 
 bool
+/**
+ * @brief Verify that every checkpointing environment a queue refers to exists
+ *
+ * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
+ * calls it for the attribute before accepting a changed cluster queue.
+ *
+ * @param cqueue the cluster queue being verified
+ * @param[out] answer_list receives the reason the value was rejected
+ * @param attr_elem the attribute value to verify
+ * @param master_ckpt_list the defined checkpointing environments
+ * @return true when the value is acceptable
+ */
 cqueue_verify_ckpt_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_ckpt_list)
 {
    bool ret = true;
@@ -99,6 +136,18 @@ cqueue_verify_ckpt_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
 }
 
 bool
+/**
+ * @brief Verify that every resource in the complex values is defined and its value fits its type
+ *
+ * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
+ * calls it for the attribute before accepting a changed cluster queue.
+ *
+ * @param cqueue the cluster queue being verified
+ * @param[out] answer_list receives the reason the value was rejected
+ * @param attr_elem the attribute value to verify
+ * @param master_centry_list the defined complex entries
+ * @return true when the value is acceptable
+ */
 cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_centry_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
 
@@ -126,6 +175,18 @@ cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list, lLi
 }
 
 bool
+/**
+ * @brief Verify that the initial state is one of the accepted words
+ *
+ * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
+ * calls it for the attribute before accepting a changed cluster queue.
+ *
+ * @param cqueue the cluster queue being verified
+ * @param[out] answer_list receives the reason the value was rejected
+ * @param attr_elem the attribute value to verify
+ * @param master_list unused
+ * @return true when the value is acceptable
+ */
 cqueue_verify_initial_state(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
 {
    bool ret = true;
@@ -154,6 +215,18 @@ cqueue_verify_initial_state(lListElem *cqueue, lList **answer_list, lListElem *a
 }
 
 bool
+/**
+ * @brief Verify that every parallel environment a queue refers to exists
+ *
+ * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
+ * calls it for the attribute before accepting a changed cluster queue.
+ *
+ * @param cqueue the cluster queue being verified
+ * @param[out] answer_list receives the reason the value was rejected
+ * @param attr_elem the attribute value to verify
+ * @param master_pe_list the defined parallel environments
+ * @return true when the value is acceptable
+ */
 cqueue_verify_pe_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_pe_list)
 {
    bool ret = true;
@@ -172,6 +245,18 @@ cqueue_verify_pe_list(lListElem *cqueue, lList **answer_list, lListElem *attr_el
 }
 
 bool
+/**
+ * @brief Verify that the priority is within the range a nice value allows
+ *
+ * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
+ * calls it for the attribute before accepting a changed cluster queue.
+ *
+ * @param cqueue the cluster queue being verified
+ * @param[out] answer_list receives the reason the value was rejected
+ * @param attr_elem the attribute value to verify
+ * @param master_list unused
+ * @return true when the value is acceptable
+ */
 cqueue_verify_priority(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
 {
    bool ret = true;
@@ -196,6 +281,18 @@ cqueue_verify_priority(lListElem *cqueue, lList **answer_list, lListElem *attr_e
 }
 
 bool
+/**
+ * @brief Verify that the processor set specification is well formed
+ *
+ * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
+ * calls it for the attribute before accepting a changed cluster queue.
+ *
+ * @param cqueue the cluster queue being verified
+ * @param[out] answer_list receives the reason the value was rejected
+ * @param attr_elem the attribute value to verify
+ * @param master_list unused
+ * @return true when the value is acceptable
+ */
 cqueue_verify_processors(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
 {
    bool ret = true;
@@ -217,6 +314,18 @@ cqueue_verify_processors(lListElem *cqueue, lList **answer_list, lListElem *attr
 }
 
 bool
+/**
+ * @brief Verify that every project a queue refers to exists
+ *
+ * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
+ * calls it for the attribute before accepting a changed cluster queue.
+ *
+ * @param cqueue the cluster queue being verified
+ * @param[out] answer_list receives the reason the value was rejected
+ * @param attr_elem the attribute value to verify
+ * @param master_project_list the defined projects
+ * @return true when the value is acceptable
+ */
 cqueue_verify_project_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_project_list)
 {
    bool ret = true;
@@ -235,6 +344,18 @@ cqueue_verify_project_list(lListElem *cqueue, lList **answer_list, lListElem *at
 }
 
 bool
+/**
+ * @brief Verify that the shell start mode is one of the accepted words
+ *
+ * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
+ * calls it for the attribute before accepting a changed cluster queue.
+ *
+ * @param cqueue the cluster queue being verified
+ * @param[out] answer_list receives the reason the value was rejected
+ * @param attr_elem the attribute value to verify
+ * @param master_list unused
+ * @return true when the value is acceptable
+ */
 cqueue_verify_shell_start_mode(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
 {
    bool ret = true;
@@ -265,6 +386,18 @@ cqueue_verify_shell_start_mode(lListElem *cqueue, lList **answer_list, lListElem
    DRETURN(ret);
 }
 bool
+/**
+ * @brief Verify that the login shell is given as an absolute path
+ *
+ * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
+ * calls it for the attribute before accepting a changed cluster queue.
+ *
+ * @param cqueue the cluster queue being verified
+ * @param[out] answer_list receives the reason the value was rejected
+ * @param attr_elem the attribute value to verify
+ * @param master_list unused
+ * @return true when the value is acceptable
+ */
 cqueue_verify_shell(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
     {
        bool ret = true;
@@ -288,6 +421,18 @@ cqueue_verify_shell(lListElem *cqueue, lList **answer_list, lListElem *attr_elem
    }
 
 bool
+/**
+ * @brief Verify that every subordinate relation names an existing cluster queue
+ *
+ * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
+ * calls it for the attribute before accepting a changed cluster queue.
+ *
+ * @param cqueue the cluster queue being verified
+ * @param[out] answer_list receives the reason the value was rejected
+ * @param attr_elem the attribute value to verify
+ * @param master_cqueue_list the defined cluster queues
+ * @return true when the value is acceptable
+ */
 cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_cqueue_list)
 {
    bool ret = true;
@@ -331,6 +476,18 @@ cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem
 }
 
 bool
+/**
+ * @brief Verify that every userset a queue refers to exists
+ *
+ * One of the `verify_function` entries of `cqueue_attribute_array`; qmaster
+ * calls it for the attribute before accepting a changed cluster queue.
+ *
+ * @param cqueue the cluster queue being verified
+ * @param[out] answer_list receives the reason the value was rejected
+ * @param attr_elem the attribute value to verify
+ * @param master_userset_list the defined usersets
+ * @return true when the value is acceptable
+ */
 cqueue_verify_user_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_userset_list)
 {
    bool ret = true;
@@ -350,30 +507,21 @@ cqueue_verify_user_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
 
 
 
-/****** sge_cqueue_verify/cqueue_verify_job_slots() ****************************
-*  NAME
-*     cqueue_verify_job_slots() -- verify the queue slots attribute
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_verify_job_slots(lListElem *cqueue, lList **answer_list, 
-*                             lListElem *attr_elem)
-*
-*  FUNCTION
-*     Verifies if the slots attribute of a queue is in the expected range
-*     (0 .. std::numeric_limits<uint32_t>::max()). std::numeric_limits<uint32_t>::max() is 9999999.
-*
-*  INPUTS
-*     lListElem *cqueue    - The queue to verify.
-*     lList **answer_list  - answer list to report errors
-*     lListElem *attr_elem - the attribute to verify
-*
-*  RESULT
-*     bool - true on success, false on error
-*
-*  NOTES
-*     MT-NOTE: cqueue_verify_job_slots() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Verify the queue slots attribute
+ *
+ * Verifies if the slots attribute of a queue is in the expected range
+ * (0 .. std::numeric_limits<uint32_t>::max()). std::numeric_limits<uint32_t>::max() is 9999999.
+ *
+ * @param cqueue The queue to verify.
+ * @param answer_list answer list to report errors
+ * @param attr_elem the attribute to verify
+ * @param master_list unused
+ *
+ * @return true on success, false on error
+ *
+ * @note MT-NOTE: cqueue_verify_job_slots() is MT safe
+ */
 bool 
 cqueue_verify_job_slots(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
 {
@@ -394,30 +542,21 @@ cqueue_verify_job_slots(lListElem *cqueue, lList **answer_list, lListElem *attr_
    DRETURN(ret);
 }
 
-/****** sge_cqueue_verify/cqueue_verify_memory_value() ****************************
-*  NAME
-*     cqueue_verify_memory_value() -- verify a queue memory attribute like h_vmem
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, 
-*                             lListElem *attr_elem)
-*
-*  FUNCTION
-*     Verifies if a memory attribute of a queue is in the expected range
-*     (0 .. INFINITY) NONE is no allowed value.
-*
-*  INPUTS
-*     lListElem *cqueue    - The queue to verify.
-*     lList **answer_list  - answer list to report errors
-*     lListElem *attr_elem - the attribute to verify
-*
-*  RESULT
-*     bool - true on success, false on error
-*
-*  NOTES
-*     MT-NOTE: cqueue_verify_memory_value() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Verify a queue memory attribute like h_vmem
+ *
+ * Verifies if a memory attribute of a queue is in the expected range
+ * (0 .. INFINITY) NONE is no allowed value.
+ *
+ * @param cqueue The queue to verify.
+ * @param answer_list answer list to report errors
+ * @param attr_elem the attribute to verify
+ * @param master_list unused
+ *
+ * @return true on success, false on error
+ *
+ * @note MT-NOTE: cqueue_verify_memory_value() is MT safe
+ */
 bool
 cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
 {
@@ -444,30 +583,21 @@ cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, lListElem *at
    DRETURN(ret);
 }
 
-/****** sge_cqueue_verify/cqueue_verify_time_value() ****************************
-*  NAME
-*     cqueue_verify_time_value() -- verify a queue time attribute like h_cpu
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_verify_time_value(lListElem *cqueue, lList **answer_list, 
-*                             lListElem *attr_elem)
-*
-*  FUNCTION
-*     Verifies if a time attribute of a queue is in the expected range
-*     (0:0:0 .. INFINITY) NONE is no allowed value.
-*
-*  INPUTS
-*     lListElem *cqueue    - The queue to verify.
-*     lList **answer_list  - answer list to report errors
-*     lListElem *attr_elem - the attribute to verify
-*
-*  RESULT
-*     bool - true on success, false on error
-*
-*  NOTES
-*     MT-NOTE: cqueue_verify_time_value() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Verify a queue time attribute like h_cpu
+ *
+ * Verifies if a time attribute of a queue is in the expected range
+ * (0:0:0 .. INFINITY) NONE is no allowed value.
+ *
+ * @param cqueue The queue to verify.
+ * @param answer_list answer list to report errors
+ * @param attr_elem the attribute to verify
+ * @param master_list unused
+ *
+ * @return true on success, false on error
+ *
+ * @note MT-NOTE: cqueue_verify_time_value() is MT safe
+ */
 bool
 cqueue_verify_time_value(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
 {

@@ -32,6 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Acknowledgements between the daemons
+ *
+ * A message that is not acknowledged is resent, so an acknowledgement is what
+ * lets the sender stop. The `ACK_*` type says which message is meant.
+ *
+ * @see sge_ack.h
+ */
+
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_component.h"
 
@@ -41,6 +50,16 @@
 #include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/ocs_gdi_ClientServerBase.h"
 
+/**
+ * @brief Pack an acknowledgement into a send buffer
+ *
+ * @param[in,out] pb the buffer to append to
+ * @param type one of the `ACK_*` values, saying what is acknowledged
+ * @param id the first id the type gives meaning to, e.g. a job number
+ * @param id2 the second id, e.g. an array task number
+ * @param str a string the type gives meaning to, e.g. a parallel task id
+ * @return `PACK_SUCCESS` on success
+ */
 int pack_ack(sge_pack_buffer *pb, uint32_t type, uint32_t id, uint32_t id2, const char *str)
 {
    int ret;
@@ -59,6 +78,16 @@ int pack_ack(sge_pack_buffer *pb, uint32_t type, uint32_t id, uint32_t id2, cons
    DRETURN(ret);
 }
 
+/**
+ * @brief Send an acknowledgement to qmaster
+ *
+ * @param type one of the `ACK_*` values, saying what is acknowledged
+ * @param ulong_val the first id the type gives meaning to
+ * @param ulong_val_2 the second id
+ * @param str a string the type gives meaning to
+ * @param[out] alpp receives the error message when the send failed
+ * @return `CL_RETVAL_OK` on success
+ */
 int sge_send_ack_to_qmaster(uint32_t type, uint32_t ulong_val,
                             uint32_t ulong_val_2, const char *str, lList **alpp)
 {

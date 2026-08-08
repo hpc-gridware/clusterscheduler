@@ -33,44 +33,58 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations, states and events of the advance reservation object
+ *
+ * @see sge_advance_reservation.cc
+ */
+
 #include "sgeobj/cull/sge_advance_reservation_AR_L.h"
 #include "sgeobj/cull/sge_advance_reservation_ARA_L.h"
 
-/* values for AR_verify */
+/// The `-w` letters an advance reservation accepts, in the order of the values below
 #define AR_OPTION_VERIFY_STR "ev"
+/// Values for `AR_verify`, i.e. how far `qrsub -w` goes
 enum {
-   AR_ERROR_VERIFY = 0,
-   AR_JUST_VERIFY
+   AR_ERROR_VERIFY = 0, ///< `-w e` reject a reservation that cannot be granted
+   AR_JUST_VERIFY       ///< `-w v` only verify, do not create the reservation
 };
 
-/* AR states for AR_state */
+/**
+ * @brief AR states for `AR_state`
+ *
+ * @warning Append new states **below** the existing ones: the value is written
+ *          into the reporting and accounting files, so renumbering would need
+ *          update procedures for both. `ar_state2dstring` has to be changed
+ *          alongside.
+ */
 typedef enum {
-   AR_UNKNOWN = 0,  /* should never be seen. only used for variable initialisation */
+   AR_UNKNOWN = 0,  ///< should never be seen; only used for variable initialisation
 
-   AR_WAITING,      /* w   waiting - granted but start time not reached */
-   AR_RUNNING,      /* r   running - start time reached */
-   AR_EXITED,       /* x   exited - end time reached and doing cleanup */
-   AR_DELETED,      /* d   deleted - manual deletion */
-   AR_ERROR,        /* E   error - AR became invalid and start time is reached */
-   AR_WARNING       /* W   error - AR became invalid but start time not reached */
-
-   /* append new states below! otherwise update procedures for reporting an accounting 
-    * have to be written. change ar_state2dstring if you change something here */
-
+   AR_WAITING,      ///< `w` granted but start time not reached
+   AR_RUNNING,      ///< `r` start time reached
+   AR_EXITED,       ///< `x` end time reached and doing cleanup
+   AR_DELETED,      ///< `d` deleted manually
+   AR_ERROR,        ///< `E` became invalid and start time is reached
+   AR_WARNING       ///< `W` became invalid but start time not reached
 } ar_state_t;
 
-/* AR event types which trigger state changes */
-
+/**
+ * @brief AR event types which trigger state changes
+ *
+ * @warning Append new events **below** the existing ones; the value reaches
+ *          the reporting and accounting files, as with @ref ar_state_t.
+ */
 typedef enum {
-   ARL_UNKNOWN = 0, /* should never be seen. only used for variable initialisation */
+   ARL_UNKNOWN = 0, ///< should never be seen; only used for variable initialisation
 
-   ARL_CREATION,           /* incoming request to create a new ar object */
-   ARL_STARTTIME_REACHED,  /* start time reached */
-   ARL_ENDTIME_REACHED,    /* end time reached */
-   ARL_UNSATISFIED,        /* resources are unsatisfied */
-   ARL_OK,                 /* resources are OK after they were unsatisfied */
-   ARL_TERMINATED,         /* ar object deleted */
-   ARL_DELETED
+   ARL_CREATION,           ///< incoming request to create a new ar object
+   ARL_STARTTIME_REACHED,  ///< start time reached
+   ARL_ENDTIME_REACHED,    ///< end time reached
+   ARL_UNSATISFIED,        ///< resources are unsatisfied
+   ARL_OK,                 ///< resources are OK after they were unsatisfied
+   ARL_TERMINATED,         ///< ar object deleted
+   ARL_DELETED             ///< the object was removed from the master list
 
    /* append new events below! otherwise update procedures for reporting an accounting 
     * have to be written*/

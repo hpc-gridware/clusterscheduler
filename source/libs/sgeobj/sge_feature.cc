@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The product name in the forms the clients print it
+ *
+ * @see sge_feature.h
+ */
+
 #include <cstring>
 
 #include "uti/sge_log.h"
@@ -41,35 +47,21 @@
 
 #include "sgeobj/sge_feature.h"         
 
-/****** sgeobj/feature/feature_get_product_name() *****************************
-*  NAME
-*     feature_get_product_name() -- get product name string
-*
-*  SYNOPSIS
-*     char* feature_get_product_name(featureset_product_name_id_t style)
-*
-*  FUNCTION
-*     This function will return a text string containing the
-*     product name. The return value depends on the style
-*     parameter. An invalid style value will automatically be
-*     interpreted as FS_SHORT.
-*
-*  INPUTS
-*     style     - FS_SHORT         = return short name
-*                 FS_LONG          = return long name
-*                 FS_VERSION       = return version
-*                 FS_SHORT_VERSION = return short name and version
-*                 FS_LONG_VERSION  = return long name and version
-*     buffer    - buffer provided by caller 
-*                 the string returned by this function points to 
-*                 this buffer
-*
-*  RESULT
-*     char* - string
-*
-*  NOTES
-*     MT-NOTE: feature_get_product_name() is MT safe
-******************************************************************************/
+/**
+ * @brief Get product name string
+ *
+ * This function will return a text string containing the
+ * product name. The return value depends on the style
+ * parameter. An invalid style value will automatically be
+ * interpreted as FS_SHORT.
+ *
+ * @param style FS_SHORT         = return short name FS_LONG          = return long name FS_VERSION       = return version FS_SHORT_VERSION = return short name and version FS_LONG_VERSION  = return long name and version
+ * @param buffer buffer provided by caller the string returned by this function points to this buffer
+ *
+ * @return string
+ *
+ * @note MT-NOTE: feature_get_product_name() is MT safe
+ */
 const char *feature_get_product_name(featureset_product_name_id_t style, dstring *buffer) {
    DENTER(TOP_LAYER);
 

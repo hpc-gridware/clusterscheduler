@@ -32,6 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Reports: everything an execution host sends back to qmaster
+ *
+ * Load values, the host's configuration and the state of its jobs all travel
+ * in one report object; `REP_type` says which of them `REP_list` holds.
+ *
+ * @see sge_report.h
+ */
+
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
@@ -45,22 +54,15 @@
 #include "execution_states.h"
 
 #if 0
-/****** sgeobj/report/job_report_print_usage() *******************************
-*  NAME
-*     job_report_print_usage() -- Print usage contained in job report 
-*
-*  SYNOPSIS
-*     void job_report_print_usage(const lListElem *job_report, 
-*                                 FILE *fp) 
-*
-*  FUNCTION
-*     Print usage information conatines in "job_report". Print the 
-*     information to the given file stream "fp" or as debug messages. 
-*
-*  INPUTS
-*     const lListElem *job_report - JR_Type element 
-*     FILE *fp                    - file stream or nullptr
-******************************************************************************/
+/**
+ * @brief Print usage contained in job report
+ *
+ * Print usage information conatines in "job_report". Print the
+ * information to the given file stream "fp" or as debug messages.
+ *
+ * @param job_report JR_Type element
+ * @param fp file stream or nullptr
+ */
 void job_report_print_usage(const lListElem *job_report, FILE *fp) 
 {
    DENTER(TOP_LAYER);
@@ -83,26 +85,17 @@ void job_report_print_usage(const lListElem *job_report, FILE *fp)
 }
 #endif
 
-/****** sgeobj/report/job_report_init_from_job() *****************************
-*  NAME
-*     job_report_init_from_job() -- initialize job report 
-*
-*  SYNOPSIS
-*     void job_report_init_from_job(lListElem *job_report, 
-*                                   const lListElem *job, 
-*                                   const lListElem *ja_task, 
-*                                   const lListElem *pe_task) 
-*
-*  FUNCTION
-*     Initialize "job_report" from the attributes obtained from
-*     "job", "ja_task" and "pe_task". 
-*
-*  INPUTS
-*     lListElem *job_report    - JR_Type object
-*     const lListElem *job     - JB_Type object
-*     const lListElem *ja_task - JAT_Type object 
-*     const lListElem *pe_task - PET_Type object 
-******************************************************************************/
+/**
+ * @brief Initialize job report
+ *
+ * Initialize "job_report" from the attributes obtained from
+ * "job", "ja_task" and "pe_task".
+ *
+ * @param job_report JR_Type object
+ * @param job JB_Type object
+ * @param ja_task JAT_Type object
+ * @param pe_task PET_Type object
+ */
 void job_report_init_from_job(lListElem *job_report, 
                               const lListElem *job, 
                               const lListElem *ja_task, 
@@ -141,6 +134,18 @@ void job_report_init_from_job(lListElem *job_report,
    DRETURN_VOID;
 }
 
+/**
+ * @brief Fill a job report with the usage a finished job accumulated
+ *
+ * The usage is taken from the parallel task when one is given, otherwise from
+ * the array task.
+ *
+ * @param[in,out] job_report the report to fill
+ * @param job the job the report is about
+ * @param ja_task the array task
+ * @param pe_task the parallel task, or nullptr
+ * @param time_stamp the time the usage was collected
+ */
 void job_report_init_from_job_with_usage(lListElem *job_report,
                                          const lListElem *job,
                                          lListElem *ja_task,

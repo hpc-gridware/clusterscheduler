@@ -33,19 +33,30 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for acknowledgements between the daemons
+ *
+ * @see sge_ack.cc
+ */
+
 #include "sgeobj/cull/sge_ack_ACK_L.h"
 #include "sge_daemonize.h"
 
+/**
+ * @brief What an acknowledgement refers to
+ *
+ * Most messages between the daemons are acknowledged, so the sender knows it
+ * may stop resending. The type says which message is being acknowledged.
+ */
 enum {
-   ACK_JOB_EXIT,         /* sent back by qmaster, when execd sends a job_exit */
-   ACK_SIGNAL_JOB,       /* sent back by qmaster, when execd reports a job as */
-                         /* running - that was not supposed to be there       */
-   ACK_EVENT_DELIVERY,   /* sent back by schedd, when master sends events     */
-   ACK_SIGJOB,           /* send back by execd, when qmaster signals job      */
-   ACK_SIGQUEUE,         /* send back by execd, when qmaster signals queue    */
-   ACK_LOAD_REPORT,      /* send back by qmaster, when execd sends a load report */
-   ACK_SIGNAL_SLAVE,     /* sent to slave execds when master task finished    */
-   ACK_JOB_REPORT_RESEND /* sent to master execd to resend master task finish as trigger */
+   ACK_JOB_EXIT,         ///< sent back by qmaster, when execd sends a job_exit
+   ACK_SIGNAL_JOB,       ///< sent back by qmaster, when execd reports a job as running that was not supposed to be there
+   ACK_EVENT_DELIVERY,   ///< sent back by schedd, when master sends events
+   ACK_SIGJOB,           ///< sent back by execd, when qmaster signals a job
+   ACK_SIGQUEUE,         ///< sent back by execd, when qmaster signals a queue
+   ACK_LOAD_REPORT,      ///< sent back by qmaster, when execd sends a load report
+   ACK_SIGNAL_SLAVE,     ///< sent to slave execds when the master task finished
+   ACK_JOB_REPORT_RESEND ///< sent to the master execd to resend the master task finish as a trigger
 };
 
 int pack_ack(sge_pack_buffer *pb, uint32_t type, uint32_t id, uint32_t id2, const char *str);
