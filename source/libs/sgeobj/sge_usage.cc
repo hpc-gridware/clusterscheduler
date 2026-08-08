@@ -447,7 +447,7 @@ parse_full_double(const char *value, double &out) {
 /**
  * Parse a raw shepherd-usage-file value into a fresh UA_Type element.
  * Discrimination rule (CS-849, origin AE3):
- *   1. length ≥ 2 && value starts and ends with the same quote character
+ *   1. length >= 2 && value starts and ends with the same quote character
  *      ('"' or '\''): strip both quotes, UA_svalue = interior, no escape processing.
  *      Empty pair "" yields an empty-string UA_svalue.
  *   2. Else parses as a full double: UA_value = the parsed number.
