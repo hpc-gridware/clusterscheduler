@@ -64,6 +64,7 @@ if (DOXYGEN_FOUND)
          source/libs/uti
          source/libs/cull
          source/libs/gdi
+         source/libs/sgeobj
    )
 
    if (DXM_FINISHED_MODULES)
