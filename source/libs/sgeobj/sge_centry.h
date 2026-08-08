@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations and constants of the complex entry object
+ *
+ * @see sge_centry.cc
+ */
+
 #include "sgeobj/cull/sge_centry_CE_L.h"
 #include "sgeobj/cull/sge_ct_SCT_L.h"
 #include "sgeobj/cull/sge_ct_REF_L.h"
@@ -51,67 +57,89 @@
  * used.  
  */
 
-/* relops in CE_relop */
+/**
+ * @brief How a request is compared against what a queue or host offers
+ *
+ * Stored in `CE_relop`. The relation is part of the complex entry's
+ * definition, not of the request: the administrator decides once per resource
+ * whether more is better, less is better, or only equality counts.
+ */
 enum {
-   CMPLXEQ_OP = 1, /* == */
-   CMPLXGE_OP,     /* >= */
-   CMPLXGT_OP,     /* > */
-   CMPLXLT_OP,     /* < */
-   CMPLXLE_OP,     /* <= */
-   CMPLXNE_OP,     /* != */
-   CMPLXEXCL_OP    /* EXCL */
+   CMPLXEQ_OP = 1, ///< the offered value must equal the request
+   CMPLXGE_OP,     ///< the offered value must be at least the request
+   CMPLXGT_OP,     ///< the offered value must exceed the request
+   CMPLXLT_OP,     ///< the offered value must be below the request
+   CMPLXLE_OP,     ///< the offered value must be at most the request
+   CMPLXNE_OP,     ///< the offered value must differ from the request
+   CMPLXEXCL_OP    ///< the resource is granted exclusively to one job
 };
 
+/// Whether a job may, must or must not request a resource; stored in `CE_requestable`
 enum {
-   REQU_NO = 1,
-   REQU_YES,
-   REQU_FORCED
+   REQU_NO = 1, ///< the resource cannot be requested by a job
+   REQU_YES,    ///< a job may request it
+   REQU_FORCED  ///< a job must request it to be scheduled at all
 };
 
+/**
+ * @brief What a job consumes of a resource, stored in `CE_consumable`
+ *
+ * A consumable is booked when a job starts and released when it ends. The
+ * three yes-variants differ in how much a parallel job consumes: per slot, per
+ * job, or once per host the job runs on.
+ */
 enum {
-   CONSUMABLE_NO = 0,
-   CONSUMABLE_YES,
-   CONSUMABLE_JOB,
-   CONSUMABLE_HOST
+   CONSUMABLE_NO = 0,  ///< not consumable; the value is only compared, never booked
+   CONSUMABLE_YES,     ///< consumed once per slot
+   CONSUMABLE_JOB,     ///< consumed once per job, regardless of its slot count
+   CONSUMABLE_HOST     ///< consumed once per host the job occupies
 };
 
-/* bit mask for CE_dominant */
+/**
+ * @brief Where a resource value came from, stored as a bit mask in `CE_dominant`
+ *
+ * The same resource can be defined at several layers and in several ways; the
+ * value a job actually sees is the most restrictive one. `CE_dominant` records
+ * which layer and which kind that was, so `qstat -F` can show it.
+ *
+ * The low byte is the layer, the high byte the kind.
+ */
 enum {
-   DOMINANT_LAYER_GLOBAL = 0x0001,
-   DOMINANT_LAYER_HOST = 0x0002,
-   DOMINANT_LAYER_QUEUE = 0x0004,
-   DOMINANT_LAYER_RQS = 0x0008,
-   DOMINANT_LAYER_MASK = 0x00ff,        /* all layers */
+   DOMINANT_LAYER_GLOBAL = 0x0001,      ///< the global host
+   DOMINANT_LAYER_HOST = 0x0002,        ///< an execution host
+   DOMINANT_LAYER_QUEUE = 0x0004,       ///< a queue instance
+   DOMINANT_LAYER_RQS = 0x0008,         ///< a resource quota set
+   DOMINANT_LAYER_MASK = 0x00ff,        ///< all layers
 
-   DOMINANT_TYPE_VALUE = 0x0100,        /* value from complex template */
-   DOMINANT_TYPE_FIXED = 0x0200,        /* fixed value from object
-                                         * configuration */
-   DOMINANT_TYPE_LOAD = 0x0400,         /* load value */
-   DOMINANT_TYPE_CLOAD = 0x0800,        /* corrected load value */
-   DOMINANT_TYPE_CONSUMABLE = 0x1000,   /* consumable */
-   DOMINANT_TYPE_MASK = 0xff00          /* all types */
+   DOMINANT_TYPE_VALUE = 0x0100,        ///< value from complex template
+   DOMINANT_TYPE_FIXED = 0x0200,        ///< fixed value from object configuration
+   DOMINANT_TYPE_LOAD = 0x0400,         ///< load value
+   DOMINANT_TYPE_CLOAD = 0x0800,        ///< corrected load value
+   DOMINANT_TYPE_CONSUMABLE = 0x1000,   ///< consumable
+   DOMINANT_TYPE_MASK = 0xff00          ///< all types
 };
 
-/* tag level*/
+/// At which level a resource request was satisfied
 enum{
-   NO_TAG = 0,
-   QUEUE_TAG,
-   HOST_TAG,
-   GLOBAL_TAG,
-   PE_TAG,     /* not really used as a tag */
-   RQS_TAG,    /* not really used as a tag */
-   MAX_TAG
+   NO_TAG = 0, ///< not satisfied anywhere
+   QUEUE_TAG,  ///< satisfied by a queue instance
+   HOST_TAG,   ///< satisfied by an execution host
+   GLOBAL_TAG, ///< satisfied by the global host
+   PE_TAG,     ///< not really used as a tag
+   RQS_TAG,    ///< not really used as a tag
+   MAX_TAG     ///< not a tag; the number of values above
 };
 
+/// The letter a tag level is printed as, indexed by the tag
 #define CENTRY_LEVEL_TO_CHAR(level) "NQHGPLM"[level]
 
-/* Mapping list for generating a complex out of a queue */
+/// Maps one queue or host attribute onto the complex entry it is reported as
 struct queue2cmplx {
-   const char *name;    /* name of the centry element, not the shortcut */
-   int  field;    /* name of the element in the queue structure */
-   int  cqfld;    /* cluster queue field */
-   int  valfld;   /* value field in cluster queue sublist */
-   ocs::CEntry::Type  type;     /* type of the element in the queue strcuture */
+   const char *name;    ///< name of the centry element, not the shortcut
+   int  field;    ///< name of the element in the queue structure
+   int  cqfld;    ///< cluster queue field
+   int  valfld;   ///< value field in cluster queue sublist
+   ocs::CEntry::Type  type;     ///< type of the element in the queue structure
 };
 extern const int max_host_resources;
 extern const struct queue2cmplx host_resource[]; 
@@ -150,6 +178,11 @@ bool
 centry_print_resource_to_dstring(const lListElem *this_elem, 
                                  dstring *string);
 
+/**
+ * @brief The complex configuration of the active data store
+ *
+ * @return a pointer to the master list of complex entries
+ */
 lList **
 centry_list_get_master_list();
 

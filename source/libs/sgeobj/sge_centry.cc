@@ -34,6 +34,21 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Complex entries: the definitions of the resources jobs request
+ *
+ * A complex entry (`CE_Type`) defines one resource - its type, how a request
+ * is compared against what is offered, whether a job may request it, and
+ * whether it is consumed. The same element is reused for a *request*, where
+ * the value is what the job asked for rather than what is defined.
+ *
+ * Some resources are built in rather than configured; #host_resource and
+ * #queue_resource map those onto the host and queue attributes they are read
+ * from.
+ *
+ * @see sge_centry.h
+ */
+
 #include <cstring>
 #include <cfloat>
 #include <limits>
@@ -65,11 +80,12 @@
 
 #include "sge_centry_rsmap.h"
 
+/// Debug layer the complex entry traces are written to
 #define CENTRY_LAYER BASIS_LAYER
 
-/* EB: ADOC: add commets */
-
-const int max_host_resources = 29;/* specifies the number of elements in the host_resource array */
+/// Number of elements in #host_resource
+const int max_host_resources = 29;
+/// The built in resources every execution host reports
 const struct queue2cmplx host_resource[] = {
         {"arch",             0, 0, 0, ocs::CEntry::Type::STR},
         {"cpu",              0, 0, 0, ocs::CEntry::Type::DOUBLE},
@@ -102,7 +118,9 @@ const struct queue2cmplx host_resource[] = {
         {LOAD_ATTR_DEVICES,  0, 0, 0, ocs::CEntry::Type::RESTR}
 };
 
-const int max_queue_resources = 24; /* specifies the number of elements in the queue_resource array */
+/// Number of elements in #queue_resource
+const int max_queue_resources = 24;
+/// The queue attributes that are also visible as complex entries
 const struct queue2cmplx queue_resource[] = {
         {"qname",            QU_qname,            0,                   0,              ocs::CEntry::Type::STR},
         {"hostname",         QU_qhostname,        0,                   0,              ocs::CEntry::Type::HOST},
@@ -130,6 +148,17 @@ const struct queue2cmplx queue_resource[] = {
         {"min_cpu_interval", QU_min_cpu_interval, CQ_min_cpu_interval, AINTER_value,   ocs::CEntry::Type::TIME}  /* value is SGE_STRING */
 };
 
+/**
+ * @brief Look a built in resource up in #host_resource or #queue_resource
+ *
+ * @param name the resource name, not its shortcut
+ * @param queue true to search the queue resources, false for the host ones
+ * @param[out] field receives the attribute within the queue instance; may be nullptr
+ * @param[out] cqfld receives the cluster queue attribute; may be nullptr
+ * @param[out] valfld receives the value field within the cluster queue sublist; may be nullptr
+ * @param[out] type receives the resource's type; may be nullptr
+ * @return the index in the array, or -1 when the name is not a built in resource
+ */
 int get_rsrc(const char *name, bool queue, int *field, int *cqfld, int *valfld, ocs::CEntry::Type *type) {
    int pos = 0;
    const struct queue2cmplx *rlist;
@@ -156,36 +185,20 @@ int get_rsrc(const char *name, bool queue, int *field, int *cqfld, int *valfld, 
    return -1;
 }
 
-/****** sgeobj/centry/centry_fill_and_check() *********************************
-*  NAME
-*     centry_fill_and_check() -- fill and check the attribute
-*
-*  SYNOPSIS
-*     int centry_fill_and_check(lListElem *cep,
-*                               bool allow_empty_boolean,
-*                               bool allow_neg_consumable)
-*
-*  FUNCTION
-*     fill and check the attribute
-*
-*  INPUTS
-*     lListElem *cep           - CE_Type, this object will be checked
-*     lList** answer_list      - answer list
-*     int allow_empty_boolean  - boolean
-*        true  - nullptr values of boolean attributes will
-*                be replaced with "true"
-*        false - nullptr values will be handled as error
-*     int allow_neg_consumable - boolean
-*        true  - negative values for consumable
-*                resources are allowed.
-*        false - function will return with -1 if it finds
-*                consumable resources with a negative value
-*
-*  RESULT
-*        0 on success
-*       -1 on error
-*        an error message will be written into SGE_EVENT
-******************************************************************************/
+/**
+ * @brief Fill and check the attribute
+ *
+ * fill and check the attribute
+ *
+ * @param this_elem CE_Type, this object will be checked
+ * @param answer_list answer list
+ * @param allow_empty_boolean true replaces a nullptr value of a boolean
+ *                            attribute with "true"; false treats it as an error
+ * @param allow_neg_consumable true allows a negative value for a consumable
+ *                             resource; false makes the function return -1 for one
+ *
+ * @return 1 on error an error message will be written into SGE_EVENT
+ */
 int
 centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empty_boolean,
                       bool allow_neg_consumable) {
@@ -288,6 +301,12 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
    DRETURN(0);
 }
 
+/**
+ * @brief The symbol a relational operator is written as
+ *
+ * @param op one of the `CMPLX*_OP` values
+ * @return the symbol, e.g. `>=`
+ */
 const char *
 map_op2str(uint32_t op)
 {
@@ -308,6 +327,12 @@ map_op2str(uint32_t op)
    return opv[op];
 }
 
+/**
+ * @brief The word a requestable setting is written as
+ *
+ * @param op one of the `REQU_*` values
+ * @return the word, e.g. `FORCED`
+ */
 const char *
 map_req2str(uint32_t op)
 {
@@ -324,25 +349,17 @@ map_req2str(uint32_t op)
    return opv[op];
 }
 
-/****** sge_centry/map_consumable2str() ****************************************
-*  NAME
-*     map_consumable2str() -- map to consumable string
-*
-*  SYNOPSIS
-*     const char * map_consumable2str(uint32_t op)
-*
-*  FUNCTION
-*     maps int representation of CONSUMABLE to string
-*
-*  INPUTS
-*     uint32_t op - CONSUMABLE_*
-*
-*  RESULT
-*     const char * - string representation of consumable definition
-*
-*  NOTES
-*     MT-NOTE: map_consumable2str() is not safe
-*******************************************************************************/
+/**
+ * @brief Map to consumable string
+ *
+ * maps int representation of CONSUMABLE to string
+ *
+ * @param op CONSUMABLE_*
+ *
+ * @return string representation of consumable definition
+ *
+ * @note MT-NOTE: map_consumable2str() is not safe
+ */
 const char *map_consumable2str(uint32_t op) {
    static const char *opv[] = {
       "NO",       /* CONSUMABLE_NO */
@@ -357,6 +374,12 @@ const char *map_consumable2str(uint32_t op) {
    return opv[op];
 }
 
+/**
+ * @brief The name a resource type is written as
+ *
+ * @param type the type
+ * @return the name, e.g. `MEMORY`
+ */
 const char *
 map_type2str(ocs::CEntry::Type type)
 {
@@ -383,24 +406,16 @@ map_type2str(ocs::CEntry::Type type)
    return typev[static_cast<uint32_t>(type)];
 }
 
-/****** sgeobj/centry/centry_create() *****************************************
-*  NAME
-*     centry_create() -- Create a preinitialized centry element
-*
-*  SYNOPSIS
-*     lListElem *
-*     centry_create(lList **answer_list, const char *name)
-*
-*  FUNCTION
-*     Create a preinitialized centry element with the given "name".
-*
-*  INPUTS
-*     lList **answer_list  - AN_Type
-*     const char *name     - full name
-*
-*  RESULT
-*     lListElem * - CE_Type element
-*******************************************************************************/
+/**
+ * @brief Create a preinitialized centry element
+ *
+ * Create a preinitialized centry element with the given "name".
+ *
+ * @param answer_list AN_Type
+ * @param name full name
+ *
+ * @return CE_Type element
+ */
 lListElem *
 centry_create(lList **answer_list, const char *name) {
    lListElem *ret = nullptr;  /* CE_Type */
@@ -429,32 +444,21 @@ centry_create(lList **answer_list, const char *name) {
    DRETURN(ret);
 }
 
-/****** sgeobj/centry/centry_is_referenced() **********************************
-*  NAME
-*     centry_is_referenced() -- Is centry element referenced?
-*
-*  SYNOPSIS
-*     bool
-*     centry_is_referenced(const lListElem *centry,
-*                          lList **answer_list,
-*                          const lList *master_cqueue_list,
-*                          const lList *master_exechost_list,
-*                          const lList *master_sconf_list)
-*
-*  FUNCTION
-*     Is the centry element referenced in a sublist of
-*     "master_queue_list", "master_exechost_list" or
-*     "master_sconf_list".
-*
-*  INPUTS
-*     const lListElem *centry           - CE_Type
-*     lList **answer_list               - AN_Type
-*     const lList *master_cqueue_list   - CQ_Type
-*     const lList *master_exechost_list - EH_Type
-*
-*  RESULT
-*     bool - true or false
-*******************************************************************************/
+/**
+ * @brief Is centry element referenced?
+ *
+ * Is the centry element referenced in a sublist of
+ * "master_queue_list", "master_exechost_list" or
+ * "master_sconf_list".
+ *
+ * @param centry CE_Type
+ * @param answer_list AN_Type
+ * @param master_cqueue_list CQ_Type
+ * @param master_exechost_list EH_Type
+ * @param master_rqs_list RQS_Type
+ *
+ * @return true or false
+ */
 bool
 centry_is_referenced(const lListElem *centry, lList **answer_list,
                      const lList *master_cqueue_list,
@@ -527,30 +531,18 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/centry/centry_print_resource_to_dstring() **********************
-*  NAME
-*     centry_print_resource_to_dstring() -- Print to dstring
-*
-*  SYNOPSIS
-*     bool
-*     centry_print_resource_to_dstring(const lListElem *this_elem,
-*                                      dstring *string)
-*
-*  FUNCTION
-*     Print resource string (memory, time) to dstring.
-*
-*  INPUTS
-*     const lListElem *this_elem - CE_Type
-*     dstring *string            - dynamic string
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: centry_print_resource_to_dstring() is MT safe
-*******************************************************************************/
+/**
+ * @brief Print to dstring
+ *
+ * Print resource string (memory, time) to dstring.
+ *
+ * @param this_elem CE_Type
+ * @param string dynamic string
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: centry_print_resource_to_dstring() is MT safe
+ */
 bool
 centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string) {
    DENTER(CENTRY_LAYER);
@@ -574,23 +566,16 @@ centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string) {
    DRETURN(true);
 }
 
-/****** sgeobj/centry/centry_list_locate() ************************************
-*  NAME
-*     centry_list_locate() -- Find Centry element
-*
-*  SYNOPSIS
-*     lListElem *centry_list_locate(const lList *this_list, const char *name)
-*
-*  FUNCTION
-*     Find CEntry element with "name" in "this_list".
-*
-*  INPUTS
-*     const lList *this_list - CE_Type list
-*     const char *name       - name of an CE_Type entry
-*
-*  RESULT
-*     lListElem * - CE_Type element
-*******************************************************************************/
+/**
+ * @brief Find Centry element
+ *
+ * Find CEntry element with "name" in "this_list".
+ *
+ * @param this_list CE_Type list
+ * @param name name of an CE_Type entry
+ *
+ * @return CE_Type element
+ */
 lListElem *
 centry_list_locate(const lList *this_list, const char *name) {
    lListElem *ret = nullptr;   /* CE_Type */
@@ -605,24 +590,13 @@ centry_list_locate(const lList *this_list, const char *name) {
    DRETURN(ret);
 }
 
-/****** sgeobj/centry/centry_list_sort() **************************************
-*  NAME
-*     centry_list_sort() -- Sort a CE_Type list
-*
-*  SYNOPSIS
-*     bool centry_list_sort(lList *this_list)
-*
-*  FUNCTION
-*     Sort a CE_Type list
-*
-*  INPUTS
-*     lList *this_list - CE_Type list
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*******************************************************************************/
+/**
+ * @brief Sort a CE_Type list
+ *
+ * @param this_list CE_Type list
+ *
+ * @return error state true  - success false - error
+ */
 bool
 centry_list_sort(lList *this_list) {
    bool ret = true;
@@ -638,22 +612,15 @@ centry_list_sort(lList *this_list) {
    DRETURN(ret);
 }
 
-/****** sgeobj/centry/centry_list_init_double() *******************************
-*  NAME
-*     centry_list_init_double() -- Initialize double from string
-*
-*  SYNOPSIS
-*     bool centry_list_init_double(lList *this_list)
-*
-*  FUNCTION
-*     Initialize all double values contained in "this_list"
-*
-*  INPUTS
-*     lList *this_list - CE_Type list
-*
-*  RESULT
-*     bool - true
-*******************************************************************************/
+/**
+ * @brief Initialize double from string
+ *
+ * Initialize all double values contained in "this_list"
+ *
+ * @param this_list CE_Type list
+ *
+ * @note bool - true
+ */
 void
 centry_list_init_double(const lList *this_list) {
    DENTER(CENTRY_LAYER);
@@ -666,44 +633,24 @@ centry_list_init_double(const lList *this_list) {
    DRETURN_VOID;
 }
 
-/****** sgeobj/centry/centry_list_fill_request() ******************************
-*  NAME
-*     centry_list_fill_request() -- fills and checks list of complex entries
-*
-*  SYNOPSIS
-*     int centry_list_fill_request(lList *centry_list,
-*                                  lList *master_centry_list,
-*                                  bool allow_non_requestable,
-*                                  bool allow_empty_boolean,
-*                                  bool allow_neg_consumable)
-*
-*  FUNCTION
-*     This function fills a given list of complex entries with missing
-*     attributes which can be found in the complex. It checks also
-*     wether the given in the centry_list-List are valid.
-*
-*  INPUTS
-*     lList *this_list           - resources as complex list CE_Type
-*     lList **answer_list        - answer list
-*     lList *master_centry_list  - the global complex list
-*     bool allow_non_requestable - needed for qstat -l or qmon customize
-*                                 dialog
-*     int allow_empty_boolean    - boolean
-*        true  - nullptr values of boolean attributes will
-*                be replaced with "true"
-*        false - nullptr values will be handled as error
-*     int allow_neg_consumable  - boolean
-*        true  - negative values for consumable
-*                resources are allowed.
-*        false - function will return with -1 if it finds
-*                consumable resources with a negative value
-*
-*  RESULT
-*     int - error
-*        0 on success
-*       -1 on error
-*        an error message will be written into SGE_EVENT
-*******************************************************************************/
+/**
+ * @brief Fills and checks list of complex entries
+ *
+ * This function fills a given list of complex entries with missing
+ * attributes which can be found in the complex. It checks also
+ * wether the given in the centry_list-List are valid.
+ *
+ * @param this_list resources as complex list CE_Type
+ * @param answer_list answer list
+ * @param master_centry_list the global complex list
+ * @param allow_non_requestable needed for qstat -l or qmon customize dialog
+ * @param allow_empty_boolean true replaces a nullptr value of a boolean
+ *                            attribute with "true"; false treats it as an error
+ * @param allow_neg_consumable true allows a negative value for a consumable
+ *                             resource; false makes the function return -1 for one
+ *
+ * @return error 0 on success -1 on error an error message will be written into SGE_EVENT
+ */
 int
 centry_list_fill_request(const lList *this_list, lList **answer_list, const lList *master_centry_list,
                          bool allow_non_requestable, bool allow_empty_boolean,
@@ -784,6 +731,15 @@ centry_list_fill_config(lList *centry_list, const lList *master_centry_list) {
 }
 
 bool
+/**
+ * @brief May a job request a specific queue?
+ *
+ * Decided by whether the `qname` complex entry is requestable, which an
+ * administrator can turn off to stop users from bypassing the scheduler.
+ *
+ * @param this_list the complex entries to look in
+ * @return true when `qname` exists and is requestable
+ */
 centry_list_are_queues_requestable(const lList *this_list) {
    bool ret = false;
 
@@ -799,6 +755,13 @@ centry_list_are_queues_requestable(const lList *this_list) {
 }
 
 const char *
+/**
+ * @brief Render a complex entry list into a dstring
+ *
+ * @param this_list the entries to render
+ * @param[out] string receives the text, appended
+ * @return the resulting text
+ */
 centry_list_append_to_dstring(const lList *this_list, dstring *string) {
    DENTER(CENTRY_LAYER);
 
@@ -829,6 +792,14 @@ centry_list_append_to_dstring(const lList *this_list, dstring *string) {
 
 /* CLEANUP: should be replaced by centry_list_append_to_dstring() */
 int
+/**
+ * @brief Render a complex entry list into a fixed size buffer
+ *
+ * @param this_list the entries to render
+ * @param[out] buff receives the text
+ * @param max_len the size of `buff`
+ * @return true when the text fitted
+ */
 centry_list_append_to_string(lList *this_list, char *buff, uint32_t max_len) {
    int attr_fields[] = {CE_name, CE_stringval, 0};
    const char *attr_delis[] = {"=", ",", "\n"};
@@ -853,6 +824,17 @@ centry_list_append_to_string(lList *this_list, char *buff, uint32_t max_len) {
 /*
  * NOTE
  *    MT-NOTE: centry_list_parse_from_string() is MT safe
+ */
+/**
+ * @brief Parse a `name=value,name=value` list into complex entries
+ *
+ * @param[in,out] complex_attributes the list the parsed entries are added to;
+ *                                   a new list is created when it is nullptr
+ * @param str the text to parse
+ * @param check_value true to reject a value that does not fit the resource's type
+ * @return the resulting list, or nullptr when the text could not be parsed
+ *
+ * @note MT-NOTE: centry_list_parse_from_string() is MT safe
  */
 lList *
 centry_list_parse_from_string(lList *complex_attributes,
@@ -922,6 +904,14 @@ centry_list_parse_from_string(lList *complex_attributes,
 }
 
 void
+/**
+ * @brief Collapse repeated requests for the same resource
+ *
+ * The last value for a name wins, which is what a user writing the same
+ * `-l` option twice expects.
+ *
+ * @param[in,out] this_list the request list to compress
+ */
 centry_list_remove_duplicates(lList *this_list) {
    DENTER(TOP_LAYER);
    cull_compress_definition_list(this_list, CE_name, CE_stringval, 0);
@@ -929,52 +919,35 @@ centry_list_remove_duplicates(lList *this_list) {
 }
 
 
-/****** sgeobj/centry/centry_elem_validate() **********************************
-*  NAME
-*     centry_elem_validate() -- validates a element and checks for duplicates
-*
-*  SYNOPSIS
-*     int centry_elem_validate(lListElem *centry,
-*                                  lList *centry_list,
-*                                  lList *answer_list)
-*
-*  FUNCTION
-*     Checks weather the configuration within the new centry is okay or not.
-*     A centry is valid, when it satisfies the following rules:
-*         name 	  : has to be unique
-*         Short cu  : has to be unique
-*         Type	     : every type from the list (string, host, cstring, int,
-*                                               double, boolean, memory, time)
-*         Consumable : can only be defined for: int, double, memory, time, RSMAP
-*
-*         Relational operator:
-*         - for consumables:              only <=
-*         - for non consumables:
-*            - string, host, cstring:     only ==, !=
-*            - boolean:	                  only ==
-*            - int, double, memory, time: ==, !=, <=, <, =>, >
-*
-*         Requestable	   : for all attribute
-*         default value 	: only for consumables
-*
-*     A RSMAP must be a consumable.
-*
-*     The type for build in attributes is not allowed to be changed!
-*
-*     When no centy list is passed in, the check for uniqie name and
-*     short cuts is skipt.
-*
-*  INPUTS
-*     lListElem *centry     - the centry list, which should be validated
-*     lList *centry_list    - if not null, the function checks, if the
-*                             centry element is already in the list
-*     lList *answer_list    - contains the error messages
-*
-*  RESULT
-*     bool  false - error (the anwer_list contains the error message)
-*           true - okay
-*
-*******************************************************************************/
+/**
+ * @brief Validates a element and checks for duplicates
+ *
+ * Checks weather the configuration within the new centry is okay or not.
+ * A centry is valid, when it satisfies the following rules:
+ *     name 	  : has to be unique
+ *     Short cu  : has to be unique
+ *     Type	     : every type from the list (string, host, cstring, int,
+ *                                           double, boolean, memory, time)
+ *     Consumable : can only be defined for: int, double, memory, time, RSMAP
+ *     Relational operator:
+ *     - for consumables:              only <=
+ *     - for non consumables:
+ *        - string, host, cstring:     only ==, !=
+ *        - boolean:	                  only ==
+ *        - int, double, memory, time: ==, !=, <=, <, =>, >
+ *     Requestable	   : for all attribute
+ *     default value 	: only for consumables
+ * A RSMAP must be a consumable.
+ * The type for build in attributes is not allowed to be changed!
+ * When no centy list is passed in, the check for uniqie name and
+ * short cuts is skipt.
+ *
+ * @param centry the centry list, which should be validated
+ * @param centry_list if not null, the function checks, if the centry element is already in the list
+ * @param answer_list contains the error messages
+ *
+ * @return error (the anwer_list contains the error message) true - okay
+ */
 bool centry_elem_validate(lListElem *centry, const lList *centry_list,
                           lList **answer_list) {
    DENTER(TOP_LAYER);
@@ -1220,32 +1193,22 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/centry/centry_urgency_contribution() ***************************
-*  NAME
-*     centry_urgency_contribution() -- Compute urgency for a particular resource
-*
-*  SYNOPSIS
-*     double
-*     centry_urgency_contribution(int slots, const char *name, double
-*                                 value, const lListElem *centry)
-*
-*  FUNCTION
-*     The urgency contribution for a particular resource 'name' is determined
-*     based on the 'slot' amount and using 'value' as per slot request. The
-*     urgency value in the 'centry' element is used.
-*
-*  INPUTS
-*     int slots               - The slot amount assumed.
-*     const char *name        - The resource name.
-*     double value            - The per slot request.
-*     const lListElem *centry - The centry element (CE_Type)
-*
-*  RESULT
-*     double - The resulting urgency contribution
-*
-*  NOTES
-*     MT-NOTES: centry_urgency_contribution() is MT safe
-*******************************************************************************/
+/**
+ * @brief Compute urgency for a particular resource
+ *
+ * The urgency contribution for a particular resource 'name' is determined
+ * based on the 'slot' amount and using 'value' as per slot request. The
+ * urgency value in the 'centry' element is used.
+ *
+ * @param slots The slot amount assumed.
+ * @param name The resource name.
+ * @param value The per slot request.
+ * @param centry The centry element (CE_Type)
+ *
+ * @return The resulting urgency contribution
+ *
+ * @note MT-NOTES: centry_urgency_contribution() is MT safe
+ */
 double
 centry_urgency_contribution(int slots, const char *name, double value,
                             const lListElem *centry) {
@@ -1290,6 +1253,14 @@ centry_urgency_contribution(int slots, const char *name, double value,
 }
 
 bool
+/**
+ * @brief Is every entry of a list defined in the complex configuration?
+ *
+ * @param this_list the complex configuration to check against
+ * @param[out] answer_list receives the name of the first entry that is missing
+ * @param centry_list the entries to look for
+ * @return true when all of them exist
+ */
 centry_list_do_all_exists(const lList *this_list, lList **answer_list,
                           const lList *centry_list) {
    bool ret = true;
@@ -1312,6 +1283,13 @@ centry_list_do_all_exists(const lList *this_list, lList **answer_list,
 }
 
 bool
+/**
+ * @brief Reject a complex configuration that cannot work
+ *
+ * @param this_list the complex configuration to check
+ * @param[out] answer_list receives the reason it was rejected
+ * @return true when the configuration is usable
+ */
 centry_list_is_correct(lList *this_list, lList **answer_list) {
 
    bool ret = true;
@@ -1343,6 +1321,15 @@ centry_list_is_correct(lList *this_list, lList **answer_list) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Reject an object that refers to a resource the complex does not define
+ *
+ * @param[out] alpp receives the name of the unknown resource
+ * @param ep the object to check
+ * @param nm the attribute of `ep` holding the resource list
+ * @param master_centry_list the defined complex entries
+ * @return 0 when every referenced resource exists
+ */
 int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *master_centry_list) {
    DENTER(TOP_LAYER);
    int ret = 0;
@@ -1373,9 +1360,13 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *ma
 
 /** @brief Adds the slot complex to the complex values
  *
+ * The global and the template host are skipped: neither runs jobs, so neither
+ * needs a slot count.
+ *
  * @param ehost Host object
- * @param load_list List of load values
- * returns error status or 0 on success
+ * @param processors how many processors the host reported, used as the default
+ *                   slot count
+ * @return an error status, or 0 on success
  */
 int host_ensure_slots_are_defined(lListElem *ehost, uint32_t processors) {
    DENTER(TOP_LAYER);
@@ -1410,30 +1401,20 @@ int host_ensure_slots_are_defined(lListElem *ehost, uint32_t processors) {
    DRETURN(0);
 }
 
-/****** sge_centry/validate_load_formula() ********************
-*  NAME
-*     validate_load_formula()
-*
-*  SYNOPSIS
-*     bool validate_load_formula(lListElem *schedd_conf, lList
-*     **answer_list, lList *centry_list, const char *name)
-*
-*  FUNCTION
-*     The function validates a load formula string.
-*
-*  INPUTS
-*     const char *load_formula - string that should be a valid load formula
-*     lList **answer_list      - error messages
-*     lList *centry_list       - list of defined complex values
-*     const char*              - name (used for error messages)
-*
-*  RESULT
-*     bool - true if valid
-*            false if unvalid
-*
-* MT-NOTE: is MT-safe, works only on the passed in data
-*
-*******************************************************************************/
+/**
+ * @brief The function validates a load formula string
+ *
+ * The function validates a load formula string.
+ *
+ * @param load_formula string that should be a valid load formula
+ * @param answer_list error messages
+ * @param centry_list list of defined complex values
+ * @param name the attribute the formula belongs to, used in error messages
+ *
+ * @return true if valid false if unvalid
+ *
+ * @note MT-NOTE: is MT-safe, works only on the passed in data
+ */
 bool validate_load_formula(const char *load_formula, lList **answer_list, const lList *centry_list, const char *name) {
    bool ret = true;
 
@@ -1514,30 +1495,19 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
    DRETURN(ret);
 }
 
-/****** sge_centry/load_formula_is_centry_referenced() *************************
-*  NAME
-*     load_formula_is_centry_referenced() -- search load formula for centry reference
-*
-*  SYNOPSIS
-*     bool load_formula_is_centry_referenced(const char *load_formula, const
-*     lListElem *centry)
-*
-*  FUNCTION
-*     This function searches for a centry reference in the defined algebraic
-*     expression
-*
-*  INPUTS
-*     const char *load_formula - load formula expression
-*     const lListElem *centry  - centry to search for
-*
-*  RESULT
-*     bool - true if referenced
-*            false if not referenced
-*
-*  NOTES
-*     MT-NOTE: load_formula_is_centry_referenced() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Search load formula for centry reference
+ *
+ * This function searches for a centry reference in the defined algebraic
+ * expression
+ *
+ * @param load_formula load formula expression
+ * @param centry centry to search for
+ *
+ * @return true if referenced false if not referenced
+ *
+ * @note MT-NOTE: load_formula_is_centry_referenced() is MT safe
+ */
 bool load_formula_is_centry_referenced(const char *load_formula, const lListElem *centry) {
    bool ret = false;
    const char *term_delim = "+-";
@@ -1575,6 +1545,20 @@ bool load_formula_is_centry_referenced(const char *load_formula, const lListElem
    DRETURN(ret);
 }
 
+/**
+ * @brief The value of a resource together with where it came from
+ *
+ * A resource can be defined at several layers; this reports the value that
+ * actually applies and, through `dominant_p`, which layer and kind it came
+ * from - see the `DOMINANT_*` bits.
+ *
+ * @param rep the resource element to read
+ * @param[out] dominant_p receives the `DOMINANT_*` bits
+ * @param[out] resource_string_p receives the value as text
+ * @param[out] dbl_value receives the value as a double
+ * @param[out] uint64_value receives the value as an unsigned integer
+ * @return the value as text
+ */
 const char *sge_get_dominant_stringval(const lListElem *rep, uint32_t *dominant_p, dstring *resource_string_p, double *dbl_value, uint64_t *uint64_value) {
    DENTER(TOP_LAYER);
 
@@ -1658,6 +1642,15 @@ const char *sge_get_dominant_stringval(const lListElem *rep, uint32_t *dominant_
    DRETURN(s);
 }
 
+/**
+ * @brief The sign of a slot count
+ *
+ * Booking and unbooking share the same code paths with a positive or negative
+ * slot count, so the sign says which of the two is happening.
+ *
+ * @param slots the slot count
+ * @return 1 for a positive count, -1 for a negative one, 0 for zero
+ */
 int slot_signum(int slots) {
    int ret = 0;
 
@@ -1709,7 +1702,8 @@ bool consumable_do_booking(uint32_t consumable, bool is_master_task, bool do_per
  * but for CONSUMABLE_JOB and CONSUMABLE_HOST requests are only booked once (1, or -1 for undebiting)
  *
  * @param[in] consumable type, e.g. CONSUMABLE_NO, CONSUMABLE_YES, ...
- * @param[in] slots, the number of slots (tasks) which shall be booked on a resource
+ * @param[in] slots the number of slots (tasks) which shall be booked on a resource
+ * @return the slot count to debit
  */
 int consumable_get_debit_slots(uint32_t consumable, int slots) {
    // default: CONSUMABLE_YES

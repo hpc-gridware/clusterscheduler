@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Rendering and verifying event and event client objects
+ *
+ * @see sge_event.h
+ */
+
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
@@ -49,7 +55,15 @@
 
 #include "msg_common.h"
 
-/* documentation see libs/evc/sge_event_client.c */
+/**
+ * @brief Render an event for logging and for `qconf -secl`
+ *
+ * @param event the event to render
+ * @param[out] buffer receives the text
+ * @return the rendered text, i.e. the buffer's content
+ *
+ * @see @ref evc
+ */
 const char *event_text(const lListElem *event, dstring *buffer) 
 {
    uint32_t type, intkey, number, intkey2;
@@ -433,54 +447,43 @@ static bool event_client_verify_subscription(const lListElem *event_client, lLis
    DRETURN(ret);
 }
 
-/****** sge_event/event_client_verify() ****************************************
-*  NAME
-*     event_client_verify() -- verify an event client object
-*
-*  SYNOPSIS
-*     bool 
-*     event_client_verify(const lListElem *event_client, lList **answer_list) 
-*
-*  FUNCTION
-*     Verifies, if an incoming event client object (new event client registration
-*     through a GDI_ADD operation or event client modification through GDI_MOD
-*     operation is correct.
-*
-*     We do the following verifications:
-*        - EV_id correct:
-*           - add request usually may only request dynamic event client id, 
-*             if a special id is requested, we must be on local host and be
-*             admin user or root.
-*        - EV_name (valid string, limited length)
-*        - EV_d_time (valid delivery interval)
-*        - EV_subscribed (valid subscription list)
-*        - EV_busy_handling (valid busy handling)
-*        - EV_session (valid string, limited length)
-*
-*     No verification will be done
-*        - EV_host (is always overwritten by qmaster code)
-*        - EV_commproc (comes from commlib)
-*        - EV_commid (comes from commlib)
-*        - EV_uid (is always overwritten  by qmaster code)
-*        - EV_last_heard_from (only used by qmaster)
-*        - EV_last_send_time (only used by qmaster)
-*        - EV_next_send_time (only used by qmaster)
-*        - EV_sub_array (only used by qmaster)
-*        - EV_changed (?)
-*        - EV_next_number (?)
-*        - EV_state (?)
-*
-*  INPUTS
-*     const lListElem *event_client - ??? 
-*     lList **answer_list           - ??? 
-*     bool add                      - is this an add request (or mod)?
-*
-*  RESULT
-*     bool - 
-*
-*  NOTES
-*     MT-NOTE: event_client_verify() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Verify an event client object
+ *
+ * Verifies, if an incoming event client object (new event client registration
+ * through a GDI_ADD operation or event client modification through GDI_MOD
+ * operation is correct.
+ * We do the following verifications:
+ *    - EV_id correct:
+ *       - add request usually may only request dynamic event client id,
+ *         if a special id is requested, we must be on local host and be
+ *         admin user or root.
+ *    - EV_name (valid string, limited length)
+ *    - EV_d_time (valid delivery interval)
+ *    - EV_subscribed (valid subscription list)
+ *    - EV_busy_handling (valid busy handling)
+ *    - EV_session (valid string, limited length)
+ * No verification will be done
+ *    - EV_host (is always overwritten by qmaster code)
+ *    - EV_commproc (comes from commlib)
+ *    - EV_commid (comes from commlib)
+ *    - EV_uid (is always overwritten  by qmaster code)
+ *    - EV_last_heard_from (only used by qmaster)
+ *    - EV_last_send_time (only used by qmaster)
+ *    - EV_next_send_time (only used by qmaster)
+ *    - EV_sub_array (only used by qmaster)
+ *    - EV_changed (?)
+ *    - EV_next_number (?)
+ *    - EV_state (?)
+ *
+ * @param event_client
+ * @param answer_list
+ * @param add is this an add request (or mod)?
+ *
+ * @return TODO document the return value
+ *
+ * @note MT-NOTE: event_client_verify() is MT safe
+ */
 bool 
 event_client_verify(const lListElem *event_client, lList **answer_list, bool add)
 {

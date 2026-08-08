@@ -34,44 +34,50 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations of the cluster queue object
+ *
+ * @see sge_cqueue.cc
+ */
+
 #include "sgeobj/cull/sge_cqueue_CQ_L.h"
 
+/**
+ * @brief What has to happen to a queue instance after a cluster queue change
+ *
+ * Changing a cluster queue can create, delete or modify the queue instances
+ * derived from it. Each instance is tagged with what it needs, and the tags
+ * are then acted on in one pass.
+ */
 enum {
-   SGE_QI_TAG_DEFAULT = 0,
-
-   /*
-    * send delete event and remove from spool area
-    */
-   SGE_QI_TAG_DEL = 1,
-
-   /*
-    * send add events and make persistent
-    */
-   SGE_QI_TAG_ADD = 2,
-
-   /*
-    * send mod event and make persistent
-    */
-   SGE_QI_TAG_MOD = 4,
-
-   /*
-    * send mod event but skip spooling (no state value changed!)
-    */
-   SGE_QI_TAG_MOD_ONLY_CONFIG = 8
+   SGE_QI_TAG_DEFAULT = 0,          ///< nothing to do
+   SGE_QI_TAG_DEL = 1,              ///< send delete event and remove from spool area
+   SGE_QI_TAG_ADD = 2,              ///< send add events and make persistent
+   SGE_QI_TAG_MOD = 4,              ///< send mod event and make persistent
+   SGE_QI_TAG_MOD_ONLY_CONFIG = 8   ///< send mod event but skip spooling (no state value changed!)
 };
 
+/**
+ * @brief One cluster queue attribute and how it maps onto a queue instance
+ *
+ * A cluster queue stores most attributes as a list of host specific values;
+ * the queue instance derived for one host stores the single value that applies
+ * to it. This describes both ends of that mapping for one attribute, plus how
+ * a new value is validated.
+ */
 typedef struct _list_attribute_struct {
-   int cqueue_attr;
-   int qinstance_attr;
-   int href_attr;
-   int value_attr;
-   int primary_key_attr;
-   const char *name;
-   bool is_sgeee_attribute;
-   bool verify_client;
-   bool (*verify_function)(lListElem *attr_elem, lList **answer_list, lListElem *cqueue, const lList *master_list);
+   int cqueue_attr;        ///< the attribute in the cluster queue, holding the list of values
+   int qinstance_attr;     ///< the attribute in the queue instance, holding the resolved value
+   int href_attr;          ///< the attribute of a list entry naming the host or host group
+   int value_attr;         ///< the attribute of a list entry holding the value
+   int primary_key_attr;   ///< the key attribute within a sublist, or `NoName`
+   const char *name;       ///< the attribute name an administrator writes
+   bool is_sgeee_attribute; ///< the attribute only exists in the ticket based policies
+   bool verify_client;     ///< the client verifies the value too, not only qmaster
+   bool (*verify_function)(lListElem *attr_elem, lList **answer_list, lListElem *cqueue, const lList *master_list); ///< validates a new value, or nullptr
 } list_attribute_struct;
 
+/// Every cluster queue attribute, terminated by an entry whose `name` is nullptr
 extern list_attribute_struct cqueue_attribute_array[];
 
 lEnumeration *

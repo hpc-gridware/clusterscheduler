@@ -34,8 +34,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The queue type: which kinds of job a queue accepts
+ *
+ * @see sge_qinstance_type.cc
+ */
+
 #include "uti/sge_dstring.h"
 
+/// The queue type names, indexed by their `QU_qtype` bit; see sge_qinstance_type.cc
 extern const char *queue_types[];
 
 const char *

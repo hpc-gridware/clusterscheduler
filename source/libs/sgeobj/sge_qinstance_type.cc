@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The queue type: which kinds of job a queue accepts
+ *
+ * Two of the four types are stored bits of `QU_qtype`; parallel and
+ * checkpointing are derived from whether the queue references a PE or a
+ * checkpointing environment.
+ *
+ * @see sge_qinstance_type.h
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "cull/cull.h"
@@ -44,8 +54,18 @@
 
 #include "msg_common.h"
 
+/// Debug layer the queue type traces are written to
 #define QINSTANCE_TYPE_LAYER TOP_LAYER
 
+/**
+ * @brief The queue type names, in the order of the `QU_qtype` bits
+ *
+ * The position in this array is the bit position, so `sge_parse_bitfield_str`
+ * can turn `qtype` back into the stored bit field. `PARALLEL` and
+ * `CHECKPOINTING` are deliberately absent: they are not stored bits but
+ * derived from whether the queue references a PE or a checkpointing
+ * environment - see #qinstance_is_parallel_queue.
+ */
 const char *queue_types[] = {
    "BATCH",
    "INTERACTIVE",
@@ -66,29 +86,21 @@ qinstance_has_type(const lListElem *this_elem, uint32_t type)
    return ret;
 }
 
-/****** sgeobj/qinstance/qtype_append_to_dstring() ****************************
-*  NAME
-*     qtype_append_to_dstring() -- Creates qtype bitmask as string 
-*
-*  SYNOPSIS
-*     const char * qtype_append_to_dstring(uint32_t qtype, dstring *string)
-*
-*  FUNCTION
-*     This functions expects a "qtype" bitmask. Each bit represents a 
-*     certain queue type. If it is set to 1 the corresponding type name 
-*     will be appended to "string". If no bit is 1 than "NONE" will be
-*     appended to "string".
-*
-*  INPUTS
-*     uint32_t qtype  - bitmask
-*     dstring *string - string 
-*
-*  RESULT
-*     const char * - pointer to the internal buffer of string
-*
-*  NOTES
-*     MT-NOTE: qtype_append_to_dstring() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Creates qtype bitmask as string
+ *
+ * This functions expects a "qtype" bitmask. Each bit represents a
+ * certain queue type. If it is set to 1 the corresponding type name
+ * will be appended to "string". If no bit is 1 than "NONE" will be
+ * appended to "string".
+ *
+ * @param qtype bitmask
+ * @param string string
+ *
+ * @return pointer to the internal buffer of string
+ *
+ * @note MT-NOTE: qtype_append_to_dstring() is MT safe
+ */
 const char *
 qtype_append_to_dstring(uint32_t qtype, dstring *string)
 {
@@ -118,6 +130,18 @@ qtype_append_to_dstring(uint32_t qtype, dstring *string)
    DRETURN(ret);
 }
 
+/**
+ * @brief Render a queue's type as qstat prints it
+ *
+ * The abbreviated form additionally shows `P` for a parallel queue and `C` for
+ * a checkpointing one, which the long form does not - those two are derived
+ * from references, not from the stored bits.
+ *
+ * @param this_elem the queue instance to read
+ * @param[out] string receives the text, appended
+ * @param only_first_char true for the one letter per type form, false for the names
+ * @return always true
+ */
 bool
 qinstance_print_qtype_to_dstring(const lListElem *this_elem,
                                  dstring *string, bool only_first_char)
@@ -162,6 +186,16 @@ qinstance_print_qtype_to_dstring(const lListElem *this_elem,
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse a queue type list and store it in the queue
+ *
+ * An empty or missing value clears the type, it is not an error.
+ *
+ * @param[in,out] this_elem the queue instance to change
+ * @param[out] answer_list receives the message naming the bad type
+ * @param value the type names, as an administrator wrote them
+ * @return true when the value was understood
+ */
 bool
 qinstance_parse_qtype_from_string(lListElem *this_elem, lList **answer_list,
                                   const char *value)
@@ -182,21 +216,45 @@ qinstance_parse_qtype_from_string(lListElem *this_elem, lList **answer_list,
    DRETURN(ret);
 }
 
+/**
+ * @brief Is this a batch queue?
+ *
+ * @param this_elem the queue instance to check
+ * @return true when the #BQ bit is set
+ */
 bool qinstance_is_batch_queue(const lListElem *this_elem)
 {
    return qinstance_has_type(this_elem, BQ);
 }
 
+/**
+ * @brief Is this an interactive queue?
+ *
+ * @param this_elem the queue instance to check
+ * @return true when the #IQ bit is set
+ */
 bool qinstance_is_interactive_queue(const lListElem *this_elem)
 {
    return qinstance_has_type(this_elem, IQ);
 }
 
+/**
+ * @brief Is this a checkpointing queue?
+ *
+ * @param this_elem the queue instance to check
+ * @return true when it references a checkpointing environment
+ */
 bool qinstance_is_checkpointing_queue(const lListElem *this_elem)
 {
    return qinstance_is_a_ckpt_referenced(this_elem);
 }
 
+/**
+ * @brief Is this a parallel queue?
+ *
+ * @param this_elem the queue instance to check
+ * @return true when it references a parallel environment
+ */
 bool qinstance_is_parallel_queue(const lListElem *this_elem)
 {
    return qinstance_is_a_pe_referenced(this_elem);

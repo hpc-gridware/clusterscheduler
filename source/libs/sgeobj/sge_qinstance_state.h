@@ -33,64 +33,95 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The state bits of a queue instance and the transitions that change them
+ *
+ * @see sge_qinstance_state.cc
+ */
+
 #include "cull/cull.h"
 #include "uti/sge_dstring.h"
 
-/*
- * QI states
+/**
+ * @name Queue instance states
+ *
+ * Bits of `QU_state`. Several can be set at once, and the letters `qstat`
+ * prints are derived from them - see #qinstance_state_as_string.
+ * @{
  */
-#define QI_DEFAULT                     0x00000000 
-#define QI_ALARM                       0x00000001
-#define QI_SUSPEND_ALARM               0x00000002
-#define QI_DISABLED                    0x00000004
-#define QI_SUSPENDED                   0x00000100
-#define QI_UNKNOWN                     0x00000400
-#define QI_ERROR                       0x00004000
-#define QI_SUSPENDED_ON_SUBORDINATE    0x00008000
-#define QI_CAL_DISABLED                0x00020000
-#define QI_CAL_SUSPENDED               0x00040000
-#define QI_AMBIGUOUS                   0x00080000
-#define QI_ORPHANED                    0x00100000
-#define QI_FULL                        0x00200000
+#define QI_DEFAULT                     0x00000000 ///< no state bit set; the queue is available
+#define QI_ALARM                       0x00000001 ///< a load threshold is exceeded, so no job is dispatched here
+#define QI_SUSPEND_ALARM               0x00000002 ///< a suspend threshold is exceeded, so running jobs get suspended
+#define QI_DISABLED                    0x00000004 ///< an administrator disabled the queue
+#define QI_SUSPENDED                   0x00000100 ///< an administrator suspended the queue
+#define QI_UNKNOWN                     0x00000400 ///< the execution host has not reported for too long
+#define QI_ERROR                       0x00004000 ///< a job could not be started here and the cause is unclear
+#define QI_SUSPENDED_ON_SUBORDINATE    0x00008000 ///< suspended because a subordinate relation demanded it
+#define QI_CAL_DISABLED                0x00020000 ///< disabled by the queue's calendar
+#define QI_CAL_SUSPENDED               0x00040000 ///< suspended by the queue's calendar
+#define QI_AMBIGUOUS                   0x00080000 ///< the cluster queue's configuration does not resolve for this host
+#define QI_ORPHANED                    0x00100000 ///< the queue was deleted but still holds jobs
+#define QI_FULL                        0x00200000 ///< every slot is in use
+/** @} */
 
-/*
- * QI state transition
+/**
+ * @name Queue instance state transitions
+ *
+ * What a `qmod` request asks for. These are not the state bits above: a
+ * transition names an action, and several of them deliberately share a value
+ * with the state bit they set or clear.
+ * @{
  */
-#define QI_DO_NOTHING                  0x00000000
-#define QI_DO_DISABLE                  0x00000004
-#define QI_DO_ENABLE                   0x00000008
-#define QI_DO_UNSUSPEND                0x00000080
-#define QI_DO_SUSPEND                  0x00000100
-#define QI_DO_CLEARERROR               0x00004000
-#define QI_DO_CLEAN                    0x00010000
-#define QI_DO_RESCHEDULE               0x00080000
-#define QI_DO_CAL_DISABLE              0x00020000
-#define QI_DO_CAL_SUSPEND              0x00040000
-#define QI_DO_RECONNECT                0x08000000   ///< CS-2144: client GDI request for IJS session reconnect
+#define QI_DO_NOTHING                  0x00000000 ///< no action
+#define QI_DO_DISABLE                  0x00000004 ///< disable the queue
+#define QI_DO_ENABLE                   0x00000008 ///< enable the queue again
+#define QI_DO_UNSUSPEND                0x00000080 ///< resume a suspended queue
+#define QI_DO_SUSPEND                  0x00000100 ///< suspend the queue
+#define QI_DO_CLEARERROR               0x00004000 ///< clear #QI_ERROR
+#define QI_DO_CLEAN                    0x00010000 ///< drop the jobs the queue still holds
+#define QI_DO_RESCHEDULE               0x00080000 ///< reschedule the jobs running here
+#define QI_DO_CAL_DISABLE              0x00020000 ///< disable because the calendar says so
+#define QI_DO_CAL_SUSPEND              0x00040000 ///< suspend because the calendar says so
+#define QI_DO_RECONNECT                0x08000000 ///< CS-2144: client GDI request for IJS session reconnect
 
 #ifdef __SGE_QINSTANCE_STATE_DEBUG__
-#  define QI_DO_SETERROR               0x00100000
-#  define QI_DO_SETORPHANED            0x00200000
-#  define QI_DO_CLEARORPHANED          0x00400000
-#  define QI_DO_SETUNKNOWN             0x00800000
-#  define QI_DO_CLEARUNKNOWN           0x01000000
-#  define QI_DO_SETAMBIGUOUS           0x02000000
-#  define QI_DO_CLEARAMBIGUOUS         0x04000000
+#  define QI_DO_SETERROR               0x00100000 ///< debug only: set #QI_ERROR by hand
+#  define QI_DO_SETORPHANED            0x00200000 ///< debug only: set #QI_ORPHANED by hand
+#  define QI_DO_CLEARORPHANED          0x00400000 ///< debug only: clear #QI_ORPHANED by hand
+#  define QI_DO_SETUNKNOWN             0x00800000 ///< debug only: set #QI_UNKNOWN by hand
+#  define QI_DO_CLEARUNKNOWN           0x01000000 ///< debug only: clear #QI_UNKNOWN by hand
+#  define QI_DO_SETAMBIGUOUS           0x02000000 ///< debug only: set #QI_AMBIGUOUS by hand
+#  define QI_DO_CLEARAMBIGUOUS         0x04000000 ///< debug only: clear #QI_AMBIGUOUS by hand
 #endif
 
-/* job/queue state transition via job identifier */
+/// The request names a job, so the transition applies to that job
 #define JOB_DO_ACTION                  0x80000000
+/// The request names a queue, so the transition applies to that queue
 #define QUEUE_DO_ACTION                0x40000000
+/** @} */
 
-/*
+/**
+ * @name Queue instance transition options
  *
+ * Passed alongside a transition to say how far it reaches.
+ *
+ * @warning Everything from here down to the second
+ *          `transition_option_is_valid_for_qinstance` declaration exists
+ *          **twice** in this header, verbatim. The values are identical and
+ *          the declarations agree, so it compiles; it is an accidental paste,
+ *          not a deliberate conditional. Delete one copy when this file is
+ *          next touched for a code change.
+ * @{
  */
-#define QI_TRANSITION_NOTHING          0x00000000
-#define QI_TRANSITION_OPTION           0x00000001
+#define QI_TRANSITION_NOTHING          0x00000000 ///< the transition applies to nothing further
+#define QI_TRANSITION_OPTION           0x00000001 ///< the transition also applies to the jobs in the queue
+/** @} */
 
+/// Is this a transition a queue instance accepts?
 bool
 transition_is_valid_for_qinstance(uint32_t transition, lList **answer_list);
 
+/// Is this a transition option a queue instance accepts?
 bool
 transition_option_is_valid_for_qinstance(uint32_t option, lList **answer_list);
 
@@ -98,15 +129,22 @@ transition_option_is_valid_for_qinstance(uint32_t option, lList **answer_list);
 #  define QI_DO_SETERROR               0x00100000
 #endif
 
-/*
+/**
+ * @name Queue instance transition options (duplicate)
  *
+ * @warning An accidental verbatim copy of the block above. See the warning
+ *          there.
+ * @{
  */
-#define QI_TRANSITION_NOTHING          0x00000000
-#define QI_TRANSITION_OPTION           0x00000001
+#define QI_TRANSITION_NOTHING          0x00000000 ///< duplicate of the definition above
+#define QI_TRANSITION_OPTION           0x00000001 ///< duplicate of the definition above
+/** @} */
 
+/// Duplicate declaration; see the block above
 bool
 transition_is_valid_for_qinstance(uint32_t transition, lList **answer_list);
 
+/// Duplicate declaration; see the block above
 bool
 transition_option_is_valid_for_qinstance(uint32_t option, lList **answer_list);
 

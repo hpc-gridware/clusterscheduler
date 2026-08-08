@@ -34,6 +34,20 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Queue instances: one queue on one host
+ *
+ * A cluster queue is a template; the queue instance is what a job actually
+ * runs in. Its name is `cqueue@host`, and most of its attributes were resolved
+ * from the cluster queue's per host lists when the instance was created.
+ *
+ * This is also where consumables are booked and unbooked: #rc_debit_consumable
+ * is the single place that changes a resource container's actual values, for
+ * queues, hosts and the global host alike.
+ *
+ * @see sge_qinstance.h
+ */
+
 #include <cstring>
 
 #include "uti/sge_dstring.h"
@@ -72,33 +86,24 @@
 #include "uti/sge.h"
 #include "uti/sge_time.h"
 
+/// Debug layer the queue instance traces are written to
 #define QINSTANCE_LAYER BASIS_LAYER
 
-/****** sgeobj/qinstance/qinstance_list_locate() ******************************
-*  NAME
-*     qinstance_list_locate() -- find a qinstance 
-*
-*  SYNOPSIS
-*     lListElem * 
-*     qinstance_list_locate(const lList *this_list, 
-*                           const char *hostname, const char *cqueue_name) 
-*
-*  FUNCTION
-*     Find a qinstance in "this_list" which is part of the cluster queue
-*     with the name "cqueue_name" and resides on the host with the name 
-*     "hostname".
-*
-*  INPUTS
-*     const lList *this_list  - QU_Type list
-*     const char *hostname    - hostname 
-*     const char *cqueue_name - cluster queue name 
-*
-*  RESULT
-*     lListElem * - QU_Type element
-*
-*  NOTES
-*     MT-NOTE: qinstance_list_locate() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Find a qinstance
+ *
+ * Find a qinstance in "this_list" which is part of the cluster queue
+ * with the name "cqueue_name" and resides on the host with the name
+ * "hostname".
+ *
+ * @param this_list QU_Type list
+ * @param hostname hostname
+ * @param cqueue_name cluster queue name
+ *
+ * @return QU_Type element
+ *
+ * @note MT-NOTE: qinstance_list_locate() is MT safe
+ */
 lListElem *
 qinstance_list_locate(const lList *this_list, const char *hostname,
                       const char *cqueue_name) {
@@ -122,55 +127,33 @@ qinstance_list_locate(const lList *this_list, const char *hostname,
    return ret;
 }
 
-/****** sgeobj/qinstance/qinstance_list_locate2() *****************************
-*  NAME
-*     qinstance_list_locate2() -- find a qinstance using the fullname 
-*
-*  SYNOPSIS
-*     lListElem * 
-*     qinstance_list_locate2(const lList *queue_list, 
-*                            const char *full_name) 
-*
-*  FUNCTION
-*     find a qinstance using the fullname 
-*
-*  INPUTS
-*     const lList *queue_list - QU_Type list 
-*     const char *full_name   - fullname of the qinstance (<cqueue>@<hostname>)
-*
-*  RESULT
-*     lListElem * - QU_type element
-*
-*  NOTES
-*     MT-NOTE: qinstance_list_locate2() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Find a qinstance using the fullname
+ *
+ * find a qinstance using the fullname
+ *
+ * @param queue_list QU_Type list
+ * @param full_name fullname of the qinstance (`cqueue@hostname`)
+ *
+ * @return QU_type element
+ *
+ * @note MT-NOTE: qinstance_list_locate2() is MT safe
+ */
 lListElem *
 qinstance_list_locate2(const lList *queue_list, const char *full_name) {
    return lGetElemStrRW(queue_list, QU_full_name, full_name);
 }
 
-/****** sgeobj/qinstance/qinstance_get_name() *********************************
-*  NAME
-*     qinstance_get_name() -- returns the fullname of a qinstance object 
-*
-*  SYNOPSIS
-*     const char * 
-*     qinstance_get_name(const lListElem *this_elem, 
-*                        dstring *string_buffer) 
-*
-*  FUNCTION
-*     Returns the fullname of a qinstance object 
-*
-*  INPUTS
-*     const lListElem *this_elem - QU_Type 
-*     dstring *string_buffer     - dynamic string buffer 
-*
-*  RESULT
-*     const char * - pointer to the internal string buffer of "string_buffer"
-*
-*  NOTES
-*     MT-NOTE: qinstance_get_name() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Returns the fullname of a qinstance object
+ *
+ * @param this_elem QU_Type
+ * @param string_buffer dynamic string buffer
+ *
+ * @return pointer to the internal string buffer of "string_buffer"
+ *
+ * @note MT-NOTE: qinstance_get_name() is MT safe
+ */
 const char *
 qinstance_get_name(const lListElem *this_elem, dstring *string_buffer) {
    const char *ret = nullptr;
@@ -183,29 +166,18 @@ qinstance_get_name(const lListElem *this_elem, dstring *string_buffer) {
    return ret;
 }
 
-/****** sgeobj/qinstance/qinstance_list_set_tag() *****************************
-*  NAME
-*     qinstance_list_set_tag() -- tag a list of qinstances 
-*
-*  SYNOPSIS
-*     void 
-*     qinstance_list_set_tag(lList *queue_list, uint32_t tag_value, int tag_nm = QU_tag)
-*
-*  FUNCTION
-*     Tag a list of qinstances ("queue_list") with "tag_value".
-*     Examples for tags are QU_tag (default) and QU_tagged4schedule.
-*
-*  INPUTS
-*     lList *this_list   - QU_Type list
-*     uint32_t tag_value - unsigned long value (not a bitmask)
-*     int tag_nm         - which tag attribute to use (default: QU_tag)
-*
-*  RESULT
-*     void - None
-*
-*  NOTES
-*     MT-NOTE: qinstance_list_set_tag() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Tag a list of qinstances
+ *
+ * Tag a list of qinstances ("queue_list") with "tag_value".
+ * Examples for tags are QU_tag (default) and QU_tagged4schedule.
+ *
+ * @param queue_list QU_Type list
+ * @param tag_value unsigned long value (not a bitmask)
+ * @param tag_nm which tag attribute to use (default: QU_tag)
+ *
+ * @note MT-NOTE: qinstance_list_set_tag() is MT safe
+ */
 void qinstance_list_set_tag(lList *queue_list, uint32_t tag_value, int tag_nm) {
    if (queue_list != nullptr) {
       for_each_rw_lv (qinstance, queue_list) {
@@ -214,25 +186,15 @@ void qinstance_list_set_tag(lList *queue_list, uint32_t tag_value, int tag_nm) {
    }
 }
 
-/****** sgeobj/qinstance/qinstance_increase_qversion() ************************
-*  NAME
-*     qinstance_increase_qversion() -- increase the qinstance queue version 
-*
-*  SYNOPSIS
-*     void qinstance_increase_qversion(lListElem *this_elem) 
-*
-*  FUNCTION
-*     Increase the queue version of the given qinstance "this_elem". 
-*
-*  INPUTS
-*     lListElem *this_elem - QU_Type element 
-*
-*  RESULT
-*     void - None
-*
-*  NOTES
-*     MT-NOTE: qinstance_increase_qversion() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Increase the qinstance queue version
+ *
+ * Increase the queue version of the given qinstance "this_elem".
+ *
+ * @param this_elem QU_Type element
+ *
+ * @note MT-NOTE: qinstance_increase_qversion() is MT safe
+ */
 void
 qinstance_increase_qversion(lListElem *this_elem) {
    DENTER(TOP_LAYER);
@@ -270,30 +232,18 @@ qinstance_is_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem) {
    DRETURN(ret);
 }
 
-/****** sgeobj/qinstance/qinstance_is_pe_referenced() *************************
-*  NAME
-*     qinstance_is_pe_referenced() -- Is the PE object referenced 
-*
-*  SYNOPSIS
-*     bool 
-*     qinstance_is_pe_referenced(const lListElem *this_elem, 
-*                                const lListElem *pe) 
-*
-*  FUNCTION
-*     Is the given PE ("pe") referenced in the qinstance element "this_elem". 
-*
-*  INPUTS
-*     const lListElem *this_elem - QU_Type element 
-*     const lListElem *pe        - PE_Type element 
-*
-*  RESULT
-*     bool - test result 
-*        true  - is referenced 
-*        false - is not referenced 
-*
-*  NOTES
-*     MT-NOTE: qinstance_is_pe_referenced() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Is the PE object referenced
+ *
+ * Is the given PE ("pe") referenced in the qinstance element "this_elem".
+ *
+ * @param this_elem QU_Type element
+ * @param pe PE_Type element
+ *
+ * @return test result true  - is referenced false - is not referenced
+ *
+ * @note MT-NOTE: qinstance_is_pe_referenced() is MT safe
+ */
 bool
 qinstance_is_pe_referenced(const lListElem *this_elem, const lListElem *pe) {
    DENTER(TOP_LAYER);
@@ -305,30 +255,18 @@ qinstance_is_pe_referenced(const lListElem *this_elem, const lListElem *pe) {
    DRETURN(false);
 }
 
-/****** sgeobj/qinstance/qinstance_is_calendar_referenced() *******************
-*  NAME
-*     qinstance_is_calendar_referenced() -- is the calendar referenced 
-*
-*  SYNOPSIS
-*     bool 
-*     qinstance_is_calendar_referenced(const lListElem *this_elem, 
-*                                      const lListElem *calendar) 
-*
-*  FUNCTION
-*     Is the "calendar" referenced in the qinstance "this_elem". 
-*
-*  INPUTS
-*     const lListElem *this_elem - QU_Type element 
-*     const lListElem *calendar  - CAL_Type element 
-*
-*  RESULT
-*     bool - test result 
-*        true  - is referenced
-*        false - is not referenced 
-*
-*  NOTES
-*     MT-NOTE: qinstance_is_calendar_referenced() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Is the calendar referenced
+ *
+ * Is the "calendar" referenced in the qinstance "this_elem".
+ *
+ * @param this_elem QU_Type element
+ * @param calendar CAL_Type element
+ *
+ * @return test result true  - is referenced false - is not referenced
+ *
+ * @note MT-NOTE: qinstance_is_calendar_referenced() is MT safe
+ */
 bool
 qinstance_is_calendar_referenced(const lListElem *this_elem,
                                  const lListElem *calendar) {
@@ -347,27 +285,17 @@ qinstance_is_calendar_referenced(const lListElem *this_elem,
    DRETURN(ret);
 }
 
-/****** sgeobj/qinstance/qinstance_is_a_pe_referenced() ***********************
-*  NAME
-*     qinstance_is_a_pe_referenced() -- is a PE referenced
-*
-*  SYNOPSIS
-*     bool qinstance_is_a_pe_referenced(const lListElem *this_elem) 
-*
-*  FUNCTION
-*     Test is at least one PE is referenced by qinstance "this_elem" 
-*
-*  INPUTS
-*     const lListElem *this_elem - QU_Type 
-*
-*  RESULT
-*     bool - test result
-*        true  - an PE is referenced
-*        false - no PE is referenced ("NONE")
-*
-*  NOTES
-*     MT-NOTE: qinstance_is_a_pe_referenced() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Is a PE referenced
+ *
+ * Test is at least one PE is referenced by qinstance "this_elem"
+ *
+ * @param this_elem QU_Type
+ *
+ * @return test result true  - an PE is referenced false - no PE is referenced ("NONE")
+ *
+ * @note MT-NOTE: qinstance_is_a_pe_referenced() is MT safe
+ */
 bool
 qinstance_is_a_pe_referenced(const lListElem *this_elem) {
    bool ret = false;
@@ -379,31 +307,19 @@ qinstance_is_a_pe_referenced(const lListElem *this_elem) {
    DRETURN(ret);
 }
 
-/****** sgeobj/qinstance/qinstance_is_ckpt_referenced() ***********************
-*  NAME
-*     qinstance_is_ckpt_referenced() -- Is the CKTP referenced 
-*
-*  SYNOPSIS
-*     bool 
-*     qinstance_is_ckpt_referenced(const lListElem *this_elem, 
-*                                  const lListElem *ckpt) 
-*
-*  FUNCTION
-*     Tests if the given CKPT object ("ckpt") is referenced in
-*     the qinstance "this_elem". 
-*
-*  INPUTS
-*     const lListElem *this_elem - QU_Type element
-*     const lListElem *ckpt      - CKPT_Type element
-*
-*  RESULT
-*     bool - test result
-*        true  - CKPT is referenced
-*        false - CKPT is not referenced
-*
-*  NOTES
-*     MT-NOTE: qinstance_is_ckpt_referenced() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Is the CKTP referenced
+ *
+ * Tests if the given CKPT object ("ckpt") is referenced in
+ * the qinstance "this_elem".
+ *
+ * @param this_elem QU_Type element
+ * @param ckpt CKPT_Type element
+ *
+ * @return test result true  - CKPT is referenced false - CKPT is not referenced
+ *
+ * @note MT-NOTE: qinstance_is_ckpt_referenced() is MT safe
+ */
 bool
 qinstance_is_ckpt_referenced(const lListElem *this_elem, const lListElem *ckpt) {
    bool ret = false;
@@ -416,27 +332,17 @@ qinstance_is_ckpt_referenced(const lListElem *this_elem, const lListElem *ckpt) 
    DRETURN(ret);
 }
 
-/****** sgeobj/qinstance/qinstance_is_a_ckpt_referenced() *********************
-*  NAME
-*     qinstance_is_a_ckpt_referenced() -- Is an CKPT object referenced 
-*
-*  SYNOPSIS
-*     bool qinstance_is_a_ckpt_referenced(const lListElem *this_elem) 
-*
-*  FUNCTION
-*     Is an CKPT object referenced in "this_elem". 
-*
-*  INPUTS
-*     const lListElem *this_elem - CKPT_Type element 
-*
-*  RESULT
-*     bool - test result
-*        true  - a CKPT is referenced
-*        false - no CKPT is referenced
-*
-*  NOTES
-*     MT-NOTE: qinstance_is_a_ckpt_referenced() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Is an CKPT object referenced
+ *
+ * Is an CKPT object referenced in "this_elem".
+ *
+ * @param this_elem CKPT_Type element
+ *
+ * @return test result true  - a CKPT is referenced false - no CKPT is referenced
+ *
+ * @note MT-NOTE: qinstance_is_a_ckpt_referenced() is MT safe
+ */
 bool
 qinstance_is_a_ckpt_referenced(const lListElem *this_elem) {
    bool ret = false;
@@ -448,29 +354,18 @@ qinstance_is_a_ckpt_referenced(const lListElem *this_elem) {
    DRETURN(ret);
 }
 
-/****** sgeobj/qinstance/qinstance_is_centry_a_complex_value() ****************
-*  NAME
-*     qinstance_is_centry_a_complex_value() -- Is it a complex_value 
-*
-*  SYNOPSIS
-*     bool 
-*     qinstance_is_centry_a_complex_value(const lListElem *this_elem, 
-*                                         const lListElem *centry) 
-*
-*  FUNCTION
-*     Is the given "centry" in the list of complex_values of "this_elem".
-*
-*  INPUTS
-*     const lListElem *this_elem - QU_Type element 
-*     const lListElem *centry    - CE_Type element 
-*
-*  RESULT
-*     bool - test result
-*        true  - it is a complex value
-*        false - no complex value
-*  NOTES
-*     MT-NOTE: qinstance_is_centry_a_complex_value() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Is it a complex_value
+ *
+ * Is the given "centry" in the list of complex_values of "this_elem".
+ *
+ * @param this_elem QU_Type element
+ * @param centry CE_Type element
+ *
+ * @return test result true  - it is a complex value false - no complex value
+ *
+ * @note MT-NOTE: qinstance_is_centry_a_complex_value() is MT safe
+ */
 bool
 qinstance_is_centry_a_complex_value(const lListElem *this_elem,
                                     const lListElem *centry) {
@@ -489,36 +384,23 @@ qinstance_is_centry_a_complex_value(const lListElem *this_elem,
    DRETURN(ret);
 }
 
-/****** sgeobj/qinstance/qinstance_list_find_matching() ***********************
-*  NAME
-*     qinstance_list_find_matching() -- find certain qinstances 
-*
-*  SYNOPSIS
-*     bool
-*     qinstance_list_find_matching(const lList *this_list, 
-*                                  lList **answer_list,
-*                                  const char *hostname_pattern, 
-*                                  lList **qref_list)
-*
-*  FUNCTION
-*     Finds all qinstances in "this_list" whose hostname part matches
-*     the "hostname_pattern" (fnmatch pattern) and stores the
-*     qinstance name in "qref_list". In case of any error "answer_list"
-*     will be filled.
-*
-*  INPUTS
-*     const lList *this_list       - QU_Type list 
-*     lList **answer_list          - AN_Type list 
-*     const char *hostname_pattern - fnmatch hostname pattern 
-*     lList **qref_list            - QR_Type list
-*
-*  RESULT
-*     bool - error result
-*        true  - success
-*
-*  NOTES
-*     MT-NOTE: qinstance_list_find_matching() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Find certain qinstances
+ *
+ * Finds all qinstances in "this_list" whose hostname part matches
+ * the "hostname_pattern" (fnmatch pattern) and stores the
+ * qinstance name in "qref_list". In case of any error "answer_list"
+ * will be filled.
+ *
+ * @param this_list QU_Type list
+ * @param answer_list AN_Type list
+ * @param hostname_pattern fnmatch hostname pattern
+ * @param qref_list QR_Type list
+ *
+ * @return error result true  - success
+ *
+ * @note MT-NOTE: qinstance_list_find_matching() is MT safe
+ */
 bool
 qinstance_list_find_matching(const lList *this_list, lList **answer_list,
                              const char *hostname_pattern, lList **qref_list) {
@@ -549,26 +431,17 @@ qinstance_list_find_matching(const lList *this_list, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/qinstance/qinstance_slots_used() *******************************
-*  NAME
-*     qinstance_slots_used() -- Returns the number of currently used slots 
-*
-*  SYNOPSIS
-*     int 
-*     qinstance_slots_used(const lListElem *this_elem) 
-*
-*  FUNCTION
-*     Returns the number of currently used slots. 
-*
-*  INPUTS
-*     const lListElem *this_elem - QU_Type element 
-*
-*  RESULT
-*     int - number of slots
-*
-*  NOTES
-*     MT-NOTE: qinstance_slots_used() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Returns the number of currently used slots
+ *
+ * Returns the number of currently used slots.
+ *
+ * @param this_elem QU_Type element
+ *
+ * @return number of slots
+ *
+ * @note MT-NOTE: qinstance_slots_used() is MT safe
+ */
 int
 qinstance_slots_used(const lListElem *this_elem) 
 {
@@ -587,25 +460,17 @@ qinstance_slots_used(const lListElem *this_elem)
    DRETURN(ret);
 }
 
-/****** sgeobj/qinstance/qinstance_slots_reserved() ***************************
-*  NAME
-*     qinstance_slots_reserved() -- the number of maximal reserved slots
-*
-*  SYNOPSIS
-*     int qinstance_slots_reserved(const lListElem *this_elem) 
-*
-*  FUNCTION
-*     Returns the number of maximal reserved slots by all advance reservations
-*
-*  INPUTS
-*     const lListElem *this_elem - QU_Type element
-*
-*  RESULT
-*     int - number of slots
-*
-*  NOTES
-*     MT-NOTE: qinstance_slots_reserved() is MT safe 
-*******************************************************************************/
+/**
+ * @brief The number of maximal reserved slots
+ *
+ * Returns the number of maximal reserved slots by all advance reservations
+ *
+ * @param this_elem QU_Type element
+ *
+ * @return number of slots
+ *
+ * @note MT-NOTE: qinstance_slots_reserved() is MT safe
+ */
 uint32_t
 qinstance_slots_reserved(const lListElem *this_elem) {
    DENTER(QINSTANCE_LAYER);
@@ -620,27 +485,14 @@ qinstance_slots_reserved(const lListElem *this_elem) {
    DRETURN(ret);
 }
 
-/****** sgeobj/qinstance/qinstance_set_slots_used() ***************************
-*  NAME
-*     qinstance_set_slots_used() -- Modifies the number of used slots 
-*
-*  SYNOPSIS
-*     void 
-*     qinstance_set_slots_used(lListElem *this_elem, int new_slots) 
-*
-*  FUNCTION
-*     Modifies the number of used slots 
-*
-*  INPUTS
-*     lListElem *this_elem - QU_Type 
-*     int new_slots        - new slot value 
-*
-*  RESULT
-*     void - NONE 
-*
-*  NOTES
-*     MT-NOTE: qinstance_set_slots_used() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Modifies the number of used slots
+ *
+ * @param this_elem QU_Type
+ * @param new_slots new slot value
+ *
+ * @note MT-NOTE: qinstance_set_slots_used() is MT safe
+ */
 void
 qinstance_set_slots_used(lListElem *this_elem, int new_slots) {
    DENTER(QINSTANCE_LAYER);
@@ -654,40 +506,26 @@ qinstance_set_slots_used(lListElem *this_elem, int new_slots) {
    DRETURN_VOID;
 }
 
-/****** sgeobj/qinstance/qinstance_debit_consumable() *************************
-*  NAME
-*     qinstance_debit_consumable() -- Debits/Undebits consumables
-*
-*  SYNOPSIS
-*     int
-*     qinstance_debit_consumable(lListElem *qep, 
-*                                const lListElem *jep,
-*                                lList *centry_list,
-*                                int slots)
-*
-*  FUNCTION
-*     Checks if there are nonstatic load values avaialable for the
-*     qinstance. If this is the case, then then the "unknown" state 
-*     of that machine will be released. 
-*
-*  INPUTS
-*     lListElem *qep     - Qinstance resource container
-*     lListElem *jep     - The job (JB_Type) defining which resources and how
-*                          much of them need to be (un)debited
-*     lList *centry_list - The global complex list that is needed to interpret
-*                          the jobs' resource requests.
-*     int slots          - The number of slots for which we are debiting.
-*                          Positive slots numbers cause debiting, negative
-*                          ones cause undebiting.
-*
-*  RESULT
-*     Returns -1 in case of an error. Otherwise the number of (un)debitations 
-*     that actually took place is returned. If 0 is returned that means the
-*     consumable resources of the 'ep' object has not changed.
-*
-*  NOTES
-*     MT-NOTE: qinstance_debit_consumable() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Debits/Undebits consumables
+ *
+ * Checks if there are nonstatic load values avaialable for the
+ * qinstance. If this is the case, then then the "unknown" state
+ * of that machine will be released.
+ *
+ * @param qep Qinstance resource container
+ * @param jep The job (JB_Type) defining which resources and how much of them need to be (un)debited
+ * @param pe The job's parallel environment, needed to split master and slave requests; may be nullptr
+ * @param centry_list The global complex list that is needed to interpret the jobs' resource requests.
+ * @param slots The number of slots for which we are debiting. Positive slots numbers cause debiting, negative ones cause undebiting.
+ * @param is_master_task true when this booking includes the job's master task
+ * @param do_per_host_booking true when a per host consumable still has to be booked on this host
+ * @param just_check If != nullptr do not debit, only check whether debiting would exceed the resources
+ *
+ * @return 1 in case of an error. Otherwise the number of (un)debitations that actually took place is returned. If 0 is returned that means the consumable resources of the 'ep' object has not changed.
+ *
+ * @note MT-NOTE: qinstance_debit_consumable() is MT safe
+ */
 int
 qinstance_debit_consumable(lListElem *qep, const lListElem *jep, const lListElem *pe, const lList *centry_list,
                            int slots, bool is_master_task, bool do_per_host_booking, bool *just_check) {
@@ -697,31 +535,17 @@ qinstance_debit_consumable(lListElem *qep, const lListElem *jep, const lListElem
                               lGetString(qep, QU_qname), is_master_task, do_per_host_booking, just_check);
 }
 
-/****** sgeobj/qinstance/qinstance_message_add() *****************************
-*  NAME
-*     qinstance_message_add() -- Adds a message to the qinstance structure 
-*
-*  SYNOPSIS
-*     bool
-*     qinstance_message_add(lListElem *this_elem, uint32_t type,
-*                           const char *message)
-*
-*  FUNCTION
-*     Adds a message to the qinstance structure
-*
-*  INPUTS
-*     lListElem *this_elem - QU_Type 
-*     uint32_t type        - message type
-*     const char *message  - message
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error 
-*
-*  NOTES
-*     MT-NOTE: qinstance_message_add() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Adds a message to the qinstance structure
+ *
+ * @param this_elem QU_Type
+ * @param type message type
+ * @param message message
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: qinstance_message_add() is MT safe
+ */
 bool
 qinstance_message_add(lListElem *this_elem, uint32_t type, const char *message) {
    bool ret = true;
@@ -731,30 +555,18 @@ qinstance_message_add(lListElem *this_elem, uint32_t type, const char *message) 
    DRETURN(ret);
 }
 
-/****** sgeobj/qinstance/qinstance_message_trash_all_of_type_X() **************
-*  NAME
-*     qinstance_message_trash_all_of_type_X() -- Trash messages 
-*
-*  SYNOPSIS
-*     bool
-*     qinstance_message_trash_all_of_type_X(lListElem *this_elem, 
-*                                           uint32_t type)
-*
-*  FUNCTION
-*     Removes all messages with the message "type" id. 
-*
-*  INPUTS
-*     lListElem *this_elem - QU_Type 
-*     uint32_t type        - message type
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error 
-*
-*  NOTES
-*     MT-NOTE: qinstance_message_trash_all_of_type_X() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Trash messages
+ *
+ * Removes all messages with the message "type" id.
+ *
+ * @param this_elem QU_Type
+ * @param type message type
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: qinstance_message_trash_all_of_type_X() is MT safe
+ */
 bool
 qinstance_message_trash_all_of_type_X(lListElem *this_elem, uint32_t type) {
    bool ret = true;
@@ -764,28 +576,17 @@ qinstance_message_trash_all_of_type_X(lListElem *this_elem, uint32_t type) {
    DRETURN(ret);
 }
 
-/****** sgeobj/qinstance/qinstance_set_full_name() ****************************
-*  NAME
-*     qinstance_set_full_name() -- set the full name of the qinstance 
-*
-*  SYNOPSIS
-*     void
-*     qinstance_set_full_name(lListElem *this_elem)
-*
-*  FUNCTION
-*     Set the full name of the qinstance. The QU_qname name attribute
-*     will be used as input for the cqueue part and QU_qhostname
-*     as hostname part of the full name.
-*
-*  INPUTS
-*     lListElem *this_elem - QU_Type 
-*
-*  RESULT
-*     void - NONE
-*
-*  NOTES
-*     MT-NOTE: qinstance_set_full_name() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Set the full name of the qinstance
+ *
+ * Set the full name of the qinstance. The QU_qname name attribute
+ * will be used as input for the cqueue part and QU_qhostname
+ * as hostname part of the full name.
+ *
+ * @param this_elem QU_Type
+ *
+ * @note MT-NOTE: qinstance_set_full_name() is MT safe
+ */
 void
 qinstance_set_full_name(lListElem *this_elem) {
    dstring buffer = DSTRING_INIT;
@@ -798,29 +599,20 @@ qinstance_set_full_name(lListElem *this_elem) {
    sge_dstring_free(&buffer);
 }
 
-/****** sgeobj/qinstance/qinstance_validate() *********************************
-*  NAME
-*     qinstance_validate() -- validates and initializes qinstances 
-*
-*  SYNOPSIS
-*     bool
-*     qinstance_validate(lListElem *this_elem, lList **answer_list)
-*
-*  FUNCTION
-*     Validates qinstance attributes and initializes them if necessary.
-*
-*  INPUTS
-*     lListElem *this_elem - QU_Type 
-*     lList **answer_list - AN_Type
-*
-*  RESULT
-*     void - error result
-*        true  - success
-*        false - error 
-*
-*  NOTES
-*     MT-NOTE: qinstance_validate() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Validates and initializes qinstances
+ *
+ * Validates qinstance attributes and initializes them if necessary.
+ *
+ * @param this_elem QU_Type
+ * @param answer_list AN_Type
+ * @param master_exechost_list the execution hosts, so the queue's host can be checked
+ * @param master_centry_list the complex entries, so the queue's resources can be checked
+ *
+ * @return true on success, false on error
+ *
+ * @note MT-NOTE: qinstance_validate() is MT safe
+ */
 bool
 qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *master_exechost_list,
                    const lList *master_centry_list) {
@@ -878,29 +670,20 @@ qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *maste
    DRETURN(ret);
 }
 
-/****** sgeobj/qinstance/qinstance_list_validate() ****************************
-*  NAME
-*     qinstance_list_validate() -- validates and initializes qinstances 
-*
-*  SYNOPSIS
-*     bool
-*     qinstance_list_validate(lList *this_list, lList **answer_list)
-*
-*  FUNCTION
-*     Validates qinstances attributes and initializes them if necessary.
-*
-*  INPUTS
-*     lList *this_list - QU_Type list
-*     lList **answer_list - AN_Type
-*
-*  RESULT
-*     void - error result
-*        true  - success
-*        false - error 
-*
-*  NOTES
-*     MT-NOTE: qinstance_list_validate() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Validates and initializes qinstances
+ *
+ * Validates qinstances attributes and initializes them if necessary.
+ *
+ * @param this_list QU_Type list
+ * @param answer_list AN_Type
+ * @param master_exechost_list the execution hosts, so each queue's host can be checked
+ * @param master_centry_list the complex entries, so each queue's resources can be checked
+ *
+ * @return true on success, false at the first queue that failed
+ *
+ * @note MT-NOTE: qinstance_list_validate() is MT safe
+ */
 bool
 qinstance_list_validate(lList *this_list, lList **answer_list, const lList *master_exechost_list,
                         const lList *master_centry_list) {
@@ -979,53 +762,27 @@ rc_debit_consumable_explicit_request(const char *name, const char *obj_type, con
    DRETURN(ret);
 }
 
-/****** lib/sgeobj/debit_consumable() ****************************************
-*  NAME
-*     rc_debit_consumable() -- Debit/Undebit consumables from resource container
-*
-*  SYNOPSIS
-*     int 
-*     rc_debit_consumable(lListElem *jep, lListElem *ep, lList *centry_list, 
-*                         int slots, int config_nm, int actual_nm, 
-*                         const char *obj_name)
-*
-*  FUNCTION
-*     Updates all consumable actual values of a resource container
-*     for 'slots' slots of the given job. Positive slots numbers 
-*     cause debiting, negative ones cause undebiting.
-*
-*  INPUTS
-*     lListElem *jep       - The job (JB_Type) defining which resources and how
-*                            much of them need to be (un)debited
-*                            
-*     lListElem *ep        - The resource container (global/host/queue) 
-*                            that owns the resources (EH_Type).
-* 
-*     lList *centry_list   - The global complex list that is needed to interpret
-*                            the jobs' resource requests.
-*
-*     int slots            - The number of slots for which we are debiting.
-*                            Positive slots numbers cause debiting, negative 
-*                            ones cause undebiting.
-*
-*     int config_nm        - The CULL field of the 'ep' object that contains a
-*                            CE_Type list of configured complex values.
-* 
-*     int actual_nm        - The CULL field of the 'ep' object that contains a
-*                            CE_Type list of actual complex values.
-*
-*     const char *obj_name - The name of the object we are debiting from. This
-*                            is only used for monitoring/diagnosis purposes.
-*
-*     bool *just_check     - If != nullptr do not do the actual debiting, but just
-*                            check if debiting would exceed resources.
-*                            Only makes sense for debiting (slots > 0).
-*
-*  RESULT
-*     Returns -1 in case of an error. Otherwise the number of (un)debitations
-*     that actually took place is returned. If 0 is returned that means the
-*     consumable resources of the 'ep' object has not changed.
-******************************************************************************/
+/**
+ * @brief Debit/Undebit consumables from resource container
+ *
+ * Updates all consumable actual values of a resource container
+ * for 'slots' slots of the given job. Positive slots numbers
+ * cause debiting, negative ones cause undebiting.
+ *
+ * @param jep The job (JB_Type) defining which resources and how much of them need to be (un)debited
+ * @param pe The job's parallel environment, needed to split master and slave requests; may be nullptr
+ * @param ep The resource container (global/host/queue) that owns the resources (EH_Type).
+ * @param centry_list The global complex list that is needed to interpret the jobs' resource requests.
+ * @param slots The number of slots for which we are debiting. Positive slots numbers cause debiting, negative ones cause undebiting.
+ * @param config_nm The CULL field of the 'ep' object that contains a CE_Type list of configured complex values.
+ * @param actual_nm The CULL field of the 'ep' object that contains a CE_Type list of actual complex values.
+ * @param obj_name The name of the object we are debiting from. This is only used for monitoring/diagnosis purposes.
+ * @param is_master_task true when this booking includes the job's master task
+ * @param do_per_host_booking true when a per host consumable still has to be booked on this host
+ * @param just_check If != nullptr do not do the actual debiting, but just check if debiting would exceed resources. Only makes sense for debiting (slots > 0).
+ *
+ * @return 1 in case of an error. Otherwise the number of (un)debitations that actually took place is returned. If 0 is returned that means the consumable resources of the 'ep' object has not changed.
+ */
 int
 rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, const lList *centry_list, int slots,
                     int config_nm, int actual_nm, const char *obj_name, bool is_master_task,
@@ -1172,6 +929,15 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
    DRETURN(mods);
 }
 
+/**
+ * @brief Mirror the configured slot count into the consumable configuration
+ *
+ * `slots` is configured as a plain queue attribute but booked like any other
+ * consumable, so the value has to exist in both places. The entry is created
+ * when it does not exist yet.
+ *
+ * @param[in,out] this_elem the queue instance to update
+ */
 void 
 qinstance_set_conf_slots_used(lListElem *this_elem) {
    DENTER(QINSTANCE_LAYER);
@@ -1189,31 +955,21 @@ qinstance_set_conf_slots_used(lListElem *this_elem) {
    DRETURN_VOID;
 }
 
-/****** sge_qinstance/qinstance_list_verify_execd_job() ************************
-*  NAME
-*     qinstance_list_verify_execd_job() -- verify a queue instance list
-*
-*  SYNOPSIS
-*     bool 
-*     qinstance_list_verify_execd_job(const lList *queue_list, lList **answer_list) 
-*
-*  FUNCTION
-*     Verify correctness of a queue instance list, that has been sent by qmaster
-*     to execd as part of a job start order.
-*
-*  INPUTS
-*     const lList *queue_list - the queue instance list
-*     lList **answer_list     - answer list to pass back error messages
-*
-*  RESULT
-*     bool - true: everything ok, else false
-*
-*  NOTES
-*     MT-NOTE: qinstance_list_verify_execd_job() is MT safe 
-*
-*  SEE ALSO
-*     sge_qinstance/qinstance_verify()
-*******************************************************************************/
+/**
+ * @brief Verify a queue instance list
+ *
+ * Verify correctness of a queue instance list, that has been sent by qmaster
+ * to execd as part of a job start order.
+ *
+ * @param queue_list the queue instance list
+ * @param answer_list answer list to pass back error messages
+ *
+ * @return true: everything ok, else false
+ *
+ * @note MT-NOTE: qinstance_list_verify_execd_job() is MT safe
+ *
+ * @see #qinstance_verify
+ */
 bool
 qinstance_list_verify_execd_job(const lList *queue_list, lList **answer_list) {
 
@@ -1236,28 +992,19 @@ qinstance_list_verify_execd_job(const lList *queue_list, lList **answer_list) {
    DRETURN(true);
 }
 
-/****** sge_qinstance/qinstance_verify() ***************************************
-*  NAME
-*     qinstance_verify() -- verify a queue instance in execd
-*
-*  SYNOPSIS
-*     bool 
-*     qinstance_verify(const lListElem *qep, lList **answer_list) 
-*
-*  FUNCTION
-*     Verify a single queue instance, that has been sent by qmaster to execd
-*     as part of a job start order.
-*
-*  INPUTS
-*     const lListElem *qep - the queue instance to verify
-*     lList **answer_list  - answer list to pass back error messages
-*
-*  RESULT
-*     bool - true: everything ok, else false
-*
-*  NOTES
-*     MT-NOTE: qinstance_verify() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Verify a queue instance in execd
+ *
+ * Verify a single queue instance, that has been sent by qmaster to execd
+ * as part of a job start order.
+ *
+ * @param qep the queue instance to verify
+ * @param answer_list answer list to pass back error messages
+ *
+ * @return true: everything ok, else false
+ *
+ * @note MT-NOTE: qinstance_verify() is MT safe
+ */
 bool
 qinstance_verify(const lListElem *qep, lList **answer_list) {
    bool ret = true;
@@ -1292,27 +1039,18 @@ qinstance_verify(const lListElem *qep, lList **answer_list) {
    DRETURN(ret);
 }
 
-/****** sge_qinstance/qinstance_verify_full_name() *****************************
-*  NAME
-*     qinstance_verify_full_name() -- verify a queue instance full name
-*
-*  SYNOPSIS
-*     bool 
-*     qinstance_verify_full_name(lList **answer_list, const char *full_name) 
-*
-*  FUNCTION
-*     Verifies, if a queue instance full name is correct (form cqueue@host).
-*
-*  INPUTS
-*     lList **answer_list   - answer list to pass back error messages
-*     const char *full_name - the queue instance name to verify
-*
-*  RESULT
-*     bool - true: everything ok, else false
-*
-*  NOTES
-*     MT-NOTE: qinstance_verify_full_name() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Verify a queue instance full name
+ *
+ * Verifies, if a queue instance full name is correct (form `cqueue@host`).
+ *
+ * @param answer_list answer list to pass back error messages
+ * @param full_name the queue instance name to verify
+ *
+ * @return true: everything ok, else false
+ *
+ * @note MT-NOTE: qinstance_verify_full_name() is MT safe
+ */
 bool
 qinstance_verify_full_name(lList **answer_list, const char *full_name) {
    bool ret = true;
@@ -1368,27 +1106,19 @@ qinstance_verify_full_name(lList **answer_list, const char *full_name) {
    return ret;
 }
 
-/****** sge_qinstance/qinstance_set_error() ************************************
-*  NAME
-*     qinstance_set_error() -- set/unset qinstance into state
-*
-*  SYNOPSIS
-*     void qinstance_set_error(lListElem *qinstance, uint32_t type, const char
-*     *message, bool set_error) 
-*
-*  FUNCTION
-*     Sets or Unsets a qinstance into error state and adds or removes the given
-*     error message
-*
-*  INPUTS
-*     lListElem *qinstance - qinstance object (QU_Type)
-*     uint32_t type        - new state
-*     const char *message  - error message to set
-*     bool set_error       - set or unset
-*
-*  NOTES
-*     MT-NOTE: qinstance_set_error() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Set/unset qinstance into state
+ *
+ * Sets or Unsets a qinstance into error state and adds or removes the given
+ * error message
+ *
+ * @param qinstance qinstance object (QU_Type)
+ * @param type new state
+ * @param message error message to set
+ * @param set_error set or unset
+ *
+ * @note MT-NOTE: qinstance_set_error() is MT safe
+ */
 void
 qinstance_set_error(lListElem *qinstance, uint32_t type, const char *message, bool set_error) {
    qinstance_set_state(qinstance, set_error, type);
