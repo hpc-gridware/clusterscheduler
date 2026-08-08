@@ -14,8 +14,13 @@ which is where the house style wants it. The license header itself is never
 touched.
 
 Without -b, a placeholder brief is written that names the file. That is
-deliberate: the placeholder is easy to grep for and the gate does not accept a
-file whose brief was never written properly, so it cannot be forgotten silently.
+deliberate: the placeholder is easy to grep for.
+
+It is NOT gate-enforced, though - a placeholder brief is still a brief, so
+doxygen is satisfied and dxm-check.sh reports nothing. One reached a commit
+that way (sge_object.cc). Before finishing a pass:
+
+    grep -rl 'TODO describe this file' $MOD        # must print nothing
 
 Files that already contain an @file block are left alone.
 """
