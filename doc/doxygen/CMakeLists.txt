@@ -66,6 +66,7 @@ if (DOXYGEN_FOUND)
          source/libs/gdi
          source/libs/sgeobj
          source/libs/evm
+         source/libs/mir
    )
 
    if (DXM_FINISHED_MODULES)
