@@ -476,11 +476,11 @@ static bool event_client_verify_subscription(const lListElem *event_client, lLis
  *    - EV_next_number (?)
  *    - EV_state (?)
  *
- * @param event_client
- * @param answer_list
+ * @param event_client the registration to verify
+ * @param[out] answer_list receives the reason it was rejected
  * @param add is this an add request (or mod)?
  *
- * @return TODO document the return value
+ * @return true when the registration is acceptable
  *
  * @note MT-NOTE: event_client_verify() is MT safe
  */

@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for parsing and printing numeric values
+ *
+ * @see sge_ulong.cc
+ */
+
 #include "sgeobj/cull/sge_ulong_ULNG_L.h"
 
 #include "sgeobj/ocs_CEntry.h"

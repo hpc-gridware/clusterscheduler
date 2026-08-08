@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for evaluating resource request expressions
+ *
+ * @see sge_eval_expression.cc
+ */
+
 #include "cull/cull_list.h"
 #include "sgeobj/ocs_CEntry.h"
 

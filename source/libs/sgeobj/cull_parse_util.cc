@@ -32,6 +32,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Parsing textual lists into CULL lists, and printing them back
+ *
+ * The two forms users write are a plain list (`a,b,c`) and a definition list
+ * (`name=value,name=value`). Both are parsed through an *interpretation rule*:
+ * an array of attribute numbers saying which attribute each parsed word goes
+ * into, which is what lets one parser fill any element type.
+ *
+ * @see cull_parse_util.h
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <sstream>
@@ -84,6 +95,16 @@ static int fprint_name_value_list(FILE *fp, char *name, lList *thresholds, int p
 ** problem: if nullptr ends string list, then nullptr cannot be used
 ** for fields that should not be set
 */
+/**
+ * @brief Parse an argv style array of strings into a CULL list
+ *
+ * @param pstrlist the nullptr terminated strings to parse
+ * @param listname the name the resulting list is created under
+ * @param descr the descriptor of the elements to create
+ * @param interpretation_rule the attribute order the words are parsed into
+ * @param[out] pplist receives the list
+ * @return 0 on success
+ */
 int cull_parse_string_list(
 char **pstrlist,
 const char *listname,
@@ -247,6 +268,16 @@ lList **pplist
 ** DESCRIPTION
 **   parses list of form var=value,var=value,...
 */
+/**
+ * @brief Parse a `name=value,name=value` string into a CULL list
+ *
+ * @param str the text to parse; it is modified in place by the tokenizer
+ * @param[out] lpp receives the list
+ * @param name the name the resulting list is created under
+ * @param descr the descriptor of the elements to create
+ * @param interpretation_rule the attributes the name and the value are stored in
+ * @return 0 on success
+ */
 int cull_parse_definition_list(
 char *str,
 lList **lpp,
@@ -300,6 +331,18 @@ int *interpretation_rule
 **   does NOT remove duplicate entries within one list,
 **   for this purpose see cull_compress_definition_list
 */
+/**
+ * @brief Merge one definition list into another, by key
+ *
+ * An entry of `lp_new` overrides the entry of `lpp_old` with the same name; an
+ * entry that has no counterpart is appended.
+ *
+ * @param[in,out] lpp_old the list to merge into
+ * @param lp_new the entries to merge in
+ * @param nm_var the attribute holding an entry's name
+ * @param nm_value the attribute holding its value
+ * @return 0 on success
+ */
 int cull_merge_definition_list(
 lList **lpp_old,
 lList *lp_new,
@@ -461,6 +504,18 @@ int nm_value
 **   e.g. a=1,a=2 -> a=2
 **   removes the unnecessary elements
 */
+/**
+ * @brief Collapse repeated entries of a definition list
+ *
+ * The last entry for a key wins, which is what a user writing the same option
+ * twice expects.
+ *
+ * @param[in,out] lp the list to compress
+ * @param nm_var the attribute holding an entry's name
+ * @param nm_value the attribute holding its value
+ * @param double_keys non-zero when the key is the name and the value together
+ * @return 0 on success
+ */
 int cull_compress_definition_list(
 lList *lp,
 int nm_var,
@@ -570,6 +625,18 @@ int double_keys
 **   parses a simple list like a,b,c...
 **   string value NONE as first token is interpreted as no list
 */
+/**
+ * @brief Parse a comma separated list of plain values into a CULL list
+ *
+ * Unlike #cull_parse_definition_list the entries carry no name, only a value.
+ *
+ * @param str the text to parse; it is modified in place by the tokenizer
+ * @param[out] lpp receives the list
+ * @param name the name the resulting list is created under
+ * @param descr the descriptor of the elements to create
+ * @param interpretation_rule the attribute the value is stored in
+ * @return 0 on success
+ */
 int cull_parse_simple_list(
 char *str,
 lList **lpp,
@@ -844,31 +911,22 @@ uni_print_list(FILE *fp, char *buff, uint32_t buff_size, const lList *lp, const 
    DRETURN(0);
 }
 
-/****** cull_parse_util/fprint_cull_list() *************************************
-*  NAME
-*     fprint_cull_list() --  Prints str and field 
-*
-*  SYNOPSIS
-*     int fprint_cull_list(FILE *fp, char *str, lList *lp, int fi) 
-*
-*  FUNCTION
-*     Prints str and field 'fi' (must be string) of
-*     every element of lList lp to file fp separated
-*     by blanks. If fp is nullptr, "NONE" will be printed.
-*
-*  INPUTS
-*     FILE *fp  - a file
-*     char *str - a string name of list 
-*     lList *lp - a list
-*     int fi    - an element from the list to be printed 
-*
-*  RESULT
-*     int - 0 on success, -1 otherwise
-*
-*  NOTES
-*     MT-NOTE: fprint_cull_list() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Prints str and field
+ *
+ * Prints str and field 'fi' (must be string) of
+ * every element of lList lp to file fp separated
+ * by blanks. If fp is nullptr, "NONE" will be printed.
+ *
+ * @param fp a file
+ * @param str a string name of list
+ * @param lp a list
+ * @param fi an element from the list to be printed
+ *
+ * @return 0 on success, -1 otherwise
+ *
+ * @note MT-NOTE: fprint_cull_list() is MT safe
+ */
 int fprint_cull_list(FILE *fp, char *str, lList *lp, int fi)
 {
    const lListElem *ep;
@@ -896,32 +954,22 @@ FPRINTF_ERROR:
 }                   
 
 
-/****** cull_parse_util/fprint_thresholds() ************************************
-*  NAME
-*     fprint_thresholds() -- Print a name=value list of type CE_Type
-*
-*  SYNOPSIS
-*     int fprint_thresholds(FILE *fp, char *name, lList *thresholds, int 
-*     print_slots) 
-*
-*  FUNCTION
-*     A CE_Type list is printed to 'fp' in a name=value,name=value,... 
-*     fashion. If print_slots is 0 an entry with name "slots" is skipped.
-*     The 'name' is printed prior the actual list to 'fp'.
-*
-*  INPUTS
-*     FILE *fp          - The file pointer 
-*     char *name        - The name printed before the list
-*     lList *thresholds - The CE_Type list.
-*     int print_slots   - Flag indicating whether "slots" is skipped or not.
-*
-*  RESULT
-*     int - 0 on success 
-*           -1 on fprintf() errors
-*
-*  NOTES
-*     MT-NOTE: fprint_thresholds() is MT safe
-*******************************************************************************/
+/**
+ * @brief Print a name=value list of type CE_Type
+ *
+ * A CE_Type list is printed to 'fp' in a name=value,name=value,...
+ * fashion. If print_slots is 0 an entry with name "slots" is skipped.
+ * The 'name' is printed prior the actual list to 'fp'.
+ *
+ * @param fp The file pointer
+ * @param name The name printed before the list
+ * @param thresholds The CE_Type list.
+ * @param print_slots Flag indicating whether "slots" is skipped or not.
+ *
+ * @return 0 on success -1 on fprintf() errors
+ *
+ * @note MT-NOTE: fprint_thresholds() is MT safe
+ */
 int fprint_thresholds(
 FILE *fp,
 char *name,
@@ -931,32 +979,22 @@ int print_slots
    return fprint_name_value_list(fp, name, thresholds, print_slots, CE_name, CE_stringval, CE_doubleval);
 }
 
-/****** cull_parse_util/fprint_resource_utilizations() *************************
-*  NAME
-*     fprint_resource_utilizations() -- Print a name=value list of type RUE_Type
-*
-*  SYNOPSIS
-*     int fprint_resource_utilizations(FILE *fp, char *name, lList *thresholds, 
-*     int print_slots) 
-*
-*  FUNCTION
-*     A RUE_Type list is printed to 'fp' in a name=value,name=value,... 
-*     fashion. If print_slots is 0 an entry with name "slots" is skipped.
-*     The 'name' is printed prior the actual list to 'fp'.
-*
-*  INPUTS
-*     FILE *fp          - The file pointer 
-*     char *name        - The name printed before the list
-*     lList *thresholds - The RUE_Type list.
-*     int print_slots   - Flag indicating whether "slots" is skipped or not.
-*
-*  RESULT
-*     int - 0 on success 
-*           -1 on fprintf() errors
-*
-*  NOTES
-*     MT-NOTE: fprint_resource_utilizations() is MT safe
-*******************************************************************************/
+/**
+ * @brief Print a name=value list of type RUE_Type
+ *
+ * A RUE_Type list is printed to 'fp' in a name=value,name=value,...
+ * fashion. If print_slots is 0 an entry with name "slots" is skipped.
+ * The 'name' is printed prior the actual list to 'fp'.
+ *
+ * @param fp The file pointer
+ * @param name The name printed before the list
+ * @param thresholds The RUE_Type list.
+ * @param print_slots Flag indicating whether "slots" is skipped or not.
+ *
+ * @return 0 on success -1 on fprintf() errors
+ *
+ * @note MT-NOTE: fprint_resource_utilizations() is MT safe
+ */
 int fprint_resource_utilizations(
 FILE *fp,
 char *name,
@@ -966,40 +1004,28 @@ int print_slots
    return fprint_name_value_list(fp, name, thresholds, print_slots, RUE_name, -1, RUE_utilized_now);
 }
 
-/****** cull_parse_util/fprint_name_value_list() *******************************
-*  NAME
-*     fprint_name_value_list() -- Print name=value list of any type.
-*
-*  SYNOPSIS
-*     static int fprint_name_value_list(FILE *fp, char *name, lList 
-*     *thresholds, int print_slots, int nm_name, int nm_strval, int 
-*     nm_doubleval) 
-*
-*  FUNCTION
-*     A list with name (String) and value (Double) CULL fields is printed 
-*     to 'fp' in a name=value,name=value,... fashion. If print_slots is 0 
-*     an entry with name "slots" is skipped. The 'name' is printed prior 
-*     the actual list to 'fp'. In 'nm_name'/'nm_strval' the CULL names must
-*     be passed. Optionally a string representation of the value is printed 
-*     if non-nullptr and if 'nm_strval' is not -1.
-*
-*  INPUTS
-*     FILE *fp          - The file pointer
-*     char *name        - The name printed before the list
-*     lList *thresholds - The list
-*     int print_slots   - Flag indicating whether "slots" is skipped or not.
-*     int nm_name       - The CULL nm for the name (String).
-*     int nm_strval     - The CULL nm for the value (Double).
-*     int nm_doubleval  - If existing in the list the CULL nm for a string 
-*                         representation of the value (String) or -1 otherwise.
-*
-*  RESULT
-*     int - 0 on success
-*           -1 on fprintf() errors
-*
-*  NOTES
-*     MT-NOTE: fprint_name_value_list() is MT safe
-*******************************************************************************/
+/**
+ * @brief Print name=value list of any type
+ *
+ * A list with name (String) and value (Double) CULL fields is printed
+ * to 'fp' in a name=value,name=value,... fashion. If print_slots is 0
+ * an entry with name "slots" is skipped. The 'name' is printed prior
+ * the actual list to 'fp'. In 'nm_name'/'nm_strval' the CULL names must
+ * be passed. Optionally a string representation of the value is printed
+ * if non-nullptr and if 'nm_strval' is not -1.
+ *
+ * @param fp The file pointer
+ * @param name The name printed before the list
+ * @param thresholds The list
+ * @param print_slots Flag indicating whether "slots" is skipped or not.
+ * @param nm_name The CULL nm for the name (String).
+ * @param nm_strval The CULL nm for the value (Double).
+ * @param nm_doubleval If existing in the list the CULL nm for a string representation of the value (String) or -1 otherwise.
+ *
+ * @return 0 on success -1 on fprintf() errors
+ *
+ * @note MT-NOTE: fprint_name_value_list() is MT safe
+ */
 static int fprint_name_value_list(
 FILE *fp,
 char *name,
@@ -1045,6 +1071,20 @@ FPRINTF_ERROR:
    DRETURN(-1);
 }            
 
+/**
+ * @brief Parse a switch that appears in both a hard and a soft form
+ *
+ * `-l` and `-q` may be written before or after `-soft`, which decides whether
+ * the request has to be satisfied or only should be. This sorts the parsed
+ * entries into the two attributes accordingly.
+ *
+ * @param cmdline the parsed option list to consume from
+ * @param option the switch to look for
+ * @param[in,out] job the job the requests are stored in
+ * @param scope which request set the entries belong to
+ * @param hard_field the attribute the hard requests go into
+ * @param soft_field the attribute the soft requests go into
+ */
 void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uint32_t scope,
                          int hard_field, int soft_field) {
    DENTER(TOP_LAYER);
@@ -1119,6 +1159,19 @@ void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uin
    DRETURN_VOID;
 }
 
+/**
+ * @brief Parse a switch's list argument into an attribute of an object
+ *
+ * @param cmdline the parsed option list to consume from
+ * @param option the switch to look for
+ * @param[in,out] job the object the list is stored in
+ * @param field the attribute the list is stored in
+ * @param nm_var the attribute holding an entry's name
+ * @param nm_value the attribute holding its value
+ * @param flags one of the `FLG_LIST_*` values, deciding what happens to an
+ *              existing value
+ * @return 0 on success
+ */
 int 
 parse_list_simple(lList *cmdline, const char *option, lListElem *job, int field,
                   int nm_var, int nm_value, uint32_t flags)
@@ -1146,6 +1199,19 @@ parse_list_simple(lList *cmdline, const char *option, lListElem *job, int field,
    DRETURN(0);
 }
 
+/**
+ * @brief Like #parse_list_simple, but into a caller supplied list
+ *
+ * @param lp the parsed option list to consume from
+ * @param[out] destlist receives the parsed entries
+ * @param option the switch to look for
+ * @param job the object the flags are applied against
+ * @param field the attribute the list would be stored in
+ * @param nm_var the attribute holding an entry's name
+ * @param nm_value the attribute holding its value
+ * @param flags one of the `FLG_LIST_*` values
+ * @return 0 on success
+ */
 int 
 parse_list_simpler(lList *lp, lList **destlist, const char *option, lListElem *job, int field,
                   int nm_var, int nm_value, uint32_t flags)
@@ -1182,28 +1248,18 @@ parse_list_simpler(lList *lp, lList **destlist, const char *option, lListElem *j
    return 0;
 }
 
-/****** cull_parse_util/cull_parse_path_list() **************************************
-*  NAME
-*     cull_parse_path_list() -- parse a path list 
-*
-*  SYNOPSIS
-*     int cull_parse_path_list(lList **lpp, char *path_str) 
-*
-*  FUNCTION
-*     Parse a path list of the format: [[host]:]path[,[[host]:]path...]
-*
-*  INPUTS
-*     lList **lpp    - parsed list PN_Type 
-*     char *path_str - input string 
-*
-*  RESULT
-*     int - error code 
-*        0 = okay
-*        1 = error 
-*
-*  NOTES
-*     MT-NOTE: cull_parse_path_list() is MT safe
-*******************************************************************************/
+/**
+ * @brief Parse a path list
+ *
+ * Parse a path list of the format: [[host]:]path[,[[host]:]path...]
+ *
+ * @param lpp parsed list PN_Type
+ * @param path_str input string
+ *
+ * @return error code 0 = okay 1 = error
+ *
+ * @note MT-NOTE: cull_parse_path_list() is MT safe
+ */
 int cull_parse_path_list(lList **lpp, const char *path_str) 
 {
    char *path = nullptr;
@@ -1266,26 +1322,18 @@ int cull_parse_path_list(lList **lpp, const char *path_str)
    DRETURN(ret_error? 1 : 0);
 }
 
-/****** cull_parse_util/cull_parse_jid_hold_list() *****************************
-*  NAME
-*     cull_parse_jid_hold_list() -- parse a jid list 
-*
-*  SYNOPSIS
-*     int cull_parse_jid_hold_list(lList **lpp, const char *str) 
-*
-*  FUNCTION
-*     parse a jid list of the fomat jid[,jid,...]
-*
-*  INPUTS
-*     lList **lpp - ST_Type result list 
-*     const char *str   - input string to be parsed 
-*
-*  RESULT
-*     int - 
-*
-*  NOTES
-*     MT-NOTE: cull_parse_jid_hold_list() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Parse a jid list
+ *
+ * parse a jid list of the fomat jid[,jid,...]
+ *
+ * @param[out] lpp ST_Type result list
+ * @param str input string to be parsed
+ *
+ * @return 0 on success, 1 when the string could not be parsed
+ *
+ * @note MT-NOTE: cull_parse_jid_hold_list() is MT safe
+ */
 int 
 cull_parse_jid_hold_list(lList **lpp, const char *str) 
 {
@@ -1324,28 +1372,19 @@ cull_parse_jid_hold_list(lList **lpp, const char *str)
    DRETURN(0);
 }
 
-/****** cull_parse_util/sge_parse_hold_list() **********************************
-*  NAME
-*     sge_parse_hold_list() -- parse -h switch of qsub and qalter 
-*
-*  SYNOPSIS
-*     int sge_parse_hold_list(char *hold_str, uint32_t prog_number)
-*
-*  FUNCTION
-*     Parse the hold flags of -h switches which can be used with 
-*     qaub and qalter 
-*
-*  INPUTS
-*     char *hold_str       - string tobe parsed
-*     uint32_t prog_number - program number
-*
-*  RESULT
-*     int - hold state
-*        -1 in case of error
-*
-*  NOTES
-*     MT-NOTE: sge_parse_hold_list() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Parse -h switch of qsub and qalter
+ *
+ * Parse the hold flags of -h switches which can be used with
+ * qaub and qalter
+ *
+ * @param hold_str string tobe parsed
+ * @param prog_number program number
+ *
+ * @return hold state -1 in case of error
+ *
+ * @note MT-NOTE: sge_parse_hold_list() is MT safe
+ */
 int 
 sge_parse_hold_list(const char *hold_str, uint32_t prog_number) {
    int i, j;

@@ -32,6 +32,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Command line parsing, in two stages
+ *
+ * The clients first turn `argv` into a list of `SPA_Type` elements - one per
+ * switch, with its argument - and then consume that list option by option.
+ * The second stage removes what it consumed, so an option nobody asked for is
+ * still in the list at the end and can be reported.
+ *
+ * @see parse.h
+ */
+
 #include <cstring>
 #include <strings.h>
 
@@ -69,6 +80,17 @@ static void sge_parse_string_list(lList **lp, const char *str, int field, lDescr
 
 /***************************************************************************/
 /* MT-NOTE: sge_add_noarg() is MT safe */
+/**
+ * @brief Record a command line switch that takes no argument
+ *
+ * @param[in,out] popt_list the parsed option list, created when it is nullptr
+ * @param opt_number the switch's id
+ * @param opt_switch the switch as it was written
+ * @param opt_switch_arg the argument text, if the caller wants to keep it
+ * @return the new element, or nullptr when it could not be created
+ *
+ * @note MT-NOTE: sge_add_noarg() is MT safe
+ */
 lListElem *sge_add_noarg(
 lList **popt_list,
 uint32_t opt_number,
@@ -102,6 +124,18 @@ const char *opt_switch_arg
 /***************************************************************************/
 
 /* MT-NOTE: sge_add_arg() is MT safe */
+/**
+ * @brief Record a command line switch that takes an argument
+ *
+ * @param[in,out] popt_list the parsed option list, created when it is nullptr
+ * @param opt_number the switch's id
+ * @param opt_type the argument's type
+ * @param opt_switch the switch as it was written
+ * @param opt_switch_arg the argument text
+ * @return the new element, or nullptr when it could not be created
+ *
+ * @note MT-NOTE: sge_add_arg() is MT safe
+ */
 lListElem *sge_add_arg(
 lList **popt_list,
 uint32_t opt_number,
@@ -141,6 +175,16 @@ const char *opt_switch_arg
  **** An errormessage is appended to the answer-list (alpp).
  **** The function returns a pointer to the next argument.
  ****/
+/**
+ * @brief Parse a switch that takes no argument
+ *
+ * @param[in,out] sp the current argument; the parser advances past what it consumed
+ * @param shortopt the short form of the switch
+ * @param longopt the long form, or nullptr
+ * @param[out] ppcmdline receives the parsed option, as an `SPA_Type` element
+ * @param[out] alpp receives the error message
+ * @return a pointer to the next argument
+ */
 char **parse_noopt(
 char **sp,
 const char *shortopt,
@@ -174,6 +218,18 @@ lList **alpp
  **** character, then all options matching the first given
  **** charcters are valid (e.g. 'OAport' matches 'OA*')
  ****/
+/**
+ * @brief Parse a switch and everything up to the next switch as its argument
+ *
+ * Used where an option takes a list, e.g. `-l a=1,b=2`.
+ *
+ * @param[in,out] sp the current argument; the parser advances past what it consumed
+ * @param shortopt the short form of the switch
+ * @param longopt the long form, or nullptr
+ * @param[out] ppcmdline receives the parsed option, as an `SPA_Type` element
+ * @param[out] alpp receives the error message
+ * @return a pointer to the next argument
+ */
 char **parse_until_next_opt(
 char **sp,
 const char *shortopt,
@@ -219,6 +275,19 @@ lListElem *ep; /* SPA_Type */
  **** appended to the answer-list (alpp).
  **** The function returns a pointer to the next argument.
  ****/
+/**
+ * @brief Parse a switch and everything up to the next switch, requiring an argument
+ *
+ * Like #parse_until_next_opt, but an empty argument is an error rather than
+ * an accepted switch without a value.
+ *
+ * @param[in,out] sp the current argument; the parser advances past what it consumed
+ * @param shortopt the short form of the switch
+ * @param longopt the long form, or nullptr
+ * @param[out] ppcmdline receives the parsed option, as an `SPA_Type` element
+ * @param[out] alpp receives the error message
+ * @return a pointer to the next argument
+ */
 char **parse_until_next_opt2(
 char **sp,
 const char *shortopt,
@@ -254,6 +323,15 @@ lList **alpp
  **** ppcmdline (SPA_Type).
  **** The function returns a pointer to the next argument.
  ****/
+/**
+ * @brief Parse a switch whose argument is a free form parameter string
+ *
+ * @param[in,out] sp the current argument; the parser advances past what it consumed
+ * @param opt the switch to match
+ * @param[out] ppcmdline receives the parsed option, as an `SPA_Type` element
+ * @param[out] alpp receives the error message
+ * @return a pointer to the next argument
+ */
 char **parse_param(
 char **sp,
 const char *opt,
@@ -289,6 +367,18 @@ lListElem *ep = nullptr; /* SPA_Type */
  ****
  **** The answerlist ppal is not used yet.
  ****/
+/**
+ * @brief Take a flag switch out of the parsed option list
+ *
+ * Every occurrence of the switch is removed from `ppcmdline`, so the list left
+ * over afterwards is the set of options nobody consumed.
+ *
+ * @param[in,out] ppcmdline the parsed option list to consume from
+ * @param opt the switch to look for
+ * @param[out] ppal not used yet
+ * @param[out] pflag set to 1 when the switch was present
+ * @return true when the switch was present
+ */
 bool parse_flag(
 lList **ppcmdline,
 const char *opt,
@@ -327,6 +417,20 @@ char* actual_opt;
  **** The arguments are collected. 
  **** The arguments can be eiter comma-separated. 
  ****/ 
+/**
+ * @brief Take a switch and its list argument out of the parsed option list
+ *
+ * The switch may occur several times and each argument may itself be a comma
+ * separated list; everything is collected into one destination list.
+ *
+ * @param[in,out] ppcmdline the parsed option list to consume from
+ * @param opt the switch to look for
+ * @param[out] ppal receives error messages
+ * @param[out] ppdestlist receives the collected values
+ * @param type the descriptor of the elements to create
+ * @param field the attribute the value is stored in
+ * @return true when the switch was present
+ */
 bool parse_multi_stringlist(
 lList **ppcmdline,
 const char *opt,
@@ -354,6 +458,20 @@ int field
    }
 }
 
+/**
+ * @brief Take a switch and its job/task id list out of the parsed option list
+ *
+ * An argument may name a whole job or single array tasks of it
+ * (`jobid.taskrange`), and the switch may occur several times.
+ *
+ * @param[in,out] ppcmdline the parsed option list to consume from
+ * @param opt the switch to look for
+ * @param[out] alpp receives error messages
+ * @param[out] ppdestlist receives the collected ids
+ * @param include_names true to accept a job name where an id is expected
+ * @param action what the caller intends to do with the jobs, recorded per entry
+ * @return true when the switch was present
+ */
 bool parse_multi_jobtaskslist(
 lList **ppcmdline,
 const char *opt,
@@ -413,6 +531,15 @@ uint32_t action
    DRETURN(ret);
 }
 
+/**
+ * @brief Take a switch and its string argument out of the parsed option list
+ *
+ * @param[in,out] ppcmdline the parsed option list to consume from
+ * @param opt the switch to look for
+ * @param[out] ppal receives error messages
+ * @param[out] str receives a freshly allocated copy of the argument
+ * @return 1 when the switch was present
+ */
 int parse_string(
 lList **ppcmdline,
 const char *opt,
@@ -442,6 +569,15 @@ char **str
    }
 }
 
+/**
+ * @brief Take a switch and its argument out of the parsed option list, without copying
+ *
+ * @param[in,out] ppcmdline the parsed option list to consume from
+ * @param opt the switch to look for
+ * @param[out] ppal receives error messages
+ * @param[out] value receives the argument; it belongs to the option list
+ * @return 1 when the switch was present
+ */
 int
 parse_string_arg(lList **ppcmdline, const char *opt, lList **ppal, char **value)
 {
@@ -459,6 +595,15 @@ parse_string_arg(lList **ppcmdline, const char *opt, lList **ppal, char **value)
    DRETURN(ret);
 }
 
+/**
+ * @brief Take a switch and its numeric argument out of the parsed option list
+ *
+ * @param[in,out] ppcmdline the parsed option list to consume from
+ * @param opt the switch to look for
+ * @param[out] ppal receives error messages
+ * @param[out] value receives the number
+ * @return 1 when the switch was present
+ */
 int
 parse_uint32_t(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *value)
 {
@@ -476,6 +621,15 @@ parse_uint32_t(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *value
    DRETURN(ret);
 }
 
+/**
+ * @brief Take a switch and its list of numbers out of the parsed option list
+ *
+ * @param[in,out] ppcmdline the parsed option list to consume from
+ * @param opt the switch to look for
+ * @param[out] ppal receives error messages
+ * @param[out] value receives the numbers
+ * @return 1 when the switch was present
+ */
 int 
 parse_u_longlist(lList **ppcmdline, const char *opt, lList **ppal, lList **value) 
 {
@@ -495,6 +649,13 @@ parse_u_longlist(lList **ppcmdline, const char *opt, lList **ppal, lList **value
 }
 
 
+/**
+ * @brief Parse the `-g` grouping options of the query clients
+ *
+ * @param string_list the option words as they were written
+ * @param[out] answer_list receives the message naming an unknown word
+ * @return the combined `GROUP_*` bit mask
+ */
 uint32_t
 parse_group_options(lList *string_list, lList **answer_list) 
 {
@@ -536,6 +697,20 @@ parse_group_options(lList *string_list, lList **answer_list)
    -1 error
 
 */
+/**
+ * @brief Parse a comma separated list of names into a bit mask
+ *
+ * The position of a name in `set_specifier` is its bit position, which is what
+ * lets a stored bit field be rendered back into names.
+ *
+ * @param str the names to parse
+ * @param set_specifier the accepted names, terminated by nullptr
+ * @param[out] value receives the bit mask
+ * @param name what the field is called, used in the error message
+ * @param[out] alpp receives the message naming the unknown word
+ * @param none_allowed true to accept `NONE` as the empty mask
+ * @return true when every name was understood
+ */
 bool 
 sge_parse_bitfield_str(const char *str, const char *set_specifier[], 
                        uint32_t *value, const char *name, lList **alpp,

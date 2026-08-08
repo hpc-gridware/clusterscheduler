@@ -34,6 +34,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Rendering CULL objects as XML, for the clients' `-xml` switch
+ *
+ * Values are XML escaped as they are added, so callers pass plain text
+ * throughout.
+ *
+ * @see sge_cull_xml.h
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -64,6 +73,14 @@ static void lWriteXMLHead_(const lListElem *ep, int nesting_level, std::ostream 
 
 static lListElem *append_Attr_S(lList *attributeList, const char *name, const char *value);
 
+/**
+ * @brief Create the root element of an XML document
+ *
+ * @param name the root element's tag name
+ * @param list the elements nested inside it; ownership passes to the document
+ * @param attributes the root element's attributes; ownership passes to it
+ * @return the new document root
+ */
 lListElem* xml_getHead(const char *name, lList *list, lList *attributes) {
    lListElem *xml_head = nullptr;
 
@@ -84,6 +101,14 @@ lListElem* xml_getHead(const char *name, lList *list, lList *attributes) {
    return xml_head;
 }
 
+/**
+ * @brief Add a stylesheet processing instruction to an XML document
+ *
+ * @param[in,out] xml_head the document root to add to
+ * @param name the stylesheet's type, e.g. `text/xsl`
+ * @param url where the stylesheet is found
+ * @param version the stylesheet version
+ */
 void xml_addStylesheet(lListElem *xml_head, const char* name, const char *url, const char *version) {
    lListElem *stylesheet_elem = lCreateElem(XMLS_Type);
    lList *stylesheet_list = nullptr;
@@ -101,11 +126,27 @@ void xml_addStylesheet(lListElem *xml_head, const char* name, const char *url, c
    }   
 }
 
+/**
+ * @brief Add a double valued attribute to an XML element
+ *
+ * @param[in,out] xml_elem the element to add to
+ * @param name the attribute name
+ * @param value the value, rendered with `%f`
+ */
 void xml_addAttributeD(lListElem *xml_elem, const char *name, double value){
    DSTRING_STATIC(string, 512);
    xml_addAttribute(xml_elem, name, sge_dstring_sprintf(&string, "%f", value));
 }
 
+/**
+ * @brief Add a string valued attribute to an XML element
+ *
+ * The value is XML escaped on the way in, so the caller passes plain text.
+ *
+ * @param[in,out] xml_elem the element to add to
+ * @param name the attribute name
+ * @param value the value
+ */
 void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
    lListElem *attr_elem = lCreateElem(XMLA_Type);
    lList *attr_list = nullptr;
@@ -139,25 +180,15 @@ void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
    DRETURN_VOID;
 }
 
-/****** cull/list/lWriteListXMLTo() **********************************************
-*  NAME
-*     lWriteListXMLTo() -- Write a list to a file stream 
-*
-*  SYNOPSIS
-*     void lWriteListXMLTo(const lList *lp, FILE *fp) 
-*
-*  FUNCTION
-*     Write a list to a file stream in XML format
-*
-*  INPUTS
-*     const lList *lp   - list 
-*     int nesting_level - current nesting level
-*     FILE *fp          - file stream 
-*
-*  NOTE:
-*    MT-NOTE: is thread save, works only on the objects which are passed in 
-*
-*******************************************************************************/
+/**
+ * @brief Write a list to a file stream
+ *
+ * Write a list to a file stream in XML format
+ *
+ * @param lp list
+ * @param nesting_level current nesting level
+ * @param fp file stream NOTE: MT-NOTE: is thread save, works only on the objects which are passed in
+ */
 static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os)
 {
    DENTER(CULL_LAYER);
@@ -219,29 +250,29 @@ static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os)
    DRETURN_VOID;
 }
 
-/****** cull/list/lWriteElemXMLTo() **********************************************
-*  NAME
-*     lWriteElemXMLTo() -- Write a element to file stream 
-*
-*  SYNOPSIS
-*     void lWriteElemXMLTo(const lListElem *ep, FILE *fp) 
-*
-*  FUNCTION
-*     Write a element to file stream in XML format 
-*
-*  INPUTS
-*     const lListElem *ep  - element 
-*     FILE *fp             - file stream 
-*     int ignore_cull_name - ignore the specified cull name if != -1 
-*   
-*  NOTE:
-*    MT-NOTE: is thread save, works only on the objects which are passed in 
-******************************************************************************/
+/**
+ * @brief Write a element to file stream
+ *
+ * Write a element to file stream in XML format
+ *
+ * @param ep element
+ * @param[out] os stream to write to
+ *
+ * @note MT-NOTE: is thread safe, works only on the objects which are passed in
+ */
 void lWriteElemXMLTo(const lListElem *ep, std::ostream &os) {
    DENTER(CULL_LAYER);
    lWriteElemXML_(ep, 0, os);
    DRETURN_VOID;
 }
+/**
+ * @brief Write an element to a file stream in XML format
+ *
+ * @param ep element
+ * @param[out] fp file stream to write to
+ *
+ * @note MT-NOTE: is thread safe, works only on the objects which are passed in
+ */
 void lWriteElemXMLTo(const lListElem *ep, FILE *fp) {
    DENTER(CULL_LAYER);
    std::ostringstream os;
@@ -402,12 +433,28 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
    DRETURN_VOID;
 }
 
+/**
+ * @brief Append an attribute holding a double, rendered with five decimal places
+ *
+ * @param[in,out] attributeList the attribute list to append to
+ * @param name the attribute name
+ * @param value the value
+ * @return the new attribute element
+ */
 lListElem *xml_append_Attr_D(lList *attributeList, const char *name, double value) {
    char buffer[20];
    snprintf(buffer, sizeof(buffer), "%.5f", value);
    return append_Attr_S(attributeList, name, buffer);
 }
 
+/**
+ * @brief Append an attribute holding a double, rendered in at most eight characters - fixed point below 99999999, otherwise three significant digits
+ *
+ * @param[in,out] attributeList the attribute list to append to
+ * @param name the attribute name
+ * @param value the value
+ * @return the new attribute element
+ */
 lListElem *xml_append_Attr_D8(lList *attributeList, const char *name, double value) {
    char buffer[20];
    if (value > 99999999)
@@ -417,6 +464,14 @@ lListElem *xml_append_Attr_D8(lList *attributeList, const char *name, double val
    return append_Attr_S(attributeList, name, buffer);
 }
 
+/**
+ * @brief Append an attribute holding a string, XML escaped
+ *
+ * @param[in,out] attributeList the attribute list to append to
+ * @param name the attribute name
+ * @param value the value
+ * @return the new attribute element
+ */
 lListElem *xml_append_Attr_S(lList *attributeList, const char *name, const char *value){
    dstring string = DSTRING_INIT;
    lListElem *xml_Elem = nullptr;
@@ -431,12 +486,28 @@ lListElem *xml_append_Attr_S(lList *attributeList, const char *name, const char 
    return xml_Elem;         
 }
 
+/**
+ * @brief Append an attribute holding an int
+ *
+ * @param[in,out] attributeList the attribute list to append to
+ * @param name the attribute name
+ * @param value the value
+ * @return the new attribute element
+ */
 lListElem *xml_append_Attr_I(lList *attributeList, const char *name, int value) {
    char buffer[20];
    snprintf(buffer, sizeof(buffer), "%d", value);
    return append_Attr_S(attributeList, name, buffer);
 }
 
+/**
+ * @brief Append an attribute holding an unsigned integer
+ *
+ * @param[in,out] attributeList the attribute list to append to
+ * @param name the attribute name
+ * @param value the value
+ * @return the new attribute element
+ */
 lListElem *xml_append_Attr_U(lList *attributeList, const char *name, uint32_t value) {
    char buffer[20];
    snprintf(buffer, sizeof(buffer), sge_u32, value);
@@ -504,6 +575,13 @@ static lListElem *append_Attr_S(lList *attributeList, const char *name, const ch
    return parent;
 }
 
+/**
+ * @brief Replace the characters XML reserves with their entities
+ *
+ * @param string the text to escape; nullptr yields false
+ * @param[out] target receives the escaped text
+ * @return true when something was written
+ */
 bool escape_string(const char *string, dstring *target){
    DENTER(CULL_LAYER);
 

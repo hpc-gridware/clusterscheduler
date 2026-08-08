@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Evaluating a resource request written as a boolean expression
+ *
+ * A request may be an expression over `fnmatch` patterns rather than a plain
+ * value, e.g. `arch=lx*&!lx-x86`. This is the recursive descent evaluation of
+ * that grammar; the operators are `!`, `|` and `&` with parentheses.
+ *
+ * @see sge_eval_expression.h
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <strings.h>
@@ -83,11 +93,16 @@ static bool is_pattern(const char );
 static int MatchPattern(s_token *, bool);
 static void uncaseValue(s_token *,char *);
 
-/* arrays and enums.  */
-enum { T_NOT, T_OR, T_AND, T_BRACEOPEN, T_BRACECLOSE, T_END, T_EXP, T_ERROR };
+/// The tokens a resource expression is made of
+enum { T_NOT,/**< the `!` operator */T_OR,/**< the `|` operator */T_AND,/**< the `&` operator */T_BRACEOPEN,/**< an opening parenthesis */T_BRACECLOSE,/**< a closing parenthesis */T_END,/**< the end of the expression */T_EXP,/**< a pattern to match against the value */T_ERROR/**< not a token; the expression could not be tokenized */};
 
-/* ATTENTION! The order of TERMINALS and enumTypes have to match */
+/**
+ * @brief The token ids the terminal symbols stand for
+ *
+ * @warning The order has to match #tTypes; the two are indexed together.
+ */
 const int eTypes[] = {T_NOT, T_OR, T_AND, T_BRACEOPEN, T_BRACECLOSE, T_END};
+/// How each token is written, for error messages; see #eTypes for the order
 const char *tTypes[] = { "!<pattern>", "|<pattern>", "&<pattern>", "(", ")", "<end>",
 "<pattern>", "<error>" };
 

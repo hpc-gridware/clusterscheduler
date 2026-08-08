@@ -33,20 +33,28 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for reading a flat configuration file into an object
+ *
+ * @see config.cc
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull_parse_util.h"
 
+/// How a configured value relates to the one already stored
 enum {
-   MODE_RELATIVE,
-   MODE_SET,
-   MODE_ADD,
-   MODE_SUB
+   MODE_RELATIVE, ///< the value is a factor applied to the current one
+   MODE_SET,      ///< the value replaces the current one
+   MODE_ADD,      ///< the value is added to the current one
+   MODE_SUB       ///< the value is subtracted from the current one
 };
 
 int add_nm_to_set(int fields[], int name_nm);
 
+/// Flags for #read_config_list
 enum {
-   RCL_NO_VALUE = 0x0001
+   RCL_NO_VALUE = 0x0001 ///< accept a line that carries a name but no value
 };
 
 int read_config_list(FILE *fp, lList **clpp, lList **alpp, lDescr *dp, int nm1, int nm2, int nm3, const char *delimitor, int flag, char *buf, int size);
