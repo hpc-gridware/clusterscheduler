@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qconf - the complex entry switches
+ */
+
 #include <cstring>
 
 #include "sgeobj/msg_sgeobjlib.h"

@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief qsh - command line parsing specific to the interactive clients
+ */
 #include <cstring>
 #include <climits>
 #include <unistd.h>

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qdel - deletes jobs
+ */
+
 #include <algorithm>
 #include <cstring>
 #include <cstdio>
@@ -60,6 +64,12 @@
 static bool sge_parse_cmdline_qdel(char **argv, char **envp, lList **ppcmdline, lList **alpp);
 static bool sge_parse_qdel(lList **ppcmdline, lList **ppreflist, uint32_t *pforce, lList **ppuserlist, lList **alpp);
 
+/** @brief The process environment, as the C library defines it
+ *
+ * Declared here rather than included, and passed to the command line parser so
+ * that options which read an environment variable resolve it against the
+ * submitting user's environment rather than against `getenv()`.
+ */
 extern char **environ;
 
 /************************************************************************/

@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief qmod - enables, disables, suspends and clears queues and jobs
+ */
 #include <cstring>
 
 #include "uti/ocs_TerminationManager.h"
@@ -64,6 +68,12 @@ static int qmod_usage(FILE *fp, char *what);
 
 static bool answer_list_has_exit_code_error(lList **answer_list);
 
+/** @brief The process environment, as the C library defines it
+ *
+ * Declared here rather than included, and passed to the command line parser so
+ * that options which read an environment variable resolve it against the
+ * submitting user's environment rather than against `getenv()`.
+ */
 extern char **environ;
 
 int main(int argc, char **argv) {
@@ -147,28 +157,18 @@ int main(int argc, char **argv) {
 }
 
 
-/****** qmod/answer_list_has_exit_code_error() *********************************
-*  NAME
-*     answer_list_has_exit_code_error() -- Returns if there was a critical error 
-*                                          or when the return status was not OK. 
-*
-*  SYNOPSIS
-*     static bool answer_list_has_exit_code_error(lList **answer_list) 
-*
-*  FUNCTION
-*     Checks the answer list if there was any critical error or in the other 
-*     cases if there was a status other than ok. 
-*
-*  INPUTS
-*     lList **answer_list - AN_Type list
-*
-*  RESULT
-*     static bool - "true" if an error is found "false" otherwise 
-*
-*  NOTES
-*     MT-NOTE: answer_list_has_exit_code_error() is not MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Returns if there was a critical error
+ *
+ * Checks the answer list if there was any critical error or in the other
+ * cases if there was a status other than ok.
+ *
+ * @param answer_list AN_Type list
+ *
+ * @return "true" if an error is found "false" otherwise
+ *
+ * @note MT-NOTE: answer_list_has_exit_code_error() is not MT safe
+ */
 static bool answer_list_has_exit_code_error(lList **answer_list)
 {
    bool ret = false;

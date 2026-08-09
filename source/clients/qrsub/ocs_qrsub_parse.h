@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the qrsub command line parser
+ */
+
 #include "cull/cull.h"
 
 bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar);

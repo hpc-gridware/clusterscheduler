@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qconf - the host group switches
+ */
+
 #include "uti/sge_edit.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -205,30 +209,19 @@ hgroup_provide_modify_context(lListElem **this_elem, lList **answer_list, bool i
    DRETURN(ret);
 }
 
-/****** sge_hgroup_qconf/hgroup_add() ******************************************
-*  NAME
-*     hgroup_add() -- creates a default hgroup object.
-*
-*  SYNOPSIS
-*     bool hgroup_add(lList **answer_list, const char *name, bool 
-*     is_name_validate) 
-*
-*  FUNCTION
-*     To create a new hgrp, qconf needs a default object, that can be edited.
-*
-*  INPUTS
-*     lList **answer_list   - any errors?
-*     const char *name      - name of the hgrp
-*     bool is_name_validate - should the name be validated? false, if one generates
-*                             a template
-*
-*  RESULT
-*     bool - true, if everything went fine
-*
-*  NOTES
-*     MT-NOTE: hgroup_add() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Creates a default hgroup object
+ *
+ * To create a new hgrp, qconf needs a default object, that can be edited.
+ *
+ * @param answer_list any errors?
+ * @param name name of the hgrp
+ * @param is_name_validate should the name be validated? false, if one generates a template
+ *
+ * @return true, if everything went fine
+ *
+ * @note MT-NOTE: hgroup_add() is MT safe
+ */
 bool
 hgroup_add(lList **answer_list, const char *name, bool is_name_validate ) {
    bool ret = true;

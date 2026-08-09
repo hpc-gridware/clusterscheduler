@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief A test program that repeatedly reconnects to qmaster, to exercise the reconnect path
+ */
+
 /*
  * sge_test_reconnect - minimal test/debug client for the IJS reconnect broker.
  *

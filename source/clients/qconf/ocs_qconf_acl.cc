@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qconf - the userset and manager/operator list switches
+ */
+
 #include <cstdio>
 
 #include "uti/sge_log.h"

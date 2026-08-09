@@ -33,5 +33,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the qsh command line parser
+ */
+
 lList *cull_parse_qsh_parameter(uint32_t prog_name, uint32_t uid, const char *username, const char *cell_root,
                                 const char *unqualified_hostname, const char *qualified_hostname, lList *cmdline, lListElem **pjob);

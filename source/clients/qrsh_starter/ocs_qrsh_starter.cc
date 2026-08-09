@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief The program the shepherd runs on the execution host to start an interactive job
+ */
 #include <cstdio>
 #include <cstdarg>
 
@@ -71,25 +75,16 @@
 
 static pid_t child_pid = 0;
 
-/****** Interactive/qrsh/qrsh_error() ******************************************
-*  NAME
-*     qrsh_error() -- propagate qrsh startup error to shepherd and qrsh client
-*
-*  SYNOPSIS
-*     static
-*     void qrsh_error(const char *fmt, ...)
-*
-*  FUNCTION
-*     Writes the passed error message to a special error file in the jobs
-*     temporary directory.
-*     Separate error files are written for jobs and tasks (started by
-*     qrsh -inherit).
-*
-*  INPUTS
-*     const char *fmt - format string
-*     ...             - arguments to be formatted using the format string
-*
-*******************************************************************************/
+/**
+ * @brief Propagate qrsh startup error to shepherd and qrsh client
+ *
+ * Writes the passed error message to a special error file in the jobs
+ * temporary directory.
+ * Separate error files are written for jobs and tasks (started by
+ * qrsh -inherit).
+ *
+ * @param fmt format string ...             - arguments to be formatted using the format string
+ */
 static void qrsh_error(const char *fmt, ...)
 {
    char *tmpdir = nullptr;
@@ -179,49 +174,34 @@ qrsh_trace (const char *format, ...) {
 }
 #endif
 
-/****** Interactive/qrsh/setEnvironment() ***************************************
-*
-*  NAME
-*     setEnvironment() -- set environment from file
-*
-*  SYNOPSIS
-*     static char *setEnvironment(const char *jobdir, char **wrapper);
-*
-*  FUNCTION
-*     Reads environment variables and their values from file <envFileName>
-*     and sets them in the actual process environment.
-*     The file format conforms to the sge environment file format:
-*     Each line contains a tuple:
-*        <name>=<value>
-*     Special handling for variable PWD: tries to change to named
-*     directory.
-*     Special handling for variable QRSH_COMMAND: is the command to be executed
-*     by qrsh_starter. The value of this variable will be returned as command,
-*     or nullptr, if an error occurs.
-*     Special handling for variable QRSH_WRAPPER: this is a wrapper to be called
-*     instead of a shell to execute the command.
-*     If this variable is contained in the environment, it will be returned in
-*     the parameter wrapper. Memory will be allocated to hold the variable, it
-*     is in the responsibility of the caller to free this memory.
-*     Special handling for variable DISPLAY: if it is already set, do not
-*     overwrite it. Usually  it is not set, but if ssh is used as transport
-*     mechanism for qrsh, the ssh -X option can be used to enable
-*     X11 forwarding.
-*
-*  INPUTS
-*     jobdir - the jobs spool directory
-*     wrapper - buffer to take the path and name of a wrapper script
-*
-*  RESULT
-*     command, if all actions could be performed
-*     nullptr,    if an error occurred; possible errors are:
-*                 - the environment file cannot be opened
-*                 - a PWD entry is found, but changing to the named directory fails
-*                 - necessary memory cannot be allocated
-*                 - the variable QRSH_COMMAND is not found
-*
-****************************************************************************
-*/
+/**
+ * @brief Set environment from file
+ *
+ * Reads environment variables and their values from file `envFileName`
+ * and sets them in the actual process environment.
+ * The file format conforms to the sge environment file format:
+ * Each line contains a tuple:
+ *    `name`=`value`
+ * Special handling for variable PWD: tries to change to named
+ * directory.
+ * Special handling for variable QRSH_COMMAND: is the command to be executed
+ * by qrsh_starter. The value of this variable will be returned as command,
+ * or nullptr, if an error occurs.
+ * Special handling for variable QRSH_WRAPPER: this is a wrapper to be called
+ * instead of a shell to execute the command.
+ * If this variable is contained in the environment, it will be returned in
+ * the parameter wrapper. Memory will be allocated to hold the variable, it
+ * is in the responsibility of the caller to free this memory.
+ * Special handling for variable DISPLAY: if it is already set, do not
+ * overwrite it. Usually  it is not set, but if ssh is used as transport
+ * mechanism for qrsh, the ssh -X option can be used to enable
+ * X11 forwarding.
+ *
+ * @param jobdir the jobs spool directory
+ * @param wrapper buffer to take the path and name of a wrapper script
+ *
+ * @return command, if all actions could be performed nullptr,    if an error occurred; possible errors are: - the environment file cannot be opened - a PWD entry is found, but changing to the named directory fails - necessary memory cannot be allocated - the variable QRSH_COMMAND is not found ***************************************************************************
+ */
 static char *setEnvironment(const char *jobdir, char **wrapper)
 {
    char envFileName[SGE_PATH_MAX];
@@ -339,24 +319,15 @@ FCLOSE_ERROR:
    return nullptr;
 }
 
-/****** Interactive/qrsh/readConfig() *****************************************
-*  NAME
-*     readConfig() -- read the jobs configuration
-*
-*  SYNOPSIS
-*     static int readConfig(const char *jobdir)
-*
-*  FUNCTION
-*     Reads the jobs configuration (<job spool dir>/config).
-*
-*  INPUTS
-*     const char *jobdir - the jobs spool directory
-*
-*  RESULT
-*     static int - 0, if an error occurred
-*                  1, if function completed without errors
-*
-*******************************************************************************/
+/**
+ * @brief Read the jobs configuration
+ *
+ * Reads the jobs configuration (<job spool dir>/config).
+ *
+ * @param jobdir the jobs spool directory
+ *
+ * @return 0, if an error occurred 1, if function completed without errors
+ */
 static int readConfig(const char *jobdir)
 {
    char configFileName[SGE_PATH_MAX];
@@ -372,25 +343,17 @@ static int readConfig(const char *jobdir)
    return 1;
 }
 
-/****** Interactive/qrsh/changeDirectory() *****************************************
-*  NAME
-*     changeDirectory() -- change to directory named in job config
-*
-*  SYNOPSIS
-*     static int changeDirectory()
-*
-*  FUNCTION
-*     Reads the target working directory for a qrsh job from the jobs
-*     configuration and tries to
-*     change the current working directory.
-*
-*  RESULT
-*     static int - 0, if an error occurred
-*                  1, if function completed without errors
-*  SEE ALSO
-*     Interactive/qrsh/readConfig()
-*
-*******************************************************************************/
+/**
+ * @brief Change to directory named in job config
+ *
+ * Reads the target working directory for a qrsh job from the jobs
+ * configuration and tries to
+ * change the current working directory.
+ *
+ * @return 0, if an error occurred 1, if function completed without errors
+ *
+ * @see #readConfig
+ */
 static int changeDirectory()
 {
    char *cwd = nullptr;
@@ -414,29 +377,16 @@ static int changeDirectory()
 }
 
 
-/****** Interactive/qrsh/write_pid_file() ***************************************
-*
-*  NAME
-*     write_pid_file()  -- write a pid to file pid in $TMPDIR
-*
-*  SYNOPSIS
-*     static int write_pid_file(pid_t pid);
-*
-*  FUNCTION
-*     Writes the given pid to a file named pid in the directory
-*     contained in environment variable TMPDIR
-*
-*  INPUTS
-*     pid - the pid to write
-*
-*  RESULT
-*     1, if all actions could be performed
-*     0, if an error occurred. Possible error situations are:
-*        - the environement variable TMPDIR cannot be read
-*        - the file cannot be opened
-*
-****************************************************************************
-*/
+/**
+ * @brief Write a pid to file pid in $TMPDIR
+ *
+ * Writes the given pid to a file named pid in the directory
+ * contained in environment variable TMPDIR
+ *
+ * @param pid the pid to write
+ *
+ * @return 1, if all actions could be performed 0, if an error occurred. Possible error situations are: - the environement variable TMPDIR cannot be read - the file cannot be opened ***************************************************************************
+ */
 static int write_pid_file(pid_t pid)
 {
    char *pid_file_name = nullptr;
@@ -467,23 +417,14 @@ static int write_pid_file(pid_t pid)
    return 1;
 }
 
-/****** Interactive/qrsh/forward_signal() ***************************************
-*
-*  NAME
-*     forward_signal() -- forward a signal to qrsh_starter's child
-*
-*  SYNOPSIS
-*     static void forward_signal(int sig);
-*
-*  FUNCTION
-*     Forwards the signal <sig> to the process group given
-*     in the global variable <child_pid>.
-*
-*  INPUTS
-*     sig - the signal to forward
-*
-****************************************************************************
-*/
+/**
+ * @brief Forward a signal to qrsh_starter's child
+ *
+ * Forwards the signal `sig` to the process group given
+ * in the global variable `child_pid`.
+ *
+ * @param sig the signal to forward ***************************************************************************
+ */
 static void forward_signal(int sig)
 {
    if(child_pid > 0) {
@@ -491,34 +432,25 @@ static void forward_signal(int sig)
    }
 }
 
-/****** Interactive/qrsh/split_command() *******************************************
-*  NAME
-*     split_command() -- split commandline into tokens
-*
-*  SYNOPSIS
-*     static int split_command(char *command, char ***cmdargs)
-*
-*  FUNCTION
-*     The command to be executed by qrsh_starter may contain multiple
-*     arguments, quotes, double quotes, back quotes etc. within the
-*     arguments ...
-*     To preserve all this information, qrsh writes the command line arguments
-*     to an environment variable QRSH_COMMAND and separates the arguments by
-*     the character with code 255 (0xff).
-*     split_command splits the resulting string into the original arguments
-*     and writes them to a string array.
-*
-*  INPUTS
-*     char *command   - arguments separated by 0xff
-*     char ***cmdargs - pointer to string array to be filled with arguments
-*
-*  RESULT
-*     static int - the number of arguments or 0 if an error occurred
-*
-*  SEE ALSO
-*     Interactive/qrsh/join_command()
-*
-*******************************************************************************/
+/**
+ * @brief Split commandline into tokens
+ *
+ * The command to be executed by qrsh_starter may contain multiple
+ * arguments, quotes, double quotes, back quotes etc. within the
+ * arguments ...
+ * To preserve all this information, qrsh writes the command line arguments
+ * to an environment variable QRSH_COMMAND and separates the arguments by
+ * the character with code 255 (0xff).
+ * split_command splits the resulting string into the original arguments
+ * and writes them to a string array.
+ *
+ * @param command arguments separated by 0xff
+ * @param cmdargs pointer to string array to be filled with arguments
+ *
+ * @return the number of arguments or 0 if an error occurred
+ *
+ * @see #join_command
+ */
 static int split_command(char *command, char ***cmdargs) {
    /* count number of arguments */
    int counter = 1;
@@ -696,50 +628,29 @@ static char *join_command(int argc, char **argv) {
 }
 
 
-/****** Interactive/qrsh/startJob() ***************************************
-*
-*  NAME
-*     startJob() -- start a shell with commands to execute
-*
-*  SYNOPSIS
-*     static int startJob(char *command, char *wrapper, int noshell);
-*
-*  FUNCTION
-*     Starts the commands and arguments to be executed as
-*     specified in parameter <command>.
-*     If the parameter noshell is set to 1, the command is directly called
-*     by exec.
-*     If a wrapper is specified (parameter wrapper, set by environment
-*     variable QRSH_WRAPPER), this wrapper is called and is passed the
-*     command to execute as commandline parameters.
-*     If neither noshell nor wrapper is set, a users login shell is called
-*     with the parameters -c <command>.
-*     The child process creates an own process group.
-*     The pid of the child process is written to a pid file in $TMPDIR.
-*
-*  INPUTS
-*     command - commandline to be executed
-*     wrapper - name and path of a wrapper script
-*     noshell - if != 0, call the command directly without shell
-*
-*  RESULT
-*     status of the child process after it terminated
-*     or EXIT_FAILURE, if the process of starting the child
-*     failed because of one of the following error situations:
-*        - fork failed
-*        - the pid of the child process cannot be written to pid file
-*        - the name of actual user cannot be determined
-*        - info about the actual user cannot be determined (getpwnam)
-*        - necessary memory cannot be allocated
-*        - executing the shell failed
-*
-*  SEE ALSO
-*     Interactive/qrsh/write_pid_file()
-*     Interactive/qrsh/split_command()
-*     Interactive/qrsh/join_command()
-*
-****************************************************************************
-*/
+/**
+ * @brief Start a shell with commands to execute
+ *
+ * Starts the commands and arguments to be executed as
+ * specified in parameter `command`.
+ * If the parameter noshell is set to 1, the command is directly called
+ * by exec.
+ * If a wrapper is specified (parameter wrapper, set by environment
+ * variable QRSH_WRAPPER), this wrapper is called and is passed the
+ * command to execute as commandline parameters.
+ * If neither noshell nor wrapper is set, a users login shell is called
+ * with the parameters -c `command`.
+ * The child process creates an own process group.
+ * The pid of the child process is written to a pid file in $TMPDIR.
+ *
+ * @param command commandline to be executed
+ * @param wrapper name and path of a wrapper script
+ * @param noshell if != 0, call the command directly without shell
+ *
+ * @return status of the child process after it terminated or EXIT_FAILURE, if the process of starting the child failed because of one of the following error situations: - fork failed - the pid of the child process cannot be written to pid file - the name of actual user cannot be determined - info about the actual user cannot be determined (getpwnam) - necessary memory cannot be allocated - executing the shell failed
+ *
+ * @see #write_pid_file, #split_command, #join_command
+ */
 static int startJob(char *command, char *wrapper, int noshell)
 {
 
@@ -883,33 +794,20 @@ static int startJob(char *command, char *wrapper, int noshell)
    return EXIT_FAILURE;
 }
 
-/****** Interactive/qrsh/writeExitCode() ***************************************
-*
-*  NAME
-*    writeExitCode() -- write exit code of child process to file
-*
-*  SYNOPSIS
-*     static int writeExitCode(int myExitCode, int programExitCode)
-*
-*  FUNCTION
-*     If myExitCode != EXIT_SUCCESS, that means, if an error occurred in
-*     qrsh_starter, write this exit code to file,
-*     else write the exit code of the child process (programExitCode).
-*     The exit code is written to a file "qrsh_exit_code" in the
-*     directory $TMPDIR.
-*
-*  INPUTS
-*     myExitCode      - status of qrsh_starter
-*     programExitCode - status of the child process
-*
-*  RESULT
-*     EXIT_SUCCESS, if all actions could be performed,
-*     EXIT_FAILURE, if one of the following errors occurred:
-*        - the environment variable TMPDIR cannot be read
-*        - the file $TMPDIR/qrsh_exit_code cannot be written
-*
-****************************************************************************
-*/
+/**
+ * @brief Write exit code of child process to file
+ *
+ * If myExitCode != EXIT_SUCCESS, that means, if an error occurred in
+ * qrsh_starter, write this exit code to file,
+ * else write the exit code of the child process (programExitCode).
+ * The exit code is written to a file "qrsh_exit_code" in the
+ * directory $TMPDIR.
+ *
+ * @param myExitCode status of qrsh_starter
+ * @param programExitCode status of the child process
+ *
+ * @return EXIT_SUCCESS, if all actions could be performed, EXIT_FAILURE, if one of the following errors occurred: - the environment variable TMPDIR cannot be read - the file $TMPDIR/qrsh_exit_code cannot be written ***************************************************************************
+ */
 static int writeExitCode(int myExitCode, int programExitCode)
 {
    int exitCode;

@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the qconf cluster queue switches
+ */
+
 #include "sgeobj/sge_daemonize.h"
 
 lListElem *

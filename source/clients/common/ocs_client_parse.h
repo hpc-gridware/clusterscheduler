@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the shared client command line handling
+ */
+
 #include <cinttypes>
 
 #include "cull/cull.h"

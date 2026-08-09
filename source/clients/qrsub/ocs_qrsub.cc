@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qrsub - requests an advance reservation
+ */
+
 #include <cstdarg>
 #include <cstdlib>
 
@@ -55,6 +59,12 @@
 #include "ocs_qrsub_parse.h"
 #include "msg_clients_common.h"
 
+/** @brief The process environment, as the C library defines it
+ *
+ * Declared here rather than included, and passed to the command line parser so
+ * that options which read an environment variable resolve it against the
+ * submitting user's environment rather than against `getenv()`.
+ */
 extern char **environ;
 
 int main(int argc, const char **argv) {

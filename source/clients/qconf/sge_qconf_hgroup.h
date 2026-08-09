@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the qconf host group switches
+ */
+
 #include "sgeobj/sge_daemonize.h"
 
 lListElem *hgroup_get_via_gdi(lList **answer_list, const char *group);

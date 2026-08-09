@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief qacct - reports accounting information for finished jobs
+ */
 #include <cstdlib>
 #include <cstring>
 #include <sys/types.h>

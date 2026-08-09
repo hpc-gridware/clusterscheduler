@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the qconf switch handlers
+ */
+
 #include "spool/sge_spooling_utilities.h"
 #include "spool/flatfile/sge_flatfile.h"   /* CS-2313a: spool_flatfile_format */
 #include "sgeobj/sge_daemonize.h"

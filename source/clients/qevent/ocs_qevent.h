@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the qevent event client
+ */
+
 #include "uti/sge_dstring.h"
 
 #define MAX_TRIGGER_SCRIPTS (10)

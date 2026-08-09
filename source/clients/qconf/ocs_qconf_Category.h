@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Interface of the qconf job category switches
+ */
+
 #include "cull/cull.h"
 
 #include "sgeobj/ocs_Category.h"

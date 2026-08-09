@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qconf - the resource quota set switches
+ */
+
 #include <cstring>
 
 #include "uti/sge_edit.h"
@@ -58,29 +62,19 @@
 static bool
 rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_unchanged_message);
 
-/****** resource_quota_qconf/rqs_show() *********************************
-*  NAME
-*     rqs_show() -- show resource quota sets
-*
-*  SYNOPSIS
-*     bool rqs_show(lList **answer_list, const char *name) 
-*
-*  FUNCTION
-*     This funtion gets the selected resource quota sets from GDI and
-*     writes they out on stdout
-*
-*  INPUTS
-*     lList **answer_list - answer list
-*     const char *name    - comma separated list of resource quota set names
-*
-*  RESULT
-*     bool - true  on success
-*            false on error
-*
-*  NOTES
-*     MT-NOTE: rqs_show() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Show resource quota sets
+ *
+ * This funtion gets the selected resource quota sets from GDI and
+ * writes they out on stdout
+ *
+ * @param answer_list answer list
+ * @param name comma separated list of resource quota set names
+ *
+ * @return true  on success false on error
+ *
+ * @note MT-NOTE: rqs_show() is MT safe
+ */
 bool
 rqs_show(lList **answer_list, const char *name)
 {
@@ -117,31 +111,20 @@ rqs_show(lList **answer_list, const char *name)
    DRETURN(ret);
 }
 
-/****** resource_quota_qconf/rqs_get_via_gdi() **************************
-*  NAME
-*     rqs_get_via_gdi() -- get resource quota sets from GDI
-*
-*  SYNOPSIS
-*     bool rqs_get_via_gdi(lList **answer_list, const lList 
-*     *rqsref_list, lList **rqs_list) 
-*
-*  FUNCTION
-*     This function gets the selected resource quota sets from qmaster. The selection
-*     is done in the string list rqsref_list.
-*
-*  INPUTS
-*     lList **answer_list       - answer list
-*     const lList *rqsref_list - resource quota sets selection
-*     lList **rqs_list         - copy of the selected rule sets
-*
-*  RESULT
-*     bool - true  on success
-*            false on error
-*
-*  NOTES
-*     MT-NOTE: rqs_get_via_gdi() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Get resource quota sets from GDI
+ *
+ * This function gets the selected resource quota sets from qmaster. The selection
+ * is done in the string list rqsref_list.
+ *
+ * @param answer_list answer list
+ * @param rqsref_list resource quota sets selection
+ * @param rqs_list copy of the selected rule sets
+ *
+ * @return true  on success false on error
+ *
+ * @note MT-NOTE: rqs_get_via_gdi() is MT safe
+ */
 bool
 rqs_get_via_gdi(lList **answer_list, const lList *rqsref_list, lList **rqs_list)
 {
@@ -175,28 +158,18 @@ rqs_get_via_gdi(lList **answer_list, const lList *rqsref_list, lList **rqs_list)
    DRETURN(ret);
 }
 
-/****** resource_quota_qconf/rqs_get_all_via_gdi() **********************
-*  NAME
-*     rqs_get_all_via_gdi() -- get all resource quota sets from GDI 
-*
-*  SYNOPSIS
-*     bool rqs_get_all_via_gdi(lList **answer_list, lList **rqs_list) 
-*
-*  FUNCTION
-*     This function gets all resource quota sets known by qmaster
-*
-*  INPUTS
-*     lList **answer_list - answer list
-*     lList **rqs_list   - copy of all resource quota sets
-*
-*  RESULT
-*     bool - true  on success
-*            false on error
-*
-*  NOTES
-*     MT-NOTE: rqs_get_all_via_gdi() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Get all resource quota sets from GDI
+ *
+ * This function gets all resource quota sets known by qmaster
+ *
+ * @param answer_list answer list
+ * @param rqs_list copy of all resource quota sets
+ *
+ * @return true  on success false on error
+ *
+ * @note MT-NOTE: rqs_get_all_via_gdi() is MT safe
+ */
 bool
 rqs_get_all_via_gdi(lList **answer_list, lList **rqs_list)
 {
@@ -215,29 +188,19 @@ rqs_get_all_via_gdi(lList **answer_list, lList **rqs_list)
    DRETURN(ret);
 }
 
-/****** resource_quota_qconf/rqs_add() ******************************
-*  NAME
-*     rqs_add() -- add resource quota set list
-*
-*  SYNOPSIS
-*     bool rqs_add(lList **answer_list, const char *name) 
-*
-*  FUNCTION
-*     This function provide a modify context for qconf to add new resource
-*     quota sets. If no name is given a template rule set is shown
-*
-*  INPUTS
-*     lList **answer_list - answer list
-*     const char *name    - comma seperated list of rule sets to add
-*
-*  RESULT
-*     bool - true  on success
-*            false on error
-*
-*  NOTES
-*     MT-NOTE: rqs_add() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Add resource quota set list
+ *
+ * This function provide a modify context for qconf to add new resource
+ * quota sets. If no name is given a template rule set is shown
+ *
+ * @param answer_list answer list
+ * @param name comma seperated list of rule sets to add
+ *
+ * @return true  on success false on error
+ *
+ * @note MT-NOTE: rqs_add() is MT safe
+ */
 bool
 rqs_add(lList **answer_list, const char *name)
 {
@@ -264,29 +227,19 @@ rqs_add(lList **answer_list, const char *name)
    DRETURN(ret);
 }
 
-/****** resource_quota_qconf/rqs_modify() ***************************
-*  NAME
-*     rqs_modify() -- modify resource quota sets
-*
-*  SYNOPSIS
-*     bool rqs_modify(lList **answer_list, const char *name) 
-*
-*  FUNCTION
-*     This function provides a modify context for qconf to modify resource
-*     quota sets.
-*
-*  INPUTS
-*     lList **answer_list - answer list
-*     const char *name    - comma seperated list of rule sets to modify
-*
-*  RESULT
-*     bool - true  on success
-*            false on error
-*
-*  NOTES
-*     MT-NOTE: rqs_modify() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Modify resource quota sets
+ *
+ * This function provides a modify context for qconf to modify resource
+ * quota sets.
+ *
+ * @param answer_list answer list
+ * @param name comma seperated list of rule sets to modify
+ *
+ * @return true  on success false on error
+ *
+ * @note MT-NOTE: rqs_modify() is MT safe
+ */
 bool
 rqs_modify(lList **answer_list, const char *name) {
    DENTER(TOP_LAYER);
@@ -321,33 +274,25 @@ rqs_modify(lList **answer_list, const char *name) {
    DRETURN(ret);
 }
 
-/****** resource_quota_qconf/rqs_upsert_via_gdi() ******************************
-*  NAME
-*     rqs_upsert_via_gdi() -- modify-or-add the file's rqs, preserve the rest
-*
-*  SYNOPSIS
-*     static bool rqs_upsert_via_gdi(lList **answer_list, lList *file_rqs_list)
-*
-*  FUNCTION
-*     Applies the resource quota sets in @p file_rqs_list to the current rqs
-*     configuration: an rqs is modified (MOD) if one of the same name already
-*     exists, added (ADD) otherwise, and every other rqs is left untouched. This
-*     gives -Arqs and -Mrqs (without an explicit rqs_list) the same add-or-modify
-*     semantics as the per-object -Ap/-Mp, instead of replacing the whole rqs list
-*     (which would silently delete rqs not present in the file). The file's rqs
-*     are split by existence into a MOD batch and an ADD batch so that the
-*     resulting messages accurately read "modified"/"added".
-*
-*  INPUTS
-*     lList **answer_list   - answer list
-*     lList *file_rqs_list  - the rqs read from the file (not modified/freed here)
-*
-*  RESULT
-*     bool - true on success, false on error
-*
-*  NOTES
-*     MT-NOTE: rqs_upsert_via_gdi() is MT safe
-*******************************************************************************/
+/**
+ * @brief Modify-or-add the file's rqs, preserve the rest
+ *
+ * Applies the resource quota sets in @p file_rqs_list to the current rqs
+ * configuration: an rqs is modified (MOD) if one of the same name already
+ * exists, added (ADD) otherwise, and every other rqs is left untouched. This
+ * gives -Arqs and -Mrqs (without an explicit rqs_list) the same add-or-modify
+ * semantics as the per-object -Ap/-Mp, instead of replacing the whole rqs list
+ * (which would silently delete rqs not present in the file). The file's rqs
+ * are split by existence into a MOD batch and an ADD batch so that the
+ * resulting messages accurately read "modified"/"added".
+ *
+ * @param answer_list answer list
+ * @param file_rqs_list the rqs read from the file (not modified/freed here)
+ *
+ * @return true on success, false on error
+ *
+ * @note MT-NOTE: rqs_upsert_via_gdi() is MT safe
+ */
 static bool
 rqs_upsert_via_gdi(lList **answer_list, lList *file_rqs_list)
 {
@@ -402,29 +347,18 @@ rqs_upsert_via_gdi(lList **answer_list, lList *file_rqs_list)
    DRETURN(ret);
 }
 
-/****** resource_quota_qconf/rqs_add_from_file() ********************
-*  NAME
-*     rqs_add_from_file() -- add resource quota set from file
-*
-*  SYNOPSIS
-*     bool rqs_add_from_file(lList **answer_list, const char 
-*     *filename) 
-*
-*  FUNCTION
-*     This function add new resource quota sets from file.
-*
-*  INPUTS
-*     lList **answer_list  - answer list
-*     const char *filename - filename of new resource quota sets
-*
-*  RESULT
-*     bool - true  on success
-*            false on error
-*
-*  NOTES
-*     MT-NOTE: rqs_add_from_file() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Add resource quota set from file
+ *
+ * This function add new resource quota sets from file.
+ *
+ * @param answer_list answer list
+ * @param filename filename of new resource quota sets
+ *
+ * @return true  on success false on error
+ *
+ * @note MT-NOTE: rqs_add_from_file() is MT safe
+ */
 bool
 rqs_add_from_file(lList **answer_list, const char *filename) {
    bool ret = false;
@@ -446,31 +380,20 @@ rqs_add_from_file(lList **answer_list, const char *filename) {
    DRETURN(ret);
 }
 
-/****** resource_quota_qconf/rqs_provide_modify_context() ***********
-*  NAME
-*     rqs_provide_modify_context() -- provide qconf modify context
-*
-*  SYNOPSIS
-*     bool rqs_provide_modify_context(lList **rqs_list, lList 
-*     **answer_list, bool ignore_unchanged_message) 
-*
-*  FUNCTION
-*     This function provides a editor session to edit the selected resource quota
-*     sets interactively. 
-*
-*  INPUTS
-*     lList **rqs_list             - resource quota sets to modify
-*     lList **answer_list           - answer list
-*     bool ignore_unchanged_message - ignore unchanged message
-*
-*  RESULT
-*     bool - true  on success
-*            false on error
-*
-*  NOTES
-*     MT-NOTE: rqs_provide_modify_context() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Provide qconf modify context
+ *
+ * This function provides a editor session to edit the selected resource quota
+ * sets interactively.
+ *
+ * @param rqs_list resource quota sets to modify
+ * @param answer_list answer list
+ * @param ignore_unchanged_message ignore unchanged message
+ *
+ * @return true  on success false on error
+ *
+ * @note MT-NOTE: rqs_provide_modify_context() is MT safe
+ */
 static bool
 rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_unchanged_message)
 {
@@ -541,30 +464,21 @@ rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_un
    DRETURN(ret);
 }
 
-/****** resource_quota_qconf/rqs_add_del_mod_via_gdi() **************
-*  NAME
-*    rqs_add_del_mod_via_gdi/rqs_add_del_mod_via_gdi() -- modfies qmaster resource quota sets
-*
-*  SYNOPSIS
-*     bool rqs_add_del_mod_via_gdi(lList *rqs_list, lList 
-*     **answer_list, uint32_t gdi_command)
-*
-*  FUNCTION
-*     This function modifies via GDI the qmaster copy of the resource quota sets.
-*
-*  INPUTS
-*     lList *rqs_list     - resource quota sets to modify on qmaster
-*     lList **answer_list  - answer list from qmaster
-*     uint32_t gdi_command - commands what to do
-*
-*  RESULT
-*     bool - true  on success
-*            false on error
-*
-*  NOTES
-*     MT-NOTE: rqs_add_del_mod_via_gdi() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Modfies qmaster resource quota sets
+ *
+ * This function modifies via GDI the qmaster copy of the resource quota sets.
+ *
+ * @param rqs_list resource quota sets to modify on qmaster
+ * @param answer_list answer list from qmaster
+ * @param cmd the GDI command: add, modify or delete
+ * @param sub_cmd the GDI sub-command, which decides how a list-valued
+ *                attribute is merged with the one already stored
+ *
+ * @return true  on success false on error
+ *
+ * @note MT-NOTE: rqs_add_del_mod_via_gdi() is MT safe
+ */
 bool
 rqs_add_del_mod_via_gdi(lList *rqs_list, lList **answer_list, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_cmd)
 {
@@ -591,30 +505,19 @@ rqs_add_del_mod_via_gdi(lList *rqs_list, lList **answer_list, ocs::gdi::Command 
    DRETURN(ret);
 }
 
-/****** resource_quota_qconf/rqs_modify_from_file() *****************
-*  NAME
-*     rqs_modify_from_file() -- modifies resource quota sets from file
-*
-*  SYNOPSIS
-*     bool rqs_modify_from_file(lList **answer_list, const char 
-*     *filename, const char* name) 
-*
-*  FUNCTION
-*     This function allows to modify one or all resource quota sets from a file
-*
-*  INPUTS
-*     lList **answer_list  - answer list
-*     const char *filename - filename with the resource quota sets to change
-*     const char* name     - comma separated list of rule sets to change
-*
-*  RESULT
-*     bool - true  on success
-*            false on error
-*
-*  NOTES
-*     MT-NOTE: rqs_modify_from_file() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Modifies resource quota sets from file
+ *
+ * This function allows to modify one or all resource quota sets from a file
+ *
+ * @param answer_list answer list
+ * @param filename filename with the resource quota sets to change
+ * @param name comma separated list of rule sets to change
+ *
+ * @return true  on success false on error
+ *
+ * @note MT-NOTE: rqs_modify_from_file() is MT safe
+ */
 bool
 rqs_modify_from_file(lList **answer_list, const char *filename, const char* name)
 {

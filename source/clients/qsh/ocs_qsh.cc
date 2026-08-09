@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qsh/qlogin/qrsh - submits an interactive job and connects the terminal to it
+ */
+
 /*----------------------------------------------------
  * qsh.c
  *
@@ -206,7 +210,20 @@ static void set_builtin_ijs_signals_and_handlers();
 ****************************************************************************
 *
 */
+
+/** @brief The process environment, as the C library defines it
+ *
+ * Declared here rather than included, and passed to the command line parser so
+ * that options which read an environment variable resolve it against the
+ * submitting user's environment rather than against `getenv()`.
+ */
 extern char **environ;
+
+/** @brief The rsh, rlogin or telnet client this qsh forked, or 0
+ *
+ * A global because the signal handlers need it: a signal the user sends to qsh
+ * has to be passed on to the client that actually owns the terminal.
+ */
 pid_t child_pid = 0;
 
 /****** Interactive/qsh/-Interactive-Defines ***************************************
@@ -250,31 +267,20 @@ static void forward_signal(int sig)
    DRETURN_VOID;
 }
 
-/****** Interactive/qsh/open_qrsh_socket() ***************************************
-*
-*  NAME
-*     open_qrsh_socket -- create socket for messages to qrsh
-*
-*  SYNOPSIS
-*     static int open_qrsh_socket(int *port, const lList *port_range)
-*
-*  FUNCTION
-*     Creates a TCP server socket. When port_range is nullptr or empty the OS
-*     assigns a free ephemeral port (bind to port 0). When port_range is given
-*     the function iterates through the ranges sequentially — honouring the
-*     optional step size — and binds to the first port that is available.
-*     If no port can be bound the program exits.
-*
-*  INPUTS
-*     port       - reference to port number; set to the bound port on success
-*     port_range - RN_Type list of port ranges, or nullptr for OS-assigned port
-*
-*  RESULT
-*     socket file descriptor, or 0 if listen() failed
-*
-****************************************************************************
-*
-*/
+/**
+ * @brief Create socket for messages to qrsh
+ *
+ * Creates a TCP server socket. When port_range is nullptr or empty the OS
+ * assigns a free ephemeral port (bind to port 0). When port_range is given
+ * the function iterates through the ranges sequentially — honouring the
+ * optional step size — and binds to the first port that is available.
+ * If no port can be bound the program exits.
+ *
+ * @param port reference to port number; set to the bound port on success
+ * @param port_range RN_Type list of port ranges, or nullptr for OS-assigned port
+ *
+ * @return socket file descriptor, or 0 if listen() failed ***************************************************************************
+ */
 static int open_qrsh_socket(int *port, const lList *port_range) {
    struct sockaddr_in server;
    socklen_t length;
@@ -350,32 +356,19 @@ static int open_qrsh_socket(int *port, const lList *port_range) {
    DRETURN(sock);
 }
 
-/****** Interactive/qsh/wait_for_qrsh_socket() ***************************************
-*
-*  NAME
-*     wait_for_qrsh_socket -- wait for client connecting to socket
-*
-*  SYNOPSIS
-*     static int wait_for_qrsh_socket(int sock, int timeout)
-*
-*  FUNCTION
-*     Waits for a client to connect to the socket passed as parameter sock.
-*     A timeout (in seconds) can be specified.
-*
-*  INPUTS
-*     sock    - socket, that has been correctly initialized
-*     timeout - timeout in seconds, if 0, wait forever
-*
-*  RESULT
-*     the filedescriptor for the accepted client connection
-*     -1, if an error occurs or the timeout expires
-*
-*  SEE ALSO
-*     Interactive/qsh/open_qrsh_socket()
-*
-****************************************************************************
-*
-*/
+/**
+ * @brief Wait for client connecting to socket
+ *
+ * Waits for a client to connect to the socket passed as parameter sock.
+ * A timeout (in seconds) can be specified.
+ *
+ * @param sock socket, that has been correctly initialized
+ * @param timeout timeout in seconds, if 0, wait forever
+ *
+ * @return 1, if an error occurs or the timeout expires
+ *
+ * @see #open_qrsh_socket
+ */
 static int wait_for_qrsh_socket(int sock, int timeout)
 {
    int msgsock = -1;
@@ -411,32 +404,21 @@ static int wait_for_qrsh_socket(int sock, int timeout)
    DRETURN(msgsock);
 }
 
-/****** Interactive/qsh/read_from_qrsh_socket() ***************************************
-*
-*  NAME
-*     read_from_qrsh_socket -- read a message from socket
-*
-*  SYNOPSIS
-*     static char *read_from_qrsh_socket(int msgsock)
-*
-*  FUNCTION
-*     Tries to read characters from the socket msgsock until a null byte
-*     is received.
-*
-*  INPUTS
-*     msgsock - file/socket descriptor to read from
-*
-*  RESULT
-*     the read message,
-*     nullptr, if an error occurred
-*
-*  NOTES
-*     The result points to a static buffer - in subsequent calls of
-*     read_from_qrsh_socket, this buffer will be overwritten.
-*
-****************************************************************************
-*
-*/
+/**
+ * @brief Read a message from socket
+ *
+ * Tries to read characters from the socket msgsock until a null byte
+ * is received.
+ *
+ * @param msgsock file/socket descriptor to read from
+ *
+ * @return the read message, nullptr, if an error occurred
+ *
+ * @note The result points to a static buffer - in subsequent calls of
+ *       read_from_qrsh_socket, this buffer will be overwritten.
+ *
+ *       ***************************************************************************
+ */
 static char *read_from_qrsh_socket(int msgsock)
 {
    int rval = 0;
@@ -464,39 +446,23 @@ static char *read_from_qrsh_socket(int msgsock)
    DRETURN(buffer);
 }
 
-/****** Interactive/qsh/get_remote_exit() ***************************************
-*
-*  NAME
-*     get_remote_exit -- read returncode from socket
-*
-*  SYNOPSIS
-*     static int get_remote_exit(int sock);
-*
-*  FUNCTION
-*     Reads the returncode of the client program from a socket connection
-*     to qlogin_starter.
-*     The message read from the socket connection may contain an additional
-*     text separated from the return code by a colon.
-*     This text is interpreted as an error message and written to stderr.
-*
-*     Will wait for some time period (QSH_SOCKET_FINAL_TIMEOUT) for
-*     qlogin_starter to connect.
-*
-*  INPUTS
-*     sock - socket file handle
-*
-*  RESULT
-*     the returncode of the client program,
-*     -1, if the read failed
-*
-*  SEE ALSO
-*     Interactive/qsh/-Defines
-*     Interactive/qsh/wait_for_qrsh_socket()
-*     Interactive/qsh/read_from_qrsh_socket()
-*
-****************************************************************************
-*
-*/
+/**
+ * @brief Read returncode from socket
+ *
+ * Reads the returncode of the client program from a socket connection
+ * to qlogin_starter.
+ * The message read from the socket connection may contain an additional
+ * text separated from the return code by a colon.
+ * This text is interpreted as an error message and written to stderr.
+ * Will wait for some time period (QSH_SOCKET_FINAL_TIMEOUT) for
+ * qlogin_starter to connect.
+ *
+ * @param sock socket file handle
+ *
+ * @return the returncode of the client program, -1, if the read failed
+ *
+ * @see #wait_for_qrsh_socket, #read_from_qrsh_socket
+ */
 static int get_remote_exit_code(int sock)
 {
    int msgsock;
@@ -523,37 +489,28 @@ static int get_remote_exit_code(int sock)
    DRETURN(-1);
 }
 
-/****** Interactive/qsh/quote_argument() ***************************************
-*
-*  NAME
-*     quote_argument -- quote an argument
-*
-*  SYNOPSIS
-*     static const char *quote_argument(const char *arg)
-*
-*  FUNCTION
-*     Encloses the contents of string arg into  quotes ('').
-*     Memory for the new string is allocated using malloc.
-*     It is in the responsibility of the user to free this memory.
-*
-*  INPUTS
-*     arg - the argument string to quote
-*
-*  RESULT
-*     the quoted string
-*
-*  EXAMPLE
-*     const char *quoted = quote_argument("test");
-*     printf("%s\n", quoted);
-*     sge_free(&quoted);
-*
-*  NOTES
-*     Function might be moved to some library, same code is used in other
-*     modules.
-*
-****************************************************************************
-*
-*/
+/**
+ * @brief Quote an argument
+ *
+ * Encloses the contents of string arg into  quotes ('').
+ * Memory for the new string is allocated using malloc.
+ * It is in the responsibility of the user to free this memory.
+ *
+ * @code
+ * const char *quoted = quote_argument("test");
+ * printf("%s\n", quoted);
+ * sge_free(&quoted);
+ * @endcode
+ *
+ * @param arg the argument string to quote
+ *
+ * @return the quoted string
+ *
+ * @note Function might be moved to some library, same code is used in other
+ *       modules.
+ *
+ *       ***************************************************************************
+ */
 
 static const char *quote_argument(const char *arg) {
    char *new_arg = nullptr;
@@ -576,32 +533,18 @@ static const char *quote_argument(const char *arg) {
    DRETURN(new_arg);
 }
 
-/****** Interactive/qsh/parse_result_list() ***************************************
-*
-*  NAME
-*     parse_result_list -- parse result list from sge function calls
-*
-*  SYNOPSIS
-*     static int parse_result_list(lList *alp, int *alp_error);
-*
-*  FUNCTION
-*     Parses through the list and outputs the errors and warnings contained
-*     as list elements.
-*     Returns info whether an error was contained or not in alp_error
-*     and if qsh must exit in returncode.
-*
-*  INPUTS
-*     alp - pointer to result list
-*     [alp_error] - reference to return error status
-*
-*  RESULT
-*     0, if no error was contained in list
-*     1, if an error was contained in list
-*     alp_error - 1, if alp contains an error condition, else 0
-*
-****************************************************************************
-*
-*/
+/**
+ * @brief Parse result list from sge function calls
+ *
+ * Parses through the list and outputs the errors and warnings contained
+ * as list elements.
+ * Returns info whether an error was contained or not in alp_error
+ * and if qsh must exit in returncode.
+ *
+ * @param alp pointer to result list [alp_error] - reference to return error status
+ *
+ * @return 0, if no error was contained in list 1, if an error was contained in list alp_error - 1, if alp contains an error condition, else 0 ***************************************************************************
+ */
 static int parse_result_list(lList *alp, int *alp_error)
 {
    DENTER(TOP_LAYER);
@@ -635,51 +578,29 @@ static int parse_result_list(lList *alp, int *alp_error)
 }
 
 
-/****** Interactive/qsh/start_client_program() ***************************************
-*
-*  NAME
-*     start_client_program -- start a telnet/rsh/rlogin/... client
-*
-*  SYNOPSIS
-*     static void start_client_program(const char *client_name,
-*                                      lList *opts_qrsh,
-*                                      const char *host,
-*                                      const char *port,
-*                                      const char *job_dir,
-*                                      const char *utilbin_dir,
-*                                      int is_rsh,
-*                                      int is_rlogin
-*                                      int nostdin,
-*                                      int noshell,
-*                                      int sock)
-*
-*  FUNCTION
-*     Builds the argument vector for the start of the client program,
-*     creates a process (fork) and starts the client program in the
-*     child process.
-*     After termination of the child, read exit code of remote process
-*     from qlogin_starter.
-*
-*  INPUTS
-*     client_name - name of the program to start
-*     opts_qrsh   - arguments passed to a qrsh call
-*     host        - host on which to start command
-*     port        - port on which to contact server process (telnetd etc.)
-*     job_dir     - job directory
-*     utilbin_dir - path of the utilbin directory on the remote host
-*     is_rsh      - do we call a rsh (or similar) program?
-*     is_rlogin   - do we call a rlogin (or similar) program?
-*     nostdin     - shall stdin be suppressed (parameter -n to rsh)?
-*     noshell     - shall command be executed without wrapping login shell
-*     sock        - socket descriptor of connection to qlogin_starter
-*
-*  RESULT
-*     returncode of the executed command or
-*     EXIT_FAILURE, if exec failed
-*
-****************************************************************************
-*
-*/
+/**
+ * @brief Start a telnet/rsh/rlogin/... client
+ *
+ * Builds the argument vector for the start of the client program,
+ * creates a process (fork) and starts the client program in the
+ * child process.
+ * After termination of the child, read exit code of remote process
+ * from qlogin_starter.
+ *
+ * @param client_name name of the program to start
+ * @param opts_qrsh arguments passed to a qrsh call
+ * @param host host on which to start command
+ * @param port port on which to contact server process (telnetd etc.)
+ * @param job_dir job directory
+ * @param utilbin_dir path of the utilbin directory on the remote host
+ * @param is_rsh do we call a rsh (or similar) program?
+ * @param is_rlogin do we call a rlogin (or similar) program?
+ * @param nostdin shall stdin be suppressed (parameter -n to rsh)?
+ * @param noshell shall command be executed without wrapping login shell
+ * @param sock socket descriptor of connection to qlogin_starter
+ *
+ * @return returncode of the executed command or EXIT_FAILURE, if exec failed ***************************************************************************
+ */
 static int start_client_program(const char *client_name,
                                 lList *opts_qrsh,
                                 const char *host,
@@ -820,57 +741,31 @@ static int start_client_program(const char *client_name,
    return -1;
 }
 
-/****** Interactive/qsh/get_client_server_context() ***************************************
-*
-*  NAME
-*     get_client_server_context -- get parameters for client/server connection
-*
-*  SYNOPSIS
-*     static int get_client_server_context(int msgsock,
-*                                          char **port,
-*                                          char **job_dir,
-*                                          char **utilbin_dir,
-*                                          const char **host);
-*
-*  FUNCTION
-*     Tries to read the parameters port and job_dir from the socket connection
-*     to qlogin_starter (msgsock).
-*     They are sent from qlogin_starter in the format
-*     0:<port>:<utilbin_dir>:<job_dir>
-*
-*     The communication partner may also report an error, using the format
-*     <error>:<message> where error is a number != 0
-*     In this case, the error code and message will be written to stderr.
-*
-*  INPUTS
-*     msgsock     - socket descriptor of connection to qlogin_starter
-*     port        - reference to port number, see RESULT
-*     job_dir     - reference to job_dir, see RESULT
-*     utilbin_dir - reference to utilbin_dir, see RESULT
-*     host        - reference to host, see RESULT
-*
-*  RESULT
-*     1, if everything ok,
-*     0, if the required parameters are not found
-*
-*     [port]        - used to return the port number to caller
-*     [job_dir]     - used to return the job directory to caller
-*     [utilbin_dir] - used to return the utilbin directory on the
-*                     remote host
-*     [host]        - used to return the host, to which to connect
-*                     with rsh/rlogin/telnet call
-*
-*  NOTES
-*     port and data point to a static buffer in function
-*     read_from_qrsh_socket(). Subsequent calls to this function
-*     will overwrite this buffer.
-*
-*  SEE ALSO
-*     Interactive/qsh/read_from_qrsh_socket()
-*
-****************************************************************************
-*
-*/
+/**
+ * @brief Get parameters for client/server connection
+ *
+ * Tries to read the parameters port and job_dir from the socket connection
+ * to qlogin_starter (msgsock).
+ * They are sent from qlogin_starter in the format
+ * 0:`port`:`utilbin_dir`:`job_dir`
+ * The communication partner may also report an error, using the format
+ * `error`:`message` where error is a number != 0
+ * In this case, the error code and message will be written to stderr.
+ *
+ * @param msgsock socket descriptor of connection to qlogin_starter
+ * @param port reference to port number, see RESULT
+ * @param job_dir reference to job_dir, see RESULT
+ * @param utilbin_dir reference to utilbin_dir, see RESULT
+ * @param host reference to host, see RESULT
+ *
+ * @return 1, if everything ok, 0, if the required parameters are not found [port]        - used to return the port number to caller [job_dir]     - used to return the job directory to caller [utilbin_dir] - used to return the utilbin directory on the remote host [host]        - used to return the host, to which to connect with rsh/rlogin/telnet call
+ *
+ * @note port and data point to a static buffer in function
+ *       read_from_qrsh_socket(). Subsequent calls to this function
+ *       will overwrite this buffer.
+ *
+ * @see #read_from_qrsh_socket
+ */
 static int get_client_server_context(int msgsock, char **port, char **job_dir, char **utilbin_dir, const char **host)
 {
    char *s_code = nullptr;
@@ -914,44 +809,31 @@ static int get_client_server_context(int msgsock, char **port, char **job_dir, c
    DRETURN(0);
 }
 
-/****** Interactive/qsh/get_client_name() ***************************************
-*
-*  NAME
-*     get_client_name -- get path and name of client program to start
-*
-*  SYNOPSIS
-*     static const char *
-*     get_client_name(int is_rsh, int is_rlogin, int inherit_job);
-*
-*  FUNCTION
-*     Determines path and name of the client program to start
-*     (telnet, rsh, rlogin etc.).
-*     Takes into consideration the cluster and host configuration.
-*     If no value is set for the client program (value none), use
-*     telnet in qlogin mode (try to find in path) or
-*     $SGE_ROOT/utilbin/$ARCH/[rsh|rlogin] in rsh/rlogin mode.
-*
-*     In case of qrexec (inherit_job), try to read client name
-*     from environment variable SGE_RSH_COMMAND, which is set by
-*     sge_execd in the job environment.
-*  INPUTS
-*     is_rsh      - are we treating a qrsh call
-*     is_rlogin   - are we treating a qrsh call without commands
-*                   (-> rlogin)
-*     inherit_job - we have inherited an existing environment
-*
-*  RESULT
-*     path and name of client program
-*     nullptr, if an error occures
-*
-*  NOTE
-*     It is in the responsibility of the caller to free the client name!
-*
-*  MT-NOTE
-*     get_client_name is thread safe
-****************************************************************************
-*
-*/
+/**
+ * @brief Get path and name of client program to start
+ *
+ * Determines path and name of the client program to start
+ * (telnet, rsh, rlogin etc.).
+ * Takes into consideration the cluster and host configuration.
+ * If no value is set for the client program (value none), use
+ * telnet in qlogin mode (try to find in path) or
+ * $SGE_ROOT/utilbin/$ARCH/[rsh|rlogin] in rsh/rlogin mode.
+ * In case of qrexec (inherit_job), try to read client name
+ * from environment variable SGE_RSH_COMMAND, which is set by
+ * sge_execd in the job environment.
+ *
+ * @param is_rsh are we treating a qrsh call
+ * @param is_rlogin are we treating a qrsh call without commands (-> rlogin)
+ * @param inherit_job we have inherited an existing environment
+ *
+ * @return path and name of client program nullptr, if an error occures
+ *
+ * @note It is in the responsibility of the caller to free the client name!
+ *
+ *       MT-NOTE
+ *       get_client_name is thread safe
+ *       ***************************************************************************
+ */
 static const char *
 get_client_name(int is_rsh, int is_rlogin, int inherit_job)
 {
@@ -1068,28 +950,18 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job)
    return client_name;
 }
 
-/****** Interactive/qsh/set_job_info() ****************************************
-*
-*  NAME
-*     set_job_info -- info about interactive job for execd/shepherd
-*
-*  SYNOPSIS
-*     static void set_job_info(lListElem *job, const char *name,
-*                              int is_qlogin, int is_rsh,
-*                              int is_rlogin);
-*
-*  FUNCTION
-*     Sets the flag JB_type and the jobname JB_job_name to reasonable
-*     values depending on the startmode of the qsh binary:
-*
-*  INPUTS
-*     job       - job data structure
-*     name      - name of the program to start - if called with path,
-*                 the path is stripped
-*     is_qlogin - are we treating a qlogin call
-*     is_rsh    - are we treating a qrsh call
-*     is_rlogin - are we treating a qrsh call without commands (-> rlogin)
-*******************************************************************************/
+/**
+ * @brief Info about interactive job for execd/shepherd
+ *
+ * Sets the flag JB_type and the jobname JB_job_name to reasonable
+ * values depending on the startmode of the qsh binary:
+ *
+ * @param job job data structure
+ * @param name name of the program to start - if called with path, the path is stripped
+ * @param is_qlogin are we treating a qlogin call
+ * @param is_rsh are we treating a qrsh call
+ * @param is_rlogin are we treating a qrsh call without commands (-> rlogin)
+ */
 static void set_job_info(lListElem *job, const char *name, int is_qlogin,
                          int is_rsh, int is_rlogin)
 {
@@ -1132,36 +1004,27 @@ static void set_job_info(lListElem *job, const char *name, int is_qlogin,
    lFreeList(&stdout_stderr_path);
 }
 
-/****** Interactive/qsh/set_command_to_env() ***************************************
-*
-*  NAME
-*     set_command_to_env() -- set command to execute in environment variable
-*
-*  SYNOPSIS
-*     static void set_command_to_env(lList *envlp, lList *opts_qrsh);
-*
-*  FUNCTION
-*     Creates an environment variable QRSH_COMMAND in the environment list
-*     <envlp>, that contains the commandline passed in the argument list
-*     <opts_qrsh>.
-*     Arguments are separated by the character code 0xff.
-*
-*  INPUTS
-*     envlp     - environment list
-*     opts_qrsh - list of commandline arguments
-*
-*  BUGS
-*     In general, passing the commandline via environment variable is only
-*     a workaround for the problems occuring when passing the commandline
-*     via rsh command (quoting, backquotes etc. through several shells).
-*
-*     Better would be to pass the commandline over a save (not modifying)
-*     mechanism, e.g. passing each argument as a line over file (not possible)
-*     or a socket connection.
-*
-****************************************************************************
-*
-*/
+/**
+ * @brief Set command to execute in environment variable
+ *
+ * Creates an environment variable QRSH_COMMAND in the environment list
+ * `envlp`, that contains the commandline passed in the argument list
+ * `opts_qrsh`.
+ * Arguments are separated by the character code 0xff.
+ *
+ * @param envlp environment list
+ * @param opts_qrsh list of commandline arguments
+ *
+ * @bug In general, passing the commandline via environment variable is only
+ *      a workaround for the problems occuring when passing the commandline
+ *      via rsh command (quoting, backquotes etc. through several shells).
+ *
+ *      Better would be to pass the commandline over a save (not modifying)
+ *      mechanism, e.g. passing each argument as a line over file (not possible)
+ *      or a socket connection.
+ *
+ *      ***************************************************************************
+ */
 static void set_command_to_env(lList *envlp, lList *opts_qrsh)
 {
    dstring buffer = DSTRING_INIT;
@@ -1198,27 +1061,18 @@ static void set_command_to_env(lList *envlp, lList *opts_qrsh)
    sge_dstring_free(&buffer);
 }
 
-/****** qsh/set_builtin_ijs_signals_and_handlers() *****************************
-*  NAME
-*     set_builtin_ijs_signals_and_handlers() -- sets signal mask and handlers
-*                                               for the builtin interactive
-*                                               job support
-*
-*  SYNOPSIS
-*     static void set_builtin_ijs_signals_and_handlers()
-*
-*  FUNCTION
-*     In the builtin interactive job support, qsh/qrsh/qlogin need to catch
-*     specific signals. The mask and handlers for this signals must be set
-*     before the first thread (which is a commlib thread) is created, so that
-*     every thread inherits the mask and handlers.
-*
-*  RESULT
-*     static void - no result
-*
-*  NOTES
-*     MT-NOTE: set_builtin_ijs_signals_and_handlers() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Sets signal mask and handlers
+ *
+ * In the builtin interactive job support, qsh/qrsh/qlogin need to catch
+ * specific signals. The mask and handlers for this signals must be set
+ * before the first thread (which is a commlib thread) is created, so that
+ * every thread inherits the mask and handlers.
+ *
+ * @note static void - no result
+ *
+ * @note MT-NOTE: set_builtin_ijs_signals_and_handlers() is not MT safe
+ */
 static void set_builtin_ijs_signals_and_handlers()
 {
    sge_set_def_sig_mask(nullptr, nullptr);
@@ -1226,41 +1080,22 @@ static void set_builtin_ijs_signals_and_handlers()
    set_signal_handlers();
 }
 
-/****** qsh/write_builtin_ijs_connection_data_to_job_object() ******************
-*  NAME
-*     write_builtin_ijs_connection_data_to_job_object() -- writes the connection
-*                                                         data to the job object
-*
-*  SYNOPSIS
-*     static void write_builtin_ijs_connection_data_to_job_object(const char*
-*     qualified_hostname, lListElem *job, lList *opts_qrsh)
-*
-*  FUNCTION
-*     Writes the data necessary to connect to the commlib server that was
-*     started before this function gets called to the job object.
-*
-*  INPUTS
-*     const char* qualified_hostname - The qualified hostname of this host.
-*                                      Returned by sge_gethostbyname().
-*     int port                       - The TCP/SSL/??? port this server is
-*                                      listening on for new connections
-*     lListElem *job                 - The job object where the connection data
-*                                      gets written to.
-*     lList *opts_qrsh               - The command line of this command. We need
-*                                      the name of the binary from the command
-*                                      line, the shepherd must know which kind
-*                                      of interactive job this is.
-*
-*  OUTPUTS
-*     lListElem *job                 - The job object where the connection data
-*                                      gets written to.
-*
-*  RESULT
-*     static void -  no result
-*
-*  NOTES
-*     MT-NOTE: write_builtin_ijs_connection_data_to_job_object() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Writes the connection
+ *
+ * Writes the data necessary to connect to the commlib server that was
+ * started before this function gets called to the job object.
+ *
+ * @param qualified_hostname The qualified hostname of this host. Returned by sge_gethostbyname().
+ * @param port The TCP/SSL/??? port this server is listening on for new connections
+ * @param job The job object where the connection data gets written to.
+ * @param opts_qrsh The command line of this command. We need the name of the binary from the command line, the shepherd must know which kind of interactive job this is.
+ * @param job The job object where the connection data gets written to.
+ *
+ * @note static void -  no result
+ *
+ * @note MT-NOTE: write_builtin_ijs_connection_data_to_job_object() is not MT safe
+ */
 static void write_builtin_ijs_connection_data_to_job_object(
    const char* qualified_hostname,
    cl_com_handle *com_handle,
@@ -1306,38 +1141,29 @@ static void write_builtin_ijs_connection_data_to_job_object(
 #endif
 }
 
-/****** qsh/block_notification_signals() ***************************************
-*  NAME
-*     block_notification_signals() -- block signals used by -notify
-*
-*  SYNOPSIS
-*     void block_notification_signals()
-*
-*  FUNCTION
-*     Makes sure that signals used for job notification are blocked
-*     for qrsh -inherit.
-*
-*     Background: A job that is submitted with the -notify option
-*     will get a notification signal some time before certain actions
-*     are performed on the job, e.g. it gets notified with a SIGUSR2
-*     when it shall be deleted by qdel, before it actually gets killed
-*     with a SIGKILL. See submit.1 for more details.
-*
-*     Problem: The master task (job script) of a job being submitted
-*     with -notify will handle the notification signal.
-*     But the notification signal is sent to the whole process group
-*     of the job, meaning to all qrsh -inherit processes as well.
-*     But the qrsh -inherit may not exit on receiving the signal.
-*     Therefore they have to block it.
-*
-*     The default notification signals are SIGUSR1 and SIGUSR2.
-*     They can be redefined by the execd_params NOTIFY_SUSP and NOTIFY_KILL.
-*     In this case, execd sets environment variables SGE_NOTIFY_SUSP_SIGNAL
-*     and SGE_NOTIFY_KILL_SIGNAL.
-*
-*  NOTES
-*     MT-NOTE: block_notification_signals() is MT safe
-*******************************************************************************/
+/**
+ * @brief Block signals used by -notify
+ *
+ * Makes sure that signals used for job notification are blocked
+ * for qrsh -inherit.
+ * Background: A job that is submitted with the -notify option
+ * will get a notification signal some time before certain actions
+ * are performed on the job, e.g. it gets notified with a SIGUSR2
+ * when it shall be deleted by qdel, before it actually gets killed
+ * with a SIGKILL. See submit.1 for more details.
+ * Problem: The master task (job script) of a job being submitted
+ * with -notify will handle the notification signal.
+ * But the notification signal is sent to the whole process group
+ * of the job, meaning to all qrsh -inherit processes as well.
+ * But the qrsh -inherit may not exit on receiving the signal.
+ * Therefore they have to block it.
+ * The default notification signals are SIGUSR1 and SIGUSR2.
+ * They can be redefined by the execd_params NOTIFY_SUSP and NOTIFY_KILL.
+ * In this case, execd sets environment variables SGE_NOTIFY_SUSP_SIGNAL
+ * and SGE_NOTIFY_KILL_SIGNAL.
+ *
+ * @note MT-NOTE: block_notification_signals() is MT safe
+ */
 void block_notification_signals()
 {
    /* default notification signals */

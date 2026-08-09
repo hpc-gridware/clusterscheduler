@@ -35,6 +35,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the client half of interactive job support
+ */
+
 #include "cull/cull_list.h"
 #include "uti/ocs_Ternary.h"
 

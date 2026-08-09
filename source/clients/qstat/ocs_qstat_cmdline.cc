@@ -33,6 +33,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief qstat - command line parsing
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <pwd.h>

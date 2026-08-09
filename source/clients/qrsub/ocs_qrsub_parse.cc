@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qrsub - turns the command line into an advance reservation object
+ */
+
 #include <pwd.h>
 #include <cstdarg>
 #include <cstdlib>

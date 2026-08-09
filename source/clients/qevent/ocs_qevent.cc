@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qevent - an event client that prints the cluster event stream, for testing and diagnosis
+ */
+
 #include <unistd.h>
 #include <cstdio>
 #include <cstring>
@@ -700,34 +704,17 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
    DRETURN_VOID;
 }
 
-/****** qevent/qevent_subscribe_mode() *****************************************
-*  NAME
-*     qevent_subscribe_mode() -- ???
-*
-*  SYNOPSIS
-*     static void qevent_subscribe_mode(sge_evc_class_t *evc)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     sge_evc_class_t *evc - ???
-*
-*  RESULT
-*     static void -
-*
-*  EXAMPLE
-*     ???
-*
-*  NOTES
-*     MT-NOTE: qevent_subscribe_mode() is not MT safe
-*
-*  BUGS
-*     ???
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief TODO document this
+ *
+ * @param evc
+ *
+ * @note static void -
+ *
+ * @note MT-NOTE: qevent_subscribe_mode() is not MT safe
+ *
+ * @bug ???
+ */
 static void qevent_subscribe_mode(sge_evc_class_t *evc)
 {
    int event_type = SGE_TYPE_FIRST;

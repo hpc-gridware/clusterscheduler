@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qconf - the cluster queue switches
+ */
+
 #include <cstring>
 
 #include "uti/sge_edit.h"
@@ -575,22 +579,19 @@ cqueue_delete(lList **answer_list, const char *name)
    DRETURN(ret);
 }
 
-/****** resource_quota_qconf/qinstance_list_write() **************************
-*  NAME
-*     qinstance_list_write() -- print a list of resolved queue instances
-*
-*  FUNCTION
-*     Writes the resolved queue instances collected for a -sq <queue>@<host> or
-*     -sq <queue>@@<hostgroup> query. In json mode the instances are emitted as a
-*     single enveloped array ({ "qinstance": [ ... ] }) so the output is one valid
-*     json document even when the query matches several hosts; in ASCII mode each
-*     instance is printed as a separate block (blank-line separated), as before.
-*     The "qinstance" type name is passed explicitly because the QINSTANCE object
-*     type cannot be resolved from its content (it is mis-detected as exechost).
-*
-*  RESULT
-*     bool - true on success, false on error
-*******************************************************************************/
+/**
+ * @brief Print a list of resolved queue instances
+ *
+ * Writes the resolved queue instances collected for a -sq `queue`@`host` or
+ * -sq `queue`@@`hostgroup` query. In json mode the instances are emitted as a
+ * single enveloped array ({ "qinstance": [ ... ] }) so the output is one valid
+ * json document even when the query matches several hosts; in ASCII mode each
+ * instance is printed as a separate block (blank-line separated), as before.
+ * The "qinstance" type name is passed explicitly because the QINSTANCE object
+ * type cannot be resolved from its content (it is mis-detected as exechost).
+ *
+ * @return true on success, false on error
+ */
 static bool
 qinstance_list_write(lList **answer_list, const lList *qi_list)
 {
@@ -831,24 +832,16 @@ cqueue_list_sick(lList **answer_list)
    DRETURN(ret);
 }
 
-/****** insert_custom_complex_values_writer() **********************************
-*  NAME
-*     insert_custom_complex_values_writer() -- Inserts a custom writer for the
-*                                              complex_values field
-*
-*  SYNOPSIS
-*     static void insert_custom_complex_values_writer (spooling_field *fields)
-*
-*  FUNCTION
-*     Inserts a custom writer for the complex_values field of a QU field list
-*     which does not write out the "slots" complex value.
-*
-*  INPUT
-*     spooling_field *fields - The QU fields list to be used for spooling
-*
-*  NOTES
-*     MT-NOTES: insert_custom_complex_values_writer() is MT safe
-*******************************************************************************/
+/**
+ * @brief Inserts a custom writer for the
+ *
+ * Inserts a custom writer for the complex_values field of a QU field list
+ * which does not write out the "slots" complex value.
+ *
+ * @param fields The QU fields list to be used for spooling
+ *
+ * @note MT-NOTES: insert_custom_complex_values_writer() is MT safe
+ */
 static void insert_custom_complex_values_writer(spooling_field *fields)
 {
    /* First, find the complex_values field. */
@@ -868,25 +861,17 @@ static void insert_custom_complex_values_writer(spooling_field *fields)
    DRETURN_VOID;
 }
 
-/****** write_QU_consumable_config_list() **************************************
-*  NAME
-*     write_QU_consumable_config_list() -- Writes the complex_values field
-*                                          without including slots
-*
-*  SYNOPSIS
-*     static int write_QU_consumable_config_list(const lListElem *ep, int nm,
-*                                                dstring *buffer, lList **alp)
-*
-*  FUNCTION
-*     Writes the complex_values field to the buffer, but leaves out the slots
-*     entry.
-*
-*  INPUT
-*     const lListElem *ep - The QU element containing the complex_values
-*     int              nm - The nm of the field := QU_consumable_config_list
-*     dstring     *buffer - The dstring into which to print the field
-*     lList         **alp - Answer list for errors
-*******************************************************************************/
+/**
+ * @brief Writes the complex_values field
+ *
+ * Writes the complex_values field to the buffer, but leaves out the slots
+ * entry.
+ *
+ * @param ep The QU element containing the complex_values
+ * @param nm The nm of the field := QU_consumable_config_list
+ * @param buffer The dstring into which to print the field
+ * @param alp Answer list for errors
+ */
 static int write_QU_consumable_config_list(const lListElem *ep, int nm,
                                            dstring *buffer, lList **alp)
 {
