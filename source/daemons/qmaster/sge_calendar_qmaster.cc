@@ -285,6 +285,21 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    DRETURN_VOID;
 } /* sge_calendar_event_handler() */
 
+/** @brief Put the queues following a calendar into the state it now prescribes
+ *
+ * Runs both when the calendar is changed and when a calendar event fires, so a
+ * queue reaches the right state whether the change came from an administrator
+ * or from the clock.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cep the calendar
+ * @param old_cep the calendar as it was, or nullptr when a timer triggered this
+ * @param object the table entry for calendars, or nullptr when a timer triggered this
+ * @param ppList receives information for post processing
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lListElem *old_cep, gdi_object_t *object,
                                  lList **ppList, monitoring_t *monitor) {
    const char *cal_name = lGetString(cep, CAL_name);

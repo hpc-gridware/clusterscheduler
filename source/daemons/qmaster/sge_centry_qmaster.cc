@@ -69,8 +69,22 @@
 #include "msg_qmaster.h"
 
 
-/* ------------------------------------------------------------ */
-
+/** @brief Apply one attribute change to a complex entry
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param answer_list receives messages for the caller
+ * @param centry see the description above
+ * @param reduced_elem see the description above
+ * @param add 1 for add, 0 for modify
+ * @param remote_user see the description above
+ * @param remote_host see the description above
+ * @param object the table entry for this object type
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return see the description above
+ */
 int
 centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *centry, lListElem *reduced_elem, int add,
            const char *remote_user, const char *remote_host, gdi_object_t *object,
@@ -243,8 +257,15 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
    }
 }
 
-/* ------------------------------------------------------------ */
-
+/** @brief Write a complex entry to the spool
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param cep see the description above
+ * @param object the table entry for this object type
+ * @return see the description above
+ */
 int
 centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
    lList *answer_list = nullptr;

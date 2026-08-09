@@ -184,10 +184,15 @@ reporting_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
    DRETURN_VOID;
 } /* reporting_trigger_handler() */
 
-/*
-* NOTES
-*     MT-NOTE: intermediate_usage_written() is MT-safe
-*/
+/** @brief Has an interim accounting record already been written for this task?
+ *
+ * NOTES
+ * MT-NOTE: intermediate_usage_written() is MT-safe
+ *
+ * @param job_report see the description above
+ * @param ja_task the array task
+ * @return see the description above
+ */
 bool
 intermediate_usage_written(const lListElem *job_report, const lListElem *ja_task) {
    bool ret = false;

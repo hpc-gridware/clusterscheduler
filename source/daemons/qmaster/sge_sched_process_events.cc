@@ -93,8 +93,10 @@ event_update_func(uint32_t ec_id, lList **alpp, lList *event_list, void *arg)
 
 /*********************************************/
 /*  event client registration stuff          */
-/*********************************************/
-
+/** @brief Decide whether a job change should trigger a scheduling run
+ *
+ * @param evc see the description above
+ */
 void
 set_job_flushing(sge_evc_class_t *evc)
 {

@@ -62,22 +62,25 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
-/************************************************************************
- Master routine for job exit
-
- We need a rusage struct filled.
- In normal cases this is done by the execd, sending this structure
- to notify master about job finish.
-
- In case of an error noticed by the master which needs the job to be 
- removed we can fill this structure by hand. We need:
-
- rusage->job_number
- rusage->qname to clean up the queue (if we didn't find it we nevertheless
-               clean up the job
-
- for functions regarding rusage see sge_rusage.c
- ************************************************************************/
+/** @brief Handle the end of a job reported by its execution host
+ *
+ * Master routine for job exit
+ * We need a rusage struct filled.
+ * In normal cases this is done by the execd, sending this structure
+ * to notify master about job finish.
+ * In case of an error noticed by the master which needs the job to be
+ * removed we can fill this structure by hand. We need:
+ * rusage->job_number
+ * rusage->qname to clean up the queue (if we didn't find it we nevertheless
+ * clean up the job
+ * for functions regarding rusage see sge_rusage.c
+ *
+ * @param jr the job report
+ * @param jep the job (`JB_Type`)
+ * @param jatep the array task
+ * @param monitor for monitoring qmaster threads
+ * @param gdi_session the session the change belongs to
+ */
 void
 sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *monitor, uint64_t gdi_session) {
    DENTER(TOP_LAYER);

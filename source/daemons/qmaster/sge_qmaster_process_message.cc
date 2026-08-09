@@ -267,6 +267,16 @@ sge_qmaster_process_message(monitoring_t *monitor) {
    DRETURN_VOID;
 } /* sge_qmaster_process_message */
 
+/** @brief The data store that satisfies both of two requirements
+ *
+ * A request that touches several object types has to be answered from one
+ * store, and that store must be at least as current as the strictest of them
+ * demands - otherwise part of the answer would come from a stale mirror.
+ *
+ * @param type1 one requirement
+ * @param type2 the other
+ * @return the more restrictive of the two
+ */
 ocs::DataStore::Id
 get_most_restrictive_datastore(ocs::DataStore::Id type1, ocs::DataStore::Id type2) {
    if (type1 == type2) {

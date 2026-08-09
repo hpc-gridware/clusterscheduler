@@ -116,10 +116,16 @@ get_entry_from_conf(lListElem *aConf, const char *anEntryName);
 static uint32_t
 sge_get_config_version_for_host(const char *aName);
 
-/* 
+/** @brief Read the cluster configuration from the spool at startup
+ *
  * Read the cluster configuration from secondary storage using 'aSpoolContext'.
  * This is the bootstrap function for the configuration module. It does populate
  * the list with the cluster configuration.
+ *
+ * @param aSpoolContext the spooling context to read through
+ * @param config_list receives the configurations
+ * @param answer_list receives messages for the caller
+ * @return 0 on success
  */
 int
 sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lList **answer_list) {
@@ -206,11 +212,19 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
    DRETURN(0);
 }
 
-/*
- * Delete configuration 'confp' from cluster configuration.
+/** @brief Delete a host's local configuration
  *
- * TODO: A fix for IZ issue #79 is needed. For this to be done it may be 
+ * Delete configuration 'confp' from cluster configuration.
+ * TODO: A fix for IZ issue #79 is needed. For this to be done it may be
  * necessary to introduce something like 'protected' configuration entries.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param aConf the configuration to delete
+ * @param anAnswer receives messages for the caller
+ * @param aUser the requesting user
+ * @param aHost the requesting host
+ * @return STATUS_OK on success
  */
 int
 sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *aConf, lList **anAnswer, char *aUser, char *aHost) {
@@ -657,11 +671,15 @@ check_config(lList **alpp, lListElem *conf) {
 }
 
 
-/*
+/** @brief Has a host's effective configuration changed since it last asked?
+ *
  * Compare configuration 'aConf' for host 'aHost' with the cluster configuration.
  * Return '0' if 'aConf' is equal to the cluster configuration, '1' otherwise.
- *
  * 'aHost' is of type 'EH_Type', 'aConf' is of type 'CONF_Type'.
+ *
+ * @param aHost the execution host
+ * @param aConf the configuration the host currently holds
+ * @return 0 when the two are the same
  */
 int
 sge_compare_configuration(const lListElem *aHost, const lList *aConf) {
@@ -692,10 +710,15 @@ sge_compare_configuration(const lListElem *aHost, const lList *aConf) {
 }
 
 
-/*
+/** @brief One entry of a host's effective configuration
+ *
  * Return a *COPY* of configuration entry 'anEntryName'. First we do query the
  * local configuration 'aHost'. If that is fruitless, we try the global
- * configuration. 
+ * configuration.
+ *
+ * @param aHost the execution host
+ * @param anEntryName the entry to read
+ * @return the entry, or nullptr when it is not set
  */
 lListElem *
 sge_get_configuration_entry_by_name(const char *aHost, const char *anEntryName) {
@@ -728,8 +751,13 @@ get_entry_from_conf(lListElem *aConf, const char *anEntryName) {
    return lCopyElem(elem);
 }
 
-/*
+/** @brief The configurations matching a condition
+ *
  * Return a *COPY* of the master configuration.
+ *
+ * @param condition which configurations to return
+ * @param enumeration which fields to include
+ * @return the matching configurations, which the caller owns
  */
 lList *
 sge_get_configuration(const lCondition *condition, const lEnumeration *enumeration) {
@@ -785,10 +813,14 @@ sge_get_config_version_for_host(const char *aName) {
    DRETURN(version);
 }
 
-/*
+/** @brief A host's effective configuration: global, with its local entries applied
+ *
  * Return a *COPY* of the configuration for host 'aName'. The host name 'aName'
  * will be resolved to eliminate any host name differences caused by the
  * various host name formats or the host name alias mechanism.
+ *
+ * @param aName the execution host
+ * @return the configuration, which the caller owns
  */
 lListElem *
 sge_get_configuration_for_host(const char *aName) {

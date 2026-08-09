@@ -463,6 +463,15 @@ sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *up_ep
    DRETURN(STATUS_OK);
 }
 
+/** @brief Check that every named project exists
+ * @param alpp receives messages for the caller
+ * @param name_list the project names to verify
+ * @param prj_list the known projects
+ * @param attr_name the attribute the names came from, for the message
+ * @param obj_descr what kind of object it belongs to, for the message
+ * @param obj_name the object's name, for the message
+ * @return STATUS_OK when every project exists
+ */
 int
 verify_project_list(lList **alpp, const lList *name_list, const lList *prj_list, const char *attr_name,
                     const char *obj_descr, const char *obj_name) {

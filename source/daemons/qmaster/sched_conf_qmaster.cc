@@ -78,12 +78,19 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, u
 }
 
 
-/************************************************************
-  sge_mod_sched_configuration - Master code
-
-  Modify scheduler configuration. We have only one entry in
-  Master_Sched_Config_List. So we replace it with the new one.
- ************************************************************/
+/** @brief Replace the scheduler configuration
+ *
+ * Modify scheduler configuration. We have only one entry in
+ * Master_Sched_Config_List. So we replace it with the new one.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param confp see the description above
+ * @param alpp receives messages for the caller
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return see the description above
+ */
 int
 sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *confp, lList **alpp, char *ruser, char *rhost) {
    lList *temp_conf_list = nullptr;

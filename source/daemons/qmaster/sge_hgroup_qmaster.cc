@@ -386,8 +386,14 @@ hgroup_rollback(lListElem *this_elem) {
    DRETURN_VOID;
 }
 
-/* CS-2438 chunk 7: same rollback, reachable from the @exec_hosts sync in
- * sge_host_qmaster.cc, which builds the pending queue copies the same way. */
+/** @brief Discard the pending queue copies a failed host group change built
+ *
+ * CS-2438 chunk 7: same rollback as hgroup_rollback(), reachable from the
+ * `@exec_hosts` sync in `sge_host_qmaster.cc`, which builds the pending queue
+ * copies the same way.
+ *
+ * @param hgroup the host group
+ */
 void
 hgroup_rollback_cqueues(lListElem *hgroup) {
    hgroup_rollback(hgroup);

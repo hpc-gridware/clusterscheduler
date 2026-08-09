@@ -124,6 +124,12 @@ qmod_job_reschedule(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *j
 
 /*-------------------------------------------------------------------------*/
 
+/** @brief Handle a `qmod` request: suspend, resume, enable, disable, reschedule
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param monitor for monitoring qmaster threads
+ */
 void
 sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -1034,7 +1040,15 @@ rebuild_signal_events() {
    DRETURN_VOID;
 } /* rebuild_signal_events() */
 
-/* this function is called by our timer mechanism for resending signals */
+/** @brief Send a signal again to a job or queue that has not reacted
+ *
+ * This function is called by our timer mechanism for resending signals: the
+ * handler for #TYPE_SIGNAL_RESEND_EVENT. A signal is not acknowledged
+ * synchronously, so it is repeated until the state actually changes.
+ *
+ * @param anEvent the timed event that fired
+ * @param monitor for monitoring qmaster threads
+ */
 void
 resend_signal_event(te_event_t anEvent, monitoring_t *monitor) {
    lListElem *qep, *jep, *jatep;
@@ -1102,11 +1116,19 @@ sge_propagate_queue_suspension(const char *qnm, int how) {
    DRETURN_VOID;
 }
 
-/************************************************************************
- This is called by the qmaster to:
- - send a signal to all jobs in a queue (job_number == 0);
- - send a signal to one job
- ************************************************************************/
+/** @brief Signal a queue instance, or one job in it
+ *
+ * This is called by the qmaster to:
+ * - send a signal to all jobs in a queue (job_number == 0);
+ * - send a signal to one job
+ *
+ * @param how the signal to send
+ * @param qep the queue instance
+ * @param jep the job, or nullptr to signal every job in the queue
+ * @param jatep the array task, or nullptr
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, monitoring_t *monitor) {
    int i;
