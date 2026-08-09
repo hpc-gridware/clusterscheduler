@@ -78,6 +78,7 @@ if (DOXYGEN_FOUND)
          source/daemons/shadowd
          source/daemons/common
          source/daemons/shepherd
+         source/daemons/execd
    )
 
    if (DXM_FINISHED_MODULES)
