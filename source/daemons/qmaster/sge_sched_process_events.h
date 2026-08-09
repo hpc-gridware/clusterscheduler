@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Deciding which events should trigger a scheduling run
  */
 
 #include "evc/sge_event_client.h"

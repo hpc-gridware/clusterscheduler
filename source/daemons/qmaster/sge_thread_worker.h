@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief The threads that answer requests which change something
  */
 
 #include <pthread.h>

@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Scheduling categories: deciding once for every job that looks alike
  */
 
 #include "uti/sge_log.h"

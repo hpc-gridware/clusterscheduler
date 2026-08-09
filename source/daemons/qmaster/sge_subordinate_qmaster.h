@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Subordinate queues, including the slot-wise suspension tree
  */
 
 #include "uti/sge_monitor.h"

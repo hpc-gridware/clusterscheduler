@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Users and projects
  */
 /*
    This is the module for handling users and projects.

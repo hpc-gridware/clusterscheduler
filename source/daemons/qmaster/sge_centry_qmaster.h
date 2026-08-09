@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Complex entries: the resources a cluster knows about
  */
 
 #include "sge_c_gdi.h"

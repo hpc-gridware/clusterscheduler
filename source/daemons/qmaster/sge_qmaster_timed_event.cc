@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief The timer qmaster hangs all its periodic and deferred work on
  */
 
 #include <cstring>

@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Handling the end of a job as reported by its execution host
  */
 #include <cstring>
 

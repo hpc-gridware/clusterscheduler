@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief What the two reporting file writers share
  */
 
 #include "uti/sge_time.h"

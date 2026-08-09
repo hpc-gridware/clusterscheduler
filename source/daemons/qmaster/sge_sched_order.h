@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Batching the scheduler's orders and sending them to qmaster
  */
 
 #include "uti/sge_sl.h"

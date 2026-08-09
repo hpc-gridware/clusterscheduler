@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Spooling an object and announcing the change as one operation
  */
 
 #include "sgeobj/sge_event.h"

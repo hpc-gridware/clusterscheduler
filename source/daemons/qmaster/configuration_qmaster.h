@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief The global and per-host configurations, and how a host learns they changed
  */
 
 #include <cinttypes>

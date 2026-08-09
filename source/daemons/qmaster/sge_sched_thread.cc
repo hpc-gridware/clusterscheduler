@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief The scheduler thread inside qmaster, and the lists it schedules from
  */
 #include <cstring>
 #include <pthread.h>

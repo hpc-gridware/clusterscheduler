@@ -20,7 +20,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Deferred spooling and event emission for share tree usage
  */
 
 #include <cstdint>

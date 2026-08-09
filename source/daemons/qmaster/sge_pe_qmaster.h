@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Parallel environments, and the slots booked against them
  */
 
 #include "sge_c_gdi.h"

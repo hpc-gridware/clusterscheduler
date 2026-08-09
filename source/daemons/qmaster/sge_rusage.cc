@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief One finished job, as it is written to the accounting and reporting files
  */
 #include <cstring>
 

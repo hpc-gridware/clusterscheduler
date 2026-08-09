@@ -20,7 +20,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Base of the read-only data stores kept current by a mirror thread
  */
 
 #include "mir/ocs_MirrorDataStore.h"

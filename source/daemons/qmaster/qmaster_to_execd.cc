@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Telling an execution host something, and coping when it is unreachable
  */
 #include <cstring>
 

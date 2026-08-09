@@ -20,7 +20,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief The threads that answer read-only requests from a mirror store
  */
 
 #include <pthread.h>

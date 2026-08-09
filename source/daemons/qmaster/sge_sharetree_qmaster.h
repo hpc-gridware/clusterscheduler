@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief The share tree, and carrying usage across a replacement
  */
 
 #include "sgeobj/sge_daemonize.h"

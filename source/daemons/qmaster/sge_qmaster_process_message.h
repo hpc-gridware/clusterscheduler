@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Receiving a message and routing it to the thread that answers it
  */
 
 #include "uti/sge_monitor.h"

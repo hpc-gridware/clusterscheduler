@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief qmaster's threads, and the state the main thread keeps about them
  */
 
 #include <fcntl.h>

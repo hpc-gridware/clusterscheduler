@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief The event subscription the scheduler runs with
  */
 
 #include <cstdio>

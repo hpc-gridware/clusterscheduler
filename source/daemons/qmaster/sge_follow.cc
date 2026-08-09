@@ -35,7 +35,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Following the scheduler's orders and booking the usage they imply
  */
 #include <cstring>
 #include <pthread.h>

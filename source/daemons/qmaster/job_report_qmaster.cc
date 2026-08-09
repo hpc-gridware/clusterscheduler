@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Reconciling an execution host's job reports with what qmaster believes
  */
 #include <cstring>
 

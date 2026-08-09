@@ -20,7 +20,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Granting resource map ids to a scheduled task
  */
 
 #include "cull_list.h"

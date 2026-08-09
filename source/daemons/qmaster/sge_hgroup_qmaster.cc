@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Host groups, and the queue instances that follow their membership
  */
 
 #include <cstdio>

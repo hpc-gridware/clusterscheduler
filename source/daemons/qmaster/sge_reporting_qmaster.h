@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief The classic delimiter-separated accounting and reporting files
  */
 
 #include "uti/sge_dstring.h"

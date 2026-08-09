@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Rescheduling the jobs of a host that stopped answering
  */
 
 #include "sge_qmaster_timed_event.h"

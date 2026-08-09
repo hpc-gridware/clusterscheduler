@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief The generic GDI request path: one table, every configuration object
  */
 
 #include <cstring>

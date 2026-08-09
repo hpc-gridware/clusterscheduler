@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief The read-only data store the listener threads answer from
  */
 
 #include "sgeobj/sge_host.h"

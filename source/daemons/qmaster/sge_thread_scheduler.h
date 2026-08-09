@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Starting and stopping the scheduler thread while qmaster runs
  */
 
 #include <pthread.h>

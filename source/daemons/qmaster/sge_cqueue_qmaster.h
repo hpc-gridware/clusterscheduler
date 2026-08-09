@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Cluster queues, and the queue instances they expand into
  */
 
 #include "sge_c_gdi.h"

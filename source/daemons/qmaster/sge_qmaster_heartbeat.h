@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief The heartbeat qmaster bumps so the shadow daemons see it alive
  */
 
 #include "sgeobj/sge_daemonize.h"

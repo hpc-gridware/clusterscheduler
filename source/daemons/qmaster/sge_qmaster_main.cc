@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief sge_qmaster - the cluster's master daemon
  */
 
 #include <csignal>

@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Handling qmod: suspending, resuming, enabling and rescheduling
  */
 
 #include "uti/sge_monitor.h"

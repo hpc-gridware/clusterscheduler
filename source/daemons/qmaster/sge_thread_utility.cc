@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Helpers shared by the qmaster threads
  */
 
 #include "uti/sge_rmon_macros.h"

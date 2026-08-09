@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Array task dependencies
  */
 
 #include "sgeobj/sge_object.h"

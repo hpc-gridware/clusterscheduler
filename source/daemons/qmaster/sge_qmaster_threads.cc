@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Starting and stopping qmaster's thread pools
  */
 
 #include <csignal>

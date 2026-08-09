@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Enforcing the resource limits of running jobs
  */
 
 #include <cinttypes>

@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Finished-job retention: booking final usage and pruning later
  */
 
 #include "uti/sge_rmon_macros.h"

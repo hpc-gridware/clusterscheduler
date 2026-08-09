@@ -35,7 +35,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Handing a job to an execution host, and burying it when it ends
  */
 #include <cstdlib>
 #include <cstring>

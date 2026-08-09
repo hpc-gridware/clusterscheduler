@@ -35,7 +35,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Queue instances: the state a queue has on one host
  */
 
 #include <cstdio>

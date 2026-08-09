@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief A minimal class used to exercise the build and the test harness
  */
 
 #include <iostream>

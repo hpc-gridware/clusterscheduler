@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Execution, submit and admin hosts
  */
 
 #include "uti/sge_monitor.h"

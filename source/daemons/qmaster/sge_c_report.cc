@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Receiving load and job reports from the execution hosts
  */
 
 #include "sge_c_report.h"

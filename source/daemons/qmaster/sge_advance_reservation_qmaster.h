@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Advance reservations: booking resources ahead of the jobs that will use them
  */
 
 #include "uti/sge_monitor.h"

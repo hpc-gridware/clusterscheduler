@@ -20,7 +20,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Brokering a client's reconnect to a running interactive job
  */
 
 #include <sys/types.h>

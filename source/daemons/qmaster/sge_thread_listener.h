@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief The threads that accept connections and answer what they can alone
  */
 
 #include <pthread.h>

@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Bringing qmaster up: spool, master lists, built-in complexes and threads
  */
 
 #include "sgeobj/sge_daemonize.h"

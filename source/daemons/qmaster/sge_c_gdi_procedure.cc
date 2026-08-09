@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief TODO describe this file
+ * @brief Dispatching a procedure call that arrived over GDI
  */
 
 #include <sstream>
