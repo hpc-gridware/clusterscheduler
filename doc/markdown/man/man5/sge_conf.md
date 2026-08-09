@@ -1409,9 +1409,38 @@ till the update is performed.
 ***MAX_DYN_EC***
 
 Sets the max number of dynamic event clients (as used by qsub -sync y and by xxQS_NAMExx DRMAA API library 
-sessions). The default is set to 1000. The number of dynamic event clients should not be bigger than
-half of the number of file descriptors the system has. The number of file descriptors are shared among the 
-connections to all exec hosts, all event clients, and file handles that the qmaster needs.
+sessions). The default is set to 1000.
+
+Every event client occupies one file descriptor of the `sge_qmaster` process. Those descriptors are shared with
+the connections to all exec hosts and with the files `sge_qmaster` holds open itself, so the configured value is
+capped by the number of file descriptors available to the process. The cap is applied at startup and again
+whenever the configuration is changed, and it is derived from the soft `RLIMIT_NOFILE` limit of `sge_qmaster`:
+
+    MAX_DYN_EC <= soft RLIMIT_NOFILE - 45
+
+Of those 45 reserved descriptors, 20 are held back by the communication library for its own use and 25 are left
+for the remainder of `sge_qmaster`. In the unusual case that fewer than 25 descriptors remain after the
+communication library has taken its share, the limit becomes 1.
+
+A configured value is only ever reduced, never raised, so a value below the cap always takes effect unchanged.
+When the value does exceed the cap, it is reduced and the following message is written to the `sge_qmaster`
+messages file:
+
+    nr of dynamic event clients exceeds max file descriptor limit, setting MAX_DYN_EC=<value>
+
+The value that finally takes effect is logged as:
+
+    max dynamic event clients is set to <value>
+
+The cap is an upper bound, not a recommendation. Since the same descriptors also serve the connections to all
+exec hosts, the number of dynamic event clients should be kept well below it - not more than half of the file
+descriptors available to `sge_qmaster` is a reasonable guideline.
+
+To allow more dynamic event clients, raise the file descriptor limit of the `sge_qmaster` process before
+increasing *MAX_DYN_EC*, for example with `LimitNOFILE=` in its systemd unit or with `ulimit -n` in its startup
+environment. A soft `RLIMIT_NOFILE` limit below 32 is rejected by the communication library with "operating
+system provides too few file descriptors (at least 32 are required)" and `sge_qmaster` cannot set up
+communication at all.
 
 ***MONITOR_TIME*** 
 
