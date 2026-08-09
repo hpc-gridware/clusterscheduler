@@ -31,6 +31,28 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Keeps a job's AFS token alive for as long as the job runs
+ *
+ * An AFS token expires. A job that outlives its token loses access to the
+ * filesystem it was submitted from, part of the way through. The shepherd
+ * therefore starts one `sge_coshepherd` per job, which does nothing but wait
+ * and renew.
+ *
+ * Two details decide its whole shape:
+ *
+ * - **It is told to stop by a file, not by a signal.** The token file is the
+ *   liveness marker: while it exists the job is running, and when the shepherd
+ *   removes it at job end this process sees it gone and exits. That is why the
+ *   loop stats the file every #SLEEP seconds rather than waiting for anything.
+ * - **It renews early, not on expiry.** `renew_before` is a tenth of the token
+ *   lifetime, capped at 30 minutes, so a renewal that fails still leaves time
+ *   for the next attempt before the token actually runs out.
+ *
+ * Usage: `sge_coshepherd <command> <user> <token_extend_time>`, where
+ * `command` is the site's token renewal program.
+ */
 #include <cstdio>
 #include <cstring>
 #include <sys/types.h>
@@ -56,6 +78,14 @@ static void show_coshepherd_version() {
    printf("   %-40.40s %s\n", MSG_GDI_USAGE_help_OPT , MSG_GDI_UTEXT_help_OPT);
 
 }
+
+/** @def SLEEP
+ * @brief How often the token file is checked, in seconds
+ *
+ * Defined inside `main()` and used only there. It bounds how long the process
+ * lingers after the job has ended, so it trades that delay against how often a
+ * mostly idle process wakes up.
+ */
 
 int main(int argc, char *argv[])
 {

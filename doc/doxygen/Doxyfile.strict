@@ -107,11 +107,24 @@ RECURSIVE              = YES
 #
 # EXCLUDE_PATTERNS is repeated rather than appended because @INCLUDE brings the
 # main Doxyfile's value along, and doxygen has no += for it.
+# source/security/gss and source/security/krb are the Sun-era Kerberos and GSSAPI
+# support: 16 files, ~4900 lines. Neither directory has a CMakeLists.txt, neither
+# is named by any add_subdirectory or any other build file, and the one place the
+# rest of the tree reaches them - ocs_gdi_security.h - does so under
+# `#ifdef KERBEROS`, which no cmake file in the repository ever defines. The code
+# therefore cannot be built as the tree stands.
+#
+# Excluded on the same criterion `06` already applies to source/experimental:
+# out of scope while it is not built, revisit if it ever is. source/security's
+# third subdirectory, coshepherd, IS built and stays in scope.
+# Decision 2026-08-10.
 EXCLUDE_PATTERNS       = */._* \
                          */msg_*.h \
                          */sge_spooling_flatfile_scanner.cc \
                          */com_sun_grid_drmaa_SessionImpl.h \
-                         */jdrmaa/*.java
+                         */jdrmaa/*.java \
+                         */source/security/gss/* \
+                         */source/security/krb/*
 
 # main() and usage() exist once per program, with the same signature every time,
 # and doxygen treats same-named file-scope functions across translation units as

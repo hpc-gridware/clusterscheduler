@@ -81,6 +81,7 @@ if (DOXYGEN_FOUND)
          source/daemons/execd
         source/daemons/qmaster
         source/common
+        source/security
    )
 
    if (DXM_FINISHED_MODULES)
