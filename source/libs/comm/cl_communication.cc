@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The protocol layer under the public interface
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cerrno>
@@ -62,6 +66,12 @@
 #include "comm/cl_communication.h"
 #include "comm/msg_commlib.h"
 
+/** @def CL_DO_COMMUNICATION_DEBUG
+ * @brief Log every state transition of every connection
+ *
+ * Off by default; what it produces is only readable when chasing one
+ * connection that will not complete its handshake.
+ */
 #define CL_DO_COMMUNICATION_DEBUG 0
 
 #if CL_DO_COMMUNICATION_DEBUG
@@ -105,6 +115,11 @@ static bool cl_com_default_ssl_verify_func(cl_ssl_verify_mode_t mode, bool servi
 }
 #endif
 
+/** @brief Are these the same endpoint?
+ * @param endpoint1 one endpoint
+ * @param endpoint2 the other
+ * @return 1 when component name, id and host all match, else 0
+ */
 int cl_com_compare_endpoints(cl_com_endpoint_t *endpoint1, cl_com_endpoint_t *endpoint2) {  /* CR check */
    if (endpoint1 != nullptr && endpoint2 != nullptr) {
       if (endpoint1->comp_id == endpoint2->comp_id) {
@@ -139,6 +154,10 @@ void cl_com_dump_endpoint(cl_com_endpoint_t* endpoint, const char* text) {
 }
 #endif
 
+/** @brief Release a message and its payload
+ * @param message the message, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_message(cl_com_message_t **message) {   /* CR check */
    if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -155,7 +174,23 @@ int cl_com_free_message(cl_com_message_t **message) {   /* CR check */
    return CL_RETVAL_OK;
 }
 
+/** @def CL_DEBUG_MESSAGE_FORMAT_STRING
+ * @brief Line format of a message in the debug client stream
+ *
+ * Sixteen tab separated fields. `qping -dump` parses this, so the field order
+ * is part of that tool's interface and cannot be rearranged freely.
+ *
+ * @note Defined inside a function body, so the block has to sit at file scope
+ *       - doxygen lists it as a file macro and takes no comment beside it.
+ */
+
 /* WARNING: connection_list must be locked by caller */
+/** @brief Queue one line for the attached debug clients
+ * @param connection the connection the line is about
+ * @param message the text, may be nullptr when `ms` carries it
+ * @param ms the message being reported, may be nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_add_debug_message(cl_com_connection_t *connection, const char *message, cl_com_message_t *ms) {
 #define CL_DEBUG_MESSAGE_FORMAT_STRING "%lu\t%.6f\t%s\t%s\t%s\t%s\t%s\t%s\t%lu\t%lu\t%lu\t%s\t%s\t%s\t%s\t%lu\n"
 
@@ -359,6 +394,13 @@ int cl_com_add_debug_message(cl_com_connection_t *connection, const char *messag
    return ret_val;
 }
 
+/** @brief Build the state for an attaching debug client
+ * @param new_setup receives it
+ * @param dc_mode how much to send
+ * @param dc_dump_flag include message payload
+ * @param dc_app_log_level application log level to forward
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_create_debug_client_setup(cl_debug_client_setup_t **new_setup,
                                      cl_debug_client_t dc_mode,             /* debug_client_mode */
                                      bool dc_dump_flag,        /* flag for sending message data */
@@ -395,6 +437,10 @@ int cl_com_create_debug_client_setup(cl_debug_client_setup_t **new_setup,
    return CL_RETVAL_OK;
 }
 
+/** @brief Release that state
+ * @param dc_setup the state, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_debug_client_setup(cl_debug_client_setup_t **dc_setup) {
 
    int ret_val = CL_RETVAL_OK;
@@ -417,6 +463,26 @@ int cl_com_free_debug_client_setup(cl_debug_client_setup_t **dc_setup) {
 }
 
 #if defined(SECURE)
+/** @brief Build an SSL configuration for the older `SECURE` framework
+ *
+ * @param new_setup receives the configuration
+ * @param ssl_cert_mode whether the file parameters are names or PEM data
+ * @param ssl_method which method is handed to `SSL_CTX_new()`
+ * @param ssl_CA_cert_pem_file CA certificate
+ * @param ssl_CA_key_pem_file private key of the CA; not used
+ * @param ssl_cert_pem_file our certificate
+ * @param ssl_key_pem_file our key
+ * @param ssl_rand_file entropy file, used when the pool is not seeded
+ * @param ssl_reconnect_file reconnect data; not used
+ * @param ssl_crl_file certificate revocation list
+ * @param ssl_refresh_time key lifetime for a service; not used
+ * @param ssl_password password for an encrypted key file; not used
+ * @param ssl_verify_func hook checking the peer's name
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ *
+ * @note Four of these parameters are marked unused in #cl_ssl_setup_t and are
+ *       stored but never read.
+ */
 int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
                             cl_ssl_cert_mode_t ssl_cert_mode,
                             cl_ssl_method_t ssl_method,
@@ -555,6 +621,23 @@ int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
 #endif
 
 #if defined(OCS_WITH_OPENSSL)
+/** @brief Build an SSL configuration for the newer OpenSSL framework
+ *
+ * The same name as the `SECURE` overload above, and both are compiled - the
+ * shorter parameter list is what tells them apart.
+ *
+ * @param new_setup receives the configuration
+ * @param ssl_cert_mode whether the file parameters are names or PEM data
+ * @param ssl_method which method is handed to `SSL_CTX_new()`
+ * @param ssl_client_cert_file certificate used to verify the peer, may be empty
+ * @param ssl_server_cert_file certificate identifying us
+ * @param ssl_server_key_file key identifying us
+ * @param allow_incomplete accept a configuration that is missing files
+ * @param needs_client_cert fail when the client certificate cannot be read;
+ *        the qmaster passes false, because `act_qmaster` can name a host for
+ *        which no certificate exists
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
                             cl_ssl_cert_mode_t ssl_cert_mode,
                             cl_ssl_method_t ssl_method,
@@ -635,6 +718,11 @@ int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
 }
 #endif
 
+/** @brief Copy an SSL configuration
+ * @param new_setup receives the copy
+ * @param source the original
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_dup_ssl_setup(cl_ssl_setup_t **new_setup, cl_ssl_setup_t *source) {
 
    if (source == nullptr) {
@@ -668,6 +756,10 @@ int cl_com_dup_ssl_setup(cl_ssl_setup_t **new_setup, cl_ssl_setup_t *source) {
       return CL_RETVAL_SSL_NOT_SUPPORTED;
 }
 
+/** @brief Release an SSL configuration
+ * @param del_setup the configuration, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_ssl_setup(cl_ssl_setup_t **del_setup) {
    if (del_setup == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -719,6 +811,16 @@ int cl_com_free_ssl_setup(cl_ssl_setup_t **del_setup) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Build a message and queue it on a connection
+ * @param message receives the message; must point at nullptr
+ * @param connection the connection
+ * @param data the payload, taken over by the message
+ * @param size its length
+ * @param ack_type whether and when the peer acknowledges
+ * @param response_id the message id this one answers, or 0
+ * @param tag the application's own tag
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int
 cl_com_setup_message(cl_com_message_t **message, cl_com_connection_t *connection, cl_byte_t *data, unsigned long size,
                      cl_xml_ack_type_t ack_type, unsigned long response_id, unsigned long tag) {
@@ -765,6 +867,10 @@ cl_com_setup_message(cl_com_message_t **message, cl_com_connection_t *connection
    return return_value;
 }
 
+/** @brief Allocate an empty message
+ * @param message receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_create_message(cl_com_message_t **message) {
    if (message == nullptr || *message != nullptr) {
       return CL_RETVAL_PARAMS;
@@ -782,6 +888,10 @@ int cl_com_create_message(cl_com_message_t **message) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Allocate an empty connection
+ * @param connection receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_create_connection(cl_com_connection_t **connection) {
    int ret_val;
 
@@ -934,6 +1044,16 @@ static void cl_dump_private(cl_com_connection_t* connection) {  /* CR check */
 }
 #endif
 
+/** @brief Read the length prefix that precedes every message
+ *
+ * The GMSH says how many bytes the following message has, so nothing else can
+ * be read until this succeeded - which is why every read path starts here.
+ *
+ * @param connection the connection
+ * @param only_one_read when set, do a single read call rather than looping;
+ *        receives how many bytes came in
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_read_GMSH(cl_com_connection_t *connection, unsigned long *only_one_read) {
 
    if (connection == nullptr) {
@@ -956,6 +1076,10 @@ int cl_com_read_GMSH(cl_com_connection_t *connection, unsigned long *only_one_re
    return CL_RETVAL_UNDEFINED_FRAMEWORK;
 }
 
+/** @brief Name of a connection's transport
+ * @param connection the connection
+ * @return a static string
+ */
 const char *cl_com_get_framework_type(cl_com_connection_t *connection) {  /* CR check */
    if (connection == nullptr) {
       CL_LOG(CL_LOG_ERROR, "connection pointer is nullptr");
@@ -974,6 +1098,10 @@ const char *cl_com_get_framework_type(cl_com_connection_t *connection) {  /* CR 
    return "unexpected framework type";
 }
 
+/** @brief Name of a connection's direction
+ * @param connection the connection
+ * @return a static string
+ */
 const char *cl_com_get_connection_type(cl_com_connection_t *connection) { /* CR check */
    if (connection == nullptr) {
       CL_LOG(CL_LOG_ERROR, "connection pointer is nullptr");
@@ -997,6 +1125,10 @@ const char *cl_com_get_connection_type(cl_com_connection_t *connection) { /* CR 
    return "unknown";
 }
 
+/** @brief Whether a connection is the listening socket, as a name
+ * @param connection the connection
+ * @return a static string
+ */
 const char *cl_com_get_service_handler_flag(cl_com_connection_t *connection) { /* CR check */
    if (connection == nullptr) {
       CL_LOG(CL_LOG_ERROR, "connection pointer is nullptr");
@@ -1019,6 +1151,10 @@ const char *cl_com_get_service_handler_flag(cl_com_connection_t *connection) { /
    }
 }
 
+/** @brief Whether a connection has data to write, as a name
+ * @param connection the connection
+ * @return a static string
+ */
 const char *cl_com_get_data_write_flag(cl_com_connection_t *connection) {  /* CR check */
    if (connection == nullptr) {
       CL_LOG(CL_LOG_ERROR, "connection pointer is nullptr");
@@ -1038,6 +1174,10 @@ const char *cl_com_get_data_write_flag(cl_com_connection_t *connection) {  /* CR
    }
 }
 
+/** @brief Whether a connection has data to read, as a name
+ * @param connection the connection
+ * @return a static string
+ */
 const char *cl_com_get_data_read_flag(cl_com_connection_t *connection) {  /* CR check */
    if (connection == nullptr) {
       CL_LOG(CL_LOG_ERROR, "connection pointer is nullptr");
@@ -1057,6 +1197,10 @@ const char *cl_com_get_data_read_flag(cl_com_connection_t *connection) {  /* CR 
    }
 }
 
+/** @brief Name of a connection's state
+ * @param connection the connection
+ * @return a static string
+ */
 const char *cl_com_get_connection_state(cl_com_connection_t *connection) {   /* CR check */
    if (connection == nullptr) {
       CL_LOG(CL_LOG_ERROR, "connection pointer is nullptr");
@@ -1087,6 +1231,10 @@ const char *cl_com_get_connection_state(cl_com_connection_t *connection) {   /* 
    return "unknown";
 }
 
+/** @brief Name of a connection's sub state
+ * @param connection the connection
+ * @return a static string
+ */
 const char *cl_com_get_connection_sub_state(cl_com_connection_t *connection) {
    if (connection == nullptr) {
       CL_LOG(CL_LOG_ERROR, "connection pointer is nullptr");
@@ -1188,6 +1336,10 @@ const char *cl_com_get_connection_sub_state(cl_com_connection_t *connection) {
    return "UNEXPECTED CONNECTION SUB STATE";
 }
 
+/** @brief Whether a connection is stream or message oriented, as a name
+ * @param connection the connection
+ * @return a static string
+ */
 const char *cl_com_get_data_flow_type(cl_com_connection_t *connection) {  /* CR check */
    if (connection == nullptr) {
       CL_LOG(CL_LOG_ERROR, "connection pointer is nullptr");
@@ -1215,6 +1367,9 @@ void cl_com_ignore_timeouts(bool flag) {
    cl_ingore_timeout = flag;
 }
 
+/** @brief Is the abort flag set?
+ * @return what #cl_com_ignore_timeouts was last given
+ */
 bool cl_com_get_ignore_timeouts_flag() {
    if (cl_ingore_timeout) {
       CL_LOG(CL_LOG_WARNING, "ignoring all communication timeouts");
@@ -1224,35 +1379,24 @@ bool cl_com_get_ignore_timeouts_flag() {
 
 
 
-/****** cl_communication/cl_com_open_connection() ******************************
-*  NAME
-*     cl_com_open_connection() -- open a connection to a service handler
-*
-*  SYNOPSIS
-*     int cl_com_open_connection(cl_com_connection_t* connection, const char*
-*     comp_host, const char* comp_name, int comp_id, int timeout)
-*
-*  FUNCTION
-*     This function is called to setup a connection to a service handler. The
-*     connection object (cl_com_connection_t) must be initalized with a call
-*     to cl_com_setup_xxx_connection (e.g. cl_com_setup_tcp_connection() for
-*     a CL_CT_TCP connection which is using tcp/ip for transport)
-*
-*  INPUTS
-*     cl_com_connection_t* connection - pointer to a connection object
-*     const char* comp_host           - host of service
-*     const char* comp_name           - component name of service
-*     int comp_id                     - component id of service
-*     int timeout                     - timeout for connection establishment
-*
-*  RESULT
-*     int - CL_COMM_XXXX error value or CL_RETVAL_OK for no errors
-*
-*  SEE ALSO
-*
-*     cl_communication/cl_com_close_connection()
-*     cl_communication/cl_com_setup_tcp_connection()
-*******************************************************************************/
+/**
+ * @brief Open a connection to a service handler
+ *
+ * This function is called to setup a connection to a service handler. The
+ * connection object (cl_com_connection_t) must be initalized with a call
+ * to cl_com_setup_xxx_connection (e.g. cl_com_setup_tcp_connection() for
+ * a CL_CT_TCP connection which is using tcp/ip for transport)
+ *
+ * @param connection pointer to a connection object
+ * @param timeout timeout for connection establishment
+ * @param remote_endpoint the service to connect to - host, component name and
+ *        id, which used to be three separate parameters
+ * @param local_endpoint who we announce ourselves as
+ *
+ * @return CL_COMM_XXXX error value or CL_RETVAL_OK for no errors
+ *
+ * @see #cl_com_close_connection, `cl_com_setup_tcp_connection()`
+ */
 int cl_com_open_connection(cl_com_connection_t *connection, int timeout, cl_com_endpoint_t *remote_endpoint,
                            cl_com_endpoint_t *local_endpoint) {
    int retval = CL_RETVAL_UNKNOWN;
@@ -1413,29 +1557,19 @@ int cl_com_open_connection(cl_com_connection_t *connection, int timeout, cl_com_
    return retval;
 }
 
-/****** cl_communication/cl_com_close_connection() *****************************
-*  NAME
-*     cl_com_close_connection() -- cleanup a connection
-*
-*  SYNOPSIS
-*     int cl_com_close_connection(cl_com_connection_t* connection)
-*
-*  FUNCTION
-*     This wrapper function will call the correct cl_com_xxx_close_connection()
-*     function for the selected framework. The called function must free
-*     the memory for the connection->com_private pointer.
-*
-*  INPUTS
-*     cl_com_connection_t* connection - pointer to a cl_com_connection_t
-*                                       structure
-*
-*  RESULT
-*     int - CL_RETVAL_XXXX error or CL_RETVAL_OK on success
-*
-*  SEE ALSO
-*     cl_communication/cl_com_setup_tcp_connection()
-*
-*******************************************************************************/
+/**
+ * @brief Cleanup a connection
+ *
+ * This wrapper function will call the correct cl_com_xxx_close_connection()
+ * function for the selected framework. The called function must free
+ * the memory for the connection->com_private pointer.
+ *
+ * @param connection pointer to a cl_com_connection_t structure
+ *
+ * @return CL_RETVAL_XXXX error or CL_RETVAL_OK on success
+ *
+ * @see `cl_com_setup_tcp_connection()`
+ */
 /* connection_list must be locked */
 int cl_com_close_connection(cl_com_connection_t **connection) {
    int retval = CL_RETVAL_OK;
@@ -1533,6 +1667,11 @@ int cl_com_close_connection(cl_com_connection_t **connection) {
    return CL_RETVAL_PARAMS;
 }
 
+/** @brief The port a service connection listens on
+ * @param connection the connection
+ * @param port receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_connection_get_service_port(cl_com_connection_t *connection, int *port) {
    if (connection == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -1552,6 +1691,15 @@ int cl_com_connection_get_service_port(cl_com_connection_t *connection, int *por
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief The remote port a client connected from
+ *
+ * What makes reserved port security checkable: a port below 1024 means the
+ * peer was privileged when it connected.
+ *
+ * @param connection the connection
+ * @param port receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_connection_get_client_socket_in_port(cl_com_connection_t *connection, int *port) {
    if (connection == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -1571,6 +1719,11 @@ int cl_com_connection_get_client_socket_in_port(cl_com_connection_t *connection,
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief The socket behind a connection
+ * @param connection the connection
+ * @param fd receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_connection_get_fd(cl_com_connection_t *connection, int *fd) {
    int ret_val = CL_RETVAL_PARAMS;
    if (fd == nullptr || connection == nullptr) {
@@ -1634,6 +1787,11 @@ const char *cl_com_connection_get_ip(cl_com_connection_t *connection, dstring *d
    return ret;
 }
 
+/** @brief The port a connection connects to
+ * @param connection the connection
+ * @param port receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_connection_get_connect_port(cl_com_connection_t *connection, int *port) {
    if (connection == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -1653,6 +1811,11 @@ int cl_com_connection_get_connect_port(cl_com_connection_t *connection, int *por
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief Set the port a connection connects to
+ * @param connection the connection
+ * @param port the port
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_connection_set_connect_port(cl_com_connection_t *connection, int port) {
    if (connection == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -1672,6 +1835,10 @@ int cl_com_connection_set_connect_port(cl_com_connection_t *connection, int port
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief Release a statistics block
+ * @param statistic the block, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_handle_statistic(cl_com_handle_statistic_t **statistic) {
 
    if (statistic == nullptr || *statistic == nullptr) {
@@ -1686,6 +1853,10 @@ int cl_com_free_handle_statistic(cl_com_handle_statistic_t **statistic) {
 
 }
 
+/** @brief Release a resolver result
+ * @param hostent_p the result, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_hostent(cl_com_hostent_t **hostent_p) {  /* CR check */
 
    if (hostent_p == nullptr || *hostent_p == nullptr) {
@@ -1700,6 +1871,10 @@ int cl_com_free_hostent(cl_com_hostent_t **hostent_p) {  /* CR check */
    return CL_RETVAL_OK;
 }
 
+/** @brief Release a host cache entry
+ * @param hostspec the entry, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_hostspec(cl_com_host_spec_t **hostspec) {
 
    if (hostspec == nullptr || *hostspec == nullptr) {
@@ -1719,6 +1894,10 @@ int cl_com_free_hostspec(cl_com_host_spec_t **hostspec) {
    return CL_RETVAL_OK;
 }
 
+/** @brief The name of a resolver error code
+ * @param h_error the `h_errno` value
+ * @return its name, or nullptr for a code that is not known
+ */
 char *cl_com_get_h_error_string(int h_error) {
 
    if (h_error == HOST_NOT_FOUND) {
@@ -1737,6 +1916,13 @@ char *cl_com_get_h_error_string(int h_error) {
    return nullptr;
 }
 
+/** @brief Resolve the local host
+ * @param unique_hostname receives the canonical name; the caller frees it
+ * @param copy_addr receives the address, may be nullptr
+ * @param he_copy receives a copy of the resolver result, may be nullptr
+ * @param system_error_value receives `errno`, may be nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_gethostname(char **unique_hostname, struct in_addr *copy_addr, struct hostent **he_copy,
                        int *system_error_value) {  /* CR check */
 
@@ -1970,6 +2156,11 @@ static int cl_com_dup_host(char **host_dest, const char *source, cl_host_resolve
    return retval;
 }
 
+/** @brief Choose short or fully qualified host comparison
+ * @param method which
+ * @param local_domain_name the domain to strip for short comparison
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_set_resolve_method(cl_host_resolve_method_t method, char *local_domain_name) {
    cl_raw_list_t *host_list = nullptr;
    cl_host_list_data_t *host_list_data = nullptr;
@@ -2030,6 +2221,26 @@ int cl_com_set_resolve_method(cl_host_resolve_method_t method, char *local_domai
    return CL_RETVAL_OK;
 }
 
+/** @def CL_COM_COMPARE_HOSTS_STATIC_BUFFER_SIZE
+ * @brief Stack buffer #cl_com_compare_hosts uses before it allocates
+ *
+ * Host name comparison is on the path of every connection, so the common case
+ * is kept off the heap; longer names fall back to an allocation.
+ *
+ * @note Defined inside the body of #cl_com_compare_hosts, hence the file
+ *       scope block.
+ */
+
+/** @brief Are these the same host?
+ *
+ * Compares according to the configured resolve method - short names up to the
+ * first dot, or fully qualified. This is why two spellings of one host do not
+ * produce two endpoints.
+ *
+ * @param host1 one name
+ * @param host2 the other
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_compare_hosts(const char *host1, const char *host2) {
 #define CL_COM_COMPARE_HOSTS_STATIC_BUFFER_SIZE 512
 
@@ -2175,6 +2386,18 @@ static bool cl_com_is_ip_address_string(const char *resolve_hostname, struct in_
    return true;
 }
 
+/** @brief Resolve a host name, through the cache
+ *
+ * Resolution is on the path of every connection, so both successes and
+ * failures are cached - see #cl_com_host_spec_t.
+ *
+ * @param unresolved_host the name to resolve
+ * @param unique_hostname receives the canonical name; the caller frees it
+ * @param copy_addr receives the address, may be nullptr
+ * @param he_copy receives a copy of the resolver result, may be nullptr
+ * @param system_error_value receives `errno`, may be nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_cached_gethostbyname(const char *unresolved_host, char **unique_hostname, struct in_addr *copy_addr,
                                 struct hostent **he_copy, int *system_error_value) {
    cl_host_list_elem_t *elem = nullptr;
@@ -2409,6 +2632,13 @@ int cl_com_cached_gethostbyname(const char *unresolved_host, char **unique_hostn
 }
 
 /* hostlist must be locked */
+/** @brief Read the host alias file into the cache
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
+/** @brief Read the host alias file into a host list
+ * @param hostlist the list to fill
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_read_alias_file(cl_raw_list_t *hostlist) {
    cl_host_list_data_t *ldata = nullptr;
    SGE_STRUCT_STAT sb;
@@ -2502,6 +2732,10 @@ int cl_com_read_alias_file(cl_raw_list_t *hostlist) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Re-resolve the cached hosts whose entries have expired
+ * @param list_p the cache
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_host_list_refresh(cl_raw_list_t *list_p) {
    struct timeval now;
    cl_host_list_elem_t *elem = nullptr;
@@ -2699,6 +2933,10 @@ int cl_com_host_list_refresh(cl_raw_list_t *list_p) {
    return ret_val;
 }
 
+/** @brief Drop endpoint entries whose cached resolution has expired
+ * @param list_p the list
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_endpoint_list_refresh(cl_raw_list_t *list_p) {
    struct timeval now;
    cl_endpoint_list_elem_t *act_elem = nullptr;
@@ -2783,6 +3021,13 @@ static int cl_com_get_ip_string(struct in_addr *addr, char **ipstr) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Resolve an address back to a name, through the cache
+ * @param addr the address
+ * @param unique_hostname receives the canonical name; the caller frees it
+ * @param he_copy receives a copy of the resolver result, may be nullptr
+ * @param system_error_val receives `errno`, may be nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_cached_gethostbyaddr(struct in_addr *addr, char **unique_hostname, struct hostent **he_copy,
                                 int *system_error_val) {
    cl_host_list_elem_t *elem = nullptr;
@@ -2995,15 +3240,6 @@ int cl_com_cached_gethostbyaddr(struct in_addr *addr, char **unique_hostname, st
 }
 
 #if CL_DO_COMMUNICATION_DEBUG
-/* cl_com_print_host_info - log a hostent struct
-
-   params:
-
-   cl_com_hostent_t* hostent_p -> pointer to filled cl_com_hostent_t
-
-   return:
-      - int - CL_RETVAL_XXXX error number
-*/
 int cl_com_print_host_info(cl_com_hostent_t *hostent_p ) {
 
    char** tp = nullptr;
@@ -3034,34 +3270,24 @@ int cl_com_print_host_info(cl_com_hostent_t *hostent_p ) {
 }
 #endif
 
-/****** cl_communication/cl_com_connection_request_handler_setup() *************
-*  NAME
-*     cl_com_connection_request_handler_setup() -- Setup service
-*
-*  SYNOPSIS
-*     int cl_com_connection_request_handler_setup(cl_com_connection_t*
-*     connection)
-*
-*  FUNCTION
-*     This function is used to setup a connection service handler. All service
-*     specific setup is done here. When the setup was done the connection can
-*     be used to call cl_com_connection_request_handler(). To shutdown the
-*     service a call to cl_com_connection_request_handler_cleanup() must be done.
-*
-*     This function is only a wrapper for the correct
-*     cl_com_xxx_connection_request_handler_setup() function of the selected
-*     framework.
-*
-*  INPUTS
-*     cl_com_connection_t* connection - pointer to a inizialized connection
-*
-*  RESULT
-*     int - CL_RETVAL_XXXX error or CL_RETVAL_OK on success
-*
-*  SEE ALSO
-*     cl_communication/cl_com_connection_request_handler_cleanup()
-*     cl_communication/cl_com_connection_request_handler()
-*******************************************************************************/
+/**
+ * @brief Setup service
+ *
+ * This function is used to setup a connection service handler. All service
+ * specific setup is done here. When the setup was done the connection can
+ * be used to call cl_com_connection_request_handler(). To shutdown the
+ * service a call to cl_com_connection_request_handler_cleanup() must be done.
+ * This function is only a wrapper for the correct
+ * cl_com_xxx_connection_request_handler_setup() function of the selected
+ * framework.
+ *
+ * @param connection pointer to a inizialized connection
+ * @param local_endpoint the endpoint to listen as
+ *
+ * @return CL_RETVAL_XXXX error or CL_RETVAL_OK on success
+ *
+ * @see #cl_com_connection_request_handler_cleanup, #cl_com_connection_request_handler
+ */
 int cl_com_connection_request_handler_setup(cl_com_connection_t *connection, cl_com_endpoint_t *local_endpoint) {
    int retval = CL_RETVAL_OK;
    bool only_prepare_service = false;
@@ -3110,45 +3336,25 @@ int cl_com_connection_request_handler_setup(cl_com_connection_t *connection, cl_
 }
 
 
-/****** cl_communication/cl_com_connection_request_handler() *******************
-*  NAME
-*     cl_com_connection_request_handler() -- Get new incomming connections
-*
-*  SYNOPSIS
-*     int cl_com_connection_request_handler(cl_com_connection_t* connection,
-*     cl_com_connection_t** new_connection, int timeout_val_sec, int
-*     timeout_val_usec)
-*
-*  FUNCTION
-*     This wrapper function will call the correct
-*     cl_com_xxx_connection_request_handler() function for the selected
-*     framework.
-*
-*     It will create a new connection pointer and sets new_connection to the
-*     new connection when connection requests are queueing. new_connection
-*     must point to nullptr when calling this function.
-*
-*     The new connection must be handled (and erased) by the caller of this
-*     function.
-*
-*  INPUTS
-*     cl_com_connection_t* connection      - pointer to service connection
-*                                            struct. (Created with a call to
-*                                            cl_com_connection_request_handler_setup())
-*     cl_com_connection_t** new_connection - pointer to an address of a cl_com_connection_t
-*                                            struct. (will be set to a new
-*                                            connection)
-*     int timeout_val_sec                  - timeout in sec
-*     int timeout_val_usec                 - timeout in usec
-*
-*  RESULT
-*     int - CL_RETVAL_XXXX error or CL_RETVAL_OK on success
-*
-*  SEE ALSO
-*     cl_communication/cl_com_connection_request_handler_cleanup()
-*     cl_communication/cl_com_connection_request_handler_setup()
-*     cl_communication/cl_com_connection_request_handler()
-*******************************************************************************/
+/**
+ * @brief Get new incomming connections
+ *
+ * This wrapper function will call the correct
+ * cl_com_xxx_connection_request_handler() function for the selected
+ * framework.
+ * It will create a new connection pointer and sets new_connection to the
+ * new connection when connection requests are queueing. new_connection
+ * must point to nullptr when calling this function.
+ * The new connection must be handled (and erased) by the caller of this
+ * function.
+ *
+ * @param connection pointer to service connection struct. (Created with a call to cl_com_connection_request_handler_setup())
+ * @param new_connection pointer to an address of a cl_com_connection_t struct. (will be set to a new connection)
+ *
+ * @return CL_RETVAL_XXXX error or CL_RETVAL_OK on success
+ *
+ * @see #cl_com_connection_request_handler_cleanup, #cl_com_connection_request_handler_setup, #cl_com_connection_request_handler
+ */
 int cl_com_connection_request_handler(cl_com_connection_t *connection, cl_com_connection_t **new_connection) {
    int retval = CL_RETVAL_OK;
 
@@ -3209,29 +3415,19 @@ int cl_com_connection_request_handler(cl_com_connection_t *connection, cl_com_co
 
 }
 
-/****** cl_communication/cl_com_connection_request_handler_cleanup() ***********
-*  NAME
-*     cl_com_connection_request_handler_cleanup() -- cleanup service
-*
-*  SYNOPSIS
-*     int cl_com_connection_request_handler_cleanup(cl_com_connection_t*
-*     connection)
-*
-*  FUNCTION
-*     This wrapper function calls the correct
-*     cl_com_xxx_connection_request_handler_cleanup() function to shutdown a
-*     server connection.
-*
-*  INPUTS
-*     cl_com_connection_t* connection - open service connection struct
-*
-*  RESULT
-*     int - CL_RETVAL_XXXX error or CL_RETVAL_OK on success
-*
-*  SEE ALSO
-*     cl_communication/cl_com_connection_request_handler()
-*     cl_communication/cl_com_connection_request_handler_setup()
-*******************************************************************************/
+/**
+ * @brief Cleanup service
+ *
+ * This wrapper function calls the correct
+ * cl_com_xxx_connection_request_handler_cleanup() function to shutdown a
+ * server connection.
+ *
+ * @param connection open service connection struct
+ *
+ * @return CL_RETVAL_XXXX error or CL_RETVAL_OK on success
+ *
+ * @see #cl_com_connection_request_handler, #cl_com_connection_request_handler_setup
+ */
 int cl_com_connection_request_handler_cleanup(cl_com_connection_t *connection) { /* CR check */
    if (connection != nullptr) {
 
@@ -3258,34 +3454,27 @@ int cl_com_connection_request_handler_cleanup(cl_com_connection_t *connection) {
 
 
 
-/****** cl_communication/cl_com_open_connection_request_handler() **************
-*  NAME
-*     cl_com_open_connection_request_handler() -- Check for incomming data
-*
-*  SYNOPSIS
-*     int cl_com_open_connection_request_handler(int framework_type,
-*     cl_raw_list_t* connection_list, int timeout)
-*
-*  FUNCTION
-*     This function is a wrapper for the correct
-*     cl_com_xxx_open_connection_request_handler() function of the selected
-*     framework.
-*
-*     This function will set the connection data_read_flag if there is any
-*     data to read from this connection.
-*
-*  INPUTS
-*     int framework_type             - framework type of connection list
-*     cl_raw_list_t* connection_list - list of connections to check
-*     int timeout                    - timeout
-*
-*  RESULT
-*     int - CL_RETVAL_XXXX error or CL_RETVAL_OK on success
-*
-*  SEE ALSO
-*     cl_tcp_framework/cl_com_tcp_open_connection_request_handler()
-*******************************************************************************/
-/* WARNING connection list must be locked */
+/**
+ * @brief Check for incomming data
+ *
+ * This function is a wrapper for the correct
+ * cl_com_xxx_open_connection_request_handler() function of the selected
+ * framework.
+ * This function will set the connection data_read_flag if there is any
+ * data to read from this connection.
+ *
+ * @param poll_handle the `poll()` arrays, reused between calls
+ * @param handle the handle whose connections are checked
+ * @param timeout_val_sec how long to wait, seconds
+ * @param timeout_val_usec how long to wait, microseconds
+ * @param select_mode whether to watch for reading, writing or both
+ *
+ * @return CL_RETVAL_XXXX error or CL_RETVAL_OK on success
+ *
+ * @warning The handle's connection list must be locked by the caller.
+ *
+ * @see `cl_com_tcp_open_connection_request_handler()`
+ */
 int cl_com_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_com_handle_t *handle, int timeout_val_sec,
                                            int timeout_val_usec, cl_select_method_t select_mode)
 {
@@ -3350,6 +3539,10 @@ int cl_com_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_com_ha
    return CL_RETVAL_UNDEFINED_FRAMEWORK;
 }
 
+/** @brief Release the `poll()` arrays
+ * @param poll_handle the arrays
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_poll_array(cl_com_poll_t *poll_handle) {
    /*
     * This procedure releases the memory malloc()ed inside
@@ -3371,6 +3564,11 @@ int cl_com_free_poll_array(cl_com_poll_t *poll_handle) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Grow the `poll()` arrays to hold this many connections
+ * @param poll_handle the arrays
+ * @param nr_of_malloced_connections how many entries are needed
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_malloc_poll_array(cl_com_poll_t *poll_handle, unsigned long nr_of_malloced_connections) {
 
    /*
@@ -3408,6 +3606,17 @@ int cl_com_malloc_poll_array(cl_com_poll_t *poll_handle, unsigned long nr_of_mal
                  CL_RETVAL_UNCOMPLETE_WRITE - could not send all data
 */
 /* caller has to lock the connection list */
+/** @brief Carry an outgoing connection through its handshake
+ *
+ * The counterpart of #cl_com_connection_complete_accept for a connection we
+ * opened: send the CM, read the GMSH and the CRM.
+ *
+ * @param connection_list the handle's connections
+ * @param elem the connection being completed
+ * @param timeout when to give up
+ * @param select_mode what the connection was polled for
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connection_list_elem_t *elem, long timeout,
                                        cl_select_method_t select_mode) {
    struct timeval now;
@@ -4649,6 +4858,16 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
 }
 
 /* caller has to lock the connection list */
+/** @brief Carry an incoming connection through its handshake
+ *
+ * Drives the #CL_ACCEPTING and #CL_CONNECTING sub states: read the GMSH, read
+ * the CM, decide, send the CRM. Returns as soon as it would block, so it is
+ * called repeatedly until the connection reaches #CL_CONNECTED.
+ *
+ * @param connection the connection
+ * @param timeout when to give up
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_connection_complete_accept(cl_com_connection_t *connection, long timeout) {
    if (connection == nullptr) {
       CL_LOG(CL_LOG_ERROR, "connection pointer is nullptr");
@@ -4677,6 +4896,14 @@ int cl_com_connection_complete_accept(cl_com_connection_t *connection, long time
    return CL_RETVAL_UNDEFINED_FRAMEWORK;
 }
 
+/** @brief Read from a connection, dispatching to its framework
+ * @param connection the connection
+ * @param message buffer to read into
+ * @param size how many bytes are wanted
+ * @param only_one_read when set, do a single read call rather than looping;
+ *        receives how many bytes came in
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_read(cl_com_connection_t *connection, cl_byte_t *message, unsigned long size, unsigned long *only_one_read) {
 
    if (connection == nullptr) {
@@ -4698,6 +4925,10 @@ int cl_com_read(cl_com_connection_t *connection, cl_byte_t *message, unsigned lo
    return CL_RETVAL_UNDEFINED_FRAMEWORK;
 }
 
+/** @brief Carry a connection through the CCM/CCRM exchange
+ * @param connection the connection
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_connection_complete_shutdown(cl_com_connection_t *connection) {
    if (connection == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -4725,6 +4956,14 @@ int cl_com_connection_complete_shutdown(cl_com_connection_t *connection) {
    return CL_RETVAL_UNDEFINED_FRAMEWORK;
 }
 
+/** @brief Write to a connection, dispatching to its framework
+ * @param connection the connection
+ * @param message the bytes
+ * @param size how many
+ * @param only_one_write when set, do a single write call rather than looping;
+ *        receives how many bytes went out
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int
 cl_com_write(cl_com_connection_t *connection, cl_byte_t *message, unsigned long size, unsigned long *only_one_write) {
 
