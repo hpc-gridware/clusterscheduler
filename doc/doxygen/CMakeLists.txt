@@ -73,6 +73,11 @@ if (DOXYGEN_FOUND)
          source/libs/comm
          source/libs/ijs
          source/libs/jdrmaa
+         source/libs/procedure
+         source/utilbin
+         source/daemons/shadowd
+         source/daemons/common
+         source/daemons/shepherd
    )
 
    if (DXM_FINISHED_MODULES)
