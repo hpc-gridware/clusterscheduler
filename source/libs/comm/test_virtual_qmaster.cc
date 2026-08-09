@@ -32,6 +32,18 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: a stand-in for the qmaster
+ *
+ * Provides the service the two virtual clients connect to - a message thread
+ * answering requests and an event thread pushing events - so the commlib side
+ * of the qmaster can be exercised without the qmaster.
+ *
+ * Usage: `test_virtual_qmaster <DEBUG_LEVEL> <PORT> <INTERVAL>`
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 
 #include <cstdio>
 #include <cstring>
@@ -42,8 +54,11 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_commlib.h"
 
-#define DATA_SIZE 5000
+#define DATA_SIZE 5000   ///< Size of one test package, in bytes
 
+/** @brief Note the signal so the client loop can leave
+ * @param sig the signal that arrived
+ */
 void sighandler_client(int sig);
 
 static int do_shutdown = 0;
@@ -56,22 +71,38 @@ static int evc_count = 0;
 static int events_sent = 0;
 
 static cl_com_handle_t *handle = nullptr;
-cl_raw_list_t *thread_list = nullptr;
+cl_raw_list_t *thread_list = nullptr;   ///< The threads this test started
 
-#define MAX_EVENT_CLIENTS 1000
-cl_com_endpoint_t *event_client_array[MAX_EVENT_CLIENTS];
+#define MAX_EVENT_CLIENTS 1000   ///< Upper bound on event clients the virtual qmaster serves
+cl_com_endpoint_t *event_client_array[MAX_EVENT_CLIENTS];   ///< The event clients currently registered
 
+/** @brief Answers requests, standing in for the qmaster message path
+ * @param t_conf the thread's settings
+ * @return nullptr
+ */
 void *my_message_thread(void *t_conf);
 
+/** @brief Placeholder callback that does nothing */
 void do_nothing() {
    char help[255];
 
    sprintf(help, "hallo");
 }
 
+/** @brief Pushes events, standing in for the event master
+ * @param t_conf the thread's settings
+ * @return nullptr
+ */
 void *my_event_thread(void *t_conf);
 
 
+/** @brief The #cl_app_status_func_t this test registers
+ *
+ * What a SIM asking for status gets back.
+ *
+ * @param info_message receives the status text
+ * @return the numeric status
+ */
 unsigned long my_application_status(char **info_message) {
    if (info_message != nullptr) {
       *info_message = strdup("not specified (state 1)");
@@ -94,6 +125,11 @@ void sighandler_client(
    do_shutdown = 1;
 }
 
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 extern int main(int argc, char **argv) {
    cl_thread_settings_t *thread_p = nullptr;
    cl_thread_settings_t *dummy_thread_p = nullptr;

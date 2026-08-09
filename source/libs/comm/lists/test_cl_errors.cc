@@ -32,6 +32,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: every commlib error code has a text
+ *
+ * Walks the range from #CL_RETVAL_OK to #CL_RETVAL_LAST_ID and prints the
+ * codes #cl_get_error_text has no case for.
+ *
+ * @note Not registered with ctest; run it by hand. It is what would have
+ *       caught #CL_RETVAL_DUP_SOCKET_FD_ERROR having no text, had anyone run
+ *       it - see [[P32 pass libs-comm-10a]].
+ */
+
 
 #include <cstdio>
 #include <cstring>
@@ -39,6 +50,9 @@
 
 #include "comm/lists/cl_lists.h"
 
+/** @brief Run the test
+ * @return 0 on success
+ */
 int main() {
    int i;
 

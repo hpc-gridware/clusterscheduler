@@ -32,6 +32,14 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: a commlib client
+ *
+ * Connects to a `test_cl_commlib` service and sends messages to it.
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 
 #include <cstdio>
 #include <cstdlib>
@@ -45,8 +53,11 @@
 
 #include "uti/sge_profiling.h"
 
-#define CL_DO_SLOW 1
+#define CL_DO_SLOW 1   ///< Insert sleeps between the steps, so the exchange can be followed by eye
 
+/** @brief Note the signal so the client loop can leave
+ * @param sig the signal that arrived
+ */
 void sighandler_client(int sig);
 
 static int do_shutdown = 0;
@@ -66,6 +77,18 @@ void sighandler_client(
    cl_com_ignore_timeouts(true);
 }
 
+/** @def SELECT_TIMEOUT
+ * @brief How long the client waits in one poll, in seconds
+ *
+ * @note Defined inside `main()`, so the block sits at file scope - doxygen
+ *       lists it as a file macro and takes no comment beside it.
+ */
+
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 extern int main(int argc, char **argv) {
    struct sigaction sa;
    static int runs = 100;

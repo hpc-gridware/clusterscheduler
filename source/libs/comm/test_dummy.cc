@@ -33,12 +33,26 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: the smallest possible commlib program
+ *
+ * Sets the log list up, logs, and shuts down - enough to check that linking
+ * against the commlib works at all.
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 #include <cstdio>
 #include <cstdlib>
 
 #include "comm/dummy.h"
 #include "comm/lists/cl_lists.h"
 
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 int main(int argc, char **argv) {
    int test = 1;
    int my_error = 0;

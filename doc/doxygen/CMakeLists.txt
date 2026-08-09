@@ -70,6 +70,7 @@ if (DOXYGEN_FOUND)
          source/libs/japi
          source/libs/sched
          source/libs/spool
+         source/libs/comm
    )
 
    if (DXM_FINISHED_MODULES)

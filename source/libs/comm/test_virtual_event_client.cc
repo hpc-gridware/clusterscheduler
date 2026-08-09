@@ -32,6 +32,14 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: an event client against `test_virtual_qmaster`
+ *
+ * Usage: `test_virtual_event_client <debug_level> <vmaster_port> <vmaster_host> [no_output]`
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 
 #include <cstdio>
 #include <cstring>
@@ -46,12 +54,15 @@
 #include "basis_types.h"
 
 /* shutdown when test client can't connect for more than 15 min */
-#define SGE_TEST_VIRTUAL_CLIENT_SHUTDOWN_TIMEOUT 15*60
+#define SGE_TEST_VIRTUAL_CLIENT_SHUTDOWN_TIMEOUT 15*60   ///< How long the virtual client waits for its shutdown to complete
 
 /* counters */
 static int snd_messages = 0;
 static int events_received = 0;
 
+/** @brief Note the signal so the client loop can leave
+ * @param sig the signal that arrived
+ */
 void sighandler_client(int sig);
 
 static int do_shutdown = 0;
@@ -74,6 +85,11 @@ void sighandler_client(
    do_shutdown = 1;
 }
 
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 extern int main(int argc, char **argv) {
    struct sigaction sa;
    struct timeval now;

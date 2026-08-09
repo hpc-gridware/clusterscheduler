@@ -33,6 +33,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: reproducers for individual reported issues
+ *
+ * Takes an issue number on the command line and runs the reproducer for it.
+ *
+ * Usage: `test_commlib_issue <issue number>`
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -45,6 +55,9 @@
 #include "comm/cl_endpoint_list.h"
 #include "uti/sge_profiling.h"
 
+/** @brief Note the signal so the reproducer can leave
+ * @param sig the signal that arrived
+ */
 void sighandler_issue_tests(int sig);
 
 static int do_shutdown = 0;
@@ -62,6 +75,7 @@ void sighandler_issue_tests(int sig) {
    do_shutdown = 1;
 }
 
+/** @brief Print how to call the program and exit */
 void usage() {
    long i = 0;
    printf("usage: test_commlib_issue [ISSUE_NR]\n");
@@ -72,6 +86,9 @@ void usage() {
    }
 }
 
+/** @brief Reproducer for issue 2728
+ * @return 0 on success
+ */
 int issue_2728_test() {
    const char *host1 = "Foo.domain.Net";
    const char *host2 = "foo.domain.net";
@@ -100,6 +117,10 @@ int issue_2728_test() {
    return 0;
 }
 
+/** @brief Run the reproducer for one issue
+ * @param nr which issue
+ * @return 0 when the reproducer ran
+ */
 int run_test(long nr) {
    int test_result = 0;
    printf("running test for issue %ld - %s\n", issue_list[nr], issue_desc[nr]);
@@ -123,6 +144,11 @@ int run_test(long nr) {
    return test_result;
 }
 
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 extern int main(int argc, char **argv) {
    struct sigaction sa;
    int test_result = 0;

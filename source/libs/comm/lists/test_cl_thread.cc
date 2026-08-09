@@ -33,16 +33,38 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: the thread wrapper
+ *
+ * Creates #THREAD_COUNT threads through #cl_thread_setup, triggers their
+ * events, and shuts them down again - so it covers the startup handshake
+ * that makes #cl_thread_setup block until the new thread is really running.
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <pthread.h>
 
 #include "comm/lists/cl_lists.h"
 
+/** @brief The thread body the test starts
+ *
+ * Written the way `cl_thread.h` prescribes: cleanup handler pushed,
+ * #cl_thread_func_startup first, #cl_thread_func_cleanup last.
+ *
+ * @param t_conf the thread's settings
+ * @return nullptr
+ */
 void *timeout_thread_main(void *t_conf);  /* thread_func for timeout thread implementation */
 
+/** @brief How many threads the test starts */
 #define THREAD_COUNT 10
 
+/** @brief Run the test
+ * @return 0 on success
+ */
 extern int main() {
    int i;
    int retval;

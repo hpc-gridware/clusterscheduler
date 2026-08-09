@@ -33,6 +33,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: the thread list
+ *
+ * Creates threads through the list rather than singly, looks them up by id
+ * and by name, and deletes them again.
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <sys/time.h>
@@ -40,12 +49,23 @@
 
 #include "comm/lists/cl_lists.h"
 
-cl_raw_list_t *thread_list = nullptr;
+cl_raw_list_t *thread_list = nullptr;   ///< The threads this test started
 
+/** @brief The thread body the test starts
+ * @param t_conf the thread's settings
+ * @return nullptr
+ */
 void *my_thread(void *t_conf);
 
+/** @brief Create, look up and delete threads through the list
+ * @param t_conf the thread's settings
+ * @return nullptr
+ */
 void *my_thread_test(void *t_conf);
 
+/** @brief Run the test
+ * @return 0 on success
+ */
 extern int main() {
    cl_thread_settings_t *thread_p = nullptr;
    cl_thread_settings_t *dummy_thread_p = nullptr;

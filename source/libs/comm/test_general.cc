@@ -32,11 +32,25 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: assorted checks that need no peer
+ *
+ * Prints the system's `FD_SETSIZE` and runs the reproducers that fit in one
+ * process.
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 #include <cstdio>
 #include <unistd.h>
 
 #include "comm/cl_commlib.h"
 
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 int main(int argc, char **argv) {
    printf("\nFD_SETSIZE on this system: %ld\n", (unsigned long) FD_SETSIZE);
    printf("\ntest issue #1502: ");

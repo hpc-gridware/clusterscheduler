@@ -33,6 +33,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: the endpoint list
+ *
+ * Defines endpoints, reads their ports and autoclose modes back, and lets
+ * entries expire.
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 
 #include <cstdio>
 #include <cstdlib>
@@ -41,6 +50,11 @@
 #include "comm/cl_commlib.h"
 #include "comm/cl_endpoint_list.h"
 
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 extern int
 main(int argc, char **argv) {
    int retval = 0;

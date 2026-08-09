@@ -33,6 +33,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: a commlib service
+ *
+ * Brings up a service handle and answers every message it receives. Run it
+ * together with `test_cl_commlib_client`.
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -47,8 +56,11 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_uidgid.h"
 
-#define CL_DO_SLOW 0
+#define CL_DO_SLOW 0   ///< Insert sleeps between the steps, so the exchange can be followed by eye
 
+/** @brief Note the signal so the service loop can leave
+ * @param sig the signal that arrived
+ */
 void sighandler_server(int sig);
 
 static int pipe_signal = 0;
@@ -75,6 +87,10 @@ void sighandler_server(
    do_shutdown = 1;
 }
 
+/** @brief The #cl_tag_name_func_t this test registers
+ * @param tag the numeric message tag
+ * @return a name for it, for readable debug output
+ */
 const char *my_application_tag_name(unsigned long tag) {
    if (tag > 0) {
       return "TAG > 0";
@@ -82,6 +98,13 @@ const char *my_application_tag_name(unsigned long tag) {
    return "DEFAULT_APPLICATION_TAG";
 }
 
+/** @brief The #cl_app_status_func_t this test registers
+ *
+ * What a SIM asking for status gets back.
+ *
+ * @param info_message receives the status text
+ * @return the numeric status
+ */
 unsigned long my_application_status(char **info_message) {
    if (info_message != nullptr) {
       (*info_message) = strdup("not specified (state 1)");
@@ -159,6 +182,11 @@ static bool my_ssl_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, con
 }
 #endif
 
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 extern int main(int argc, char **argv) {
    struct sigaction sa;
    static int runs = 100;

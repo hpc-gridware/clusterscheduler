@@ -33,11 +33,23 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: the name/value parameter list
+ *
+ * Appends, replaces and removes parameters and prints the list as a
+ * `name=value,...` string after each step.
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 #include <cstdio>
 #include <cstdlib>
 
 #include "comm/lists/cl_parameter_list.h"
 
+/** @brief Run the test
+ * @return 0 on success
+ */
 extern int main() {
    int ret;
    char *param1 = "param1";

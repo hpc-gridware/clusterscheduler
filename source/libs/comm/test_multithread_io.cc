@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: several threads reading and writing one handle
+ *
+ * @warning **Broken.** `main()` prints *"This test does not work!"* and
+ *          exits before it reaches any commlib call. The body below it has
+ *          not run in a long time.
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -40,6 +50,9 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_commlib.h"
 
+/** @brief Note the signal so the client loop can leave
+ * @param sig the signal that arrived
+ */
 void sighandler_client(int sig);
 
 static int do_shutdown = 0;
@@ -47,10 +60,18 @@ static int do_shutdown = 0;
 static cl_com_handle_t *handle = nullptr;
 
 
-cl_raw_list_t *thread_list = nullptr;
+cl_raw_list_t *thread_list = nullptr;   ///< The threads this test started
 
+/** @brief Writer thread of the multi-threaded I/O test
+ * @param t_conf the thread's settings
+ * @return nullptr
+ */
 void *my_multi_thread(void *t_conf);
 
+/** @brief Reader thread of the multi-threaded I/O test
+ * @param t_conf the thread's settings
+ * @return nullptr
+ */
 void *my_multi_read_thread(void *t_conf);
 
 void sighandler_client(
@@ -69,6 +90,9 @@ void sighandler_client(
    do_shutdown = 1;
 }
 
+/** @brief Run the test
+ * @return 0 on success, 1 on failure
+ */
 extern int main() {
    cl_thread_settings_t *thread_p = nullptr;
    cl_thread_settings_t *dummy_thread_p = nullptr;
