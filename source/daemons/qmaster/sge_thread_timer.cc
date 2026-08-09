@@ -95,6 +95,10 @@
 
 #include "msg_qmaster.h"
 
+/** @brief Release the monitoring state when the timer thread ends
+ *
+ * @param monitor for monitoring qmaster threads
+ */
 static void
 sge_timer_cleanup_monitor(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -359,6 +363,11 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
  * The handler keeps rescheduling with sweep_all=1 until the drain is complete
  * (finished.size() <= sweep_batch), then transitions to the normal cadence.
  */
+/** @brief Prune retained finished tasks that have outlived the retention window
+ *
+ * @param anEvent the timed event that fired
+ * @param monitor for monitoring qmaster threads
+ */
 static void
 sge_finished_jobs_sweep_handler(te_event_t anEvent, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -479,6 +488,8 @@ sge_finished_jobs_sweep_handler(te_event_t anEvent, monitoring_t *monitor) {
  *
  * registers event handlers
  */
+/** @brief Register the handler for every timed event type
+ */
 void
 sge_timer_register_event_handler() {
    DENTER(TOP_LAYER);
@@ -527,6 +538,8 @@ sge_timer_register_event_handler() {
  *
  * Start periodic qmaster tasks. Periodic tasks are implemented as recurring
  * events.
+ */
+/** @brief Arm the recurring events qmaster needs
  */
 void sge_timer_start_periodic_tasks() {
    te_event_t ev = nullptr;
@@ -609,6 +622,10 @@ void sge_timer_start_periodic_tasks() {
    DRETURN_VOID;
 }
 
+/** @brief Start the timer thread pool
+ *
+ * @param monitor for monitoring qmaster threads
+ */
 void
 sge_timer_initialize(monitoring_t *monitor) {
    cl_thread_settings_t *dummy_thread_p = nullptr;
@@ -650,6 +667,8 @@ sge_timer_initialize(monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
+/** @brief Stop the timer threads and wait for them
+ */
 void
 sge_timer_terminate() {
    DENTER(TOP_LAYER);

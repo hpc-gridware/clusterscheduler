@@ -59,6 +59,10 @@
 #include "sge_thread_event_master.h"
 #include "msg_qmaster.h"
 
+/** @brief Release the monitoring state when the event master thread ends
+ *
+ * @param arg the thread argument
+ */
 static void
 sge_event_master_cleanup_monitor(void *arg) {
    DENTER(TOP_LAYER);
@@ -67,6 +71,10 @@ sge_event_master_cleanup_monitor(void *arg) {
    DRETURN_VOID;
 }
 
+/** @brief Release the pending report list when the thread ends
+ *
+ * @param arg the thread argument
+ */
 static void
 sge_event_master_cleanup_report_list(void *arg) {
    DENTER(TOP_LAYER);
@@ -75,6 +83,8 @@ sge_event_master_cleanup_report_list(void *arg) {
    DRETURN_VOID;
 }
 
+/** @brief Start the event master thread pool
+ */
 void
 sge_event_master_initialize() {
    DENTER(TOP_LAYER);
@@ -89,6 +99,8 @@ sge_event_master_initialize() {
    DRETURN_VOID;
 }
 
+/** @brief Stop the event master threads and wait for them
+ */
 void
 sge_event_master_terminate() {
    DENTER(TOP_LAYER);
@@ -119,6 +131,11 @@ sge_event_master_terminate() {
    DRETURN_VOID;
 }
 
+/** @brief One the event master thread: it ships events to the event clients
+ *
+ * @param arg the thread argument
+ * @return the thread's exit value
+ */
 [[noreturn]] void *
 sge_event_master_main(void *arg) {
    auto *thread_config = static_cast<cl_thread_settings_t *>(arg);

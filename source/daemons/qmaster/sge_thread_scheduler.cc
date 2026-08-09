@@ -158,6 +158,10 @@ schedd_serf_newline() {
 }
 
 
+/** @brief Release the monitoring state when the scheduler thread ends
+ *
+ * @param arg the thread argument
+ */
 static void
 sge_scheduler_cleanup_monitor(void *arg) {
    DENTER(TOP_LAYER);
@@ -166,6 +170,10 @@ sge_scheduler_cleanup_monitor(void *arg) {
    DRETURN_VOID;
 }
 
+/** @brief Deregister the scheduler as an event client when the thread ends
+ *
+ * @param arg the thread argument
+ */
 static void
 sge_scheduler_cleanup_event_client(void *arg) {
    DENTER(TOP_LAYER);
@@ -174,6 +182,10 @@ sge_scheduler_cleanup_event_client(void *arg) {
    DRETURN_VOID;
 }
 
+/** @brief Release the scheduler's event subscription
+ *
+ * @param where_what the subscription to release
+ */
 static void
 sge_scheduler_cleanup_where_what(void *where_what) {
    DENTER(TOP_LAYER);
@@ -182,6 +194,12 @@ sge_scheduler_cleanup_where_what(void *where_what) {
    DRETURN_VOID;
 }
 
+/** @brief Wait until the events for the next scheduling run have arrived
+ *
+ * @param evc the event client
+ * @param event_list receives the events that arrived
+ * @return true when events arrived, false on shutdown
+ */
 static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_list) {
    int wait_ret;
    bool do_ack = false;
@@ -320,6 +338,10 @@ sge_scheduler_initialize(lList **answer_list) {
  * @note MT-NOTE: sge_scheduler_cleanup_thread() is MT safe
  *
  * @see #sge_scheduler_initialize, #sge_scheduler_cleanup_thread, #sge_scheduler_terminate, #sge_scheduler_main
+ */
+/** @brief Release what the scheduler thread allocated
+ *
+ * @param arg the thread argument
  */
 void
 sge_scheduler_cleanup_thread([[maybe_unused]] void *arg) {

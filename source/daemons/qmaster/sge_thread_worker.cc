@@ -78,6 +78,10 @@
 #include "sge_qmaster_process_message.h"
 #include "msg_qmaster.h"
 
+/** @brief Release the monitoring state when the worker thread ends
+ *
+ * @param arg the thread argument
+ */
 static void
 sge_worker_cleanup_monitor(void *arg) {
    DENTER(TOP_LAYER);

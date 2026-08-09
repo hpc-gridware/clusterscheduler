@@ -67,6 +67,10 @@
 
 #include <ocs_gdi_ClientServerBase.h>
 
+/** @brief Release the monitoring state when the reader thread ends
+ *
+ * @param arg the thread argument
+ */
 static void
 sge_reader_cleanup_monitor(void *arg) {
    DENTER(TOP_LAYER);
@@ -75,6 +79,8 @@ sge_reader_cleanup_monitor(void *arg) {
    DRETURN_VOID;
 }
 
+/** @brief Start the reader thread pool
+ */
 void
 sge_reader_initialize() {
    const int max_initial_reader_threads = ocs::Bootstrap::get_reader_thread_count();
@@ -91,6 +97,8 @@ sge_reader_initialize() {
    DRETURN_VOID;
 }
 
+/** @brief Stop the reader threads and wait for them
+ */
 void
 sge_reader_terminate() {
    DENTER(TOP_LAYER);
@@ -127,6 +135,11 @@ sge_reader_terminate() {
    DRETURN_VOID;
 }
 
+/** @brief One the reader thread: it answers read-only requests from a mirror data store
+ *
+ * @param arg the thread argument
+ * @return the thread's exit value
+ */
 [[noreturn]] void *
 sge_reader_main(void *arg) {
    auto *thread_config = (cl_thread_settings_t *) arg;
