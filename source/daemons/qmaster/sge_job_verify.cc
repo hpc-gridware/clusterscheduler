@@ -137,6 +137,12 @@ sge_job_verify_global_master_slave_requests(lList **alpp, const lListElem *jep, 
    return ret;
 }
 
+/** @brief Reject a parallel job whose global request conflicts with its master or slave request
+ *
+ * @param alpp receives messages for the caller
+ * @param jep the job (`JB_Type`)
+ * @return true when the job is acceptable
+ */
 bool
 sge_job_verify_global_master_slave_allocation_rule(lList **alpp, const lListElem *jep) {
    bool ret = true;
@@ -173,6 +179,13 @@ sge_job_verify_global_master_slave_allocation_rule(lList **alpp, const lListElem
    return ret;
 }
 
+/** @brief Verify the per-job requests a slave task may not make
+ *
+ * @param alpp receives messages for the caller
+ * @param jep the job (`JB_Type`)
+ * @param centry_list see the brief above
+ * @return true when the job is acceptable
+ */
 bool
 sge_job_verify_slave_per_job_requests(lList **alpp, const lListElem *jep, const lList *centry_list) {
    bool ret = true;
@@ -199,6 +212,13 @@ sge_job_verify_slave_per_job_requests(lList **alpp, const lListElem *jep, const 
    return ret;
 }
 
+/** @brief Verify the per-host resource requests of a parallel job
+ *
+ * @param alpp receives messages for the caller
+ * @param jep the job (`JB_Type`)
+ * @param master_centry_list see the brief above
+ * @return true when the job is acceptable
+ */
 bool
 sge_job_verify_per_host_requests(lList **alpp, const lListElem *jep, const lList *master_centry_list) {
    bool ret = true;
@@ -338,6 +358,16 @@ job_verify_adjust_request_set(lList **alpp, const lListElem *jep, const lList *m
    return ret;
 }
 
+/** @brief Verify a submitted job and fill in what it left unsaid
+ *
+ * @param jep the job (`JB_Type`)
+ * @param alpp receives messages for the caller
+ * @param lpp the master list
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param monitor for monitoring qmaster threads
+ * @return STATUS_OK when the job is acceptable
+ */
 int
 sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
                       ocs::gdi::Packet *packet, ocs::gdi::Task *task,

@@ -26,6 +26,13 @@
 #include "mir/ocs_MirrorDataStore.h"
 
 namespace ocs {
+   /** @brief Base of the read-only data stores kept current by a mirror thread
+    *
+    * qmaster answers read-only requests from private copies of the master
+    * lists rather than from the live ones, so a `qstat` storm never takes a
+    * lock a `qsub` is waiting for. Each copy has its own thread applying the
+    * event stream to it, and its own lock.
+    */
    class MirrorServerDataStore : public MirrorDataStore {
    public:
       MirrorServerDataStore(ocs::DataStore::Id data_store_id, sge_locktype_t lock_type);

@@ -86,6 +86,8 @@ sge_worker_cleanup_monitor(void *arg) {
    DRETURN_VOID;
 }
 
+/** @brief Start the worker thread pool
+ */
 void
 sge_worker_initialize() {
    const int max_initial_worker_threads = ocs::Bootstrap::get_worker_thread_count();
@@ -114,6 +116,8 @@ sge_worker_initialize() {
    DRETURN_VOID;
 }
 
+/** @brief Stop the worker threads and wait for them
+ */
 void
 sge_worker_terminate() {
    bool do_final_spooling;
@@ -184,6 +188,10 @@ sge_worker_terminate() {
    DRETURN_VOID;
 }
 
+/** @brief One worker thread: take a request, answer it, repeat
+ *
+ * @param arg see the brief above
+ */
 [[noreturn]] void *
 sge_worker_main(void *arg) {
    auto *thread_config = (cl_thread_settings_t *) arg;

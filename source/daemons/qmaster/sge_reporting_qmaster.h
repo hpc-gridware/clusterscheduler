@@ -66,6 +66,11 @@ bool
 intermediate_usage_written(const lListElem *job_report, const lListElem *ja_task);
 
 namespace ocs {
+   /** @brief Writes the reporting records in the classic delimiter-separated format
+    *
+    * The format the older reporting tools read: one record per line, fields
+    * separated by #REPORTING_DELIMITER.
+    */
    class ClassicReportingFileWriter : public BaseReportingFileWriter {
    private:
       static const char REPORTING_DELIMITER{':'};
@@ -131,6 +136,10 @@ namespace ocs {
                                   const lListElem *host, const lListElem *job) const;
    };
 
+   /** @brief Writes the accounting records in the classic delimiter-separated format
+    *
+    * This is the file `qacct` reads by default.
+    */
    class ClassicAccountingFileWriter : public BaseAccountingFileWriter {
    private:
       static const char REPORTING_DELIMITER = ':';

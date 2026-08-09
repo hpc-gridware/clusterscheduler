@@ -26,6 +26,12 @@
 #include "ocs_MirrorServerDataStore.h"
 
 namespace ocs {
+   /** @brief The data store the reader threads answer from
+    *
+    * Subscribes to everything a read-only GDI request may need, and tracks
+    * sessions so that a client which just changed something is not answered
+    * from a copy that predates its own change.
+    */
    class MirrorReaderDataStore : public MirrorServerDataStore {
    public:
       MirrorReaderDataStore() : MirrorServerDataStore(DataStore::Id::READER, LOCK_READER) {};

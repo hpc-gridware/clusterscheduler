@@ -371,6 +371,20 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_e
    DRETURN(ret);
 }
 
+/** @brief Bring a cluster queue's instances into line with its new configuration
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cqueue see the brief above
+ * @param answer_list receives messages for the caller
+ * @param reduced_elem see the brief above
+ * @param refresh_all_values see the brief above
+ * @param is_startup see the brief above
+ * @param monitor for monitoring qmaster threads
+ * @param master_hgroup_list the host groups
+ * @param master_cqueue_list the cluster queues
+ * @return true on success
+ */
 bool
 cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                       bool refresh_all_values, bool is_startup, monitoring_t *monitor, const lList *master_hgroup_list,
@@ -544,6 +558,21 @@ cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
    DRETURN(ret);
 }
 
+/** @brief Create and delete queue instances as a cluster queue gains and loses hosts
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cqueue see the brief above
+ * @param answer_list receives messages for the caller
+ * @param reduced_elem see the brief above
+ * @param add_hosts see the brief above
+ * @param rem_hosts see the brief above
+ * @param refresh_all_values see the brief above
+ * @param monitor for monitoring qmaster threads
+ * @param master_hgroup_list the host groups
+ * @param master_cqueue_list the cluster queues
+ * @return true on success
+ */
 bool
 cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                          lList *add_hosts, lList *rem_hosts, bool refresh_all_values, monitoring_t *monitor,
@@ -1011,6 +1040,14 @@ cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
    }
 }
 
+/** @brief Delete the orphaned instances of one cluster queue
+ *
+ * @param this_elem the object
+ * @param answer_list receives messages for the caller
+ * @param ehname see the brief above
+ * @param gdi_session the session the change belongs to
+ * @return true when anything was deleted
+ */
 bool
 cqueue_del_all_orphaned(lListElem *this_elem, lList **answer_list, const char *ehname, uint64_t gdi_session) {
    bool ret = true;
@@ -1072,6 +1109,15 @@ cqueue_del_all_orphaned(lListElem *this_elem, lList **answer_list, const char *e
    DRETURN(ret);
 }
 
+/** @brief Delete every orphaned queue instance in the list
+ *
+ * @param this_list the list to work on
+ * @param answer_list receives messages for the caller
+ * @param cqname see the brief above
+ * @param ehname see the brief above
+ * @param gdi_session the session the change belongs to
+ * @return true when anything was deleted
+ */
 bool
 cqueue_list_del_all_orphaned(lList *this_list, lList **answer_list, const char *cqname, const char *ehname, uint64_t gdi_session) {
    bool ret = true;
@@ -1094,6 +1140,14 @@ cqueue_list_del_all_orphaned(lList *this_list, lList **answer_list, const char *
    DRETURN(ret);
 }
 
+/** @brief Mark the instances on one host unknown, or clear that state
+ *
+ * @param this_list the list to work on
+ * @param hostname the host
+ * @param send_events whether to announce the change to the event clients
+ * @param is_unknown see the brief above
+ * @param gdi_session the session the change belongs to
+ */
 void
 cqueue_list_set_unknown_state(lList *this_list, const char *hostname, bool send_events, bool is_unknown, uint64_t gdi_session) {
    const lListElem *cqueue;

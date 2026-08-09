@@ -26,6 +26,11 @@
 #include <string>
 
 namespace ocs {
+   /** @brief A minimal class used to exercise the build and the test harness
+    *
+    * Not part of qmaster's behaviour; it exists so the unit test framework has
+    * something trivial to link against.
+    */
    class TestClass {
    private:
    protected:

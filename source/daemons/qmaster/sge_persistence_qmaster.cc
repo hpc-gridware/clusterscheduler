@@ -59,6 +59,11 @@
 
 static unsigned long spooling_wait_time = 0;
 
+/** @brief Open the spooling backend at startup
+ *
+ * @param answer_list receives messages for the caller
+ * @return true on success
+ */
 bool
 sge_initialize_persistence(lList **answer_list) {
    DENTER(TOP_LAYER);
@@ -96,6 +101,8 @@ sge_initialize_persistence(lList **answer_list) {
    DRETURN(ret);
 }
 
+/** @brief Arm the timer that flushes deferred spool writes
+ */
 void
 sge_initialize_persistance_timer() {
    te_event_t ev = nullptr;
@@ -111,6 +118,11 @@ sge_initialize_persistance_timer() {
    DRETURN_VOID;
 }
 
+/** @brief Flush and close the spooling backend
+ *
+ * @param answer_list receives messages for the caller
+ * @return true on success
+ */
 bool
 sge_shutdown_persistence(lList **answer_list) {
    bool ret = true;
@@ -146,6 +158,11 @@ sge_shutdown_persistence(lList **answer_list) {
    DRETURN(ret);
 }
 
+/** @brief Flush whatever is waiting to be spooled
+ *
+ * @param anEvent the timed event that fired
+ * @param monitor for monitoring qmaster threads
+ */
 void
 spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
    uint64_t next_trigger = 0;
@@ -197,6 +214,8 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
  * @param spool shall we spool or only send an event?
  *
  * @return true on success, false on error. answer_list will contain an error description
+ *
+ * @param gdi_session the session the change belongs to
  *
  * @note From an academic standpoint, the parameter spool shouldn't be needed.
  *       Whenever an object changes and a change event is created, the data

@@ -294,7 +294,7 @@ sge_add_check_limit_trigger() {
  *
  * @note MT-NOTE: sge_job_enfoce_limit_handler() is MT safe
  *
- * @see #sge_host_add_remove_enforce_limit_trigger, #sge_host_add_enforce_limit_trigger, #sge_host_remove_enforce_limit_trigger
+ * @see `sge_host_add_remove_enforce_limit_trigger()`, #sge_host_add_enforce_limit_trigger, #sge_host_remove_enforce_limit_trigger
  */
 void
 sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
@@ -446,7 +446,7 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
  *
  * @note MT-NOTE: sge_host_add_enforce_limit_trigger() is MT safe
  *
- * @see #sge_host_add_remove_enforce_limit_trigger, #sge_host_add_enforce_limit_trigger, #sge_host_remove_enforce_limit_trigger
+ * @see `sge_host_add_remove_enforce_limit_trigger()`, #sge_host_add_enforce_limit_trigger, #sge_host_remove_enforce_limit_trigger
  */
 void
 sge_host_add_enforce_limit_trigger(const char *hostname) {
@@ -468,7 +468,7 @@ sge_host_add_enforce_limit_trigger(const char *hostname) {
  *
  * @note MT-NOTE: sge_host_remove_enforce_limit_trigger() is MT safe
  *
- * @see #sge_host_add_remove_enforce_limit_trigger, #sge_host_add_enforce_limit_trigger, #sge_host_remove_enforce_limit_trigger
+ * @see `sge_host_add_remove_enforce_limit_trigger()`, #sge_host_add_enforce_limit_trigger, #sge_host_remove_enforce_limit_trigger
  */
 void
 sge_host_remove_enforce_limit_trigger(const char *hostname) {

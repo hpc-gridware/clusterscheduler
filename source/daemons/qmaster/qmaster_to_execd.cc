@@ -115,7 +115,7 @@ host_notify_about_X(lListElem *host, uint32_t x, ocs::gdi::ClientServerBase::Cli
  *
  * @return see host_notify_about_X()
  *
- * @see #host_notify_about_X
+ * @see `host_notify_about_X()`
  */
 int host_notify_about_new_conf(lListElem *host) {
    return host_notify_about_X(host, 0, ocs::gdi::ClientServerBase::TAG_GET_NEW_CONF, EXECD);
@@ -131,7 +131,7 @@ int host_notify_about_new_conf(lListElem *host) {
  *
  * @return see host_notify_about_X()
  *
- * @see #host_notify_about_X
+ * @see `host_notify_about_X()`
  */
 int host_notify_about_kill(lListElem *host, int kill_command) {
    return host_notify_about_X(host, kill_command, ocs::gdi::ClientServerBase::TAG_KILL_EXECD, EXECD);

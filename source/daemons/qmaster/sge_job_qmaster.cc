@@ -1613,7 +1613,7 @@ static void job_suc_pre_doit(lListElem *jep, bool array_deps) {
  *       no need to spool the dependency links or to send events to
  *       update event clients - this is done in the calling functions
  *
- * @see #job_suc_pre_doit, #job_suc_pre_ad
+ * @see `job_suc_pre_doit()`, #job_suc_pre_ad
  */
 void job_suc_pre(lListElem *jep) {
    DENTER(TOP_LAYER);
@@ -1634,7 +1634,7 @@ void job_suc_pre(lListElem *jep) {
  *       no need to spool the dependency links or to send events to
  *       update event clients - this is done in the calling functions
  *
- * @see #job_suc_pre_doit, #job_suc_pre
+ * @see `job_suc_pre_doit()`, #job_suc_pre
  */
 void job_suc_pre_ad(lListElem *jep) {
    DENTER(TOP_LAYER);
