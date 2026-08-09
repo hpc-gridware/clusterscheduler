@@ -66,14 +66,29 @@ HAVE_DOT               = NO
 # could not be resolved" and the gate rejects correct documentation.
 #
 # So the whole tree is parsed - measured at ~3 seconds - and the *warnings* are
-# filtered down to the converted modules afterwards by dxm-check.sh. INPUT is
-# therefore inherited unchanged from the main Doxyfile above.
+# filtered down to the converted modules afterwards by dxm-check.sh.
 #
 # Consequence worth knowing while the migration is in progress: a #reference to
 # a macro in a module that has not been converted yet still fails, because a
 # file without an @file block contributes no link targets. Use backticks for
 # those and upgrade them to #reference once that module is converted.
+#
+# INPUT is the one input setting that is NOT inherited unchanged. The main
+# Doxyfile covers source/ only, and it stays that way: the module tests under
+# test/ are gated but deliberately kept out of the published documentation
+# (decision 2026-08-09). Repeating the tag here overrides the value @INCLUDE
+# brought along, the same mechanism as EXCLUDE_PATTERNS below.
+#
+# Without this the tests are invisible to the gate, and invisible in the worst
+# way: doxygen reports nothing for a file it never read, which looks exactly
+# like a clean file. dxm-check.sh guards against the total case with its
+# "parsed no input files" check, but not against a subtree quietly missing.
 #---------------------------------------------------------------------------
+
+INPUT                  = ./clusterscheduler/source/ \
+                         ./gcs-extensions/source/ \
+                         ./clusterscheduler/test/ \
+                         ./gcs-extensions/test/
 
 RECURSIVE              = YES
 
