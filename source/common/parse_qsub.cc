@@ -117,6 +117,28 @@ static int ocs_parse_sync_switch(lList **opts, uint32_t opt, const char *arg, co
 ** NOTES
 **    MT-NOTE: cull_parse_cmdline() is MT safe
 */
+/** @brief Turn an argument vector into a list of options
+ *
+ * The first half of submitting: this recognises the switches and their
+ * arguments without interpreting them, and #cull_parse_job_parameter then
+ * builds the job from the result.
+ *
+ * @param prog_number the client being parsed for, which decides the option set
+ * @param arg_list the arguments, not including `argv[0]`
+ * @param envp the environment, for the options that read one
+ * @param pcmdline receives the parsed options (`SPA_Type`)
+ * @param flags any of `FLG_USE_PSEUDOS` and `FLG_QALTER`; see the banner above
+ *              for what each does
+ *
+ * @return `nullptr` when everything was fine, otherwise an answer list
+ *         (`AN_Type`) carrying one of
+ *         - `STATUS_EUNKNOWN` - an internal error, a null pointer or out of memory
+ *         - `STATUS_EEXIST` - an option was given more than once; a warning
+ *         - `STATUS_ESEMANTIC` - an option that needs an argument had none
+ *         - `STATUS_ESYNTAX` - an option argument could not be parsed
+ *
+ * @note MT-NOTE: cull_parse_cmdline() is MT safe
+ */
 lList *cull_parse_cmdline(
         uint32_t prog_number,
         const char **arg_list,
@@ -2480,31 +2502,22 @@ static int var_list_parse_from_environment(lList **lpp, char **envp)
    DRETURN(0);
 }
 
-/****** set_yn_option() ********************************************************
-*  NAME
-*     set_yn_option() -- Sets the value of a y|n option
-*
-*  SYNOPSIS
-*     static int set_yn_option (lList **opts, uint32_t opt, char *arg,
-*                               char *value, lList **alpp)
-*
-*  FUNCTION
-*     Sets the value of the option element to TRUE or FALSE depending on whether
-*     the option value is y[es] or n[o].
-*
-*  INPUT
-*     lList **opts - The list of options to which to append the option element
-*     uint32_t opt - The option code of the option
-*     char *arg    - The option text
-*     char *value  - The option value
-*     lList **alpp - The answer list
-*
-*  RESULT
-*     int - STATUS_OK if success, STATUS_ERROR1 otherwise
-*
-*  NOTES
-*     MT-NOTES: set_yn_option() is MT safe
-*******************************************************************************/
+/**
+ * @brief Sets the value of a y|n option
+ *
+ * Sets the value of the option element to TRUE or FALSE depending on whether
+ * the option value is y[es] or n[o].
+ *
+ * @param opts The list of options to which to append the option element
+ * @param opt The option code of the option
+ * @param arg The option text
+ * @param value The option value
+ * @param alpp The answer list
+ *
+ * @return STATUS_OK if success, STATUS_ERROR1 otherwise
+ *
+ * @note MT-NOTES: set_yn_option() is MT safe
+ */
 static int set_yn_option (lList **opts, uint32_t opt, const char *arg, const char *value,
                           lList **alpp)
 {
@@ -2598,8 +2611,20 @@ ocs_parse_sync_switch(lList **opts, uint32_t opt, const char *arg, const char *v
    DRETURN(STATUS_OK);
 }
 
-/* This method is not thread safe.  Fortunately, it is only used by the
- * -cwd switch which can be forbidden in DRMAA. */
+/** @brief Express a path relative to the job owner's home directory
+ *
+ * Used for `-cwd`: the current directory on the submit host has to be named in
+ * a way the execution host can resolve, and the home directory is the one
+ * anchor both are assumed to share.
+ *
+ * @param pjob the job, for the owner whose home directory is used
+ * @param path the path to rewrite
+ * @param alpp used to return error messages
+ * @return the rewritten path, in a static buffer the caller must not free
+ *
+ * @note Not thread safe, because of that static buffer. Acceptable because it
+ *       is only reached through `-cwd`, which DRMAA can forbid.
+ */
 char *reroot_path(lListElem* pjob, const char *path, lList **alpp) {
    const char *home = nullptr;
    char tmp_str[SGE_PATH_MAX + 1];

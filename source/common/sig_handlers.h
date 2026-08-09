@@ -39,18 +39,29 @@
 
 #include <csignal>
 
+
+
 void sge_setup_sig_handlers(int me_who);
 void sge_reap(int dummy);
 
-extern sigset_t default_mask;
-extern sigset_t omask;
-extern sigset_t io_mask;
+extern sigset_t default_mask;   ///< see the definition in `sig_handlers.cc`
+extern sigset_t omask;          ///< see the definition in `sig_handlers.cc`
+extern sigset_t io_mask;        ///< see the definition in `sig_handlers.cc`
 
-extern struct sigaction sigterm_vec, sigterm_ovec;
-extern struct sigaction sigalrm_vec, sigalrm_ovec;
+extern struct sigaction sigterm_vec, sigterm_ovec;   ///< see the definition in `sig_handlers.cc`
+extern struct sigaction sigalrm_vec, sigalrm_ovec;   ///< see the definition in `sig_handlers.cc`
+
+/** @brief The `SIGCHLD` handler and the one it replaced
+ *
+ * @warning These two names are defined nowhere. `sig_handlers.cc` defines
+ *          `sigcld_pipe_vec` / `sigcld_pipe_ovec` instead - the same handler
+ *          was later used for `SIGPIPE` as well and the variables were renamed
+ *          without updating this declaration. Referring to `sigcld_vec` would
+ *          not link. Left as it is: removing a declaration is a code change.
+ */
 extern struct sigaction sigcld_vec, sigcld_ovec;
 
-extern volatile int shut_me_down;
-extern volatile int sge_sig_handler_dead_children;
-extern volatile int sge_sig_handler_in_main_loop;
-extern volatile int sge_sig_handler_sigpipe_received;
+extern volatile int shut_me_down;                       ///< see the definition in `sig_handlers.cc`
+extern volatile int sge_sig_handler_dead_children;      ///< see the definition in `sig_handlers.cc`
+extern volatile int sge_sig_handler_in_main_loop;       ///< see the definition in `sig_handlers.cc`
+extern volatile int sge_sig_handler_sigpipe_received;   ///< see the definition in `sig_handlers.cc`

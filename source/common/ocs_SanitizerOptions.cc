@@ -55,6 +55,9 @@
  * compile errors out even when ASan is off.
  */
 #ifndef __has_feature
+/** @brief Stand-in for the clang feature test on compilers that lack it
+ * @param x the feature being asked about; the answer is always "no"
+ */
 #  define __has_feature(x) 0
 #endif
 

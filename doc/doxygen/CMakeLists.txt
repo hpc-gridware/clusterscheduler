@@ -80,6 +80,7 @@ if (DOXYGEN_FOUND)
          source/daemons/shepherd
          source/daemons/execd
         source/daemons/qmaster
+        source/common
    )
 
    if (DXM_FINISHED_MODULES)

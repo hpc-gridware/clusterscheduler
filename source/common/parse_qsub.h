@@ -43,24 +43,24 @@
 /*
  * defines for SPA_occurrence
  */
-#define BIT_SPA_OCC_NONE               0x00000000L
-#define BIT_SPA_OCC_NOARG              0x00000001L
-#define BIT_SPA_OCC_ARG                0x00000002L
+#define BIT_SPA_OCC_NONE               0x00000000L   ///< the option did not appear
+#define BIT_SPA_OCC_NOARG              0x00000001L   ///< the option appeared without an argument
+#define BIT_SPA_OCC_ARG                0x00000002L   ///< the option appeared with an argument
 
 /*
 ** defines for pseudo-arguments
 */
-#define STR_PSEUDO_JOBID       "jobid"
-#define STR_PSEUDO_SCRIPT      "script"
-#define STR_PSEUDO_JOBARG      "jobarg"
-#define STR_PSEUDO_SCRIPTLEN   "scriptlen"
-#define STR_PSEUDO_SCRIPTPTR   "scriptptr"
+#define STR_PSEUDO_JOBID       "jobid"       ///< pseudo-argument: the job id operand
+#define STR_PSEUDO_SCRIPT      "script"      ///< pseudo-argument: the job script name
+#define STR_PSEUDO_JOBARG      "jobarg"      ///< pseudo-argument: one argument to the job script
+#define STR_PSEUDO_SCRIPTLEN   "scriptlen"   ///< pseudo-argument: length of an inline script
+#define STR_PSEUDO_SCRIPTPTR   "scriptptr"   ///< pseudo-argument: the inline script itself
 
 /*
 ** flags
 */
-#define FLG_USE_PSEUDOS 1
-#define FLG_QALTER      2
+#define FLG_USE_PSEUDOS 1   ///< the operands become the pseudo-arguments above rather than an error
+#define FLG_QALTER      2   ///< parse for `qalter`, where options that only make sense at submit time are rejected
 
 
 /* I've added a -wd option to cull_parse_job_parameter() to deal with the
@@ -72,7 +72,7 @@
 /*
 ** marker to indicate that a -wd was originally a -cwd
 */
-#define SGE_HOME_DIRECTORY "$$HOME$$"
+#define SGE_HOME_DIRECTORY "$$HOME$$"   ///< marks a `-wd` that was originally a `-cwd`, so it can still be resolved relative to the home directory
 #endif
 
 lList *cull_parse_cmdline(uint32_t prog_number, const char **arg_list, char **envp, lList **pcmdline, uint32_t flags);

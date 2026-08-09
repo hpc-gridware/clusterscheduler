@@ -69,6 +69,11 @@
 
 #include "msg_common.h"
 
+/** @brief Build this file for the submit clients rather than for `qsh`
+ *
+ * The parser is shared, but `qsh` accepts a different set of options; this
+ * selects the `qsub` set.
+ */
 #define USE_CLIENT_QSUB 1
 
 /*
@@ -91,22 +96,28 @@ const char *default_prefix = "#$";
 /*    return (*s == '\0' || *s == '\n'); */
 /* } */
 
-/*
-** NAME
-**   cull_parse_job_parameter
-** PARAMETER
-**   cmdline            - nullptr or SPA_Type, if nullptr, *pjob is initialised with defaults
-**   pjob               - pointer to job element, is filled according to cmdline
-**
-** RETURN
-**   answer list, AN_Type or nullptr if everything ok, the following stati can occur:
-**   STATUS_EUNKNOWN   - bad internal error like nullptr pointer received or no memory
-**   STATUS_EDISK      - getcwd() failed
-**   STATUS_ENOIMP     - unknown switch or -help occurred
-** EXTERNAL
-**   me
-** DESCRIPTION
-*/
+/** @brief Fill in a job object from a parsed command line
+ *
+ * The second half of submitting: #cull_parse_cmdline turns the argument vector
+ * into a list of options, and this turns that list into the job. Called with
+ * `cmdline` as `nullptr` it produces a job carrying nothing but the defaults,
+ * which is how a template job is made.
+ *
+ * @param uid the submitting user's uid
+ * @param username the submitting user's name
+ * @param cell_root the cell directory, for resolving the default files
+ * @param unqualified_hostname the submit host, unqualified
+ * @param qualified_hostname the submit host, fully qualified
+ * @param cmdline the parsed options (`SPA_Type`), or `nullptr` for defaults only
+ * @param pjob the job (`JB_Type`) to fill in
+ * @param sync_options receives the `-sync` bits
+ *
+ * @return `nullptr` when everything was fine, otherwise an answer list
+ *         (`AN_Type`) carrying one of
+ *         - `STATUS_EUNKNOWN` - an internal error, a null pointer or out of memory
+ *         - `STATUS_EDISK` - `getcwd()` failed
+ *         - `STATUS_ENOIMP` - an unknown switch, or `-help`
+ */
 lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *cell_root,
                                 const char *unqualified_hostname, const char *qualified_hostname, 
                                 lList *cmdline, lListElem **pjob, uint32_t *sync_options)
@@ -819,72 +830,36 @@ lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *
    DRETURN(answer);
 }
 
-/****** client/parse_job_cull/parse_script_file() *****************************
-*  NAME
-*     parse_script_file() -- parse a job script or a job defaults file
-*
-*  SYNOPSIS
-*     lList* parse_script_file(char *script_file, 
-*                              const char *directive_prefix, 
-*                              lList **lpp_options, 
-*                              char **envp, 
-*                              uint32_t flags);
-*
-*  FUNCTION
-*     Searches for special comments in script files and parses contained 
-*     SGE options or
-*     parses SGE options in job defaults files (sge_request).
-*     Script files are parsed with directive prefix nullptr,
-*     default files are parsed with directive prefix "" and FLG_USE_NO_PSEUSOS.
-*
-*  INPUTS
-*     char *script_file      - script file name or nullptr or "-"
-*                              in the latter two cases the job script is read 
-*                              from stdin
-*     char *directive_prefix - only lines beginning with this prefix are parsed
-*                              nullptr causes function to look in the lpp_options
-*                              list whether the -C option has been set. 
-*                              If it has, this prefix is used.
-*                              If not, the default prefix "#$" is used. 
-*                              "" causes the function to parse all lines not 
-*                              starting with "#" (comment lines).
-*     lList **lpp_options    - list pointer-pointer, SPA_Type
-*                              list to store the recognized switches in, is 
-*                              created if it doesnt exist but there are 
-*                              options to be returned
-*     char **envp            - environment pointer
-*     uint32_t flags         - FLG_HIGHER_PRIOR:    new options are appended
-*                                                   to list
-*                              FLG_LOWER_PRIOR:     new options are inserted 
-*                                                   at the beginning of list
-*                              FLG_USE_NO_PSEUDOS:  do not create pseudoargs 
-*                                                   for script pointer and 
-*                                                   length
-*                              FLG_IGN_NO_FILE:     do not show an error if 
-*                                                   script_file was not found
-*  RESULT
-*     lList* - answer list, AN_Type, or nullptr if everything was ok,
-*              the following stati can occur:
-*                 STATUS_EUNKNOWN - bad internal error like nullptr pointer
-*                                   received or no memory
-*                 STATUS_EDISK    - file could not be opened
-*
-*  NOTES
-*     Special comments in script files have to start in the first column of a 
-*     line.
-*     Comments in job defaults files have to start in the first column of a 
-*     line.
-*     If a line is longer than MAX_STRING_SIZE bytes, contents (SGE options) 
-*     starting from position MAX_STRING_SIZE + 1 are silently ignored.
-*     MAX_STRING_SIZE is defined in common/basis_types.h (current value 2048).
-*
-*     MT-NOTE: parse_script_file() is MT safe
-*
-*  SEE ALSO
-*     centry_list_parse_from_string()
-*     basis_types.h
-*     sge_request(5)
-*******************************************************************************/
+/**
+ * @brief Parse a job script or a job defaults file
+ *
+ * Searches for special comments in script files and parses contained
+ * SGE options or
+ * parses SGE options in job defaults files (sge_request).
+ * Script files are parsed with directive prefix nullptr,
+ * default files are parsed with directive prefix "" and FLG_USE_NO_PSEUSOS.
+ *
+ * @param prog_number the client being parsed for, which decides the option set
+ * @param script_file script file name or nullptr or "-" in the latter two cases the job script is read from stdin
+ * @param directive_prefix only lines beginning with this prefix are parsed nullptr causes function to look in the lpp_options list whether the -C option has been set. If it has, this prefix is used. If not, the default prefix "#$" is used. "" causes the function to parse all lines not starting with "#" (comment lines).
+ * @param lpp_options list pointer-pointer, SPA_Type list to store the recognized switches in, is created if it doesnt exist but there are options to be returned
+ * @param envp environment pointer
+ * @param flags FLG_HIGHER_PRIOR:    new options are appended to list FLG_LOWER_PRIOR:     new options are inserted at the beginning of list FLG_USE_NO_PSEUDOS:  do not create pseudoargs for script pointer and length FLG_IGN_NO_FILE:     do not show an error if script_file was not found
+ *
+ * @return answer list, AN_Type, or nullptr if everything was ok, the following stati can occur: STATUS_EUNKNOWN - bad internal error like nullptr pointer received or no memory STATUS_EDISK    - file could not be opened
+ *
+ * @note Special comments in script files have to start in the first column of a
+ *       line.
+ *       Comments in job defaults files have to start in the first column of a
+ *       line.
+ *       If a line is longer than MAX_STRING_SIZE bytes, contents (SGE options)
+ *       starting from position MAX_STRING_SIZE + 1 are silently ignored.
+ *       MAX_STRING_SIZE is defined in common/basis_types.h (current value 2048).
+ *
+ *       MT-NOTE: parse_script_file() is MT safe
+ *
+ * @see #centry_list_parse_from_string
+ */
 lList *parse_script_file(
 uint32_t prog_number,
 const char *script_file,

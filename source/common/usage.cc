@@ -59,6 +59,14 @@ static void usage_silent(FILE *fp);
 
 static int marker[OA__END];
 
+/** @brief Note that this client uses a given argument placeholder
+ *
+ * The usage output prints the syntax of each placeholder only once, at the end,
+ * and only for the placeholders this client actually uses. Every option printed
+ * therefore marks the placeholders it names.
+ *
+ * @param argument_number one of the `OA_*` values above
+ */
 void mark_argument_syntax(int argument_number) {
    marker[argument_number] = 1;
 }
@@ -226,6 +234,30 @@ FILE *fp
 }
 
 
+/** @def PRINTITD
+ * @brief Print one option and its description
+ *
+ * Defined inside sge_usage() and used only there; relies on the local `fp`.
+ *
+ * @param o the option as it is typed, e.g. `[-a date_time]`
+ * @param d the one-line description
+ */
+
+/** @def PRINTIT
+ * @brief #PRINTITD for an option that needs no description
+ * @param o the option as it is typed
+ */
+
+/** @def MARK
+ * @brief Note that this client uses a placeholder, so its syntax gets printed
+ * @param n one of the `OA_*` values
+ */
+
+/** @brief Print the usage text of a client
+ *
+ * @param prog_number the client to print the usage of
+ * @param fp where to print it - `stdout` for `-help`, `stderr` for a usage error
+ */
 void sge_usage(ProgName prog_number, FILE *fp) {
    DENTER(TOP_LAYER);
   char namebuf[128];

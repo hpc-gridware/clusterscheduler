@@ -40,7 +40,9 @@
 #include "comm/cl_data_types.h"
 #include "comm/lists/cl_thread.h"
 
+/** @brief The commlib thread list, under the name this module uses for it */
 #define THREAD_LIB_HANDLE cl_raw_list_t
+/** @brief One commlib thread, under the name this module uses for it */
 #define THREAD_HANDLE     cl_thread_settings_t
 
 
@@ -67,5 +69,14 @@ int thread_trigger_event(THREAD_HANDLE *thread);
 int thread_wait_for_event(THREAD_HANDLE *thread, int sec, int msec);
 int thread_join(THREAD_HANDLE *thread);
 
+/** @brief Enable or disable cancellation for the calling thread
+ *
+ * @param enabled true to allow the thread to be cancelled
+ * @return `CL_RETVAL_OK` on success, a `CL_RETVAL_*` error otherwise
+ *
+ * @warning Declared here but defined nowhere in the tree, and called from
+ *          nowhere either. Kept because removing a declaration is a code
+ *          change; see the dead-declaration list.
+ */
 int thread_setcancelstate(int enabled);
 int thread_testcancel(void *t_conf);

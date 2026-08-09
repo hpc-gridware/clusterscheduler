@@ -119,18 +119,5 @@ enum {
    OA__END   ///< not a placeholder; the number of them, used to size `marker[]`
 };
 
-/** @brief Note that this client uses a given argument placeholder
- *
- * The usage output prints the syntax of each placeholder only once, at the end,
- * and only for the placeholders this client actually uses. Every option printed
- * therefore marks the placeholders it names.
- *
- * @param argument_number one of the `OA_*` values above
- */
 void mark_argument_syntax(int argument_number);
-/** @brief Print the usage text of a client
- *
- * @param prog_number the client to print the usage of
- * @param fp where to print it - `stdout` for `-help`, `stderr` for a usage error
- */
 void sge_usage(ProgName prog_number, FILE *fp);
