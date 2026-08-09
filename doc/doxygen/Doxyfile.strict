@@ -84,10 +84,17 @@ RECURSIVE              = YES
 # whole is still wanted, and the main Doxyfile still documents these files; only
 # the "every macro must be documented" requirement is lifted here.
 #
+# sge_spooling_flatfile_scanner.cc is flex output, checked in rather than
+# regenerated at build time (the CMakeLists only compiles it with -Wno-error).
+# It is the only generated scanner or parser in the tree, so it is named
+# explicitly instead of matched by a */*_scanner.cc pattern that would also
+# swallow a hand written file of that name.
+#
 # EXCLUDE_PATTERNS is repeated rather than appended because @INCLUDE brings the
 # main Doxyfile's value along, and doxygen has no += for it.
 EXCLUDE_PATTERNS       = */._* \
-                         */msg_*.h
+                         */msg_*.h \
+                         */sge_spooling_flatfile_scanner.cc
 
 #---------------------------------------------------------------------------
 # What has to be documented
