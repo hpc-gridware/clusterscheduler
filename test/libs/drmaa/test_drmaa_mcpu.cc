@@ -50,7 +50,20 @@
 #define CMD "/tmp/sleeper.sh"
 #define CATEGORY "test"
 
+/** @brief Handle code
+ *
+ * @param code see the description above
+ * @param msg see the description above
+ * @param r see the description above
+ * @param t see the description above
+ * @return non-zero or true when the case passed
+ */
 int handle_code(int code, char *msg, int r, int t);
+/** @brief Run
+ *
+ * @param arg see the description above
+  * @return the thread's result; the tests ignore it
+ */
 void *run(void *arg);
 
 int main(int argc, char **argv) {

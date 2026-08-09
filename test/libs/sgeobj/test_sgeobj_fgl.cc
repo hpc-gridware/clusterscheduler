@@ -70,6 +70,8 @@ static long request = 0;
       }                                                                      \
    } 
 
+/** @brief Simulate job add
+ */
 void simulate_job_add() {
    DENTER(TOP_LAYER);
    fgl_lock();
@@ -86,6 +88,12 @@ void simulate_job_add() {
    DRETURN_VOID;
 }
 
+/** @brief Simulate job start
+ *
+ * @param jid see the description above
+ * @param cqueue see the description above
+ * @param host see the description above
+ */
 void simulate_job_start(uint32_t jid, const char *cqueue, const char *host) {
    DENTER(TOP_LAYER);
    fgl_lock();
@@ -102,6 +110,10 @@ void simulate_job_start(uint32_t jid, const char *cqueue, const char *host) {
    DRETURN_VOID;
 }
 
+/** @brief Simulate load report
+ *
+ * @param host see the description above
+ */
 void simulate_load_report(const char *host) {
    DENTER(TOP_LAYER);
    fgl_lock();
@@ -118,6 +130,10 @@ void simulate_load_report(const char *host) {
    DRETURN_VOID;
 }
 
+/** @brief Simulate project update
+ *
+ * @param host see the description above
+ */
 void simulate_project_update(const char *host) {
    DENTER(TOP_LAYER);
    fgl_lock();
@@ -135,6 +151,11 @@ void simulate_project_update(const char *host) {
 }
 
 
+/** @brief Thread1
+ *
+ * @param data see the description above
+  * @return the thread's result; the tests ignore it
+ */
 void *thread1(void *data) {
    thread_arg_t *thread = (thread_arg_t *)data;
    dstring thread_name = DSTRING_INIT;

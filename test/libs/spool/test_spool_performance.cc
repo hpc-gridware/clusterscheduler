@@ -239,6 +239,8 @@ static void write_csv(const char *scenario, prof_level level)
    fclose(csv);
 }
 
+/** @brief Clear caches
+ */
 void clear_caches()
 {
    printf("\n===> clear the filesystem caches\n");

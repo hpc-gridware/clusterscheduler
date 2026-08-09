@@ -65,18 +65,28 @@ void *get_thread_func_arg() {
 pthread_mutex_t mutex_lock = PTHREAD_MUTEX_INITIALIZER;
 long lock_counter = 0;
 
+/** @brief Incr counter
+ */
 void incr_counter() {
    pthread_mutex_lock(&mutex_lock);
    lock_counter++;
    pthread_mutex_unlock(&mutex_lock);
 }
 
+/** @brief Decr counter
+ */
 void decr_counter() {
    pthread_mutex_lock(&mutex_lock);
    lock_counter--;
    pthread_mutex_unlock(&mutex_lock);
 }
 
+/** @brief Getrandomnumber
+ *
+ * @param min=20 see the description above
+ * @param max=1000 see the description above
+ * @return non-zero or true when the case passed
+ */
 int getRandomNumber(const int min = 20, const int max = 1000) {
     std::random_device rd; // Seed for the random number engine
     std::mt19937 gen(rd()); // Mersenne Twister engine
@@ -157,6 +167,13 @@ static void *thread_function(void *anArg) {
    DRETURN(nullptr);
 }
 
+/** @brief Is in tolerance
+ *
+ * @param value1 see the description above
+ * @param value2 see the description above
+ * @param accepted_tolerance see the description above
+ * @return non-zero or true when the case passed
+ */
 int is_in_tolerance(uint32_t value1, uint32_t value2, u_int accepted_tolerance) {
    return 0;
 }

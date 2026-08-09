@@ -32,6 +32,9 @@
 
 #include "basis_types.h"
 
+/** @brief Test case: munge
+ * @return true when the case passed
+ */
 bool
 test_munge() {
    bool ret = true;

@@ -28,6 +28,9 @@
 #include <time.h>
 #include <pthread.h>
 
+/** @brief Get milli
+  * @return the value
+ */
 long get_milli() {
    const auto now = std::chrono::system_clock::now();
    const auto epoch = now.time_since_epoch();

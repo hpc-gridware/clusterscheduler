@@ -42,6 +42,12 @@
 
 #define WD "/tmp"
 
+/** @brief Handle code
+ *
+ * @param code see the description above
+ * @param msg see the description above
+ * @return non-zero or true when the case passed
+ */
 int handle_code(int code, char *msg);
 
 int main(int argc, char **argv) {

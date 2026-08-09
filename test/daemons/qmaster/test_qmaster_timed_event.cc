@@ -37,6 +37,16 @@
 
 static int s_fail = 0;
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \
@@ -48,16 +58,22 @@ static int s_fail = 0;
    } while (0)
 
 // handler stubs — event delivery requires sge_thread_timer, which is not started here
+/** @brief Calendar event handler
+ */
 void calendar_event_handler(te_event_t /*anEvent*/, monitoring_t * /*monitor*/) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
+/** @brief Signal resend event handler
+ */
 void signal_resend_event_handler(te_event_t /*anEvent*/, monitoring_t * /*monitor*/) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
 
+/** @brief Job resend event handler
+ */
 void job_resend_event_handler(te_event_t /*anEvent*/, monitoring_t * /*monitor*/) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;

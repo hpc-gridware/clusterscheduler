@@ -47,16 +47,34 @@
 #include "uti/sge_string.h"
 #include "uti/sge_stdlib.h"
 
+/** @brief Do test
+ * @return non-zero or true when the case passed
+ */
 int do_test();
 
+/** @brief Test case: params
+ * @return non-zero or true when the case passed
+ */
 int test_params();
 
+/** @brief Do sleep
+  * @return the thread's result; the tests ignore it
+ */
 void *do_sleep(void *);
 
+/** @brief Do calc
+  * @return the thread's result; the tests ignore it
+ */
 void *do_calc(void *);
 
+/** @brief Do calc2
+  * @return the thread's result; the tests ignore it
+ */
 void *do_calc2(void *);
 
+/** @brief Do malloc
+  * @return the thread's result; the tests ignore it
+ */
 void *do_malloc(void *);
 
 
