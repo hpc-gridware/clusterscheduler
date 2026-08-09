@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The priority translation facility: turning tickets into nice values
+ *
+ * @see ptf.h for how the feedback loop works.
+ */
+
 #if defined(SOLARIS)
 #  include <sys/param.h>
 #endif
@@ -40,6 +46,12 @@
 #if defined(COMPILE_DC) || defined(MODULE_TEST)
 
 #if defined(LINUX) || defined(SOLARIS) || !defined(MODULE_TEST) || defined(FREEBSD) || defined(DARWIN)
+/** @brief Take usage from the process data collector rather than from wait3()
+ *
+ * Set on every platform where the collector runs; without it the PTF sees only
+ * what the shepherd reports when a job ends, which is too late to adjust
+ * anything.
+ */
 #   define USE_DC
 #endif
 
@@ -128,10 +140,27 @@
  *
  */
 
+/** @brief Advance a pointer by a byte count, whatever it points at
+ *
+ * The collector hands over a job followed by a variable number of processes in
+ * one block, so walking it means stepping by bytes.
+ *
+ * @param type the pointer's target type
+ * @param ptr the pointer, advanced in place
+ * @param nbyte how far to advance it
+ */
 #define INCPTR(type, ptr, nbyte) ptr = (type *)((char *)ptr + nbyte)
 
+/** @brief #INCPTR for a job pointer
+ * @param ptr the pointer, advanced in place
+ * @param nbyte how far to advance it
+ */
 #define INCJOBPTR(ptr, nbyte) INCPTR(struct psJob_s, ptr, nbyte)
 
+/** @brief #INCPTR for a process pointer
+ * @param ptr the pointer, advanced in place
+ * @param nbyte how far to advance it
+ */
 #define INCPROCPTR(ptr, nbyte) INCPTR(struct psProc_s, ptr, nbyte)
 
 static void ptf_calc_job_proportion_pass0(lListElem *job,
@@ -193,26 +222,19 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
 
 #endif
 
-lList *ptf_jobs = nullptr;
+lList *ptf_jobs = nullptr;   ///< Every job the PTF is currently adjusting
 
 static int is_ptf_running = 0;
 
-/****** execd/ptf/ptf_get_osjobid() *******************************************
-*  NAME
-*     ptf_get_osjobid() -- return the job id 
-*
-*  SYNOPSIS
-*     static osjobid_t ptf_get_osjobid(lListElem *osjob) 
-*
-*  FUNCTION
-*     The function returns the os job id contained in the CULL element
-*
-*  INPUTS
-*     lListElem *osjob - element of type JO_Type 
-*
-*  RESULT
-*     static osjobid_t - os job id (job id / ash / supplementary gid)
-******************************************************************************/
+/**
+ * @brief Return the job id
+ *
+ * The function returns the os job id contained in the CULL element
+ *
+ * @param osjob element of type JO_Type
+ *
+ * @return os job id (job id / ash / supplementary gid)
+ */
 static osjobid_t ptf_get_osjobid(lListElem *osjob)
 {
    osjobid_t osjobid;
@@ -231,20 +253,14 @@ static osjobid_t ptf_get_osjobid(lListElem *osjob)
    return osjobid;
 }
 
-/****** execd/ptf/ptf_set_osjobid() *******************************************
-*  NAME
-*     ptf_set_osjobid() -- set os job id 
-*
-*  SYNOPSIS
-*     static void ptf_set_osjobid(lListElem *osjob, osjobid_t osjobid) 
-*
-*  FUNCTION
-*     Set the attribute of "osjob" containing the os job id
-*
-*  INPUTS
-*     lListElem *osjob  - element of type JO_Type 
-*     osjobid_t osjobid - os job id (job id / ash / supplementary gid) 
-******************************************************************************/
+/**
+ * @brief Set os job id
+ *
+ * Set the attribute of "osjob" containing the os job id
+ *
+ * @param osjob element of type JO_Type
+ * @param osjobid os job id (job id / ash / supplementary gid)
+ */
 static void ptf_set_osjobid(lListElem *osjob, osjobid_t osjobid)
 {
 #if !defined(LINUX) && !defined(SOLARIS) && !defined(DARWIN) && !defined(FREEBSD) && !defined(NETBSD)
@@ -259,23 +275,18 @@ static void ptf_set_osjobid(lListElem *osjob, osjobid_t osjobid)
 #endif
 }
 
-/****** execd/ptf/ptf_build_usage_list() **************************************
-*  NAME
-*     ptf_build_usage_list() -- create a new usage list from an existing list 
-*
-*  SYNOPSIS
-*     static lList* ptf_build_usage_list(char *name)
-*
-*  FUNCTION
-*     This method creates a new usage list or makes a copy of a old
-*     usage list and zeros out the usage values. 
-*
-*  INPUTS
-*     char *name            - name of the new list 
-*
-*  RESULT
-*     static lList* - the new usage list
-******************************************************************************/
+/**
+ * @brief Create a new usage list from an existing list
+ *
+ * This method creates a new usage list or makes a copy of a old
+ * usage list and zeros out the usage values.
+ *
+ * @param usage_collection which usage attributes to include
+ *
+ * @param name name of the new list
+ *
+ * @return the new usage list
+ */
 lList *ptf_build_usage_list(const char *name, usage_collection_t usage_collection)
 {
    DENTER(TOP_LAYER);
@@ -311,24 +322,17 @@ lList *ptf_build_usage_list(const char *name, usage_collection_t usage_collectio
    DRETURN(usage_list);
 }
 
-/****** execd/ptf/ptf_reinit_queue_priority() *********************************
-*  NAME
-*     ptf_reinit_queue_priority() -- set static priority 
-*
-*  SYNOPSIS
-*     void ptf_reinit_queue_priority(uint32_t job_id, uint32_t ja_task_id,
-*                                    char *pe_task_id_str, uint32_t priority)
-*
-*  FUNCTION
-*     If execd switches from SGEEE to SGE mode this functions is used to
-*     reinitialize static priorities of all jobs currently running.
-*
-*  INPUTS
-*     uint32_t job_id      - job id
-*     uint32_t ja_task_id  - task number
-*     char *pe_task_id_str - pe task id string or nullptr
-*     uint32_t priority    - new static priority
-******************************************************************************/
+/**
+ * @brief Set static priority
+ *
+ * If execd switches from SGEEE to SGE mode this functions is used to
+ * reinitialize static priorities of all jobs currently running.
+ *
+ * @param job_id job id
+ * @param ja_task_id task number
+ * @param pe_task_id_str pe task id string or nullptr
+ * @param priority new static priority
+ */
 void ptf_reinit_queue_priority(uint32_t job_id, uint32_t ja_task_id,
                                const char *pe_task_id_str, int priority)
 {
@@ -362,20 +366,14 @@ void ptf_reinit_queue_priority(uint32_t job_id, uint32_t ja_task_id,
    DRETURN_VOID;
 }
 
-/****** execd/ptf/ptf_set_job_priority() **************************************
-*  NAME
-*     ptf_set_job_priority() -- Update job priority 
-*
-*  SYNOPSIS
-*     static void ptf_set_job_priority(lListElem *job) 
-*
-*  FUNCTION
-*     The funktion updates the priority of each process which belongs
-*     to "job". The attribute JL_pri of "job" specifies the new priority.
-*
-*  INPUTS
-*     lListElem *job - JL_Type 
-******************************************************************************/
+/**
+ * @brief Update job priority
+ *
+ * The funktion updates the priority of each process which belongs
+ * to "job". The attribute JL_pri of "job" specifies the new priority.
+ *
+ * @param job JL_Type
+ */
 static void ptf_set_job_priority(lListElem *job)
 {
    DENTER(TOP_LAYER);
@@ -387,23 +385,16 @@ static void ptf_set_job_priority(lListElem *job)
    DRETURN_VOID;
 }
 
-/****** execd/ptf/ptf_set_native_job_priority() *******************************
-*  NAME
-*     ptf_set_native_job_priority() -- Change job priority  
-*
-*  SYNOPSIS
-*     static void ptf_set_native_job_priority(lListElem *job, lListElem *osjob, 
-*                                             long pri) 
-*
-*  FUNCTION
-*     The function updates the priority of each process which belongs
-*     to "job" and "osjob".
-*
-*  INPUTS
-*     lListElem *job   - job 
-*     lListElem *osjob - one of the os jobs of "job" 
-*     long pri         - new priority value 
-******************************************************************************/
+/**
+ * @brief Change job priority
+ *
+ * The function updates the priority of each process which belongs
+ * to "job" and "osjob".
+ *
+ * @param job job
+ * @param osjob one of the os jobs of "job"
+ * @param pri new priority value
+ */
 static void ptf_set_native_job_priority(lListElem *job, const lListElem *osjob,
                                         long pri)
 {
@@ -414,27 +405,19 @@ static void ptf_set_native_job_priority(lListElem *job, const lListElem *osjob,
 
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 
-/****** execd/ptf/ptf_setpriority_addgrpid() **********************************
-*  NAME
-*     ptf_setpriority_addgrpid() -- Change priority of processes
-*
-*  SYNOPSIS
-*     static void ptf_setpriority_jobid(lListElem *job, lListElem *osjob,
-*                                       long *pri)
-*
-*  FUNCTION
-*     This function is only available for the architecture SOLARIS,
-*     LINUX, DARWIN and FREEBSD. All processes belonging to "job" and "osjob" will
-*     get a new priority.
-*
-*     This function assumes the the "max" priority is smaller than the "min"
-*     priority.
-*
-*  INPUTS
-*     lListElem *job   - job
-*     lListElem *osjob - one of the os jobs of "job"
-*     long pri         - new priority
-******************************************************************************/
+/**
+ * @brief Change priority of processes
+ *
+ * This function is only available for the architecture SOLARIS,
+ * LINUX, DARWIN and FREEBSD. All processes belonging to "job" and "osjob" will
+ * get a new priority.
+ * This function assumes the the "max" priority is smaller than the "min"
+ * priority.
+ *
+ * @param job job
+ * @param osjob one of the os jobs of "job"
+ * @param pri new priority
+ */
 static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjob,
                                      long pri)
 {
@@ -456,56 +439,34 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
 
 #endif
 
-/****** execd/ptf/ptf_get_job() ***********************************************
-*  NAME
-*     ptf_get_job() -- look up the job for the supplied job_id and return it 
-*
-*  SYNOPSIS
-*     static lListElem* ptf_get_job(u_long job_id) 
-*
-*  FUNCTION
-*     look up the job for the supplied job_id and return it 
-*
-*  INPUTS
-*     u_long job_id - SGE job id 
-*
-*  RESULT
-*     static lListElem* - JL_Type
-******************************************************************************/
+/**
+ * @brief Look up the job for the supplied job_id and return it
+ *
+ * look up the job for the supplied job_id and return it
+ *
+ * @param job_id SGE job id
+ *
+ * @return JL_Type
+ */
 static lListElem *ptf_get_job(u_long job_id)
 {
    lListElem *job = lGetElemUlongRW(ptf_jobs, JL_job_ID, job_id);
    return job;
 }
 
-/****** execd/ptf/ptf_get_job_os() ********************************************
-*  NAME
-*     ptf_get_job_os() -- look up the job for the supplied OS job_id 
-*
-*  SYNOPSIS
-*     static lListElem* ptf_get_job_os(lList *job_list, 
-*                                      osjobid_t os_job_id, 
-*                                      lListElem **job_elem) 
-*
-*  FUNCTION
-*     This functions tries to find a os job element (JO_Type) with
-*     "os_job_id" within the list of os jobs of "job_elem". If "job_elem"
-*     is not provided the function will look up the whole "job_list".
-*
-*  INPUTS
-*     lList *job_list      - List of all known jobs (JL_Type) 
-*     osjobid_t os_job_id  - os job id (ash, job id, supplementary gid) 
-*     lListElem **job_elem - Pointer to a job element pointer (JL_Type)
-*                          - pointer to a nullptr pointer
-*                            => *job_elem will contain the corresponding
-*                               job element pointer when the function 
-*                               returns successfully
-*                          - nullptr
-*
-*  RESULT
-*     static lListElem* - osjob (JO_Type) 
-*                         or nullptr if it was not found.
-******************************************************************************/
+/**
+ * @brief Look up the job for the supplied OS job_id
+ *
+ * This functions tries to find a os job element (JO_Type) with
+ * "os_job_id" within the list of os jobs of "job_elem". If "job_elem"
+ * is not provided the function will look up the whole "job_list".
+ *
+ * @param job_list List of all known jobs (JL_Type)
+ * @param os_job_id os job id (ash, job id, supplementary gid)
+ * @param job_elem Pointer to a job element pointer (JL_Type) - pointer to a nullptr pointer => *job_elem will contain the corresponding job element pointer when the function returns successfully - nullptr
+ *
+ * @return osjob (JO_Type) or nullptr if it was not found.
+ */
 static lListElem *ptf_get_job_osjob_by_osjobid(const lList *job_list, osjobid_t os_job_id,
                                                lListElem **job_elem)
 {
@@ -647,23 +608,17 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
    DRETURN(job);
 }
 
-/****** execd/ptf/ptf_get_usage_from_data_collector() *************************
-*  NAME
-*     ptf_get_usage_from_data_collector() -- get usage from PDC 
-*
-*  SYNOPSIS
-*     static void ptf_get_usage_from_data_collector() 
-*
-*  FUNCTION
-*     get the usage for all the jobs in the job ticket list and update 
-*     the job list 
-*
-*     call data collector routine with a list of all the jobs in the job_list
-*     for each job in the job_list
-*        update job.usage with data collector info
-*        update list of process IDs associated with job end     
-*     do
-******************************************************************************/
+/**
+ * @brief Get usage from PDC
+ *
+ * get the usage for all the jobs in the job ticket list and update
+ * the job list
+ * call data collector routine with a list of all the jobs in the job_list
+ * for each job in the job_list
+ *    update job.usage with data collector info
+ *    update list of process IDs associated with job end
+ * do
+ */
 static void ptf_get_usage_from_data_collector()
 {
 #ifdef USE_DC
@@ -1148,6 +1103,16 @@ static void ptf_set_OS_scheduling_parameters(lList *job_list, double min_share,
 /*--------------------------------------------------------------------
  * ptf_job_started - process new job
  *--------------------------------------------------------------------*/
+/** @brief Register a job the PTF should start adjusting
+ *
+ * @param os_job_id the operating system job id, or the additional group id
+ * @param task_id_str the PE task, or nullptr for the job itself
+ * @param new_job the job (`JB_Type`)
+ * @param jataskid the array task
+ * @param systemd_scope the job's systemd scope, or nullptr when systemd is not in use
+ * @param usage_collection how much usage detail to collect for it
+ * @return 0 on success, one of the `PTF_ERROR_*` values otherwise
+ */
 int ptf_job_started(osjobid_t os_job_id, const char *task_id_str,
                     const lListElem *new_job, uint32_t jataskid, const char *systemd_scope, usage_collection_t usage_collection)
 {
@@ -1191,6 +1156,17 @@ int ptf_job_started(osjobid_t os_job_id, const char *task_id_str,
  * ptf_job_complete - process completed job
  *--------------------------------------------------------------------*/
 
+/** @brief Take a finished job out of the PTF and hand back its final usage
+ *
+ * The entry is kept until the usage has been collected, so that a job which
+ * ends between two rounds does not lose what it consumed.
+ *
+ * @param job_id the job
+ * @param ja_task_id the array task
+ * @param pe_task_id the PE task, or nullptr for the job itself
+ * @param[out] usage receives the final usage list
+ * @return 0 on success, one of the `PTF_ERROR_*` values otherwise
+ */
 int ptf_job_complete(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id, lList **usage)
 {
    DENTER(TOP_LAYER);
@@ -1277,6 +1253,14 @@ int ptf_job_complete(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_i
  * from the SGE scheduler.
  *--------------------------------------------------------------------*/
 
+/** @brief Take a new set of ticket values from the scheduler
+ *
+ * Tickets are what the scheduler decided each job is entitled to; the next
+ * round of ptf_adjust_job_priorities() works towards them.
+ *
+ * @param job_ticket_list the tickets, per job
+ * @return 0 on success, one of the `PTF_ERROR_*` values otherwise
+ */
 int ptf_process_job_ticket_list(lList *job_ticket_list)
 {
    DENTER(TOP_LAYER);
@@ -1325,6 +1309,11 @@ int ptf_process_job_ticket_list(lList *job_ticket_list)
    DRETURN(0);
 }
 
+/** @brief Refresh every registered job's usage from the data collector
+ *
+ * Called before the priorities are adjusted and before usage is reported to
+ * the qmaster, so both work from the same reading.
+ */
 void ptf_update_job_usage()
 {
    DENTER(TOP_LAYER);
@@ -1360,6 +1349,14 @@ void ptf_update_job_usage()
  * executing jobs. Called whenever the PTF interval timer expires.
  *--------------------------------------------------------------------*/
 
+/** @brief One round of the feedback loop: nudge each job's nice value
+ *
+ * Compares what each job has consumed against what its tickets entitled it to
+ * and moves its nice value towards the difference, damped by
+ * #PTF_DIFF_DECAY_CONSTANT. Runs at most every #PTF_SCHEDULE_TIME seconds.
+ *
+ * @return 0 on success, one of the `PTF_ERROR_*` values otherwise
+ */
 int ptf_adjust_job_priorities()
 {
    DENTER(TOP_LAYER);
@@ -1470,6 +1467,12 @@ int ptf_adjust_job_priorities()
  * ptf_get_job_usage - routine to return a single usage list for the
  * entire job.
  *--------------------------------------------------------------------*/
+/** @brief The usage collected so far for one job
+ * @param job_id the job
+ * @param ja_task_id the array task
+ * @param task_id the PE task, or nullptr for the job itself
+ * @return the usage list, or nullptr when the job is not registered
+ */
 lList *ptf_get_job_usage(u_long job_id, u_long ja_task_id, 
                          const char *task_id)
 {
@@ -1518,6 +1521,10 @@ static lList *_ptf_get_job_usage(lListElem *job, u_long ja_task_id,
  * sub-task.
  *--------------------------------------------------------------------*/
 
+/** @brief The usage collected so far for every registered job
+ * @param[out] job_usage_list receives one entry per job
+ * @return 0 on success, one of the `PTF_ERROR_*` values otherwise
+ */
 int ptf_get_usage(lList **job_usage_list)
 {
    lList *job_list, *temp_usage_list;
@@ -1580,6 +1587,9 @@ int ptf_get_usage(lList **job_usage_list)
  * ptf_init - initialize the Priority Translation Facility
  *--------------------------------------------------------------------*/
 
+/** @brief Prepare the PTF's job list
+ * @return 0 on success
+ */
 int ptf_init()
 {
    DENTER(TOP_LAYER);
@@ -1606,6 +1616,10 @@ int ptf_init()
    DRETURN(0);
 }
 
+/** @brief Begin adjusting priorities
+ *
+ * Idempotent; ptf_is_running() reports the state.
+ */
 void ptf_start()
 {
    DENTER(TOP_LAYER);
@@ -1616,6 +1630,7 @@ void ptf_start()
    DRETURN_VOID;
 }
 
+/** @brief Stop adjusting priorities and forget every registered job */
 void ptf_stop()
 {
    DENTER(TOP_LAYER);
@@ -1629,6 +1644,7 @@ void ptf_stop()
    DRETURN_VOID;
 }
 
+/** @brief Write the registered jobs and their priorities to the log */
 void ptf_show_registered_jobs()
 {
    lList *job_list;
@@ -1665,6 +1681,10 @@ void ptf_show_registered_jobs()
    DRETURN_VOID;
 }
 
+/** @brief Forget one job without collecting its usage
+ * @param job_id the job
+ * @param ja_task_id the array task
+ */
 void ptf_unregister_registered_job(uint32_t job_id, uint32_t ja_task_id ) {
    lListElem *job;
    lListElem *next_job;
@@ -1703,6 +1723,7 @@ void ptf_unregister_registered_job(uint32_t job_id, uint32_t ja_task_id ) {
    DRETURN_VOID;
 }
 
+/** @brief Forget every registered job without collecting usage */
 void ptf_unregister_registered_jobs()
 {
    const lListElem *job;
@@ -1722,6 +1743,9 @@ void ptf_unregister_registered_jobs()
    DRETURN_VOID;
 }
 
+/** @brief Is the PTF currently adjusting priorities?
+ * @return non-zero when it is running
+ */
 int ptf_is_running()
 {
    return is_ptf_running;
@@ -1731,6 +1755,10 @@ int ptf_is_running()
  * ptf_errstr - return PTF error string
  *--------------------------------------------------------------------*/
 
+/** @brief The message belonging to a `PTF_ERROR_*` value
+ * @param ptf_error_code the error code
+ * @return its message
+ */
 const char *ptf_errstr(int ptf_error_code)
 {
    const char *errmsg = MSG_ERROR_UNKNOWNERRORCODE;

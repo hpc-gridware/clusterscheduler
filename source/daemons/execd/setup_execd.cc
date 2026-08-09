@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Bringing the daemon up, and adopting the jobs already running here
+ */
 #include <cstring>
 
 #include "uti/ocs_Topo.h"
@@ -67,6 +71,9 @@ extern lList *jr_list;
 static char execd_messages_file[SGE_PATH_MAX];
 
 /*-------------------------------------------------------------------*/
+/** @brief Bring the daemon up: spool directory, configuration, and what is already running
+ * @param tmp_err_file_name where to log until the real log file is known
+ */
 void sge_setup_sge_execd(const char* tmp_err_file_name)
 {
    DENTER(TOP_LAYER);
@@ -149,6 +156,14 @@ void sge_setup_sge_execd(const char* tmp_err_file_name)
    DRETURN_VOID;
 }
 
+/** @brief Take over a job that was already running when the daemon started
+ *
+ * Its shepherd is still alive and its active_jobs directory is still there, so
+ * the job is adopted rather than restarted.
+ *
+ * @param job the job (`JB_Type`)
+ * @return 0 on success
+ */
 int job_initialize_job(lListElem *job)
 {
    DENTER(TOP_LAYER);

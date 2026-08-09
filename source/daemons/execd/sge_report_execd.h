@@ -33,15 +33,29 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Assembling and sending the execution daemon's periodic reports
+ *
+ * The daemon tells qmaster what this host looks like - its load, its
+ * configuration, the jobs on it - on a schedule. Each kind of report has its
+ * own function and its own next-send time, so a load report every interval
+ * does not drag the configuration report along with it.
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/sge_daemonize.h"
 
+/** @brief Fills in one kind of report and says when it is next due
+ *
+ * The `next_send` out parameter is how a report sets its own cadence.
+ */
 typedef int (*report_func_type)(lList *, uint64_t now, uint64_t *next_send);
 
+/** @brief One kind of report the daemon sends, and when it is next due */
 typedef struct report_source {
-  int type;
-  report_func_type func;
-  uint64_t next_send;
+  int type;                 ///< Which report this is, a `NUM_REP_REPORT_*` value
+  report_func_type func;    ///< Fills it in
+  uint64_t next_send;       ///< When it is next due
 } report_source;
 
 int sge_send_all_reports(uint64_t now, int which, report_source *report_sources);

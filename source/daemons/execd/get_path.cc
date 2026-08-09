@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Working out where a job's output goes on this host
+ */
 #include <pwd.h>
 #include <cstring>
 #include <cerrno>
@@ -84,6 +88,23 @@ getHomeDir(dstring *dstr_exp_path, const char *user)
 }
 
 
+/** @brief Resolve one of a job's paths into a concrete filename
+ *
+ * Picks the entry that applies to this host, expands the pseudo variables, and
+ * appends the job's own name when what the user gave is a directory.
+ *
+ * @param qualified_hostname this host, as the cluster knows it
+ * @param lp the path list the user submitted
+ * @param cwd the job's working directory, for a relative path
+ * @param owner the job owner, for the home directory
+ * @param job_name the job's name
+ * @param job_number the job id
+ * @param ja_task_number the array task id
+ * @param type which path this is, an `SGE_STD*` value
+ * @param[out] pathstr receives the result
+ * @param pathstr_len size of that buffer
+ * @return 0 on success
+ */
 int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cwd, const char *owner, 
                  const char *job_name, uint32_t job_number,
                  uint32_t ja_task_number, int type,
@@ -137,32 +158,20 @@ int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cw
    DRETURN(0);
 }
 
-/****** execd/fileio/sge_get_fs_path() ********************************
-*  NAME
-*     sge_get_fs_path() -- Retrieve the file staging host and path
-*
-*  SYNOPSIS
-*     bool sge_get_fs_path( lList* lp, char* fs_host, char* fs_path )
-*
-*  FUNCTION
-*     Retrieves the file staging host and path from the
-*     job list element.
-*
-*  INPUTS
-*     lList *lp        - pointer to the path sublist
-*     char  *fs_host   - buffer to hold the host name
-*     char  *fs_path   - buffer to hold the file path
-*
-*  RESULT
-*     bool - Is file staging enabled for this (stdin/stdout/stderr)
-*            path sublist?
-*
-*  EXAMPLES
-*
-*  NOTES
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Retrieve the file staging host and path
+ *
+ * Retrieves the file staging host and path from the
+ * job list element.
+ *
+ * @param lp pointer to the path sublist
+ * @param[out] fs_host buffer to hold the host name
+ * @param fs_host_len size of that buffer
+ * @param[out] fs_path buffer to hold the file path
+ * @param fs_path_len size of that buffer
+ *
+ * @return Is file staging enabled for this (stdin/stdout/stderr) path sublist?
+ */
 bool sge_get_fs_path(const lList* lp, char* fs_host, size_t fs_host_len, char* fs_path, size_t fs_path_len)
 {
    const lListElem* ep;
@@ -186,6 +195,19 @@ bool sge_get_fs_path(const lList* lp, char* fs_host, size_t fs_host_len, char* f
 }
 
 const char*
+/** @brief Expand the pseudo variables a user may put in a path
+ *
+ * `$HOME`, `$USER`, `$JOB_ID`, `$JOB_NAME`, `$HOSTNAME` and `$TASK_ID`.
+ *
+ * @param[out] dstr_exp_path receives the expanded path
+ * @param in_path the path as the user gave it
+ * @param job_id the job
+ * @param ja_task_id the array task
+ * @param job_name the job's name
+ * @param user the job owner
+ * @param host this host
+ * @return the expanded path
+ */
 expand_path(dstring *dstr_exp_path, const char *in_path, uint32_t job_id, uint32_t ja_task_id,
             const char *job_name, const char *user, const char *host)
 {
@@ -259,37 +281,24 @@ expand_path(dstring *dstr_exp_path, const char *in_path, uint32_t job_id, uint32
    DRETURN(sge_dstring_get_string(dstr_exp_path));
 }
 
-/****** execd/fileio/sge_make_ja_task_active_dir() *********************************
-*  NAME
-*     sge_make_ja_task_active_dir() -- create a jatask's active job directory
-*
-*  SYNOPSIS
-*     const char* sge_make_ja_task_active_dir(const lListElem *job, 
-*                                             const lListElem *ja_task, 
-*                                             dstring *err_str) 
-*
-*  FUNCTION
-*     Creates the active jobs sub directory for a job array task.
-*     If it already exists (because the task has been restarted)
-*     and the execd is configured to keep the active job directories
-*     (execd_param KEEP_ACTIVE), it is renamed to <old_name>.n, where
-*     n is a number from 0 to 9. If a job is restarted more than 10 times,
-*     the old active job dir will be removed and only the first 10 be kept.
-*
-*  INPUTS
-*     const lListElem *job     - job object
-*     const lListElem *ja_task - ja task object
-*     dstring *err_str         - optional buffer to hold error strings. If it is
-*                                nullptr, errors are output.
-*
-*  RESULT
-*     const char* - the path of the jobs/jatasks active job directory, or nullptr if
-*                   the function call failed.
-*
-*  SEE ALSO
-*     execd/fileio/sge_get_active_job_file_path()
-*     execd/fileio/sge_make_pe_task_active_dir()
-*******************************************************************************/
+/**
+ * @brief Create a jatask's active job directory
+ *
+ * Creates the active jobs sub directory for a job array task.
+ * If it already exists (because the task has been restarted)
+ * and the execd is configured to keep the active job directories
+ * (execd_param KEEP_ACTIVE), it is renamed to `old_name`.n, where
+ * n is a number from 0 to 9. If a job is restarted more than 10 times,
+ * the old active job dir will be removed and only the first 10 be kept.
+ *
+ * @param job job object
+ * @param ja_task ja task object
+ * @param err_str optional buffer to hold error strings. If it is nullptr, errors are output.
+ *
+ * @return the path of the jobs/jatasks active job directory, or nullptr if the function call failed.
+ *
+ * @see `sge_get_active_job_file_path()`, #sge_make_pe_task_active_dir
+ */
 const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *ja_task, dstring *err_str)
 {
    static dstring path_buffer = DSTRING_INIT;
@@ -367,34 +376,20 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
    DRETURN(path);
 }
 
-/****** execd/fileio/sge_make_pe_task_active_dir() *********************************
-*  NAME
-*     sge_make_pe_task_active_dir() -- create a petask's active job directory
-*
-*  SYNOPSIS
-*     const char* sge_make_pe_task_active_dir(const lListElem *job, 
-*                                             const lListElem *ja_task, 
-*                                             const lListElem *pe_task, 
-*                                             dstring *err_str) 
-*
-*  FUNCTION
-*     Creates the active job sub directory for a pe task.
-*
-*  INPUTS
-*     const lListElem *job     - the job object
-*     const lListElem *ja_task - the ja task object
-*     const lListElem *pe_task - the pe task object
-*     dstring *err_str         - optional buffer to hold error strings. If it is
-*                                nullptr, errors are output.
-*
-*  RESULT
-*     const char* - the path of the jobs/jatasks active job directory, or nullptr if
-*                   the function call failed.
-*
-*  SEE ALSO
-*     execd/fileio/sge_get_active_job_file_path()
-*     execd/fileio/sge_make_ja_task_active_dir()
-*******************************************************************************/
+/**
+ * @brief Create a petask's active job directory
+ *
+ * Creates the active job sub directory for a pe task.
+ *
+ * @param job the job object
+ * @param ja_task the ja task object
+ * @param pe_task the pe task object
+ * @param err_str optional buffer to hold error strings. If it is nullptr, errors are output.
+ *
+ * @return the path of the jobs/jatasks active job directory, or nullptr if the function call failed.
+ *
+ * @see `sge_get_active_job_file_path()`, #sge_make_ja_task_active_dir
+ */
 const char *sge_make_pe_task_active_dir(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task, dstring *err_str)
 {
    static dstring path_buffer = DSTRING_INIT;

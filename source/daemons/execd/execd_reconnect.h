@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The one-time token a shepherd uses to reconnect to its execution daemon
+ */
+
 #include <sys/types.h>
 #include <cstdint>
 
@@ -59,9 +63,9 @@ int do_reconnect_prepare(ocs::gdi::ClientServerBase::struct_msg_t *aMsg);
  * read it but other local users cannot.  The token is sensitive — never relax the mode.
  *
  * File format (one key=value per line, trailing newline):
- *   host=<hostname>
- *   port=<integer>
- *   token=<one-time token, opaque to execd>
+ *   host=`<hostname>`
+ *   port=`<integer>`
+ *   token=`<one-time token, opaque to execd>`
  *
  * @param job_id      Job ID (as used by sge_get_active_job_file_path).
  * @param ja_task_id  Array task ID (0 for non-array jobs).

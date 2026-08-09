@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Handling the ticket values the scheduler sends for the jobs on this host
+ */
+
 #include "gdi/ocs_gdi_ClientServerBase.h"
 
 int do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg);

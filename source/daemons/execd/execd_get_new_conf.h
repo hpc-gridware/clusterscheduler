@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Handling qmaster's notification that the configuration changed
+ */
+
 #include "gdi/ocs_gdi_ClientServerBase.h"
 
 int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg);

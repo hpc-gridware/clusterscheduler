@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The one-time token a shepherd uses to reconnect to its execution daemon
+ */
+
 #include <cerrno>
 #include <cstdio>
 #include <cstring>

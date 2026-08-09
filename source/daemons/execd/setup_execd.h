@@ -33,8 +33,21 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Bringing the daemon up, and adopting the jobs already running here
+ */
+
 #include "sgeobj/sge_daemonize.h"
 
 void sge_setup_sge_execd(const char* tmp_err_file_name);
+/** @brief Put the execution daemon into the background
+ *
+ * @param context the daemonize context
+ * @return 0 on success
+ *
+ * @warning Declared here but defined nowhere in the tree, and called from
+ *          nowhere either. Kept because removing a declaration is a code
+ *          change; see the dead-declaration list.
+ */
 int daemonize_execd(void *context);
 int job_initialize_job(lListElem *job);

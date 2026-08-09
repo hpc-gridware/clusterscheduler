@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Everything the daemon does between messages: reaping, resending, reporting
+ */
 #include <cfloat>
 #include <cstring>
 #include <cerrno>
@@ -442,9 +446,20 @@ update_wallclock_usage(uint64_t now, const lListElem *job, const lListElem *ja_t
  do cyclic jobs
  ******************************************************/
 /* TODO: what are the intended intervals? */
+/** @brief Seconds before a signal a job has not reacted to is sent again */
 #define SIGNAL_RESEND_INTERVAL 1
+/** @brief How often to look for jobs left behind by a previous daemon */
 #define OLD_JOB_INTERVAL 60
 
+/** @brief Everything the daemon does between messages
+ *
+ * Reaps shepherds, resends signals a job has not reacted to, triggers the load
+ * report, adjusts priorities and cleans up old jobs. Called from the main loop
+ * whenever it is not handling a message.
+ *
+ * @param is_qmaster_down whether qmaster is currently unreachable
+ * @return 0 on success
+ */
 int do_ck_to_do(bool is_qmaster_down) {
    DENTER(TOP_LAYER);
 
@@ -653,25 +668,16 @@ int do_ck_to_do(bool is_qmaster_down) {
    DRETURN(return_value);
 }
 
-/****** execd_ck_to_do/sge_execd_ja_task_is_tightly_integrated() ***************
-*  NAME
-*     sge_execd_ja_task_is_tightly_integrated() -- is it a tightly integr. parallel job?
-*
-*  SYNOPSIS
-*     static bool 
-*     sge_execd_ja_task_is_tightly_integrated(const lListElem *ja_task) 
-*
-*  FUNCTION
-*     Checks if a certain job (ja_task) is running in a tightly integrated
-*     parallel environment.
-*
-*  INPUTS
-*     const lListElem *ja_task - ja_task (in execd context)
-*
-*  RESULT
-*     static bool - true, if it is a tightly integrated job, else false
-*
-*******************************************************************************/
+/**
+ * @brief Is it a tightly integr. parallel job?
+ *
+ * Checks if a certain job (ja_task) is running in a tightly integrated
+ * parallel environment.
+ *
+ * @param ja_task ja_task (in execd context)
+ *
+ * @return true, if it is a tightly integrated job, else false
+ */
 static bool 
 sge_execd_ja_task_is_tightly_integrated(const lListElem *ja_task)
 {
@@ -687,26 +693,16 @@ sge_execd_ja_task_is_tightly_integrated(const lListElem *ja_task)
    return ret;
 }
 
-/****** execd_ck_to_do/sge_kill_petasks() **************************************
-*  NAME
-*     sge_kill_petasks() -- kill all pe tasks of a tightly integr. parallel job
-*
-*  SYNOPSIS
-*     static bool 
-*     sge_kill_petasks(const lListElem *job, const lListElem *ja_task) 
-*
-*  FUNCTION
-*     Kills all tasks of a tightly integrated parallel job/array task.
-*
-*  INPUTS
-*     const lListElem *job     - the job
-*     const lListElem *ja_task - the array task
-*
-*  RESULT
-*     static bool - true, if any task was found and could be signalled, 
-*                   else false
-*
-*******************************************************************************/
+/**
+ * @brief Kill all pe tasks of a tightly integr. parallel job
+ *
+ * Kills all tasks of a tightly integrated parallel job/array task.
+ *
+ * @param job the job
+ * @param ja_task the array task
+ *
+ * @return true, if any task was found and could be signalled, else false
+ */
 static bool
 sge_kill_petasks(const lListElem *job, const lListElem *ja_task)
 {
@@ -896,6 +892,12 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
 }
 
 #ifdef COMPILE_DC
+/** @brief Hand a newly started job to the priority translation facility
+ * @param job the job (`JB_Type`)
+ * @param ja_task the array task
+ * @param pe_task the PE task, or nullptr
+ * @return 0 on success
+ */
 int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task) {
    DENTER(TOP_LAYER);
 

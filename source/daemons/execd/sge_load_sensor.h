@@ -33,17 +33,28 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Running the site's own load sensors and reading their output
+ *
+ * A load sensor is any program that writes `host:name:value` lines on stdout;
+ * the daemon keeps it running and folds what it prints into the load report.
+ * That is how a site adds a load value the system knows nothing about.
+ */
+
 #include <sys/time.h>
 
+/** @brief Name of the built-in idle-time load sensor */
 #define IDLE_LOADSENSOR_NAME "qidle"
+/** @brief Name of the built-in GNU load sensor */
 #define GNU_LOADSENSOR_NAME "qloadsensor"
 
+/** @brief Outcome of a load sensor operation */
 enum { 
-   LS_OK = 0,
-   LS_ALREADY_STARTED,            /* load sensor is already started     */
-   LS_CANT_PEOPEN,                /* failure in starting LS with peopen */
-   LS_NOT_STARTED,                /* load sensor not started            */
-   LS_BROKEN_PIPE                 /* ls has exited or select <= 0       */
+   LS_OK = 0,                     ///< Success
+   LS_ALREADY_STARTED,            ///< load sensor is already started
+   LS_CANT_PEOPEN,                ///< failure in starting LS with peopen
+   LS_NOT_STARTED,                ///< load sensor not started
+   LS_BROKEN_PIPE                 ///< ls has exited or select <= 0
 };
 
 int sge_ls_get(const char* qualified_hostname, const char *binary_path, lList **lpp);
@@ -56,6 +67,14 @@ void sge_ls_qidle(int);
 
 void sge_ls_gnu_ls(int);
 
+/** @brief Add the load sensors' pipes to a descriptor set
+ *
+ * @param fds the set to add to
+ *
+ * @warning Declared here but defined nowhere in the tree, and called from
+ *          nowhere either. Kept because removing a declaration is a code
+ *          change; see the dead-declaration list.
+ */
 void set_ls_fds(fd_set *fds);
 
 int sge_ls_stop_if_pid(pid_t pid);

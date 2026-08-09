@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Handling the ticket values the scheduler sends for the jobs on this host
+ */
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -52,6 +56,10 @@
  get a list of jobid/tickets tuples and pass them to the PTF
  *************************************************************************/
 
+/** @brief Handle the new ticket values message from qmaster
+ * @param aMsg the received message
+ * @return 0 on success
+ */
 int
 do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    DENTER(TOP_LAYER);

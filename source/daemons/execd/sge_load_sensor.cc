@@ -32,6 +32,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Running the site's own load sensors and reading their output
+ */
 #include <fcntl.h>
 #include <cerrno>
 #include <cstring>
@@ -68,6 +72,7 @@ static int read_ls();
 /* 
  * time load sensors get to quit cleanly before they get a SIGKILL 
  */
+/** @brief Seconds to wait for a load sensor to exit before killing it */
 #define LS_QUIT_TIMEOUT (10)
 
 /* 
@@ -87,24 +92,17 @@ static int has_to_use_qidle = 0;
 static int has_to_use_gnu_load_sensor = 0;
 
 
-/****** execd/loadsensor/sge_ls_get_pid() *************************************
-*  NAME
-*     sge_ls_get_pid -- get pid of a loadsensor 
-*
-*  SYNOPSIS
-*     static pid_t sge_ls_get_pid(lListElem *this_ls)
-*
-*  FUNCTION
-*     Returns the pid which is stored in an CULL element of
-*     the type LS_Type. If the corresponding loadsensor was
-*     not started until now then -1 will be returned.
-*
-*  INPUTS
-*     this_ls - pointer to a CULL element of type LS_Type
-*
-*  RESULT
-*     returns pid
-******************************************************************************/
+/**
+ * @brief Get pid of a loadsensor
+ *
+ * Returns the pid which is stored in an CULL element of
+ * the type LS_Type. If the corresponding loadsensor was
+ * not started until now then -1 will be returned.
+ *
+ * @param this_ls pointer to a CULL element of type LS_Type
+ *
+ * @return returns pid
+ */
 static pid_t sge_ls_get_pid(const lListElem *this_ls)
 {
    pid_t pid = -1;
@@ -117,23 +115,16 @@ static pid_t sge_ls_get_pid(const lListElem *this_ls)
    return pid;
 }
 
-/****** execd/loadsensor/sge_ls_set_pid() *************************************
-*  NAME
-*     sge_ls_set_pid -- set pid in loadsensor element
-*
-*  SYNOPSIS
-*     static void sge_ls_set_pid(lListElem *this_ls, pid_t pid)
-*
-*  FUNCTION
-*     Set the pid entry in a CULL element of the type LS_Type.
-*
-*  INPUTS
-*     this_ls - pointer to a CULL element of type LS_Type
-*     pid - pid of the loadsensor process or -1 
-*
-*  RESULT
-*     [this_ls] - LS_pid entry of the CULL element will be modified 
-******************************************************************************/
+/**
+ * @brief Set pid in loadsensor element
+ *
+ * Set the pid entry in a CULL element of the type LS_Type.
+ *
+ * @param this_ls pointer to a CULL element of type LS_Type
+ * @param pid pid of the loadsensor process or -1
+ *
+ * @note [this_ls] - LS_pid entry of the CULL element will be modified
+ */
 static void sge_ls_set_pid(lListElem *this_ls, pid_t pid)
 {
    char pid_buffer[256];
@@ -142,28 +133,20 @@ static void sge_ls_set_pid(lListElem *this_ls, pid_t pid)
    lSetString(this_ls, LS_pid, pid_buffer);
 }
 
-/****** execd/loadsensor/sge_ls_status() **************************************
-*  NAME
-*     sge_ls_status -- returns the status of a loadsensor 
-*
-*  SYNOPSIS
-*     static int sge_ls_status(lListElem *this_ls)
-*
-*  FUNCTION
-*     The functions detects the status of a londsensor
-*     and returns the corresponding integer value. 
-*     Following values are possible:
-*
-*        LS_OK              - the ls waits for commands
-*        LS_NOT_STARTED     - load sensor not started   
-*        LS_BROKEN_PIPE     - ls has exited or is not ready to read    
-*
-*  INPUTS
-*     this_ls - pointer to a CULL element of type LS_Type
-*
-*  RESULT
-*     returns the status of the loadsensor     
-******************************************************************************/
+/**
+ * @brief Returns the status of a loadsensor
+ *
+ * The functions detects the status of a londsensor
+ * and returns the corresponding integer value.
+ * Following values are possible:
+ *    LS_OK              - the ls waits for commands
+ *    LS_NOT_STARTED     - load sensor not started
+ *    LS_BROKEN_PIPE     - ls has exited or is not ready to read
+ *
+ * @param this_ls pointer to a CULL element of type LS_Type
+ *
+ * @return returns the status of the loadsensor
+ */
 static int sge_ls_status(lListElem *this_ls)
 {
    fd_set writefds;
@@ -191,38 +174,23 @@ static int sge_ls_status(lListElem *this_ls)
    DRETURN(LS_OK);
 }
 
-/****** execd/loadsensor/sge_ls_start_ls() ************************************
-*  NAME
-*     sge_ls_start_ls -- starts a loadsensor  
-*
-*  SYNOPSIS
-*     static void sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
-*
-*  FUNCTION
-*     An additional loadsensor process will be started. The name
-*     of the script has to be stored in the LS_command entry of
-*     'this_ls' before this function will be called. 
-*
-*     The process environment of the loadsensor will contain
-*     the HOST variable. This variable containes the hostname
-*     of the execution daemon which calls this function.
-*
-*     If 'this_ls' correlates to the 'qidle'-loadsensor then 
-*     also the XAUTHORITY environment variable will be set.
-*
-*  INPUTS
-*     qualified_hostname - qualified host name
-*     this_ls - pointer to a CULL element of type LS_Type
-*
-*  RESULT
-*     An additional loadsensor process will be started. 
-*     [this_ls] - the CULL element will be modified
-*        LS_pid containes the pid of the ls process 
-*        LS_in, LS_out, LS_err are the FILE-streams for the
-*        communication with the ls-process     
-*        returns LS_OK
-*     If sge_peopen fails, returns LS_CANT_PEOPEN     
-******************************************************************************/
+/**
+ * @brief Starts a loadsensor
+ *
+ * An additional loadsensor process will be started. The name
+ * of the script has to be stored in the LS_command entry of
+ * 'this_ls' before this function will be called.
+ * The process environment of the loadsensor will contain
+ * the HOST variable. This variable containes the hostname
+ * of the execution daemon which calls this function.
+ * If 'this_ls' correlates to the 'qidle'-loadsensor then
+ * also the XAUTHORITY environment variable will be set.
+ *
+ * @param qualified_hostname qualified host name
+ * @param this_ls pointer to a CULL element of type LS_Type
+ *
+ * @return An additional loadsensor process will be started. [this_ls] - the CULL element will be modified LS_pid containes the pid of the ls process LS_in, LS_out, LS_err are the FILE-streams for the communication with the ls-process returns LS_OK If sge_peopen fails, returns LS_CANT_PEOPEN
+ */
 static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
 {
    DENTER(TOP_LAYER);
@@ -279,32 +247,21 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
    return LS_OK;
 }
 
-/******* execd/loadsensor/sge_ls_create_ls() **********************************
-*  NAME
-*     sge_ls_create_ls -- creates a new CULL loadsensor element 
-*
-*  SYNOPSIS
-*     static lListElem* sge_ls_create_ls(const char *qualified_hostname,
-*                                        char *name, const char *scriptfile)
-*
-*  FUNCTION
-*     The function creates a new CULL element of type LS_Type and
-*     returns a pointer to this object. The loadsensor will be
-*     started immediately.
-*     If it cannot be started then, LS_has_to_restart is set to 
-*     true so that it will be attempted to be restarted in the next load interval
-*
-*  INPUTS
-*     qualified_hostname - qualified host name
-*     name - pseudo name of the ls
-*              "extern" for user defined loadsensors
-*              "intern" for qidle and qloadsensor
-*     scriptfile - absolute path to the ls scriptfile
-*
-*  RESULT
-*     new CULL element of type LS_Type will be returned
-*     and a new loadsensor process will be created by this function
-******************************************************************************/
+/**
+ * @brief Creates a new CULL loadsensor element
+ *
+ * The function creates a new CULL element of type LS_Type and
+ * returns a pointer to this object. The loadsensor will be
+ * started immediately.
+ * If it cannot be started then, LS_has_to_restart is set to
+ * true so that it will be attempted to be restarted in the next load interval
+ *
+ * @param qualified_hostname qualified host name
+ * @param name pseudo name of the ls "extern" for user defined loadsensors "intern" for qidle and qloadsensor
+ * @param scriptfile absolute path to the ls scriptfile
+ *
+ * @return new CULL element of type LS_Type will be returned and a new loadsensor process will be created by this function
+ */
 static lListElem *sge_ls_create_ls(const char *qualified_hostname, const char *name, const char *scriptfile)
 {
    lListElem *new_ls = nullptr;    /* LS_Type */
@@ -346,28 +303,19 @@ static lListElem *sge_ls_create_ls(const char *qualified_hostname, const char *n
    DRETURN(new_ls);
 }
 
-/****** execd/loadsensor/sge_ls_stop_ls() *************************************
-*  NAME
-*     sge_ls_stop_ls -- stop a loadsensor process
-*
-*  SYNOPSIS
-*     static void sge_ls_stop_ls(lListElem *this_ls, 
-*        int send_no_quit_command) 
-*
-*  FUNCTION
-*     The "quit" command will be send to the loadsensor process.
-*     So the loadsensor process can stop itself.
-*
-*  INPUTS
-*     this_ls - pointer to a CULL element of type LS_Type
-*     send_no_quit_command - 
-*        0 - send quit command
-*        1 - no quit command will be send (kill without notification)
-*
-*  RESULT
-*     the loadsensor process will be terminated
-*     [this_ls] the entries will be reinitialized
-******************************************************************************/
+/**
+ * @brief Stop a loadsensor process
+ *
+ * The "quit" command will be send to the loadsensor process.
+ * So the loadsensor process can stop itself.
+ *
+ * @param this_ls pointer to a CULL element of type LS_Type
+ * @param send_no_quit_command
+ * @param 0 send quit command
+ * @param 1 no quit command will be send (kill without notification)
+ *
+ * @note the loadsensor process will be terminated [this_ls] the entries will be reinitialized
+ */
 static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command)
 {
    int ret, exit_status;
@@ -406,32 +354,23 @@ static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command)
    DRETURN_VOID;
 }
 
-/****** execd/loadsensor/read_ls() ********************************************
-*  NAME
-*     read_ls -- read sensor output and add it to load report
-*
-*  SYNOPSIS
-*     static int read_ls()
-*
-*  FUNCTION
-*     This function loops over all loadsensor elements in 
-*     the ls_list (LS_Type). It tries to read from the
-*     output stream (LS_out). The output will be parsed
-*     and stored in the LS_incomplete entry (LR_Type). 
-*     
-*     If the protocol part of the loadsensor is correct
-*     then the entries of LS_incomplete will be moved
-*     LS_complete. 
-* 
-*     The last complete set of load values (LS_complete)
-*     will be added to the load report.
-*     
-*  INPUTS
-*     this_ls - pointer to a CULL element of type LS_Type
-*
-*  RESULT
-*     [this_ls] LS_incomplete and LS_complete will be modified.
-******************************************************************************/
+/**
+ * @brief Read sensor output and add it to load report
+ *
+ * This function loops over all loadsensor elements in
+ * the ls_list (LS_Type). It tries to read from the
+ * output stream (LS_out). The output will be parsed
+ * and stored in the LS_incomplete entry (LR_Type).
+ * If the protocol part of the loadsensor is correct
+ * then the entries of LS_incomplete will be moved
+ * LS_complete.
+ * The last complete set of load values (LS_complete)
+ * will be added to the load report.
+ *
+ * @param this_ls pointer to a CULL element of type LS_Type
+ *
+ * @return [this_ls] LS_incomplete and LS_complete will be modified.
+ */
 static int read_ls()
 {
    DENTER(TOP_LAYER);
@@ -491,25 +430,17 @@ static int read_ls()
    DRETURN(0);
 }
 
-/****** execd/loadsensor/ls_send_command() ************************************
-*  NAME
-*     ls_send_command -- send a command to a loadsensor 
-*
-*  SYNOPSIS
-*     static int ls_send_command(lListElem *this_ls, const char *command)
-*
-*  FUNCTION
-*     This function will send a command through the input
-*     stream (LS_in) to the loadsensor. 
-*
-*  INPUTS
-*     this_ls - pointer to a CULL element of type LS_Type
-*     command - valid loadsensor command
-*
-*  RESULT
-*      0 - success
-*     -1 - error
-******************************************************************************/
+/**
+ * @brief Send a command to a loadsensor
+ *
+ * This function will send a command through the input
+ * stream (LS_in) to the loadsensor.
+ *
+ * @param this_ls pointer to a CULL element of type LS_Type
+ * @param command valid loadsensor command
+ *
+ * @return success -1 - error
+ */
 static int ls_send_command(lListElem *this_ls, const char *command)
 {
    fd_set writefds;
@@ -570,73 +501,45 @@ static int ls_send_command(lListElem *this_ls, const char *command)
    DRETURN(0);
 }
 
-/****** execd/loadsensor/sge_ls_qidle() ***************************************
-*  NAME
-*     sge_ls_qidle -- enable/diable qidle loadsensor 
-*
-*  SYNOPSIS
-*     static void sge_ls_qidle(int qidle)
-*
-*  FUNCTION
-*     enable/diable qidle loadsensor
-*
-*  INPUTS
-*     qidle: 1 - enable qidle
-*            0 - diable qidle 
-******************************************************************************/
-
+/**
+ * @brief Enable or disable the qidle load sensor
+ *
+ * @param qidle 0 disables it, non-zero enables it
+ */
 void sge_ls_qidle(int qidle)
 {
    has_to_use_qidle = qidle;
 }
 
-/****** execd/loadsensor/sge_ls_gnu_ls() **************************************
-*  NAME
-*     sge_ls_gnu_ls -- enable/diable qloadsensor
-*
-*  SYNOPSIS
-*     static void sge_ls_gnu_ls(int gnu_ls)
-*
-*  FUNCTION
-*     enable/diable qidle loadsensor
-*
-*  INPUTS
-*     qidle: 1 - enable qidle
-*            0 - diable qidle
-******************************************************************************/
+/**
+ * @brief Enable or disable the GNU load sensor
+ *
+ * @param gnu_ls 0 disables it, non-zero enables it
+ */
 void sge_ls_gnu_ls(int gnu_ls)
 {
    has_to_use_gnu_load_sensor = gnu_ls;
 }
 
-/****** execd/loadsensor/sge_ls_start() ***************************************
-*  NAME
-*     sge_ls_start -- start/stop/restart loadsensors 
-*
-*  SYNOPSIS
-*     int sge_ls_start(const char *scriptfiles)
-*
-*  FUNCTION
-*     The 'scriptfiles' parameter will be parsed. Each
-*     loadsensor not contained in the global list 
-*     'ls_list' (LS_Type) will be added and the process 
-*     will be started. 
-*
-*     Loadsensors wich are contained in the global list
-*     but not in 'scriptfiles' will be stopped and 
-*     removed.
-*
-*     Depending on global variables additional internal
-*     loadsensors will be started:
-*      'has_to_use_gnu_load_sensor' == 1  => start qloadsensor
-*      'has_to_use_qidle' == 1            => start qidle
-*     
-*  INPUTS
-*     scriptfiles - comma separated list of scriptfiles
-*
-*  RESULT
-*     LS_OK
-******************************************************************************/
+/**
+ * @brief Start/stop/restart loadsensors
+ *
+ * The 'scriptfiles' parameter will be parsed. Each
+ * loadsensor not contained in the global list
+ * 'ls_list' (LS_Type) will be added and the process
+ * will be started.
+ * Loadsensors wich are contained in the global list
+ * but not in 'scriptfiles' will be stopped and
+ * removed.
+ * Depending on global variables additional internal
+ * loadsensors will be started:
+ *  'has_to_use_gnu_load_sensor' == 1  => start qloadsensor
+ *  'has_to_use_qidle' == 1            => start qidle
+ *
+ * @param scriptfiles comma separated list of scriptfiles
+ *
+ * @return LS_OK
+ */
 static int sge_ls_start(const char *qualified_hostname, const char *binary_path, char *scriptfiles)
 {
    lListElem *nxt_ls_elem = nullptr;    /* LS_Type */
@@ -748,16 +651,11 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
    DRETURN(LS_OK);
 }
 
-/****** execd/loadsensor/trigger_ls_restart() *********************************
-*  NAME
-*     trigger_ls_restart -- restart loadsensors
-*
-*  SYNOPSIS
-*     void trigger_ls_restart()
-*
-*  FUNCTION
-*     Trigger the restart of all loadsensors
-******************************************************************************/
+/**
+ * @brief Restart loadsensors
+ *
+ * Trigger the restart of all loadsensors
+ */
 void trigger_ls_restart()
 {
    DENTER(TOP_LAYER);
@@ -769,26 +667,18 @@ void trigger_ls_restart()
    DRETURN_VOID;
 }
 
-/****** execd/loadsensor/sge_ls_stop_if_pid() *********************************
-*  NAME
-*     sge_ls_stop_if_pid -- restart loadsensor with given pid 
-*
-*  SYNOPSIS
-*     int sge_ls_stop_if_pid(pid_t pid, int send_no_quit_command)
-*
-*  FUNCTION
-*     If the given pid is the pid of a loadsensor we started
-*     previously, then we will trigger a restart. This is
-*     necessary when a loadsensor process dies horribly.
-*     The execd notifies this module by invoking this function.
-*
-*  INPUTS
-*     pid - process id
-*
-*  RESULT
-*     0 - pid was not a loadsensor
-*     1 - we triggerd the restart because pid was a loadsensor
-******************************************************************************/
+/**
+ * @brief Restart loadsensor with given pid
+ *
+ * If the given pid is the pid of a loadsensor we started
+ * previously, then we will trigger a restart. This is
+ * necessary when a loadsensor process dies horribly.
+ * The execd notifies this module by invoking this function.
+ *
+ * @param pid process id
+ *
+ * @return pid was not a loadsensor 1 - we triggerd the restart because pid was a loadsensor
+ */
 int sge_ls_stop_if_pid(pid_t pid)
 {
    DENTER(TOP_LAYER);
@@ -803,32 +693,24 @@ int sge_ls_stop_if_pid(pid_t pid)
    DRETURN(0);
 }
 
-/****** execd/loadsensor/sge_ls_get() *****************************************
-*  NAME
-*     sge_ls_get -- reqeust a load report 
-*
-*  SYNOPSIS
-*     int sge_ls_get(lList **lpp)
-*
-*  FUNCTION
-*     This functions starts/stops/restarts all loadsensors
-*     contained in the global variable 'conf.load_sensor'.
-*
-*     The restart of a loadsensor process will be triggered 
-*     when the modification time of the scriptfile changed.
-*
-*     After that it collects load values by reading the
-*     output of each loadsensor process. The last complete
-*     list of load values will be added into the given load
-*     report list 'lpp'.
-*     
-*  INPUTS
-*     lpp - last complete list of load values determined
-*           by the started loadsensors 
-*
-*  RESULT
-*     0 - OK
-******************************************************************************/
+/**
+ * @brief Request a load report
+ *
+ * This functions starts/stops/restarts all loadsensors
+ * contained in the global variable 'conf.load_sensor'.
+ * The restart of a loadsensor process will be triggered
+ * when the modification time of the scriptfile changed.
+ * After that it collects load values by reading the
+ * output of each loadsensor process. The last complete
+ * list of load values will be added into the given load
+ * report list 'lpp'.
+ *
+ * @param qualified_hostname this host, as the cluster knows it
+ * @param binary_path where to find the load sensor binaries
+ * @param[in,out] lpp last complete list of load values determined by the started loadsensors
+ *
+ * @return OK
+ */
 int sge_ls_get(const char *qualified_hostname, const char *binary_path, lList **lpp)
 {
    DENTER(TOP_LAYER);
@@ -895,22 +777,16 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, lList **
    DRETURN(0);
 }
 
-/****** execd/loadsensor/sge_ls_stop() ****************************************
-*  NAME
-*     sge_ls_stop -- stop all loadsensor
-*
-*  SYNOPSIS
-*     void sge_ls_stop(int exited)
-*
-*  FUNCTION
-*     Stop all loadsensors and destroy the complete
-*     'ls_list'. 
-*
-*  INPUTS
-*     exited - notify the loadsensors before exit
-*        0 - notify them
-*        1 - do not notify them (avoid communication with ls)
-******************************************************************************/
+/**
+ * @brief Stop all loadsensor
+ *
+ * Stop all loadsensors and destroy the complete
+ * 'ls_list'.
+ *
+ * @param exited whether the load sensors have already exited: 0 means notify
+ *        them first, 1 means do not - which avoids communicating with a sensor
+ *        that is already gone
+ */
 void sge_ls_stop(int exited)
 {
    lListElem *ls_elem;

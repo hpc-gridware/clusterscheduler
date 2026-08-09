@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Writing a job's configuration to disk and forking its shepherd
+ */
+
 #include "sgeobj/sge_daemonize.h"
 
 int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_str, int err_length);

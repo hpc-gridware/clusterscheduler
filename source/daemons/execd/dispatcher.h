@@ -33,8 +33,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The execution daemon's main loop: receive a message, act on it, repeat
+ */
+
 #include "sgeobj/sge_daemonize.h"
 
+/** @brief How long to keep trying to reach qmaster before giving up on a message */
 #define EXECD_MAX_RECONNECT_TIMEOUT 30
 
 int sge_execd_process_messages();

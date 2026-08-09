@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Profiling levels for the daemon's own hot paths
+ */
+
 #include <pthread.h>
 
 #include "uti/sge_log.h"
@@ -26,12 +30,18 @@
 #include "execd_profiling.h"
 
 namespace ocs {
+   /** @brief Name the daemon's profiling levels so the output is readable */
    void execd_profiling_initialize() {
       prof_set_level_name(SGE_PROF_CUSTOM1, "dispatcher", nullptr);
       prof_set_level_name(SGE_PROF_CUSTOM2, "systemd", nullptr);
       prof_set_level_name(SGE_PROF_CUSTOM3, "ptf/pdc", nullptr);
    }
 
+   /** @brief Start or stop profiling to match the current configuration
+    *
+    * Driven by the `PROF_EXECD` execd parameter, so profiling can be switched
+    * on in a running daemon.
+    */
    void execd_profiling_start_stop() {
       static bool profiling_started = false;
       // start / stop profiling depending on configuration (execd_params PROF_EXECD=true)
@@ -56,6 +66,7 @@ namespace ocs {
       }
    }
 
+   /** @brief Write the collected profiling figures to the log */
    void execd_profiling_output() {
       static uint64_t next_prof_output = 0;
       if (thread_prof_active_by_id(pthread_self())) {
@@ -63,6 +74,7 @@ namespace ocs {
       }
    }
 
+   /** @brief Release what the profiling collected */
    void execd_profiling_cleanup() {
    }
 }

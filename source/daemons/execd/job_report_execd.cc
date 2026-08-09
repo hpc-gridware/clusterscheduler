@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief The job reports waiting to be acknowledged by qmaster
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <cfloat>
@@ -62,18 +66,37 @@
 #include "msg_execd.h"
 #include "sge_conf.h"
 
+/** @brief The job reports waiting to be sent to qmaster
+ *
+ * A report stays in this list until qmaster acknowledges it, so that a report
+ * lost to a restart or a network failure is sent again rather than dropped -
+ * which is what keeps a finished job from being forgotten.
+ */
 lList *jr_list = nullptr;
 static bool flush_jr = false;
 static int check_queue_limits = 0;
 
+/** @brief Ask for the job reports to be sent at the next opportunity
+ * @param value true to request a flush
+ */
 void sge_set_flush_jr_flag(bool value) {
    flush_jr = value;
 }
 
+/** @brief Is a job report flush pending?
+ * @return true when one is
+ */
 bool sge_get_flush_jr_flag() {
    return flush_jr;
 }
 
+/** @brief Mark one job report as worth sending immediately
+ *
+ * A state change the user is waiting on - a job starting or finishing -
+ * should not wait for the next periodic report.
+ *
+ * @param jr the job report
+ */
 void
 flush_job_report(lListElem *jr)
 {
@@ -102,6 +125,13 @@ void trace_jr()
 }
 #endif
 
+/** @brief Start a job report for a job, task or PE task
+ * @param jobid the job
+ * @param jataskid the array task
+ * @param petaskid the PE task, or nullptr
+ * @param jep the job (`JB_Type`)
+ * @return the new report, or the existing one when there already is one
+ */
 lListElem *add_job_report(uint32_t jobid, uint32_t jataskid, const char *petaskid, const lListElem *jep)
 {
    lListElem *jr, *jatep = nullptr;
@@ -140,6 +170,12 @@ lListElem *add_job_report(uint32_t jobid, uint32_t jataskid, const char *petaski
 }
 
 lListElem *
+/** @brief The pending report for a job, task or PE task
+ * @param job_id the job
+ * @param ja_task_id the array task
+ * @param pe_task_id the PE task, or nullptr
+ * @return the report, or nullptr when there is none
+ */
 get_job_report(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id)
 {
    lListElem *jr;
@@ -165,11 +201,18 @@ get_job_report(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id)
    DRETURN(jr);
 }
 
+/** @brief Drop one job report, once qmaster has acknowledged it
+ * @param jr the report
+ */
 void del_job_report(lListElem *jr)
 {
    lRemoveElem(jr_list, &jr);
 }
 
+/** @brief Drop every report belonging to one job task
+ * @param jobid the job
+ * @param jataskid the array task
+ */
 void cleanup_job_report(uint32_t jobid, uint32_t jataskid)
 {
    lListElem *jr, *jr_next;
@@ -209,6 +252,13 @@ void cleanup_job_report(uint32_t jobid, uint32_t jataskid)
       0 on success
       -1 on error
    ------------------------------------------------------------ */
+/** @brief Add one usage figure to a job report
+ * @param jr the report
+ * @param name the usage attribute
+ * @param val_as_str its value as text, for the attributes reported that way
+ * @param val its value as a number
+ * @return true on success
+ */
 int add_usage(lListElem *jr, const char *name, const char *val_as_str, double val)
 {
    lListElem *usage;
@@ -305,6 +355,14 @@ RETURN
    Typical dispatcher service function return values
 
    ------------------------------------------------------------ */
+/** @brief Handle a qmaster acknowledgement of the reports it received
+ *
+ * This is what lets a report be dropped from #jr_list; anything not
+ * acknowledged is sent again.
+ *
+ * @param aMsg the received message
+ * @return 0 on success
+ */
 int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
 {
    uint32_t jobid, jataskid;
@@ -480,6 +538,15 @@ count_queue_limits(const lListElem *queue, ocs::CEntry::Type type, int limit_nm,
    return found_limit;
 }
 
+/** @brief Count a job in or out of the queues whose limits have to be watched
+ *
+ * Only queues holding a job with a resource limit need to be checked each
+ * interval, so the daemon keeps a count rather than scanning all of them.
+ *
+ * @param qualified_hostname this host, as the cluster knows it
+ * @param jep the job (`JB_Type`)
+ * @param increase true when the job starts, false when it ends
+ */
 void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem *jep, bool increase)
 {
    const lListElem *gdil_ep;
@@ -513,6 +580,9 @@ void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem 
    }
 }
 
+/** @brief Whether any running job is subject to a queue resource limit
+ * @return non-zero when the limits have to be enforced this interval
+ */
 bool check_for_queue_limits()
 {
    bool ret = false;

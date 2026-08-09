@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The temporary directory a job runs with as $TMPDIR
+ */
+
 #include <cerrno>
 
 #include "uti/sge_log.h"
@@ -48,6 +52,20 @@
 
 /*******************************************************/
 char *
+/** @brief Create the temporary directory a job runs with as `$TMPDIR`
+ *
+ * Created as the daemon and then handed to the job owner, because the parent
+ * directory is usually not writable by users.
+ *
+ * @param qep the queue instance, which configures where temporary directories live
+ * @param jobid the job
+ * @param jataskid the array task
+ * @param uid the job owner
+ * @param gid the job owner's group
+ * @param[out] tmpdir receives the directory
+ * @param tmpdir_size size of that buffer
+ * @return 0 on success
+ */
 sge_make_tmpdir(lListElem *qep, uint32_t jobid, uint32_t jataskid, uid_t uid, gid_t gid, char *tmpdir, size_t tmpdir_size)
 {
    const char *t;
@@ -88,6 +106,18 @@ sge_make_tmpdir(lListElem *qep, uint32_t jobid, uint32_t jataskid, uid_t uid, gi
 }
 
 /************************************************************************/
+/** @brief Delete a job's temporary directory when it ends
+ *
+ * Done as the job owner where possible, so that a job cannot make the daemon
+ * delete something it should not.
+ *
+ * @param dir the directory
+ * @param job_owner the job owner
+ * @param jobid the job
+ * @param jataskid the array task
+ * @param queue_name the queue instance, for the error message
+ * @return 0 on success
+ */
 int sge_remove_tmpdir(const char *dir, const char *job_owner, uint32_t jobid, uint32_t jataskid, const char *queue_name)
 {
    stringT tmpstr;
@@ -115,6 +145,14 @@ int sge_remove_tmpdir(const char *dir, const char *job_owner, uint32_t jobid, ui
    DRETURN(0);
 }
 
+/** @brief The temporary directory a job was given
+ * @param qep the queue instance, which configures where temporary directories live
+ * @param jobid the job
+ * @param jataskid the array task
+ * @param[out] tmpdir receives the directory
+ * @param tmpdir_size size of that buffer
+ * @return the directory, or nullptr when none was configured
+ */
 char *sge_get_tmpdir(lListElem *qep, uint32_t jobid, uint32_t jataskid, char *tmpdir, size_t tmpdir_size)
 {
    DENTER(TOP_LAYER);

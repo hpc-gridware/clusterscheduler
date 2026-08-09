@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Profiling levels for the daemon's own hot paths
+ */
+
 namespace ocs {
    void execd_profiling_initialize();
    void execd_profiling_start_stop();

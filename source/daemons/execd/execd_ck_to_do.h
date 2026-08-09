@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Everything the daemon does between messages: reaping, resending, reporting
+ */
+
 #include "sgeobj/sge_daemonize.h"
 
 int do_ck_to_do(bool is_qmaster_down);

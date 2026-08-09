@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Collecting this host's load values and assembling the load report
+ */
+
 #include "sge_report_execd.h"
 
 extern report_source execd_report_sources[];
