@@ -33,12 +33,38 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The commlib's public interface
+ *
+ * What an application calls. The lifecycle is:
+ *
+ * 1. #cl_com_setup_commlib once per process, choosing whether the commlib
+ *    runs threads of its own (#cl_thread_mode_t);
+ * 2. #cl_com_create_handle per participant - the qmaster creates a service
+ *    handle, a client a non-service one;
+ * 3. #cl_commlib_send_message and #cl_commlib_receive_message;
+ * 4. #cl_commlib_shutdown_handle, then #cl_com_cleanup_commlib.
+ *
+ * In #CL_NO_THREAD mode the application additionally has to call
+ * #cl_commlib_trigger from its main loop, or nothing moves.
+ *
+ * Almost everything here returns a `CL_RETVAL_*` code from
+ * `comm/lists/cl_errors.h`; #cl_get_error_text turns one into a sentence.
+ *
+ * @see @ref cl_data_types.h for the handle, connection and message types
+ */
+
 #include <cinttypes>
 
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 #include "comm/cl_communication.h"
 
+/** @brief Component name a `qping -dump` client connects under
+ *
+ * The commlib recognises a peer by this name and starts feeding it the debug
+ * stream instead of treating it as an ordinary client.
+ */
 #define CL_COM_DEBUG_CLIENT_NAME "debug_client"
 
 /* commlib init and hostlist functions */
@@ -190,12 +216,16 @@ cl_thread_mode_t cl_commlib_get_thread_state();
 int cl_com_setup_connection(cl_com_handle_t *handle,
                             cl_com_connection_t **connection);
 
-/* 
-TODO: cleanup function names !!!
-TODO: ADOC Header !!!
-*/
-
-/* typical user function calls */
+/** @name The calls an application actually makes
+ *
+ * Everything above is setup and configuration; these five are the working
+ * interface.
+ *
+ * @todo The names are inconsistent - `cl_com_*` and `cl_commlib_*` are used
+ *       for both configuration and operations, with no rule behind which is
+ *       which.
+ * @{
+ */
 
 int cl_commlib_trigger(cl_com_handle_t *handle, int synchron);
 
@@ -243,9 +273,12 @@ int cl_commlib_search_endpoint(cl_com_handle_t *handle,
 int cl_commlib_get_connect_time(cl_com_handle_t *handle, const char *un_resolved_hostname, const char *component_name,
                                 unsigned long component_id, unsigned long *msg_time);
 
-/* defines from old commlib */
-
-#define HEARD_FROM_TIMEOUT 1  /* dummy parameter */
+/** @brief Placeholder from the pre-commlib API
+ *
+ * @warning A dummy. Accepted where the old interface expected a timeout
+ *          parameter and ignored everywhere.
+ */
+#define HEARD_FROM_TIMEOUT 1
 
 int cl_commlib_set_connection_param(cl_com_handle_t *handle, int parameter, int value);
 
@@ -258,14 +291,28 @@ int cl_commlib_set_global_param(cl_global_settings_params_t parameter, bool valu
 int
 cl_commlib_get_last_message_time(cl_com_handle_t *handle, const char *un_resolved_hostname, const char *component_name,
                                  unsigned long component_id, unsigned long *msg_time);
+/** @} */
 
 
-/* dummy defines for old lib compatibility */
-
-#define COMMD_NACK_UNKNOWN_HOST CL_RETVAL_UNKNOWN_HOST_ERROR  /* TODO: check this define */
-#define COMMD_NACK_CONFLICT CL_RETVAL_ENDPOINT_NOT_UNIQUE
-#define CL_FIRST_FREE_EC    32
+/** @name Compatibility with the old `commd` error names
+ *
+ * Kept so that code written against the predecessor library still compiles.
+ * @{
+ */
+#define COMMD_NACK_UNKNOWN_HOST CL_RETVAL_UNKNOWN_HOST_ERROR   ///< @todo Verify this mapping is still the right one
+#define COMMD_NACK_CONFLICT CL_RETVAL_ENDPOINT_NOT_UNIQUE      ///< An endpoint of that name and id already exists
+#define CL_FIRST_FREE_EC    32                                 ///< Lowest event client id an application may use
+/** @} */
 
 int getuniquehostname(const char *hostin, char *hostout, int refresh_aliases);
 
+/** @brief The commlib's own threads
+ *
+ * @return the thread list
+ *
+ * @warning Declared here and **defined nowhere** in either repository. Its
+ *          only caller, `get_active_thread_list()` in
+ *          `daemons/qmaster/sge_thread_utility.cc`, sits inside an `#if 0`
+ *          block - which is the only reason this has never been a link error.
+ */
 cl_raw_list_t * cl_com_get_thread_list();
