@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include <cstdio>
 #include <cstring>
 
@@ -262,6 +266,9 @@ static const int pe_nm[] = {
 };
 
 
+/** @brief Build whatever of the subscription is not built yet
+ * @param where_what the subscription, filled in place
+ */
 void
 ensure_valid_what_and_where(sge_where_what_t *where_what) {
    lDescr *tmp_what_descr = nullptr;
@@ -409,6 +416,9 @@ ensure_valid_what_and_where(sge_where_what_t *where_what) {
    DRETURN_VOID;
 }
 
+/** @brief Release the subscription
+ * @param where_what the subscription
+ */
 void
 free_what_and_where(sge_where_what_t *where_what) {
    lFreeWhere(&(where_what->where_queue));

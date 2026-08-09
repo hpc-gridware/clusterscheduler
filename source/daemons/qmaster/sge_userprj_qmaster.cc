@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief TODO describe this file
+ */
 /*
    This is the module for handling users and projects.
    We save users to <spool>/qmaster/$USER_DIR and
@@ -564,17 +568,11 @@ sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *us
    DRETURN(status);
 }
 
-/****** qmaster/sge_userprj_qmaster/do_add_auto_user() *************************
-*  NAME
-*     do_add_auto_user() -- add auto user to SGE_UU_LIST
-*
-*  SYNOPSIS
-*     static int do_add_auto_user(lListElem*, lList**) 
-*
-*  NOTES
-*     MT-NOTE: do_add_auto_user() is not MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Add auto user to SGE_UU_LIST
+ *
+ * @note MT-NOTE: do_add_auto_user() is not MT safe
+ */
 static int do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *anUser, lList **anAnswer, monitoring_t *monitor) {
    int res = STATUS_EUNKNOWN;
    gdi_object_t *userList = nullptr;
@@ -610,23 +608,16 @@ static int do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lLis
    DRETURN(res);
 }
 
-/****** sge_userprj_qmaster/sge_userprj_spool() ********************************
-*  NAME
-*     sge_userprj_spool() -- updates the spooled user and projects
-*
-*  SYNOPSIS
-*     void sge_userprj_spool() 
-*
-*  FUNCTION
-*     The usage is only stored every 2 min. To have the acual usage stored when
-*     the qmaster is going down, we have to through all user/projects and store
-*     them again.
-*
-*  NOTES
-*     MT-NOTE: sge_userprj_spool() is not MT safe, because it is working on global
-*              master lists (only reading)
-*
-*******************************************************************************/
+/**
+ * @brief Updates the spooled user and projects
+ *
+ * The usage is only stored every 2 min. To have the acual usage stored when
+ * the qmaster is going down, we have to through all user/projects and store
+ * them again.
+ *
+ * @note MT-NOTE: sge_userprj_spool() is not MT safe, because it is working on global
+ *       master lists (only reading)
+ */
 void sge_userprj_spool(uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    lList *answer_list = nullptr;
@@ -653,30 +644,21 @@ void sge_userprj_spool(uint64_t gdi_session) {
    DRETURN_VOID;
 }
 
-/****** sge_userprj_qmaster/project_still_used() *******************************
-*  NAME
-*     project_still_used() -- True, if project still used
-*
-*  SYNOPSIS
-*     static bool project_still_used(const char *p)
-*
-*  FUNCTION
-*     Returns true, if project is still used as ACL with host_conf(5),
-*     queue_conf(5).
-*
-*     Use of projects as ACLs in sge_conf(5) play no role here, 
-*     since such ACLs are checked in qmaster and thus are not 
-*     relevant for the scheduling algorithm.
-*
-*  INPUTS
-*     const char *p - the project
-*
-*  RESULT
-*     static bool - True, if project still used
-*
-*  NOTES
-*     MT-NOTE: project_still_used() is not MT safe
-*******************************************************************************/
+/**
+ * @brief True, if project still used
+ *
+ * Returns true, if project is still used as ACL with host_conf(5),
+ * queue_conf(5).
+ * Use of projects as ACLs in sge_conf(5) play no role here,
+ * since such ACLs are checked in qmaster and thus are not
+ * relevant for the scheduling algorithm.
+ *
+ * @param p the project
+ *
+ * @return True, if project still used
+ *
+ * @note MT-NOTE: project_still_used() is not MT safe
+ */
 static bool project_still_used(const char *p) {
    const lListElem *qc, *cq, *hep, *rqs;
 
@@ -709,25 +691,18 @@ static bool project_still_used(const char *p) {
 }
 
 
-/****** sge_userprj_qmaster/project_update_categories() ************************
-*  NAME
-*     project_update_categories() -- Update all projects wrts categories
-*
-*  SYNOPSIS
-*     void project_update_categories(const lList *added, const lList *removed)
-*
-*  FUNCTION
-*     Each added/removed project is verified whether it is used first
-*     time/still as ACL for host_conf(5)/queue_conf(5). If so an event
-*     is sent.
-*
-*  INPUTS
-*     const lList *added   - List of added project references (PR_Type)
-*     const lList *removed - List of removed project references (PR_Type)
-*
-*  NOTES
-*     MT-NOTE: project_update_categories() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Update all projects wrts categories
+ *
+ * Each added/removed project is verified whether it is used first
+ * time/still as ACL for host_conf(5)/queue_conf(5). If so an event
+ * is sent.
+ *
+ * @param added List of added project references (PR_Type)
+ * @param removed List of removed project references (PR_Type)
+ *
+ * @note MT-NOTE: project_update_categories() is not MT safe
+ */
 void project_update_categories(const lList *added, const lList *removed, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    const lListElem *ep;

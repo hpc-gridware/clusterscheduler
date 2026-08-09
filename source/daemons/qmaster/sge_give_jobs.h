@@ -33,30 +33,57 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Handing a job to an execution host, and burying it when it ends
+ *
+ * A job's life in qmaster is a state machine, and this is where it is
+ * advanced. Delivery is not instantaneous - qmaster sends the job and the
+ * execution host confirms it later, or does not - so a job is *transferring*
+ * until it is confirmed and is redelivered if it is not.
+ *
+ * The end of a job is split in two (CS-1908). `sge_finish_ja_task()` books the
+ * usage and writes the accounting record; `sge_bury_ja_task()` removes the
+ * task. With finished-job retention the second step happens much later, so
+ * that `qstat -s f` can still show the task.
+ */
+
 #include "sge_qmaster_timed_event.h"
 #include "sgeobj/sge_daemonize.h"
 
+/** @brief How long a job may stay in transfer before it is delivered again
+ *
+ * An execution host that has not confirmed within this gets the job resent.
+ */
 #define MAX_JOB_DELIVER_TIME (5u*60)
 
+/** @brief What sge_commit_job() should skip
+ *
+ * Used when the caller is going to spool or announce the change itself, and a
+ * second write or a duplicate event would be wrong.
+ */
 typedef enum {
-   COMMIT_DEFAULT = 0x0000,
-   COMMIT_NO_SPOOLING = 0x0001,   /* don't spool the job */
-   COMMIT_NO_EVENTS = 0x0002,   /* don't create events */
-   COMMIT_UNENROLLED_TASK = 0x0004,   /* handle unenrolled pending tasks */
-   COMMIT_NEVER_RAN = 0x0008    /* job never ran */
+   COMMIT_DEFAULT = 0x0000,           ///< Spool and announce as usual
+   COMMIT_NO_SPOOLING = 0x0001,       ///< don't spool the job
+   COMMIT_NO_EVENTS = 0x0002,         ///< don't create events
+   COMMIT_UNENROLLED_TASK = 0x0004,   ///< handle unenrolled pending tasks
+   COMMIT_NEVER_RAN = 0x0008          ///< job never ran
 } sge_commit_flags_t;
 
-/* sge_commit_job() state transitions */
+/** @brief The state transition sge_commit_job() is being asked to make
+ *
+ * Note that 5 is missing: the value was retired and not reused, because the
+ * numbers appear in spooled state.
+ */
 typedef enum {
-   COMMIT_ST_SENT = 0,               /* job was sent and is now transfering */
-   COMMIT_ST_ARRIVED = 1,            /* job was reported as running by execd */
-   COMMIT_ST_RESCHEDULED = 2,        /* job gets rescheduled */
-   COMMIT_ST_FINISHED_FAILED = 3,    /* GE job finished or failed (FINISH/ABORT) */
-   COMMIT_ST_FINISHED_FAILED_EE = 4, /* GEEE job finished or failed: books usage and buries the job */
-   COMMIT_ST_NO_RESOURCES = 6,       /* remove interacive job (FINISH/ABORT) */
-   COMMIT_ST_DELIVERY_FAILED = 7,    /* delivery failed and rescheduled */
-   COMMIT_ST_FAILED_AND_ERROR = 8,   /* job failed and error state set */
-   COMMIT_ST_USER_RESCHEDULED = 9    /* job get rescheduled due to exit 99 or qmod -rj executed by job user */
+   COMMIT_ST_SENT = 0,               ///< job was sent and is now transfering
+   COMMIT_ST_ARRIVED = 1,            ///< job was reported as running by execd
+   COMMIT_ST_RESCHEDULED = 2,        ///< job gets rescheduled
+   COMMIT_ST_FINISHED_FAILED = 3,    ///< GE job finished or failed (FINISH/ABORT)
+   COMMIT_ST_FINISHED_FAILED_EE = 4, ///< GEEE job finished or failed: books usage and buries the job
+   COMMIT_ST_NO_RESOURCES = 6,       ///< remove interacive job (FINISH/ABORT)
+   COMMIT_ST_DELIVERY_FAILED = 7,    ///< delivery failed and rescheduled
+   COMMIT_ST_FAILED_AND_ERROR = 8,   ///< job failed and error state set
+   COMMIT_ST_USER_RESCHEDULED = 9    ///< job get rescheduled due to exit 99 or qmod -rj executed by job user
 } sge_commit_mode_t;
 
 int sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep, lListElem *hep, monitoring_t *monitor, uint64_t gdi_session);
@@ -71,6 +98,7 @@ void sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_
  *   - U5 retention sweep calls sge_bury_ja_task at prune time. */
 void sge_finish_ja_task(const char *sge_root, lListElem *job, uint32_t job_id,
                         lListElem *ja_task, int no_events, uint64_t gdi_session);
+
 void sge_bury_ja_task(const char *sge_root, lListElem *job, uint32_t job_id,
                       lListElem *ja_task, int spool_job, int no_events, uint64_t gdi_session);
 

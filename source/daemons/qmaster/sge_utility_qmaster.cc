@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief TODO describe this file
+ */
 #include <cstring>
 #include <cctype>
 
@@ -57,38 +61,25 @@
 
 #define CQUEUE_LAYER TOP_LAYER
 
-/****** sge_utility_qmaster/attr_mod_procedure() *******************************
-*  NAME
-*     attr_mod_procedure() -- modify the prolog/epilog/pe_start/pe_stop procedures
-*
-*  SYNOPSIS
-*     int attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, 
-*     int nm, char *attr_name, char *variables[]) 
-*
-*  FUNCTION
-*     This function modifies a prolog/epilog/pe_start/pe_stop of "new_qep".
-*     The attribute of "qep" element is identified by nm.
-*     Possible errors will be reported in "alpp". "qep"
-*     "qep" element will be used to identify the changes which have been done.
-*     "attr_name" is used to report errors
-*
-*  INPUTS
-*     lList **alpp      - AN_Type, The answer list 
-*     lListElem *qep    - CQ_Type, reduced changes source element 
-*     lListElem *new_ep - CQ_Type, target element 
-*     int nm            - CULL attribute name (CQ_Type)
-*     char *attr_name   - CULL sublist attribute name of that
-*                              field which containes the value of
-*                              the attribute to be modified. 
-*     char *variables[] - procedure variables 
-*
-*  RESULT
-*     int - 0 success, error othewise
-*
-*  NOTES
-*     MT-NOTE: attr_mod_procedure() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Modify the prolog/epilog/pe_start/pe_stop procedures
+ *
+ * This function modifies a prolog/epilog/pe_start/pe_stop of "new_qep".
+ * The attribute of "qep" element is identified by nm.
+ * Possible errors will be reported in "alpp". "qep"
+ * "qep" element will be used to identify the changes which have been done.
+ * "attr_name" is used to report errors
+ *
+ * @param alpp AN_Type, The answer list
+ * @param qep CQ_Type, reduced changes source element
+ * @param new_ep CQ_Type, target element
+ * @param nm CULL attribute name (CQ_Type)
+ * @param attr_name CULL sublist attribute name of that field which containes the value of the attribute to be modified. char *variables[] - procedure variables
+ *
+ * @return 0 success, error othewise
+ *
+ * @note MT-NOTE: attr_mod_procedure() is MT safe
+ */
 int
 attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, const char *attr_name, const char *variables[]) {
    DENTER(TOP_LAYER);
@@ -129,31 +120,21 @@ attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, cons
    DRETURN(0);
 }
 
-/****** sge_utility_qmaster/attr_mod_zerostr() *********************************
-*  NAME
-*     attr_mod_zerostr() -- modify strings, no verification 
-*
-*  SYNOPSIS
-*     int attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, char 
-*     *attr_name) 
-*
-*  FUNCTION
-*      This function modifies "new_qep" attribute with string from "qep 
-*      without any verification. nullptr is a valid value.
-*
-*  INPUTS
-*     lListElem *qep    - CQ_Type, source of the modification 
-*     lListElem *new_ep - CQ_Type, destination of the modification 
-*     int nm            - CULL attribute name (CQ_Type) of the element
-*     char *attr_name   - CULL sublist attribute name 
-*
-*  RESULT
-*     int - 0, success, othewise error
-*
-*  NOTES
-*     MT-NOTE: attr_mod_zerostr() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Modify strings, no verification
+ *
+ *  This function modifies "new_qep" attribute with string from "qep
+ *  without any verification. nullptr is a valid value.
+ *
+ * @param qep CQ_Type, source of the modification
+ * @param new_ep CQ_Type, destination of the modification
+ * @param nm CULL attribute name (CQ_Type) of the element
+ * @param attr_name CULL sublist attribute name
+ *
+ * @return 0, success, othewise error
+ *
+ * @note MT-NOTE: attr_mod_zerostr() is MT safe
+ */
 int
 attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
    DENTER(TOP_LAYER);
@@ -167,32 +148,22 @@ attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, const char *attr_nam
    DRETURN(0);
 }
 
-/****** sge_utility_qmaster/attr_mod_str() *************************************
-*  NAME
-*     attr_mod_str() -- modify strings except that it may not be nullptr
-*
-*  SYNOPSIS
-*     int attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, 
-*     char *attr_name) 
-*
-*  FUNCTION
-*      This function modifies "new_qep" attribute with string from "qep 
-*      except that the value of an attribute may not be nullptr.
-*
-*  INPUTS
-*     lList **alpp      - AN_Type, The answer list 
-*     lListElem *qep    - CQ_Type, source of the modification 
-*     lListElem *new_ep - CQ_Type, destination of the modification 
-*     int nm            - CULL attribute name (CQ_Type) of the element
-*     char *attr_name   - CULL sublist attribute name 
-*
-*  RESULT
-*     int -  0 success, othewise error
-*
-*  NOTES
-*     MT-NOTE: attr_mod_str() is MT safe 
-*     
-*******************************************************************************/
+/**
+ * @brief Modify strings except that it may not be nullptr
+ *
+ *  This function modifies "new_qep" attribute with string from "qep
+ *  except that the value of an attribute may not be nullptr.
+ *
+ * @param alpp AN_Type, The answer list
+ * @param qep CQ_Type, source of the modification
+ * @param new_ep CQ_Type, destination of the modification
+ * @param nm CULL attribute name (CQ_Type) of the element
+ * @param attr_name CULL sublist attribute name
+ *
+ * @return 0 success, othewise error
+ *
+ * @note MT-NOTE: attr_mod_str() is MT safe
+ */
 int
 attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
    int dataType;
@@ -233,30 +204,20 @@ attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, const char
    DRETURN(0);
 }
 
-/****** sge_utility_qmaster/attr_mod_bool() ************************************
-*  NAME
-*     attr_mod_bool() -- modify raw boolean, no verification 
-*
-*  SYNOPSIS
-*     int attr_mod_bool(lListElem *qep, lListElem *new_ep, int nm, char 
-*     *attr_name) 
-*
-*  FUNCTION
-*     This function modifies "new_qep" attribute with boolean value from "qep"
-*
-*  INPUTS
-*     lListElem *qep    - CQ_Type, source of the modification 
-*     lListElem *new_ep - CQ_Type, destination of the modification 
-*     int nm            - CULL attribute name (CQ_Type) of the element
-*     char *attr_name   - CULL sublist attribute name 
-*
-*  RESULT
-*     int - 0 succes, othewise error
-*
-*  NOTES
-*     MT-NOTE: attr_mod_bool() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Modify raw boolean, no verification
+ *
+ * This function modifies "new_qep" attribute with boolean value from "qep"
+ *
+ * @param qep CQ_Type, source of the modification
+ * @param new_ep CQ_Type, destination of the modification
+ * @param nm CULL attribute name (CQ_Type) of the element
+ * @param attr_name CULL sublist attribute name
+ *
+ * @return 0 succes, othewise error
+ *
+ * @note MT-NOTE: attr_mod_bool() is MT safe
+ */
 int
 attr_mod_bool(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
    DENTER(TOP_LAYER);
@@ -270,30 +231,20 @@ attr_mod_bool(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) 
    DRETURN(0);
 }
 
-/****** sge_utility_qmaster/attr_mod_ulong() ***********************************
-*  NAME
-*     attr_mod_ulong() -- modify raw ulong, no verification 
-*
-*  SYNOPSIS
-*     int attr_mod_ulong(lListElem *qep, lListElem *new_ep, int nm, char 
-*     *attr_name) 
-*
-*  FUNCTION
-*     This function modifies "new_qep" attribute with boolean value from "qep"
-*
-*  INPUTS
-*     lListElem *qep    - CQ_Type, source of the modification 
-*     lListElem *new_ep - CQ_Type, destination of the modification 
-*     int nm            - CULL attribute name (CQ_Type) of the element
-*     char *attr_name   - CULL sublist attribute name 
-*
-*  RESULT
-*     int - 0 succes, othewise error
-*
-*  NOTES
-*     MT-NOTE: attr_mod_ulong() is MT safe 
-*    
-*******************************************************************************/
+/**
+ * @brief Modify raw ulong, no verification
+ *
+ * This function modifies "new_qep" attribute with boolean value from "qep"
+ *
+ * @param qep CQ_Type, source of the modification
+ * @param new_ep CQ_Type, destination of the modification
+ * @param nm CULL attribute name (CQ_Type) of the element
+ * @param attr_name CULL sublist attribute name
+ *
+ * @return 0 succes, othewise error
+ *
+ * @note MT-NOTE: attr_mod_ulong() is MT safe
+ */
 int attr_mod_ulong(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
    DENTER(TOP_LAYER);
 
@@ -318,30 +269,20 @@ int attr_mod_ulong64(lListElem *qep, lListElem *new_ep, int nm, const char *attr
    DRETURN(0);
 }
 
-/****** sge_utility_qmaster/attr_mod_double() **********************************
-*  NAME
-*     attr_mod_double() --  modify raw double, no verification 
-*
-*  SYNOPSIS
-*     int attr_mod_double(lListElem *qep, lListElem *new_ep, int nm, char 
-*     *attr_name) 
-*
-*  FUNCTION
-*    This function modifies "new_qep" attribute with double value from "qep" 
-*
-*  INPUTS
-*     lListElem *qep    - CQ_Type, source of the modification 
-*     lListElem *new_ep - CQ_Type, destination of the modification 
-*     int nm            - CULL attribute name (CQ_Type) of the element
-*     char *attr_name   - CULL sublist attribute name 
-*
-*  RESULT
-*     int - 0 success, othewise error
-*
-*  NOTES
-*     MT-NOTE: attr_mod_double() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Modify raw double, no verification
+ *
+ * This function modifies "new_qep" attribute with double value from "qep"
+ *
+ * @param qep CQ_Type, source of the modification
+ * @param new_ep CQ_Type, destination of the modification
+ * @param nm CULL attribute name (CQ_Type) of the element
+ * @param attr_name CULL sublist attribute name
+ *
+ * @return 0 success, othewise error
+ *
+ * @note MT-NOTE: attr_mod_double() is MT safe
+ */
 int
 attr_mod_double(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
    DENTER(TOP_LAYER);
@@ -355,32 +296,22 @@ attr_mod_double(lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
    DRETURN(0);
 }
 
-/****** sge_utility_qmaster/attr_mod_mem_str() *********************************
-*  NAME
-*     attr_mod_mem_str() -- modify memory string, nullptr is not allowed
-*
-*  SYNOPSIS
-*     int attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int 
-*     nm, char *attr_name) 
-*
-*  FUNCTION
-*      This function modifies "new_qep" attribute with string from "qep 
-*      except that the value of an memory attribute may not be nullptr.
-*
-*  INPUTS
-*     lList **alpp      - AN_Type, The answer list 
-*     lListElem *qep    - CQ_Type, source of the modification 
-*     lListElem *new_ep - CQ_Type, destination of the modification 
-*     int nm            - CULL attribute name (CQ_Type) of the element
-*     char *attr_name   - CULL sublist attribute name
-*
-*  RESULT
-*     int - 0 success, othewise error
-*
-*  NOTES
-*     MT-NOTE: attr_mod_mem_str() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Modify memory string, nullptr is not allowed
+ *
+ *  This function modifies "new_qep" attribute with string from "qep
+ *  except that the value of an memory attribute may not be nullptr.
+ *
+ * @param alpp AN_Type, The answer list
+ * @param qep CQ_Type, source of the modification
+ * @param new_ep CQ_Type, destination of the modification
+ * @param nm CULL attribute name (CQ_Type) of the element
+ * @param attr_name CULL sublist attribute name
+ *
+ * @return 0 success, othewise error
+ *
+ * @note MT-NOTE: attr_mod_mem_str() is MT safe
+ */
 int
 attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name) {
    DENTER(TOP_LAYER);
@@ -404,33 +335,23 @@ attr_mod_mem_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *
    DRETURN(0);
 }
 
-/****** sge_utility_qmaster/attr_mod_time_str() ********************************
-*  NAME
-*     attr_mod_time_str() -- modify a valid time string
-*
-*  SYNOPSIS
-*     int attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, 
-*     int nm, char *attr_name, int enable_infinity) 
-*
-*  FUNCTION
-*     This function modifies "new_qep" attribute with string from "qep" 
-*     The value of an time_str attribute may not be nullptr and must be valid.
-*       
-*  INPUTS
-*     lList **alpp      - AN_Type, The answer list 
-*     lListElem *qep    - CQ_Type, source of the modification 
-*     lListElem *new_ep - CQ_Type, destination of the modification 
-*     int nm            - CULL attribute name (CQ_Type) of the element
-*     char *attr_name   - CULL sublist attribute name 
-*     int enable_infinity - The "infinity" string can be there
-*
-*  RESULT
-*     int - 0 on success, othewise error
-*
-*  NOTES
-*     MT-NOTE: attr_mod_time_str() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Modify a valid time string
+ *
+ * This function modifies "new_qep" attribute with string from "qep"
+ * The value of an time_str attribute may not be nullptr and must be valid.
+ *
+ * @param alpp AN_Type, The answer list
+ * @param qep CQ_Type, source of the modification
+ * @param new_ep CQ_Type, destination of the modification
+ * @param nm CULL attribute name (CQ_Type) of the element
+ * @param attr_name CULL sublist attribute name
+ * @param enable_infinity The "infinity" string can be there
+ *
+ * @return 0 on success, othewise error
+ *
+ * @note MT-NOTE: attr_mod_time_str() is MT safe
+ */
 int
 attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char *attr_name, int enable_infinity) {
    DENTER(TOP_LAYER);
@@ -464,41 +385,29 @@ attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char 
    DRETURN(0);
 }
 
-/****** sge_utility_qmaster/attr_mod_sub_list() ********************************
-*  NAME
-*     attr_mod_sub_list() -- This function modifies a certain configuration sublist 
-*
-*  SYNOPSIS
-*     bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int 
-*     this_elem_name, int this_elem_primary_key, lListElem *delta_elem, int 
-*     sub_command, const char *sub_list_name, const char *object_name, int 
-*     no_info) 
-*
-*  FUNCTION
-*     This function modifies a certain configuration sublist of "this_elem".
-*     Possible errors will be reported in answer_list "alpp". The reduced_elem 
-*     "delta_elem" will be used to identify the changes which have been made.
-*     "sub_command" defines how these changes should be applied to "this_elem".
-*
-*  INPUTS
-*     lList **alpp              - The AN_Type, answer_list
-*     lListElem *this_elem      - The target object element, CQ_Type 
-*     int this_elem_name        - The name of the list elemet (lList) 
-*     int this_elem_primary_key - The primary field for sublist 
-*     lListElem *delta_elem     - The source (probably reduced) list of the elements, CQ_Type 
-*     int sub_command           - The add, modify, remove command, GDI subcommand
-*     const char *sub_list_name - The sublist name
-*     const char *object_name   - The target object name
-*     int no_info               - Skip or add the info messages 
-*     bool *changed             - Report back if changes have been made (may be nullptr)
-*
-*  RESULT
-*     bool - true, the success
-*
-*  NOTES
-*     MT-NOTE: attr_mod_sub_list() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief This function modifies a certain configuration sublist
+ *
+ * This function modifies a certain configuration sublist of "this_elem".
+ * Possible errors will be reported in answer_list "alpp". The reduced_elem
+ * "delta_elem" will be used to identify the changes which have been made.
+ * "sub_command" defines how these changes should be applied to "this_elem".
+ *
+ * @param alpp The AN_Type, answer_list
+ * @param this_elem The target object element, CQ_Type
+ * @param this_elem_name The name of the list elemet (lList)
+ * @param this_elem_primary_key The primary field for sublist
+ * @param delta_elem The source (probably reduced) list of the elements, CQ_Type
+ * @param sub_command The add, modify, remove command, GDI subcommand
+ * @param sub_list_name The sublist name
+ * @param object_name The target object name
+ * @param no_info Skip or add the info messages
+ * @param changed Report back if changes have been made (may be nullptr)
+ *
+ * @return true, the success
+ *
+ * @note MT-NOTE: attr_mod_sub_list() is MT safe
+ */
 bool
 attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int this_elem_primary_key,
                   const lListElem *delta_elem, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_cmd,
@@ -799,55 +708,35 @@ attr_mod_obj_binding(lList **alpp, lListElem *new_ar, const lListElem *ar) {
 }
 
 
-/****** sgeobj/cqueue/cqueue_mod_sublist() ***********************************
-*  NAME
-*     cqueue_mod_sublist() -- modify cqueues configuration sublist 
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, 
-*                        lListElem *reduced_elem, int sub_command, 
-*                        int attribute_name, int sublist_host_name, 
-*                        int sublist_value_name, int subsub_key, 
-*                        const char *attribute_name_str, 
-*                        const char *object_name_str) 
-*
-*  FUNCTION
-*     This function modifies a certain configuration sublist of "this_elem".
-*     Possible errors will be reported in "answer_list". "reduced_elem"
-*     will be used to identify the changes which have been done.
-*     "sub_command" defines how these changes should be applied to 
-*     "this_elem". "sublist_value_name" is the sublist of "this_elem" which
-*     should be modified whereas "subsub_key" defines the attribute
-*     which containes the primary key of that sublist. "attribute_name_str"
-*     is the name of the cqueue attribute which will be modified with
-*     this operation. It will be used for error output. "object_name_str"
-*     is the name of the cqueue which will be modified by this operation.
-*      
-*
-*  INPUTS
-*     lListElem *this_elem           - CQ_Type 
-*     lList **answer_list            - AN_Type 
-*     lListElem *reduced_elem        - reduced CQ_Type element 
-*     int sub_command                - GDI subcommand 
-*     int attribute_name             - CULL attribute name (CQ_Type)
-*     int sublist_host_name          - CULL sublist attribute name
-*                                      depend on sublist of CQ_Type 
-*     int sublist_value_name         - CULL sublist attribute name of that
-*                                      field which containes the value of
-*                                      the attribute to be modified.
-*     int subsub_key                 - CULL sublist attribute key
-*     const char *attribute_name_str - string used for user output 
-*     const char *object_name_str    - cqueue name 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: cqueue_mod_sublist() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Modify cqueues configuration sublist
+ *
+ * This function modifies a certain configuration sublist of "this_elem".
+ * Possible errors will be reported in "answer_list". "reduced_elem"
+ * will be used to identify the changes which have been done.
+ * "sub_command" defines how these changes should be applied to
+ * "this_elem". "sublist_value_name" is the sublist of "this_elem" which
+ * should be modified whereas "subsub_key" defines the attribute
+ * which containes the primary key of that sublist. "attribute_name_str"
+ * is the name of the cqueue attribute which will be modified with
+ * this operation. It will be used for error output. "object_name_str"
+ * is the name of the cqueue which will be modified by this operation.
+ *
+ * @param this_elem CQ_Type
+ * @param answer_list AN_Type
+ * @param reduced_elem reduced CQ_Type element
+ * @param sub_command GDI subcommand
+ * @param attribute_name CULL attribute name (CQ_Type)
+ * @param sublist_host_name CULL sublist attribute name depend on sublist of CQ_Type
+ * @param sublist_value_name CULL sublist attribute name of that field which containes the value of the attribute to be modified.
+ * @param subsub_key CULL sublist attribute key
+ * @param attribute_name_str string used for user output
+ * @param object_name_str cqueue name
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: cqueue_mod_sublist() is MT safe
+ */
 bool
 cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced_elem,
                    ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_cmd,

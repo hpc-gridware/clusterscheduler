@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include "uti/sge_monitor.h"
 
 #include "sgeobj/sge_event.h"
@@ -43,24 +47,29 @@
 
 #include "sge_qmaster_timed_event.h"
 
+/** @brief The points in a job's life that are worth recording
+ *
+ * Each one becomes a job log record in the reporting file, so this is the
+ * vocabulary an accounting or auditing tool reads a job's history in.
+ */
 typedef enum {
-   JL_UNKNOWN = 0,   /* job is in unknown state - should never be seen */
-   JL_PENDING,       /* job is pending */
-   JL_SENT,          /* job has been sent to execd */
-   JL_RESENT,        /* job has been resent to execd - sent hasn't been ack */
-   JL_DELIVERED,     /* job has been delivered - execd replied with ack */
-   JL_RUNNING,       /* job is running (reported by execd) */
-   JL_SUSPENDED,     /* job has been suspended */
-   JL_UNSUSPENDED,   /* job has been unsuspended */
-   JL_HELD,          /* a hold was applied */
-   JL_RELEASED,      /* all holds were released */
-   JL_RESTART,       /* a restart of the job was requested */
-   JL_MIGRATE,       /* a migration was requested */
-   JL_DELETED,       /* the job has been deleted */
-   JL_FINISHED,      /* the job has finished */
-   JL_ERROR,         /* job is in error state */
+   JL_UNKNOWN = 0,   ///< job is in unknown state - should never be seen
+   JL_PENDING,       ///< job is pending
+   JL_SENT,          ///< job has been sent to execd
+   JL_RESENT,        ///< job has been resent to execd - sent hasn't been ack
+   JL_DELIVERED,     ///< job has been delivered - execd replied with ack
+   JL_RUNNING,       ///< job is running (reported by execd)
+   JL_SUSPENDED,     ///< job has been suspended
+   JL_UNSUSPENDED,   ///< job has been unsuspended
+   JL_HELD,          ///< a hold was applied
+   JL_RELEASED,      ///< all holds were released
+   JL_RESTART,       ///< a restart of the job was requested
+   JL_MIGRATE,       ///< a migration was requested
+   JL_DELETED,       ///< the job has been deleted
+   JL_FINISHED,      ///< the job has finished
+   JL_ERROR,         ///< job is in error state
 
-   JL_ALL
+   JL_ALL            ///< Not a state; the number of them
 } job_log_t;
 
 const char *

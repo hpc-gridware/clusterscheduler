@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_dstring.h"
@@ -273,29 +277,21 @@ ocs::CategoryQmaster::reattach_all_jobs(lList *master_job_list,
    DRETURN_VOID;
 }
 
-/****** sge_category/sge_reset_job_category() **********************************
-*  NAME
-*     sge_reset_job_category() -- resets the category temp information
-*
-*  SYNOPSIS
-*     int sge_reset_job_category()
-*
-*  FUNCTION
-*     Some information in the category should only life throu one scheduling run.
-*     These informations are reseted in the call:
-*     - dispatching messages
-*     - soft violations
-*     - not suitable cluster
-*     - the flag that identifies, if the messages are already added to the schedd infos
-*     - something with the resource reservation
-*
-*  RESULT
-*     int - always 0
-*
-*  NOTES
-*     MT-NOTE: sge_reset_job_category() is not MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Resets the category temp information
+ *
+ * Some information in the category should only life throu one scheduling run.
+ * These informations are reseted in the call:
+ * - dispatching messages
+ * - soft violations
+ * - not suitable cluster
+ * - the flag that identifies, if the messages are already added to the schedd infos
+ * - something with the resource reservation
+ *
+ * @note int - always 0
+ *
+ * @note MT-NOTE: sge_reset_job_category() is not MT safe
+ */
 void
 ocs::CategoryQmaster::reset_tmp_data(lList *master_category_list) {
    DENTER(TOP_LAYER);

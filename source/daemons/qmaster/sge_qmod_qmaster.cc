@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief TODO describe this file
+ */
 #include <cstdlib>
 #include <cstring>
 #include <climits>

@@ -33,33 +33,50 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The event subscription the scheduler runs with
+ *
+ * A scheduling run needs a lot of the cluster but not all of it, and not every
+ * field of what it does need. The conditions and enumerations here are what
+ * the scheduler subscribes with, so the mirror keeps exactly that much and the
+ * event stream carries no more than it has to.
+ *
+ * The `sge_process_*_event_*` callbacks are where the scheduler reacts to a
+ * change the mirror has just applied - or is about to.
+ */
+
 #include "evc/sge_event_client.h"
 #include "sgeobj/sge_object.h"
 #include "mir/sge_mirror.h"
 #include "cull/cull.h"
 
+/** @brief Which objects the scheduler subscribes to, and which of their fields
+ *
+ * Built once and reused for every subscription; ensure_valid_what_and_where()
+ * rebuilds whatever is missing.
+ */
 typedef struct {
-   lCondition *where_queue;
-   lCondition *where_queue2;
-   lCondition *where_all_queue;
-   lCondition *where_cqueue;
-   lCondition *where_job;
-   lCondition *where_host;
-   lCondition *where_dept;
-   lCondition *where_acl;
-   lCondition *where_jat;
-   lCondition *where_config;
+   lCondition *where_queue;      ///< Which queue instances are of interest
+   lCondition *where_queue2;     ///< The same, for the second queue subscription
+   lCondition *where_all_queue;  ///< Which queue instances go into the all-queue list
+   lCondition *where_cqueue;     ///< Which cluster queues are of interest
+   lCondition *where_job;        ///< Which jobs are of interest
+   lCondition *where_host;       ///< Which hosts are of interest
+   lCondition *where_dept;       ///< Which departments are of interest
+   lCondition *where_acl;        ///< Which access control lists are of interest
+   lCondition *where_jat;        ///< Which array tasks are of interest
+   lCondition *where_config;     ///< Which configuration entries are of interest
 
-   lEnumeration *what_queue;
-   lEnumeration *what_queue2;
-   lEnumeration *what_cqueue;
-   lEnumeration *what_job;
-   lEnumeration *what_host;
-   lEnumeration *what_acldept;
-   lEnumeration *what_jat;
-   lEnumeration *what_pet;
-   lEnumeration *what_pe;
-   lEnumeration *what_config;
+   lEnumeration *what_queue;     ///< Which queue instance fields to receive
+   lEnumeration *what_queue2;    ///< The same, for the second queue subscription
+   lEnumeration *what_cqueue;    ///< Which cluster queue fields to receive
+   lEnumeration *what_job;       ///< Which job fields to receive
+   lEnumeration *what_host;      ///< Which host fields to receive
+   lEnumeration *what_acldept;   ///< Which access control list and department fields to receive
+   lEnumeration *what_jat;       ///< Which array task fields to receive
+   lEnumeration *what_pet;       ///< Which PE task fields to receive
+   lEnumeration *what_pe;        ///< Which parallel environment fields to receive
+   lEnumeration *what_config;    ///< Which configuration fields to receive
 } sge_where_what_t;
 
 void 

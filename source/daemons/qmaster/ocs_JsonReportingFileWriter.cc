@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_sharetree_printing.h"
 
@@ -78,7 +82,7 @@ namespace ocs {
    }
 
    /**
-    * Emit a single JSONL online_usage record for the running job.
+    * @brief Emit a single JSONL online_usage record for the running job.
     *
     * When pe_task is non-null the record carries that pe_task's scaled
     * usage and a pe_taskid field. When pe_task is null the record carries
@@ -94,6 +98,14 @@ namespace ocs {
     * after job start, before the execd has produced its first usage
     * report), no record is emitted at all — empty-`usage` records would
     * clutter the reporting file without adding information.
+    *
+    * @param answer_list receives error messages
+    * @param job_report the job report the execution host sent
+    * @param job the job (`JB_Type`)
+    * @param ja_task the array task
+    * @param pe_task the PE task, or nullptr for the ja_task's own usage
+    * @param aggregate_pe_tasks whether the PE tasks are summed into the ja_task value
+    * @return true on success
     *
     * @see ReportingFileWriter::create_online_usage_records()
     */
@@ -200,6 +212,9 @@ namespace ocs {
       DRETURN(true);
    }
 
+   /** @brief Append one finished JSON object to the buffer
+    * @param stringBuffer the rendered object
+    */
    void
    JsonReportingFileWriter::create_record(rapidjson::StringBuffer &stringBuffer) {
       stringBuffer.Put('\n');
@@ -594,6 +609,17 @@ namespace ocs {
       DRETURN(ret);
    }
 
+   /** @brief Write one accounting record for one queue instance of a reservation
+    *
+    * A reservation spans queue instances, and the accounting is per
+    * instance, so create_ar_acct_record() calls this once for each.
+    *
+    * @param ar the advance reservation (`AR_Type`)
+    * @param cqueue_name the cluster queue
+    * @param hostname the host
+    * @param slots the slots reserved there
+    * @param report_time the time to stamp the record with
+    */
    void
    ocs::JsonReportingFileWriter::create_single_ar_acct_record(const lListElem *ar, const char *cqueue_name,
                                 const char *hostname, uint32_t slots, uint64_t report_time) {
@@ -655,6 +681,12 @@ namespace ocs {
       DRETURN_VOID;
    }
 
+   /** @brief Write a host's load values as a JSON object
+    * @param writer the JSON writer
+    * @param load_list the load values
+    * @param variables which of them to write; all of them when nullptr
+    * @return true on success
+    */
    bool
    JsonReportingFileWriter::write_load_values(rapidjson::Writer<rapidjson::StringBuffer> &writer,
                                               const lList *load_list, const lList *variables) {
@@ -684,6 +716,14 @@ namespace ocs {
       DRETURN(ret);
    }
 
+   /** @brief Write the consumables of a host or queue instance as a JSON object
+    * @param writer the JSON writer
+    * @param actual what is currently in use
+    * @param total what is configured
+    * @param host the host, for the resource definitions
+    * @param job the job the usage is attributed to, or nullptr for the host's own total
+    * @return true on success
+    */
    bool
    JsonReportingFileWriter::write_consumables(rapidjson::Writer<rapidjson::StringBuffer> &writer,
                                               const lList *actual, const lList *total,

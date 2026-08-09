@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 
@@ -26,6 +30,7 @@
 
 namespace ocs {
 
+   /** @brief Writes the reporting records as one JSON object per line */
    class JsonReportingFileWriter : public BaseReportingFileWriter {
    private:
 
@@ -86,9 +91,11 @@ namespace ocs {
       void
       create_single_ar_acct_record(const lListElem *ar, const char *cqueue_name,
                                    const char *hostname, uint32_t slots, uint64_t report_time);
+
       static bool
       write_load_values(rapidjson::Writer<rapidjson::StringBuffer> &writer,
                         const lList *load_list, const lList *variables);
+
       bool
       write_consumables(rapidjson::Writer<rapidjson::StringBuffer> &writer,
                         const lList *actual, const lList *total,

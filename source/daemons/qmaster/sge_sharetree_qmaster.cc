@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief TODO describe this file
+ */
 /*
    This is the module for handling the SGE sharetree
    We save the sharetree to <spool>/qmaster/sharetree
@@ -335,7 +339,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
             }
          }
 
-         /* make sure this user or project is in the non�project sub-tree 
+         /* make sure this user or project is in the non-project sub-tree 
             portion of the share tree only once */
          if (lGetElemStr(*found, STN_name, name)) {
             ERROR(MSG_STREE_USERPRJTWICE_SS, objname, name);

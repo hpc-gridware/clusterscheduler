@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief TODO describe this file
+ */
 #include <cstdio>
 #include <cstring>
 
@@ -333,27 +337,19 @@ debit_all_jobs_from_pes(lList *pe_list) {
    DRETURN_VOID;
 }
 
-/****** sge_pe_qmaster/pe_diff_usersets() **************************************
-*  NAME
-*     pe_diff_usersets() -- Diff old/new PE usersets
-*
-*  SYNOPSIS
-*     void pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList
-*     **new_acl, lList **old_acl)
-*
-*  FUNCTION
-*     A diff new/old is made regarding PE acl/xacl.
-*     Userset references are returned in new_acl/old_acl.
-*
-*  INPUTS
-*     const lListElem *new_pe - New PE (PE_Type)
-*     const lListElem *old_pe - Old PE (PE_Type)
-*     lList **new_acl      - New userset references (US_Type)
-*     lList **old_acl      - Old userset references (US_Type)
-*
-*  NOTES
-*     MT-NOTE: pe_diff_usersets() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Diff old/new PE usersets
+ *
+ * A diff new/old is made regarding PE acl/xacl.
+ * Userset references are returned in new_acl/old_acl.
+ *
+ * @param new_pe New PE (PE_Type)
+ * @param old_pe Old PE (PE_Type)
+ * @param new_acl New userset references (US_Type)
+ * @param old_acl Old userset references (US_Type)
+ *
+ * @note MT-NOTE: pe_diff_usersets() is not MT safe
+ */
 void
 pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_acl, lList **old_acl) {
    const char *u;
@@ -392,25 +388,17 @@ pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_a
 }
 
 
-/****** sge_pe_qmaster/pe_update_categories() **********************************
-*  NAME
-*     pe_update_categories() -- Update categories wrts userset
-*
-*  SYNOPSIS
-*     static void pe_update_categories(const lListElem *new_pe, const lListElem
-*     *old_pe)
-*
-*  FUNCTION
-*     The userset information wrts categories is updated based
-*      on new/old PE configuration and events are sent upon changes.
-*
-*  INPUTS
-*     const lListElem *new_pe - New PE (PE_Type)
-*     const lListElem *old_pe - Old PE (PE_Type)
-*
-*  NOTES
-*     MT-NOTE: pe_update_categories() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Update categories wrts userset
+ *
+ * The userset information wrts categories is updated based
+ *  on new/old PE configuration and events are sent upon changes.
+ *
+ * @param new_pe New PE (PE_Type)
+ * @param old_pe Old PE (PE_Type)
+ *
+ * @note MT-NOTE: pe_update_categories() is not MT safe
+ */
 static void
 pe_update_categories(const lListElem *new_pe, const lListElem *old_pe, uint64_t gdi_session) {
    lList *old_lp = nullptr, *new_lp = nullptr;

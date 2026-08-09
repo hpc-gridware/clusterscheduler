@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include <cstring>
 #include <csignal>
 #include <ctime>
@@ -154,42 +158,30 @@ static void
 debit_all_jobs_from_qs();
 
 
-/****** qmaster/setup_qmaster/sge_setup_qmaster() ******************************
-*  NAME
-*     sge_setup_qmaster() -- setup qmaster
-*
-*  SYNOPSIS
-*     int sge_setup_qmaster(char* anArgv[])
-*
-*  FUNCTION
-*     Process commandline arguments. Remove qmaster lock file. Write qmaster
-*     host to the 'act_qmaster' file. Initialize qmaster and reporting. Write
-*     qmaster PID file.
-*
-*     NOTE: Before this function is invoked, qmaster must become admin user.
-*
-*  INPUTS
-*     char* anArgv[] - commandline argument vector
-*
-*  RESULT
-*     0 - success
-*
-*  NOTES
-*     MT-NOTE: sge_setup_qmaster() is NOT MT safe!
-*     MT-NOTE:
-*     MT-NOTE: This function must be called exclusively, with the qmaster main
-*     MT-NOTE: thread being the *only* active thread. In other words, do not
-*     MT-NOTE: invoke this function after any additional thread (directly or
-*     MT-NOTE: indirectly) has been created.
-*
-*     Do *not* write the qmaster pid file, before 'qmaster_init()' did return
-*     successfully. Otherwise, if we do have a running qmaster and a second
-*     qmaster is started (illegally) on the same host, the second qmaster will
-*     overwrite the pid of the qmaster started first. The second qmaster will
-*     detect it's insubordinate doing and terminate itself, thus leaving behind
-*     a useless pid.
-*
-*******************************************************************************/
+/**
+ * @brief Setup qmaster
+ *
+ * Process commandline arguments. Remove qmaster lock file. Write qmaster
+ * host to the 'act_qmaster' file. Initialize qmaster and reporting. Write
+ * qmaster PID file.
+ * NOTE: Before this function is invoked, qmaster must become admin user.
+ *
+ * @return success
+ *
+ * @note MT-NOTE: sge_setup_qmaster() is NOT MT safe!
+ *       MT-NOTE:
+ *       MT-NOTE: This function must be called exclusively, with the qmaster main
+ *       MT-NOTE: thread being the *only* active thread. In other words, do not
+ *       MT-NOTE: invoke this function after any additional thread (directly or
+ *       MT-NOTE: indirectly) has been created.
+ *
+ *       Do *not* write the qmaster pid file, before 'qmaster_init()' did return
+ *       successfully. Otherwise, if we do have a running qmaster and a second
+ *       qmaster is started (illegally) on the same host, the second qmaster will
+ *       overwrite the pid of the qmaster started first. The second qmaster will
+ *       detect it's insubordinate doing and terminate itself, thus leaving behind
+ *       a useless pid.
+ */
 int
 sge_setup_qmaster(char *anArgv[]) {
    char err_str[1024];
@@ -217,31 +209,22 @@ sge_setup_qmaster(char *anArgv[]) {
    DRETURN(0);
 }
 
-/****** qmaster/setup_qmaster/sge_qmaster_thread_init() ************************
-*  NAME
-*     sge_qmaster_thread_init() -- Initialize a qmaster thread.
-*
-*  SYNOPSIS
-*     int sge_qmaster_thread_init(bool switch_to_admin_user)
-*
-*  FUNCTION
-*     Subsume functions which need to be called immediately after thread
-*     startup. This function does make sure that the thread local data
-*     structures do contain reasonable values.
-*
-*  INPUTS
-*     bool switch_to_admin_user - become admin user if set to true
-*
-*  RESULT
-*     0 - success
-*
-*  NOTES
-*     MT-NOTE: sge_qmaster_thread_init() is MT safe
-*     MT-NOTE:
-*     MT-NOTE: sge_qmaster_thread_init() should be invoked at the beginning
-*     MT-NOTE: of a thread function.
-*
-*******************************************************************************/
+/**
+ * @brief Initialize a qmaster thread
+ *
+ * Subsume functions which need to be called immediately after thread
+ * startup. This function does make sure that the thread local data
+ * structures do contain reasonable values.
+ *
+ * @param switch_to_admin_user become admin user if set to true
+ *
+ * @return success
+ *
+ * @note MT-NOTE: sge_qmaster_thread_init() is MT safe
+ *       MT-NOTE:
+ *       MT-NOTE: sge_qmaster_thread_init() should be invoked at the beginning
+ *       MT-NOTE: of a thread function.
+ */
 int
 sge_qmaster_thread_init(ProgName prog_id, ThreadName thread_id, bool switch_to_admin_user) {
    const char *admin_user;
@@ -284,27 +267,14 @@ sge_qmaster_thread_init(ProgName prog_id, ThreadName thread_id, bool switch_to_a
    DRETURN(0);
 } /* sge_qmaster_thread_init() */
 
-/****** qmaster/setup_qmaster/sge_setup_job_resend() ***************************
-*  NAME
-*     sge_setup_job_resend() -- Setup job resend events.
-*
-*  SYNOPSIS
-*     void sge_setup_job_resend()
-*
-*  FUNCTION
-*     Register a job resend event for each job or array task which does have a
-*     'JTRANSFERING' status.
-*
-*  INPUTS
-*     void - none
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: sge_setup_job_resend() is not MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Setup job resend events
+ *
+ * Register a job resend event for each job or array task which does have a
+ * 'JTRANSFERING' status.
+ *
+ * @note MT-NOTE: sge_setup_job_resend() is not MT safe
+ */
 void
 sge_setup_job_resend() {
    DENTER(TOP_LAYER);
@@ -349,50 +319,31 @@ sge_setup_job_resend() {
    DRETURN_VOID;
 } /* sge_setup_job_resend() */
 
-/****** setup_qmaster/sge_process_qmaster_cmdline() ****************************
-*  NAME
-*     sge_process_qmaster_cmdline() -- global available function for qmaster
-*
-*  SYNOPSIS
-*     void sge_process_qmaster_cmdline(char**anArgv)
-*
-*  FUNCTION
-*     This function simply calls the static function process_cmdline()
-*
-*  INPUTS
-*     char**anArgv - command line arguments from main()
-*
-*  NOTES
-*     MT-NOTE: sge_process_qmaster_cmdline() is NOT MT safe
-*
-*  SEE ALSO
-*     qmaster/setup_qmaster/process_cmdline()
-*******************************************************************************/
+/**
+ * @brief Global available function for qmaster
+ *
+ * This function simply calls the static function process_cmdline()
+ *
+ * @param anArgv command line arguments from main()
+ *
+ * @note MT-NOTE: sge_process_qmaster_cmdline() is NOT MT safe
+ *
+ * @see #process_cmdline
+ */
 void
 sge_process_qmaster_cmdline(char **anArgv) {
    process_cmdline(anArgv);
 }
 
-/****** qmaster/setup_qmaster/process_cmdline() ********************************
-*  NAME
-*     process_cmdline() -- Handle command line arguments
-*
-*  SYNOPSIS
-*     static void process_cmdline(char **anArgv)
-*
-*  FUNCTION
-*     Handle command line arguments. Parse argument vector and handle options.
-*
-*  INPUTS
-*     char **anArgv - pointer to agrument vector
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: process_cmdline() is NOT MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Handle command line arguments
+ *
+ * Handle command line arguments. Parse argument vector and handle options.
+ *
+ * @param anArgv pointer to agrument vector
+ *
+ * @note MT-NOTE: process_cmdline() is NOT MT safe.
+ */
 static void
 process_cmdline(char **anArgv) {
    DENTER(TOP_LAYER);
@@ -436,28 +387,18 @@ process_cmdline(char **anArgv) {
    DRETURN_VOID;
 } /* process_cmdline */
 
-/****** qmaster/setup_qmaster/parse_cmdline_qmaster() **************************
-*  NAME
-*     parse_cmdline_qmaster() -- Parse command line arguments
-*
-*  SYNOPSIS
-*     static lList* parse_cmdline_qmaster(char **argv, lList **ppcmdline)
-*
-*  FUNCTION
-*     Decompose argument vector. Handle options and option arguments.
-*
-*  INPUTS
-*     char **argv       - pointer to argument vector
-*     lList **ppcmdline - pointer to lList pointer which does contain the
-*                         command line arguments upon return.
-*
-*  RESULT
-*     lList* - pointer to answer list
-*
-*  NOTES
-*     MT-NOTE: parse_cmdline_qmaster() is MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Parse command line arguments
+ *
+ * Decompose argument vector. Handle options and option arguments.
+ *
+ * @param argv pointer to argument vector
+ * @param ppcmdline pointer to lList pointer which does contain the command line arguments upon return.
+ *
+ * @return pointer to answer list
+ *
+ * @note MT-NOTE: parse_cmdline_qmaster() is MT safe.
+ */
 static lList *
 parse_cmdline_qmaster(char **argv, lList **ppcmdline) {
    char **sp;
@@ -484,27 +425,16 @@ parse_cmdline_qmaster(char **argv, lList **ppcmdline) {
    DRETURN(alp);
 } /* parse_cmdline_qmaster() */
 
-/****** qmaster/setup_qmaster/parse_qmaster() **********************************
-*  NAME
-*     parse_qmaster() -- Process options.
-*
-*  SYNOPSIS
-*     static lList* parse_qmaster(lList **ppcmdline, uint32_t *help)
-*
-*  FUNCTION
-*     Process options
-*
-*  INPUTS
-*     lList **ppcmdline - list of options
-*     uint32_t *help    - flag is set upon return if help has been requested
-*
-*  RESULT
-*     lList* - answer list
-*
-*  NOTES
-*     MT-NOTE: parse_qmaster() is not MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Process options
+ *
+ * @param ppcmdline list of options
+ * @param help flag is set upon return if help has been requested
+ *
+ * @return answer list
+ *
+ * @note MT-NOTE: parse_qmaster() is not MT safe.
+ */
 static lList *
 parse_qmaster(lList **ppcmdline, uint32_t *help) {
    lList *alp = nullptr;
@@ -534,26 +464,15 @@ parse_qmaster(lList **ppcmdline, uint32_t *help) {
    DRETURN(alp);
 } /* parse_qmaster() */
 
-/****** qmaster/setup_qmaster/qmaster_init() ***********************************
-*  NAME
-*     qmaster_init() -- Initialize qmaster
-*
-*  SYNOPSIS
-*     static void qmaster_init(char **anArgv)
-*
-*  FUNCTION
-*     Initialize qmaster. Do general setup and communication setup.
-*
-*  INPUTS
-*     char **anArgv - process argument vector
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: qmaster_init() is NOT MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Initialize qmaster
+ *
+ * Initialize qmaster. Do general setup and communication setup.
+ *
+ * @param anArgv process argument vector
+ *
+ * @note MT-NOTE: qmaster_init() is NOT MT safe.
+ */
 static void
 qmaster_init() {
    DENTER(TOP_LAYER);
@@ -571,33 +490,18 @@ qmaster_init() {
    DRETURN_VOID;
 }
 
-/****** qmaster/setup_qmaster/communication_setup() ****************************
-*  NAME
-*     communication_setup() -- set up communication
-*
-*  SYNOPSIS
-*     static void communication_setup()
-*
-*  FUNCTION
-*     Initialize qmaster communication.
-*
-*     This function will fail, if the configured qmaster port is already in
-*     use.
-*
-*     This could happen if either qmaster has been terminated shortly before
-*     and the operating system did not get around to free the port or there
-*     is a qmaster already running.
-*
-*  INPUTS
-*     void - none
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: communication_setup() is NOT MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Set up communication
+ *
+ * Initialize qmaster communication.
+ * This function will fail, if the configured qmaster port is already in
+ * use.
+ * This could happen if either qmaster has been terminated shortly before
+ * and the operating system did not get around to free the port or there
+ * is a qmaster already running.
+ *
+ * @note MT-NOTE: communication_setup() is NOT MT safe
+ */
 static void
 communication_setup() {
    char *qmaster_params = nullptr;
@@ -680,34 +584,21 @@ communication_setup() {
    DRETURN_VOID;
 } /* communication_setup() */
 
-/****** qmaster/setup_qmaster/is_qmaster_already_running() *********************
-*  NAME
-*     is_qmaster_already_running() -- is qmaster already running
-*
-*  SYNOPSIS
-*     static bool is_qmaster_already_running()
-*
-*  FUNCTION
-*     Check, whether there is running qmaster already.
-*
-*  INPUTS
-*     void - none
-*
-*  RESULT
-*     true  - running qmaster detected.
-*     false - otherwise
-*
-*  NOTES
-*     MT-NOTE: is_qmaster_already_running() is not MT safe
-*
-*  BUGS
-*     This function will only work, if the PID found in the qmaster PID file
-*     either does belong to a running qmaster or no process at all.
-*
-*     Of course PID's will be reused. This is, however, not a problem because
-*     of the very specifc situation in which this function is called.
-*
-*******************************************************************************/
+/**
+ * @brief Is qmaster already running
+ *
+ * Check, whether there is running qmaster already.
+ *
+ * @return running qmaster detected. false - otherwise
+ *
+ * @note MT-NOTE: is_qmaster_already_running() is not MT safe
+ *
+ * @bug This function will only work, if the PID found in the qmaster PID file
+ *      either does belong to a running qmaster or no process at all.
+ *
+ *      Of course PID's will be reused. This is, however, not a problem because
+ *      of the very specifc situation in which this function is called.
+ */
 static bool
 is_qmaster_already_running(const char *qmaster_spool_dir) {
    DENTER(TOP_LAYER);
@@ -763,31 +654,17 @@ sge_propagate_queue_suspension(lListElem *jep, dstring *cqueue_name, dstring *ho
    }
 }
 
-/****** qmaster/setup_qmaster/qmaster_lock_and_shutdown() ***************************
-*  NAME
-*     qmaster_lock_and_shutdown() -- Acquire qmaster lock file and shutdown
-*
-*  SYNOPSIS
-*     static void qmaster_lock_and_shutdown(int anExitValue)
-*
-*  FUNCTION
-*     qmaster exit function. This version MUST NOT be used, if the current
-*     working   directory is NOT the spool directory. Other components do rely
-*     on finding the lock file in the spool directory.
-*
-*  INPUTS
-*     int anExitValue - exit value
-*
-*  RESULT
-*     void - none
-*
-*  EXAMPLE
-*     ???
-*
-*  NOTES
-*     MT-NOTE: qmaster_lock_and_shutdown() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Acquire qmaster lock file and shutdown
+ *
+ * qmaster exit function. This version MUST NOT be used, if the current
+ * working   directory is NOT the spool directory. Other components do rely
+ * on finding the lock file in the spool directory.
+ *
+ * @param anExitValue exit value
+ *
+ * @note MT-NOTE: qmaster_lock_and_shutdown() is MT safe
+ */
 static void
 qmaster_lock_and_shutdown(int anExitValue) {
    DENTER(TOP_LAYER);
@@ -1314,27 +1191,18 @@ setup_qmaster() {
    DRETURN(0);
 }
 
-/****** setup_qmaster/remove_invalid_job_references() **************************
-*  NAME
-*     remove_invalid_job_references() -- ???
-*
-*  SYNOPSIS
-*     static int remove_invalid_job_references(bool job_spooling, int user
-*
-*  FUNCTION
-*   get rid of still debited per job usage contained
-*   in user or project object if the job is no longer existing
-*
-*  INPUTS
-*     int user                        - work on users
-*
-*  RESULT
-*     static int -  always 0
-*
-*  NOTES
-*     MT-NOTE: remove_invalid_job_references() is not MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Get rid of still debited per job usage contained
+ *
+ * get rid of still debited per job usage contained
+ * in user or project object if the job is no longer existing
+ *
+ * @param user work on users
+ *
+ * @return always 0
+ *
+ * @note MT-NOTE: remove_invalid_job_references() is not MT safe
+ */
 static int
 remove_invalid_job_references(int user) {
    DENTER(TOP_LAYER);

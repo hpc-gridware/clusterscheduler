@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include <cstdio>
 #include <cstring>
 
@@ -1062,32 +1066,23 @@ cqueue_list_set_unknown_state(lList *this_list, const char *hostname, bool send_
 }
 
 
-/****** sge_cqueue_qmaster/cqueue_diff_sublist() *******************************
-*  NAME
-*     cqueue_diff_sublist() -- Diff cluster queue sublists
-*
-*  SYNOPSIS
-*     static void cqueue_diff_sublist(const lListElem *new_cqueue, const lListElem
-*     *old_cqueue, int snm1, int snm2, int sublist_nm, int key_nm, const lDescr *dp,
-*     lList **new_sublist, lList **old_sublist)
-*
-*  FUNCTION
-*     Determine new/old refereneces in a cluster queue configuration sublist.
-*
-*  INPUTS
-*     const lListElem *new_cqueue - New cluster queue (CQ_Type)
-*     const lListElem *old_cqueue - Old cluster queue (CQ_Type)
-*     int snm1             - First cluster queue sublist field
-*     int snm2             - Second cluster queue sublist field
-*     int sublist_nm       - Subsub list field
-*     int key_nm           - Field with key in subsublist
-*     const lDescr *dp     - Type for outgoing sublist arguments
-*     lList **new_sublist  - List of new references
-*     lList **old_sublist  - List of old references
-*
-*  NOTES
-*     MT-NOTE: cqueue_diff_sublist() is MT safe
-*******************************************************************************/
+/**
+ * @brief Diff cluster queue sublists
+ *
+ * Determine new/old refereneces in a cluster queue configuration sublist.
+ *
+ * @param new_cqueue New cluster queue (CQ_Type)
+ * @param old_cqueue Old cluster queue (CQ_Type)
+ * @param snm1 First cluster queue sublist field
+ * @param snm2 Second cluster queue sublist field
+ * @param sublist_nm Subsub list field
+ * @param key_nm Field with key in subsublist
+ * @param dp Type for outgoing sublist arguments
+ * @param new_sublist List of new references
+ * @param old_sublist List of old references
+ *
+ * @note MT-NOTE: cqueue_diff_sublist() is MT safe
+ */
 static void
 cqueue_diff_sublist(const lListElem *new_cqueue, const lListElem *old_cqueue, int snm1, int snm2, int sublist_nm,
                     int key_nm, const lDescr *dp, lList **new_sublist, lList **old_sublist) {
@@ -1135,27 +1130,19 @@ cqueue_diff_sublist(const lListElem *new_cqueue, const lListElem *old_cqueue, in
    DRETURN_VOID;
 }
 
-/****** sge_cqueue_qmaster/cqueue_diff_projects() ******************************
-*  NAME
-*     cqueue_diff_projects() -- Diff old/new cluster queue projects
-*
-*  SYNOPSIS
-*     void cqueue_diff_projects(const lListElem *new_cqueue, const lListElem *old_cqueue,
-*     lList **new_prj, lList **old_prj)
-*
-*  FUNCTION
-*     A diff new/old is made regarding cluster queue projects/xprojects.
-*     Project references are returned in new_prj/old_prj.
-*
-*  INPUTS
-*     const lListElem *new_cqueue - New cluster queue (CQ_Type)
-*     const lListElem *old_cqueue - Old cluster queue (CQ_Type)
-*     lList **new_prj      - New project references (PR_Type)
-*     lList **old_prj      - Old project references (PR_Type)
-*
-*  NOTES
-*     MT-NOTE: cqueue_diff_projects() is MT safe
-*******************************************************************************/
+/**
+ * @brief Diff old/new cluster queue projects
+ *
+ * A diff new/old is made regarding cluster queue projects/xprojects.
+ * Project references are returned in new_prj/old_prj.
+ *
+ * @param new_cqueue New cluster queue (CQ_Type)
+ * @param old_cqueue Old cluster queue (CQ_Type)
+ * @param new_prj New project references (PR_Type)
+ * @param old_prj Old project references (PR_Type)
+ *
+ * @note MT-NOTE: cqueue_diff_projects() is MT safe
+ */
 void
 cqueue_diff_projects(const lListElem *new_cqueue, const lListElem *old_cqueue, lList **new_prj, lList **old_prj) {
    cqueue_diff_sublist(new_cqueue, old_cqueue, CQ_projects, CQ_xprojects,
@@ -1163,27 +1150,19 @@ cqueue_diff_projects(const lListElem *new_cqueue, const lListElem *old_cqueue, l
    lDiffListStr(PR_name, new_prj, old_prj);
 }
 
-/****** sge_cqueue_qmaster/cqueue_diff_usersets() ******************************
-*  NAME
-*     cqueue_diff_projects() -- Diff old/new cluster queue usersets
-*
-*  SYNOPSIS
-*     void cqueue_diff_projects(const lListElem *new_cqueue, const lListElem *old_cqueue,
-*     lList **new_prj, lList **old_prj)
-*
-*  FUNCTION
-*     A diff new/old is made regarding cluster queue acl/xacl.
-*     Userset references are returned in new_acl/old_acl.
-*
-*  INPUTS
-*     const lListElem *new_cqueue - New cluster queue (CQ_Type)
-*     const lListElem *old_cqueue - Old cluster queue (CQ_Type)
-*     lList **new_acl      - New userset references (US_Type)
-*     lList **old_acl      - Old userset references (US_Type)
-*
-*  NOTES
-*     MT-NOTE: cqueue_diff_usersets() is MT safe
-*******************************************************************************/
+/**
+ * @brief Diff old/new cluster queue usersets
+ *
+ * A diff new/old is made regarding cluster queue acl/xacl.
+ * Userset references are returned in new_acl/old_acl.
+ *
+ * @param new_cqueue New cluster queue (CQ_Type)
+ * @param old_cqueue Old cluster queue (CQ_Type)
+ * @param new_acl New userset references (US_Type)
+ * @param old_acl Old userset references (US_Type)
+ *
+ * @note MT-NOTE: cqueue_diff_usersets() is MT safe
+ */
 void
 cqueue_diff_usersets(const lListElem *new_cqueue, const lListElem *old_cqueue, lList **new_acl, lList **old_acl) {
    cqueue_diff_sublist(new_cqueue, old_cqueue, CQ_acl, CQ_xacl,
@@ -1192,26 +1171,18 @@ cqueue_diff_usersets(const lListElem *new_cqueue, const lListElem *old_cqueue, l
 }
 
 
-/****** sge_cqueue_qmaster/cqueue_update_categories() **************************
-*  NAME
-*     cqueue_update_categories() -- Update categories wrts userset/project
-*
-*  SYNOPSIS
-*     static void cqueue_update_categories(const lListElem *new_cq, const
-*     lListElem *old_cq)
-*
-*  FUNCTION
-*     The userset/project information wrts categories is updated based
-*     on new/old cluster queue configuration and events are sent upon
-*     changes.
-*
-*  INPUTS
-*     const lListElem *new_cq - New cluster queue (CQ_Type)
-*     const lListElem *old_cq - Old cluster queue (CQ_Type)
-*
-*  NOTES
-*     MT-NOTE: cqueue_update_categories() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Update categories wrts userset/project
+ *
+ * The userset/project information wrts categories is updated based
+ * on new/old cluster queue configuration and events are sent upon
+ * changes.
+ *
+ * @param new_cq New cluster queue (CQ_Type)
+ * @param old_cq Old cluster queue (CQ_Type)
+ *
+ * @note MT-NOTE: cqueue_update_categories() is not MT safe
+ */
 static void
 cqueue_update_categories(const lListElem *new_cq, const lListElem *old_cq, uint64_t gdi_session) {
    lList *old_lp = nullptr, *new_lp = nullptr;
@@ -1227,28 +1198,17 @@ cqueue_update_categories(const lListElem *new_cq, const lListElem *old_cq, uint6
    lFreeList(&new_lp);
 }
 
-/****** sgeobj/qinstance/qinstance_check_unknown_state() **********************
-*  NAME
-*     qinstance_check_unknown_state() -- Modifies the number of used slots 
-*
-*  SYNOPSIS
-*     void
-*     qinstance_check_unknown_state(lListElem *this_elem)
-*
-*  FUNCTION
-*     Checks if there are nonstatic load values available for the
-*     qinstance. If this is the case, then then the "unknown" state 
-*     of that machine will be released. 
-*
-*  INPUTS
-*     lListElem *this_elem - QU_Type 
-*
-*  RESULT
-*     void - NONE 
-*
-*  NOTES
-*     MT-NOTE: qinstance_check_unknown_state() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Modifies the number of used slots
+ *
+ * Checks if there are nonstatic load values available for the
+ * qinstance. If this is the case, then then the "unknown" state
+ * of that machine will be released.
+ *
+ * @param this_elem QU_Type
+ *
+ * @note MT-NOTE: qinstance_check_unknown_state() is MT safe
+ */
 static void
 qinstance_check_unknown_state(lListElem *this_elem, const lList *master_exechost_list, uint64_t gdi_session) {
    DENTER(TOP_LAYER);

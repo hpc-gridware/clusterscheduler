@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include <cstring>
 
 #include "gdi/ocs_gdi_ClientBase.h"
@@ -50,26 +54,13 @@
 
 #include "msg_daemons_common.h"
 
-/****** qmaster/sge_qmaster_main/sge_start_heartbeat() *****************************
-*  NAME
-*     sge_start_heartbeat() -- Start qmaster heartbeat. 
-*
-*  SYNOPSIS
-*     static void sge_start_heartbeat() 
-*
-*  FUNCTION
-*     Add heartbeat event and register according event handler. 
-*
-*  INPUTS
-*     void - none 
-*
-*  RESULT
-*     void - none 
-*
-*  NOTES
-*     MT-NOTE: sge_start_heartbeat() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Start qmaster heartbeat
+ *
+ * Add heartbeat event and register according event handler.
+ *
+ * @note MT-NOTE: sge_start_heartbeat() is MT safe
+ */
 void
 heartbeat_initialize()
 {
@@ -93,30 +84,19 @@ heartbeat_initialize()
    DRETURN_VOID;
 } /* sge_start_heartbeat() */
 
-/****** qmaster/sge_qmaster_heartbeat/increment_heartbeat() *************************
-*  NAME
-*     increment_heartbeat() -- Event handler for heartbeat events
-*
-*  SYNOPSIS
-*     void increment_heartbeat(te_event_t anEvent) 
-*
-*  FUNCTION
-*     Update qmaster heartbeat file.
-*
-*  INPUTS
-*     te_event_t anEvent - heartbeat event 
-*
-*  RESULT
-*     void - none 
-*
-*  NOTES
-*     MT-NOTE: increment_hearbeat() is NOT MT safe. This function is only
-*     MT-NOTE: invoked from within the event delivery thread.
-*
-*     We do assume that the system clock does NOT run backwards. However, we
-*     do cope with a system clock which has been put back.
-*
-*******************************************************************************/
+/**
+ * @brief Event handler for heartbeat events
+ *
+ * Update qmaster heartbeat file.
+ *
+ * @param anEvent heartbeat event
+ *
+ * @note MT-NOTE: increment_hearbeat() is NOT MT safe. This function is only
+ *       MT-NOTE: invoked from within the event delivery thread.
+ *
+ *       We do assume that the system clock does NOT run backwards. However, we
+ *       do cope with a system clock which has been put back.
+ */
 void 
 increment_heartbeat(te_event_t anEvent, monitoring_t *monitor)
 {

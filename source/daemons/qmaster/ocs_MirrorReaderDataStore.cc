@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include "mir/sge_mirror.h"
 
 #include <sgeobj/ocs_Session.h>

@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief TODO describe this file
+ */
 #include <cstring>
 #include <pthread.h>
 
@@ -53,26 +57,14 @@
 #include "sge_sched_process_events.h"
 #include "sge_sched_prepare_data.h"
 
-/****** qmaster/sge_thread_scheduler/event_update_func() **************************
-*  NAME
-*     event_update_func() -- 
-*
-*  SYNOPSIS
-*     void event_update_func(lList **alpp, lList *event_list)
-*
-*  FUNCTION
-*
-*  INPUTS
-*     lList **alpp - answer list
-*     lList *event_list - a report list, the event are stored in REP_list
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: is MT safe. 
-*
-*******************************************************************************/
+/**
+ * @brief TODO document this
+ *
+ * @param alpp answer list
+ * @param event_list a report list, the event are stored in REP_list
+ *
+ * @note MT-NOTE: is MT safe.
+ */
 void
 event_update_func(uint32_t ec_id, lList **alpp, lList *event_list, void *arg)
 {

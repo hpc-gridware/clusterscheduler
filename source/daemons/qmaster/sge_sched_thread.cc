@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief TODO describe this file
+ */
 #include <cstring>
 #include <pthread.h>
 
@@ -108,6 +112,9 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
                     bool is_schedule_based, lList **load_list, const lList *hgrp_list, lList *rqs_list, lList *ar_list,
                     sched_prof_t *pi, bool monitor_next_run, uint64_t now);
 
+/** @brief Record that the global configuration changed
+ * @param new_value true when it has
+ */
 void
 st_set_flag_new_global_conf(bool new_value) {
    DENTER(TOP_LAYER);
@@ -117,6 +124,9 @@ st_set_flag_new_global_conf(bool new_value) {
    DRETURN_VOID;
 }
 
+/** @brief Has the global configuration changed since the last run?
+ * @return true when it has
+ */
 bool
 st_get_flag_new_global_conf() {
    bool ret = false;
@@ -179,6 +189,11 @@ scheduler_global_queue_messages(scheduler_all_data_t *lists, bool monitor_next_r
    DRETURN_VOID;
 }
 
+/** @brief Run one scheduling pass over the snapshot
+ * @param evc the event client
+ * @param answer_list receives error messages
+ * @param lists the scheduler's snapshot of the cluster
+ */
 void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_data_t *lists) {
    order_t orders = ORDER_INIT;
    lList **splitted_job_lists[SPLIT_LAST];            /* JB_Type */
@@ -1014,29 +1029,14 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
    DRETURN(0);
 }
 
-/****** schedd/scheduler/select_assign_debit() ********************************
-*  NAME
-*     select_assign_debit()
-*
-*  FUNCTION
-*     Selects resources for 'job', add appropriate order to the 'orders_list',
-*     debits resources of this job for the next dispatch and sort out no longer
-*     available queues from the 'queue_list'. If no assignment can be made and 
-*     reservation scheduling is enabled a reservation assignment is made if 
-*     possible. This is done to prevent lower prior jobs eating up resources 
-*     and thus preventing this job from being started at the earliest point in 
-*     time.
-*
-*  INPUTS
-*     bool is_start  -   try to find a now assignment 
-*     bool is_reserve -  try to find a reservation assignment 
-*
-*  RESULT
-*     int - 0 ok got an assignment now
-*           1 got a reservation assignment
-*          -1 will never get an assignment for that category
-*          -2 will never get an assignment for that particular job
-******************************************************************************/
+/**
+ * @brief Selects resources for 'job', add appropriate order to the 'orders_list',
+ *
+ * @param is_start try to find a now assignment
+ * @param is_reserve try to find a reservation assignment
+ *
+ * @return 0 ok got an assignment now 1 got a reservation assignment -1 will never get an assignment for that category -2 will never get an assignment for that particular job
+ */
 static dispatch_t
 select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, lListElem *ja_task, lList *pe_list,
                     const lList *ckpt_list, const lList *centry_list, lList *host_list, lList *acl_list,

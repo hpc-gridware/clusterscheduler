@@ -33,6 +33,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief TODO describe this file
+ */
 #include <cstring>
 
 #include "uti/sge_bitfield.h"
@@ -121,6 +125,10 @@ static int
 attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Command cmd,
                    ocs::gdi::SubCommand sub_command, const char *attr_name, const char *object_name);
 
+/** @brief Arm the timers this host needs: load cleanup and reschedule-unknown
+ *
+ * Note the misspelling in the name; it is part of the interface now.
+ */
 void
 host_initalitze_timer() {
    DENTER(TOP_LAYER);
@@ -150,22 +158,13 @@ host_initalitze_timer() {
 }
 
 
-/****** qmaster/host/host_trash_nonstatic_load_values() ***********************
-*  NAME
-*     host_trash_nonstatic_load_values() -- Trash old load values 
-*
-*  SYNOPSIS
-*     static void host_trash_nonstatic_load_values(lListElem *host) 
-*
-*  FUNCTION
-*     Trash old load values in "host" element 
-*
-*  INPUTS
-*     lListElem *host - EH_Type element 
-*
-*  RESULT
-*     void - None
-*******************************************************************************/
+/**
+ * @brief Trash old load values
+ *
+ * Trash old load values in "host" element
+ *
+ * @param host EH_Type element
+ */
 static void
 host_trash_nonstatic_load_values(lListElem *host) {
    lListElem *load_attr;
@@ -188,6 +187,18 @@ host_trash_nonstatic_load_values(lListElem *host) {
    0 ok
    1 host does exist
 
+ */
+/** @brief Create a host object of a given kind, if it does not exist yet
+ *
+ * An execution host reporting in for the first time, or a submit host named in
+ * a request, is created rather than rejected.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param hostname the host
+ * @param target which host list to add it to
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
  */
 int
 sge_add_host_of_type(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *hostname, ocs::gdi::Target target, monitoring_t *monitor) {
@@ -231,6 +242,15 @@ sge_add_host_of_type(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char 
    DRETURN((ret == STATUS_OK) ? 0 : -1);
 }
 
+/** @brief Create host objects for every host named in a host group but missing
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param this_list the host list to add to
+ * @param answer_list receives messages for the caller
+ * @param href_list the host references to satisfy
+ * @param monitor for monitoring qmaster threads
+ * @return true on success
+ */
 bool
 host_list_add_missing_href(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const lList *this_list, lList **answer_list,
                            const lList *href_list, monitoring_t *monitor) {
@@ -255,6 +275,18 @@ host_list_add_missing_href(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const
    spooled to disk
 
 */
+/** @brief Delete a host object
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param hep the host
+ * @param alpp receives messages for the caller
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param target which host list it belongs to
+ * @param master_hgroup_list the host groups, to check the host is not referenced
+ * @param monitor for monitoring qmaster threads
+ * @return STATUS_OK on success
+ */
 int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep, lList **alpp, char *ruser, char *rhost, ocs::gdi::Target target,
                  const lList *master_hgroup_list, monitoring_t *monitor) {
    int pos;
@@ -416,6 +448,25 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
 
 /* ------------------------------------------------------------ */
 
+/** @brief Apply one attribute change to a host
+ *
+ * The gdi_object_t::modifier for hosts; see sge_c_gdi.h for the sequence it
+ * is called from.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param new_host the host as it is to become
+ * @param ep the reduced element the client sent
+ * @param add 1 for add, 0 for modify
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param object the table entry for hosts
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_host, lListElem *ep, int add,
          const char *ruser, const char *rhost, gdi_object_t *object,
@@ -597,6 +648,17 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
 DRETURN(STATUS_EUNKNOWN);
 }
 
+/** @brief Write a host to the spool
+ *
+ * The gdi_object_t::writer for hosts.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param ep the host
+ * @param object the table entry for hosts
+ * @return 0 on success
+ */
 int
 host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    int pos;
@@ -635,43 +697,31 @@ host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    DRETURN(ret);
 }
 
-/****** qmaster/host/host_sync_exec_hostgroup() *******************************
-*  NAME
-*     host_sync_exec_hostgroup() -- rebuild @exec_hosts from the exec host list
-*
-*  FUNCTION
-*     CS-2438 chunk 7. "@exec_hosts" is derived, not administered: it mirrors
-*     the execution host list and is read-only for every role including manager.
-*     This is the one place that fills it.
-*
-*     A full rebuild, not an incremental add/remove of the one host that
-*     changed. Exec hosts are added and deleted rarely -- this is nowhere near a
-*     hot path -- and a rebuild converges even if some future code path forgets
-*     to call it, whereas a missed incremental update stays wrong until the next
-*     qmaster restart. For a derived list, self-correcting beats cheap.
-*
-*     "global" and "template" are excluded: they are pseudo-hosts carrying
-*     default values, not machines, and a queue instance on them makes no sense.
-*
-*     Not spooled, deliberately. The membership is derived from EH_LIST, which
-*     IS spooled, and it is rebuilt at every qmaster startup -- writing it to
-*     disk on every exec host add would be I/O for state that is reconstructed
-*     anyway. The group object itself was spooled once when chunk 1 seeded it.
-*
-*  INPUTS
-*     ocs::gdi::Packet *packet - for cqueue_handle_qinstances() and the session
-*     ocs::gdi::Task *task     - likewise
-*     monitoring_t *monitor    - likewise
-*     bool send_events         - false during qmaster startup, where the event
-*                                system is not serving yet and setup_qmaster.cc
-*                                rebuilds every cache once afterwards anyway
-*
-*  RESULT
-*     bool - true if the membership changed
-*
-*  NOTES
-*     MT-NOTE: call under the write lock -- it modifies the HGRP master list
-*******************************************************************************/
+/**
+ * @brief Rebuild `@exec_hosts` from the exec host list
+ *
+ * CS-2438 chunk 7. `@exec_hosts` is derived, not administered: it mirrors
+ * the execution host list and is read-only for every role including manager.
+ * This is the one place that fills it.
+ * A full rebuild, not an incremental add/remove of the one host that
+ * changed. Exec hosts are added and deleted rarely -- this is nowhere near a
+ * hot path -- and a rebuild converges even if some future code path forgets
+ * to call it, whereas a missed incremental update stays wrong until the next
+ * qmaster restart. For a derived list, self-correcting beats cheap.
+ * "global" and "template" are excluded: they are pseudo-hosts carrying
+ * default values, not machines, and a queue instance on them makes no sense.
+ * Not spooled, deliberately. The membership is derived from EH_LIST, which
+ * IS spooled, and it is rebuilt at every qmaster startup -- writing it to
+ * disk on every exec host add would be I/O for state that is reconstructed
+ * anyway. The group object itself was spooled once when chunk 1 seeded it.
+ *
+ * @param monitor likewise
+ * @param send_events false during qmaster startup, where the event system is not serving yet and setup_qmaster.cc rebuilds every cache once afterwards anyway
+ *
+ * @return true if the membership changed
+ *
+ * @note MT-NOTE: call under the write lock -- it modifies the HGRP master list
+ */
 bool
 host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
                          bool send_events) {
@@ -924,6 +974,19 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
    DRETURN(true);
 }
 
+/** @brief Announce a host change once it is safely spooled
+ *
+ * The gdi_object_t::on_success for hosts.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep the host as it now is
+ * @param old_ep the host as it was, or nullptr on add
+ * @param object the table entry for hosts
+ * @param ppList receives information for post processing
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -959,6 +1022,15 @@ host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
 
 /* ------------------------------------------------------------ */
 
+/** @brief Mark a host as unreachable and everything on it as unknown
+ *
+ * Called when the execution daemon stops answering. The jobs are not deleted -
+ * the host may come back with them still running - but the queue instances go
+ * into the unknown state so the scheduler stops sending work there.
+ *
+ * @param hep the execution host
+ * @param gdi_session the session the change belongs to
+ */
 void
 sge_mark_unheard(lListElem *hep, uint64_t gdi_session) {
    const char *host;
@@ -993,6 +1065,12 @@ sge_mark_unheard(lListElem *hep, uint64_t gdi_session) {
    updates global and host specific load values
    using the load report list lp
 */
+/** @brief Store the load values an execution host just reported
+ * @param rhost the host as it identified itself
+ * @param real_host its resolved name
+ * @param lp the reported load values
+ * @param gdi_session the session the change belongs to
+ */
 void
 sge_update_load_values(const char *rhost, const char* real_host, lList *lp, uint64_t gdi_session) {
    lListElem *ep, **hepp = nullptr;
@@ -1150,6 +1228,14 @@ sge_update_load_values(const char *rhost, const char* real_host, lList *lp, uint
    trash old load values 
    
 */
+/** @brief Drop load values that have outlived their configured lifetime
+ *
+ * A value nobody refreshes must not go on influencing scheduling for ever;
+ * registered as a #TYPE_LOAD_VALUE_CLEANUP_EVENT.
+ *
+ * @param anEvent the timed event that fired
+ * @param monitor for monitoring qmaster threads
+ */
 void
 sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
    lListElem *hep;
@@ -1232,6 +1318,10 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
+/** @brief How often this host is expected to report its load
+ * @param hep the execution host
+ * @return the interval in seconds
+ */
 uint32_t
 load_report_interval(lListElem *hep) {
    uint32_t timeout;
@@ -1313,6 +1403,11 @@ exec_host_change_queue_version(const char *exechost_name, uint64_t gdi_session) 
  **** Actutally only the permission is checked here
  **** and master_kill_execds is called to do the work.
  ****/
+/** @brief Handle a request to shut execution daemons down
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @return 0 on success
+ */
 void
 sge_gdi_kill_exechost(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
 
@@ -1490,6 +1585,23 @@ notify(lListElem *lel, ocs::gdi::Packet *packet, ocs::gdi::Task *task, int kill_
  ****
  **** gdi call for old request starting_up.
  ****/
+/** @brief Register an execution daemon that has just started
+ *
+ * A restart is not the same as a first start: on a restart the jobs qmaster
+ * believes are running there have to be reconciled with what the daemon
+ * actually found, which is what @p is_restart selects.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param host the execution host
+ * @param alpp receives messages for the caller
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param target which host list the host belongs to
+ * @param monitor for monitoring qmaster threads
+ * @param is_restart whether the daemon is re-registering
+ * @return STATUS_OK on success
+ */
 int
 sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *host, lList **alpp, char *ruser,
                     char *rhost, ocs::gdi::Target target, monitoring_t *monitor, bool is_restart) {
@@ -1580,31 +1692,22 @@ verify_scaling_list(lList **answer_list, lListElem *host) {
    DRETURN(ret ? STATUS_OK : STATUS_EUNKNOWN);
 }
 
-/****** sge_host_qmaster/host_diff_sublist() ***********************************
-*  NAME
-*     host_diff_sublist() -- Diff exechost sublists
-*
-*  SYNOPSIS
-*     static void host_diff_sublist(const lListElem *new_host, const lListElem *old_host,
-*     int snm1, int snm2, int key_nm, const lDescr *dp, lList **new_sublist,
-*     lList **old_sublist)
-*
-*  FUNCTION
-*     Makes a diff userset/project sublists of an exec host.
-*
-*  INPUTS
-*     const lListElem *new_host - New exec host (EH_Type)
-*     const lListElem *old_host - Old exec host (EH_Type)
-*     int snm1             - First exec host sublist field
-*     int snm2             - Second exec host sublist field
-*     int key_nm           - Field with key in sublist
-*     const lDescr *dp     - Type for outgoing sublist arguments
-*     lList **new_sublist  - List of new references
-*     lList **old_sublist  - List of old references
-*
-*  NOTES
-*     MT-NOTE: host_diff_sublist() is MT safe
-*******************************************************************************/
+/**
+ * @brief Diff exechost sublists
+ *
+ * Makes a diff userset/project sublists of an exec host.
+ *
+ * @param new_host New exec host (EH_Type)
+ * @param old_host Old exec host (EH_Type)
+ * @param snm1 First exec host sublist field
+ * @param snm2 Second exec host sublist field
+ * @param key_nm Field with key in sublist
+ * @param dp Type for outgoing sublist arguments
+ * @param new_sublist List of new references
+ * @param old_sublist List of old references
+ *
+ * @note MT-NOTE: host_diff_sublist() is MT safe
+ */
 static void
 host_diff_sublist(const lListElem *new_host, const lListElem *old_host, int snm1, int snm2, int key_nm,
                   const lDescr *dp, lList **new_sublist, lList **old_sublist) {
@@ -1641,54 +1744,38 @@ host_diff_sublist(const lListElem *new_host, const lListElem *old_host, int snm1
 }
 
 
-/****** sge_host_qmaster/host_diff_projects() **********************************
-*  NAME
-*     host_diff_projects() -- Diff old/new exec host projects
-*
-*  SYNOPSIS
-*     void host_diff_projects(const lListElem *new_host, const lListElem *old_host, lList
-*     **new_prj, lList **old_prj)
-*
-*  FUNCTION
-*     A diff new/old is made regarding exec host projects/xprojects.
-*     Project references are returned in new_prj/old_prj.
-*
-*  INPUTS
-*     const lListElem *new_host - New exec host (EH_Type)
-*     const lListElem *old_host - Old exec host (EH_Type)
-*     lList **new_prj      - New project references (US_Type)
-*     lList **old_prj      - Old project references (US_Type)
-*
-*  NOTES
-*     MT-NOTE: host_diff_projects() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Diff old/new exec host projects
+ *
+ * A diff new/old is made regarding exec host projects/xprojects.
+ * Project references are returned in new_prj/old_prj.
+ *
+ * @param new_host New exec host (EH_Type)
+ * @param old_host Old exec host (EH_Type)
+ * @param new_prj New project references (US_Type)
+ * @param old_prj Old project references (US_Type)
+ *
+ * @note MT-NOTE: host_diff_projects() is not MT safe
+ */
 void
 host_diff_projects(const lListElem *new_host, const lListElem *old_host, lList **new_prj, lList **old_prj) {
    host_diff_sublist(new_host, old_host, EH_prj, EH_xprj, PR_name, PR_Type, new_prj, old_prj);
    lDiffListStr(PR_name, new_prj, old_prj);
 }
 
-/****** sge_host_qmaster/host_diff_usersets() **********************************
-*  NAME
-*     host_diff_usersets() -- Diff old/new exec host usersets
-*
-*  SYNOPSIS
-*     void host_diff_usersets(const lListElem *new_host, const lListElem *old_host, lList
-*     **new_acl, lList **old_acl)
-*
-*  FUNCTION
-*     A diff new/old is made regarding exec host acl/xacl.
-*     Userset references are returned in new_acl/old_acl.
-*
-*  INPUTS
-*     const lListElem *new_host - New exec host (EH_Type)
-*     const lListElem *old_host - Old exec host (EH_Type)
-*     lList **new_acl      - New userset references (US_Type)
-*     lList **old_acl      - Old userset references (US_Type)
-*
-*  NOTES
-*     MT-NOTE: host_diff_usersets() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Diff old/new exec host usersets
+ *
+ * A diff new/old is made regarding exec host acl/xacl.
+ * Userset references are returned in new_acl/old_acl.
+ *
+ * @param new_host New exec host (EH_Type)
+ * @param old_host Old exec host (EH_Type)
+ * @param new_acl New userset references (US_Type)
+ * @param old_acl Old userset references (US_Type)
+ *
+ * @note MT-NOTE: host_diff_usersets() is not MT safe
+ */
 void
 host_diff_usersets(const lListElem *new_host, const lListElem *old_host, lList **new_acl, lList **old_acl) {
    host_diff_sublist(new_host, old_host, EH_acl, EH_xacl, US_name, US_Type, new_acl, old_acl);
@@ -1696,27 +1783,18 @@ host_diff_usersets(const lListElem *new_host, const lListElem *old_host, lList *
 }
 
 
-/****** sge_host_qmaster/host_update_categories() ******************************
-*  NAME
-*     host_update_categories() --  Update categories wrts userset/project
-*
-*  SYNOPSIS
-*     static void host_update_categories(const lListElem *new_hep, const
-*     lListElem *old_hep)
-*
-*  FUNCTION
-*     The userset/project information wrts categories is updated based
-*     on new/old exec host configuration and events are sent upon
-*     changes.
-*
-*
-*  INPUTS
-*     const lListElem *new_hep - New exec host (EH_Type)
-*     const lListElem *old_hep - Old exec host (EH_Type)
-*
-*  NOTES
-*     MT-NOTE: host_update_categories() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Update categories wrts userset/project
+ *
+ * The userset/project information wrts categories is updated based
+ * on new/old exec host configuration and events are sent upon
+ * changes.
+ *
+ * @param new_hep New exec host (EH_Type)
+ * @param old_hep Old exec host (EH_Type)
+ *
+ * @note MT-NOTE: host_update_categories() is not MT safe
+ */
 static void
 host_update_categories(const lListElem *new_hep, const lListElem *old_hep, uint64_t gdi_session) {
    lList *old_lp = nullptr, *new_lp = nullptr;
@@ -1732,35 +1810,23 @@ host_update_categories(const lListElem *new_hep, const lListElem *old_hep, uint6
    lFreeList(&new_lp);
 }
 
-/****** sge_utility_qmaster/attr_mod_threshold() *******************************
-*  NAME
-*     attr_mod_threshold() -- modify the threshold configuration sublist 
-*
-*  SYNOPSIS
-*     int attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, 
-*     int sub_command, char *attr_name, char 
-*     *object_name) 
-*
-*  FUNCTION
-*   Validation tries to find each element of the ep element in the threshold identified by nm.
-*   Elements which already exist here are copied into sublist of new_ep.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx  - gdi context
-*     lList **alpp              - The answer list 
-*     lListElem *ep            - The source object element 
-*     lListElem *new_ep         - The target object element 
-*     int sub_command           - The add, modify, remove command 
-*     const char *attr_name     - The attribute name 
-*     const char *object_name   - The target object name
-*
-*  RESULT
-*     int - 0 if success
-*
-*  NOTES
-*     MT-NOTE: attr_mod_threshold() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Modify the threshold configuration sublist
+ *
+ * Validation tries to find each element of the ep element in the threshold identified by nm.
+ * Elements which already exist here are copied into sublist of new_ep.
+ *
+ * @param alpp The answer list
+ * @param ep The source object element
+ * @param new_ep The target object element
+ * @param sub_command The add, modify, remove command
+ * @param attr_name The attribute name
+ * @param object_name The target object name
+ *
+ * @return 0 if success
+ *
+ * @note MT-NOTE: attr_mod_threshold() is MT safe
+ */
 static int
 attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Command cmd,
                    ocs::gdi::SubCommand sub_command, const char *attr_name, const char *object_name) {

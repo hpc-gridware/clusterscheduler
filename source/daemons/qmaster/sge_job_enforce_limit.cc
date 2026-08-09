@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include <cinttypes>
 #include "sge.h"
 
@@ -86,56 +90,36 @@ is_module_enabled() {
 }
 
 
-/****** qmaster/qmaster-execd/sge_host_add_remove_enforce_limit_trigger() ******
-*  NAME
-*     sge_host_add_remove_enforce_limit_trigger() -- add/remove a trigger
-*
-*  SYNOPSIS
-*     static void
-*     sge_host_add_remove_enforce_limit_trigger(const char *hostname,
-*                                               bool add)
-*
-*  FUNCTION
-*     This functions adds events to the list of events within the timer thread.
-*     Each of those events is sent when the hard wallclock limit of a job is
-*     reached. Trigger events will only be registered for those jobs which
-*     are currently running on the host provided via "hostname".
-*
-*     Additionally tasks of a pe job currently running on the host with
-*     "hostname" will be tagged. The protorcol would otherwise assume that
-*     hosts where the pe tasks are running would send reports about the
-*     final usage when the pe task ends. Pe jobs would then stuck in the
-*     queue on that host endlessly.
-*
-*     When the event is triggered the function sge_job_enfoce_limit_handler()
-*     is executed.
-*
-*     If "add" is false then all steps are reversed.
-*
-*     This function does nothing if "ENABLE_ENFORCE_MASTER_LIMIT" is not
-*     defined as qmaster_param or set to false.
-*
-*     The functions sge_host_add_enforce_limit_trigger() and
-*     sge_host_remove_enforce_limit_trigger() are wrapper function
-*     for this function.
-*
-*  INPUTS
-*     const char *hostname - hostname of a host which is not contactable
-*                            anymore.
-*     bool add             - true or false depending whether a trigger
-*                            should be added or removed
-*
-*  RESULT
-*     static void - NONE
-*
-*  NOTES
-*     MT-NOTE: sge_host_add_remove_enforce_limit_trigger() is MT safe
-*
-*  SEE ALSO
-*     qmaster/qmaster-execd/sge_job_enfoce_limit_handler
-*     qmaster/qmaster-execd/sge_host_add_enforce_limit_trigger()
-*     qmaster/qmaster-execd/sge_host_remove_enforce_limit_trigger()
-*******************************************************************************/
+/**
+ * @brief Add/remove a trigger
+ *
+ * This functions adds events to the list of events within the timer thread.
+ * Each of those events is sent when the hard wallclock limit of a job is
+ * reached. Trigger events will only be registered for those jobs which
+ * are currently running on the host provided via "hostname".
+ * Additionally tasks of a pe job currently running on the host with
+ * "hostname" will be tagged. The protorcol would otherwise assume that
+ * hosts where the pe tasks are running would send reports about the
+ * final usage when the pe task ends. Pe jobs would then stuck in the
+ * queue on that host endlessly.
+ * When the event is triggered the function sge_job_enfoce_limit_handler()
+ * is executed.
+ * If "add" is false then all steps are reversed.
+ * This function does nothing if "ENABLE_ENFORCE_MASTER_LIMIT" is not
+ * defined as qmaster_param or set to false.
+ * The functions sge_host_add_enforce_limit_trigger() and
+ * sge_host_remove_enforce_limit_trigger() are wrapper function
+ * for this function.
+ *
+ * @param hostname hostname of a host which is not contactable anymore.
+ * @param add true or false depending whether a trigger should be added or removed
+ *
+ * @note static void - NONE
+ *
+ * @note MT-NOTE: sge_host_add_remove_enforce_limit_trigger() is MT safe
+ *
+ * @see #sge_host_add_enforce_limit_trigger, #sge_host_remove_enforce_limit_trigger
+ */
 static void
 sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
    lListElem *job;
@@ -245,38 +229,26 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
    DRETURN_VOID;
 }
 
-/****** qmaster/qmaster-execd/sge_add_check_limit_trigger() *****************
-*  NAME
-*     sge_add_check_limit_trigger() -- check limits for unknown host
-*
-*  SYNOPSIS
-*     void sge_add_check_limit_trigger()
-*
-*  FUNCTION
-*     Add a timer thread event trigger which will be fired when the
-*     double of the maximum of all load report intervals of all execution
-*     hosts is reached.
-*
-*     When the trigger function is executed then all jobs running on hosts
-*     still in unknown state will be checked how long they have till the
-*     corresponding runtime limit is reached. In that case an additional
-*     trigger event is registered which will be fired, when the real limit
-*     is reached.
-*
-*     Please note that the same trigger function is used for job specific
-*     triggers and for limit triggers of all jobs running on unknown hosts.
-*     The only difference is that job and ja_task == 0 will be passed to
-*     sge_job_enfoce_limit_handler().
-*
-*  INPUTS
-*     void - NONE
-*
-*  NOTES
-*     MT-NOTE: sge_add_check_limit_trigger() is MT safe
-*
-*  SEE ALSO
-*     qmaster/qmaster-execd/sge_job_enfoce_limit_handler()
-*******************************************************************************/
+/**
+ * @brief Check limits for unknown host
+ *
+ * Add a timer thread event trigger which will be fired when the
+ * double of the maximum of all load report intervals of all execution
+ * hosts is reached.
+ * When the trigger function is executed then all jobs running on hosts
+ * still in unknown state will be checked how long they have till the
+ * corresponding runtime limit is reached. In that case an additional
+ * trigger event is registered which will be fired, when the real limit
+ * is reached.
+ * Please note that the same trigger function is used for job specific
+ * triggers and for limit triggers of all jobs running on unknown hosts.
+ * The only difference is that job and ja_task == 0 will be passed to
+ * sge_job_enfoce_limit_handler().
+ *
+ * @note MT-NOTE: sge_add_check_limit_trigger() is MT safe
+ *
+ * @see #sge_job_enfoce_limit_handler
+ */
 void
 sge_add_check_limit_trigger() {
    const lList *master_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
@@ -302,46 +274,28 @@ sge_add_check_limit_trigger() {
    DRETURN_VOID;
 }
 
-/****** qmaster/qmaster-execd/sge_job_enfoce_limit_handler() *******************
-*  NAME
-*     sge_job_enfoce_limit_handler() -- enforces wallclock limits in master
-*
-*  SYNOPSIS
-*     void
-*     sge_job_enfoce_limit_handler(sge_gdi_ctx_class_t *ctx,
-*                                  te_event_t event, monitoring_t *monitor)
-*
-*  FUNCTION
-*     This handler is triggered by the timed event thread when the
-*     hr_t limit of a job is reached. The job and ja_task id are provided
-*     as numeric parameters.
-*
-*     The function will check if the job is still running and if the
-*     host where the job is running is still in unknown state. Before the
-*     function terminates the job like "qdel -f" the data structures are
-*     manipulated in a way so that the online unsage of the job which was
-*     reported in the past will be written to accounting records.
-*
-*     To add a event which will trigger the execution of this function
-*     sge_host_add_enforce_limit_trigger() can be used. Events which have
-*     been added can be removed by sge_host_remove_enforce_limit_trigger().
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context object
-*     te_event_t event         - timed event structure
-*     monitoring_t *monitor    - monitoring object
-*
-*  RESULT
-*     void - NONE
-*
-*  NOTES
-*     MT-NOTE: sge_job_enfoce_limit_handler() is MT safe
-*
-*  SEE ALSO
-*     qmaster/qmaster-execd/sge_host_add_remove_enforce_limit_trigger()
-*     qmaster/qmaster-execd/sge_host_add_enforce_limit_trigger()
-*     qmaster/qmaster-execd/sge_host_remove_enforce_limit_trigger()
-*******************************************************************************/
+/**
+ * @brief Enforces wallclock limits in master
+ *
+ * This handler is triggered by the timed event thread when the
+ * hr_t limit of a job is reached. The job and ja_task id are provided
+ * as numeric parameters.
+ * The function will check if the job is still running and if the
+ * host where the job is running is still in unknown state. Before the
+ * function terminates the job like "qdel -f" the data structures are
+ * manipulated in a way so that the online unsage of the job which was
+ * reported in the past will be written to accounting records.
+ * To add a event which will trigger the execution of this function
+ * sge_host_add_enforce_limit_trigger() can be used. Events which have
+ * been added can be removed by sge_host_remove_enforce_limit_trigger().
+ *
+ * @param event timed event structure
+ * @param monitor monitoring object
+ *
+ * @note MT-NOTE: sge_job_enfoce_limit_handler() is MT safe
+ *
+ * @see #sge_host_add_remove_enforce_limit_trigger, #sge_host_add_enforce_limit_trigger, #sge_host_remove_enforce_limit_trigger
+ */
 void
 sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -480,34 +434,20 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
-/****** qmaster/qmaster-execd/sge_host_add_enforce_limit_trigger() *************
-*  NAME
-*     sge_host_add_enforce_limit_trigger() -- adds trigger events
-*
-*  SYNOPSIS
-*     void sge_host_add_enforce_limit_trigger(const char *hostname)
-*
-*  FUNCTION
-*     Adds trigger events to the list of events in the timed event thread.
-*     Added events can be removed via sge_host_remove_enforce_limit_trigger().
-*
-*     Find a more detailed description what this function does in the
-*     ADOC comment of sge_host_add_remove_enforce_limit_trigger().
-*
-*  INPUTS
-*     const char *hostname - hostname of a host in unknown state.
-*
-*  RESULT
-*     void - None
-*
-*  NOTES
-*     MT-NOTE: sge_host_add_enforce_limit_trigger() is MT safe
-*
-*  SEE ALSO
-*     qmaster/qmaster-execd/sge_host_add_remove_enforce_limit_trigger()
-*     qmaster/qmaster-execd/sge_host_add_enforce_limit_trigger()
-*     qmaster/qmaster-execd/sge_host_remove_enforce_limit_trigger()
-*******************************************************************************/
+/**
+ * @brief Adds trigger events
+ *
+ * Adds trigger events to the list of events in the timed event thread.
+ * Added events can be removed via sge_host_remove_enforce_limit_trigger().
+ * Find a more detailed description what this function does in the
+ * ADOC comment of sge_host_add_remove_enforce_limit_trigger().
+ *
+ * @param hostname hostname of a host in unknown state.
+ *
+ * @note MT-NOTE: sge_host_add_enforce_limit_trigger() is MT safe
+ *
+ * @see #sge_host_add_remove_enforce_limit_trigger, #sge_host_add_enforce_limit_trigger, #sge_host_remove_enforce_limit_trigger
+ */
 void
 sge_host_add_enforce_limit_trigger(const char *hostname) {
    DENTER(TOP_LAYER);
@@ -515,35 +455,21 @@ sge_host_add_enforce_limit_trigger(const char *hostname) {
    DRETURN_VOID;
 }
 
-/****** qmaster/qmaster-execd/sge_host_remove_enforce_limit_trigger() **********
-*  NAME
-*     sge_host_remove_enforce_limit_trigger() -- removes trigger events
-*
-*  SYNOPSIS
-*     void sge_host_remove_enforce_limit_trigger(const char *hostname)
-*
-*  FUNCTION
-*     Removes trigger events from the list of events in the timed event thread.
-*     Events have to be added via sge_host_remove_enforce_limit_trigger()
-*     before they can be removed.
-*
-*     Find a more detailed description what this function does in the
-*     ADOC comment of sge_host_add_remove_enforce_limit_trigger().
-*
-*  INPUTS
-*     const char *hostname - hostname of a host which is again in known state
-*
-*  RESULT
-*     void - None
-*
-*  NOTES
-*     MT-NOTE: sge_host_remove_enforce_limit_trigger() is MT safe
-*
-*  SEE ALSO
-*     qmaster/qmaster-execd/sge_host_add_remove_enforce_limit_trigger()
-*     qmaster/qmaster-execd/sge_host_add_enforce_limit_trigger()
-*     qmaster/qmaster-execd/sge_host_remove_enforce_limit_trigger()
-*******************************************************************************/
+/**
+ * @brief Removes trigger events
+ *
+ * Removes trigger events from the list of events in the timed event thread.
+ * Events have to be added via sge_host_remove_enforce_limit_trigger()
+ * before they can be removed.
+ * Find a more detailed description what this function does in the
+ * ADOC comment of sge_host_add_remove_enforce_limit_trigger().
+ *
+ * @param hostname hostname of a host which is again in known state
+ *
+ * @note MT-NOTE: sge_host_remove_enforce_limit_trigger() is MT safe
+ *
+ * @see #sge_host_add_remove_enforce_limit_trigger, #sge_host_add_enforce_limit_trigger, #sge_host_remove_enforce_limit_trigger
+ */
 void
 sge_host_remove_enforce_limit_trigger(const char *hostname) {
    DENTER(TOP_LAYER);
@@ -551,39 +477,24 @@ sge_host_remove_enforce_limit_trigger(const char *hostname) {
    DRETURN_VOID;
 }
 
-/****** qmaster/qmaster-execd/sge_job_add_enforce_limit_trigger() ************
-*  NAME
-*     sge_job_add_enforce_limit_trigger() -- add a trigger event for a job
-*
-*  SYNOPSIS
-*     void
-*     sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task);
-*
-*  FUNCTION
-*     Adds a trigger event for the given job/task. The job must be
-*     already in the transfering or running state.
-*
-*     The added event will trigger the forced removal of the job when
-*     h_rt limit of the job or of one of the pe tasks part of the
-*     job is reached.
-*
-*     Counterpart for this function is
-*     sge_job_remove_enforce_limit_trigger()
-*
-*  INPUTS
-*     lListElem *job       - job structure
-*     lListElem *ja_task   - job array task structure
-*                            the jobs MUST be running!
-*
-*  RESULT
-*     void - NONE
-*
-*  NOTES
-*     MT-NOTE: sge_job_add_enforce_limit_trigger() is MT safe
-*
-*  SEE ALSO
-*     qmaster/qmaster-execd/sge_job_remove_enforce_limit_trigger()
-*******************************************************************************/
+/**
+ * @brief Add a trigger event for a job
+ *
+ * Adds a trigger event for the given job/task. The job must be
+ * already in the transfering or running state.
+ * The added event will trigger the forced removal of the job when
+ * h_rt limit of the job or of one of the pe tasks part of the
+ * job is reached.
+ * Counterpart for this function is
+ * sge_job_remove_enforce_limit_trigger()
+ *
+ * @param job job structure
+ * @param ja_task job array task structure the jobs MUST be running!
+ *
+ * @note MT-NOTE: sge_job_add_enforce_limit_trigger() is MT safe
+ *
+ * @see #sge_job_remove_enforce_limit_trigger
+ */
 void
 sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
    DENTER(TOP_LAYER);
@@ -714,32 +625,19 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
    DRETURN_VOID;
 }
 
-/****** qmaster/qmaster-execd/sge_job_remove_enforce_limit_trigger() ***********
-*  NAME
-*     sge_job_remove_enforce_limit_trigger() -- remove a event for a job
-*
-*  SYNOPSIS
-*     void
-*     sge_job_remove_enforce_limit_trigger(uint32_t job_id,
-*                                          uint32_t ja_task_id)
-*
-*  FUNCTION
-*     Counterpart for the function sge_job_add_enforce_limit_trigger().
-*     Find a detailed description there.
-*
-*  INPUTS
-*     uint32_t job_id     - job id
-*     uint32_t ja_task_id - ja task id
-*
-*  RESULT
-*     void - NONE
-*
-*  NOTES
-*     MT-NOTE: sge_job_remove_enforce_limit_trigger() is MT safe
-*
-*  SEE ALSO
-*     qmaster/qmaster-execd/sge_job_add_enforce_limit_trigger()
-*******************************************************************************/
+/**
+ * @brief Remove a event for a job
+ *
+ * Counterpart for the function sge_job_add_enforce_limit_trigger().
+ * Find a detailed description there.
+ *
+ * @param job_id job id
+ * @param ja_task_id ja task id
+ *
+ * @note MT-NOTE: sge_job_remove_enforce_limit_trigger() is MT safe
+ *
+ * @see #sge_job_add_enforce_limit_trigger
+ */
 void
 sge_job_remove_enforce_limit_trigger(uint32_t job_id, uint32_t ja_task_id) {
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);

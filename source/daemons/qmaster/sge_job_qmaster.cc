@@ -33,6 +33,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief TODO describe this file
+ */
 #include <cstdlib>
 #include <cstring>
 #include <cerrno>
@@ -123,48 +127,49 @@
 #include "ocs_gdi_ClientServerBase.h"
 
 
-/****** qmaster/job/spooling ***************************************************
-*
-*  NAME
-*     job spooling -- when are jobs/ja_tasks/pe_tasks spooled?
-*
-*  FUNCTION
-*     Spooling of jobs is done when
-*        - a new job is added
-*        - a job is modified (qalter)
-*        - a ja_task has been created
-*        - the jobs ja_tasks are partly deleted (not all tasks)
-*        - a job leaves qmaster (all tasks finished)
-*
-*     Spooling of ja_tasks is done when
-*        - a ja_task is created (as result of schedd start order)
-*        - a ja_task is sent to execd
-*        - a ja_task has been received (ack) by an execd
-*        - a ja_task is rescheduled
-*        - ja_task delivery to execd failed (reschedule)
-*        - the ja_task is marked as deleted
-*        - jobs are notified about exec host shutdown
-*        - for long running ja_tasks, the reported usage is spooled once a day
-*        - a ja_task is (un)suspended on threshold
-*        - a job is (un)suspended (qmod)
-*        - a job error state is cleared
-*
-*     Spooling of pe_tasks is done when
-*        - a new pe_task has been reported from execd
-*        - for long running pe_tasks, the reported usage is spooled once a day
-*        - for finished pe_tasks, usage is summed up in a container pe_task.
-*          This container is spooled whenever usage is summed up.
-*        - a pe_task is deleted
-*
-*******************************************************************************/
+/**
+ * @brief When are jobs/ja_tasks/pe_tasks spooled?
+ *
+ * Spooling of jobs is done when
+ *    - a new job is added
+ *    - a job is modified (qalter)
+ *    - a ja_task has been created
+ *    - the jobs ja_tasks are partly deleted (not all tasks)
+ *    - a job leaves qmaster (all tasks finished)
+ * Spooling of ja_tasks is done when
+ *    - a ja_task is created (as result of schedd start order)
+ *    - a ja_task is sent to execd
+ *    - a ja_task has been received (ack) by an execd
+ *    - a ja_task is rescheduled
+ *    - ja_task delivery to execd failed (reschedule)
+ *    - the ja_task is marked as deleted
+ *    - jobs are notified about exec host shutdown
+ *    - for long running ja_tasks, the reported usage is spooled once a day
+ *    - a ja_task is (un)suspended on threshold
+ *    - a job is (un)suspended (qmod)
+ *    - a job error state is cleared
+ * Spooling of pe_tasks is done when
+ *    - a new pe_task has been reported from execd
+ *    - for long running pe_tasks, the reported usage is spooled once a day
+ *    - for finished pe_tasks, usage is summed up in a container pe_task.
+ *      This container is spooled whenever usage is summed up.
+ *    - a pe_task is deleted
+ */
 
+/** @brief The next job number, and whether it still has to be spooled
+ *
+ * Job numbers must not repeat across a qmaster restart, so the counter is
+ * spooled - but not on every submit, which would make a submit wait for a
+ * disk write. Instead a block is reserved, and #changed says whether the
+ * spooled value has fallen behind.
+ */
 typedef struct {
-   uint32_t job_number;
-   bool changed;
-   pthread_mutex_t job_number_mutex;
+   uint32_t job_number;              ///< The next job number to hand out
+   bool changed;                     ///< The spooled value is out of date
+   pthread_mutex_t job_number_mutex; ///< Guards both fields above
 } job_number_t;
 
-job_number_t job_number_control = {0, false, PTHREAD_MUTEX_INITIALIZER};
+job_number_t job_number_control = {0, false, PTHREAD_MUTEX_INITIALIZER};   ///< @copybrief job_number_t
 
 static int
 mod_task_attributes(const ocs::gdi::Packet *packet, lListElem *job, lListElem *new_ja_task, lListElem *tep, lList **alpp,
@@ -369,10 +374,12 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
  *    - called in sge_c_gdi_del (possibly multiple times, e.g. qdel 1,2 will trigger 2 calls)
  * @param[in] idep ID_Type element, can contain job ids, job names (with patterns), a user list (with patterns)
  * @param[out] alpp to return messages (INFO, WARNING, ERROR) to the caller
- * @param[in] ruser the user who executed qdel
- * @param[in] rhost the host on which qdel was executed
+ * @param[in] packet the client request, carrying the user and host that executed qdel
+ * @param[in] task the GDI task being answered
+ * @param[in] cmd the command being executed
  * @param[in] sub_command sub command being part of the request (SGE_GDI_ALL_JOBS, SGE_GDI_ALL_USERS)
  * @param[in] monitor for monitoring qmaster threads
+ * @return STATUS_OK on success, an error status otherwise
  */
 int
 sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task,  lListElem *idep, lList **alpp,
@@ -547,28 +554,19 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task,  lListElem
    DRETURN(STATUS_OK);
 }
 
-/****** sge_job_qmaster/is_pe_master_task_send() *******************************
-*  NAME
-*     is_pe_master_task_send() -- figures out, if all slaves have been notified
-*
-*  SYNOPSIS
-*     bool is_pe_master_task_send(lListElem *jatep)
-*
-*  FUNCTION
-*     In case of tightly integrated pe jobs the slave execds have to be notified first.
-*     Once all execds acknowledged the slave notification, the master can be sent.
-*     This function figures out, if all slaves have acknowledged notification.
-*
-*  INPUTS
-*     lListElem *jatep - ja task in question
-*
-*  RESULT
-*     bool - true, if all slaves have acknowledged slave notification
-*
-*  NOTES
-*     MT-NOTE: is_pe_master_task_send() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Figures out, if all slaves have been notified
+ *
+ * In case of tightly integrated pe jobs the slave execds have to be notified first.
+ * Once all execds acknowledged the slave notification, the master can be sent.
+ * This function figures out, if all slaves have acknowledged notification.
+ *
+ * @param jatep ja task in question
+ *
+ * @return true, if all slaves have acknowledged slave notification
+ *
+ * @note MT-NOTE: is_pe_master_task_send() is MT safe
+ */
 bool
 is_pe_master_task_send(lListElem *jatep) {
    bool all_slaves_arrived = true;
@@ -583,32 +581,23 @@ is_pe_master_task_send(lListElem *jatep) {
    return all_slaves_arrived;
 }
 
-/****** sge_job_qmaster/all_slave_jobs_finished() ******************************
-*  NAME
-*     all_slave_jobs_finished() -- have all slave jobs finished?
-*
-*  SYNOPSIS
-*     bool all_slave_jobs_finished(lListElem *jatep)
-*
-*  FUNCTION
-*     Figures out if all slave jobs of a tightly integrated parallel
-*     job have finished.
-*     The first gdil element of a host is tagged as long as the execd
-*     on this host didn't report the slave job finish.
-*
-*  INPUTS
-*     lListElem *jatep - the ja task of the running pe job
-*
-*  RESULT
-*     bool - true if all slave jobs finished, else false
-*
-*  NOTES
-*     MT-NOTE: all_slave_jobs_finished() is MT safe
-*     TODO: can be merged with is_pe_master_task_send
-*
-*  SEE ALSO
-*     sge_job_qmaster/is_pe_master_task_send()
-*******************************************************************************/
+/**
+ * @brief Have all slave jobs finished?
+ *
+ * Figures out if all slave jobs of a tightly integrated parallel
+ * job have finished.
+ * The first gdil element of a host is tagged as long as the execd
+ * on this host didn't report the slave job finish.
+ *
+ * @param jatep the ja task of the running pe job
+ *
+ * @return true if all slave jobs finished, else false
+ *
+ * @note MT-NOTE: all_slave_jobs_finished() is MT safe
+ *       TODO: can be merged with is_pe_master_task_send
+ *
+ * @see #is_pe_master_task_send
+ */
 bool
 all_slave_jobs_finished(lListElem *jatep) {
    bool all_slaves_finished = true;
@@ -634,22 +623,15 @@ all_slave_jobs_finished(lListElem *jatep) {
    return all_slaves_finished;
 }
 
-/****** sge_job_qmaster/tag_all_host_gdil() ************************************
-*  NAME
-*     tag_all_host_gdil() -- tag all hosts of a parallel job
-*
-*  SYNOPSIS
-*     void tag_all_host_gdil(lListElem *jatep)
-*
-*  FUNCTION
-*     Sets a tag for all hosts of a tightly integrated parallel job.
-*
-*  INPUTS
-*     lListElem *jatep - the ja task of the parallel job
-*
-*  NOTES
-*     MT-NOTE: tag_all_host_gdil() is MT safe
-*******************************************************************************/
+/**
+ * @brief Tag all hosts of a parallel job
+ *
+ * Sets a tag for all hosts of a tightly integrated parallel job.
+ *
+ * @param jatep the ja task of the parallel job
+ *
+ * @note MT-NOTE: tag_all_host_gdil() is MT safe
+ */
 void
 tag_all_host_gdil(lListElem *jatep) {
    const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
@@ -667,30 +649,19 @@ tag_all_host_gdil(lListElem *jatep) {
    }
 }
 
-/****** sge_job_qmaster/ack_all_slaves() ***************************************
-*  NAME
-*     ack_all_slaves() -- send an ACK to all slave hosts
-*
-*  SYNOPSIS
-*     void
-*     ack_all_slaves(sge_gdi_ctx_class_t *ctx,
-*                    uint32_t job_id, uint32_t ja_task_id,
-*                    const lListElem *ja_task, uint32_t type)
-*
-*  FUNCTION
-*     Sends an acknowledge message for a tighly integrated job to all
-*     slave exec hosts.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
-*     uint32_t job_id          - job id
-*     uint32_t ja_task_id      - job array task id
-*     const lListElem *ja_task - the job array task
-*     uint32_t type            - which ACK to send, e.g. ACK_SIGNAL_SLAVE
-*
-*  NOTES
-*     MT-NOTE: ack_all_slaves() is MT safe
-*******************************************************************************/
+/**
+ * @brief Send an ACK to all slave hosts
+ *
+ * Sends an acknowledge message for a tighly integrated job to all
+ * slave exec hosts.
+ *
+ * @param job_id job id
+ * @param ja_task_id job array task id
+ * @param ja_task the job array task
+ * @param type which ACK to send, e.g. ACK_SIGNAL_SLAVE
+ *
+ * @note MT-NOTE: ack_all_slaves() is MT safe
+ */
 void
 ack_all_slaves(uint32_t job_id, uint32_t ja_task_id, const lListElem *ja_task,
                uint32_t type) {
@@ -791,31 +762,19 @@ empty_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int was_modi
    DRETURN_VOID;
 }
 
-/****** sge_job_qmaster/job_list_filter() **************************************
-*  NAME
-*     job_list_filter() -- Build filter for the joblist
-*
-*  SYNOPSIS
-*     static void job_list_filter(lList *user_list, const char* jobid, char
-*     *ruser, bool all_users_flag, lCondition **job_filter, lCondition
-*     **user_filter)
-*
-*  FUNCTION
-*     Builds two where filters: one for users and one for jobs.
-*
-*  INPUTS
-*     lList *user_list         - user list or nullptr if no user exists
-*     const char* jobid        - a job id or a job name or a pattern
-*     lCondition **job_filter  - pointer to the target filter. If a where
-*                                does exist, it will be extended by the new ones
-*
-*  RESULT
-*     static void -
-*
-*  NOTES
-*     MT-NOTE: job_list_filter() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Build filter for the joblist
+ *
+ * Builds two where filters: one for users and one for jobs.
+ *
+ * @param user_list user list or nullptr if no user exists
+ * @param jobid a job id or a job name or a pattern
+ * @param job_filter pointer to the target filter. If a where does exist, it will be extended by the new ones
+ *
+ * @note static void -
+ *
+ * @note MT-NOTE: job_list_filter() is MT safe
+ */
 static void
 job_list_filter(lList *user_list, const char *jobid, lCondition **job_filter) {
    lCondition *new_where = nullptr;
@@ -961,6 +920,13 @@ static void get_rid_of_schedd_job_messages(uint32_t job_number) {
    DRETURN_VOID;
 }
 
+/** @brief Mail the job owner that their task was aborted
+ * @param job the job (`JB_Type`)
+ * @param ja_task the array task
+ * @param ruser who caused the abort
+ * @param rhost where they did it
+ * @param err_str why it was aborted
+ */
 void job_ja_task_send_abort_mail(const lListElem *job,
                                  const lListElem *ja_task,
                                  const char *ruser,
@@ -1006,6 +972,21 @@ void job_ja_task_send_abort_mail(const lListElem *job,
    sge_dstring_free(&body);
 }
 
+/** @brief Remove a job because it was deleted, forcing it if asked
+ *
+ * A job whose execution host is unreachable can only be removed with
+ * @p force, which drops it from qmaster without waiting for the host to
+ * confirm - so the job may still be running out there.
+ *
+ * @param j the job (`JB_Type`)
+ * @param t the array task
+ * @param answer_list receives messages for the caller
+ * @param ruser who deleted it
+ * @param force whether to remove it without waiting for the execution host
+ * @param monitor for monitoring qmaster threads
+ * @param gdi_session the session the change belongs to
+ * @return 0 on success
+ */
 void get_rid_of_job_due_to_qdel(lListElem *j,
                                 lListElem *t,
                                 lList **answer_list,
@@ -1087,6 +1068,15 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
    DRETURN_VOID;
 }
 
+/** @brief Mark a job as being deleted, so nothing else acts on it meanwhile
+ *
+ * Deleting a running job is not instantaneous - the execution host has to be
+ * told and has to answer - and until it is done the job must not be scheduled,
+ * modified or deleted again.
+ *
+ * @param j the job (`JB_Type`)
+ * @param t the array task
+ */
 void job_mark_job_as_deleted(lListElem *j, lListElem *t) {
    DENTER(TOP_LAYER);
 
@@ -1145,17 +1135,29 @@ job_set_deleted_by(lListElem *ja_task, const char *user, const char *host) {
    replace old job by new job
 */
 
-/* actions to be done after successful
-saving to disk of a modified job */
+/** @brief actions to be done after successful saving to disk of a modified job
+ *
+ * A modification collects these as it goes and they are carried out once the
+ * job has actually been spooled, so that nothing is announced to the event
+ * clients that a crash could then undo.
+ */
 enum {
-   MOD_EVENT = 1,
-   PRIO_EVENT = 2,
-   RECHAIN_JID_HOLD = 4,
-   RECHAIN_JA_AD_HOLD = 8,
-   VERIFY_EVENT = 16,
-   REDEBIT_JOB = 32
+   MOD_EVENT = 1,            ///< Send a job modification event
+   PRIO_EVENT = 2,           ///< Send a priority change event
+   RECHAIN_JID_HOLD = 4,     ///< Re-link the job dependency holds
+   RECHAIN_JA_AD_HOLD = 8,   ///< Re-link the array dependency holds
+   VERIFY_EVENT = 16,        ///< Re-run the queue verification
+   REDEBIT_JOB = 32          ///< Re-debit the job's resource usage
 };
 
+/** @brief Apply a `qalter` request to a job
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param jep the job as the client wants it to become
+ * @param alpp receives messages for the caller
+ * @param sub_command what kind of modification this is
+ * @return STATUS_OK on success, an error status otherwise
+ */
 int
 sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lList **alpp, ocs::gdi::SubCommand sub_command) {
    DENTER(TOP_LAYER);
@@ -1483,6 +1485,12 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
    DRETURN(STATUS_OK);
 }
 
+/** @brief Announce a change to a whole job to the event clients
+ * @param type which event
+ * @param jep the job (`JB_Type`)
+ * @param jatask the array task, or nullptr
+ * @param gdi_request the request the change belongs to
+ */
 void sge_add_job_event(ev_event type, lListElem *jep, lListElem *jatask, uint64_t gdi_request) {
    DENTER(TOP_LAYER);
    sge_add_event(0, type, lGetUlong(jep, JB_job_number),
@@ -1491,6 +1499,12 @@ void sge_add_job_event(ev_event type, lListElem *jep, lListElem *jatask, uint64_
    DRETURN_VOID;
 }
 
+/** @brief Announce a change to one array task to the event clients
+ * @param type which event
+ * @param jep the job (`JB_Type`)
+ * @param jatask the array task
+ * @param gdi_request the request the change belongs to
+ */
 void sge_add_jatask_event(ev_event type, lListElem *jep, lListElem *jatask, uint64_t gdi_request) {
    DENTER(TOP_LAYER);
    sge_add_event(0, type, lGetUlong(jep, JB_job_number),
@@ -1587,60 +1601,42 @@ static void job_suc_pre_doit(lListElem *jep, bool array_deps) {
    DRETURN_VOID;
 }
 
-/****** sge_job_qmaster/job_suc_pre() ******************************************
-*  NAME
-*     job_suc_pre() -- build job depencency hold links
-*
-*  SYNOPSIS
-*     void job_suc_pre(lListElem *jep)
-*
-*  FUNCTION
-*     Builds the hold links for job dependencies,
-*     both in the dependent job, as well in its predecessor jobs.
-*
-*  INPUTS
-*     lListElem *jep - the dependent job
-*
-*  NOTES
-*     MT-NOTE: job_suc_pre() is MT safe if the caller holds the global lock
-*
-*     no need to spool the dependency links or to send events to
-*     update event clients - this is done in the calling functions
-*
-*  SEE ALSO
-*     sge_job_qmaster/job_suc_pre_doit()
-*     sge_job_qmaster/job_suc_pre_ad()
-*******************************************************************************/
+/**
+ * @brief Build job depencency hold links
+ *
+ * Builds the hold links for job dependencies,
+ * both in the dependent job, as well in its predecessor jobs.
+ *
+ * @param jep the dependent job
+ *
+ * @note MT-NOTE: job_suc_pre() is MT safe if the caller holds the global lock
+ *
+ *       no need to spool the dependency links or to send events to
+ *       update event clients - this is done in the calling functions
+ *
+ * @see #job_suc_pre_doit, #job_suc_pre_ad
+ */
 void job_suc_pre(lListElem *jep) {
    DENTER(TOP_LAYER);
    job_suc_pre_doit(jep, false);
    DRETURN_VOID;
 }
 
-/****** sge_job_qmaster/job_suc_pre_ad() ******************************************
-*  NAME
-*     job_suc_pre_ad() -- build job array task depencency hold links
-*
-*  SYNOPSIS
-*     void job_suc_pre_ad(lListElem *jep)
-*
-*  FUNCTION
-*     Builds the hold links for job array task dependencies,
-*     both in the dependent job, as well in its predecessor jobs.
-*
-*  INPUTS
-*     lListElem *jep - the dependent job
-*
-*  NOTES
-*     MT-NOTE: job_suc_pre_ad() is MT safe if the caller holds the global lock
-*
-*     no need to spool the dependency links or to send events to
-*     update event clients - this is done in the calling functions
-*
-*  SEE ALSO
-*     sge_job_qmaster/job_suc_pre_doit()
-*     sge_job_qmaster/job_suc_pre()
-*******************************************************************************/
+/**
+ * @brief Build job array task depencency hold links
+ *
+ * Builds the hold links for job array task dependencies,
+ * both in the dependent job, as well in its predecessor jobs.
+ *
+ * @param jep the dependent job
+ *
+ * @note MT-NOTE: job_suc_pre_ad() is MT safe if the caller holds the global lock
+ *
+ *       no need to spool the dependency links or to send events to
+ *       update event clients - this is done in the calling functions
+ *
+ * @see #job_suc_pre_doit, #job_suc_pre
+ */
 void job_suc_pre_ad(lListElem *jep) {
    DENTER(TOP_LAYER);
    job_suc_pre_doit(jep, true);
@@ -1883,26 +1879,17 @@ has_invalid_consumable_changes(lList **alpp, const lList *new_lp, const lList *o
    DRETURN(false);
 }
 
-/****** sge_job/deny_soft_consumables() ****************************************
-*  NAME
-*     deny_soft_consumables() -- Deny soft consumables
-*
-*  SYNOPSIS
-*     static int deny_soft_consumables(lList **alpp, lList *srl)
-*
-*  FUNCTION
-*     Find out if consumables are requested and deny them.
-*
-*  INPUTS
-*     lList** alpp                    - answer list pointer pointer
-*     lList *srl                      - jobs JB_soft_resource_list
-*     const lList *master_centry_list - the master centry list
-*
-*  RESULT
-*     static int - 0 request can pass
-*                !=0 consumables requested soft
-*
-*******************************************************************************/
+/**
+ * @brief Deny soft consumables
+ *
+ * Find out if consumables are requested and deny them.
+ *
+ * @param alpp answer list pointer pointer
+ * @param srl jobs JB_soft_resource_list
+ * @param master_centry_list the master centry list
+ *
+ * @return 0 request can pass !=0 consumables requested soft
+ */
 int deny_soft_consumables(lList **alpp, const lList *srl, const lList *master_centry_list) {
    const lListElem *entry, *dcep;
    const char *name;
@@ -2955,32 +2942,22 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
    DRETURN(STATUS_OK);
 }
 
-/****** sge_job_qmaster/contains_dependency_cycles() ***************************
-*  NAME
-*     contains_dependency_cycles() -- detects cycles in the job dependencies
-*
-*  SYNOPSIS
-*     static bool contains_dependency_cycles(const lListElem * new_job,
-*     uint32_t job_number, lList **alpp)
-*
-*  FUNCTION
-*     This function follows the deep search allgorithm, to look for cycles
-*     in the job dependency list. It stops, when the first cycle is found. It
-*     only performes the cycle check for a given job and not for all jobs in
-*     the system.
-*
-*  INPUTS
-*     const lListElem * new_job - job, which dependency have to be evaludated
-*     uint32_t job_number       - job number, of the first job
-*     lList **alpp              - answer list
-*
-*  RESULT
-*     static bool - true, if there is a dependency cycle
-*
-*  MT-NOTE
-*     Is not thread save. Reads from the global Job-List
-*
-*******************************************************************************/
+/**
+ * @brief Detects cycles in the job dependencies
+ *
+ * This function follows the deep search allgorithm, to look for cycles
+ * in the job dependency list. It stops, when the first cycle is found. It
+ * only performes the cycle check for a given job and not for all jobs in
+ * the system.
+ *
+ * @param new_job job, which dependency have to be evaludated
+ * @param job_number job number, of the first job
+ * @param alpp answer list
+ *
+ * @return true, if there is a dependency cycle Is not thread save. Reads from the global Job-List
+ *
+ * @note MT-NOTE
+ */
 static bool contains_dependency_cycles(const lListElem *new_job, uint32_t job_number, lList **alpp) {
    bool is_cycle = false;
    const lList *predecessor_list = lGetList(new_job, JB_jid_predecessor_list);
@@ -3024,29 +3001,19 @@ static bool contains_dependency_cycles(const lListElem *new_job, uint32_t job_nu
    DRETURN(is_cycle);
 }
 
-/****** qmaster/job/job_verify_predecessors() *********************************
-*  NAME
-*     job_verify_predecessors() -- verify -hold_jid list of a job
-*
-*  SYNOPSIS
-*     static int job_verify_predecessors(const lListElem *job,
-*                                        lList **alpp,
-*                                        lList *predecessors)
-*
-*  FUNCTION
-*     These checks are done:
-*       #1 Ensure the job will not become it's own predecessor
-*       #2 resolve job names and regulare expressions. The
-*          job ids will be stored in JB_jid_predecessor_list
-*
-*  INPUTS
-*     const lListElem *job - JB_Type element (JB_job_number may be 0 if
-*                            not yet know (at submit time)
-*     lList **alpp         - the answer list
-*
-*  RESULT
-*     int - returns != 0 if there is a problem with predecessors
-******************************************************************************/
+/**
+ * @brief Verify -hold_jid list of a job
+ *
+ * These checks are done:
+ *   #1 Ensure the job will not become it's own predecessor
+ *   #2 resolve job names and regulare expressions. The
+ *      job ids will be stored in JB_jid_predecessor_list
+ *
+ * @param job JB_Type element (JB_job_number may be 0 if not yet know (at submit time)
+ * @param alpp the answer list
+ *
+ * @return returns != 0 if there is a problem with predecessors
+ */
 int job_verify_predecessors(lListElem *job, lList **alpp) {
    uint32_t jobid = lGetUlong(job, JB_job_number);
    const lList *predecessors_req = nullptr;
@@ -3126,30 +3093,22 @@ int job_verify_predecessors(lListElem *job, lList **alpp) {
    DRETURN(0);
 }
 
-/****** qmaster/job/job_verify_predecessors_ad() *********************************
-*  NAME
-*     job_verify_predecessors_ad() -- verify -hold_jid_ad list of a job
-*
-*  SYNOPSIS
-*     static int job_verify_predecessors_ad(lListElem *job, lList **alpp)
-*
-*  FUNCTION
-*     These checks are done:
-*       #1 Ensure the job will not become it's own predecessor
-*       #2 Resolve job names and regulare expressions. The
-*          job ids will be stored in JB_ja_ad_predecessor_list
-*       #3 Ensure the jobs in the predecessor list are equivalent array jobs
-*       #4 Update JB_ja_a_h_ids and JB_ja_a_n_ids according to the
-           predecessors list
-*
-*  INPUTS
-*     lListElem *job - JB_Type element (JB_job_number may be 0 if
-*                            not yet know (at submit time)
-*     lList **alpp   - the answer list
-*
-*  RESULT
-*     int - returns != 0 if there is a problem with predecessors
-******************************************************************************/
+/**
+ * @brief Verify -hold_jid_ad list of a job
+ *
+ * These checks are done:
+ *   #1 Ensure the job will not become it's own predecessor
+ *   #2 Resolve job names and regulare expressions. The
+ *      job ids will be stored in JB_ja_ad_predecessor_list
+ *   #3 Ensure the jobs in the predecessor list are equivalent array jobs
+ *   #4 Update JB_ja_a_h_ids and JB_ja_a_n_ids according to the
+ *       predecessors list
+ *
+ * @param job JB_Type element (JB_job_number may be 0 if not yet know (at submit time)
+ * @param alpp the answer list
+ *
+ * @return returns != 0 if there is a problem with predecessors
+ */
 int job_verify_predecessors_ad(lListElem *job, lList **alpp, uint64_t gdi_session) {
    uint32_t jobid = lGetUlong(job, JB_job_number);
    const lList *predecessors_req = nullptr;
@@ -3272,6 +3231,10 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp, uint64_t gdi_sessio
    DRETURN(0);
 }
 
+/** @brief Hand out the next job number
+ * @param monitor for monitoring qmaster threads
+ * @return the job number
+ */
 uint32_t
 sge_get_job_number(monitoring_t *monitor) {
    uint32_t job_nr;
@@ -3306,6 +3269,10 @@ sge_get_job_number(monitoring_t *monitor) {
    DRETURN(job_nr);
 }
 
+/** @brief Read the next job number back from the spool at startup
+ *
+ * A restart must not hand out a number a previous qmaster already used.
+ */
 void sge_init_job_number() {
    FILE *fp = nullptr;
    uint32_t job_nr = 0;
@@ -3337,6 +3304,14 @@ void sge_init_job_number() {
    DRETURN_VOID;
 }
 
+/** @brief Spool the next job number, on the timer
+ *
+ * Registered as a #TYPE_JOB_NUMBER_EVENT rather than done per submit, so a
+ * submit never waits for a disk write.
+ *
+ * @param anEvent the timed event that fired
+ * @param monitor for monitoring qmaster threads
+ */
 void sge_store_job_number(te_event_t anEvent, monitoring_t *monitor) {
    uint32_t job_nr = 0;
    bool changed = false;
@@ -3401,6 +3376,17 @@ static uint32_t guess_highest_job_number() {
 }
 
 /* all modifications are done now verify schedulability */
+/** @brief Is there any queue this job could ever run in?
+ *
+ * Answers `qsub -w`, and rejects at submit time a job that could never be
+ * scheduled anywhere rather than leaving it pending forever.
+ *
+ * @param alpp receives messages for the caller
+ * @param jep the job (`JB_Type`)
+ * @param[out] trigger receives what has to happen next
+ * @param is_modify whether this is a modification rather than a submit
+ * @return 0 when a suitable queue exists
+ */
 int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_modify) {
    int verify_mode = lGetUlong(jep, JB_verify_suitable_queues);
    bool verify_only = (verify_mode == JUST_VERIFY || verify_mode == POKE_VERIFY) ? true : false;
@@ -3648,6 +3634,19 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
    DRETURN(0);
 }
 
+/** @brief Submit a new job as a copy of an existing one
+ *
+ * What `qsub -clearp` and `qresub` do: the stored job is the template, so the
+ * copy inherits everything that was not overridden.
+ *
+ * @param jep the job to copy from, and the overrides
+ * @param alpp receives messages for the caller
+ * @param lpp receives the new job
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param monitor for monitoring qmaster threads
+ * @return STATUS_OK on success, an error status otherwise
+ */
 int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp,
                      ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
    uint32_t seek_jid;
@@ -3712,31 +3711,20 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp,
    DRETURN(ret);
 }
 
-/****** sge_job_qmaster/spool_write_script() ***********************************
-*  NAME
-*     spool_write_script() -- Write job script
-*
-*  SYNOPSIS
-*     bool spool_write_script(lList **answer_list,uint32_t jobid, lListElem *jep)
-*
-*  FUNCTION
-*     The function stores the script of a '-b n' job into a file.
-*
-*  INPUTS
-*     lList **answer_list
-*     uint32_t jobid - job id (needed for Dtrace only)
-*     lListElem *jep - the job
-*
-*  RESULT
-*     static bool - true on success
-*
-*  NOTES
-*     MT-NOTE: spool_write_script() is MT safe
-*
-*  SEE ALSO
-*     spool_delete_script()
-*     spool_read_script()
-*******************************************************************************/
+/**
+ * @brief Write job script
+ *
+ * The function stores the script of a '-b n' job into a file.
+ *
+ * @param jobid job id (needed for Dtrace only)
+ * @param jep the job
+ *
+ * @return true on success
+ *
+ * @note MT-NOTE: spool_write_script() is MT safe
+ *
+ * @see #spool_delete_script, #spool_read_script
+ */
 bool spool_write_script(lList **answer_list, uint32_t jobid, const lListElem *jep) {
    bool ret = true;
    dstring buffer = DSTRING_INIT;
@@ -3753,31 +3741,20 @@ bool spool_write_script(lList **answer_list, uint32_t jobid, const lListElem *je
    DRETURN(ret);
 }
 
-/****** sge_job_qmaster/spool_read_script() **************************************
-*  NAME
-*     spool_read_script() -- Read job script
-*
-*  SYNOPSIS
-*     bool spool_read_script(lList **answer_list, uint32_t jobid, lListElem *jep)
-*
-*  FUNCTION
-*     The function reads the script of a '-b n' job from file.
-*
-*  INPUTS
-*     lList **answer_list
-*     uint32_t jobid - job id (needed for Dtrace only)
-*     lListElem *jep - the job
-*
-*  RESULT
-*     bool - true on success
-*
-*  NOTES
-*     MT-NOTE: spool_read_script() is MT safe
-*
-*  SEE ALSO
-*     spool_write_script()
-*     spool_delete_script()
-*******************************************************************************/
+/**
+ * @brief Read job script
+ *
+ * The function reads the script of a '-b n' job from file.
+ *
+ * @param jobid job id (needed for Dtrace only)
+ * @param jep the job
+ *
+ * @return true on success
+ *
+ * @note MT-NOTE: spool_read_script() is MT safe
+ *
+ * @see #spool_write_script, #spool_delete_script
+ */
 bool spool_read_script(lList **answer_list, uint32_t jobid, lListElem *jep) {
    bool ret = true;
    dstring buffer = DSTRING_INIT;
@@ -3803,31 +3780,20 @@ bool spool_read_script(lList **answer_list, uint32_t jobid, lListElem *jep) {
    DRETURN(ret);
 }
 
-/****** sge_job_qmaster/spool_delete_script() ************************************
-*  NAME
-*     spool_delete_script() -- Delete job script
-*
-*  SYNOPSIS
-*     bool spool_delete_script(lList **answer_list, uint32_t jobid, lListElem *jep)
-*
-*  FUNCTION
-*     The function removes the file where the script of a '-b n' job is stored.
-*
-*  INPUTS
-*     lList **answer_list
-*     uint32_t jobid - job id (needed for Dtrace only)
-*     lListElem *jep - the job
-*
-*  RESULT
-*     bool - true on success
-*
-*  NOTES
-*     MT-NOTE: spool_delete_script() is MT safe
-*
-*  SEE ALSO
-*     spool_write_script()
-*     spool_read_script()
-*******************************************************************************/
+/**
+ * @brief Delete job script
+ *
+ * The function removes the file where the script of a '-b n' job is stored.
+ *
+ * @param jobid job id (needed for Dtrace only)
+ * @param jep the job
+ *
+ * @return true on success
+ *
+ * @note MT-NOTE: spool_delete_script() is MT safe
+ *
+ * @see #spool_write_script, #spool_read_script
+ */
 bool spool_delete_script(lList **answer_list, uint32_t jobid, lListElem *jep) {
    bool ret = true;
    dstring buffer = DSTRING_INIT;
@@ -4225,36 +4191,26 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
    DRETURN(njobs);
 }
 
-/****** sge_job_qmaster/job_verify_project() ***********************************
-*  NAME
-*     job_verify_project() -- verify the JB_project of a job
-*
-*  SYNOPSIS
-*     static int
-*     job_verify_project(const lListElem *job, lList **alpp,
-*                        const char *user, const char *group)
-*
-*  FUNCTION
-*     Does verifications on the JB_project field of a job.
-*     Is called when qmaster gets a new job (sge_gdi_add_job),
-*     or when a job is modified (sge_gdi_mod_job).
-*     Verifies the project:
-*        - global config projects/xprojects
-*        - enforce_project
-*        - exists in project list
-*
-*  INPUTS
-*     const lListElem *job - the job containing JB_project
-*     lList **alpp         - answer list to pass back error messages
-*     const char *user     - job owner / job submitter
-*     const char *group    - job owners group
-*
-*  RESULT
-*     static int - STATUS_OK on success, else STATUS_* error code
-*
-*  NOTES
-*     MT-NOTE: job_verify_project() is MT safe, if caller holds the global lock.
-*******************************************************************************/
+/**
+ * @brief Verify the JB_project of a job
+ *
+ * Does verifications on the JB_project field of a job.
+ * Is called when qmaster gets a new job (sge_gdi_add_job),
+ * or when a job is modified (sge_gdi_mod_job).
+ * Verifies the project:
+ *    - global config projects/xprojects
+ *    - enforce_project
+ *    - exists in project list
+ *
+ * @param job the job containing JB_project
+ * @param alpp answer list to pass back error messages
+ * @param user job owner / job submitter
+ * @param group job owners group
+ *
+ * @return STATUS_OK on success, else STATUS_* error code
+ *
+ * @note MT-NOTE: job_verify_project() is MT safe, if caller holds the global lock.
+ */
 int
 job_verify_project(const lListElem *job, lList **alpp,
                    const char *user, const char *group, const lList *grp_list) {
@@ -4331,6 +4287,10 @@ job_verify_project(const lListElem *job, lList **alpp,
 * NOTES
 *     MT-NOTE: reporting_get_job_log_name() is MT-safe
 */
+/** @brief The name a job log event is recorded under
+ * @param type the event
+ * @return its name
+ */
 const char *
 get_job_log_name(const job_log_t type) {
    const char *ret;
@@ -4552,8 +4512,8 @@ job_ja_task_debit(const lListElem *job, const lListElem *ja_task, lList **answer
  *
  * @param[in] job The job object (JB_Type) containing the job array task
  * @param[in] ja_task The job array task (JAT_Type) for which to credit resources
- * @param
  * @param[out] answer_list Pointer to answer list for error messages and reporting records
+ * @param[in] gdi_session the session the change belongs to
  *
  * @return true on success, false on failure
  *

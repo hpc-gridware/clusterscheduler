@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief TODO describe this file
+ */
 #include <cstdio>
 #include <cstring>
 #include <sys/time.h>
@@ -214,26 +218,15 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep,
    DRETURN(STATUS_OK);
 }
 
-/****** qmaster/sge_calendar_qmaster/sge_calendar_event_handler() **************
-*  NAME
-*     sge_calendar_event_handler() -- calendar event handler
-*
-*  SYNOPSIS
-*     void sge_calendar_event_handler(te_event_t anEvent) 
-*
-*  FUNCTION
-*     Handle calendar events. 
-*
-*  INPUTS
-*     te_event_t anEvent - calendar event
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: sge_calendar_event_handler() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Calendar event handler
+ *
+ * Handle calendar events.
+ *
+ * @param anEvent calendar event
+ *
+ * @note MT-NOTE: sge_calendar_event_handler() is MT safe
+ */
 void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    lListElem *cep;
    const char *cal_name = te_get_alphanumeric_key(anEvent);

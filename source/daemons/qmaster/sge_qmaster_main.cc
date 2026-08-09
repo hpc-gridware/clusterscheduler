@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include <csignal>
 #include <iostream>
 
@@ -87,77 +91,53 @@
 
 static void init_sig_action_and_mask();
 
-/****** qmaster/sge_qmaster_main/sge_qmaster_application_status() ************
-*  NAME
-*     sge_qmaster_application_status() -- commlib status callback function
-*
-*  SYNOPSIS
-*      unsigned long sge_qmaster_application_status(char** info_message)
-*
-*  FUNCTION
-*      This is the implementation of the commlib application status callback
-*      function. This function is called from the commlib when a connected
-*      client wants to get a SIRM (Status Information Response Message).
-*      The standard client for this action is the qping command.
-*
-*      The callback function is set with cl_com_set_status_func() after
-*      commlib initalization.
-*
-*      The function is called by a commlib thread which is not in the
-*      context of the qmaster application. This means no qmaster specific
-*      functions should be called (locking of global variables).
-*
-*      status 0:  no errors
-*      status 1:  one or more threads has reached warning timeout
-*      status 2:  one or more threads has reached error timeout
-*      status 3:  thread alive timeout struct not initalized
-*
-*  INPUTS
-*     char** info_message - pointer to an char* inside commlib.
-*                           info message must be malloced, commlib will
-*                           free this memory.
-*  RESULT
-*     unsigned long status - status of application
-*
-*  NOTES
-*     This function is MT save
-*
-*******************************************************************************/
+/**
+ * @brief Commlib status callback function
+ *
+ *  This is the implementation of the commlib application status callback
+ *  function. This function is called from the commlib when a connected
+ *  client wants to get a SIRM (Status Information Response Message).
+ *  The standard client for this action is the qping command.
+ *  The callback function is set with cl_com_set_status_func() after
+ *  commlib initalization.
+ *  The function is called by a commlib thread which is not in the
+ *  context of the qmaster application. This means no qmaster specific
+ *  functions should be called (locking of global variables).
+ *  status 0:  no errors
+ *  status 1:  one or more threads has reached warning timeout
+ *  status 2:  one or more threads has reached error timeout
+ *  status 3:  thread alive timeout struct not initalized
+ *
+ * @param info_message pointer to an char* inside commlib. info message must be malloced, commlib will free this memory.
+ *
+ * @return status of application
+ *
+ * @note This function is MT save
+ */
 unsigned long
 sge_qmaster_application_status(char **info_message) {
    return sge_monitor_status(info_message, mconf_get_monitor_time());
 }
 
-/****** qmaster/sge_qmaster_main/main() ****************************************
-*  NAME
-*     main() -- qmaster entry point
-*
-*  SYNOPSIS
-*     int main(int argc, char* argv[])
-*
-*  FUNCTION
-*     Qmaster entry point.
-*
-*     NOTE: The main thread must block all signals before any additional thread
-*     is created. Failure to do so will ruin signal handling!
-*
-*  INPUTS
-*     int argc     - number of commandline arguments
-*     char* argv[] - commandline arguments
-*
-*  RESULT
-*     0 - success
-*
-*  NOTES
-*     We check whether 'SGE_ROOT' is set before we daemonize. Once qmaster is
-*     a daemon, we are no longer connected to a terminal and hence can not
-*     output an error message to stdout or stderr.
-*
-*     We need to inovke 'prepare_enroll()' *before* the user id is switched via
-*     'become_admin_user()'. This is because qmaster must be able to bind a so
-*     called reserved port (requires root privileges) if configured to do so.
-*
-*******************************************************************************/
+/**
+ * @brief Qmaster entry point
+ *
+ * Qmaster entry point.
+ * NOTE: The main thread must block all signals before any additional thread
+ * is created. Failure to do so will ruin signal handling!
+ *
+ * @param argc number of commandline arguments char* argv[] - commandline arguments
+ *
+ * @return success
+ *
+ * @note We check whether 'SGE_ROOT' is set before we daemonize. Once qmaster is
+ *       a daemon, we are no longer connected to a terminal and hence can not
+ *       output an error message to stdout or stderr.
+ *
+ *       We need to inovke 'prepare_enroll()' *before* the user id is switched via
+ *       'become_admin_user()'. This is because qmaster must be able to bind a so
+ *       called reserved port (requires root privileges) if configured to do so.
+ */
 int main(int argc, char *argv[]) {
    int max_enroll_tries;
    int ret_val;
@@ -366,27 +346,14 @@ int main(int argc, char *argv[]) {
    DRETURN(0);
 } /* main() */
 
-/****** qmaster/sge_qmaster_main/init_sig_action_and_mask() *******************
-*  NAME
-*     init_sig_action_and_mask() -- initialize signal action and mask
-*
-*  SYNOPSIS
-*     static void init_sig_action_and_mask()
-*
-*  FUNCTION
-*     Initialize signal action and mask.
-*
-*     NOTE: We ignore SIGCHLD. This, together with the 'SA_NOCLDWAIT' flag,
-*     does make sure, that an unwaited for child process will not become
-*     a zombie process.
-*
-*  INPUTS
-*     none
-*
-*  RESULT
-*     none
-*
-*******************************************************************************/
+/**
+ * @brief Initialize signal action and mask
+ *
+ * Initialize signal action and mask.
+ * NOTE: We ignore SIGCHLD. This, together with the 'SA_NOCLDWAIT' flag,
+ * does make sure, that an unwaited for child process will not become
+ * a zombie process.
+ */
 static void init_sig_action_and_mask() {
    struct sigaction sa{};
    sigset_t sig_set;

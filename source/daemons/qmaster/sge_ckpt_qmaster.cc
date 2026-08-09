@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief TODO describe this file
+ */
 #include <cstdio>
 #include <cstring>
 #include <cctype>
@@ -56,51 +60,29 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
-/****** qmaster/ckpt/ckpt_mod() ***********************************************
-*  NAME
-*     ckpt_mod -- add/modify ckpt object in master ckpt list
-*
-*  SYNOPSIS
-*     int ckpt_mod (lList **alpp, lListElem *new_ckpt, lListElem *ckpt, 
-*                   int add, char *ruser, char *rhost, gdi_object_t *object,
-*                   int sub_command);
-*
-*  FUNCTION
-*     This function will be called from the framework which will
-*     add/modify/delete generic gdi objects.
-*     The purpose of this function is it to add new ckpt
-*     objects or modify existing checkpointing interfaces. 
-*
-*
-*  INPUTS
-*     alpp        - reference to an answer list.
-*     new_ckpt    - if a new ckpt object will be created by this 
-*                   function, than new_ckpt is new uninitialized
-*                   CULL object
-*                   if this function was called due to a modify request
-*                   than new_ckpt will contain the old data
-*                   (see add parameter)
-*     ckpt        - a reduced ckpt object which contains all
-*                   necessary information to create a new object
-*                   or modify parts of an existing one
-*     add         - 1 if a new element should be added to the master list 
-*                   0 to modify an existing object
-*     ruser       - username of person who invoked this gdi request
-*     rhost       - hostname of the host where someone initiated an gdi call
-*     object      - structure of the gdi framework which contains 
-*                   additional information to perform the request
-*                   (function pointers, names, CULL-types) 
-*     sub_command - how should we handle sublist elements
-*              SGE_GDI_CHANGE - modify sublist elements
-*              SGE_GDI_APPEND - add elements to a sublist
-*              SGE_GDI_REMOVE - remove sublist elements
-*              SGE_GDI_SET - replace the complete sublist    
-*
-*  RESULT
-*     [alpp] - error messages will be added to this list
-*     0 - success
-*     STATUS_EUNKNOWN - an error occurred
-******************************************************************************/
+/**
+ * @brief Add/modify ckpt object in master ckpt list
+ *
+ * This function will be called from the framework which will
+ * add/modify/delete generic gdi objects.
+ * The purpose of this function is it to add new ckpt
+ * objects or modify existing checkpointing interfaces.
+ *
+ * @param alpp reference to an answer list.
+ * @param new_ckpt if a new ckpt object will be created by this function, than new_ckpt is new uninitialized CULL object if this function was called due to a modify request than new_ckpt will contain the old data (see add parameter)
+ * @param ckpt a reduced ckpt object which contains all necessary information to create a new object or modify parts of an existing one
+ * @param add 1 if a new element should be added to the master list 0 to modify an existing object
+ * @param ruser username of person who invoked this gdi request
+ * @param rhost hostname of the host where someone initiated an gdi call
+ * @param object structure of the gdi framework which contains additional information to perform the request (function pointers, names, CULL-types)
+ * @param sub_command how should we handle sublist elements
+ * @param SGE_GDI_CHANGE modify sublist elements
+ * @param SGE_GDI_APPEND add elements to a sublist
+ * @param SGE_GDI_REMOVE remove sublist elements
+ * @param SGE_GDI_SET replace the complete sublist
+ *
+ * @return [alpp] - error messages will be added to this list 0 - success STATUS_EUNKNOWN - an error occurred
+ */
 int
 ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ckpt, lListElem *ckpt, int add, const char *ruser,
          const char *rhost, gdi_object_t *object,
@@ -187,33 +169,20 @@ ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
 DRETURN(STATUS_EUNKNOWN);
 }
 
-/****** qmaster/ckpt/ckpt_spool() *********************************************
-*
-*  NAME
-*     ckpt_spool -- spool a ckpt object  
-*
-*  SYNOPSIS
-*     int ckpt_spool(lList **alpp, lListElem *ep, gdi_object_t *object);
-*
-*  FUNCTION
-*     This function will be called from the framework which will
-*     add/modify/delete generic gdi objects.
-*     After an object was modified/added successfully it
-*     is necessary to spool the current state to the filesystem.
-*
-*
-*  INPUTS
-*     alpp        - reference to an answer list.
-*     ep          - ckpt object which should be spooled
-*     object      - structure of the gdi framework which contains 
-*                   additional information to perform the request
-*                   (function pointers, names, CULL-types) 
-*
-*  RESULT
-*     [alpp] - error messages will be added to this list
-*     0 - success
-*     STATUS_EEXIST - an error occurred
-******************************************************************************/
+/**
+ * @brief Spool a ckpt object
+ *
+ * This function will be called from the framework which will
+ * add/modify/delete generic gdi objects.
+ * After an object was modified/added successfully it
+ * is necessary to spool the current state to the filesystem.
+ *
+ * @param alpp reference to an answer list.
+ * @param ep ckpt object which should be spooled
+ * @param object structure of the gdi framework which contains additional information to perform the request (function pointers, names, CULL-types)
+ *
+ * @return [alpp] - error messages will be added to this list 0 - success STATUS_EEXIST - an error occurred
+ */
 int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
 
@@ -231,34 +200,22 @@ int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLi
    DRETURN(dbret ? 0 : 1);
 }
 
-/****** qmaster/ckpt/ckpt_success() *******************************************
-*
-*  NAME
-*     ckpt_success -- does something after a successful modify
-*
-*  SYNOPSIS
-*     int ckpt_success(lListElem *ep; lListElem *old_ep; gdi_object_t *object);
-*
-*  FUNCTION
-*     This function will be called from the framework which will
-*     add/modify/delete generic gdi objects.
-*     After an object was modified/added and spooled successfully 
-*     it is possibly necessary to perform additional tasks.
-*     For example it is necessary to send some events to
-+     other daemon.
-*
-*
-*  INPUTS
-*     ep          - new ckpt object 
-*     old_ep      - old ckpt object before modification or
-*                   nullptr if a new object was added
-*     object      - structure of the gdi framework which contains 
-*                   additional information to perform the request
-*                   (function pointers, names, CULL-types) 
-*
-*  RESULT
-*     0 - success
-******************************************************************************/
+/**
+ * @brief Does something after a successful modify
+ *
+ * This function will be called from the framework which will
+ * add/modify/delete generic gdi objects.
+ * After an object was modified/added and spooled successfully
+ * it is possibly necessary to perform additional tasks.
+ * For example it is necessary to send some events to
+ * +     other daemon.
+ *
+ * @param ep new ckpt object
+ * @param old_ep old ckpt object before modification or nullptr if a new object was added
+ * @param object structure of the gdi framework which contains additional information to perform the request (function pointers, names, CULL-types)
+ *
+ * @return success
+ */
 int
 ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    const char *ckpt_name;
@@ -273,31 +230,20 @@ ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
    DRETURN(0);
 }
 
-/****** qmaster/ckpt/sge_del_ckpt() *******************************************
-*
-*  NAME
-*     sge_del_ckpt -- delete ckpt object in master ckpt list
-*
-*  SYNOPSIS
-*     int sge_del_ckpt(lListElem *ep, lList **alpp, char *ruser, char *rhost);
-* 
-*  FUNCTION
-*     This function will be called from the framework which will
-*     add/modify/delete generic gdi objects.
-*     The purpose of this function is it to delete ckpt objects. 
-*
-*
-*  INPUTS
-*     ep          - element which should be deleted
-*     alpp        - reference to an answer list.
-*     ruser       - username of person who invoked this gdi request
-*     rhost       - hostname of the host where someone initiated an gdi call
-*
-*  RESULT
-*     [alpp] - error messages will be added to this list
-*     0 - success
-*     STATUS_EUNKNOWN - an error occurred
-******************************************************************************/
+/**
+ * @brief Delete ckpt object in master ckpt list
+ *
+ * This function will be called from the framework which will
+ * add/modify/delete generic gdi objects.
+ * The purpose of this function is it to delete ckpt objects.
+ *
+ * @param ep element which should be deleted
+ * @param alpp reference to an answer list.
+ * @param ruser username of person who invoked this gdi request
+ * @param rhost hostname of the host where someone initiated an gdi call
+ *
+ * @return [alpp] - error messages will be added to this list 0 - success STATUS_EUNKNOWN - an error occurred
+ */
 int
 sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
    lListElem *found;

@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_userset.h"
 

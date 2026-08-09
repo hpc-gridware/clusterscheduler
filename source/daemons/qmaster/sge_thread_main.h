@@ -33,6 +33,19 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qmaster's threads, and the state the main thread keeps about them
+ *
+ * qmaster is not one loop but a set of thread pools, each with a job it does
+ * and nothing else: workers answer requests that change something, readers
+ * answer read-only ones, listeners accept connections, the timer fires the
+ * deferred work, the event master ships events, the scheduler schedules, and
+ * the mirror threads keep the read-only data stores current.
+ *
+ * Splitting reads from writes is the point of the reader pool: a `qstat`
+ * storm then costs nothing that a `qsub` has to wait for.
+ */
+
 #include <pthread.h>
 #include <vector>
 
@@ -42,42 +55,43 @@
 
 #include "ocs_MirrorDataStore.h"
 
+/** @brief The thread pools qmaster runs, and how it means to exit */
 typedef struct {
-   /* exit state: 100 = another master took over */
+   /** @brief exit state: 100 = another master took over */
    int exit_state;
 
-   /* Worker threads: handling incoming GDI requests (RW and RO) */
+   /** @brief Worker threads: handling incoming GDI requests (RW and RO) */
    cl_raw_list_t *worker_thread_pool;
 
-   /* Reader threads: handling incoming GDI requests (RO) */
+   /** @brief Reader threads: handling incoming GDI requests (RO) */
    cl_raw_list_t *reader_thread_pool;
 
-   /* Message threads: accepting and answering certain commlib requests */
+   /** @brief Message threads: accepting and answering certain commlib requests */
    cl_raw_list_t *listener_thread_pool;
 
-   /* Signal thread */
+   /** @brief Signal thread */
    cl_raw_list_t *signal_thread_pool;
 
-   /* Timed event thread */
+   /** @brief Timed event thread */
    cl_raw_list_t *timer_thread_pool;
 
-   /* Event master thread */
+   /** @brief Event master thread */
    cl_raw_list_t *event_master_thread_pool;
 
-   /* Scheduler thread */
+   /** @brief Scheduler thread */
    cl_raw_list_t *scheduler_thread_pool;
 
-   /* JVM thread */
+   /** @brief JVM thread */
    cl_raw_list_t *jvm_thread_pool;
 
-   /* intern GDI test thread */
+   /** @brief intern GDI test thread */
    cl_raw_list_t *test_thread_pool;
 
-   /* Event mirror thread */
+   /** @brief Event mirror thread */
    std::vector<ocs::MirrorDataStore *>mirror_thread_pool;
 } main_control_t;
 
-extern main_control_t Main_Control;
+extern main_control_t Main_Control;   ///< The running threads and the exit state
 
 int
 sge_qmaster_shutdown_via_signal_thread(int i);

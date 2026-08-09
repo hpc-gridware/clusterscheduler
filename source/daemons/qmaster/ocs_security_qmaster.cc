@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #if defined(OCS_WITH_OPENSSL)
 
 #include "uti/ocs_Bootstrap.h"

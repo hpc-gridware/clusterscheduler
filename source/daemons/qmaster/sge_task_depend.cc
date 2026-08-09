@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include <cstdio>
 
 #include "uti/sge_rmon_macros.h"
@@ -65,45 +69,33 @@ static void task_depend(uint32_t *lb, uint32_t *ub, uint32_t t0, uint32_t sa, ui
 }
 
 
-/**************** qmaster/task/sge_task_depend_get_range() *******************
-*  NAME
-*     sge_task_depend_get_range() -- get predecessor job task depdendencies 
-*
-*  SYNOPSIS
-*     int sge_task_depend_get_range(lListElem **range, lList **alpp, 
-*                                   const lListElem *pre_jep, 
-*                                   const lListElem *suc_jep, 
-*                                   uint32_t task_id)
-*
-*  FUNCTION
-*     This function determines the range of sub-tasks of job pre_jep that
-*     suc_jep.task_id will be dependent on when suc_jep has an explicit
-*     array dependency hold on pre_jep (with -hold_jid_ad option).
-*
-*  INPUTS
-*     lListElem **range        - RN_Type pointer
-*     lList **alpp             - AN_Type list pointer
-*     const lListElem *pre_jep - const JB_Type element
-*     const lListElem *suc_jep - const JB_Type element
-*     uint32_t task_id         - a valid suc_jep task id
-*
-*  RESULT
-*     int - 0 on success
-*
-*  NOTES
-*     Let div(a, b) = floor(a / b)
-*     Let nearest_index_in_A(i) = t0 + div(i - t0, sa) * sa
-*
-*     Sub-task B.i will be dependent on all tasks in A between
-*     nearest_index_in_A(i) and nearest_index_in_A(i + sb - 1) where 
-*     i = t0 + n * sb and n is a positive integer.
-*
-*     It is safe to swap pre_jep and suc_jep provided that the given task id
-*     belongs to pre_jep (therefore reversing the sense of the dependence).
-*
-*     MT-NOTE: sge_task_depend_get_range() is MT safe
-*
-******************************************************************************/
+/**
+ * @brief Get predecessor job task depdendencies
+ *
+ * This function determines the range of sub-tasks of job pre_jep that
+ * suc_jep.task_id will be dependent on when suc_jep has an explicit
+ * array dependency hold on pre_jep (with -hold_jid_ad option).
+ *
+ * @param range RN_Type pointer
+ * @param alpp AN_Type list pointer
+ * @param pre_jep const JB_Type element
+ * @param suc_jep const JB_Type element
+ * @param task_id a valid suc_jep task id
+ *
+ * @return 0 on success
+ *
+ * @note Let div(a, b) = floor(a / b)
+ *       Let nearest_index_in_A(i) = t0 + div(i - t0, sa) * sa
+ *
+ *       Sub-task B.i will be dependent on all tasks in A between
+ *       nearest_index_in_A(i) and nearest_index_in_A(i + sb - 1) where
+ *       i = t0 + n * sb and n is a positive integer.
+ *
+ *       It is safe to swap pre_jep and suc_jep provided that the given task id
+ *       belongs to pre_jep (therefore reversing the sense of the dependence).
+ *
+ *       MT-NOTE: sge_task_depend_get_range() is MT safe
+ */
 int
 sge_task_depend_get_range(lListElem **range, lList **alpp, const lListElem *pre_jep, const lListElem *suc_jep,
                           uint32_t task_id) {
@@ -181,45 +173,35 @@ task_depend_is_finished(const lListElem *job, uint32_t task_id) {
 }
 
 
-/**************** qmaster/task/sge_task_depend_update() *******************
-*  NAME
-*     sge_task_depend_update() -- update job array dependencies for a task
-*
-*  SYNOPSIS
-*     bool sge_task_depend_update(lListElem *jep, lList **alpp,
-                                  uint32_t task_id)
-*
-*  FUNCTION
-*     This function recalculates array dependency hold information
-*     for a particular task id of job jep (-hold_jid_ad option).
-*     If the task is independent (i.e., has no predecessor tasks that
-*     are in an unfinished state), its id will be removed from the
-*     JB_ja_a_h_ids hold range and potentially moved to JB_ja_n_h_ids.
-*     Enrolled tasks may be held or unheld if they are not finished,
-*     causing task mod events to be generated if the task was updated.
-*
-*  INPUTS
-*     lListElem *jep   - JB_Type element
-*     lList **alpp     - AN_Type list pointer
-*     uint32_t task_id - a task id in job jep
-*
-*  RESULT
-*     bool - true if the job was modified, otherwise false
-*
-*  NOTES
-*     If array dependency information cannot be determined, then
-*     this function will assume that a task dependence still exists.
-*
-*     A false result from this function should not be considered failure.
-*     Update status is returned to help the caller decide whether modify
-*     event code should be emitted.
-*
-*     If the job argument jep is nullptr, or the task indicated by task_id
-*     in jep is finished, false is returned.
-*
-*     MT-NOTE: Is not thread safe. Reads from the global Job-List
-*
-******************************************************************************/
+/**
+ * @brief Update job array dependencies for a task
+ *
+ * This function recalculates array dependency hold information
+ * for a particular task id of job jep (-hold_jid_ad option).
+ * If the task is independent (i.e., has no predecessor tasks that
+ * are in an unfinished state), its id will be removed from the
+ * JB_ja_a_h_ids hold range and potentially moved to JB_ja_n_h_ids.
+ * Enrolled tasks may be held or unheld if they are not finished,
+ * causing task mod events to be generated if the task was updated.
+ *
+ * @param jep JB_Type element
+ * @param alpp AN_Type list pointer
+ * @param task_id a task id in job jep
+ *
+ * @return true if the job was modified, otherwise false
+ *
+ * @note If array dependency information cannot be determined, then
+ *       this function will assume that a task dependence still exists.
+ *
+ *       A false result from this function should not be considered failure.
+ *       Update status is returned to help the caller decide whether modify
+ *       event code should be emitted.
+ *
+ *       If the job argument jep is nullptr, or the task indicated by task_id
+ *       in jep is finished, false is returned.
+ *
+ *       MT-NOTE: Is not thread safe. Reads from the global Job-List
+ */
 bool
 sge_task_depend_update(lListElem *jep, lList **alpp, uint32_t task_id, uint64_t gdi_request) {
    DENTER(TOP_LAYER);
@@ -299,36 +281,27 @@ sge_task_depend_update(lListElem *jep, lList **alpp, uint32_t task_id, uint64_t 
    DRETURN(false);
 }
 
-/****************** qmaster/task/sge_task_depend_init() **********************
-*  NAME
-*     sge_task_depend_init() -- initialize job array task dependencies
-*
-*  SYNOPSIS
-*     bool sge_task_depend_init(lListElem *jep, lList **alpp)
-*
-*  FUNCTION
-*     This function inits the JB_ja_a_h_ids dependence cache when the 
-*     array dependency request list is non-empty (-hold_jid_ad option).
-*     It might also update the JHELD flag of the JAT_state field for enrolled 
-*     tasks, placing or clearing the MINUS_H_TGT_JA_AD bits of the JAT_hold
-*     field. Task mod events are generated for the modified enrolled tasks.
-*
-*  INPUTS
-*     lListElem *jep - JB_Type element
-*     lList **alpp   - AN_Type list pointer
-*
-*  RESULT
-*     bool - true if the job was modified, otherwise false
-*
-*  NOTES
-*     Use thus function to completely recalculate array dependencies when
-*     the ja_ad_predecessors list is modified, or upon qmaster restart.
-*
-*     If the job was never an array successor, this function has no effect.
-*
-*     MT-NOTE: sge_task_depend_init() is not MT safe (calls MT unsafe method)
-*
-******************************************************************************/
+/**
+ * @brief Initialize job array task dependencies
+ *
+ * This function inits the JB_ja_a_h_ids dependence cache when the
+ * array dependency request list is non-empty (-hold_jid_ad option).
+ * It might also update the JHELD flag of the JAT_state field for enrolled
+ * tasks, placing or clearing the MINUS_H_TGT_JA_AD bits of the JAT_hold
+ * field. Task mod events are generated for the modified enrolled tasks.
+ *
+ * @param jep JB_Type element
+ * @param alpp AN_Type list pointer
+ *
+ * @return true if the job was modified, otherwise false
+ *
+ * @note Use thus function to completely recalculate array dependencies when
+ *       the ja_ad_predecessors list is modified, or upon qmaster restart.
+ *
+ *       If the job was never an array successor, this function has no effect.
+ *
+ *       MT-NOTE: sge_task_depend_init() is not MT safe (calls MT unsafe method)
+ */
 bool
 sge_task_depend_init(lListElem *jep, lList **alpp, uint64_t gdi_session) {
    bool ret = false;
@@ -358,40 +331,31 @@ sge_task_depend_init(lListElem *jep, lList **alpp, uint64_t gdi_session) {
    DRETURN(ret);
 }
 
-/****************** qmaster/task/sge_task_depend_flush() **********************
-*  NAME
-*     sge_task_depend_flush() -- flush job array task dependencies
-*
-*  SYNOPSIS
-*     bool sge_task_depend_flush(lListElem *jep, lList **alpp)
-*
-*  FUNCTION
-*     This function clears the JB_ja_a_h_ids dependence cache when it
-*     contains one or more task ranges and the job array dependency
-*     predecessor list is empty (-hold_jid_ad option). It might also
-*     release the JHELD flag of the JAT_state field for enrolled tasks
-*     with MINUS_H_TGT_JA_AD in the JAT_hold field. Task mod events will
-*     be generated if the enrolled task was updated.
-*
-*  INPUTS
-*     lListElem *jep - JB_Type element
-*     lList **alpp   - AN_Type list pointer
-*
-*  RESULT
-*     bool - true if the job was modified, otherwise false
-*
-*  NOTES
-*     It is useful to call this function when jobs are removed from the
-*     JB_ja_ad_predecessor_list as a way of ensuring that dependence state
-*     information in both structures is consistent. It is more efficient
-*     to call this function than to update dependency information accross
-*     the entire range of sub-tasks of job jep.
-*
-*     If the job was never an array successor, this function has no effect.
-*
-*     MT-NOTE: sge_task_depend_flush() is MT safe
-*
-******************************************************************************/
+/**
+ * @brief Flush job array task dependencies
+ *
+ * This function clears the JB_ja_a_h_ids dependence cache when it
+ * contains one or more task ranges and the job array dependency
+ * predecessor list is empty (-hold_jid_ad option). It might also
+ * release the JHELD flag of the JAT_state field for enrolled tasks
+ * with MINUS_H_TGT_JA_AD in the JAT_hold field. Task mod events will
+ * be generated if the enrolled task was updated.
+ *
+ * @param jep JB_Type element
+ * @param alpp AN_Type list pointer
+ *
+ * @return true if the job was modified, otherwise false
+ *
+ * @note It is useful to call this function when jobs are removed from the
+ *       JB_ja_ad_predecessor_list as a way of ensuring that dependence state
+ *       information in both structures is consistent. It is more efficient
+ *       to call this function than to update dependency information accross
+ *       the entire range of sub-tasks of job jep.
+ *
+ *       If the job was never an array successor, this function has no effect.
+ *
+ *       MT-NOTE: sge_task_depend_flush() is MT safe
+ */
 bool
 sge_task_depend_flush(lListElem *jep, lList **alpp, uint64_t gdi_session) {
    bool ret = false;
@@ -444,29 +408,19 @@ sge_task_depend_flush(lListElem *jep, lList **alpp, uint64_t gdi_session) {
 }
 
 
-/********** qmaster/task/sge_task_depend_is_same_range() ****************
-*  NAME
-*     sge_task_depend_is_same_range() -- determine array job equivalence 
-*
-*  SYNOPSIS
-*     bool sge_task_depend_is_same_range(const lListElem *suc_jep, 
-                                         const lListElem *pre_jep) 
-*
-*  FUNCTION
-*     This function determines if the job arguments are suitable predecessor
-*     and successor jobs for an array dependency pair (-hold_jid_ad option).
-*
-*  INPUTS
-*     lListElem *pre_jep - const JB_Type element
-*     lListElem *suc_jep - const JB_Type element
-*
-*  RESULT
-*     bool - true if jobs are compatible array jobs, otherwise false
-*
-*  MT-NOTE
-*    sge_task_depend_is_same_range() is MT safe
-*
-******************************************************************************/
+/**
+ * @brief Determine array job equivalence
+ *
+ * This function determines if the job arguments are suitable predecessor
+ * and successor jobs for an array dependency pair (-hold_jid_ad option).
+ *
+ * @param pre_jep const JB_Type element
+ * @param suc_jep const JB_Type element
+ *
+ * @return true if jobs are compatible array jobs, otherwise false sge_task_depend_is_same_range() is MT safe
+ *
+ * @note MT-NOTE
+ */
 bool
 sge_task_depend_is_same_range(const lListElem *pre_jep, const lListElem *suc_jep) {
    uint32_t a0, a1, b0, b1, sa, sb;

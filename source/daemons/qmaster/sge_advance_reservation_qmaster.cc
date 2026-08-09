@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include <cstdlib>
 #include <cstring>
 #include <cerrno>
@@ -103,13 +107,18 @@
 #include "ocs_GrantedResources.h"
 #include "sge_sched_thread_rsmap.h"
 
+/** @brief The next advance reservation id, and whether it still has to be spooled
+ *
+ * The same arrangement as the job number: ids must not repeat across a restart,
+ * so the counter is spooled, but not on every reservation.
+ */
 typedef struct {
-   uint32_t ar_id;
-   bool changed;
-   pthread_mutex_t ar_id_mutex;
+   uint32_t ar_id;               ///< The next id to hand out
+   bool changed;                 ///< The spooled value is out of date
+   pthread_mutex_t ar_id_mutex;  ///< Guards both fields above
 } ar_id_t;
 
-ar_id_t ar_id_control = {0, false, PTHREAD_MUTEX_INITIALIZER};
+ar_id_t ar_id_control = {0, false, PTHREAD_MUTEX_INITIALIZER};   ///< @copybrief ar_id_t
 
 static bool
 ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session);
@@ -123,6 +132,16 @@ guess_highest_ar_id();
 static void
 sge_ar_send_mail(lListElem *ar, int type);
 
+/** @brief Arm the timers for every reservation known at startup
+ *
+ * A reservation that should already have started while qmaster was down has to
+ * be caught up rather than missed.
+ *
+ * @param answer_list receives messages for the caller
+ * @param monitor for monitoring qmaster threads
+ * @param gdi_session the session the change belongs to
+ * @return true on success
+ */
 void
 ar_initialize_timer(lList **answer_list, monitoring_t *monitor, uint64_t gdi_session) {
    lListElem *ar, *next_ar;
@@ -183,47 +202,29 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor, uint64_t gdi_ses
    DRETURN_VOID;
 }
 
-/****** sge_advance_reservation_qmaster/ar_mod() *******************************
-*  NAME
-*     ar_mod() -- gdi callback function for adding modifing advance reservations
-*
-*  SYNOPSIS
-*     int ar_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *new_ar, 
-*     lListElem *ar, int add, const char *ruser, const char *rhost, 
-*     gdi_object_t *object, int sub_command, monitoring_t *monitor) 
-*
-*  FUNCTION
-*     This function is called from the framework that
-*     add/modify/delete generic gdi objects.
-*     The purpose of this function is it to add new advance reservation
-*     objects.
-*     Modifing is currently not supported.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context pointer
-*     lList **alpp             - the answer_list
-*     lListElem *new_ar        - if a new ar object will be created by this
-*                                function, then new_ar is a newly initialized
-*                                CULL object.
-*     lListElem *ar            - a reduced ar object that contains all of the
-*                                requested values
-*     int add                  - 1 for add requests
-*                                0 for mod requests
-*     const char *ruser        - username who invoked this GDI request
-*     const char *rhost        - hostname of where the GDI request was invoked
-*     gdi_object_t *object     - structure of the GDI framework that contains
-*                                additional informations to perform the request
-*     int sub_command          - GDI sub command
-*     monitoring_t *monitor    - monitoring structure
-*
-*  RESULT
-*     int - 0 on success
-*           STATUS_EUNKNOWN if an error occurred
-*           STATUS_NOTOK_DOAGAIN if a temporary error
-*
-*  NOTES
-*     MT-NOTE: ar_mod() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Gdi callback function for adding modifing advance reservations
+ *
+ * This function is called from the framework that
+ * add/modify/delete generic gdi objects.
+ * The purpose of this function is it to add new advance reservation
+ * objects.
+ * Modifing is currently not supported.
+ *
+ * @param alpp the answer_list
+ * @param new_ar if a new ar object will be created by this function, then new_ar is a newly initialized CULL object.
+ * @param ar a reduced ar object that contains all of the requested values
+ * @param add 1 for add requests 0 for mod requests
+ * @param ruser username who invoked this GDI request
+ * @param rhost hostname of where the GDI request was invoked
+ * @param object structure of the GDI framework that contains additional informations to perform the request
+ * @param sub_command GDI sub command
+ * @param monitor monitoring structure
+ *
+ * @return 0 on success STATUS_EUNKNOWN if an error occurred STATUS_NOTOK_DOAGAIN if a temporary error
+ *
+ * @note MT-NOTE: ar_mod() is not MT safe
+ */
 int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
            const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    uint32_t ar_id;
@@ -326,34 +327,22 @@ DRETURN(STATUS_EUNKNOWN);
 DRETURN(STATUS_NOTOK_DOAGAIN);
 }
 
-/****** sge_advance_reservation_qmaster/ar_spool() *****************************
-*  NAME
-*     ar_spool() -- gdi callback funktion to spool an advance reservation
-*
-*  SYNOPSIS
-*     int ar_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem *ep, 
-*     gdi_object_t *object) 
-*
-*  FUNCTION
-*     This function is called from the framework that
-*     add/modify/delete generic gdi objects.
-*     After an object was modified/added successfully it
-*     is necessary to spool the current state to the filesystem.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - GDI context
-*     lList **alpp             - answer_list
-*     lListElem *ep            - element to spool
-*     gdi_object_t *object     - structure from the GDI framework
-*
-*  RESULT
-*     [alpp] - error messages will be added to this list
-*     0 - success
-*     STATUS_EEXIST - an error occurred
-*
-*  NOTES
-*     MT-NOTE: ar_spool() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Gdi callback funktion to spool an advance reservation
+ *
+ * This function is called from the framework that
+ * add/modify/delete generic gdi objects.
+ * After an object was modified/added successfully it
+ * is necessary to spool the current state to the filesystem.
+ *
+ * @param alpp answer_list
+ * @param ep element to spool
+ * @param object structure from the GDI framework
+ *
+ * @return [alpp] - error messages will be added to this list 0 - success STATUS_EEXIST - an error occurred
+ *
+ * @note MT-NOTE: ar_spool() is MT safe
+ */
 int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
    dstring buffer = DSTRING_INIT;
@@ -374,37 +363,26 @@ int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
    DRETURN(dbret ? 0 : 1);
 }
 
-/****** sge_advance_reservation_qmaster/ar_success() ***************************
-*  NAME
-*     ar_success() -- does something after a successfully add or modify request
-*
-*  SYNOPSIS
-*     int ar_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem 
-*     *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) 
-*
-*  FUNCTION
-*     This function is called from the framework that
-*     add/modify/delete generic gdi objects.
-*     After an object was modified/added and spooled successfully 
-*     it is possibly necessary to perform additional tasks.
-*     For example it is necessary to send some events to
-*     other daemon.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - GDI context
-*     lListElem *ep            - new added object
-*     lListElem *old_ep        - old object before modifications or nullptr
-*                                for add requests
-*     gdi_object_t *object     - structure from the GDI framework
-*     lList **ppList           - ???
-*     monitoring_t *monitor    - monitoring structure
-*
-*  RESULT
-*     int - 0
-*
-*  NOTES
-*     MT-NOTE: ar_success() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Does something after a successfully add or modify request
+ *
+ * This function is called from the framework that
+ * add/modify/delete generic gdi objects.
+ * After an object was modified/added and spooled successfully
+ * it is possibly necessary to perform additional tasks.
+ * For example it is necessary to send some events to
+ * other daemon.
+ *
+ * @param ep new added object
+ * @param old_ep old object before modifications or nullptr for add requests
+ * @param object structure from the GDI framework
+ * @param ppList
+ * @param monitor monitoring structure
+ *
+ * @return 0
+ *
+ * @note MT-NOTE: ar_success() is not MT safe
+ */
 int
 ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -448,34 +426,22 @@ ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListE
    DRETURN(0);
 }
 
-/****** sge_advance_reservation_qmaster/ar_del() *******************************
-*  NAME
-*     ar_del() -- removes advance reservation from master list
-*
-*  SYNOPSIS
-*     int ar_del(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, lList 
-*     **ar_list, char *ruser, char *rhost) 
-*
-*  FUNCTION
-*     This function removes a advance reservation from the master list and
-*     performs the necessary cleanup.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - GDI context
-*     lListElem *ep            - element that should be removed (ID_Type)
-*     lList **alpp             - answer list
-*     lList **ar_list          - list from where the element should be removed
-*                                (normally a reference to the master ar list)
-*     char *ruser              - user who invoked this GDI request
-*     char *rhost              - host where the request was invoked
-*
-*  RESULT
-*     int - 0 on success
-*           STATUS_EUNKNOWN on failure
-*
-*  NOTES
-*     MT-NOTE: ar_del() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Removes advance reservation from master list
+ *
+ * This function removes a advance reservation from the master list and
+ * performs the necessary cleanup.
+ *
+ * @param ep element that should be removed (ID_Type)
+ * @param alpp answer list
+ * @param ar_list list from where the element should be removed (normally a reference to the master ar list)
+ * @param ruser user who invoked this GDI request
+ * @param rhost host where the request was invoked
+ *
+ * @return 0 on success STATUS_EUNKNOWN on failure
+ *
+ * @note MT-NOTE: ar_del() is not MT safe
+ */
 int
 ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **master_ar_list, monitoring_t *monitor) {
    lListElem *ar, *nxt;
@@ -685,27 +651,17 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
    DRETURN(0);
 }
 
-/****** sge_advance_reservation_qmaster/sge_get_ar_id() ************************
-*  NAME
-*     sge_get_ar_id() -- returns the next possible unused id
-*
-*  SYNOPSIS
-*     static uint32_t sge_get_ar_id(sge_gdi_ctx_class_t *ctx, monitoring_t
-*     *monitor) 
-*
-*  FUNCTION
-*     returns the next possible unused advance reservation id.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
-*     monitoring_t *monitor    - monitoring structure
-*
-*  RESULT
-*     static uint32_t - ar id
-*
-*  NOTES
-*     MT-NOTE: sge_get_ar_id() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Returns the next possible unused id
+ *
+ * returns the next possible unused advance reservation id.
+ *
+ * @param monitor monitoring structure
+ *
+ * @return ar id
+ *
+ * @note MT-NOTE: sge_get_ar_id() is MT safe
+ */
 static uint32_t
 sge_get_ar_id(monitoring_t *monitor) {
    uint32_t ar_id;
@@ -733,27 +689,18 @@ sge_get_ar_id(monitoring_t *monitor) {
    DRETURN(ar_id);
 }
 
-/****** sge_advance_reservation_qmaster/sge_store_ar_id() **********************
-*  NAME
-*     sge_store_ar_id() -- store ar id
-*
-*  SYNOPSIS
-*     void sge_store_ar_id(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, 
-*     monitoring_t *monitor) 
-*
-*  FUNCTION
-*     At qmaster shutdown it's necessary to store the latest highest ar id to
-*     reinitialize the counter at the next qmaster start. This is done by a event
-*     timer in specific intervall.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - GDI context
-*     te_event_t anEvent       - event that triggered this function
-*     monitoring_t *monitor    - pointer to monitor (not used here)
-*
-*  NOTES
-*     MT-NOTE: sge_store_ar_id() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Store ar id
+ *
+ * At qmaster shutdown it's necessary to store the latest highest ar id to
+ * reinitialize the counter at the next qmaster start. This is done by a event
+ * timer in specific intervall.
+ *
+ * @param anEvent event that triggered this function
+ * @param monitor pointer to monitor (not used here)
+ *
+ * @note MT-NOTE: sge_store_ar_id() is not MT safe
+ */
 void
 sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor) {
    uint32_t ar_id = 0;
@@ -791,19 +738,13 @@ sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
-/****** sge_advance_reservation_qmaster/sge_init_ar_id() ***********************
-*  NAME
-*     sge_init_ar_id() -- init ar id counter
-*
-*  SYNOPSIS
-*     void sge_init_ar_id() 
-*
-*  FUNCTION
-*     Called during startup and sets the advance reservation id counter. 
-*
-*  NOTES
-*     MT-NOTE: sge_init_ar_id() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Init ar id counter
+ *
+ * Called during startup and sets the advance reservation id counter.
+ *
+ * @note MT-NOTE: sge_init_ar_id() is MT safe
+ */
 void
 sge_init_ar_id() {
    FILE *fp = nullptr;
@@ -836,23 +777,16 @@ sge_init_ar_id() {
    DRETURN_VOID;
 }
 
-/****** sge_advance_reservation_qmaster/guess_highest_ar_id() ******************
-*  NAME
-*     guess_highest_ar_id() -- guesses the histest ar id
-*
-*  SYNOPSIS
-*     static uint32_t guess_highest_ar_id()
-*
-*  FUNCTION
-*     Iterates over all granted advance reservations in the cluster and determines
-*     the highest id
-*
-*  RESULT
-*     static uint32_t - determined id
-*
-*  NOTES
-*     MT-NOTE: guess_highest_ar_id() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Guesses the histest ar id
+ *
+ * Iterates over all granted advance reservations in the cluster and determines
+ * the highest id
+ *
+ * @return determined id
+ *
+ * @note MT-NOTE: guess_highest_ar_id() is MT safe
+ */
 static uint32_t
 guess_highest_ar_id() {
    const lListElem *ar;
@@ -880,28 +814,19 @@ guess_highest_ar_id() {
    DRETURN(maxid);
 }
 
-/****** sge_advance_reservation_qmaster/sge_ar_event_handler() *****************
-*  NAME
-*     sge_ar_event_handler() -- advance reservation event handler
-*
-*  SYNOPSIS
-*     void sge_ar_event_handler(sge_gdi_ctx_class_t *ctx, te_event_t anEvent, 
-*     monitoring_t *monitor) 
-*
-*  FUNCTION
-*     Registered function in the times event framework. For every granted a trigger
-*     for the start time of the advance reservation is registered. When the function is
-*     executed at start time it regististers a additional timer for the end time of
-*     the advance reservation.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - GDI context
-*     te_event_t anEvent       - triggered timed event
-*     monitoring_t *monitor    - monitoring structure
-*
-*  NOTES
-*     MT-NOTE: sge_ar_event_handler() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Advance reservation event handler
+ *
+ * Registered function in the times event framework. For every granted a trigger
+ * for the start time of the advance reservation is registered. When the function is
+ * executed at start time it regististers a additional timer for the end time of
+ * the advance reservation.
+ *
+ * @param anEvent triggered timed event
+ * @param monitor monitoring structure
+ *
+ * @note MT-NOTE: sge_ar_event_handler() is MT safe
+ */
 void
 sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -982,29 +907,20 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
-/****** sge_advance_reservation_qmaster/ar_reserve_queues() ********************
-*  NAME
-*     ar_reserve_queues() -- selects the queues for reserving 
-*
-*  SYNOPSIS
-*     static bool ar_reserve_queues(lList **alpp, lListElem *ar) 
-*
-*  FUNCTION
-*     The function executes the scheduler code to select queues matching the
-*     advance reservation request for reserving. The function works on temporary
-*     lists and creates the AR_granted_slots list
-*
-*  INPUTS
-*     lList **alpp  - answer list pointer pointer
-*     lListElem *ar - ar object
-*
-*  RESULT
-*     static bool - true on success, enough resources reservable
-*                   false in verify mode or not enough resources available
-*
-*  NOTES
-*     MT-NOTE: ar_reserve_queues() is not MT safe, needs GLOBAL_LOCK
-*******************************************************************************/
+/**
+ * @brief Selects the queues for reserving
+ *
+ * The function executes the scheduler code to select queues matching the
+ * advance reservation request for reserving. The function works on temporary
+ * lists and creates the AR_granted_slots list
+ *
+ * @param alpp answer list pointer pointer
+ * @param ar ar object
+ *
+ * @return true on success, enough resources reservable false in verify mode or not enough resources available
+ *
+ * @note MT-NOTE: ar_reserve_queues() is not MT safe, needs GLOBAL_LOCK
+ */
 static bool
 ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
@@ -1246,30 +1162,22 @@ ar_reserve_queues(lList **alpp, lListElem *ar, uint64_t gdi_session) {
    DRETURN(ret);
 }
 
-/****** sge_advance_reservation_qmaster/ar_do_reservation() ********************
-*  NAME
-*     ar_do_reservation() -- do the reservation in the selected queue instances
-*
-*  SYNOPSIS
-*     int ar_do_reservation(lListElem *ar, bool incslots) 
-*
-*  FUNCTION
-*     This function does the (un)reserveration in the selected parallel environment
-*     and the selected queue instances
-*
-*  INPUTS
-*     lListElem *ar - ar object (AR_Type)
-*     bool incslots - increase or decrease usage
-*
-*  RESULT
-*     int - 0
-*
-*  NOTES
-*     MT-NOTE: ar_do_reservation() is not MT safe 
-*
-*  SEE ALSO
-*     sge_resource_utilization/rqs_add_job_utilization()
-*******************************************************************************/
+/**
+ * @brief Do the reservation in the selected queue instances
+ *
+ * This function does the (un)reserveration in the selected parallel environment
+ * and the selected queue instances
+ *
+ * @param ar ar object (AR_Type)
+ * @param incslots increase or decrease usage: true to book the slots, false to give them back
+ * @param gdi_session the session the change belongs to
+ *
+ * @return 0
+ *
+ * @note MT-NOTE: ar_do_reservation() is not MT safe
+ *
+ * @see `rqs_add_job_utilization()`
+ */
 int
 ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
@@ -1383,43 +1291,27 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
    DRETURN(0);
 }
 
-/****** libs/sgeobj/ar_list_has_reservation_due_to_ckpt() **********************
-*  NAME
-*     ar_list_has_reservation_due_to_ckpt() -- does ckpt change breake an ar 
-*
-*  SYNOPSIS
-*     bool ar_list_has_reservation_due_to_ckpt(lList *ar_master_list, 
-*                                              lList **answer_list,
-*                                              const char *qinstance_name, 
-*                                              lList *ckpt_string_list) 
-*
-*  FUNCTION
-*     This function tests if a modification of a ckpt list in a qinstance is
-*     allowed according to the advance reservations. 
-*
-*     Input parameters are: the advance reservation master list, the name of the
-*     qinstance which sould be modified and the ST_Type string list of ckpt
-*     names which represents the new setting for the qinstance.
-*
-*     If there is no reservation for this qinstance-ckpt combination or if 
-*     the reservation would be still valid after the modification then 
-*     the function returns 'false". Otherwise 'true' 
-*
-*  INPUTS
-*     lList *ar_master_list      - advance reservation master list
-*     lList **answer_list        - answer list which will contain the reason why a 
-*                                  modification is not valid
-*     const char *qinstance_name - name of a qinstance <cqname@hostname>
-*     lList *ckpt_string_list    - ST_Type list containing ckpt names 
-*
-*  RESULT
-*     boolean
-*        true - modification would breake at least one ar
-*        false - no ar will be broken if the ckpt list is modified 
-*
-*  NOTES
-*     MT-NOTE: ar_get_string_from_event() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Does ckpt change breake an ar
+ *
+ * This function tests if a modification of a ckpt list in a qinstance is
+ * allowed according to the advance reservations.
+ * Input parameters are: the advance reservation master list, the name of the
+ * qinstance which sould be modified and the ST_Type string list of ckpt
+ * names which represents the new setting for the qinstance.
+ * If there is no reservation for this qinstance-ckpt combination or if
+ * the reservation would be still valid after the modification then
+ * the function returns 'false". Otherwise 'true'
+ *
+ * @param ar_master_list advance reservation master list
+ * @param answer_list answer list which will contain the reason why a modification is not valid
+ * @param qinstance_name name of a qinstance <`cqname@hostname`>
+ * @param ckpt_string_list ST_Type list containing ckpt names
+ *
+ * @return modification would breake at least one ar false - no ar will be broken if the ckpt list is modified
+ *
+ * @note MT-NOTE: ar_get_string_from_event() is MT safe
+ */
 bool
 ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_list,
                                     const char *qinstance_name, lList *ckpt_string_list) {
@@ -1441,43 +1333,27 @@ ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_
    DRETURN(false);
 }
 
-/****** libs/sgeobj/ar_list_has_reservation_due_to_pe() **********************
-*  NAME
-*     ar_list_has_reservation_due_to_pe() -- does pe change breake an ar 
-*
-*  SYNOPSIS
-*     bool ar_list_has_reservation_due_to_pe(lList *ar_master_list, 
-*                                            lList **answer_list,
-*                                            const char *qinstance_name, 
-*                                            lList *pe_string_list) 
-*
-*  FUNCTION
-*     This function tests if a modification of a pe list in a qinstance is
-*     allowed according to the advance reservations. 
-*
-*     Input parameters are: the advance reservation master list, the name of the
-*     qinstance which should be modified and the ST_Type string list of pe 
-*     names which represents the new setting for the qinstance.
-*
-*     If there is no reservation for this qinstance-ckpt combination or if 
-*     the reservation would be still valid after the modification then 
-*     the function returns 'false". Otherwise 'true' 
-*
-*  INPUTS
-*     lList *ar_master_list      - advance reservation master list
-*     lList **answer_list        - answer list which will contain the reason why a 
-*                                  modification is not valid
-*     const char *qinstance_name - name of a qinstance <cqname@hostname>
-*     lList *pe_string_list    - ST_Type list containing pe names 
-*
-*  RESULT
-*     boolean
-*        true - modification would breake at least one ar
-*        false - no ar will be broken if the ckpt list is modified 
-*
-*  NOTES
-*     MT-NOTE: ar_get_string_from_event() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Does pe change breake an ar
+ *
+ * This function tests if a modification of a pe list in a qinstance is
+ * allowed according to the advance reservations.
+ * Input parameters are: the advance reservation master list, the name of the
+ * qinstance which should be modified and the ST_Type string list of pe
+ * names which represents the new setting for the qinstance.
+ * If there is no reservation for this qinstance-ckpt combination or if
+ * the reservation would be still valid after the modification then
+ * the function returns 'false". Otherwise 'true'
+ *
+ * @param ar_master_list advance reservation master list
+ * @param answer_list answer list which will contain the reason why a modification is not valid
+ * @param qinstance_name name of a qinstance <`cqname@hostname`>
+ * @param pe_string_list ST_Type list containing pe names
+ *
+ * @return modification would breake at least one ar false - no ar will be broken if the ckpt list is modified
+ *
+ * @note MT-NOTE: ar_get_string_from_event() is MT safe
+ */
 bool
 ar_list_has_reservation_due_to_pe(const lList *ar_master_list, lList **answer_list, const char *qinstance_name,
                                   lList *pe_string_list) {
@@ -1499,44 +1375,28 @@ ar_list_has_reservation_due_to_pe(const lList *ar_master_list, lList **answer_li
    DRETURN(false);
 }
 
-/****** sgeobj/ar_list_has_reservation_for_pe_with_slots() ********************
-*  NAME
-*     ar_list_has_reservation_for_pe_with_slots() -- Does PE change violate AR 
-*
-*  SYNOPSIS
-*     bool 
-*     ar_list_has_reservation_for_pe_with_slots(lList *ar_master_list, 
-*                                               lList **answer_list, 
-*                                               const char *pe_name, 
-*                                               uint32_t new_slots)
-*
-*  FUNCTION
-*     This function tests if a modification of slots entry in a pe is
-*     allowed according to the advance reservations. 
-*
-*     Input parameters are: the advance reservation master list, the name of the
-*     pe which should be modified and the new slots value which should
-*     be set in the pe which might vialote the advance reservations in
-*     the system
-*
-*     If there is no reservation for this pe or if the new slots setting
-*     does not violate the advance reservations in the system then this
-*     function returns 'false'. Otherwise 'true'
-*
-*  INPUTS
-*     lList *ar_master_list - master advance reservation list 
-*     lList **answer_list   - answer list 
-*     const char *pe_name   - pe name 
-*     uint32_t new_slots    - new slots setting for pe with 'pe_name'
-*
-*  RESULT
-*     bool 
-*        true - modification would break the ar's currently known
-*        false - modification is valid
-*
-*  NOTES
-*     MT-NOTE: ar_list_has_reservation_for_pe_with_slots() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Does PE change violate AR
+ *
+ * This function tests if a modification of slots entry in a pe is
+ * allowed according to the advance reservations.
+ * Input parameters are: the advance reservation master list, the name of the
+ * pe which should be modified and the new slots value which should
+ * be set in the pe which might vialote the advance reservations in
+ * the system
+ * If there is no reservation for this pe or if the new slots setting
+ * does not violate the advance reservations in the system then this
+ * function returns 'false'. Otherwise 'true'
+ *
+ * @param ar_master_list master advance reservation list
+ * @param answer_list answer list
+ * @param pe_name pe name
+ * @param new_slots new slots setting for pe with 'pe_name'
+ *
+ * @return modification would break the ar's currently known false - modification is valid
+ *
+ * @note MT-NOTE: ar_list_has_reservation_for_pe_with_slots() is MT safe
+ */
 bool
 ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list, lList **answer_list, const char *pe_name,
                                           uint32_t new_slots) {
@@ -1668,19 +1528,9 @@ ar_get_request_or_default(const lListElem *ar, const lListElem *cr, const char *
    return ret;
 }
 
-/****** sge_advance_reservation_qmaster/ar_initialize_resource_booking() *******
-*  \brief Initialize reserved queue structure.
-*
-*  \details
-*  The function creates the resource booking lists (AR_reserved_queues and AR_reserved_hosts)
-*  that store the necessary data to debit jobs in an AR. The elements of the lists are
-*  reduced elements of QU_Type and EH_Type.
-*
-*  \param[in] ar  Advance reservation that should be initialized.
-*
-*  \note
-*  MT-NOTE: ar_initialize_resource_booking() is not MT safe.
-*******************************************************************************/
+/**
+ * @brief TODO document this
+ */
 void
 ar_initialize_resource_booking(lListElem *ar) {
    DENTER(TOP_LAYER);
@@ -1872,26 +1722,17 @@ ar_initialize_resource_booking(lListElem *ar) {
    DRETURN_VOID;
 }
 
-/****** sge_advance_reservation_qmaster/sge_ar_remove_all_jobs() ***************
-*  NAME
-*     sge_ar_remove_all_jobs() -- removes all jobs of an AR
-*
-*  SYNOPSIS
-*     void sge_ar_remove_all_jobs(sge_gdi_ctx_class_t *ctx, uint32_t
-*     ar_id, monitoring_t *monitor) 
-*
-*  FUNCTION
-*     The function deletes all jobs (and tasks) requested the advance
-*     reservation
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context handler
-*     uint32_t ar_id           - advance reservation id
-*     monitoring_t *monitor    - monitoring structure
-*
-*  NOTES
-*     MT-NOTE: sge_ar_remove_all_jobs() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Removes all jobs of an AR
+ *
+ * The function deletes all jobs (and tasks) requested the advance
+ * reservation
+ *
+ * @param ar_id advance reservation id
+ * @param monitor monitoring structure
+ *
+ * @note MT-NOTE: sge_ar_remove_all_jobs() is not MT safe
+ */
 bool
 sge_ar_remove_all_jobs(uint32_t ar_id, int forced, monitoring_t *monitor, uint64_t gdi_session) {
    lListElem *nextjep, *jep;
@@ -1962,32 +1803,21 @@ sge_ar_remove_all_jobs(uint32_t ar_id, int forced, monitoring_t *monitor, uint64
    DRETURN(ret);
 }
 
-/****** sge_advance_reservation_qmaster/sge_ar_list_conflicts_with_calendar() ******
-*  NAME
-*     sge_ar_list_conflicts_with_calendar() -- checks if the given calendar
-*                                              conflicts with AR open time frame
-*
-*  SYNOPSIS
-*     bool sge_ar_list_conflicts_with_calendar(lList **answer_list, const char 
-*     *qinstance_name, lListElem *cal_ep, lList *master_ar_list) 
-*
-*  FUNCTION
-*     Iteraters over all existing Advance Reservations reserved queues and verifies
-*     that the new calender does not invalidate the AR if the queue was reserved
-*
-*  INPUTS
-*     lList **answer_list        - answer list
-*     const char *qinstance_name - qinstance name the calendar was configured
-*     lListElem *cal_ep          - the calendar object (CAL_Type)
-*     lList *master_ar_list      - master AR list
-*
-*  RESULT
-*     bool - true if conflicts
-*            false if OK
-*
-*  NOTES
-*     MT-NOTE: sge_ar_list_conflicts_with_calendar() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Checks if the given calendar
+ *
+ * Iteraters over all existing Advance Reservations reserved queues and verifies
+ * that the new calender does not invalidate the AR if the queue was reserved
+ *
+ * @param answer_list answer list
+ * @param qinstance_name qinstance name the calendar was configured
+ * @param cal_ep the calendar object (CAL_Type)
+ * @param master_ar_list master AR list
+ *
+ * @return true if conflicts false if OK
+ *
+ * @note MT-NOTE: sge_ar_list_conflicts_with_calendar() is MT safe
+ */
 bool
 sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_name, const lListElem *cal_ep,
                                     const lList *master_ar_list) {
@@ -2010,29 +1840,19 @@ sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_n
    DRETURN(false);
 }
 
-/****** sge_advance_reservation_qmaster/sge_ar_state_set_running() *************
-*  NAME
-*     sge_ar_state_set_running() -- set ar in running state
-*
-*  SYNOPSIS
-*     void sge_ar_state_set_running(lListElem *ar) 
-*
-*  FUNCTION
-*     Sets the AR state to running. A running state can result in error state
-*     if one of the reserved queues is unable to run a job. This is covered by the
-*     function
-*
-*  INPUTS
-*     lListElem *ar - advance reservation object (AR_Type)
-*
-*  NOTES
-*     MT-NOTE: sge_ar_state_set_running() is MT safe 
-*
-*  SEE ALSO
-*     sge_advance_reservation_qmaster/sge_ar_state_set_exited()
-*     sge_advance_reservation_qmaster/sge_ar_state_set_deleted()
-*     sge_advance_reservation_qmaster/sge_ar_state_set_waiting()
-*******************************************************************************/
+/**
+ * @brief Set ar in running state
+ *
+ * Sets the AR state to running. A running state can result in error state
+ * if one of the reserved queues is unable to run a job. This is covered by the
+ * function
+ *
+ * @param ar advance reservation object (AR_Type)
+ *
+ * @note MT-NOTE: sge_ar_state_set_running() is MT safe
+ *
+ * @see #sge_ar_state_set_exited, #sge_ar_state_set_deleted, #sge_ar_state_set_waiting
+ */
 void
 sge_ar_state_set_running(lListElem *ar) {
    uint32_t old_state = lGetUlong(ar, AR_state);
@@ -2061,29 +1881,19 @@ sge_ar_state_set_running(lListElem *ar) {
    }
 }
 
-/****** sge_advance_reservation_qmaster/sge_ar_state_set_waiting() *************
-*  NAME
-*     sge_ar_state_set_waiting() -- set ar in running state
-*
-*  SYNOPSIS
-*     void sge_ar_state_set_waiting(lListElem *ar) 
-*
-*  FUNCTION
-*     Sets the AR state to waiting. A waiting state can result in warning state
-*     if one of the reserved queues is unable to run a job. This is covered by the
-*     function
-*
-*  INPUTS
-*     lListElem *ar - advance reservation object (AR_Type)
-*
-*  NOTES
-*     MT-NOTE: sge_ar_state_set_waiting() is MT safe 
-*
-*  SEE ALSO
-*     sge_advance_reservation_qmaster/sge_ar_state_set_exited()
-*     sge_advance_reservation_qmaster/sge_ar_state_set_deleted()
-*     sge_advance_reservation_qmaster/sge_ar_state_set_running()
-*******************************************************************************/
+/**
+ * @brief Set ar in running state
+ *
+ * Sets the AR state to waiting. A waiting state can result in warning state
+ * if one of the reserved queues is unable to run a job. This is covered by the
+ * function
+ *
+ * @param ar advance reservation object (AR_Type)
+ *
+ * @note MT-NOTE: sge_ar_state_set_waiting() is MT safe
+ *
+ * @see #sge_ar_state_set_exited, #sge_ar_state_set_deleted, #sge_ar_state_set_running
+ */
 void
 sge_ar_state_set_waiting(lListElem *ar) {
    uint32_t old_state = lGetUlong(ar, AR_state);
@@ -2105,82 +1915,52 @@ sge_ar_state_set_waiting(lListElem *ar) {
    }
 }
 
-/****** sge_advance_reservation_qmaster/sge_ar_state_set_deleted() *************
-*  NAME
-*     sge_ar_state_set_deleted() -- sets AR into deleted state
-*
-*  SYNOPSIS
-*     void sge_ar_state_set_deleted(lListElem *ar) 
-*
-*  FUNCTION
-*     Sets the AR state to deleted
-*
-*  INPUTS
-*     lListElem *ar - advance reservation object (AR_Type)
-*
-*  NOTES
-*     MT-NOTE: sge_ar_state_set_deleted() is MT safe 
-*
-*  SEE ALSO
-*     sge_advance_reservation_qmaster/sge_ar_state_set_exited()
-*     sge_advance_reservation_qmaster/sge_ar_state_set_waiting()
-*     sge_advance_reservation_qmaster/sge_ar_state_set_running()
-*******************************************************************************/
+/**
+ * @brief Sets AR into deleted state
+ *
+ * Sets the AR state to deleted
+ *
+ * @param ar advance reservation object (AR_Type)
+ *
+ * @note MT-NOTE: sge_ar_state_set_deleted() is MT safe
+ *
+ * @see #sge_ar_state_set_exited, #sge_ar_state_set_waiting, #sge_ar_state_set_running
+ */
 void
 sge_ar_state_set_deleted(lListElem *ar) {
    lSetUlong(ar, AR_state, AR_DELETED);
 }
 
-/****** sge_advance_reservation_qmaster/sge_ar_state_set_exited() **************
-*  NAME
-*     sge_ar_state_set_exited() -- sets AR into exited state
-*
-*  SYNOPSIS
-*     void sge_ar_state_set_exited(lListElem *ar) 
-*
-*  FUNCTION
-*     Sets the AR state to deleted
-*
-*  INPUTS
-*     lListElem *ar - advance reservation object (AR_Type)
-*
-*  NOTES
-*     MT-NOTE: sge_ar_state_set_exited() is MT safe 
-*
-*  SEE ALSO
-*     sge_advance_reservation_qmaster/sge_ar_state_set_deleted()
-*     sge_advance_reservation_qmaster/sge_ar_state_set_waiting()
-*     sge_advance_reservation_qmaster/sge_ar_state_set_running()
-*******************************************************************************/
+/**
+ * @brief Sets AR into exited state
+ *
+ * Sets the AR state to deleted
+ *
+ * @param ar advance reservation object (AR_Type)
+ *
+ * @note MT-NOTE: sge_ar_state_set_exited() is MT safe
+ *
+ * @see #sge_ar_state_set_deleted, #sge_ar_state_set_waiting, #sge_ar_state_set_running
+ */
 void
 sge_ar_state_set_exited(lListElem *ar) {
    lSetUlong(ar, AR_state, AR_EXITED);
 }
 
-/****** sge_advance_reservation_qmaster/sge_ar_list_set_error_state() **********
-*  NAME
-*     sge_ar_list_set_error_state() -- Set/unset all ARs reserved in a specific queue
-*                                      into error state
-*
-*  SYNOPSIS
-*     void sge_ar_list_set_error_state(lList *ar_list, const char *qname, 
-*     uint32_t error_type, bool send_events, bool set_error)
-*
-*  FUNCTION
-*     The function sets/unsets all ARs that reserved in a queue in the error state and
-*     generates the error messages for qrstat -explain
-*     
-*
-*  INPUTS
-*     lList *ar_list      - master advance reservation list
-*     const char *qname   - queue name
-*     uint32_t error_type - error type
-*     bool send_events    - send events?
-*     bool set_error      - set or unset
-*
-*  NOTES
-*     MT-NOTE: sge_ar_list_set_error_state() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Set/unset all ARs reserved in a specific queue
+ *
+ * The function sets/unsets all ARs that reserved in a queue in the error state and
+ * generates the error messages for qrstat -explain
+ *
+ * @param ar_list master advance reservation list
+ * @param qname queue name
+ * @param error_type error type
+ * @param send_events send events?
+ * @param set_error set or unset
+ *
+ * @note MT-NOTE: sge_ar_list_set_error_state() is MT safe
+ */
 void
 sge_ar_list_set_error_state(lList *ar_list, const char *qname, uint32_t error_type, bool set_error, uint64_t gdi_session) {
    lListElem *ar;
@@ -2225,23 +2005,16 @@ sge_ar_list_set_error_state(lList *ar_list, const char *qname, uint32_t error_ty
    DRETURN_VOID;
 }
 
-/****** sge_advance_reservation_qmaster/sge_ar_send_mail() *********************
-*  NAME
-*     sge_ar_send_mail() -- send mail for advance reservation state change
-*
-*  SYNOPSIS
-*     static void sge_ar_send_mail(lListElem *ar, int type) 
-*
-*  FUNCTION
-*     Create and send mail for a specific event
-*
-*  INPUTS
-*     lListElem *ar - advance reservation object (AR_Type)
-*     int type      - event type
-*
-*  NOTES
-*     MT-NOTE: sge_ar_send_mail() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Send mail for advance reservation state change
+ *
+ * Create and send mail for a specific event
+ *
+ * @param ar advance reservation object (AR_Type)
+ * @param type event type
+ *
+ * @note MT-NOTE: sge_ar_send_mail() is MT safe
+ */
 static void
 sge_ar_send_mail(lListElem *ar, int type) {
    dstring buffer = DSTRING_INIT;
@@ -2328,37 +2101,22 @@ sge_ar_send_mail(lListElem *ar, int type) {
    DRETURN_VOID;
 }
 
-/****** sge_advance_reservation_qmaster/ar_list_has_reservation_due_to_qinstance_complex_attr() ******
-*  NAME
-*     ar_list_has_reservation_due_to_qinstance_complex_attr() -- check
-*        if change of complex values is valid concerning ar 
-*
-*  SYNOPSIS
-*     bool ar_list_has_reservation_due_to_qinstance_complex_attr(
-*        lList *ar_master_list, 
-*        lList **answer_list, 
-*        lListElem *qinstance, 
-*        lList *ce_master_list) 
-*
-*  FUNCTION
-*     Check if the modification of the complex_values of a qinstance
-*     whould break existing advance reservations 
-*
-*  INPUTS
-*     lList *ar_master_list - master AR list 
-*     lList **answer_list   - answer list 
-*     lListElem *qinstance  - qinstance 
-*     lList *ce_master_list - master centry list 
-*
-*  RESULT
-*     bool 
-*        true - modification is not allowed
-*        false - modification is allowed
-*
-*  NOTES
-*     MT-NOTE: ar_list_has_reservation_due_to_qinstance_complex_attr() is  
-*     MT safe 
-*******************************************************************************/
+/**
+ * @brief Check
+ *
+ * Check if the modification of the complex_values of a qinstance
+ * whould break existing advance reservations
+ *
+ * @param ar_master_list master AR list
+ * @param answer_list answer list
+ * @param qinstance qinstance
+ * @param ce_master_list master centry list
+ *
+ * @return modification is not allowed false - modification is allowed
+ *
+ * @note MT-NOTE: ar_list_has_reservation_due_to_qinstance_complex_attr() is
+ *       MT safe
+ */
 bool
 ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_list, lList **answer_list,
                                                       lListElem *qinstance, const lList *ce_master_list) {
@@ -2441,37 +2199,22 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
    DRETURN(false);
 }
 
-/****** sge_advance_reservation_qmaster/ar_list_has_reservation_due_to_host_complex_attr() ******
-*  NAME
-*     ar_list_has_reservation_due_to_host_complex_attr() -- check
-*        if change of complex values is valid concerning ar 
-*
-*  SYNOPSIS
-*     bool ar_list_has_reservation_due_to_host_complex_attr(
-*        lList  *ar_master_list, 
-*        lList **answer_list, 
-*        lListElem *host, 
-*        lList *ce_master_list) 
-*
-*  FUNCTION
-*      Check if the modification of the complex_values of a host
-*      whould break existing advance reservations.
-*
-*  INPUTS
-*     lList *ar_master_list - master AR list 
-*     lList **answer_list   - AN_Type list 
-*     lListElem *host       - host 
-*     lList *ce_master_list - master centry list 
-*
-*  RESULT
-*     bool 
-*        true - modification is not allowed
-*        false - modification is allowed
-*
-*  NOTES
-*     MT-NOTE: ar_list_has_reservation_due_to_host_complex_attr() is MT 
-*     safe 
-*******************************************************************************/
+/**
+ * @brief Check
+ *
+ *  Check if the modification of the complex_values of a host
+ *  whould break existing advance reservations.
+ *
+ * @param ar_master_list master AR list
+ * @param answer_list AN_Type list
+ * @param host host
+ * @param ce_master_list master centry list
+ *
+ * @return modification is not allowed false - modification is allowed
+ *
+ * @note MT-NOTE: ar_list_has_reservation_due_to_host_complex_attr() is MT
+ *       safe
+ */
 bool
 ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lList **answer_list,
                                                  lListElem *host, const lList *ce_master_list) {

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include <csignal>
 #include <cstring>
 #include <cerrno>
@@ -61,34 +65,20 @@
 #include "msg_daemons_common.h"
 #include "ocs_DebugParam.h"
 
-/****** qmaster/sge_qmaster_main/sge_gdi_kill_master() *************************
-*  NAME
-*     ocs::gdi::Client::sge_gdi_kill_master() -- Shutdown qmaster via GDI
-*
-*  SYNOPSIS
-*     void ocs::gdi::Client::sge_gdi_kill_master(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
-*
-*  FUNCTION
-*     Shutdown qmaster by means of a GDI request. This operation is only
-*     permitted for a user of type 'manager'.
-*
-*  INPUTS
-*     ocs::gdi::Packet *packet - request packet
-*     ocs::gdi::Task *task     - request task
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: ocs::gdi::Client::sge_gdi_kill_master() is not MT safe.
-*     MT-NOTE:
-*     MT-NOTE: This is acceptable for now, because this function is currently
-*     MT-NOTE: only invoked from the message thread.
-*
-*     TODO-AD: make this function thread safe. 'manop_is_manager()' is NOT MT
-*     TODO-AD  safe.
-*
-*******************************************************************************/
+/**
+ * @brief Shutdown qmaster via GDI
+ *
+ * Shutdown qmaster by means of a GDI request. This operation is only
+ * permitted for a user of type 'manager'.
+ *
+ * @note MT-NOTE: ocs::gdi::Client::sge_gdi_kill_master() is not MT safe.
+ *       MT-NOTE:
+ *       MT-NOTE: This is acceptable for now, because this function is currently
+ *       MT-NOTE: only invoked from the message thread.
+ *
+ *       TODO-AD: make this function thread safe. 'manop_is_manager()' is NOT MT
+ *       TODO-AD  safe.
+ */
 void
 sge_gdi_kill_master(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    DENTER(GDI_LAYER);
@@ -117,51 +107,34 @@ sge_gdi_kill_master(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    DRETURN_VOID;
 } /* ocs::gdi::Client::sge_gdi_kill_master() */
 
-/****** qmaster/sge_qmaster_main/sge_daemonize_qmaster() ***************************
-*  NAME
-*     sge_daemonize_qmaster() -- Turn qmaster into a daemon. 
-*
-*  SYNOPSIS
-*     static void sge_daemonize_qmaster() 
-*
-*  FUNCTION
-*     If the environment variable 'SGE_ND' is set, the functions does return
-*     immediately.
-*
-*     First, we call 'fork()'. If the process was started as a shell command in
-*     the foreground, when the parent terminates, the shell thinks the command
-*     is done. This automatically runs the child process in the background.
-*     Also, the child inherits the process group ID from the parent but gets
-*     its own process ID. This guarantees that the child is not a process group
-*     leader. 
-*
-*     We call 'setsid()' to create a new session. The process becomes the
-*     session leader of the new session, becomes the process group leader of a
-*     new process group, and has no controlling terminal.
-*
-*     By calling 'fork()' a second time, we guarantee the the daemon (second
-*     child) is no longer a session leader, so it cannot acquire a controlling
-*     terminal. We must ignore 'SIGHUP' because when the session leader
-*     terminates (the first child), all processes in the session (our second
-*     child) receive the 'SIGHUP' signal.
-*
-*     We close any open descriptors that are inherited from the process that
-*     executed 'sge_qmaster', normally a shell. We redirect 'stdin', 'stdout'
-*     and 'stderr' to '/dev/null'. The reason for opening these descriptors
-*     is so that any library function called by 'sge_qmaster' that assumes it
-*     can read from standard input or write to either standard ouput or
-*     standard error will not fail.
-*
-*  INPUTS
-*     void - none 
-*
-*  RESULT
-*     void - none 
-*
-*  NOTES
-*     MT-NOTE: sge_daemonize_qmaster() is not MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Turn qmaster into a daemon
+ *
+ * If the environment variable 'SGE_ND' is set, the functions does return
+ * immediately.
+ * First, we call 'fork()'. If the process was started as a shell command in
+ * the foreground, when the parent terminates, the shell thinks the command
+ * is done. This automatically runs the child process in the background.
+ * Also, the child inherits the process group ID from the parent but gets
+ * its own process ID. This guarantees that the child is not a process group
+ * leader.
+ * We call 'setsid()' to create a new session. The process becomes the
+ * session leader of the new session, becomes the process group leader of a
+ * new process group, and has no controlling terminal.
+ * By calling 'fork()' a second time, we guarantee the the daemon (second
+ * child) is no longer a session leader, so it cannot acquire a controlling
+ * terminal. We must ignore 'SIGHUP' because when the session leader
+ * terminates (the first child), all processes in the session (our second
+ * child) receive the 'SIGHUP' signal.
+ * We close any open descriptors that are inherited from the process that
+ * executed 'sge_qmaster', normally a shell. We redirect 'stdin', 'stdout'
+ * and 'stderr' to '/dev/null'. The reason for opening these descriptors
+ * is so that any library function called by 'sge_qmaster' that assumes it
+ * can read from standard input or write to either standard ouput or
+ * standard error will not fail.
+ *
+ * @note MT-NOTE: sge_daemonize_qmaster() is not MT safe
+ */
 bool
 sge_daemonize_qmaster() {
    pid_t pid = -1;
@@ -203,29 +176,15 @@ sge_daemonize_qmaster() {
    DRETURN(true);
 } /* sge_daemonize_qmaster() */
 
-/****** qmaster/sge_qmaster_main/sge_become_admin_user() ***************************
-*  NAME
-*     sge_become_admin_user() -- Become admin user. 
-*
-*  SYNOPSIS
-*     static void sge_become_admin_user() 
-*
-*  FUNCTION
-*     Get admin user from bootstrap configuration. Set admin user and change
-*     the effective UID/GID to the admin user UID/GID. 
-*
-*     Note: The effective UID does determine file access permissions.
-*
-*  INPUTS
-*     void - none
-*
-*  RESULT
-*     void - none 
-*
-*  NOTES
-*     MT-NOTE: sge_become_admin_user() is not MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Become admin user
+ *
+ * Get admin user from bootstrap configuration. Set admin user and change
+ * the effective UID/GID to the admin user UID/GID.
+ * Note: The effective UID does determine file access permissions.
+ *
+ * @note MT-NOTE: sge_become_admin_user() is not MT safe
+ */
 void
 sge_become_admin_user(const char *admin_user) {
    char str[MAX_STRING_SIZE];
@@ -245,31 +204,17 @@ sge_become_admin_user(const char *admin_user) {
    DRETURN_VOID;
 } /* sge_become_admin_user() */
 
-/****** qmaster/sge_qmaster_main/sge_exit_func() **********************************
-*  NAME
-*     sge_exit_func() -- qmaster exit function
-*
-*  SYNOPSIS
-*     static void sge_exit_func(int anExitValue) 
-*
-*  FUNCTION
-*     qmaster exit function. This function should be used BEFORE qmaster
-*     did change its working directory to be the spool directory. This
-*     exit function does NOT lock the qmaster lock file.
-*
-*  INPUTS
-*     int anExitValue - exit value 
-*
-*  RESULT
-*     void - none 
-*
-*  EXAMPLE
-*     ??? 
-*
-*  NOTES
-*     MT-NOTE: sge_exit_func() is MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Qmaster exit function
+ *
+ * qmaster exit function. This function should be used BEFORE qmaster
+ * did change its working directory to be the spool directory. This
+ * exit function does NOT lock the qmaster lock file.
+ *
+ * @param anExitValue exit value
+ *
+ * @note MT-NOTE: sge_exit_func() is MT safe.
+ */
 void
 sge_exit_func(int anExitValue) {
    DENTER(TOP_LAYER);

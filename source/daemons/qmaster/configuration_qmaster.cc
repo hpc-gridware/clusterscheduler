@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief TODO describe this file
+ */
 #include <cstdio>
 #include <cerrno>
 #include <cstring>
@@ -277,33 +281,22 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
 }
 
 
-/****** qmaster/sge_mod_configuration() ****************************************
-*  NAME
-*     sge_mod_configuration() -- modify cluster configuration
-*
-*  SYNOPSIS
-*     int sge_mod_configuration(lListElem *aConf, lList **anAnswer, char *aUser,
-*                               char *aHost)
-*
-*  FUNCTION
-*     Modify cluster configuration. 'confp' is a pointer to a 'CONF_Type' list
-*     element and does contain the modified configuration entry. Adding a new
-*     configuration entry is also viewed as a modification.
-*
-*  INPUTS
-*     lListElem *aConf  - CONF_Type element containing the modified conf
-*     lList **anAnswer  - answer list
-*     char *aUser       - target user
-*     char *aHost       - target host
-*
-*  RESULT
-*     int - 0 success
-*          -1 error
-*
-*  NOTES
-*     MT-NOTE: sge_mod_configuration() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Modify cluster configuration
+ *
+ * Modify cluster configuration. 'confp' is a pointer to a 'CONF_Type' list
+ * element and does contain the modified configuration entry. Adding a new
+ * configuration entry is also viewed as a modification.
+ *
+ * @param aConf CONF_Type element containing the modified conf
+ * @param anAnswer answer list
+ * @param aUser target user
+ * @param aHost target host
+ *
+ * @return 0 success -1 error
+ *
+ * @note MT-NOTE: sge_mod_configuration() is MT safe
+ */
 int
 sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, const char *aHost, uint64_t gdi_session) {
    DENTER(TOP_LAYER);

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include <csignal>
 #include <pthread.h>
 #include <cstring>
@@ -98,33 +102,22 @@ sge_signaler_terminate() {
 }
 
 
-/****** qmaster/sge_qmaster_main/signal_thread() *******************************
-*  NAME
-*     signal_thread() -- signal thread function
-*
-*  SYNOPSIS
-*     void* signal_thread(void* anArg) 
-*
-*  FUNCTION
-*     Signal handling thread function. Establish recognized signal set. Enter
-*     signal wait loop. Wait for signal. Handle signal.
-*
-*     If signal is 'SIGINT' or 'SIGTERM', kick-off shutdown and invalidate
-*     signal thread.
-*
-*     NOTE: The signal thread will terminate on return of this function.
-*
-*  INPUTS
-*     void* anArg - not used 
-*
-*  RESULT
-*     void* - none 
-*
-*  NOTES
-*     MT-NOTE: signal_thread() is a thread function. Do NOT use this function
-*     MT-NOTE: in any other way!
-*
-*******************************************************************************/
+/**
+ * @brief Signal thread function
+ *
+ * Signal handling thread function. Establish recognized signal set. Enter
+ * signal wait loop. Wait for signal. Handle signal.
+ * If signal is 'SIGINT' or 'SIGTERM', kick-off shutdown and invalidate
+ * signal thread.
+ * NOTE: The signal thread will terminate on return of this function.
+ *
+ * @param anArg not used
+ *
+ * @return none
+ *
+ * @note MT-NOTE: signal_thread() is a thread function. Do NOT use this function
+ *       MT-NOTE: in any other way!
+ */
 void *
 sge_signaler_main(void *arg) {
    auto *thread_config = (cl_thread_settings_t *) arg;

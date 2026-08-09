@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include <cstdio>
 #include <filesystem>
 #include <unistd.h>
@@ -72,7 +76,7 @@ namespace ocs {
    std::string ReportingFileWriter::config_mutex_name = "reporting_config_mutex";
 
    /**
-    * initialize all configured writers and make them read their configuration from the
+    * @brief initialize all configured writers and make them read their configuration from the
     * reporting params (@see ReportingFileWriter::update_config())
     */
    void ReportingFileWriter::initialize() {
@@ -103,6 +107,7 @@ namespace ocs {
    /**
     * shutdown all writers
     */
+/** @brief Flush and close every writer */
    void ReportingFileWriter::shutdown() {
       sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (int i = 0; i < NUM_WRITERS; i++) {
@@ -120,6 +125,9 @@ namespace ocs {
     *
     * @return true on success, else false
     */
+/** @brief Flush every writer now
+ * @return true when all of them succeeded
+ */
    bool ReportingFileWriter::flush_all() {
       bool ret = true;
 
@@ -166,6 +174,7 @@ namespace ocs {
     * - removes the no longer necessary writers
     * - makes all configured writers read their configuration from the reporting_params
     */
+/** @brief Re-read the reporting configuration into every writer */
    void ReportingFileWriter::update_config_all() {
       bool config_changed = false;
       const char *rp_str = mconf_get_reporting_params();
@@ -302,6 +311,11 @@ namespace ocs {
    }
 
    // the following static methods are wrappers calling the object methods for every writer
+   /** @brief Offer a job that has just been submitted to every writer
+    * @param answer_list receives error messages
+    * @param job the job (`JB_Type`)
+    * @return true on success
+    */
    bool ReportingFileWriter::create_new_job_records(lList **answer_list, const lListElem *job) {
       bool ret = true;
 
@@ -316,6 +330,19 @@ namespace ocs {
       return ret;
    }
 
+   /** @brief Offer a change in a job's life: submitted, started, deleted, finished
+    * @param answer_list receives error messages
+    * @param event_time when it happened
+    * @param type which change it was
+    * @param user who caused it
+    * @param host the host it happened on
+    * @param job_report the job report the execution host sent
+    * @param job the job (`JB_Type`)
+    * @param ja_task the array task
+    * @param pe_task the PE task
+    * @param message a description of what happened
+    * @return true on success
+    */
    bool ReportingFileWriter::create_job_logs(lList **answer_list, uint64_t event_time, const job_log_t type,
                                              const char *user, const char *host, const lListElem *job_report,
                                              const lListElem *job, const lListElem *ja_task, const lListElem *pe_task,
@@ -335,6 +362,14 @@ namespace ocs {
       return ret;
    }
 
+   /** @brief Offer a finished job, or an intermediate record for one still running to every writer
+    * @param answer_list receives error messages
+    * @param job_report the job report the execution host sent
+    * @param job the job (`JB_Type`)
+    * @param ja_task the array task
+    * @param intermediate whether this is an interim record for a job that is still running
+    * @return true on success
+    */
    bool ReportingFileWriter::create_acct_records(lList **answer_list, lListElem *job_report, lListElem *job,
                                                  lListElem *ja_task, bool intermediate) {
       bool ret = true;
@@ -364,6 +399,15 @@ namespace ocs {
     * @see create_online_usage_record()
     * @see is_online_usage_required()
     */
+   /** @brief Offer the usage of a job that is still running to every writer
+    * @param answer_list receives error messages
+    * @param job_report the job report the execution host sent
+    * @param job the job (`JB_Type`)
+    * @param ja_task the array task
+    * @param pe_task the PE task
+    * @param aggregate_pe_tasks whether the PE tasks are summed rather than reported individually
+    * @return true on success
+    */
    bool ReportingFileWriter::create_online_usage_records(lList **answer_list, lListElem *job_report, lListElem *job,
                                                          lListElem *ja_task, lListElem *pe_task, bool aggregate_pe_tasks) {
       bool ret = true;
@@ -387,6 +431,9 @@ namespace ocs {
     *
     * @see create_online_usage_records()
     */
+   /** @brief Does the configuration ask for usage of running jobs?
+    * @return true when online usage has to be collected
+    */
    bool ReportingFileWriter::is_online_usage_required() {
       bool required;
 
@@ -397,6 +444,12 @@ namespace ocs {
       return required;
    }
 
+   /** @brief Offer an execution host and its load values to every writer
+    * @param answer_list receives error messages
+    * @param host the host it happened on
+    * @param report_time the time to stamp the record with
+    * @return true on success
+    */
    bool ReportingFileWriter::create_host_records(lList **answer_list, const lListElem *host, uint64_t report_time) {
       bool ret = true;
 
@@ -411,6 +464,13 @@ namespace ocs {
       return ret;
    }
 
+   /** @brief Offer the consumables a job took from a host to every writer
+    * @param answer_list receives error messages
+    * @param host the host it happened on
+    * @param job the job (`JB_Type`)
+    * @param report_time the time to stamp the record with
+    * @return true on success
+    */
    bool
    ReportingFileWriter::create_host_consumable_records(lList **answer_list, const lListElem *host, const lListElem *job,
                                                        uint64_t report_time) {
@@ -427,6 +487,12 @@ namespace ocs {
       return ret;
    }
 
+   /** @brief Offer a queue instance and its state to every writer
+    * @param answer_list receives error messages
+    * @param queue the queue instance (`QU_Type`)
+    * @param report_time the time to stamp the record with
+    * @return true on success
+    */
    bool ReportingFileWriter::create_queue_records(lList **answer_list, const lListElem *queue, uint64_t report_time) {
       bool ret = true;
 
@@ -441,6 +507,14 @@ namespace ocs {
       return ret;
    }
 
+   /** @brief Offer the consumables a job took from a queue instance to every writer
+    * @param answer_list receives error messages
+    * @param host the host it happened on
+    * @param queue the queue instance (`QU_Type`)
+    * @param job the job (`JB_Type`)
+    * @param report_time the time to stamp the record with
+    * @return true on success
+    */
    bool ReportingFileWriter::create_queue_consumable_records(lList **answer_list, const lListElem *host,
                                                              const lListElem *queue, const lListElem *job,
                                                              uint64_t report_time) {
@@ -457,6 +531,12 @@ namespace ocs {
       return ret;
    }
 
+   /** @brief Offer an advance reservation that has just been created to every writer
+    * @param answer_list receives error messages
+    * @param ar the advance reservation (`AR_Type`)
+    * @param report_time the time to stamp the record with
+    * @return true on success
+    */
    bool ReportingFileWriter::create_new_ar_records(lList **answer_list, const lListElem *ar, uint64_t report_time) {
       bool ret = true;
 
@@ -471,6 +551,12 @@ namespace ocs {
       return ret;
    }
 
+   /** @brief Offer the attributes of an advance reservation to every writer
+    * @param answer_list receives error messages
+    * @param ar the advance reservation (`AR_Type`)
+    * @param report_time the time to stamp the record with
+    * @return true on success
+    */
    bool
    ReportingFileWriter::create_ar_attribute_records(lList **answer_list, const lListElem *ar, uint64_t report_time) {
       bool ret = true;
@@ -486,6 +572,14 @@ namespace ocs {
       return ret;
    }
 
+   /** @brief Offer a change in an advance reservation's state to every writer
+    * @param answer_list receives error messages
+    * @param ar the advance reservation (`AR_Type`)
+    * @param state the state it moved to
+    * @param ar_description a description of the change
+    * @param report_time the time to stamp the record with
+    * @return true on success
+    */
    bool ReportingFileWriter::create_ar_log_records(lList **answer_list, const lListElem *ar, ar_state_event_t state,
                                                    const char *ar_description, uint64_t report_time) {
       bool ret = true;
@@ -501,6 +595,12 @@ namespace ocs {
       return ret;
    }
 
+   /** @brief Offer the accounting record of an advance reservation to every writer
+    * @param answer_list receives error messages
+    * @param ar the advance reservation (`AR_Type`)
+    * @param report_time the time to stamp the record with
+    * @return true on success
+    */
    bool ReportingFileWriter::create_ar_acct_records(lList **answer_list, const lListElem *ar, uint64_t report_time) {
       bool ret = true;
 
@@ -515,6 +615,10 @@ namespace ocs {
       return ret;
    }
 
+   /** @brief Offer a monitoring snapshot to every writer
+    * @param json_data the snapshot, already rendered as JSON
+    * @return true on success
+    */
    bool ReportingFileWriter::create_monitoring_records(const char *json_data) {
       bool ret = true;
 
@@ -651,6 +755,9 @@ namespace ocs {
     *
     * @return true on success, false on error
     */
+/** @brief Write what is buffered out to the file
+ * @return true on success
+ */
    bool ReportingFileWriter::flush() {
       bool ret = true;
 
@@ -763,12 +870,16 @@ namespace ocs {
       return next_flush_time;
    }
 
+   /** @brief Re-read the reporting configuration into this writer */
    void ReportingFileWriter::update_config() {
       // if the flush_time changed, need to re-calculate the next_flush_time
       auto new_config_flush_time = sge_gmt32_to_gmt64(mconf_get_reporting_flush_time());
       update_config_flush_time(new_config_flush_time);
    }
 
+/** @brief Change how often this writer flushes
+ * @param new_flush_time the new interval
+ */
    void ReportingFileWriter::update_config_flush_time(uint64_t new_flush_time) {
       if (new_flush_time != config_flush_time) {
          if (next_flush_time != 0) {

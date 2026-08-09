@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief TODO describe this file
+ */
 #include <cstring>
 
 #include "uti/sge_bitfield.h"
@@ -133,37 +137,25 @@ status2str(uint32_t status) {
  *      the job is treated as finished.
  */
 
-/****** job_report_qmaster/process_job_report() ********************************
-*  NAME
-*     process_job_report() -- process a job report from execd
-*
-*  SYNOPSIS
-*     void 
-*     process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report,
-*                        lListElem *hep, char *rhost, char *commproc,
-*                        sge_pack_buffer *pb, monitoring_t *monitor) 
-*
-*  FUNCTION
-*     Process 'report' containing a job report list from 
-*     'commproc' at 'rhost'.
-*  
-*     The 'pb' may get used to collect requests that will be 
-*     generated in this process. The caller should reply it
-*     to the sender of this job report list if 'pb' remains
-*     not empty.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
-*     lListElem *report        - the job report
-*     lListElem *hep           - the host for which we got the job report
-*     char *rhost              - name of the remote host having sent the report
-*     char *commproc           - the commproc name
-*     sge_pack_buffer *pb      - pack buffer for sending answers (ACK)
-*     monitoring_t *monitor    - monitor
-*
-*  NOTES
-*     MT-NOTE: process_job_report() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Process a job report from execd
+ *
+ * Process 'report' containing a job report list from
+ * 'commproc' at 'rhost'.
+ * The 'pb' may get used to collect requests that will be
+ * generated in this process. The caller should reply it
+ * to the sender of this job report list if 'pb' remains
+ * not empty.
+ *
+ * @param report the job report
+ * @param hep the host for which we got the job report
+ * @param rhost name of the remote host having sent the report
+ * @param commproc the commproc name
+ * @param pb pack buffer for sending answers (ACK)
+ * @param monitor monitor
+ *
+ * @note MT-NOTE: process_job_report() is MT safe
+ */
 void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *commproc,
                         sge_pack_buffer *pb, monitoring_t *monitor, uint64_t gdi_session) {
    DENTER(TOP_LAYER);

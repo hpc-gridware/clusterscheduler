@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include <pthread.h>
 #include <algorithm>
 #include <cstring>
@@ -470,19 +474,11 @@ sge_finished_jobs_sweep_handler(te_event_t anEvent, monitoring_t *monitor) {
  * be linked into consumers (e.g. lightweight test binaries) that do not pull
  * in this whole translation unit. See ocs_FinishedJobs.h. */
 
-/****** qmaster/sge_thread_timer/sge_timer_register_event_handler() *************
-*  NAME
-*     sge_timer_register_event_handler() -- register event handlers
-*
-*  SYNOPSIS
-*     void sge_timer_register_event_handler()
-*
-*  FUNCTION
-*    registers event handlers
-*
-*  SEE ALSO
-*     sge_thread_timer/sge_timer_start_periodic_tasks
-*******************************************************************************/
+/**
+ * @brief Register event handlers
+ *
+ * registers event handlers
+ */
 void
 sge_timer_register_event_handler() {
    DENTER(TOP_LAYER);
@@ -526,25 +522,12 @@ sge_timer_register_event_handler() {
    DRETURN_VOID;
 }
 
-/****** qmaster/sge_thread_timer/sge_timer_start_periodic_tasks() ************************
-*  NAME
-*     sge_timer_start_periodic_tasks() -- Start periodic qmaster tasks.
-*
-*  SYNOPSIS
-*     static void sge_timer_start_periodic_tasks()
-*
-*  FUNCTION
-*     Start periodic qmaster tasks. Periodic tasks are implemented as recurring
-*     events.
-*
-*  INPUTS
-*     void - none
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*******************************************************************************/
+/**
+ * @brief Start periodic qmaster tasks
+ *
+ * Start periodic qmaster tasks. Periodic tasks are implemented as recurring
+ * events.
+ */
 void sge_timer_start_periodic_tasks() {
    te_event_t ev = nullptr;
 
@@ -700,51 +683,40 @@ sge_timer_terminate() {
    DRETURN_VOID;
 }
 
-/****** qmaster/sge_qmaster_timed_event/timed_event_thread() ***********************
-*  NAME
-*     timed_event_thread() -- Deliver timed events due
-*
-*  SYNOPSIS
-*     static void* timed_event_thread(void* anArg)
-*
-*  FUNCTION
-*     Check whether system clock has been put back. If so, adjust event due
-*     times. Check if event list does contain events. If so, fetch first event
-*     and check whether it is due. If there is a due event, search event handler
-*     table for a matching event handler and invoke it.
-*
-*     After event delivery an event with event mode 'ONE_TIME_EVENT' will be
-*     removed. An event with event mode 'RECURRING_EVENT' will be delivered
-*     repeatedly.
-*
-*     The event list MUST be sorted in ascending event due time order.
-*
-*  INPUTS
-*     void* anArg - not used
-*
-*  RESULT
-*     void* - none
-*
-*  NOTES
-*     MT-NOTE: 'timed_event_thread()' is a thread function. Do NOT use this
-*     MT-NOTE: function in any other way!
-*     MT-NOTE:
-*     MT-NOTE: If the event list is empty, 'timed_event_thread()' will wait until
-*     MT-NOTE: an event has been added.
-*     MT-NOTE:
-*     MT-NOTE: If no event is due, i.e. the due date of the next event does lie
-*     MT-NOTE: ahead, 'timed_event_thread()' does wait until the next event does
-*     MT-NOTE: become due, or an event which is due earlier has been added. If
-*     MT-NOTE: an event has been deleted while waiting ('Event_Control.deleted'
-*     MT-NOTE: equals 'true'), skip the current event and start over. The
-*     MT-NOTE: deleted event maybe the event 'timed_event_thread()' has been
-*     MT-NOTE: waiting for.
-*     MT-NOTE:
-*     MT-NOTE: Before 'te_scan_table_and_deliver()' is invoked,
-*     MT-NOTE: 'Event_Control.mutex' MUST be unlocked. Otherwise, a deadlock
-*     MT-NOTE: may occur due to recursive mutex locking.
-*
-*******************************************************************************/
+/**
+ * @brief Deliver timed events due
+ *
+ * Check whether system clock has been put back. If so, adjust event due
+ * times. Check if event list does contain events. If so, fetch first event
+ * and check whether it is due. If there is a due event, search event handler
+ * table for a matching event handler and invoke it.
+ * After event delivery an event with event mode 'ONE_TIME_EVENT' will be
+ * removed. An event with event mode 'RECURRING_EVENT' will be delivered
+ * repeatedly.
+ * The event list MUST be sorted in ascending event due time order.
+ *
+ * @param anArg not used
+ *
+ * @return none
+ *
+ * @note MT-NOTE: 'timed_event_thread()' is a thread function. Do NOT use this
+ *       MT-NOTE: function in any other way!
+ *       MT-NOTE:
+ *       MT-NOTE: If the event list is empty, 'timed_event_thread()' will wait until
+ *       MT-NOTE: an event has been added.
+ *       MT-NOTE:
+ *       MT-NOTE: If no event is due, i.e. the due date of the next event does lie
+ *       MT-NOTE: ahead, 'timed_event_thread()' does wait until the next event does
+ *       MT-NOTE: become due, or an event which is due earlier has been added. If
+ *       MT-NOTE: an event has been deleted while waiting ('Event_Control.deleted'
+ *       MT-NOTE: equals 'true'), skip the current event and start over. The
+ *       MT-NOTE: deleted event maybe the event 'timed_event_thread()' has been
+ *       MT-NOTE: waiting for.
+ *       MT-NOTE:
+ *       MT-NOTE: Before 'te_scan_table_and_deliver()' is invoked,
+ *       MT-NOTE: 'Event_Control.mutex' MUST be unlocked. Otherwise, a deadlock
+ *       MT-NOTE: may occur due to recursive mutex locking.
+ */
 [[noreturn]] void *
 sge_timer_main(void *arg) {
    DENTER(TOP_LAYER);

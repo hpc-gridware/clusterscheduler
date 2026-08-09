@@ -19,11 +19,19 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief TODO describe this file
+ */
+
 #include "rapidjson/stringbuffer.h"
 
 #include "ocs_BaseAccountingFileWriter.h"
 
 namespace ocs {
+   /** @brief Writes the accounting records as one JSON object per line
+    *
+    * @ingroup libprocedure
+    */
    class JsonAccountingFileWriter : public BaseAccountingFileWriter {
    private:
    public:
