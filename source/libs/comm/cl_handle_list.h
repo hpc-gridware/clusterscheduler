@@ -33,12 +33,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Every handle in the process
+ */
+
 
 #include "comm/cl_data_types.h"
 
+/** @brief One handle of this process */
 typedef struct cl_handle_list_elem {
-   cl_com_handle_t *handle;   /* data */
-   cl_raw_list_elem_t *raw_elem;
+   cl_com_handle_t *handle;        ///< The handle
+   cl_raw_list_elem_t *raw_elem;   ///< Back pointer into the raw list
 } cl_handle_list_elem_t;
 
 

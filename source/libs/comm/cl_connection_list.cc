@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief A handle's connections
+ */
+
 #include <cstdio>
 #include <cerrno>
 #include <cstring>
@@ -45,6 +49,13 @@
 #include "comm/cl_message_list.h"
 #include "comm/cl_communication.h"
 
+/** @brief Create a connection list
+ * @param list_p receives the new list
+ * @param list_name name for log messages
+ * @param enable_locking create the mutex
+ * @param create_hash build the lookup table
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_connection_list_setup(cl_raw_list_t **list_p, const char *list_name, int enable_locking, bool create_hash) {
    cl_connection_list_data_t *ldata = nullptr;
    int ret_val;
@@ -80,6 +91,10 @@ int cl_connection_list_setup(cl_raw_list_t **list_p, const char *list_name, int 
    return ret_val;
 }
 
+/** @brief Free the connection list and everything in it
+ * @param list_p the list, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_connection_list_cleanup(cl_raw_list_t **list_p) {
    cl_connection_list_data_t *ldata = nullptr;
 
@@ -101,6 +116,10 @@ int cl_connection_list_cleanup(cl_raw_list_t **list_p) {
    return cl_raw_list_cleanup(list_p);
 }
 
+/** @brief Render an endpoint as `name:id:host` for messages
+ * @param endpoint the endpoint
+ * @return the text, which the caller frees
+ */
 char *cl_create_endpoint_string(cl_com_endpoint_t *endpoint) {
    char help[2048]; /* max length of endpoint name is 256 */
    if (endpoint == nullptr) {
@@ -110,6 +129,12 @@ char *cl_create_endpoint_string(cl_com_endpoint_t *endpoint) {
    return strdup(help);
 }
 
+/** @brief Add a connection to a handle
+ * @param list_p the list
+ * @param connection the connection
+ * @param do_lock take the list lock; pass 0 when the caller already holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_connection_list_append_connection(cl_raw_list_t *list_p, cl_com_connection_t *connection, int do_lock) {
    int ret_val;
    cl_connection_list_elem_t *new_elem = nullptr;
@@ -169,6 +194,12 @@ int cl_connection_list_append_connection(cl_raw_list_t *list_p, cl_com_connectio
    return CL_RETVAL_OK;
 }
 
+/** @brief Take a connection out of a handle
+ * @param list_p the list
+ * @param connection the connection
+ * @param do_lock take the list lock; pass 0 when the caller already holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_connection_list_remove_connection(cl_raw_list_t *list_p, cl_com_connection_t *connection, int do_lock) {
    int function_return = CL_RETVAL_CONNECTION_NOT_FOUND;
    int ret_val = CL_RETVAL_OK;
@@ -228,6 +259,14 @@ int cl_connection_list_remove_connection(cl_raw_list_t *list_p, cl_com_connectio
    return function_return;
 }
 
+/** @brief Release every connection that has finished closing
+ *
+ * A connection is not freed the moment it closes - it may still be referenced
+ * from a message queue - so the service thread sweeps them here instead.
+ *
+ * @param handle the handle
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_connection_list_destroy_connections_to_close(cl_com_handle_t *handle) {
    int ret_val = CL_RETVAL_OK;
    bool timeout_flag = cl_com_get_ignore_timeouts_flag();
@@ -477,6 +516,10 @@ int cl_connection_list_destroy_connections_to_close(cl_com_handle_t *handle) {
    return ret_val;
 }
 
+/** @brief The first connection
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_connection_list_elem_t *cl_connection_list_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -485,6 +528,10 @@ cl_connection_list_elem_t *cl_connection_list_get_first_elem(cl_raw_list_t *list
    return nullptr;
 }
 
+/** @brief The last connection
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_connection_list_elem_t *cl_connection_list_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
    if (raw_elem) {
@@ -493,6 +540,10 @@ cl_connection_list_elem_t *cl_connection_list_get_least_elem(cl_raw_list_t *list
    return nullptr;
 }
 
+/** @brief The element after this one
+ * @param elem the current element
+ * @return the next element, or nullptr at the end
+ */
 cl_connection_list_elem_t *cl_connection_list_get_next_elem(cl_connection_list_elem_t *elem) {  /* CR check */
 
    cl_raw_list_elem_t *next_raw_elem = nullptr;
@@ -507,6 +558,10 @@ cl_connection_list_elem_t *cl_connection_list_get_next_elem(cl_connection_list_e
    return nullptr;
 }
 
+/** @brief The element before this one
+ * @param elem the current element
+ * @return the previous element, or nullptr at the start
+ */
 cl_connection_list_elem_t *cl_connection_list_get_last_elem(cl_connection_list_elem_t *elem) {  /* CR check */
 
    cl_raw_list_elem_t *last_raw_elem = nullptr;
@@ -521,6 +576,11 @@ cl_connection_list_elem_t *cl_connection_list_get_last_elem(cl_connection_list_e
    return nullptr;
 }
 
+/** @brief Find the connection to a peer
+ * @param list_p the list
+ * @param endpoint who the peer is
+ * @return the element, or nullptr
+ */
 cl_connection_list_elem_t *cl_connection_list_get_elem_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint) {
    cl_connection_list_elem_t *elem = nullptr;
 

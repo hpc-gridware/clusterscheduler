@@ -33,33 +33,44 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief What the commlib knows about other components
+ */
+
 #include "uti/sge_htable.h"
 
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
-#define CL_ENDPOINT_LIST_DEFAULT_LIFE_TIME     60 * 60 * 24  /* 24 h   (without hearing anything from and endpoint) */
-#define CL_ENDPOINT_LIST_DEFAULT_REFRESH_TIME  10            /*   1 s   (refresh list every 10 seconds */
+#define CL_ENDPOINT_LIST_DEFAULT_LIFE_TIME     60 * 60 * 24   ///< Forget an endpoint after a day of silence
+#define CL_ENDPOINT_LIST_DEFAULT_REFRESH_TIME  10             ///< Seconds between two sweeps for expired entries
 
+/** @brief What is known about one other component
+ *
+ * Learned from the CM of a connecting client or recorded by the application,
+ * so that a later send can find the peer without being told its port again.
+ *
+ * @warning Nothing here may be a `malloc`ed pointer except `endpoint` - the
+ *          element is copied by value in places.
+ */
 typedef struct cl_endpoint_list_elem_type {
-   cl_com_endpoint_t *endpoint;     /* data */
+   cl_com_endpoint_t *endpoint;   ///< Who it is: component name, id and host
 
-   /* endpoint specific data (use no malloced pointers here, expect endpoint ) */
-   int service_port;
-   cl_xml_connection_autoclose_t autoclose;
-   bool is_static;
-   long last_used;
+   int service_port;                          ///< The port it listens on
+   cl_xml_connection_autoclose_t autoclose;   ///< Whether its connections may be closed to make room
+   bool is_static;                            ///< Set by the application; a static entry is never expired
+   long last_used;                            ///< When anything was last heard from it
 
-   /* list data */
-   cl_raw_list_elem_t *raw_elem;
+   cl_raw_list_elem_t *raw_elem;   ///< Back pointer into the raw list
 } cl_endpoint_list_elem_t;
 
 
-typedef struct cl_endpoint_list_data_type {          /* list specific data */
-   long entry_life_time;         /* max life time of an endpoint */
-   long refresh_interval;        /* refresh interval */
-   long last_refresh_time;       /* last life time check */
-   htable ht;                      /* endpoint list hash table */
+/** @brief The endpoint list's own state */
+typedef struct cl_endpoint_list_data_type {
+   long entry_life_time;     ///< How long an entry survives without being touched
+   long refresh_interval;    ///< Seconds between two sweeps for expired entries
+   long last_refresh_time;   ///< When the last sweep ran
+   htable ht;                ///< Lookup by endpoint, so a send does not walk the list
 } cl_endpoint_list_data_t;
 
 

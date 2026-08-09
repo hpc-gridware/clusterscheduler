@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The host alias table
+ */
+
 #include <cstring>
 
 #include "uti/sge_stdlib.h"
@@ -39,6 +43,11 @@
 #include "comm/cl_host_alias_list.h"
 #include "comm/cl_commlib.h"
 
+/** @brief Create the alias table
+ * @param list_p receives the new list
+ * @param list_name name for log messages
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_host_alias_list_setup(cl_raw_list_t **list_p, const char *list_name) {
    int ret_val = CL_RETVAL_OK;
    ret_val = cl_raw_list_setup(list_p, list_name, 1);
@@ -48,6 +57,10 @@ int cl_host_alias_list_setup(cl_raw_list_t **list_p, const char *list_name) {
    return ret_val;
 }
 
+/** @brief Free the alias table and everything in it
+ * @param list_p the list, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_host_alias_list_cleanup(cl_raw_list_t **list_p) {
    cl_host_alias_list_elem_t *elem = nullptr;
    int ret_val = CL_RETVAL_OK;
@@ -74,6 +87,13 @@ int cl_host_alias_list_cleanup(cl_raw_list_t **list_p) {
    return ret_val;
 }
 
+/** @brief Add one alias
+ * @param list_p the table
+ * @param local_resolved_name the name the resolver returns
+ * @param alias_name the name the cluster uses instead
+ * @param lock_list take the list lock; pass 0 when the caller already holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_host_alias_list_append_host(cl_raw_list_t *list_p, const char *local_resolved_name, const char *alias_name, int lock_list) {
 
    cl_host_alias_list_elem_t *new_elem = nullptr;
@@ -162,6 +182,12 @@ int cl_host_alias_list_append_host(cl_raw_list_t *list_p, const char *local_reso
    return CL_RETVAL_OK;
 }
 
+/** @brief Remove one alias
+ * @param list_p the table
+ * @param element the entry to remove
+ * @param lock_list take the list lock; pass 0 when the caller already holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_host_alias_list_remove_host(cl_raw_list_t *list_p, cl_host_alias_list_elem_t *element, int lock_list) {
    cl_host_alias_list_elem_t *elem = nullptr;
    int ret_val = CL_RETVAL_OK;
@@ -202,6 +228,12 @@ int cl_host_alias_list_remove_host(cl_raw_list_t *list_p, cl_host_alias_list_ele
    return function_return;
 }
 
+/** @brief The resolved name behind an alias
+ * @param list_p the table
+ * @param alias_name the alias
+ * @param local_resolved_name receives the name; the caller frees it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_host_alias_list_get_local_resolved_name(cl_raw_list_t *list_p, char *alias_name, char **local_resolved_name) {
    cl_host_alias_list_elem_t *elem = nullptr;
    int ret_val;
@@ -240,6 +272,12 @@ int cl_host_alias_list_get_local_resolved_name(cl_raw_list_t *list_p, char *alia
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief The alias for a resolved name
+ * @param list_p the table
+ * @param local_resolved_name the resolved name
+ * @param alias_name receives the alias; the caller frees it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_host_alias_list_get_alias_name(cl_raw_list_t *list_p, const char *local_resolved_name, char **alias_name) {
    cl_host_alias_list_elem_t *elem = nullptr;
    int ret_val;
@@ -277,6 +315,10 @@ int cl_host_alias_list_get_alias_name(cl_raw_list_t *list_p, const char *local_r
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief The first alias
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_host_alias_list_elem_t *cl_host_alias_list_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -285,6 +327,10 @@ cl_host_alias_list_elem_t *cl_host_alias_list_get_first_elem(cl_raw_list_t *list
    return nullptr;
 }
 
+/** @brief The last alias
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_host_alias_list_elem_t *cl_host_alias_list_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
    if (raw_elem) {
@@ -293,6 +339,10 @@ cl_host_alias_list_elem_t *cl_host_alias_list_get_least_elem(cl_raw_list_t *list
    return nullptr;
 }
 
+/** @brief The element after this one
+ * @param elem the current element
+ * @return the next element, or nullptr at the end
+ */
 cl_host_alias_list_elem_t *cl_host_alias_list_get_next_elem(cl_host_alias_list_elem_t *elem) {
    cl_raw_list_elem_t *next_raw_elem = nullptr;
 
@@ -306,6 +356,10 @@ cl_host_alias_list_elem_t *cl_host_alias_list_get_next_elem(cl_host_alias_list_e
    return nullptr;
 }
 
+/** @brief The element before this one
+ * @param elem the current element
+ * @return the previous element, or nullptr at the start
+ */
 cl_host_alias_list_elem_t *cl_host_alias_list_get_last_elem(cl_host_alias_list_elem_t *elem) {
    cl_raw_list_elem_t *last_raw_elem = nullptr;
 

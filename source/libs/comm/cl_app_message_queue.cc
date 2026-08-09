@@ -32,18 +32,48 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The queues between the application and the connections
+ */
+
 #include "uti/sge_stdlib.h"
 
 #include "comm/cl_app_message_queue.h"
 
+/** @brief Create a send or receive queue
+ * @param list_p receives the new list
+ * @param list_name name for log messages
+ * @param enable_locking create the mutex
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_app_message_queue_setup(cl_raw_list_t **list_p, const char *list_name, int enable_locking) {
    return cl_raw_list_setup(list_p, list_name, enable_locking);
 }
 
+/** @brief Free the queue and everything in it
+ * @param list_p the list, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_app_message_queue_cleanup(cl_raw_list_t **list_p) {
    return cl_raw_list_cleanup(list_p);
 }
 
+/** @brief Put an entry on the queue
+ *
+ * The `rcv_` parameter is used for a receive queue and the `snd_` ones for a
+ * send queue; the other half is passed as nullptr or zero.
+ *
+ * @param list_p the queue
+ * @param rcv_connection receive queue: the connection a message arrived on
+ * @param snd_destination send queue: who the message goes to
+ * @param snd_ack_type send queue: whether and when the peer acknowledges
+ * @param snd_data send queue: the payload, taken over by the queue
+ * @param snd_size send queue: its length
+ * @param snd_response_mid send queue: the message id this answers, or 0
+ * @param snd_tag send queue: the application's own tag
+ * @param do_lock take the list lock; pass 0 when the caller already holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_app_message_queue_append(cl_raw_list_t *list_p,
                                 cl_com_connection_t *rcv_connection,
                                 cl_com_endpoint_t *snd_destination,
@@ -101,6 +131,14 @@ int cl_app_message_queue_append(cl_raw_list_t *list_p,
    return CL_RETVAL_OK;
 }
 
+/** @brief Take entries belonging to a connection off the queue
+ * @param list_p the queue
+ * @param connection the connection
+ * @param do_lock take the list lock; pass 0 when the caller already holds it
+ * @param remove_all_elements remove every entry of that connection rather
+ *        than only the first
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_app_message_queue_remove(cl_raw_list_t *list_p, cl_com_connection_t *connection, int do_lock,
                                 bool remove_all_elements) {
    int function_return = CL_RETVAL_CONNECTION_NOT_FOUND;
@@ -146,6 +184,10 @@ int cl_app_message_queue_remove(cl_raw_list_t *list_p, cl_com_connection_t *conn
    return function_return;
 }
 
+/** @brief The first entry
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_app_message_queue_elem_t *cl_app_message_queue_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -154,6 +196,10 @@ cl_app_message_queue_elem_t *cl_app_message_queue_get_first_elem(cl_raw_list_t *
    return nullptr;
 }
 
+/** @brief The last entry
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_app_message_queue_elem_t *cl_app_message_queue_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
    if (raw_elem) {
@@ -162,6 +208,10 @@ cl_app_message_queue_elem_t *cl_app_message_queue_get_least_elem(cl_raw_list_t *
    return nullptr;
 }
 
+/** @brief The element after this one
+ * @param elem the current element
+ * @return the next element, or nullptr at the end
+ */
 cl_app_message_queue_elem_t *cl_app_message_queue_get_next_elem(cl_app_message_queue_elem_t *elem) {
 
    cl_raw_list_elem_t *next_raw_elem = nullptr;
@@ -176,6 +226,10 @@ cl_app_message_queue_elem_t *cl_app_message_queue_get_next_elem(cl_app_message_q
    return nullptr;
 }
 
+/** @brief The element before this one
+ * @param elem the current element
+ * @return the previous element, or nullptr at the start
+ */
 cl_app_message_queue_elem_t *cl_app_message_queue_get_last_elem(cl_app_message_queue_elem_t *elem) {
 
    cl_raw_list_elem_t *last_raw_elem = nullptr;

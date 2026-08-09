@@ -33,25 +33,32 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The queues between the application and the connections
+ */
+
 
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
+/** @brief One entry of a handle's send or receive queue
+ *
+ * The same struct serves both queues, and which half of it is filled depends
+ * on which queue the element is in - the `rcv_` member for
+ * #cl_com_handle::received_message_queue, the `snd_` members for
+ * #cl_com_handle::send_message_queue.
+ */
 typedef struct cl_app_message_queue_elem_t {
+   cl_com_connection_t *rcv_connection;   ///< Receive queue: the connection a message arrived on
 
-   /* when used as received_message_queue */
-   cl_com_connection_t *rcv_connection;
+   cl_com_endpoint_t *snd_destination;    ///< Send queue: who the message goes to
+   cl_xml_ack_type_t snd_ack_type;        ///< Send queue: whether and when the peer acknowledges
+   cl_byte_t *snd_data;                   ///< Send queue: the payload, owned by the element
+   unsigned long snd_size;                ///< Send queue: its length
+   unsigned long snd_response_mid;        ///< Send queue: the message id this answers, or 0
+   unsigned long snd_tag;                 ///< Send queue: the application's own tag
 
-   /* when used as send_message_queue */
-   cl_com_endpoint_t *snd_destination;
-   cl_xml_ack_type_t snd_ack_type;
-   cl_byte_t *snd_data;
-   unsigned long snd_size;
-   unsigned long snd_response_mid;
-   unsigned long snd_tag;
-
-   /* common data */
-   cl_raw_list_elem_t *raw_elem;
+   cl_raw_list_elem_t *raw_elem;          ///< Back pointer into the raw list
 } cl_app_message_queue_elem_t;
 
 
