@@ -688,6 +688,13 @@ sge_job_resend_event_handler_sim_job_runtime(uint64_t now, const lListElem *job,
    return runtime;
 }
 
+/** @brief Redeliver a job whose execution host never confirmed it
+ *
+ * The handler for #TYPE_JOB_RESEND_EVENT.
+ *
+ * @param anEvent the timed event that fired
+ * @param monitor for monitoring qmaster threads
+ */
 void
 sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    lListElem *jep, *jatep;
@@ -796,6 +803,13 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
+/** @brief Stop resending a job to its execution host
+ *
+ * Called once the host confirms the job, or once the job is gone.
+ *
+ * @param jid the job
+ * @param ja_task_id the array task
+ */
 void
 cancel_job_resend(uint32_t jid, uint32_t ja_task_id) {
    DENTER(TOP_LAYER);
@@ -808,6 +822,18 @@ cancel_job_resend(uint32_t jid, uint32_t ja_task_id) {
 
 /*
  * if hep equals to nullptr, resend is triggered immediately
+ */
+/** @brief Arm a timer to deliver a job again if it is still unconfirmed
+ *
+ * Delivery is not acknowledged synchronously, so an unconfirmed job is simply
+ * sent again after @p delta seconds until the host accepts it or the job is
+ * cancelled.
+ *
+ * @param now the current time
+ * @param hep the execution host, or nullptr when it is not known yet
+ * @param jid the job
+ * @param ja_task_id the array task
+ * @param delta seconds to wait before the next attempt
  */
 void
 trigger_job_resend(uint64_t now, lListElem *hep, uint32_t jid, uint32_t ja_task_id, int delta) {
@@ -901,14 +927,7 @@ create_timed_events_for_simulated_jobs() {
  * @param jatep the array task
  * @param jr the job report (may be nullptr)
  * @param mode the 'mode' - actually the state transition
- * @param commit_flags additional flags for parametrizing
- */
-/** @brief Move a job to its next state, spooling and announcing the change
- * @param jep the job (`JB_Type`)
- * @param jatep the array task
- * @param jr the job report that caused the transition, or nullptr
- * @param mode the transition to make
- * @param commit_flags what to skip, a `COMMIT_*` bitmask
+ * @param commit_flags additional flags for parametrizing, a `COMMIT_*` bitmask
  * @param monitor for monitoring qmaster threads
  * @param gdi_session the session the change belongs to
  */
@@ -2167,6 +2186,17 @@ setCheckpointObj(lListElem *job) {
    DRETURN(ret);
 }
 
+/** @brief Release the queue instances a granted list points at that no longer exist
+ *
+ * A job can outlive the queue instance it was granted - the queue may be
+ * deleted or reconfigured while the job runs - and the slots would otherwise
+ * stay booked against something that is gone.
+ *
+ * @param gdil_list the granted destination list
+ * @param alpp receives messages for the caller
+ * @param gdi_session the session the change belongs to
+ * @return true when anything was released
+ */
 bool
 gdil_del_all_orphaned(const lList *gdil_list, lList **alpp, uint64_t gdi_session) {
    bool ret = true;

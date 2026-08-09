@@ -986,6 +986,12 @@ reschedule_add_additional_time(uint64_t time) {
    DRETURN_VOID;
 }
 
+/** @brief Forget that one job on one host was waiting to be rescheduled
+ * @param host the execution host
+ * @param job_number the job
+ * @param task_number the array task
+ * @param gdi_session the session the change belongs to
+ */
 void
 remove_from_reschedule_unknown_list(lListElem *host, uint32_t job_number, uint32_t task_number, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
@@ -1011,6 +1017,11 @@ remove_from_reschedule_unknown_list(lListElem *host, uint32_t job_number, uint32
    DRETURN_VOID;
 }
 
+/** @brief Forget a job on every host that was waiting to reschedule it
+ * @param job_number the job
+ * @param task_number the array task
+ * @param gdi_session the session the change belongs to
+ */
 void
 remove_from_reschedule_unknown_lists(uint32_t job_number, uint32_t task_number, uint64_t gdi_session) {
    lListElem *host;

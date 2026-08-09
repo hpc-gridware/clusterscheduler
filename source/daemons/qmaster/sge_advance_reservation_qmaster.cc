@@ -140,7 +140,6 @@ sge_ar_send_mail(lListElem *ar, int type);
  * @param answer_list receives messages for the caller
  * @param monitor for monitoring qmaster threads
  * @param gdi_session the session the change belongs to
- * @return true on success
  */
 void
 ar_initialize_timer(lList **answer_list, monitoring_t *monitor, uint64_t gdi_session) {

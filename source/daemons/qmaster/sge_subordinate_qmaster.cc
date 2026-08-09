@@ -1277,7 +1277,6 @@ cqueue_list_x_on_subordinate_so(lList *master_cqueue_list, lList **answer_list, 
  * @param answer_list receives messages for the caller
  * @param[out] resolved_so_list receives the suspended subordinates
  * @param master_cqueue_list the cluster queues
- * @return true on success
  */
 void
 qinstance_find_suspended_subordinates(const lListElem *this_elem, lList **answer_list, lList **resolved_so_list,

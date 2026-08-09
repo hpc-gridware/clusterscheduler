@@ -985,7 +985,6 @@ void job_ja_task_send_abort_mail(const lListElem *job,
  * @param force whether to remove it without waiting for the execution host
  * @param monitor for monitoring qmaster threads
  * @param gdi_session the session the change belongs to
- * @return 0 on success
  */
 void get_rid_of_job_due_to_qdel(lListElem *j,
                                 lListElem *t,

@@ -597,6 +597,12 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
    DRETURN(ret);
 }
 
+/** @brief Apply a binding change to an object that carries one
+ * @param alpp receives messages for the caller
+ * @param new_ar the object as it is to become
+ * @param ar the reduced element the client sent
+ * @return true on success
+ */
 bool
 attr_mod_obj_binding(lList **alpp, lListElem *new_ar, const lListElem *ar) {
    DENTER(TOP_LAYER);
@@ -839,6 +845,19 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
    DRETURN(ret);
 }
 
+/** @brief Reject a request that names the same key twice
+ *
+ * Two entries for one key in a sublist would leave the result depending on
+ * which the code happened to read first.
+ *
+ * @param alpp receives messages for the caller
+ * @param lp1 the first list to compare
+ * @param lp2 the second list to compare
+ * @param nm the key field
+ * @param name the attribute's name, for the message
+ * @param obj_name the object's name, for the message
+ * @return non-zero when a key occurs more than once
+ */
 int
 multiple_occurances(lList **alpp, const lList *lp1, const lList *lp2, int nm, const char *name, const char *obj_name) {
    const lListElem *ep1;
@@ -862,6 +881,10 @@ multiple_occurances(lList **alpp, const lList *lp1, const lList *lp2, int nm, co
    DRETURN(0);
 }
 
+/** @brief Drop an empty sublist so it is not spooled as an empty element
+ * @param ep the object
+ * @param nm the sublist field
+ */
 void
 normalize_sublist(lListElem *ep, int nm) {
    const lList *lp;

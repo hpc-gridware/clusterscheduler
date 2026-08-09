@@ -81,6 +81,21 @@ static int acl_is_valid_acl(lListElem *acl, lList **answer_list);
 
    deletes an userset list from the global userset_list
  ******************************************************************/
+/** @brief Delete a user set from the master list
+ *
+ * Refuses while the set is still referenced - by a queue's access lists, a
+ * project, or a resource quota - because a dangling reference would silently
+ * change who may run where.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep the user set to delete
+ * @param alpp receives messages for the caller
+ * @param userset_list the master user set list
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return STATUS_OK on success
+ */
 int
 sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **userset_list, char *ruser, char *rhost) {
    lListElem *found;
@@ -197,6 +212,16 @@ sge_change_queue_version_acl(ocs::gdi::Packet *packet, ocs::gdi::Task *task, con
       STATUS_OK         - on success
       STATUS_ESEMANTIC  - on error
  ******************************************************/
+/** @brief Check that a user set may become, or remain, a department
+ *
+ * A user may belong to only one department, so a set marked as one must not
+ * overlap any other department.
+ *
+ * @param userset_list the existing user sets
+ * @param new_userset the set being added or changed
+ * @param alpp receives messages for the caller
+ * @return STATUS_OK when the departments stay consistent
+ */
 int
 sge_verify_department_entries(const lList *userset_list, lListElem *new_userset, lList **alpp) {
    DENTER(TOP_LAYER);

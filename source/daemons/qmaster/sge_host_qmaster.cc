@@ -1406,7 +1406,6 @@ exec_host_change_queue_version(const char *exechost_name, uint64_t gdi_session) 
 /** @brief Handle a request to shut execution daemons down
  * @param packet the client request
  * @param task the GDI task being answered
- * @return 0 on success
  */
 void
 sge_gdi_kill_exechost(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {

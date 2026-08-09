@@ -617,9 +617,6 @@ do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_
  *    - an execd sends an ack for a signal delivery
  *    - an external event client sends an ack for received events
  *
- * @param packet
- * @param task
- * @param monitor *
  * @param packet Pseudo GDI packet that contains an ACK request
  * @param task Pseudo GDI task containing the ACK list with one ACK element
  * @param monitor Monitoring object
