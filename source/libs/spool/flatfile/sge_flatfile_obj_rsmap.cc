@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Reading and writing the per-instance characteristics of an RSMAP
+ */
+
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -381,8 +385,8 @@ store_range(std::string &str_out, long &range_start, long &range_last, uint32_t 
  *
  * @param ep        CE_Type element representing a complex_value
  * @param nm        attribute to read from (CE_stringval)
- * @param buf       string buffer we fill in with the data
- * @param alpp      for returning errors
+ * @param buffer    string buffer we fill in with the data
+ * @param alp       for returning errors
  * @return          1 in case of success, else 0
  */
 int

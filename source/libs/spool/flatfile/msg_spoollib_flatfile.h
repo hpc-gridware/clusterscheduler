@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Message catalogue of the flatfile spooling backend
+ */
+
 // clang-format off
 
 /* 

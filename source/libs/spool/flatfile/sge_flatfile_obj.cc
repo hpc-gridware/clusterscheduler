@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
+/** @file
+ * @brief The attribute list to spool, per object type
+ */
+
 #include <cstring>
 #include <strings.h>
 #include <cctype>
@@ -1407,31 +1411,20 @@ static int write_CE_stringval(const lListElem *ep, int nm, dstring *buffer,
    return 1;
 }
 
-/****** sge_flatfile_obj/read_RQR_obj() ****************************************
-*  NAME
-*     read_RQR_obj() -- parse a RQR object from string
-*
-*  SYNOPSIS
-*     static int read_RQR_obj(lListElem *ep, int nm, const char *buffer, lList 
-*     **alp) 
-*
-*  FUNCTION
-*     Reads in a RQR Element from string
-*
-*  INPUTS
-*     lListElem *ep      - Store for parsed Elem
-*     int nm             - nm to be parsed 
-*     const char *buffer - String of the elem to be parsed
-*     lList **alp        - Answer list
-*
-*  RESULT
-*     static int - 1 on success
-*                  0 on error
-*
-*  NOTES
-*     MT-NOTE: read_RQR_obj() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Parse a RQR object from string
+ *
+ * Reads in a RQR Element from string
+ *
+ * @param ep Store for parsed Elem
+ * @param nm nm to be parsed
+ * @param buffer String of the elem to be parsed
+ * @param alp Answer list
+ *
+ * @return 1 on success 0 on error
+ *
+ * @note MT-NOTE: read_RQR_obj() is MT safe
+ */
 static int read_RQR_obj(lListElem *ep, int nm, const char *buffer,
                              lList **alp) {
    lListElem *filter = nullptr;
@@ -1446,31 +1439,20 @@ static int read_RQR_obj(lListElem *ep, int nm, const char *buffer,
    DRETURN(ret);
 }
 
-/****** sge_flatfile_obj/write_RQR_obj() ***************************************
-*  NAME
-*     write_RQR_obj() -- converts a element to string
-*
-*  SYNOPSIS
-*     static int write_RQR_obj(const lListElem *ep, int nm, dstring *buffer, lList 
-*     **alp) 
-*
-*  FUNCTION
-*     Prints out a RQR Element to a string
-*
-*  INPUTS
-*     const lListElem *ep - Elem to be converted
-*     int nm              - nm of Elem
-*     dstring *buffer     - Element as string
-*     lList **alp         - Answer List
-*
-*  RESULT
-*     static int - 1 on success
-*                  0 on error
-*
-*  NOTES
-*     MT-NOTE: write_RQR_obj() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Converts a element to string
+ *
+ * Prints out a RQR Element to a string
+ *
+ * @param ep Elem to be converted
+ * @param nm nm of Elem
+ * @param buffer Element as string
+ * @param alp Answer List
+ *
+ * @return 1 on success 0 on error
+ *
+ * @note MT-NOTE: write_RQR_obj() is MT safe
+ */
 static int write_RQR_obj(const lListElem *ep, int nm, dstring *buffer,
                        lList **alp) {
    return rqs_append_filter_to_dstring(lGetObject(ep, nm), buffer, alp);

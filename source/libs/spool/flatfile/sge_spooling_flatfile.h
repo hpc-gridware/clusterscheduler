@@ -33,36 +33,31 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
+/** @file
+ * @brief The classic spooling backend: master lists as flat files
+ */
+
 #include "cull/cull.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/sge_spooling_utilities.h"
 
-/****** spool/flatfile/--Spooling-Flatfile ************************************
-*
-*  NAME
-*     Flat file spooling - spooling and output of data in flat files
-*
-*  FUNCTION
-*     The module provides functions and a spooling framework instantiation
-*     for data input/output in flat files.
-*
-*     It can be used for spooling of data, for information output (e.g. qstat)
-*     and input/output as used by qconf.
-*
-*     The output format can be influenced by the use of a spool_flatfile_instr
-*     structure.
-*
-*  SEE ALSO
-*     spool/flatfile/-Spooling-Flatfile-Typedefs
-*     spool/flatfile/spool_flatfile_write_object()
-*     spool/flatfile/spool_flatfile_write_list()
-*     spool/flatfile/spool_flatfile_read_object()
-*     spool/flatfile/spool_flatfile_read_list()
-*     spool/flatfile/spool_flatfile_align_object()
-*     spool/flatfile/spool_flatfile_align_list()
-****************************************************************************
-*/
+/** @defgroup spool_classic Classic spooling backend
+ * @brief The master lists as flat files in the spool directory
+ *
+ * The backend the framework calls `classic` and the installer offers as
+ * *"classic spooling"*: one directory per object type under the spool
+ * directory, one file per object, written by @ref spool_flatfile.
+ *
+ * It registers only the callbacks it needs - startup, shutdown, list, read,
+ * write, delete and the two validate hooks. Options, maintenance, triggers,
+ * transactions and reading keys are all `nullptr`, which is why
+ * #spool_maintain_context and #spool_transaction do nothing under this
+ * backend and #spool_read_keys behaves the way it does.
+ *
+ * @see @ref spool_flatfile, @ref spool_framework
+ * @{
+ */
 
 
 /*
@@ -116,3 +111,5 @@ spool_classic_default_delete_func(lList **answer_list,
 
 bool
 spool_flatfile_key_is_safe(const char *key);
+
+/** @} */

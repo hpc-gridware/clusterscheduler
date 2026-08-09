@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The classic spooling backend: master lists as flat files
+ */
+
 /* system */
 #include <cerrno>
 #include <cstring>
@@ -75,6 +79,10 @@
 
 static const char *spooling_method = "classic";
 
+/** @brief Report `"classic"` as this library's spooling method
+ *
+ * @return the string `"classic"`
+ */
 #ifdef SPOOLING_classic
 const char *get_spooling_method()
 #else
@@ -351,6 +359,21 @@ spool_classic_default_startup_func(lList **answer_list,
    DRETURN(ret);
 }
 
+/**
+ * @brief Release what the classic backend allocated at startup
+ *
+ * Frees the field lists built by #spool_classic_create_context. Most object
+ * types use one of the static arrays and must not be freed; only the ones
+ * whose lists were built on the heap are released here.
+ *
+ * @param answer_list to return error messages
+ * @param rule the spooling rule being shut down
+ *
+ * @return true on success, else false
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ */
 bool
 spool_classic_default_shutdown_func(lList **answer_list,
                                     const lListElem *rule)
@@ -439,41 +462,26 @@ static bool read_validate_object(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** spool/flatfile/spool_flatfile_default_list_func() *****************
-*  NAME
-*     spool_flatfile_default_list_func() -- read lists through flatfile spooling
-*
-*  SYNOPSIS
-*     bool
-*     spool_flatfile_default_list_func(lList **answer_list,
-*                                      const lListElem *type,
-*                                      const lListElem *rule,
-*                                      lList **list,
-*                                      const sge_object_type object_type)
-*
-*  FUNCTION
-*     Depending on the object type given, calls the appropriate functions
-*     reading the correspondent list of objects using the old spooling
-*     functions.
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     const lListElem *type           - object type description
-*     const lListElem *rule           - rule to be used
-*     lList **list                    - target list
-*     const sge_object_type object_type - object type
-*
-*  RESULT
-*     bool - true, on success, else false
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*  SEE ALSO
-*     spool/flatfile/--Flatfile-Spooling
-*     spool/spool_read_list()
-*******************************************************************************/
+/**
+ * @brief Read lists through flatfile spooling
+ *
+ * Depending on the object type given, calls the appropriate functions
+ * reading the correspondent list of objects using the old spooling
+ * functions.
+ *
+ * @param answer_list to return error messages
+ * @param type object type description
+ * @param rule rule to be used
+ * @param list target list
+ * @param object_type object type
+ *
+ * @return true, on success, else false
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ *
+ * @see `spool_read_list()`
+ */
 bool
 spool_classic_default_list_func(lList **answer_list,
                                  const lListElem *type,
@@ -669,40 +677,25 @@ spool_classic_default_list_func(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** spool/flatfile/spool_flatfile_default_read_func() *****************
-*  NAME
-*     spool_flatfile_default_read_func() -- read objects using flatfile spooling
-*
-*  SYNOPSIS
-*     lListElem*
-*     spool_flatfile_default_read_func(lList **answer_list,
-*                                      const lListElem *type,
-*                                      const lListElem *rule,
-*                                      const char *key,
-*                                      const sge_object_type object_type)
-*
-*  FUNCTION
-*     Reads an individual object by calling the appropriate flatfile spooling
-*     function.
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     const lListElem *type           - object type description
-*     const lListElem *rule           - rule to use
-*     const char *key                 - unique key specifying the object
-*     const sge_object_type object_type - object type
-*
-*  RESULT
-*     lListElem* - the object, if it could be read, else nullptr
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*  SEE ALSO
-*     spool/flatfile/--Flatfile-Spooling
-*     spool/spool_read_object()
-*******************************************************************************/
+/**
+ * @brief Read objects using flatfile spooling
+ *
+ * Reads an individual object by calling the appropriate flatfile spooling
+ * function.
+ *
+ * @param answer_list to return error messages
+ * @param type object type description
+ * @param rule rule to use
+ * @param key unique key specifying the object
+ * @param object_type object type
+ *
+ * @return the object, if it could be read, else nullptr
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ *
+ * @see `spool_read_object()`
+ */
 lListElem *
 spool_classic_default_read_func(lList **answer_list,
                                  const lListElem *type,
@@ -845,51 +838,15 @@ spool_classic_default_read_func(lList **answer_list,
    DRETURN(ep);
 }
 
-/****** spool/flatfile/spool_flatfile_default_write_func() ****************
-*  NAME
-*     spool_flatfile_default_write_func() -- write object with flatfile spooling
-*
-*  SYNOPSIS
-*     bool
-*     spool_flatfile_default_write_func(lList **answer_list,
-*                                       const lListElem *type,
-*                                       const lListElem *rule,
-*                                       const lListElem *object,
-*                                       const char *key,
-*                                       const sge_object_type object_type)
-*
-*  FUNCTION
-*     Writes an object through the appropriate flatfile spooling functions.
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     const lListElem *type           - object type description
-*     const lListElem *rule           - rule to use
-*     const lListElem *object         - object to spool
-*     const char *key                 - unique key
-*     const sge_object_type object_type - object type
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*  SEE ALSO
-*     spool/flatfile/--Flatfile-Spooling
-*     spool/spool_delete_object()
-*******************************************************************************/
-
 /**
  * @brief Check that a spool object key is a safe relative spool path.
  *
- * A key is used verbatim to build a spool-file path (EXECHOST_DIR/<key> etc.).
+ * A key is used verbatim to build a spool-file path (`EXECHOST_DIR/<key>` etc.).
  * Most keys are validated upstream by verify_str_key(), but host names are not,
  * so this is a defence-in-depth guard at the spool sink (CS-2364, CWE-22).
  *
  * A key may be a multi-component relative path: a queue instance is spooled
- * under "<cqueue>/<host>", so '/' is a legitimate separator and must not be
+ * under `"<cqueue>/<host>"`, so '/' is a legitimate separator and must not be
  * rejected outright. Instead every component is validated independently — the
  * key must be relative (no leading '/') and no component may be empty, "." or
  * ".." or start with '.' — so the resulting path can never escape the spool
@@ -916,6 +873,25 @@ spool_flatfile_key_is_safe(const char *key) {
    return true;
 }
 
+/**
+ * @brief Write an object with flatfile spooling
+ *
+ * Writes an object through the appropriate flatfile spooling functions.
+ *
+ * @param answer_list to return error messages
+ * @param type object type description
+ * @param rule rule to use
+ * @param object object to spool
+ * @param key unique key, also the relative path the object is written to
+ * @param object_type object type
+ *
+ * @return true on success, else false
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ *
+ * @see #spool_write_object
+ */
 bool
 spool_classic_default_write_func(lList **answer_list,
                                   const lListElem *type,
@@ -1145,41 +1121,26 @@ spool_classic_default_write_func(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** spool/flatfile/spool_flatfile_default_delete_func() ***************
-*  NAME
-*     spool_flatfile_default_delete_func() -- delete object in flatfile spooling
-*
-*  SYNOPSIS
-*     bool
-*     spool_flatfile_default_delete_func(lList **answer_list,
-*                                        const lListElem *type,
-*                                        const lListElem *rule,
-*                                        const char *key,
-*                                        const sge_object_type object_type)
-*
-*  FUNCTION
-*     Deletes an object in the flatfile spooling.
-*     In most cases, the correspondent spool file is deleted, in some cases
-*     (e.g. jobs), a special remove function is called.
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     const lListElem *type           - object type description
-*     const lListElem *rule           - rule to use
-*     const char *key                 - unique key
-*     const sge_object_type object_type - object type
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*  SEE ALSO
-*     spool/flatfile/--Flatfile-Spooling
-*     spool/spool_delete_object()
-*******************************************************************************/
+/**
+ * @brief Delete object in flatfile spooling
+ *
+ * Deletes an object in the flatfile spooling.
+ * In most cases, the correspondent spool file is deleted, in some cases
+ * (e.g. jobs), a special remove function is called.
+ *
+ * @param answer_list to return error messages
+ * @param type object type description
+ * @param rule rule to use
+ * @param key unique key
+ * @param object_type object type
+ *
+ * @return true on success, else false
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ *
+ * @see `spool_delete_object()`
+ */
 bool
 spool_classic_default_delete_func(lList **answer_list,
                                    const lListElem *type,
