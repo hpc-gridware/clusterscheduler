@@ -83,6 +83,19 @@ if (DOXYGEN_FOUND)
         source/common
         source/security
         source/clients
+
+        # The second repository. Paths stay relative to the clusterscheduler
+        # directory, which is where dxm-check.sh is run from.
+        ../gcs-extensions/source/libs/ocs_bridge
+        ../gcs-extensions/source/libs/spool
+        ../gcs-extensions/source/libs/lwdb
+        ../gcs-extensions/source/libs/sgeobj
+        ../gcs-extensions/source/daemons
+
+        # ../gcs-extensions/source/tools is documented but NOT registered: two
+        # definitions are spelled Class::Class::member (a legal but redundant
+        # injected-class-name qualifier), which doxygen cannot match to their
+        # declarations. No comment can fix that; see task 43.
    )
 
    if (DXM_FINISHED_MODULES)
