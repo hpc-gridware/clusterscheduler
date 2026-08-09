@@ -31,6 +31,20 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief sge_shadowd - take over the qmaster when the host running it stops answering
+ *
+ * A shadow daemon runs on every host listed in `shadow_masters`. It does
+ * nothing but watch the qmaster heartbeat file, and when the heartbeat stops
+ * changing for long enough it tries to become the new qmaster host.
+ *
+ * The three intervals below are what keeps that from happening by accident,
+ * and the lock file is what keeps two shadow daemons from both winning. Before
+ * starting a qmaster this one re-reads the heartbeat, re-checks the
+ * `act_qmaster` file and probes whether the old qmaster is still listening -
+ * so a qmaster that was merely slow does not get a second instance.
+ */
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -77,15 +91,34 @@
 #endif
 
 #ifndef FALSE
+/** @brief Boolean false, for the platforms whose headers do not define it */
 #   define FALSE 0
 #endif
 
 #ifndef TRUE
+/** @brief Boolean true, for the platforms whose headers do not define it */
 #   define TRUE  1
 #endif
 
+/** @brief Seconds between two reads of the heartbeat file
+ *
+ * Overridable with `SGE_CHECK_INTERVAL`, which the testsuite uses to make a
+ * takeover happen in seconds rather than minutes.
+ */
 #define CHECK_INTERVAL      60
+
+/** @brief Seconds the heartbeat may stand still before a takeover is considered
+ *
+ * Overridable with `SGE_GET_ACTIVE_INTERVAL`.
+ */
 #define GET_ACTIVE_INTERVAL 240
+
+/** @brief Seconds to wait again after a heartbeat was found unchanged
+ *
+ * Added to #GET_ACTIVE_INTERVAL for the next round, so a qmaster that is
+ * merely busy gets a second chance before its host is declared dead.
+ * Overridable with `SGE_DELAY_TIME`.
+ */
 #define DELAY_TIME          600
 
 int main(int argc, char **argv);
@@ -158,6 +191,14 @@ shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, cha
 }
 
 /*----------------------------------------------------------------------------*/
+/** @def PRINTITD
+ * @brief Print one option and its description in the `-help` output
+ *
+ * Defined inside main() and used only there.
+ *
+ * @param o the option
+ * @param d its description
+ */
 int
 main(int argc, char **argv) {
    int heartbeat = 0;

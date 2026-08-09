@@ -32,6 +32,10 @@
  ************************************************************************/
 
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Giving a job an operating system identity the daemons can track it by
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <pwd.h>
@@ -47,6 +51,18 @@
 #include "uti/sge.h"
 #include "basis_types.h"
 
+/** @brief Give the job an operating system identity the daemons can track it by
+ *
+ * On platforms with a native job id this registers one; elsewhere it hands out
+ * an additional group id from the configured range. Either way the result is
+ * the handle the process data collector attributes usage by and
+ * procfs_kill_addgrpid() signals through.
+ *
+ * @param sid the session the job runs in
+ * @param[in,out] add_grp_id_ptr the additional group id to use; receives the
+ *        one that was actually taken
+ * @param pw the job owner
+ */
 void setosjobid(pid_t sid, gid_t *add_grp_id_ptr, struct passwd *pw)
 {
    shepherd_trace("setosjobid: uid = " pid_t_fmt ", euid = " pid_t_fmt, getuid(), geteuid());

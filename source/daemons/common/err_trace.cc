@@ -31,6 +31,12 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief The shepherd's three report files: trace, error and exit_status
+ *
+ * @see err_trace.h for why the shepherd reports through files at all.
+ */
 /* Error and trace handling for shepherd 
  * Error/Trace files will go to the actual directory at first time 
  * shepherd_error() and trace() are called 
@@ -75,10 +81,15 @@ static FILE *shepherd_error_fp=nullptr;
 static FILE *shepherd_exit_status_fp=nullptr;
 static FILE *shepherd_trace_fp = nullptr;
 
+/** @brief Which of the shepherd's three files an operation is about
+ *
+ * Used as an index into `g_shepherd_file_name` and `g_shepherd_file_path`, so
+ * the order has to match those tables.
+ */
 typedef enum st_shepherd_file_def {
-   st_trace,
-   st_exit_status,
-   st_error
+   st_trace,         ///< `trace` - what the shepherd did, step by step
+   st_exit_status,   ///< `exit_status` - one line per phase that ran
+   st_error          ///< `error` - why the job could not be started
 } st_shepherd_file_t;
 
 static const char *g_shepherd_file_name[3] = {"trace", "exit_status", "error"};
@@ -89,10 +100,10 @@ static bool g_keep_files_open = true; /* default: Open files at start and keep
                                                   them open for writing */
 static pthread_mutex_t g_trace_mutex;
 
-extern pid_t coshepherd_pid;
-extern int   shepherd_state;  /* holds exit status for shepherd_error() */
-extern bool  g_new_interactive_job_support;
-bool foreground = true; // make shepherd_trace() write to both trace file and stdout for debugging
+extern pid_t coshepherd_pid;   ///< The co-shepherd of an interactive job, so its pid can be stamped into the trace
+extern int   shepherd_state;  ///< holds exit status for shepherd_error()
+extern bool  g_new_interactive_job_support;   ///< Whether the built-in interactive job support is in use
+bool foreground = true; ///< make shepherd_trace() write to both trace file and stdout for debugging
 
 /* Forward declaration of static functions */
 
@@ -110,25 +121,12 @@ static bool  shepherd_seteuid(uid_t uid, const char *op);
 /******************************************************************************
 * "Public" functions 
 *******************************************************************************/
-/****** shepherd_trace_init/shepherd_trace_exit *******************************
-*  NAME
-*     shepherd_trace_init() -- Begin shepherd's tracing.
-*     shepherd_trace_exit() -- End shepherd's tracing. 
-*
-*  SYNOPSIS
-*    void shepherd_trace_init( void )
-*    void shepherd_trace_exit( void )
-*
-*  FUNCTION
-*     Init: Creates or opens trace file.
-*     Exit: Closes trace file. Call it as shepherd's last function.
-*
-*  INPUTS
-*     void - none
-*
-*  RESULT
-*     void - none
-*******************************************************************************/
+/** @brief Begin the shepherd's tracing: create or open the trace file
+ *
+ * Idempotent - the file is opened once and then kept open.
+ *
+ * @see shepherd_trace_exit(), which must be the shepherd's last call.
+ */
 void shepherd_trace_init()
 {
 	if (!shepherd_trace_fp) {
@@ -136,6 +134,10 @@ void shepherd_trace_init()
 	}
 }
 
+/** @brief End the shepherd's tracing and close the trace file
+ *
+ * Must be the shepherd's last call.
+ */
 void shepherd_trace_exit()
 {
     int  old_euid = SGE_SUPERUSER_UID;
@@ -172,44 +174,26 @@ FCLOSE_ERROR:
 	shepherd_error_exit();
 }
 
-/****** shepherd_trace_chown **************************************************
-*  NAME
-*     shepherd_trace_chown() -- Change owner of trace file.
-*
-*  SYNOPSIS
-*    void shepherd_trace_chown(const char* job_owner)
-*
-*  FUNCTION
-*    Changes owner and group of trace file to job_owner.
-*
-*  INPUTS
-*     job_owner: Name of the new owner of the file.
-*
-*  RESULT
-*     void - none
-*******************************************************************************/
+/** @brief Change owner of trace file
+ *
+ * Called once the shepherd has dropped to the job owner, so that the user can
+ * read their own trace file afterwards.
+ *
+ * @param job_owner Name of the new owner of the file.
+ */
 void shepherd_trace_chown(const char* job_owner)
 {
 	shepherd_trace_chown_intern(job_owner, shepherd_trace_fp, st_trace);
 }
 
-/****** err_trace/shepherd_trace_exit() **************************************
-*  NAME
-*     shepherd_trace_exit() -- End shepherd's tracing. 
-*
-*  SYNOPSIS
-*     static FILE* shepherd_trace_exit()
-*
-*  FUNCTION
-*     Closes the shepherd's trace file.
-*     Call it as shepherd's last function.
-*
-*  INPUTS
-*     void - none
-*
-*  RESULT
-*     void - none
-*******************************************************************************/
+/** @brief Create or open the error and exit_status files
+ *
+ * Idempotent, like shepherd_trace_init().
+ *
+ * @note The banner this block replaces described `shepherd_trace_exit()`,
+ *       which is a different function further up. The description was wrong,
+ *       not the placement.
+ */
 void shepherd_error_init()
 {
 	if (shepherd_error_fp == nullptr) {
@@ -220,6 +204,7 @@ void shepherd_error_init()
 	}
 }
 
+/** @brief Close the error and exit_status files */
 void shepherd_error_exit()
 {
     int  old_euid = SGE_SUPERUSER_UID;
@@ -253,46 +238,24 @@ void shepherd_error_exit()
    }
 }
 
-/****** shepherd_error_chown **************************************************
-*  NAME
-*     shepherd_error_chown() -- Change owner of error and exit_status files. 
-*
-*  SYNOPSIS
-*    void shepherd_error_chown(const char* job_owner)
-*
-*  FUNCTION
-*    Changes owner and group of error and exit_status file to job_owner.
-*
-*  INPUTS
-*     job_owner: Name of the new owner of the file.
-*
-*  RESULT
-*     void - none
-*******************************************************************************/
+/** @brief Change owner of error and exit_status files
+ * @param job_owner Name of the new owner of the file.
+ */
 void shepherd_error_chown(const char* job_owner)
 {
 	shepherd_trace_chown_intern(job_owner, shepherd_error_fp, st_error);
 	shepherd_trace_chown_intern(job_owner, shepherd_exit_status_fp, st_exit_status);
 }
 
-/****** shepherd_trace ********************************************************
-*  NAME
-*     shepherd_trace() -- Write line to trace file.
-*
-*  SYNOPSIS
-*     int shepherd_trace(const char *format, ...) 
-*
-*  FUNCTION
-*     Writes a line to the trace file, preceding it with a date, time, uid
-*     and pid stamp.
-*
-*  INPUTS
-*     format: The format string of the line to be written to the error file.
-*     ...: The parameters to the format string. See printf(3c).
-*
-*  RESULT
-*     int - 0 if successful, 1 if an error occurred.
-*******************************************************************************/
+/** @brief Write a line to the trace file
+ *
+ * The line is stamped with date, time, uid and pid. With #foreground set it
+ * also goes to stdout.
+ *
+ * @param format The format string of the line to be written to the error file.
+ * @param ... The parameters to the format string. See printf(3c).
+ * @return 0 if successful, 1 if an error occurred.
+ */
 int shepherd_trace(const char *format, ...) 
 {
    dstring     ds;
@@ -352,25 +315,15 @@ int shepherd_trace(const char *format, ...)
    return ret;
 }
 
-/****** shepherd_error ********************************************************
-*  NAME
-*     shepherd_error() -- Write a line to the error file and exit program.
-*
-*  SYNOPSIS
-*     void shepherd_error(bool do_exit, const char *format, ...)
-*
-*  FUNCTION
-*     Writes a line to the error file, preceding it with a
-*     date, time, uid and pid stamp, and exits the program. stops execution.
-*
-*  INPUTS
-*     do_exit: If true, this function calls exit(2).
-*     format: The format string of the line to be written to the error file.
-*     ...: The parameters to the format string. See printf(3c).
-*
-*  RESULT
-*     void - none
-*******************************************************************************/
+/** @brief Write a line to the error file, and optionally end the shepherd
+ *
+ * The message goes to the trace file as well, so the trace stays a complete
+ * account. The exit status written is #shepherd_state.
+ *
+ * @param do_exit If true, this function calls exit(2).
+ * @param format The format string of the line to be written to the error file.
+ * @param ... The parameters to the format string. See printf(3c).
+ */
 void shepherd_error(int do_exit, const char *format, ...)
 {
    dstring     ds;
@@ -450,27 +403,24 @@ void shepherd_error(int do_exit, const char *format, ...)
    }
 }
 
+/** @brief Write a plain string to the error file, without format processing
+ *
+ * For text that may itself contain `%`, which shepherd_error() would try to
+ * interpret.
+ *
+ * @param text the message
+ */
 void shepherd_error_ptr(const char *text)
 {
    shepherd_error(1, text); 
 }
 
-/****** shepherd_write_exit_status ********************************************
-*  NAME
-*     shepherd_write_exit_status() -- Write exit status to exit_status file.
-*
-*  SYNOPSIS
-*     void shepherd_write_exit_status(const char *exit_status)
-*
-*  FUNCTION
-*     Writes the exit status to the exit_status file.
-*
-*  INPUTS
-*     exit_status: The exit status of the shepherd.
-*
-*  RESULT
-*     void - none
-*******************************************************************************/
+/** @brief Append one exit status to the exit_status file
+ *
+ * One line per phase that ran, which is what count_exit_status() later counts.
+ *
+ * @param exit_status The exit status of the shepherd.
+ */
 void shepherd_write_exit_status(const char *exit_status)
 {
 	struct stat statbuf;
@@ -517,27 +467,15 @@ void shepherd_write_exit_status(const char *exit_status)
 	}
 }
 
-/****** is_shepherd_trace_fd **************************************************
-*  NAME
-*     is_shepherd_trace_fd() -- Check if given file descriptor is a file descr.
-*                               to the trace, error or exit_status file.
-*
-*  SYNOPSIS
-*     int is_shepherd_trace_fd(int fd)
-*
-*  FUNCTION
-*     Checks if the given file descriptor is a file descriptor of the open file
-*     handles to the trace, error or exit_status file.
-*     This function is needed during daemonizing to close all file descriptors
-*     except the ones to the trace, error and exit_status files.
-*
-*  INPUTS
-*     fd: The file descriptor that has to be checked.
-*
-*  RESULT
-*     int - 1 if fd is a file descriptor to trace, error or exit_status file,
-*           0 if it is not.
-*******************************************************************************/
+/** @brief Is this descriptor one of the shepherd's three report files?
+ *
+ * Daemonizing closes every descriptor; these three have to survive it, or the
+ * shepherd loses the only channel it has for saying what went wrong.
+ *
+ * @param fd The file descriptor that has to be checked.
+ * @return 1 if fd is a file descriptor to trace, error or exit_status file,
+ *         0 if it is not.
+ */
 int is_shepherd_trace_fd(int fd)
 {
    if ((shepherd_trace_fp && fd==fileno(shepherd_trace_fp))
@@ -549,29 +487,20 @@ int is_shepherd_trace_fd(int fd)
    }
 }
 
+/** @brief The descriptor of the open trace file
+ * @return the descriptor, or -1 when the trace file is not open
+ */
 int get_shepherd_trace_fp() {
 	return fileno(shepherd_trace_fp);
 }
 
-/****** count_exit_status *****************************************************
-*  NAME
-*     count_exit_status() -- Return the number of lines in the exit status file
-*
-*  SYNOPSIS
-*     int count_exit_status()
-*
-*  FUNCTION
-*     Returns the number of lines in the exit_status file.
-*     Each pe_start, prolog, job, epilog and pe_stop write a line to the
-*     exit_status file.
-*     This function is used to detect where the shepherd fails.
-*
-*  INPUTS
-*     void - none
-*
-*  RESULT
-*     int - Number of lines in the exit_status file.
-*******************************************************************************/
+/** @brief How many phases of the job have finished
+ *
+ * `pe_start`, `prolog`, the job itself, `epilog` and `pe_stop` each append a
+ * line, so the count says how far the shepherd got before it failed.
+ *
+ * @return Number of lines in the exit_status file.
+ */
 int count_exit_status()
 {
    int n = 0;

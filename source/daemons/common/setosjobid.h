@@ -32,6 +32,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Giving a job an operating system identity the daemons can track it by
+ */
 #include <sys/types.h>
 #include <pwd.h>
 

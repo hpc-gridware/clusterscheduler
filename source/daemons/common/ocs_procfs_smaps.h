@@ -19,12 +19,22 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Reading per-process memory detail out of `/proc/<pid>/smaps`
+ */
+
 namespace ocs {
 
+   /** @brief The memory figures summed out of one process's `/proc/<pid>/smaps`
+    *
+    * `smaps` reports per mapping; these are the totals. They separate memory a
+    * process really owns from memory it merely shares, which the coarse `rss`
+    * figure cannot.
+    */
    struct smaps_sums_t {
-      uint64_t pss_kb;   // sum of "Pss:"
-      uint64_t smem_kb;  // sum of "Shared_Clean:" + "Shared_Dirty:" + "Shared_Hugetlb:"
-      uint64_t pmem_kb;  // sum of "Private_Clean:" + "Private_Dirty:" + "Private_Hugetlb:"
+      uint64_t pss_kb;   ///< sum of "Pss:"
+      uint64_t smem_kb;  ///< sum of "Shared_Clean:" + "Shared_Dirty:" + "Shared_Hugetlb:"
+      uint64_t pmem_kb;  ///< sum of "Private_Clean:" + "Private_Dirty:" + "Private_Hugetlb:"
    };
 
    bool procfs_parse_smaps_sums(pid_t pid, smaps_sums_t &out);

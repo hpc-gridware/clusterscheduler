@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Starting the protocol daemon of an interactive job, and reporting back to qrsh
+ */
 #include <unistd.h>
 #include <cstdio>
 #include <sys/types.h>
@@ -60,25 +64,12 @@
 #include <cinttypes>
 #include "msg_common.h"
 
-/****** qrsh_starter/delete_qrsh_pid_file() *****************************************
-*  NAME
-*     delete_qrsh_pid_file() -- delete the pid file from $TMPDIR
-*
-*  SYNOPSIS
-*     static int delete_qrsh_pid_file() 
-*
-*  FUNCTION
-*     Delete the pid file created by qrsh_starter
-*
-*  RESULT
-*     1, if the file could be deleted
-*     0, if and error occurred. Possible error situations are:
-*           - the environment variable TMPDIR cannot be read
-*           - the file cannot be deleted
-*
-*  SEE ALSO
-*  qrsh_starter
-*******************************************************************************/
+/** @brief Delete the pid file qrsh_starter created in `$TMPDIR`
+ *
+ * @return 1 if the file could be deleted, 0 if an error occurred - either the
+ *         environment variable `TMPDIR` cannot be read, or the file cannot be
+ *         deleted
+ */
 int delete_qrsh_pid_file()
 {
    char *pid_file_name = nullptr;
@@ -100,33 +91,19 @@ int delete_qrsh_pid_file()
 
 
 
-/****** shepherd/qrsh/write_to_qrsh() *****************************************
-*  NAME
-*     write_to_qrsh -- short description
-*
-*  SYNOPSIS
-*    int write_to_qrsh(const char *data);
-*
-*  FUNCTION
-*     Writes the contents of <data> to an other (remote) process over
-*     a socket connection.
-*     Host and port of the communication partner are read from the 
-*     configuration entry "qrsh_control_port".
-*     A socket client connection is opened to the named host and port,
-*     and the data is written.
-*
-*  INPUTS
-*     data - null terminated string with data to write
-*
-*  RESULT
-*     0, if function finishes correctly
-*     1, if the config entry qrsh_control_port does not exist
-*     2, if qrsh_control_port contains illegal data
-*     3, if opening the socket failed
-*     4, if the hostname cannot be resolved
-*     5, if connecting to the socket fails
-*     6, if writing the data fails
-******************************************************************************/
+/** @brief Send a string back to the waiting `qrsh` client
+ *
+ * The client's host and port come from the configuration entry
+ * `qrsh_control_port`. A fresh connection is opened for each message and
+ * closed again, so this is a one-shot channel rather than a session.
+ *
+ * @param data null terminated string with data to write
+ * @return 0 if function finishes correctly, 1 if the config entry
+ *         `qrsh_control_port` does not exist, 2 if it contains illegal data,
+ *         3 if opening the socket failed, 4 if the hostname cannot be
+ *         resolved, 5 if connecting to the socket fails, 6 if writing the data
+ *         fails
+ */
 int write_to_qrsh(const char *data)
 {
    char *address = nullptr;
@@ -206,29 +183,18 @@ int write_to_qrsh(const char *data)
    return 0;
 }
 
-/****** shepherd/qrsh/write_exit_code_to_qrsh() *******************************
-*  NAME
-*     write_exit_code_to_qrsh -- write an exit code to qrsh
-*
-*  SYNOPSIS
-*     void write_exit_code_to_qrsh(int exit_code)
-*
-*  FUNCTION
-*     If the program handled by this shepherd uses rsh mechanism
-*     (configuration value "rsh_daemon" is set), then the function
-*     writes an exit code to the corresponding qrsh process via a 
-*     socket connection.
-*
-*     The exit code is either taken from parameter <exit_code>, if it is
-*     notequal 0, to signal an error condition in the shepherd,
-*     or read from a special file ($TMPDIR/qrsh_exit_code).
-*
-*  INPUTS
-*     exit_code - status of the calling process
-*
-*  SEE ALSO
-*     shepherd/qrsh/write_to_qrsh()
-******************************************************************************/
+/** @brief Report a job's exit code back to the waiting `qrsh` client
+ *
+ * Only meaningful when the job uses the rsh mechanism, that is when the
+ * configuration value `rsh_daemon` is set.
+ *
+ * A non-zero @p exit_code means the shepherd itself failed and is reported as
+ * given; zero means the job ran, and the real status is read from
+ * `$TMPDIR/qrsh_exit_code` instead.
+ *
+ * @param exit_code status of the calling process
+ * @see write_to_qrsh()
+ */
 void write_exit_code_to_qrsh(int exit_code)
 {
    char buffer[1024];
@@ -244,25 +210,14 @@ void write_exit_code_to_qrsh(int exit_code)
    }
 }
 
-/****** shepherd/qrsh/get_exit_code_of_qrsh_starter() *************************
-*  NAME
-*     get_exit_code_of_qrsh_starter -- short description
-*
-*  SYNOPSIS
-*     #include "qlogin_starter.h"
-*     int get_exit_code_of_qrsh_starter(int* exit_code);
-*
-*  FUNCTION
-*     Reads the exit code from a process started via qrsh - qrsh_starter
-*     from a file in the jobs TMPDIR.
-*
-*  INPUTS
-*     exit_code - exit code of qrsh_starter
-*
-*  RESULT
-*     0, success
-*     1, if an error occurred while trying to get the exit code
-******************************************************************************/
+/** @brief Read the real exit code of a job started through `qrsh_starter`
+ *
+ * `rshd` reports its own status, not the job's, so the job's is left in a file
+ * in the job's `TMPDIR` for this to pick up.
+ *
+ * @param[out] exit_code receives the exit code of qrsh_starter
+ * @return 0 on success, 1 if an error occurred while trying to get the exit code
+ */
 int get_exit_code_of_qrsh_starter(int* exit_code)
 {
    char buffer[1024];
@@ -314,27 +269,15 @@ FCLOSE_ERROR:
    return ret;
 }
 
-/****** shepherd/qrsh/get_error_of_qrsh_starter() *************************
-*  NAME
-*     get_error_of_qrsh_starter -- get error message from qrsh_starter
-*
-*  SYNOPSIS
-*     #include "qlogin_starter.h"
-*     const char *
-*     get_error_of_qrsh_starter();
-*
-*  FUNCTION
-*     Reads an error message that qrsh_starter may have written to the 
-*     qrsh jobs tmpdir due to an error in the startup phase of the qrsh job.
-*
-*  RESULT
-*     the error message from qrsh_starter or
-*     nullptr, if no error was generated (the job started up without problems)
-*
-*  NOTE
-*     The returned string is dynamically allocated. It is in the responsibility
-*     of the caller to free it.
-******************************************************************************/
+/** @brief Read anything `qrsh_starter` said before the job could start
+ *
+ * The startup phase of a qrsh job runs where nobody is listening, so a failure
+ * there is written into the job's tmpdir and collected here.
+ *
+ * @return the error message from qrsh_starter, or nullptr if no error was
+ *         generated - the job started up without problems. The string is
+ *         dynamically allocated and the caller has to free it.
+ */
 const char *get_error_of_qrsh_starter()
 {
    char buffer[SGE_PATH_MAX];
@@ -384,45 +327,31 @@ FCLOSE_ERROR:
 
 }
 
-/****** shepherd/qrsh/qlogin_starter() ****************************************
-*
-*  NAME
-*     qlogin_starter -- short description
-*
-*  SYNOPSIS
-*     #include "qlogin_starter.h"
-*     int qlogin_starter(const char *cwd, char *daemon);
-*
-*  FUNCTION
-*     The function is called from shepherd to start a protocol daemon
-*     like telnetd, rshd or rlogind.
-*     The mechanism used to call these daemons is that of inetd:
-*        - a socket is created (server side, any free port is assigned 
-*          by the operating system)
-*        - qlogin_starter waits for someone to connect to this socket
-*        - the socket file handles are redirected to stdin, stdout 
-*          and stderr
-*        - the daemon process is started
-*     Additionally to the inetd mechanism, the port number and some 
-*     other information is sent to the qrsh process that initiated
-*     (over qmaster, schedd, execd, shepherd) the qlogin_starter call.
-*
-*  INPUTS
-*     cwd    - the current working directory (the active_jobs directory)
-*     daemon - name and path of the daemon to start
-*
-*  RESULT
-*     on success, the function will not return (it exec's)
-*      4, if there is a problem with permissions
-*      5, if a socket cannot be allocated
-*      6, if a socket bind fails
-*      7, if socket name (port) cannot be determined
-*      8, if environment (to be passed to qrsh) cannot be read
-*      9, if sending information to qrsh fails
-*     10, if nobody connects to the socket within a one minute
-*     11, if the acception of a connecting client fails
-*     12, if the execution of the daemon fails
-******************************************************************************/
+/** @brief Start a protocol daemon for an interactive job, the way `inetd` would
+ *
+ * Called from the shepherd to run `telnetd`, `rshd` or `rlogind`:
+ *
+ * 1. a server socket is created, the operating system assigning any free port
+ * 2. qlogin_starter waits for someone to connect to it
+ * 3. the socket is redirected onto stdin, stdout and stderr
+ * 4. the daemon is exec'd
+ *
+ * Beyond what `inetd` does, the port and some further information are sent
+ * back to the `qrsh` process that set all this in motion - which reached here
+ * by way of qmaster, the scheduler, the execution daemon and the shepherd, and
+ * has no other way of learning which port to connect to.
+ *
+ * @param cwd the current working directory (the active_jobs directory)
+ * @param daemon name and path of the daemon to start
+ * @param env the environment to pass on to qrsh
+ * @return on success the function does not return, because it exec's. Otherwise
+ *         4 if there is a problem with permissions, 5 if a socket cannot be
+ *         allocated, 6 if a socket bind fails, 7 if the socket name (port)
+ *         cannot be determined, 8 if the environment to be passed to qrsh
+ *         cannot be read, 9 if sending information to qrsh fails, 10 if nobody
+ *         connects to the socket within one minute, 11 if accepting a
+ *         connecting client fails, 12 if the execution of the daemon fails
+ */
 int qlogin_starter(const char *cwd, char *daemon, char** env)
 {
    int ret;

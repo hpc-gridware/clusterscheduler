@@ -33,15 +33,26 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Mailing the administrator about job failures, without flooding them
+ */
+
 /*
 ** defines for admin mail handling of the job-related
 ** error states
 */
-#define BIT_ADM_ALWAYS   0
-#define BIT_ADM_NEVER    1
-#define BIT_ADM_NEW_CONF 2
-#define BIT_ADM_QCHANGE  4
-#define BIT_ADM_HOUR     8
+/** @name When a job failure state is worth mailing the administrator about
+ *
+ * A busy cluster can fail the same way thousands of times in a minute, so each
+ * state carries a rule saying how often it may be reported.
+ * @{
+ */
+#define BIT_ADM_ALWAYS   0   ///< Mail every occurrence
+#define BIT_ADM_NEVER    1   ///< Never mail about this state
+#define BIT_ADM_NEW_CONF 2   ///< Mail again once the configuration has changed
+#define BIT_ADM_QCHANGE  4   ///< Mail again once the queue has changed
+#define BIT_ADM_HOUR     8   ///< Mail at most once an hour
+/** @} */
 
 int adm_mail_reset(int state);
 void job_related_adminmail(uint32_t progid, lListElem *jr, int is_array, const char *job_owner);

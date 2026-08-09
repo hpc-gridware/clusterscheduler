@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Sending a message to a list of recipients through the configured mailer
+ */
 #include <unistd.h>
 #include <cstring>
 #include <sys/types.h>
@@ -68,20 +72,14 @@ static void sge_send_mail(uint32_t progid,
                           const char *user, const char *host, const char *subj,
                           const char *buf);
 
-/*
-** NAME
-**   cull_mail
-** PARAMETER
-**   user_list     -   mail recipients list (MR_Type)
-**   subj          -   subject line
-**   buf           -   message contents
-** RETURN
-**   none
-** EXTERNAL
-**   sge_send_mail
-** DESCRIPTION
-**   sends a mail to each of the recipients in the list
-*/
+/** @brief Send one message to every recipient in a list
+ *
+ * @param progid which daemon is sending
+ * @param user_list mail recipients list (MR_Type)
+ * @param subj subject line
+ * @param buf message contents
+ * @param mail_type what the mail is about, used in the log
+ */
 void cull_mail(uint32_t progid, const lList *user_list, const char *subj, const char *buf, const char *mail_type) {
    char *mailer;
    int mailer_has_subj_line;

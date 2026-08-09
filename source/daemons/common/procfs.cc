@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Walking `/proc`: attributing processes to jobs, and signalling them
+ */
+
 #if !defined(COMPILE_DC)
 
 int verydummyprocfs;
@@ -91,11 +95,13 @@ int verydummyprocfs;
 #endif
 
 #if defined(LINUX) || defined(SOLARIS)
+/** @brief Where the per-process information is mounted */
 #   define PROC_DIR "/proc"
 #endif
 
 #if defined(LINUX)
 
+/** @brief Buffer size for one line read out of a `/proc` file */
 #define BIGLINE 1024
 
 #endif
@@ -109,6 +115,15 @@ static struct dirent *dent;
 
 #if defined(LINUX)
 
+/** @brief Does this kernel list a process's supplementary groups in `/proc`?
+ *
+ * Determined once at startup by reading `/proc/self/status` and looking for
+ * the `Groups:` line. Without it a process cannot be attributed to a job by
+ * its additional group id, and usage collection falls back to what little the
+ * shepherd itself can see.
+ *
+ * @return true when the field is present
+ */
 int groups_in_proc () 
 {
    char buf[1024];
@@ -195,6 +210,16 @@ static void touch_time_stamp(const char *d_name, int time_stamp, lnk_link_t *job
    DRETURN_VOID;
 }
 
+/** @brief Signal every process in `/proc` carrying one additional group id
+ *
+ * Walks `/proc` rather than a process group, because a job's processes may
+ * have changed their process group; the additional group id is the one thing
+ * a job cannot shed.
+ *
+ * @param add_grp_id the job's additional group id
+ * @param sig the signal to send
+ * @param shepherd_trace called to record what was signalled; may be nullptr
+ */
 void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_trace)
 {
    char procnam[1024];
@@ -373,11 +398,15 @@ FCLOSE_ERROR:
    DRETURN_VOID;
 }
 
+/** @brief Open `/proc` for a walk over the processes
+ * @return 0 on success, non-zero when the directory could not be opened
+ */
 int pt_open() {
    cwd = opendir(PROC_DIR);
    return cwd == nullptr;
 }
 
+/** @brief End the walk over `/proc` */
 void pt_close() {
    closedir(cwd);
 }

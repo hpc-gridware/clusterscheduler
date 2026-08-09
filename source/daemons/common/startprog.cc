@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Starting another program and waiting for it, for the daemons
+ */
 #include <cstdio>
 #include <sys/wait.h>
 #include <cstring>
@@ -66,6 +70,23 @@ static int do_wait(pid_t);
  *       >0 the exit status of the child 
  *       exit status 8 is reserved for unsuccessful exec()
  *-----------------------------------------------------------------------*/
+/** @brief Start a program and wait until it exits
+ *
+ * Blocks the caller, so in practice only useful to a daemon. The path is built
+ * from `argv0` or `path`, because the configuration may not be readable yet at
+ * the point this is called.
+ *
+ * @param out descriptor the child's standard output is sent to
+ * @param err descriptor the child's standard error is sent to
+ * @param argv0 the caller's own argv[0], used to locate the binary directory
+ * @param path an explicit directory to look in instead
+ * @param name the program to start
+ * @param ... its arguments, terminated by a nullptr
+ * @return 0 if ok, -1 if fork() or exec() failed or the child died through a
+ *         signal, -2 if the executable is not stat()able, otherwise the exit
+ *         status of the child. Exit status 8 is reserved for an unsuccessful
+ *         exec().
+ */
 int startprog(int out, int err, 
               char *argv0, char *path, char *name, ...) 
 {

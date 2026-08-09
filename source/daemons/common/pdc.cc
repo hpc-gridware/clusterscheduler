@@ -32,8 +32,19 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The process data collector: what each job on this host is consuming
+ *
+ * @see pdc.h for why the totals are accumulated rather than read.
+ */
+
 #if !defined(COMPILE_DC)
 
+/** @brief Placeholder so the translation unit is not empty
+ *
+ * Everything in this file is behind `COMPILE_DC`; on a platform that does not
+ * build the collector the compiler would otherwise see an empty file.
+ */
 int verydummypdc;
 
 #   if defined(MODULE_TEST) || defined(PDC_STANDALONE)
@@ -59,6 +70,11 @@ int main(int argc,char *argv[])
 #endif
 #else
 
+/** @brief Ask the system headers for the kernel-visible struct layouts
+ *
+ * Some of the per-process fields the collector reads are only declared when
+ * this is set before the headers are included.
+ */
 #define _KMEMUSER 1
 
 #include <cstdio>
@@ -93,7 +109,9 @@ int main(int argc,char *argv[])
 #endif
 
 #if defined(LINUX) || defined(SOLARIS)
+/** @brief printf conversion for a 64 bit unsigned value on this platform */
 #  define F64 "%ld"
+/** @brief scanf conversion for a 64 bit signed value on this platform */
 #  define S64 "%li"
 #else
 #  define F64 "%d"
@@ -131,30 +149,62 @@ int main(int argc,char *argv[])
 #  endif
 #endif
 
+/** @brief How often the collector is willing to re-read each kind of data
+ *
+ * A cap, not a schedule: a caller asking twice within the interval gets the
+ * figures from the previous read rather than another walk of `/proc`.
+ */
 typedef struct {
-   int job_collection_interval;  /* max job data collection interval */
-   int prc_collection_interval;  /* max process data collection interval */
-   int sys_collection_interval;  /* max system data collection interval */
+   int job_collection_interval;  ///< max job data collection interval
+   int prc_collection_interval;  ///< max process data collection interval
+   int sys_collection_interval;  ///< max system data collection interval
 } ps_config_t;
 
 /* default collection intervals */
 static ps_config_t ps_config = { 0, 0, 5 };
 
-time_t last_time = 0;
-lnk_link_t job_list;
-long pagesize;           /* size of a page of memory (probably 8k) */
-int physical_memory;     /* size of real mem in KB                 */
-char unixname[128];      /* the name of the booted kernel          */
+time_t last_time = 0;    ///< When /proc was last walked, for the collection intervals
+lnk_link_t job_list;     ///< Head of the list of watched jobs
+long pagesize;           ///< size of a page of memory (probably 8k)
+int physical_memory;     ///< size of real mem in KB
+char unixname[128];      ///< the name of the booted kernel
 
 #if defined(LINUX)
-int sup_grp_in_proc;
+int sup_grp_in_proc;     ///< Whether /proc lists supplementary groups; see sup_groups_in_proc()
 #endif
 
+/** @brief Advance a pointer by a byte count, whatever it points at
+ *
+ * The reply to psGetOneJob() is a job followed by a variable number of
+ * processes in one block, so walking it means stepping by bytes rather than
+ * by elements.
+ *
+ * @param type the pointer's target type
+ * @param ptr the pointer, advanced in place
+ * @param nbyte how far to advance it
+ */
 #define INCPTR(type, ptr, nbyte) ptr = (type *)((char *)ptr + nbyte)
+
+/** @brief #INCPTR for a job pointer
+ * @param ptr the pointer, advanced in place
+ * @param nbyte how far to advance it
+ */
 #define INCJOBPTR(ptr, nbyte) INCPTR(struct psJob_s, ptr, nbyte)
+
+/** @brief #INCPTR for a process pointer
+ * @param ptr the pointer, advanced in place
+ * @param nbyte how far to advance it
+ */
 #define INCPROCPTR(ptr, nbyte) INCPTR(struct psProc_s, ptr, nbyte)
 
 #if defined(LINUX)
+   /** @brief Whether this kernel lists a process's supplementary groups in /proc
+    *
+    * Determined once at startup. Without it the collector cannot attribute a
+    * process to a job by its additional group id.
+    *
+    * @return true when /proc reports supplementary groups
+    */
    int sup_groups_in_proc () {
       return(sup_grp_in_proc);
    }
@@ -162,6 +212,16 @@ int sup_grp_in_proc;
 
 #if defined(LINUX) || defined(SOLARIS) || defined(FREEBSD) || defined(DARWIN)
 
+/** @brief Signal every process belonging to one additional group id
+ *
+ * This is how a job is killed as a whole: the shepherd gives every process of
+ * the job the same additional group id, so signalling that group reaches the
+ * children too, including the ones that tried to escape their process group.
+ *
+ * @param add_grp_id the job's additional group id
+ * @param sig the signal to send
+ * @param shepherd_trace called to record what was signalled; may be nullptr
+ */
 void pdc_kill_addgrpid(gid_t add_grp_id, int sig,
    tShepherd_trace shepherd_trace)
 {
@@ -252,6 +312,10 @@ void pdc_kill_addgrpid(gid_t add_grp_id, int sig,
 }
 #endif
 
+/** @brief The list entry of a watched job
+ * @param jid the job
+ * @return its link, or nullptr when the job is not being watched
+ */
 lnk_link_t * find_job(JobID_t jid) {
    lnk_link_t *curr;
 
@@ -281,6 +345,12 @@ get_gmt()
 static psSys_t sysdata;
 #endif
 
+/** @brief Set how often each kind of data may be re-read
+ *
+ * @param jobi job data interval in seconds; -1 leaves it unchanged
+ * @param prci process data interval in seconds; -1 leaves it unchanged
+ * @param sysi system data interval in seconds; -1 leaves it unchanged
+ */
 void
 psSetCollectionIntervals(int jobi, int prci, int sysi)
 {
@@ -660,6 +730,12 @@ static int psRetrieveOSJobData() {
 
 static time_t start_time;
 
+/** @brief Start the collector
+ *
+ * Idempotent - the execution daemon calls it from more than one place.
+ *
+ * @return 0; the signature returns int for symmetry with the rest of the API
+ */
 int psStartCollector()
 {
    static int initialized = 0;
@@ -704,12 +780,30 @@ int psStartCollector()
 }
 
 
+/** @brief Stop the collector
+ *
+ * Nothing to do: the collector holds no thread and no descriptor of its own,
+ * only the job list, which the daemon keeps until it exits.
+ *
+ * @return 0
+ */
 int psStopCollector()
 {
    return 0;
 }
 
 
+/** @brief Start accounting for a job
+ *
+ * A job may already be in the list: the collector creates an entry as soon as
+ * it sees a process carrying that id, which can happen before the daemon gets
+ * round to asking for it. Such an entry is marked `precreated` and is hidden
+ * from callers until this function clears the mark.
+ *
+ * @param JobID the job; 0 is ignored
+ * @param usage_collection how much detail to collect for it
+ * @return 0
+ */
 int psWatchJob(JobID_t JobID, usage_collection_t usage_collection)
 {
    if (JobID != 0) {
@@ -746,6 +840,10 @@ int psWatchJob(JobID_t JobID, usage_collection_t usage_collection)
 }
 
 
+/** @brief Stop accounting for a job and release what was collected for it
+ * @param JobID the job; 0 is ignored
+ * @return 0
+ */
 int psIgnoreJob(JobID_t JobID) {
    if (JobID != 0) {
       lnk_link_t *curr;
@@ -761,6 +859,16 @@ int psIgnoreJob(JobID_t JobID) {
    return 0;
 }
 
+/** @brief The current usage of one job, with its processes
+ *
+ * Re-reads `/proc` first, so the answer is current rather than as of the last
+ * interval. Precreated entries are skipped - a job the caller never asked to
+ * watch is not reported.
+ *
+ * @param JobID the job
+ * @return a freshly allocated block holding the job followed by its processes,
+ *         which the caller owns; nullptr when the job is not being watched
+ */
 struct psJob_s *psGetOneJob(JobID_t JobID)
 {
    psJob_t *job;
@@ -810,6 +918,13 @@ struct psJob_s *psGetOneJob(JobID_t JobID)
 }
 
 
+/** @brief The current usage of every watched job
+ *
+ * Re-reads `/proc` first, like psGetOneJob().
+ *
+ * @return a freshly allocated block holding the job count followed by the
+ *         jobs, which the caller owns
+ */
 struct psJob_s *psGetAllJobs()
 {
    psJob_t *rjob, *jobs;
@@ -870,6 +985,13 @@ struct psJob_s *psGetAllJobs()
    return rjob;
 }
 
+/** @brief Check the collector's internal state
+ *
+ * A stub: it has always returned success. Kept because it is part of the
+ * collector's published interface.
+ *
+ * @return 0
+ */
 int psVerify()
 {
    return 0;

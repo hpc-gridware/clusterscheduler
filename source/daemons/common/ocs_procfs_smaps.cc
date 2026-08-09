@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Reading per-process memory detail out of `/proc/<pid>/smaps`
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "ocs_procfs_smaps.h"

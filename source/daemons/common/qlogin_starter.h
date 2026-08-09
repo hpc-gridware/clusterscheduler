@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Starting the protocol daemon of an interactive job, and reporting back to qrsh
+ */
+
 int delete_qrsh_pid_file();
 int qlogin_starter(const char *cwd, char *daemon, char **env);
 int write_to_qrsh(const char *data);

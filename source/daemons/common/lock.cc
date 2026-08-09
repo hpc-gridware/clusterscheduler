@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief The qmaster start lock, so only one shadow daemon takes over
+ */
 #include <cstdio>
 #include <fcntl.h>
 
@@ -39,11 +43,13 @@
 
 #include "lock.h"
 
-/*-------------------------------------------------------------
- * Name:   qmaster_lock
- * Return: 0 if creation of file was successful
- *         -1 if file couldn't be created
- *-------------------------------------------------------------*/
+/** @brief Claim the right to start a qmaster on this host
+ *
+ * Creates the file exclusively, so exactly one caller can win.
+ *
+ * @param file the lock file, normally #QMASTER_LOCK_FILE
+ * @return 0 if creation of file was successful, -1 if file couldn't be created
+ */
 int qmaster_lock(
 const char *file
 ) {
@@ -61,11 +67,10 @@ const char *file
    }
 }
 
-/*-------------------------------------------------------------
- * Name:   qmaster_unlock
- * Return: 0 if file could be unlinked
- *         -1 if file couldn't be unlinked
- *-------------------------------------------------------------*/
+/** @brief Release the claim
+ * @param file the lock file
+ * @return 0 if file could be unlinked, -1 if file couldn't be unlinked
+ */
 int qmaster_unlock(
 const char *file
 ) {
@@ -78,11 +83,10 @@ const char *file
    DRETURN(ret);
 }
 
-/*-------------------------------------------------------------
- * Name:   isLocked
- * Return: 1 if file exists
- *         0 if file doesn't exist
- *-------------------------------------------------------------*/
+/** @brief Is somebody already claiming to start a qmaster?
+ * @param file the lock file
+ * @return 1 if file exists, 0 if file doesn't exist
+ */
 int isLocked(
 const char *file
 ) {
