@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
+/** @file
+ * @brief The berkeleydb spooling backend
+ */
+
 #include <ctime>
 
 #include "cull/cull.h"
@@ -40,18 +44,22 @@
 #include "spool/sge_spooling.h"
 #include "spool/sge_spooling_utilities.h"
 
-/****** spool/berkeleydb/--Spooling-Berkeley-DB ********************************
-*
-*  NAME
-*     berkeleydb spooling - spooling of data in BerkeleyDB database
-*
-*  FUNCTION
-*     The module provides functions and a spooling framework instantiation
-*     for data input/output into a BerkeleyDB database.
-*
-*  SEE ALSO
-****************************************************************************
-*/
+/** @defgroup spool_berkeleydb Berkeley DB spooling backend
+ * @brief The master lists in a Berkeley DB database
+ *
+ * The alternative to @ref spool_classic. Two databases - one for jobs, one
+ * for everything else, see #bdb_database - inside one Berkeley DB
+ * environment.
+ *
+ * It is the only backend that registers all the callbacks: it is the only one
+ * with real transactions (#spooling_transaction_func), the only one that can
+ * list keys without reading the records (#spooling_read_keys_func), and the
+ * only one with recurring housekeeping to do (#spooling_trigger_func -
+ * checkpointing and trimming the transaction log).
+ *
+ * @see @ref spool_framework, @ref spool_classic
+ * @{
+ */
 
 extern "C" {
 #ifdef SPOOLING_berkeleydb
@@ -68,6 +76,13 @@ bool
 spool_berkeleydb_default_startup_func(lList **answer_list, 
                                     const lListElem *rule, bool check);
 
+/** @brief The part of the startup that master and clients share
+ *
+ * @param answer_list to return error messages
+ * @param rule the spooling rule being started up
+ *
+ * @return true on success, else false
+ */
 bool 
 spool_berkeleydb_common_startup_func(lList **answer_list, 
                                    const lListElem *rule);
@@ -115,3 +130,5 @@ spool_berkeleydb_default_delete_func(lList **answer_list,
                                    const lListElem *rule, 
                                    const char *key, 
                                    const sge_object_type object_type);
+
+/** @} */

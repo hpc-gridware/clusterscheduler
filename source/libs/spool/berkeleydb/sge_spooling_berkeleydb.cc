@@ -32,10 +32,20 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The berkeleydb spooling backend
+ */
+
+/** @def NO_SGE_COMPILE_DEBUG
+ * @brief Compiles the rmon tracing out of this whole file
+ */
 #ifndef NO_SGE_COMPILE_DEBUG
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
+/** @def BDB_LAYER
+ * @brief The rmon layer this module would trace on
+ */
 #define BDB_LAYER BASIS_LAYER
 
 #include <cstring>
@@ -71,6 +81,10 @@
 
 static const char *spooling_method = "berkeleydb";
 
+/** @brief Report `"berkeleydb"` as this library's spooling method
+ *
+ * @return the string `"berkeleydb"`
+ */
 #ifdef SPOOLING_berkeleydb
 const char *get_spooling_method()
 #else
@@ -84,32 +98,18 @@ static bool
 spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
                              const char *option);
 
-/****** spool/berkeleydb/spool_berkeleydb_create_context() ********************
-*  NAME
-*     spool_berkeleydb_create_context() -- create a berkeleydb spooling context
-*
-*  SYNOPSIS
-*     lListElem*
-*     spool_berkeleydb_create_context(lList **answer_list, const char *args)
-*
-*  FUNCTION
-*     Create a spooling context for the berkeleydb spooling.
-*
-*     Argv has as first (and currently only) parameter the Database URL.
-*
-*     It currently consists of the path to the database directory.
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     const char *args    - arguments to the spooling method, see above.
-*
-*  RESULT
-*     lListElem* - on success, the new spooling context, else nullptr
-*
-*  SEE ALSO
-*     spool/--Spooling
-*     spool/berkeleydb/--BerkeleyDB-Spooling
-*******************************************************************************/
+/**
+ * @brief Create a berkeleydb spooling context
+ *
+ * Create a spooling context for the berkeleydb spooling.
+ * Argv has as first (and currently only) parameter the Database URL.
+ * It currently consists of the path to the database directory.
+ *
+ * @param answer_list to return error messages
+ * @param args arguments to the spooling method, see above.
+ *
+ * @return on success, the new spooling context, else nullptr
+ */
 lListElem *
 spool_berkeleydb_create_context(lList **answer_list, const char *args)
 {
@@ -158,36 +158,22 @@ spool_berkeleydb_create_context(lList **answer_list, const char *args)
    DRETURN(context);
 }
 
-/****** spool/berkeleydb/spool_berkeleydb_default_startup_func() **************
-*  NAME
-*     spool_berkeleydb_default_startup_func() -- setup
-*
-*  SYNOPSIS
-*     bool
-*     spool_berkeleydb_default_startup_func(lList **answer_list,
-*                                         const char *args, bool check)
-*
-*  FUNCTION
-*
-*  INPUTS
-*     lList **answer_list   - to return error messages
-*     const lListElem *rule - the rule containing data necessary for
-*                             the startup (e.g. path to the spool directory)
-*     bool check            - check the spooling database
-*
-*  RESULT
-*     bool - true, if the startup succeeded, else false
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*     MT-NOTE: spool_berkeleydb_default_startup_func() is MT safe
-*
-*  SEE ALSO
-*     spool/berkeleydb/--BerkeleyDB-Spooling
-*     spool/spool_startup_context()
-*******************************************************************************/
+/**
+ * @brief Setup
+ *
+ * @param answer_list to return error messages
+ * @param rule the rule containing data necessary for the startup (e.g. path to the spool directory)
+ * @param check check the spooling database
+ *
+ * @return true, if the startup succeeded, else false
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ *
+ *       MT-NOTE: spool_berkeleydb_default_startup_func() is MT safe
+ *
+ * @see `spool_startup_context()`
+ */
 bool
 spool_berkeleydb_default_startup_func(lList **answer_list,
                                       const lListElem *rule, bool check)
@@ -213,36 +199,23 @@ spool_berkeleydb_default_startup_func(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** spool/berkeleydb/spool_berkeleydb_default_shutdown_func() **************
-*  NAME
-*     spool_berkeleydb_default_shutdown_func() -- shutdown spooling context
-*
-*  SYNOPSIS
-*     bool
-*     spool_berkeleydb_default_shutdown_func(lList **answer_list,
-*                                          lListElem *rule);
-*
-*  FUNCTION
-*     Shuts down the context, e.g. the database connection.
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     const lListElem *rule - the rule containing data necessary for
-*                             the shutdown (e.g. path to the spool directory)
-*
-*  RESULT
-*     bool - true, if the shutdown succeeded, else false
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*     MT-NOTE: spool_berkeleydb_default_shutdown_func() is MT safe
-*
-*  SEE ALSO
-*     spool/berkeleydb/--Spooling-BerkeleyDB
-*     spool/spool_shutdown_context()
-*******************************************************************************/
+/**
+ * @brief Shutdown spooling context
+ *
+ * Shuts down the context, e.g. the database connection.
+ *
+ * @param answer_list to return error messages
+ * @param rule the rule containing data necessary for the shutdown (e.g. path to the spool directory)
+ *
+ * @return true, if the shutdown succeeded, else false
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ *
+ *       MT-NOTE: spool_berkeleydb_default_shutdown_func() is MT safe
+ *
+ * @see `spool_shutdown_context()`
+ */
 bool
 spool_berkeleydb_default_shutdown_func(lList **answer_list,
                                     const lListElem *rule)
@@ -269,43 +242,27 @@ spool_berkeleydb_default_shutdown_func(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** spool/berkeleydb/spool_berkeleydb_default_maintenance_func() ************
-*  NAME
-*     spool_berkeleydb_default_maintenance_func() -- maintain database
-*
-*  SYNOPSIS
-*     bool
-*     spool_berkeleydb_default_maintenance_func(lList **answer_list,
-*                                    lListElem *rule
-*                                    const spooling_maintenance_command cmd,
-*                                    const char *args);
-*
-*  FUNCTION
-*     Maintains the database:
-*        - initialization
-*        - ...
-*
-*  INPUTS
-*     lList **answer_list   - to return error messages
-*     const lListElem *rule - the rule containing data necessary for
-*                             the maintenance (e.g. path to the spool
-*                             directory)
-*     const spooling_maintenance_command cmd - the command to execute
-*     const char *args      - arguments to the maintenance command
-*
-*  RESULT
-*     bool - true, if the maintenance succeeded, else false
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*     MT-NOTE: spool_berkeleydb_default_maintenance_func() is MT safe
-*
-*  SEE ALSO
-*     spool/berkeleydb/--Spooling-BerkeleyDB
-*     spool/spool_maintain_context()
-*******************************************************************************/
+/**
+ * @brief Maintain database
+ *
+ * Maintains the database:
+ *    - initialization
+ *    - ...
+ *
+ * @param answer_list to return error messages
+ * @param rule the rule containing data necessary for the maintenance (e.g. path to the spool directory)
+ * @param cmd the command to execute
+ * @param args arguments to the maintenance command
+ *
+ * @return true, if the maintenance succeeded, else false
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ *
+ *       MT-NOTE: spool_berkeleydb_default_maintenance_func() is MT safe
+ *
+ * @see `spool_maintain_context()`
+ */
 bool
 spool_berkeleydb_default_maintenance_func(lList **answer_list,
                                     const lListElem *rule,
@@ -336,37 +293,23 @@ spool_berkeleydb_default_maintenance_func(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** spool/berkeleydb/spool_berkeleydb_trigger_func() ****************
-*  NAME
-*     spool_berkeleydb_trigger_func() -- do recurring tasks
-*
-*  SYNOPSIS
-*     bool
-*     spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
-*                                   time_t trigger, time_t *next_trigger)
-*
-*  FUNCTION
-*     Does recurring tasks for the Berkeley DB.
-*
-*     In case of spooling to a local filesystem
-*     - regular checkpointing is done
-*     - a cleanup of the transaction log is done
-*
-*  INPUTS
-*     lList **answer_list   - used to return error messages
-*     const lListElem *rule - the spooling rule
-*     time_t trigger        - time when this trigger was due
-*     time_t *next_trigger  - time when trigger shall be called again
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     MT-NOTE: spool_berkeleydb_trigger_func() is MT safe
-*
-*  SEE ALSO
-*     spool/berkeleydb/--Spooling-BerkeleyDB
-*******************************************************************************/
+/**
+ * @brief Do recurring tasks
+ *
+ * Does recurring tasks for the Berkeley DB.
+ * In case of spooling to a local filesystem
+ * - regular checkpointing is done
+ * - a cleanup of the transaction log is done
+ *
+ * @param answer_list used to return error messages
+ * @param rule the spooling rule
+ * @param trigger time when this trigger was due
+ * @param next_trigger time when trigger shall be called again
+ *
+ * @return true on success, else false
+ *
+ * @note MT-NOTE: spool_berkeleydb_trigger_func() is MT safe
+ */
 bool
 spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
                               uint64_t trigger, uint64_t *next_trigger)
@@ -399,34 +342,20 @@ spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
    DRETURN(ret);
 }
 
-/****** spool/berkeleydb/spool_berkeleydb_transaction_func() ************
-*  NAME
-*     spool_berkeleydb_transaction_func() -- start or end a transaction
-*
-*  SYNOPSIS
-*     bool
-*     spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
-*                                       spooling_transaction_command cmd)
-*
-*  FUNCTION
-*     Starts or ends a transaction (depending on cmd).
-*
-*     Each thread of a process can have one open transaction.
-*
-*  INPUTS
-*     lList **answer_list              - to return error messages
-*     const lListElem *rule            - spooling rule
-*     spooling_transaction_command cmd - the transaction command
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     MT-NOTE: spool_berkeleydb_transaction_func() is MT safe
-*
-*  SEE ALSO
-*     spool/berkeleydb/--Spooling-BerkeleyDB
-*******************************************************************************/
+/**
+ * @brief Start or end a transaction
+ *
+ * Starts or ends a transaction (depending on cmd).
+ * Each thread of a process can have one open transaction.
+ *
+ * @param answer_list to return error messages
+ * @param rule spooling rule
+ * @param cmd the transaction command
+ *
+ * @return true on success, else false
+ *
+ * @note MT-NOTE: spool_berkeleydb_transaction_func() is MT safe
+ */
 bool
 spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
                                   spooling_transaction_command cmd)
@@ -473,43 +402,27 @@ spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
    DRETURN(ret);
 }
 
-/****** spool/berkeleydb/spool_berkeleydb_default_list_func() *****************
-*  NAME
-*     spool_berkeleydb_default_list_func() -- read lists through berkeleydb spooling
-*
-*  SYNOPSIS
-*     bool
-*     spool_berkeleydb_default_list_func(
-*                                      lList **answer_list,
-*                                      const lListElem *type,
-*                                      const lListElem *rule, lList **list,
-*                                      const sge_object_type object_type)
-*
-*  FUNCTION
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     const lListElem *type           - object type description
-*     const lListElem *rule           - rule to be used
-*     lList **list                    - target list
-*     const sge_object_type object_type - object type
-*
-*  RESULT
-*     bool - true, on success, else false
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*     MT-NOTE: spool_berkeleydb_default_list_func() is MT safe
-*
-*              The caller has to make sure, that locking for the list
-*              parameter is done correctly!
-*
-*  SEE ALSO
-*     spool/berkeleydb/--BerkeleyDB-Spooling
-*     spool/spool_read_list()
-*******************************************************************************/
+/**
+ * @brief Read lists through berkeleydb spooling
+ *
+ * @param answer_list to return error messages
+ * @param type object type description
+ * @param rule rule to be used
+ * @param list target list
+ * @param object_type object type
+ *
+ * @return true, on success, else false
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ *
+ *       MT-NOTE: spool_berkeleydb_default_list_func() is MT safe
+ *
+ *       The caller has to make sure, that locking for the list
+ *       parameter is done correctly!
+ *
+ * @see `spool_read_list()`
+ */
 bool
 spool_berkeleydb_default_list_func(lList **answer_list,
                                  const lListElem *type,
@@ -696,39 +609,24 @@ spool_berkeleydb_default_list_func(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** spool/berkeleydb/spool_berkeleydb_default_read_func() *****************
-*  NAME
-*     spool_berkeleydb_default_read_func() -- read objects through berkeleydb spooling
-*
-*  SYNOPSIS
-*     lListElem*
-*     spool_berkeleydb_default_read_func(lList **answer_list,
-*                                      const lListElem *type,
-*                                      const lListElem *rule, const char *key,
-*                                      const sge_object_type object_type)
-*
-*  FUNCTION
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     const lListElem *type           - object type description
-*     const lListElem *rule           - rule to use
-*     const char *key                 - unique key specifying the object
-*     const sge_object_type object_type - object type
-*
-*  RESULT
-*     lListElem* - the object, if it could be read, else nullptr
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*     MT-NOTE: spool_berkeleydb_default_read_func() is MT safe
-*
-*  SEE ALSO
-*     spool/berkeleydb/--BerkeleyDB-Spooling
-*     spool/spool_read_object()
-*******************************************************************************/
+/**
+ * @brief Read objects through berkeleydb spooling
+ *
+ * @param answer_list to return error messages
+ * @param type object type description
+ * @param rule rule to use
+ * @param key unique key specifying the object
+ * @param object_type object type
+ *
+ * @return the object, if it could be read, else nullptr
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ *
+ *       MT-NOTE: spool_berkeleydb_default_read_func() is MT safe
+ *
+ * @see `spool_read_object()`
+ */
 lListElem *
 spool_berkeleydb_default_read_func(lList **answer_list,
                                  const lListElem *type,
@@ -809,6 +707,23 @@ spool_berkeleydb_default_read_func(lList **answer_list,
    DRETURN(ep);
 }
 
+/**
+ * @brief List the keys the database holds below a key
+ *
+ * The #spooling_read_keys_func of this backend, and the only implementation
+ * of it in the tree - the flatfile backend leaves the callback nullptr, which
+ * is why `spooledit list` only works against a Berkeley DB spool.
+ *
+ * @param answer_list to return error messages
+ * @param rule the spooling rule
+ * @param list receives the keys (`STU_Type`)
+ * @param key the key prefix to list below
+ *
+ * @return true on success, else false
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ */
 bool
 spool_berkeleydb_default_read_keys_func(lList **answer_list,
                                         const lListElem *rule,
@@ -867,43 +782,27 @@ spool_berkeleydb_default_read_keys_func(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** spool/berkeleydb/spool_berkeleydb_default_write_func() ****************
-*  NAME
-*     spool_berkeleydb_default_write_func() -- write objects through berkeleydb spooling
-*
-*  SYNOPSIS
-*     bool
-*     spool_berkeleydb_default_write_func(lList **answer_list,
-*                                       const lListElem *type,
-*                                       const lListElem *rule,
-*                                       const lListElem *object,
-*                                       const char *key,
-*                                       const sge_object_type object_type)
-*
-*  FUNCTION
-*     Writes an object through the appropriate berkeleydb spooling functions.
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     const lListElem *type           - object type description
-*     const lListElem *rule           - rule to use
-*     const lListElem *object         - object to spool
-*     const char *key                 - unique key
-*     const sge_object_type object_type - object type
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*     MT-NOTE: spool_berkeleydb_default_write_func() is MT safe
-*
-*  SEE ALSO
-*     spool/berkeleydb/--BerkeleyDB-Spooling
-*     spool/spool_delete_object()
-*******************************************************************************/
+/**
+ * @brief Write objects through berkeleydb spooling
+ *
+ * Writes an object through the appropriate berkeleydb spooling functions.
+ *
+ * @param answer_list to return error messages
+ * @param type object type description
+ * @param rule rule to use
+ * @param object object to spool
+ * @param key unique key
+ * @param object_type object type
+ *
+ * @return true on success, else false
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ *
+ *       MT-NOTE: spool_berkeleydb_default_write_func() is MT safe
+ *
+ * @see `spool_delete_object()`
+ */
 bool
 spool_berkeleydb_default_write_func(lList **answer_list,
                                   const lListElem *type,
@@ -1041,41 +940,26 @@ spool_berkeleydb_default_write_func(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** spool/berkeleydb/spool_berkeleydb_default_delete_func() ***************
-*  NAME
-*     spool_berkeleydb_default_delete_func() -- delete object in berkeleydb spooling
-*
-*  SYNOPSIS
-*     bool
-*     spool_berkeleydb_default_delete_func(lList **answer_list,
-*                                        const lListElem *type,
-*                                        const lListElem *rule,
-*                                        const char *key,
-*                                        const sge_object_type object_type)
-*
-*  FUNCTION
-*     Deletes an object in the berkeleydb spooling.
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     const lListElem *type           - object type description
-*     const lListElem *rule           - rule to use
-*     const char *key                 - unique key
-*     const sge_object_type object_type - object type
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*     MT-NOTE: spool_berkeleydb_default_delete_func() is MT safe
-*
-*  SEE ALSO
-*     spool/berkeleydb/--BerkeleyDB-Spooling
-*     spool/spool_delete_object()
-*******************************************************************************/
+/**
+ * @brief Delete object in berkeleydb spooling
+ *
+ * Deletes an object in the berkeleydb spooling.
+ *
+ * @param answer_list to return error messages
+ * @param type object type description
+ * @param rule rule to use
+ * @param key unique key
+ * @param object_type object type
+ *
+ * @return true on success, else false
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ *
+ *       MT-NOTE: spool_berkeleydb_default_delete_func() is MT safe
+ *
+ * @see `spool_delete_object()`
+ */
 bool
 spool_berkeleydb_default_delete_func(lList **answer_list,
                                    const lListElem *type,

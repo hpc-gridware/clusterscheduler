@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Reading and writing the spool file of an advance reservation
+ */
+
 #include <filesystem>
 
 #include "cull/cull_file.h"

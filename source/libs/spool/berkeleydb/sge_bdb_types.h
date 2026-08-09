@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
+/** @file
+ * @brief The Berkeley DB handles of one spooling rule
+ */
+
 #include <ctime>
 #include <pthread.h>
 
@@ -40,34 +44,42 @@
 
 #include "uti/sge_dstring.h"
 
-/* JG: TODO: the following defines should better be parameters to
- *           the berkeley db spooling
+/** @name How often the housekeeping runs
+ *
+ * #spool_berkeleydb_trigger uses these to decide what is due and to tell the
+ * framework when to call it again.
+ *
+ * @todo (JG) These should be parameters of the Berkeley DB spooling rather
+ *       than compiled in.
+ * @{
  */
+#define BERKELEYDB_CLEAR_INTERVAL 300   ///< Seconds between two trims of the transaction log
+#define BERKELEYDB_CHECKPOINT_INTERVAL 60   ///< Seconds between two checkpoints, i.e. cache writes to disk
+#define BERKELEYDB_MIN_INTERVAL BERKELEYDB_CHECKPOINT_INTERVAL   ///< The shorter of the two, and therefore how often the trigger has to run at all
+/** @} */
 
-/* how often will the transaction log be cleared */
-#define BERKELEYDB_CLEAR_INTERVAL 300
-
-/* how often will the database be checkpointed (cache written to disk) */
-#define BERKELEYDB_CHECKPOINT_INTERVAL 60
-
-/* this is the minimum of clear and checkpoint interval */
-#define BERKELEYDB_MIN_INTERVAL BERKELEYDB_CHECKPOINT_INTERVAL
-
-/* Berkeley DB data structures:
- * We have a bdb_info object per spooling rule.
- * It holds all data that is required to use the spooling rule.
- * In case of local spooling, the DB_ENV and the DB are accessible for multiple threads.
- * The transaction handle is always thread specific.
- * Thread specific data is initialized in the spooling startup function.
+/** @brief Which of the two databases an operation addresses
+ *
+ * Jobs are kept apart from everything else because they are written far more
+ * often, so that job spooling cannot slow the configuration down or be held
+ * up by it.
  */
-
 typedef enum {
-   BDB_CONFIG_DB = 0,
-   BDB_JOB_DB,
-   
-   BDB_ALL_DBS
+   BDB_CONFIG_DB = 0,   ///< Everything but jobs
+   BDB_JOB_DB,          ///< Jobs and their tasks
+
+   BDB_ALL_DBS          ///< Not a database: the number of them, for sizing arrays and for loops over both
 } bdb_database;
 
+/** @brief Opaque handle to the Berkeley DB state of one spooling rule
+ *
+ * The struct behind it is private to `sge_bdb_types.cc`; everything goes
+ * through the accessors below. Environment and database handles are shared
+ * between threads for a database on a local filesystem, while the
+ * transaction handle is always thread specific - which is why
+ * #bdb_get_txn and #bdb_set_txn reach into thread specific data while
+ * #bdb_get_path does not.
+ */
 typedef struct _bdb_info *bdb_info;
 
 bdb_info
@@ -112,6 +124,10 @@ bdb_set_next_clear(bdb_info info, const uint64_t next);
 void
 bdb_set_next_checkpoint(bdb_info info, const uint64_t next);
 
+/** @brief Request or clear recovery on the next open
+ * @param info the handle
+ * @param recover true to run recovery
+ */
 void 
 bdb_set_recover(bdb_info info, bool recover);
 

@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
+/** @file
+ * @brief The Berkeley DB operations behind the berkeleydb spooling backend
+ */
+
 #include "cull/cull.h"
 #include "spool/berkeleydb/sge_bdb_types.h"
 #include <cinttypes>

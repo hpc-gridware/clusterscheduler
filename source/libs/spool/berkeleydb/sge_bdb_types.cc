@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
+/** @file
+ * @brief The Berkeley DB handles of one spooling rule
+ */
+
 #include <cstdlib>
 #include <cstring>
 #include <cerrno>
@@ -47,24 +51,46 @@
 
 #include <cinttypes>
 
+/** @brief Everything one spooling rule needs to reach its Berkeley DB
+ *
+ * One of these per rule, reached through the opaque #bdb_info handle. The
+ * environment and the database handles live here and are shared between all
+ * threads; only the transaction handle is per thread, and it is kept in
+ * `bdb_connection` under #_bdb_info::key.
+ */
 struct _bdb_info {
-   pthread_mutex_t   mtx;                 /* lock access to this object */
-   pthread_key_t     key;                 /* for thread specific data */
-  
-   const char *      path;                /* the database path */
+   pthread_mutex_t   mtx;                 ///< Guards this object; taken by #bdb_lock_info
+   pthread_key_t     key;                 ///< Thread specific key under which each thread finds its connection
 
-   DB_ENV *          env;                 /* global database environment */
-   DB **             db;                  /* global database object */
+   const char *      path;                ///< The database path
 
-   uint64_t            next_clear;          /* time of next logfile clear */
-   uint64_t            next_checkpoint;     /* time of next checkpoint */
-   bool              recover;             /* shall we recover on open? */
+   DB_ENV *          env;                 ///< Global database environment
+   DB **             db;                  ///< Global database handles, one per #bdb_database
+
+   uint64_t            next_clear;          ///< When the transaction log is next trimmed, see #BERKELEYDB_CLEAR_INTERVAL
+   uint64_t            next_checkpoint;     ///< When the cache is next written to disk, see #BERKELEYDB_CHECKPOINT_INTERVAL
+   bool              recover;             ///< Run recovery when the environment is opened
 };
 
+/** @brief The handles that belong to one thread
+ *
+ * Stored under the thread specific key of #_bdb_info and created on first use
+ * by `bdb_init_connection()`, so that a thread never has to be told to
+ * initialise itself.
+ *
+ * @warning Only `txn` is live. `env` and `db` are set to nullptr on creation
+ *          and freed on destruction and are never read or assigned a real
+ *          handle in between - #bdb_get_env and #bdb_get_db both return the
+ *          shared ones from #_bdb_info. They are what is left of Berkeley
+ *          DB's RPC mode, which needed a per thread environment; the doc
+ *          comments on those accessors still described it. The array
+ *          `bdb_init_connection()` allocates for `db` is therefore one
+ *          allocation per thread that nothing ever uses.
+ */
 typedef struct bdb_connection {
-   DB_ENV *    env;                 /* thread specific database environment */
-   DB **        db;                 /* thread specific database object */
-   DB_TXN *    txn;                 /* transaction handle, always per thread */
+   DB_ENV *    env;                 ///< Dead - see the warning above
+   DB **        db;                 ///< Dead - see the warning above
+   DB_TXN *    txn;                 ///< The running transaction of this thread
 } bdb_connection;
 
 static void
@@ -73,32 +99,21 @@ bdb_init_connection(bdb_connection *con);
 static void 
 bdb_destroy_connection(void *connection);
 
-/****** spool/berkeleydb/bdb_create() *****************************************
-*  NAME
-*     bdb_create() -- create Berkeley DB specific data structures
-*
-*  SYNOPSIS
-*     bdb_info 
-*     bdb_create(const char *path)
-*
-*  FUNCTION
-*     Creates and initializes an object describing the connection to a 
-*     Berkeley DB database and holding database and transaction handles.
-*
-*     Transaction handles are thread specific.
-*
-*     Path is
-*     - the absolute path to a Database in case of local spooling
-*
-*  INPUTS
-*     const char *path   - path to the database
-*
-*  RESULT
-*     bdb_info - pointer to a newly created and initialized structure
-*
-*  NOTES
-*     MT-NOTE: bdb_create() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Create Berkeley DB specific data structures
+ *
+ * Creates and initializes an object describing the connection to a
+ * Berkeley DB database and holding database and transaction handles.
+ * Transaction handles are thread specific.
+ * Path is
+ * - the absolute path to a Database in case of local spooling
+ *
+ * @param path path to the database
+ *
+ * @return pointer to a newly created and initialized structure
+ *
+ * @note MT-NOTE: bdb_create() is MT safe
+ */
 bdb_info
 bdb_create(const char *path)
 {
@@ -126,11 +141,15 @@ bdb_create(const char *path)
 }
 
 /**
+ * @brief Release the state of one spooling rule
+ *
  * Releases the per-rule bdb_info allocated in bdb_create: deletes the
  * pthread key, frees the strdup'd path and the DB handle array, destroys
  * the mutex, and frees the struct. Worker threads that still hold a
  * per-thread bdb_connection must have had their pthread-key destructor
  * fired first; ordinarily that happens at thread exit.
+ *
+ * @param info the handle, set to nullptr on return
  */
 void
 bdb_destroy(bdb_info *info)
@@ -210,57 +229,39 @@ bdb_destroy_connection(void *connection)
    DRETURN_VOID;
 }
 
-/****** spool/berkeleydb/bdb_get_path() ****************************************
-*  NAME
-*     bdb_get_path() -- get the database path
-*
-*  SYNOPSIS
-*     const char * 
-*     bdb_get_path(bdb_info info) 
-*
-*  FUNCTION
-*     Returns the path to a Berkeley DB database.
-*     If the RPC mechanism is used, this is the last component of the path.
-*
-*  INPUTS
-*     bdb_info info - the database object
-*
-*  RESULT
-*     const char * - path to the database.
-*
-*  NOTES
-*     MT-NOTE: bdb_get_path() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Get the database path
+ *
+ * Returns the path to a Berkeley DB database.
+ * If the RPC mechanism is used, this is the last component of the path.
+ *
+ * @param info the database object
+ *
+ * @return path to the database.
+ *
+ * @note MT-NOTE: bdb_get_path() is MT safe
+ */
 const char *
 bdb_get_path(bdb_info info)
 {
    return info->path;
 }
 
-/****** spool/berkeleydb/bdb_get_env() *****************************************
-*  NAME
-*     bdb_get_env() -- get Berkeley DB database environment
-*
-*  SYNOPSIS
-*     DB_ENV * bdb_get_env(bdb_info info) 
-*
-*  FUNCTION
-*     Returns the Berkeley DB database environment set earlier using 
-*     bdb_set_env().
-*     If the RPC mechanism is used, the environment is stored per thread.
-*
-*  INPUTS
-*     bdb_info info - the database object
-*
-*  RESULT
-*     DB_ENV * - the database environment
-*
-*  NOTES
-*     MT-NOTE: bdb_get_env() is MT safe 
-*
-*  SEE ALSO
-*     spool/berkeleydb/bdb_set_env()
-*******************************************************************************/
+/**
+ * @brief Get Berkeley DB database environment
+ *
+ * Returns the Berkeley DB database environment set earlier using
+ * bdb_set_env().
+ * The environment is shared between all threads.
+ *
+ * @param info the database object
+ *
+ * @return the database environment
+ *
+ * @note MT-NOTE: bdb_get_env() is MT safe
+ *
+ * @see #bdb_set_env
+ */
 DB_ENV *
 bdb_get_env(bdb_info info)
 {
@@ -271,30 +272,20 @@ bdb_get_env(bdb_info info)
    return env;
 }
 
-/****** spool/berkeleydb/bdb_get_db() ******************************************
-*  NAME
-*     bdb_get_db() -- get Berkeley DB database handle
-*
-*  SYNOPSIS
-*     DB * 
-*     bdb_get_db(bdb_info info) 
-*
-*  FUNCTION
-*     Return the Berkeleyd BD database handle set earlier using bdb_set_db().
-*     If the RPC mechanism is used, the database handle is stored per thread.
-*
-*  INPUTS
-*     bdb_info info - the database object
-*
-*  RESULT
-*     DB * - the database handle
-*
-*  NOTES
-*     MT-NOTE: bdb_get_db() is MT safe 
-*
-*  SEE ALSO
-*     spool/berkeleydb/bdb_set_db()
-*******************************************************************************/
+/**
+ * @brief Get Berkeley DB database handle
+ *
+ * Returns the handle stored earlier with #bdb_set_db.
+ *
+ * @param info the database object
+ * @param database which of the two databases
+ *
+ * @return the database handle, or nullptr if it is not open
+ *
+ * @note MT-NOTE: bdb_get_db() is MT safe
+ *
+ * @see #bdb_set_db
+ */
 DB *
 bdb_get_db(bdb_info info, const bdb_database database)
 {
@@ -305,30 +296,20 @@ bdb_get_db(bdb_info info, const bdb_database database)
    return db;
 }
 
-/****** spool/berkeleydb/bdb_get_txn() *****************************************
-*  NAME
-*     bdb_get_txn() -- get a transaction handle
-*
-*  SYNOPSIS
-*     DB_TXN * 
-*     bdb_get_txn(bdb_info info) 
-*
-*  FUNCTION
-*     Returns a transaction handle set earlier with bdb_set_txn().
-*     Each thread can have one transaction open.
-*
-*  INPUTS
-*     bdb_info info - the database object
-*
-*  RESULT
-*     DB_TXN * - a transaction handle
-*
-*  NOTES
-*     MT-NOTE: bdb_get_txn() is MT safe 
-*
-*  SEE ALSO
-*     spool/berkeleydb/bdb_set_txn()
-*******************************************************************************/
+/**
+ * @brief Get a transaction handle
+ *
+ * Returns a transaction handle set earlier with bdb_set_txn().
+ * Each thread can have one transaction open.
+ *
+ * @param info the database object
+ *
+ * @return a transaction handle
+ *
+ * @note MT-NOTE: bdb_get_txn() is MT safe
+ *
+ * @see #bdb_set_txn
+ */
 DB_TXN *
 bdb_get_txn(bdb_info info)
 {
@@ -336,104 +317,86 @@ bdb_get_txn(bdb_info info)
    return con->txn;
 }
 
+/** @brief When the transaction log is next due to be trimmed
+ * @param info the handle
+ * @return the time, as an absolute timestamp
+ */
 uint64_t
 bdb_get_next_clear(bdb_info info)
 {
    return info->next_clear;
 }
 
+/** @brief When the database is next due to be checkpointed
+ * @param info the handle
+ * @return the time, as an absolute timestamp
+ */
 uint64_t
 bdb_get_next_checkpoint(bdb_info info)
 {
    return info->next_checkpoint;
 }
 
+/** @brief Whether recovery runs when the environment is opened
+ * @param info the handle
+ * @return true if recovery is requested
+ */
 bool
 bdb_get_recover(bdb_info info) 
 {
    return info->recover;
 }
 
-/****** spool/berkeleydb/bdb_set_env() *****************************************
-*  NAME
-*     bdb_set_env() -- set the Berkeley DB environment
-*
-*  SYNOPSIS
-*     void 
-*     bdb_set_env(bdb_info info, DB_ENV *env) 
-*
-*  FUNCTION
-*     Sets the Berkeley DB environment.
-*     If the RPC mechanism is used, an environment has to be created and opened
-*     per thread.
-*
-*  INPUTS
-*     bdb_info info - the database object
-*     DB_ENV *env           - the environment handle to set
-*
-*  NOTES
-*     MT-NOTE: bdb_set_env() is MT safe 
-*
-*  SEE ALSO
-*     spool/berkeleydb/bdb_get_env()
-*******************************************************************************/
+/**
+ * @brief Set the Berkeley DB environment
+ *
+ * Sets the Berkeley DB environment. It is shared between all threads.
+ *
+ * @param info the database object
+ * @param env the environment handle to set
+ *
+ * @note MT-NOTE: bdb_set_env() is MT safe
+ *
+ * @see #bdb_get_env
+ */
 void
 bdb_set_env(bdb_info info, DB_ENV *env)
 {
    info->env  = env;
 }
 
-/****** spool/berkeleydb/bdb_set_db() ******************************************
-*  NAME
-*     bdb_set_db() -- set a Berkeley DB database handle
-*
-*  SYNOPSIS
-*     void 
-*     bdb_set_db(bdb_info info, DB *db) 
-*
-*  FUNCTION
-*     Sets the Berkeley DB database handle.
-*     If the RPC mechanism is used, a database handle has to be created and 
-*     opened per thread.
-*
-*  INPUTS
-*     bdb_info info - the database object
-*     DB *db                - the database handle to store
-*
-*  NOTES
-*     MT-NOTE: bdb_set_db() is MT safe 
-*
-*  SEE ALSO
-*     spool/berkeleydb/bdb_get_db()
-*******************************************************************************/
+/**
+ * @brief Set a Berkeley DB database handle
+ *
+ * Sets the Berkeley DB database handle. It is shared between all threads.
+ *
+ * @param info the database object
+ * @param db the database handle to store
+ * @param database which of the two databases it is
+ *
+ * @note MT-NOTE: bdb_set_db() is MT safe
+ *
+ * @see #bdb_get_db
+ */
 void
 bdb_set_db(bdb_info info, DB *db, const bdb_database database)
 {
    info->db[database]  = db;
 }
 
-/****** spool/berkeleydb/bdb_set_txn() *****************************************
-*  NAME
-*     bdb_set_txn() -- store a transaction handle
-*
-*  SYNOPSIS
-*     void 
-*     bdb_set_txn(bdb_info info, DB_TXN *txn) 
-*
-*  FUNCTION
-*     Stores a Berkeley DB transaction handle.
-*     It is always stored in thread local storage.
-*
-*  INPUTS
-*     bdb_info info - the database object
-*     DB_TXN *txn           - the transaction handle to store
-*
-*  NOTES
-*     MT-NOTE: bdb_set_txn() is MT safe 
-*
-*  SEE ALSO
-*     spool/berkeleydb/bdb_get_txn()
-*******************************************************************************/
+/**
+ * @brief Store a transaction handle
+ *
+ * Stores a Berkeley DB transaction handle.
+ * It is always stored in thread local storage.
+ *
+ * @param info the database object
+ * @param txn the transaction handle to store
+ *
+ * @note MT-NOTE: bdb_set_txn() is MT safe
+ *
+ * @see #bdb_get_txn
+ */
 void
 bdb_set_txn(bdb_info info, DB_TXN *txn)
 {
@@ -441,12 +404,20 @@ bdb_set_txn(bdb_info info, DB_TXN *txn)
    con->txn = txn;
 }
 
+/** @brief Set when the transaction log is next trimmed
+ * @param info the handle
+ * @param next the time, as an absolute timestamp
+ */
 void
 bdb_set_next_clear(bdb_info info, const uint64_t next)
 {
    info->next_clear = next;
 }
 
+/** @brief Set when the database is next checkpointed
+ * @param info the handle
+ * @param next the time, as an absolute timestamp
+ */
 void
 bdb_set_next_checkpoint(bdb_info info, const uint64_t next)
 {
@@ -459,29 +430,20 @@ bdb_set_recover(bdb_info info, bool recover)
    info->recover = recover;
 }
 
-/****** spool/berkeleydb/bdb_get_dbname() **************************************
-*  NAME
-*     bdb_get_dbname() -- get a meaningfull database name
-*
-*  SYNOPSIS
-*     const char * 
-*     bdb_get_dbname(bdb_info info, dstring *buffer) 
-*
-*  FUNCTION
-*     Return a meaningfull name for a database connection.
-*     It contains the database path.
-*     A dstring buffer has to be provided by the caller.
-*
-*  INPUTS
-*     bdb_info info - the database object
-*     dstring *buffer       - buffer to hold the database name
-*
-*  RESULT
-*     const char * - the database name
-*
-*  NOTES
-*     MT-NOTE: bdb_get_dbname() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Get a meaningfull database name
+ *
+ * Return a meaningfull name for a database connection.
+ * It contains the database path.
+ * A dstring buffer has to be provided by the caller.
+ *
+ * @param info the database object
+ * @param buffer buffer to hold the database name
+ *
+ * @return the database name
+ *
+ * @note MT-NOTE: bdb_get_dbname() is MT safe
+ */
 const char *
 bdb_get_dbname(bdb_info info, dstring *buffer)
 {
@@ -497,18 +459,28 @@ bdb_get_dbname(bdb_info info, dstring *buffer)
    return ret;
 }
 
+/** @brief Take the lock guarding a handle
+ * @param info the handle
+ */
 void
 bdb_lock_info(bdb_info info)
 {
    sge_mutex_lock("bdb mutex", "bdb_lock_info", __LINE__, &(info->mtx));
 }
 
+/** @brief Release the lock guarding a handle
+ * @param info the handle
+ */
 void
 bdb_unlock_info(bdb_info info)
 {
    sge_mutex_unlock("bdb mutex", "bdb_unlock_info", __LINE__, &(info->mtx));
 }
 
+/** @brief The name of one of the two databases, for messages and filenames
+ * @param database which database
+ * @return the name
+ */
 const char *
 bdb_get_database_name(const bdb_database database)
 {

@@ -32,10 +32,26 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/ 
 
+/** @file
+ * @brief The Berkeley DB operations behind the berkeleydb spooling backend
+ */
+
+/** @def NO_SGE_COMPILE_DEBUG
+ * @brief Compiles the rmon tracing out of this whole file
+ *
+ * Defined before `uti/sge_rmon_macros.h` is included, so every #DENTER,
+ * #DRETURN and `DPRINTF` below turns into nothing.
+ */
 #ifndef NO_SGE_COMPILE_DEBUG
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
+/** @def BDB_LAYER
+ * @brief The rmon layer this module would trace on
+ *
+ * Only ever passed to #DENTER, which #NO_SGE_COMPILE_DEBUG above has already
+ * made empty.
+ */
 #define BDB_LAYER BASIS_LAYER
 
 #include <cerrno>
@@ -80,31 +96,20 @@ spool_berkeleydb_clear_log(lList **answer_list, bdb_info info);
 static bool
 spool_berkeleydb_checkpoint(lList **answer_list, bdb_info info);
 
-/****** spool/berkeleydb/spool_berkeleydb_check_version() **********************
-*  NAME
-*     spool_berkeleydb_check_version() -- check version of shared libs 
-*
-*  SYNOPSIS
-*     bool 
-*     spool_berkeleydb_check_version(lList **answer_list) 
-*
-*  FUNCTION
-*     Checks if major and minor version number returned by the db_version()
-*     library call of Berkeley DB matches the version numbers set at compile
-*     time.
-*
-*     The major and minor number must be equal, the patch level may differ.
-*
-*  INPUTS
-*     lList **answer_list - used to return info and error messages
-*
-*  RESULT
-*     bool - true, on success, else false
-*
-*  NOTES
-*     MT-NOTE: spool_berkeleydb_check_version() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Check version of shared libs
+ *
+ * Checks if major and minor version number returned by the db_version()
+ * library call of Berkeley DB matches the version numbers set at compile
+ * time.
+ * The major and minor number must be equal, the patch level may differ.
+ *
+ * @param answer_list used to return info and error messages
+ *
+ * @return true, on success, else false
+ *
+ * @note MT-NOTE: spool_berkeleydb_check_version() is MT safe
+ */
 bool
 spool_berkeleydb_check_version(lList **answer_list)
 {
@@ -132,37 +137,22 @@ spool_berkeleydb_check_version(lList **answer_list)
    DRETURN(ret);
 }
 
-/****** spool/berkeleydb/spool_berkeleydb_create_environment() *****************
-*  NAME
-*     spool_berkeleydb_create_environment() -- ??? 
-*
-*  SYNOPSIS
-*     bool spool_berkeleydb_create_environment(lList **answer_list, struct 
-*     bdb_info info, const char *url) 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     lList **answer_list   - ??? 
-*     bdb_info info - ??? 
-*     const char *url       - ??? 
-*
-*  RESULT
-*     bool - 
-*
-*  EXAMPLE
-*     ??? 
-*
-*  NOTES
-*     MT-NOTE: spool_berkeleydb_create_environment() is not MT safe 
-*
-*  BUGS
-*     ??? 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief Create and open the Berkeley DB environment
+ *
+ * Checks that the database directory exists, then opens the environment
+ * there, running recovery first when #bdb_get_recover asks for it.
+ *
+ * @param answer_list to return error messages
+ * @param info the handle, which supplies the path and receives the
+ *             environment
+ *
+ * @return true if the environment is open afterwards, else false
+ *
+ * @note The path comes from the handle; the `url` this block used to
+ *       document has not been a parameter for a long time.
+ * @note MT-NOTE: spool_berkeleydb_create_environment() is not MT safe
+ */
 bool spool_berkeleydb_create_environment(lList **answer_list, 
                                          bdb_info info)
 { 
@@ -343,6 +333,13 @@ bool spool_berkeleydb_create_environment(lList **answer_list,
    DRETURN(ret);
 }
 
+/** @brief Open the environment and both databases
+ * @param answer_list to return error messages
+ * @param info the handle
+ * @param create create the databases if they do not exist yet - only
+ *               `spoolinit init` passes true
+ * @return true on success, else false
+ */
 bool 
 spool_berkeleydb_open_database(lList **answer_list, bdb_info info, 
                                bool create)
@@ -455,6 +452,11 @@ spool_berkeleydb_open_database(lList **answer_list, bdb_info info,
    DRETURN(ret);
 }
 
+/** @brief Close both databases and the environment
+ * @param answer_list to return error messages
+ * @param info the handle
+ * @return true on success, else false
+ */
 bool 
 spool_berkeleydb_close_database(lList **answer_list, bdb_info info)
 {
@@ -533,32 +535,22 @@ spool_berkeleydb_close_database(lList **answer_list, bdb_info info)
    DRETURN(ret);
 }
 
-/****** sge_bdb/spool_berkeleydb_start_transaction() ***************************
-*  NAME
-*     spool_berkeleydb_start_transaction() -- start a transaction
-*
-*  SYNOPSIS
-*     bool 
-*     spool_berkeleydb_start_transaction(lList **answer_list, bdb_info info) 
-*
-*  FUNCTION
-*     Starts a transaction.
-*     Transactions are bound to a certain thread, multiple threads can start
-*     transactions in parallel.
-*
-*  INPUTS
-*     lList **answer_list   - used to return error messages
-*     bdb_info info - database handle
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     MT-NOTE: spool_berkeleydb_start_transaction() is MT safe 
-*
-*  SEE ALSO
-*     spool/berkeleydb/spool_berkeleydb_end_transaction()
-*******************************************************************************/
+/**
+ * @brief Start a transaction
+ *
+ * Starts a transaction.
+ * Transactions are bound to a certain thread, multiple threads can start
+ * transactions in parallel.
+ *
+ * @param answer_list used to return error messages
+ * @param info database handle
+ *
+ * @return true on success, else false
+ *
+ * @note MT-NOTE: spool_berkeleydb_start_transaction() is MT safe
+ *
+ * @see #spool_berkeleydb_end_transaction
+ */
 bool
 spool_berkeleydb_start_transaction(lList **answer_list, bdb_info info)
 {
@@ -614,6 +606,12 @@ spool_berkeleydb_start_transaction(lList **answer_list, bdb_info info)
    DRETURN(ret);
 }
 
+/** @brief Commit or roll back the transaction of the calling thread
+ * @param answer_list to return error messages
+ * @param info the handle
+ * @param commit true to commit, false to roll back
+ * @return true on success, else false
+ */
 bool
 spool_berkeleydb_end_transaction(lList **answer_list, bdb_info info, 
                                  bool commit)
@@ -679,6 +677,18 @@ spool_berkeleydb_end_transaction(lList **answer_list, bdb_info info,
    DRETURN(ret);
 }
 
+/** @brief Do the recurring database housekeeping
+ *
+ * Checkpoints the database and trims the transaction log when either is due,
+ * and reports when it next needs to be called.
+ *
+ * @param answer_list  to return error messages
+ * @param info         the handle
+ * @param trigger      the time this call was due
+ * @param next_trigger receives the time of the next call, at most
+ *                     #BERKELEYDB_MIN_INTERVAL away
+ * @return true on success, else false
+ */
 bool 
 spool_berkeleydb_trigger(lList **answer_list, bdb_info info, 
                          uint64_t trigger, uint64_t *next_trigger)
@@ -708,6 +718,15 @@ spool_berkeleydb_trigger(lList **answer_list, bdb_info info,
    DRETURN(ret);
 }
 
+/** @brief Read every record whose key starts with a prefix
+ * @param answer_list to return error messages
+ * @param info the handle
+ * @param database which database to read from
+ * @param list receives the objects
+ * @param descr the type to read them as
+ * @param key the key prefix, e.g. the object type name
+ * @return true on success, else false
+ */
 bool 
 spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
                            const bdb_database database,
@@ -836,6 +855,14 @@ spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
    DRETURN(ret);
 }
 
+/** @brief Write one cull object as a record
+ * @param answer_list to return error messages
+ * @param info the handle
+ * @param database which database to write to
+ * @param object the object to write
+ * @param key the full key to write it under
+ * @return true on success, else false
+ */
 bool 
 spool_berkeleydb_write_object(lList **answer_list, bdb_info info,
                               const bdb_database database,
@@ -934,6 +961,14 @@ spool_berkeleydb_write_object(lList **answer_list, bdb_info info,
    DRETURN(ret);
 }
 
+/** @brief Write a plain string as a record
+ * @param answer_list to return error messages
+ * @param info the handle
+ * @param database which database to write to
+ * @param key the full key to write it under
+ * @param str the string
+ * @return true on success, else false
+ */
 bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
                               const bdb_database database,
                               const char *key, const char *str)
@@ -990,6 +1025,15 @@ bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
    DRETURN(ret);
 }
 
+/** @brief Write one parallel task of an array task
+ * @param answer_list to return error messages
+ * @param info the handle
+ * @param object the task to write
+ * @param job_id the job it belongs to
+ * @param ja_task_id the array task it belongs to
+ * @param pe_task_id the task's own id
+ * @return true on success, else false
+ */
 bool
 spool_berkeleydb_write_pe_task(lList **answer_list, bdb_info info,
                                const lListElem *object, 
@@ -1014,6 +1058,14 @@ spool_berkeleydb_write_pe_task(lList **answer_list, bdb_info info,
    return ret;
 }
 
+/** @brief Write one array task, without its parallel tasks
+ * @param answer_list to return error messages
+ * @param info the handle
+ * @param object the array task to write
+ * @param job_id the job it belongs to
+ * @param ja_task_id the task's own number
+ * @return true on success, else false
+ */
 bool
 spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info,
                                const lListElem *object, 
@@ -1040,6 +1092,22 @@ spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info,
    return ret;
 }
 
+/** @brief Write a job, without its array tasks
+ *
+ * A job is not stored as one record. The array task list is swapped out of
+ * the element before it is written and swapped back afterwards, so that the
+ * job record holds only the job itself and each array task is a record of its
+ * own - which is what makes updating one running task cheap instead of
+ * rewriting a job with thousands of them.
+ *
+ * @param answer_list to return error messages
+ * @param info the handle
+ * @param object the job to write
+ * @param job_id the job's id
+ * @param ja_task_id the array task to write along with the job
+ * @param only_job write the job alone and leave `ja_task_id` alone
+ * @return true on success, else false
+ */
 bool
 spool_berkeleydb_write_job(lList **answer_list, bdb_info info,
                            const lListElem *object, 
@@ -1075,6 +1143,18 @@ spool_berkeleydb_write_job(lList **answer_list, bdb_info info,
    return ret;
 }
 
+/** @brief Write a cluster queue, without its queue instances
+ *
+ * The same decomposition as for a job: the instance list is swapped out
+ * before the write and back afterwards, so that each queue instance is its
+ * own record.
+ *
+ * @param answer_list to return error messages
+ * @param info the handle
+ * @param object the cluster queue to write
+ * @param key the queue name
+ * @return true on success, else false
+ */
 bool
 spool_berkeleydb_write_cqueue(lList **answer_list, bdb_info info, 
                               const lListElem *object, const char *key)
@@ -1102,32 +1182,23 @@ spool_berkeleydb_write_cqueue(lList **answer_list, bdb_info info,
    return ret;
 }
 
-/****** spool/berkeleydb/spool_berkeleydb_delete_object() **********************
-*  NAME
-*     spool_berkeleydb_delete_object() -- delete one or multiple objects
-*
-*  SYNOPSIS
-*     bool 
-*     spool_berkeleydb_delete_object(lList **answer_list, bdb_info info,
-*                                    const char *key, bool sub_objects) 
-*
-*  FUNCTION
-*     If sub_objects = false, deletes the object specified by key.
-*     If sub_objects = true, key will be used as pattern to delete multiple
-*     objects.
-*
-*  INPUTS
-*     lList **answer_list   - used to return error messages
-*     bdb_info info - database handle
-*     const char *key       - key
-*     bool sub_objects      - use key as pattern?
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     MT-NOTE: spool_berkeleydb_delete_object() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Delete one or multiple objects
+ *
+ * If sub_objects = false, deletes the object specified by key.
+ * If sub_objects = true, key will be used as pattern to delete multiple
+ * objects.
+ *
+ * @param answer_list used to return error messages
+ * @param info database handle
+ * @param database which of the two databases to delete from
+ * @param key key
+ * @param sub_objects use key as pattern?
+ *
+ * @return true on success, else false
+ *
+ * @note MT-NOTE: spool_berkeleydb_delete_object() is MT safe
+ */
 bool
 spool_berkeleydb_delete_object(lList **answer_list, bdb_info info, 
                                const bdb_database database,
@@ -1265,40 +1336,28 @@ spool_berkeleydb_delete_object(lList **answer_list, bdb_info info,
    DRETURN(ret);
 }
 
-/****** spool/berkeleydb/spool_berkeleydb_delete_pe_task() *********************
-*  NAME
-*     spool_berkeleydb_delete_pe_task() -- delete one or multiple pe task(s)
-*
-*  SYNOPSIS
-*     bool 
-*     spool_berkeleydb_delete_pe_task(lList **answer_list, bdb_info info,
-*                                     const char *key, bool sub_objects) 
-*
-*  FUNCTION
-*     Deletes one or multiple pe_tasks specified by key.
-*  
-*     The key has the form "<job_id>.<ja_task_id> <pe_task_id>" formatted as 
-*     "%10d.%10d %s".
-*     If sub_objects = true, it can be used as pattern, typically used to 
-*     delete all pe_tasks of a certain ja_task by setting key to 
-*     "<job_id>.<ja_task_id>" or just "<job_id>" to delete all pe_tasks
-*     dependent on a certain job.
-*
-*  INPUTS
-*     lList **answer_list   - used to return error messages
-*     bdb_info info - database handle
-*     const char *key       - key
-*     bool sub_objects      - interpret key as pattern?
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     MT-NOTE: spool_berkeleydb_delete_pe_task() is MT safe 
-*
-*  SEE ALSO
-*     spool/berkeleydb/spool_berkeleydb_delete_object()
-*******************************************************************************/
+/**
+ * @brief Delete one or multiple pe task(s)
+ *
+ * Deletes one or multiple pe_tasks specified by key.
+ * The key has the form "`job_id`.`ja_task_id` `pe_task_id`" formatted as
+ * "%10d.%10d %s".
+ * If sub_objects = true, it can be used as pattern, typically used to
+ * delete all pe_tasks of a certain ja_task by setting key to
+ * "`job_id`.`ja_task_id`" or just "`job_id`" to delete all pe_tasks
+ * dependent on a certain job.
+ *
+ * @param answer_list used to return error messages
+ * @param info database handle
+ * @param key key
+ * @param sub_objects interpret key as pattern?
+ *
+ * @return true on success, else false
+ *
+ * @note MT-NOTE: spool_berkeleydb_delete_pe_task() is MT safe
+ *
+ * @see #spool_berkeleydb_delete_object
+ */
 bool
 spool_berkeleydb_delete_pe_task(lList **answer_list, bdb_info info,
                                 const char *key, bool sub_objects)
@@ -1319,39 +1378,26 @@ spool_berkeleydb_delete_pe_task(lList **answer_list, bdb_info info,
    return ret;
 }
 
-/****** spool/berkeleydb/spool_berkeleydb_delete_ja_task() *********************
-*  NAME
-*     spool_berkeleydb_delete_ja_task() -- delete ja_task(s)
-*
-*  SYNOPSIS
-*     bool 
-*     spool_berkeleydb_delete_ja_task(lList **answer_list, bdb_info info,
-*                                     const char *key, bool sub_objects) 
-*
-*  FUNCTION
-*     Deletes one or multiple ja_tasks specified by key.
-*     The ja_task(s) and all dependent pe_tasks are deleted.
-*  
-*     The key has the form "<job_id>.<ja_task_id>" formatted as "%10d.%10d".
-*     If sub_objects = true, it can be used as pattern, typically used to 
-*     delete all ja_tasks of a certain job by setting key to "<job_id>.".
-*
-*  INPUTS
-*     lList **answer_list   - used to return error messages
-*     bdb_info info - database handle
-*     const char *key       - key
-*     bool sub_objects      - use key as pattern?
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     MT-NOTE: spool_berkeleydb_delete_ja_task() is MT safe 
-*
-*  SEE ALSO
-*     spool/berkeleydb/spool_berkeleydb_delete_object()
-*     spool/berkeleydb/spool_berkeleydb_delete_pe_task()
-*******************************************************************************/
+/**
+ * @brief Delete ja_task(s)
+ *
+ * Deletes one or multiple ja_tasks specified by key.
+ * The ja_task(s) and all dependent pe_tasks are deleted.
+ * The key has the form "`job_id`.`ja_task_id`" formatted as "%10d.%10d".
+ * If sub_objects = true, it can be used as pattern, typically used to
+ * delete all ja_tasks of a certain job by setting key to "`job_id`.".
+ *
+ * @param answer_list used to return error messages
+ * @param info database handle
+ * @param key key
+ * @param sub_objects use key as pattern?
+ *
+ * @return true on success, else false
+ *
+ * @note MT-NOTE: spool_berkeleydb_delete_ja_task() is MT safe
+ *
+ * @see #spool_berkeleydb_delete_object, #spool_berkeleydb_delete_pe_task
+ */
 bool
 spool_berkeleydb_delete_ja_task(lList **answer_list, bdb_info info,
                                 const char *key, bool sub_objects)
@@ -1376,38 +1422,26 @@ spool_berkeleydb_delete_ja_task(lList **answer_list, bdb_info info,
    return ret;
 }
 
-/****** spool/berkeleydb/spool_berkeleydb_delete_job() *************************
-*  NAME
-*     spool_berkeleydb_delete_job() -- delete a job
-*
-*  SYNOPSIS
-*     bool 
-*     spool_berkeleydb_delete_job(lList **answer_list, bdb_info info, 
-*                                 const char *key, bool sub_objects) 
-*
-*  FUNCTION
-*     Deletes the given job and all its ja_tasks.
-*     Key usually will be the unique job id formatted with %10d, but the function
-*     allows for some sort of pattern matching by specifying only parts of the
-*     jobid, e.g. the key "00001" will delete all jobs from 1000 to 1999, 
-*     an empty string will mean "delete all jobs", if sub_objects = true.
-*
-*  INPUTS
-*     lList **answer_list   - used to return error messages
-*     bdb_info info - database handle
-*     const char *key       - key (job_number)
-*     bool sub_objects      - is the given key a pattern?
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     MT-NOTE: spool_berkeleydb_delete_job() is MT safe 
-*
-*  SEE ALSO
-*     spool/berkeleydb/spool_berkeleydb_delete_object()
-*     spool/berkeleydb/spool_berkeleydb_delete_ja_task()
-*******************************************************************************/
+/**
+ * @brief Delete a job
+ *
+ * Deletes the given job and all its ja_tasks.
+ * Key usually will be the unique job id formatted with %10d, but the function
+ * allows for some sort of pattern matching by specifying only parts of the
+ * jobid, e.g. the key "00001" will delete all jobs from 1000 to 1999,
+ * an empty string will mean "delete all jobs", if sub_objects = true.
+ *
+ * @param answer_list used to return error messages
+ * @param info database handle
+ * @param key key (job_number)
+ * @param sub_objects is the given key a pattern?
+ *
+ * @return true on success, else false
+ *
+ * @note MT-NOTE: spool_berkeleydb_delete_job() is MT safe
+ *
+ * @see #spool_berkeleydb_delete_object, #spool_berkeleydb_delete_ja_task
+ */
 bool
 spool_berkeleydb_delete_job(lList **answer_list, bdb_info info,
                             const char *key, bool sub_objects)
@@ -1432,32 +1466,21 @@ spool_berkeleydb_delete_job(lList **answer_list, bdb_info info,
    return ret;
 }
 
-/****** spool/berkeleydb/spool_berkeleydb_delete_cqueue() **********************
-*  NAME
-*     spool_berkeleydb_delete_cqueue() -- delete a cluster queue
-*
-*  SYNOPSIS
-*     bool 
-*     spool_berkeleydb_delete_cqueue(lList **answer_list, bdb_info info,
-*                                    const char *key) 
-*
-*  FUNCTION
-*     Deletes a cluster queue and all its queue instances.
-*
-*  INPUTS
-*     lList **answer_list   - used to return error messages
-*     bdb_info info - database handle
-*     const char *key       - key (name) of cluster queue to delete
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     MT-NOTE: spool_berkeleydb_delete_cqueue() is MT safe 
-*
-*  SEE ALSO
-*     spool/berkeleydb/spool_berkeleydb_delete_object()
-*******************************************************************************/
+/**
+ * @brief Delete a cluster queue
+ *
+ * Deletes a cluster queue and all its queue instances.
+ *
+ * @param answer_list used to return error messages
+ * @param info database handle
+ * @param key key (name) of cluster queue to delete
+ *
+ * @return true on success, else false
+ *
+ * @note MT-NOTE: spool_berkeleydb_delete_cqueue() is MT safe
+ *
+ * @see #spool_berkeleydb_delete_object
+ */
 bool
 spool_berkeleydb_delete_cqueue(lList **answer_list, bdb_info info,
                                const char *key)
@@ -1532,6 +1555,11 @@ spool_berkeleydb_handle_bdb_error(lList **answer_list, bdb_info info,
    }
 }
 
+/** @brief Reopen the databases if another process closed them underneath us
+ * @param answer_list to return error messages
+ * @param info the handle
+ * @return true if the databases are usable afterwards, else false
+ */
 bool 
 spool_berkeleydb_check_reopen_database(lList **answer_list, 
                                        bdb_info info)
@@ -1560,6 +1588,14 @@ spool_berkeleydb_check_reopen_database(lList **answer_list,
    DRETURN(ret);
 }
 
+/** @brief List the keys that start with a prefix, without reading the records
+ * @param answer_list to return error messages
+ * @param info the handle
+ * @param database which database to look in
+ * @param list receives the keys (`STU_Type`)
+ * @param key the key prefix
+ * @return true on success, else false
+ */
 bool 
 spool_berkeleydb_read_keys(lList **answer_list, bdb_info info,
                            const bdb_database database,
@@ -1649,6 +1685,13 @@ spool_berkeleydb_read_keys(lList **answer_list, bdb_info info,
    DRETURN(ret);
 }
 
+/** @brief Read one record and parse it back into a cull object
+ * @param answer_list to return error messages
+ * @param info the handle
+ * @param database which database to read from
+ * @param key the full key of the record
+ * @return the object, or nullptr if it is not there or cannot be parsed
+ */
 lListElem *
 spool_berkeleydb_read_object(lList **answer_list, bdb_info info,
                              const bdb_database database,
@@ -1731,6 +1774,13 @@ spool_berkeleydb_read_object(lList **answer_list, bdb_info info,
    DRETURN(ret);
 }
 
+/** @brief Read one record as a plain string
+ * @param answer_list to return error messages
+ * @param info the handle
+ * @param database which database to read from
+ * @param key the full key of the record
+ * @return the string, which the caller frees, or nullptr
+ */
 char *
 spool_berkeleydb_read_string(lList **answer_list, bdb_info info,
                              const bdb_database database,

@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The job spool directory: one file per job, array task and parallel task
+ */
+
 #include "cull/cull.h"
 
 #include "uti/sge_spool.h"

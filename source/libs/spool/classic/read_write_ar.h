@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Reading and writing the spool file of an advance reservation
+ */
+
 #include "uti/sge_spool.h"
 
 namespace ocs::spool::classic {
