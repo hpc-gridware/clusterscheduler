@@ -43,17 +43,7 @@ namespace ocs {
          PE,                ///< the binding is written into a rankfile for the parallel environment
       };
 
-      /**
-       * @brief The keyword for an instance, as written in a request
-       * @param mode the instance to name
-       * @return its keyword, or `"???"` for an unknown value
-       */
       static std::string to_string(Instance mode);
-      /**
-       * @brief Parse an instance keyword
-       * @param mode the keyword to parse
-       * @return the instance, or #UNINITIALIZED when it is not recognised
-       */
       static Instance from_string(const std::string& mode);
    };
 }

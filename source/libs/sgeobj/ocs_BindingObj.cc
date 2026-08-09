@@ -58,6 +58,11 @@
 #include "msg_common.h"
 #include "sge_conf.h"
 
+/**
+ * @brief Remove the binding request from an object
+ * @param parent the object to clear
+ * @param nm the field the binding sub-object lives in
+ */
 void
 ocs::Binding::clear(lListElem *parent, const int nm) {
    DENTER(TOP_LAYER);
@@ -65,6 +70,13 @@ ocs::Binding::clear(lListElem *parent, const int nm) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief The binding sub-object, created on first access
+ * @param parent the object to read or extend
+ * @param[out] answer_list receives the reason when it could not be created
+ * @param nm the field the binding sub-object lives in
+ * @return the binding sub-object, or nullptr on error
+ */
 lListElem *
 ocs::Binding::binding_get_or_create_elem(lListElem *parent, lList **answer_list, const int nm) {
    DENTER(TOP_LAYER);
@@ -102,6 +114,13 @@ ocs::Binding::binding_get_or_create_elem(lListElem *parent, lList **answer_list,
    DRETURN(binding_elem);
 }
 
+/**
+ * @brief Was a binding requested at all?
+ *
+ * @param parent the object carrying the binding request
+ * @param nm the field the binding sub-object lives in
+ * @return true when the object carries a binding request
+ */
 bool
 ocs::Binding::binding_was_requested(const lListElem *parent, const int nm) {
    DENTER(TOP_LAYER);
@@ -113,6 +132,13 @@ ocs::Binding::binding_was_requested(const lListElem *parent, const int nm) {
    DRETURN(true);
 }
 
+/**
+ * @brief Who applies the binding
+ *
+ * @param parent the object carrying the binding request
+ * @param nm the field the binding sub-object lives in
+ * @return the requested @ref ocs::BindingType::Type
+ */
 ocs::BindingType::Type
 ocs::Binding::binding_get_type(const lListElem *parent, const int nm) {
    DENTER(TOP_LAYER);
@@ -131,6 +157,13 @@ ocs::Binding::binding_get_type(const lListElem *parent, const int nm) {
    DRETURN(binding_type);
 }
 
+/**
+ * @brief The hardware unit the binding counts in
+ *
+ * @param parent the object carrying the binding request
+ * @param nm the field the binding sub-object lives in
+ * @return the requested @ref ocs::BindingUnit::Unit
+ */
 ocs::BindingUnit::Unit
 ocs::Binding::binding_get_unit(const lListElem *parent, const int nm) {
    DENTER(TOP_LAYER);
@@ -149,6 +182,13 @@ ocs::Binding::binding_get_unit(const lListElem *parent, const int nm) {
    DRETURN(binding_unit);
 }
 
+/**
+ * @brief How the selected hardware is ordered
+ *
+ * @param parent the object carrying the binding request
+ * @param nm the field the binding sub-object lives in
+ * @return the sort specification, empty when none was given
+ */
 std::string
 ocs::Binding::binding_get_sort(const lListElem *parent, const int nm) {
    DENTER(TOP_LAYER);
@@ -166,6 +206,13 @@ ocs::Binding::binding_get_sort(const lListElem *parent, const int nm) {
    DRETURN(binding_sort);
 }
 
+/**
+ * @brief Where on the topology the binding starts
+ *
+ * @param parent the object carrying the binding request
+ * @param nm the field the binding sub-object lives in
+ * @return the requested @ref ocs::BindingStart::Start
+ */
 ocs::BindingStart::Start
 ocs::Binding::binding_get_start(const lListElem *parent, const int nm) {
    DENTER(TOP_LAYER);
@@ -183,6 +230,13 @@ ocs::Binding::binding_get_start(const lListElem *parent, const int nm) {
    DRETURN(binding_start);
 }
 
+/**
+ * @brief Where the binding stops
+ *
+ * @param parent the object carrying the binding request
+ * @param nm the field the binding sub-object lives in
+ * @return the requested @ref ocs::BindingStop::Stop
+ */
 ocs::BindingStop::Stop
 ocs::Binding::binding_get_end(const lListElem *parent, const int nm) {
    DENTER(TOP_LAYER);
@@ -200,6 +254,13 @@ ocs::Binding::binding_get_end(const lListElem *parent, const int nm) {
    DRETURN(binding_end);
 }
 
+/**
+ * @brief How the binding walks the topology
+ *
+ * @param parent the object carrying the binding request
+ * @param nm the field the binding sub-object lives in
+ * @return the requested @ref ocs::BindingStrategy::Strategy
+ */
 ocs::BindingStrategy::Strategy
 ocs::Binding::binding_get_strategy(const lListElem *parent, const int nm) {
    DENTER(TOP_LAYER);
@@ -217,6 +278,13 @@ ocs::Binding::binding_get_strategy(const lListElem *parent, const int nm) {
    DRETURN(binding_strategy);
 }
 
+/**
+ * @brief Which instance applies the binding
+ *
+ * @param parent the object carrying the binding request
+ * @param nm the field the binding sub-object lives in
+ * @return the requested @ref ocs::BindingInstance::Instance
+ */
 ocs::BindingInstance::Instance
 ocs::Binding::binding_get_instance(const lListElem *parent, const int nm) {
    DENTER(TOP_LAYER);
@@ -234,6 +302,13 @@ ocs::Binding::binding_get_instance(const lListElem *parent, const int nm) {
    DRETURN(binding_instance);
 }
 
+/**
+ * @brief Which hardware the binding is restricted to
+ *
+ * @param parent the object carrying the binding request
+ * @param nm the field the binding sub-object lives in
+ * @return the filter expression, empty when none was given
+ */
 std::string
 ocs::Binding::binding_get_filter(const lListElem *parent, int nm) {
    DENTER(TOP_LAYER);
@@ -245,6 +320,13 @@ ocs::Binding::binding_get_filter(const lListElem *parent, int nm) {
    DRETURN(lGetString(binding_elem, BN_filter));
 }
 
+/**
+ * @brief How many units the binding asks for
+ *
+ * @param parent the object carrying the binding request
+ * @param nm the field the binding sub-object lives in
+ * @return the requested amount
+ */
 uint32_t
 ocs::Binding::binding_get_amount(const lListElem *parent, const int nm) {
    DENTER(TOP_LAYER);
@@ -257,6 +339,12 @@ ocs::Binding::binding_get_amount(const lListElem *parent, const int nm) {
    DRETURN(amount);
 }
 
+/**
+ * @brief Fill in the binding fields the request left out
+ * @param parent the object whose binding request is completed
+ * @param[out] answer_list receives the reason on failure
+ * @param nm the field the binding sub-object lives in
+ */
 void
 ocs::Binding::binding_set_missing_defaults(lListElem *parent, lList **answer_list, const int nm) {
    DENTER(TOP_LAYER);

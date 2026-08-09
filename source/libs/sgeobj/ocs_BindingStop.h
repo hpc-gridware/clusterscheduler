@@ -46,17 +46,7 @@ namespace ocs {
          FIRST_USED_CACHE2,      ///< the first level 2 cache domain already in use
       };
 
-      /**
-       * @brief The keyword for an anchor, as written in a request
-       * @param mode the anchor to name
-       * @return its keyword
-       */
       static std::string to_string(Stop mode);
-      /**
-       * @brief Parse an anchor keyword
-       * @param mode the keyword to parse
-       * @return the anchor, or #UNINITIALIZED when it is not recognised
-       */
       static Stop from_string(const std::string& mode);
       };
 }

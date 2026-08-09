@@ -38,17 +38,7 @@ namespace ocs {
          SLOT               ///< the binding follows the slots the job was granted
       };
 
-      /**
-       * @brief The keyword for a binding type, as written in a request
-       * @param mode the type to name
-       * @return its keyword
-       */
       static std::string to_string(Type mode);
-      /**
-       * @brief Parse a binding type keyword
-       * @param mode the keyword to parse
-       * @return the type, or #UNINITIALIZED when it is not recognised
-       */
       static Type from_string(const std::string& mode);
    };
 }

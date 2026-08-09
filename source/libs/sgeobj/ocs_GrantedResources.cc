@@ -114,6 +114,12 @@ ocs::GrantedResources::add_binding_to_use(lList **granted_resources_list, const 
  * @param hostname Hostname to search for
  * @param binding_to_use Returned combined binding_to_use (empty if no binding information is found)
  */
+/**
+ * @brief Collect everything granted on one host into a single topology
+ *
+ * A job may hold several grants on the same host, one per slot; this
+ * merges them so the execution side sees one binding.
+ */
 void
 ocs::GrantedResources::get_combined_binding_for_host(const lList *gr_list, const char *hostname, TopologyString &binding_to_use) {
    DENTER(TOP_LAYER);

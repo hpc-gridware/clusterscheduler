@@ -40,31 +40,11 @@ namespace ocs {
     */
    class Version {
    public:
-      /**
-       * @brief The version as a comparable number
-       * @return the encoded version
-       */
       static uint32_t get_version();
-      /**
-       * @brief The version as it is shown to users
-       * @return the version string
-       */
       static std::string get_version_string();
-      /**
-       * @brief The version split into its parts
-       * @return major, minor, patch level and the release suffix
-       */
       static std::tuple<int, int, int, std::string> get_version_token();
 
-      /**
-       * @brief The abbreviated product name
-       * @return the short name
-       */
       static std::string get_short_product_name();
-      /**
-       * @brief The full product name
-       * @return the long name
-       */
       static std::string get_long_product_name();
 
       /// May a peer of this version talk to us?

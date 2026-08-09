@@ -109,6 +109,12 @@ ocs::Usage::calculate_default_decay_constant(const int halftime) {
    sconf_set_decay_constant(sge_decay_constant);
 }
 
+/**
+ * @brief Add one named decay constant to a decay list
+ * @param[in,out] decay_list the list to extend
+ * @param value the decay constant
+ * @param name the usage attribute it applies to
+ */
 void ocs::Usage::add_decay_element(lList **decay_list, double value, const char *name) {
    double decay_rate, decay_constant;
    calculate_decay_constant(value, &decay_rate, &decay_constant);
@@ -544,6 +550,11 @@ ocs::Usage::strip_irrelevant_usage(lList *usage_list, const lList *usage_weight_
  * build_usage_list - create a new usage list from an existing list
  *--------------------------------------------------------------------*/
 
+/** @brief Build a named usage list, reusing the values of an existing one
+ * @param name the name the resulting list is stored under
+ * @param old_usage_list the list to take the existing values from; may be nullptr
+ * @return the new list
+ */
 lList *
 ocs::Usage::build_usage_list(const char *name, lList *old_usage_list)
 {
@@ -577,6 +588,11 @@ ocs::Usage::build_usage_list(const char *name, lList *old_usage_list)
 /*--------------------------------------------------------------------
  * get_usage - return usage entry based on name
  *--------------------------------------------------------------------*/
+/** @brief Look up one usage attribute by name
+ * @param usage_list the list to search
+ * @param name the attribute to find
+ * @return the element, or nullptr when the attribute is not booked
+ */
 lListElem *
 ocs::Usage::get_usage(lList *usage_list, const char *name) {
    return lGetElemStrRW(usage_list, UA_name, name);
@@ -586,6 +602,10 @@ ocs::Usage::get_usage(lList *usage_list, const char *name) {
 /*--------------------------------------------------------------------
  * create_usage_elem - create a new usage element
  *--------------------------------------------------------------------*/
+/** @brief Create a usage element for the named attribute, initialised to zero
+ * @param name the attribute name
+ * @return the new element
+ */
 lListElem *
 ocs::Usage::create_usage_elem( const char *name ) {
    lListElem *usage = lCreateElem(UA_Type);

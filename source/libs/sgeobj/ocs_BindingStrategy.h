@@ -38,17 +38,7 @@ namespace ocs {
       };
 
 
-      /**
-       * @brief The keyword for a strategy, as written in a request
-       * @param mode the strategy to name
-       * @return its keyword, or `"???"` for an unknown value
-       */
       static std::string to_string(Strategy mode);
-      /**
-       * @brief Parse a strategy keyword
-       * @param mode the keyword to parse
-       * @return the strategy, or #UNINITIALIZED when it is not recognised
-       */
       static Strategy from_string(const std::string& mode);
    };
 }

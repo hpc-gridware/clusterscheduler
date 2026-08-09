@@ -26,6 +26,11 @@
 
 #include "ocs_BindingInstance.h"
 
+/**
+ * @brief The keyword for an instance, as written in a request
+ * @param mode the instance to name
+ * @return its keyword, or `"???"` for an unknown value
+ */
 std::string ocs::BindingInstance::to_string(const Instance mode) {
    switch (mode) {
       case NONE: return "NONE";
@@ -36,6 +41,11 @@ std::string ocs::BindingInstance::to_string(const Instance mode) {
    }
 }
 
+/**
+ * @brief Parse an instance keyword
+ * @param mode the keyword to parse
+ * @return the instance, or #UNINITIALIZED when it is not recognised
+ */
 ocs::BindingInstance::Instance
 ocs::BindingInstance::from_string(const std::string& mode) {
    if (mode == "NONE") {

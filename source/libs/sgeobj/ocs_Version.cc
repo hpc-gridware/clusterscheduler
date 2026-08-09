@@ -104,26 +104,46 @@ static const std::string OCS_LONG_PRODUCT_NAME{"Open Cluster Scheduler"};
 static const std::string OCS_SHORT_PRODUCT_NAME{"OCS"};
 #endif
 
+/**
+ * @brief The version as it is shown to users
+ * @return the version string
+ */
 std::string
 ocs::Version::get_version_string() {
    return OCS_VERSION_STRING; // e.g "9.0.2alpha"
 }
 
+/**
+ * @brief The version as a comparable number
+ * @return the encoded version
+ */
 std::uint32_t
 ocs::Version::get_version() {
    return OCS_VERSION;
 }
 
+/**
+ * @brief The abbreviated product name
+ * @return the short name
+ */
 std::string
 ocs::Version::get_short_product_name() {
    return OCS_SHORT_PRODUCT_NAME;
 }
 
+/**
+ * @brief The full product name
+ * @return the long name
+ */
 std::string
 ocs::Version::get_long_product_name() {
    return OCS_LONG_PRODUCT_NAME;
 }
 
+/**
+ * @brief The version split into its parts
+ * @return major, minor, patch level and the release suffix
+ */
 std::tuple<int, int, int, std::string>
 ocs::Version::get_version_token() {
    std::string version = ocs::Version::get_version_string();

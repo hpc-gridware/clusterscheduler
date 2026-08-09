@@ -72,90 +72,17 @@ namespace ocs {
       static bool job_get_systemd_slice_and_scope(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task,
                                                   std::string &slice, std::string &scope, dstring *error_dstr);
 
-      /**
-       * @brief The binding sub-object, created on first access
-       *
-       * @param pjob the job to read or extend
-       * @param[out] answer receives the reason when it could not be created
-       * @return the binding sub-object, or nullptr on error
-       */
       static lListElem *binding_get_or_create_elem(lListElem *pjob, lList**answer);
-      /**
-       * @brief Was a binding requested at all?
-       *
-       * @param job the job carrying the binding request
-       * @return true when the object carries a binding request
-       */
       static bool binding_was_requested(const lListElem *job);
-      /**
-       * @brief Who applies the binding
-       *
-       * @param job the job carrying the binding request
-       * @return the requested @ref ocs::BindingType::Type
-       */
       static BindingType::Type binding_get_type(const lListElem *job);
-      /**
-       * @brief The hardware unit the binding counts in
-       *
-       * @param job the job carrying the binding request
-       * @return the requested @ref ocs::BindingUnit::Unit
-       */
       static BindingUnit::Unit binding_get_unit(const lListElem *job);
-      /**
-       * @brief How the selected hardware is ordered
-       *
-       * @param job the job carrying the binding request
-       * @return the sort specification, empty when none was given
-       */
       static std::string binding_get_sort(const lListElem *job);
-      /**
-       * @brief Where on the topology the binding starts
-       *
-       * @param job the job carrying the binding request
-       * @return the requested @ref ocs::BindingStart::Start
-       */
       static BindingStart::Start binding_get_start(const lListElem *job);
-      /**
-       * @brief Where the binding stops
-       *
-       * @param job the job carrying the binding request
-       * @return the requested @ref ocs::BindingStop::Stop
-       */
       static BindingStop::Stop binding_get_stop(const lListElem *job);
-      /**
-       * @brief How the binding walks the topology
-       *
-       * @param job the job carrying the binding request
-       * @return the requested @ref ocs::BindingStrategy::Strategy
-       */
       static BindingStrategy::Strategy binding_get_strategy(const lListElem *job);
-      /**
-       * @brief Which hardware the binding is restricted to
-       *
-       * @param job the job carrying the binding request
-       * @return the filter expression, empty when none was given
-       */
       static std::string binding_get_filter(const lListElem *job);
-      /**
-       * @brief How many units the binding asks for
-       *
-       * @param job the job carrying the binding request
-       * @return the requested amount
-       */
       static uint32_t binding_get_amount(const lListElem *job);
-      /**
-       * @brief Which instance of the job the binding applies to
-       *
-       * @param job the job carrying the binding request
-       * @return the requested @ref ocs::BindingInstance::Instance
-       */
       static BindingInstance::Instance binding_get_instance(const lListElem *job);
-      /**
-       * @brief Fill in the binding fields the request left out
-       *
-       * @param job the job whose binding request is completed
-       * @param[out] answer_list receives the reason on failure
-       */
       static void binding_set_missing_defaults(lListElem *job, lList **answer_list);
 
    };

@@ -59,12 +59,6 @@ namespace ocs {
 
       static void decay_usage(const lList *usage_list, const lList *decay_list, double interval);
 
-      /**
-       * @brief Add one named decay constant to a decay list
-       * @param[in,out] decay_list the list to extend
-       * @param value the decay constant
-       * @param name the usage attribute it applies to
-       */
       static void add_decay_element(lList **decay_list, double value, const char *name);
 
       static lList *get_decay_list();
@@ -103,27 +97,10 @@ namespace ocs {
 
       static bool strip_irrelevant_usage(lList *usage_list, const lList *usage_weight_list);
 
-      /**
-       * @brief Build a named usage list, reusing the values of an existing one
-       * @param name the name the resulting list is stored under
-       * @param old_usage_list the list to take the existing values from; may be nullptr
-       * @return the new list
-       */
       static lList *build_usage_list(const char *name, lList *old_usage_list);
 
-      /**
-       * @brief Look up one usage attribute by name
-       * @param usage_list the list to search
-       * @param name the attribute to find
-       * @return the element, or nullptr when the attribute is not booked
-       */
       static lListElem *get_usage(lList *usage_list, const char *name);
 
-      /**
-       * @brief Create a usage element for the named attribute, initialised to zero
-       * @param name the attribute name
-       * @return the new element
-       */
       static lListElem *create_usage_elem(const char *name);
    };
 }

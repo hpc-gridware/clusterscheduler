@@ -72,6 +72,13 @@ ocs::RequestLimits::parse_from_config(lList **answer_list) {
    DRETURN(false);
 }
 
+/**
+ * @brief Would answering this request break a configured request limit?
+ * @param packet the request being handled
+ * @param task the single task within the packet that is checked
+ * @param[out] answer_list receives the message naming the limit that was hit
+ * @return true when the request has to be rejected
+ */
 bool
 ocs::RequestLimits::will_exceed_limit(gdi::Packet *packet, gdi::Task *task, lList **answer_list) {
    DENTER(TOP_LAYER);
