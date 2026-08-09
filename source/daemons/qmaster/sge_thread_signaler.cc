@@ -63,6 +63,8 @@
 #   include "sge_string.h"
 #endif
 
+/** @brief Start the signal thread
+ */
 void
 sge_signaler_initialize() {
    cl_thread_settings_t *dummy_thread_p = nullptr;
@@ -76,6 +78,8 @@ sge_signaler_initialize() {
    DRETURN_VOID;
 }
 
+/** @brief Ask the signal thread to stop
+ */
 void
 sge_signaler_initiate_termination() {
    DENTER(TOP_LAYER);
@@ -88,6 +92,8 @@ sge_signaler_initiate_termination() {
    DRETURN_VOID;
 }
 
+/** @brief Wait for the signal thread to end
+ */
 void
 sge_signaler_terminate() {
    DENTER(TOP_LAYER);

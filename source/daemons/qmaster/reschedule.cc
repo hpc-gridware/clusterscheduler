@@ -75,6 +75,11 @@
 #include "sge_give_jobs.h"
 #include "msg_qmaster.h"
 
+/** @brief Extra delay added to every reschedule-unknown timeout
+ *
+ * Set by the testsuite so a takeover can be forced to happen sooner or later
+ * than the configured timeout; 0 in normal operation.
+ */
 uint64_t add_time = 0;
 
 static uint32_t

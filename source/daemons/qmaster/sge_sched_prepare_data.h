@@ -108,10 +108,34 @@ sge_callback_result
 sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
                                      sge_event_action action, lListElem *event, void *clientdata);
 
+/** @brief React to a scheduler configuration change, after the mirror applies it
+ *
+ * @param evc see the brief above
+ * @param type see the brief above
+ * @param action see the brief above
+ * @param event see the brief above
+ * @param clientdata see the brief above
+ *
+ * @warning Declared here but defined nowhere in the tree, and called from
+ *          nowhere either. Kept because removing a declaration is a code
+ *          change; see the dead-declaration list.
+ */
 sge_callback_result
 sge_process_schedd_conf_event_after(sge_evc_class_t *evc, sge_object_type type,
                                     sge_event_action action, lListElem *event, void *clientdata);
 
+/** @brief React to a job change before the mirror applies it
+ *
+ * @param evc see the brief above
+ * @param type see the brief above
+ * @param action see the brief above
+ * @param event see the brief above
+ * @param clientdata see the brief above
+ *
+ * @warning Declared here but defined nowhere in the tree, and called from
+ *          nowhere either. Kept because removing a declaration is a code
+ *          change; see the dead-declaration list.
+ */
 sge_callback_result
 sge_process_job_event_before(sge_evc_class_t *evc, sge_object_type type,
                              sge_event_action action, lListElem *event, void *clientdata);
@@ -120,6 +144,18 @@ sge_callback_result
 sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
                             sge_event_action action, lListElem *event, void *clientdata);
 
+/** @brief React to an array task change after the mirror applies it
+ *
+ * @param evc see the brief above
+ * @param type see the brief above
+ * @param action see the brief above
+ * @param event see the brief above
+ * @param clientdata see the brief above
+ *
+ * @warning Declared here but defined nowhere in the tree, and called from
+ *          nowhere either. Kept because removing a declaration is a code
+ *          change; see the dead-declaration list.
+ */
 sge_callback_result
 sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type,
                                 sge_event_action action, lListElem *event, void *clientdata);
@@ -132,6 +168,18 @@ sge_callback_result
 sge_process_schedd_monitor_event(sge_evc_class_t *evc, sge_object_type type,
                                  sge_event_action action, lListElem *event, void *clientdata);
 
+/** @brief React to a category change before the mirror applies it
+ *
+ * @param evc see the brief above
+ * @param type see the brief above
+ * @param action see the brief above
+ * @param event see the brief above
+ * @param clientdata see the brief above
+ *
+ * @warning Declared here but defined nowhere in the tree, and called from
+ *          nowhere either. Kept because removing a declaration is a code
+ *          change; see the dead-declaration list.
+ */
 sge_callback_result
 sge_process_category_event_before(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata);
 

@@ -41,11 +41,20 @@
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
 
-#define RESCHEDULE_SKIP_JR_REMOVE      0x00000000
-#define RESCHEDULE_SKIP_JR_SEND_ACK    0x00000001
-#define RESCHEDULE_SKIP_JR             0x00000002
-#define RESCHEDULE_HANDLE_JR_REMOVE    0x00000004
-#define RESCHEDULE_HANDLE_JR_WAIT      0x00000008
+/** @name What to do with the job report of a job that is being rescheduled
+ *
+ * A job on a host that stopped answering is rescheduled elsewhere, but its old
+ * report may still arrive afterwards. These say whether that late report is
+ * acted on, acknowledged, or simply dropped - acting on it would resurrect a
+ * job that is already running somewhere else.
+ * @{
+ */
+#define RESCHEDULE_SKIP_JR_REMOVE      0x00000000   ///< Drop the report without acknowledging it
+#define RESCHEDULE_SKIP_JR_SEND_ACK    0x00000001   ///< Drop it, but acknowledge so the host stops resending
+#define RESCHEDULE_SKIP_JR             0x00000002   ///< Ignore the report entirely
+#define RESCHEDULE_HANDLE_JR_REMOVE    0x00000004   ///< Act on the report, then remove the job
+#define RESCHEDULE_HANDLE_JR_WAIT      0x00000008   ///< Act on the report and wait for the job to finish
+/** @} */
 
 void
 reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor);

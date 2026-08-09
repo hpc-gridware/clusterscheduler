@@ -279,6 +279,16 @@ int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
    DRETURN(0);
 }
 
+/** @brief Delete a parallel environment, unless a queue still references it
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param pep the parallel environment (`PE_Type`)
+ * @param alpp receives messages for the caller
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return STATUS_OK on success
+ */
 int
 sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList **alpp, char *ruser, char *rhost) {
    int pos;
@@ -350,6 +360,10 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList
    DRETURN(STATUS_OK);
 }
 
+/** @brief Rebuild every parallel environment's slot booking from the running jobs
+ *
+ * @param pe_list the parallel environments
+ */
 void
 debit_all_jobs_from_pes(lList *pe_list) {
    DENTER(TOP_LAYER);

@@ -348,6 +348,19 @@ userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLis
 /***********************************************************************
    master code: delete a user or project
  ***********************************************************************/
+/** @brief Delete a user or a project
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param up_ep the user or project
+ * @param alpp receives messages for the caller
+ * @param upl the master list
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param user the user
+ * @param / see the brief above
+ * @return STATUS_OK on success
+ */
 int
 sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *up_ep, lList **alpp, lList **upl,
                 const char *ruser, const char *rhost, int user /* =1 user, =0 project */ ) {
@@ -494,6 +507,11 @@ verify_project_list(lList **alpp, const lList *name_list, const lList *prj_list,
 /* sge_automatic_user_cleanup_handler - handles automatically deleting     */
 /* automatic user objects which have expired.                         */
 /*-------------------------------------------------------------------------*/
+/** @brief Remove automatically created users that have gone idle
+ *
+ * @param anEvent the timed event that fired
+ * @param monitor for monitoring qmaster threads
+ */
 void
 sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
    uint64_t auto_user_delete_time = sge_gmt32_to_gmt64(mconf_get_auto_user_delete_time());
@@ -561,6 +579,15 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
 /* sge_add_auto_user - handles automatically adding GEEE user objects      */
 /*    called in ocs::gdi::Client::sge_gdi_add_job                                            */
 /*-------------------------------------------------------------------------*/
+/** @brief Create a user object on demand, from the auto_user template
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param user the user
+ * @param alpp receives messages for the caller
+ * @param monitor for monitoring qmaster threads
+ * @return STATUS_OK on success
+ */
 int
 sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *user, lList **alpp, monitoring_t *monitor) {
    lListElem *uep;

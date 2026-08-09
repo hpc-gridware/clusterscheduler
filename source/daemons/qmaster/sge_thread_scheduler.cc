@@ -81,12 +81,18 @@
 #include "ocs_Bootstrap.h"
 #include "ocs_gperf.h"
 
+/** @brief Seconds the scheduler thread waits for work before looking around
+ *
+ * A wake-up is normally driven by the event trigger; this bounds how long the
+ * thread sleeps when nothing happens at all.
+ */
 #define SCHEDULER_TIMEOUT_S 10
 
 static char schedule_log_path[SGE_PATH_MAX + 1] = "";
 static const char *schedule_log_file = "schedule";
 static int SGE_TEST_DELAY_SCHEDULING = 0;
 
+/** @brief @copybrief master_scheduler_class_t */
 master_scheduler_class_t Master_Scheduler = {
         PTHREAD_MUTEX_INITIALIZER,
         false,
@@ -896,6 +902,9 @@ sge_scheduler_main(void *arg) {
    // pthread_cleanup_push()/pthread_cleanup_pop() before the call of cl_thread_func_testcancel()
 }
 
+/** @brief Is the scheduler thread currently running?
+ * @return true when it is
+ */
 bool
 sge_scheduler_is_running() {
    return Master_Scheduler.is_running;
