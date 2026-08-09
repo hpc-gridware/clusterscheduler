@@ -86,50 +86,65 @@
 #include "msg_history.h"
 #include "msg_qacct.h"
 
+/** @brief The width of each column of the grouped output
+ *
+ * `qacct -g`, `-o`, `-q` and so on group the records and print one line per
+ * group, with the grouping key in the first column. The width of that column
+ * depends on the longest value actually present, so the whole file is read
+ * once to measure before anything is printed.
+ */
 typedef struct {
-   size_t host;
-   size_t queue;
-   size_t group;
-   size_t owner;
-   size_t project;
-   size_t department;
-   size_t granted_pe;
-   size_t slots;
-   size_t arid;
+   size_t host;         ///< widest host name seen
+   size_t queue;        ///< widest queue name seen
+   size_t group;        ///< widest group name seen
+   size_t owner;        ///< widest user name seen
+   size_t project;      ///< widest project name seen
+   size_t department;   ///< widest department name seen
+   size_t granted_pe;   ///< widest parallel environment name seen
+   size_t slots;        ///< widest slot count seen
+   size_t arid;         ///< widest advance reservation id seen
 } sge_qacct_columns;
 
+/** @brief Everything the command line asked for, in one place
+ *
+ * Most options come in pairs: a value and a `*flag`. The flag is what says the
+ * option was given at all, because for several of them the *absence* of a value
+ * is meaningful - `-o` with no user means "group by owner", `-o fred` means
+ * "only fred". A null value with the flag set therefore cannot be told from an
+ * option that was never given, unless the flag is kept separately.
+ */
 typedef struct {
-   char *group;
-   char *host;
-   const char *owner;
-   const char *job_name;
-   const char *project;
-   const char *department;
-   const char *account;
-   const char *granted_pe;
-   const char *complexes;
-   uint32_t job_number;
-   uint32_t slots;
-   uint32_t ar_number;
-   int jobflag;
-   int ownerflag;
-   int groupflag;
-   int jobfound;
-   int complexflag;
-   int queueflag;
-   int projectflag;
-   int departmentflag;
-   int hostflag;
-   int accountflag;
-   int granted_peflag;
-   int slotsflag;
-   int arflag;
-   uint32_t taskstart;
-   uint32_t taskend;
-   uint32_t taskstep;
-   uint64_t begin_time;
-   uint64_t end_time;
-   lList *queue_name_list;
+   char *group;                ///< `-g`: only this group, or the grouping key when empty
+   char *host;                 ///< `-h`: only this execution host, or the grouping key when empty
+   const char *owner;          ///< `-o`: only this user, or the grouping key when empty
+   const char *job_name;       ///< `-j`: only jobs with this name
+   const char *project;        ///< `-P`: only this project, or the grouping key when empty
+   const char *department;     ///< `-D`: only this department, or the grouping key when empty
+   const char *account;        ///< `-A`: only jobs with this account string
+   const char *granted_pe;     ///< `-pe`: only jobs that ran in this parallel environment
+   const char *complexes;      ///< `-l`: only jobs whose request matches this resource list
+   uint32_t job_number;        ///< `-j`: only this job id
+   uint32_t slots;             ///< `-slots`: only jobs granted this many slots
+   uint32_t ar_number;         ///< `-ar`: only jobs that ran under this advance reservation
+   int jobflag;                ///< `-j` was given
+   int ownerflag;              ///< `-o` was given
+   int groupflag;              ///< `-g` was given
+   int jobfound;               ///< at least one record matched the requested job
+   int complexflag;            ///< `-l` was given
+   int queueflag;              ///< `-q` was given
+   int projectflag;            ///< `-P` was given
+   int departmentflag;         ///< `-D` was given
+   int hostflag;               ///< `-h` was given
+   int accountflag;            ///< `-A` was given
+   int granted_peflag;         ///< `-pe` was given
+   int slotsflag;              ///< `-slots` was given
+   int arflag;                 ///< `-ar` was given
+   uint32_t taskstart;         ///< `-t`: first array task of the range to report
+   uint32_t taskend;           ///< `-t`: last array task of the range to report
+   uint32_t taskstep;          ///< `-t`: step of that range
+   uint64_t begin_time;        ///< `-b`: ignore records that ended before this
+   uint64_t end_time;          ///< `-e`: ignore records that ended after this
+   lList *queue_name_list;     ///< `-q`: the queues to report on (`QR_Type`)
 } sge_qacct_options;
 
 static void qacct_usage(FILE *err_fp);
@@ -1342,29 +1357,29 @@ static void qacct_usage(FILE *err_fp)
 }
 
 
-/*
-** NAME
-**   showjob
-** PARAMETER
-**   dusage   - pointer to struct sge_rusage_type, representing
-**              a line in the SGE accounting file
-** RETURN
-**   none
-** EXTERNAL
-**   none
-** DESCRIPTION
-**   detailed display of job accounting data
-*/
-#define SHOWJOB_STRING         "%-35.34s%s\n"
-#define SHOWJOB_STRING_NO_DATA "%-35.34s-/-\n"
-#define SHOWJOB_STRING_20      "%-35.34s%-20s\n"
-#define SHOWJOB_STRING_20_NOLF "%-35.34s%-20s"
-#define SHOWJOB_U32_20         "%-35.34s%-20" sge_fuu32 "\n"
-#define SHOWJOB_U32_FAILED     "%-35.34s%-3" sge_fuu32" %s %s\n"
-#define SHOWJOB_FLOAT_0        "%-35.34s%-13.0f\n"
-#define SHOWJOB_FLOAT_3        "%-35.34s%-13.3f\n"
-#define SHOWJOB_FLOAT_18_0     "%-35.34s%-18.0f\n"
-#define SHOWJOB_FLOAT_18_3     "%-35.34s%-18.3f\n"
+/** @name Line formats of the `qacct -j` detail output
+ *
+ * Every line is a 35-column label followed by the value, so the labels line up
+ * whatever the value is. The variants differ only in how the value is
+ * formatted.
+ * @{
+ */
+#define SHOWJOB_STRING         "%-35.34s%s\n"                       ///< label and a string of any length
+#define SHOWJOB_STRING_NO_DATA "%-35.34s-/-\n"                      ///< label and `-/-`, for a value the record does not carry
+#define SHOWJOB_STRING_20      "%-35.34s%-20s\n"                    ///< label and a string padded to 20 columns
+#define SHOWJOB_STRING_20_NOLF "%-35.34s%-20s"                      ///< #SHOWJOB_STRING_20 without the newline, so more can be appended
+#define SHOWJOB_U32_20         "%-35.34s%-20" sge_fuu32 "\n"        ///< label and a `uint32_t` padded to 20 columns
+#define SHOWJOB_U32_FAILED     "%-35.34s%-3" sge_fuu32" %s %s\n"    ///< label, the failure code, and the two strings that explain it
+#define SHOWJOB_FLOAT_0        "%-35.34s%-13.0f\n"                  ///< label and a float, no decimals
+#define SHOWJOB_FLOAT_3        "%-35.34s%-13.3f\n"                  ///< label and a float, three decimals
+#define SHOWJOB_FLOAT_18_0     "%-35.34s%-18.0f\n"                  ///< #SHOWJOB_FLOAT_0 in a wider column
+#define SHOWJOB_FLOAT_18_3     "%-35.34s%-18.3f\n"                  ///< #SHOWJOB_FLOAT_3 in a wider column
+/** @} */
+
+/** @brief Print one accounting record in full, the `qacct -j` output
+ *
+ * @param dusage one line of the accounting file, already parsed
+ */
 static void showjob(sge_rusage_type *dusage) {
    DSTRING_STATIC(dstr_buffer, 100);
    dstring *pdstr_buffer = &dstr_buffer;

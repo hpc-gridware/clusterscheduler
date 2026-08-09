@@ -41,20 +41,29 @@
 
 #include "cull/cull.h"
 
-#define SGE_COMMON_DEF_REQ_FILE "common/sge_request"
-#define SGE_HOME_DEF_REQ_FILE ".sge_request"
-#define SGE_COMMON_DEF_QSTAT_FILE "common/sge_qstat"
-#define SGE_HOME_DEF_QSTAT_FILE ".sge_qstat"
-#define SGE_COMMON_DEF_QSELECT_FILE "common/sge_qselect"
-#define SGE_HOME_DEF_QSELECT_FILE ".sge_qselect"
-#define SGE_COMMON_DEF_QHOST_FILE "common/sge_qhost"
-#define SGE_HOME_DEF_QHOST_FILE ".sge_qhost"
-#define SGE_COMMON_DEF_QQUOTA_FILE "common/sge_qquota"
-#define SGE_HOME_DEF_QQUOTA_FILE ".sge_qquota"
-#define SGE_COMMON_DEF_AR_REQ_FILE "common/sge_ar_request"
-#define SGE_HOME_DEF_AR_REQ_FILE ".sge_ar_request"
-#define SGE_COMMON_DEF_QRSTAT_FILE "common/sge_qrstat"
-#define SGE_HOME_DEF_QRSTAT_FILE ".sge_qrstat"
+/** @name The default-request files, in the order they are read
+ *
+ * Every submit client reads its options from three places before the command
+ * line: the cluster-wide file, the user's own file, and then the job script.
+ * Later sources override earlier ones, which is why a site can set a default
+ * that a user can still change.
+ * @{
+ */
+#define SGE_COMMON_DEF_REQ_FILE "common/sge_request"   ///< cluster-wide defaults for the submit clients, relative to the cell directory
+#define SGE_HOME_DEF_REQ_FILE ".sge_request"   ///< the user's own defaults for the submit clients, relative to the home directory
+#define SGE_COMMON_DEF_QSTAT_FILE "common/sge_qstat"   ///< cluster-wide defaults for `qstat`, relative to the cell directory
+#define SGE_HOME_DEF_QSTAT_FILE ".sge_qstat"   ///< the user's own defaults for `qstat`, relative to the home directory
+#define SGE_COMMON_DEF_QSELECT_FILE "common/sge_qselect"   ///< cluster-wide defaults for `qselect`, relative to the cell directory
+#define SGE_HOME_DEF_QSELECT_FILE ".sge_qselect"   ///< the user's own defaults for `qselect`, relative to the home directory
+#define SGE_COMMON_DEF_QHOST_FILE "common/sge_qhost"   ///< cluster-wide defaults for `qhost`, relative to the cell directory
+#define SGE_HOME_DEF_QHOST_FILE ".sge_qhost"   ///< the user's own defaults for `qhost`, relative to the home directory
+#define SGE_COMMON_DEF_QQUOTA_FILE "common/sge_qquota"   ///< cluster-wide defaults for `qquota`, relative to the cell directory
+#define SGE_HOME_DEF_QQUOTA_FILE ".sge_qquota"   ///< the user's own defaults for `qquota`, relative to the home directory
+#define SGE_COMMON_DEF_AR_REQ_FILE "common/sge_ar_request"   ///< cluster-wide defaults for `qrsub`, relative to the cell directory
+#define SGE_HOME_DEF_AR_REQ_FILE ".sge_ar_request"   ///< the user's own defaults for `qrsub`, relative to the home directory
+#define SGE_COMMON_DEF_QRSTAT_FILE "common/sge_qrstat"   ///< cluster-wide defaults for `qrstat`, relative to the cell directory
+#define SGE_HOME_DEF_QRSTAT_FILE ".sge_qrstat"   ///< the user's own defaults for `qrstat`, relative to the home directory
+/** @} */
 
 void opt_list_append_opts_from_default_files(uint32_t prog_number, const char *cell_root, const char *username,
                                              lList **pcmdline, lList **answer_list, char **envp);

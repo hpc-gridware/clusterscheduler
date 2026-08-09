@@ -48,9 +48,20 @@ CANON = {
 
 
 def parse_sections(block):
+    """Split a banner into its NAME/FUNCTION/INPUTS/... sections.
+
+    Two banner styles exist in the tree and both must parse: the comment lines
+    may start at column 0 ("*  NAME") or be indented by one space (" *  NAME").
+    Matching only the first silently produced an EMPTY section dict, and the
+    caller then wrote "@brief TODO document this" over a complete banner -
+    prose, inputs and notes included. Gate A sees only comments and the doxygen
+    gate sees a brief, so nothing catches it. Strip the leading whitespace
+    before the '*' so both styles reach the same code.
+    """
     secs, cur = {}, None
     for line in block:
-        body = line[1:] if line.startswith('*') else line
+        lead = line.lstrip()
+        body = lead[1:] if lead.startswith('*') else line
         m = SECTION_RE.match(body.rstrip())
         if m:
             cur = CANON.get(m.group(1).strip())

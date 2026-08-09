@@ -63,7 +63,25 @@ static void append_opts_from_default_files(uint32_t prog_number, lList **pcmdlin
                                            char **def_files);
 
 /**
- * @brief TODO document this
+ * @brief Parse default files
+ *
+ * This function reads the 3 defaults files if they exist and parses them
+ * into an options list.
+ *
+ * @param prog_number the client reading the defaults, which decides which files are read
+ * @param cell_root the cell directory, where the cluster-wide file lives
+ * @param user the user whose home directory holds the second file
+ * @param pcmdline the option list (`SPA_Type`) to append to; created if it is
+ *                 `nullptr` and the files hold any options
+ * @param answer_list receives warnings; none of these stops the parse:
+ *                    `STATUS_ENOSUCHUSER` (no passwd entry for the user),
+ *                    `STATUS_EDISK` (home or current directory unreadable, or
+ *                    the file could not be opened), `STATUS_EEXIST` and
+ *                    `STATUS_EUNKNOWN` (from #parse_script_file, which may
+ *                    return others as well)
+ * @param envp environment pointer
+ *
+ * @note MT-NOTE: opt_list_append_opts_from_default_files() is MT safe
  */
 void opt_list_append_opts_from_default_files(uint32_t prog_number, const char *cell_root, const char *user,
                                              lList **pcmdline, lList **answer_list, char **envp) {
@@ -101,7 +119,24 @@ void opt_list_append_opts_from_default_files(uint32_t prog_number, const char *c
 }
 
 /**
- * @brief TODO document this
+ * @brief Get absolut path name to file in user
+ *
+ * This function returns the path to the file in the user's home
+ * directory
+ *
+ * @param absolut_filename receives the computed absolute file name
+ * @param filename file name
+ * @param user user name
+ * @param answer_list receives warnings; none of these stops the parse:
+ *                    `STATUS_ENOSUCHUSER` (no passwd entry for the user),
+ *                    `STATUS_EDISK` (home or current directory unreadable, or
+ *                    the file could not be opened), `STATUS_EEXIST` and
+ *                    `STATUS_EUNKNOWN` (from #parse_script_file, which may
+ *                    return others as well)
+ *
+ * @return true or false
+ *
+ * @note MT-NOTE: get_user_home_file_path() is MT safe
  */
 bool get_user_home_file_path(dstring *absolut_filename, const char *filename, const char *user, lList **answer_list) {
    DENTER(TOP_LAYER);
@@ -122,7 +157,17 @@ bool get_user_home_file_path(dstring *absolut_filename, const char *filename, co
 }
 
 /**
- * @brief TODO document this
+ * @brief Find cwd default file path
+ *
+ * This function returns the path of the defaults file in the current working
+ * directory
+ *
+ * @param answer_list receives warnings; none of these stops the parse:
+ *                    `STATUS_ENOSUCHUSER` (no passwd entry for the user),
+ *                    `STATUS_EDISK` (home or current directory unreadable, or
+ *                    the file could not be opened), `STATUS_EEXIST` and
+ *                    `STATUS_EUNKNOWN` (from #parse_script_file, which may
+ *                    return others as well)
  */
 static char *get_cwd_defaults_file_path(lList **answer_list) {
    DENTER(TOP_LAYER);
@@ -145,7 +190,24 @@ static char *get_cwd_defaults_file_path(lList **answer_list) {
 }
 
 /**
- * @brief TODO document this
+ * @brief Parse default files
+ *
+ * This function reads the defaults files pointed to by def_files[] if they
+ * exist and parses them into an options list.
+ *
+ * @param prog_number the client reading the defaults, which decides which files are read
+ * @param cell_root the cell directory, where the cluster-wide file lives
+ * @param user the user whose home directory holds the second file
+ * @param pcmdline the option list (`SPA_Type`) to append to; created if it is
+ *                 `nullptr` and the files hold any options
+ * @param answer_list receives warnings; none of these stops the parse:
+ *                    `STATUS_ENOSUCHUSER` (no passwd entry for the user),
+ *                    `STATUS_EDISK` (home or current directory unreadable, or
+ *                    the file could not be opened), `STATUS_EEXIST` and
+ *                    `STATUS_EUNKNOWN` (from #parse_script_file, which may
+ *                    return others as well)
+ * @param envp environment pointer
+ * @param def_files paths to default files
  */
 static void append_opts_from_default_files(uint32_t prog_number, lList **pcmdline, lList **answer_list, char **envp,
                                            char **def_files) {
@@ -214,7 +276,18 @@ static void append_opts_from_default_files(uint32_t prog_number, lList **pcmdlin
    DRETURN_VOID;
 }
 /**
- * @brief TODO document this
+ * @brief Parse opts from cmd line
+ *
+ * Parse options from the qsub commandline given by "argv" and store
+ * the parsed objects in "opts_cmdline". If an error occures store
+ * the error/warning messages in the "answer_list".
+ * "envp" is a pointer to the process environment.
+ *
+ * @param prog_number the client being parsed for, which decides the option set
+ * @param opts_cmdline command line options
+ * @param answer_list AN_Type list
+ * @param argv Argumente
+ * @param envp Environment
  */
 void opt_list_append_opts_from_qsub_cmdline(uint32_t prog_number, lList **opts_cmdline, lList **answer_list,
                                             const char **argv, char **envp) {
@@ -223,7 +296,18 @@ void opt_list_append_opts_from_qsub_cmdline(uint32_t prog_number, lList **opts_c
 }
 
 /**
- * @brief TODO document this
+ * @brief Parse opts from cmd line
+ *
+ * Parse options from the qalter commandline given by "argv" and store
+ * the parsed objects in "opts_cmdline". If an error occures store
+ * the error/warning messages in the "answer_list".
+ * "envp" is a pointer to the process environment.
+ *
+ * @param prog_number the client being parsed for, which decides the option set
+ * @param opts_cmdline command line options
+ * @param answer_list AN_Type list
+ * @param argv Argumente
+ * @param envp Environment
  */
 void opt_list_append_opts_from_qalter_cmdline(uint32_t prog_number, lList **opts_cmdline, lList **answer_list,
                                               const char **argv, char **envp) {
@@ -232,7 +316,21 @@ void opt_list_append_opts_from_qalter_cmdline(uint32_t prog_number, lList **opts
 }
 
 /**
- * @brief TODO document this
+ * @brief Parse opts from scriptfile
+ *
+ * This function parses the commandline options which are embedded
+ * in scriptfile (jobscript) and stores the parsed objects in
+ * opts_scriptfile. The filename of the scriptfile has to be
+ * contained in the list "opts_cmdline" which has been previously i
+ * created with opt_list_append_opts_from_*_cmdline(). "answer_list"
+ * will be used to store error/warning messages.
+ * "envp" is a pointer to the process environment.
+ *
+ * @param prog_number the client being parsed for, which decides the option set
+ * @param opts_scriptfile embedded command line options
+ * @param answer_list AN_Type list
+ * @param opts_cmdline Argumente
+ * @param envp Environment
  */
 void opt_list_append_opts_from_script(uint32_t prog_number, lList **opts_scriptfile, lList **answer_list,
                                       const lList *opts_cmdline, char **envp) {
@@ -253,7 +351,23 @@ void opt_list_append_opts_from_script(uint32_t prog_number, lList **opts_scriptf
 }
 
 /**
- * @brief TODO document this
+ * @brief Parse opts from scriptfile
+ *
+ * This function parses the commandline options which are embedded
+ * in scriptfile (jobscript) and stores the parsed objects in
+ * opts_scriptfile. The filename of the scriptfile has to be
+ * contained in the list "opts_cmdline" which has been previously i
+ * created with opt_list_append_opts_from_*_cmdline(). If the filename of
+ * the scriptfile is not an absolute path, "path" will be prepended to it.
+ * "answer_list" will be used to store error/warning messages.
+ * "envp" is a pointer to the process environment.
+ *
+ * @param prog_number the client being parsed for, which decides the option set
+ * @param opts_scriptfile embedded command line options
+ * @param path the root path for the script file
+ * @param answer_list AN_Type list
+ * @param opts_cmdline Argumente
+ * @param envp Environment
  */
 void opt_list_append_opts_from_script_path(uint32_t prog_number, lList **opts_scriptfile, const char *path,
                                            lList **answer_list, const lList *opts_cmdline, char **envp) {
@@ -293,7 +407,20 @@ void opt_list_append_opts_from_script_path(uint32_t prog_number, lList **opts_sc
 }
 
 /**
- * @brief TODO document this
+ * @brief Merge commandlines together
+ *
+ * Merge "opts_defaults", "opts_scriptfile" and "opts_cmdline" into
+ * "opts_all".
+ * Options to a sge submit can come from different sources:
+ *  - default settings (sge/sge_request)
+ *  - special comments in scriptfiles (override default settings)
+ *  - command line options (override default settings and special
+ *    comments)
+ *
+ * @param opts_all destination commandline
+ * @param opts_defaults opts from default files
+ * @param opts_scriptfile opts from the script
+ * @param opts_cmdline commandline options
  */
 void opt_list_merge_command_lines(lList **opts_all, lList **opts_defaults, lList **opts_scriptfile,
                                   lList **opts_cmdline) {
@@ -335,7 +462,17 @@ void opt_list_merge_command_lines(lList **opts_all, lList **opts_defaults, lList
 }
 
 /**
- * @brief TODO document this
+ * @brief Is a certain option contained in list?
+ *
+ * This function returns true (1) if the given 'option'
+ * (e.g. "-help") is contained in the list 'opts'.
+ *
+ * @param opts SPA_Type list
+ * @param option switch name
+ *
+ * @return found switch? true - yes false - no
+ *
+ * @see #opt_list_is_X_true
  */
 bool opt_list_has_X(lList *opts, const char *option) {
    bool ret = false;
@@ -348,7 +485,19 @@ bool opt_list_has_X(lList *opts, const char *option) {
 }
 
 /**
- * @brief TODO document this
+ * @brief Check the state of a boolean switch
+ *
+ * This function returns true (1) if the given 'option'
+ * (e.g. "-b") is contained in the list 'opts' and if
+ * it was set to 'true'. If the value of the boolean switch
+ * is false than the function will also return false (0).
+ *
+ * @param opts SPA_Type list
+ * @param option switch name
+ *
+ * @return found switch with value 'true' true - yes false - no
+ *
+ * @see #opt_list_has_X
  */
 bool opt_list_is_X_true(lList *opts, const char *option) {
    bool ret = false;
@@ -360,6 +509,14 @@ bool opt_list_is_X_true(lList *opts, const char *option) {
    return ret;
 }
 
+/** @brief Reject `-masterq` and `-scope` given together
+ *
+ * `-scope master` is the newer spelling of what `-masterq` used to say, so
+ * accepting both would leave two sources for the same setting.
+ *
+ * @param opts the parsed options (`SPA_Type`)
+ * @param alpp receives `STATUS_ESEMANTIC` when both were given
+ */
 void opt_list_verify_scope(lList *opts, lList **alpp) {
    if (lGetElemStr(opts, SPA_switch_val, "-masterq") != nullptr &&
        lGetElemStr(opts, SPA_switch_val, "-scope") != nullptr) {
@@ -368,7 +525,17 @@ void opt_list_verify_scope(lList *opts, lList **alpp) {
 }
 
 /**
- * @brief TODO document this
+ * @brief Creates absolute filename for file in SGE_ROOT
+ *
+ * Sets the absolut filename of a file in SGE_ROOT in the given dstring
+ *
+ * @param absolut_filename created absolut filename
+ * @param cell_root sge root patch
+ * @param filename file name
+ *
+ * @return pointer to filename in absolut_filename
+ *
+ * @note MT-NOTE: get_root_file_path() is MT safe
  */
 const char *get_root_file_path(dstring *absolut_filename, const char *cell_root, const char *filename) {
    DENTER(TOP_LAYER);
@@ -377,7 +544,17 @@ const char *get_root_file_path(dstring *absolut_filename, const char *cell_root,
 }
 
 /**
- * @brief TODO document this
+ * @brief Get absoult filename in users home dir
+ *
+ * Sets the absolut filename of a file in the users home directory
+ *
+ * @param home_dir created absolut filename
+ * @param user user
+ * @param answer_list answer list
+ *
+ * @return true on success false on error
+ *
+ * @note MT-NOTE: get_user_home() is MT safe
  */
 bool get_user_home(dstring *home_dir, const char *user, lList **answer_list) {
    DENTER(TOP_LAYER);
