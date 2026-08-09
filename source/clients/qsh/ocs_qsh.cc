@@ -139,6 +139,14 @@ static void remove_unknown_opts(lList *lp, uint32_t jb_now, int tightly_integrat
 static void delete_job(uint32_t job_id, lList *lp);
 static void set_builtin_ijs_signals_and_handlers();
 
+/** @brief Print progress to stderr, but only under `-verbose`
+ *
+ * Flushes immediately: the messages report how far a not-yet-started
+ * interactive job has got, so a buffered line that arrives after the job
+ * finally starts is worse than useless.
+ *
+ * @param x the whole `fprintf` argument list, brackets included
+ */
 #define VERBOSE_LOG(x) if (log_state_get_log_verbose()) { fprintf x; fflush(stderr); }
 
 /****** Interactive/qsh/--Interactive ***************************************
@@ -251,10 +259,23 @@ pid_t child_pid = 0;
 ****************************************************************************
 *
 */
-#define MAX_JOB_NAME 128
-#define QSH_INTERACTIVE_POLLING_MIN 3
-#define QSH_BATCH_POLLING_MIN 32
-#define QSH_POLLING_MAX 256
+#define MAX_JOB_NAME 128   ///< longest job name qsh will build from the command
+
+/** @name How often qsh asks whether its job has started
+ *
+ * There is no push notification, so the client polls. The interval starts at
+ * the minimum and doubles up to #QSH_POLLING_MAX, so an interactive job that
+ * starts at once is noticed immediately while one queued behind a long backlog
+ * does not keep asking. The interactive minimum is far shorter than the batch
+ * one because a user is waiting at a terminal.
+ * @{
+ */
+#define QSH_INTERACTIVE_POLLING_MIN 3    ///< first interval for `qsh`/`qlogin`/`qrsh`, in seconds
+#define QSH_BATCH_POLLING_MIN 32         ///< first interval when the job is not interactive, in seconds
+#define QSH_POLLING_MAX 256              ///< the interval never grows past this, in seconds
+/** @} */
+
+/** @brief How long to wait for the job to connect back before giving up, in seconds */
 #define QSH_SOCKET_FINAL_TIMEOUT 60
 
 static void forward_signal(int sig)

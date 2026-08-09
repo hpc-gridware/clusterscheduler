@@ -65,6 +65,13 @@
 #include "ocs_AdvanceReservation.h"
 
 
+/** @brief Build an advance reservation from the parsed `qrsub` command line
+ *
+ * @param pcmdline the parsed options (`SPA_Type`)
+ * @param alpp used to return error messages
+ * @param ar receives the advance reservation (`AR_Type`)
+ * @return true on success; false with `alpp` filled otherwise
+ */
 bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
 {
    lListElem *ep = nullptr, *next_ep = nullptr;

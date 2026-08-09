@@ -77,6 +77,11 @@ static const char *JOB_NAME_DEL = ":";
 
 static lList *qalter_parse_job_parameter(uint32_t prog_number, lList *cmdline, lList **pjob, int *all_jobs, int *all_users);
 
+/** @brief `-w v` was given: report what would happen and change nothing
+ *
+ * A global because the parsing helpers have to see it without it being threaded
+ * through every one of them.
+ */
 int verify = 0;
 
 /** @brief The process environment, as the C library defines it

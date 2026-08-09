@@ -91,6 +91,15 @@ hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent)
    DRETURN_VOID;
 }
 
+/** @brief Send one host group to qmaster
+ *
+ * The single point where the host group switches reach the master.
+ *
+ * @param this_elem the host group (`HGRP_Type`) to send
+ * @param answer_list used to return error messages
+ * @param gdi_command `ADD`, `MOD` or `DEL`
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool 
 hgroup_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::Command gdi_command)
 {
@@ -112,6 +121,12 @@ hgroup_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::
    DRETURN(ret);
 }
 
+/** @brief Fetch one host group from qmaster
+ *
+ * @param answer_list used to return error messages
+ * @param name the host group to fetch
+ * @return the host group (`HGRP_Type`), or `nullptr` with `answer_list` filled
+ */
 lListElem *
 hgroup_get_via_gdi(lList **answer_list, const char *name)
 {
@@ -253,6 +268,14 @@ hgroup_add(lList **answer_list, const char *name, bool is_name_validate ) {
    DRETURN(ret); 
 }
 
+/** @brief Add a host group from a file, without the editor
+ *
+ * The non-interactive form: the file must already be complete.
+ *
+ * @param answer_list used to return error messages
+ * @param filename the file holding the host group definition
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool
 hgroup_add_from_file(lList **answer_list, const char *filename) {
    bool ret = true;
@@ -294,6 +317,14 @@ hgroup_add_from_file(lList **answer_list, const char *filename) {
    DRETURN(ret);
 }
 
+/** @brief Change a host group, using the editor
+ *
+ * Fetches the current definition, opens `$EDITOR` on it, and sends back what changed.
+ *
+ * @param answer_list used to return error messages
+ * @param name the host group to change
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool hgroup_modify(lList **answer_list, const char *name) {
    bool ret = true;
 
@@ -318,6 +349,14 @@ bool hgroup_modify(lList **answer_list, const char *name) {
    DRETURN(ret);
 }
 
+/** @brief Change a host group from a file, without the editor
+ *
+ * The non-interactive form of #hgroup_modify.
+ *
+ * @param answer_list used to return error messages
+ * @param filename the file holding the new definition
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool
 hgroup_modify_from_file(lList **answer_list, const char *filename)
 {
@@ -363,6 +402,12 @@ hgroup_modify_from_file(lList **answer_list, const char *filename)
    DRETURN(ret);
 }
 
+/** @brief Delete a host group
+ *
+ * @param answer_list used to return error messages
+ * @param name the host group to delete
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool
 hgroup_delete(lList **answer_list, const char *name)
 {
@@ -380,6 +425,12 @@ hgroup_delete(lList **answer_list, const char *name)
    DRETURN(ret);
 }
 
+/** @brief Print one host group
+ *
+ * @param answer_list used to return error messages
+ * @param name the host group to print
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool
 hgroup_show(lList **answer_list, const char *name)
 {
@@ -407,6 +458,18 @@ hgroup_show(lList **answer_list, const char *name)
    DRETURN(ret);
 }
 
+/** @brief Print a host group's members, either as a tree or resolved flat
+ *
+ * A host group may contain other host groups, so there are two useful views:
+ * the tree, which shows where each host comes from, and the resolved list,
+ * which shows what the group finally means. `qconf -shgrp_tree` asks for the
+ * first, `-shgrp_resolved` for the second.
+ *
+ * @param answer_list used to return error messages
+ * @param name the host group to print
+ * @param show_tree true for the tree, false for the resolved list
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool hgroup_show_structure(lList **answer_list, const char *name, bool show_tree)
 {
    bool ret = true;

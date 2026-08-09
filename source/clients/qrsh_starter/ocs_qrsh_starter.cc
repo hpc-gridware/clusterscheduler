@@ -63,6 +63,15 @@
 #include "msg_daemons_common.h"
 #include "msg_qrsh_starter.h"
 
+/** @brief Put an exit code where `wait()` would have put it
+ *
+ * The rest of the system reads this program's result with the `wait()` macros,
+ * which expect the exit code in the high byte. When qrsh_starter has to report
+ * a failure of its own rather than pass on the job's status, it has to build
+ * that layout by hand.
+ *
+ * @param x the exit code to report
+ */
 #define MAKEEXITSTATUS(x) (x << 8)
 
 #if 0
@@ -506,7 +515,8 @@ static int split_command(char *command, char ***cmdargs) {
  *        re-tokenization as exactly one token.
  *
  * Single-quoting is fully literal in POSIX shells — every character (including
- * spaces, $, `, ;, &, *, ", backslash) is taken verbatim — except for `'`
+ * space, dollar, backtick, semicolon, ampersand, star, double quote and
+ * backslash) is taken verbatim — except for the single quote
  * itself, which cannot appear inside single quotes. We split the quoted run at
  * each literal single quote and splice in `'\''` (close-quote, escaped-quote,
  * re-open-quote), the standard idiom used by GNU `shquote`, Python's

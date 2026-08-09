@@ -42,8 +42,8 @@
 #include "cull/cull_list.h"
 #include "uti/ocs_Ternary.h"
 
-#define COMM_SERVER "qrsh_ijs"
-#define COMM_CLIENT "shepherd_ijs"
+#define COMM_SERVER "qrsh_ijs"      ///< commlib component name of this end; the client listens, so it is the server
+#define COMM_CLIENT "shepherd_ijs"   ///< commlib component name of the shepherd, which connects back
 
 void set_signal_handlers();
 void* tty_to_commlib(void *t_conf);
@@ -61,32 +61,8 @@ int run_ijs_server(COMM_HANDLE *phandle, const char *remote_host,
 
 int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg);
 
-/**
- * @brief Switch run_ijs_server into reconnect mode (CS-2144).
- *
- * When set to a non-null token, commlib_to_tty expects the first inbound message
- * from the shepherd to be RECONNECT_REQUEST_MSG carrying this exact token.  A match
- * causes RECONNECT_ACCEPT_MSG to be sent and the session to be marked connected
- * without re-issuing X11_AUTH_MSG/SETTINGS_CTRL_MSG (the shell is already running).
- * A mismatch causes RECONNECT_REJECT_MSG to be sent and the session to be torn down.
- *
- * Pass nullptr to clear (default — normal qsub/qrsh fresh-session mode).
- * The pointer must outlive run_ijs_server's invocation.
- */
 void set_expected_reconnect_token(const char *token);
 
-/**
- * @brief Did run_ijs_server exit because the user pressed the ~. escape?
- *
- * Set during tty_to_commlib's processing of the ~. escape sequence (and also
- * on keepalive-detected dead connections, which take the same disconnect-not-
- * stdin-close path). Cleared at the start of each run_ijs_server invocation.
- *
- * Used by ocs_qsh.cc after run_ijs_server returns: when this returns true
- * the user explicitly disconnected, so qrsh must NOT tell qmaster to delete
- * the job — the shepherd's reconnect grace period (CS-2118 / CS-2155) keeps
- * the job alive for `ijs_reconnect_timeout` seconds so the user can reattach.
- */
 bool ijs_was_escape_disconnect();
 
 int force_ijs_server_shutdown(COMM_HANDLE **phandle,

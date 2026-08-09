@@ -105,9 +105,14 @@ static volatile sig_atomic_t received_window_change_signal = 1;
 static volatile sig_atomic_t received_broken_pipe_signal = 0;
 static volatile sig_atomic_t quit_pending; /* Set non-zero to quit the loop. */
 
+/** @brief The signal a handler saw, or 0
+ *
+ * Read by the forwarding loop, which is the only place that may act on it.
+ */
 volatile sig_atomic_t received_signal = 0;
 
 /* X11 forwarding state — set by run_ijs_server before worker threads start */
+/** @brief How many X11 connections one interactive job may forward at once */
 #define X11_MAX_CONNS 64
 static bool             g_forward_x11 = false;         ///< true when -X was given
 static char             g_x11_display[256] = "";       ///< client's DISPLAY (e.g. ":0.0")
@@ -1268,6 +1273,9 @@ void* commlib_to_tty(void *t_conf)
  * @param suspend_remote Ternary::Yes to suspend the remote process on Ctrl-Z.
  * @param forward_x11    If true, fetch the MIT-MAGIC-COOKIE-1 for $DISPLAY
  *                       and enable X11 forwarding to the job.
+ * @param escape_char    The character that introduces an escape sequence,
+ *                       `~` by default, so that `~.` disconnects the session
+ *                       without ending the job.
  * @param[out] p_exit_status Exit status of the remote command (128+signal if
  *                           killed by a signal).
  * @param[out] p_err_msg     Error description on failure.
@@ -1457,10 +1465,38 @@ cleanup:
    thread_cleanup_lib(&thread_lib_handle);
    DRETURN(ret_val);
 }
+/**
+ * @brief Switch run_ijs_server into reconnect mode (CS-2144).
+ *
+ * When set to a non-null token, commlib_to_tty expects the first inbound message
+ * from the shepherd to be RECONNECT_REQUEST_MSG carrying this exact token.  A match
+ * causes RECONNECT_ACCEPT_MSG to be sent and the session to be marked connected
+ * without re-issuing X11_AUTH_MSG/SETTINGS_CTRL_MSG (the shell is already running).
+ * A mismatch causes RECONNECT_REJECT_MSG to be sent and the session to be torn down.
+ *
+ * Pass nullptr to clear (default — normal qsub/qrsh fresh-session mode).
+ * The pointer must outlive run_ijs_server's invocation.
+ *
+ * @param token the token the shepherd must present, or `nullptr` to clear
+ */
 
 void set_expected_reconnect_token(const char *token) {
    g_expected_reconnect_token = token;
 }
+/**
+ * @brief Did run_ijs_server exit because the user pressed the ~. escape?
+ *
+ * Set during tty_to_commlib's processing of the ~. escape sequence (and also
+ * on keepalive-detected dead connections, which take the same disconnect-not-
+ * stdin-close path). Cleared at the start of each run_ijs_server invocation.
+ *
+ * Used by ocs_qsh.cc after run_ijs_server returns: when this returns true
+ * the user explicitly disconnected, so qrsh must NOT tell qmaster to delete
+ * the job — the shepherd's reconnect grace period (CS-2118 / CS-2155) keeps
+ * the job alive for `ijs_reconnect_timeout` seconds so the user can reattach.
+ *
+ * @return true when the last run ended in a disconnect rather than a job end
+ */
 
 bool ijs_was_escape_disconnect() {
    return g_escape_disconnect;

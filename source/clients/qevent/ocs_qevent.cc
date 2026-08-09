@@ -77,8 +77,14 @@
 #include "sig_handlers.h"
 #include "msg_clients_common.h"
 
-u_long Global_jobs_running = 0;
-u_long Global_jobs_registered = 0;
+u_long Global_jobs_running = 0;      ///< jobs seen started but not yet finished, printed by the `-ts` mode
+u_long Global_jobs_registered = 0;   ///< jobs seen submitted, printed by the `-ts` mode
+
+/** @brief The parsed command line
+ *
+ * A global because the event callbacks take a fixed signature and still have to
+ * reach the trigger scripts the user asked for.
+ */
 qevent_options *Global_qevent_options;
 
 
@@ -705,11 +711,15 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
 }
 
 /**
- * @brief TODO document this
+ * @brief `-ts` mode: subscribe and unsubscribe in a loop, to exercise the event master
  *
- * @param evc
+ * Not a diagnostic mode. It walks `event_type` through every `SGE_TYPE_*` value,
+ * subscribing one more each time round, then unsubscribes them all and starts
+ * over. The point is to keep the qmaster's subscription bookkeeping changing
+ * under load, which is what the testsuite wants to exercise; the events
+ * themselves are printed but not otherwise used.
  *
- * @note static void -
+ * @param evc the event client to subscribe through
  *
  * @note MT-NOTE: qevent_subscribe_mode() is not MT safe
  *

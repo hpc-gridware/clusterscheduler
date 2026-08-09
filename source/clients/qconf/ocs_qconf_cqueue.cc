@@ -78,6 +78,17 @@ static bool
 cqueue_provide_modify_context(lListElem **this_elem, lList **answer_list,
                               bool ignore_unchanged_message);
 
+/** @brief Send one cluster queue to qmaster
+ *
+ * The single point where the cluster queue switches reach the master.
+ *
+ * @param this_elem the cluster queue (`CQ_Type`) to send
+ * @param answer_list used to return error messages
+ * @param gdi_command `ADD`, `MOD` or `DEL`
+ * @param sub_cmd how a list-valued attribute is merged with the one already
+ *                stored: replaced wholesale, or added to
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool
 cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::Command gdi_command, ocs::gdi::SubCommand sub_cmd)
 {
@@ -106,6 +117,12 @@ cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::
    DRETURN(ret);
 }
 
+/** @brief Fetch one cluster queue from qmaster
+ *
+ * @param answer_list used to return error messages
+ * @param name the cluster queue to fetch
+ * @return the cluster queue (`CQ_Type`), or `nullptr` with `answer_list` filled
+ */
 lListElem *
 cqueue_get_via_gdi(lList **answer_list, const char *name)
 {
@@ -280,6 +297,17 @@ static bool cqueue_hgroup_get_via_gdi(lList **answer_list,
 }
 
 bool
+/** @brief Fetch the host groups and the cluster queues in one request
+ *
+ * They are fetched together because a queue's configuration is written in terms
+ * of host groups: resolving what a queue actually applies to needs both, and
+ * fetching them separately would leave a window in which they disagree.
+ *
+ * @param answer_list used to return error messages
+ * @param hgrp_list receives the host groups (`HGRP_Type`)
+ * @param cq_list receives the cluster queues (`CQ_Type`)
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 cqueue_hgroup_get_all_via_gdi(lList **answer_list,
                               lList **hgrp_list, lList **cq_list)
 {
@@ -411,6 +439,14 @@ cqueue_provide_modify_context(lListElem **this_elem, lList **answer_list,
    DRETURN(ret);
 }
 
+/** @brief Add a cluster queue, using the editor
+ *
+ * Builds a template, opens `$EDITOR` on it, and sends the result to qmaster.
+ *
+ * @param answer_list used to return error messages
+ * @param name the name of the cluster queue to create
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool 
 cqueue_add(lList **answer_list, const char *name)
 {
@@ -446,6 +482,14 @@ cqueue_add(lList **answer_list, const char *name)
    DRETURN(ret); 
 }
 
+/** @brief Add a cluster queue from a file, without the editor
+ *
+ * The non-interactive form: the file must already be complete.
+ *
+ * @param answer_list used to return error messages
+ * @param filename the file holding the cluster queue definition
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool 
 cqueue_add_from_file(lList **answer_list, const char *filename)
 {
@@ -488,6 +532,14 @@ cqueue_add_from_file(lList **answer_list, const char *filename)
    DRETURN(ret); 
 }
 
+/** @brief Change a cluster queue, using the editor
+ *
+ * Fetches the current definition, opens `$EDITOR` on it, and sends back what changed.
+ *
+ * @param answer_list used to return error messages
+ * @param name the cluster queue to change
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool 
 cqueue_modify(lList **answer_list, const char *name)
 {
@@ -515,6 +567,14 @@ cqueue_modify(lList **answer_list, const char *name)
    DRETURN(ret);
 }
 
+/** @brief Change a cluster queue from a file, without the editor
+ *
+ * The non-interactive form of #cqueue_modify.
+ *
+ * @param answer_list used to return error messages
+ * @param filename the file holding the new definition
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool 
 cqueue_modify_from_file(lList **answer_list, const char *filename)
 {
@@ -561,6 +621,12 @@ cqueue_modify_from_file(lList **answer_list, const char *filename)
    DRETURN(ret);
 }
 
+/** @brief Delete a cluster queue
+ *
+ * @param answer_list used to return error messages
+ * @param name the cluster queue to delete
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool 
 cqueue_delete(lList **answer_list, const char *name)
 {
@@ -627,6 +693,13 @@ qinstance_list_write(lList **answer_list, const lList *qi_list)
    DRETURN(ret);
 }
 
+/** @brief Print the cluster queues matching a pattern list
+ *
+ * @param answer_list used to return error messages
+ * @param qref_pattern_list the queue references to print (`QR_Type`); each may
+ *                          be a wildcard pattern, so one call can print several
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool
 cqueue_show(lList **answer_list, const lList *qref_pattern_list)
 {
@@ -799,6 +872,16 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
    DRETURN(ret);
 }
 
+/** @brief Report cluster queues whose configuration cannot do what it says
+ *
+ * The `qconf -sick` check. A queue is "sick" when its configuration is
+ * accepted but cannot take effect - most often an attribute overridden for a
+ * host or host group that the queue does not actually contain, so the override
+ * is dead weight that reads as if it applied.
+ *
+ * @param answer_list used to return error messages
+ * @return true when the check ran; the findings are printed, not returned
+ */
 bool
 cqueue_list_sick(lList **answer_list)
 {

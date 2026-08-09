@@ -37,6 +37,10 @@
 
 #include "ocs_qconf_Category.h"
 #include "ocs_qconf_parse.h"   /* CS-2313a: qconf_opt_format */
+/** @brief Print all categories, the `-scatl` switch
+ * @param answer_list used to return error messages
+ * @return true on success
+ */
 #include "msg_qconf.h"
 
 bool ocs::CategoryQconf::show_list(lList **answer_list) {
@@ -69,6 +73,11 @@ bool ocs::CategoryQconf::show_list(lList **answer_list) {
 
    DRETURN(true);
 }
+/** @brief Print one category, the `-scat` switch
+ * @param answer_list used to return error messages
+ * @param id the category id, as `-scatl` printed it
+ * @return true on success
+ */
 
 bool ocs::CategoryQconf::show(lList **answer_list, uint32_t id) {
    DENTER(TOP_LAYER);
@@ -89,6 +98,11 @@ bool ocs::CategoryQconf::show(lList **answer_list, uint32_t id) {
 
    DRETURN(true);
 }
+/** @brief Fetch one category from qmaster
+ * @param answer_list used to return error messages
+ * @param id the category id
+ * @return the category, or `nullptr` with `answer_list` filled
+ */
 
 lListElem *
 ocs::CategoryQconf::get_via_gdi(lList **answer_list, uint64_t id) {
@@ -118,6 +132,10 @@ ocs::CategoryQconf::get_via_gdi(lList **answer_list, uint64_t id) {
 
    DRETURN(ret);
 }
+/** @brief Fetch all categories from qmaster
+ * @param answer_list used to return error messages
+ * @return the categories, or `nullptr` with `answer_list` filled
+ */
 
 lList *
 ocs::CategoryQconf::get_via_gdi(lList **answer_list) {

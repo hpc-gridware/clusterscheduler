@@ -167,7 +167,7 @@ static char **sge_parser_get_next(char **arg)
 static bool qconf_opt_dry_run = false;   /* H3 (-dry):    validate/report, do not send */
 static bool qconf_opt_force = false;     /* H6 (-f):      skip the bulk-delete prompt */
 static bool qconf_opt_strict = false;    /* H2 (-strict): apply nothing unless all files valid */
-spool_flatfile_format qconf_opt_format = SP_FORM_ASCII;  /* CS-2313a (-fmt): plain|json (see ocs_qconf_parse.h) */
+spool_flatfile_format qconf_opt_format = SP_FORM_ASCII;  ///< see the declaration in `ocs_qconf_parse.h`
 
 /**
  * @brief Print a message-catalogue line (plus newline) to stdout.
@@ -1811,6 +1811,16 @@ qconf_json_type_load_values(lListElem *host, int load_list_nm)
 }
 
 /*------------------------------------------------------------*/
+/** @brief Work through the `qconf` command line, one switch at a time
+ *
+ * `qconf` accepts several switches in one invocation and applies them in the
+ * order given, so this is a loop over the arguments rather than a single
+ * dispatch. Most switches are handled by the table in #object_info_entry; the
+ * ones that are not have their own handlers in this file.
+ *
+ * @param argv the arguments, not including `argv[0]`
+ * @return 0 when every switch succeeded
+ */
 int sge_parse_qconf(char *argv[])
 {
    int status;
