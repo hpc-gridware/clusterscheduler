@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief spooledit - read, write and delete single objects in the spool
+ *
+ * The repair tool for a spool the daemons can no longer start from.
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

@@ -32,6 +32,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief A test program for signal delivery to threads
+ *
+ * Not installed; it exists so the behaviour can be checked on a new platform,
+ * where signal-to-thread delivery is the part most likely to differ.
+ */
+
 #include <csignal>
 #include <pthread.h>
 #include <cstdio>
@@ -44,13 +51,14 @@
 #undef FALSE
 #undef TRUE
 
-enum { FALSE = 0, TRUE = 1, NUM_THRDS = 3 };
+enum { FALSE = 0,/**< Boolean false; redefined here because the platform macros were undefined above */TRUE = 1,/**< Boolean true */NUM_THRDS = 3/**< How many worker threads the test starts */};
 
+/** @brief What the worker threads and the main thread share */
 typedef struct {
-   pthread_mutex_t  mtx;
-   pthread_cond_t   cndvar;
-   int              quit;  /* should we quit */
-   int              cntr;  /* number of threads (except main thread) */
+   pthread_mutex_t  mtx;      ///< Guards the fields below
+   pthread_cond_t   cndvar;   ///< Signalled when #quit or #cntr changes
+   int              quit;  ///< should we quit
+   int              cntr;  ///< number of threads (except main thread)
 } control_block_t;
 
 static control_block_t cb = { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 0, 0 };

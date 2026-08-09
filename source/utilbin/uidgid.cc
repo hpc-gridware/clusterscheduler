@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief uidgid - print the real or effective user or group id
+ *
+ * Portable across platforms whose `id` differs in output format.
+ */
+
 #include <cstdio>
 #include <unistd.h>
 #include <cstdlib>

@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief gethostname - report this host under the name the cluster will use for it
+ */
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

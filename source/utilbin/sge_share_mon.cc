@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief sge_share_mon - watch the share tree and report how the shares are used
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
@@ -221,6 +225,11 @@ FCLOSE_ERROR:
 }
 
 
+/** @brief Entry point of sge_share_mon
+ * @param argc argument count
+ * @param argv argument vector
+ * @return the program's exit status
+ */
 int
 main(int argc, char **argv)
 {

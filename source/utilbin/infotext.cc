@@ -32,6 +32,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief infotext - print a localised message from the message catalogue
+ *
+ * Lets the shell scripts of the installation emit translated text instead of
+ * hard-coding English.
+ */
+
 
 /* Interactive formatted localized text*/
 /* __          _          _        ____*/
@@ -51,16 +58,17 @@
 #include "msg_utilbin.h"
 #include <cinttypes>
 
+/** @brief The switches one `infotext` call was given */
 typedef struct sge_infotext_opt {
-      int e;     /* print to stderr */
-      int n;     /* no new line */
-      int u;     /* underline output */
-      const char* D;   /* dash string */
-      int S;     /* nr of spaces */
-      const char* yes; /* yes parameter for -ask */
-      const char* no;  /* no parameter for -ask */
-      const char* def; /* default parameter for -ask */
-      int log; /* file logging on/off */
+      int e;     ///< print to stderr
+      int n;     ///< no new line
+      int u;     ///< underline output
+      const char* D;   ///< dash string
+      int S;     ///< nr of spaces
+      const char* yes; ///< yes parameter for -ask
+      const char* no;  ///< no parameter for -ask
+      const char* def; ///< default parameter for -ask
+      int log; ///< file logging on/off
    } sge_infotext_options;
 
 

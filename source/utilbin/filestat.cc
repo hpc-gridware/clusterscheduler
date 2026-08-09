@@ -31,6 +31,13 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief filestat - report one attribute of a file: owner, mode or timestamp
+ *
+ * A portable stand-in for the platform `stat`, whose output format differs
+ * between operating systems.
+ */
 #include <cstdio>
 #include <sys/types.h>
 #include <unistd.h>

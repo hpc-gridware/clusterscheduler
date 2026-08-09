@@ -18,6 +18,13 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief get_cloud_provider - detect whether this host runs on AWS, GCP or Azure
+ *
+ * Tries the DMI tables first because they need no network, then the cloud
+ * metadata service, then an external `curl`.
+ */
+
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -29,11 +36,12 @@
 
 #include <curl/curl.h>
 
+/** @brief The cloud a host was detected to run on */
 enum class CloudProvider {
-    Aws,
-    Gcp,
-    Azure,
-    Unknown
+    Aws,       ///< Amazon Web Services
+    Gcp,       ///< Google Cloud Platform
+    Azure,     ///< Microsoft Azure
+    Unknown    ///< No provider could be identified, including bare metal
 };
 
 static const char* to_string(CloudProvider p) {
@@ -263,12 +271,20 @@ static CloudProvider detect_from_curl_tool() {
 // -----------------------------------------------------------------------------
 // CLI
 // -----------------------------------------------------------------------------
+/** @brief Which detection methods the caller allowed
+ *
+ * They are tried cheapest first: the DMI tables need no network, the metadata
+ * service needs one local request, the external `curl` needs a process.
+ */
 struct Options {
-    bool use_dmi = false;
-    bool use_metadata = false;
-    bool use_curl_tool = false;
+    bool use_dmi = false;         ///< Read the DMI tables
+    bool use_metadata = false;    ///< Query the cloud metadata service
+    bool use_curl_tool = false;   ///< Fall back to an external `curl`
 };
 
+/** @brief Print the usage
+ * @param argv0 the program name, as invoked
+ */
 static void print_usage(const char* argv0) {
     std::cerr
         << "Usage: " << argv0 << " [-dmi] [-metadata] [-curl]\n"
@@ -315,6 +331,11 @@ static std::optional<Options> parse_args(int argc, char** argv) {
     return opt;
 }
 
+/** @brief Entry point of get_cloud_provider
+ * @param argc argument count
+ * @param argv argument vector
+ * @return the program's exit status
+ */
 int main(int argc, char** argv) {
     const auto options = parse_args(argc, argv);
     if (!options) {

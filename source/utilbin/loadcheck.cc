@@ -34,6 +34,14 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief loadcheck - report the load values this host would send to qmaster
+ *
+ * The same collection code the execution daemon uses, so it answers "what
+ * does the cluster think this host looks like" without starting a daemon.
+ * With `-cb` it reports the topology the core binding is based on instead.
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -265,27 +273,24 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+/** @brief Print one memory load value, unless a different one was asked for
+ *
+ * @param name the load value's name
+ * @param thisone the single value the user asked for; nullptr prints everything
+ * @param precision decimal places
+ * @param value the value
+ * @param m the unit to append
+ */
 void print_mem_load(const char *name, const char *thisone, int precision, double value, const char *m) {
    if ((thisone && !strcmp(name, thisone)) || !thisone)
       printf("%-15s %.*f%s\n", name, precision, value, m);
 }
 
-/****** loadcheck/check_core_binding() *****************************************
-*  NAME
-*     check_core_binding() -- Checks core binding functionality on current host. 
-*
-*  SYNOPSIS
-*     void check_core_binding() 
-*
-*  FUNCTION
-*     Checks core binding functionality on current host. 
-*
-*  INPUTS
-*
-*  RESULT
-*     void - No result
-*
-*******************************************************************************/
+/** @brief Checks core binding functionality on current host.
+ *
+ * Reports what the topology detection finds, or says that the platform does
+ * not support core binding at all.
+ */
 void check_core_binding()
 {
    /* try if it is possible to use hwloc in case of Linux */
@@ -298,6 +303,7 @@ void check_core_binding()
 }
 
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
+/** @brief Report what hwloc detects on this host, for diagnosing a binding problem */
 void test_hwloc()
 {
    int s, c;
@@ -359,26 +365,13 @@ void test_hwloc()
 #endif
 
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
-/****** loadcheck/fill_socket_core_topology() **********************************
-*  NAME
-*     fill_socket_core_topology() -- Get load values regarding processor topology. 
-*
-*  SYNOPSIS
-*     void fill_socket_core_topology(dstring* msocket, dstring* mcore, dstring* 
-*     mtopology) 
-*
-*  FUNCTION
-*     Gets the values regarding processor topology. 
-*
-*  OUTPUTS 
-*     dstring* msocket   - The amount of sockets the host have. 
-*     dstring* mcore     - The amount of cores the host have.
-*     dstring* mtopology - The topology the host have. 
-*
-*  RESULT
-*     void - nothing 
-*
-*******************************************************************************/
+/** @brief Gets the values regarding processor topology.
+ *
+ * @param[out] msocket the amount of sockets the host have
+ * @param[out] mcore the amount of cores the host have
+ * @param[out] mthread the amount of hardware threads the host have
+ * @param[out] mtopology the topology the host have
+ */
 void fill_socket_core_topology(dstring* msocket, dstring* mcore, dstring* mthread, dstring* mtopology) {
    int ms = get_execd_amount_of_sockets();
    sge_dstring_sprintf(msocket, "%d", ms);

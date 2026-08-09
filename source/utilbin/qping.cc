@@ -32,6 +32,14 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qping - ask a running daemon whether it is alive, and what it is doing
+ *
+ * Speaks the commlib protocol directly, so it reaches a daemon that is up but
+ * no longer answering GDI requests - which is exactly the case worth
+ * diagnosing. `-dump` prints the message traffic itself.
+ */
+
 #include <cstdlib>
 #include <cstdio>
 #include <csignal>
@@ -61,6 +69,7 @@
 #include "msg_utilbin.h"
 #include "msg_clients_common.h"
 
+/** @brief How many arguments the dump filter accepts */
 #define ARGUMENT_COUNT 15
 static char*  cl_values[ARGUMENT_COUNT+2];
 static int    cl_short_host_name_option = 0;                                       

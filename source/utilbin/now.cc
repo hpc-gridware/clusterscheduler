@@ -31,6 +31,12 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief now - print the current time as seconds since the epoch
+ *
+ * A portable `date +%s` for the shell scripts.
+ */
 #include <cstdio>
 #include <ctime>
 #include <cstdlib>

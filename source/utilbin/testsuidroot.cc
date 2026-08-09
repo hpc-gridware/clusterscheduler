@@ -31,6 +31,13 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief testsuidroot - verify that a setuid-root binary really gains root
+ *
+ * An installation check: some file systems are mounted `nosuid`, and then the
+ * daemons fail later in ways that do not point at the mount option.
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
