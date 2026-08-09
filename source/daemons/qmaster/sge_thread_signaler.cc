@@ -111,7 +111,7 @@ sge_signaler_terminate() {
  * signal thread.
  * NOTE: The signal thread will terminate on return of this function.
  *
- * @param anArg not used
+ * @param arg not used
  *
  * @return none
  *

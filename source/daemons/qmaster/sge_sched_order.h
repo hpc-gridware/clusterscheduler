@@ -41,12 +41,18 @@
 
 #include "sched/sge_orders.h"
 
+/** @brief The orders the scheduler has assembled but not yet sent
+ *
+ * A scheduling run produces thousands of orders; they are collected here and
+ * shipped as one multi-request, because a round trip per order would cost more
+ * than the run itself.
+ */
 typedef struct {
-   lList *order_list;
-   sge_sl_list_t *request_list;
+   lList *order_list;             ///< The orders collected so far
+   sge_sl_list_t *request_list;   ///< The GDI requests sent but not yet acknowledged
 } gdi_request_queue_t;
 
-extern gdi_request_queue_t Master_Request_Queue;
+extern gdi_request_queue_t Master_Request_Queue;   ///< @copybrief gdi_request_queue_t
 
 bool
 schedd_order_initialize();

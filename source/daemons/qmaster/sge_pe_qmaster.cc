@@ -70,6 +70,24 @@ static char object_name[] = "parallel environment";
 
 static void pe_update_categories(const lListElem *new_pe, const lListElem *old_pe, uint64_t gdi_session);
 
+/** @brief Apply one attribute change to a parallel environment
+ *
+ * The gdi_object_t::modifier for parallel environments; see sge_c_gdi.h for the sequence it is called from.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param new_pe the parallel environment
+ * @param pe the parallel environment
+ * @param add 1 for add, 0 for modify
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param object the table entry for this object type
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
        int add, const char *ruser, const char *rhost, gdi_object_t *object,
@@ -203,6 +221,17 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
    DRETURN(STATUS_EUNKNOWN);
 }
 
+/** @brief Write a parallel environment to the spool
+ *
+ * The gdi_object_t::writer for parallel environments.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param pep the parallel environment
+ * @param object the table entry for this object type
+ * @return 0 on success
+ */
 int
 pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *pep, gdi_object_t *object) {
    lList *answer_list = nullptr;
@@ -222,6 +251,19 @@ pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    DRETURN(dbret ? 0 : 1);
 }
 
+/** @brief Announce a parallel environment change once it is safely spooled
+ *
+ * The gdi_object_t::on_success for parallel environments.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep the object
+ * @param old_ep the object as it was, or nullptr on add
+ * @param object the table entry for this object type
+ * @param ppList receives information for post processing
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor) {
    const char *pe_name;

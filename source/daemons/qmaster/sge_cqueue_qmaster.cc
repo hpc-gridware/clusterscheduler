@@ -565,6 +565,24 @@ cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListEl
    DRETURN(ret);
 }
 
+/** @brief Apply one attribute change to a cluster queue
+ *
+ * The gdi_object_t::modifier for cluster queues; see sge_c_gdi.h for the sequence it is called from.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param answer_list receives messages for the caller
+ * @param cqueue the cluster queue
+ * @param reduced_elem the reduced element the client sent
+ * @param add 1 for add, 0 for modify
+ * @param remote_user the requesting user
+ * @param remote_host the requesting host
+ * @param object the table entry for this object type
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *cqueue, lListElem *reduced_elem, int add,
            const char *remote_user, const char *remote_host, gdi_object_t *object,
@@ -671,6 +689,19 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
    }
 }
 
+/** @brief Announce a cluster queue change once it is safely spooled
+ *
+ * The gdi_object_t::on_success for cluster queues.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cqueue the cluster queue
+ * @param old_cqueue see the declaration
+ * @param object the table entry for this object type
+ * @param ppList receives information for post processing
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lListElem *old_cqueue, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -759,6 +790,11 @@ cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue
    DRETURN(0);
 }
 
+/** @brief Make the pending changes to a cluster queue permanent
+ *
+ * @param cqueue the cluster queue
+ * @param gdi_session the session the change belongs to
+ */
 void
 cqueue_commit(lListElem *cqueue, uint64_t gdi_session) {
    lList *qinstances = lGetListRW(cqueue, CQ_qinstances);
@@ -803,6 +839,17 @@ cqueue_commit(lListElem *cqueue, uint64_t gdi_session) {
    DRETURN_VOID;
 }
 
+/** @brief Write a cluster queue to the spool
+ *
+ * The gdi_object_t::writer for cluster queues.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param answer_list receives messages for the caller
+ * @param cqueue the cluster queue
+ * @param object the table entry for this object type
+ * @return 0 on success
+ */
 int
 cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *cqueue, gdi_object_t *object) {
    DENTER(TOP_LAYER);
@@ -842,6 +889,16 @@ cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
    DRETURN(ret);
 }
 
+/** @brief Delete a cluster queue
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param this_elem the object
+ * @param answer_list receives messages for the caller
+ * @param remote_user the requesting user
+ * @param remote_host the requesting host
+ * @return STATUS_OK on success
+ */
 int
 cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
    bool ret = true;

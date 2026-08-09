@@ -113,15 +113,21 @@
 #include "msg_qmaster.h"
 #include "msg_common.h"
 
+/** @brief One built-in complex entry, as it is created on a fresh cluster
+ *
+ * The complex entries a cluster starts with - `slots`, `h_vmem`, `arch` and
+ * the rest - are defined by this table rather than spooled, so that a new
+ * installation has them before anyone configures anything.
+ */
 struct cmplx_tmp {
-   const char *name;
-   const char *shortcut;
-   ocs::CEntry::Type valtype;
-   uint32_t relop;
-   uint32_t consumable;
-   const char *valdefault;
-   uint32_t requestable;
-   const char *urgency_weight;
+   const char *name;              ///< The resource's name
+   const char *shortcut;          ///< Its abbreviation, as accepted on a command line
+   ocs::CEntry::Type valtype;     ///< Its value type
+   uint32_t relop;                ///< How a request is compared against it
+   uint32_t consumable;           ///< Whether it is consumed by a job, and per slot or per job
+   const char *valdefault;        ///< What a job requests when it does not say
+   uint32_t requestable;          ///< Whether a job may request it at all
+   const char *urgency_weight;    ///< How much requesting it adds to a job's urgency
 };
 
 static void
@@ -328,7 +334,7 @@ sge_setup_job_resend() {
  *
  * @note MT-NOTE: sge_process_qmaster_cmdline() is NOT MT safe
  *
- * @see #process_cmdline
+ * @see `process_cmdline()`
  */
 void
 sge_process_qmaster_cmdline(char **anArgv) {

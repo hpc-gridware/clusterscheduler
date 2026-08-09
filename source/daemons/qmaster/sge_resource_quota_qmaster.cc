@@ -95,11 +95,9 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
  * @param ruser username who invoked this gdi request
  * @param rhost hostname of where the gdi request was invoked
  * @param object structure of the gdi framework which contains additional information to perform the request
- * @param sub_command how should we handle sublist elements
- * @param SGE_GDI_CHANGE modify sublist elements
- * @param SGE_GDI_APPEND add elements to a sublist
- * @param SGE_GDI_REMOVE remove sublist elements
- * @param SGE_GDI_SET replace the complete sublist
+ * @param sub_command how should we handle sublist elements: `SGE_GDI_CHANGE`
+ *        modifies them, `SGE_GDI_APPEND` adds to the sublist, `SGE_GDI_REMOVE`
+ *        removes from it, `SGE_GDI_SET` replaces the whole sublist
  * @param monitor monitoring structure
  *
  * @return 0 on success STATUS_EUNKNOWN if an error occurred

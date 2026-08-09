@@ -215,8 +215,8 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor, uint64_t gdi_ses
  * @param new_ar if a new ar object will be created by this function, then new_ar is a newly initialized CULL object.
  * @param ar a reduced ar object that contains all of the requested values
  * @param add 1 for add requests 0 for mod requests
- * @param ruser username who invoked this GDI request
- * @param rhost hostname of where the GDI request was invoked
+ * @param packet the client request, carrying the requesting user and host
+ * @param task the GDI task being answered
  * @param object structure of the GDI framework that contains additional informations to perform the request
  * @param sub_command GDI sub command
  * @param monitor monitoring structure
@@ -434,9 +434,10 @@ ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListE
  *
  * @param ep element that should be removed (ID_Type)
  * @param alpp answer list
- * @param ar_list list from where the element should be removed (normally a reference to the master ar list)
- * @param ruser user who invoked this GDI request
- * @param rhost host where the request was invoked
+ * @param master_ar_list list from where the element should be removed (normally a reference to the master ar list)
+ * @param packet the client request, carrying the user and host that invoked it
+ * @param task the GDI task being answered
+ * @param monitor for monitoring qmaster threads
  *
  * @return 0 on success STATUS_EUNKNOWN on failure
  *
@@ -1956,7 +1957,6 @@ sge_ar_state_set_exited(lListElem *ar) {
  * @param ar_list master advance reservation list
  * @param qname queue name
  * @param error_type error type
- * @param send_events send events?
  * @param set_error set or unset
  *
  * @note MT-NOTE: sge_ar_list_set_error_state() is MT safe

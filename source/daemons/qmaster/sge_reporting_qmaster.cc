@@ -166,7 +166,7 @@ reporting_shutdown(lList **answer_list, bool do_spool) {
 /**
  * @brief Process timed event
  *
- * @param te_event_t timed event
+ * @param anEvent timed event
  *
  * @note MT-NOTE: reporting_trigger_handler() is MT safe.
  *
@@ -742,7 +742,6 @@ ocs::ClassicReportingFileWriter::create_host_consumable_record(lList **answer_li
 /**
  * @brief Dump sharetree usage
  *
- * @param answer_list used to return error messages
  * @param monitor monitors the use of the global lock
  *
  * @note bool -  true on success, false on error
@@ -1061,7 +1060,6 @@ bool ocs::ClassicReportingFileWriter::create_ar_acct_record(lList **answer_list,
  * This record will be written for every qinstance whenever an
  * advance reservation terminates.
  *
- * @param answer_list answer list
  * @param ar the ar object which has been created
  * @param cqueue_name cluster queue name
  * @param hostname hostname of the qinstance

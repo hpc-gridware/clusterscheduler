@@ -92,6 +92,24 @@ calendar_initalize_timer(monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
+/** @brief Apply one attribute change to a calendar
+ *
+ * The gdi_object_t::modifier for calendars; see sge_c_gdi.h for the sequence it is called from.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param new_cal see the declaration
+ * @param cep see the declaration
+ * @param add 1 for add, 0 for modify
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param object the table entry for this object type
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_cal, lListElem *cep, int add,
              const char *ruser, const char *rhost, gdi_object_t *object,
@@ -145,6 +163,17 @@ calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
 DRETURN(STATUS_EUNKNOWN);
 }
 
+/** @brief Write a calendar to the spool
+ *
+ * The gdi_object_t::writer for calendars.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param cep see the declaration
+ * @param object the table entry for this object type
+ * @return 0 on success
+ */
 int
 calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
    lList *answer_list = nullptr;

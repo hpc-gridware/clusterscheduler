@@ -82,6 +82,24 @@ static int
 do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *, lList **, monitoring_t *monitor);
 
 
+/** @brief Apply one attribute change to an user or project
+ *
+ * The gdi_object_t::modifier for user or projects; see sge_c_gdi.h for the sequence it is called from.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param modp see the declaration
+ * @param ep the object
+ * @param add 1 for add, 0 for modify
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param object the table entry for this object type
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
             const char *rhost, gdi_object_t *object,
@@ -238,6 +256,19 @@ userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListE
    DRETURN(STATUS_EUNKNOWN);
 }
 
+/** @brief Announce an user or project change once it is safely spooled
+ *
+ * The gdi_object_t::on_success for user or projects.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep the object
+ * @param old_ep the object as it was, or nullptr on add
+ * @param object the table entry for this object type
+ * @param ppList receives information for post processing
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    int user_flag = (object->target == ocs::gdi::Target::UU_LIST) ? 1 : 0;
@@ -282,6 +313,17 @@ userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, l
    DRETURN(0);
 }
 
+/** @brief Write an user or project to the spool
+ *
+ * The gdi_object_t::writer for user or projects.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param upe see the declaration
+ * @param object the table entry for this object type
+ * @return 0 on success
+ */
 int
 userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *upe, gdi_object_t *object) {
    lList *answer_list = nullptr;

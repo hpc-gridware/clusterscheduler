@@ -347,6 +347,11 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
    DRETURN(ret);
 }
 
+/** @brief Make the pending changes to a host group permanent
+ *
+ * @param hgroup the host group
+ * @param gdi_session the session the change belongs to
+ */
 void
 hgroup_commit(lListElem *hgroup, uint64_t gdi_session) {
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
@@ -370,6 +375,10 @@ hgroup_commit(lListElem *hgroup, uint64_t gdi_session) {
    DRETURN_VOID;
 }
 
+/** @brief Discard the pending changes to a host group
+ *
+ * @param this_elem the object
+ */
 static void
 hgroup_rollback(lListElem *this_elem) {
    DENTER(TOP_LAYER);
@@ -384,6 +393,24 @@ hgroup_rollback_cqueues(lListElem *hgroup) {
    hgroup_rollback(hgroup);
 }
 
+/** @brief Apply one attribute change to a host group
+ *
+ * The gdi_object_t::modifier for host groups; see sge_c_gdi.h for the sequence it is called from.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param answer_list receives messages for the caller
+ * @param hgroup the host group
+ * @param reduced_elem the reduced element the client sent
+ * @param add 1 for add, 0 for modify
+ * @param remote_user the requesting user
+ * @param remote_host the requesting host
+ * @param object the table entry for this object type
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int add,
            const char *remote_user, const char *remote_host, gdi_object_t *object,
@@ -680,6 +707,16 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
    }
 }
 
+/** @brief Delete a host group
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param this_elem the object
+ * @param answer_list receives messages for the caller
+ * @param remote_user the requesting user
+ * @param remote_host the requesting host
+ * @return STATUS_OK on success
+ */
 int
 hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
    int ret = true;
@@ -859,6 +896,19 @@ hgroup_send_referencee_events(const lList *referencees, lList *master_hgroup_lis
    }
 }
 
+/** @brief Announce a host group change once it is safely spooled
+ *
+ * The gdi_object_t::on_success for host groups.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param hgroup the host group
+ * @param old_hgroup see the declaration
+ * @param object the table entry for this object type
+ * @param ppList receives information for post processing
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hgroup, lListElem *old_hgroup, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    const char *name = lGetHost(hgroup, HGRP_name);
@@ -891,6 +941,17 @@ hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hgroup
 }
 
 
+/** @brief Write a host group to the spool
+ *
+ * The gdi_object_t::writer for host groups.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param answer_list receives messages for the caller
+ * @param this_elem the object
+ * @param object the table entry for this object type
+ * @return 0 on success
+ */
 int
 hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *this_elem, gdi_object_t *object) {
    bool tmp_ret = true;

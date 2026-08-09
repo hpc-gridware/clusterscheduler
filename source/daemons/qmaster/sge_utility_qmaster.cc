@@ -398,7 +398,7 @@ attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char 
  * @param this_elem_name The name of the list elemet (lList)
  * @param this_elem_primary_key The primary field for sublist
  * @param delta_elem The source (probably reduced) list of the elements, CQ_Type
- * @param sub_command The add, modify, remove command, GDI subcommand
+ * @param sub_cmd The add, modify, remove command, GDI subcommand
  * @param sub_list_name The sublist name
  * @param object_name The target object name
  * @param no_info Skip or add the info messages
@@ -725,7 +725,7 @@ attr_mod_obj_binding(lList **alpp, lListElem *new_ar, const lListElem *ar) {
  * @param this_elem CQ_Type
  * @param answer_list AN_Type
  * @param reduced_elem reduced CQ_Type element
- * @param sub_command GDI subcommand
+ * @param sub_cmd GDI subcommand
  * @param attribute_name CULL attribute name (CQ_Type)
  * @param sublist_host_name CULL sublist attribute name depend on sublist of CQ_Type
  * @param sublist_value_name CULL sublist attribute name of that field which containes the value of the attribute to be modified.

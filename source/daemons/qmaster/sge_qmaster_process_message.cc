@@ -206,7 +206,7 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
  *
  * Get a pending message. Handle message based on message tag.
  *
- * @param anArg none
+ * @param monitor none
  *
  * @note void* - none
  *

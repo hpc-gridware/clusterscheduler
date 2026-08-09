@@ -42,6 +42,24 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
+/** @brief Apply one attribute change to a RBAC role
+ *
+ * The gdi_object_t::modifier for RBAC roles; see sge_c_gdi.h for the sequence it is called from.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param new_ep see the declaration
+ * @param ep the object
+ * @param add 1 for add, 0 for modify
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param object the table entry for this object type
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ep, lListElem *ep, int add,
          const char *ruser, const char *rhost, gdi_object_t *object,
@@ -119,6 +137,17 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    DRETURN(0);
 }
 
+/** @brief Write a RBAC role to the spool
+ *
+ * The gdi_object_t::writer for RBAC roles.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param ep the object
+ * @param object the table entry for this object type
+ * @return 0 on success
+ */
 int
 role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
@@ -137,6 +166,19 @@ role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    DRETURN(dbret ? 0 : 1);
 }
 
+/** @brief Announce a RBAC role change once it is safely spooled
+ *
+ * The gdi_object_t::on_success for RBAC roles.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep the object
+ * @param old_ep the object as it was, or nullptr on add
+ * @param object the table entry for this object type
+ * @param ppList receives information for post processing
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
              lList **ppList, monitoring_t *monitor) {

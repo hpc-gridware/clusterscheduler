@@ -1434,7 +1434,7 @@ sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
  * @param rhost the requesting host
  * @param cmd the command being executed
  * @param sub_command what kind of modification this is
- * @param ppList receives information for post processing
+ * @param tmp_list receives information for post processing
  * @param monitor for monitoring qmaster threads
  * @return STATUS_OK on success, an error status otherwise
  */

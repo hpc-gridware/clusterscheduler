@@ -183,10 +183,10 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
  * The granted resource list is built from the (granted) hard requests of the job
  * and for RSMAPs by searching free ids in the hosts' complex_values lists.
  *
- * @param ja_task
- * @param job
- * @param gdil
- * @param host_list
+ * @param a the scheduling assignment being committed
+ * @param ja_task the array task the resources are granted to
+ * @param job the job (`JB_Type`)
+ * @param host_list the execution hosts, for their complex values
  * @return true in case of success, false in case of errors
  */
 bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lListElem *job, const lList *host_list) {

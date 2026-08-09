@@ -47,8 +47,12 @@
 
 #include "msg_common.h"
 
+/** @brief @copybrief gdi_request_queue_t */
 gdi_request_queue_t Master_Request_Queue;
 
+/** @brief Prepare the buffers the scheduler's orders are collected in
+ * @return true on success
+ */
 bool
 schedd_order_initialize() {
    bool ret = true;
@@ -59,6 +63,9 @@ schedd_order_initialize() {
    DRETURN(ret);
 }
 
+/** @brief Release the order buffers
+ * @return true on success
+ */
 bool
 schedd_order_destroy() {
    bool ret = true;
@@ -69,6 +76,13 @@ schedd_order_destroy() {
 }
 
 
+/** @brief Send the assembled batch of orders to qmaster
+ * @param orders the order buffers being assembled
+ * @param order_list the orders to send
+ * @param answer_list receives messages for the caller
+ * @param name what the batch is, for the log
+ * @return true on success
+ */
 bool
 sge_schedd_send_orders(order_t *orders, lList **order_list, lList **answer_list, const char *name) {
    bool ret = true;
@@ -93,6 +107,16 @@ sge_schedd_send_orders(order_t *orders, lList **order_list, lList **answer_list,
    DRETURN(ret);
 }
 
+/** @brief Add one batch of orders to the multi-request being assembled
+ *
+ * Orders are batched rather than sent one at a time: a scheduling run produces
+ * thousands of them, and each would otherwise be a separate GDI round trip.
+ *
+ * @param orders the order buffers being assembled
+ * @param answer_list receives messages for the caller
+ * @param order_list the orders to add
+ * @return true on success
+ */
 bool
 sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **order_list) {
    DENTER(TOP_LAYER);
@@ -124,6 +148,15 @@ sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **o
    DRETURN(ret);
 }
 
+/** @brief Wait until qmaster has applied everything sent so far
+ *
+ * The scheduler works from a snapshot, so it must not start the next run until
+ * its previous decisions are in the master lists - otherwise it would schedule
+ * against state it has already changed.
+ *
+ * @param answer_list receives messages for the caller
+ * @return true when every outstanding request was applied
+ */
 bool
 sge_schedd_block_until_orders_processed(lList **answer_list) {
    DENTER(TOP_LAYER);

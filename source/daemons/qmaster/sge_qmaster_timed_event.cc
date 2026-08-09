@@ -94,7 +94,7 @@ handler_tbl_t Handler_Tbl = {
  * @param aType event type
  * @param aKey1 first numeric key
  * @param aKey2 second numeric key
- * @param aStrKey alphanumeric key
+ * @param strKey alphanumeric key
  * @param ignore_keys boolean flag
  *
  * @return number of events deleted
@@ -437,7 +437,7 @@ te_add_event(te_event_t anEvent) {
  * @param aType event type
  * @param aKey1 first numeric key
  * @param aKey2 second numeric key
- * @param aStrKey alphanumeric key
+ * @param strKey alphanumeric key
  *
  * @return number of events deleted
  *
@@ -533,7 +533,7 @@ te_type_t te_get_type(te_event_t anEvent) {
  *
  * Return timed event first numeric key.
  *
- * @param te_event_t timed event
+ * @param anEvent timed event
  *
  * @return first numeric key
  *

@@ -695,7 +695,7 @@ sge_timer_terminate() {
  * repeatedly.
  * The event list MUST be sorted in ascending event due time order.
  *
- * @param anArg not used
+ * @param arg not used
  *
  * @return none
  *

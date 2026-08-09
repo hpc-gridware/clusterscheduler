@@ -91,6 +91,19 @@ sge_process_project_event_before(sge_evc_class_t *evc, sge_object_type type,
                                  sge_event_action action, lListElem *event, void *clientdata);
 #endif
 
+/** @brief React to a scheduler configuration change, before the mirror applies it
+ *
+ * @param evc the event client
+ * @param type the object type the event is about
+ * @param action what happened to it
+ * @param event the event
+ * @param clientdata the scheduler's snapshot
+ * @return whether the mirror should go on to apply the event
+ *
+ * @warning Declared here but defined nowhere in the tree, and called from
+ *          nowhere either. Kept because removing a declaration is a code
+ *          change; see the dead-declaration list.
+ */
 sge_callback_result
 sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
                                      sge_event_action action, lListElem *event, void *clientdata);
