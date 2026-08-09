@@ -109,7 +109,9 @@ RECURSIVE              = YES
 # main Doxyfile's value along, and doxygen has no += for it.
 EXCLUDE_PATTERNS       = */._* \
                          */msg_*.h \
-                         */sge_spooling_flatfile_scanner.cc
+                         */sge_spooling_flatfile_scanner.cc \
+                         */com_sun_grid_drmaa_SessionImpl.h \
+                         */jdrmaa/*.java
 
 #---------------------------------------------------------------------------
 # What has to be documented

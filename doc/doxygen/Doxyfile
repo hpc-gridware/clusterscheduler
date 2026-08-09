@@ -1082,7 +1082,9 @@ EXCLUDE_SYMLINKS       = NO
 # exclude all test directories for example use the pattern */test/*
 
 EXCLUDE_PATTERNS       = */._* \
-                         */sge_spooling_flatfile_scanner.cc
+                         */sge_spooling_flatfile_scanner.cc \
+                         */com_sun_grid_drmaa_SessionImpl.h \
+                         */jdrmaa/*.java
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the

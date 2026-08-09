@@ -71,6 +71,8 @@ if (DOXYGEN_FOUND)
          source/libs/sched
          source/libs/spool
          source/libs/comm
+         source/libs/ijs
+         source/libs/jdrmaa
    )
 
    if (DXM_FINISHED_MODULES)
