@@ -839,8 +839,8 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
  * @brief Recompute this group's cache and its referencees'
  *
  * CS-2451: the resolved host list of this group just changed, and with it
- * that of every group referencing it -- transitively, since @a may contain
- * @b which contains @c. Refresh all of them BEFORE any event goes out, so
+ * that of every group referencing it -- transitively, since `@a` may contain
+ * `@b` which contains `@c`. Refresh all of them BEFORE any event goes out, so
  * no event carries a cache that disagrees with the master list.
  * The caller must have chained the new object into the master list already,
  * so resolving here sees the new state.
@@ -886,6 +886,10 @@ hgroup_refresh_caches(lListElem *hgroup, lList *master_hgroup_list, lList **refe
  * spooled and nothing in the referencees' own configuration changed, so
  * rewriting their spool files would be pure I/O.
  * Send these AFTER the event for the group that actually changed.
+ *
+ * @param referencees the host groups whose cache was refreshed (`HR_Type`)
+ * @param master_hgroup_list the master host group list
+ * @param gdi_session the session the change belongs to
  */
 void
 hgroup_send_referencee_events(const lList *referencees, lList *master_hgroup_list, uint64_t gdi_session)

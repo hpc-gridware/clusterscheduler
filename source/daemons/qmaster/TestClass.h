@@ -36,6 +36,7 @@ namespace ocs {
    protected:
    public:
       explicit TestClass(const std::string &name);
+
       static void method(const std::string &arg1);
    };
 }

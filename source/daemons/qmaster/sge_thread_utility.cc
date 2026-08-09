@@ -55,6 +55,18 @@ add_active_threads(cl_raw_list_t *threads, lList *active_thread_list) {
 }
 
 
+/** @brief The names of the running thread pools and how many threads each has
+ *
+ * Only the threads whose number an administrator can influence are reported:
+ * the scheduler, and the listener, reader and worker pools. The signal, timer,
+ * event master, mirror and commlib threads are deliberately left out (the code
+ * for them is kept but disabled) because their number is not configurable and
+ * listing them would suggest otherwise.
+ *
+ * @return a newly created `ST_Type` list, one element per pool, `ST_name` the
+ *         pool name and `ST_id` the number of threads in it, sorted by name.
+ *         The caller owns the list.
+ */
 lList *
 get_active_thread_list() {
    DENTER(TOP_LAYER);

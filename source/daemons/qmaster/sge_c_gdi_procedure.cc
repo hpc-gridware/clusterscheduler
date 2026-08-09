@@ -336,6 +336,15 @@ namespace {
    };
 } // namespace
 
+/** @brief Run a procedure call that arrived over GDI
+ *
+ * @param ao the table entry for the object being acted on
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ */
 void sge_c_gdi_procedure(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Command cmd,
                          ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
    DENTER(TOP_LAYER);

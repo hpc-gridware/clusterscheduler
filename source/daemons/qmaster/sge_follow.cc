@@ -162,6 +162,10 @@ set_next_stree_spooling_time() {
 /** @brief returns true if the scheduler should spool stree/prj/user objects
  *
  *  This function checks if the scheduler should spool.
+ *
+ * @return true if this call is the one that has to spool; false if the
+ *         spool interval has not elapsed, or another thread already took
+ *         the decision for this round
  */
 bool
 do_stree_spooling() {

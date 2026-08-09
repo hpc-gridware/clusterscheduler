@@ -74,10 +74,18 @@
  * Do not wait forever, but only n report intervals.
  * Could be made configurable in qmaster_params.
  */
+/** @brief How long a finished master task waits for its slave tasks before it gives up */
 #define MAX_MASTER_TASK_FINISH_BEFORE_EXIT 20
 
 static const char *status2str(uint32_t status);
 
+/** @brief Is a task in one of the states that mean it is on its way, or running?
+ *
+ * `JWRITTEN` and `JWAITING4OSJID` count as running because the job is already
+ * committed to a host even though it has not started yet.
+ *
+ * @param state the task state
+ */
 #define is_running(state) (state==JWRITTEN || state==JRUNNING|| state==JWAITING4OSJID)
 
 static const char *

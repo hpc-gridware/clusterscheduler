@@ -195,6 +195,7 @@ sge_worker_terminate() {
 /** @brief One worker thread: take a request, answer it, repeat
  *
  * @param arg see the brief above
+ * @return never returns; the thread is cancelled at shutdown
  */
 [[noreturn]] void *
 sge_worker_main(void *arg) {

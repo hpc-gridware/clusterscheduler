@@ -63,12 +63,27 @@
 #include "sge_rusage.h"
 #include "msg_qmaster.h"
 
+/** @brief The field layout of one classic accounting record
+ *
+ * The order and count of the conversions here must match drusage field for
+ * field, and must not change: `qacct` and every site's own parser read this
+ * file positionally.
+ */
 #define ACTFILE_FPRINTF_FORMAT \
 "%s%c%s%c%s%c%s%c%s%c" sge_u32 "%c%s%c" sge_u32 "%c" sge_u64 "%c" sge_u64 "%c" sge_u64 "%c" sge_u32 "%c%d%c" \
 sge_u32 "%c%f%c%f%c%f%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c%f%c" \
 sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c%s%c%s%c%s%c%d%c" sge_u32 "%c%f%c%f%c%f%c%s%c%f%c%s%c%f%c" sge_u32 "%c" sge_u64 "" \
 "\n"
 
+/** @brief Fill in a default where the job report left a string unset
+ *
+ * The accounting record is positional, so an absent field would shift every
+ * later one; a placeholder keeps the line parseable.
+ *
+ * @param jr the job report
+ * @param nm the field
+ * @param s the default to use
+ */
 #define SET_STR_DEFAULT(jr, nm, s) if (lGetString(jr, nm) == nullptr) \
                                       lSetString(jr, nm, s)
 

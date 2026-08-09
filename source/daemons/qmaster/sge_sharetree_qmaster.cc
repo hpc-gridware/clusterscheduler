@@ -464,7 +464,14 @@ update_sharetree(lList *dst, const lList *src) {
    DRETURN(0);
 }
 
-/* seek user/prj node (depends on node_type STT_USER|STT_PROJECT) in actual share tree */
+/** @brief Find the user or project node with a given name in a share tree
+ *
+ * @param share_tree the share tree (`STN_Type`) to search
+ * @param name the node name to look for
+ * @param node_type `STT_USER` or `STT_PROJECT`; only nodes of that type match
+ * @param recurse if non-zero, descend into the children of non-matching nodes
+ * @return the node, or `nullptr` if the tree is empty or holds no such node
+ */
 lListElem *
 getNode(const lList *share_tree, const char *name, int node_type, int recurse) {
    DENTER(TOP_LAYER);

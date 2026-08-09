@@ -303,6 +303,15 @@ acl_is_valid_acl(lListElem *acl, lList **answer_list) {
    DRETURN(ret);
 }
 
+/** @brief Is the job's owner a member of the given department?
+ *
+ * @param job the job (`JB_Type`) whose owner and groups are checked
+ * @param alpp used to return error messages; may be `nullptr` when the caller
+ *             is probing several departments and a non-match is not an error
+ * @param dept_name the department to check against
+ * @param userset_list the departments (`US_Type`)
+ * @return true if the owner is a member of `dept_name`
+ */
 bool
 job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, const lList *userset_list) {
    DENTER(TOP_LAYER);
@@ -351,6 +360,18 @@ job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, con
    DRETURN(false);
 }
 
+/** @brief Assign the job to the first department its owner belongs to
+ *
+ * The departments are tried in list order and the first match wins, so a user
+ * in several departments gets whichever comes first - the order is the
+ * assignment rule. `defaultdepartment` is skipped during the search and used
+ * as the fallback when no other department matches.
+ *
+ * @param job the job (`JB_Type`); `JB_department` is set on success
+ * @param alpp used to return error messages
+ * @param userset_list the departments (`US_Type`)
+ * @return true if a department could be assigned
+ */
 bool
 job_set_department(lListElem *job, lList **alpp, const lList *userset_list) {
    DENTER(TOP_LAYER);

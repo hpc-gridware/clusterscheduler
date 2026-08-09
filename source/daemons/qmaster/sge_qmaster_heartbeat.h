@@ -41,6 +41,11 @@
 
 #include "sge_qmaster_timed_event.h"
 
+/** @brief Seconds between two bumps of the heartbeat file
+ *
+ * Must stay well below the shadow daemons' `GET_ACTIVE_INTERVAL`, or they
+ * would start a takeover while this qmaster is perfectly healthy.
+ */
 #define HEARTBEAT_INTERVAL 30
 
 void 

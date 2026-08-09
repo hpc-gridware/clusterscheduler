@@ -57,6 +57,7 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
+/** @brief Debug layer the timed event code logs under */
 #define EVENT_LAYER CULL_LAYER
 
 event_control_t Event_Control = {

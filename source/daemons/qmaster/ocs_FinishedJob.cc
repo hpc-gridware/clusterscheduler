@@ -100,6 +100,12 @@ namespace {
  *    - mark the master share tree dirty so the next TET tick republishes it.
  *
  *  Returns 0 on success, a negative value on a hard error (missing jep/jatep).
+ *
+ * @param jep the job (`JB_Type`)
+ * @param jatep the array task that finished (`JAT_Type`)
+ * @param monitor unused; kept so the signature matches the other commit helpers
+ * @param gdi_session the session the change belongs to
+ * @return 0 on success, a negative value if `jep` or `jatep` is `nullptr`
  */
 int
 sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* monitor */, uint64_t gdi_session) {

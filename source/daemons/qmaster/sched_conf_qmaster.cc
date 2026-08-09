@@ -50,6 +50,13 @@
 #include "sge_persistence_qmaster.h"
 #include "msg_common.h"
 
+/** @brief Read the scheduler configuration from the spool at startup
+ *
+ * @param aSpoolContext the spooling context to read through
+ * @param anAnswer receives messages for the caller
+ * @param gdi_session the session the change belongs to
+ * @return STATUS_OK on success
+ */
 int
 sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, uint64_t gdi_session) {
    lList *sched_conf = nullptr;

@@ -72,6 +72,14 @@ update_license_data(lListElem *hep, lList *lp_lic, uint64_t gdi_session);
 /**
  * @brief Process execd load report
  *
+ * @param packet the GDI packet the report arrived in
+ * @param task the GDI task within that packet
+ * @param rhost the host the execution daemon sent the report from
+ * @param commproc the commlib component name of the sender (`execd`)
+ * @param id the commlib component id of the sender
+ * @param report_list the reports (`REP_Type`) to process
+ * @param monitor for monitoring qmaster threads
+ *
  * @note MT-NOTE: sge_c_report() is MT safe
  */
 void

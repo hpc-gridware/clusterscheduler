@@ -1101,6 +1101,10 @@ void job_mark_job_as_deleted(lListElem *j, lListElem *t) {
  *
  * Called when a job is deleted by qdel or by qmaster master-limit enforcement
  * so that the originator can later be added to the accounting record.
+ *
+ * @param ja_task the array task being deleted (`JAT_Type`)
+ * @param user the user who triggered the deletion
+ * @param host the host the deletion was requested from
  */
 void
 job_set_deleted_by(lListElem *ja_task, const char *user, const char *host) {

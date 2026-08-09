@@ -26,10 +26,16 @@
 
 #include "TestClass.h"
 
+/** @brief Construct the test object and immediately call #method with the name
+ * @param name passed straight on to ocs::TestClass::method()
+ */
 ocs::TestClass::TestClass(const std::string &name) {
    TestClass::method(name);
 }
 
+/** @brief Does nothing
+ * @param arg1 ignored
+ */
 void
 ocs::TestClass::method(const std::string &arg1) {
    //std::cout << "method from clusterscheduler repo was called" << std::endl;

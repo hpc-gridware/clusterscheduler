@@ -46,7 +46,7 @@
  * 'null thread id'. Given, that any variable with static storage class will be
  * initialized to '0', using '0' as a thread id would be an insane choice anyway.
  */
-enum { INVALID_THREAD = 0 };
+enum { INVALID_THREAD = 0/**< No thread; see the note above on why 0 is used */};
 
 void sge_gdi_kill_master(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
 

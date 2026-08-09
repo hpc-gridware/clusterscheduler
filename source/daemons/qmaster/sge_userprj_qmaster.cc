@@ -693,6 +693,8 @@ static int do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lLis
  * the qmaster is going down, we have to through all user/projects and store
  * them again.
  *
+ * @param gdi_session the session the spooling belongs to
+ *
  * @note MT-NOTE: sge_userprj_spool() is not MT safe, because it is working on global
  *       master lists (only reading)
  */

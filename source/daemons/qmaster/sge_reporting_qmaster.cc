@@ -119,6 +119,13 @@ reporting_initialize() {
    DRETURN_VOID;
 }
 
+/** @brief Make the reporting trigger fire again immediately
+ *
+ * Called when the reporting configuration changed: the pending trigger was
+ * scheduled with the old interval, so it is dropped and a new one is queued for
+ * right now. The next handler run then re-reads the configuration and schedules
+ * itself with the new interval.
+ */
 void
 reporting_reinitialize_timed_event() {
    DENTER(TOP_LAYER);
@@ -261,6 +268,15 @@ ocs::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListE
    DRETURN(ret);
 }
 
+/** @brief Append one line to the reporting buffer
+ *
+ * Writes `<timestamp>:<type>:<data>` under the buffer mutex. The timestamp is
+ * taken here rather than by the caller, so that the order of the lines in the
+ * file matches the order in which they were buffered.
+ *
+ * @param type the record type, the second field of a reporting file line
+ * @param data the already formatted remainder of the line
+ */
 void
 ocs::ClassicReportingFileWriter::create_record(const char *type, const char *data) {
    sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
@@ -810,10 +826,21 @@ ocs::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
    }
 }
 
-/*
-* NOTES
-*     MT-NOTE: reporting_write_load_values() is MT-safe
-*/
+/** @brief Append the requested load values as a comma separated `name=value` list
+ *
+ * Only the variables named in `variables` are written, and only those that are
+ * actually reported in `load_list` - a variable that no execution daemon
+ * reports is skipped rather than written empty.
+ *
+ * @param answer_list used to return error messages
+ * @param buffer the record being built; the list is appended to it
+ * @param load_list the reported load values (`HL_Type`)
+ * @param variables the load values to write (`STU_Type`), from the reporting
+ *                  configuration
+ * @return true on success
+ *
+ * @note MT-NOTE: write_load_values() is MT-safe
+ */
 bool
 ocs::ClassicReportingFileWriter::write_load_values(lList **answer_list, dstring *buffer,
                                               const lList *load_list, const lList *variables) {
@@ -1066,6 +1093,7 @@ bool ocs::ClassicReportingFileWriter::create_ar_acct_record(lList **answer_list,
  * This record will be written for every qinstance whenever an
  * advance reservation terminates.
  *
+ * @param dstr the record being built; the accounting line is appended to it
  * @param ar the ar object which has been created
  * @param cqueue_name cluster queue name
  * @param hostname hostname of the qinstance

@@ -59,6 +59,7 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
+/** @brief Debug layer the cluster queue helpers log under */
 #define CQUEUE_LAYER TOP_LAYER
 
 /**
@@ -258,6 +259,19 @@ int attr_mod_ulong(lListElem *qep, lListElem *new_ep, int nm, const char *attr_n
    DRETURN(0);
 }
 
+/** @brief Modify raw uint64, no verification
+ *
+ * This function modifies the "new_ep" attribute with the uint64 value from "qep".
+ *
+ * @param qep CQ_Type, source of the modification
+ * @param new_ep CQ_Type, destination of the modification
+ * @param nm CULL attribute name (CQ_Type) of the element
+ * @param attr_name CULL sublist attribute name
+ *
+ * @return 0 success, otherwise error
+ *
+ * @note MT-NOTE: attr_mod_ulong64() is MT safe
+ */
 int attr_mod_ulong64(lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
    DENTER(TOP_LAYER);
 

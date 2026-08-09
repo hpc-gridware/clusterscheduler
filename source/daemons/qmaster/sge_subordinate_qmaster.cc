@@ -1083,6 +1083,7 @@ do_slotwise_subordinate_lists_differ(const lList *old_so_list, const lList *new_
  * @param gdil the granted destination list of the job that changed
  * @param monitor for monitoring qmaster threads
  * @param gdi_session the session the change belongs to
+ * @return true if every affected queue instance could be signalled
  */
 bool
 cqueue_list_x_on_subordinate_gdil(const lList *master_cqueue_list, bool suspend,
@@ -1245,6 +1246,7 @@ qinstance_x_on_subordinate(lListElem *this_elem, bool suspend, bool send_event, 
  * @param resolved_so_list the queue instances to act on
  * @param monitor for monitoring qmaster threads
  * @param gdi_session the session the change belongs to
+ * @return true if every affected queue instance could be signalled
  */
 bool
 cqueue_list_x_on_subordinate_so(lList *master_cqueue_list, lList **answer_list, bool suspend,
@@ -1334,6 +1336,7 @@ qinstance_find_suspended_subordinates(const lListElem *this_elem, lList **answer
  * @param monitor for monitoring qmaster threads
  * @param master_cqueue_list the cluster queues
  * @param gdi_session the session the change belongs to
+ * @return true if the instance starts out suspended by a superordinate queue
  */
 bool
 qinstance_initialize_sos_attr(lListElem *this_elem, monitoring_t *monitor, const lList *master_cqueue_list, uint64_t gdi_session) {

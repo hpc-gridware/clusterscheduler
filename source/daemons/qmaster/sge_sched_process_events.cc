@@ -58,12 +58,20 @@
 #include "sge_sched_prepare_data.h"
 
 /**
- * @brief TODO document this
+ * @brief Hand a batch of freshly delivered events to the scheduler thread
  *
+ * The event client's delivery callback. It does not process anything: it moves
+ * the events out of `event_list` into #Scheduler_Control under the mutex, sets
+ * `triggered` and signals the condition variable, so the scheduler thread wakes
+ * up and does the work. Delivery must not block on a scheduling run.
+ *
+ * The list is moved with lXchgList() rather than copied, so the caller's
+ * `event_list` is left empty.
+ *
+ * @param ec_id the event client id the events were delivered for
  * @param alpp answer list
  * @param event_list a report list, the event are stored in REP_list
- * @param ec_id see the brief above
- * @param arg see the brief above
+ * @param arg unused
  *
  * @note MT-NOTE: is MT safe.
  */
@@ -118,6 +126,23 @@ set_job_flushing(sge_evc_class_t *evc)
    evc->ec_set_flush(evc, sgeE_JATASK_DEL, flush, interval);
 }
 
+/** @brief Subscribe the scheduler to the events it needs, with the right flush delays
+ *
+ * The scheduler does not want every event immediately. Subscribing without a
+ * flush means the event master delivers on its regular interval; the events
+ * that should shorten a scheduling interval - a job submitted, a job finished -
+ * are subscribed with a flush delay taken from `flush_submit_sec` /
+ * `flush_finish_sec`, so that a new run starts soon after they happen rather
+ * than at the end of the interval.
+ *
+ * The subscription also decides what the mirror keeps, so it has to cover
+ * exactly the lists in #scheduler_all_data_t and no more.
+ *
+ * @param evc the event client the scheduler runs as
+ * @param where_what the `where`/`what` filters limiting each subscription to
+ *                   the fields the scheduler actually reads
+ * @return 0 on success
+ */
 int
 subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what)
 {

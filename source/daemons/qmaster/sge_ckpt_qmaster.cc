@@ -324,6 +324,11 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
    DRETURN(STATUS_OK);
 }
 
+/** @brief The `when` string of a checkpointing environment, from its bitmask
+ *
+ * @param bitmask the checkpoint occasions as a bitmask
+ * @return the string, which the caller owns
+ */
 const char *
 get_checkpoint_when(int bitmask) {
    int i = 0;
@@ -351,6 +356,15 @@ get_checkpoint_when(int bitmask) {
    DRETURN(when);
 }
 
+/** @brief Is this combination of checkpoint occasions allowed?
+ *
+ * @param bitmask the checkpoint occasions as a bitmask
+ * @return non-zero when the bitmask is valid
+ *
+ * @note Also declared in `libs/uti/sge_parse_num_par.h`, which is a layering
+ *       oddity: a libuti header declaring a function only qmaster implements.
+ *       Left as it is - removing a declaration would be a code change.
+ */
 int
 is_checkpoint_when_valid(int bitmask) {
    int ret = 0;

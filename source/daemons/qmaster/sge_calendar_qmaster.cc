@@ -66,6 +66,10 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
+/** @brief Arm the timers for every calendar known at startup
+ *
+ * @param monitor for monitoring qmaster threads
+ */
 void
 calendar_initalize_timer(monitoring_t *monitor) {
    lListElem *cep;
@@ -192,6 +196,16 @@ calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLi
    DRETURN(dbret ? 0 : 1);
 }
 
+/** @brief Delete a calendar, unless a queue still follows it
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cep the calendar
+ * @param alpp receives messages for the caller
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return STATUS_OK on success
+ */
 int
 sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lList **alpp, char *ruser, char *rhost) {
    const char *cal_name;

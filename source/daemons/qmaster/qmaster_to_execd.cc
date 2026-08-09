@@ -137,6 +137,11 @@ int host_notify_about_kill(lListElem *host, int kill_command) {
    return host_notify_about_X(host, kill_command, ocs::gdi::ClientServerBase::TAG_KILL_EXECD, EXECD);
 }
 
+/** @brief Ask an execution host to send its complete load report rather than a delta
+ *
+ * @param host the execution host
+ * @return 0 on success
+ */
 int host_notify_about_full_load_report(lListElem *host) {
    return host_notify_about_X(host, 0, ocs::gdi::ClientServerBase::TAG_FULL_LOAD_REPORT, EXECD);
 }

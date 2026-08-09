@@ -288,17 +288,22 @@ centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
 /* ------------------------------------------------------------ */
 
 /**
- * @brief TODO document this
+ * @brief Apply the consequences of an added or modified complex entry
  *
- * @param ep
- * @param old_ep
- * @param object
+ * Called after a centry has been written. A changed complex may alter what
+ * every job's resource requests mean, so the resource debitations of all
+ * running jobs are re-done against all hosts and queues, and the change is
+ * announced as an event. See the `@bug` below for the cost of that.
+ *
+ * @param ep the new or modified complex entry (`CE_Type`)
+ * @param old_ep the previous version, or `nullptr` when the entry was added
+ * @param object the GDI object description for complex entries
  * @param packet the client request
  * @param task the GDI task being answered
  * @param ppList see the brief above
  * @param monitor for monitoring qmaster threads
  *
- * @return TODO document the return value
+ * @return 0 on success
  *
  * @note MT-NOTE: centry_success() is not MT safe
  *
@@ -366,6 +371,16 @@ centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
    DRETURN(0);
 }
 
+/** @brief Delete a complex entry, unless something still requests it
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param centry the complex entry (`CE_Type`)
+ * @param answer_list receives messages for the caller
+ * @param remote_user the requesting user
+ * @param remote_host the requesting host
+ * @return STATUS_OK on success
+ */
 int
 sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *centry, lList **answer_list, char *remote_user, char *remote_host) {
    bool ret = true;

@@ -1087,6 +1087,13 @@ sge_qmaster_qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_stat
    return changed;
 }
 
+/** @brief Mark a queue instance as suspended by its calendar, or no longer so
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param set_state true to set the state, false to clear it
+ * @param gid_session the session the change belongs to
+ * @return true when the state changed
+ */
 bool
 sge_qmaster_qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_state, uint64_t gid_session) {
    bool changed;
@@ -1098,6 +1105,13 @@ sge_qmaster_qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_sta
    return changed;
 }
 
+/** @brief Mark a queue instance as orphaned - deleted but still holding jobs
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param set_state true to set the state, false to clear it
+ * @param gid_session the session the change belongs to
+ * @return true when the state changed
+ */
 bool
 sge_qmaster_qinstance_state_set_orphaned(lListElem *this_elem, bool set_state, uint64_t gid_session) {
    bool changed;
@@ -1140,6 +1154,8 @@ sge_qmaster_qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state, 
  *
  * @param this_elem the queue instance (`QU_Type`)
  * @param gdi_session the session the change belongs to
+ *
+ * @return true if the initial configuration changed the state
  */
 bool
 sge_qmaster_qinstance_set_initial_state(lListElem *this_elem, uint64_t gdi_session) {

@@ -71,6 +71,9 @@
  * Shutdown qmaster by means of a GDI request. This operation is only
  * permitted for a user of type 'manager'.
  *
+ * @param packet the GDI packet holding the request
+ * @param task the GDI task within that packet
+ *
  * @note MT-NOTE: ocs::gdi::Client::sge_gdi_kill_master() is not MT safe.
  *       MT-NOTE:
  *       MT-NOTE: This is acceptable for now, because this function is currently
@@ -133,6 +136,9 @@ sge_gdi_kill_master(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
  * can read from standard input or write to either standard ouput or
  * standard error will not fail.
  *
+ * @return true if qmaster is a daemon afterwards; also true, without doing
+ *         anything, when `SGE_ND` is set in the environment
+ *
  * @note MT-NOTE: sge_daemonize_qmaster() is not MT safe
  */
 bool
@@ -182,6 +188,8 @@ sge_daemonize_qmaster() {
  * Get admin user from bootstrap configuration. Set admin user and change
  * the effective UID/GID to the admin user UID/GID.
  * Note: The effective UID does determine file access permissions.
+ *
+ * @param admin_user the admin user name from the bootstrap configuration
  *
  * @note MT-NOTE: sge_become_admin_user() is not MT safe
  */

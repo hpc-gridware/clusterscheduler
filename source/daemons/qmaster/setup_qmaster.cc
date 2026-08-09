@@ -172,6 +172,8 @@ debit_all_jobs_from_qs();
  * qmaster PID file.
  * NOTE: Before this function is invoked, qmaster must become admin user.
  *
+ * @param anArgv the qmaster command line arguments, as passed to `main()`
+ *
  * @return success
  *
  * @note MT-NOTE: sge_setup_qmaster() is NOT MT safe!

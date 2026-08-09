@@ -312,6 +312,8 @@ job_verify_non_pe_soft_master_slave_requests(lList **alpp, const lListElem *jep)
  * @param alpp answer list which is filled in case of errors
  * @param jep job containing the request set
  * @param master_centry_list list of centry definitions
+ *
+ * @return true if all checks passed; false with `alpp` filled otherwise
  */
 bool
 job_verify_adjust_request_set(lList **alpp, const lListElem *jep, const lList *master_centry_list) {

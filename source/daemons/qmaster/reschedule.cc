@@ -109,6 +109,9 @@ get_from_reschedule_unknown_list(const lListElem *host, uint32_t job_number, uin
  *       * network or host problems (machine crashed, cable problem ...)
  *    - qmaster startup (all execution hosts are in unknown state)
  *
+ * @param anEvent the timed event that fired
+ * @param monitor for monitoring qmaster threads
+ *
  * @note MT-NOTE: reschedule_unknown_event() is NOT MT safe
  */
 void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {

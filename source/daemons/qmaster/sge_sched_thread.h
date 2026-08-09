@@ -91,15 +91,6 @@ st_set_flag_new_global_conf(bool new_value);
 bool
 st_get_flag_new_global_conf();
 
-/** @brief Subscribe the scheduler to the events it needs
- *
- * The subscription decides what the mirror keeps, so it has to cover exactly
- * the lists in #scheduler_all_data_t and no more.
- *
- * @param evc the event client
- * @param where_what the filters and field selections to subscribe with
- * @return 0 on success
- */
 int
 subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what);
 

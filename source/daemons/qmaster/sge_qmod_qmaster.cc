@@ -993,6 +993,17 @@ qmod_job_unsuspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *je
 }
 
 
+/** @brief Re-arm the signal resend timers after a qmaster restart
+ *
+ * The timed events themselves live only in memory, but the state they were
+ * created from is spooled: `JAT_pending_signal` /
+ * `JAT_pending_signal_delivery_time` on array tasks, and the `QU_pending_signal`
+ * pair on queue instances. Without this, a signal that was in flight across a
+ * restart would never be repeated and the job or queue would sit in its old
+ * state forever.
+ *
+ * Called once during qmaster startup, after the spooled lists have been read.
+ */
 void
 rebuild_signal_events() {
    const lListElem *cqueue, *jep, *jatep;

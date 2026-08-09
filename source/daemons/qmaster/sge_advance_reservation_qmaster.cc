@@ -1536,7 +1536,16 @@ ar_get_request_or_default(const lListElem *ar, const lListElem *cr, const char *
 }
 
 /**
- * @brief TODO document this
+ * @brief Build the AR's private copy of the queues and hosts it reserved
+ *
+ * The granted slot list only names queue instances. Booking against the live
+ * cluster configuration would make the reservation follow later configuration
+ * changes, so the AR gets its own reduced copies of the reserved queues
+ * (`AR_reserved_queues`) and hosts (`AR_reserved_hosts`) and debits the
+ * requested resources into those. From here on the AR is accounted against
+ * this snapshot, not against the queues themselves.
+ *
+ * @param ar the advance reservation (`AR_Type`) to initialize
  */
 void
 ar_initialize_resource_booking(lListElem *ar) {
@@ -1739,6 +1748,8 @@ ar_initialize_resource_booking(lListElem *ar) {
  * @param monitor monitoring structure
  * @param forced see the brief above
  * @param gdi_session the session the change belongs to
+ *
+ * @return true if all jobs of the AR could be removed
  *
  * @note MT-NOTE: sge_ar_remove_all_jobs() is not MT safe
  */

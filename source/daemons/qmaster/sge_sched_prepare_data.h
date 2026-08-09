@@ -115,6 +115,7 @@ sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
  * @param action see the brief above
  * @param event see the brief above
  * @param clientdata see the brief above
+ * @return see the brief above
  *
  * @warning Declared here but defined nowhere in the tree, and called from
  *          nowhere either. Kept because removing a declaration is a code
@@ -131,6 +132,7 @@ sge_process_schedd_conf_event_after(sge_evc_class_t *evc, sge_object_type type,
  * @param action see the brief above
  * @param event see the brief above
  * @param clientdata see the brief above
+ * @return see the brief above
  *
  * @warning Declared here but defined nowhere in the tree, and called from
  *          nowhere either. Kept because removing a declaration is a code
@@ -151,6 +153,7 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
  * @param action see the brief above
  * @param event see the brief above
  * @param clientdata see the brief above
+ * @return see the brief above
  *
  * @warning Declared here but defined nowhere in the tree, and called from
  *          nowhere either. Kept because removing a declaration is a code
@@ -175,6 +178,7 @@ sge_process_schedd_monitor_event(sge_evc_class_t *evc, sge_object_type type,
  * @param action see the brief above
  * @param event see the brief above
  * @param clientdata see the brief above
+ * @return see the brief above
  *
  * @warning Declared here but defined nowhere in the tree, and called from
  *          nowhere either. Kept because removing a declaration is a code

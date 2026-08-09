@@ -190,6 +190,17 @@ role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
    DRETURN(0);
 }
 
+/** @brief Delete a role from the master role list
+ *
+ * @param packet the GDI packet holding the request
+ * @param task the GDI task within that packet
+ * @param ep an element carrying at least the `RL_name` of the role to delete
+ * @param alpp used to return error messages
+ * @param ruser the user who requested the deletion
+ * @param rhost the host the request came from
+ * @return `STATUS_OK`, or one of `STATUS_EUNKNOWN` / `STATUS_EEXIST` with
+ *         `alpp` filled
+ */
 int
 sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
    lList **master_role_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_RL);
