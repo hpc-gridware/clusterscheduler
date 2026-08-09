@@ -35,6 +35,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Gettext wrappers, so that a message can be marked for translation whether or not the build has gettext
+ */
+
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
 
 #  include <libintl.h>

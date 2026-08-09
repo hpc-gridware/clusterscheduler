@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the command line to job object conversion
+ */
+
 /*
 ** flags for parse_script_file
 */

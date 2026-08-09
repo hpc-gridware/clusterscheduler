@@ -33,6 +33,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief The qsub-style command line parser shared by every submit client
+ */
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>

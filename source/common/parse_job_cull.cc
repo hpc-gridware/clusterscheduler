@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Turns the parsed command line of a submit client into a job (`JB_Type`) object
+ */
 #include <cstring>
 #include <climits>
 #include <cctype>

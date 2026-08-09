@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Prints the usage text of every client, from one shared description of the options
+ */
+
 #include <cstdio>
 #include <cstring>
 

@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the qsub-style command line parser
+ */
+
 #include "sgeobj/cull/sge_boundaries.h"
 #include "cull/cull.h"
 

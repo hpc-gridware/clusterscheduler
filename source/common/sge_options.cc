@@ -34,8 +34,19 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The table saying which command line option each client accepts
+ */
+
 #include "sge_options.h"
 
+/** @brief Which command line option each client accepts
+ *
+ * The column headings are spelled vertically in the comment below - each column
+ * is one client, each row one option, and a non-zero cell means that client
+ * accepts that option. Adding an option means adding a row here as well as an
+ * enumerator in the header, and the two must stay in the same order.
+ */
 unsigned short sge_options[][ALL_OPT + 1] =
 {
    /*

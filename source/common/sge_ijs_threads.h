@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the thread helpers used by interactive job support
+ */
+
 #include "comm/cl_data_types.h"
 #include "comm/lists/cl_thread.h"
 

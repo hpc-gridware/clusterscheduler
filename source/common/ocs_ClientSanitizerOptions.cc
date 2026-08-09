@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Default ASan/LSan options, linked into the clients when built with a sanitizer
+ */
+
 /*
  * LSan-runtime hook.
  *

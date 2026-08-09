@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief The signal handlers every client and daemon installs at startup
+ */
 #include <cstdio>
 #include <csignal>
 #include <cstdlib>

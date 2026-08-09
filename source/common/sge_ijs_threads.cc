@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Thin wrappers around the commlib thread list, used by interactive job support
+ */
+
 #include "sge_ijs_threads.h"
 
 int thread_init_lib(THREAD_LIB_HANDLE **thread_lib_handle)

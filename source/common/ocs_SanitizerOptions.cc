@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Default ASan/LSan options, linked into the daemons when built with a sanitizer
+ */
+
 /*
  * ASan-runtime hook.
  *

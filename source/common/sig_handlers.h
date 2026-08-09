@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the common signal handler setup
+ */
+
 #include <csignal>
 
 void sge_setup_sig_handlers(int me_who);

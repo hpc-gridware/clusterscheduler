@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Column headings for the accounting and history output
+ */
+
 #include <cinttypes>
 
 // clang-format off

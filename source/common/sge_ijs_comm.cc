@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The commlib connection that carries an interactive job's terminal traffic
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

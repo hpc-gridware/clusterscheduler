@@ -35,6 +35,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the interactive job support transport
+ */
+
 #if defined(LINUX)
 #include <pty.h>
 #endif
