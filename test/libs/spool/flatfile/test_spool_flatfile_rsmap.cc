@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for flatfile rsmap in `libs/spool`
+ */
+
 /* CS-1338: focused unit tests for read_CE_stringval_host — the flatfile
  * reader for RSMAP complex_values entries. Covers bare IDs (regression),
  * ranges, mixed range+ID input, the new per-instance characteristics

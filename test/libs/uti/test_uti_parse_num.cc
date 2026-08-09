@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for parse num in `libs/uti`
+ */
+
 /*
  * Tests for parse_ulong_val() / extended_parse_ulong_val() - the type-aware
  * complex-attribute value parser.

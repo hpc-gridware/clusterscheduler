@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for lock trylock in `libs/uti`
+ */
+
 #include <random>
 
 #include <unistd.h>

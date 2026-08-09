@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for bitfield in `libs/uti`
+ */
+
 #define XMALLINFO
 
 #include <cstdio>

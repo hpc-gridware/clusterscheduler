@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for qquota plain in `libs/procedure`
+ */
+
 /*
  * Tests for QQuotaViewPlain::report_resource_value (CS-2348 display fix):
  * a static RQS limit must be rendered human-readably by attribute type

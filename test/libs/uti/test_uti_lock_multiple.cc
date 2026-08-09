@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for lock multiple in `libs/uti`
+ */
+
 #include <sys/time.h>
 #include <cstdio>
 #include <pthread.h>

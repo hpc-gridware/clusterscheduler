@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for peopen in `libs/uti`
+ */
+
 /*
  * Regression test for CS-2333:
  *   sge_peopen()/sge_peopen_r() drop the UID of a target user but never call

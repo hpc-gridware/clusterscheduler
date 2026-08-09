@@ -19,6 +19,10 @@
  ************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for heartbeat in `daemons/common`
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>

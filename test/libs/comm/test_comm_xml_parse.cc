@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for xml parse in `libs/comm`
+ */
+
 /*
  * Regression test for CS-2343 (HIGH-COMM-001):
  *   cl_xml_parse_version() wrote charptr[buffer_length - 1] with no bounds

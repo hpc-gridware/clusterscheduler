@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief CS-2447 probe: measures how long drmaa_wait() takes to return after a job has actually ended
+ */
+
 /*
  * CS-2447 probe. Measures how long drmaa_wait() takes to return *after a job
  * has actually ended*, i.e. with the job runtime taken out.

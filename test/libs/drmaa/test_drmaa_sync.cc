@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for sync in `libs/drmaa`
+ */
+
 #include <unistd.h>
 #include <cstring>
 #include <pthread.h>

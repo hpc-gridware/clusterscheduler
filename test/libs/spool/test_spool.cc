@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for the spooling framework
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for mcpu in `libs/drmaa`
+ */
+
 #include <ctime>
 #include <pthread.h>
 #include <cstdio>

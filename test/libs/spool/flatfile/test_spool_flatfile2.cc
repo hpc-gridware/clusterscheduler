@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Further tests of the flatfile spooling format, beyond test_spool_flatfile
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>

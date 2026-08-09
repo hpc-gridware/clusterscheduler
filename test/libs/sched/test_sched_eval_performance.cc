@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for eval performance in `libs/sched`
+ */
+
 /*----------------------------------------------------
  *
  * The litte test program matches an "attribute" against

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for schedd conf in `libs/sgeobj`
+ */
+
 #include <cstdio>
 
 #include "uti/sge_component.h"

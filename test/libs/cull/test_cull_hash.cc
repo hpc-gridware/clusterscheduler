@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for hash in `libs/cull`
+ */
+
 /* #define HASH_STATISTICS */
 #define XMALLINFO
 

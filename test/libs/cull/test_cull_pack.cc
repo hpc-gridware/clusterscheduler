@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for pack in `libs/cull`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

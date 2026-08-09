@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for err in `libs/uti`
+ */
+
 #include <cstdio>
 #include <cstring>
 

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for flatfile in `libs/spool`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>

@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Unit tests for perf in `libs/drmaa`
+ */
 #include <cstdio>
 #include <unistd.h>
 #include <cstring>

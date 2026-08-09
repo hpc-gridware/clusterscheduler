@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief CS-2404 regression probe: submits one DRMAA job into user hold and prints its id, for the testsuite precedence check to inspect
+ */
+
 /*
  * CS-2404 regression probe. Submits a single job with a caller-provided
  * DRMAA_NATIVE_SPECIFICATION into user hold, prints the job id on stdout,

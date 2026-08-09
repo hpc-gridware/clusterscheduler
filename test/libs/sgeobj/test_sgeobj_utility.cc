@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for utility in `libs/sgeobj`
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <string>

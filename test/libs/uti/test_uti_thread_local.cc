@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for thread local in `libs/uti`
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <pthread.h>

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for lock simple in `libs/uti`
+ */
+
 
 #include <unistd.h>
 #include <cstdio>

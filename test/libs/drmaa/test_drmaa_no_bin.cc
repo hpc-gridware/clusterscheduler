@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for no bin in `libs/drmaa`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include "drmaa.h"

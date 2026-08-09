@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for authinfo in `libs/uti`
+ */
+
 /*
  * Tests for component_parse_auth_info() (the pre-auth GDI auth_info parser).
  *

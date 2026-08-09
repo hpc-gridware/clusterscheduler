@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for hgroup in `libs/sgeobj`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

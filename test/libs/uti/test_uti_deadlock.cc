@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Provokes a lock-order deadlock between two threads, to check that the lock service detects it
+ */
+
 #include "test_uti_lock_main.h"
 
 #include <unistd.h>

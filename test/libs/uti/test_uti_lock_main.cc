@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Shared main() of the locking tests
+ */
+
 #include <pthread.h>
 #include <cstdio>
 

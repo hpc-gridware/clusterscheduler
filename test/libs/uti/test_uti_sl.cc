@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for sl in `libs/uti`
+ */
+
 #include <fnmatch.h>
 #include <cstdio>
 #include <cstdlib>

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Regression test for issue 1832: the DRMAA behaviour required by the -hold_jid_ad option
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

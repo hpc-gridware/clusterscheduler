@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for basic in `libs/mir`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 

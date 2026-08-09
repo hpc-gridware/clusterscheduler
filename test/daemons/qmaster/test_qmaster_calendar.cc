@@ -19,6 +19,10 @@
  ************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for calendar in `daemons/qmaster`
+ */
+
 #include <cstdio>
 #include <ctime>
 

@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Deliberately faulty code, used to check that the valgrind setup actually reports errors
+ */
+
 #include <iostream>
 #include <cstring>
 

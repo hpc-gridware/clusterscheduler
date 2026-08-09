@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for qquota json in `libs/procedure`
+ */
+
 /*
  * Regression test for CS-2338:
  *   QQuotaViewJSON::report_limit_string_value() must route the server-supplied

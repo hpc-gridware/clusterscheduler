@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
+/** @file
+ * @brief Unit tests for mt in `libs/spool`
+ */
+
 
 /* system */
 #include <pthread.h>

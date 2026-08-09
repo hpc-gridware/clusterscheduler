@@ -7,6 +7,10 @@
  *  https://www.openssl.org/source/license.html
  */
 
+/** @file
+ * @brief Unit tests for openssl
+ */
+
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>

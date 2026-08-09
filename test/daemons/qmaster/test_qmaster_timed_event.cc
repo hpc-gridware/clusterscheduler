@@ -19,6 +19,10 @@
  ************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for timed event in `daemons/qmaster`
+ */
+
 #include <cstdio>
 #include <cstring>
 

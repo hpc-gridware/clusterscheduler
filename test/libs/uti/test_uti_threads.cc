@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for threads in `libs/uti`
+ */
+
 #include <cstdio>
 #include <cerrno>
 #include <unistd.h>

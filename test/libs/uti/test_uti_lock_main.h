@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface shared by the locking tests
+ */
+
 /* Number of threads needed */
 int get_thread_demand();
 

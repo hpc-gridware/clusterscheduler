@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for utilities in `libs/spool`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 

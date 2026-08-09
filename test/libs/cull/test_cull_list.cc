@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for list in `libs/cull`
+ */
+
 #include <cstdio>
 #include <cstring>
 

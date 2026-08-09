@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for performance in `libs/spool`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>

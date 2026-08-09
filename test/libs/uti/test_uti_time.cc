@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for time in `libs/uti`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

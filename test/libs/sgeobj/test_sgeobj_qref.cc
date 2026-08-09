@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for qref in `libs/sgeobj`
+ */
+
 /*
  * Unit tests for qref_list_host_rejected() - CS-2450.
  *
