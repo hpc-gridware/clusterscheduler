@@ -34,6 +34,11 @@
  *
  *  @return thread name pattern or nullptr if not set
  */
+/**
+ * @brief Which threads should produce debug output
+ * @return the pattern from the environment, or nullptr when unset;
+ *         owned by the class, do not free
+ */
 const char *
 ocs::DebugParam::get_thread_name_pattern() {
    static bool initialized = false;
@@ -52,6 +57,10 @@ ocs::DebugParam::get_thread_name_pattern() {
  *  The check is only performed once and the result is cached for subsequent calls.
  *
  *  @return true if the component is running in ND mode, false otherwise
+ */
+/**
+ * @brief Is this component running in no-daemon mode?
+ * @return true when the component was asked to stay in the foreground
  */
 bool ocs::DebugParam::is_component_in_nd_mode() {
    static bool initialized = false;

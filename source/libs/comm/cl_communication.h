@@ -202,18 +202,8 @@ const char *cl_com_get_connection_sub_state(cl_com_connection_t *connection);  /
 const char *cl_com_get_data_flow_type(cl_com_connection_t *connection);        ///< Stream or message oriented
 /** @} */
 
-/** @brief Make every pending operation give up at once
- *
- * Safe to call from a signal handler, which is the point: it is how a process
- * being shut down stops waiting on peers that will never answer.
- *
- * @param flag true to abort, false to resume normal timeout handling
- */
 void cl_com_ignore_timeouts(bool flag);
 
-/** @brief Is the abort flag set?
- * @return what #cl_com_ignore_timeouts was last given
- */
 bool cl_com_get_ignore_timeouts_flag();
 
 

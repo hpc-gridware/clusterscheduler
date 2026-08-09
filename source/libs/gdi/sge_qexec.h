@@ -69,18 +69,6 @@ enum {
 sge_tid_t sge_qexecve(const char *hostname, const char *queuename, const char *cwd,
                       const lList *environment, const lList *path_aliases, const char *cert);
 
-/**
- * @brief Wait for a remote task started with #sge_qexecve
- *
- * @param tid the task to wait for, or nullptr for any
- * @param[out] status receives the task's exit status
- * @param options 0 to block, or `WNOHANG` to return immediately
- * @return the id of the task that ended, or nullptr when none had
- */
 int sge_qwaittid(sge_tid_t tid, int *status, int options);
 
-/**
- * @brief The reason the last qexec call failed
- * @return the message; static storage, do not free
- */
 const char *qexec_last_err();

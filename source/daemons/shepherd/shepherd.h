@@ -67,14 +67,5 @@ int
 wait_my_child(int pid, const char *childname, int timeout, ckpt_info_t *p_ckpt_info,
               struct rusage *rusage, int fd_pty_master, int fd_std_err);
 
-/** @brief Deliver a signal to the job, by whichever route reaches all of it
- *
- * Prefers the systemd scope or the additional group id over the process group,
- * because a job that changed its process group would otherwise escape.
- *
- * @param pid the job process
- * @param sig the signal
- * @return true when the signal was delivered
- */
 bool
 shepherd_signal_job(pid_t pid, int sig);

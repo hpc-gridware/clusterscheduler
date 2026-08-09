@@ -60,6 +60,14 @@
    insert ep into sorted list lp using so as sort order
 
  */
+/**
+ * @brief Insert an element at the position its sort order dictates
+ *
+ * @param so the sort order to honour
+ * @param ep the element to insert
+ * @param lp the list to insert into, already sorted by @p so
+ * @return 0 on success, -1 when any argument is nullptr
+ */
 int lInsertSorted(const lSortOrder *so, lListElem *ep, lList *lp) {
    DENTER(TOP_LAYER);
 
@@ -86,6 +94,17 @@ int lInsertSorted(const lSortOrder *so, lListElem *ep, lList *lp) {
    DRETURN(0);
 }
 
+/**
+ * @brief Move an element to the position its sort order now dictates
+ *
+ * For use after a field the order sorts on has been changed: the element is
+ * unchained and re-inserted.
+ *
+ * @param so the sort order to honour
+ * @param ep the element to move; must be in @p lp
+ * @param lp the list holding @p ep
+ * @return always 0
+ */
 int lResortElem(const lSortOrder *so, lListElem *ep, lList *lp) {
    lDechainElem(lp, ep);
    lInsertSorted(so, ep, lp);
@@ -190,6 +209,22 @@ int lSortCompare(
    DRETURN(result);
 }
 
+/**
+ * @brief Build a sort order from a format string and field names
+ *
+ * Each criterion is written as `%I` followed by `+` for ascending or `-` for
+ * descending, with the field name passed as the matching variadic argument:
+ *
+ * @code
+ * lSortOrder *so = lParseSortOrderVarArg(JR_Type, "%I-", JR_pe_task_id_str);
+ * @endcode
+ *
+ * @param dp descriptor of the object type being sorted
+ * @param fmt the criteria, e.g. `"%I+%I-"`
+ * @param ... one field name per `%I`, in order
+ * @return the sort order, to be released with #lFreeSortOrder, or nullptr on a
+ *         syntax error or an unknown field
+ */
 lSortOrder *lParseSortOrderVarArg(const lDescr *dp, const char *fmt, ...) {
    va_list ap;
    lSortOrder *ret;
@@ -308,11 +343,26 @@ lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap) {
    DRETURN(sp);
 }
 
+/**
+ * @brief Release a sort order
+ *
+ * @param[in,out] so the order to free; set to nullptr on return
+ */
 void lFreeSortOrder(lSortOrder **so) {
    sge_free(so);
 }
 
 
+/**
+ * @brief Allocate a sort order with room for @p n criteria
+ *
+ * The criteria are filled in with #lAddSortCriteria. Room for the terminating
+ * entry is added automatically.
+ *
+ * @param n number of criteria the order will hold
+ * @return the new order, to be released with #lFreeSortOrder, or nullptr when
+ *         it could not be allocated
+ */
 lSortOrder *lCreateSortOrder(
         int n
 ) {
@@ -330,6 +380,15 @@ lSortOrder *lCreateSortOrder(
 }
 
 
+/**
+ * @brief Append one criterion to a sort order
+ *
+ * @param dp descriptor of the object type being sorted
+ * @param so the order to append to, from #lCreateSortOrder
+ * @param nm the field to compare
+ * @param up_down_flag +1 to sort ascending, -1 descending
+ * @return 0 on success, -1 when @p nm is not a field of @p dp
+ */
 int lAddSortCriteria(
         const lDescr *dp,
         lSortOrder *so,

@@ -153,10 +153,6 @@ namespace ocs {
 
       // Constructors
       TopologyString() = default;
-      /**
-       * @brief Parse a topology string into its tree form
-       * @param internal_topology the string to parse
-       */
       explicit TopologyString(const std::string &internal_topology);
 
       // String to tree and tree to string conversion

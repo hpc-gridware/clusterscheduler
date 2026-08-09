@@ -205,15 +205,6 @@ namespace ocs::uti {
        */
       static bool is_openssl_available() { return libssl_handle != nullptr; }
 
-      /**
-       * @brief Build the path a component's certificate is stored at
-       *
-       * @param[out] cert_path receives the path
-       * @param home_dir the user's home directory, or nullptr for a daemon
-       * @param hostname host name to embed in the file name
-       * @param comp_name component name to embed in the file name, e.g. `qmaster`
-       * @return true when a path could be built
-       */
       static bool build_cert_path(std::string &cert_path, const char *home_dir, const char *hostname, const char *comp_name);
       static bool build_key_path(std::string &key_path, const char *home_dir, const char *hostname, uint32_t port, const char *comp_name);
       static const char *get_error_message();
@@ -247,13 +238,6 @@ namespace ocs::uti {
 
          bool verify_create_directories(bool switch_user, bool called_as_root, dstring *error_dstr, bool &created_dirs) const;
          bool certificate_recreate_required(dstring *error_dstr);
-         /**
-          * @brief "<port>/<cell>" of this installation, derived from the key path.
-          *
-          * Goes into the certificate as OU, so a certificate says which
-          * installation it belongs to. See CS-2487. Empty for contexts that keep
-          * certificate and key in memory only.
-          */
          std::string installation_tag() const;
          /**
           * @brief Set when the certificate on disk belongs to another installation.
@@ -308,10 +292,6 @@ namespace ocs::uti {
           */
          uint64_t get_renewal_time() { return renewal_time; }
 
-         /**
-          * @brief Has the certificate expired, or is it about to?
-          * @return true when the certificate needs replacing
-          */
          bool certificate_recreate_required() const;
          bool is_cert_file_updated();
       };

@@ -27,17 +27,8 @@ namespace ocs {
    /// Debug settings a developer can switch on through the environment
    class DebugParam {
    public:
-      /**
-       * @brief Which threads should produce debug output
-       * @return the pattern from the environment, or nullptr when unset;
-       *         owned by the class, do not free
-       */
       static const char *get_thread_name_pattern();
 
-      /**
-       * @brief Is this component running in no-daemon mode?
-       * @return true when the component was asked to stay in the foreground
-       */
       static bool is_component_in_nd_mode();
    };
 

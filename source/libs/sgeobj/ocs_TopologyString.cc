@@ -46,6 +46,10 @@
 #include "sge_conf.h"
 
 // e.g., "(N[size=4096](S(X[size=512](Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))(E(T))(E(T))))))"
+/**
+ * @brief Parse a topology string into its tree form
+ * @param topology the string to parse
+ */
 ocs::TopologyString::TopologyString(const std::string& topology) {
    reset_topology(topology);
 }

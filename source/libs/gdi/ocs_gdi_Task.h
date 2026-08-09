@@ -63,18 +63,6 @@ namespace ocs::gdi {
        */
       bool do_select_pack_simultaneous;
    public:
-      /**
-       * @brief Build a task
-       *
-       * @param target which object list to act on
-       * @param command what to do
-       * @param sub_cmd modifiers refining @p command
-       * @param lp the objects to send, consumed unless @p do_copy is true
-       * @param a_list receives qmaster's answer
-       * @param condition which objects to act on; consumed
-       * @param enumeration which fields to transfer; consumed
-       * @param do_copy true to copy the arguments instead of taking them over
-       */
       Task(Target target, Command command, SubCommand sub_cmd, lList **lp,
            lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy);
       Task();  ///< Build an empty task

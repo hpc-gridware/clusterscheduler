@@ -191,6 +191,9 @@ void log_state_set_log_level(uint32_t theLevel) {
    sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 }
 
+/** @brief Set the file log messages are written to
+ * @param file path of the message file
+ */
 void log_state_set_log_file(const char *file) {
    sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
    // close the persistent fd so it is re-opened against the new path on next use
@@ -233,6 +236,15 @@ void log_state_set_log_as_admin_user(int i) {
    sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 }
 
+/** @brief Write one message to the message file and, when verbose, to stderr
+ *
+ * Called by the logging macros; use those rather than this directly.
+ *
+ * @param log_level severity, one of the `LOG_*` values
+ * @param msg the message text
+ * @param file source file the message originates from
+ * @param line source line the message originates from
+ */
 void
 sge_log(int log_level, const char *msg, const char *file, int line) {
    DENTER_(BASIS_LAYER);

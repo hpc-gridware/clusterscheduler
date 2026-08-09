@@ -757,6 +757,15 @@ namespace ocs::uti {
     * @see build_key_path()
     */
 #define PER_USER_AND_HOST_CERTS
+   /**
+    * @brief Build the path a component's certificate is stored at
+    *
+    * @param[out] cert_path receives the path
+    * @param home_dir the user's home directory, or nullptr for a daemon
+    * @param hostname host name to embed in the file name
+    * @param comp_name component name to embed in the file name, e.g. `qmaster`
+    * @return true when a path could be built
+    */
    bool OpenSSL::build_cert_path(std::string &cert_path, const char *home_dir, const char *hostname, const char *comp_name) {
       DENTER(TOP_LAYER);
       bool ret = true;
@@ -951,6 +960,13 @@ namespace ocs::uti {
     * two directories above "private" name the installation. Deriving it here
     * keeps the port out of the constructors and the commlib call sites.
     */
+   /**
+    * @brief "<port>/<cell>" of this installation, derived from the key path.
+    *
+    * Goes into the certificate as OU, so a certificate says which
+    * installation it belongs to. See CS-2487. Empty for contexts that keep
+    * certificate and key in memory only.
+    */
    std::string OpenSSL::OpenSSLContext::installation_tag() const {
       if (key_path.empty()) {
          // certificate and key are kept in memory only (qrsh)
@@ -965,6 +981,10 @@ namespace ocs::uti {
       return port_dir.filename().string() + "/" + cell_dir.filename().string();
    }
 
+   /**
+    * @brief Has the certificate expired, or is it about to?
+    * @return true when the certificate needs replacing
+    */
    bool OpenSSL::OpenSSLContext::certificate_recreate_required() const {
       DENTER(TOP_LAYER);
 

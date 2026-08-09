@@ -156,17 +156,8 @@ namespace ocs::gdi {
       Packet();
       ~Packet();
 
-      /**
-       * @brief Add a task to this packet
-       * @param task the task to append; the packet takes it over
-       * @return the task's index, used to pick its answer out later
-       */
       int append_task(Task *task);
 
-      /**
-       * @brief Build the multi answer list from the tasks' individual answers
-       * @param[out] malpp receives one entry per task
-       */
       void create_multi_answer(lList **malpp);
 
       /// Has a worker finished this packet?
@@ -176,80 +167,18 @@ namespace ocs::gdi {
       /// Mark this packet finished and wake everyone waiting on it
       void broadcast_that_handled();
 
-      /**
-       * @brief Hand this packet to a worker thread inside qmaster
-       *
-       * Fills in the caller's identity from the component, then puts the
-       * packet on #GlobalRequestQueue. Nothing is packed or sent — this is the
-       * path qmaster's own threads take.
-       *
-       * @param[out] answer_list receives errors detected while queueing
-       * @return true when the packet was queued
-       */
       bool execute_internal(lList **answer_list);
-      /**
-       * @brief Wait for a packet queued by #execute_internal and take its answers
-       * @param[out] malpp receives the multi answer list
-       */
       void wait_for_result_internal(lList **malpp);
 
-      /**
-       * @brief Pack this packet and send it to qmaster through the commlib
-       *
-       * The path an ordinary client takes.
-       *
-       * @param[out] answer_list receives packing or communication errors
-       * @return true when the packet was sent
-       */
       bool execute_external(lList **answer_list);
-      /**
-       * @brief Wait for the reply to a packet sent by #execute_external
-       * @param[out] malpp receives the multi answer list
-       */
       void wait_for_result_external(lList **malpp);
 
-      /**
-       * @brief How large a packbuffer this packet needs
-       * @return the size in bytes, measured by packing in counting mode
-       */
       uint32_t get_pb_size();
-      /**
-       * @brief Read a whole packet, header and tasks, out of a packbuffer
-       * @param[out] answer_list receives the reason on failure
-       * @param pb the buffer to read from
-       * @return true on success
-       */
       bool unpack(lList **answer_list, sge_pack_buffer *pb);
-      /**
-       * @brief Read only the header, so the receiver can decide who handles it
-       * @param[out] answer_list receives the reason on failure
-       * @param pb the buffer to read from
-       * @return true on success
-       */
       bool unpack_header(lList **answer_list, sge_pack_buffer *pb);
 
-      /**
-       * @brief Write a whole packet, header and tasks, into a packbuffer
-       * @param[out] answer_list receives the reason on failure
-       * @param pb the buffer to append to
-       * @return true on success
-       */
       bool pack(lList **answer_list, sge_pack_buffer *pb);
-      /**
-       * @brief Write only the header into a packbuffer
-       * @param[out] answer_list receives the reason on failure
-       * @param pb the buffer to append to
-       * @return true on success
-       */
       bool pack_header(lList **answer_list, sge_pack_buffer *pb);
-      /**
-       * @brief Write one task into a packbuffer
-       * @param task the task to write
-       * @param[out] answer_list receives the reason on failure
-       * @param pb the buffer to append to
-       * @param has_next true when another task follows, so the reader keeps going
-       * @return true on success
-       */
       bool pack_task(Task *task, lList **answer_list, sge_pack_buffer *pb, bool has_next);
       /// Log this packet's header and tasks at debug level
       void debug_print();

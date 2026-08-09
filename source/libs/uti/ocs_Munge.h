@@ -93,25 +93,8 @@ public:
    /// libmunge's `munge_strerror()`; nullptr until #initialize has succeeded
    static munge_strerror_func_t munge_strerror_func;
 
-   /**
-    * @brief Has libmunge been loaded successfully?
-    *
-    * @return true when #initialize has succeeded and the function pointers are
-    *         usable
-    */
    static bool is_initialized();
 
-   /**
-    * @brief Open libmunge and resolve the functions this code uses
-    *
-    * Fails if it has already succeeded — it is not idempotent, so call it once
-    * per process.
-    *
-    * @param[out] error_dstr receives the reason on failure: already
-    *        initialised, the library could not be opened, or a symbol was
-    *        missing
-    * @return true on success
-    */
    static bool initialize(dstring *error_dstr);
 
    /// Close libmunge and forget the resolved function pointers

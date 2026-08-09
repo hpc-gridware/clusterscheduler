@@ -47,6 +47,14 @@ std::string fake_topo_file = NONE_STR;           ///< topology file read instead
  *         See issue CS-111.
  */
 
+/**
+ * @brief Read the topology from a file instead of the real machine
+ *
+ * For testing scheduling against hardware the test host does not have.
+ *
+ * @param topo_file an hwloc XML topology file, or `"NONE"` to go back to
+ *        the real machine
+ */
 void ocs::Topo::set_fake_topo_file(std::string &topo_file) {
    DENTER(TOP_LAYER);
 
@@ -125,6 +133,10 @@ bool ocs::Topo::has_topology_information() {
    return ret;
 }
 
+/**
+ * @brief The underlying hwloc topology
+ * @return the topology; owned by this class, do not destroy it
+ */
 hwloc_topology_t
 ocs::Topo::get_hwloc_topology() {
    return topo_hwloc_topology;
@@ -291,6 +303,15 @@ ocs::Topo::get_processor_ids(int socket_number, int core_number, int **proc_ids,
    return ret;
 }
 
+/**
+ * @brief Add one hardware thread to a cpuset, by logical position
+ * @param cpuset the set to add to
+ * @param socket_id logical socket number, counting from 0
+ * @param core_id logical core number within the socket
+ * @param thread_id logical thread number within the core
+ * @return 0 on success, -1 when the topology is unknown or that position
+ *         does not exist
+ */
 int
 ocs::Topo::add_hw_for_logical_id(hwloc_bitmap_t cpuset, int socket_id, int core_id, int thread_id) {
    if (!has_topology_information()) {
@@ -471,6 +492,12 @@ void ocs::Topo::CpuKind::release_data() {
    DRETURN_VOID;
 }
 
+/**
+ * @brief The letter identifying one core's kind
+ * @param topology the hwloc topology the core belongs to
+ * @param core the core to classify
+ * @return its letter, for use in the topology string
+ */
 char
 ocs::Topo::CpuKind::get_letter_for_core(hwloc_topology_t topology, hwloc_obj_t core) {
    DENTER(TOP_LAYER);
@@ -492,6 +519,17 @@ ocs::Topo::CpuKind::get_letter_for_core(hwloc_topology_t topology, hwloc_obj_t c
 }
 
 // NSX SNX SXN
+/**
+ * @brief Append one object and everything below it to a topology string
+ *
+ * Recursive; #get_new_topology is the entry point.
+ *
+ * @param[in,out] topo_string the string to append to
+ * @param topology the topology being walked
+ * @param obj the object to describe at this step
+ * @param depth current recursion depth
+ * @param data_nodes true to leave cache and memory objects out
+ */
 void ocs::Topo::get_sub_topology(std::string& topo_string, hwloc_topology_t topology, hwloc_obj_t obj, int depth, bool data_nodes) {
    bool close_group = false;
    bool close_numa_group = false;
@@ -575,6 +613,13 @@ void ocs::Topo::get_sub_topology(std::string& topo_string, hwloc_topology_t topo
    }
 }
 
+/**
+ * @brief Build the topology string for this host
+ * @param[out] topo_str receives the string
+ * @param data_nodes true to include cache and memory objects
+ * @param enable_hwloc false to skip hwloc and report nothing
+ * @return true when a topology could be determined
+ */
 bool
 ocs::Topo::get_new_topology(std::string &topo_str, const bool data_nodes, const bool enable_hwloc) {
    // Check if HWLOC is enabled for this host
@@ -599,6 +644,19 @@ ocs::Topo::get_new_topology(std::string &topo_str, const bool data_nodes, const 
    return true;
 }
 
+/**
+ * @brief Turn a binding string into a cpuset
+ *
+ * Walks @p binding_to_use one letter at a time: `S`/`s` steps to the next
+ * socket, `C`/`c` to the next core, `T`/`t` to the next thread, and an
+ * upper case letter also selects the hardware it steps to. @p cpuset is
+ * emptied first.
+ *
+ * Does nothing when @p cpuset is nullptr or @p binding_to_use is empty.
+ *
+ * @param cpuset the set to fill
+ * @param binding_to_use the binding string to interpret
+ */
 void
 ocs::Topo::make_cpuset(hwloc_bitmap_t cpuset, const std::string &binding_to_use) {
    DENTER(TOP_LAYER);

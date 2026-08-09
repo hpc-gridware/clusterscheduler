@@ -28,26 +28,6 @@
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
 
-/**
- * @brief Dispatcher handler for TAG_RECONNECT_PREPARE messages from qmaster.
- *
- * Wire format unpacked from the message buffer (in this exact order):
- *   job_id        (uint32, packint)
- *   ja_task_id    (uint32, packint)
- *   host          (string, packstr)
- *   port          (uint32, packint)
- *   token         (string, packstr)
- *   owner_uid     (uint32, packint)
- *   owner_gid     (uint32, packint)
- *
- * Calls execd_write_reconnect_info() with the unpacked fields.  No reply is
- * sent — the qmaster broker treats this as fire-and-forget; the shepherd's
- * polling loop is the side that observes success or failure.
- *
- * @param aMsg The struct_msg_t produced by the dispatcher; aMsg->buf is the
- *   packed body of the message.
- * @return 0 on success, -1 on unpacking failure or writer error.
- */
 int do_reconnect_prepare(ocs::gdi::ClientServerBase::struct_msg_t *aMsg);
 
 int execd_write_reconnect_info(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id,

@@ -25,8 +25,6 @@
 
 #include "cull/cull_list.h"
 
-/** @brief Bind the CULL name space used by lNm2Str()/lStr2Nm() on this thread.
- *  @param ns_vector  sentinel-terminated name space array */
 void lInit(const lNameSpace *ns_vector);
 
 const char *lNm2Str(int nm);

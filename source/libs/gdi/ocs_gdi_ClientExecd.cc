@@ -51,6 +51,14 @@
 #include "uti/ocs_Topo.h"
 
 /* TODO: move this function to execd */
+/**
+ * @brief Block until qmaster has a configuration to hand out
+ *
+ * Used at execd start-up, when qmaster may not be up yet.
+ *
+ * @param[out] conf_list receives the configuration
+ * @return 0 once a configuration was received
+ */
 int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
    DENTER(GDI_LAYER);
    static uint64_t last_qmaster_file_read = 0;
@@ -130,6 +138,12 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
  * EXTERNAL
  *
  *-------------------------------------------------------------------------*/
+/**
+ * @brief Fetch the configuration with the host local values merged in
+ *
+ * @param[out] conf_list receives the merged configuration
+ * @return 0 on success, otherwise an error code
+ */
 int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
    lListElem *global = nullptr;
    lListElem *local = nullptr;

@@ -352,6 +352,14 @@ ocs::gdi::ClientBase::log_flush_func(cl_raw_list_t *list_p) {
  *
  * @see #general_communication_error
  */
+/**
+ * @brief Ask whether a particular communication error has occurred
+ *
+ * @param progid the component asking
+ * @param error_type which error to ask about
+ * @param reset_error_flag true to clear the flag while reading it
+ * @return true when that error has occurred since it was last cleared
+ */
 bool ocs::gdi::ClientBase::sge_get_com_error_flag(uint32_t progid, sge_gdi_stored_com_error_t error_type, bool reset_error_flag) {
    DENTER(GDI_LAYER);
    bool ret_val = false;
@@ -393,6 +401,12 @@ bool ocs::gdi::ClientBase::sge_get_com_error_flag(uint32_t progid, sge_gdi_store
    DRETURN(ret_val);
 }
 
+/**
+ * @brief Register this component with the commlib
+ *
+ * @param[out] answer_list receives the reason on failure
+ * @return CL_RETVAL_OK on success
+ */
 int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
    DENTER(TOP_LAYER);
 
@@ -743,6 +757,16 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
 
 // * setup gdi for an application or thread
 // * does not enroll. commlib setup has to be done separately or ocs::gdi::ClientBase::setup_and_enroll()
+/**
+ * @brief Set the GDI up for the calling thread, without connecting
+ *
+ * @param component_id which program this is
+ * @param thread_id which thread of it
+ * @param[out] answer_list receives the reason on failure
+ * @param is_qmaster_intern_client true for a thread inside qmaster, which
+ *        takes the internal path instead of the commlib
+ * @return #AE_OK, or #AE_ALREADY_SETUP when this thread was already set up
+ */
 ocs::gdi::ErrorValue
 ocs::gdi::ClientBase::setup(ProgName component_id, ThreadName thread_id, lList **answer_list, bool is_qmaster_intern_client) {
    DENTER(TOP_LAYER);
@@ -786,6 +810,15 @@ ocs::gdi::ClientBase::setup(ProgName component_id, ThreadName thread_id, lList *
    DRETURN(AE_OK);
 }
 
+/**
+ * @brief Set the GDI up and register with the commlib in one call
+ *
+ * @param component_id which program this is
+ * @param thread_id which thread of it
+ * @param[out] answer_list receives the reason on failure
+ * @param display_name name to register under, or nullptr for the default
+ * @return #AE_OK on success
+ */
 ocs::gdi::ErrorValue
 ocs::gdi::ClientBase::setup_and_enroll(ProgName component_id, ThreadName thread_id, lList **answer_list,
                                        const char *display_name) {
@@ -825,6 +858,10 @@ ocs::gdi::ClientBase::setup_and_enroll(ProgName component_id, ThreadName thread_
  *
  * @note MT-NOTES: ocs::gdi::ClientBase::setup_and_enroll() is MT safe
  */
+/**
+ * @brief Deregister from the commlib and release the GDI state
+ * @return CL_RETVAL_OK on success
+ */
 int ocs::gdi::ClientBase::shutdown() {
    DENTER(GDI_LAYER);
    gdi_default_exit_func(0);
@@ -843,6 +880,15 @@ int ocs::gdi::ClientBase::shutdown() {
  * NOTES
  *    MT-NOTE: get_qm_name() is MT safe
  *-----------------------------------------------------------------------*/
+/**
+ * @brief Read the active qmaster host out of the `act_qmaster` file
+ *
+ * @param[out] master_host receives the host name
+ * @param master_file path of the `act_qmaster` file
+ * @param[out] err_str receives the reason on failure
+ * @param err_str_size size of @p err_str
+ * @return 0 on success, -1 on error
+ */
 int
 ocs::gdi::ClientBase::get_qm_name(char *master_host, const char *master_file, char *err_str, size_t err_str_size) {
    DENTER(TOP_LAYER);
@@ -922,6 +968,15 @@ FCLOSE_ERROR:
    NOTES
       MT-NOTE: write_qm_name() is MT safe
  *********************************************************************/
+/**
+ * @brief Write the active qmaster host into the `act_qmaster` file
+ *
+ * @param master_host the host to record
+ * @param master_file path of the `act_qmaster` file
+ * @param[out] err_str receives the reason on failure
+ * @param err_str_size size of @p err_str
+ * @return 0 on success, -1 on error
+ */
 int
 ocs::gdi::ClientBase::write_qm_name(const char *master_host, const char *master_file, char *err_str, size_t err_str_size) {
    FILE *fp;
@@ -944,6 +999,13 @@ FCLOSE_ERROR:
    return -1;
 }
 
+/**
+ * @brief The host qmaster currently runs on
+ *
+ * @param reread true to re-read `act_qmaster` rather than use the cached
+ *        value — needed after a failover
+ * @return the host name; owned by the GDI, do not free
+ */
 const char *
 ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
    DENTER(BASIS_LAYER);
@@ -1029,6 +1091,12 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
    DRETURN(gdi_data_get_master_host());
 }
 
+/**
+ * @brief Is qmaster reachable?
+ *
+ * @param[out] answer_list receives the reason when it is not
+ * @return CL_RETVAL_OK when qmaster answered
+ */
 int
 ocs::gdi::ClientBase::gdi_is_alive(lList **answer_list) {
    DENTER(TOP_LAYER);

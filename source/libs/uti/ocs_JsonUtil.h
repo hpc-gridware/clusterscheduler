@@ -28,52 +28,17 @@
 
 #include <cinttypes>
 
-/**
- * @brief Write one key and its an `int` value
- *
- * @param writer the JSON writer to append to
- * @param key the member name
- * @param value the value to write
- */
 void
 write_json(rapidjson::Writer<rapidjson::StringBuffer> &writer, const char *key, int value);
 
-/**
- * @brief Write one key and its a `uint32_t` value
- *
- * @param writer the JSON writer to append to
- * @param key the member name
- * @param value the value to write
- */
 void
 write_json(rapidjson::Writer<rapidjson::StringBuffer> &writer, const char *key, uint32_t value);
 
-/**
- * @brief Write one key and its a `uint64_t` value
- *
- * @param writer the JSON writer to append to
- * @param key the member name
- * @param value the value to write
- */
 void
 write_json(rapidjson::Writer<rapidjson::StringBuffer> &writer, const char *key, uint64_t value);
 
-/**
- * @brief Write one key and its a `double` value
- *
- * @param writer the JSON writer to append to
- * @param key the member name
- * @param value the value to write
- */
 void
 write_json(rapidjson::Writer<rapidjson::StringBuffer> &writer, const char *key, double value);
 
-/**
- * @brief Write one key and its a C string value
- *
- * @param writer the JSON writer to append to
- * @param key the member name
- * @param value the value to write
- */
 void
 write_json(rapidjson::Writer<rapidjson::StringBuffer> &writer, const char *key, const char *value);
