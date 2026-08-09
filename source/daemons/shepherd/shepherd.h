@@ -33,23 +33,63 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The shepherd: one process per job, from fork to exit status
+ *
+ * The execution daemon does not run jobs itself. For each one it forks a
+ * shepherd, which sets the limits, drops to the job owner, starts the job and
+ * stays alive until it ends - so that a daemon restart cannot orphan a running
+ * job, and so that anything the job does badly happens in a process that is
+ * not the daemon.
+ */
+
+/** @brief What the shepherd needs to know to checkpoint the job it supervises */
 typedef struct {
-   int type;
-   int pid;
-   int interval;
+   int type;       ///< The checkpointing mechanism, as a `CKPT_*` bitmask
+   int pid;        ///< The process to checkpoint
+   int interval;   ///< Seconds between two automatic checkpoints; 0 for none
 } ckpt_info_t;
 
+/** @brief The descriptors connecting an interactive job to its client
+ *
+ * Either a pty or three pipes, depending on whether the job asked for a
+ * terminal.
+ */
 typedef struct {
-   int pty_master;
-   int pipe_in;
-   int pipe_out;
-   int pipe_err;
-   int pipe_to_child;
+   int pty_master;     ///< Master side of the pty, -1 when pipes are used
+   int pipe_in;        ///< The job's standard input
+   int pipe_out;       ///< The job's standard output
+   int pipe_err;       ///< The job's standard error
+   int pipe_to_child;  ///< Control channel to the child, for window size changes and the like
 } ijs_fds_t;
 
+/** @brief Wait for the job to end, checkpointing and signalling it meanwhile
+ *
+ * This is where the shepherd spends nearly all its life. It reaps the child,
+ * services the queued signals, triggers checkpoints on the configured
+ * interval, and enforces the notify delay.
+ *
+ * @param pid the job process
+ * @param childname what the child is, for the trace file: `job`, `prolog`, …
+ * @param timeout seconds to wait before giving up; 0 for no timeout
+ * @param p_ckpt_info the checkpointing configuration, or nullptr
+ * @param[out] rusage receives what the kernel accounted for the child
+ * @param fd_pty_master the pty master for an interactive job, -1 otherwise
+ * @param fd_std_err the child's standard error, for an interactive job
+ * @return the child's exit status
+ */
 int
 wait_my_child(int pid, const char *childname, int timeout, ckpt_info_t *p_ckpt_info,
               struct rusage *rusage, int fd_pty_master, int fd_std_err);
 
+/** @brief Deliver a signal to the job, by whichever route reaches all of it
+ *
+ * Prefers the systemd scope or the additional group id over the process group,
+ * because a job that changed its process group would otherwise escape.
+ *
+ * @param pid the job process
+ * @param sig the signal
+ * @return true when the signal was delivered
+ */
 bool
 shepherd_signal_job(pid_t pid, int sig);

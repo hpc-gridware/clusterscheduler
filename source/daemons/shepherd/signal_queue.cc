@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief A small queue for the signals the shepherd receives
+ *
+ * @see signal_queue.h for why the signals are queued rather than acted on.
+ */
+
 #include <cstdio>
 
 #include <cctype>
@@ -41,6 +47,7 @@
 #include "signal_queue.h"
 #include "err_trace.h"
 
+/** @brief How many signals the ring buffer holds before it starts refusing them */
 #define SGE_MAXSIG 128
 
 /* ring buffer to queue signals */
@@ -50,9 +57,16 @@ static int next_sig = 0;
 static int free_sig = 0; 
 
 
+/** @brief Step one place round the ring buffer
+ * @param i the current index
+ */
 #define NEXT_INDEX(i) (((i+1)>SGE_MAXSIG-1)?0:(i+1))
 
 #ifdef DEBUG
+/** @brief Write the queue's contents to the trace file
+ *
+ * Debug builds only.
+ */
 void report_signal_queue()
 {
    char str[256];
@@ -75,6 +89,10 @@ void report_signal_queue()
 }
 #endif
 
+/** @brief Turn a signal name from the configuration into a signal number
+ * @param override_signal the name, e.g. `SIGKILL`
+ * @return the signal number, or -1 when the name is not known
+ */
 int shepherd_sys_str2signal(char *override_signal)
 {
    if (!isdigit(override_signal[0]))
@@ -82,24 +100,13 @@ int shepherd_sys_str2signal(char *override_signal)
    return sge_sys_str2signal(override_signal);
 }
 
-/****** shepherd/signal/queue/add_signal() ************************************
-*  NAME
-*     add_signal() -- store signal in queue 
-*
-*  SYNOPSIS
-*     int add_signal(int signal) 
-*
-*  FUNCTION
-*     Store an additional signal in queue. 
-*
-*  INPUTS
-*     int signal - sginal number 
-*
-*  RESULT
-*     int - error state
-*        0 - successful
-*       -1 - buffer is full 
-*******************************************************************************/
+/** @brief Store an additional signal in the queue
+ *
+ * Called from a signal handler, so it does nothing but append.
+ *
+ * @param signal signal number
+ * @return 0 on success, -1 when the buffer is full
+ */
 int add_signal(int signal)
 {
    int ret = -1;
@@ -118,23 +125,9 @@ int add_signal(int signal)
    return ret;
 }  
 
-/****** shepherd/signal_queue/get_signal() ************************************
-*  NAME
-*     get_signal() -- get signal from queue 
-*
-*  SYNOPSIS
-*     int get_signal() 
-*
-*  FUNCTION
-*     Get signal from queue. If tehre are no more signals return -1.
-*
-*  INPUTS
-*
-*  RESULT
-*     int - 
-*        >0 - signal number
-*        -1 - There are no more signals 
-*******************************************************************************/
+/** @brief Take the next signal out of the queue
+ * @return the signal number, or -1 when there are no more signals
+ */
 int get_signal()
 {
    int signal = -1;
@@ -148,24 +141,10 @@ int get_signal()
    return signal;
 }
 
-/****** shepherd/signal_queue/pending_sig() ***********************************
-*  NAME
-*     pending_sig() -- look for given signal in queue 
-*
-*  SYNOPSIS
-*     int pending_sig(int sig) 
-*
-*  FUNCTION
-*     Try to find signal in queue.
-*
-*  INPUTS
-*     int sig - signal number 
-*
-*  RESULT
-*     int - result
-*        0 - not found
-*        1 - found 
-*******************************************************************************/
+/** @brief Is this signal already waiting in the queue?
+ * @param sig signal number
+ * @return 1 when found, 0 when not
+ */
 int pending_sig(int sig) 
 {
    int ret = 0;
@@ -180,34 +159,15 @@ int pending_sig(int sig)
    return ret;
 }
 
-/****** shepherd/signal_queue/get_n_sigs() ************************************
-*  NAME
-*     get_n_sigs() -- return number of queues signals 
-*
-*  SYNOPSIS
-*     int get_n_sigs() 
-*
-*  FUNCTION
-*     Return number of queues signals 
-*
-*  RESULT
-*     int - number of signals
-*******************************************************************************/
+/** @brief How many signals are waiting
+ * @return the number of queued signals
+ */
 int get_n_sigs()
 {
    return n_sigs; 
 }
 
-/****** shepherd/signal_queue/clear_queued_signals() **************************
-*  NAME
-*     clear_queued_signals() -- clear signal queue 
-*
-*  SYNOPSIS
-*     void clear_queued_signals() 
-*
-*  FUNCTION
-*     Clear signal queue 
-*******************************************************************************/
+/** @brief Discard every queued signal */
 void clear_queued_signals()
 {
    n_sigs = next_sig = free_sig = 0; 

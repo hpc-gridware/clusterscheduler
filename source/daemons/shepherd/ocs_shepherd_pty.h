@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Forking the job with a pseudo terminal, or with three pipes
+ */
+
 pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg);
 
 pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out, int *fd_pipe_err, dstring *err_msg);

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Solaris processor sets: giving the job processors of its own
+ */
+
 #include <sys/types.h>
 #include <cstdio>
 #include <cstdlib>
@@ -56,17 +60,25 @@
 #include "execution_states.h"
 #include "err_trace.h"
 
-#define PROC_SET_OK            0
-#define PROC_SET_WARNING       1
-#define PROC_SET_ERROR        -1
-#define PROC_SET_BUSY         -2
+/** @name Outcome of a processor set operation
+ * @{
+ */
+#define PROC_SET_OK            0   ///< The set was created or freed
+#define PROC_SET_WARNING       1   ///< It worked, but something is worth reporting
+#define PROC_SET_ERROR        -1   ///< It failed
+#define PROC_SET_BUSY         -2   ///< The processors are already in another set
+/** @} */
 
 #if defined(SOLARIS64) || defined(SOLARISAMD64)
 static int free_processor_set(char *err_str);
 static int set_processor_range(char *crange, int proc_set_num, char *err_str);
 #endif
 
-void sge_pset_create_processor_set() 
+/** @brief Put the job into a processor set of its own
+ *
+ * Solaris only. Elsewhere core binding does the same job through hwloc.
+ */
+void sge_pset_create_processor_set()  
 {
 #if defined(SOLARIS64) || defined(SOLARISAMD64)
    char err_str[2*SGE_PATH_MAX+128];
@@ -95,6 +107,7 @@ void sge_pset_create_processor_set()
 
 }
 
+/** @brief Give the job's processors back when it ends */
 void sge_pset_free_processor_set()
 {
 #if defined(SOLARIS64) || defined(SOLARISAMD64)

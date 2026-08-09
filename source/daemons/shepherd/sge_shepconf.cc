@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Reading the shepherd's own configuration: methods, signals and notification
+ */
 #include <cstring>
 #include <csignal>
 
@@ -42,27 +46,17 @@
 #include "sge_shepconf.h"
 #include "err_trace.h"
 
-/****** shepherd/shepconf/shepconf_has_userdef_method() ************************
-*  NAME
-*     shepconf_has_userdef_method() -- Do we have a user def. method?
-*
-*  SYNOPSIS
-*     int shepconf_has_userdef_method(char *method_name, dstring *method) 
-*
-*  FUNCTION
-*     Try to find the variable "method_name" in config-file. 
-*     Return true and set "method" if it is an absolute path
-*     otherwise return false.
-*      
-*
-*  INPUTS
-*     char *method_name - "starter_method", "suspend_method", 
-*                         "resume_method" or "terminate_method"
-*     dstring *method   - Absolut filename of the method 
-*
-*  RESULT
-*     int - true or false 
-*******************************************************************************/
+/** @brief Is a user defined method configured under this name?
+ *
+ * True only when the configured value is an absolute path; a value that is a
+ * signal name belongs to shepconf_has_userdef_signal() instead, and the two
+ * are how the same configuration entry can mean either.
+ *
+ * @param method_name "starter_method", "suspend_method", "resume_method" or
+ *        "terminate_method"
+ * @param[out] method receives the absolute filename of the method
+ * @return true when a method is configured
+ */
 int shepconf_has_userdef_method(const char *method_name, dstring *method)
 {
    char *conf_val = search_nonone_conf_val(method_name);
@@ -75,26 +69,16 @@ int shepconf_has_userdef_method(const char *method_name, dstring *method)
    return ret;
 }
 
-/****** shepherd/shepconf/shepconf_has_userdef_signal() ***********************
-*  NAME
-*     shepconf_has_userdef_signal() -- Do we have a user def. signal? 
-*
-*  SYNOPSIS
-*     int shepconf_has_userdef_signal(char *method_name, int *signal) 
-*
-*  FUNCTION
-*     Try to find the variable "method_name" in config-file.
-*     Return true and set "signal" if it is a signal name
-*     otherwise return false. 
-*
-*  INPUTS
-*     char *method_name - "starter_method", "suspend_method",
-*                         "resume_method" or "terminate_method" 
-*     int *signal       - signal id 
-*
-*  RESULT
-*     int - true or false 
-*******************************************************************************/
+/** @brief Is a signal name configured under this name?
+ *
+ * The counterpart of shepconf_has_userdef_method(): the same entry may hold
+ * either a path to run or a signal to send.
+ *
+ * @param method_name "starter_method", "suspend_method", "resume_method" or
+ *        "terminate_method"
+ * @param[out] signal receives the signal id
+ * @return true when a signal is configured
+ */
 int shepconf_has_userdef_signal(const char *method_name, int *signal) 
 {
    char *conf_val = search_nonone_conf_val(method_name);
@@ -107,26 +91,15 @@ int shepconf_has_userdef_signal(const char *method_name, int *signal)
    return ret;
 }
 
-/****** shepherd/shepconf/shepconf_has_notify_signal() ************************
-*  NAME
-*     shepconf_has_notify_signal() -- Do we have a notification signal 
-*
-*  SYNOPSIS
-*     int shepconf_has_notify_signal(char *notify_name, int *signal) 
-*
-*  FUNCTION
-*     This function checks if the notification mechanism is enabled.
-*     In this case the function will retuen 'true' and it will
-*     return the default signal or the user defined signal for
-*     the given "notify_name".
-*
-*  INPUTS
-*     char *notify_name - "notify_susp" or "notify_kill" 
-*     int *signal       - signal id 
-*
-*  RESULT
-*     int - true or false
-*******************************************************************************/
+/** @brief Is the notification mechanism enabled, and with which signal?
+ *
+ * A job may ask to be warned before it is suspended or killed, so that it can
+ * save its work.
+ *
+ * @param notify_name "notify_susp" or "notify_kill"
+ * @param[out] signal receives the signal id, default or user defined
+ * @return true when notification is enabled
+ */
 int shepconf_has_notify_signal(const char *notify_name, int *signal)
 {
    const char *notify_array[] = {
@@ -179,23 +152,10 @@ int shepconf_has_notify_signal(const char *notify_name, int *signal)
    return ret;
 }
 
-/****** shepherd/shepconf/shepconf_has_to_notify_before_signal() **************
-*  NAME
-*     shepconf_has_to_notify_before_signal() -- Get notification time 
-*
-*  SYNOPSIS
-*     int shepconf_has_to_notify_before_signal(int *seconds) 
-*
-*  FUNCTION
-*     If the notification mechanism is enabled then this function
-*     will return with "true" and "seconds" will be > 0. 
-*
-*  INPUTS
-*     int *seconds - time to elapse between notification and final signal 
-*
-*  RESULT
-*     int - true or false
-*******************************************************************************/
+/** @brief How long to wait between the warning and the real signal
+ * @param[out] seconds receives the delay
+ * @return true when a delay is configured
+ */
 int shepconf_has_to_notify_before_signal(int *seconds) 
 {
    *seconds = atoi(get_conf_val("notify"));

@@ -32,6 +32,18 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief The files the shepherd leaves in the job's active_jobs directory
+ *
+ * The execution daemon and the shepherd share no memory and no connection, so
+ * everything the daemon needs to know afterwards - the pid, the usage, the
+ * exit status, whether the shepherd got as far as exiting cleanly - is written
+ * into the job's directory and read back from there.
+ *
+ * That is also what makes a restarted daemon able to pick up jobs it did not
+ * start: the state is on disk, not in the daemon.
+ */
 bool 
 shepherd_write_pid_file(pid_t pid, dstring *errmsg);
 

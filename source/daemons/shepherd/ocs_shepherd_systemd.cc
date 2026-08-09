@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Placing the job in a systemd scope, so the OS tracks and limits it
+ */
+
 #include <cstring>
 
 #include "sgeobj/sge_conf.h"
@@ -38,11 +42,11 @@ namespace ocs {
    // to true would make callers take the systemd code path and silently skip their non-systemd
    // fallback, e.g. core binding would never be applied and jobs would only be signalled via kill().
 #if defined(OCS_WITH_SYSTEMD)
-   bool g_use_systemd = true;
+   bool g_use_systemd = true;    ///< Whether the job is placed in a systemd scope; see the comment above
 #else
-   bool g_use_systemd = false;
+   bool g_use_systemd = false;   ///< Whether the job is placed in a systemd scope; see the comment above
 #endif
-   ocs::uti::SystemdProperties_t g_systemd_properties;
+   ocs::uti::SystemdProperties_t g_systemd_properties;   ///< The properties the job's scope is created with
 
    /**
     * @brief Initialize the Systemd integration.
@@ -115,8 +119,11 @@ namespace ocs {
       }
    }
 
+/** @brief What separates two entries in the `devices_allow` configuration */
 #define DEVICES_DELIMITOR ";"
+/** @brief What separates a device from its access mode in one entry */
 #define DEVICES_MODE_SEPARATOR ':'
+/** @brief The access mode assumed when an entry names none */
 #define DEVICES_DEFAULT_MODE "r"
    //       DeviceAllow, array of structs having two strings: device name and access mode: a(ss)
    //          use config file entry devices_allow to specify devices which are allowed
@@ -221,7 +228,6 @@ namespace ocs {
     * the systemd properties under the key "AllowedCPUs".
     *
     * @param cpuset - cpuset from hwloc which contains the CPU binding (logical cpus).
-    * @return
     */
 #if defined(OCS_HWLOC)
    void

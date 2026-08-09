@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Binding the job's threads to the cores the scheduler granted it
+ */
+
 #include "uti/sge.h"
 
 #include "sgeobj/ocs_BindingInstance.h"
@@ -65,6 +69,9 @@ ocs::BindingShepherd::bind_process_to_cpuset(hwloc_const_bitmap_t cpuset) {
 
 #if defined(OCS_HWLOC) && !defined(SOLARIS)
 
+/** @brief Bind this process to the cores the job was granted
+ * @return 0 when the binding was applied
+ */
 int
 ocs::BindingShepherd::do_thread_binding() {
    // Read binding_to_use from config file. None means no bining is done for the job.

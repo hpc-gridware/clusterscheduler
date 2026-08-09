@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The interactive job loop: relaying a job's terminal traffic to its client
+ */
+
 #include <algorithm>
 #include <cstdio>
 #include <cerrno>
@@ -71,9 +75,12 @@
 #include "err_trace.h"
 #include "shepherd.h"
 
+/** @brief Seconds to wait for the client to answer before giving up on it */
 #define RESPONSE_MSG_TIMEOUT 120
 
+/** @brief Commlib endpoint name of the `qrsh` side */
 #define COMM_SERVER "qrsh_ijs"
+/** @brief Commlib endpoint name of the shepherd side */
 #define COMM_CLIENT "shepherd_ijs"
 
 /*
@@ -100,6 +107,7 @@ static char          *g_hostname           = nullptr;
 extern int           received_signal; /* defined in shepherd.c */
 
 /* X11 forwarding state (set by commlib_to_pty on X11_AUTH_MSG, read by pty_to_commlib) */
+/** @brief How many X11 connections a job may forward at once */
 #define X11_MAX_CONNS  64
 static int              g_x11_listen_fd                  = -1;   ///< Unix socket accepting X11 from job
 static int              g_x11_client_fds[X11_MAX_CONNS]; ///< per-conn_id fd toward job X client (-1=unused)
@@ -1728,6 +1736,27 @@ static void* commlib_to_pty(void *t_conf)
    return nullptr;
 }
 
+/** @brief Supervise an interactive job while relaying its terminal traffic
+ *
+ * The interactive counterpart of wait_my_child(): as well as reaping the job
+ * and servicing signals, it moves data both ways between the job's pty or
+ * pipes and the `qrsh` client over the commlib, and forwards window size
+ * changes and X11 connections.
+ *
+ * @param job_pid the job process
+ * @param childname what the child is, for the trace file
+ * @param timeout seconds to wait before giving up; 0 for no timeout
+ * @param p_ckpt_info the checkpointing configuration, or nullptr
+ * @param p_ijs_fds the descriptors connecting the job to its client
+ * @param job_owner the submitting user
+ * @param remote_host where the client is
+ * @param remote_port the port it listens on
+ * @param communication_framework which commlib framework to use
+ * @param[out] exit_status receives the job's exit status
+ * @param[out] rusage receives what the kernel accounted for the job
+ * @param[out] err_msg receives the reason on failure
+ * @return 0 on success
+ */
 int
 parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt_info,
             ijs_fds_t *p_ijs_fds, const char *job_owner, const char *remote_host,
@@ -1977,6 +2006,14 @@ shepherd_trace("+++++ timestamp: %d.%03d ++++", (int)ts.time, (int)ts.millitm);
    return 0;
 }
 
+/** @brief Tell the client the job has ended, and tear the connection down
+ *
+ * Separate from parent_loop() because the commlib connection has to outlive
+ * the loop: the exit status still has to reach the client.
+ *
+ * @param exit_status the job's exit status
+ * @return 0 on success
+ */
 int close_parent_loop(int exit_status)
 {
    int     ret = 0;

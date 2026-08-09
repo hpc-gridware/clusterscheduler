@@ -33,24 +33,55 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#define RES_PROC     1
-#define RES_JOB      2
-#define RES_BOTH     (RES_PROC|RES_JOB)
+/** @file
+ * @brief Turning a job's resource requests into process limits
+ *
+ * The shepherd applies `setrlimit()` for each requested resource just before
+ * it exec's the job, so the kernel enforces the limits rather than the
+ * daemons having to police them.
+ *
+ * Two things complicate that. A limit configured for a *job* has to be
+ * multiplied by the slots the job holds on this host before it becomes a
+ * per-process limit; and a limit small enough to stop the job would also stop
+ * the shepherd, so every limit is raised to at least the `LIMIT_*_MIN` values
+ * below.
+ */
 
-#define LIMIT_VMEM_MIN (10l*1024l*1024l)
-#define LIMIT_STACK_MIN (1l*1024l*1024l)
-#define LIMIT_CPU_MIN (2l)
-#define LIMIT_FSIZE_MIN (15l*1024l)       
-#define LIMIT_DESCR_MIN (100)
-#define LIMIT_DESCR_MAX (65535)
-#define LIMIT_PROC_MIN  (20)
-#define LIMIT_MEMLOCK_MIN (4*1024)
-#define LIMIT_LOCKS_MIN (2)
+/** @name What a limit applies to on this platform
+ *
+ * Whether the kernel counts a resource per process or across the whole job
+ * differs between platforms, and decides whether the configured value has to
+ * be multiplied by the slot count.
+ * @{
+ */
+#define RES_PROC     1                 ///< The kernel enforces this limit per process
+#define RES_JOB      2                 ///< The kernel enforces it across the job
+#define RES_BOTH     (RES_PROC|RES_JOB) ///< Both, so either reading is defensible
+/** @} */
 
+/** @name Floors below which a limit would break the shepherd itself
+ *
+ * The shepherd runs inside the job's limits, so a job that asks for almost no
+ * memory or almost no CPU would kill the process that is supposed to start and
+ * supervise it. Each limit is raised to at least these values.
+ * @{
+ */
+#define LIMIT_VMEM_MIN (10l*1024l*1024l)   ///< Virtual memory, 10 MB
+#define LIMIT_STACK_MIN (1l*1024l*1024l)   ///< Stack, 1 MB
+#define LIMIT_CPU_MIN (2l)                 ///< CPU seconds
+#define LIMIT_FSIZE_MIN (15l*1024l)        ///< File size, 15 KB - enough for the trace files
+#define LIMIT_DESCR_MIN (100)              ///< Open file descriptors
+#define LIMIT_DESCR_MAX (65535)            ///< Upper bound on descriptors, whatever was asked for
+#define LIMIT_PROC_MIN  (20)               ///< Processes
+#define LIMIT_MEMLOCK_MIN (4*1024)         ///< Locked memory
+#define LIMIT_LOCKS_MIN (2)                ///< File locks
+/** @} */
+
+/** @brief One row of the table mapping a kernel limit to its name and scope */
 struct resource_table_entry {
-   uint32_t resource;
-   const char *resource_name;
-   int resource_type[2];
+   uint32_t resource;         ///< The `RLIMIT_*` constant
+   const char *resource_name; ///< Its name, for the trace file
+   int resource_type[2];      ///< `RES_*` per platform: [0] NEC SX, [1] every other architecture
 };
 
 void setrlimits(bool trace_limits);
