@@ -106,15 +106,6 @@ typedef struct {
 
 /// The one event master instance; see @ref event_master_control_t
 extern event_master_control_t Event_Master_Control;
-/**
- * @brief Release a thread's event transaction storage
- *
- * Registered as the destructor of #event_master_control_t::transaction_key, so
- * a thread that ends with an open transaction does not leak its collected
- * requests.
- *
- * @param arg the thread's @ref event_master_transaction_t
- */
 void sge_cleanup_event_master_control(void *arg);
 void sge_event_master_flush_requests(bool force = false);
 

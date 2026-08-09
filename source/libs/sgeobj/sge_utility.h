@@ -93,12 +93,4 @@ verify_obj_name(lList **alpp, const char *str, size_t str_length, const char *na
 
 bool verify_host_name(lList **answer_list, const char *host_name);
 
-/**
- * @brief Resolve this host's own qualified name again
- *
- * Called after the configuration changed, since `ignore_fqdn` decides whether
- * the domain is part of the name this component reports.
- *
- * @return `CL_RETVAL_OK` on success, otherwise a commlib error code
- */
 int reresolve_qualified_hostname();

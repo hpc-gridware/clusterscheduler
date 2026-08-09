@@ -78,54 +78,18 @@ extern spooling_field RQS_fields[];    ///< Resource quota set
  * owns. `spool == true` adds them, `false` leaves them out.
  * @{
  */
-/** @brief Build the field list of a project
- * @param spool include the usage, the long term usage and the debited job usage
- * @return the field list, to be freed with #spool_free_spooling_fields
- */
 spooling_field *sge_build_PR_field_list(bool spool);
 
-/** @brief Build the field list of a user
- * @param spool include the accumulated usage, as for a project
- * @return the field list, to be freed with #spool_free_spooling_fields
- */
 spooling_field *sge_build_UU_field_list(bool spool);
 
-/** @brief Build the field list of a share tree node
- * @param spool   include the accumulated usage
- * @param recurse include the child nodes, which is what makes a whole tree
- *                one object to write
- * @return the field list, to be freed with #spool_free_spooling_fields
- */
 spooling_field *sge_build_STN_field_list(bool spool, bool recurse);
 
-/** @brief Build the field list of a share tree node for JSON output
- *
- * No `recurse` flag: in JSON the nesting is expressed by the format itself.
- *
- * @return the field list, to be freed with #spool_free_spooling_fields
- */
 spooling_field *sge_build_STN_json_field_list();
 
-/** @brief Build the field list of an execution host
- * @param spool     include the fields the qmaster owns
- * @param to_stdout use the layout `qhost` prints rather than the spool layout
- * @param history   include the reporting fields
- * @return the field list, to be freed with #spool_free_spooling_fields
- */
 spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
                                             bool history);
 
-/** @brief Build the field list of a global or local configuration
- * @param spool_config write the spool file layout rather than the one
- *                     `qconf -sconf` shows
- * @return the field list, to be freed with #spool_free_spooling_fields
- */
 spooling_field *sge_build_CONF_field_list(bool spool_config);
 
-/** @brief Build the field list of a queue instance
- * @param to_stdout use the layout `qconf -sq` shows
- * @param to_file   use the spool file layout
- * @return the field list, to be freed with #spool_free_spooling_fields
- */
 spooling_field *sge_build_QU_field_list(bool to_stdout, bool to_file);
 /** @} */

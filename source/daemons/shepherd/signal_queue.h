@@ -47,7 +47,11 @@ int get_signal();
 int pending_sig(int sig);
 int get_n_sigs();
 void clear_queued_signals();
-/** @brief Write the queue's contents to the trace file; debug builds only */
+/** @brief Write the queue's contents to the trace file
+ *
+ * @note The definition is inside an `#ifdef DEBUG`, so doxygen never sees it;
+ *       the block therefore sits on the declaration.
+ */
 void report_signal_queue();
 
 int shepherd_sys_str2signal(char *override_signal);

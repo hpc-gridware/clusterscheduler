@@ -38,35 +38,12 @@ namespace ocs {
    /** @brief Marks and queries the rejected state of a job's category */
    class CategorySchedd {
    public:
-      /**
-       * @brief Marks the category of a job as rejected
-       *
-       * @param[in] job              the job whose category is rejected
-       * @param[in] with_reservation true to also reject the category for
-       *                             reservation, not only for dispatching now
-       */
       static void
       job_reject_category(const lListElem *job, bool with_reservation);
 
-      /**
-       * @brief Was the category of this job already rejected?
-       *
-       * @param[in] job the job to look at
-       *
-       * @return non-zero if no job of this category can be dispatched in this
-       *         scheduling run
-       */
       static int
       job_is_category_rejected(const lListElem *job);
 
-      /**
-       * @brief Was the category of this job already rejected for reservation?
-       *
-       * @param[in] job the job to look at
-       *
-       * @return non-zero if no job of this category can get a reservation in
-       *         this scheduling run
-       */
       static int
       job_is_category_reservation_rejected(const lListElem *job);
    };

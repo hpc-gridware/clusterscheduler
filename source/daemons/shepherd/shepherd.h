@@ -63,21 +63,6 @@ typedef struct {
    int pipe_to_child;  ///< Control channel to the child, for window size changes and the like
 } ijs_fds_t;
 
-/** @brief Wait for the job to end, checkpointing and signalling it meanwhile
- *
- * This is where the shepherd spends nearly all its life. It reaps the child,
- * services the queued signals, triggers checkpoints on the configured
- * interval, and enforces the notify delay.
- *
- * @param pid the job process
- * @param childname what the child is, for the trace file: `job`, `prolog`, …
- * @param timeout seconds to wait before giving up; 0 for no timeout
- * @param p_ckpt_info the checkpointing configuration, or nullptr
- * @param[out] rusage receives what the kernel accounted for the child
- * @param fd_pty_master the pty master for an interactive job, -1 otherwise
- * @param fd_std_err the child's standard error, for an interactive job
- * @return the child's exit status
- */
 int
 wait_my_child(int pid, const char *childname, int timeout, ckpt_info_t *p_ckpt_info,
               struct rusage *rusage, int fd_pty_master, int fd_std_err);

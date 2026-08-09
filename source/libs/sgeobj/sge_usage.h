@@ -144,15 +144,5 @@ usage_list_sum(lList *usage_list, const lList *add_usage_list);
 
 lList *scale_usage(const lList *scaling, const lList *prev_usage, lList *scaled_usage);
 
-/**
- * @brief Parse a raw `variable=value` pair from the shepherd usage file
- *
- * Also used for equivalent sources. The result is a `UA_Type` element with a
- * correctly typed value; see CS-849 for the discrimination rule, and
- * `test/libs/sgeobj/test_sgeobj_usage.cc` for the cases it covers.
- *
- * The caller owns the returned element and has to free it or attach it to a
- * usage list. An empty value and an empty variable name are both accepted.
- */
 lListElem *
 usage_parse_value(const char *name, const char *value);

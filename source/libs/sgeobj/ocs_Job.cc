@@ -118,6 +118,17 @@ void ocs::Job::sgeee_sort_jobs(lList *job_list) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief The systemd slice and scope names a job's processes run under
+ *
+ * @param job the job
+ * @param ja_task the array task, or nullptr
+ * @param pe_task the parallel task, or nullptr
+ * @param[out] slice receives the slice name
+ * @param[out] scope receives the scope name
+ * @param[out] error_dstr receives the reason on failure
+ * @return true when both names could be built
+ */
 bool
 ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task,
                                           std::string &slice, std::string &scope, dstring *error_dstr) {

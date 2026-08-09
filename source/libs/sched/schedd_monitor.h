@@ -49,47 +49,10 @@
 /** Name of the scheduler run log file, below `<cell root>/common` */
 #define SCHED_LOG_NAME "schedd_runlog"
 
-/**
- * @brief Returns a string representation of a job id for the run log
- *
- * @param[in] jobid the job id, or 0 when no single job is meant
- *
- * @return `"Job <id>"`, or `"Job"` for id 0
- *
- * @warning The result points into a static buffer and is overwritten by the
- *          next call.
- */
 const char *job_descr(uint32_t jobid);
 
-/**
- * @brief Writes one line to the scheduler run log
- *
- * The line goes to the answer list if one was passed, and to the run log file
- * if `monitor_next_run` is set - both can happen in the same call, and
- * neither is an error.
- *
- * @param[in]     logstr           the line to log
- * @param[in,out] monitor_alpp     answer list for `qalter -w v`, or nullptr
- * @param[in]     monitor_next_run whether to append to the run log file
- *
- * @return 0 on success, -1 if the run log file could not be written
- */
 int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run);
 
-/**
- * @brief Logs a list of items behind a common prefix, wrapping the lines
- *
- * Used for enumerations such as job ids. The list is printed in chunks, so
- * that no single log line becomes unreadably long.
- *
- * @param[in,out] monitor_alpp     answer list for `qalter -w v`, or nullptr
- * @param[in]     monitor_next_run whether to append to the run log file
- * @param[in]     logstr           prefix put in front of every line
- * @param[in]     lp               the list of items to print
- * @param[in]     nm               the field of an element to print
- *
- * @return always 0
- */
 int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *logstr, lList *lp, int nm);
 
 /**
@@ -112,10 +75,4 @@ void schedd_set_monitor_next_run(bool set);
  */
 bool schedd_is_monitor_next_run();
 
-/**
- * @brief Determines the path of the scheduler run log
- *
- * Composes `<cell root>/common/` #SCHED_LOG_NAME once; a second call does
- * nothing, so the path stays stable for the lifetime of the process.
- */
 void schedd_set_schedd_log_file();

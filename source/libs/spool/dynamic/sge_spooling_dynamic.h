@@ -72,17 +72,6 @@ const char *get_spooling_method();
 const char *get_dynamic_spooling_method();
 #endif
 
-/** @brief Load a spooling shared library and build its context
- *
- * @param answer_list to return error messages
- * @param method      the spooling method the library must report
- * @param shlib_name  the library to load, without the platform suffix
- * @param args        the argument string handed on to the library's own
- *                    create-context function
- *
- * @return the new spooling context, or nullptr if the library could not be
- *         loaded, lacks the expected symbols, or implements another method
- */
 lListElem *
 spool_dynamic_create_context(lList **answer_list, const char *method,
                              const char *shlib_name, const char *args);

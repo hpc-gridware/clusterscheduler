@@ -38,6 +38,35 @@
 #include "qstat/group/ocs_QStatGroupController.h"
 #include "qstat/group/ocs_QStatGroupViewBase.h"
 
+/** @brief Add up one cluster queue's instances into the counts the view prints
+ *
+ * The out parameters are the members of QStatGroupViewBase::Summary,
+ * passed one by one; see that struct for what each of them counts.
+ *
+ * @param cqueue the cluster queue
+ * @param exechost_list the execution hosts, for the load values
+ * @param centry_list the complex entries, to interpret the load
+ * @param load receives the average load
+ * @param is_load_available receives whether any instance reported a load
+ * @param used receives the slots in use
+ * @param resv receives the slots reserved
+ * @param total receives the slots configured
+ * @param suspend_manual receives the slots suspended by an administrator
+ * @param suspend_threshold receives the slots suspended by a threshold
+ * @param suspend_on_subordinate receives the slots suspended by a subordinate relationship
+ * @param suspend_calendar receives the slots suspended by a calendar
+ * @param unknown receives the slots on unreachable hosts
+ * @param load_alarm receives the slots in load alarm
+ * @param disabled_manual receives the slots disabled by an administrator
+ * @param disabled_calendar receives the slots disabled by a calendar
+ * @param ambiguous receives the slots whose configuration cannot be resolved
+ * @param orphaned receives the slots of deleted instances still holding jobs
+ * @param error receives the slots in error state
+ * @param available receives the slots that could take a job now
+ * @param temp_disabled receives the slots temporarily unusable
+ * @param manual_intervention receives the slots needing an administrator
+ * @return true when the cluster queue could be summed up
+ */
 bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue, const lList *exechost_list, const lList *centry_list,
                                                          double *load, bool *is_load_available, uint32_t *used, uint32_t *resv, uint32_t *total,
                                                          uint32_t *suspend_manual, uint32_t *suspend_threshold, uint32_t *suspend_on_subordinate,

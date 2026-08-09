@@ -327,6 +327,14 @@ bool verify_host_name(lList **answer_list, const char *host_name)
    return ret;
 }
 
+/**
+ * @brief Resolve this host's own qualified name again
+ *
+ * Called after the configuration changed, since `ignore_fqdn` decides whether
+ * the domain is part of the name this component reports.
+ *
+ * @return `CL_RETVAL_OK` on success, otherwise a commlib error code
+ */
 int reresolve_qualified_hostname() {
    int ret = CL_RETVAL_OK;
 

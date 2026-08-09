@@ -2631,6 +2631,21 @@ static int sr_fifo_drain() {
    return enq;
 }
 
+/** @brief Wait for the job to end, checkpointing and signalling it meanwhile
+ *
+ * This is where the shepherd spends nearly all its life. It reaps the child,
+ * services the queued signals, triggers checkpoints on the configured
+ * interval, and enforces the notify delay.
+ *
+ * @param pid the job process
+ * @param childname what the child is, for the trace file: `job`, `prolog`, …
+ * @param timeout seconds to wait before giving up; 0 for no timeout
+ * @param p_ckpt_info the checkpointing configuration, or nullptr
+ * @param[out] rusage receives what the kernel accounted for the child
+ * @param fd_pty_master the pty master for an interactive job, -1 otherwise
+ * @param fd_std_err the child's standard error, for an interactive job
+ * @return the child's exit status
+ */
 int wait_my_child(
 int pid,                   /* pid of job */
 const char *childname,     /* "job", "pe_start", ...     */

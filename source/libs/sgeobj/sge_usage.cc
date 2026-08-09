@@ -467,6 +467,16 @@ parse_full_double(const char *value, double &out) {
  * @param value the raw text; nullptr is treated as the empty string
  * @return the new element, or nullptr when `name` was nullptr
  */
+/**
+ * @brief Parse a raw `variable=value` pair from the shepherd usage file
+ *
+ * Also used for equivalent sources. The result is a `UA_Type` element with a
+ * correctly typed value; see CS-849 for the discrimination rule, and
+ * `test/libs/sgeobj/test_sgeobj_usage.cc` for the cases it covers.
+ *
+ * The caller owns the returned element and has to free it or attach it to a
+ * usage list. An empty value and an empty variable name are both accepted.
+ */
 lListElem *
 usage_parse_value(const char *name, const char *value) {
    if (name == nullptr) {

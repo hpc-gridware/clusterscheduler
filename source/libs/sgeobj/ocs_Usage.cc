@@ -502,6 +502,18 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
  * user and project objects for the specified job
  *--------------------------------------------------------------------*/
 
+/**
+ * @brief Decay the already booked usage and add this job's scaled usage on top
+ * @param job the finished job
+ * @param ja_task the finished array task
+ * @param node the job owner's share tree node
+ * @param user the submitting user's object
+ * @param project the job's project
+ * @param decay_list the decay constants, one per usage attribute
+ * @param usage_weight_list the weights each usage attribute is scaled by
+ * @param seqno the current usage sequence number, so usage is decayed only once
+ * @param curr_time now, in seconds, as the base of the decay
+ */
 void
 ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem * /* node */, lListElem *user,
                                 lListElem *project, lList *decay_list, const lList *usage_weight_list, u_long seqno,
@@ -509,6 +521,20 @@ ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem * 
    book_user_project_usage(job, ja_task, user, project, decay_list, usage_weight_list, seqno, curr_time, true);
 }
 
+/**
+ * @brief Sum a finished job's scaled usage into UU_usage / PR_usage / UPP_usage
+ *
+ * No decay is applied. This is the worker-thread booking path introduced
+ * in CS-1239: decay moved to a periodic Timed Event Thread task, and only
+ * the additive part of #decay_and_sum_usage runs at finish time.
+ * `usage_time_stamp` is left untouched; the TET decay task owns it.
+ *
+ * @param job the finished job
+ * @param ja_task the finished array task
+ * @param user the submitting user's object, booked into `UU_usage`
+ * @param project the job's project, booked into `PR_usage` and `UPP_usage`
+ * @param usage_weight_list the weights each usage attribute is scaled by
+ */
 void
 ocs::Usage::sum_usage(lListElem *job, lListElem *ja_task, lListElem *user, lListElem *project,
                       const lList *usage_weight_list) {

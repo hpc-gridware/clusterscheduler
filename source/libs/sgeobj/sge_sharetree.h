@@ -100,18 +100,6 @@ typedef struct {
    lListElem **nodes;   ///< the nodes, root first
 } ancestors_t;
 
-/**
- * @brief Number the share tree nodes
- *
- * Walks the tree from `ep` and gives every node an id, so nodes can be
- * referred to by number rather than by path.
- *
- * @param[out] alpp receives error messages
- * @param ep the node to start at
- * @param id the id to give this node
- * @param[out] ret_id receives the next unused id
- * @return true when the whole subtree could be numbered
- */
 bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id);
 int show_sharetree_path(lListElem *root, const char *path);
 int show_sharetree(const lListElem *ep, const char *indent);

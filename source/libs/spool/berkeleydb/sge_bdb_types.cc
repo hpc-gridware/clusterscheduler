@@ -424,6 +424,10 @@ bdb_set_next_checkpoint(bdb_info info, const uint64_t next)
    info->next_checkpoint = next;
 }
 
+/** @brief Request or clear recovery on the next open
+ * @param info the handle
+ * @param recover true to run recovery
+ */
 void
 bdb_set_recover(bdb_info info, bool recover)
 {
