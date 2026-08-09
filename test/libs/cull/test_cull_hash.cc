@@ -76,8 +76,8 @@ lNameSpace my_nmv[] = {
 
 #else
 enum {
-   TEST_ulong = 1,
-   TEST_string
+   TEST_ulong = 1,   ///< an unsigned long attribute
+   TEST_string   ///< a string attribute
 };
 
 LISTDEF(TEST_Type)
@@ -124,9 +124,15 @@ static int s_fail = 0;
       } \
    } while (0)
 
+/** @brief What one benchmark run measured, in seconds per operation
+ *
+ * The hash test is as much a benchmark as a correctness test: it reports the
+ * cost of each operation with and without a hash index, so a change that makes
+ * lookups faster but insertion far slower is visible rather than hidden.
+ */
 struct BenchTimes {
-   double create, copy, lookup, iter_str, mod_key, mod_str, del_key, del_str;
-   int objs_del_key, objs_del_str;
+   double create,/**< building the list */copy,/**< copying it */lookup,/**< finding elements by key */iter_str,/**< walking it in string-key order */mod_key,/**< changing the hashed key of elements */mod_str,/**< changing a non-key string */del_key,/**< deleting by key */del_str;/**< deleting by string */
+   int objs_del_key,/**< how many elements the del_key pass removed */objs_del_str;/**< how many the del_str pass removed */
 };
 
 static void usage(const char *argv0) {

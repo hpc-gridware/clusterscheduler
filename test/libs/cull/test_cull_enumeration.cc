@@ -49,32 +49,38 @@
 #include "cull/cull.h"
 #include "cull/cull_whatP.h"
 
+/** @brief A synthetic CULL object type, defined only for these tests
+ *
+ * One attribute per CULL data type, so the tests can exercise every type
+ * without depending on a real object whose layout may change.
+ */
 enum {
-   TEST_int = 1,
-   TEST_host,
-   TEST_string,
-   TEST_double,
-   TEST_long,
-   TEST_ulong,
-   TEST_ulong64,
-   TEST_bool,
-   TEST_list,
-   TEST_object,
-   TEST_ref
+   TEST_int = 1,   ///< an int attribute
+   TEST_host,   ///< a host name attribute
+   TEST_string,   ///< a string attribute
+   TEST_double,   ///< a double attribute
+   TEST_long,   ///< a long attribute
+   TEST_ulong,   ///< an unsigned long attribute
+   TEST_ulong64,   ///< a 64-bit unsigned attribute
+   TEST_bool,   ///< a bool attribute
+   TEST_list,   ///< a sublist attribute
+   TEST_object,   ///< a sub-object attribute
+   TEST_ref   ///< a reference attribute
 };
 
+/** @brief A second synthetic type, for the tests that need two */
 enum {
-   TEST1_int = 51,
-   TEST1_host,
-   TEST1_string,
-   TEST1_double,
-   TEST1_long,
-   TEST1_ulong,
-   TEST1_ulong64,
-   TEST1_bool,
-   TEST1_list,
-   TEST1_object,
-   TEST1_ref
+   TEST1_int = 51,   ///< an int attribute
+   TEST1_host,   ///< a host name attribute
+   TEST1_string,   ///< a string attribute
+   TEST1_double,   ///< a double attribute
+   TEST1_long,   ///< a long attribute
+   TEST1_ulong,   ///< an unsigned long attribute
+   TEST1_ulong64,   ///< a 64-bit unsigned attribute
+   TEST1_bool,   ///< a bool attribute
+   TEST1_list,   ///< a sublist attribute
+   TEST1_object,   ///< a sub-object attribute
+   TEST1_ref   ///< a reference attribute
 };
 
 LISTDEF(TEST_Type)
@@ -133,9 +139,10 @@ NAMEDEF(TEST1_Name)
                 NAME("TEST1_ref")
 NAMEEND
 
-#define TEST_Size sizeof(TEST_Name) / sizeof(char *)
-#define TEST1_Size sizeof(TEST1_Name) / sizeof(char *)
+#define TEST_Size sizeof(TEST_Name) / sizeof(char *)    ///< number of attributes of the synthetic type
+#define TEST1_Size sizeof(TEST1_Name) / sizeof(char *)   ///< number of attributes of the second synthetic type
 
+/** @brief The name space registering the synthetic types with CULL */
 lNameSpace nmv[] = {
         {1,  TEST_Size,  TEST_Name, TEST_Type},
         {51, TEST1_Size, TEST1_Name, TEST1_Type},
@@ -354,10 +361,10 @@ int main(int /*argc*/, char * /*argv*/[]) {
    printf("\n--- lSelect ---\n");
    {
       lEnumeration *what = lWhat("%T(%I %I -> %T( %I %I -> %T (%I %I %I %I) %I %I) %I -> %T(%I) %I)",
-                                 TEST_Type,
-                                 TEST_int,
+                                 TEST_Type,   ///< a test attribute
+                                 TEST_int,   ///< an int attribute
                                  TEST_list, TEST1_Type,
-                                 TEST1_int,
+                                 TEST1_int,   ///< an int attribute
                                  TEST1_list, TEST_Type,
                                  TEST_int, TEST_list, TEST_object, TEST_string,
                                  TEST1_object, TEST1_string,

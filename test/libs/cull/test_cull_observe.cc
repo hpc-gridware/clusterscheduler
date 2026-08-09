@@ -34,18 +34,23 @@
 #ifdef OBSERVE
 #include "cull/cull_observe.h"
 
+/** @brief A synthetic CULL object type, defined only for these tests
+ *
+ * One attribute per CULL data type, so the tests can exercise every type
+ * without depending on a real object whose layout may change.
+ */
 enum {
-   TEST_int = 1,
-   TEST_host,
-   TEST_string,
-   TEST_double,
-   TEST_char,
-   TEST_long,
-   TEST_ulong,
-   TEST_bool,
-   TEST_list,
-   TEST_object,
-   TEST_ref
+   TEST_int = 1,   ///< an int attribute
+   TEST_host,   ///< a host name attribute
+   TEST_string,   ///< a string attribute
+   TEST_double,   ///< a double attribute
+   TEST_char,   ///< a test attribute
+   TEST_long,   ///< a long attribute
+   TEST_ulong,   ///< an unsigned long attribute
+   TEST_bool,   ///< a bool attribute
+   TEST_list,   ///< a sublist attribute
+   TEST_object,   ///< a sub-object attribute
+   TEST_ref   ///< a reference attribute
 };
 
 LISTDEF(TEST_Type)
@@ -76,8 +81,9 @@ NAMEDEF(TEST_Name)
    NAME("TEST_ref")
 NAMEEND   
 
-#define TEST_Size sizeof(TEST_Name) / sizeof(char *)
+#define TEST_Size sizeof(TEST_Name) / sizeof(char *)    ///< number of attributes of the synthetic type
 
+/** @brief The name space registering the synthetic types with CULL */
 lNameSpace nmv[] = {
    {1, TEST_Size, TEST_Name},
    {0, 0, nullptr}

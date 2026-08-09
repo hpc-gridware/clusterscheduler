@@ -64,15 +64,15 @@
 #include <sge_log.h>
 
 enum {
-   TEST_host = 1,
-   TEST_string,
-   TEST_double,
-   TEST_ulong,
-   TEST_ulong64,
-   TEST_bool,
-   TEST_list,
-   TEST_object,
-   TEST_ref
+   TEST_host = 1,   ///< a host name attribute
+   TEST_string,   ///< a string attribute
+   TEST_double,   ///< a double attribute
+   TEST_ulong,   ///< an unsigned long attribute
+   TEST_ulong64,   ///< a 64-bit unsigned attribute
+   TEST_bool,   ///< a bool attribute
+   TEST_list,   ///< a sublist attribute
+   TEST_object,   ///< a sub-object attribute
+   TEST_ref   ///< a reference attribute
 };
 
 LISTDEF(TEST_Type)
