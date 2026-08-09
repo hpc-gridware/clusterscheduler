@@ -33,11 +33,24 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The SSL transport
+ *
+ * The counterpart of `cl_tcp_framework.h`: the same operations, over a
+ * TLS connection rather than a bare socket. Which of the two a connection
+ * uses is its #cl_com_connection_type::framework_type, and nothing above
+ * `cl_communication.cc` knows the difference.
+ *
+ * Beyond the transport it also carries what TCP has no equivalent for:
+ * building the SSL contexts, verifying the peer's certificate against the
+ * application's #cl_ssl_verify_func_t, and the CRL check.
+ */
+
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
-#define CL_COM_SSL_FRAMEWORK_MAX_INT      32767
-#define CL_COM_SSL_FRAMEWORK_MIN_INT_SIZE 4
+#define CL_COM_SSL_FRAMEWORK_MAX_INT      32767   ///< Largest value the framework encodes into a fixed width field
+#define CL_COM_SSL_FRAMEWORK_MIN_INT_SIZE 4       ///< Smallest `int` width the framework assumes, in bytes
 
 /* ssl specific functions */
 int cl_com_ssl_framework_setup();

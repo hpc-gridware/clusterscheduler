@@ -33,6 +33,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The plain TCP transport
+ *
+ * One of the interchangeable transports behind #cl_framework_t. Every
+ * `cl_com_*` call in `cl_communication.cc` that touches a socket dispatches
+ * here when the connection's framework is #CL_CT_TCP, and into
+ * `cl_ssl_framework.cc` when it is not - so the two files implement the same
+ * set of operations under different names.
+ */
+
 #include <netinet/in.h>
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"

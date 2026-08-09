@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The plain TCP transport
+ *
+ * One of the interchangeable transports behind #cl_framework_t. Every
+ * `cl_com_*` call in `cl_communication.cc` that touches a socket dispatches
+ * here when the connection's framework is #CL_CT_TCP, and into
+ * `cl_ssl_framework.cc` when it is not - so the two files implement the same
+ * set of operations under different names.
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cerrno>
@@ -61,17 +71,22 @@
 #include "uti/sge_os.h"
 #include "uti/sge_unistd.h"
 
-/* connection specific struct (not used from outside) */
+/** @brief What the TCP framework hangs off a connection
+ *
+ * Reached through #cl_com_connection_type::com_private. The `ssl_connection`
+ * member is why this file also serves #CL_CT_SSL_TLS: the newer TLS framework
+ * is this one plus an OpenSSL connection on top, rather than a separate
+ * transport.
+ */
 typedef struct cl_com_tcp_private_type {
-   /* TCP/IP specific */
-   int server_port;         /* used port for server setup */
-   int connect_port;        /* port to connect to */
-   int connect_in_port;     /* port from where client is connected (used for reserved port check) */
-   int sockfd;              /* socket file descriptor */
-   int pre_sockfd;          /* socket which was prepared for later listen call (only_prepare_service == TRUE */
-   struct sockaddr_in client_addr;    /* used in connect for storing client addr of connection partner */
+   int server_port;       ///< Port a service listens on
+   int connect_port;      ///< Port a client connects to
+   int connect_in_port;   ///< Remote port the client came from, for the reserved port check
+   int sockfd;            ///< The socket
+   int pre_sockfd;        ///< A socket bound but not yet listening, for #CL_COMMLIB_DELAYED_LISTEN
+   struct sockaddr_in client_addr;   ///< Address of the peer
 #if defined (OCS_WITH_OPENSSL)
-   ocs::uti::OpenSSL::OpenSSLConnection *ssl_connection; /* SSL connection data, if SSL is used */
+   ocs::uti::OpenSSL::OpenSSLConnection *ssl_connection;   ///< The TLS layer, when the framework is #CL_CT_SSL_TLS
 #endif
 } cl_com_tcp_private_t;
 
@@ -81,6 +96,11 @@ static int cl_com_tcp_free_com_private(cl_com_connection_t *connection);
 
 static int cl_com_tcp_connection_request_handler_setup_finalize(cl_com_connection_t *connection);
 
+/** @brief The socket behind a connection
+ * @param connection the connection
+ * @param fd receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_tcp_get_fd(cl_com_connection_t *connection, int *fd) {
    cl_com_tcp_private_t *private_com = nullptr;
    if (connection == nullptr || fd == nullptr) {
@@ -101,6 +121,11 @@ int cl_com_tcp_get_fd(cl_com_connection_t *connection, int *fd) {
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief The port a service connection listens on
+ * @param connection the connection
+ * @param port receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_tcp_get_service_port(cl_com_connection_t *connection, int *port) {
    cl_com_tcp_private_t *private_com = nullptr;
    if (connection == nullptr || port == nullptr) {
@@ -114,6 +139,15 @@ int cl_com_tcp_get_service_port(cl_com_connection_t *connection, int *port) {
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief The remote port a client connected from
+ *
+ * Below 1024 means the peer was privileged, which is what makes reserved
+ * port security checkable.
+ *
+ * @param connection the connection
+ * @param port receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_tcp_get_client_socket_in_port(cl_com_connection_t *connection, int *port) {
    cl_com_tcp_private_t *private_com = nullptr;
    if (connection == nullptr || port == nullptr) {
@@ -127,6 +161,11 @@ int cl_com_tcp_get_client_socket_in_port(cl_com_connection_t *connection, int *p
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief The port a connection connects to
+ * @param connection the connection
+ * @param port receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_tcp_get_connect_port(cl_com_connection_t *connection, int *port) {
    cl_com_tcp_private_t *private_com = nullptr;
    if (connection == nullptr || port == nullptr) {
@@ -140,6 +179,11 @@ int cl_com_tcp_get_connect_port(cl_com_connection_t *connection, int *port) {
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief Set the port a connection connects to
+ * @param connection the connection
+ * @param port the port
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_tcp_set_connect_port(cl_com_connection_t *connection, int port) {
    cl_com_tcp_private_t *private_com = nullptr;
    if (connection == nullptr) {
@@ -168,35 +212,25 @@ static void cl_dump_tcp_private(cl_com_connection_t* connection) {
 }
 #endif
 
-/****** cl_tcp_framework/cl_com_tcp_open_connection() **************************
-*  NAME
-*     cl_com_tcp_open_connection() -- open a tcp/ip connection
-*
-*  SYNOPSIS
-*     int cl_com_tcp_open_connection(cl_com_connection_t* connection, const 
-*     char* comp_host, const char* comp_name, int comp_id, int timeout) 
-*
-*  FUNCTION
-*     This function will create a new socket file descriptor and set the 
-*     SO_REUSEADDR socket option and the O_NONBLOCK file descriptor flag. 
-*     After that the socket will try to connect the service handler on the
-*     given connect_port (set with cl_com_tcp_setup_connection()) on the
-*     host specified with comp_host. After a successful connect the 
-*     TCP_NODELAY socket option is set. 
-*
-*  INPUTS
-*     cl_com_connection_t* connection - pointer to a connection struct
-*     const char* comp_host           - host where a service is available
-*     const char* comp_name           - component name of service
-*     int comp_id                     - component id of service
-*     int timeout                     - timeout for connect
-*
-*  RESULT
-*     int - CL_COMM_XXXX error value or CL_RETVAL_OK for no errors
-*
-*  SEE ALSO
-*     cl_communication/cl_com_open_connection()
-*******************************************************************************/
+/**
+ * @brief Open a tcp/ip connection
+ *
+ * This function will create a new socket file descriptor and set the
+ * SO_REUSEADDR socket option and the O_NONBLOCK file descriptor flag.
+ * After that the socket will try to connect the service handler on the
+ * given connect_port (set with cl_com_tcp_setup_connection()) on the
+ * host specified with comp_host. After a successful connect the
+ * TCP_NODELAY socket option is set.
+ *
+ * @param connection pointer to a connection struct, which already carries the
+ *        remote endpoint - host, component name and id used to be three
+ *        separate parameters here
+ * @param timeout timeout for connect
+ *
+ * @return CL_COMM_XXXX error value or CL_RETVAL_OK for no errors
+ *
+ * @see `cl_com_open_connection()`
+ */
 int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
    cl_com_tcp_private_t *private_com = nullptr;
 
@@ -480,40 +514,33 @@ int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
 
 
 
-/****** cl_communication/cl_com_tcp_setup_connection() *************************
-*  NAME
-*     cl_com_tcp_setup_connection() -- setup a connection type
-*
-*  SYNOPSIS
-*     int cl_com_tcp_setup_connection(cl_com_connection_t* connection, int 
-*     server_port, int connect_port) 
-*
-*  FUNCTION
-*     This function is used to setup the connection type. It will malloc
-*     a cl_com_tcp_private_t structure and set the pointer 
-*     connection->com_private to this structure.
-*
-*     When the connection structure is used to provide a service the server_port
-*     must be specified. If the connection is used to be a client to a service
-*     the connect_port must be specified.
-*
-*     The memory obtained by the malloc() call for the cl_com_tcp_private_t structure 
-*     is released by a call to cl_com_tcp_close_connection()
-*
-*  INPUTS
-*     cl_com_connection_t* connection - empty connection structure
-*     int server_port                 - port to provide a tcp service 
-*     int connect_port                - port to connect to
-*     int data_flow_type              - CL_COM_STREAM or CL_COM_MESSAGE
-*
-*  RESULT
-*     int - CL_COMM_XXXX error value or CL_RETVAL_OK for no errors
-*
-*  SEE ALSO
-*
-*     cl_communication/cl_com_close_connection()
-*
-*******************************************************************************/
+/**
+ * @brief Setup a connection type
+ *
+ * This function is used to setup the connection type. It will malloc
+ * a cl_com_tcp_private_t structure and set the pointer
+ * connection->com_private to this structure.
+ * When the connection structure is used to provide a service the server_port
+ * must be specified. If the connection is used to be a client to a service
+ * the connect_port must be specified.
+ * The memory obtained by the malloc() call for the cl_com_tcp_private_t structure
+ * is released by a call to cl_com_tcp_close_connection()
+ *
+ * @param handle the handle the connection belongs to
+ * @param connection empty connection structure
+ * @param server_port port to provide a tcp service
+ * @param connect_port port to connect to
+ * @param data_flow_type CL_COM_STREAM or CL_COM_MESSAGE
+ * @param auto_close_mode whether a service may close it to make room
+ * @param framework_type #CL_CT_TCP or #CL_CT_SSL_TLS, both handled here
+ * @param data_format_type binary or XML payload
+ * @param tcp_connect_mode whether to use a reserved local port
+ * @param we_are_server true when this will be the listening side
+ *
+ * @return CL_COMM_XXXX error value or CL_RETVAL_OK for no errors
+ *
+ * @see #cl_com_close_connection
+ */
 int cl_com_tcp_setup_connection(cl_com_handle_t *handle,
                                 cl_com_connection_t **connection,
                                 int server_port,
@@ -603,24 +630,16 @@ int cl_com_tcp_setup_connection(cl_com_handle_t *handle,
 }
 
 
-/****** cl_tcp_framework/cl_com_tcp_free_com_private() *************************
-*  NAME
-*     cl_com_tcp_free_com_private() -- free private struct of a tcp connection
-*
-*  SYNOPSIS
-*     int cl_com_tcp_free_com_private(cl_com_connection_t* connection) 
-*
-*  FUNCTION
-*     This function will free the com_private struct pointer of a tcp connection
-*     struct
-*
-*  INPUTS
-*     cl_com_connection_t* connection - pointer to tcp/ip connection
-*
-*  RESULT
-*     int - CL_RETVAL_XXXX error or CL_RETVAL_OK on success
-*
-*******************************************************************************/
+/**
+ * @brief Free private struct of a tcp connection
+ *
+ * This function will free the com_private struct pointer of a tcp connection
+ * struct
+ *
+ * @param connection pointer to tcp/ip connection
+ *
+ * @return CL_RETVAL_XXXX error or CL_RETVAL_OK on success
+ */
 static int cl_com_tcp_free_com_private(cl_com_connection_t *connection) {
 
    if (connection == nullptr) {
@@ -646,26 +665,18 @@ static int cl_com_tcp_free_com_private(cl_com_connection_t *connection) {
 }
 
 
-/****** cl_tcp_framework/cl_com_tcp_close_connection() *************************
-*  NAME
-*     cl_com_tcp_close_connection() -- close and shutdown a tcp connection
-*
-*  SYNOPSIS
-*     int cl_com_tcp_close_connection(cl_com_connection_t* connection) 
-*
-*  FUNCTION
-*     This function will shutdown and close the connection (if open) and free
-*     the connection->com_private pointer for a tcp connection.
-*
-*  INPUTS
-*     cl_com_connection_t* connection - connection pointer
-*
-*  RESULT
-*     int - CL_RETVAL_XXXX error or CL_RETVAL_OK on success
-*
-*  SEE ALSO
-*     cl_communication/cl_com_close_connection()
-*******************************************************************************/
+/**
+ * @brief Close and shutdown a tcp connection
+ *
+ * This function will shutdown and close the connection (if open) and free
+ * the connection->com_private pointer for a tcp connection.
+ *
+ * @param connection connection pointer
+ *
+ * @return CL_RETVAL_XXXX error or CL_RETVAL_OK on success
+ *
+ * @see #cl_com_close_connection
+ */
 int cl_com_tcp_close_connection(cl_com_connection_t **connection) {
    const cl_com_tcp_private_t *private_com = nullptr;
 
@@ -704,6 +715,14 @@ int cl_com_tcp_close_connection(cl_com_connection_t **connection) {
 
 #if defined(OCS_WITH_OPENSSL)
 // check if a SSL_write call needs to be repeated due to SSL_ERROR_WANT_READ or SSL_ERROR_WANT_WRITE
+/** @brief Does the last write have to be repeated?
+ *
+ * Only meaningful when the TCP framework is carrying a TLS connection: an
+ * `SSL_write()` may have to be reissued with the identical buffer.
+ *
+ * @param connection the connection
+ * @return true when the write must be repeated unchanged
+ */
 bool cl_com_tcp_write_repeat_required(cl_com_connection_t *connection) {
    bool ret = false;
 
@@ -718,6 +737,14 @@ bool cl_com_tcp_write_repeat_required(cl_com_connection_t *connection) {
 }
 #endif
 
+/** @brief Write to a connection over TCP
+ * @param connection the connection
+ * @param message the bytes
+ * @param size how many
+ * @param only_one_write when set, do a single write rather than looping;
+ *        receives how many bytes went out
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_tcp_write(cl_com_connection_t *connection, cl_byte_t *message, ssize_t size,
                      unsigned long *only_one_write) {
    cl_com_tcp_private_t *private_com = nullptr;
@@ -805,6 +832,14 @@ int cl_com_tcp_write(cl_com_connection_t *connection, cl_byte_t *message, ssize_
    return CL_RETVAL_OK;
 }
 
+/** @brief Read from a connection over TCP
+ * @param connection the connection
+ * @param message buffer to read into
+ * @param size how many bytes are wanted
+ * @param only_one_read when set, do a single read rather than looping;
+ *        receives how many bytes came in
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int
 cl_com_tcp_read(cl_com_connection_t *connection, cl_byte_t *message, ssize_t size, unsigned long *only_one_read) {
    cl_com_tcp_private_t *private_com = nullptr;
@@ -897,6 +932,12 @@ cl_com_tcp_read(cl_com_connection_t *connection, cl_byte_t *message, ssize_t siz
    return CL_RETVAL_OK;
 }
 
+/** @brief Read the length prefix over TCP
+ * @param connection the connection
+ * @param only_one_read when set, do a single read rather than looping;
+ *        receives how many bytes came in
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_tcp_read_GMSH(cl_com_connection_t *connection, unsigned long *only_one_read) {
    int retval = CL_RETVAL_OK;
    unsigned long data_read = 0;
@@ -1031,29 +1072,21 @@ static int cl_com_tcp_connection_request_handler_setup_finalize(cl_com_connectio
 }
 
 
-/****** cl_tcp_framework/cl_com_tcp_connection_request_handler_setup() *********
-*  NAME
-*     cl_com_tcp_connection_request_handler_setup() -- bind tcp/ip socket
-*
-*  SYNOPSIS
-*     int cl_com_tcp_connection_request_handler_setup(cl_com_connection_t* 
-*     connection) 
-*
-*  FUNCTION
-*     This function creates a new stream socket and sets SO_REUSEADDR socket
-*     option. After that the socket is bind to the server_port. A final listen
-*     enables connection requests on that socket. 
-*
-*  INPUTS
-*     cl_com_connection_t* connection - pointer to connection
-*
-*  RESULT
-*     int - CL_RETVAL_XXXX error or CL_RETVAL_OK on success 
-*
-*  SEE ALSO
-*     cl_tcp_framework/cl_com_tcp_connection_request_handler()
-*     cl_tcp_framework/cl_com_tcp_connection_request_handler_cleanup()
-*******************************************************************************/
+/**
+ * @brief Bind tcp/ip socket
+ *
+ * This function creates a new stream socket and sets SO_REUSEADDR socket
+ * option. After that the socket is bind to the server_port. A final listen
+ * enables connection requests on that socket.
+ *
+ * @param connection pointer to connection
+ * @param only_prepare_service bind but do not listen yet, which is how
+ *        #CL_COMMLIB_DELAYED_LISTEN defers accepting
+ *
+ * @return CL_RETVAL_XXXX error or CL_RETVAL_OK on success
+ *
+ * @see #cl_com_tcp_connection_request_handler, #cl_com_tcp_connection_request_handler_cleanup
+ */
 int cl_com_tcp_connection_request_handler_setup(cl_com_connection_t *connection, bool only_prepare_service) {
    int sockfd = 0;
    struct sockaddr_in serv_addr;
@@ -1145,29 +1178,19 @@ int cl_com_tcp_connection_request_handler_setup(cl_com_connection_t *connection,
 }
 
 
-/****** cl_tcp_framework/cl_com_tcp_connection_request_handler_cleanup() *******
-*  NAME
-*     cl_com_tcp_connection_request_handler_cleanup() -- shutdown service
-*
-*  SYNOPSIS
-*     int cl_com_tcp_connection_request_handler_cleanup(cl_com_connection_t* 
-*     connection) 
-*
-*  FUNCTION
-*     This function will shutdown a service connection, created with the
-*     cl_com_tcp_connection_request_handler_setup() function. Free the connection
-*     with cl_tcp_close_connection() has to be done by caller.
-*
-*  INPUTS
-*     cl_com_connection_t* connection - Connection to shutdown
-*
-*  RESULT
-*     int - CL_RETVAL_XXXX error or CL_RETVAL_OK on success 
-*
-*  SEE ALSO
-*     cl_tcp_framework/cl_com_tcp_connection_request_handler()
-*     cl_tcp_framework/cl_com_tcp_connection_request_handler_setup()
-*******************************************************************************/
+/**
+ * @brief Shutdown service
+ *
+ * This function will shutdown a service connection, created with the
+ * cl_com_tcp_connection_request_handler_setup() function. Free the connection
+ * with cl_tcp_close_connection() has to be done by caller.
+ *
+ * @param connection Connection to shutdown
+ *
+ * @return CL_RETVAL_XXXX error or CL_RETVAL_OK on success
+ *
+ * @see #cl_com_tcp_connection_request_handler, #cl_com_tcp_connection_request_handler_setup
+ */
 int cl_com_tcp_connection_request_handler_cleanup(cl_com_connection_t *connection) {
 
    cl_com_tcp_private_t *private_com = nullptr;
@@ -1192,39 +1215,24 @@ int cl_com_tcp_connection_request_handler_cleanup(cl_com_connection_t *connectio
 
 /* caller must free new_connection pointer */
 
-/****** cl_tcp_framework/cl_com_tcp_connection_request_handler() ***************
-*  NAME
-*     cl_com_tcp_connection_request_handler() -- Check for connection requests
-*
-*  SYNOPSIS
-*     int cl_com_tcp_connection_request_handler(cl_com_connection_t* 
-*     connection, cl_com_connection_t** new_connection, int timeout_val_sec, 
-*     int timeout_val_usec) 
-*
-*  FUNCTION
-*     This function will do a select call for the service connection file de-
-*     scriptor. If the select returns with no error the connection is accepted
-*     (via accept()) and a new connection structure ( cl_com_connection_t )
-*     is malloced. The new connection will get all default settings from the
-*     service connection struct. 
-*
-*     This function has to fill all struct information for the new connection
-*     ( cl_com_connection_t type)
-*
-*  INPUTS
-*     cl_com_connection_t* connection      - pointer to service connection
-*     cl_com_connection_t** new_connection - nullptr
-*     int timeout_val_sec                  - timeout value in sec (for select)
-*     int timeout_val_usec                 - timeout value in usec (for select)
-*
-*  RESULT
-*     int - CL_RETVAL_XXXX error or CL_RETVAL_OK on success 
-*     an address to a new connection in new_connection parameter
-*
-*  SEE ALSO
-*     cl_tcp_framework/cl_com_tcp_connection_request_handler_setup()
-*     cl_tcp_framework/cl_com_tcp_connection_request_handler_cleanup()
-*******************************************************************************/
+/**
+ * @brief Check for connection requests
+ *
+ * This function will do a select call for the service connection file de-
+ * scriptor. If the select returns with no error the connection is accepted
+ * (via accept()) and a new connection structure ( cl_com_connection_t )
+ * is malloced. The new connection will get all default settings from the
+ * service connection struct.
+ * This function has to fill all struct information for the new connection
+ * ( cl_com_connection_t type)
+ *
+ * @param connection pointer to service connection
+ * @param new_connection receives the accepted connection; must point at nullptr
+ *
+ * @return CL_RETVAL_XXXX error or CL_RETVAL_OK on success an address to a new connection in new_connection parameter
+ *
+ * @see #cl_com_tcp_connection_request_handler_setup, #cl_com_tcp_connection_request_handler_cleanup
+ */
 int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_com_connection_t **new_connection) {
    cl_com_connection_t *tmp_connection = nullptr;
    struct sockaddr_in cli_addr;
@@ -1376,25 +1384,16 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
   sockfd = new connection socket file descriptor (from accept call)
 */
 
-/****** cl_tcp_framework/cl_com_tcp_get_private() ******************************
-*  NAME
-*     cl_com_tcp_get_private() -- get cl_com_tcp_private_t struct of a connection
-*
-*  SYNOPSIS
-*     static cl_com_tcp_private_t* cl_com_tcp_get_private(cl_com_connection_t* 
-*     connection) 
-*
-*  FUNCTION
-*     This function returns the com_private pointer of the connection and does
-*     a type cast.
-*
-*  INPUTS
-*     cl_com_connection_t* connection - tcp connection to get private struct
-*
-*  RESULT
-*     static cl_com_tcp_private_t* - pointer to private tcp data of tcp connection
-*
-*******************************************************************************/
+/**
+ * @brief Get cl_com_tcp_private_t struct of a connection
+ *
+ * This function returns the com_private pointer of the connection and does
+ * a type cast.
+ *
+ * @param connection tcp connection to get private struct
+ *
+ * @return pointer to private tcp data of tcp connection
+ */
 static cl_com_tcp_private_t *cl_com_tcp_get_private(cl_com_connection_t *connection) {  /* CR check */
    if (connection != nullptr) {
       return (cl_com_tcp_private_t *)connection->com_private;
@@ -1402,33 +1401,21 @@ static cl_com_tcp_private_t *cl_com_tcp_get_private(cl_com_connection_t *connect
    return nullptr;
 }
 
-/****** cl_tcp_framework/cl_com_tcp_open_connection_request_handler() **********
-*  NAME
-*     cl_com_tcp_open_connection_request_handler() -- ??? 
-*
-*  SYNOPSIS
-*     int cl_com_tcp_open_connection_request_handler(cl_raw_list_t* 
-*     connection_list, int timeout_val) 
-*
-*  FUNCTION
-*     First action of this function is do set the data_read_flag of each
-*     connection in the list to CL_COM_DATA_NOT_READY.
-*
-*     After that this function will do a select on all file descriptors in 
-*     the list for reading. If the select returns that there is data for a 
-*     connection the data_read_flag of the connection 
-*     ( struct cl_com_connection_t ) is set.
-*
-*  INPUTS
-*     cl_raw_list_t* connection_list - connection list
-*     int timeout_val                - timeout for select
-*
-*  RESULT
-*     int - CL_RETVAL_XXXX error or CL_RETVAL_OK on success 
-*
-*  SEE ALSO
-*     cl_communication/cl_com_open_connection_request_handler()
-*******************************************************************************/
+/**
+ * @brief First action of this function is do set the data_read_flag of each
+ *
+ * @param poll_handle the `poll()` arrays, reused between calls
+ * @param handle the handle the connections belong to
+ * @param connection_list connection list
+ * @param service_connection the listening socket, or nullptr
+ * @param timeout_val_sec how long to wait, seconds
+ * @param timeout_val_usec how long to wait, microseconds
+ * @param select_mode whether to watch for reading, writing or both
+ *
+ * @return CL_RETVAL_XXXX error or CL_RETVAL_OK on success
+ *
+ * @see `cl_com_open_connection_request_handler()`
+ */
 int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_com_handle_t *handle,
                                                cl_raw_list_t *connection_list, cl_com_connection_t *service_connection,
                                                int timeout_val_sec, int timeout_val_usec,
