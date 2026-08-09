@@ -99,6 +99,9 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
  *        modifies them, `SGE_GDI_APPEND` adds to the sublist, `SGE_GDI_REMOVE`
  *        removes from it, `SGE_GDI_SET` replaces the whole sublist
  * @param monitor monitoring structure
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cmd the command being executed
  *
  * @return 0 on success STATUS_EUNKNOWN if an error occurred
  *
@@ -186,6 +189,8 @@ DRETURN(STATUS_EUNKNOWN);
  * @param alpp reference to an answer list.
  * @param ep rqs object which should be spooled
  * @param object structure of the gdi framework which contains additional information to perform the request (function pointers, names, CULL-types)
+ * @param packet the client request
+ * @param task the GDI task being answered
  *
  * @return [alpp] - error messages will be added to this list 0 - success STATUS_EEXIST - an error occurred
  *
@@ -225,6 +230,8 @@ rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEle
  * @param object structure of the gdi framework which contains additional information to perform the request (function pointers, names, CULL-types)
  * @param ppList
  * @param monitor monitoring structure
+ * @param packet the client request
+ * @param task the GDI task being answered
  *
  * @return 0 success
  *
@@ -251,6 +258,8 @@ rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList
  * @param rqs_list reference to the Master_RQS_LIST
  * @param ruser username of person who invoked this gdi request
  * @param rhost hostname of the host where someone initiated an gdi call
+ * @param packet the client request
+ * @param task the GDI task being answered
  *
  * @return success STATUS_EUNKNOWN - an error occurred
  *
@@ -509,6 +518,7 @@ filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **s
  * @param old_rqs old resource quota set list (RQS_Type)
  * @param new_list list of referenced usersets in new_rqs (US_Type)
  * @param old_list list of referenced usersets in old_rqs (US_Type)
+ * @param master_userset_list see the brief above
  *
  * @return true if some or none userset is referenced false if all userset are referenced in new_list
  *
@@ -560,6 +570,7 @@ rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **ne
  * @param old_rqs old resource quota set list (RQS_Type)
  * @param new_list list of referenced projects in new_rqs (PR_Type)
  * @param old_list list of referenced projects in old_rqs (PR_Type)
+ * @param master_project_list see the brief above
  *
  * @return true if some or none project is referenced false if all projects are referenced in new_list
  *

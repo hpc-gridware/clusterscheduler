@@ -187,6 +187,7 @@ task_depend_is_finished(const lListElem *job, uint32_t task_id) {
  * @param jep JB_Type element
  * @param alpp AN_Type list pointer
  * @param task_id a task id in job jep
+ * @param gdi_request see the brief above
  *
  * @return true if the job was modified, otherwise false
  *
@@ -292,6 +293,7 @@ sge_task_depend_update(lListElem *jep, lList **alpp, uint32_t task_id, uint64_t 
  *
  * @param jep JB_Type element
  * @param alpp AN_Type list pointer
+ * @param gdi_session the session the change belongs to
  *
  * @return true if the job was modified, otherwise false
  *
@@ -343,6 +345,7 @@ sge_task_depend_init(lListElem *jep, lList **alpp, uint64_t gdi_session) {
  *
  * @param jep JB_Type element
  * @param alpp AN_Type list pointer
+ * @param gdi_session the session the change belongs to
  *
  * @return true if the job was modified, otherwise false
  *

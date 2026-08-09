@@ -293,6 +293,10 @@ centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
  * @param ep
  * @param old_ep
  * @param object
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ppList see the brief above
+ * @param monitor for monitoring qmaster threads
  *
  * @return TODO document the return value
  *
@@ -472,6 +476,7 @@ sge_change_queue_version_centry(uint64_t gdi_version) {
  * jobs.
  *
  * @param centries list of centries that acually require recomputation.
+ * @param gdi_version see the brief above
  *
  * @note MT-NOTE: centry_redebit_consumables() maybe not MT safe (the functions
  *       qinstance_debit_consumable and host_debit_consumable have no MT-NOTE).

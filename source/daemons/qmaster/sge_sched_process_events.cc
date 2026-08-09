@@ -62,6 +62,8 @@
  *
  * @param alpp answer list
  * @param event_list a report list, the event are stored in REP_list
+ * @param ec_id see the brief above
+ * @param arg see the brief above
  *
  * @note MT-NOTE: is MT safe.
  */

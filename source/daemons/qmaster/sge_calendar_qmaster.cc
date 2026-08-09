@@ -253,6 +253,7 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep,
  * Handle calendar events.
  *
  * @param anEvent calendar event
+ * @param monitor for monitoring qmaster threads
  *
  * @note MT-NOTE: sge_calendar_event_handler() is MT safe
  */

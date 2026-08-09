@@ -76,6 +76,10 @@
  * @param rhost hostname of the host where someone initiated an gdi call
  * @param object structure of the gdi framework which contains additional information to perform the request (function pointers, names, CULL-types)
  * @param sub_command how should we handle sublist elements: `SGE_GDI_CHANGE`
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cmd the command being executed
+ * @param monitor for monitoring qmaster threads
  *        modifies them, `SGE_GDI_APPEND` adds to the sublist, `SGE_GDI_REMOVE`
  *        removes from it, `SGE_GDI_SET` replaces the whole sublist
  *
@@ -178,6 +182,8 @@ DRETURN(STATUS_EUNKNOWN);
  * @param alpp reference to an answer list.
  * @param ep ckpt object which should be spooled
  * @param object structure of the gdi framework which contains additional information to perform the request (function pointers, names, CULL-types)
+ * @param packet the client request
+ * @param task the GDI task being answered
  *
  * @return [alpp] - error messages will be added to this list 0 - success STATUS_EEXIST - an error occurred
  */
@@ -211,6 +217,10 @@ int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLi
  * @param ep new ckpt object
  * @param old_ep old ckpt object before modification or nullptr if a new object was added
  * @param object structure of the gdi framework which contains additional information to perform the request (function pointers, names, CULL-types)
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ppList see the brief above
+ * @param monitor for monitoring qmaster threads
  *
  * @return success
  */
@@ -239,6 +249,8 @@ ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
  * @param alpp reference to an answer list.
  * @param ruser username of person who invoked this gdi request
  * @param rhost hostname of the host where someone initiated an gdi call
+ * @param packet the client request
+ * @param task the GDI task being answered
  *
  * @return [alpp] - error messages will be added to this list 0 - success STATUS_EUNKNOWN - an error occurred
  */

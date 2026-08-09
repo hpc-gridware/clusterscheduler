@@ -721,6 +721,7 @@ te_event_t te_event_from_list_elem(const lListElem *aListElem) {
  * added to the event list again after delivery, with its due date adjusted.
  *
  * @param anEvent event to deliver
+ * @param monitor for monitoring qmaster threads
  *
  * @note MT-NOTE: te_scan_table_and_deliver() is MT safe.
  *       MT-NOTE:

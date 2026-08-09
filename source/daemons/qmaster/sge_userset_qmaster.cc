@@ -543,6 +543,7 @@ static bool userset_still_used(const char *u) {
  *
  * @param added List of added userset references (US_Type)
  * @param removed List of removed userset references (US_Type)
+ * @param gdi_session the session the change belongs to
  *
  * @note MT-NOTE: userset_update_categories() is not MT safe
  */
@@ -604,6 +605,9 @@ void userset_update_categories(const lList *added, const lList *removed, uint64_
  * @param object structure of the gdi framework
  * @param sub_command requested sub_commands
  * @param monitor monitoring structure
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cmd the command being executed
  *
  * @return 0 on success STATUS_EUNKNOWN if an error occurred
  *
@@ -778,6 +782,8 @@ DRETURN(STATUS_EUNKNOWN);
  * @param alpp answer list
  * @param userset userset object to spool
  * @param object structure of the gdi framework
+ * @param packet the client request
+ * @param task the GDI task being answered
  *
  * @return [alpp] - error messages will be added to this list 0 - success STATUS_EEXIST - an error occurred
  *
@@ -813,6 +819,8 @@ int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, 
  * @param object structure of the gdi framework
  * @param ppList additional list that is returned to the client
  * @param monitor monitoring structure
+ * @param packet the client request
+ * @param task the GDI task being answered
  *
  * @return 0 on success
  *

@@ -219,6 +219,9 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor, uint64_t gdi_ses
  * @param object structure of the GDI framework that contains additional informations to perform the request
  * @param sub_command GDI sub command
  * @param monitor monitoring structure
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param cmd the command being executed
  *
  * @return 0 on success STATUS_EUNKNOWN if an error occurred STATUS_NOTOK_DOAGAIN if a temporary error
  *
@@ -337,6 +340,8 @@ DRETURN(STATUS_NOTOK_DOAGAIN);
  * @param alpp answer_list
  * @param ep element to spool
  * @param object structure from the GDI framework
+ * @param packet the client request
+ * @param task the GDI task being answered
  *
  * @return [alpp] - error messages will be added to this list 0 - success STATUS_EEXIST - an error occurred
  *
@@ -377,6 +382,8 @@ int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
  * @param object structure from the GDI framework
  * @param ppList
  * @param monitor monitoring structure
+ * @param packet the client request
+ * @param task the GDI task being answered
  *
  * @return 0
  *
@@ -1730,6 +1737,8 @@ ar_initialize_resource_booking(lListElem *ar) {
  *
  * @param ar_id advance reservation id
  * @param monitor monitoring structure
+ * @param forced see the brief above
+ * @param gdi_session the session the change belongs to
  *
  * @note MT-NOTE: sge_ar_remove_all_jobs() is not MT safe
  */
@@ -1957,6 +1966,7 @@ sge_ar_state_set_exited(lListElem *ar) {
  * @param qname queue name
  * @param error_type error type
  * @param set_error set or unset
+ * @param gdi_session the session the change belongs to
  *
  * @note MT-NOTE: sge_ar_list_set_error_state() is MT safe
  */

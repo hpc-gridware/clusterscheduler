@@ -717,6 +717,8 @@ host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
  *
  * @param monitor likewise
  * @param send_events false during qmaster startup, where the event system is not serving yet and setup_qmaster.cc rebuilds every cache once afterwards anyway
+ * @param packet the client request
+ * @param task the GDI task being answered
  *
  * @return true if the membership changed
  *

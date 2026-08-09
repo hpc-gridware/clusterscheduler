@@ -778,6 +778,7 @@ static bool project_still_used(const char *p) {
  *
  * @param added List of added project references (PR_Type)
  * @param removed List of removed project references (PR_Type)
+ * @param gdi_session the session the change belongs to
  *
  * @note MT-NOTE: project_update_categories() is not MT safe
  */

@@ -75,6 +75,7 @@
  * @param new_ep CQ_Type, target element
  * @param nm CULL attribute name (CQ_Type)
  * @param attr_name CULL sublist attribute name of that field which containes the value of the attribute to be modified. char *variables[] - procedure variables
+ * @param variables see the brief above
  *
  * @return 0 success, error othewise
  *
@@ -403,6 +404,7 @@ attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char 
  * @param object_name The target object name
  * @param no_info Skip or add the info messages
  * @param changed Report back if changes have been made (may be nullptr)
+ * @param cmd the command being executed
  *
  * @return true, the success
  *
@@ -738,6 +740,7 @@ attr_mod_obj_binding(lList **alpp, lListElem *new_ar, const lListElem *ar) {
  * @param subsub_key CULL sublist attribute key
  * @param attribute_name_str string used for user output
  * @param object_name_str cqueue name
+ * @param cmd the command being executed
  *
  * @return error state true  - success false - error
  *

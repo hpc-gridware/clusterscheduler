@@ -223,6 +223,8 @@ sge_setup_qmaster(char *anArgv[]) {
  * structures do contain reasonable values.
  *
  * @param switch_to_admin_user become admin user if set to true
+ * @param prog_id see the brief above
+ * @param thread_id see the brief above
  *
  * @return success
  *

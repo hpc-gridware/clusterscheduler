@@ -306,6 +306,7 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
  * @param anAnswer answer list
  * @param aUser target user
  * @param aHost target host
+ * @param gdi_session the session the change belongs to
  *
  * @return 0 success -1 error
  *

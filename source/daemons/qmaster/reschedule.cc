@@ -200,6 +200,10 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
  * @param force force the rescheduling of certain jobs (boolean)
  * @param answer answer list (AN_Type)
  * @param is_manual indicator for manual (e.g. 'qmod -rj') or automatic (e.g. execd goes down) rescheduling.
+ * @param monitor for monitoring qmaster threads
+ * @param caller_user the requesting user
+ * @param caller_host the requesting host
+ * @param gdi_session the session the change belongs to
  *
  * @return 0 on success; 1 if one of the parameters was invalid
  */
@@ -265,6 +269,10 @@ reschedule_jobs(lListElem *ep, uint32_t force, lList **answer, monitoring_t *mon
  * @param force force rescheduling (boolean)
  * @param answer answer list (AN_Type)
  * @param is_manual indicator for manual (e.g. 'qmod -rj') or automatic (e.g. execd goes down) rescheduling
+ * @param monitor for monitoring qmaster threads
+ * @param caller_user the requesting user
+ * @param caller_host the requesting host
+ * @param gdi_session the session the change belongs to
  *
  * @return 0 on success
  */
@@ -600,6 +608,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
  * @param job_number job id
  * @param task_number task id
  * @param state state
+ * @param gdi_session the session the change belongs to
  *
  * @return point to the element added into the reschedule_unknown_list (RU_Type)
  */
@@ -657,6 +666,7 @@ get_from_reschedule_unknown_list(const lListElem *host, uint32_t job_number, uin
  * Removes an entry of the reschedule_unknown_list of a host.
  *
  * @param host host (EH_Type)
+ * @param gdi_session the session the change belongs to
  */
 void
 delete_from_reschedule_unknown_list(lListElem *host, uint64_t gdi_session) {
@@ -704,6 +714,7 @@ delete_from_reschedule_unknown_list(lListElem *host, uint64_t gdi_session) {
  * master and a execution daemon for a job/task.
  *
  * @param host host (EH_Type)
+ * @param gdi_session the session the change belongs to
  */
 void
 update_reschedule_unknown_list(lListElem *host, uint64_t gdi_session) {

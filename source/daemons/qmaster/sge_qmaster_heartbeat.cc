@@ -90,6 +90,7 @@ heartbeat_initialize()
  * Update qmaster heartbeat file.
  *
  * @param anEvent heartbeat event
+ * @param monitor for monitoring qmaster threads
  *
  * @note MT-NOTE: increment_hearbeat() is NOT MT safe. This function is only
  *       MT-NOTE: invoked from within the event delivery thread.

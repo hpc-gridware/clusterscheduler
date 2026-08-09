@@ -3105,6 +3105,7 @@ int job_verify_predecessors(lListElem *job, lList **alpp) {
  *
  * @param job JB_Type element (JB_job_number may be 0 if not yet know (at submit time)
  * @param alpp the answer list
+ * @param gdi_session the session the change belongs to
  *
  * @return returns != 0 if there is a problem with predecessors
  */
@@ -3717,6 +3718,7 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp,
  *
  * @param jobid job id (needed for Dtrace only)
  * @param jep the job
+ * @param answer_list receives messages for the caller
  *
  * @return true on success
  *
@@ -3747,6 +3749,7 @@ bool spool_write_script(lList **answer_list, uint32_t jobid, const lListElem *je
  *
  * @param jobid job id (needed for Dtrace only)
  * @param jep the job
+ * @param answer_list receives messages for the caller
  *
  * @return true on success
  *
@@ -3786,6 +3789,7 @@ bool spool_read_script(lList **answer_list, uint32_t jobid, lListElem *jep) {
  *
  * @param jobid job id (needed for Dtrace only)
  * @param jep the job
+ * @param answer_list receives messages for the caller
  *
  * @return true on success
  *
@@ -4205,6 +4209,7 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
  * @param alpp answer list to pass back error messages
  * @param user job owner / job submitter
  * @param group job owners group
+ * @param grp_list see the brief above
  *
  * @return STATUS_OK on success, else STATUS_* error code
  *

@@ -167,6 +167,7 @@ reporting_shutdown(lList **answer_list, bool do_spool) {
  * @brief Process timed event
  *
  * @param anEvent timed event
+ * @param monitor for monitoring qmaster threads
  *
  * @note MT-NOTE: reporting_trigger_handler() is MT safe.
  *

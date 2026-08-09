@@ -153,6 +153,7 @@ status2str(uint32_t status) {
  * @param commproc the commproc name
  * @param pb pack buffer for sending answers (ACK)
  * @param monitor monitor
+ * @param gdi_session the session the change belongs to
  *
  * @note MT-NOTE: process_job_report() is MT safe
  */
