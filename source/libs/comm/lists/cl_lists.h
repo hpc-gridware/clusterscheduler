@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Umbrella header pulling in every commlib list type
+ */
+
 /* this is the main header file for lib ngclists */
 #include <pthread.h>
 

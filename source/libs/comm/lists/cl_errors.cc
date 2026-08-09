@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The commlib return codes and their texts
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>

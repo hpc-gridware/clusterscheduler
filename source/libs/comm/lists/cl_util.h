@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Small helpers: number widths and hex conversion
+ */
+
 /*  #define std::numeric_limits<uint32_t>::max() 4294967295UL */
 
 #include <cinttypes>

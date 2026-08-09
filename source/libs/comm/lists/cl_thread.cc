@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The commlib's thread wrapper
+ */
+
 #include <cstdio>
 #include <cerrno>
 #include <cstring>
@@ -45,6 +49,12 @@
 #include "comm/lists/cl_lists.h"
 
 
+/** @def CL_DO_THREAD_DEBUG
+ * @brief Log every wait, trigger and cancel test of every thread
+ *
+ * Off by default; the traffic it produces is only useful when chasing a
+ * thread that will not wake up or will not die.
+ */
 #define CL_DO_THREAD_DEBUG 0
 
 
@@ -55,6 +65,10 @@ static int global_thread_config_key_done = 0;
 
 static int cl_thread_set_default_cancel_method();
 
+/** @brief Allocate a condition variable with its mutex and counter
+ * @param condition receives the new condition; must point at a nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_thread_create_thread_condition(cl_thread_condition_t **condition) {
    cl_thread_condition_t *new_condition = nullptr;
    int ret_val;
@@ -135,6 +149,10 @@ int cl_thread_create_thread_condition(cl_thread_condition_t **condition) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Free a condition variable and set the pointer to nullptr
+ * @param condition the condition to free
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_thread_delete_thread_condition(cl_thread_condition_t **condition) {
    int ret_val;
    if (condition == nullptr) {
@@ -182,6 +200,17 @@ int cl_thread_delete_thread_condition(cl_thread_condition_t **condition) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Sleep on a condition until it is triggered or the time runs out
+ *
+ * Returns at once when triggers are already pending, so a wake-up that
+ * arrives before the wait is not lost.
+ *
+ * @param condition the condition to sleep on
+ * @param sec seconds to wait at most
+ * @param micro_sec microseconds to add to that
+ * @return #CL_RETVAL_OK when triggered, #CL_RETVAL_CONDITION_WAIT_TIMEOUT
+ *         when the time ran out, else a `CL_RETVAL_*` code
+ */
 int cl_thread_wait_for_thread_condition(cl_thread_condition_t *condition, long sec, long micro_sec) {
    int ret_val = CL_RETVAL_OK;
 
@@ -264,6 +293,10 @@ int cl_thread_wait_for_thread_condition(cl_thread_condition_t *condition, long s
    return ret_val;
 }
 
+/** @brief Throw away the pending triggers of a condition
+ * @param condition the condition to clear
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_thread_clear_triggered_conditions(cl_thread_condition_t *condition) {
    if (condition == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -285,6 +318,11 @@ int cl_thread_clear_triggered_conditions(cl_thread_condition_t *condition) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Wake a thread sleeping on a condition
+ * @param condition the condition to trigger
+ * @param do_broadcast wake every waiter rather than one
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_thread_trigger_thread_condition(cl_thread_condition_t *condition, int do_broadcast) {
    int ret_val = CL_RETVAL_OK;
 
@@ -328,6 +366,10 @@ int cl_thread_trigger_thread_condition(cl_thread_condition_t *condition, int do_
    return ret_val;
 }
 
+/** @brief Release the thread specific key that carries the thread settings
+ *
+ * Called once at process shutdown, after every thread is gone.
+ */
 void cl_thread_cleanup_global_thread_config_key() {
    pthread_mutex_lock(&global_thread_config_key_mutex);
    if (global_thread_config_key_done == 1) {
@@ -340,6 +382,24 @@ void cl_thread_cleanup_global_thread_config_key() {
 
 /* if no start_routine is given (=nullptr) the cl_thread_settings_t struct is
    filled, but no thread is started */
+/** @brief Create a thread and wait until it has started
+ *
+ * Fills `thread_config`, creates the pthread and blocks on the startup
+ * condition until the new thread calls #cl_thread_func_startup - so a
+ * successful return means the thread is really running, not merely created.
+ *
+ * @param thread_config receives the settings; allocated by the caller
+ * @param log_list the log list the thread appends to, may be nullptr
+ * @param name name of the thread
+ * @param id id of the thread
+ * @param start_routine the thread's main function
+ * @param cleanup_func called when the thread ends, may be nullptr
+ * @param user_data free for the thread's own use
+ * @param thread_type what kind of thread this is
+ * @return #CL_RETVAL_OK when the thread is up,
+ *         #CL_RETVAL_THREAD_START_TIMEOUT when it never signalled, else a
+ *         `CL_RETVAL_*` code
+ */
 int cl_thread_setup(cl_thread_settings_t *thread_config,
                     cl_raw_list_t *log_list,
                     const char *name,
@@ -429,6 +489,10 @@ int cl_thread_setup(cl_thread_settings_t *thread_config,
    return CL_RETVAL_OK;
 }
 
+/** @brief Wait for a thread to end
+ * @param thread_config the thread's settings
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_thread_join(cl_thread_settings_t *thread_config) {
 
    if (thread_config == nullptr) {
@@ -447,6 +511,14 @@ int cl_thread_join(cl_thread_settings_t *thread_config) {
    return CL_RETVAL_OK;
 }
 
+/** @brief The settings of the calling thread
+ *
+ * Read from the thread specific key, so a thread can find itself without
+ * being passed anything.
+ *
+ * @return the settings, or nullptr when called from a thread that was not
+ *         set up through this module
+ */
 cl_thread_settings_t *cl_thread_get_thread_config() {
    /* cl_thread_setup  will set the thread specific data */
    cl_thread_settings_t *settings = nullptr;
@@ -458,6 +530,10 @@ cl_thread_settings_t *cl_thread_get_thread_config() {
    return settings;
 }
 
+/** @brief Release what #cl_thread_setup allocated
+ * @param thread_config the thread's settings
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_thread_cleanup(cl_thread_settings_t *thread_config) {
    /* free all malloc()'ed pointers in cl_thread_settings_t structure */
    int ret_val;
@@ -503,6 +579,14 @@ int cl_thread_cleanup(cl_thread_settings_t *thread_config) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Ask a thread to end
+ *
+ * Cancels the thread and wakes it, so that a thread sleeping in
+ * #cl_thread_wait_for_event notices at its next cancel test.
+ *
+ * @param thread_config the thread's settings
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_thread_shutdown(cl_thread_settings_t *thread_config) {
    int ret_val;
 
@@ -522,6 +606,13 @@ int cl_thread_shutdown(cl_thread_settings_t *thread_config) {
    }
 }
 
+/** @brief Sleep until this thread is triggered or the time runs out
+ * @param thread_config the thread's settings
+ * @param sec seconds to wait at most
+ * @param micro_sec microseconds to add to that
+ * @return #CL_RETVAL_OK when triggered, #CL_RETVAL_CONDITION_WAIT_TIMEOUT
+ *         when the time ran out, else a `CL_RETVAL_*` code
+ */
 int cl_thread_wait_for_event(cl_thread_settings_t *thread_config, long sec, long micro_sec) {
 
    int ret = CL_RETVAL_OK;
@@ -548,6 +639,11 @@ int cl_thread_wait_for_event(cl_thread_settings_t *thread_config, long sec, long
    return ret;
 }
 
+/** @brief The one letter state of a thread
+ * @param thread_config the thread's settings
+ * @return the letter, see #cl_thread_convert_state_id, or a message when
+ *         `thread_config` is nullptr
+ */
 const char *cl_thread_get_state(cl_thread_settings_t *thread_config) {
 
    if (thread_config == nullptr) {
@@ -557,6 +653,14 @@ const char *cl_thread_get_state(cl_thread_settings_t *thread_config) {
    return cl_thread_convert_state_id(thread_config->thread_state);
 }
 
+/** @brief Turn a thread state into the letter that is shown for it
+ *
+ * These letters are what `qping -info` prints in its thread listing.
+ *
+ * @param thread_state one of the `CL_THREAD_*` states
+ * @return `"r"` running, `"w"` waiting, `"d"` exited, `"s"` starting,
+ *         `"c"` cancelled, `"m"` the main thread, `"?"` anything else
+ */
 const char *cl_thread_convert_state_id(int thread_state) {
 
 
@@ -578,6 +682,10 @@ const char *cl_thread_convert_state_id(int thread_state) {
    }
 }
 
+/** @brief Throw away the events queued for this thread
+ * @param thread_config the thread's settings
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_thread_clear_events(cl_thread_settings_t *thread_config) {
    if (thread_config == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -585,6 +693,10 @@ int cl_thread_clear_events(cl_thread_settings_t *thread_config) {
    return cl_thread_clear_triggered_conditions(thread_config->thread_event_condition);
 }
 
+/** @brief Wake this thread out of #cl_thread_wait_for_event
+ * @param thread_config the thread's settings
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_thread_trigger_event(cl_thread_settings_t *thread_config) {
    int ret_val;
    if (thread_config == nullptr) {
@@ -598,6 +710,14 @@ int cl_thread_trigger_event(cl_thread_settings_t *thread_config) {
    return ret_val;
 }
 
+/** @brief Let the thread be cancelled here, if a cancel is pending
+ *
+ * A thread that never calls this cannot be shut down: #cl_thread_shutdown
+ * only marks it, and the mark takes effect at the next cancellation point.
+ *
+ * @param thread_config the thread's settings
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_thread_func_testcancel(cl_thread_settings_t *thread_config) {
    if (thread_config == nullptr) {
       return CL_RETVAL_THREAD_CANCELSTATE_ERROR;
@@ -644,6 +764,14 @@ static int cl_thread_set_default_cancel_method() {
    return CL_RETVAL_OK;
 }
 
+/** @brief Announce that the thread is up
+ *
+ * Signals the startup condition #cl_thread_setup is blocked on. Must be the
+ * first thing a thread main function does after its initialisation.
+ *
+ * @param thread_config the thread's settings
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_thread_func_startup(cl_thread_settings_t *thread_config) {
    int ret_val = CL_RETVAL_OK;
    if (thread_config == nullptr) {
@@ -667,6 +795,10 @@ int cl_thread_func_startup(cl_thread_settings_t *thread_config) {
    return ret_val;
 }
 
+/** @brief Make these settings the calling thread's own
+ * @param thread_config the settings to store
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_thread_set_thread_config(cl_thread_settings_t *thread_config) {
 
    cl_thread_set_default_cancel_method();
@@ -684,6 +816,9 @@ int cl_thread_set_thread_config(cl_thread_settings_t *thread_config) {
    return CL_RETVAL_NOT_THREAD_SPECIFIC_INIT;
 }
 
+/** @brief Forget the calling thread's settings
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_thread_unset_thread_config() {
 
    pthread_mutex_lock(&global_thread_config_key_mutex);
@@ -699,6 +834,10 @@ int cl_thread_unset_thread_config() {
    return CL_RETVAL_NOT_THREAD_SPECIFIC_INIT;
 }
 
+/** @brief Announce that the thread is about to end
+ * @param thread_config the thread's settings
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_thread_func_cleanup(cl_thread_settings_t *thread_config) {
    if (thread_config == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -709,6 +848,13 @@ int cl_thread_func_cleanup(cl_thread_settings_t *thread_config) {
    return CL_RETVAL_OK;
 }
 
+/** @brief The cleanup handler a thread main function pushes
+ *
+ * Runs whether the thread returns or is cancelled, which is what keeps the
+ * state correct in the cancelled case.
+ *
+ * @param thread_config the thread's settings
+ */
 void cl_thread_default_cleanup_function(cl_thread_settings_t *thread_config) {
    if (thread_config != nullptr) {
       thread_config->thread_state = CL_THREAD_CANCELED;

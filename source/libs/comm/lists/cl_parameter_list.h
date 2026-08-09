@@ -33,12 +33,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief A commlib list of name/value parameters
+ */
+
 #include "comm/lists/cl_lists.h"
 
+/** @brief One name/value pair in a parameter list */
 typedef struct cl_parameter_list_elem_t {
-   char *parameter;     /* data */
-   char *value;         /* data */
-   cl_raw_list_elem_t *raw_elem;
+   char *parameter;                ///< The name, owned by the list
+   char *value;                    ///< The value, owned by the list
+   cl_raw_list_elem_t *raw_elem;   ///< Back pointer into the raw list
 } cl_parameter_list_elem_t;
 
 

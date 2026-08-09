@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Small helpers: number widths and hex conversion
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -41,24 +45,40 @@
 #include "comm/lists/cl_util.h"
 #include "comm/lists/cl_errors.h"
 
+/** @brief How many characters the decimal form of a number needs
+ * @param id the number
+ * @return the number of characters
+ */
 int cl_util_get_ulong_number_length(unsigned long id) {
    char help[512];
    snprintf(help, 512, "%lu", id);
    return (int) strlen(help);
 }
 
+/** @brief How many characters the decimal form of a number needs
+ * @param id the number
+ * @return the number of characters
+ */
 int cl_util_get_int_number_length(int id) {
    char help[512];
    snprintf(help, 512, "%d", id);
    return (int) strlen(help);
 }
 
+/** @brief How many characters the decimal form of a number needs
+ * @param id the number
+ * @return the number of characters
+ */
 int cl_util_get_double_number_length(double id) {
    char help[512];
    snprintf(help, 512, "%f", id);
    return (int) strlen(help);
 }
 
+/** @brief Parse an unsigned number out of a string
+ * @param text the text to parse
+ * @return the value, 0 when the text does not parse
+ */
 unsigned long cl_util_get_ulong_value(const char *text) {
    unsigned long value = 0;
    if (text != nullptr) {
@@ -67,6 +87,16 @@ unsigned long cl_util_get_ulong_value(const char *text) {
    return value;
 }
 
+/** @brief Render a byte buffer as hex text
+ *
+ * Used to get binary message content into the log, which is line based.
+ *
+ * @param buffer the bytes
+ * @param buf_len how many
+ * @param ascii_buffer receives the text, which the caller frees
+ * @param separator put between two bytes, may be nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_util_get_ascii_hex_buffer(unsigned char *buffer, unsigned long buf_len, char **ascii_buffer, char *separator) {
    char *asc_buffer = nullptr;
    unsigned long asc_buffer_size = 0;
@@ -110,6 +140,12 @@ int cl_util_get_ascii_hex_buffer(unsigned char *buffer, unsigned long buf_len, c
    return CL_RETVAL_OK;
 }
 
+/** @brief Turn hex text back into bytes
+ * @param hex_buffer the text
+ * @param buffer receives the bytes, which the caller frees
+ * @param buffer_lenght receives how many
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_util_get_binary_buffer(char *hex_buffer, unsigned char **buffer, unsigned long *buffer_lenght) {
    unsigned char *bin_buffer = nullptr;
    unsigned long bin_buffer_len = 0;
@@ -154,6 +190,10 @@ int cl_util_get_binary_buffer(char *hex_buffer, unsigned char **buffer, unsigned
    return CL_RETVAL_OK;
 }
 
+/** @brief The value of a hex digit
+ * @param hex_char the digit
+ * @return the value, or -1 when the character is not a hex digit
+ */
 int cl_util_get_hex_value(char hex_char) {
    int ret_val;
    switch (hex_char) {
@@ -217,6 +257,10 @@ int cl_util_get_hex_value(char hex_char) {
    return ret_val;
 }
 
+/** @brief The hex digit for a nibble value
+ * @param value the value, 0 to 15
+ * @return the digit
+ */
 char cl_util_get_ascii_hex_char(unsigned char value) {
    char ret_val;
    switch (value) {

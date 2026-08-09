@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Message catalogue of the commlib list library
+ */
+
 #include <cinttypes>
 
 #include <basis_types.h>

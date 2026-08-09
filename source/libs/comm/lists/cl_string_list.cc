@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief A commlib list of strings
+ */
+
 #include <cstdio>
 #include <cerrno>
 #include <cstring>
@@ -41,12 +45,21 @@
 
 #include "comm/lists/cl_string_list.h"
 
+/** @brief Create a string list
+ * @param list_p receives the new list
+ * @param list_name name for log messages
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_string_list_setup(cl_raw_list_t **list_p, const char *list_name) {
    int ret_val = CL_RETVAL_OK;
    ret_val = cl_raw_list_setup(list_p, list_name, 1);
    return ret_val;
 }
 
+/** @brief Free a string list and everything in it
+ * @param list_p the list, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_string_list_cleanup(cl_raw_list_t **list_p) {
    cl_string_list_elem_t *elem = nullptr;
    if (list_p == nullptr) {
@@ -69,6 +82,13 @@ int cl_string_list_cleanup(cl_raw_list_t **list_p) {
    return cl_raw_list_cleanup(list_p);
 }
 
+/** @brief Append a copy of a string
+ * @param list_p the list
+ * @param string the string to copy in
+ * @param lock_list take the list lock; pass 0 when the caller already
+ *                  holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_string_list_append_string(cl_raw_list_t *list_p, char *string, int lock_list) {
 
    int ret_val;
@@ -121,6 +141,13 @@ int cl_string_list_append_string(cl_raw_list_t *list_p, char *string, int lock_l
    return CL_RETVAL_OK;
 }
 
+/** @brief Remove the first element holding an equal string
+ * @param list_p the list
+ * @param string the string to look for, compared by value
+ * @param lock_list take the list lock; pass 0 when the caller already
+ *                  holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_string_list_remove_string(cl_raw_list_t *list_p, char *string, int lock_list) {
    int ret_val = CL_RETVAL_OK;
    int function_return = CL_RETVAL_UNKNOWN_HOST_ERROR;
@@ -160,6 +187,10 @@ int cl_string_list_remove_string(cl_raw_list_t *list_p, char *string, int lock_l
    return function_return;
 }
 
+/** @brief The first element
+ * @param list_p the list
+ * @return the element, or nullptr
+ */
 cl_string_list_elem_t *cl_string_list_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -168,6 +199,10 @@ cl_string_list_elem_t *cl_string_list_get_first_elem(cl_raw_list_t *list_p) {
    return nullptr;
 }
 
+/** @brief The last element
+ * @param list_p the list
+ * @return the element, or nullptr
+ */
 cl_string_list_elem_t *cl_string_list_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
    if (raw_elem) {
@@ -176,6 +211,10 @@ cl_string_list_elem_t *cl_string_list_get_least_elem(cl_raw_list_t *list_p) {
    return nullptr;
 }
 
+/** @brief The element after this one
+ * @param elem the current element
+ * @return the next element, or nullptr at the end
+ */
 cl_string_list_elem_t *cl_string_list_get_next_elem(cl_string_list_elem_t *elem) {
    cl_raw_list_elem_t *next_raw_elem = nullptr;
 
@@ -190,6 +229,10 @@ cl_string_list_elem_t *cl_string_list_get_next_elem(cl_string_list_elem_t *elem)
 }
 
 
+/** @brief The element before this one
+ * @param elem the current element
+ * @return the previous element, or nullptr at the start
+ */
 cl_string_list_elem_t *cl_string_list_get_last_elem(cl_string_list_elem_t *elem) {
    cl_raw_list_elem_t *last_raw_elem = nullptr;
 
