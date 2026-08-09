@@ -124,7 +124,14 @@ EXCLUDE_PATTERNS       = */._* \
                          */com_sun_grid_drmaa_SessionImpl.h \
                          */jdrmaa/*.java \
                          */source/security/gss/* \
-                         */source/security/krb/*
+                         */source/security/krb/* \
+                         */dump_cull_schema/cJSON.*
+
+# cJSON is vendored third-party (Dave Gamble and contributors, MIT), checked in
+# rather than fetched, and carries its own upstream documentation. Same reason
+# the generated flex scanner above is excluded: it is not ours to document, and
+# reformatting its comments would make the next upstream update a manual merge.
+# Decision 2026-08-10.
 
 # main() and usage() exist once per program, with the same signature every time,
 # and doxygen treats same-named file-scope functions across translation units as
