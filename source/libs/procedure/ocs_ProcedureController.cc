@@ -18,12 +18,22 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The MVC framework the CLI commands are built on
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "ocs_ProcedureController.h"
 
 #include <iostream>
 
+/** @brief Render the model data via the view.
+ *
+ * @param parameter  The parsed procedure parameters (used by subclass overrides).
+ * @param model      The model whose data has already been fetched via make_snapshot().
+ * @param view       The view that writes formatted output to out_.
+ */
 void ocs::ProcedureController::process_request(ProcedureParameter &parameter, ProcedureModel &model, ProcedureView &view) {
    DENTER(TOP_LAYER);
    view.show(out_, model.get_output_text());

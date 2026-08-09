@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Client side model of `qstat`: fetches the lists over GDI
+ */
+
 
 #include "cull/cull_list.h"
 

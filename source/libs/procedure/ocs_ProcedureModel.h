@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base of the models: fetching or computing what a command reports
+ */
+
 #include "cull/cull.h"
 
 #include "ocs_ProcedureParameter.h"
@@ -45,27 +49,18 @@ namespace ocs {
       lList *procedure_response = nullptr; ///< CULL list received from qmaster; owned by this object.
 
    public:
-      /** @brief Return the pre-rendered output text received from qmaster.
-       *
-       * Returns an empty string if the response list is absent or malformed.
-       * The returned pointer is valid for the lifetime of this object.
-       */
       [[nodiscard]] const char *get_output_text() const;
+
+      /** @brief Write what the model holds to the log
+       *
+       * Does nothing in the base; a subclass overrides it to dump its own
+       * lists when tracing is on.
+       */
       virtual void log_details() const {};
 #pragma endregion
 
 #pragma region Data Retrieval
    public:
-      /** @brief Send the procedure request to qmaster and store the response.
-       *
-       * Serialises @p parameter into a CULL bundle, issues a GDI GET_PROCEDURE
-       * request, and stores the resulting response list.  On success the rendered
-       * output is accessible via get_output_text().
-       *
-       * @param answer_list  Receives error messages on failure.
-       * @param parameter    The parsed procedure parameters to send.
-       * @return true on success, false if the GDI call returned an error.
-       */
       virtual bool make_snapshot(lList **answer_list, ProcedureParameter &parameter);
 #pragma endregion
 

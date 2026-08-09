@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Plain text rendering of `qhost`
+ */
+
 #include <ostream>
 
 #include <basis_types.h>
@@ -27,9 +31,20 @@
 #include "ocs_QHostParameter.h"
 
 namespace ocs {
+   /** @brief Renders `qhost` output as the columnar plain text a terminal expects
+    *
+    * The `_start` and `_end` hooks are largely no-ops - plain text has no
+    * brackets - and the `_value` hooks apply the caller's printf format so the
+    * columns line up.
+    *
+    * @ingroup libprocedure
+    */
    class QHostViewPlain : public QHostViewBase {
-      bool print_host_header = true;
+      bool print_host_header = true;   ///< Whether the host table still needs its header line
    public:
+      /** @brief Build the plain text view
+       * @param parameter the call's parameters
+       */
       explicit QHostViewPlain(const QHostParameter &parameter) : QHostViewBase(parameter) {}
       ~QHostViewPlain() override = default;
 

@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base model of `qquota`: the lists the report is built from
+ */
+
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge.h"
 
@@ -41,11 +45,25 @@ ocs::QQuotaModelBase::~QQuotaModelBase() {
    DRETURN_VOID;
 }
 
+/** @brief Fetch raw CULL lists into the member variables.
+ *
+ * Overridden by QQuotaModelClient (GDI calls) and QQuotaModelServer (master lists).
+ *
+ * @param answer_list receives error messages
+ * @param host_list the hosts the user asked for; all hosts when empty
+ * @return true when everything could be fetched
+ */
 bool ocs::QQuotaModelBase::fetch_data(lList **answer_list, const lList *host_list) {
    // Nothing to do here. Implemented in child classes.
    return true;
 }
 
+/** @brief Run the full pipeline: fetch_data, then hand off to the view.
+ *
+ * @param answer_list  Receives error messages on failure.
+ * @param parameter    Parsed qquota parameters.
+ * @return true if fetch_data succeeded.
+ */
 bool ocs::QQuotaModelBase::make_snapshot(lList **answer_list, QQuotaParameter &parameter) {
    DENTER(TOP_LAYER);
 
@@ -56,26 +74,45 @@ bool ocs::QQuotaModelBase::make_snapshot(lList **answer_list, QQuotaParameter &p
    DRETURN(true);
 }
 
+/** @brief The resource quota set fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QQuotaModelBase::get_rqs_what() {
    return lWhat("%T(ALL)", RQS_Type);
 }
 
+/** @brief The complex entry fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QQuotaModelBase::get_centry_what() {
    return lWhat("%T(ALL)", CE_Type);
 }
 
+/** @brief The user set fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QQuotaModelBase::get_user_set_what() {
    return lWhat("%T(ALL)", US_Type);
 }
 
+/** @brief The host group fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QQuotaModelBase::get_hgroup_what() {
    return lWhat("%T(ALL)", HGRP_Type);
 }
 
+/** @brief The execution host fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QQuotaModelBase::get_host_what() {
    return lWhat("%T(%I %I %I %I)", EH_Type, EH_name, EH_load_list, EH_consumable_config_list, EH_resource_utilization);
 }
 
+/** @brief Build the CULL condition selecting the hosts to fetch
+ * @param host_list the hosts the user asked for; all hosts when empty
+ * @return the condition, which the caller owns
+ */
 lCondition *ocs::QQuotaModelBase::get_host_where(const lList *host_list) {
    lCondition *where = nullptr;
 

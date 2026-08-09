@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Server side model of `qhost`: reads the lists inside qmaster
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/ocs_DataStore.h"

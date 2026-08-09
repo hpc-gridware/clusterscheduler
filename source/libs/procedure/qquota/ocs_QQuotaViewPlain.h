@@ -19,21 +19,34 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Plain text rendering of `qquota`
+ */
+
 #include <sstream>
 
 #include "ocs_QQuotaParameterClient.h"
 #include "ocs_QQuotaViewBase.h"
 
+/** @brief Column layout of the plain text report: rule, limit, filters */
 #define HEAD_FORMAT "%-18s %-20.20s %s\n"
 
 namespace ocs {
+   /** @brief Renders the `qquota` report as the columnar plain text a terminal expects
+    *
+    * The filters of a rule are collected in #filter_stream rather than written
+    * as they arrive, because plain text puts them all in one column at the end
+    * of the line while the hooks deliver them one at a time.
+    *
+    * @ingroup libprocedure
+    */
    class QQuotaViewPlain : public QQuotaViewBase {
-      bool print_header = true;
-      std::ostringstream filter_stream{};
-      bool last_exclude = false;
-      std::string last_name = std::string();
-      bool first_filter_type = true;
-      bool filter_type_changed = true;
+      bool print_header = true;                 ///< Whether the table still needs its header line
+      std::ostringstream filter_stream{};       ///< The filters of the current rule, until the line is written
+      bool last_exclude = false;                ///< Whether the previous filter value was an exclusion
+      std::string last_name = std::string();    ///< The previous filter's name, to group values of one filter
+      bool first_filter_type = true;            ///< Whether no filter has been written for this rule yet
+      bool filter_type_changed = true;          ///< Whether the current value belongs to a different filter than the last
    public:
       explicit QQuotaViewPlain(const QQuotaParameter &parameter);
       ~QQuotaViewPlain() override;

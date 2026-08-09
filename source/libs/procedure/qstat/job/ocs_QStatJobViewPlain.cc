@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Plain text rendering of `qstat -j`
+ */
+
 #include <sstream>
 #include <string>
 #include <format>
@@ -58,6 +62,12 @@
 #include "sgeobj/ocs_BindingType.h"
 #include "sgeobj/cull/sge_binding_BN_L.h"
 
+/** @brief Write a list of complex entries as `name=value` pairs
+ * @param os stream to write to
+ * @param cel the complex entries
+ * @param indent leading whitespace for a continuation line
+ * @param separator what goes between two entries
+ */
 void ocs::QStatJobViewPlain::show_ce_type_list(std::ostream &os, const lList *cel, const char *indent,
                                                const char *separator) {
    DENTER(TOP_LAYER);
@@ -81,6 +91,16 @@ void ocs::QStatJobViewPlain::show_ce_type_list(std::ostream &os, const lList *ce
    DRETURN_VOID;
 }
 
+/** @brief Report one job in plain text without going through a view object
+ *
+ * Kept for the callers that have a job and a stream but no view - `qalter -w v`
+ * and the job verification path.
+ *
+ * @param os stream to write to
+ * @param ilp the scheduler job info list, holding the reasons a job is not running
+ * @param job the job (`JB_Type`)
+ * @param flags which parts of the listing were requested
+ */
 void ocs::QStatJobViewPlain::cull_show_job(std::ostream &os, const lList *ilp, const lListElem *job, const int flags) {
    // create dummy params and view so that we can call virtual methods in this static function
    const ProcedureParameter parameter("", nullptr);

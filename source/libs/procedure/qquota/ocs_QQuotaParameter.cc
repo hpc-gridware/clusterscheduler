@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Parameters of `qquota`: what the call was asked to report
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_ulong.h"
@@ -38,6 +42,10 @@ ocs::QQuotaParameter::~QQuotaParameter() {
    DRETURN_VOID;
 }
 
+/** @brief Build the parameters on the server, from a received bundle
+ * @param bundle the marshalled parameters
+ * @param packet the originating client packet
+ */
 ocs::QQuotaParameter::QQuotaParameter(lList *bundle, gdi::Packet *packet) : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 

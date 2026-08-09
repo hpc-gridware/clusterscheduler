@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base model of `qstat`: the lists the report is built from
+ */
+
 #include <cerrno>
 #include <fnmatch.h>
 #include <limits>
@@ -141,6 +145,13 @@ void ocs::QStatModelBase::apply_state_filter(QStatParameter &parameter) {
    DRETURN_VOID;
 }
 
+/** @brief Work out how wide the queue name column has to be
+ *
+ * The plain text listing sizes that column to the longest name actually
+ * reported, so it can only be decided once the lists are filtered.
+ *
+ * @param parameter the parsed parameters, which receive the width
+ */
 void ocs::QStatModelBase::calc_longest_queue_length(QStatParameter &parameter) const {
    const char *env = parameter.get_variable("SGE_LONG_QNAMES");
    if (env == nullptr) {
@@ -368,6 +379,14 @@ ocs::QStatModelBase::get_sub_ja_task_filter(const QStatParameter &parameter) {
    return what_JAT_Type_list;
 }
 
+/** @brief The job fields the report needs
+ *
+ * Which fields those are depends on the parameters - the extra priority
+ * and usage columns are only fetched when they are going to be printed.
+ *
+ * @param parameter the parsed parameters
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *
 ocs::QStatModelBase::get_job_what(const QStatParameter &parameter) {
    DENTER(TOP_LAYER);
@@ -390,6 +409,10 @@ ocs::QStatModelBase::get_job_what(const QStatParameter &parameter) {
    DRETURN(job_what);
 }
 
+/** @brief Build the CULL condition selecting the jobs to report
+ * @param parameter the parsed parameters, holding the user and state filters
+ * @return the condition, which the caller owns
+ */
 lCondition *
 ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
    DENTER(TOP_LAYER);
@@ -626,54 +649,94 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
    DRETURN(jw);
 }
 
+/** @brief The queue instance fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QStatModelBase::get_queue_what() {
    return lWhat("%T(ALL)", CQ_Type);
 }
 
+/** @brief The complex entry fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QStatModelBase::get_centry_what() {
    return lWhat("%T(ALL)", CE_Type);
 }
 
+/** @brief Build the CULL condition selecting the execution hosts to fetch
+ * @return the condition, which the caller owns
+ */
 lCondition *ocs::QStatModelBase::get_ehost_where() {
    return lWhere("%T(%I!=%s)", EH_Type, EH_name, SGE_TEMPLATE_NAME);
 }
 
+/** @brief The execution host fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QStatModelBase::get_ehost_what() {
    return lWhat("%T(ALL)", EH_Type);
 }
 
+/** @brief The parallel environment fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QStatModelBase::get_pe_what() {
    return lWhat("%T(%I%I%I%I%I)", PE_Type, PE_name, PE_slots, PE_job_is_first_task, PE_control_slaves, PE_urgency_slots);
 }
 
+/** @brief The checkpointing environment fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QStatModelBase::get_ckpt_what() {
    return lWhat("%T(%I)", CK_Type, CK_name);
 }
 
+/** @brief The user set fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QStatModelBase::get_uset_what() {
    return lWhat("%T(ALL)", US_Type);
 }
 
+/** @brief The project fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QStatModelBase::get_prj_what() {
    return lWhat("%T(ALL)", PR_Type);
 }
 
+/** @brief The scheduler configuration fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QStatModelBase::get_sconf_what() {
    return lWhat("%T(ALL)", SC_Type);
 }
 
+/** @brief The host group fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QStatModelBase::get_hgrp_what() {
    return lWhat("%T(ALL)", HGRP_Type);
 }
 
+/** @brief Build the CULL condition selecting the configuration entries to fetch
+ * @return the condition, which the caller owns
+ */
 lCondition *ocs::QStatModelBase::get_conf_where() {
    return lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
 }
 
+/** @brief The configuration fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QStatModelBase::get_conf_what() {
    return lWhat("%T(ALL)", CONF_Type);
 }
 
+/** @brief Build the CULL condition selecting the jobs of a `qstat -j` call
+ * @param job_view_list the jobs the user named, by number or pattern
+ * @return the condition, which the caller owns
+ */
 lCondition *ocs::QStatModelBase::get_job_view_where(const lList *job_view_list) {
    lCondition *where = nullptr;
 
@@ -705,10 +768,16 @@ lCondition *ocs::QStatModelBase::get_job_view_where(const lList *job_view_list) 
    }
    return where;
 }
+/** @brief The scheduler job info fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QStatModelBase::get_sme_what() {
    return lWhat("%T(ALL)", SME_Type);
 }
 
+/** @brief The `qstat -j` fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QStatModelBase::get_job_view_what() {
    lEnumeration *what = lWhat( "%T(%I%I%I%I"
                                    "%I%I%I%I%I"
@@ -762,17 +831,35 @@ lEnumeration *ocs::QStatModelBase::get_job_view_what() {
    return what;
 }
 
+/** @brief Normalise parameter flags before any data is fetched.
+ *
+ * @param parameter the parsed parameters, adjusted in place
+ */
 void ocs::QStatModelBase::prepare_filter(QStatParameter &parameter) {
    // set the full_listing flags that will influence job/task filters
    apply_state_filter(parameter);
 }
 
+/** @brief Fetch raw CULL lists into the member variables.
+ *
+ * Overridden by QStatModelClient (GDI calls) and QStatModelServer (master lists).
+ *
+ * @param answer_list receives error messages
+ * @param parameter the parsed parameters
+ * @return true when everything could be fetched
+ */
 bool ocs::QStatModelBase::fetch_data(lList **answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
    // has to be overridden by derived class
    DRETURN(true);
 }
 
+/** @brief Post-process fetched lists (e.g. resolve hostgroup references).
+ *
+ * @param answer_list receives error messages
+ * @param parameter the parsed parameters
+ * @return true when the lists could be prepared
+ */
 bool ocs::QStatModelBase::prepare_data(lList **answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
@@ -855,6 +942,13 @@ bool ocs::QStatModelBase::prepare_data(lList **answer_list, QStatParameter &para
       -1 error
 
 */
+/** @brief Tag the queue instances that are in one of the requested states
+ * @param queue_states the states the user asked for
+ * @param exechost_list the execution hosts, for the load values
+ * @param queue_list the queue instances, tagged in place
+ * @param centry_list the complex entries, to interpret the load
+ * @return the number of queue instances that matched
+ */
 int ocs::QStatModelBase::select_by_queue_state(uint32_t queue_states, lList *exechost_list, lList *queue_list, lList *centry_list) {
    DENTER(TOP_LAYER);
 
@@ -902,6 +996,12 @@ int ocs::QStatModelBase::select_by_queue_state(uint32_t queue_states, lList *exe
    DRETURN(0);
 }
 
+/** @brief Tag the queue instances named by the requested queue references
+ * @param cqueue_list the cluster queues, tagged in place
+ * @param hgrp_list the host groups, to resolve `@group` references
+ * @param qref_list the queue references the user gave
+ * @return the number of queue instances that matched
+ */
 int ocs::QStatModelBase::select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qref_list) {
    DENTER(TOP_LAYER);
    int ret = 0;
@@ -962,6 +1062,9 @@ int ocs::QStatModelBase::select_by_qref_list(lList *cqueue_list, const lList *hg
    DRETURN(ret);
 }
 
+/** @brief Drop the jobs the user did not ask about
+ * @param parameter the parsed parameters
+ */
 void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
@@ -1074,6 +1177,11 @@ void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
    DRETURN_VOID;
 }
 
+/** @brief Drop the queue instances the user did not ask about
+ * @param answer_list receives error messages
+ * @param parameter the parsed parameters
+ * @return the number of queue instances that remain
+ */
 int ocs::QStatModelBase::filter_queues(lList **answer_list, const QStatParameter &parameter) const {
    DENTER(TOP_LAYER);
 
@@ -1142,6 +1250,10 @@ int ocs::QStatModelBase::filter_queues(lList **answer_list, const QStatParameter
    DRETURN(1);
 }
 
+/** @brief Whether any queue instance survived the tagging
+ * @param queue_list the queue instances
+ * @return true when at least one is still tagged
+ */
 bool ocs::QStatModelBase::is_cqueue_selected(lList *queue_list) {
    DENTER(TOP_LAYER);
    bool a_cqueue_is_selected = false;
@@ -1176,6 +1288,14 @@ bool ocs::QStatModelBase::is_cqueue_selected(lList *queue_list) {
      -1  error
 
 */
+/** @brief Tag the queue instances that satisfy the requested resources
+ * @param resource_list the resources the user asked for
+ * @param exechost_list the execution hosts
+ * @param queue_list the queue instances, tagged in place
+ * @param centry_list the complex entries
+ * @param empty_qs whether queue instances without the resource still count
+ * @return the number of queue instances that matched
+ */
 int ocs::QStatModelBase::select_by_resource_list(lList *resource_list, lList *exechost_list, lList *queue_list, lList *centry_list, uint32_t empty_qs) {
    DENTER(TOP_LAYER);
 
@@ -1221,6 +1341,12 @@ int ocs::QStatModelBase::select_by_resource_list(lList *resource_list, lList *ex
       -1 error
 
 */
+/** @brief Tag the queue instances that offer one of the requested parallel environments
+ * @param queue_list the queue instances, tagged in place
+ * @param peref_list the parallel environments the user asked for
+ * @param pe_list the configured parallel environments
+ * @return the number of queue instances that matched
+ */
 int ocs::QStatModelBase::select_by_pe_list(lList *queue_list, lList *peref_list, lList *pe_list) {
    DENTER(TOP_LAYER);
    int nqueues = 0;
@@ -1293,6 +1419,14 @@ int ocs::QStatModelBase::select_by_pe_list(lList *queue_list, lList *peref_list,
       -1 error
 
 */
+/** @brief Tag the queue instances the requested users may run in
+ * @param exechost_list the execution hosts
+ * @param cqueue_list the cluster queues, tagged in place
+ * @param queue_user_list the users the user asked about
+ * @param acl_list the access control lists
+ * @param project_list the projects
+ * @return the number of queue instances that matched
+ */
 int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *queue_user_list, lList *acl_list, lList *project_list) {
    DENTER(TOP_LAYER);
    int nqueues = 0;
@@ -1517,6 +1651,12 @@ int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *
    DRETURN(nqueues);
 }
 
+/** @brief Apply user-specified filters (queue state, resource, PE, queue ref …).
+ *
+ * @param alpp receives error messages
+ * @param parameter the parsed parameters
+ * @return true when the filters could be applied
+ */
 bool ocs::QStatModelBase::filter_data(lList **alpp, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
@@ -1535,6 +1675,12 @@ bool ocs::QStatModelBase::filter_data(lList **alpp, QStatParameter &parameter) {
    DRETURN(true);
 }
 
+/** @brief Run the full pipeline: prepare_filter → fetch_data → prepare_data → filter_data.
+ *
+ * @param answer_list  Receives error messages on failure.
+ * @param parameter    Parsed qstat parameters.
+ * @return true if all pipeline steps succeeded.
+ */
 bool ocs::QStatModelBase::make_snapshot(lList **answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 

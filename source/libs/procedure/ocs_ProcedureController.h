@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The MVC framework the CLI commands are built on
+ */
+
 #include <sstream>
 
 #include "ocs_ProcedureParameter.h"
@@ -84,17 +88,14 @@ namespace ocs {
     */
    class ProcedureController {
    protected:
-      std::ostream& out_;
+      std::ostream& out_;   ///< Where the view writes; `std::cout` for a client, a response buffer inside qmaster
    public:
+      /** @brief Bind a controller to an output stream
+       * @param out the stream the view will write to
+       */
       explicit ProcedureController(std::ostream &out) : out_(out) {};
       virtual ~ProcedureController() = default;
 
-      /** @brief Render the model data via the view.
-       *
-       * @param parameter  The parsed procedure parameters (used by subclass overrides).
-       * @param model      The model whose data has already been fetched via make_snapshot().
-       * @param view       The view that writes formatted output to out_.
-       */
       virtual void process_request(ProcedureParameter &parameter, ProcedureModel &model, ProcedureView &view);
    };
 }

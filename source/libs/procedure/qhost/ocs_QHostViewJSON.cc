@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief JSON rendering of `qhost`
+ */
+
 #include <ostream>
 #include <iomanip>
 #include <chrono>

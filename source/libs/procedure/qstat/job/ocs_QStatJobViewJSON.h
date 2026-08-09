@@ -19,17 +19,33 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief JSON rendering of `qstat -j`
+ */
+
 #include <ostream>
 
 #include "ocs_QStatJobViewBase.h"
 #include "qstat/ocs_QStatModelBase.h"
 
 namespace ocs {
+   /** @brief Renders `qstat -j` as JSON
+    *
+    * A comma belongs between two members of a JSON object but not before the
+    * first, and the hooks do not say which one they are, so the view remembers
+    * whether it has already written something at each level.
+    *
+    * The private `report_X_*` helpers exist because most of the eighty hooks do
+    * the same thing - read one CULL field and emit it under a name - and only
+    * differ in the field and its type.
+    *
+    * @ingroup libprocedure
+    */
    class QStatJobViewJSON : public QStatJobViewBase {
-      int indent{0};
-      bool first_attribute{true};
-      bool first_task{true};
-      bool first_task_attribute{true};
+      int indent{0};                    ///< Current indentation depth
+      bool first_attribute{true};       ///< Whether no attribute of the current job has been written yet
+      bool first_task{true};            ///< Whether no task of the current job has been written yet
+      bool first_task_attribute{true};  ///< Whether no attribute of the current task has been written yet
 
       void report_X_path_list(std::ostream &os, const lListElem *job, int nm, const char *name);
       void report_X_boolean(std::ostream &os, const lListElem *job, int nm, const char *name);
@@ -45,6 +61,9 @@ namespace ocs {
       void report_X_task_str_uint32_list(std::ostream &os, const lListElem *task, int nm, const char *name,
                                          int str_nm, const char *str_name, int uint32_nm, const char *uint32_name);
    public:
+      /** @brief Build the JSON view
+       * @param parameter the call's parameters
+       */
       explicit QStatJobViewJSON(const ProcedureParameter &parameter) : QStatJobViewBase(parameter) {
       } ;
 

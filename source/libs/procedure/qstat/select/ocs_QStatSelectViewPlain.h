@@ -20,10 +20,18 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Plain text rendering of `qselect`
+ */
+
 #include "ocs_QStatSelectViewBase.h"
 #include "../ocs_QStatParameter.h"
 
 namespace ocs {
+   /** @brief Renders the `qselect` answer as one queue instance name per line
+    *
+    * @ingroup libprocedure
+    */
    class QStatSelectViewPlain : public QStatSelectViewBase {
    public:
       explicit QStatSelectViewPlain(const QStatParameter &parameter);

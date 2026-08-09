@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Controller of `qstat -j`: runs the request and drives the view
+ */
+
 #include <sstream>
 #include <iostream>
 
@@ -26,6 +30,11 @@
 #include "qstat/job/ocs_QStatJobController.h"
 #include "qstat/job/ocs_QStatJobViewBase.h"
 
+/** @brief Run the request
+ * @param parameter the parsed parameters
+ * @param model the model, client or server side
+ * @param view the view for the requested output format
+ */
 void ocs::QStatJobController::process_request(QStatParameter &parameter, QStatModelBase &model, QStatJobViewBase &view) {
    DENTER(TOP_LAYER);
 

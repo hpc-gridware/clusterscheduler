@@ -18,12 +18,19 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief JSON rendering of `qselect`
+ */
+
 #include <sstream>
 
 #include "uti/sge_rmon_macros.h"
 
 #include "qstat/select/ocs_QStatSelectViewJSON.h"
 
+/** @brief Build the JSON view
+ * @param parameter the call's parameters
+ */
 ocs::QStatSelectViewJSON::QStatSelectViewJSON(const QStatParameter &parameter) : QStatSelectViewBase(parameter) {
 }
 

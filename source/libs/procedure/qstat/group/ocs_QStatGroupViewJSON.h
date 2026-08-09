@@ -19,13 +19,24 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief JSON rendering of `qstat -g c`
+ */
+
 #include "ocs_QStatGroupViewBase.h"
 
 namespace ocs {
+   /** @brief Renders `qstat -g c` as JSON
+    *
+    * @ingroup libprocedure
+    */
    class QStatGroupViewJSON : public QStatGroupViewBase {
-      int indent = 0;
-      bool first_queue = true;
+      int indent = 0;             ///< Current indentation depth
+      bool first_queue = true;    ///< Whether no cluster queue has been written yet, so no comma is needed
    public:
+      /** @brief Build the JSON view
+       * @param parameter the call's parameters
+       */
       explicit QStatGroupViewJSON(const ProcedureParameter &parameter) : QStatGroupViewBase(parameter) {};
       ~QStatGroupViewJSON() override = default;
 

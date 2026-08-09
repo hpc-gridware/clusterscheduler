@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base of the parameter objects: a command's arguments, format and context
+ */
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -28,12 +32,21 @@
 #include "ocs_ProcedureParameter.h"
 
 
+/** @brief Add one named entry to a bundle
+ * @param bundle the bundle to add to
+ * @param param_name the entry's name, one of the constants above
+ * @param parameter the entry's value, taken over by the bundle
+ */
 void ocs::ProcedureParameter::add_parameter_bundle(lList *bundle, const std::string& param_name, lList *parameter) {
    SGE_ASSERT(bundle != nullptr);
    lListElem *bundle_elem = lAddElemStr(&bundle, SPP_name, param_name.c_str(), SPP_Type);
    lSetList(bundle_elem, SPP_value_list, parameter);
 }
 
+/** @brief Serialise this object into a CULL SPP_Type parameter bundle for GDI transport.
+ *
+ * @return the bundle, which the caller owns
+ */
 lList *
 ocs::ProcedureParameter::get_bundle() {
    DENTER(TOP_LAYER);
@@ -69,6 +82,12 @@ ocs::ProcedureParameter::get_bundle() {
    DRETURN(bundle);
 }
 
+/** @brief Populate this object from a received CULL SPP_Type parameter bundle.
+ *
+ * Called on the server side after the GDI request is received.
+ *
+ * @param bundle the received bundle
+ */
 void ocs::ProcedureParameter::set_bundle(const lList *bundle) {
    DENTER(TOP_LAYER);
 
@@ -100,6 +119,13 @@ void ocs::ProcedureParameter::set_bundle(const lList *bundle) {
    DRETURN_VOID;
 }
 
+/** @brief Read the command name out of a bundle without building a parameter object
+ *
+ * This is what lets the server pick the right subclass before it has one.
+ *
+ * @param parameter_bundle the received bundle
+ * @return the procedure name
+ */
 std::string ocs::ProcedureParameter::get_procedure_from_bundle(const lList *parameter_bundle) {
    const lListElem *name_value_param = lGetElemStr(parameter_bundle, SPP_name, NAME_VALUE_LIST);
    const lList *name_value_list = lGetList(name_value_param, SPP_value_list);
@@ -107,6 +133,10 @@ std::string ocs::ProcedureParameter::get_procedure_from_bundle(const lList *para
    return lGetString(procedure_elem, VA_value);
 }
 
+/** @brief Read the sub-command name out of a bundle
+ * @param parameter_bundle the received bundle
+ * @return the sub-procedure name, empty when there is none
+ */
 std::string ocs::ProcedureParameter::get_sub_procedure_from_bundle(const lList *parameter_bundle) {
    const lListElem *name_value_param = lGetElemStr(parameter_bundle, SPP_name, NAME_VALUE_LIST);
    const lList *name_value_list = lGetList(name_value_param, SPP_value_list);
@@ -119,6 +149,10 @@ std::string ocs::ProcedureParameter::get_sub_procedure_from_bundle(const lList *
    return "";
 }
 
+/** @brief Add one environment variable
+ * @param name the variable
+ * @param value its value
+ */
 void ocs::ProcedureParameter::add_variable(const char *name, const char *value) {
    DENTER(TOP_LAYER);
    lListElem *elem = lAddElemStr(&env_variable_list_, VA_variable, name, VA_Type);
@@ -128,6 +162,10 @@ void ocs::ProcedureParameter::add_variable(const char *name, const char *value) 
    DRETURN_VOID;
 }
 
+/** @brief Read one environment variable
+ * @param name the variable
+ * @return its value, or nullptr when it is not set
+ */
 const char *ocs::ProcedureParameter::get_variable(const char *name) const {
    DENTER(TOP_LAYER);
    const lListElem *elem = lGetElemStr(env_variable_list_, VA_variable, name);

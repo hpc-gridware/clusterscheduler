@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Plain text rendering of `qquota`
+ */
+
 #include <format>
 #include <sstream>
 
@@ -31,6 +35,9 @@
 
 #include "msg_clients_common.h"
 
+/** @brief Build the plain text view
+ * @param parameter the call's parameters
+ */
 ocs::QQuotaViewPlain::QQuotaViewPlain(const QQuotaParameter &parameter) : QQuotaViewBase(parameter) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;

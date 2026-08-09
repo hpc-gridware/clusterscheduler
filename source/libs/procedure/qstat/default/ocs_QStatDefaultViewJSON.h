@@ -19,18 +19,33 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief JSON rendering of plain `qstat`
+ */
+
 #include "ocs_QStatDefaultViewBase.h"
 
 namespace ocs {
+   /** @brief Renders plain `qstat` as JSON
+    *
+    * A comma belongs between two entries of a JSON array but not before the
+    * first, and the hooks do not say which entry they are, so the view
+    * remembers per level whether it has already written something.
+    *
+    * @ingroup libprocedure
+    */
    class QStatDefaultViewJSON : public QStatDefaultViewBase {
-      int indent{0};
-      bool first_queue{true};
-      bool first_job{true};
-      bool first_sub_object{true};
-      bool within_queue_section{false};
+      int indent{0};                          ///< Current indentation depth
+      bool first_queue{true};                 ///< Whether no queue instance has been written yet
+      bool first_job{true};                   ///< Whether no job has been written in the current section yet
+      bool first_sub_object{true};            ///< Whether no entry of the current nested list has been written yet
+      bool within_queue_section{false};       ///< Whether the queue section is open
       //bool within_pending_section{false};
-      bool within_running_section{false};
+      bool within_running_section{false};     ///< Whether the running job section is open
    public:
+      /** @brief Build the JSON view
+       * @param parameter the call's parameters
+       */
       explicit QStatDefaultViewJSON(const ProcedureParameter &parameter) : QStatDefaultViewBase(parameter) {};
       ~QStatDefaultViewJSON() override = default;
 

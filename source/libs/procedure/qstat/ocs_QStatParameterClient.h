@@ -19,10 +19,21 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Client side parameters of `qstat`: parsed from argv and the environment
+ */
+
 #include "ocs_QStatParameter.h"
 #include "cull/cull.h"
 
 namespace ocs {
+   /** @brief The `qstat` parameters as the client builds them, from argv and the environment
+    *
+    * The server side never parses a command line - it receives the marshalled
+    * bundle - so everything here is client only.
+    *
+    * @ingroup libprocedure
+    */
    class QStatParameterClient : public QStatParameter {
 
 #pragma region Parsing
@@ -41,6 +52,9 @@ namespace ocs {
 #pragma region Parsing
 
    public:
+      /** @brief Build empty client side parameters
+       * @param procedure_name the command being run
+       */
       QStatParameterClient(std::string procedure_name) : QStatParameter(std::move(procedure_name)) {};
       ~QStatParameterClient() override = default;
 

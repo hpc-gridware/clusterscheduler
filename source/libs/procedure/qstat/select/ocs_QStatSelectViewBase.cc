@@ -18,5 +18,9 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base view of `qselect`, and the interface the three output formats implement
+ */
+
 #include "qstat/select/ocs_QStatSelectViewBase.h"
 

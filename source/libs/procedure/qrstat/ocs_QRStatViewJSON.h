@@ -19,20 +19,32 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief JSON rendering of `qrstat`
+ */
+
 #include "ocs_QRStatViewBase.h"
 #include "cull/cull.h"
 
 namespace ocs {
+   /** @brief Renders the `qrstat` report as JSON
+    *
+    * A comma belongs between the entries of a JSON array but not before the
+    * first one, and the hooks do not announce which entry they are, so the view
+    * remembers per list whether it has already written something.
+    *
+    * @ingroup libprocedure
+    */
    class QRStatViewJSON : public QRStatViewBase {
-      bool first_ar = true;
-      bool first_ar_attr = true;
-      bool first_resource = true;
-      bool first_queue = true;
-      bool first_binding = true;
-      bool first_mail = true;
-      bool first_acl = true;
-      bool first_xacl = true;
-      int indent = 0;
+      bool first_ar = true;         ///< Whether no reservation has been written yet
+      bool first_ar_attr = true;    ///< Whether no attribute of the current reservation has been written yet
+      bool first_resource = true;   ///< Whether no resource has been written yet
+      bool first_queue = true;      ///< Whether no granted queue has been written yet
+      bool first_binding = true;    ///< Whether no core binding has been written yet
+      bool first_mail = true;       ///< Whether no mail recipient has been written yet
+      bool first_acl = true;        ///< Whether no allowed user has been written yet
+      bool first_xacl = true;       ///< Whether no barred user has been written yet
+      int indent = 0;               ///< Current indentation depth
    public:
       explicit QRStatViewJSON(const QRStatParameter &parameter);
       ~QRStatViewJSON() override = default;

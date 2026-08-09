@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base model of `qhost`: the lists the report is built from
+ */
+
 #include "cull/cull.h"
 
 #include "ocs_QHostParameter.h"
@@ -61,12 +65,33 @@ namespace ocs {
       lList *queue_list_ = nullptr;       ///< Queue lists
 
    public:
+      /** @brief True if the executing user has manager privileges
+       * @return true if the executing user has manager privileges
+       */
       [[nodiscard]] virtual bool is_manager() const { return is_manager_; }
+      /** @brief Queue lists
+       * @return queue lists
+       */
       [[nodiscard]] virtual lList *get_queue_list() const { return queue_list_; }
+      /** @brief Job lists
+       * @return job lists
+       */
       [[nodiscard]] virtual lList *get_job_list() const { return job_list_; }
+      /** @brief Complex entry lists
+       * @return complex entry lists
+       */
       [[nodiscard]] virtual lList *get_centry_list() const { return centry_list_; }
+      /** @brief Execution host lists
+       * @return execution host lists
+       */
       [[nodiscard]] virtual lList *get_exec_host_list() const { return exec_host_list_; }
+      /** @brief Parallel environment lists
+       * @return parallel environment lists
+       */
       [[nodiscard]] virtual lList *get_pe_list() const { return pe_list_; }
+      /** @brief Access control lists
+       * @return access control lists
+       */
       [[nodiscard]] virtual lList *get_acl_list() const { return acl_list_; }
 #pragma endregion
 
@@ -74,31 +99,26 @@ namespace ocs {
    protected:
       static lCondition *get_host_where(const lList *hostname_list);
       static lCondition *get_job_where(const lList *user_name_list, uint32_t show);
+
       static lEnumeration *get_host_what();
+
       static lEnumeration *get_queue_what();
+
       static lEnumeration *get_job_what();
+
       static lEnumeration *get_centry_what();
+
       static lEnumeration *get_pe_what();
+
       static lEnumeration *get_user_set_what();
 
-      /** @brief Fetch raw CULL lists into the member variables.
-       *
-       * Overridden by QHostModelClient (GDI calls) and QHostModelServer (master lists).
-       */
       virtual bool fetch_data(lList **answer_list, const lList *hostname_list, const lList *user_name_list, uint32_t show);
-      /** @brief Post-process fetched lists (e.g. resolve hostgroup references). */
+
       virtual bool prepare_data(lList **answer_list, const lList *resource_match_list, uint32_t show) const;
-      /** @brief Apply the resource-match filter to the exec host list. */
+
       virtual void filter_data(const lList *resource_match_list);
-      /** @brief Sort the exec host list for deterministic view output. */
       virtual void sort_data();
    public:
-      /** @brief Run the full pipeline: fetch_data → prepare_data → filter_data → sort_data.
-       *
-       * @param answer_list  Receives error messages on failure.
-       * @param parameter    Parsed qhost parameters.
-       * @return true if all pipeline steps succeeded.
-       */
       virtual bool make_snapshot(lList **answer_list, QHostParameter &parameter);
 #pragma endregion
 

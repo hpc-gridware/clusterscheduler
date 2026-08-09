@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base model of `qrstat`: the lists the report is built from
+ */
+
 #include "cull/cull.h"
 
 #include "qrstat/ocs_QRStatParameterClient.h"
@@ -48,27 +52,21 @@ namespace ocs {
 
    protected:
       static lEnumeration *get_ar_what(QRStatParameter& parameter);
+
       static lCondition *get_ar_where(QRStatParameter& parameter);
 
-      /** @brief Fetch the AR list into ar_list_.
-       *
-       * Overridden by QRStatModelClient (GDI call) and QRStatModelServer (master list).
-       */
       virtual bool fetch_data(lList **answer_list, QRStatParameter& parameter);
 
    public:
+      /** @brief The advance reservations being reported
+       * @return the AR list
+       */
       [[nodiscard]] const lList *get_ar_list() const { return ar_list_; }
 
    public:
       QRStatModelBase() = default;
       virtual ~QRStatModelBase();
 
-      /** @brief Run the full pipeline: fetch_data, then hand off to the view.
-       *
-       * @param answer_list  Receives error messages on failure.
-       * @param parameter    Parsed qrstat parameters.
-       * @return true if fetch_data succeeded.
-       */
       bool make_snapshot(lList **answer_list, QRStatParameter &parameter);
    };
 }

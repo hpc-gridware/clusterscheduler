@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base model of `qquota`: the lists the report is built from
+ */
+
 #include "cull/cull.h"
 
 #include "ocs_QQuotaParameter.h"
@@ -45,41 +49,55 @@ namespace ocs {
    class QQuotaModelBase {
 #pragma region Data
    protected:
-      lList *centry_list_ = nullptr;
-      lList *user_set_list_ = nullptr;
-      lList *hgroup_list_ = nullptr;
-      lList *exec_host_list_ = nullptr;
-      lList *rqs_list_ = nullptr;
+      lList *centry_list_ = nullptr;      ///< Complex entries, for the type of each limited resource
+      lList *user_set_list_ = nullptr;    ///< User sets, to resolve the `@group` filters of a rule
+      lList *hgroup_list_ = nullptr;      ///< Host groups, to resolve the `@group` filters of a rule
+      lList *exec_host_list_ = nullptr;   ///< Execution hosts
+      lList *rqs_list_ = nullptr;         ///< The resource quota sets being reported
 
    public:
+      /** @brief The resource quota sets being reported
+       * @return the RQS list
+       */
       [[nodiscard]] const lList *get_rqs_list() const { return rqs_list_; }
+
+      /** @brief The complex entries
+       * @return the centry list
+       */
       [[nodiscard]] const lList *get_centry_list() const { return centry_list_; }
+
+      /** @brief The user sets
+       * @return the user set list
+       */
       [[nodiscard]] const lList *get_user_set_list() const { return user_set_list_; }
+
+      /** @brief The host groups
+       * @return the hgroup list
+       */
       [[nodiscard]] const lList *get_hgroup_list() const { return hgroup_list_; }
+
+      /** @brief The execution hosts
+       * @return the exec host list
+       */
       [[nodiscard]] const lList *get_exec_host_list() const { return exec_host_list_; }
 #pragma endregion
 
 #pragma region Data Retrieval
    protected:
       static lEnumeration *get_rqs_what();
+
       static lEnumeration *get_centry_what();
+
       static lEnumeration *get_user_set_what();
+
       static lEnumeration *get_hgroup_what();
+
       static lEnumeration *get_host_what();
+
       static lCondition *get_host_where(const lList *host_list);
 
-      /** @brief Fetch raw CULL lists into the member variables.
-       *
-       * Overridden by QQuotaModelClient (GDI calls) and QQuotaModelServer (master lists).
-       */
       virtual bool fetch_data(lList **answer_list, const lList *host_list);
    public:
-      /** @brief Run the full pipeline: fetch_data, then hand off to the view.
-       *
-       * @param answer_list  Receives error messages on failure.
-       * @param parameter    Parsed qquota parameters.
-       * @return true if fetch_data succeeded.
-       */
       virtual bool make_snapshot(lList **answer_list, QQuotaParameter &parameter);
 #pragma endregion
 

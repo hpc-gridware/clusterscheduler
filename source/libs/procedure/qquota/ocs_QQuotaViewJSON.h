@@ -19,16 +19,29 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief JSON rendering of `qquota`
+ */
+
 #include <iosfwd>
 
 #include "ocs_QQuotaParameterClient.h"
 #include "ocs_QQuotaViewBase.h"
 
 namespace ocs {
+   /** @brief Renders the `qquota` report as JSON
+    *
+    * JSON needs state the other formats do not: the values of one filter go
+    * into one array, and a comma belongs between rules but not before the
+    * first. The hooks do not announce either boundary, so the view remembers
+    * what it has already opened.
+    *
+    * @ingroup libprocedure
+    */
    class QQuotaViewJSON : public QQuotaViewBase {
-      int indent = 0;
-      std::string last_filter_name{};
-      bool first_rule = true;
+      int indent = 0;                        ///< Current indentation depth
+      std::string last_filter_name{};        ///< The filter whose array is open, to keep its values together
+      bool first_rule = true;                ///< Whether no rule has been written yet, so no comma is needed
    public:
       explicit QQuotaViewJSON(const QQuotaParameter &parameter);
       ~QQuotaViewJSON() override;

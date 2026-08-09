@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Client side model of `qquota`: fetches the lists over GDI
+ */
+
 #include "cull/cull.h"
 
 #include "ocs_QQuotaModelBase.h"

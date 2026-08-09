@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Parameters of `qrstat`: what the call was asked to report
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_str.h"
@@ -28,6 +32,10 @@
 #include "qhost/ocs_QHostParameter.h"
 #include "sgeobj/cull/sge_param_SPP_L.h"
 
+/** @brief Build the parameters on the server, from a received bundle
+ * @param bundle the marshalled parameters
+ * @param packet the originating client packet
+ */
 ocs::QRStatParameter::QRStatParameter(lList *bundle, gdi::Packet *packet) : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
@@ -44,6 +52,12 @@ ocs::QRStatParameter::~QRStatParameter() {
    DRETURN_VOID;
 }
 
+/** @brief Resolve `-u *` and the empty user list into concrete names
+ *
+ * Called before the model runs, so that both execution contexts filter on
+ * the same list. `*` becomes an empty list, meaning all users; an empty
+ * list becomes the calling user.
+ */
 void ocs::QRStatParameter::transform_user_list() {
    str_list_transform_user_list(&user_list_, nullptr,  user_);
 }

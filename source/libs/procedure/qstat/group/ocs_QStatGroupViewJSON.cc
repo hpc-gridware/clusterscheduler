@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief JSON rendering of `qstat -g c`
+ */
+
 #include <format>
 #include <iomanip>
 

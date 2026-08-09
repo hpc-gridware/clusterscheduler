@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Parameters of `qhost`: what the call was asked to report
+ */
+
 #include <string>
 
 #include "uti/sge_rmon_macros.h"
@@ -30,6 +34,7 @@
 
 #include "ocs_ProcedureParameter.h"
 
+/** @brief The process environment, which the parameter parsing reads */
 extern char **environ;
 
 ocs::QHostParameter::~QHostParameter() {
@@ -39,6 +44,10 @@ ocs::QHostParameter::~QHostParameter() {
    lFreeList(&resource_visible_list_);
 }
 
+/** @brief Build the parameters on the server, from a received bundle
+ * @param bundle the marshalled parameters
+ * @param packet the originating client packet
+ */
 ocs::QHostParameter::QHostParameter(lList *bundle, gdi::Packet *packet) : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 

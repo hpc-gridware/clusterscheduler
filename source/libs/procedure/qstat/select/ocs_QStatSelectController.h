@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Controller of `qselect`: runs the request and drives the view
+ */
+
 #include <ostream>
 
 #include "qstat/ocs_QStatParameter.h"
@@ -26,10 +30,17 @@
 #include "qstat/select/ocs_QStatSelectViewBase.h"
 
 namespace ocs {
+   /** @brief Runs one `qselect` request: report the queue instances that match
+    *
+    * @ingroup libprocedure
+    */
    class QStatSelectController {
-      std::ostream &out_;
+      std::ostream &out_;   ///< Where the view writes
 
    public:
+      /** @brief Bind a controller to an output stream
+       * @param out the stream the view will write to
+       */
       explicit QStatSelectController(std::ostream &out) : out_(out) {
       }
 

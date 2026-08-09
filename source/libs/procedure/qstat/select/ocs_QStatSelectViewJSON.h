@@ -20,13 +20,21 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief JSON rendering of `qselect`
+ */
+
 #include "ocs_QStatSelectViewBase.h"
 #include "../ocs_QStatParameter.h"
 
 namespace ocs {
+   /** @brief Renders the `qselect` answer as JSON
+    *
+    * @ingroup libprocedure
+    */
    class QStatSelectViewJSON : public QStatSelectViewBase {
-      int indent = 0;
-      bool first_queue = true;
+      int indent = 0;             ///< Current indentation depth
+      bool first_queue = true;    ///< Whether no queue instance has been written yet, so no comma is needed
    public:
       explicit QStatSelectViewJSON(const QStatParameter &parameter);
 

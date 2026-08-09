@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base of the models: fetching or computing what a command reports
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/cull/sge_param_SPP_L.h"
@@ -33,6 +37,16 @@
 #include "ocs_ProcedureParameter.h"
 #include "sgeobj/sge_answer.h"
 
+/** @brief Send the procedure request to qmaster and store the response.
+ *
+ * Serialises @p parameter into a CULL bundle, issues a GDI GET_PROCEDURE
+ * request, and stores the resulting response list.  On success the rendered
+ * output is accessible via get_output_text().
+ *
+ * @param answer_list  Receives error messages on failure.
+ * @param parameter    The parsed procedure parameters to send.
+ * @return true on success, false if the GDI call returned an error.
+ */
 bool
 ocs::ProcedureModel::make_snapshot(lList **answer_list, ProcedureParameter &parameter) {
    DENTER(TOP_LAYER);
@@ -54,6 +68,13 @@ ocs::ProcedureModel::make_snapshot(lList **answer_list, ProcedureParameter &para
    DRETURN(true);
 }
 
+/** @brief Return the pre-rendered output text received from qmaster.
+ *
+ * Returns an empty string if the response list is absent or malformed.
+ * The returned pointer is valid for the lifetime of this object.
+ *
+ * @return the rendered text, empty when the response is absent or malformed
+ */
 const char *
 ocs::ProcedureModel::get_output_text() const {
    DENTER(TOP_LAYER);

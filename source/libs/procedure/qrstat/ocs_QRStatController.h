@@ -19,15 +19,27 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Controller of `qrstat`: runs the request and drives the view
+ */
+
 #include "ocs_QRStatParameterClient.h"
 #include "ocs_QRStatModelBase.h"
 #include "ocs_QRStatViewBase.h"
 
 namespace ocs {
+   /** @brief Runs one `qrstat` request: fetch the advance reservations, report them
+    *
+    * @ingroup libprocedure
+    */
    class QRStatController {
-      std::ostream &out_;
+      std::ostream &out_;   ///< Where the view writes
    public:
+      /** @brief Bind a controller to an output stream
+       * @param out the stream the view will write to
+       */
       explicit QRStatController(std::ostream &out) : out_(out) {};
+
       virtual ~QRStatController() = default;
 
       virtual void process_request(QRStatParameter &parameter, QRStatModelBase &model, QRStatViewBase &view);

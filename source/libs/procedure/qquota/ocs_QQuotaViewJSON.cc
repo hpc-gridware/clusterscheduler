@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief JSON rendering of `qquota`
+ */
+
 #include <ostream>
 
 #include "ocs_QQuotaViewJSON.h"
@@ -26,6 +30,9 @@
 
 #include "ocs_QQuotaViewBase.h"
 
+/** @brief Build the JSON view
+ * @param parameter the call's parameters
+ */
 ocs::QQuotaViewJSON::QQuotaViewJSON(const QQuotaParameter &parameter) : QQuotaViewBase(parameter) {
 }
 
@@ -157,6 +164,7 @@ ocs::QQuotaViewJSON::report_limit_string_value(std::ostream &os, const char *fil
  *
  * @param os        output stream to write the JSON fragment to
  * @param resource  resource name; server-supplied, may be NULL
+ * @param type      the resource's type; not used by this format
  * @param max       configured limit value
  * @param used      current usage; 0 means omit (e.g. static non-consumable limits)
  */

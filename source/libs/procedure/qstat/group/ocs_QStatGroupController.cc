@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Controller of `qstat -g c`: runs the request and drives the view
+ */
+
 #include <algorithm>
 
 #include "uti/sge_rmon_macros.h"
@@ -140,6 +144,11 @@ bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue
 }
 
 
+/** @brief Run the request
+ * @param parameter the parsed parameters
+ * @param model the model, client or server side
+ * @param view the view for the requested output format
+ */
 void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStatModelBase &model, QStatGroupViewBase &view) {
    DENTER(TOP_LAYER);
 

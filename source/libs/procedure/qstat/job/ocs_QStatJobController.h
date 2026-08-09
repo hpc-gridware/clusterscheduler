@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Controller of `qstat -j`: runs the request and drives the view
+ */
+
 #include "cull/cull.h"
 
 #include "qstat/ocs_QStatModelBase.h"
@@ -27,10 +31,17 @@
 #include "ocs_QStatJobViewBase.h"
 
 namespace ocs {
+   /** @brief Runs one `qstat -j` request: fetch the selected jobs, report them in detail
+    *
+    * @ingroup libprocedure
+    */
    class QStatJobController {
-      std::ostream &out_;
+      std::ostream &out_;   ///< Where the view writes
 
    public:
+      /** @brief Bind a controller to an output stream
+       * @param out the stream the view will write to
+       */
       explicit QStatJobController(std::ostream &out) : out_(out) {
       }
 
