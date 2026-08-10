@@ -92,6 +92,7 @@ struct _test_sl_thread_cp_t {
    bool thread_error; ///< set by any thread that detects an unexpected outcome
 };
 
+/** @brief Shorthand for #_test_sl_thread_cp_t */
 typedef struct _test_sl_thread_cp_t test_sl_thread_cp_t;
 
 // matches every element regardless of type; used by sge_tq_move_from_to_if tests

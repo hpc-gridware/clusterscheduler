@@ -76,8 +76,8 @@
 #else
 #define BALANCE_LOOP_COUNT 2   ///< outer runs under Insure++
 #define LOOP_COUNT 300         ///< evaluations per run under Insure++
-/** @} */
 #endif
+/** @} */
 
 /* Local functions and variables */
 static int tests(int (*test)(ocs::CEntry::Type, const char *, const char *, int));

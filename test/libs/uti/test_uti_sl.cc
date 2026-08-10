@@ -68,17 +68,23 @@ static int s_fail = 0;
    } while (0)
 
 /* following is used in test_mt_support() */
-#define TEST_SL_MAX_THREADS 10
+#define TEST_SL_MAX_THREADS 10   ///< how many threads work on the list at once
 
+/** @brief What the worker threads share */
 struct _test_sl_thread_t {
-   pthread_mutex_t mutex;
-   sge_sl_list_t *list;
-   bool do_terminate;
+   pthread_mutex_t mutex;   ///< guards the list where the test needs it to
+   sge_sl_list_t *list;     ///< the list under test
+   bool do_terminate;       ///< set to tell the threads to stop
 };
 
+/** @brief Shorthand for #_test_sl_thread_t */
 typedef struct _test_sl_thread_t test_sl_thread_t;
 
-/* used in test to check the destroy sequence */
+/** @brief Records the order elements were destroyed in
+ *
+ * The destroy callback appends to it, so the test can check the sequence rather
+ * than only that everything was freed.
+ */
 dstring test_string = DSTRING_INIT;
 
 /** @brief Test case: destroy test

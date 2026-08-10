@@ -92,6 +92,11 @@ if (DOXYGEN_FOUND)
         ../gcs-extensions/source/libs/sgeobj
         ../gcs-extensions/source/daemons
         ../gcs-extensions/source/tools
+
+        # Phase 4b: the module tests. Registered so a new test cannot be added
+        # undocumented - which is where an undocumented file is cheapest to fix.
+        test
+        ../gcs-extensions/test
    )
 
    if (DXM_FINISHED_MODULES)

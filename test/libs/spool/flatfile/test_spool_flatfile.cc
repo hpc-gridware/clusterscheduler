@@ -125,6 +125,7 @@ static int SPOOL_dir_perm_test();
 static int SPOOL_key_safe_test();
 static int SPOOL_classic_params_test();
 
+/** @brief One test case: takes nothing, returns non-zero on failure */
 typedef int (*func)();
 
 int main(int argc, char** argv)

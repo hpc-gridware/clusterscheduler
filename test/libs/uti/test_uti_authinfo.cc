@@ -84,13 +84,13 @@ static std::string join_authinfo(const std::vector<std::string> &fields) {
 
 /** @brief Result of a parse() call; @p grp must be sge_free()d by the caller. */
 struct parse_result_t {
-   bool ret;
-   uid_t uid;
-   gid_t gid;
-   std::string user;
-   std::string group;
-   int amount;
-   ocs_grp_elem_t *grp;
+   bool ret;                ///< the call succeeded
+   uid_t uid;               ///< the uid it decoded
+   gid_t gid;               ///< the primary gid it decoded
+   std::string user;        ///< the user name it decoded
+   std::string group;       ///< the primary group name it decoded
+   int amount;              ///< how many supplementary groups it decoded
+   ocs_grp_elem_t *grp;     ///< those groups; the caller frees them
 };
 
 /** @brief Encode @p fields the way the client does and run component_parse_auth_info(). */

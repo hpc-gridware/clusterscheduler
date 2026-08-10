@@ -87,10 +87,15 @@ free_local_storage(void *data) {
    free(data);
 }
 
+/** @brief What one thread observed about its thread-local slot
+ *
+ * Checked after the thread has ended rather than inside it, so a failed
+ * assertion cannot be lost with the thread.
+ */
 struct thread_result_t {
-   bool pre_init_null;     // getspecific before setspecific returned nullptr
-   bool post_init_correct; // getspecific immediately after setspecific returned correct value
-   bool after_yield_correct; // getspecific after sched_yield still returns correct value
+   bool pre_init_null;       ///< the slot was null before anything was stored
+   bool post_init_correct;   ///< reading it straight back gave what was stored
+   bool after_yield_correct; ///< it still did after yielding to another thread
 };
 
 static void *
@@ -141,10 +146,11 @@ t2_main(void *args) {
    DRETURN(nullptr);
 }
 
+/** @brief What one thread observed when it used two keys at once */
 struct two_key_result_t {
-   bool key1_correct;  // getspecific(key1) returned expected value
-   bool key2_correct;  // getspecific(key2) returned expected value
-   bool keys_differ;   // the two values are distinct pointers (no aliasing)
+   bool key1_correct;   ///< the first key read back what was stored
+   bool key2_correct;   ///< so did the second
+   bool keys_differ;    ///< the two are distinct pointers, so the keys do not alias
 };
 
 static void *

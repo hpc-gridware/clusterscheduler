@@ -57,24 +57,12 @@ int do_test();
  */
 int test_params();
 
-/** @brief Do sleep
-  * @return the thread's result; the tests ignore it
- */
 void *do_sleep(void *);
 
-/** @brief Do calc
-  * @return the thread's result; the tests ignore it
- */
 void *do_calc(void *);
 
-/** @brief Do calc2
-  * @return the thread's result; the tests ignore it
- */
 void *do_calc2(void *);
 
-/** @brief Do malloc
-  * @return the thread's result; the tests ignore it
- */
 void *do_malloc(void *);
 
 
@@ -231,6 +219,10 @@ int do_test() {
    return EXIT_SUCCESS;
 }
 
+/** @brief A worker that sleeps, so the profiler has wall time to attribute
+ * @param p unused
+ * @return the thread's result; the tests ignore it
+ */
 void *do_sleep(void *p) {
    dstring error = DSTRING_INIT;
 
@@ -317,6 +309,10 @@ void *do_sleep(void *p) {
 }
 
 
+/** @brief A worker that burns CPU, so the profiler has user time to attribute
+ * @param p unused
+ * @return the thread's result; the tests ignore it
+ */
 void *do_calc(void *p) {
    int num = 3000;
    int i = 0;
@@ -377,6 +373,10 @@ void *do_calc(void *p) {
    return nullptr;
 }
 
+/** @brief A worker that burns CPU differently, so two busy threads can be told apart
+ * @param p unused
+ * @return the thread's result; the tests ignore it
+ */
 void *do_calc2(void *p) {
    int num = 7000;
    int i = 0;
@@ -429,6 +429,10 @@ void *do_calc2(void *p) {
    return nullptr;
 }
 
+/** @brief A worker that allocates and frees, so the profiler sees a different kind of work
+ * @param p unused
+ * @return the thread's result; the tests ignore it
+ */
 void *do_malloc(void *p) {
    char *text;
    int count = 90000;

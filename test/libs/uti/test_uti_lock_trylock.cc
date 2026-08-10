@@ -66,7 +66,7 @@ void *get_thread_func_arg() {
 }
 
 pthread_mutex_t mutex_lock = PTHREAD_MUTEX_INITIALIZER;   ///< the lock the threads fight over
-long lock_counter = 0;
+long lock_counter = 0;   ///< how many times the lock was taken, across all threads
 
 /** @brief Incr counter
  */

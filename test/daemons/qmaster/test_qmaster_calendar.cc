@@ -45,6 +45,12 @@ typedef struct {
    const char *description; ///< human-readable description for test output
 } cal_entry_t;
 
+/** @brief One moment to check a calendar against
+ *
+ * A calendar answers two questions at once - what state the queue is in now,
+ * and when it next changes - so a case carries both, twice over for the
+ * calendars that change state twice.
+ */
 typedef struct {
    int       cal_nr;   ///< index into calendars[]
    struct tm now;      ///< simulated current date/time

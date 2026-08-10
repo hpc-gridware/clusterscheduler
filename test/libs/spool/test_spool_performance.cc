@@ -258,6 +258,26 @@ void clear_caches()
  * @param str the text to stringify
  */
 
+/** @name The `what` filters the benchmark reads with
+ *
+ * Defined inside `main()`. Reading fewer attributes should be faster; these
+ * four make that measurable rather than assumed.
+ * @{
+ */
+/** @def NM10
+ * @brief A `what` selecting 10 attributes
+ */
+/** @def NM5
+ * @brief A `what` selecting 5 attributes
+ */
+/** @def NM2
+ * @brief A `what` selecting 2 attributes
+ */
+/** @def NM1
+ * @brief A `what` selecting 1 attribute
+ */
+/** @} */
+
 int main(int argc, char *argv[])
 {
    lListElem *spooling_context;
@@ -265,10 +285,10 @@ int main(int argc, char *argv[])
 
    DENTER_MAIN(TOP_LAYER, "test_performance");
 
-#define NM10 "%I%I%I%I%I%I%I%I%I%I"   ///< a `what` selecting 10 attributes
-#define NM5  "%I%I%I%I%I"   ///< a `what` selecting 5 attributes
-#define NM2  "%I%I"   ///< a `what` selecting 2 attributes
-#define NM1  "%I"   ///< a `what` selecting 1 attributes
+#define NM10 "%I%I%I%I%I%I%I%I%I%I"
+#define NM5  "%I%I%I%I%I"
+#define NM2  "%I%I"
+#define NM1  "%I"
 
    prof_start(SGE_PROF_CUSTOM1, nullptr);
    prof_set_level_name(SGE_PROF_CUSTOM1, "performance", nullptr);

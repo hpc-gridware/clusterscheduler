@@ -73,7 +73,7 @@ static int delay = 0;
  */
 
 #if SGE_LOCKING
-pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;   ///< serialises the threads where the test wants them serialised
 #endif
 
 static bool add_job(int job_id)
