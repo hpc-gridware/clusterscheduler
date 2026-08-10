@@ -119,6 +119,7 @@ static bool is_master(const char* progname) {
  *       `sge_csp_path.cc` and `ocs_Bootstrap.h`.
  */
 int sge_ssl_setup_security_path(const char *progname, const char *user) {
+   DENTER(TOP_LAYER);
 
    int return_value = 0;
    int commlib_error = 0;
@@ -157,8 +158,6 @@ int sge_ssl_setup_security_path(const char *progname, const char *user) {
    bool from_services   = false;
    int  qmaster_port    = -1;
    char *user_name = sge_strdup(nullptr, user);
-
-   DENTER(TOP_LAYER);
 
    if (progname == nullptr) {
       CRITICAL(SFNMAX, MSG_GDI_NO_VALID_PROGRAMM_NAME);

@@ -223,6 +223,8 @@ static int sge_init_lib(void *lib_ptr, const char *lib_name,
  * @see #once_libscf_init
  */
 static void init_scf_lib() {
+   DENTER(TOP_LAYER);
+
    const char *func_name[] = {
            "scf_error",
            "scf_strerror",
@@ -243,7 +245,6 @@ static void init_scf_lib() {
            &shared_scf_func__smf_disable_instance,
            nullptr};
 
-   DENTER(TOP_LAYER);
    if (sge_init_lib(scf_lib, "libscf.so", func_name, func_ptr) == 0) {
       libscfLoaded = 1;
    } else {
@@ -291,6 +292,8 @@ static int once_libscf_init() {
  * @see #sge_smf_init_libs
  */
 static void init_contract_lib() {
+   DENTER(TOP_LAYER);
+
    const char *func_name[] = {
            "ct_tmpl_activate",
            "ct_tmpl_clear",
@@ -317,7 +320,6 @@ static void init_contract_lib() {
            &shared_contract_func__ct_pr_tmpl_set_param,
            nullptr};
 
-   DENTER(TOP_LAYER);
    if (sge_init_lib(contract_lib, "libcontract.so", func_name, func_ptr) == 0) {
       libcontractLoaded = 1;
    } else {

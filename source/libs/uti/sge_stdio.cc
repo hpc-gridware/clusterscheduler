@@ -362,6 +362,8 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
 pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
                    const char *user, char **env, FILE **fp_in, FILE **fp_out,
                    FILE **fp_err, bool null_stderr) {
+   DENTER(TOP_LAYER);
+
    pid_t pid;
    int pipefds[3][2];
    int i;
@@ -373,8 +375,6 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
    uid_t myuid;
    uid_t tuid;
    gid_t tgid = (gid_t) -1;
-
-   DENTER(TOP_LAYER);
 
    if (sge_has_admin_user()) {
       sge_switch2start_user();

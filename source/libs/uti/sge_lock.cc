@@ -203,6 +203,8 @@ void sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, 
  * @return true when the lock was taken, false when it was already held
  */
 bool sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID) {
+   DENTER(BASIS_LAYER);
+
    bool res = false;
 
 #ifdef SGE_DEBUG_LOCK_TIME
@@ -210,8 +212,6 @@ bool sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, 
    struct timeval after;
    double time;
 #endif
-
-   DENTER(BASIS_LAYER);
 
    pthread_once(&lock_once, lock_once_init);
 
@@ -336,6 +336,8 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
 #else
 
 void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID) {
+   DENTER(BASIS_LAYER);
+
    int res = -1;
 
 #ifdef SGE_DEBUG_LOCK_TIME
@@ -343,8 +345,6 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
    struct timeval after;
    double time;
 #endif
-
-   DENTER(BASIS_LAYER);
 
    pthread_once(&lock_once, lock_once_init);
 

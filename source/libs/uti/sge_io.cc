@@ -200,6 +200,8 @@ int sge_filecmp(const char *name0, const char *name1) {
  * @note MT-NOTE: sge_copy_append() is MT safe
  */
 int sge_copy_append(const char *src, const char *dst, sge_mode_t mode) {
+   DENTER(TOP_LAYER);
+
 /// @cond   function local copy buffer size
 #define CPBUF 1024
 /// @endcond
@@ -207,8 +209,6 @@ int sge_copy_append(const char *src, const char *dst, sge_mode_t mode) {
    char buf[CPBUF];
    int fdsrc, fddst, modus, rs, ws;
    bool error;
-
-   DENTER(TOP_LAYER);
 
    if (src == nullptr || dst == nullptr || strlen(src) == 0 || strlen(dst) == 0 ||
        !(mode == SGE_MODE_APPEND || mode == SGE_MODE_COPY)) {
@@ -559,13 +559,13 @@ char *sge_stream2string(FILE *fp, int *len) {
 /* #define USE_FOPEN */
 
 int sge_string2file(const char *str, int len, const char *fname) {
+   DENTER(TOP_LAYER);
+
 #ifdef USE_FOPEN
    FILE *fp;
 #else
    int fp = -1;
 #endif
-
-   DENTER(TOP_LAYER);
 
 #ifdef USE_FOPEN
    if (!(fp = fopen(fname, "w")))
