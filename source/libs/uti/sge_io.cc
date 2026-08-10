@@ -72,10 +72,11 @@
  * @see #sge_writenbytes
  */
 int sge_readnbytes(int sfd, char *ptr, int n) {
+   DENTER(BASIS_LAYER);
+
    int i;                       /* number of bytes read */
    int nleft = n;               /* number of bytes still to read */
 
-   DENTER(BASIS_LAYER);
    DPRINTF("TOTAL BYTES TO BE READ %d\n", n);
 
    /* Read n bytes */

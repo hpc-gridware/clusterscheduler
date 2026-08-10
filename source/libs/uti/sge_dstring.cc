@@ -196,9 +196,9 @@ dstring *sge_dstring_init_dynamic(dstring *sb, size_t size) {
  * @note MT-NOTE: sge_dstring_append() is MT safe
  */
 const char *sge_dstring_append(dstring *sb, const char *a) {
-   size_t len;  /* length of string a */
-
    DENTER(DSTRING_LAYER);
+
+   size_t len;  /* length of string a */
 
    if (sb == nullptr || a == nullptr) {
       DRETURN(nullptr);
