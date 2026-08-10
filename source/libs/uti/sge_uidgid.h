@@ -110,6 +110,10 @@ sge_getgrgid_r(gid_t gid, struct group *pg, char **buffer, size_t *buffer_size, 
 bool
 sge_is_user_superuser(const char *name);
 
+/* directory to read the user's .sge_* files from, if SGE_TEST_USER_HOME_DIR is set */
+const char *
+sge_get_user_home_override();
+
 /* getting buffer sizes for getpwnam_r etc. */
 int
 get_group_buffer_size();
