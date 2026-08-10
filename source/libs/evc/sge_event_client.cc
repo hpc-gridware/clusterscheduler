@@ -96,6 +96,39 @@
  * The interface has much less impact on qmaster performance than polling the
  * same data in regular intervals.
  *
+ * @section evc_lifecycle The shape of a session
+ *
+ * The sections below describe the pieces; this is how they fit together. Two
+ * details are easy to miss from the prose and are the whole reason the
+ * interface looks the way it does:
+ *
+ * - **Subscription changes are buffered until `ec_commit()`.** `ec_subscribe()`
+ *   and `ec_set_flush()` only change the local copy, so a client can rearrange
+ *   its whole subscription and send it as one request.
+ * - **Every delivery is acknowledged, and the acknowledgement carries the next
+ *   subscription with it.** `ec_ack()`, `ec_set_busy()` and `ec_commit()` go
+ *   out together after each batch, which is what lets qmaster tell a slow
+ *   client from a dead one. A client that stops acknowledging is eventually
+ *   sent `sgeE_ACK_TIMEOUT` and has to register again.
+ *
+ * @msc
+ *   hscale="1.4";
+ *   client [label="event client"], qmaster [label="qmaster"];
+ *
+ *   client=>qmaster  [label="ec_register()"];
+ *   qmaster>>client  [label="client id"];
+ *   client rbox client [label="ec_subscribe(), ec_set_flush(),\nec_set_edtime() - local only"];
+ *   client=>qmaster  [label="ec_commit(): the subscription"];
+ *   |||;
+ *   --- [label="then, for as long as the session lasts"];
+ *   qmaster=>client  [label="events, at the interval or flushed early"];
+ *   client rbox client [label="process them"];
+ *   client=>qmaster  [label="ec_ack() + ec_set_busy() + ec_commit()"];
+ *   |||;
+ *   --- [label="at the end"];
+ *   client=>qmaster  [label="ec_deregister()"];
+ * @endmsc
+ *
  * @section evc_ids Id numbers for registration
  *
  * Each event client registered at qmaster has a unique client id. The

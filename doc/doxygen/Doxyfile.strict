@@ -54,7 +54,25 @@ OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/doc_doxygen_strict/
 QUIET                  = YES
 
 # No diagrams either - they cost time and produce no warnings
-HAVE_DOT               = NO
+# HAVE_DOT must be YES, or doxygen ignores every @dot block and warns
+# "ignoring \dot command because HAVE_DOT is not set" - which makes a legitimate
+# diagram fail the gate (found 2026-08-10 converting the qinstance state chart).
+#
+# Every *automatic* graph is switched off below, so dot is invoked only for the
+# handful of explicit @dot blocks in the tree. That keeps the gate fast: it is
+# the automatic class, collaboration and include graphs that cost minutes, not
+# the explicit ones.
+HAVE_DOT               = YES
+CLASS_GRAPH            = NO
+COLLABORATION_GRAPH    = NO
+GROUP_GRAPHS           = NO
+INCLUDE_GRAPH          = NO
+INCLUDED_BY_GRAPH      = NO
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+GRAPHICAL_HIERARCHY    = NO
+DIRECTORY_GRAPH        = NO
+DOT_CLEANUP            = YES
 
 #---------------------------------------------------------------------------
 # Input: the whole tree, deliberately
@@ -107,6 +125,15 @@ RECURSIVE              = YES
 #
 # EXCLUDE_PATTERNS is repeated rather than appended because @INCLUDE brings the
 # main Doxyfile's value along, and doxygen has no += for it.
+# source/3rdparty, source/dist and source/experimental are the three subtrees
+# "06 Exclusions and generated code" rules out - vendored code, distribution
+# scripts, and code that is not built. The note says they are excluded from both
+# Doxyfiles; in fact neither excluded them until 2026-08-10, and they accounted
+# for 420 of the published build's warnings. One of them also broke the PDF: a
+# Readme.md under source/dist/r/clustermq carries a U+2265, which is one of the
+# two characters LaTeX cannot set (see "01"), and it stopped refman.pdf being
+# produced at all.
+#
 # source/scripts holds shell and DTrace scripts, not C/C++. monitor.d is matched
 # only because doxygen's FILE_PATTERNS lists *.d for the D language; it then
 # misparses the DTrace probe syntax. Same ruling as source/dist: scripts are not
@@ -129,6 +156,9 @@ EXCLUDE_PATTERNS       = */._* \
                          */com_sun_grid_drmaa_SessionImpl.h \
                          */jdrmaa/*.java \
                          */source/scripts/* \
+                         */source/3rdparty/* \
+                         */source/dist/* \
+                         */source/experimental/* \
                          */source/security/gss/* \
                          */source/security/krb/* \
                          */dump_cull_schema/cJSON.*

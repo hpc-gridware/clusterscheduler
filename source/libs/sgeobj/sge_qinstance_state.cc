@@ -38,101 +38,48 @@
  * Every write to `QU_state` goes through #qinstance_set_state, so the state
  * bits and the letters qstat prints cannot drift apart.
  *
- * The state chart the bits below implement:
+ * The eleven state bits are **orthogonal**: each is set and cleared
+ * independently of the others, and any combination can hold at once. There is
+ * no sequence between them and no single "current state" - which is why a
+ * queue instance shows several letters at the same time in `qstat`.
  *
- * @code
+ * What the grouping means: the left-hand causes suspend the jobs already
+ * running here, the right-hand ones stop new jobs being dispatched here. A
+ * queue instance can be in both groups at once.
  *
- *         /---------------------------------------------------\
- *         |                     exists                        |
- *         |                                                   |
- * o-----> |                                                   |------->X
- *         |                               /-----------------\ |
- *         |                               |   (suspended)   | |
- *         |                               |                 | |
- *         |         /--------\            |    /-------\    | |   
- *         | o-----> |        |---------------> |       |    | |
- *         |         |   !s   |            |    |   s   |    | |
- *         |         |        | <---------------|       |    | | 
- *         |         \--------/            |    \-------/    | |
- *         |- - - - - - - - - - - - - - - -|- - - - - - - - -|-|
- *         |         /--------\            |    /-------\    | |   
- *         | o-----> |        |---------------> |       |    | |
- *         |         |   !S   |            |    |   S   |    | |
- *         |         |        | <---------------|       |    | | 
- *         |         \--------/            |    \-------/    | |
- *         |- - - - - - - - - - - - - - - -|- - - - - - - - -|-|
- *         |         /--------\            |    /-------\    | |   
- *         | o-----> |        |---------------> |       |    | |
- *         |         |   !A   |            |    |   A   |    | |
- *         |         |        | <---------------|       |    | | 
- *         |         \--------/            |    \-------/    | |
- *         |- - - - - - - - - - - - - - - -|- - - - - - - - -|-|
- *         |         /--------\            |    /-------\    | |   
- *         | o-----> |        |---------------> |       |    | |
- *         |         |   !C   |            |    |   C   |    | |
- *         |         |        | <---------------|       |    | | 
- *         |         \--------/            |    \-------/    | |
- *         |                               \-----------------/ |
- *         |- - - - - - - - - - - - - - - - - - - - - - - - - -|
- *         |                               /-----------------\ |
- *         |                               |   (disabled)    | |
- *         |                               |                 | |
- *         |         /--------\            |    /-------\    | |
- *         | o-----> |        |---------------> |       |    | |
- *         |         |   !u   |            |    |   u   |    | |
- *         |         |        | <---------------|       |    | |
- *         |         \--------/            |    \-------/    | | 
- *         |- - - - - - - - - - - - - - - -|- - - - - - - - - -|
- *         |         /--------\            |    /-------\    | |   
- *         | o-----> |        |---------------> |       |    | |
- *         |         |   !a   |            |    |   a   |    | |
- *         |         |        | <---------------|       |    | |
- *         |         \--------/            |    \-------/    | | 
- *         |- - - - - - - - - - - - - - - -|- - - - - - - - - -|
- *         |         /--------\            |    /-------\    | |   
- *         | o-----> |        |---------------> |       |    | |
- *         |         |   !d   |            |    |   d   |    | |
- *         |         |        | <---------------|       |    | | 
- *         |         \--------/            |    \-------/    | |
- *         |- - - - - - - - - - - - - - - -|- - - - - - - - -|-|
- *         |         /--------\            |    /-------\    | |   
- *         | o-----> |        |---------------> |       |    | |
- *         |         |   !D   |            |    |   D   |    | |
- *         |         |        | <---------------|       |    | | 
- *         |         \--------/            |    \-------/    | |
- *         |- - - - - - - - - - - - - - - -|- - - - - - - - -|-|
- *         |         /--------\            |    /-------\    | |   
- *         | o-----> |        |---------------> |       |    | |
- *         |         |   !E   |            |    |   E   |    | |
- *         |         |        | <---------------|       |    | | 
- *         |         \--------/            |    \-------/    | |
- *         |- - - - - - - - - - - - - - - -|- - - - - - - - -|-|
- *         |         /--------\            |    /-------\    | |   
- *         | o-----> |        |---------------> |       |    | |
- *         |         |   !c   |            |    |   c   |    | |
- *         |         |        | <---------------|       |    | | 
- *         |         \--------/            |    \-------/    | |
- *         |- - - - - - - - - - - - - - - -|- - - - - - - - -|-|
- *         |         /--------\            |    /-------\    | |   
- *         | o-----> |        |---------------> |       |    | |
- *         |         |   !o   |            |    |   o   |    | |
- *         |         |        | <---------------|       |    | | 
- *         |         \--------/            |    \-------/    | |
- *         |                               \-----------------/ |
- *         \---------------------------------------------------/
+ * @dot
+ * digraph qinstance_state {
+ *   rankdir=LR; compound=true;
+ *   node [shape=box, fontname="Helvetica", fontsize=10];
+ *   graph [fontname="Helvetica", fontsize=10];
  *
- *         u := qinstance-host is unknown
- *         a := load alarm
- *         s := manual suspended
- *         A := suspended due to suspend_threshold
- *         S := suspended due to subordinate
- *         C := suspended due to calendar
- *         d := manual disabled
- *         D := disabled due to calendar
- *         c := configuration ambiguous
- *         o := orphaned
+ *   subgraph cluster_exists {
+ *     label="exists"; style=rounded;
  *
- * @endcode
+ *     subgraph cluster_susp {
+ *       label="running jobs are suspended"; style=rounded; color=grey40;
+ *       s [label="s\nby an administrator"];
+ *       A [label="A\nsuspend threshold"];
+ *       S [label="S\nsubordinate relation"];
+ *       C [label="C\nqueue calendar"];
+ *     }
+ *
+ *     subgraph cluster_unavail {
+ *       label="no new job is dispatched here"; style=rounded; color=grey40;
+ *       d [label="d\nby an administrator"];
+ *       D [label="D\nqueue calendar"];
+ *       u [label="u\nhost not reporting"];
+ *       a [label="a\nload threshold"];
+ *       E [label="E\njob start failed"];
+ *       c [label="c\nconfiguration ambiguous"];
+ *       o [label="o\ndeleted, jobs remain"];
+ *     }
+ *   }
+ * }
+ * @enddot
+ *
+ * Each letter is the one `qstat` prints; the bit behind it and its exact
+ * meaning are on the `QI_*` defines in the header.
  *
  * @see sge_qinstance_state.h
  */

@@ -1101,6 +1101,9 @@ EXCLUDE_PATTERNS       = */._* \
                          */com_sun_grid_drmaa_SessionImpl.h \
                          */jdrmaa/*.java \
                          */source/scripts/* \
+                         */source/3rdparty/* \
+                         */source/dist/* \
+                         */source/experimental/* \
                          */source/security/gss/* \
                          */source/security/krb/* \
                          */dump_cull_schema/cJSON.*
