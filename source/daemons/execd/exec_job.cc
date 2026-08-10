@@ -328,6 +328,8 @@ sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, ocs:
  * @return 0 on success
  */
 int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_str, int err_length) {
+   DENTER(TOP_LAYER);
+
    int i;
    char ps_name[128];
    FILE *fp;
@@ -419,8 +421,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    char *notify_susp = nullptr;
    char *shepherd_cmd = nullptr;
    char *set_token_cmd = nullptr;
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&cwd_out, cwd_out_buffer, sizeof(cwd_out_buffer));
    sge_dstring_init(&active_dir, active_dir_buffer, sizeof(active_dir_buffer));

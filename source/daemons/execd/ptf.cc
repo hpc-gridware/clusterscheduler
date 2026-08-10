@@ -789,12 +789,12 @@ static void ptf_get_usage_from_data_collector() {
 
 # ifdef MODULE_TEST
 
+   DENTER(TOP_LAYER);
+
    lListElem *proc;
    lList *usage_list;
    lList *pid_list;
    int j;
-
-   DENTER(TOP_LAYER);
 
    j = 0;
    for_each_ep_lv(job, ptf_jobs) {
