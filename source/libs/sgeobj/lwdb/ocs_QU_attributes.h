@@ -39,74 +39,74 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   QU_qhostname = 300,   ///< @todo add summary
+   QU_qhostname = 300,   ///< Execution Host
    QU_qname,   ///< cluster queue name
-   QU_full_name,   ///< @todo add summary
-   QU_tag,   ///< @todo add summary
-   QU_available_at,   ///< @todo add summary
-   QU_seq_no,   ///< @todo add summary
-   QU_nsuspend,   ///< @todo add summary
-   QU_qtype,   ///< @todo add summary
-   QU_job_slots,   ///< @todo add summary
-   QU_tmpdir,   ///< @todo add summary
-   QU_shell,   ///< @todo add summary
-   QU_calendar,   ///< @todo add summary
-   QU_priority,   ///< @todo add summary
-   QU_processors,   ///< @todo add summary
-   QU_prolog,   ///< @todo add summary
-   QU_epilog,   ///< @todo add summary
-   QU_shell_start_mode,   ///< @todo add summary
-   QU_starter_method,   ///< @todo add summary
-   QU_suspend_method,   ///< @todo add summary
-   QU_resume_method,   ///< @todo add summary
-   QU_terminate_method,   ///< @todo add summary
-   QU_initial_state,   ///< @todo add summary
-   QU_rerun,   ///< @todo add summary
-   QU_s_rt,   ///< @todo add summary
-   QU_h_rt,   ///< @todo add summary
-   QU_s_cpu,   ///< @todo add summary
-   QU_h_cpu,   ///< @todo add summary
-   QU_s_fsize,   ///< @todo add summary
-   QU_h_fsize,   ///< @todo add summary
-   QU_s_data,   ///< @todo add summary
-   QU_h_data,   ///< @todo add summary
-   QU_s_stack,   ///< @todo add summary
-   QU_h_stack,   ///< @todo add summary
-   QU_s_core,   ///< @todo add summary
-   QU_h_core,   ///< @todo add summary
-   QU_s_rss,   ///< @todo add summary
-   QU_h_rss,   ///< @todo add summary
-   QU_s_vmem,   ///< @todo add summary
-   QU_h_vmem,   ///< @todo add summary
-   QU_suspend_interval,   ///< @todo add summary
-   QU_min_cpu_interval,   ///< @todo add summary
-   QU_notify,   ///< @todo add summary
-   QU_ckpt_list,   ///< @todo add summary
-   QU_pe_list,   ///< @todo add summary
-   QU_owner_list,   ///< @todo add summary
-   QU_acl,   ///< @todo add summary
-   QU_xacl,   ///< @todo add summary
-   QU_projects,   ///< @todo add summary
-   QU_xprojects,   ///< @todo add summary
-   QU_consumable_config_list,   ///< @todo add summary
-   QU_load_thresholds,   ///< @todo add summary
-   QU_suspend_thresholds,   ///< @todo add summary
-   QU_subordinate_list,   ///< @todo add summary
-   QU_state,   ///< @todo add summary
+   QU_full_name,   ///< Full Name
+   QU_tag,   ///< Modification Tag
+   QU_available_at,   ///< Available At
+   QU_seq_no,   ///< Sequence Number
+   QU_nsuspend,   ///< Suspend Count
+   QU_qtype,   ///< Queue Type
+   QU_job_slots,   ///< Slots
+   QU_tmpdir,   ///< Temporary Directory
+   QU_shell,   ///< Login Shell
+   QU_calendar,   ///< Calendar
+   QU_priority,   ///< Nice Value
+   QU_processors,   ///< Processor Set
+   QU_prolog,   ///< Prolog
+   QU_epilog,   ///< Epilog
+   QU_shell_start_mode,   ///< Shell Start Mode
+   QU_starter_method,   ///< Starter Method
+   QU_suspend_method,   ///< Suspend Method
+   QU_resume_method,   ///< Resume Method
+   QU_terminate_method,   ///< Terminate Method
+   QU_initial_state,   ///< Initial State
+   QU_rerun,   ///< Rerunnable
+   QU_s_rt,   ///< Soft Real Time Limit
+   QU_h_rt,   ///< Hard Real Time Limit
+   QU_s_cpu,   ///< Soft CPU Limit
+   QU_h_cpu,   ///< Hard CPU Limit
+   QU_s_fsize,   ///< Soft File Size Limit
+   QU_h_fsize,   ///< Hard File Size Limit
+   QU_s_data,   ///< Soft Data Segment Limit
+   QU_h_data,   ///< Hard Data Segment Limit
+   QU_s_stack,   ///< Soft Stack Limit
+   QU_h_stack,   ///< Hard Stack Limit
+   QU_s_core,   ///< Soft Core File Limit
+   QU_h_core,   ///< Hard Core File Limit
+   QU_s_rss,   ///< Soft Resident Set Limit
+   QU_h_rss,   ///< Hard Resident Set Limit
+   QU_s_vmem,   ///< Soft Virtual Memory Limit
+   QU_h_vmem,   ///< Hard Virtual Memory Limit
+   QU_suspend_interval,   ///< Suspend Interval
+   QU_min_cpu_interval,   ///< Minimum Checkpoint Interval
+   QU_notify,   ///< Notify Time
+   QU_ckpt_list,   ///< Checkpointing Environments
+   QU_pe_list,   ///< Parallel Environments
+   QU_owner_list,   ///< Owners
+   QU_acl,   ///< Access List
+   QU_xacl,   ///< Excluded Access List
+   QU_projects,   ///< Projects
+   QU_xprojects,   ///< Excluded Projects
+   QU_consumable_config_list,   ///< Configured Consumables
+   QU_load_thresholds,   ///< Load Thresholds
+   QU_suspend_thresholds,   ///< Suspend Thresholds
+   QU_subordinate_list,   ///< Subordinate Queues
+   QU_state,   ///< State Bits
    QU_tagged4schedule,   ///< Queue Instance Tagged for Schedule
-   QU_cache_version,   ///< @todo add summary
-   QU_pending_signal,   ///< @todo add summary
-   QU_pending_signal_delivery_time,   ///< @todo add summary
-   QU_version,   ///< @todo add summary
-   QU_suspended_on_subordinate,   ///< @todo add summary
-   QU_last_suspend_threshold_ckeck,   ///< @todo add summary
-   QU_job_cnt,   ///< @todo add summary
-   QU_pending_job_cnt,   ///< @todo add summary
-   QU_soft_violation,   ///< @todo add summary
-   QU_host_seq_no,   ///< @todo add summary
-   QU_resource_utilization,   ///< @todo add summary
-   QU_message_list,   ///< @todo add summary
-   QU_gdi_do_later,   ///< @todo add summary
+   QU_cache_version,   ///< Unused
+   QU_pending_signal,   ///< Pending Signal
+   QU_pending_signal_delivery_time,   ///< Pending Signal Retry Time
+   QU_version,   ///< Queue Version
+   QU_suspended_on_subordinate,   ///< Subordinate Suspend Count
+   QU_last_suspend_threshold_ckeck,   ///< Last Suspend Threshold Check
+   QU_job_cnt,   ///< Unused
+   QU_pending_job_cnt,   ///< Unused
+   QU_soft_violation,   ///< Soft Request Violations
+   QU_host_seq_no,   ///< Host Sequence Number
+   QU_resource_utilization,   ///< Resource Utilization
+   QU_message_list,   ///< Messages
+   QU_gdi_do_later,   ///< Deferred GDI Change
    QU_state_changes,   ///< New State Variables
    QU_joker   ///< Joker
 };
