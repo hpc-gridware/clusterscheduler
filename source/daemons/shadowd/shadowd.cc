@@ -201,6 +201,8 @@ shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, cha
  */
 int
 main(int argc, char **argv) {
+   DENTER_MAIN(TOP_LAYER, "sge_shadowd");
+
    int heartbeat = 0;
    int last_heartbeat = 0;
    int latest_heartbeat = 0;
@@ -229,8 +231,6 @@ main(int argc, char **argv) {
 #endif
 
    lList *alp = nullptr;
-
-   DENTER_MAIN(TOP_LAYER, "sge_shadowd");
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
    /* initialize recovery control variables */
