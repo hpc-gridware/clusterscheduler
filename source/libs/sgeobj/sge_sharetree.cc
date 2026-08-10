@@ -72,8 +72,7 @@
  * @param[out] ret_id receives the next unused id
  * @return true when the whole subtree could be numbered
  */
-bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id)
-{
+bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id) {
    DENTER(TOP_LAYER);
    int my_id = id;
 
@@ -96,7 +95,7 @@ bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id)
    }   
 
    DRETURN(true);
-}  
+}
 
 /************************************************************************
   show_sharetree
@@ -217,11 +216,10 @@ const char *path
  *
  * @return the new node; the caller owns it
  */
-lListElem *getSNTemplate()
-{
-   lListElem *ep;
-
+lListElem *getSNTemplate() {
    DENTER(TOP_LAYER);
+
+   lListElem *ep;
 
    /* Use the catch-all "default" node so the offered template is a valid,
     * acceptable sharetree as-is: a single leaf named "template" would be rejected
@@ -251,9 +249,8 @@ lListElem *getSNTemplate()
  * @param name the node name to look for
  * @return the node, or nullptr when no node has that name
  */
-lListElem *search_named_node(lListElem *ep,  /* root of the tree */
-                             const char *name )
-{
+lListElem *search_named_node(lListElem *ep, /* root of the tree */
+                             const char *name) {
    DENTER(TOP_LAYER);
    lListElem *fep;
    static int sn_children_pos = -1;
@@ -293,8 +290,7 @@ lListElem *search_named_node(lListElem *ep,  /* root of the tree */
  *
  * @param[in,out] ancestors the structure to clean up; nullptr is ignored
  */
-void free_ancestors( ancestors_t *ancestors )
-{
+void free_ancestors(ancestors_t *ancestors) {
    if (ancestors && ancestors->nodes) {
       sge_free(&(ancestors->nodes));
    }
@@ -307,13 +303,12 @@ void free_ancestors( ancestors_t *ancestors )
  ********************************************************/
 
 static lListElem *
-search_by_path( lListElem *ep,  /* root of the [sub]tree */
-                const char *name,
-                const char *path,
-                int delim,
-                ancestors_t *ancestors,
-                int depth )
-{
+search_by_path(lListElem *ep, /* root of the [sub]tree */
+               const char *name,
+               const char *path,
+               int delim,
+               ancestors_t *ancestors,
+               int depth) {
    lList *children;
    lListElem *ret = nullptr;
    lListElem *child;
@@ -380,10 +375,9 @@ search_by_path( lListElem *ep,  /* root of the [sub]tree */
  * @return the node, or nullptr when the path does not resolve
  */
 lListElem *
-search_named_node_path( lListElem *ep,  /* root of the tree */
-                        const char *path,
-                        ancestors_t *ancestors )
-{
+search_named_node_path(lListElem *ep, /* root of the tree */
+                       const char *path,
+                       ancestors_t *ancestors) {
    return search_by_path(ep, nullptr, path, 0, ancestors, 0);
 }
 
@@ -400,10 +394,9 @@ search_named_node_path( lListElem *ep,  /* root of the tree */
 
 #ifdef notdef
 
-lListElem *search_ancestor_list( lListElem *ep,  /* root of the tree */
-                                 char *name,
-                                 ancestors_t *ancestors )
-{
+lListElem *search_ancestor_list(lListElem *ep, /* root of the tree */
+                                char *name,
+                                ancestors_t *ancestors) {
    if (ancestors)
       return search_ancestors(ep, name, ancestors, 1);
    else
@@ -426,11 +419,10 @@ lListElem *search_ancestor_list( lListElem *ep,  /* root of the tree */
  * @return the node, or nullptr when no node has that name
  */
 lListElem *
-search_ancestors( lListElem *ep,
-                  const char *name,
-                  ancestors_t *ancestors,
-                  int depth )
-{
+search_ancestors(lListElem *ep,
+                 const char *name,
+                 ancestors_t *ancestors,
+                 int depth) {
    DENTER(TOP_LAYER);
    lListElem *fep;
    static int sn_children_pos = -1;
@@ -472,8 +464,7 @@ search_ancestors( lListElem *ep,
  *
  * @return the first node which has no name or nullptr if all nodes have names
  */
-lListElem *sge_search_unspecified_node(lListElem *ep)
-{
+lListElem *sge_search_unspecified_node(lListElem *ep) {
    DENTER(TOP_LAYER);
    lListElem *ret = nullptr;
 

@@ -96,11 +96,11 @@ static bool answer_log(const lListElem *answer, bool show_info);
  *
  * @note MT-NOTE: answer_has_quality() is MT safe
  */
-bool answer_has_quality(const lListElem *answer, answer_quality_t quality) 
-{
+bool answer_has_quality(const lListElem *answer, answer_quality_t quality) {
+   DENTER(ANSWER_LAYER);
+
    bool ret;
 
-   DENTER(ANSWER_LAYER);
    ret = (lGetUlong(answer, AN_quality) ==  quality) ? true : false;
    DRETURN(ret);
 }
@@ -122,11 +122,11 @@ bool answer_has_quality(const lListElem *answer, answer_quality_t quality)
  *
  * @note MT-NOTE: answer_is_recoverable() is MT safe
  */
-static bool answer_is_recoverable(const lListElem *answer)
-{
+static bool answer_is_recoverable(const lListElem *answer) {
+   DENTER(ANSWER_LAYER);
+
    bool ret = true;
 
-   DENTER(ANSWER_LAYER);
    if (answer != nullptr) {
       const int max_non_recoverable = 4;
       const uint32_t non_recoverable[] = {
@@ -162,8 +162,7 @@ static bool answer_is_recoverable(const lListElem *answer)
  *
  *       MT-NOTE: answer_exit_if_not_recoverable() is MT safe
  */
-void answer_exit_if_not_recoverable(const lListElem *answer)
-{
+void answer_exit_if_not_recoverable(const lListElem *answer) {
    DENTER(ANSWER_LAYER);
    if (!answer_is_recoverable(answer)) {
       fprintf(stderr, "%s: %s\n", answer_get_quality_text(answer),
@@ -184,8 +183,7 @@ void answer_exit_if_not_recoverable(const lListElem *answer)
  *
  * @note MT-NOTE: answer_get_quality_text() is MT safe
  */
-const char *answer_get_quality_text(const lListElem *answer) 
-{
+const char *answer_get_quality_text(const lListElem *answer) {
    const char *quality_text[] = {
       "CRITICAL",
       "ERROR",
@@ -213,11 +211,11 @@ const char *answer_get_quality_text(const lListElem *answer)
  *
  * @note MT-NOTE: answer_get_status() is MT safe
  */
-uint32_t answer_get_status(const lListElem *answer)
-{
+uint32_t answer_get_status(const lListElem *answer) {
+   DENTER(ANSWER_LAYER);
+
    uint32_t ret;
 
-   DENTER(ANSWER_LAYER);
    ret = lGetUlong(answer, AN_status);
    DRETURN(ret);
 }
@@ -235,14 +233,14 @@ uint32_t answer_get_status(const lListElem *answer)
  *
  * @note MT-NOTE: answer_print_text() is MT safe
  */
-void answer_print_text(const lListElem *answer, 
-                       FILE *stream, 
+void answer_print_text(const lListElem *answer,
+                       FILE *stream,
                        const char *prefix,
-                       const char *suffix)
-{
+                       const char *suffix) {
+   DENTER(ANSWER_LAYER);
+
    const char *text = nullptr;
 
-   DENTER(ANSWER_LAYER);
    text = lGetString(answer, AN_text);
 
    if (prefix != nullptr) {
@@ -268,8 +266,7 @@ void answer_print_text(const lListElem *answer,
  *
  * @note MT-NOTE: answer_to_dstring() is MT safe
  */
-void answer_to_dstring(const lListElem *answer, dstring *diag)
-{
+void answer_to_dstring(const lListElem *answer, dstring *diag) {
    if (diag) {
       if (!answer) {
          sge_dstring_copy_string(diag, MSG_ANSWERWITHOUTDIAG);
@@ -297,8 +294,7 @@ void answer_to_dstring(const lListElem *answer, dstring *diag)
  *
  * @note MT-NOTE: answer_list_to_dstring() is MT safe
  */
-void answer_list_to_dstring(const lList *alp, dstring *diag)
-{
+void answer_list_to_dstring(const lList *alp, dstring *diag) {
    if (diag) {
       if (!alp || (lGetNumberOfElem (alp) == 0)) {
          sge_dstring_copy_string(diag, MSG_ANSWERWITHOUTDIAG);
@@ -342,13 +338,12 @@ void answer_list_to_dstring(const lList *alp, dstring *diag)
  *
  * @see #answer_list_add
  */
-bool 
-answer_list_add_sprintf(lList **answer_list, uint32_t status,
-                        answer_quality_t quality, const char *fmt, ...)
-{
+bool answer_list_add_sprintf(lList **answer_list, uint32_t status,
+                             answer_quality_t quality, const char *fmt, ...) {
+   DENTER(ANSWER_LAYER);
+
    bool ret = false;
 
-   DENTER(ANSWER_LAYER);
    if (answer_list != nullptr) {
       dstring buffer = DSTRING_INIT;
       const char *message;
@@ -381,11 +376,11 @@ answer_list_add_sprintf(lList **answer_list, uint32_t status,
  *
  * @note MT-NOTE: answer_list_has_quality() is MT safe
  */
-bool answer_list_has_quality(lList **answer_list, answer_quality_t quality)
-{
+bool answer_list_has_quality(lList **answer_list, answer_quality_t quality) {
+   DENTER(ANSWER_LAYER);
+
    bool ret = false;
 
-   DENTER(ANSWER_LAYER);
    if (answer_list != nullptr) {
       for_each_ep_lv(answer, *answer_list) {
          if (answer_has_quality(answer, quality)) {
@@ -408,11 +403,10 @@ bool answer_list_has_quality(lList **answer_list, answer_quality_t quality)
  *
  * @note MT-NOTE: answer_list_remove_quality() is MT safe
  */
-void answer_list_remove_quality(lList *answer_list, answer_quality_t quality)
-{
-   lListElem *aep, *nxt = lFirstRW(answer_list);
-
+void answer_list_remove_quality(lList *answer_list, answer_quality_t quality) {
    DENTER(ANSWER_LAYER);
+
+   lListElem *aep, *nxt = lFirstRW(answer_list);
 
    while ((aep=nxt)) {
       nxt=lNextRW(aep);
@@ -438,11 +432,10 @@ void answer_list_remove_quality(lList *answer_list, answer_quality_t quality)
  *
  * @note MT-NOTE: answer_list_has_status() is MT safe
  */
-bool answer_list_has_status(lList **answer_list, uint32_t status)
-{
-   bool ret = false;
-
+bool answer_list_has_status(lList **answer_list, uint32_t status) {
    DENTER(ANSWER_LAYER);
+
+   bool ret = false;
 
    if (answer_list != nullptr) {
       for_each_ep_lv(answer, *answer_list) {
@@ -467,17 +460,17 @@ bool answer_list_has_status(lList **answer_list, uint32_t status)
  *
  * @note MT-NOTE: answer_list_has_error() is MT safe
  */
-bool answer_list_has_error(lList **answer_list)
-{
+bool answer_list_has_error(lList **answer_list) {
+   DENTER(ANSWER_LAYER);
+
    bool ret = false;
 
-   DENTER(ANSWER_LAYER);
    if ((answer_list_has_quality(answer_list, ANSWER_QUALITY_ERROR)) ||
        (answer_list_has_quality(answer_list, ANSWER_QUALITY_CRITICAL))) {
        ret = true;
    }
    DRETURN(ret);
-}               
+}
 
 /**
  * @brief Print and/or exit
@@ -491,8 +484,7 @@ bool answer_list_has_error(lList **answer_list)
  *
  * @note MT-NOTE: answer_list_on_error_print_or_exit() is MT safe
  */
-void answer_list_on_error_print_or_exit(lList **answer_list, FILE *stream)
-{
+void answer_list_on_error_print_or_exit(lList **answer_list, FILE *stream) {
    DENTER(ANSWER_LAYER);
    for_each_ep_lv(answer, *answer_list) {
       answer_exit_if_not_recoverable(answer);
@@ -526,15 +518,15 @@ void answer_list_on_error_print_or_exit(lList **answer_list, FILE *stream)
  *
  * @note MT-NOTE: answer_list_print_err_warn() is MT safe
  */
-int answer_list_print_err_warn(lList **answer_list, 
+int answer_list_print_err_warn(lList **answer_list,
                                const char *critical_prefix,
                                const char *err_prefix,
-                               const char *warn_prefix)
-{
+                               const char *warn_prefix) {
+   DENTER(ANSWER_LAYER);
+
    int do_exit = 0;
    uint32_t status = 0;
 
-   DENTER(ANSWER_LAYER);
    for_each_ep_lv(answer, *answer_list) {
       if (answer_has_quality(answer, ANSWER_QUALITY_CRITICAL)) {
          answer_print_text(answer, stderr, critical_prefix, nullptr);
@@ -576,9 +568,10 @@ int answer_list_print_err_warn(lList **answer_list,
  * @note MT-NOTE: answer_list_handle_request_answer_list() is MT safe
  */
 int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream) {
+   DENTER(ANSWER_LAYER);
+
    int ret = STATUS_OK;
 
-   DENTER(ANSWER_LAYER);
    if(answer_list != nullptr && *answer_list != nullptr) {
       const lListElem *answer;
 
@@ -623,13 +616,11 @@ int answer_list_handle_request_answer_list(lList **answer_list, FILE *stream) {
  *
  * @see #answer_list_add_sprintf
  */
-bool
-answer_list_add(lList **answer_list, const char *text,
-                uint32_t status, answer_quality_t quality)
-{
-   bool ret = false;
-
+bool answer_list_add(lList **answer_list, const char *text,
+                     uint32_t status, answer_quality_t quality) {
    DENTER(ANSWER_LAYER);
+
+   bool ret = false;
 
    if (answer_list != nullptr) {
       lListElem *answer = lCreateElem(AN_Type);
@@ -667,11 +658,11 @@ answer_list_add(lList **answer_list, const char *text,
  *
  * @note MT-NOTE: answer_list_add_elem() is MT safe
  */
-bool answer_list_add_elem(lList **answer_list, lListElem *answer)
-{
+bool answer_list_add_elem(lList **answer_list, lListElem *answer) {
+   DENTER(ANSWER_LAYER);
+
    bool ret = false;
 
-   DENTER(ANSWER_LAYER);
    if (answer_list != nullptr) {
       if (*answer_list == nullptr) {
          *answer_list = lCreateList("", AN_Type);
@@ -694,8 +685,7 @@ bool answer_list_add_elem(lList **answer_list, lListElem *answer)
  *
  * @note MT-NOTE: answer_list_replace() is MT safe
  */
-void answer_list_replace(lList **answer_list, lList **new_list)
-{
+void answer_list_replace(lList **answer_list, lList **new_list) {
    DENTER(ANSWER_LAYER);
    if (answer_list != nullptr) {
       lFreeList(answer_list);
@@ -718,8 +708,7 @@ void answer_list_replace(lList **answer_list, lList **new_list)
  * @param answer_list AN_Type list
  * @param new_list AN_Type list
  */
-void answer_list_append_list(lList **answer_list, lList **new_list)
-{
+void answer_list_append_list(lList **answer_list, lList **new_list) {
    DENTER(ANSWER_LAYER);
    if (answer_list != nullptr && new_list != nullptr) {
       if (*answer_list == nullptr && *new_list != nullptr) {
@@ -786,10 +775,9 @@ bool answer_list_log(lList **answer_list, bool is_free_list, bool show_info) {
  * @note MT-NOTE: answer_log() is MT safe
  */
 static bool answer_log(const lListElem *answer, bool show_info) {
+   DENTER(ANSWER_LAYER);
 
    bool ret = false;
-
-   DENTER(ANSWER_LAYER);
 
    if (!answer) {
       DRETURN(ret);
@@ -851,12 +839,11 @@ bool answer_list_output(lList **answer_list) {
  * @param alp AN_Type list
  * @return 1 when any element carried a status other than `STATUS_OK`, else 0
  */
-int show_answer(lList *alp) 
-{
+int show_answer(lList *alp) {
+   DENTER(TOP_LAYER);
+
    const lListElem *aep = nullptr;
    int ret = 0;
-   
-   DENTER(TOP_LAYER);
    
    if (alp != nullptr) {
     
@@ -883,12 +870,11 @@ int show_answer(lList *alp)
  * @param alp AN_Type list
  * @return 1 when any element carried a status other than `STATUS_OK`, else 0
  */
-int show_answer_list(lList *alp) 
-{
+int show_answer_list(lList *alp) {
+   DENTER(TOP_LAYER);
+
    const lListElem *aep = nullptr;
    int ret = 0;
-   
-   DENTER(TOP_LAYER);
    
    if (alp != nullptr) {
       for_each_ep(aep,alp) {

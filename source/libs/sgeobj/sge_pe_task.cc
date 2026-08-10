@@ -73,15 +73,14 @@
  * @see #pe_task_sum_past_usage_all, #pe_task_sum_past_usage_list
  */
 lListElem *
-pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task)
-{
+pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task) {
+   DENTER(TOP_LAYER);
+
    lList *container_usage;
    const lList *pe_task_usage;
    lList *container_reported_usage;
    const lList *pe_task_reported_usage;
    
-   DENTER(TOP_LAYER);
-
    /* invalid input - nothing to do */
    if (container == nullptr || pe_task == nullptr) {
       DRETURN(nullptr);
@@ -125,8 +124,7 @@ pe_task_sum_past_usage(lListElem *container, const lListElem *pe_task)
  *
  * @see #pe_task_sum_past_usage, #pe_task_sum_past_usage_list
  */
-lListElem *pe_task_sum_past_usage_all(lList *pe_task_list)
-{
+lListElem *pe_task_sum_past_usage_all(lList *pe_task_list) {
    DENTER(TOP_LAYER);
    lListElem *container = nullptr;
 
@@ -163,11 +161,10 @@ lListElem *pe_task_sum_past_usage_all(lList *pe_task_list)
  * @see #pe_task_sum_past_usage, #pe_task_sum_past_usage_all
  */
 lListElem *
-pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task)
-{
-   lListElem *container;
-
+pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task) {
    DENTER(TOP_LAYER);
+
+   lListElem *container;
 
    /* no pe task list - nothing to do */
    if (pe_task_list == nullptr) {
@@ -209,9 +206,9 @@ pe_task_sum_past_usage_list(lList *pe_task_list, const lListElem *pe_task)
  */
 bool 
 pe_task_verify_request(const lListElem *petr, lList **answer_list) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (petr == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,

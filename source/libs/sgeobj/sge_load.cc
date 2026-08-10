@@ -54,12 +54,10 @@
  * @param name the load value name
  * @return true when the value is static
  */
-bool
-sge_is_static_load_value(const char *name) 
-{
-   bool ret = false;
-
+bool sge_is_static_load_value(const char *name) {
    DENTER(BASIS_LAYER);
+
+   bool ret = false;
 
    if (name != nullptr) {
       if (strcmp(name, LOAD_ATTR_ARCH) == 0 || 

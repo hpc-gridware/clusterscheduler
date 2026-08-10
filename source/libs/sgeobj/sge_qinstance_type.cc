@@ -76,8 +76,7 @@ static bool
 qinstance_has_type(const lListElem *this_elem, uint32_t type);
 
 static bool
-qinstance_has_type(const lListElem *this_elem, uint32_t type)
-{
+qinstance_has_type(const lListElem *this_elem, uint32_t type) {
    bool ret = false;
 
    if (lGetUlong(this_elem, QU_qtype) & type) {
@@ -102,11 +101,11 @@ qinstance_has_type(const lListElem *this_elem, uint32_t type)
  * @note MT-NOTE: qtype_append_to_dstring() is MT safe
  */
 const char *
-qtype_append_to_dstring(uint32_t qtype, dstring *string)
-{
+qtype_append_to_dstring(uint32_t qtype, dstring *string) {
+   DENTER(QINSTANCE_TYPE_LAYER);
+
    const char *ret = nullptr;
 
-   DENTER(QINSTANCE_TYPE_LAYER);
    if (string != nullptr) {
       const char **ptr = nullptr;
       uint32_t bitmask = 1;
@@ -142,13 +141,12 @@ qtype_append_to_dstring(uint32_t qtype, dstring *string)
  * @param only_first_char true for the one letter per type form, false for the names
  * @return always true
  */
-bool
-qinstance_print_qtype_to_dstring(const lListElem *this_elem,
-                                 dstring *string, bool only_first_char)
-{
+bool qinstance_print_qtype_to_dstring(const lListElem *this_elem,
+                                      dstring *string, bool only_first_char) {
+   DENTER(QINSTANCE_TYPE_LAYER);
+
    bool ret = true;
 
-   DENTER(QINSTANCE_TYPE_LAYER);
    if (this_elem != nullptr && string != nullptr) {
       const char **ptr = nullptr;
       uint32_t bitmask = 1;
@@ -196,14 +194,13 @@ qinstance_print_qtype_to_dstring(const lListElem *this_elem,
  * @param value the type names, as an administrator wrote them
  * @return true when the value was understood
  */
-bool
-qinstance_parse_qtype_from_string(lListElem *this_elem, lList **answer_list,
-                                  const char *value)
-{
+bool qinstance_parse_qtype_from_string(lListElem *this_elem, lList **answer_list,
+                                       const char *value) {
+   DENTER(QINSTANCE_TYPE_LAYER);
+
    bool ret = true;
    uint32_t type = 0;
 
-   DENTER(QINSTANCE_TYPE_LAYER);
    SGE_CHECK_POINTER_FALSE(this_elem, answer_list);
    if (value != nullptr && *value != 0) {
       if (!sge_parse_bitfield_str(value, queue_types, &type,
@@ -222,8 +219,7 @@ qinstance_parse_qtype_from_string(lListElem *this_elem, lList **answer_list,
  * @param this_elem the queue instance to check
  * @return true when the #BQ bit is set
  */
-bool qinstance_is_batch_queue(const lListElem *this_elem)
-{
+bool qinstance_is_batch_queue(const lListElem *this_elem) {
    return qinstance_has_type(this_elem, BQ);
 }
 
@@ -233,8 +229,7 @@ bool qinstance_is_batch_queue(const lListElem *this_elem)
  * @param this_elem the queue instance to check
  * @return true when the #IQ bit is set
  */
-bool qinstance_is_interactive_queue(const lListElem *this_elem)
-{
+bool qinstance_is_interactive_queue(const lListElem *this_elem) {
    return qinstance_has_type(this_elem, IQ);
 }
 
@@ -244,8 +239,7 @@ bool qinstance_is_interactive_queue(const lListElem *this_elem)
  * @param this_elem the queue instance to check
  * @return true when it references a checkpointing environment
  */
-bool qinstance_is_checkpointing_queue(const lListElem *this_elem)
-{
+bool qinstance_is_checkpointing_queue(const lListElem *this_elem) {
    return qinstance_is_a_ckpt_referenced(this_elem);
 }
 
@@ -255,8 +249,6 @@ bool qinstance_is_checkpointing_queue(const lListElem *this_elem)
  * @param this_elem the queue instance to check
  * @return true when it references a parallel environment
  */
-bool qinstance_is_parallel_queue(const lListElem *this_elem)
-{
+bool qinstance_is_parallel_queue(const lListElem *this_elem) {
    return qinstance_is_a_pe_referenced(this_elem);
 }
-

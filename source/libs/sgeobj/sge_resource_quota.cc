@@ -90,14 +90,14 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
  * @note MT-NOTE: rqs_parse_filter_from_string() is MT safe
  */
 bool rqs_parse_filter_from_string(lListElem **filter, const char* buffer, lList **alp) {
+   DENTER(TOP_LAYER);
+
    lListElem *tmp_filter = nullptr;
    const lListElem *scope = nullptr;
    lList *lp = nullptr;
    lList *scope_list = nullptr;
    lList *xscope_list = nullptr;
    char delims[] = "\t \v\r,{}"; 
-
-   DENTER(TOP_LAYER);
 
    if (buffer == nullptr) {
      DRETURN(false);
@@ -215,8 +215,7 @@ bool rqs_append_filter_to_dstring(const lListElem *filter, dstring *buffer, lLis
  *
  * @note MT-NOTE: rqs_set_defaults() is MT safe
  */
-lListElem* rqs_set_defaults(lListElem* rqs)
-{
+lListElem *rqs_set_defaults(lListElem *rqs) {
    DENTER(TOP_LAYER);
 
    if (rqs != nullptr) {
@@ -268,8 +267,7 @@ lListElem* rqs_set_defaults(lListElem* rqs)
  * @see #rqs_verify_attributes
  */
 static bool
-rqs_verify_filter(const lListElem *rule, lList **answer_list, int nm, const char *message)
-{
+rqs_verify_filter(const lListElem *rule, lList **answer_list, int nm, const char *message) {
    bool ret = true;
 
    if (rule == nullptr) {
@@ -316,12 +314,11 @@ rqs_verify_filter(const lListElem *rule, lList **answer_list, int nm, const char
  *
  * @note MT-NOTE: rqs_verify_attributes() is MT safe
  */
-bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, const lList *master_centry_list)
-{
+bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, const lList *master_centry_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const lList *rules = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* every rule set needs a RQS_name */
    if (lGetString(rqs, RQS_name) == nullptr) {
@@ -474,8 +471,7 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, 
  *
  * @see #rqs_verify_attributes
  */
-bool rqs_list_verify_attributes(lList *rqs_list, lList **answer_list, bool in_master, const lList *master_centry_list)
-{
+bool rqs_list_verify_attributes(lList *rqs_list, lList **answer_list, bool in_master, const lList *master_centry_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
    
@@ -503,11 +499,10 @@ bool rqs_list_verify_attributes(lList *rqs_list, lList **answer_list, bool in_ma
  *
  * @note MT-NOTE: rqs_list_locate() is MT safe
  */
-lListElem *rqs_list_locate(lList *lp, const char *name)
-{
-   lListElem *ep = nullptr;
-
+lListElem *rqs_list_locate(lList *lp, const char *name) {
    DENTER(TOP_LAYER);
+
+   lListElem *ep = nullptr;
 
    ep = lGetElemStrRW(lp, RQS_name, name);
 
@@ -530,8 +525,7 @@ lListElem *rqs_list_locate(lList *lp, const char *name)
  *
  * @note MT-NOTE: rqs_rule_locate() is MT safe
  */
-lListElem* rqs_rule_locate(lList *lp, const char *name)
-{
+lListElem *rqs_rule_locate(lList *lp, const char *name) {
    DENTER(TOP_LAYER);
    lListElem *ep = nullptr;
    int get_pos = 0;
@@ -573,8 +567,7 @@ lListElem* rqs_rule_locate(lList *lp, const char *name)
  *
  * @note MT-NOTE: rqs_xattr_pre_gdi() is MT safe
  */
-bool rqs_xattr_pre_gdi(lList *this_list, lList **answer_list) 
-{
+bool rqs_xattr_pre_gdi(lList *this_list, lList **answer_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
    char delim[] = "/";
@@ -627,14 +620,12 @@ bool rqs_xattr_pre_gdi(lList *this_list, lList **answer_list)
  *
  * @note MT-NOTE: rqs_get_rue_string() is MT safe
  */
-bool
-rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user, 
-                              const char *project, const char *host, const char *queue,
-                              const char* pe)
-{
-   lListElem *filter = nullptr;
-
+bool rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user,
+                        const char *project, const char *host, const char *queue,
+                        const char *pe) {
    DENTER(BASIS_LAYER);
+
+   lListElem *filter = nullptr;
 
    if (rule == nullptr) {
       DRETURN(false);
@@ -705,11 +696,11 @@ rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user,
  *
  * @note MT-NOTE: rqs_debit_consumable() is not MT safe
  */
-int
-rqs_debit_consumable(lListElem *rqs, const lListElem *job, const lListElem *granted, const lListElem *pe,
-                     const lList *centry_list, const lList *acl_list, const lList *hgrp_list, int slots,
-                     bool is_master_task, bool do_per_host_booking)
-{
+int rqs_debit_consumable(lListElem *rqs, const lListElem *job, const lListElem *granted, const lListElem *pe,
+                         const lList *centry_list, const lList *acl_list, const lList *hgrp_list, int slots,
+                         bool is_master_task, bool do_per_host_booking) {
+   DENTER(TOP_LAYER);
+
    lListElem *rule = nullptr;
    int mods = 0;
    const char* hostname = lGetHost(granted, JG_qhostname);
@@ -719,8 +710,6 @@ rqs_debit_consumable(lListElem *rqs, const lListElem *job, const lListElem *gran
    char *qname = nullptr;
    const char *queue_instance = lGetString(granted, JG_qname);
    const char* project = lGetString(job, JB_project);
-
-   DENTER(TOP_LAYER);
 
    if (!lGetBool(rqs, RQS_enabled)) {
       DRETURN(0);
@@ -752,7 +741,7 @@ rqs_debit_consumable(lListElem *rqs, const lListElem *job, const lListElem *gran
    
    sge_free(&qname);
 
-   DRETURN(mods); 
+   DRETURN(mods);
 }
 
 /**
@@ -778,9 +767,8 @@ rqs_debit_consumable(lListElem *rqs, const lListElem *job, const lListElem *gran
  */
 lListElem *
 rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group, const lList *grp_list,
-                      const char *project, const char* pe, const char *host, const char *queue,
-                      const lList *userset_list, const lList* hgroup_list, dstring *rule_name)
-{
+                      const char *project, const char *pe, const char *host, const char *queue,
+                      const lList *userset_list, const lList *hgroup_list, dstring *rule_name) {
    DENTER(BASIS_LAYER);
    lListElem *rule = nullptr;
    const lList *rule_list = lGetList(rqs, RQS_rule);
@@ -825,10 +813,8 @@ rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group,
  * @note MT-NOTE: rqs_debit_rule_usage() is MT safe
  */
 // @todo: pass rue_name as const char *
-int
-rqs_debit_rule_usage(const lListElem *job, const lListElem *pe, lListElem *rule, dstring *rue_name, int slots,
-                     const lList *centry_list, const char *obj_name, bool is_master_task, bool do_per_host_booking)
-{
+int rqs_debit_rule_usage(const lListElem *job, const lListElem *pe, lListElem *rule, dstring *rue_name, int slots,
+                         const lList *centry_list, const char *obj_name, bool is_master_task, bool do_per_host_booking) {
    DENTER(TOP_LAYER);
    int mods = 0;
 
@@ -966,10 +952,9 @@ static bool
 rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value,
                           const lList *master_userset_list, const lList *master_hgroup_list,
                           const char *group, bool is_xscope, const lList *grp_list) {
+   DENTER(TOP_LAYER);
 
    bool found = false;
-
-   DENTER(TOP_LAYER);
 
    if (!ocs::is_pattern(value)) {
       /* used in scheduler/qmaster and qquota */
@@ -1223,12 +1208,11 @@ rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const
  *
  * @note MT-NOTE: rqs_match_host_scope() is MT safe
  */
-static bool 
-rqs_match_host_scope(const lList *scope, const char *name, const lList *master_hgroup_list, bool is_xscope, const lList *grp_list)
-{
-   const lListElem *ep;
-
+static bool
+rqs_match_host_scope(const lList *scope, const char *name, const lList *master_hgroup_list, bool is_xscope, const lList *grp_list) {
    DENTER(TOP_LAYER);
+
+   const lListElem *ep;
 
    if (lGetElemStr(scope, ST_name, "*")) {
       DRETURN(true);
@@ -1246,7 +1230,6 @@ rqs_match_host_scope(const lList *scope, const char *name, const lList *master_h
    }
    DRETURN(false);
 }
-
 
 
 /**
@@ -1366,13 +1349,12 @@ rqs_filter_match(lListElem *filter, int filter_type, const char *value, const lL
  *
  * @note MT-NOTE: sge_centry_referenced_in_rqs() is MT safe
  */
-bool sge_centry_referenced_in_rqs(const lListElem *rqs, const lListElem *centry)
-{
+bool sge_centry_referenced_in_rqs(const lListElem *rqs, const lListElem *centry) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    const char *centry_name = lGetString(centry, CE_name);
    const lListElem *rule;
-
-   DENTER(TOP_LAYER);
 
    for_each_ep(rule, lGetList(rqs, RQS_rule)) {
       const lListElem *limit;
@@ -1414,11 +1396,10 @@ bool sge_centry_referenced_in_rqs(const lListElem *rqs, const lListElem *centry)
  *
  * @note MT-NOTE: rqs_replace_request_verify() is MT safe
  */
-bool rqs_replace_request_verify(lList **answer_list, const lList *request)
-{
-   const lListElem *ep;
-
+bool rqs_replace_request_verify(lList **answer_list, const lList *request) {
    DENTER(TOP_LAYER);
+
+   const lListElem *ep;
 
    /* search for duplicate rqs names in the request */
    for_each_ep(ep, request) {
@@ -1437,4 +1418,3 @@ bool rqs_replace_request_verify(lList **answer_list, const lList *request)
 
    DRETURN(true);
 }
-

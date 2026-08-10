@@ -96,16 +96,15 @@ void job_report_print_usage(const lListElem *job_report, FILE *fp)
  * @param ja_task JAT_Type object
  * @param pe_task PET_Type object
  */
-void job_report_init_from_job(lListElem *job_report, 
-                              const lListElem *job, 
-                              const lListElem *ja_task, 
-                              const lListElem *pe_task) 
-{
+void job_report_init_from_job(lListElem *job_report,
+                              const lListElem *job,
+                              const lListElem *ja_task,
+                              const lListElem *pe_task) {
+   DENTER(TOP_LAYER);
+
    uint32_t job_id = lGetUlong(job, JB_job_number);
    uint32_t ja_task_id = lGetUlong(ja_task, JAT_task_number);
    const lListElem *queue;
-
-   DENTER(TOP_LAYER);
 
    lSetUlong(job_report, JR_job_number, job_id);
    lSetUlong(job_report, JR_ja_task_number, ja_task_id);
@@ -150,13 +149,12 @@ void job_report_init_from_job_with_usage(lListElem *job_report,
                                          const lListElem *job,
                                          lListElem *ja_task,
                                          lListElem *pe_task,
-                                         uint64_t time_stamp)
-{
+                                         uint64_t time_stamp) {
+   DENTER(TOP_LAYER);
+
    lListElem *ep;
    lListElem *obj;
    int nm;
-
-   DENTER(TOP_LAYER);
 
    /*
     * initialize the job jeport like any other job report...
@@ -191,4 +189,3 @@ void job_report_init_from_job_with_usage(lListElem *job_report,
    lSetList(job_report, JR_usage, lCopyList("", lGetList(obj, nm)));
    DRETURN_VOID;
 }
-

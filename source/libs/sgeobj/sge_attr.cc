@@ -224,11 +224,11 @@ attr_list_locate(const lList *this_list, const char *host_or_group,
  */
 static lListElem *
 attr_create(lList **answer_list, const char *href, void *value,
-            const lDescr *descriptor, int href_nm, int value_nm)
-{
+            const lDescr *descriptor, int href_nm, int value_nm) {
+   DENTER(HOSTATTR_LAYER);
+
    lListElem *ret = nullptr;
 
-   DENTER(HOSTATTR_LAYER);
    if (href != nullptr) {
       lListElem *new_attr = lCreateElem(descriptor);
 
@@ -281,11 +281,10 @@ attr_create(lList **answer_list, const char *href, void *value,
  *
  * @note MT-NOTE: attr_list_add() is not MT safe
  */
-static bool 
-attr_list_add(lList **this_list, lList **answer_list, lListElem **attr, 
+static bool
+attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
               int flags, lList **ambiguous_href_list,
-              const lDescr *descriptor, int href_nm, int value_nm, const lList *master_hgroup_list)
-{
+              const lDescr *descriptor, int href_nm, int value_nm, const lList *master_hgroup_list) {
    DENTER(HOSTATTR_LAYER);
    bool ret = false;
 
@@ -431,12 +430,11 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
  *
  * @see #attr_create
  */
-static bool 
-attr_list_add_set_del(lList **this_list, lList **answer_list, 
-              const char *hostname, void *value, bool remove,
-              const lDescr *descriptor, 
-              int href_nm, int value_nm, const lList *master_hgroup_list)
-{
+static bool
+attr_list_add_set_del(lList **this_list, lList **answer_list,
+                      const char *hostname, void *value, bool remove,
+                      const lDescr *descriptor,
+                      int href_nm, int value_nm, const lList *master_hgroup_list) {
    bool ret = true;
    lListElem *attr = nullptr;
 
@@ -461,16 +459,15 @@ href_nm           ASTR_href
 value_nm          ASTR_value
 */
 static bool
-attr_list_find_value(const lList *this_list, lList **answer_list, 
+attr_list_find_value(const lList *this_list, lList **answer_list,
                      const char *hostname, void *value_buffer,
                      const char **matching_host_or_group,
                      const char **matching_group,
-                     bool *is_ambiguous, const lDescr *descriptor, 
-                     int href_nm, int value_nm, const lList *master_hroup_list)
-{
-   bool ret = false;
-
+                     bool *is_ambiguous, const lDescr *descriptor,
+                     int href_nm, int value_nm, const lList *master_hroup_list) {
    DENTER(HOSTATTR_LAYER);
+
+   bool ret = false;
 
    if (this_list != nullptr && hostname != nullptr) {
       const lListElem *href = nullptr;
@@ -562,14 +559,13 @@ href_nm           ASTR_href
 value_nm          ASTR_value
 */
 static bool
-attr_list_find_value_href(const lList *this_list, lList **answer_list, 
-                     const char *hostname, void *value_buffer,
-                     bool *found, const lDescr *descriptor, 
-                     int href_nm, int value_nm)
-{
-   bool ret = false;
-
+attr_list_find_value_href(const lList *this_list, lList **answer_list,
+                          const char *hostname, void *value_buffer,
+                          bool *found, const lDescr *descriptor,
+                          int href_nm, int value_nm) {
    DENTER(HOSTATTR_LAYER);
+
+   bool ret = false;
 
    if (this_list != nullptr && hostname != nullptr) {
       lListElem *href = nullptr;
@@ -623,17 +619,15 @@ value_nm          ASTR_value
  * @param value_nm the attribute holding its value
  * @return the resulting text
  */
-bool
-attr_list_append_to_dstring(const lList *this_list, dstring *string,
-                            const lDescr *descriptor, int href_nm, int value_nm)
-{
+bool attr_list_append_to_dstring(const lList *this_list, dstring *string,
+                                 const lDescr *descriptor, int href_nm, int value_nm) {
+   DENTER(HOSTATTR_LAYER);
+
    bool found_default = false;
    bool found_group = false;
    bool found_host = false;
    const lListElem *attr = nullptr;
    dstring host_string = DSTRING_INIT;
-
-   DENTER(HOSTATTR_LAYER);
 
    if ((attr = attr_list_locate(this_list, HOSTREF_DEFAULT, href_nm)) != nullptr) {
       found_default = true;
@@ -693,12 +687,11 @@ value_nm          ASTR_value
 static bool
 attr_list_parse_from_string(lList **this_list, lList **answer_list,
                             const char *string, int flags,
-                            const lDescr *descriptor, int href_nm, 
-                            int value_nm, const lList *master_hgroup_list)
-{
-   bool ret = true;
+                            const lDescr *descriptor, int href_nm,
+                            int value_nm, const lList *master_hgroup_list) {
    DENTER(TOP_LAYER);
-  
+
+   bool ret = true;
    if (this_list != nullptr && string != nullptr) {
       struct saved_vars_s *strtok_context = nullptr;
       char *token = nullptr;
@@ -877,15 +870,15 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
 href_nm           ASTR_href
 */
 static lListElem *
-attr_list_locate(const lList *this_list, const char *host_or_group, int href_nm)
-{
+attr_list_locate(const lList *this_list, const char *host_or_group, int href_nm) {
+   DENTER(HOSTATTR_LAYER);
+
    lListElem *ret = nullptr;
 
-   DENTER(HOSTATTR_LAYER);
    if (this_list != nullptr && host_or_group != nullptr) {
       ret = lGetElemHostRW(this_list, href_nm, host_or_group);
    }
-   DRETURN(ret); 
+   DRETURN(ret);
 }
 
 TEMPLATE_ATTR_IMPL(str_attr, const char *, const char *, ASTR_Type, ASTR_href, ASTR_value) 

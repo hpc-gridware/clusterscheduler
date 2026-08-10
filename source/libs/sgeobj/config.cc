@@ -104,8 +104,9 @@
  */
 int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
                      int nm2, int nm3, const char *delimitor, int flag, char *buffer,
-                     int buffer_size) 
-{
+                     int buffer_size) {
+   DENTER(TOP_LAYER);
+
    lListElem *ep;
    char *name; 
    char *value;
@@ -114,8 +115,6 @@ int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
    struct saved_vars_s *last = nullptr;
    int force_value;
   
-   DENTER(TOP_LAYER);
-
    force_value = ((flag&RCL_NO_VALUE)==0);
 
    while (fgets(buffer, buffer_size, fp)) {
@@ -239,12 +238,11 @@ Error:
  * @return the sublist, or nullptr when the key is absent
  */
 lList *get_conf_sublist(lList **alpp, lList *lp, int name_nm, int value_nm,
-                        const char *key) 
-{
+                        const char *key) {
+   DENTER(CULL_LAYER);
+
    lList *value;
 
-   DENTER(CULL_LAYER);
-   
    const lListElem *ep = lGetElemStr(lp, name_nm, key);
    if (ep == nullptr) {
       if (alpp) {
@@ -287,10 +285,10 @@ lList *get_conf_sublist(lList **alpp, lList *lp, int name_nm, int value_nm,
  */
 char *get_conf_value(lList **alpp, lList *lp, int name_nm, int value_nm,
                            const char *key) {
+   DENTER(CULL_LAYER);
+
    char *value;
 
-   DENTER(CULL_LAYER);
-   
    const lListElem *ep = lGetElemStr(lp, name_nm, key);
    if (ep == nullptr) {
       if (alpp) {
@@ -345,11 +343,11 @@ const char *key,
 lListElem *ep,
 int name_nm 
 ) {
+   DENTER(TOP_LAYER);
+
    const char *str;
    int pos;
    int dataType;
-
-   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -415,9 +413,9 @@ const char *key,
 lListElem *ep,
 int name_nm 
 ) {
-   const char *str;
-
    DENTER(CULL_LAYER);
+
+   const char *str;
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -456,10 +454,10 @@ const char *key,
 lListElem *ep,
 int name_nm 
 ) {
+   DENTER(CULL_LAYER);
+
    const char *str;
    uint32_t type;
-
-   DENTER(CULL_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -500,10 +498,10 @@ const char *key,
 lListElem *ep,
 int name_nm 
 ) {
+   DENTER(CULL_LAYER);
+
    const char *str;
    uint32_t type;
-
-   DENTER(CULL_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -544,10 +542,10 @@ const char *key,
 lListElem *ep,
 int name_nm 
 ) {
+   DENTER(CULL_LAYER);
+
    const char *str;
    uint32_t flag;
-
-   DENTER(CULL_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -608,9 +606,9 @@ const char *key,
 lListElem *ep,
 int name_nm 
 ) {
-   const char *str;
-
    DENTER(CULL_LAYER);
+
+   const char *str;
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -665,10 +663,10 @@ lListElem *ep,
 int name_nm,
 int operation_nm 
 ) {
+   DENTER(CULL_LAYER); 
+
    const char *str;
    double dval;
-
-   DENTER(CULL_LAYER); 
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -754,10 +752,10 @@ lDescr *descr,
 int *interpretation_rule 
 
 ) {
+   DENTER(CULL_LAYER);
+
    lList *tmplp = nullptr;
    char *str;
-
-   DENTER(CULL_LAYER);
 
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
@@ -813,9 +811,9 @@ const char *key,
 lListElem *ep,
 int name_nm 
 ) {
-   const char *str;
-
    DENTER(CULL_LAYER);
+
+   const char *str;
 
    if (key == nullptr) {
       DRETURN(false);
@@ -874,9 +872,9 @@ const char *key,
 lListElem *ep,
 int name_nm 
 ) {
-   const char *str;
-
    DENTER(CULL_LAYER);
+
+   const char *str;
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -925,12 +923,11 @@ int name_nm
  * @return false on error, otherwise true
  */
 bool set_conf_enum(lList **alpp, lList **clpp, int fields[], const char *key,
-                  lListElem *ep, int name_nm, const char **enum_strings) 
-{
+                   lListElem *ep, int name_nm, const char **enum_strings) {
+   DENTER(CULL_LAYER);
+
    const char *str;
    uint32_t uval = 0;
-
-   DENTER(CULL_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -971,12 +968,11 @@ bool set_conf_enum(lList **alpp, lList **clpp, int fields[], const char *key,
  * @return false on error, otherwise true
  */
 bool set_conf_enum_none(lList **alpp, lList **clpp, int fields[], const char *key,
-                  lListElem *ep, int name_nm, const char **enum_strings) 
-{
+                        lListElem *ep, int name_nm, const char **enum_strings) {
+   DENTER(TOP_LAYER);
+
    const char *str;
    uint32_t uval = 0;
-
-   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -1026,15 +1022,14 @@ bool set_conf_enum_none(lList **alpp, lList **clpp, int fields[], const char *ke
  * @param sub_name_nm the attribute within an element the words are stored in
  * @return false on error, otherwise true
  */
-bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key, 
-                  lListElem *ep, int name_nm, lDescr *descr, int sub_name_nm) 
-{
+bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key,
+                   lListElem *ep, int name_nm, lDescr *descr, int sub_name_nm) {
+   DENTER(TOP_LAYER);
+
    lList *tmplp = nullptr;
    const char *str;
    const char *tmp_str = nullptr;
    char delims[] = "\t \v\r,"; 
-
-   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -1095,16 +1090,15 @@ bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key,
  * @param master_hgroup_list the host groups, needed to resolve a host group name
  * @return false on error, otherwise true
  */
-bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[], 
-                            const char *key, lListElem *ep, int name_nm, 
-                            lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
-{
+bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[],
+                            const char *key, lListElem *ep, int name_nm,
+                            lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
+
    bool ret;
    lList *tmplp = nullptr;
    const char *str;
    lList *lanswer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -1148,16 +1142,15 @@ bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[],
  * @param master_hgroup_list the host groups, needed to resolve a host group name
  * @return false on error, otherwise true
  */
-bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[], 
-                                const char *key, lListElem *ep, int name_nm, 
-                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
-{
+bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[],
+                                const char *key, lListElem *ep, int name_nm,
+                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
+
    bool ret;
    lList *tmplp = nullptr;
    const char *str;
    lList *lanswer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -1202,16 +1195,15 @@ bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[],
  * @param master_hgroup_list the host groups, needed to resolve a host group name
  * @return false on error, otherwise true
  */
-bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[], 
-                                const char *key, lListElem *ep, int name_nm, 
-                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
-{
+bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[],
+                                const char *key, lListElem *ep, int name_nm,
+                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
+
    bool ret;
    lList *tmplp = nullptr;
    const char *str;
    lList *lanswer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -1256,16 +1248,15 @@ bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[],
  * @param master_hgroup_list the host groups, needed to resolve a host group name
  * @return false on error, otherwise true
  */
-bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[], 
-                                const char *key, lListElem *ep, int name_nm, 
-                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
-{
+bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[],
+                                const char *key, lListElem *ep, int name_nm,
+                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
+
    bool ret;
    lList *tmplp = nullptr;
    const char *str;
    lList *lanswer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -1310,16 +1301,15 @@ bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[],
  * @param master_hgroup_list the host groups, needed to resolve a host group name
  * @return false on error, otherwise true
  */
-bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[], 
-                               const char *key, lListElem *ep, int name_nm, 
-                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
-{
+bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[],
+                               const char *key, lListElem *ep, int name_nm,
+                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
+
    bool ret;
    lList *tmplp = nullptr;
    const char *str;
    lList *lanswer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -1364,16 +1354,15 @@ bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[],
  * @param master_hgroup_list the host groups, needed to resolve a host group name
  * @return false on error, otherwise true
  */
-bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[], 
-                               const char *key, lListElem *ep, int name_nm, 
-                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
-{
+bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[],
+                               const char *key, lListElem *ep, int name_nm,
+                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
+
    bool ret;
    lList *tmplp = nullptr;
    const char *str;
    lList *lanswer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -1418,16 +1407,15 @@ bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[],
  * @param master_hgroup_list the host groups, needed to resolve a host group name
  * @return false on error, otherwise true
  */
-bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[], 
-                               const char *key, lListElem *ep, int name_nm, 
-                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
-{
+bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[],
+                               const char *key, lListElem *ep, int name_nm,
+                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
+
    bool ret;
    lList *tmplp = nullptr;
    const char *str;
    lList *lanswer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -1472,16 +1460,15 @@ bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[],
  * @param master_hgroup_list the host groups, needed to resolve a host group name
  * @return false on error, otherwise true
  */
-bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[], 
-                             const char *key, lListElem *ep, int name_nm, 
-                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
-{
+bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[],
+                             const char *key, lListElem *ep, int name_nm,
+                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
+
    bool ret;
    lList *tmplp = nullptr;
    const char *str;
    lList *lanswer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -1525,16 +1512,15 @@ bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[],
  * @param master_hgroup_list the host groups, needed to resolve a host group name
  * @return false on error, otherwise true
  */
-bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[], 
-                             const char *key, lListElem *ep, int name_nm, 
-                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
-{
+bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[],
+                             const char *key, lListElem *ep, int name_nm,
+                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
+
    bool ret;
    lList *tmplp = nullptr;
    const char *str;
    lList *lanswer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -1578,16 +1564,15 @@ bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[],
  * @param master_hgroup_list the host groups, needed to resolve a host group name
  * @return false on error, otherwise true
  */
-bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[], 
-                             const char *key, lListElem *ep, int name_nm, 
-                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
-{
+bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[],
+                             const char *key, lListElem *ep, int name_nm,
+                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
+
    bool ret;
    lList *tmplp = nullptr;
    const char *str;
    lList *lanswer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -1631,16 +1616,15 @@ bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[],
  * @param master_hgroup_list the host groups, needed to resolve a host group name
  * @return false on error, otherwise true
  */
-bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[], 
-                             const char *key, lListElem *ep, int name_nm, 
-                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
-{
+bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[],
+                            const char *key, lListElem *ep, int name_nm,
+                            lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
+
    bool ret;
    lList *tmplp = nullptr;
    const char *str;
    lList *lanswer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -1684,16 +1668,15 @@ bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[],
  * @param master_hgroup_list the host groups, needed to resolve a host group name
  * @return false on error, otherwise true
  */
-bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[], 
-                              const char *key, lListElem *ep, int name_nm, 
-                              lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
-{
+bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[],
+                              const char *key, lListElem *ep, int name_nm,
+                              lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
+
    bool ret;
    lList *tmplp = nullptr;
    const char *str;
    lList *lanswer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if(!(str=get_conf_value(fields?nullptr:alpp, *clpp, CF_name, CF_value, key))) {
       DRETURN(fields?true:false);
@@ -1825,9 +1808,9 @@ int add_nm_to_set(
 int fields[],
 int name_nm 
 ) {
-   int i = 0;
-
    DENTER(CULL_LAYER);
+
+   int i = 0;
 
    if (!fields) {
       DRETURN(0); /* we leave here in most cases */

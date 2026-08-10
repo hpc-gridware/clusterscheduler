@@ -108,8 +108,9 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
  * @note MT-NOTE: path_alias_read_from_file() is MT safe
  */
 static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
-                                     char *file_name)
-{
+                                     char *file_name) {
+   DENTER(GDI_LAYER);
+
    FILE *fd;
    char buf[10000];
    char err[MAX_STRING_SIZE];
@@ -120,8 +121,6 @@ static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
    lListElem *pal;
    SGE_STRUCT_STAT sb;
    int ret = 0;
-
-   DENTER(GDI_LAYER);
 
    if (!path_alias_list || !file_name) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -229,16 +228,15 @@ FCLOSE_ERROR:
  *
  * @note MT-NOTE: path_alias_list_initialize() is MT safe
  */
-int path_alias_list_initialize(lList **path_alias_list, 
+int path_alias_list_initialize(lList **path_alias_list,
                                lList **alpp,
                                const char *cell_root,
                                const char *user,
-                               const char *host) 
-{
-   char filename[2][SGE_PATH_MAX];
-   char err[MAX_STRING_SIZE];
+                               const char *host) {
    DENTER(TOP_LAYER);
 
+   char filename[2][SGE_PATH_MAX];
+   char err[MAX_STRING_SIZE];
    /* 
     * find names of different sge_path_alias files:
     *    global
@@ -321,8 +319,7 @@ int path_alias_list_initialize(lList **path_alias_list,
  */
 int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
                              const char *inpath, const char *myhost,
-                             dstring *outpath)
-{
+                             dstring *outpath) {
    DENTER(TOP_LAYER);
    const char *origin;
    const char *translation;
@@ -384,7 +381,6 @@ int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
    sge_dstring_free(&the_path);
 
    DRETURN(0);
-
 }
 
 /**
@@ -401,9 +397,7 @@ int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
  *
  * @note MT-NOTE: path_verify() is MT safe
  */
-bool 
-path_verify(const char *path, lList **answer_list, const char *name, bool absolute)
-{
+bool path_verify(const char *path, lList **answer_list, const char *name, bool absolute) {
    bool ret = true;
 
    if (path == nullptr || *path == '\0') {
@@ -455,9 +449,7 @@ path_verify(const char *path, lList **answer_list, const char *name, bool absolu
  *
  * @see #path_verify
  */
-bool 
-path_alias_verify(const lList *path_aliases, lList **answer_list)
-{
+bool path_alias_verify(const lList *path_aliases, lList **answer_list) {
    bool ret = true;
 
    for_each_ep_lv(ep, path_aliases) {
@@ -505,9 +497,7 @@ path_alias_verify(const lList *path_aliases, lList **answer_list)
  *
  * @note MT-NOTE: path_list_verify() is MT safe
  */
-bool 
-path_list_verify(const lList *path_list, lList **answer_list, const char *name)
-{
+bool path_list_verify(const lList *path_list, lList **answer_list, const char *name) {
    bool ret = true;
 
    for_each_ep_lv(ep, path_list) {

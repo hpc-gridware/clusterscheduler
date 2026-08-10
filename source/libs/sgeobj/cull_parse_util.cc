@@ -112,12 +112,13 @@ lDescr *descr,
 int *interpretation_rule,
 lList **pplist 
 ) {
+   DENTER(BASIS_LAYER);
+
    lList *list;
    lListElem *ep;
    int *rule;
    int type;
 
-   DENTER(BASIS_LAYER);
    if (!pstrlist || !descr || !interpretation_rule || !pplist) {
       DPRINTF("cull_parse_string_list: nullptr pointer received\n");
       DRETURN(-1);
@@ -285,10 +286,11 @@ const char *name,
 lDescr *descr,
 int *interpretation_rule 
 ) {
+   DENTER(BASIS_LAYER);
+
    char **pstr;
    int ret;
 
-   DENTER(BASIS_LAYER);
    if (!str || !lpp) {
       DRETURN(-1);
    }
@@ -522,11 +524,11 @@ int nm_var,
 int nm_value,
 int double_keys 
 ) {
+   DENTER(BASIS_LAYER);
+
    lListElem *ep_other;
    int is_there;
    int type;
-
-   DENTER(BASIS_LAYER);
 
    for_each_ep_lv(ep_one, lp) {
       for (ep_other = lFirstRW(lp); ep_other; ) {
@@ -644,10 +646,11 @@ char *name,
 lDescr *descr,
 int *interpretation_rule 
 ) {
+   DENTER(BASIS_LAYER);
+
    char **pstr;
    int ret;
 
-   DENTER(BASIS_LAYER);
    if (!str || !lpp) {
       DPRINTF("cull_parse_simple_list: nullptr pointer received\n");
       DRETURN(-1);
@@ -717,9 +720,7 @@ int *interpretation_rule
  * @note Output is written directly to the stream without size limitations.
  *       Stream state should be checked by the caller if needed.
  */
-int
-uni_print_list(std::ostream& os, const lList* lp, const int* which_elements_rule, const char* pdelis[], unsigned long flags)
-{
+int uni_print_list(std::ostream &os, const lList *lp, const int *which_elements_rule, const char *pdelis[], unsigned long flags) {
    DENTER(BASIS_LAYER);
 
    const int* rule;
@@ -880,9 +881,7 @@ uni_print_list(std::ostream& os, const lList* lp, const int* which_elements_rule
  *
  * @note If @p buff is used, the output must fit into @p buff_size, otherwise an error is returned.
  */
-int
-uni_print_list(FILE *fp, char *buff, uint32_t buff_size, const lList *lp, const int *which_elements_rule, const char *pdelis[], unsigned long flags)
-{
+int uni_print_list(FILE *fp, char *buff, uint32_t buff_size, const lList *lp, const int *which_elements_rule, const char *pdelis[], unsigned long flags) {
    DENTER(BASIS_LAYER);
 
    std::ostringstream ss;
@@ -927,11 +926,10 @@ uni_print_list(FILE *fp, char *buff, uint32_t buff_size, const lList *lp, const 
  *
  * @note MT-NOTE: fprint_cull_list() is MT safe
  */
-int fprint_cull_list(FILE *fp, char *str, lList *lp, int fi)
-{
-   const lListElem *ep;
-
+int fprint_cull_list(FILE *fp, char *str, lList *lp, int fi) {
    DENTER(TOP_LAYER);
+
+   const lListElem *ep;
 
    FPRINTF((fp, "%s", str));
 
@@ -951,7 +949,7 @@ int fprint_cull_list(FILE *fp, char *str, lList *lp, int fi)
 
 FPRINTF_ERROR:
    DRETURN(-1);
-}                   
+}
 
 
 /**
@@ -1035,12 +1033,12 @@ int nm_name,
 int nm_strval,
 int nm_doubleval
 ) {
+   DENTER(TOP_LAYER);
+
    const lListElem *lep;
    int printed = 0;
    const char *s;
    char buffer[1024];
-
-   DENTER(TOP_LAYER);
 
    FPRINTF((fp, "%s", name));
 
@@ -1172,15 +1170,13 @@ void parse_list_hardsoft(lList *cmdline, const char *option, lListElem *job, uin
  *              existing value
  * @return 0 on success
  */
-int 
-parse_list_simple(lList *cmdline, const char *option, lListElem *job, int field,
-                  int nm_var, int nm_value, uint32_t flags)
-{
+int parse_list_simple(lList *cmdline, const char *option, lListElem *job, int field,
+                      int nm_var, int nm_value, uint32_t flags) {
+   DENTER(TOP_LAYER);
+
    lList *destlist = nullptr;
    lList *lp = nullptr;
    lListElem *ep;
-
-   DENTER(TOP_LAYER);
 
    destlist = lCopyList("job_sublist", lGetList(job, field));
 
@@ -1212,10 +1208,8 @@ parse_list_simple(lList *cmdline, const char *option, lListElem *job, int field,
  * @param flags one of the `FLG_LIST_*` values
  * @return 0 on success
  */
-int 
-parse_list_simpler(lList *lp, lList **destlist, const char *option, lListElem *job, int field,
-                  int nm_var, int nm_value, uint32_t flags)
-{
+int parse_list_simpler(lList *lp, lList **destlist, const char *option, lListElem *job, int field,
+                       int nm_var, int nm_value, uint32_t flags) {
    if (lp != nullptr) {
       if (flags & FLG_LIST_APPEND || flags & FLG_LIST_MERGE_DOUBLE_KEY) {
          if (lp) {  
@@ -1260,8 +1254,9 @@ parse_list_simpler(lList *lp, lList **destlist, const char *option, lListElem *j
  *
  * @note MT-NOTE: cull_parse_path_list() is MT safe
  */
-int cull_parse_path_list(lList **lpp, const char *path_str) 
-{
+int cull_parse_path_list(lList **lpp, const char *path_str) {
+   DENTER(TOP_LAYER);
+
    char *path = nullptr;
    char *cell = nullptr;
    char **str_str = nullptr;
@@ -1269,8 +1264,6 @@ int cull_parse_path_list(lList **lpp, const char *path_str)
    lListElem *ep = nullptr;
    char *path_string = nullptr;
    bool ret_error = false;
-
-   DENTER(TOP_LAYER);
 
    ret_error = (lpp == nullptr) ? true : false;
 
@@ -1334,15 +1327,13 @@ int cull_parse_path_list(lList **lpp, const char *path_str)
  *
  * @note MT-NOTE: cull_parse_jid_hold_list() is MT safe
  */
-int 
-cull_parse_jid_hold_list(lList **lpp, const char *str) 
-{
+int cull_parse_jid_hold_list(lList **lpp, const char *str) {
+   DENTER(TOP_LAYER);
+
    int rule[] = {ST_name, 0};
    char **str_str = nullptr;
    int i_ret;
    char *s;
-
-   DENTER(TOP_LAYER);
 
    if (!lpp) {
       DRETURN(1);
@@ -1387,11 +1378,11 @@ cull_parse_jid_hold_list(lList **lpp, const char *str)
  */
 int 
 sge_parse_hold_list(const char *hold_str, uint32_t prog_number) {
+   DENTER(TOP_LAYER);
+
    int i, j;
    int target = 0;
    int op_code = 0;
-
-   DENTER(TOP_LAYER);
 
    i = strlen(hold_str);
 

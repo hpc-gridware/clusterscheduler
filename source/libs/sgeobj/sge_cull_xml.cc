@@ -148,12 +148,12 @@ void xml_addAttributeD(lListElem *xml_elem, const char *name, double value){
  * @param value the value
  */
 void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
+   DENTER(CULL_LAYER);
+
    lListElem *attr_elem = lCreateElem(XMLA_Type);
    lList *attr_list = nullptr;
    dstring mod_value = DSTRING_INIT;
    bool is_mod_value; 
-   DENTER(CULL_LAYER);
-
    is_mod_value = escape_string(value, &mod_value); 
    
    if (attr_elem) {
@@ -189,8 +189,7 @@ void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
  * @param nesting_level current nesting level
  * @param fp file stream NOTE: MT-NOTE: is thread save, works only on the objects which are passed in
  */
-static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os)
-{
+static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os) {
    DENTER(CULL_LAYER);
    char indent[128];
    int i;
@@ -282,6 +281,8 @@ void lWriteElemXMLTo(const lListElem *ep, FILE *fp) {
 }
 
 static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream &os) {
+   DENTER(CULL_LAYER);
+
    int i;
    char space[128];
    lList *tlp;
@@ -289,8 +290,6 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
    const char *str;
    const char *attr_name;
    int max = nesting_level *2;
-
-   DENTER(CULL_LAYER);
 
    if (!ep) {
       LERROR(LEELEMNULL);

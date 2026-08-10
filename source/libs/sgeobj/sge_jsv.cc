@@ -99,11 +99,11 @@ static lList *jsv_list = nullptr;   /* JSV_Type */
  */
 static lListElem *
 jsv_create(const char *name, const char *context, lList **answer_list, const char *jsv_url,
-           const char *type, const char *user, const char *scriptfile)
-{
+           const char *type, const char *user, const char *scriptfile) {
+   DENTER(TOP_LAYER);
+
    lListElem *new_jsv = nullptr;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr && scriptfile != nullptr) {
       new_jsv = lCreateElem(JSV_Type);
 
@@ -158,10 +158,11 @@ jsv_create(const char *name, const char *context, lList **answer_list, const cha
 
 static pid_t
 jsv_get_pid(lListElem *jsv) {
+   DENTER(TOP_LAYER);
+
    pid_t pid = -1;
    const char *pid_string = nullptr;
 
-   DENTER(TOP_LAYER);
    pid_string = lGetString(jsv, JSV_pid);
    if (pid_string != nullptr) {
       sscanf(pid_string, pid_t_fmt, &pid);
@@ -169,9 +170,8 @@ jsv_get_pid(lListElem *jsv) {
    DRETURN(pid);
 }
 
-static void 
-jsv_set_pid(lListElem *jsv, pid_t pid)
-{
+static void
+jsv_set_pid(lListElem *jsv, pid_t pid) {
    char pid_buffer[256]; /* it is sure that pid is smaller than 256 characters */
 
    DENTER(TOP_LAYER);
@@ -182,20 +182,19 @@ jsv_set_pid(lListElem *jsv, pid_t pid)
 
 
 static bool
-jsv_is_started(lListElem *jsv) 
-{
-   return (jsv_get_pid(jsv) != -1) ? true : false; 
+jsv_is_started(lListElem *jsv) {
+   return (jsv_get_pid(jsv) != -1) ? true : false;
 }
 
 static bool
 jsv_is_send_ready(lListElem *jsv, lList **answer_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    const int timeout = 5;
    int fd;
    int lret;
 
-   DENTER(TOP_LAYER);
-   
    fd = fileno((FILE *) lGetRef(jsv, JSV_in));
 
    {
@@ -221,9 +220,10 @@ jsv_is_send_ready(lListElem *jsv, lList **answer_list) {
 
 static bool
 jsv_send_data(lListElem *jsv, lList **answer_list, const char *buffer, size_t size) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (jsv_is_send_ready(jsv, answer_list)) {
       int lret;
 
@@ -257,12 +257,11 @@ jsv_send_data(lListElem *jsv, lList **answer_list, const char *buffer, size_t si
  *
  * @note MT-NOTE: jsv_start() is not MT safe
  */
-bool 
-jsv_start(lListElem *jsv, lList **answer_list) 
-{
+bool jsv_start(lListElem *jsv, lList **answer_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (jsv != nullptr && !jsv_is_started(jsv)) {
       const char *scriptfile = lGetString(jsv, JSV_command);
       const char *user = lGetString(jsv, JSV_user);
@@ -330,10 +329,10 @@ jsv_start(lListElem *jsv, lList **answer_list)
  */
 bool 
 jsv_stop(lListElem *jsv, lList **answer_list, bool try_soft_quit) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    pid_t pid = -1;
-
-   DENTER(TOP_LAYER);
 
    /* stop is only possible if it was started before */
    pid = jsv_get_pid(jsv);
@@ -398,12 +397,12 @@ jsv_stop(lListElem *jsv, lList **answer_list, bool try_soft_quit) {
  *
  * @note MT-NOTE: jsv_url_parse() is MT safe
  */
-bool jsv_url_parse(dstring *jsv_url, lList **answer_list, dstring *type, 
-                   dstring *user, dstring *path, bool in_client)
-{
+bool jsv_url_parse(dstring *jsv_url, lList **answer_list, dstring *type,
+                   dstring *user, dstring *path, bool in_client) {
+   DENTER(TOP_LAYER);
+
    bool success = true;
 
-   DENTER(TOP_LAYER);
    if (jsv_url != nullptr) {
       dstring tmp = DSTRING_INIT;
       const char *t, *u, *p;
@@ -494,14 +493,13 @@ bool jsv_url_parse(dstring *jsv_url, lList **answer_list, dstring *type,
  *
  * @note MT-NOTE: jsv_send_command() is MT safe
  */
-bool 
-jsv_send_command(lListElem *jsv, lList **answer_list, const char *message) 
-{
+bool jsv_send_command(lListElem *jsv, lList **answer_list, const char *message) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    dstring buffer = DSTRING_INIT;
    const char *new_message = nullptr;
 
-   DENTER(TOP_LAYER);
    sge_dstring_sprintf(&buffer, "%s\n", message);
    new_message = sge_dstring_get_string(&buffer);
    DPRINTF("JSV(%s) >> %s\n", lGetString(jsv, JSV_context), message);
@@ -533,12 +531,10 @@ jsv_send_command(lListElem *jsv, lList **answer_list, const char *message)
  *
  * @note MT-NOTE: jsv_list_add() is MT safe
  */
-bool 
-jsv_list_add(const char *name, const char *context, lList **answer_list, const char *jsv_url)
-{
-   bool ret = true;
+bool jsv_list_add(const char *name, const char *context, lList **answer_list, const char *jsv_url) {
    DENTER(TOP_LAYER);
 
+   bool ret = true;
    if (strcasecmp("none", jsv_url) != 0) {
       lListElem *new_jsv = nullptr;
       dstring input = DSTRING_INIT;
@@ -581,12 +577,11 @@ jsv_list_add(const char *name, const char *context, lList **answer_list, const c
  *
  * @note MT-NOTE: jsv_list_remove() is MT safe
  */
-bool 
-jsv_list_remove(const char *name, const char *context)
-{
+bool jsv_list_remove(const char *name, const char *context) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr && context != nullptr) {
       const void *iterator = nullptr;
       lListElem *jsv_next;
@@ -621,10 +616,10 @@ jsv_list_remove(const char *name, const char *context)
  */
 bool 
 jsv_is_enabled(const char *context) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const char *jsv_url;
-
-   DENTER(TOP_LAYER);
 
    jsv_url = mconf_get_jsv_url();
    jsv_list_update("jsv", context, nullptr, jsv_url);
@@ -644,14 +639,13 @@ jsv_is_enabled(const char *context) {
  *
  * @note MT-NOTE: jsv_list_remove_all() is MT safe
  */
-bool 
-jsv_list_remove_all()
-{
+bool jsv_list_remove_all() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    lListElem *jsv;
    lListElem *jsv_next;
 
-   DENTER(TOP_LAYER);
    sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
    jsv_next = lFirstRW(jsv_list);
    while ((jsv = jsv_next) != nullptr) {
@@ -687,13 +681,11 @@ jsv_list_remove_all()
  *
  * @note MT-NOTE: jsv_list_update() is not MT safe
  */
-bool 
-jsv_list_update(const char *name, const char *context,
-                lList **answer_list, const char *jsv_url) 
-{
-   bool ret = false;
-
+bool jsv_list_update(const char *name, const char *context,
+                     lList **answer_list, const char *jsv_url) {
    DENTER(TOP_LAYER);
+
+   bool ret = false;
 
    if (name != nullptr && context != nullptr) {
       bool already_exists = false;
@@ -844,17 +836,15 @@ jsv_list_update(const char *name, const char *context,
  *
  * @note MT-NOTE: jsv_do_verify() is MT safe
  */
-bool 
-jsv_do_verify(const char *context, lListElem **job,
-              lList **answer_list, bool holding_lock) 
-{
+bool jsv_do_verify(const char *context, lListElem **job,
+                   lList **answer_list, bool holding_lock) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    lListElem *jsv;
    lListElem *jsv_next;
    const void *iterator = nullptr;
    
-   DENTER(TOP_LAYER);
-
    if (context != nullptr && job != nullptr) {
       const char *jsv_url = nullptr;
       bool holding_mutex = false;

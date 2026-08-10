@@ -297,8 +297,7 @@ verify_obj_name(lList **alpp, const char *str, size_t str_length, const char *na
  * @param[in]  host_name   the hostname to verify
  * @return true if the hostname is acceptable, false otherwise (with answer_list set)
  */
-bool verify_host_name(lList **answer_list, const char *host_name)
-{
+bool verify_host_name(lList **answer_list, const char *host_name) {
    bool ret = true;
 
    if (host_name == nullptr || *host_name == '\0') {

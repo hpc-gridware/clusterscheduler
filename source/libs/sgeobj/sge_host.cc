@@ -80,9 +80,9 @@
  */
 lListElem *
 host_list_locate(const lList *host_list, const char *hostname) {
-   lListElem *ret = nullptr;
-
    DENTER(TOP_LAYER);
+
+   lListElem *ret = nullptr;
 
    if (host_list != nullptr) {
       if (hostname != nullptr) {
@@ -138,8 +138,7 @@ host_list_locate(const lList *host_list, const char *hostname) {
  *       so this is the "qmaster is not up yet" case, not a reachable steady state.
  */
 static bool
-host_is_in_reserved_hostgroup(const char *hostname, const char *group_name)
-{
+host_is_in_reserved_hostgroup(const char *hostname, const char *group_name) {
    DENTER(TOP_LAYER);
 
    if (hostname == nullptr) {
@@ -177,9 +176,7 @@ host_is_in_reserved_hostgroup(const char *hostname, const char *group_name)
  *       a union with AH_LIST would keep granting admin rights to a host that
  *       qconf -dh has just removed from the group.
  */
-bool
-host_is_admin_host(const char *hostname)
-{
+bool host_is_admin_host(const char *hostname) {
    return host_is_in_reserved_hostgroup(hostname, ADMIN_HOSTGROUP);
 }
 
@@ -196,9 +193,7 @@ host_is_admin_host(const char *hostname)
  *
  * @note MT-NOTE: host_is_submit_host() is MT safe
  */
-bool
-host_is_submit_host(const char *hostname)
-{
+bool host_is_submit_host(const char *hostname) {
    return host_is_in_reserved_hostgroup(hostname, SUBMIT_HOSTGROUP);
 }
 
@@ -382,8 +377,7 @@ bool host_is_referenced(const lListElem *host,
  *
  * @return string describing the load value
  */
-const char *host_get_load_value(lListElem *host, const char *name)
-{
+const char *host_get_load_value(lListElem *host, const char *name) {
    const lListElem *load;
    const char *value = nullptr;
 
@@ -409,13 +403,13 @@ const char *host_get_load_value(lListElem *host, const char *name)
  * @return `CL_RETVAL_OK` on success, otherwise a commlib error code
  */
 int sge_resolve_host(lListElem *ep, int nm) {
+   DENTER(TOP_LAYER);
+
    int pos;
    int ret = CL_RETVAL_OK;
    int dataType;
    char unique[CL_MAXHOSTNAMELEN];
    const char *hostname;
-
-   DENTER(TOP_LAYER);
 
    memset(unique, 0, CL_MAXHOSTNAMELEN);
 
@@ -477,9 +471,9 @@ int sge_resolve_host(lListElem *ep, int nm) {
  * @return `CL_RETVAL_OK` on success, otherwise a commlib error code
  */
 int sge_resolve_hostname(const char *hostname, char *unique, int nm) {
-   int ret = CL_RETVAL_OK;
-
    DENTER(TOP_LAYER);
+
+   int ret = CL_RETVAL_OK;
 
    if (hostname == nullptr) {
       DRETURN(CL_RETVAL_PARAMS);
@@ -531,9 +525,9 @@ int sge_resolve_hostname(const char *hostname, char *unique, int nm) {
  */
 bool
 host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry) {
-   bool ret = false;
-
    DENTER(TOP_LAYER);
+
+   bool ret = false;
 
    if (this_elem != nullptr) {
       const char *name = lGetString(centry, CE_name);
@@ -570,9 +564,9 @@ host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry) {
 bool
 host_is_centry_a_complex_value(const lListElem *this_elem,
                                const lListElem *centry) {
-   bool ret = false;
-
    DENTER(TOP_LAYER);
+
+   bool ret = false;
 
    if (this_elem != nullptr) {
       const char *name = lGetString(centry, CE_name);
@@ -608,9 +602,9 @@ host_is_centry_a_complex_value(const lListElem *this_elem,
  */
 bool
 host_list_merge(lList *this_list) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (this_list != nullptr) {
       lListElem *global_host = lGetElemHostRW(this_list, EH_name, SGE_GLOBAL_NAME);
@@ -653,9 +647,9 @@ host_list_merge(lList *this_list) {
  */
 bool
 host_merge(lListElem *host, const lListElem *global_host) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (host != nullptr && global_host != nullptr) {
       const lList *local_list = lGetList(host, EH_report_variables);
@@ -822,9 +816,7 @@ host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, 
  * @param hostname the host of the current slot
  * @return true when this is the first slot on that host
  */
-bool
-host_do_per_host_booking(const char **last_hostname, const char *hostname)
-{
+bool host_do_per_host_booking(const char **last_hostname, const char *hostname) {
    bool ret;
 
    if (sge_strnullcmp(*last_hostname, hostname) == 0) {

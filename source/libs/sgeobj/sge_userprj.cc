@@ -61,11 +61,10 @@
  *
  * @return nullptr or element pointer
  */
-lListElem *prj_list_locate(const lList *lp, const char *name) 
-{
-   lListElem *ep = nullptr;
-
+lListElem *prj_list_locate(const lList *lp, const char *name) {
    DENTER(BASIS_LAYER);
+
+   lListElem *ep = nullptr;
 
    ep = lGetElemStrRW(lp, PR_name, name);
 
@@ -82,11 +81,10 @@ lListElem *prj_list_locate(const lList *lp, const char *name)
  *
  * @return nullptr or element pointer
  */
-lListElem *user_list_locate(const lList *lp, const char *name) 
-{
-   lListElem *ep = nullptr;
-
+lListElem *user_list_locate(const lList *lp, const char *name) {
    DENTER(BASIS_LAYER);
+
+   lListElem *ep = nullptr;
 
    ep = lGetElemStrRW(lp, UU_name, name);
 
@@ -104,11 +102,11 @@ lListElem *user_list_locate(const lList *lp, const char *name)
  *
  * @return nullptr or resulting string of dstring
  */
-const char *prj_list_append_to_dstring(const lList *this_list, dstring *string)
-{
+const char *prj_list_append_to_dstring(const lList *this_list, dstring *string) {
+   DENTER(BASIS_LAYER);
+
    const char *ret = nullptr;
 
-   DENTER(BASIS_LAYER);
    if (string != nullptr) {
       bool printed = false;
 
@@ -135,10 +133,8 @@ const char *prj_list_append_to_dstring(const lList *this_list, dstring *string)
  * @param prj_list the projects to look for
  * @return true when all of them exist
  */
-bool
-prj_list_do_all_exist(const lList *this_list, lList **answer_list,
-                      const lList *prj_list)
-{
+bool prj_list_do_all_exist(const lList *this_list, lList **answer_list,
+                           const lList *prj_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
    for_each_ep_lv(prj, prj_list) {
@@ -164,11 +160,10 @@ prj_list_do_all_exist(const lList *this_list, lList **answer_list,
  *
  * @return the new element; the caller owns it
  */
-lListElem *getUserTemplate()
-{
-   lListElem *ep;
-
+lListElem *getUserTemplate() {
    DENTER(TOP_LAYER);
+
+   lListElem *ep;
 
    ep = lCreateElem(UU_Type);
    lSetString(ep, UU_name, "template");
@@ -191,11 +186,10 @@ lListElem *getUserTemplate()
  *
  * @return the new element; the caller owns it
  */
-lListElem *getPrjTemplate()
-{
-   lListElem *ep;
-
+lListElem *getPrjTemplate() {
    DENTER(TOP_LAYER);
+
+   lListElem *ep;
 
    ep = lCreateElem(PR_Type);
    lSetString(ep, PR_name, "template");
@@ -210,4 +204,3 @@ lListElem *getPrjTemplate()
 
    DRETURN(ep);
 }
-

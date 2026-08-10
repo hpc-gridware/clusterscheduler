@@ -60,12 +60,11 @@
  * @param str a string the type gives meaning to, e.g. a parallel task id
  * @return `PACK_SUCCESS` on success
  */
-int pack_ack(sge_pack_buffer *pb, uint32_t type, uint32_t id, uint32_t id2, const char *str)
-{
+int pack_ack(sge_pack_buffer *pb, uint32_t type, uint32_t id, uint32_t id2, const char *str) {
+   DENTER(TOP_LAYER);
+
    int ret;
    lListElem *ack = lCreateElem(ACK_Type);
-
-   DENTER(TOP_LAYER);
 
    lSetUlong(ack, ACK_type, type);
    lSetUlong(ack, ACK_id, id);
@@ -89,16 +88,15 @@ int pack_ack(sge_pack_buffer *pb, uint32_t type, uint32_t id, uint32_t id2, cons
  * @return `CL_RETVAL_OK` on success
  */
 int sge_send_ack_to_qmaster(uint32_t type, uint32_t ulong_val,
-                            uint32_t ulong_val_2, const char *str, lList **alpp)
-{
+                            uint32_t ulong_val_2, const char *str, lList **alpp) {
+   DENTER(TOP_LAYER);
+
    int ret;
    sge_pack_buffer pb;
    const char* commproc = to_cstr(QMASTER);
    const char* rhost = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
    int         id   = 1;
    
-   DENTER(TOP_LAYER);
-
    /* send an ack to the qmaster for the events */
    if (init_packbuffer(&pb, 1024) != PACK_SUCCESS) {
       DRETURN(CL_RETVAL_MALLOC);

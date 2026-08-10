@@ -76,8 +76,7 @@
  * @param wildcard the pattern the job requested
  * @return true when the name matches
  */
-bool pe_name_is_matching(const char *pe_name, const char *wildcard)
-{
+bool pe_name_is_matching(const char *pe_name, const char *wildcard) {
    return fnmatch(wildcard, pe_name, 0) == 0 ? true : false;
 }
 
@@ -92,8 +91,7 @@ bool pe_name_is_matching(const char *pe_name, const char *wildcard)
  *
  * @return true or false
  */
-bool pe_is_matching(const lListElem *pe, const char *wildcard)
-{
+bool pe_is_matching(const lListElem *pe, const char *wildcard) {
    return pe_name_is_matching(lGetString(pe, PE_name), wildcard);
 }
 
@@ -107,8 +105,7 @@ bool pe_is_matching(const lListElem *pe, const char *wildcard)
  *
  * @return PE_Type object or nullptr
  */
-lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard)
-{
+lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard) {
    for_each_rw_lv (ret, pe_list) {
       if (pe_is_matching(ret, wildcard)) {
          return ret;
@@ -129,8 +126,7 @@ lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard)
  *
  * @note MT-NOTE: pe_list_locate() is MT safe
  */
-lListElem *pe_list_locate(const lList *pe_list, const char *pe_name)
-{
+lListElem *pe_list_locate(const lList *pe_list, const char *pe_name) {
    return lGetElemStrRW(pe_list, PE_name, pe_name);
 }
 
@@ -151,8 +147,7 @@ lListElem *pe_list_locate(const lList *pe_list, const char *pe_name)
  */
 bool pe_is_referenced(const lListElem *pe, lList **answer_list,
                       const lList *master_job_list,
-                      const lList *master_cqueue_list)
-{
+                      const lList *master_cqueue_list) {
    bool ret = false;
 
    for_each_ep_lv(job, master_job_list) {
@@ -207,13 +202,13 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
  *
  * @note MT-NOTE: pe_validate() is not MT safe
  */
-int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_userset_list)
-{
+int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_userset_list) {
+   DENTER(TOP_LAYER);
+
    const char *s;
    const char *pe_name;
    int ret;
 
-   DENTER(TOP_LAYER);
    pe_name = lGetString(pep, PE_name);
    if (pe_name != nullptr && verify_obj_name(alpp, pe_name, MAX_VERIFY_STRING, MSG_OBJ_PE) != STATUS_OK) {
       if (alpp == nullptr) {
@@ -298,8 +293,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
  *
  * @note MT-NOTE: pe_validate_slots() is MT safe
  */
-int pe_validate_slots(lList **alpp, uint32_t slots)
-{
+int pe_validate_slots(lList **alpp, uint32_t slots) {
    DENTER(TOP_LAYER);
 
    if (slots > std::numeric_limits<uint32_t>::max()) {
@@ -327,8 +321,7 @@ int pe_validate_slots(lList **alpp, uint32_t slots)
  *
  * @note MT-NOTE: pe_validate_urgency_slots() is MT safe
  */
-int pe_validate_urgency_slots(lList **answer_list, const char *s)
-{
+int pe_validate_urgency_slots(lList **answer_list, const char *s) {
    DENTER(TOP_LAYER);
 
    if (strcasecmp(s, SGE_ATTRVAL_MIN) &&
@@ -423,8 +416,7 @@ pe_validate_allocation_rule(lList **answer_list, const char *allocation_rule, bo
  * @note MT-NOTE: pe_urgency_slots() is MT safe
  */
 bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list,
-                          const lList *pe_ref_list, bool ignore_make_pe)
-{
+                          const lList *pe_ref_list, bool ignore_make_pe) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -460,13 +452,11 @@ bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list,
  *
  * @note MT-NOTE: pe_urgency_slots() is MT safe
  */
-int
-pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting,
-                 const lList* range_list)
-{
-   int n;
-
+int pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting,
+                     const lList *range_list) {
    DENTER(TOP_LAYER);
+
+   int n;
 
    if (!strcasecmp(urgency_slot_setting, SGE_ATTRVAL_MIN)) {
       n = range_list_get_first_id(range_list, nullptr);
@@ -505,11 +495,10 @@ pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting,
  *
  * @note MT-NOTE: pe_set_slots_used() is MT safe
  */
-lListElem* pe_create_template(char *pe_name)
-{
-   lListElem *pep;
-
+lListElem *pe_create_template(char *pe_name) {
    DENTER(TOP_LAYER);
+
+   lListElem *pep;
 
    pep = lCreateElem(PE_Type);
 
@@ -542,8 +531,7 @@ lListElem* pe_create_template(char *pe_name)
  *
  * @note MT-NOTE: pe_get_slots_used() is MT safe
  */
-int pe_get_slots_used(const lListElem *pe)
-{
+int pe_get_slots_used(const lListElem *pe) {
    int ret = -1;
    const lListElem *actual = lGetSubStr(pe, RUE_name, SGE_ATTR_SLOTS,
                                         PE_resource_utilization);
@@ -566,8 +554,7 @@ int pe_get_slots_used(const lListElem *pe)
  *
  * @note MT-NOTE: pe_set_slots_used() is MT safe
  */
-int pe_set_slots_used(lListElem *pe, int slots)
-{
+int pe_set_slots_used(lListElem *pe, int slots) {
    lListElem *actual = lGetSubStrRW(pe, RUE_name, SGE_ATTR_SLOTS, PE_resource_utilization);
    if (!actual && (!(actual = lAddSubStr(pe, RUE_name, SGE_ATTR_SLOTS, PE_resource_utilization, RUE_Type))))
       return -1;
@@ -587,11 +574,10 @@ int pe_set_slots_used(lListElem *pe, int slots)
  *
  * @note MT-NOTE: pe_debit_slots() is MT safe
  */
-void pe_debit_slots(lListElem *pep, int slots, uint32_t job_id)
-{
-   int n;
-
+void pe_debit_slots(lListElem *pep, int slots, uint32_t job_id) {
    DENTER(TOP_LAYER);
+
+   int n;
 
    if (pep) {
       n = pe_get_slots_used(pep);
@@ -618,9 +604,7 @@ void pe_debit_slots(lListElem *pep, int slots, uint32_t job_id)
  *
  * @note MT-NOTE: pe_do_accounting_summary() is MT safe
  */
-bool
-pe_do_accounting_summary(const lListElem *pe)
-{
+bool pe_do_accounting_summary(const lListElem *pe) {
    bool ret = false;
 
    /*
@@ -633,4 +617,3 @@ pe_do_accounting_summary(const lListElem *pe)
 
    return ret;
 }
-

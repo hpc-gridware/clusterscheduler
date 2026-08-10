@@ -64,8 +64,7 @@
  *
  * @see @ref evc
  */
-const char *event_text(const lListElem *event, dstring *buffer) 
-{
+const char *event_text(const lListElem *event, dstring *buffer) {
    uint32_t type, intkey, number, intkey2;
    int n=0;
    const char *strkey, *strkey2;
@@ -427,8 +426,7 @@ const char *event_text(const lListElem *event, dstring *buffer)
    return sge_dstring_get_string(buffer);
 }
 
-static bool event_client_verify_subscription(const lListElem *event_client, lList **answer_list, int d_time)
-{
+static bool event_client_verify_subscription(const lListElem *event_client, lList **answer_list, int d_time) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -484,15 +482,13 @@ static bool event_client_verify_subscription(const lListElem *event_client, lLis
  *
  * @note MT-NOTE: event_client_verify() is MT safe
  */
-bool 
-event_client_verify(const lListElem *event_client, lList **answer_list, bool add)
-{
+bool event_client_verify(const lListElem *event_client, lList **answer_list, bool add) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const char *str;
    u_long d_time = 0;
   
-   DENTER(TOP_LAYER);
-
    if (event_client == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_NULLELEMENTPASSEDTO_S, __func__);

@@ -77,11 +77,10 @@
  *
  * @note MT-NOTE: ar_list_locate() is MT safe
  */
-lListElem *ar_list_locate(const lList *ar_list, uint32_t ar_id)
-{
-   lListElem *ep = nullptr;
-
+lListElem *ar_list_locate(const lList *ar_list, uint32_t ar_id) {
    DENTER(TOP_LAYER);
+
+   lListElem *ep = nullptr;
 
    ep = lGetElemUlongRW(ar_list, AR_id, ar_id);
 
@@ -108,16 +107,15 @@ lListElem *ar_list_locate(const lList *ar_list, uint32_t ar_id)
  *
  * @note MT-NOTE: ar_validate() is MT safe
  */
-bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, const lList *master_cqueue_list, 
+bool ar_validate(lListElem *ar, lList **alpp, bool in_master, bool is_spool, const lList *master_cqueue_list,
                  const lList *master_hgroup_list, const lList *master_centry_list, const lList *master_ckpt_list,
-                 const lList *master_pe_list, const lList *master_userset_list)
-{
+                 const lList *master_pe_list, const lList *master_userset_list) {
+   DENTER(TOP_LAYER);
+
    uint64_t start_time;
    uint64_t end_time;
    uint64_t duration;
    uint64_t now64 = sge_get_gmt64();
-
-   DENTER(TOP_LAYER);
 
    /*   AR_start_time, SGE_ULONG        */
    if ((start_time = lGetUlong64(ar, AR_start_time)) == 0) {
@@ -299,11 +297,11 @@ ERROR:
  * @note MT-NOTE: ar_get_event_from_string() is not MT safe
  */
 ar_state_event_t
-ar_get_event_from_string(const char *string)
-{
+ar_get_event_from_string(const char *string) {
+   DENTER(TOP_LAYER);
+
    ar_state_event_t ret = ARL_UNKNOWN;
 
-   DENTER(TOP_LAYER);
    if (string != nullptr) {
       if (!strcmp(MSG_AR_EVENT_STATE_UNKNOWN, string)) {
          ret = ARL_UNKNOWN;
@@ -336,10 +334,10 @@ ar_get_event_from_string(const char *string)
  * @note MT-NOTE: ar_get_string_from_event() is not MT safe
  */
 const char *
-ar_get_string_from_event(ar_state_event_t event)
-{
-   const char *ret = MSG_AR_EVENT_STATE_UNKNOWN;
+ar_get_string_from_event(ar_state_event_t event) {
    DENTER(TOP_LAYER);
+
+   const char *ret = MSG_AR_EVENT_STATE_UNKNOWN;
    switch(event) {
       case ARL_UNKNOWN:
          ret = MSG_AR_EVENT_STATE_UNKNOWN;
@@ -384,9 +382,7 @@ ar_get_string_from_event(ar_state_event_t event)
  *
  * @note MT-NOTE: ar_get_string_from_event() is MT safe
  */
-void 
-ar_state2dstring(ar_state_t state, dstring *state_as_string)
-{
+void ar_state2dstring(ar_state_t state, dstring *state_as_string) {
    const char *letter = "u";
    switch (state) {
       case AR_WAITING:
@@ -426,9 +422,9 @@ ar_state2dstring(ar_state_t state, dstring *state_as_string)
  * @note MT-NOTE: sge_ar_has_errors() is MT safe
  */
 bool sge_ar_has_errors(lListElem *ar) {
-   bool ret = false;
-
    DENTER(TOP_LAYER);
+
+   bool ret = false;
 
    if (lGetUlong(ar, AR_qi_errors) != 0) {
       ret = true;

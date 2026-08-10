@@ -140,8 +140,7 @@ usage_list_get_ulong64_usage(const lList *usage_list, const char *name, uint64_t
  */
 double
 usage_list_get_double_usage(const lList *usage_list, const char *name,
-                            double def)
-{
+                            double def) {
    const lListElem *ep = lGetElemStr(usage_list, UA_name, name);
    if(ep != nullptr) {
       return lGetDouble(ep, UA_value);
@@ -164,9 +163,7 @@ usage_list_get_double_usage(const lList *usage_list, const char *name,
  *
  * @see #usage_list_set_double_usage, #usage_list_get_ulong_usage, #usage_list_get_double_usage
  */
-void
-usage_list_set_ulong_usage(lList *usage_list, const char *name, uint32_t value)
-{
+void usage_list_set_ulong_usage(lList *usage_list, const char *name, uint32_t value) {
    usage_list_set_double_usage(usage_list, name, value);
 }
 
@@ -179,9 +176,7 @@ usage_list_set_ulong_usage(lList *usage_list, const char *name, uint32_t value)
  *
  * @note MT-NOTE: usage_list_set_ulong64_usage() is MT safe
  */
-void
-usage_list_set_ulong64_usage(lList *usage_list, const char *name, uint64_t value)
-{
+void usage_list_set_ulong64_usage(lList *usage_list, const char *name, uint64_t value) {
    usage_list_set_double_usage(usage_list, name, value);
 }
 
@@ -200,9 +195,7 @@ usage_list_set_ulong64_usage(lList *usage_list, const char *name, uint64_t value
  *
  * @see #usage_list_set_ulong_usage, #usage_list_get_ulong_usage, #usage_list_get_double_usage
  */
-void
-usage_list_set_double_usage(lList *usage_list, const char *name, double value, bool create_usage)
-{
+void usage_list_set_double_usage(lList *usage_list, const char *name, double value, bool create_usage) {
    lListElem *ep = lGetElemStrRW(usage_list, UA_name, name);
    if (ep == nullptr && create_usage) {
       ep = lAddElemStr(&usage_list, UA_name, name, UA_Type);
@@ -226,9 +219,7 @@ usage_list_set_double_usage(lList *usage_list, const char *name, double value, b
  * @param value         - the value to compare and set
  * @param create_usage  - if true, create the usage element if it does not exist; default is true.
  */
-void
-usage_list_max_double_usage(lList *usage_list, const char *name, double value, bool create_usage)
-{
+void usage_list_max_double_usage(lList *usage_list, const char *name, double value, bool create_usage) {
    lListElem *ep = lGetElemStrRW(usage_list, UA_name, name);
    if (ep == nullptr && create_usage) {
       ep = lAddElemStr(&usage_list, UA_name, name, UA_Type);
@@ -257,9 +248,7 @@ usage_list_max_double_usage(lList *usage_list, const char *name, double value, b
  *
  * @note MT-NOTE: usage_list_sum() is MT safe
  */
-void
-usage_list_sum(lList *usage_list, const lList *add_usage_list)
-{
+void usage_list_sum(lList *usage_list, const lList *add_usage_list) {
    for_each_ep_lv(usage, add_usage_list) {
       const char *name = lGetString(usage, UA_name);
       /* Sum up all usage attributes. */

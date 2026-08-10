@@ -64,13 +64,11 @@
  * @param option the `QI_TRANSITION_*` option that goes with it
  * @return true when every entry could be parsed
  */
-bool
-id_list_build_from_str_list(lList **id_list, 
-                            lList **answer_list,
-                            const lList *str_list,
-                            uint32_t transition,
-                            uint32_t option)
-{
+bool id_list_build_from_str_list(lList **id_list,
+                                 lList **answer_list,
+                                 const lList *str_list,
+                                 uint32_t transition,
+                                 uint32_t option) {
    DENTER(ID_LAYER);
    bool ret = true;
 
@@ -108,5 +106,3 @@ id_list_build_from_str_list(lList **id_list,
 
    DRETURN(ret);
 }
-
-

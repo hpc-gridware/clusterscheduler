@@ -52,8 +52,7 @@ static lList *procList;
  *
  * @return PRO_Type object or nullptr
  */
-lListElem *get_pr (int pid)
-{
+lListElem *get_pr(int pid) {
    if (procList == nullptr) {
       gen_procList();
       return nullptr;
@@ -67,8 +66,7 @@ lListElem *get_pr (int pid)
  *
  * @param pr the element to append; ownership passes to the list
  */
-void append_pr (lListElem *pr)
-{
+void append_pr(lListElem *pr) {
    if (procList == nullptr) {
       gen_procList();
    }
@@ -80,16 +78,14 @@ void append_pr (lListElem *pr)
  *
  * Creates the hashed list procList
  */
-void gen_procList()
-{
+void gen_procList() {
    procList = lCreateListHash("procList", PRO_Type, true);
 }
 
 /**
  * @brief Frees the formerly created procList
  */
-void free_procList()
-{
+void free_procList() {
    lFreeList(&procList);
 }
 
@@ -99,8 +95,7 @@ void free_procList()
  * Remove all elements from procList which has not been marked as running.
  * Mark all remaining elements as not running.
  */
-void clean_procList()
-{
+void clean_procList() {
 
    lListElem *next = nullptr;
    lListElem *ep = nullptr;

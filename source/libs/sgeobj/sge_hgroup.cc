@@ -90,13 +90,12 @@
  * @note MT-NOTE: hgroup_update_cache() is not MT safe -- call it under the write
  *       lock, like every other writer of the HGRP master list
  */
-bool
-hgroup_update_cache(lListElem *hgroup, lList **answer_list, const lList *master_hgroup_list)
-{
+bool hgroup_update_cache(lListElem *hgroup, lList **answer_list, const lList *master_hgroup_list) {
+   DENTER(HGROUP_LAYER);
+
    static lUlong next_version = 1;
    bool ret = true;
 
-   DENTER(HGROUP_LAYER);
    if (hgroup == nullptr || master_hgroup_list == nullptr) {
       DRETURN(false);
    }
@@ -137,12 +136,11 @@ hgroup_update_cache(lListElem *hgroup, lList **answer_list, const lList *master_
  *
  * @note MT-NOTE: hgroup_list_update_caches() is not MT safe
  */
-bool
-hgroup_list_update_caches(lList *master_hgroup_list, lList **answer_list)
-{
+bool hgroup_list_update_caches(lList *master_hgroup_list, lList **answer_list) {
+   DENTER(HGROUP_LAYER);
+
    bool ret = true;
 
-   DENTER(HGROUP_LAYER);
    lListElem *hgroup;
    for_each_rw(hgroup, master_hgroup_list) {
       ret &= hgroup_update_cache(hgroup, answer_list, master_hgroup_list);
@@ -172,9 +170,7 @@ hgroup_list_update_caches(lList *master_hgroup_list, lList **answer_list)
  *       one is ever introduced -- RBAC output reduction is the likely reason --
  *       it must take both fields or neither.
  */
-bool
-hgroup_has_host_cache(const lListElem *hgroup)
-{
+bool hgroup_has_host_cache(const lListElem *hgroup) {
    return hgroup != nullptr && lGetUlong(hgroup, HGRP_cache_version) != 0;
 }
 
@@ -200,9 +196,7 @@ hgroup_has_host_cache(const lListElem *hgroup)
  *       a cache it reports false, which is the WRONG answer rather than a safe one.
  *       Always guard the call.
  */
-bool
-hgroup_cache_contains_host(const lListElem *hgroup, const char *hostname)
-{
+bool hgroup_cache_contains_host(const lListElem *hgroup, const char *hostname) {
    if (hgroup == nullptr || hostname == nullptr) {
       return false;
    }
@@ -233,9 +227,7 @@ hgroup_cache_contains_host(const lListElem *hgroup, const char *hostname)
  *       become one. If a caller finds itself here on every request, the cache is
  *       not being maintained -- fix that rather than optimising this.
  */
-bool
-hgroup_contains_host(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list)
-{
+bool hgroup_contains_host(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list) {
    DENTER(HGROUP_LAYER);
 
    if (hgroup == nullptr || hostname == nullptr) {
@@ -275,8 +267,7 @@ hgroup_contains_host(const lListElem *hgroup, const char *hostname, const lList 
  *
  * @note MT-NOTE: hgroup_is_reserved() is MT safe
  */
-bool hgroup_is_reserved(const char *name)
-{
+bool hgroup_is_reserved(const char *name) {
    return name != nullptr &&
           (strcmp(name, ADMIN_HOSTGROUP) == 0 ||
            strcmp(name, SUBMIT_HOSTGROUP) == 0 ||
@@ -298,8 +289,7 @@ bool hgroup_is_reserved(const char *name)
  *
  * @note MT-NOTE: hgroup_is_system_maintained() is MT safe
  */
-bool hgroup_is_system_maintained(const char *name)
-{
+bool hgroup_is_system_maintained(const char *name) {
    return name != nullptr && strcmp(name, EXEC_HOSTGROUP) == 0;
 }
 
@@ -316,8 +306,7 @@ bool hgroup_is_system_maintained(const char *name)
  *
  * @note MT-NOTE: check_hgroup_name() is not MT safe
  */
-bool hgroup_check_name(lList **answer_list, const char* name)
-{
+bool hgroup_check_name(lList **answer_list, const char *name) {
    if (!ocs::is_hgroup_name(name)) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
@@ -343,11 +332,11 @@ bool hgroup_check_name(lList **answer_list, const char* name)
  * @return found element or nullptr
  */
 lListElem *
-hgroup_list_locate(const lList *this_list, const char *group) 
-{
+hgroup_list_locate(const lList *this_list, const char *group) {
+   DENTER(HGROUP_LAYER);
+
    lListElem *ret = nullptr;
    
-   DENTER(HGROUP_LAYER);
    ret = lGetElemHostRW(this_list, HGRP_name, group);
    DRETURN(ret);
 }
@@ -366,8 +355,7 @@ hgroup_list_locate(const lList *this_list, const char *group)
  * @return new element or nullptr
  */
 lListElem *
-hgroup_create(lList **answer_list, const char *name, lList *href_or_groupref, bool is_name_validate)
-{
+hgroup_create(lList **answer_list, const char *name, lList *href_or_groupref, bool is_name_validate) {
    lListElem *ret = nullptr;  /* HGRP_Type */
 
    DENTER(HGROUP_LAYER);
@@ -386,7 +374,7 @@ hgroup_create(lList **answer_list, const char *name, lList *href_or_groupref, bo
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
    }
-   DRETURN(ret); 
+   DRETURN(ret);
 }
 
 /**
@@ -400,13 +388,12 @@ hgroup_create(lList **answer_list, const char *name, lList *href_or_groupref, bo
  *
  * @return error state true  - Success false - Error
  */
-bool 
-hgroup_add_references(lListElem *this_elem, lList **answer_list, 
-                      const lList *href_or_groupref) 
-{
+bool hgroup_add_references(lListElem *this_elem, lList **answer_list,
+                           const lList *href_or_groupref) {
+   DENTER(HGROUP_LAYER);
+
    bool ret = true;
 
-   DENTER(HGROUP_LAYER);
    if (this_elem != nullptr && href_or_groupref != nullptr) {
       lList *href_list = nullptr;   /* HR_Type */
 
@@ -444,14 +431,13 @@ hgroup_add_references(lListElem *this_elem, lList **answer_list,
  *
  * @return error state true  - Success false - Error BUGS Extremely poor performance. Try not to use this function.
  */
-bool 
-hgroup_find_all_references(const lListElem *this_elem, lList **answer_list,
-                           const lList *master_list, lList **used_hosts,
-                           lList **used_groups)
-{
+bool hgroup_find_all_references(const lListElem *this_elem, lList **answer_list,
+                                const lList *master_list, lList **used_hosts,
+                                lList **used_groups) {
+   DENTER(HGROUP_LAYER);
+
    bool ret = true;
 
-   DENTER(HGROUP_LAYER);
    if (this_elem != nullptr && master_list != nullptr) {
       lList *href_list = nullptr;   /* HR_Type */
 
@@ -482,14 +468,13 @@ hgroup_find_all_references(const lListElem *this_elem, lList **answer_list,
  *
  * @return Error state true  - Success false - Error
  */
-bool 
-hgroup_find_references(const lListElem *this_elem, lList **answer_list,
-                       const lList *master_list, lList **used_hosts,
-                       lList **used_groups)
-{
+bool hgroup_find_references(const lListElem *this_elem, lList **answer_list,
+                            const lList *master_list, lList **used_hosts,
+                            lList **used_groups) {
+   DENTER(HGROUP_LAYER);
+
    bool ret = true;
 
-   DENTER(HGROUP_LAYER);
    if (this_elem != nullptr && master_list != nullptr) {
       const char *name = lGetHost(this_elem, HGRP_name);
       lList *href_list = nullptr;   /* HR_Type */
@@ -521,14 +506,13 @@ hgroup_find_references(const lListElem *this_elem, lList **answer_list,
  *
  * @return exit state true  - Success false - Error
  */
-bool 
-hgroup_find_all_referencees(const lListElem *this_elem, 
-                            lList **answer_list, const lList *master_list, 
-                            lList **occupants_groups)
-{
+bool hgroup_find_all_referencees(const lListElem *this_elem,
+                                 lList **answer_list, const lList *master_list,
+                                 lList **occupants_groups) {
+   DENTER(HGROUP_LAYER);
+
    bool ret = true;
 
-   DENTER(HGROUP_LAYER);
    if (this_elem != nullptr && occupants_groups != nullptr) {
       lList *href_list = nullptr;
       const char *name;
@@ -563,17 +547,16 @@ hgroup_find_all_referencees(const lListElem *this_elem,
  *
  * @return Error state true  - Success false - Error
  */
-bool 
-hgroup_find_referencees(const lListElem *this_elem, 
-                        lList **answer_list,
-                        const lList *master_hgroup_list, 
-                        const lList *master_cqueue_list,
-                        lList **occupants_groups,
-                        lList **occupants_queues)
-{
+bool hgroup_find_referencees(const lListElem *this_elem,
+                             lList **answer_list,
+                             const lList *master_hgroup_list,
+                             const lList *master_cqueue_list,
+                             lList **occupants_groups,
+                             lList **occupants_queues) {
+   DENTER(HGROUP_LAYER);
+
    bool ret = true;
 
-   DENTER(HGROUP_LAYER);
    if (this_elem != nullptr) {
       if (occupants_groups != nullptr) {
          const char *name = lGetHost(this_elem, HGRP_name);
@@ -610,13 +593,12 @@ hgroup_find_referencees(const lListElem *this_elem,
  *
  * @return true or false
  */
-bool
-hgroup_list_exists(const lList *this_list, lList **answer_list,
-                   const lList *href_list)
-{
+bool hgroup_list_exists(const lList *this_list, lList **answer_list,
+                        const lList *href_list) {
+   DENTER(HGROUP_LAYER);
+
    bool ret = true;
 
-   DENTER(HGROUP_LAYER);
    if (href_list != nullptr && this_list != nullptr) {
       for_each_ep_lv(href, href_list) {
          const char *name = lGetHost(href, HR_name);
@@ -650,15 +632,14 @@ hgroup_list_exists(const lList *this_list, lList **answer_list,
  *
  * @return error state true  - Success false - Error
  */
-bool
-hgroup_list_find_matching_and_resolve(const lList *this_list,
-                                      lList **answer_list,
-                                      const char *hgroup_pattern,
-                                      lList **used_hosts) 
-{
+bool hgroup_list_find_matching_and_resolve(const lList *this_list,
+                                           lList **answer_list,
+                                           const char *hgroup_pattern,
+                                           lList **used_hosts) {
+   DENTER(HGROUP_LAYER);
+
    bool ret = true;
 
-   DENTER(HGROUP_LAYER);
    if (this_list != nullptr && hgroup_pattern != nullptr) {
       const bool hgroup_pattern_is_expression = ocs::is_expression(hgroup_pattern);
 
@@ -698,10 +679,8 @@ hgroup_list_find_matching_and_resolve(const lList *this_list,
  *
  * @return error state true  - success false - error
  */
-bool
-hgroup_list_find_matching(const lList *this_list, lList **answer_list,
-                          const char *hgroup_pattern, lList **href_list) 
-{
+bool hgroup_list_find_matching(const lList *this_list, lList **answer_list,
+                               const char *hgroup_pattern, lList **href_list) {
    DENTER(HGROUP_LAYER);
    bool ret = true;
 
