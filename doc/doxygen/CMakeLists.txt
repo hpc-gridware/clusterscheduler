@@ -91,11 +91,7 @@ if (DOXYGEN_FOUND)
         ../gcs-extensions/source/libs/lwdb
         ../gcs-extensions/source/libs/sgeobj
         ../gcs-extensions/source/daemons
-
-        # ../gcs-extensions/source/tools is documented but NOT registered: two
-        # definitions are spelled Class::Class::member (a legal but redundant
-        # injected-class-name qualifier), which doxygen cannot match to their
-        # declarations. No comment can fix that; see task 43.
+        ../gcs-extensions/source/tools
    )
 
    if (DXM_FINISHED_MODULES)
