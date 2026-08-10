@@ -12,6 +12,23 @@ Slice=GENSLICE.slice
 ExecStart=GENROOT/GENCELL/common/sgemaster start
 ExecStop=GENROOT/GENCELL/common/sgemaster stop
 Restart=no
+
+# Resource limits.
+#
+# A systemd service does not inherit the settings of /etc/security/limits.conf.
+# Without LimitNOFILE the service gets systemd's default soft limit of 1024 file
+# descriptors. sge_qmaster derives the maximum number of dynamic event clients from
+# that limit, see MAX_DYN_EC in sge_conf(5), and would silently be capped at 979.
+# The value must not exceed the kernel's fs.nr_open sysctl, commonly 1048576.
+LimitNOFILE=65536
+
+# Allow core dumps of sge_qmaster, e.g. to analyse a crash. Many distributions
+# default to 0.
+#LimitCORE=infinity
+
+# Make the kernel's OOM killer prefer other processes over sge_qmaster.
+#OOMScoreAdjust=-500
+
 #We can set (cgroups / systemd-run) options
 #MemoryAccounting=true
 #IOAccounting=true

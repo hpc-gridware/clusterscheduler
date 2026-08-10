@@ -10,6 +10,30 @@ Slice=GENSLICE.slice
 ExecStart=GENROOT/GENCELL/common/sgeexecd start
 ExecStop=GENROOT/GENCELL/common/sgeexecd softstop
 Restart=no
+
+# Resource limits.
+#
+# A systemd service does not inherit the settings of /etc/security/limits.conf.
+# Without LimitNOFILE the service - and every job it starts - gets systemd's default
+# soft limit of 1024 file descriptors. sge_shepherd overrides that limit for a job
+# only when the execd_params S_DESCRIPTORS / H_DESCRIPTORS are set, see sge_conf(5),
+# so uncommenting the line below changes the file descriptor limit of all jobs on
+# this host. The value must not exceed the kernel's fs.nr_open sysctl, commonly
+# 1048576.
+#LimitNOFILE=65536
+
+# Maximum number of tasks (processes and threads) in the cgroup of this service.
+# The systemd default is 15% of the kernel's pid_max. Without systemd job isolation
+# the shepherds and all job processes belong to this cgroup, so a host running many
+# jobs may need a higher value.
+#TasksMax=infinity
+
+# RLIMIT_NPROC is counted per user, not per service. It is inherited by the jobs.
+#LimitNPROC=
+
+# Allow core dumps of sge_execd. Inherited by the jobs.
+#LimitCORE=infinity
+
 #We can set (cgroups / systemd-run) options
 #MemoryAccounting=true
 #IOAccounting=true
