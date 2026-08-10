@@ -111,8 +111,7 @@ static const char *const SPOOL_JSON_DEFAULT_HREF = "default";
  * @return the sub-element descriptor, or nullptr if none can be determined
  */
 static const lDescr *
-spool_json_object_subtype(const spooling_field *field)
-{
+spool_json_object_subtype(const spooling_field *field) {
    const lDescr *d = object_get_subtype(field->nm);
    if (d == nullptr) {
       d = static_cast<const lDescr *>(field->clientdata);
@@ -130,8 +129,7 @@ spool_json_object_subtype(const spooling_field *field)
  * @return the lowercased type name (pointer into @p out)
  */
 static const char *
-spool_json_typename(const lListElem *object, dstring *out)
-{
+spool_json_typename(const lListElem *object, dstring *out) {
    const char *type_name = object_get_type_name(object);
    sge_dstring_clear(out);
    for (const char *c = type_name; c != nullptr && *c != '\0'; c++) {
@@ -150,8 +148,7 @@ spool_json_typename(const lListElem *object, dstring *out)
  */
 static void
 spool_json_write_envelope_name(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                               const char *type_name)
-{
+                               const char *type_name) {
    writer.Key("$schema");
    writer.String("https://json-schema.org/draft/2020-12/schema");
 
@@ -173,8 +170,7 @@ spool_json_write_envelope_name(rapidjson::PrettyWriter<rapidjson::StringBuffer> 
  */
 static void
 spool_json_write_envelope(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                          const lListElem *object)
-{
+                          const lListElem *object) {
    dstring name = DSTRING_INIT;
    spool_json_write_envelope_name(writer, spool_json_typename(object, &name));
    sge_dstring_free(&name);
@@ -190,8 +186,7 @@ spool_json_write_envelope(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writ
  */
 static void
 spool_json_write_scalar_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                              const lListElem *object, int pos, int type)
-{
+                              const lListElem *object, int pos, int type) {
    switch (type) {
       case lDoubleT:  writer.Double(lGetPosDouble(object, pos)); break;
       case lUlongT:   writer.Uint64(lGetPosUlong(object, pos)); break;
@@ -232,8 +227,7 @@ spool_json_write_scalar_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &
  */
 static void
 spool_json_write_typed_number(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                              double dval, ocs::CEntry::Type type)
-{
+                              double dval, ocs::CEntry::Type type) {
    if (dval == DBL_MAX) {
       writer.String(INFINITY_STR);
       return;
@@ -263,8 +257,7 @@ spool_json_write_typed_number(rapidjson::PrettyWriter<rapidjson::StringBuffer> &
  */
 static void
 spool_json_write_ce_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                          const lListElem *ce)
-{
+                          const lListElem *ce) {
    const double dval = lGetDouble(ce, CE_doubleval);
    const auto type = static_cast<ocs::CEntry::Type>(lGetUlong(ce, CE_valtype));
    switch (type) {
@@ -296,8 +289,7 @@ spool_json_write_ce_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writ
  */
 static void
 spool_json_write_ce_array(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                          const lList *list)
-{
+                          const lList *list) {
    writer.StartArray();
    const lListElem *ce;
    for_each_ep(ce, list) {
@@ -323,8 +315,7 @@ spool_json_write_ce_array(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writ
  * @return true if the list's descriptor carries the CE name/value/type fields
  */
 static bool
-spool_json_is_ce_list(const lList *list)
-{
+spool_json_is_ce_list(const lList *list) {
    const lDescr *d = lGetListDescr(list);
    return d != nullptr &&
           lGetPosInDescr(d, CE_name) >= 0 &&
@@ -346,8 +337,7 @@ spool_json_is_ce_list(const lList *list)
  * @return true if the field is rendered/parsed as a symbolic token
  */
 static bool
-spool_json_nm_is_symbolic(int nm)
-{
+spool_json_nm_is_symbolic(int nm) {
    switch (nm) {
       case CE_valtype:
       case CE_relop:
@@ -370,8 +360,7 @@ spool_json_nm_is_symbolic(int nm)
  */
 static void
 spool_json_write_symbolic_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                                const lListElem *object, int nm)
-{
+                                const lListElem *object, int nm) {
    dstring buf = DSTRING_INIT;
    const char *s = object_append_field_to_dstring(object, nullptr, &buf, nm, '\0');
    s != nullptr ? writer.String(s) : writer.Null();
@@ -390,8 +379,7 @@ spool_json_write_symbolic_value(rapidjson::PrettyWriter<rapidjson::StringBuffer>
  * @return true if the field should be emitted as a native JSON number
  */
 static bool
-spool_json_nm_is_number(int nm)
-{
+spool_json_nm_is_number(int nm) {
    switch (nm) {
       case CE_urgency_weight:    /* always a finite double */
       case ASTR_value:           /* cqueue string override (e.g. priority) -> number if numeric */
@@ -416,8 +404,7 @@ spool_json_nm_is_number(int nm)
  */
 static void
 spool_json_write_number_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                              const lListElem *object, int nm)
-{
+                              const lListElem *object, int nm) {
    const char *s = lGetString(object, nm);
    if (s == nullptr || *s == '\0' || sge_strnullcasecmp(s, NONE_STR) == 0) {
       writer.String("");
@@ -444,8 +431,7 @@ spool_json_write_number_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &
  * @return the complex entry type (TIME/MEM), or NONE if not numerically typed
  */
 static ocs::CEntry::Type
-spool_json_avalue_ctype(int nm)
-{
+spool_json_avalue_ctype(int nm) {
    switch (nm) {
       case ATIME_value:
       case AINTER_value:
@@ -470,8 +456,7 @@ spool_json_avalue_ctype(int nm)
  */
 static void
 spool_json_write_avalue(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                        const char *s, ocs::CEntry::Type type)
-{
+                        const char *s, ocs::CEntry::Type type) {
    if (s == nullptr || *s == '\0' || sge_strnullcasecmp(s, NONE_STR) == 0) {
       writer.String("");
       return;
@@ -495,8 +480,7 @@ spool_json_write_avalue(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer
  * @return the bit-name table for the field, or nullptr if not a bitfield
  */
 static const char *const *
-spool_json_bitfield_names(int nm)
-{
+spool_json_bitfield_names(int nm) {
    switch (nm) {
       case QU_qtype:
       case AQTLIST_value:
@@ -517,8 +501,7 @@ spool_json_bitfield_names(int nm)
  */
 static void
 spool_json_write_bitfield_array(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                                uint32_t value, const char *const *names)
-{
+                                uint32_t value, const char *const *names) {
    writer.StartArray();
    uint32_t bitmask = 1;
    for (const char *const *ptr = names; *ptr != nullptr; ptr++) {
@@ -550,8 +533,7 @@ static const char *const sched_queue_sort_methods[] = { "load", "seqno", nullptr
  * @return the value-name table for the field, or nullptr if not such an enum
  */
 static const char *const *
-spool_json_enum_names(int nm)
-{
+spool_json_enum_names(int nm) {
    switch (nm) {
       case STN_type:
          return sharetree_node_types;
@@ -571,8 +553,7 @@ spool_json_enum_names(int nm)
  */
 static void
 spool_json_write_enum_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                            uint32_t value, const char *const *names)
-{
+                            uint32_t value, const char *const *names) {
    uint32_t count = 0;
    while (names[count] != nullptr) {
       count++;
@@ -595,8 +576,7 @@ spool_json_write_enum_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &wr
  * @return the enum value
  */
 static lUlong
-spool_json_enum_from_value(const rapidjson::Value &v, const char *const *names)
-{
+spool_json_enum_from_value(const rapidjson::Value &v, const char *const *names) {
    if (v.IsString()) {
       for (uint32_t i = 0; names[i] != nullptr; i++) {
          if (sge_strnullcasecmp(v.GetString(), names[i]) == 0) {
@@ -617,8 +597,7 @@ spool_json_enum_from_value(const rapidjson::Value &v, const char *const *names)
  * @return true if the field is a date-time field
  */
 static bool
-spool_json_nm_is_datetime(int nm)
-{
+spool_json_nm_is_datetime(int nm) {
    switch (nm) {
       case UU_delete_time:
          return true;
@@ -634,8 +613,7 @@ spool_json_nm_is_datetime(int nm)
  * @param ts      timestamp in gmt64 microseconds since epoch; 0 -> "" (unset)
  */
 static void
-spool_json_write_datetime(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer, uint64_t ts)
-{
+spool_json_write_datetime(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer, uint64_t ts) {
    if (ts == 0) {
       writer.String("");   /* unset (sge_ctime64(0) would print "now") */
       return;
@@ -655,8 +633,7 @@ spool_json_write_datetime(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writ
  * @return the gmt64 timestamp, or 0 for an empty/unparsable input
  */
 static uint64_t
-spool_json_datetime_from_string(const char *s)
-{
+spool_json_datetime_from_string(const char *s) {
    if (s == nullptr || *s == '\0') {
       return 0;
    }
@@ -691,8 +668,7 @@ spool_json_datetime_from_string(const char *s)
  */
 static void
 spool_json_write_field_scalar(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                              const lListElem *ep, int nm)
-{
+                              const lListElem *ep, int nm) {
    const lDescr *d = lGetElemDescr(ep);
    const int pos = lGetPosInDescr(d, nm);
    const ocs::CEntry::Type avtype = spool_json_avalue_ctype(nm);
@@ -729,8 +705,7 @@ spool_json_write_field_scalar(rapidjson::PrettyWriter<rapidjson::StringBuffer> &
  */
 static void
 spool_json_write_positional_name(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                                 const lListElem *ep, int nm)
-{
+                                 const lListElem *ep, int nm) {
    const lDescr *d = lGetElemDescr(ep);
    const int pos = lGetPosInDescr(d, nm);
    if (pos >= 0 && lGetPosType(d, pos) == lHostT) {
@@ -764,8 +739,7 @@ spool_json_write_positional_name(rapidjson::PrettyWriter<rapidjson::StringBuffer
 static bool
 spool_json_write_positional_array(lList **answer_list, const lList *list,
                                   const spooling_field *fields,
-                                  rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer)
-{
+                                  rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer) {
    int nfields = 0;
    while (fields[nfields].nm != NoName) {
       nfields++;
@@ -813,8 +787,7 @@ spool_json_write_positional_array(lList **answer_list, const lList *list,
 static bool
 spool_json_write_list_value(lList **answer_list, const lList *sub_list,
                             const spooling_field *sub_fields,
-                            rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer)
-{
+                            rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer) {
    if (sub_list == nullptr || lGetNumberOfElem(sub_list) == 0) {
       writer.StartArray();
       writer.EndArray();
@@ -848,8 +821,7 @@ spool_json_write_list_value(lList **answer_list, const lList *sub_list,
  */
 static void
 spool_json_write_config_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                              const char *val, ocs::CEntry::Type type)
-{
+                              const char *val, ocs::CEntry::Type type) {
    if (val == nullptr || *val == '\0' || sge_strnullcasecmp(val, NONE_STR) == 0) {
       writer.String("");
    } else if (sge_strnullcasecmp(val, "true") == 0) {
@@ -886,8 +858,7 @@ spool_json_write_config_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &
  */
 static void
 spool_json_write_config_value_list(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                                   const char *s)
-{
+                                   const char *s) {
    writer.StartArray();
    if (s != nullptr && *s != '\0' && sge_strnullcasecmp(s, NONE_STR) != 0) {
       char *buf = strdup(s);
@@ -913,8 +884,7 @@ spool_json_write_config_value_list(rapidjson::PrettyWriter<rapidjson::StringBuff
  */
 static void
 spool_json_write_config_namevalue_list(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                                       const char *s)
-{
+                                       const char *s) {
    writer.StartArray();
    if (s != nullptr && *s != '\0' && sge_strnullcasecmp(s, NONE_STR) != 0) {
       char *buf = strdup(s);
@@ -955,8 +925,7 @@ static const char *const perm_rule_fields[] = {
  * @return true for the role perm_list field
  */
 static bool
-spool_json_nm_is_perm_list(int nm)
-{
+spool_json_nm_is_perm_list(int nm) {
    return nm == RL_perm_list;
 }
 
@@ -973,8 +942,7 @@ spool_json_nm_is_perm_list(int nm)
  */
 static void
 spool_json_write_perm_list(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                           const char *s)
-{
+                           const char *s) {
    writer.StartArray();
    if (s != nullptr && *s != '\0' && sge_strnullcasecmp(s, NONE_STR) != 0) {
       char *buf = strdup(s);
@@ -1021,8 +989,7 @@ spool_json_write_perm_list(rapidjson::PrettyWriter<rapidjson::StringBuffer> &wri
  * @return true on success (@p out set), false if @p v is not a JSON array
  */
 static bool
-spool_json_perm_list_from_array(const rapidjson::Value &v, dstring *out, lList **answer_list)
-{
+spool_json_perm_list_from_array(const rapidjson::Value &v, dstring *out, lList **answer_list) {
    sge_dstring_clear(out);
    if (!v.IsArray()) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1071,8 +1038,7 @@ spool_json_perm_list_from_array(const rapidjson::Value &v, dstring *out, lList *
 static bool
 spool_json_write_object_members(lList **answer_list, const lListElem *object,
                                 rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                                const spooling_field *fields)
-{
+                                const spooling_field *fields) {
    DENTER(JSON_LAYER);
 
    SGE_CHECK_POINTER_FALSE(object, answer_list);
@@ -1197,8 +1163,7 @@ spool_json_write_object_members(lList **answer_list, const lListElem *object,
 static bool
 spool_json_write_object_braced(lList **answer_list, const lListElem *object,
                                rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                               const spooling_field *fields)
-{
+                               const spooling_field *fields) {
    writer.StartObject();
    bool ok = spool_json_write_object_members(answer_list, object, writer, fields);
    writer.EndObject();
@@ -1217,8 +1182,7 @@ spool_json_write_object_braced(lList **answer_list, const lListElem *object,
 static bool
 spool_json_write_list_array(lList **answer_list, const lList *list,
                             rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
-                            const spooling_field *fields)
-{
+                            const spooling_field *fields) {
    DENTER(JSON_LAYER);
 
    writer.StartArray();
@@ -1242,10 +1206,8 @@ spool_json_write_list_array(lList **answer_list, const lList *list,
  * @param out          dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool
-spool_json_write_object(lList **answer_list, const lListElem *object,
-                        const spooling_field *fields, dstring *out)
-{
+bool spool_json_write_object(lList **answer_list, const lListElem *object,
+                             const spooling_field *fields, dstring *out) {
    DENTER(JSON_LAYER);
 
    rapidjson::StringBuffer sb;
@@ -1276,10 +1238,8 @@ spool_json_write_object(lList **answer_list, const lListElem *object,
  * @param out          dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool
-spool_json_write_list(lList **answer_list, const lList *list,
-                      const spooling_field *fields, dstring *out)
-{
+bool spool_json_write_list(lList **answer_list, const lList *list,
+                           const spooling_field *fields, dstring *out) {
    DENTER(JSON_LAYER);
 
    rapidjson::StringBuffer sb;
@@ -1322,10 +1282,8 @@ spool_json_write_list(lList **answer_list, const lList *list,
  * @param out          dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool
-spool_json_write_typed_object(lList **answer_list, const lListElem *object,
-                              const spooling_field *fields, const char *type_name, dstring *out)
-{
+bool spool_json_write_typed_object(lList **answer_list, const lListElem *object,
+                                   const spooling_field *fields, const char *type_name, dstring *out) {
    DENTER(JSON_LAYER);
 
    rapidjson::StringBuffer sb;
@@ -1362,11 +1320,9 @@ spool_json_write_typed_object(lList **answer_list, const lListElem *object,
  * @param out            dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool
-spool_json_write_typed_list_ex(lList **answer_list, const lList *list,
-                               const spooling_field *fields, const char *id_name,
-                               const char *envelope_name, dstring *out)
-{
+bool spool_json_write_typed_list_ex(lList **answer_list, const lList *list,
+                                    const spooling_field *fields, const char *id_name,
+                                    const char *envelope_name, dstring *out) {
    DENTER(JSON_LAYER);
 
    rapidjson::StringBuffer sb;
@@ -1399,10 +1355,8 @@ spool_json_write_typed_list_ex(lList **answer_list, const lList *list,
  * @param out          dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)
  */
-bool
-spool_json_write_typed_list(lList **answer_list, const lList *list,
-                            const spooling_field *fields, const char *type_name, dstring *out)
-{
+bool spool_json_write_typed_list(lList **answer_list, const lList *list,
+                                 const spooling_field *fields, const char *type_name, dstring *out) {
    return spool_json_write_typed_list_ex(answer_list, list, fields, type_name, type_name, out);
 }
 
@@ -1419,9 +1373,7 @@ spool_json_write_typed_list(lList **answer_list, const lList *list,
  * @param out          dstring the JSON document is appended to
  * @return true on success
  */
-bool
-spool_json_write_name_list(lList **answer_list, const lList *list, int keynm, dstring *out)
-{
+bool spool_json_write_name_list(lList **answer_list, const lList *list, int keynm, dstring *out) {
    return spool_json_write_name_list_ex(answer_list, list, keynm, nullptr, out);
 }
 
@@ -1441,10 +1393,8 @@ spool_json_write_name_list(lList **answer_list, const lList *list, int keynm, ds
  * @param out          dstring the JSON document is appended to
  * @return true on success
  */
-bool
-spool_json_write_name_list_ex(lList **answer_list, const lList *list, int keynm,
-                              const char *type_name, dstring *out)
-{
+bool spool_json_write_name_list_ex(lList **answer_list, const lList *list, int keynm,
+                                   const char *type_name, dstring *out) {
    DENTER(JSON_LAYER);
 
    rapidjson::StringBuffer sb;
@@ -1506,8 +1456,7 @@ spool_json_write_name_list_ex(lList **answer_list, const lList *list, int keynm,
  * @return the string form (pointer into @p out)
  */
 static const char *
-spool_json_value_to_string(const rapidjson::Value &v, dstring *out)
-{
+spool_json_value_to_string(const rapidjson::Value &v, dstring *out) {
    sge_dstring_clear(out);
    if (v.IsString()) {
       sge_dstring_append(out, v.GetString());
@@ -1530,8 +1479,7 @@ spool_json_value_to_string(const rapidjson::Value &v, dstring *out)
  * @return the unsigned long value, or 0 if not coercible
  */
 static lUlong
-spool_json_value_to_ulong(const rapidjson::Value &v)
-{
+spool_json_value_to_ulong(const rapidjson::Value &v) {
    if (v.IsUint64()) return static_cast<lUlong>(v.GetUint64());
    if (v.IsInt64())  return static_cast<lUlong>(v.GetInt64());
    if (v.IsDouble()) return static_cast<lUlong>(v.GetDouble());
@@ -1546,8 +1494,7 @@ spool_json_value_to_ulong(const rapidjson::Value &v)
  * @return the boolean value, false if not coercible
  */
 static bool
-spool_json_value_to_bool(const rapidjson::Value &v)
-{
+spool_json_value_to_bool(const rapidjson::Value &v) {
    if (v.IsBool())   return v.GetBool();
    if (v.IsNumber()) return v.GetDouble() != 0.0;
    if (v.IsString()) return sge_strnullcasecmp(v.GetString(), "true") == 0 ||
@@ -1570,8 +1517,7 @@ spool_json_value_to_bool(const rapidjson::Value &v)
  * @return the string value, or "NONE" if unset (never nullptr)
  */
 static const char *
-spool_json_string_or_unset(const rapidjson::Value &v, dstring *out)
-{
+spool_json_string_or_unset(const rapidjson::Value &v, dstring *out) {
    if (v.IsNull()) {
       return NONE_STR;
    }
@@ -1594,8 +1540,7 @@ spool_json_string_or_unset(const rapidjson::Value &v, dstring *out)
  * @param v     the JSON value
  */
 static void
-spool_json_set_field(lListElem *ep, int pos, int type, const rapidjson::Value &v)
-{
+spool_json_set_field(lListElem *ep, int pos, int type, const rapidjson::Value &v) {
    dstring s = DSTRING_INIT;
    switch (type) {
       case lDoubleT:
@@ -1643,8 +1588,7 @@ spool_json_set_field(lListElem *ep, int pos, int type, const rapidjson::Value &v
  * @return the reconstructed bitmask
  */
 static uint32_t
-spool_json_bitfield_from_array(const rapidjson::Value &v, const char *const *names)
-{
+spool_json_bitfield_from_array(const rapidjson::Value &v, const char *const *names) {
    uint32_t value = 0;
    if (v.IsArray()) {
       for (rapidjson::SizeType i = 0; i < v.Size(); i++) {
@@ -1676,8 +1620,7 @@ spool_json_bitfield_from_array(const rapidjson::Value &v, const char *const *nam
  * @param v     the JSON value
  */
 static void
-spool_json_set_positional_name(lListElem *ep, int pos, int type, const rapidjson::Value &v)
-{
+spool_json_set_positional_name(lListElem *ep, int pos, int type, const rapidjson::Value &v) {
    if (type == lHostT && v.IsString() && strcmp(v.GetString(), SPOOL_JSON_DEFAULT_HREF) == 0) {
       lSetPosHost(ep, pos, HOSTREF_DEFAULT);
    } else {
@@ -1703,8 +1646,7 @@ static bool spool_json_populate_members(lListElem *ep, const lDescr *descr,
  * @return the element descriptor, or nullptr if it cannot be determined
  */
 static const lDescr *
-spool_json_sublist_subtype(int nm, const spooling_field *fields)
-{
+spool_json_sublist_subtype(int nm, const spooling_field *fields) {
    const lDescr *d = object_get_subtype(nm);
    if (d != nullptr || fields == nullptr) {
       return d;
@@ -1740,8 +1682,7 @@ spool_json_sublist_subtype(int nm, const spooling_field *fields)
  */
 static lList *
 spool_json_read_sublist(int nm, const spooling_field *fields, lList **answer_list,
-                        const rapidjson::Value &arr)
-{
+                        const rapidjson::Value &arr) {
    const lDescr *sub_descr = spool_json_sublist_subtype(nm, fields);
    if (sub_descr == nullptr || fields == nullptr || !arr.IsArray() || arr.Size() == 0) {
       /* an empty array is read as a null (unset) list, mirroring the ASCII reader;
@@ -1816,8 +1757,7 @@ spool_json_read_sublist(int nm, const spooling_field *fields, lList **answer_lis
 static void
 spool_json_read_flatten(lListElem *ep, const lDescr *descr, const spooling_field *fields,
                         const spooling_field *flatten, int fields_out[],
-                        const rapidjson::Value &obj)
-{
+                        const rapidjson::Value &obj) {
    const int fpos = lGetPosInDescr(descr, flatten->nm);
    const lDescr *sub_descr = spool_json_sublist_subtype(flatten->nm, flatten->sub_fields);
    if (fpos < 0 || sub_descr == nullptr) {
@@ -1916,8 +1856,7 @@ spool_json_read_flatten(lListElem *ep, const lDescr *descr, const spooling_field
 static bool
 spool_json_populate_members(lListElem *ep, const lDescr *descr,
                             const spooling_field *fields, int fields_out[],
-                            lList **answer_list, const rapidjson::Value &obj)
-{
+                            lList **answer_list, const rapidjson::Value &obj) {
    const spooling_field *flatten = nullptr;
    for (int i = 0; fields[i].nm != NoName; i++) {
       const int nm = fields[i].nm;
@@ -2010,8 +1949,7 @@ spool_json_populate_members(lListElem *ep, const lDescr *descr,
  */
 lListElem *
 spool_json_read_object(lList **answer_list, const lDescr *descr,
-                       const spooling_field *fields, int fields_out[], const char *json_text)
-{
+                       const spooling_field *fields, int fields_out[], const char *json_text) {
    DENTER(JSON_LAYER);
 
    rapidjson::Document doc;
@@ -2045,8 +1983,7 @@ spool_json_read_object(lList **answer_list, const lDescr *descr,
  */
 lList *
 spool_json_read_list(lList **answer_list, const lDescr *descr,
-                     const spooling_field *fields, int fields_out[], const char *json_text)
-{
+                     const spooling_field *fields, int fields_out[], const char *json_text) {
    DENTER(JSON_LAYER);
 
    rapidjson::Document doc;

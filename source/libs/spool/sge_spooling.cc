@@ -73,11 +73,11 @@ static lList *Default_Spool_Context_List;
  * @see #spool_free_context
  */
 lListElem *
-spool_create_context(lList **answer_list, const char *name)
-{
+spool_create_context(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
    lListElem *ep = nullptr;
 
-   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
    if (name == nullptr) {
@@ -112,8 +112,7 @@ spool_create_context(lList **answer_list, const char *name)
  * @see #spool_create_context, #spool_shutdown_context
  */
 lListElem *
-spool_free_context(lList **answer_list, lListElem *context)
-{
+spool_free_context(lList **answer_list, lListElem *context) {
    DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
   
@@ -142,12 +141,11 @@ spool_free_context(lList **answer_list, lListElem *context)
  *
  * @return true if no rule rejected the option, else false
  */
-bool
-spool_set_option(lList **answer_list, lListElem *context, const char *option)
-{
+bool spool_set_option(lList **answer_list, lListElem *context, const char *option) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
   
    if (context == nullptr) {
@@ -198,12 +196,11 @@ spool_set_option(lList **answer_list, lListElem *context, const char *option)
  *
  * @see #spool_shutdown_context
  */
-bool 
-spool_startup_context(lList **answer_list, lListElem *context, bool check)
-{
+bool spool_startup_context(lList **answer_list, lListElem *context, bool check) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
    if (context == nullptr) {
@@ -313,14 +310,13 @@ error:
  *
  * @see #spool_startup_context
  */
-bool 
-spool_maintain_context(lList **answer_list, lListElem *context, 
-                       const spooling_maintenance_command cmd,
-                       const char *args)
-{
+bool spool_maintain_context(lList **answer_list, lListElem *context,
+                            const spooling_maintenance_command cmd,
+                            const char *args) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
    if (context == nullptr) {
@@ -367,12 +363,11 @@ spool_maintain_context(lList **answer_list, lListElem *context,
  *
  * @see #spool_startup_context
  */
-bool 
-spool_shutdown_context(lList **answer_list, const lListElem *context)
-{
+bool spool_shutdown_context(lList **answer_list, const lListElem *context) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
    if (context == nullptr) {
@@ -416,13 +411,12 @@ spool_shutdown_context(lList **answer_list, const lListElem *context)
  *
  * @return true if every trigger callback succeeded, else false
  */
-bool
-spool_trigger_context(lList **answer_list, const lListElem *context,
-                      uint64_t trigger, uint64_t *next_trigger)
-{
+bool spool_trigger_context(lList **answer_list, const lListElem *context,
+                           uint64_t trigger, uint64_t *next_trigger) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
    if (context == nullptr) {
@@ -465,12 +459,12 @@ spool_trigger_context(lList **answer_list, const lListElem *context,
  *       in transactions regardless of the configured spooling method. Only a
  *       transactional backend actually makes them atomic.
  */
-bool spool_transaction(lList **answer_list, const lListElem *context, 
-                       spooling_transaction_command cmd)
-{
+bool spool_transaction(lList **answer_list, const lListElem *context,
+                       spooling_transaction_command cmd) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
    if (context == nullptr) {
@@ -513,8 +507,7 @@ bool spool_transaction(lList **answer_list, const lListElem *context,
  *
  * @see #spool_get_default_context
  */
-void spool_set_default_context(lListElem *context)
-{
+void spool_set_default_context(lListElem *context) {
    if (Default_Spool_Context_List == nullptr) {
       Default_Spool_Context_List = lCreateList(nullptr, SPC_Type);
    }
@@ -532,8 +525,7 @@ void spool_set_default_context(lListElem *context)
  * @see #spool_set_default_context
  */
 lListElem *
-spool_get_default_context()
-{
+spool_get_default_context() {
    return lFirstRW(Default_Spool_Context_List);
 }
 
@@ -548,8 +540,7 @@ spool_get_default_context()
  * @return the rule, if it exists, else nullptr
  */
 lListElem *
-spool_context_search_rule(const lListElem *context, const char *name)
-{
+spool_context_search_rule(const lListElem *context, const char *name) {
    return lGetElemStrRW(lGetList(context, SPC_rules), SPR_name, name);
 }
 
@@ -579,25 +570,25 @@ spool_context_search_rule(const lListElem *context, const char *name)
  * @return the new rule, if it could be created, else nullptr
  */
 lListElem *
-spool_context_create_rule(lList **answer_list, lListElem *context, 
+spool_context_create_rule(lList **answer_list, lListElem *context,
                           const char *name, const char *url,
-                          spooling_option_func option_func, 
-                          spooling_startup_func startup_func, 
-                          spooling_shutdown_func shutdown_func, 
-                          spooling_maintenance_func maintenance_func, 
-                          spooling_trigger_func trigger_func, 
-                          spooling_transaction_func transaction_func, 
-                          spooling_list_func list_func, 
+                          spooling_option_func option_func,
+                          spooling_startup_func startup_func,
+                          spooling_shutdown_func shutdown_func,
+                          spooling_maintenance_func maintenance_func,
+                          spooling_trigger_func trigger_func,
+                          spooling_transaction_func transaction_func,
+                          spooling_list_func list_func,
                           spooling_read_func read_func,
                           spooling_read_keys_func read_keys_func,
                           spooling_write_func write_func,
                           spooling_delete_func delete_func,
                           spooling_validate_func validate_func,
-                          spooling_validate_list_func validate_list_func)
-{
+                          spooling_validate_list_func validate_list_func) {
+   DENTER(TOP_LAYER);
+
    lListElem *ep = nullptr;
 
-   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
    if (context == nullptr) {
@@ -661,9 +652,8 @@ spool_context_create_rule(lList **answer_list, lListElem *context,
  * @return an object type description or nullptr, if none was found.
  */
 lListElem *
-spool_context_search_type(const lListElem *context, 
-                          sge_object_type object_type)
-{
+spool_context_search_type(const lListElem *context,
+                          sge_object_type object_type) {
    lListElem *ep;
 
    /* search fitting rule */
@@ -693,12 +683,12 @@ spool_context_search_type(const lListElem *context,
  * @return the new object type description
  */
 lListElem *
-spool_context_create_type(lList **answer_list, lListElem *context, 
-                          sge_object_type object_type)
-{
+spool_context_create_type(lList **answer_list, lListElem *context,
+                          sge_object_type object_type) {
+   DENTER(TOP_LAYER);
+
    lListElem *ep = nullptr;
 
-   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
    if (context == nullptr) {
@@ -737,8 +727,7 @@ spool_context_create_type(lList **answer_list, lListElem *context,
  * @return the default rule, or nullptr, if no rule could be found.
  */
 lListElem *
-spool_type_search_default_rule(const lListElem *spool_type)
-{  
+spool_type_search_default_rule(const lListElem *spool_type) {
    lListElem *rule = nullptr;
 
    const lList *lp = lGetList(spool_type, SPT_rules);
@@ -768,12 +757,12 @@ spool_type_search_default_rule(const lListElem *spool_type)
  * @see #spool_context_create_type, #spool_context_create_rule
  */
 lListElem *
-spool_type_add_rule(lList **answer_list, lListElem *spool_type, 
-                    const lListElem *rule, lBool is_default)
-{
+spool_type_add_rule(lList **answer_list, lListElem *spool_type,
+                    const lListElem *rule, lBool is_default) {
+   DENTER(TOP_LAYER);
+
    lListElem *ep = nullptr;
 
-   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
    if(spool_type == nullptr) {
@@ -827,13 +816,12 @@ spool_type_add_rule(lList **answer_list, lListElem *spool_type,
  *
  * @return true, on success, false, if an error occurred
  */
-bool 
-spool_read_list(lList **answer_list, const lListElem *context, 
-                lList **list, const sge_object_type object_type)
-{
+bool spool_read_list(lList **answer_list, const lListElem *context,
+                     lList **list, const sge_object_type object_type) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
 
-   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
    if (context == nullptr) {
@@ -901,12 +889,12 @@ spool_read_list(lList **answer_list, const lListElem *context,
  * @return the object, if it could be read, else nullptr
  */
 lListElem *
-spool_read_object(lList **answer_list, const lListElem *context, 
-                  const sge_object_type object_type, const char *key)
-{
+spool_read_object(lList **answer_list, const lListElem *context,
+                  const sge_object_type object_type, const char *key) {
+   DENTER(TOP_LAYER);
+
    lListElem *result = nullptr;
 
-   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
    if (context == nullptr) {
@@ -976,12 +964,12 @@ bool
  *          flatfile spool takes this path: an error message and a success
  *          return, with `list` left empty.
  */
-spool_read_keys(lList **answer_list, const lListElem *context, 
-                lList **list, const char *key)
-{
+spool_read_keys(lList **answer_list, const lListElem *context,
+                lList **list, const char *key) {
+   DENTER(TOP_LAYER);
+
    bool result = true;
 
-   DENTER(TOP_LAYER);
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
    if (context == nullptr) {
@@ -1030,16 +1018,14 @@ spool_read_keys(lList **answer_list, const lListElem *context,
  *
  * @return true, if writing was successful, else false
  */
-bool 
-spool_write_object(lList **answer_list, const lListElem *context, 
-                   const lListElem *object, const char *key, 
-                   const sge_object_type object_type,
-                   bool do_job_spooling)
-{
-   bool ret = false;
- 
+bool spool_write_object(lList **answer_list, const lListElem *context,
+                        const lListElem *object, const char *key,
+                        const sge_object_type object_type,
+                        bool do_job_spooling) {
    DENTER(TOP_LAYER);
 
+   bool ret = false;
+ 
    switch (object_type) {
 
       case SGE_TYPE_JOB:
@@ -1132,15 +1118,13 @@ spool_write_object(lList **answer_list, const lListElem *context,
  *
  * @return true, if all rules reported success, else false
  */
-bool 
-spool_delete_object(lList **answer_list, const lListElem *context, 
-                    const sge_object_type object_type, const char *key,
-                    bool do_job_spooling)
-{
-   bool ret = false;
-   
+bool spool_delete_object(lList **answer_list, const lListElem *context,
+                         const sge_object_type object_type, const char *key,
+                         bool do_job_spooling) {
    DENTER(TOP_LAYER);
 
+   bool ret = false;
+   
    switch (object_type) {
 
       case SGE_TYPE_JOB:
@@ -1235,11 +1219,9 @@ spool_delete_object(lList **answer_list, const lListElem *context,
  *       First the attributes to be spooled have to be defined in the
  *       object definitions (libs/gdi/sge_*L.h).
  */
-bool
-spool_compare_objects(lList **answer_list, const lListElem *context, 
-                      const sge_object_type object_type, 
-                      const lListElem *ep1, const lListElem *ep2)
-{
+bool spool_compare_objects(lList **answer_list, const lListElem *context,
+                           const sge_object_type object_type,
+                           const lListElem *ep1, const lListElem *ep2) {
    DENTER(TOP_LAYER);
    if (context == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S, __func__);

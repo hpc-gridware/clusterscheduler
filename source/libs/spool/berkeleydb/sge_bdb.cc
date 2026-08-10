@@ -110,15 +110,13 @@ spool_berkeleydb_checkpoint(lList **answer_list, bdb_info info);
  *
  * @note MT-NOTE: spool_berkeleydb_check_version() is MT safe
  */
-bool
-spool_berkeleydb_check_version(lList **answer_list)
-{
+bool spool_berkeleydb_check_version(lList **answer_list) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    const char *version;
    int major, minor;
 
-   DENTER(BDB_LAYER);
-   
    version = db_version(&major, &minor, nullptr);
 
    answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
@@ -153,16 +151,15 @@ spool_berkeleydb_check_version(lList **answer_list)
  *       document has not been a parameter for a long time.
  * @note MT-NOTE: spool_berkeleydb_create_environment() is not MT safe
  */
-bool spool_berkeleydb_create_environment(lList **answer_list, 
-                                         bdb_info info)
-{ 
+bool spool_berkeleydb_create_environment(lList **answer_list,
+                                         bdb_info info) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    int dbret;
    const char *path;
 
    DB_ENV *env = nullptr;
-
-   DENTER(BDB_LAYER);
 
    path   = bdb_get_path(info);
 
@@ -340,14 +337,12 @@ bool spool_berkeleydb_create_environment(lList **answer_list,
  *               `spoolinit init` passes true
  * @return true on success, else false
  */
-bool 
-spool_berkeleydb_open_database(lList **answer_list, bdb_info info, 
-                               bool create)
-{
+bool spool_berkeleydb_open_database(lList **answer_list, bdb_info info,
+                                    bool create) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    int i;
-
-   DENTER(BDB_LAYER);
 
    for (i = (int)BDB_CONFIG_DB; i < (int)BDB_ALL_DBS && ret; i++) {
       DB_ENV *env;
@@ -457,9 +452,9 @@ spool_berkeleydb_open_database(lList **answer_list, bdb_info info,
  * @param info the handle
  * @return true on success, else false
  */
-bool 
-spool_berkeleydb_close_database(lList **answer_list, bdb_info info)
-{
+bool spool_berkeleydb_close_database(lList **answer_list, bdb_info info) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
 
    DB_ENV *env;
@@ -468,8 +463,6 @@ spool_berkeleydb_close_database(lList **answer_list, bdb_info info)
    char dbname_buffer[MAX_STRING_SIZE];
    dstring dbname_dstring = DSTRING_INIT;
    const char *dbname;
-
-   DENTER(BDB_LAYER);
 
    sge_dstring_init(&dbname_dstring, dbname_buffer, sizeof(dbname_buffer));
    dbname = bdb_get_dbname(info, &dbname_dstring);
@@ -551,15 +544,13 @@ spool_berkeleydb_close_database(lList **answer_list, bdb_info info)
  *
  * @see #spool_berkeleydb_end_transaction
  */
-bool
-spool_berkeleydb_start_transaction(lList **answer_list, bdb_info info)
-{
+bool spool_berkeleydb_start_transaction(lList **answer_list, bdb_info info) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
 
    DB_ENV *env;
    DB_TXN *txn;
-
-   DENTER(BDB_LAYER);
 
    env = bdb_get_env(info);
    txn = bdb_get_txn(info);
@@ -612,17 +603,15 @@ spool_berkeleydb_start_transaction(lList **answer_list, bdb_info info)
  * @param commit true to commit, false to roll back
  * @return true on success, else false
  */
-bool
-spool_berkeleydb_end_transaction(lList **answer_list, bdb_info info, 
-                                 bool commit)
-{
+bool spool_berkeleydb_end_transaction(lList **answer_list, bdb_info info,
+                                      bool commit) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    int dbret;
 
    DB_ENV *env;
    DB_TXN *txn;
-
-   DENTER(BDB_LAYER);
 
    env = bdb_get_env(info);
    txn = bdb_get_txn(info);
@@ -689,13 +678,11 @@ spool_berkeleydb_end_transaction(lList **answer_list, bdb_info info,
  *                     #BERKELEYDB_MIN_INTERVAL away
  * @return true on success, else false
  */
-bool 
-spool_berkeleydb_trigger(lList **answer_list, bdb_info info, 
-                         uint64_t trigger, uint64_t *next_trigger)
-{
-   bool ret = true;
-
+bool spool_berkeleydb_trigger(lList **answer_list, bdb_info info,
+                              uint64_t trigger, uint64_t *next_trigger) {
    DENTER(BDB_LAYER);
+
+   bool ret = true;
 
    if (bdb_get_next_clear(info) <= trigger) {
       /* 
@@ -727,12 +714,12 @@ spool_berkeleydb_trigger(lList **answer_list, bdb_info info,
  * @param key the key prefix, e.g. the object type name
  * @return true on success, else false
  */
-bool 
-spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
-                           const bdb_database database,
-                           lList **list, const lDescr *descr,
-                           const char *key)
-{
+bool spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
+                                const bdb_database database,
+                                lList **list, const lDescr *descr,
+                                const char *key) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    int dbret;
 
@@ -741,8 +728,6 @@ spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
 
    DBT key_dbt, data_dbt;
    DBC *dbc;
-
-   DENTER(BDB_LAYER);
 
    db  = bdb_get_db(info, database);
    txn = bdb_get_txn(info);
@@ -863,15 +848,13 @@ spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
  * @param key the full key to write it under
  * @return true on success, else false
  */
-bool 
-spool_berkeleydb_write_object(lList **answer_list, bdb_info info,
-                              const bdb_database database,
-                              const lListElem *object, const char *key)
-{
+bool spool_berkeleydb_write_object(lList **answer_list, bdb_info info,
+                                   const bdb_database database,
+                                   const lListElem *object, const char *key) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    lList *tmp_list = nullptr;
-
-   DENTER(BDB_LAYER);
 
    /* do not spool free elems. If a free elem is passed, put a copy 
     * into a temporary list and spool this copy.
@@ -970,12 +953,11 @@ spool_berkeleydb_write_object(lList **answer_list, bdb_info info,
  * @return true on success, else false
  */
 bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
-                              const bdb_database database,
-                              const char *key, const char *str)
-{
-   bool ret = true;
-
+                                   const bdb_database database,
+                                   const char *key, const char *str) {
    DENTER(BDB_LAYER);
+
+   bool ret = true;
 
    {
       int dbret;
@@ -1034,12 +1016,10 @@ bool spool_berkeleydb_write_string(lList **answer_list, bdb_info info,
  * @param pe_task_id the task's own id
  * @return true on success, else false
  */
-bool
-spool_berkeleydb_write_pe_task(lList **answer_list, bdb_info info,
-                               const lListElem *object, 
-                               uint32_t job_id, uint32_t ja_task_id,
-                               const char *pe_task_id)
-{
+bool spool_berkeleydb_write_pe_task(lList **answer_list, bdb_info info,
+                                    const lListElem *object,
+                                    uint32_t job_id, uint32_t ja_task_id,
+                                    const char *pe_task_id) {
    bool ret = true;
    dstring dbkey_dstring;
    char dbkey_buffer[MAX_STRING_SIZE];
@@ -1066,11 +1046,9 @@ spool_berkeleydb_write_pe_task(lList **answer_list, bdb_info info,
  * @param ja_task_id the task's own number
  * @return true on success, else false
  */
-bool
-spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info,
-                               const lListElem *object, 
-                               uint32_t job_id, uint32_t ja_task_id)
-{
+bool spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info,
+                                    const lListElem *object,
+                                    uint32_t job_id, uint32_t ja_task_id) {
    bool ret = true;
    dstring dbkey_dstring;
    char dbkey_buffer[MAX_STRING_SIZE];
@@ -1108,11 +1086,9 @@ spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info,
  * @param only_job write the job alone and leave `ja_task_id` alone
  * @return true on success, else false
  */
-bool
-spool_berkeleydb_write_job(lList **answer_list, bdb_info info,
-                           const lListElem *object, 
-                           uint32_t job_id, uint32_t ja_task_id, bool only_job)
-{
+bool spool_berkeleydb_write_job(lList **answer_list, bdb_info info,
+                                const lListElem *object,
+                                uint32_t job_id, uint32_t ja_task_id, bool only_job) {
    bool ret = true;
    dstring dbkey_dstring;
    char dbkey_buffer[MAX_STRING_SIZE];
@@ -1155,10 +1131,8 @@ spool_berkeleydb_write_job(lList **answer_list, bdb_info info,
  * @param key the queue name
  * @return true on success, else false
  */
-bool
-spool_berkeleydb_write_cqueue(lList **answer_list, bdb_info info, 
-                              const lListElem *object, const char *key)
-{
+bool spool_berkeleydb_write_cqueue(lList **answer_list, bdb_info info,
+                                   const lListElem *object, const char *key) {
    bool ret = true;
    dstring dbkey_dstring;
    char dbkey_buffer[MAX_STRING_SIZE];
@@ -1199,19 +1173,17 @@ spool_berkeleydb_write_cqueue(lList **answer_list, bdb_info info,
  *
  * @note MT-NOTE: spool_berkeleydb_delete_object() is MT safe
  */
-bool
-spool_berkeleydb_delete_object(lList **answer_list, bdb_info info, 
-                               const bdb_database database,
-                               const char *key, bool sub_objects)
-{
+bool spool_berkeleydb_delete_object(lList **answer_list, bdb_info info,
+                                    const bdb_database database,
+                                    const char *key, bool sub_objects) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
 
    int dbret;
 
    DB *db;
    DB_TXN *txn;
-
-   DENTER(BDB_LAYER);
 
    db = bdb_get_db(info, database);
    txn = bdb_get_txn(info);
@@ -1358,10 +1330,8 @@ spool_berkeleydb_delete_object(lList **answer_list, bdb_info info,
  *
  * @see #spool_berkeleydb_delete_object
  */
-bool
-spool_berkeleydb_delete_pe_task(lList **answer_list, bdb_info info,
-                                const char *key, bool sub_objects)
-{
+bool spool_berkeleydb_delete_pe_task(lList **answer_list, bdb_info info,
+                                     const char *key, bool sub_objects) {
    bool ret = true;
 
    dstring dbkey_dstring;
@@ -1398,10 +1368,8 @@ spool_berkeleydb_delete_pe_task(lList **answer_list, bdb_info info,
  *
  * @see #spool_berkeleydb_delete_object, #spool_berkeleydb_delete_pe_task
  */
-bool
-spool_berkeleydb_delete_ja_task(lList **answer_list, bdb_info info,
-                                const char *key, bool sub_objects)
-{
+bool spool_berkeleydb_delete_ja_task(lList **answer_list, bdb_info info,
+                                     const char *key, bool sub_objects) {
    bool ret = true;
 
    dstring dbkey_dstring;
@@ -1442,10 +1410,8 @@ spool_berkeleydb_delete_ja_task(lList **answer_list, bdb_info info,
  *
  * @see #spool_berkeleydb_delete_object, #spool_berkeleydb_delete_ja_task
  */
-bool
-spool_berkeleydb_delete_job(lList **answer_list, bdb_info info,
-                            const char *key, bool sub_objects)
-{
+bool spool_berkeleydb_delete_job(lList **answer_list, bdb_info info,
+                                 const char *key, bool sub_objects) {
    bool ret = true;
 
    dstring dbkey_dstring;
@@ -1481,10 +1447,8 @@ spool_berkeleydb_delete_job(lList **answer_list, bdb_info info,
  *
  * @see #spool_berkeleydb_delete_object
  */
-bool
-spool_berkeleydb_delete_cqueue(lList **answer_list, bdb_info info,
-                               const char *key)
-{
+bool spool_berkeleydb_delete_cqueue(lList **answer_list, bdb_info info,
+                                    const char *key) {
    bool ret = true;
 
    dstring dbkey_dstring;
@@ -1511,9 +1475,8 @@ spool_berkeleydb_delete_cqueue(lList **answer_list, bdb_info info,
 
 /* ---- static functions ---- */
 
-static void 
-spool_berkeleydb_error_close(bdb_info info)
-{
+static void
+spool_berkeleydb_error_close(bdb_info info) {
    DB_ENV *env;
    DB     *db;
    DB_TXN *txn;
@@ -1542,9 +1505,8 @@ spool_berkeleydb_error_close(bdb_info info)
 }
 
 static void
-spool_berkeleydb_handle_bdb_error(lList **answer_list, bdb_info info, 
-                                  int bdb_errno)
-{
+spool_berkeleydb_handle_bdb_error(lList **answer_list, bdb_info info,
+                                  int bdb_errno) {
    if (bdb_errno == DB_RUNRECOVERY) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
@@ -1560,14 +1522,12 @@ spool_berkeleydb_handle_bdb_error(lList **answer_list, bdb_info info,
  * @param info the handle
  * @return true if the databases are usable afterwards, else false
  */
-bool 
-spool_berkeleydb_check_reopen_database(lList **answer_list, 
-                                       bdb_info info)
-{
+bool spool_berkeleydb_check_reopen_database(lList **answer_list,
+                                            bdb_info info) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    DB_ENV *env;
-
-   DENTER(BDB_LAYER);
 
    env = bdb_get_env(info);
 
@@ -1596,11 +1556,11 @@ spool_berkeleydb_check_reopen_database(lList **answer_list,
  * @param key the key prefix
  * @return true on success, else false
  */
-bool 
-spool_berkeleydb_read_keys(lList **answer_list, bdb_info info,
-                           const bdb_database database,
-                           lList **list, const char *key)
-{
+bool spool_berkeleydb_read_keys(lList **answer_list, bdb_info info,
+                                const bdb_database database,
+                                lList **list, const char *key) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    int dbret;
 
@@ -1609,8 +1569,6 @@ spool_berkeleydb_read_keys(lList **answer_list, bdb_info info,
 
    DBT key_dbt, data_dbt;
    DBC *dbc;
-
-   DENTER(BDB_LAYER);
 
    db  = bdb_get_db(info, database);
    txn = bdb_get_txn(info);
@@ -1695,8 +1653,9 @@ spool_berkeleydb_read_keys(lList **answer_list, bdb_info info,
 lListElem *
 spool_berkeleydb_read_object(lList **answer_list, bdb_info info,
                              const bdb_database database,
-                             const char *key)
-{
+                             const char *key) {
+   DENTER(BDB_LAYER);
+
    lListElem *ret = nullptr;
    int dbret;
 
@@ -1704,8 +1663,6 @@ spool_berkeleydb_read_object(lList **answer_list, bdb_info info,
    DB_TXN *txn;
 
    DBT key_dbt, data_dbt;
-
-   DENTER(BDB_LAYER);
 
    db  = bdb_get_db(info, database);
    txn = bdb_get_txn(info);
@@ -1784,8 +1741,9 @@ spool_berkeleydb_read_object(lList **answer_list, bdb_info info,
 char *
 spool_berkeleydb_read_string(lList **answer_list, bdb_info info,
                              const bdb_database database,
-                             const char *key)
-{
+                             const char *key) {
+   DENTER(BDB_LAYER);
+
    char *ret = nullptr;
    int dbret;
 
@@ -1793,8 +1751,6 @@ spool_berkeleydb_read_string(lList **answer_list, bdb_info info,
    DB_TXN *txn;
 
    DBT key_dbt, data_dbt;
-
-   DENTER(BDB_LAYER);
 
    db  = bdb_get_db(info, database);
    txn = bdb_get_txn(info);
@@ -1831,12 +1787,11 @@ spool_berkeleydb_read_string(lList **answer_list, bdb_info info,
 }
 
 static bool
-spool_berkeleydb_clear_log(lList **answer_list, bdb_info info)
-{
+spool_berkeleydb_clear_log(lList **answer_list, bdb_info info) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    DB_ENV *env;
-
-   DENTER(BDB_LAYER);
 
    /* check connection */
    env = bdb_get_env(info);
@@ -1895,11 +1850,10 @@ spool_berkeleydb_clear_log(lList **answer_list, bdb_info info)
 }
 
 static bool
-spool_berkeleydb_checkpoint(lList **answer_list, bdb_info info)
-{
-   bool ret = true;
-
+spool_berkeleydb_checkpoint(lList **answer_list, bdb_info info) {
    DENTER(BDB_LAYER);
+
+   bool ret = true;
 
    /* only necessary for local spooling */
    {
@@ -1938,4 +1892,3 @@ spool_berkeleydb_checkpoint(lList **answer_list, bdb_info info)
 
    DRETURN(ret);
 }
-

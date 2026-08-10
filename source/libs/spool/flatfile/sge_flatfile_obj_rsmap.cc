@@ -234,9 +234,9 @@ parse_id_characteristics(const char *token, std::string &id_out,
  */
 int
 read_CE_stringval_host(lListElem *ep, int nm, const char *buf, lList **alpp) {
-   int ret = 1;
-
    DENTER(TOP_LAYER);
+
+   int ret = 1;
 
    /*
     * The following code reads both ordinary complex_values (name=value)

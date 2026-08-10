@@ -80,12 +80,11 @@
  */
 lListElem *
 spool_create_dynamic_context(lList **answer_list, const char *method,
-                             const char *shlib_name, const char *args)
-{
+                             const char *shlib_name, const char *args) {
+   DENTER(TOP_LAYER);
+
    const char *compiled_method;
    lListElem *context = nullptr;
-
-   DENTER(TOP_LAYER);
 
 #ifdef SPOOLING_berkeleydb
    compiled_method = "berkeleydb";
@@ -151,5 +150,3 @@ spool_create_dynamic_context(lList **answer_list, const char *method,
 
    DRETURN(context);
 }
-
-
