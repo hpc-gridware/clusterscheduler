@@ -224,8 +224,9 @@ gdi_data_get_master_host() {
  */
 bool
 gdi_data_is_setup() {
-   GET_SPECIFIC(sge_gdi_tl_t, tl, gdi_data_tl_init, gdi_data_tl_key);
    DENTER(TOP_LAYER);
+
+   GET_SPECIFIC(sge_gdi_tl_t, tl, gdi_data_tl_init, gdi_data_tl_key);
    gdi_data_log_ts_parameter();
    DRETURN(tl->is_setup);
 }
@@ -237,8 +238,9 @@ gdi_data_is_setup() {
  */
 void
 gdi_data_set_setup(bool is_setup) {
-   GET_SPECIFIC(sge_gdi_tl_t, tl, gdi_data_tl_init, gdi_data_tl_key);
    DENTER(TOP_LAYER);
+
+   GET_SPECIFIC(sge_gdi_tl_t, tl, gdi_data_tl_init, gdi_data_tl_key);
    tl->is_setup = is_setup;
    DRETURN_VOID;
 }

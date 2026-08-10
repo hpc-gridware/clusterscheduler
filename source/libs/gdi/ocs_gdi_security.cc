@@ -105,8 +105,7 @@ static bool is_master(const char* progname);
  * @note MT-NOTE: sge_security_initialize() is MT safe (assumptions)
  */
 
-int sge_security_initialize(const char *progname, const char *username)
-{
+int sge_security_initialize(const char *progname, const char *username) {
    DENTER(TOP_LAYER);
 
 #ifdef SECURE
@@ -163,8 +162,8 @@ int sge_security_initialize(const char *progname, const char *username)
  *
  *       MT-NOTE: set_sec_cred() is MT safe (major assumptions!)
  */
-int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, lList **alpp)
-{
+int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, lList **alpp) {
+   DENTER(TOP_LAYER);
 
    pid_t command_pid;
    FILE *fp_in, *fp_out, *fp_err;
@@ -174,8 +173,6 @@ int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, l
    char cmd[2048];
    char line[1024];
 
-   DENTER(TOP_LAYER);
-   
    if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_AFS)) {
       snprintf(binary, sizeof(binary), "%s/util/get_token_cmd", sge_root);
 
@@ -244,7 +241,7 @@ int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, l
       lSetString(job, JB_cred, str);
    }
    DRETURN(ret);
-} 
+}
 
 /**
  * @brief Fetch the job's DCE or Kerberos credential and cache it in the job
@@ -264,11 +261,10 @@ int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, l
  *
  * @bug ???
  */
-bool cache_sec_cred(const char* sge_root, lListElem *jep, const char *rhost)
-{
-   bool ret_value = true;
-
+bool cache_sec_cred(const char *sge_root, lListElem *jep, const char *rhost) {
    DENTER(TOP_LAYER);
+
+   bool ret_value = true;
 
    /* 
     * Execute command to get DCE or Kerberos credentials.
@@ -328,7 +324,7 @@ bool cache_sec_cred(const char* sge_root, lListElem *jep, const char *rhost)
       ret_value = false;
    }
    DRETURN(ret_value);
-}   
+}
 
 /**
  * @brief Remove the security credential stored for a job
@@ -338,9 +334,7 @@ bool cache_sec_cred(const char* sge_root, lListElem *jep, const char *rhost)
  *
  * @note MT-NOTE: delete_credentials() is MT safe (major assumptions!)
  */
-void delete_credentials(const char *sge_root, lListElem *jep)
-{
-
+void delete_credentials(const char *sge_root, lListElem *jep) {
    DENTER(TOP_LAYER);
 
    /* 
@@ -406,7 +400,6 @@ void delete_credentials(const char *sge_root, lListElem *jep)
 }
 
 
-
 /**
  * @brief Store the client's DCE or Kerberos credential for a job
  *
@@ -421,9 +414,7 @@ void delete_credentials(const char *sge_root, lListElem *jep)
  *
  * @note MT-NOTE: store_sec_cred() is MT safe (assumptions)
  */
-int store_sec_cred(const char* sge_root, lListElem *jep, int do_authentication, lList** alpp)
-{
-
+int store_sec_cred(const char *sge_root, lListElem *jep, int do_authentication, lList **alpp) {
    DENTER(TOP_LAYER);
 
    if ((ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE) ||
@@ -520,9 +511,7 @@ int store_sec_cred(const char* sge_root, lListElem *jep, int do_authentication, 
 #endif
 
    return 0;
-}   
-
-
+}
 
 
 /**
@@ -542,13 +531,12 @@ int store_sec_cred(const char* sge_root, lListElem *jep, int do_authentication, 
  *
  * @note MT-NOTE: store_sec_cred2() is MT safe (assumptions)
  */
-int store_sec_cred2(const char* sge_root, const char* unqualified_hostname, lListElem *jelem, int do_authentication, int *general, dstring *err_str)
-{
+int store_sec_cred2(const char *sge_root, const char *unqualified_hostname, lListElem *jelem, int do_authentication, int *general, dstring *err_str) {
+   DENTER(TOP_LAYER);
+
    int ret = 0;
    const char *cred;
    
-   DENTER(TOP_LAYER);
-
    if ((ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE) ||
         ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_KERBEROS)) &&
        (cred = lGetString(jelem, JB_cred)) && cred[0]) {
@@ -627,12 +615,12 @@ int kerb_job(
 lListElem *jelem,
 struct dispatch_entry *de 
 ) {
+   DENTER(TOP_LAYER);
+
    /* get TGT and store in job entry and in user's credentials cache */
    krb5_error_code rc;
    krb5_creds ** tgt_creds = nullptr;
    krb5_data outbuf;
-
-   DENTER(TOP_LAYER);
 
    outbuf.length = 0;
 
@@ -692,8 +680,7 @@ struct dispatch_entry *de
  *
  * @note MT-NOTE: tgt2cc() is not MT safe (assumptions)
  */
-void tgt2cc(lListElem *jep, const char *rhost)
-{
+void tgt2cc(lListElem *jep, const char *rhost) {
 
 #ifdef KERBEROS
    krb5_error_code rc;
@@ -729,7 +716,6 @@ void tgt2cc(lListElem *jep, const char *rhost)
 
    DRETURN_VOID;
 #endif
-
 }
 
 
@@ -743,8 +729,7 @@ void tgt2cc(lListElem *jep, const char *rhost)
  *
  * @note MT-NOTE: tgtcclr() is MT safe (assumptions)
  */
-void tgtcclr(lListElem *jep, const char *rhost)
-{
+void tgtcclr(lListElem *jep, const char *rhost) {
 #ifdef KERBEROS
 
    /* clear client TGT */
