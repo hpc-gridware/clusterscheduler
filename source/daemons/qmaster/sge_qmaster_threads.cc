@@ -143,10 +143,10 @@ sge_gdi_kill_master(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
  */
 bool
 sge_daemonize_qmaster() {
+   DENTER(TOP_LAYER);
+
    pid_t pid = -1;
    int failed_fd;
-
-   DENTER(TOP_LAYER);
 
    if (ocs::DebugParam::is_component_in_nd_mode()) {
       DPRINTF("sge_qmaster is not daemonized\n");
@@ -195,9 +195,9 @@ sge_daemonize_qmaster() {
  */
 void
 sge_become_admin_user(const char *admin_user) {
-   char str[MAX_STRING_SIZE];
-
    DENTER(TOP_LAYER);
+
+   char str[MAX_STRING_SIZE];
 
    if (sge_set_admin_username(admin_user, str, sizeof(str)) == -1) {
       CRITICAL(SFNMAX, str);

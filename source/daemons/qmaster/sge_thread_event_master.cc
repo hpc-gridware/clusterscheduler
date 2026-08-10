@@ -138,12 +138,12 @@ sge_event_master_terminate() {
  */
 [[noreturn]] void *
 sge_event_master_main(void *arg) {
+   DENTER(TOP_LAYER);
+
    auto *thread_config = static_cast<cl_thread_settings_t *>(arg);
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
    uint64_t next_prof_output = 0;
-
-   DENTER(TOP_LAYER);
 
    // set thread name and id used by logging an others
    const char *thread_name = thread_config->thread_name;

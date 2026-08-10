@@ -226,9 +226,9 @@ namespace ocs {
 
    bool
    JsonReportingFileWriter::create_new_job_record(lList **answer_list, const lListElem *job) {
-      bool ret = true;
-
       DENTER(TOP_LAYER);
+
+      bool ret = true;
 
       if (job != nullptr) {
          rapidjson::StringBuffer stringBuffer;
@@ -268,9 +268,9 @@ namespace ocs {
                                            const char *host,
                                            const lListElem *job_report, const lListElem *job, const lListElem *ja_task,
                                            const lListElem *pe_task, const char *message) {
-      bool ret = true;
-
       DENTER(TOP_LAYER);
+
+      bool ret = true;
 
       if (do_joblog && job != nullptr) {
          rapidjson::StringBuffer stringBuffer;
@@ -347,9 +347,9 @@ namespace ocs {
 
    bool
    JsonReportingFileWriter::create_host_record(lList **answer_list, const lListElem *host, uint64_t report_time) {
-      bool ret = true;
-
       DENTER(TOP_LAYER);
+
+      bool ret = true;
 
       if (host != nullptr) {
          rapidjson::StringBuffer stringBuffer;
@@ -379,10 +379,9 @@ namespace ocs {
    JsonReportingFileWriter::create_host_consumable_record(lList **answer_list, const lListElem *host,
                                                           const lListElem *job,
                                                           uint64_t report_time) {
+      DENTER(TOP_LAYER);
 
       bool ret = true;
-
-      DENTER(TOP_LAYER);
 
       if (host != nullptr) {
          rapidjson::StringBuffer stringBuffer;
@@ -411,9 +410,9 @@ namespace ocs {
 
    bool
    JsonReportingFileWriter::create_queue_record(lList **answer_list, const lListElem *queue, uint64_t report_time) {
-      bool ret = true;
-
       DENTER(TOP_LAYER);
+
+      bool ret = true;
 
       if (queue == nullptr) {
          ret = false;
@@ -446,9 +445,9 @@ namespace ocs {
    JsonReportingFileWriter::create_queue_consumable_record(lList **answer_list, const lListElem *host,
                                                            const lListElem *queue,
                                                            const lListElem *job, uint64_t report_time) {
-      bool ret = true;
-
       DENTER(TOP_LAYER);
+
+      bool ret = true;
 
       if (host == nullptr || queue == nullptr) {
          ret = false;
@@ -484,9 +483,9 @@ namespace ocs {
 
    bool
    JsonReportingFileWriter::create_new_ar_record(lList **answer_list, const lListElem *ar, uint64_t report_time) {
-      bool ret = true;
-
       DENTER(TOP_LAYER);
+
+      bool ret = true;
 
       if (ar == nullptr) {
          ret = false;
@@ -511,9 +510,9 @@ namespace ocs {
 
    bool
    JsonReportingFileWriter::create_ar_attribute_record(lList **answer_list, const lListElem *ar, uint64_t report_time) {
-      bool ret = true;
-
       DENTER(TOP_LAYER);
+
+      bool ret = true;
 
       if (ar == nullptr) {
          ret = false;
@@ -550,9 +549,9 @@ namespace ocs {
    bool
    JsonReportingFileWriter::create_ar_log_record(lList **answer_list, const lListElem *ar, ar_state_event_t event,
                                                  const char *ar_description, uint64_t report_time) {
-      bool ret = true;
-
       DENTER(TOP_LAYER);
+
+      bool ret = true;
 
       if (ar == nullptr) {
          ret = false;
@@ -728,7 +727,6 @@ namespace ocs {
    JsonReportingFileWriter::write_consumables(rapidjson::Writer<rapidjson::StringBuffer> &writer,
                                               const lList *actual, const lList *total,
                                               const lListElem *host, const lListElem *job) const {
-
       DENTER(TOP_LAYER);
 
       bool consumables_initialized = false;

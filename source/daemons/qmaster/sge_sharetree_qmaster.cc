@@ -74,9 +74,10 @@
  */
 int
 sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost) {
+   DENTER(TOP_LAYER);
+
    int ret;
 
-   DENTER(TOP_LAYER);
    ret = sge_mod_sharetree(packet, task, ep, lpp, alpp, ruser, rhost);
    DRETURN(ret);
 }
@@ -98,14 +99,14 @@ sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
  */
 int
 sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost) {
+   DENTER(TOP_LAYER);
+
    int ret;
    int prev_version;
    int adding;
    lList *found = nullptr;
    const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
    const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-
-   DENTER(TOP_LAYER);
 
    /* do some checks */
    if (!ep || !ruser || !rhost) {
@@ -226,13 +227,13 @@ sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, l
 int
 check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lList *project_list, lListElem *project,
                 lList **found) {
+   DENTER(TOP_LAYER);
+
    const lList *children;
    const lListElem *remaining;
    lList *save_found = nullptr;
    const char *name = lGetString(node, STN_name);
    lListElem *pep;
-
-   DENTER(TOP_LAYER);
 
    /* Check for dangling or circular references. */
    if (name == nullptr) {

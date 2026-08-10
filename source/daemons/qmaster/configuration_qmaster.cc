@@ -228,11 +228,11 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
  */
 int
 sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *aConf, lList **anAnswer, char *aUser, char *aHost) {
+   DENTER(TOP_LAYER);
+
    const char *tmp_name = nullptr;
    char unique_name[CL_MAXHOSTNAMELEN];
    int ret = -1;
-
-   DENTER(TOP_LAYER);
 
    if (!aConf || !aUser || !aHost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -436,11 +436,11 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
 
 static int
 check_config(lList **alpp, lListElem *conf) {
+   DENTER(TOP_LAYER);
+
    const char *name, *value;
    const char *conf_name;
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-
-   DENTER(TOP_LAYER);
 
    conf_name = lGetHost(conf, CONF_name);
 
@@ -723,10 +723,10 @@ sge_compare_configuration(const lListElem *aHost, const lList *aConf) {
  */
 lListElem *
 sge_get_configuration_entry_by_name(const char *aHost, const char *anEntryName) {
+   DENTER(TOP_LAYER);
+
    lListElem *conf = nullptr;
    lListElem *elem = nullptr;
-
-   DENTER(TOP_LAYER);
 
    SGE_ASSERT((nullptr != aHost) && (nullptr != anEntryName));
 
@@ -762,10 +762,10 @@ get_entry_from_conf(lListElem *aConf, const char *anEntryName) {
  */
 lList *
 sge_get_configuration(const lCondition *condition, const lEnumeration *enumeration) {
+   DENTER(TOP_LAYER);
+
    lList *conf = nullptr;
    const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
-
-   DENTER(TOP_LAYER);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
@@ -778,13 +778,13 @@ sge_get_configuration(const lCondition *condition, const lEnumeration *enumerati
 
 static uint32_t
 sge_get_config_version_for_host(const char *aName) {
+   DENTER(TOP_LAYER);
+
    const lListElem *conf = nullptr;
    uint32_t version = 0;
    char unique_name[CL_MAXHOSTNAMELEN];
    int ret = -1;
    const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
-
-   DENTER(TOP_LAYER);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
@@ -825,12 +825,12 @@ sge_get_config_version_for_host(const char *aName) {
  */
 lListElem *
 sge_get_configuration_for_host(const char *aName) {
+   DENTER(TOP_LAYER);
+
    lListElem *conf = nullptr;
    char unique_name[CL_MAXHOSTNAMELEN];
    int ret = -1;
    const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
-
-   DENTER(TOP_LAYER);
 
    SGE_ASSERT((nullptr != aName));
 
@@ -904,9 +904,9 @@ do_mod_config(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList 
  */
 static int
 check_static_conf_entries(const lList *theOldConfEntries, const lList *theNewConfEntries, lList **anAnswer) {
-   int entry_idx = 0;
-
    DENTER(TOP_LAYER);
+
+   int entry_idx = 0;
 
    while (nullptr != Static_Conf_Entries[entry_idx]) {
       const lListElem *old_entry, *new_entry = nullptr;
@@ -946,12 +946,12 @@ check_static_conf_entries(const lList *theOldConfEntries, const lList *theNewCon
  */
 static int
 exchange_conf_by_name(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList **anAnswer, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    lListElem *elem = nullptr;
    uint32_t old_version, new_version = 0;
    const char *old_conf_name = lGetHost(anOldConf, CONF_name);
    lList *config_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
-
-   DENTER(TOP_LAYER);
 
    old_version = lGetUlong(anOldConf, CONF_version);
 
@@ -981,13 +981,13 @@ exchange_conf_by_name(char *aConfName, lListElem *anOldConf, lListElem *aNewConf
 
 static bool
 has_reschedule_unknown_change(const lList *theOldConfEntries, const lList *theNewConfEntries) {
+   DENTER(TOP_LAYER);
+
    const lListElem *old_elem = nullptr;
    const lListElem *new_elem = nullptr;
    const char *old_value = nullptr;
    const char *new_value = nullptr;
    bool res = false;
-
-   DENTER(TOP_LAYER);
 
    old_elem = lGetElemStr(theOldConfEntries, CF_name, "reschedule_unknown");
    new_elem = lGetElemStr(theNewConfEntries, CF_name, "reschedule_unknown");
@@ -1010,10 +1010,10 @@ has_reschedule_unknown_change(const lList *theOldConfEntries, const lList *theNe
 
 static int
 do_add_config(char *aConfName, lListElem *aConf, lList **anAnswer, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    lListElem *elem = nullptr;
    lList *config_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
-
-   DENTER(TOP_LAYER);
 
    elem = lCopyElem(aConf);
 
@@ -1030,10 +1030,10 @@ do_add_config(char *aConfName, lListElem *aConf, lList **anAnswer, uint64_t gdi_
 
 static int
 remove_conf_by_name(char *aConfName) {
+   DENTER(TOP_LAYER);
+
    lListElem *elem = nullptr;
    lList *config_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
-
-   DENTER(TOP_LAYER);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 

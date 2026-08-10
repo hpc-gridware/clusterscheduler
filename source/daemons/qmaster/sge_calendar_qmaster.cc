@@ -72,12 +72,12 @@
  */
 void
 calendar_initalize_timer(monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    lListElem *cep;
    lList *ppList = nullptr;
    lList *answer_list = nullptr;
    const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
-
-   DENTER(TOP_LAYER);
 
    for_each_rw (cep, master_calendar_list) {
       calendar_parse_year(cep, &answer_list);
@@ -118,11 +118,11 @@ int
 calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_cal, lListElem *cep, int add,
              const char *ruser, const char *rhost, gdi_object_t *object,
              ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const char *cal_name;
-
-   DENTER(TOP_LAYER);
 
    /* ---- CAL_name cannot get changed - we just ignore it */
    if (add == 1) {
@@ -180,9 +180,9 @@ DRETURN(STATUS_EUNKNOWN);
  */
 int
 calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
-   lList *answer_list = nullptr;
-
    DENTER(TOP_LAYER);
+
+   lList *answer_list = nullptr;
 
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), cep,
                                    lGetString(cep, CAL_name), SGE_TYPE_CALENDAR, true);
@@ -208,11 +208,11 @@ calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLi
  */
 int
 sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lList **alpp, char *ruser, char *rhost) {
+   DENTER(TOP_LAYER);
+
    const char *cal_name;
    lList **master_calendar_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-
-   DENTER(TOP_LAYER);
 
    if (!cep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -272,12 +272,12 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep,
  * @note MT-NOTE: sge_calendar_event_handler() is MT safe
  */
 void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    lListElem *cep;
    const char *cal_name = te_get_alphanumeric_key(anEvent);
    lList *ppList = nullptr;
    const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
-
-   DENTER(TOP_LAYER);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
@@ -317,12 +317,12 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
  */
 int calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lListElem *old_cep, gdi_object_t *object,
                                  lList **ppList, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    const char *cal_name = lGetString(cep, CAL_name);
    lList *state_changes_list = nullptr;
    uint32_t state;
    uint64_t when = 0;
-   DENTER(TOP_LAYER);
-
    sge_add_event(0, old_cep != nullptr ? sgeE_CALENDAR_MOD : sgeE_CALENDAR_ADD, 0, 0, cal_name, nullptr, nullptr, cep, packet->gdi_session);
 
    state = calender_state_changes(cep, &state_changes_list, &when, nullptr);

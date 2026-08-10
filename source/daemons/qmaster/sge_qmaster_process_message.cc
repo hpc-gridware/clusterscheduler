@@ -590,9 +590,9 @@ do_report_request(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *
  */
 static void
 do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *monitor) {
-   uint32_t client_id = 0;
-
    DENTER(TOP_LAYER);
+
+   uint32_t client_id = 0;
 
    // in case of Munge authentication: re-resolve and check user and groups
    // @todo we do not really use the re-resolved information yet, still would drop messages with fake content

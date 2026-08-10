@@ -84,6 +84,8 @@ update_license_data(lListElem *hep, lList *lp_lic, uint64_t gdi_session);
  */
 void
 sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *rhost, char *commproc, int id, lList *report_list, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    lListElem *hep = nullptr;
    uint32_t rep_type;
    int ret = 0;
@@ -92,8 +94,6 @@ sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *rhost, char *
    sge_pack_buffer pb;
    bool is_pb_used = false;
    bool send_tag_new_conf = false;
-
-   DENTER(TOP_LAYER);
 
    if (lGetNumberOfElem(report_list) == 0) {
       DPRINTF("received empty report\n");

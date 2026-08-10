@@ -110,12 +110,12 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
 int
 rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
         const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    const char *rqs_name = nullptr;
    bool rules_changed = false;
    bool previous_enabled = (bool) lGetBool(new_rqs, RQS_enabled);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
-
-   DENTER(TOP_LAYER);
 
    /* ---- RQS_name */
    if (add) {
@@ -198,10 +198,10 @@ DRETURN(STATUS_EUNKNOWN);
  */
 int
 rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
+   DENTER(TOP_LAYER);
+
    lList *answer_list = nullptr;
    bool dbret;
-
-   DENTER(TOP_LAYER);
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
                               lGetString(ep, RQS_name), SGE_TYPE_RQS, true);
@@ -267,11 +267,11 @@ rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList
  */
 int
 rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost) {
+   DENTER(TOP_LAYER);
+
    const char *rqs_name;
    int pos;
    lListElem *found;
-
-   DENTER(TOP_LAYER);
 
    if (!ep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -330,14 +330,14 @@ rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **a
  */
 static bool
 rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
    const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
-
-   DENTER(TOP_LAYER);
 
    if (rqs != nullptr) {
       const lListElem *rule = nullptr;
@@ -408,11 +408,11 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
 static bool
 filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList **scope_ref, int nm, const lDescr *dp,
                                        const lList *master_list) {
+   DENTER(TOP_LAYER);
+
    const lListElem *scope_ep;
    const char *scope;
    bool ret = true;
-
-   DENTER(TOP_LAYER);
 
    for_each_ep(scope_ep, filter_scope) {
       scope = lGetString(scope_ep, ST_name);
@@ -481,10 +481,10 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
 static bool
 filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **scope_l, int nm, const lDescr *dp,
                                  const lList *master_list) {
+   DENTER(TOP_LAYER);
+
    lListElem *filter;
    bool ret = true;
-
-   DENTER(TOP_LAYER);
 
    if (filter_nm != RQR_filter_users && filter_nm != RQR_filter_projects) {
       DRETURN(ret);
@@ -529,10 +529,10 @@ filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **s
 bool
 rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list, lList **old_list,
                   const lList *master_userset_list) {
+   DENTER(TOP_LAYER);
+
    const lListElem *rule;
    bool ret = true;
-
-   DENTER(TOP_LAYER);
 
    if (old_rqs && old_list) {
       for_each_ep(rule, lGetList(old_rqs, RQS_rule)) {
@@ -581,9 +581,9 @@ rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **ne
 bool
 rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list, lList **old_list,
                   const lList *master_project_list) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (old_rqs && old_list) {
       const lListElem *rule;
@@ -627,11 +627,11 @@ rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **ne
  */
 static void
 rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    lList *old_lp = nullptr, *new_lp = nullptr;
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-
-   DENTER(TOP_LAYER);
 
    rqs_diff_projects(new_rqs, old_rqs, &new_lp, &old_lp, master_project_list);
    project_update_categories(new_lp, old_lp, gdi_session);
@@ -667,10 +667,10 @@ rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs, uint64
  */
 bool
 scope_is_referenced_rqs(const lListElem *rqs, int nm, const char *name) {
+   DENTER(TOP_LAYER);
+
    const lListElem *rule;
    bool ret = false;
-
-   DENTER(TOP_LAYER);
 
    if (rqs == nullptr || name == nullptr) {
       DRETURN(ret);

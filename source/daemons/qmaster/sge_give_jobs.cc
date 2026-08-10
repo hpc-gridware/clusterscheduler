@@ -205,11 +205,11 @@ static int queue_field[] = {QU_qhostname,
  */
 int
 sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep, lListElem *hep, monitoring_t *monitor, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    const char *rhost;
    int ret = 0;
    int sent_slaves = 0;
-
-   DENTER(TOP_LAYER);
 
    rhost = lGetHost(master_qep, QU_qhostname);
    DPRINTF("execd host: %s\n", rhost);
@@ -361,6 +361,8 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, uint64_
  */
 static int
 send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    lList *saved_gdil = nullptr;
    lList *gdil;
    lListElem *gdil_ep = nullptr;
@@ -372,8 +374,6 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, uint64_t gdi_session) 
 
    const char *sge_root = bootstrap_get_sge_root();
    bool simulate_execd = mconf_get_simulate_execds();
-
-   DENTER(TOP_LAYER);
 
    gdil = saved_gdil = lCreateList("", JG_Type);
    lXchgList(jatep, JAT_granted_destin_identifier_list, &saved_gdil);
@@ -697,6 +697,8 @@ sge_job_resend_event_handler_sim_job_runtime(uint64_t now, const lListElem *job,
  */
 void
 sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    lListElem *jep, *jatep;
    const lListElem *ep;
    lListElem *hep = nullptr;
@@ -707,8 +709,6 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    lList **master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-
-   DENTER(TOP_LAYER);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
@@ -934,6 +934,8 @@ create_timed_events_for_simulated_jobs() {
 void
 sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_t mode,
                int commit_flags, monitoring_t *monitor, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    lListElem *global_host_ep;
    lUlong jobid, jataskid;
    int spool_job = !(commit_flags & COMMIT_NO_SPOOLING);
@@ -954,8 +956,6 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    uint64_t task_wallclock = std::numeric_limits<uint64_t>::max();
    bool compute_qwallclock = false;
    uint32_t state = 0;
-
-   DENTER(TOP_LAYER);
 
    jobid = lGetUlong(jep, JB_job_number);
    jataskid = jatep != nullptr ? lGetUlong(jatep, JAT_task_number) : 0;
@@ -1405,9 +1405,9 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
  */
 static void
 sge_job_finish_event(lListElem *jep, lListElem *jatep, lListElem *jr, int commit_flags, const char *diagnosis, uint64_t gdi_session) {
-   bool release_jr = false;
-
    DENTER(TOP_LAYER);
+
+   bool release_jr = false;
 
    if (!jr) {
       jr = lCreateElem(JR_Type);
@@ -1454,12 +1454,12 @@ sge_job_finish_event(lListElem *jep, lListElem *jatep, lListElem *jr, int commit
 
 static void
 release_successor_jobs(const lListElem *jep, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    const lListElem *jid;
    lListElem *suc_jep;
    uint32_t job_ident;
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
-
-   DENTER(TOP_LAYER);
 
    for_each_ep(jid, lGetList(jep, JB_jid_successor_list)) {
       suc_jep = lGetElemUlongRW(master_job_list, JB_job_number, lGetUlong(jid, JRE_job_number));
@@ -1488,12 +1488,12 @@ release_successor_jobs(const lListElem *jep, uint64_t gdi_session) {
 
 static void
 release_successor_jobs_ad(const lListElem *jep, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    const lListElem *jid;
    lListElem *suc_jep;
    uint32_t job_ident;
    lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-
-   DENTER(TOP_LAYER);
 
    for_each_ep(jid, lGetList(jep, JB_ja_ad_successor_list)) {
       suc_jep = lGetElemUlongRW(master_job_list, JB_job_number, lGetUlong(jid, JRE_job_number));
@@ -1532,10 +1532,10 @@ release_successor_jobs_ad(const lListElem *jep, uint64_t gdi_session) {
  *****************************************************************************/
 static void
 release_successor_tasks_ad(lListElem *jep, uint32_t task_id, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    const lListElem *jid;
    lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-
-   DENTER(TOP_LAYER);
 
    /* every successor job of this job might have tasks to be released */
    for_each_ep(jid, lGetList(jep, JB_ja_ad_successor_list)) {
@@ -1587,6 +1587,8 @@ release_successor_tasks_ad(lListElem *jep, uint32_t task_id, uint64_t gdi_sessio
  ****/
 static void
 sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, monitoring_t *monitor, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    int pe_slots = 0;
    uint32_t job_id = lGetUlong(job, JB_job_number);
    uint32_t ja_task_id = lGetUlong(ja_task, JAT_task_number);
@@ -1603,8 +1605,6 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
    lListElem *rqs = nullptr;
    lListElem *global_host_ep = nullptr;
    bool master_task = true;
-
-   DENTER(TOP_LAYER);
 
    if (!job_is_ja_task_defined(job, ja_task_id) ||
        !job_is_enrolled(job, ja_task_id)) {
@@ -2117,11 +2117,11 @@ sge_bury_job(const char *sge_root, lListElem *job, uint32_t job_id, lListElem *j
  */
 static lListElem *
 copyJob(lListElem *job, lListElem *ja_task) {
+   DENTER(TOP_LAYER);
+
    lListElem *job_copy = nullptr;
    const lListElem *ja_task_copy = nullptr;
    lList *tmp_ja_task_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* create a copy of the job */
    lXchgList(job, JB_ja_tasks, &tmp_ja_task_list);
@@ -2159,13 +2159,13 @@ copyJob(lListElem *job, lListElem *ja_task) {
  */
 static int
 setCheckpointObj(lListElem *job) {
+   DENTER(TOP_LAYER);
+
    const lListElem *ckpt = nullptr;
    lListElem *tmp_ckpt = nullptr;
    const char *ckpt_name = nullptr;
    int ret = 0;
    const lList *master_ckpt_list = *ocs::DataStore::get_master_list(SGE_TYPE_CKPT);
-
-   DENTER(TOP_LAYER);
 
    if ((ckpt_name = lGetString(job, JB_checkpoint_name))) {
       ckpt = ckpt_list_locate(master_ckpt_list, ckpt_name);

@@ -152,10 +152,10 @@ reporting_reinitialize_timed_event() {
  */
 bool
 reporting_shutdown(lList **answer_list, bool do_spool) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    lList *alp = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (do_spool) {
       /* flush the last reporting values, suppress adding new timer */
@@ -351,9 +351,9 @@ ocs::ClassicReportingFileWriter::create_acct_record(lList **answer_list, lListEl
 
 bool
 ocs::ClassicReportingFileWriter::create_new_job_record(lList **answer_list, const lListElem *job) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (do_joblog && job != nullptr) {
       dstring job_dstring = DSTRING_INIT;
@@ -409,9 +409,9 @@ bool
 ocs::ClassicReportingFileWriter::create_job_log(lList **answer_list, uint64_t event_time, const job_log_t type, const char *user,
                                            const char *host, const lListElem *job_report, const lListElem *job, const lListElem *ja_task,
                                            const lListElem *pe_task, const char *message) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (do_joblog && job != nullptr) {
       dstring job_dstring = DSTRING_INIT;
@@ -579,9 +579,9 @@ bool
 ocs::ClassicReportingFileWriter::create_queue_record(lList **answer_list,
                                                 const lListElem *queue,
                                                 uint64_t report_time) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (queue != nullptr) {
       dstring queue_dstring = DSTRING_INIT;
@@ -624,9 +624,9 @@ ocs::ClassicReportingFileWriter::create_queue_consumable_record(lList **answer_l
                                                            const lListElem *queue,
                                                            const lListElem *job,
                                                            uint64_t report_time) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (host != nullptr && queue != nullptr) {
       dstring consumable_dstring = DSTRING_INIT;
@@ -678,9 +678,9 @@ bool
 ocs::ClassicReportingFileWriter::create_host_record(lList **answer_list,
                                                const lListElem *host,
                                                uint64_t report_time) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (host != nullptr) {
       dstring load_dstring = DSTRING_INIT;
@@ -727,9 +727,9 @@ ocs::ClassicReportingFileWriter::create_host_consumable_record(lList **answer_li
                                                           const lListElem *host,
                                                           const lListElem *job,
                                                           uint64_t report_time) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (host != nullptr) {
       dstring consumable_dstring = DSTRING_INIT;
@@ -773,12 +773,12 @@ ocs::ClassicReportingFileWriter::create_host_consumable_record(lList **answer_li
  */
 void
 ocs::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    const lList *master_stree_list = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
    const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-
-   DENTER(TOP_LAYER);
 
    if (sharelog_interval > 0) {
       /* only create sharelog entries if we have a sharetree */
@@ -933,14 +933,14 @@ bool
 ocs::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
                                                        const lListElem *ar,
                                                        uint64_t report_time) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const char *pe_name;
    const char *ar_name;
    const char *ar_account;
    dstring ar_granted_resources = DSTRING_INIT;
    dstring dstr = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
 
    pe_name = lGetString(ar, AR_pe);
    ar_name = lGetString(ar, AR_name);
@@ -1003,11 +1003,11 @@ ocs::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
                                                  ar_state_event_t event,
                                                  const char *ar_description,
                                                  uint64_t report_time) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    dstring state_string = DSTRING_INIT;
    dstring dstr = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
 
    ar_state2dstring((ar_state_t) lGetUlong(ar, AR_state), &state_string);
    sge_dstring_sprintf_append(&dstr,

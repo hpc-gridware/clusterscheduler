@@ -122,11 +122,11 @@ is_module_enabled() {
  */
 static void
 sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
+   DENTER(TOP_LAYER);
+
    lListElem *job;
    lListElem *ja_task;
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
-
-   DENTER(TOP_LAYER);
 
    /*
     * is the limit enforcment module enabled?
@@ -251,14 +251,14 @@ sge_host_add_remove_enforce_limit_trigger(const char *hostname, bool add) {
  */
 void
 sge_add_check_limit_trigger() {
+   DENTER(TOP_LAYER);
+
    const lList *master_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
    uint64_t now = sge_get_gmt64();
    uint32_t max_time = 0;
    uint32_t reconnect_timeout = EXECD_MAX_RECONNECT_TIMEOUT;
    lListElem *host;
    te_event_t ev;
-
-   DENTER(TOP_LAYER);
 
    for_each_rw (host, master_host_list) {
       max_time = std::max(max_time, 2 * load_report_interval(host));
@@ -640,14 +640,14 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
  */
 void
 sge_job_remove_enforce_limit_trigger(uint32_t job_id, uint32_t ja_task_id) {
+   DENTER(TOP_LAYER);
+
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
    const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
    lListElem *job = lGetElemUlongRW(master_job_list, JB_job_number, job_id);
    lListElem *ja_task = job_search_task(job, nullptr, ja_task_id);
    bool delete_trigger = false;
-
-   DENTER(TOP_LAYER);
 
    /*
     * Delete pe task flag which prevents communication with unknown

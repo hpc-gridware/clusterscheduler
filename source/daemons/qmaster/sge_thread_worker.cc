@@ -94,10 +94,10 @@ sge_worker_cleanup_monitor(void *arg) {
  */
 void
 sge_worker_initialize() {
+   DENTER(TOP_LAYER);
+
    const int max_initial_worker_threads = ocs::Bootstrap::get_worker_thread_count();
    cl_thread_settings_t *dummy_thread_p = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /*
     * TODO: EB: corresponding destroy function is missing during shutdown
@@ -124,9 +124,9 @@ sge_worker_initialize() {
  */
 void
 sge_worker_terminate() {
-   bool do_final_spooling;
-
    DENTER(TOP_LAYER);
+
+   bool do_final_spooling;
 
    /*
     * trigger pthread_cancel for each thread so that further 
@@ -199,12 +199,12 @@ sge_worker_terminate() {
  */
 [[noreturn]] void *
 sge_worker_main(void *arg) {
+   DENTER(TOP_LAYER);
+
    auto *thread_config = (cl_thread_settings_t *) arg;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
    uint64_t next_prof_output = 0;
-
-   DENTER(TOP_LAYER);
 
    DPRINTF("started\n");
 

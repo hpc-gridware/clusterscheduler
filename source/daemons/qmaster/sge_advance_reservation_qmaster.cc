@@ -143,10 +143,10 @@ sge_ar_send_mail(lListElem *ar, int type);
  */
 void
 ar_initialize_timer(lList **answer_list, monitoring_t *monitor, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    lListElem *ar, *next_ar;
    uint64_t now = sge_get_gmt64();
-
-   DENTER(TOP_LAYER);
 
    lList *ar_master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_AR);
 
@@ -229,6 +229,8 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor, uint64_t gdi_ses
  */
 int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ar, lListElem *ar, int add, const char *ruser,
            const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    uint32_t ar_id;
    uint32_t max_advance_reservations = mconf_get_max_advance_reservations();
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
@@ -238,8 +240,6 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
-
-   DENTER(TOP_LAYER);
 
    if (!ar_validate(ar, alpp, true, false, master_cqueue_list, master_hgroup_list, master_centry_list, master_ckpt_list,
                     master_pe_list, master_userset_list)) {
@@ -348,10 +348,10 @@ DRETURN(STATUS_NOTOK_DOAGAIN);
  * @note MT-NOTE: ar_spool() is MT safe
  */
 int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
+   DENTER(TOP_LAYER);
+
    lList *answer_list = nullptr;
    dstring buffer = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_sprintf(&buffer, sge_u32, lGetUlong(ep, AR_id));
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
@@ -451,13 +451,13 @@ ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListE
  */
 int
 ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **master_ar_list, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    lListElem *ar, *nxt;
    bool removed_one = false;
    bool has_manager_privileges = false;
    dstring buffer = DSTRING_INIT;
    lCondition *ar_where = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (!ep) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -671,10 +671,10 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
  */
 static uint32_t
 sge_get_ar_id(monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    uint32_t ar_id;
    bool is_store_ar = false;
-
-   DENTER(TOP_LAYER);
 
    sge_mutex_lock("ar_id_mutex", "sge_get_ar_id", __LINE__, &ar_id_control.ar_id_mutex);
 
@@ -710,10 +710,10 @@ sge_get_ar_id(monitoring_t *monitor) {
  */
 void
 sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    uint32_t ar_id = 0;
    bool changed = false;
-
-   DENTER(TOP_LAYER);
 
    sge_mutex_lock("ar_id_mutex", "sge_store_ar_id", __LINE__,
                   &ar_id_control.ar_id_mutex);
@@ -754,11 +754,11 @@ sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor) {
  */
 void
 sge_init_ar_id() {
+   DENTER(TOP_LAYER);
+
    FILE *fp = nullptr;
    uint32_t ar_id = 0;
    uint32_t guess_ar_id = 0;
-
-   DENTER(TOP_LAYER);
 
    if ((fp = fopen(ARSEQ_NUM_FILE, "r"))) {
       if (fscanf(fp, sge_u32, &ar_id) != 1) {
@@ -796,11 +796,11 @@ sge_init_ar_id() {
  */
 static uint32_t
 guess_highest_ar_id() {
+   DENTER(TOP_LAYER);
+
    const lListElem *ar;
    uint32_t maxid = 0;
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
-
-   DENTER(TOP_LAYER);
 
    /* this function is called during qmaster startup and not while it is running,
       we do not need to monitor this lock */
@@ -1322,9 +1322,9 @@ ar_do_reservation(lListElem *ar, bool incslots, uint64_t gdi_session) {
 bool
 ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_list,
                                     const char *qinstance_name, lList *ckpt_string_list) {
-   const lListElem *ar;
-
    DENTER(TOP_LAYER);
+
+   const lListElem *ar;
 
    for_each_ep(ar, ar_master_list) {
       const char *ckpt_string = lGetString(ar, AR_checkpoint_name);
@@ -1364,9 +1364,9 @@ ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_
 bool
 ar_list_has_reservation_due_to_pe(const lList *ar_master_list, lList **answer_list, const char *qinstance_name,
                                   lList *pe_string_list) {
-   const lListElem *ar;
-
    DENTER(TOP_LAYER);
+
+   const lListElem *ar;
 
    for_each_ep(ar, ar_master_list) {
       const char *pe_string = lGetString(ar, AR_pe);
@@ -1407,12 +1407,12 @@ ar_list_has_reservation_due_to_pe(const lList *ar_master_list, lList **answer_li
 bool
 ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list, lList **answer_list, const char *pe_name,
                                           uint32_t new_slots) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    const lListElem *ar;
    const lListElem *gs;
    uint32_t max_res_slots = 0;
-
-   DENTER(TOP_LAYER);
 
    for_each_ep(ar, ar_master_list) {
       const char *pe_string = lGetString(ar, AR_pe);
@@ -1755,11 +1755,11 @@ ar_initialize_resource_booking(lListElem *ar) {
  */
 bool
 sge_ar_remove_all_jobs(uint32_t ar_id, int forced, monitoring_t *monitor, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    lListElem *nextjep, *jep;
    lListElem *tmp_task;
    bool ret = true;
-
-   DENTER(TOP_LAYER);
 
    nextjep = lFirstRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
    while ((jep = nextjep)) {
@@ -1841,9 +1841,9 @@ sge_ar_remove_all_jobs(uint32_t ar_id, int forced, monitoring_t *monitor, uint64
 bool
 sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_name, const lListElem *cal_ep,
                                     const lList *master_ar_list) {
-   const lListElem *ar;
-
    DENTER(TOP_LAYER);
+
+   const lListElem *ar;
 
    for_each_ep(ar, master_ar_list) {
       if (lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
@@ -1983,10 +1983,10 @@ sge_ar_state_set_exited(lListElem *ar) {
  */
 void
 sge_ar_list_set_error_state(lList *ar_list, const char *qname, uint32_t error_type, bool set_error, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    lListElem *ar;
    dstring buffer = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
 
    for_each_rw(ar, ar_list) {
       lListElem *qinstance;
@@ -2037,14 +2037,14 @@ sge_ar_list_set_error_state(lList *ar_list, const char *qname, uint32_t error_ty
  */
 static void
 sge_ar_send_mail(lListElem *ar, int type) {
+   DENTER(TOP_LAYER);
+
    dstring buffer = DSTRING_INIT;
    dstring subject = DSTRING_INIT;
    dstring body = DSTRING_INIT;
    uint32_t ar_id;
    const char *ar_name;
    const char *mail_type = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (!VALID(type, lGetUlong(ar, AR_mail_options))) {
       sge_dstring_append_mailopt(&buffer, type);
@@ -2140,10 +2140,10 @@ sge_ar_send_mail(lListElem *ar, int type) {
 bool
 ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_list, lList **answer_list,
                                                       lListElem *qinstance, const lList *ce_master_list) {
+   DENTER(TOP_LAYER);
+
    const lListElem *ar;
    const lListElem *gs;
-
-   DENTER(TOP_LAYER);
 
    for_each_ep(ar, ar_master_list) {
       const char *qinstance_name = lGetString(qinstance, QU_full_name);
@@ -2238,10 +2238,10 @@ ar_list_has_reservation_due_to_qinstance_complex_attr(const lList *ar_master_lis
 bool
 ar_list_has_reservation_due_to_host_complex_attr(const lList *ar_master_list, lList **answer_list,
                                                  lListElem *host, const lList *ce_master_list) {
+   DENTER(TOP_LAYER);
+
    const lListElem *ar = nullptr;
    const char *hostname = lGetHost(host, EH_name);
-
-   DENTER(TOP_LAYER);
 
    for_each_ep(ar, ar_master_list) {
       const lListElem *gs = nullptr;

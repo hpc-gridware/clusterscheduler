@@ -116,13 +116,13 @@ get_slotwise_sos_threshold(const lListElem *qinstance) {
 static bool
 slotwise_x_on_subordinate(lListElem *qinstance_where_task_is_running, uint32_t job_id,
                           uint32_t task_id, bool suspend, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    lListElem *jep = nullptr;
    lListElem *jatep = nullptr;
    uint32_t state = 0;
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
-
-   DENTER(TOP_LAYER);
 
    jep = lGetElemUlongRW(master_job_list, JB_job_number, job_id);
    if (jep != nullptr) {
@@ -170,12 +170,12 @@ slotwise_x_on_subordinate(lListElem *qinstance_where_task_is_running, uint32_t j
 /* TODO: HP: Use get_slotwise_super_qinstance() recursively instead of this function */
 static lListElem *
 get_slotwise_sos_tree_root(lListElem *node_queue_instance) {
+   DENTER(TOP_LAYER);
+
    const char *node_queue_name = nullptr;
    const char *node_host_name = nullptr;
    lListElem *root_qinstance = nullptr;
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-
-   DENTER(TOP_LAYER);
 
    if (node_queue_instance != nullptr) {
       if (get_slotwise_sos_threshold(node_queue_instance) > 0) {
@@ -234,13 +234,13 @@ get_slotwise_sos_tree_root(lListElem *node_queue_instance) {
  */
 static lListElem *
 get_slotwise_suspend_superordinate(const char *queue_name, const char *hostname) {
+   DENTER(TOP_LAYER);
+
    const lListElem *cqueue = nullptr;
    lListElem *qinstance = nullptr;
    lListElem *super_qinstance = nullptr;
    lListElem *so = nullptr;
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-
-   DENTER(TOP_LAYER);
 
    for_each_ep(cqueue, master_cqueue_list) {
       qinstance = cqueue_locate_qinstance(cqueue, hostname);
@@ -1088,10 +1088,10 @@ do_slotwise_subordinate_lists_differ(const lList *old_so_list, const lList *new_
 bool
 cqueue_list_x_on_subordinate_gdil(const lList *master_cqueue_list, bool suspend,
                                   const lList *gdil, monitoring_t *monitor, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const lListElem *gdi = nullptr;
-
-   DENTER(TOP_LAYER);
 
    for_each_ep(gdi, gdil) {
       const char *full_name = lGetString(gdi, JG_qname);
@@ -1170,6 +1170,8 @@ cqueue_list_x_on_subordinate_gdil(const lList *master_cqueue_list, bool suspend,
 
 static bool
 qinstance_x_on_subordinate(lListElem *this_elem, bool suspend, bool send_event, monitoring_t *monitor, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    uint32_t sos_counter;
    bool do_action;
@@ -1179,8 +1181,6 @@ qinstance_x_on_subordinate(lListElem *this_elem, bool suspend, bool send_event, 
    const char *full_name;
    int signal;
    ev_event event;
-
-   DENTER(TOP_LAYER);
 
    /* increment sos counter */
    sos_counter = lGetUlong(this_elem, QU_suspended_on_subordinate);
@@ -1251,10 +1251,10 @@ qinstance_x_on_subordinate(lListElem *this_elem, bool suspend, bool send_event, 
 bool
 cqueue_list_x_on_subordinate_so(lList *master_cqueue_list, lList **answer_list, bool suspend,
                                 const lList *resolved_so_list, monitoring_t *monitor, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const lListElem *so = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /*
     * Locate all qinstances which are mentioned in resolved_so_list and 
@@ -1340,13 +1340,13 @@ qinstance_find_suspended_subordinates(const lListElem *this_elem, lList **answer
  */
 bool
 qinstance_initialize_sos_attr(lListElem *this_elem, monitoring_t *monitor, const lList *master_cqueue_list, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const lListElem *cqueue = nullptr;
    const char *full_name = nullptr;
    const char *qinstance_name = nullptr;
    const char *hostname = nullptr;
-
-   DENTER(TOP_LAYER);
 
    full_name = lGetString(this_elem, QU_full_name);
    qinstance_name = lGetString(this_elem, QU_qname);

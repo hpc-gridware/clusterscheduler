@@ -1080,9 +1080,9 @@ sge_gdi_shutdown_event_client(const ocs::gdi::Packet *packet, ocs::gdi::Task *ta
  *       by POSIX.
  */
 static int get_client_id(lListElem *anElem, int *anID) {
-   const char *id = nullptr;
-
    DENTER(TOP_LAYER);
+
+   const char *id = nullptr;
 
    if ((id = lGetString(anElem, ID_str)) == nullptr) {
       DRETURN(EINVAL);
@@ -1110,7 +1110,6 @@ static int get_client_id(lListElem *anElem, int *anID) {
 static void
 trigger_scheduler_monitoring(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                              monitoring_t *monitor) {
-
    DENTER(GDI_LAYER);
 
    if (!manop_is_manager(packet)) {
@@ -1441,6 +1440,8 @@ sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
 int
 sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *instructions, int add, gdi_object_t *object, const char *ruser,
                         const char *rhost, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, lList **tmp_list, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    int pos;
    int dataType;
    const char *name;
@@ -1450,8 +1451,6 @@ sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **
 
    dstring buffer;
    char ds_buffer[256];
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&buffer, ds_buffer, sizeof(ds_buffer));
 

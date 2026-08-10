@@ -202,6 +202,8 @@ host_trash_nonstatic_load_values(lListElem *host) {
  */
 int
 sge_add_host_of_type(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *hostname, ocs::gdi::Target target, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    int ret;
    int dataType;
    int pos;
@@ -210,8 +212,6 @@ sge_add_host_of_type(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char 
    lList *ppList = nullptr;
    const char *username = component_get_username();
    const char *qualified_hostname = component_get_qualified_hostname();
-
-   DENTER(TOP_LAYER);
 
    if (hostname == nullptr) {
       DRETURN(-1);
@@ -289,6 +289,8 @@ host_list_add_missing_href(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const
  */
 int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep, lList **alpp, char *ruser, char *rhost, ocs::gdi::Target target,
                  const lList *master_hgroup_list, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    int pos;
    lListElem *ep;
    const char *host;
@@ -300,8 +302,6 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
    const char *qualified_hostname = component_get_qualified_hostname();
    lList **master_ehost_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-
-   DENTER(TOP_LAYER);
 
    if (!hep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -471,6 +471,8 @@ int
 host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_host, lListElem *ep, int add,
          const char *ruser, const char *rhost, gdi_object_t *object,
          ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    const char *host;
    int nm;
    int pos;
@@ -481,8 +483,6 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
-
-   DENTER(TOP_LAYER);
 
    nm = object->key_nm;
 
@@ -661,6 +661,8 @@ DRETURN(STATUS_EUNKNOWN);
  */
 int
 host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
+   DENTER(TOP_LAYER);
+
    int pos;
    int dataType;
    const char *key;
@@ -668,8 +670,6 @@ host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
 
    int ret = 0;
    lList *answer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    pos = lGetPosViaElem(ep, object->key_nm, SGE_NO_ABORT);
    dataType = lGetPosType(lGetElemDescr(ep), pos);
@@ -1035,10 +1035,10 @@ host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
  */
 void
 sge_mark_unheard(lListElem *hep, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    const char *host;
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-
-   DENTER(TOP_LAYER);
 
    host = lGetHost(hep, EH_name);
 
@@ -1075,6 +1075,8 @@ sge_mark_unheard(lListElem *hep, uint64_t gdi_session) {
  */
 void
 sge_update_load_values(const char *rhost, const char* real_host, lList *lp, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    lListElem *ep, **hepp = nullptr;
    lListElem *lep;
    lListElem *global_ep = nullptr;
@@ -1084,8 +1086,6 @@ sge_update_load_values(const char *rhost, const char* real_host, lList *lp, uint
    lList *answer_list = nullptr;
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-
-   DENTER(TOP_LAYER);
 
    /* JG: TODO: this time should better come with the report.
     *           it is the time when the reported values were valid.
@@ -1240,6 +1240,8 @@ sge_update_load_values(const char *rhost, const char* real_host, lList *lp, uint
  */
 void
 sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    lListElem *hep;
    const char *host;
    uint64_t timeout;
@@ -1250,8 +1252,6 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
    bool simulate_execds = mconf_get_simulate_execds();
    lList *master_exechost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-
-   DENTER(TOP_LAYER);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
@@ -1326,10 +1326,10 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
  */
 uint32_t
 load_report_interval(lListElem *hep) {
+   DENTER(TOP_LAYER);
+
    uint32_t timeout;
    const char *host;
-
-   DENTER(TOP_LAYER);
 
    host = lGetHost(hep, EH_name);
 
@@ -1357,11 +1357,11 @@ load_report_interval(lListElem *hep) {
 
 static void
 exec_host_change_queue_version(const char *exechost_name, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    const lListElem *cqueue = nullptr;
    bool change_all = (strcasecmp(exechost_name, SGE_GLOBAL_NAME) == 0) ? true : false;
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-
-   DENTER(TOP_LAYER);
 
    for_each_ep(cqueue, master_cqueue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
@@ -1411,7 +1411,6 @@ exec_host_change_queue_version(const char *exechost_name, uint64_t gdi_session) 
  */
 void
 sge_gdi_kill_exechost(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
-
    DENTER(GDI_LAYER);
 
    if (!manop_is_manager(packet)) {
@@ -1435,14 +1434,14 @@ sge_gdi_kill_exechost(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
  *******************************************************************/
 static void
 master_kill_execds(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
+   DENTER(TOP_LAYER);
+
    int kill_jobs;
    lListElem *lel;
    const lListElem *rep;
    char host[CL_MAXHOSTNAMELEN];
    const char *hostname;
    lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
-
-   DENTER(TOP_LAYER);
 
    if (lGetString(lFirst(task->data_list), ID_str) == nullptr) {
       /* this means, we have to kill every execd. */
@@ -1606,13 +1605,13 @@ notify(lListElem *lel, ocs::gdi::Packet *packet, ocs::gdi::Task *task, int kill_
 int
 sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *host, lList **alpp, char *ruser,
                     char *rhost, ocs::gdi::Target target, monitoring_t *monitor, bool is_restart) {
+   DENTER(TOP_LAYER);
+
    lListElem *hep, *cqueue;
    dstring ds;
    char buffer[256];
    lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
@@ -1831,8 +1830,8 @@ host_update_categories(const lListElem *new_hep, const lListElem *old_hep, uint6
 static int
 attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Command cmd,
                    ocs::gdi::SubCommand sub_command, const char *attr_name, const char *object_name) {
-
    DENTER(TOP_LAYER);
+
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);

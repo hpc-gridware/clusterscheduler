@@ -61,12 +61,10 @@
  *
  * @note MT-NOTE: sge_start_heartbeat() is MT safe
  */
-void
-heartbeat_initialize()
-{
-   te_event_t ev     = nullptr;
-
+void heartbeat_initialize() {
    DENTER(TOP_LAYER);
+
+   te_event_t ev     = nullptr;
 
    te_register_event_handler(increment_heartbeat, TYPE_HEARTBEAT_EVENT);
    ev = te_new_event(sge_gmt32_to_gmt64(HEARTBEAT_INTERVAL), TYPE_HEARTBEAT_EVENT, RECURRING_EVENT,
@@ -98,9 +96,9 @@ heartbeat_initialize()
  *       We do assume that the system clock does NOT run backwards. However, we
  *       do cope with a system clock which has been put back.
  */
-void 
-increment_heartbeat(te_event_t anEvent, monitoring_t *monitor)
-{
+void increment_heartbeat(te_event_t anEvent, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    int retval = 0;
    int heartbeat = 0;
    int check_act_qmaster_file = 0;
@@ -109,8 +107,6 @@ increment_heartbeat(te_event_t anEvent, monitoring_t *monitor)
    char err_str[SGE_PATH_MAX+128];
    const char *act_qmaster_file = bootstrap_get_act_qmaster_file();
    const char *qualified_hostname = component_get_qualified_hostname();
-
-   DENTER(TOP_LAYER);
 
    retval = inc_qmaster_heartbeat(QMASTER_HEARTBEAT_FILE, 30, &heartbeat);
 
@@ -156,4 +152,3 @@ increment_heartbeat(te_event_t anEvent, monitoring_t *monitor)
 
    DRETURN_VOID;
 } /* increment_heartbeat() */
-

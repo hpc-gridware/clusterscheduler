@@ -98,11 +98,11 @@ static int acl_is_valid_acl(lListElem *acl, lList **answer_list);
  */
 int
 sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **userset_list, char *ruser, char *rhost) {
+   DENTER(TOP_LAYER);
+
    lListElem *found;
    int pos, ret;
    const char *userset_name;
-
-   DENTER(TOP_LAYER);
 
    if (!ep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -251,9 +251,9 @@ sge_verify_department_entries(const lList *userset_list, lListElem *new_userset,
  */
 static int
 dept_is_valid_defaultdepartment(lListElem *dept, lList **answer_list) {
-   int ret = 1;
    DENTER(TOP_LAYER);
 
+   int ret = 1;
    if (dept != nullptr) {
       /* test 'type' */
       if (!(lGetUlong(dept, US_type) & US_DEPT)) {
@@ -283,9 +283,9 @@ dept_is_valid_defaultdepartment(lListElem *dept, lList **answer_list) {
  */
 static int
 acl_is_valid_acl(lListElem *acl, lList **answer_list) {
-   int ret = 1;
    DENTER(TOP_LAYER);
 
+   int ret = 1;
    if (acl != nullptr) {
       if (!(lGetUlong(acl, US_type) & US_DEPT)) {
          if (lGetUlong(acl, US_fshare) > 0) {
@@ -639,12 +639,12 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
                 const char *rhost, gdi_object_t *object,
                 ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
                 monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    const char *userset_name;
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
-
-   DENTER(TOP_LAYER);
 
    /* ---- US_name */
    if (add) {
@@ -811,10 +811,10 @@ DRETURN(STATUS_EUNKNOWN);
  * @note MT-NOTE: userset_spool() is not MT safe
  */
 int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *userset, gdi_object_t *object) {
+   DENTER(TOP_LAYER);
+
    lList *answer_list = nullptr;
    bool dbret;
-
-   DENTER(TOP_LAYER);
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), userset,
                               lGetString(userset, US_name), SGE_TYPE_USERSET, true);

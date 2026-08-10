@@ -542,9 +542,9 @@ sge_timer_register_event_handler() {
 /** @brief Arm the recurring events qmaster needs
  */
 void sge_timer_start_periodic_tasks() {
-   te_event_t ev = nullptr;
-
    DENTER(TOP_LAYER);
+
+   te_event_t ev = nullptr;
 
    /* recurring events */
    ev = te_new_event(sge_gmt32_to_gmt64(15), TYPE_JOB_NUMBER_EVENT, RECURRING_EVENT, 0, 0, "job_number_changed");
@@ -628,10 +628,10 @@ void sge_timer_start_periodic_tasks() {
  */
 void
 sge_timer_initialize(monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    cl_thread_settings_t *dummy_thread_p = nullptr;
    lList *answer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    te_init();
    DPRINTF("timed event module has been initialized\n");

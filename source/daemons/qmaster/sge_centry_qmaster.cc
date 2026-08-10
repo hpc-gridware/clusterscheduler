@@ -89,6 +89,8 @@ int
 centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *centry, lListElem *reduced_elem, int add,
            const char *remote_user, const char *remote_host, gdi_object_t *object,
            ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    bool is_slots_attr = false;
    int pos;
@@ -97,8 +99,6 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
    char error_msg[200];
    const char *attrname;
    const char *temp;
-
-   DENTER(TOP_LAYER);
 
    /*
     * At least the centry name has to be available (CE_name)
@@ -268,10 +268,10 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
  */
 int
 centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
+   DENTER(TOP_LAYER);
+
    lList *answer_list = nullptr;
    bool dbret;
-
-   DENTER(TOP_LAYER);
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), cep,
                               lGetString(cep, CE_name), SGE_TYPE_CENTRY, true);
@@ -337,9 +337,9 @@ centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
 int
 centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor) {
-   bool rebuild_consumables = false;
-
    DENTER(TOP_LAYER);
+
+   bool rebuild_consumables = false;
 
    sge_add_event(0, old_ep ? sgeE_CENTRY_MOD : sgeE_CENTRY_ADD, 0, 0,
                  lGetString(ep, CE_name), nullptr, nullptr, ep, packet->gdi_session);
@@ -383,13 +383,13 @@ centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
  */
 int
 sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *centry, lList **answer_list, char *remote_user, char *remote_host) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    lList *master_centry_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
    const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
-
-   DENTER(TOP_LAYER);
 
    if (centry != nullptr || remote_user != nullptr || remote_host != nullptr) {
       const char *name = lGetString(centry, CE_name);

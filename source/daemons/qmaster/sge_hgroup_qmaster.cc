@@ -93,8 +93,7 @@ hgroup_rollback(lListElem *this_elem);
  */
 static bool
 hgroup_nesting_that_contains(const lList *current, const char *hostname,
-                             const lList *master_hgroup_list, dstring *groups)
-{
+                             const lList *master_hgroup_list, dstring *groups) {
    const lListElem *href;
    bool found = false;
 
@@ -158,8 +157,7 @@ hgroup_nesting_that_contains(const lList *current, const char *hostname,
 static bool
 hgroup_reserved_delta_is_strict(const lListElem *hgroup, lList **answer_list,
                                 const lList *delta_list, ocs::gdi::SubCommand sub_command,
-                                const lList *master_hgroup_list)
-{
+                                const lList *master_hgroup_list) {
    const char *add_name;   /* as sge_c_gdi.cc named it   */
    const char *del_name;   /* as sge_del_host() named it */
    bool ret = true;
@@ -233,10 +231,11 @@ static bool
 hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_elem,
                     ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, lList **add_hosts,
                     lList **rem_hosts, lList **occupant_groups) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
 
-   DENTER(TOP_LAYER);
    if (hgroup != nullptr && reduced_elem != nullptr) {
       int pos = lGetPosViaElem(reduced_elem, HGRP_host_list, SGE_NO_ABORT);
 
@@ -354,12 +353,13 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
  */
 void
 hgroup_commit(lListElem *hgroup, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    lList *cqueue_list = lGetListRW(hgroup, HGRP_cqueue_list);
    lListElem *next_cqueue = nullptr;
    lListElem *cqueue = nullptr;
 
-   DENTER(TOP_LAYER);
    next_cqueue = lFirstRW(cqueue_list);
    while ((cqueue = next_cqueue)) {
       const char *name = lGetString(cqueue, CQ_name);
@@ -422,13 +422,13 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
            const char *remote_user, const char *remote_host, gdi_object_t *object,
            ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
            monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    int pos;
    lList *master_hgroup_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-
-   DENTER(TOP_LAYER);
 
    /*
     * CS-2451: only HGRP_name and HGRP_host_list are ever read out of
@@ -725,11 +725,12 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
  */
 int
 hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
+   DENTER(TOP_LAYER);
+
    int ret = true;
    lList *master_hgroup_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
-   DENTER(TOP_LAYER);
    /*
     * Check all incoming parameter
     */
@@ -851,12 +852,10 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
  *
  * @note MT-NOTE: call under the write lock, like every other writer of the list
  */
-void
-hgroup_refresh_caches(lListElem *hgroup, lList *master_hgroup_list, lList **referencees)
-{
-   lList *cache_answer_list = nullptr;
-
+void hgroup_refresh_caches(lListElem *hgroup, lList *master_hgroup_list, lList **referencees) {
    DENTER(TOP_LAYER);
+
+   lList *cache_answer_list = nullptr;
 
    hgroup_update_cache(hgroup, &cache_answer_list, master_hgroup_list);
    if (hgroup_find_all_referencees(hgroup, &cache_answer_list, master_hgroup_list, referencees)) {
@@ -891,9 +890,7 @@ hgroup_refresh_caches(lListElem *hgroup, lList *master_hgroup_list, lList **refe
  * @param master_hgroup_list the master host group list
  * @param gdi_session the session the change belongs to
  */
-void
-hgroup_send_referencee_events(const lList *referencees, lList *master_hgroup_list, uint64_t gdi_session)
-{
+void hgroup_send_referencee_events(const lList *referencees, lList *master_hgroup_list, uint64_t gdi_session) {
    const lListElem *href;
 
    for_each_ep(href, referencees) {
@@ -964,6 +961,8 @@ hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hgroup
  */
 int
 hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *this_elem, gdi_object_t *object) {
+   DENTER(TOP_LAYER);
+
    bool tmp_ret = true;
    bool dbret;
    const char *name = lGetHost(this_elem, HGRP_name);
@@ -971,8 +970,6 @@ hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
    const lListElem *cqueue = nullptr;
    dstring key_dstring = DSTRING_INIT;
    lList *spool_answer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* start a transaction for spooling of all affected objects */
    dbret = spool_transaction(&spool_answer_list, spool_get_default_context(),

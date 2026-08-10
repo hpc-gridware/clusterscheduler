@@ -129,9 +129,10 @@ st_set_flag_new_global_conf(bool new_value) {
  */
 bool
 st_get_flag_new_global_conf() {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
 
-   DENTER(TOP_LAYER);
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
    ret = Scheduler_Control.new_global_conf;
    sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);

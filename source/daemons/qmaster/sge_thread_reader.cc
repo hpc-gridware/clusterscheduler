@@ -83,10 +83,10 @@ sge_reader_cleanup_monitor(void *arg) {
  */
 void
 sge_reader_initialize() {
+   DENTER(TOP_LAYER);
+
    const int max_initial_reader_threads = ocs::Bootstrap::get_reader_thread_count();
    cl_thread_settings_t *dummy_thread_p = nullptr;
-
-   DENTER(TOP_LAYER);
 
    INFO(MSG_QMASTER_THREADCOUNT_IS, max_initial_reader_threads, to_cstr(READER_THREAD));
    cl_thread_list_setup(&(Main_Control.reader_thread_pool), "thread pool");
@@ -142,12 +142,12 @@ sge_reader_terminate() {
  */
 [[noreturn]] void *
 sge_reader_main(void *arg) {
+   DENTER(TOP_LAYER);
+
    auto *thread_config = (cl_thread_settings_t *) arg;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
    uint64_t next_prof_output = 0;
-
-   DENTER(TOP_LAYER);
 
    DPRINTF("started\n");
 

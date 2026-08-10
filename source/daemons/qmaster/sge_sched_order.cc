@@ -55,9 +55,10 @@ gdi_request_queue_t Master_Request_Queue;
  */
 bool
 schedd_order_initialize() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    Master_Request_Queue.order_list = nullptr;
    ret &= sge_sl_create(&Master_Request_Queue.request_list);
    DRETURN(ret);
@@ -68,9 +69,10 @@ schedd_order_initialize() {
  */
 bool
 schedd_order_destroy() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    ret &= sge_sl_destroy(&Master_Request_Queue.request_list, nullptr);
    DRETURN(ret);
 }
@@ -85,9 +87,9 @@ schedd_order_destroy() {
  */
 bool
 sge_schedd_send_orders(order_t *orders, lList **order_list, lList **answer_list, const char *name) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if ((order_list != nullptr) && (*order_list != nullptr) && (lGetNumberOfElem(*order_list) != 0)) {
       /*

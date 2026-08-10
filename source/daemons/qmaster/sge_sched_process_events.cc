@@ -75,9 +75,7 @@
  *
  * @note MT-NOTE: is MT safe.
  */
-void
-event_update_func(uint32_t ec_id, lList **alpp, lList *event_list, void *arg)
-{
+void event_update_func(uint32_t ec_id, lList **alpp, lList *event_list, void *arg) {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
@@ -107,9 +105,7 @@ event_update_func(uint32_t ec_id, lList **alpp, lList *event_list, void *arg)
  *
  * @param evc see the description above
  */
-void
-set_job_flushing(sge_evc_class_t *evc)
-{
+void set_job_flushing(sge_evc_class_t *evc) {
    int interval;
    bool flush;
 
@@ -143,9 +139,7 @@ set_job_flushing(sge_evc_class_t *evc)
  *                   the fields the scheduler actually reads
  * @return 0 on success
  */
-int
-subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what)
-{
+int subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what) {
    DENTER(TOP_LAYER);
 
    /* subscribe event types for the mirroring interface */
@@ -185,4 +179,3 @@ subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what)
 
    DRETURN(true);
 }
-

@@ -103,9 +103,9 @@ master_scheduler_class_t Master_Scheduler = {
 
 static void
 schedd_set_serf_log_file() {
-   const char *cell_root = bootstrap_get_cell_root();
-
    DENTER(TOP_LAYER);
+
+   const char *cell_root = bootstrap_get_cell_root();
 
    if (!*schedule_log_path) {
       snprintf(schedule_log_path, sizeof(schedule_log_path), "%s/%s/%s", cell_root, "common", schedule_log_file);
@@ -119,9 +119,9 @@ schedd_set_serf_log_file() {
 static void
 schedd_serf_record_func(uint32_t job_id, uint32_t ja_taskid, const char *state, uint64_t start_time, uint64_t end_time,
                         char level_char, const char *object_name, const char *name, double utilization) {
-   FILE *fp;
-
    DENTER(TOP_LAYER);
+
+   FILE *fp;
 
    if (!(fp = fopen(schedule_log_path, "a"))) {
       DRETURN_VOID;
@@ -142,9 +142,10 @@ FCLOSE_ERROR:
 /* MT-NOTE: schedd_serf_newline() is not MT safe */
 static void
 schedd_serf_newline() {
+   DENTER(TOP_LAYER);
+
    FILE *fp;
 
-   DENTER(TOP_LAYER);
    fp = fopen(schedule_log_path, "a");
    if (fp) {
       /* well, some kind of new line indicating a new schedule run */
@@ -201,10 +202,10 @@ sge_scheduler_cleanup_where_what(void *where_what) {
  * @return true when events arrived, false on shutdown
  */
 static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_list) {
+   DENTER(TOP_LAYER);
+
    int wait_ret;
    bool do_ack = false;
-
-   DENTER(TOP_LAYER);
 
 
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);

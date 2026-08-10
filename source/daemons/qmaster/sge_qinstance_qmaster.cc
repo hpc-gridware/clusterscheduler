@@ -842,9 +842,9 @@ qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
  */
 bool
 qinstance_change_state_on_calendar(lListElem *this_elem, const lListElem *calendar, monitoring_t *monitor, uint64_t gdi_session) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (this_elem != nullptr && calendar != nullptr) {
       lList *state_changes_list = nullptr;
@@ -908,13 +908,13 @@ qinstance_change_state_on_calendar_all(const char *cal_name, uint32_t cal_order,
  */
 static bool qinstance_change_state_on_calender_(lListElem *this_elem, uint32_t cal_order,
                                                 lList **state_change_list, monitoring_t *monitor, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    bool old_cal_disabled = qinstance_state_is_cal_disabled(this_elem);
    bool old_cal_suspended = qinstance_state_is_cal_suspended(this_elem);
    bool new_cal_disabled = (cal_order == QI_DO_CAL_DISABLE) ? true : false;
    bool new_cal_suspended = (cal_order == QI_DO_CAL_SUSPEND) ? true : false;
-
-   DENTER(TOP_LAYER);
 
    lSetList(this_elem, QU_state_changes, *state_change_list);
    *state_change_list = nullptr;
@@ -1194,9 +1194,9 @@ sge_qmaster_qinstance_set_initial_state(lListElem *this_elem, uint64_t gdi_sessi
 bool
 qinstance_reinit_consumable_actual_list(lListElem *this_elem,
                                         lList **answer_list) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (this_elem != nullptr) {
       const char *name = lGetString(this_elem, QU_full_name);

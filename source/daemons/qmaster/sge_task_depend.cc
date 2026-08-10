@@ -99,9 +99,9 @@ static void task_depend(uint32_t *lb, uint32_t *ub, uint32_t t0, uint32_t sa, ui
 int
 sge_task_depend_get_range(lListElem **range, lList **alpp, const lListElem *pre_jep, const lListElem *suc_jep,
                           uint32_t task_id) {
-   uint32_t a0, a1, b0, b1, sa, sb, rmin, rmax;
-
    DENTER(TOP_LAYER);
+
+   uint32_t a0, a1, b0, b1, sa, sb, rmin, rmax;
 
    if (range == nullptr ||
        pre_jep == nullptr ||
@@ -148,9 +148,9 @@ sge_task_depend_get_range(lListElem **range, lList **alpp, const lListElem *pre_
  *****************************************************************************/
 static bool
 task_depend_is_finished(const lListElem *job, uint32_t task_id) {
-   const lListElem *ja_task = nullptr;
-
    DENTER(TOP_LAYER);
+
+   const lListElem *ja_task = nullptr;
 
    if (!job_is_enrolled(job, task_id)) {
       DRETURN(false);
@@ -306,9 +306,9 @@ sge_task_depend_update(lListElem *jep, lList **alpp, uint32_t task_id, uint64_t 
  */
 bool
 sge_task_depend_init(lListElem *jep, lList **alpp, uint64_t gdi_session) {
-   bool ret = false;
-
    DENTER(TOP_LAYER);
+
+   bool ret = false;
 
    if (jep == nullptr) {
       DPRINTF("got nullptr for job argument\n");
@@ -361,9 +361,9 @@ sge_task_depend_init(lListElem *jep, lList **alpp, uint64_t gdi_session) {
  */
 bool
 sge_task_depend_flush(lListElem *jep, lList **alpp, uint64_t gdi_session) {
-   bool ret = false;
-
    DENTER(TOP_LAYER);
+
+   bool ret = false;
 
    /* this should not really be necessary */
    if (jep == nullptr) {
@@ -426,9 +426,9 @@ sge_task_depend_flush(lListElem *jep, lList **alpp, uint64_t gdi_session) {
  */
 bool
 sge_task_depend_is_same_range(const lListElem *pre_jep, const lListElem *suc_jep) {
-   uint32_t a0, a1, b0, b1, sa, sb;
-
    DENTER(TOP_LAYER);
+
+   uint32_t a0, a1, b0, b1, sa, sb;
 
    /* equivalent jobs cannot be nullptr */
    if (pre_jep == nullptr || suc_jep == nullptr) {
