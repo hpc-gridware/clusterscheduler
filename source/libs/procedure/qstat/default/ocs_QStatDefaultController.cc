@@ -116,7 +116,6 @@ ocs::QStatDefaultController::process_queues_with_its_jobs(std::ostream &os, QSta
 void
 ocs::QStatDefaultController::process_resources(std::ostream &os, const lList* cel, lList* centry_list, int slots, int scope,
                                                   bool is_hard_resource, QStatDefaultViewBase &view) {
-
    DENTER(TOP_LAYER);
 
    if (cel == nullptr || lGetNumberOfElem(cel) == 0) {
@@ -305,9 +304,8 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
 }
 
 void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, lListElem *jatep, lListElem *qep, lListElem *gdil_ep, bool print_jobid,
-                    const char *master, dstring *dyn_task_str, int slots, int slot, int slots_per_line,
-                    QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view)
-{
+                                              const char *master, dstring *dyn_task_str, int slots, int slot, int slots_per_line,
+                                              QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
    uint32_t jstate;
    const lList *ql = nullptr;
@@ -858,14 +856,13 @@ ocs::QStatDefaultController::process_subtask(std::ostream &os, lListElem *job, l
 }
 
 void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view) {
+   DENTER(TOP_LAYER);
 
    lListElem *nxt, *jep, *jatep, *nxt_jatep;
    lList* ja_task_list = nullptr;
    int FoundTasks;
    int count = 0;
    dstring dyn_task_str = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
 
    nxt = lFirstRW(model.get_job_list());
    while ((jep=nxt)) {
@@ -1075,9 +1072,8 @@ void ocs::QStatDefaultController::process_jobs_error_state(std::ostream &os, QSt
 }
 
 void ocs::QStatDefaultController::process_jobs_not_enrolled(std::ostream &os, lListElem *job, bool print_jobid, char *master,
-                                    int slots, int slot, int *count,
-                                    QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view)
-{
+                                                            int slots, int slot, int *count,
+                                                            QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
    lList *range_list[16];         /* RN_Type */
    uint32_t hold_state[16];

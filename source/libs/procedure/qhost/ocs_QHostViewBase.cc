@@ -455,9 +455,7 @@ ocs::QHostViewBase::show_host_resources(std::ostream &os, lListElem *host, const
  * @param format the format to apply
  * @param old_string the value as it was formatted before
  */
-void
-ocs::QHostViewBase::reformat_double_string(char *new_string, const size_t result_size, const char *format, const char *old_string)
-{
+void ocs::QHostViewBase::reformat_double_string(char *new_string, const size_t result_size, const char *format, const char *old_string) {
    DENTER(TOP_LAYER);
 
    double dval;
@@ -952,14 +950,14 @@ void
 ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, lListElem *qep, int print_jobs_of_queue, uint32_t full_listing,
                                         const char *indent, uint32_t group_opt, int queue_name_length,
                                         QHostParameter &parameter, QHostModelBase &model, QHostViewBase &report_handler) {
+   DENTER(TOP_LAYER);
+
    const lListElem *gdilep;
    uint32_t job_tag;
    uint32_t jid = 0, old_jid;
    uint32_t jataskid = 0, old_jataskid;
    const char *qnm;
    dstring dyn_task_str = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
 
    qnm = lGetString(qep, QU_full_name);
 
