@@ -86,10 +86,10 @@ static lListElem *lJoinCopyElem(const lDescr *dp,
                                 const lEnumeration *enp0,
                                 const lListElem *src1,
                                 const lEnumeration *enp1) {
+   DENTER(CULL_LAYER);
+
    lListElem *dst;
    int i;
-
-   DENTER(CULL_LAYER);
 
    if (!src0 || !src1) {
       LERROR(LEELEMNULL);
@@ -141,6 +141,8 @@ static lListElem *lJoinCopyElem(const lDescr *dp,
 lList *lJoin(const char *name, int nm0, const lList *lp0,
              const lCondition *cp0, const lEnumeration *enp0, int nm1,
              const lList *lp1, const lCondition *cp1, const lEnumeration *enp1) {
+   DENTER(CULL_LAYER);
+
    lListElem *ep0, *ep1;
    lListElem *ep;
    lList *dlp = nullptr;
@@ -148,8 +150,6 @@ lList *lJoin(const char *name, int nm0, const lList *lp0,
    int lp0_pos = 0, lp1_pos = 0;
    u_int i, j;
    int needed;
-
-   DENTER(CULL_LAYER);
 
    if (!lp0 || !lp1 || !name || !enp0 || !enp1) {
       LERROR(LENULLARGS);
@@ -268,11 +268,10 @@ lList *lJoin(const char *name, int nm0, const lList *lp0,
  */
 int lSplit(lList **slp, lList **ulp, const char *ulp_name,
            const lCondition *cp) {
+   DENTER(TOP_LAYER);
 
    lListElem *ep, *next;
    int has_been_allocated = 0;
-
-   DENTER(TOP_LAYER);
 
    /*
       iterate through the source list call lCompare and chain all elems
@@ -325,7 +324,6 @@ int lSplit(lList **slp, lList **ulp, const char *ulp_name,
  * @return List with the remaining elements
  */
 lList *lSelectDestroy(lList *slp, const lCondition *cp) {
-
    DENTER(CULL_LAYER);
 
    if (lSplit(&slp, nullptr, nullptr, cp)) {
@@ -353,9 +351,9 @@ lList *lSelectDestroy(lList *slp, const lCondition *cp) {
 lListElem *
 lSelectElemPack(const lListElem *slp, const lCondition *cp,
                 const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) {
-   lListElem *new_ep = nullptr;
-
    DENTER(CULL_LAYER);
+
+   lListElem *new_ep = nullptr;
 
    if (!slp) {
       DRETURN(nullptr);
@@ -410,10 +408,11 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
 lListElem *
 lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
                  const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) {
+   DENTER(CULL_LAYER);
+
    lListElem *new_ep = nullptr;
    int index = 0;
 
-   DENTER(CULL_LAYER);
    if (!slp || (!dp && !pb)) {
       DRETURN(nullptr);
    }
@@ -483,9 +482,10 @@ lList *lSelect(const char *name, const lList *slp, const lCondition *cp,
 lList *lSelectHashPack(const char *name, const lList *slp,
                        const lCondition *cp, const lEnumeration *enp,
                        bool isHash, sge_pack_buffer *pb) {
+   DENTER(CULL_LAYER);
+
    lList *ret = nullptr;
 
-   DENTER(CULL_LAYER);
    if (slp == nullptr && pb == nullptr) {
       DRETURN(nullptr);
    }
@@ -591,12 +591,11 @@ lList *lSelectHashPack(const char *name, const lList *slp,
  */
 lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
                     const lDescr *dp, const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) {
+   DENTER(CULL_LAYER);
 
    lListElem *ep, *new_ep;
    lList *dlp = nullptr;
    const lDescr *descr = nullptr;
-
-   DENTER(CULL_LAYER);
 
    if (!slp || (!dp && !pb)) {
       DRETURN(nullptr);
@@ -668,10 +667,10 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
  */
 int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
                   int *indexp) {
+   DENTER(CULL_LAYER);
+
    int i;
    bool reduced = false;
-
-   DENTER(CULL_LAYER);
 
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -757,10 +756,10 @@ int lPartialDescr(const lEnumeration *ep, const lDescr *sdp, lDescr *ddp,
  */
 lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1,
                    const lEnumeration *ep0, const lEnumeration *ep1) {
+   DENTER(CULL_LAYER);
+
    int n, m, index;
    lDescr *ddp;
-
-   DENTER(CULL_LAYER);
 
    if (!sdp0 || !sdp1) {
       LERROR(LEDESCRNULL);
@@ -816,12 +815,11 @@ lDescr *lJoinDescr(const lDescr *sdp0, const lDescr *sdp1,
  * @return the reduced descriptor, owned by the caller, or nullptr on error
  */
 lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
+   DENTER(CULL_LAYER);
 
    lDescr *new_descr = nullptr;
    int index = 0;
    int n = 0;
-   DENTER(CULL_LAYER);
-
    if ((n = lCountWhat(what, type)) <= 0) {
       DRETURN(nullptr);
    }
@@ -854,11 +852,11 @@ lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what) {
  */
 int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
                  const char *dlmt) {
+   DENTER(TOP_LAYER);
+
    int pos;
    int dataType;
    struct saved_vars_s *context = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (!s) {
       DRETURN(1);
@@ -968,10 +966,10 @@ int lString2ListNone(const char *s, lList **lpp, const lDescr *dp,
  * @return error status 0 - OK -1 - Error
  */
 int lDiffListStr(int nm, lList **lpp1, lList **lpp2) {
+   DENTER(CULL_LAYER);
+
    const char *key;
    const lListElem *ep, *to_check;
-
-   DENTER(CULL_LAYER);
 
    if (!lpp1 || !lpp2) {
       DRETURN(-1);

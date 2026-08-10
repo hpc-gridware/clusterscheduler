@@ -64,9 +64,9 @@ static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app);
  * @param nm field name id; ignored when already present
  */
 void nm_set(int job_field[], int nm) {
-   int i;
-
    DENTER(TOP_LAYER);
+
+   int i;
 
    /* seek it */
    for (i = 0; job_field[i] != NoName; i++)
@@ -95,9 +95,9 @@ void nm_set(int job_field[], int nm) {
  * @return error state 0 - OK -1 - Error
  */
 int lReduceDescr(lDescr **dst_dpp, lDescr *src_dp, lEnumeration *enp) {
-   int n, index = 0;
-
    DENTER(TOP_LAYER);
+
+   int n, index = 0;
 
    if (!dst_dpp || !src_dp || !enp) {
       DRETURN(-1);
@@ -136,6 +136,8 @@ int lReduceDescr(lDescr **dst_dpp, lDescr *src_dp, lEnumeration *enp) {
  */
 lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
                      const int *nm_list, int nr_nm) {
+   DENTER(CULL_LAYER);
+
    int neg = 0;
    int i, j, k, n, size = 0;
    const char *s;
@@ -143,8 +145,6 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
    lEnumeration *ep2 = nullptr;
    int error_status;
    cull_parse_state state;
-
-   DENTER(CULL_LAYER);
 
    if (!fmt) {
       error_status = LENOFORMATSTR;
@@ -316,11 +316,11 @@ lEnumeration *_lWhat(const char *fmt, const lDescr *dp,
  *       "" is NOT equivalent with "%I->%T(NONE)"
  */
 lEnumeration *lWhat(const char *fmt, ...) {
+   DENTER(CULL_LAYER);
+
    lEnumeration *enumeration = nullptr;
    va_list ap;
    cull_parse_state state;
-
-   DENTER(CULL_LAYER);
 
    if (!fmt) {
       LERROR(LENOFORMATSTR);
@@ -348,14 +348,14 @@ lEnumeration *lWhat(const char *fmt, ...) {
 }
 
 static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
+   DENTER(CULL_LAYER);
+
    lDescr *dp = nullptr;
    lEnumeration *enumeration = nullptr;
    int token;
    lEnumeration ep[1000];
    int next_id = 0;
    int i;
-
-   DENTER(CULL_LAYER);
 
    if (scan(nullptr, state) != TYPE) {
       LERROR(LESYNTAX);
@@ -464,10 +464,10 @@ static lEnumeration *subscope_lWhat(cull_parse_state *state, va_list *app) {
  * @return enumeration
  */
 lEnumeration *lWhatAll() {
+   DENTER(CULL_LAYER);
+
    lEnumeration *ep;
    int error_status;
-
-   DENTER(CULL_LAYER);
 
    if (!(ep = (lEnumeration *) sge_malloc(sizeof(lEnumeration) * 2))) {
       error_status = LEMALLOC;
@@ -499,9 +499,9 @@ lEnumeration *lWhatAll() {
  * @param ep enumeration, will be set to nullptr
  */
 void lFreeWhat(lEnumeration **ep) {
-   int i;
-
    DENTER(CULL_LAYER);
+
+   int i;
 
    if (ep == nullptr || *ep == nullptr) {
       DRETURN_VOID;
@@ -526,9 +526,9 @@ void lFreeWhat(lEnumeration **ep) {
  * @return number of fields in enumeration
  */
 int lCountWhat(const lEnumeration *enp, const lDescr *dp) {
-   int n;
-
    DENTER(CULL_LAYER);
+
+   int n;
 
    if (!enp) {
       LERROR(LEENUMNULL);
@@ -565,10 +565,10 @@ int lCountWhat(const lEnumeration *enp, const lDescr *dp) {
  * @return new copy of enumeration
  */
 lEnumeration *lCopyWhat(const lEnumeration *ep) {
+   DENTER(CULL_LAYER);
+
    int i, n;
    lEnumeration *copy = nullptr;
-
-   DENTER(CULL_LAYER);
 
    if (!ep) {
       LERROR(LEENUMNULL);
@@ -603,11 +603,11 @@ lEnumeration *lCopyWhat(const lEnumeration *ep) {
  * @return enumeration
  */
 lEnumeration *lIntVector2What(const lDescr *dp, const int intv[]) {
+   DENTER(CULL_LAYER);
+
    lEnumeration *what;
    char fmtstr[2000];
    int i;
-
-   DENTER(CULL_LAYER);
 
    /*
       reduce a descriptor to get one with only
@@ -637,9 +637,10 @@ lEnumeration *lIntVector2What(const lDescr *dp, const int intv[]) {
  * @return 0 on success, -1 on error
  */
 int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
+   DENTER(CULL_LAYER);
+
    int ret = 0;
 
-   DENTER(CULL_LAYER);
    if (*what1 == nullptr ||
        (*what1)[0].pos == WHAT_NONE ||
        (*what2)[0].pos == WHAT_ALL) {
@@ -758,10 +759,11 @@ int lMergeWhat(lEnumeration **what1, lEnumeration **what2) {
  * @return 0 on success, -1 when @p nm is not part of @p what1
  */
 int lWhatSetSubWhat(lEnumeration *what1, int nm, lEnumeration **what2) {
+   DENTER(CULL_LAYER);
+
    int ret = -1;
    int i;
 
-   DENTER(CULL_LAYER);
    if (what1 != nullptr && what2 != nullptr) {
       for (i = 0; mt_get_type(what1[i].mt) != lEndT; i++) {
          if (what1[i].nm == nm) {

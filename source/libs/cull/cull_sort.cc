@@ -120,9 +120,9 @@ int lResortElem(const lSortOrder *so, lListElem *ep, lList *lp) {
 void lWriteSortOrder(
         const lSortOrder *sp
 ) {
-   int i;
-
    DENTER(CULL_LAYER);
+
+   int i;
 
    if (!sp) {
       LERROR(LESORTORDNULL);
@@ -166,9 +166,9 @@ int lSortCompare(
         const lListElem *ep1,
         const lSortOrder *sp
 ) {
-   int i, result = 0;
-
    DENTER(CULL_LAYER);
+
+   int i, result = 0;
 
    for (i = 0; !result && sp[i].nm != NoName; i++) {
 
@@ -254,12 +254,12 @@ lSortOrder *lParseSortOrderVarArg(const lDescr *dp, const char *fmt, ...) {
  * @return sort order array
  */
 lSortOrder *lParseSortOrder(const lDescr *dp, const char *fmt, va_list ap) {
+   DENTER(CULL_LAYER);
+
    const char *s = nullptr;
    lSortOrder *sp = nullptr;
    int i, n;
    cull_parse_state state;
-
-   DENTER(CULL_LAYER);
 
    if (!dp || !fmt) {
       DRETURN(nullptr);

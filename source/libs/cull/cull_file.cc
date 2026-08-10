@@ -75,11 +75,11 @@
  */
 int lWriteElemToDisk(const lListElem *ep, const char *prefix, const char *name,
                      const char *obj_name) {
+   DENTER(TOP_LAYER);
+
    stringT filename;
    sge_pack_buffer pb;
    int ret, fd;
-
-   DENTER(TOP_LAYER);
 
    if (!prefix && !name) {
       ERROR(SFNMAX, MSG_CULL_NOPREFIXANDNOFILENAMEINWRITEELMTODISK);
@@ -167,6 +167,8 @@ int lWriteElemToDisk(const lListElem *ep, const char *prefix, const char *name,
  */
 lListElem *lReadElemFromDisk(const char *prefix, const char *name,
                              const lDescr *type, const char *obj_name) {
+   DENTER(TOP_LAYER);
+
    stringT filename;
    sge_pack_buffer pb;
    SGE_STRUCT_STAT statbuf;
@@ -174,8 +176,6 @@ lListElem *lReadElemFromDisk(const char *prefix, const char *name,
    int ret, fd;
    char *buf;
    size_t size;
-
-   DENTER(TOP_LAYER);
 
    if (!prefix && !name) {
       ERROR(SFNMAX, MSG_CULL_NOPREFIXANDNOFILENAMEINREADELEMFROMDISK);

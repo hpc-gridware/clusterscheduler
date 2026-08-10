@@ -201,8 +201,7 @@ void cull_state_set_name_space(const lNameSpace *ns) {
 }
 
 #ifdef OBSERVE
-void cull_state_set_observe_started(bool started)
-{
+void cull_state_set_observe_started(bool started) {
    cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
@@ -214,8 +213,7 @@ void cull_state_set_observe_started(bool started)
    return;
 }
 
-dstring *cull_state_get_observe_dstring()
-{
+dstring *cull_state_get_observe_dstring() {
    cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
@@ -225,8 +223,7 @@ dstring *cull_state_get_observe_dstring()
    return &cull_state->observe_dstring;
 }
 
-bool cull_state_get_observe_started()
-{
+bool cull_state_get_observe_started() {
    cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);

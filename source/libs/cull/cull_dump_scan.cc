@@ -106,10 +106,10 @@ static int fGetObject(FILE *fp, lListElem **value);
  * @return error state 0 - OK -1 - Error
  */
 int lDumpDescr(FILE *fp, const lDescr *dp, int indent) {
+   DENTER(CULL_LAYER);
+
    int i, ret = ~EOF;
    char space[256];
-
-   DENTER(CULL_LAYER);
 
    space[0] = '\0';
    for (i = 0; i < indent; i++)
@@ -148,10 +148,10 @@ int lDumpDescr(FILE *fp, const lDescr *dp, int indent) {
  * @return descriptor
  */
 lDescr *lUndumpDescr(FILE *fp) {
+   DENTER(CULL_LAYER);
+
    int n, i;
    lDescr *dp = nullptr;
-
-   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
@@ -244,14 +244,14 @@ int lDumpElem(const char *fname, const lListElem *ep, int indent) {
  * @note MT-NOTE: lDumpElemFp() is not MT safe
  */
 int lDumpElemFp(FILE *fp, const lListElem *ep, int indent) {
+   DENTER(CULL_LAYER);
+
    int i, ret = ~EOF;
    lList *tlp;
    lListElem *tep;
    char space[256];
    const char *str;
    dstring dstr = DSTRING_INIT;
-
-   DENTER(CULL_LAYER);
 
    space[0] = '\0';
    for (i = 0; i < indent; i++)
@@ -360,11 +360,11 @@ int lDumpElemFp(FILE *fp, const lListElem *ep, int indent) {
  * @return error state 0 - OK -1 - Error
  */
 int lDumpObject(FILE *fp, const lListElem *ep, int indent) {
+   DENTER(CULL_LAYER);
+
    int i, ret = ~EOF;
 
    char space[256];
-
-   DENTER(CULL_LAYER);
 
    space[0] = '\0';
    for (i = 0; i < indent; i++)
@@ -405,12 +405,12 @@ int lDumpObject(FILE *fp, const lListElem *ep, int indent) {
  * @note MT-NOTE: lDumpList() is not MT safe
  */
 int lDumpList(FILE *fp, const lList *lp, int indent) {
+   DENTER(CULL_LAYER);
+
    const lListElem *ep;
    int i, ret = ~EOF;
 
    char space[256];
-
-   DENTER(CULL_LAYER);
 
    space[0] = '\0';
    for (i = 0; i < indent; i++)
@@ -454,10 +454,10 @@ int lDumpList(FILE *fp, const lList *lp, int indent) {
  * @return Read element
  */
 lListElem *lUndumpElem(const char *fname, const lDescr *dp) {
+   DENTER(CULL_LAYER);
+
    lListElem *ep = nullptr;
    FILE *fp;
-
-   DENTER(CULL_LAYER);
 
    fp = fopen(fname, "r");
    if (fp == nullptr) {
@@ -480,13 +480,13 @@ lListElem *lUndumpElem(const char *fname, const lDescr *dp) {
  * @return Read element
  */
 lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp) {
+   DENTER(CULL_LAYER);
+
    lListElem *ep;
    int n, i;
    int ret = 0;
    char *str;
    uint32_t dummy;
-
-   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
@@ -594,10 +594,10 @@ lListElem *lUndumpElemFp(FILE *fp, const lDescr *dp) {
  * @return Read list element
  */
 lListElem *lUndumpObject(FILE *fp) {
+   DENTER(CULL_LAYER);
+
    lListElem *ep;
    lDescr *dp = nullptr;
-
-   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
@@ -663,14 +663,14 @@ lListElem *lUndumpObject(FILE *fp) {
  *       hands over the varargs list to lUndumpList
  */
 lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp) {
+   DENTER(CULL_LAYER);
+
    lList *lp = nullptr;
    lListElem *fep, *ep;
    lDescr *fdp = nullptr;
    int i, j, nelem, n, k;
    int *found;
    char *oldname;
-
-   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
@@ -807,9 +807,9 @@ lList *lUndumpList(FILE *fp, const char *name, const lDescr *dp) {
 }
 
 static int space_comment(char *s) {
-   char *p, *t;
-
    DENTER(CULL_LAYER);
+
+   char *p, *t;
 
    while ((t = strstr(s, "/*"))) {
       if (!(p = strstr(t + 2, "*/"))) {
@@ -843,9 +843,9 @@ static int fGetLine(FILE *fp, char *line, int max_line) {
 }
 
 static int fGetBra(FILE *fp) {
-   char s[READ_LINE_LENGHT + 1];
-
    DENTER(CULL_LAYER);
+
+   char s[READ_LINE_LENGHT + 1];
 
    if (fGetLine(fp, s, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
@@ -856,9 +856,9 @@ static int fGetBra(FILE *fp) {
 }
 
 static int fGetKet(FILE *fp) {
-   char s[READ_LINE_LENGHT + 1];
-
    DENTER(CULL_LAYER);
+
+   char s[READ_LINE_LENGHT + 1];
 
    if (fGetLine(fp, s, READ_LINE_LENGHT)) {
       LERROR(LEFGETLINE);
@@ -869,11 +869,11 @@ static int fGetKet(FILE *fp) {
 }
 
 static int fGetDescr(FILE *fp, lDescr *dp) {
+   DENTER(CULL_LAYER);
+
    char s[READ_LINE_LENGHT + 1];
    int mt, nm;
    char bra[2], comma[2], ket[2];
-
-   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
@@ -912,9 +912,9 @@ static int fGetDescr(FILE *fp, lDescr *dp) {
 }
 
 static int fGetInt(FILE *fp, int *ip) {
-   char s[READ_LINE_LENGHT + 1];
-
    DENTER(CULL_LAYER);
+
+   char s[READ_LINE_LENGHT + 1];
 
    if (!fp) {
       LERROR(LEFILENULL);
@@ -935,9 +935,9 @@ static int fGetInt(FILE *fp, int *ip) {
 }
 
 static int fGetUlong(FILE *fp, lUlong *up) {
-   char s[READ_LINE_LENGHT + 1];
-
    DENTER(CULL_LAYER);
+
+   char s[READ_LINE_LENGHT + 1];
 
    if (!fp) {
       LERROR(LEFILENULL);
@@ -958,9 +958,9 @@ static int fGetUlong(FILE *fp, lUlong *up) {
 }
 
 static int fGetUlong64(FILE *fp, lUlong64 *up) {
-   char s[READ_LINE_LENGHT + 1];
-
    DENTER(CULL_LAYER);
+
+   char s[READ_LINE_LENGHT + 1];
 
    if (!fp) {
       LERROR(LEFILENULL);
@@ -981,12 +981,12 @@ static int fGetUlong64(FILE *fp, lUlong64 *up) {
 }
 
 static int fGetString(FILE *fp, lString *tp) {
+   DENTER(CULL_LAYER);
+
    int i, j;
    char line[READ_LINE_LENGHT + 1];
    dstring sp = DSTRING_INIT;
    const char *s;
-
-   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
@@ -1049,12 +1049,12 @@ static int fGetString(FILE *fp, lString *tp) {
 }
 
 static int fGetHost(FILE *fp, lHost *tp) {
+   DENTER(CULL_LAYER);
+
    int i;
    char line[READ_LINE_LENGHT + 1];
    char sp[READ_LINE_LENGHT + 1];
    char *s;
-
-   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
@@ -1090,9 +1090,9 @@ static int fGetHost(FILE *fp, lHost *tp) {
 }
 
 static int fGetDouble(FILE *fp, lDouble *dp) {
-   char s[READ_LINE_LENGHT + 1];
-
    DENTER(CULL_LAYER);
+
+   char s[READ_LINE_LENGHT + 1];
 
    if (!fp) {
       LERROR(LEFILENULL);
@@ -1113,9 +1113,9 @@ static int fGetDouble(FILE *fp, lDouble *dp) {
 }
 
 static int fGetLong(FILE *fp, lLong *lp) {
-   char s[READ_LINE_LENGHT + 1];
-
    DENTER(CULL_LAYER);
+
+   char s[READ_LINE_LENGHT + 1];
 
    if (!fp) {
       LERROR(LEFILENULL);
@@ -1136,10 +1136,10 @@ static int fGetLong(FILE *fp, lLong *lp) {
 }
 
 static int fGetBool(FILE *fp, lBool *cp) {
+   DENTER(CULL_LAYER);
+
    char s[READ_LINE_LENGHT + 1];
    int i = 0;
-
-   DENTER(CULL_LAYER);
 
    if (!fp) {
       LERROR(LEFILENULL);
@@ -1162,9 +1162,9 @@ static int fGetBool(FILE *fp, lBool *cp) {
 }
 
 static int fGetList(FILE *fp, lList **lpp) {
-   char s[READ_LINE_LENGHT + 1];
-
    DENTER(CULL_LAYER);
+
+   char s[READ_LINE_LENGHT + 1];
 
    if (fp == nullptr) {
       LERROR(LEFILENULL);
@@ -1195,9 +1195,9 @@ static int fGetList(FILE *fp, lList **lpp) {
 }
 
 static int fGetObject(FILE *fp, lListElem **epp) {
-   char s[READ_LINE_LENGHT + 1];
-
    DENTER(CULL_LAYER);
+
+   char s[READ_LINE_LENGHT + 1];
 
    if (fp == nullptr) {
       LERROR(LEFILENULL);

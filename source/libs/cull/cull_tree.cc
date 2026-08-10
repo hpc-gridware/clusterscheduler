@@ -59,9 +59,9 @@
  * @return number of elements
  */
 int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm) {
-   int n = 0;
-
    DENTER(CULL_LAYER);
+
+   int n = 0;
 
    if (ep) {
       int pos;
@@ -93,9 +93,9 @@ int lGetNumberOfNodes(const lListElem *ep, const lList *lp, int nm) {
  * @return number of leaves
  */
 int lGetNumberOfLeafs(const lListElem *ep, const lList *lp, int nm) {
-   int n = 0;
-
    DENTER(CULL_LAYER);
+
+   int n = 0;
 
    if (ep) {
       int pos;

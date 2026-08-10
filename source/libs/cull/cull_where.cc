@@ -97,9 +97,9 @@ static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp);
  * @return cp0 OR cp1
  */
 lCondition *lOrWhere(const lCondition *cp0, const lCondition *cp1) {
-   lCondition *newcp;
-
    DENTER(TOP_LAYER);
+
+   lCondition *newcp;
 
    if (!cp0 || !cp1) {
       LERROR(LECONDNULL);
@@ -129,9 +129,9 @@ lCondition *lOrWhere(const lCondition *cp0, const lCondition *cp1) {
  * @return 'cp0' AND 'cp1'
  */
 lCondition *lAndWhere(const lCondition *cp0, const lCondition *cp1) {
-   lCondition *newcp;
-
    DENTER(TOP_LAYER);
+
+   lCondition *newcp;
 
    if (!cp0 || !cp1) {
       LERROR(LECONDNULL);
@@ -163,11 +163,11 @@ void lWriteWhereTo(const lCondition *cp, FILE *fp) {
 }
 
 static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp) {
+   DENTER(CULL_LAYER);
+
    int i;
    char space[80];
    char out[256];
-
-   DENTER(CULL_LAYER);
 
    if (!cp) {
       LERROR(LECONDNULL);
@@ -395,11 +395,11 @@ static void lWriteWhereTo_(const lCondition *cp, int depth, FILE *fp) {
  * @return new condition
  */
 lCondition *lWhere(const char *fmt, ...) {
+   DENTER(CULL_LAYER);
+
    lCondition *cond;
    va_list ap;
    cull_parse_state state;
-
-   DENTER(CULL_LAYER);
 
    if (!fmt) {
       LERROR(LENOFORMATSTR);
@@ -426,10 +426,10 @@ lCondition *lWhere(const char *fmt, ...) {
 }
 
 static lCondition *subscope(cull_parse_state *state, va_list *app) {
+   DENTER(CULL_LAYER);
+
    lDescr *dp = nullptr;
    lCondition *cp = nullptr;
-
-   DENTER(CULL_LAYER);
 
    if (scan(nullptr, state) != TYPE) {
       LERROR(LESYNTAX);
@@ -463,9 +463,9 @@ static lCondition *subscope(cull_parse_state *state, va_list *app) {
 }
 
 static lCondition *sum(lDescr *dp, cull_parse_state *state, va_list *app) {
-   lCondition *cp, *newcp;
-
    DENTER(CULL_LAYER);
+
+   lCondition *cp, *newcp;
 
    cp = product(dp, state, app);
 
@@ -487,9 +487,9 @@ static lCondition *sum(lDescr *dp, cull_parse_state *state, va_list *app) {
 }
 
 static lCondition *product(lDescr *dp, cull_parse_state *state, va_list *app) {
-   lCondition *cp, *newcp;
-
    DENTER(CULL_LAYER);
+
+   lCondition *cp, *newcp;
 
    cp = factor(dp, state, app);
 
@@ -511,9 +511,9 @@ static lCondition *product(lDescr *dp, cull_parse_state *state, va_list *app) {
 }
 
 static lCondition *factor(lDescr *dp, cull_parse_state *state, va_list *app) {
-   lCondition *cp;
-
    DENTER(CULL_LAYER);
+
+   lCondition *cp;
 
    if (scan(nullptr, state) == NEG) {
       eat_token(state);
@@ -537,9 +537,9 @@ static lCondition *negfactor(
         cull_parse_state *state,
         va_list *app
 ) {
-   lCondition *cp;
-
    DENTER(CULL_LAYER);
+
+   lCondition *cp;
 
    if (scan(nullptr, state) == BRA) {
       eat_token(state);
@@ -702,10 +702,10 @@ static lCondition *read_val(lDescr *dp, cull_parse_state *state, va_list *app) {
 
 
 static lCondition *_subscope(cull_parse_state *state, WhereArgList *wapp) {
+   DENTER(CULL_LAYER);
+
    lDescr *dp = nullptr;
    lCondition *cp = nullptr;
-
-   DENTER(CULL_LAYER);
 
    if (scan(nullptr, state) != TYPE) {
       LERROR(LESYNTAX);
@@ -745,9 +745,9 @@ static lCondition *_subscope(cull_parse_state *state, WhereArgList *wapp) {
 }
 
 static lCondition *_sum(lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
-   lCondition *cp, *newcp;
-
    DENTER(CULL_LAYER);
+
+   lCondition *cp, *newcp;
 
    cp = _product(dp, state, wapp);
 
@@ -769,9 +769,9 @@ static lCondition *_sum(lDescr *dp, cull_parse_state *state, WhereArgList *wapp)
 }
 
 static lCondition *_product(lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
-   lCondition *cp, *newcp;
-
    DENTER(CULL_LAYER);
+
+   lCondition *cp, *newcp;
 
    cp = _factor(dp, state, wapp);
 
@@ -793,9 +793,9 @@ static lCondition *_product(lDescr *dp, cull_parse_state *state, WhereArgList *w
 }
 
 static lCondition *_factor(lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
-   lCondition *cp;
-
    DENTER(CULL_LAYER);
+
+   lCondition *cp;
 
    if (scan(nullptr, state) == NEG) {
       eat_token(state);
@@ -815,9 +815,9 @@ static lCondition *_factor(lDescr *dp, cull_parse_state *state, WhereArgList *wa
 }
 
 static lCondition *_negfactor(lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
-   lCondition *cp;
-
    DENTER(CULL_LAYER);
+
+   lCondition *cp;
 
    if (scan(nullptr, state) == BRA) {
       eat_token(state);
@@ -838,10 +838,10 @@ static lCondition *_negfactor(lDescr *dp, cull_parse_state *state, WhereArgList 
 }
 
 static lCondition *_read_val(lDescr *dp, cull_parse_state *state, WhereArgList *wapp) {
+   DENTER(CULL_LAYER);
+
    lCondition *cp;
    int token;
-
-   DENTER(CULL_LAYER);
 
    if (!dp) {
       LERROR(LEDESCRNULL);
@@ -1063,10 +1063,10 @@ void lFreeWhere(lCondition **cp) {
  * @return result 0 - false 1 - true
  */
 int lCompare(const lListElem *ep, const lCondition *cp) {
+   DENTER(CULL_LAYER);
+
    int result = 0;
    const char *str1, *str2;
-
-   DENTER(CULL_LAYER);
 
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -1288,10 +1288,9 @@ int lCompare(const lListElem *ep, const lCondition *cp) {
  * @return Copy of 'cp'
  */
 lCondition *lCopyWhere(const lCondition *cp) {
+   DENTER(CULL_LAYER);
 
    lCondition *new_cond = nullptr;
-
-   DENTER(CULL_LAYER);
 
    if (!cp) {
       DRETURN(nullptr);
