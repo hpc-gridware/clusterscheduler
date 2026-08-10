@@ -137,14 +137,23 @@ def process(lines):
             i += 1
             continue
 
-        # walk back to the opening brace of the body
+        # Walk back to the opening brace of the body, counting brackets as we
+        # go. Stopping at the first '{' seen is wrong: a local table
+        # ("static struct f fields[] = {") opens one too, and taking that for
+        # the function head made the initialiser itself look like a blocker.
+        # The body brace is the first '{' that nothing below it closes again.
         j = i - 1
-        while j >= 0 and not out[j].rstrip().endswith('{'):
-            j -= 1
-            if i - j > 40:               # not a function head within reach
+        depth = 0
+        found = False
+        while j >= 0 and i - j <= 40:
+            code = strip_noise([out[j]])[0]
+            depth += code.count('}') - code.count('{')
+            if depth < 0:
+                found = True
                 break
+            j -= 1
 
-        if j < 0 or not out[j].rstrip().endswith('{'):
+        if not found or j < 0:
             skipped.append((i + 1, 'no function body brace found within 40 lines'))
             i += 1
             continue
@@ -152,9 +161,28 @@ def process(lines):
             i += 1                       # already first
             continue
 
-        # everything between the brace and DENTER has to be a plain declaration,
-        # judged per logical statement rather than per line
-        blockers = [s for s in statements(out[j + 1:i]) if not is_declaration(s)]
+        block = out[j + 1:i]
+
+        # A DENTER inside a conditional branch must stay there: hoisting it
+        # above the #if would turn a conditional trace into an unconditional
+        # one. Detect it by the directives being unbalanced in the block.
+        depth = 0
+        for line in block:
+            d = line.lstrip()
+            if re.match(r'#\s*(if|ifdef|ifndef)\b', d):
+                depth += 1
+            elif re.match(r'#\s*endif\b', d):
+                depth -= 1
+        if depth != 0:
+            skipped.append((i + 1, 'DENTER sits inside a preprocessor branch'))
+            i += 1
+            continue
+
+        # Directives themselves are not statements - a #define or a balanced
+        # #ifdef/#else/#endif around declarations does not execute anything, so
+        # only what they enclose has to be judged.
+        code = [l for l in block if not l.lstrip().startswith('#')]
+        blockers = [s for s in statements(code) if not is_declaration(s)]
         if blockers:
             skipped.append((i + 1, 'not only declarations above: ' + blockers[0][:60]))
             i += 1
