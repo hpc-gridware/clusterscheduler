@@ -57,14 +57,13 @@
 #include "msg_execd.h"
 
 static int
-getHomeDir(dstring *dstr_exp_path, const char *user)
-{
+getHomeDir(dstring *dstr_exp_path, const char *user) {
+   DENTER(TOP_LAYER);
+
    struct passwd *pwd;
    struct passwd pw_struct;
    char *buffer;
    int size;
-
-   DENTER(TOP_LAYER);
 
    size = get_pw_buffer_size();
    buffer = sge_malloc(size);
@@ -105,11 +104,10 @@ getHomeDir(dstring *dstr_exp_path, const char *user)
  * @param pathstr_len size of that buffer
  * @return 0 on success
  */
-int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cwd, const char *owner, 
+int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cwd, const char *owner,
                  const char *job_name, uint32_t job_number,
                  uint32_t ja_task_number, int type,
-                 char *pathstr, size_t pathstr_len) 
-{
+                 char *pathstr, size_t pathstr_len) {
    DENTER(TOP_LAYER);
    const lListElem *ep = nullptr;
    const char *path = nullptr, *host = nullptr;
@@ -172,12 +170,11 @@ int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cw
  *
  * @return Is file staging enabled for this (stdin/stdout/stderr) path sublist?
  */
-bool sge_get_fs_path(const lList* lp, char* fs_host, size_t fs_host_len, char* fs_path, size_t fs_path_len)
-{
+bool sge_get_fs_path(const lList *lp, char *fs_host, size_t fs_host_len, char *fs_path, size_t fs_path_len) {
+   DENTER(TOP_LAYER);
+
    const lListElem* ep;
    bool       bFileStaging=false;
-
-   DENTER(TOP_LAYER);
 
    if(lp && (ep=lFirst(lp))) {
       bFileStaging = (bool)lGetBool(ep, PN_file_staging);
@@ -194,7 +191,7 @@ bool sge_get_fs_path(const lList* lp, char* fs_host, size_t fs_host_len, char* f
    DRETURN(bFileStaging);
 }
 
-const char*
+const char *
 /** @brief Expand the pseudo variables a user may put in a path
  *
  * `$HOME`, `$USER`, `$JOB_ID`, `$JOB_NAME`, `$HOSTNAME` and `$TASK_ID`.
@@ -209,14 +206,13 @@ const char*
  * @return the expanded path
  */
 expand_path(dstring *dstr_exp_path, const char *in_path, uint32_t job_id, uint32_t ja_task_id,
-            const char *job_name, const char *user, const char *host)
-{
+            const char *job_name, const char *user, const char *host) {
+   DENTER(TOP_LAYER);
+
    char *t;
    const char *s;
    char tmp[255];
    
-   DENTER(TOP_LAYER);
-
    sge_dstring_clear(dstr_exp_path);
 
    if (in_path) {
@@ -299,15 +295,14 @@ expand_path(dstring *dstr_exp_path, const char *in_path, uint32_t job_id, uint32
  *
  * @see `sge_get_active_job_file_path()`, #sge_make_pe_task_active_dir
  */
-const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *ja_task, dstring *err_str)
-{
+const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *ja_task, dstring *err_str) {
+   DENTER(TOP_LAYER);
+
    static dstring path_buffer = DSTRING_INIT;
    const char *path;
    int result;
 
 
-   DENTER(TOP_LAYER);
-   
    if (err_str != nullptr) {
       sge_dstring_clear(err_str);
    }
@@ -390,13 +385,12 @@ const char *sge_make_ja_task_active_dir(const lListElem *job, const lListElem *j
  *
  * @see `sge_get_active_job_file_path()`, #sge_make_ja_task_active_dir
  */
-const char *sge_make_pe_task_active_dir(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task, dstring *err_str)
-{
+const char *sge_make_pe_task_active_dir(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task, dstring *err_str) {
+   DENTER(TOP_LAYER);
+
    static dstring path_buffer = DSTRING_INIT;
    const char *path;
 
-   DENTER(TOP_LAYER);
-  
    if(err_str != nullptr) {
       sge_dstring_clear(err_str);
    }

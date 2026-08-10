@@ -148,8 +148,7 @@ static const char *JAPI_SINGLE_SESSION_KEY = "JAPI_SSK";
  * @param is_qmaster_down whether qmaster is currently unreachable
  * @return the number reaped
  */
-int sge_reap_children_execd(int max_count, bool is_qmaster_down)
-{
+int sge_reap_children_execd(int max_count, bool is_qmaster_down) {
    DENTER(TOP_LAYER);
    pid_t pid = 999;
    int exit_status, child_signal, core_dumped, failed;
@@ -341,12 +340,11 @@ DESC
 
 */
 static void unregister_from_ptf(uint32_t job_id, uint32_t ja_task_id,
-                               const char *pe_task_id, lListElem *jr) 
-{
+                                const char *pe_task_id, lListElem *jr) {
+   DENTER(TOP_LAYER);
+
    lList* usage = nullptr;
    int ptf_error;
-
-   DENTER(TOP_LAYER);
 
    ptf_error = ptf_job_complete(job_id, ja_task_id, pe_task_id, &usage);
    if (ptf_error) {
@@ -391,9 +389,10 @@ static void unregister_from_ptf(uint32_t job_id, uint32_t ja_task_id,
    jobid = id of job to reap
    failed = indicates a failure of job execution, see shepherd_states.h
  ************************************************************************/
-static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status, 
-                        int is_array, const lListElem *ja_task, const char* job_owner) 
-{
+static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
+                        int is_array, const lListElem *ja_task, const char *job_owner) {
+   DENTER(TOP_LAYER);
+
    char* binding;
    dstring jobdir = DSTRING_INIT;
    dstring fname  = DSTRING_INIT;
@@ -407,8 +406,6 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    uint32_t job_id, job_pid, ckpt_arena, general_failure = 0, ja_task_id;
    const char *pe_task_id = nullptr;
    lListElem *du;
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
@@ -831,8 +828,7 @@ write_failed_info(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id, 
  * @param pe_task_id the PE task, or nullptr
  * @param jr the job report that was acknowledged
  */
-void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id, lListElem *jr)
-{
+void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id, lListElem *jr) {
    DENTER(TOP_LAYER);
    char *exec_file, *script_file, *tmpdir, *job_owner, *qname;
    dstring jobdir = DSTRING_INIT;
@@ -1142,14 +1138,13 @@ int general
 }
 
 static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem *petep,
-                                    const char *error_string, int general, int failed)
-{
+                                    const char *error_string, int general, int failed) {
+   DENTER(TOP_LAYER);
+
    lListElem *jr;
    const lListElem *ep = nullptr;
    uint32_t jobid, jataskid = 0;
    const char *petaskid = nullptr;
-
-   DENTER(TOP_LAYER);
 
    jobid = lGetUlong(jep, JB_job_number);
    if (jatep != nullptr) {
@@ -1207,8 +1202,7 @@ static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem 
  * @param jataskid the array task
  * @param qname the queue instance it was running in
  */
-void job_unknown(uint32_t jobid, uint32_t jataskid, char *qname)
-{
+void job_unknown(uint32_t jobid, uint32_t jataskid, char *qname) {
    DENTER(TOP_LAYER);
 
    ERROR(MSG_SHEPHERD_JATASKXYISKNOWNREPORTINGITTOQMASTER, jobid, jataskid);
@@ -1581,11 +1575,10 @@ clean_up_old_jobs(bool startup) {
    DRETURN(true);
 }
 
-static void 
+static void
 examine_job_task_from_file(int startup, char *dir, lListElem *jep,
                            lListElem *jatep, lListElem *petep,
-                           const std::vector<pid_t> &pids)
-{
+                           const std::vector<pid_t> &pids) {
    lListElem *jr = nullptr;
    bool shepherd_alive;  /* true -> this shepherd is in the process table */
    FILE *fp = nullptr;
@@ -1732,14 +1725,13 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
 /* - data retrieved from "usage" as shepherd has written it */
 /*   if we cant read "usage" exit_status = 0xffffffff       */ 
 /************************************************************/
-static int 
-read_dusage(lListElem *jr, const char *jobdir, uint32_t jobid, uint32_t jataskid, const char *pe_task_id, int failed)
-{
+static int
+read_dusage(lListElem *jr, const char *jobdir, uint32_t jobid, uint32_t jataskid, const char *pe_task_id, int failed) {
+   DENTER(TOP_LAYER);
+
    char pid_file[SGE_PATH_MAX];
    FILE *fp;
    uint32_t pid;
-
-   DENTER(TOP_LAYER);
 
    pid = 0xffffffff;
 
@@ -1879,8 +1871,7 @@ FCLOSE_ERROR:
 }
 
 
-static void build_derived_final_usage(lListElem *jr, uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id)
-{
+static void build_derived_final_usage(lListElem *jr, uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id) {
    DENTER(TOP_LAYER);
 
    const lList *usage_list;
@@ -2075,6 +2066,8 @@ uint32_t *valuep
  */
 void
 reaper_sendmail(lListElem *jep, lListElem *jr) {
+   DENTER(TOP_LAYER);
+
    const lList *mail_users; 
    uint32_t mail_options;
    char sge_mail_subj[1024];
@@ -2093,8 +2086,6 @@ reaper_sendmail(lListElem *jep, lListElem *jr) {
    dstring cpu_string = DSTRING_INIT;
    dstring maxvmem_string = DSTRING_INIT;
    const char *qualified_hostname = component_get_qualified_hostname();
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
    mail_users = lGetList(jep, JB_mail_list);
@@ -2265,8 +2256,7 @@ reaper_sendmail(lListElem *jep, lListElem *jr) {
  *
  * @note MT-NOTE: execd_slave_job_exit() is MT safe
  */
-void execd_slave_job_exit(uint32_t job_id, uint32_t ja_task_id)
-{
+void execd_slave_job_exit(uint32_t job_id, uint32_t ja_task_id) {
    lListElem *job = nullptr;
    lListElem *ja_task = nullptr;
 
@@ -2298,8 +2288,7 @@ void execd_slave_job_exit(uint32_t job_id, uint32_t ja_task_id)
  *
  * @note MT-NOTE: clean_up_binding() is not MT safe
  */
-static void clean_up_binding(char* binding)
-{
+static void clean_up_binding(char *binding) {
    DENTER(TOP_LAYER);
 
    if (binding == nullptr || strcasecmp("nullptr", binding) == 0
@@ -2410,13 +2399,12 @@ static void clean_up_binding(char* binding)
  *
  * @note MT-NOTE: count_master_tasks() is MT safe
  */
-int count_master_tasks(const lList *lp, uint32_t job_id)
-{
+int count_master_tasks(const lList *lp, uint32_t job_id) {
+   DENTER(TOP_LAYER);
+
    const void *iterator = nullptr;
    int master_jobs = 0;
    const lListElem *jep;
-
-   DENTER(TOP_LAYER);
 
    jep = lGetElemUlongFirst(lp, JB_job_number, job_id, &iterator);
    while (jep != nullptr) {

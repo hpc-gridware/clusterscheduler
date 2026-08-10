@@ -103,8 +103,7 @@ static int has_to_use_gnu_load_sensor = 0;
  *
  * @return returns pid
  */
-static pid_t sge_ls_get_pid(const lListElem *this_ls)
-{
+static pid_t sge_ls_get_pid(const lListElem *this_ls) {
    pid_t pid = -1;
    const char *pid_string;
 
@@ -125,8 +124,7 @@ static pid_t sge_ls_get_pid(const lListElem *this_ls)
  *
  * @note [this_ls] - LS_pid entry of the CULL element will be modified
  */
-static void sge_ls_set_pid(lListElem *this_ls, pid_t pid)
-{
+static void sge_ls_set_pid(lListElem *this_ls, pid_t pid) {
    char pid_buffer[256];
 
    snprintf(pid_buffer, sizeof(pid_buffer), pid_t_fmt, pid);
@@ -147,13 +145,12 @@ static void sge_ls_set_pid(lListElem *this_ls, pid_t pid)
  *
  * @return returns the status of the loadsensor
  */
-static int sge_ls_status(lListElem *this_ls)
-{
+static int sge_ls_status(lListElem *this_ls) {
+   DENTER(TOP_LAYER);
+
    fd_set writefds;
    int ret;
    int higest_fd;
-
-   DENTER(TOP_LAYER);
 
    if (sge_ls_get_pid(this_ls) == -1) {
       DRETURN(LS_NOT_STARTED);
@@ -191,8 +188,7 @@ static int sge_ls_status(lListElem *this_ls)
  *
  * @return An additional loadsensor process will be started. [this_ls] - the CULL element will be modified LS_pid containes the pid of the ls process LS_in, LS_out, LS_err are the FILE-streams for the communication with the ls-process returns LS_OK If sge_peopen fails, returns LS_CANT_PEOPEN
  */
-static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
-{
+static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls) {
    DENTER(TOP_LAYER);
 
    pid_t pid = -1;
@@ -262,8 +258,7 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
  *
  * @return new CULL element of type LS_Type will be returned and a new loadsensor process will be created by this function
  */
-static lListElem *sge_ls_create_ls(const char *qualified_hostname, const char *name, const char *scriptfile)
-{
+static lListElem *sge_ls_create_ls(const char *qualified_hostname, const char *name, const char *scriptfile) {
    lListElem *new_ls = nullptr;    /* LS_Type */
    SGE_STRUCT_STAT st;
 
@@ -316,12 +311,11 @@ static lListElem *sge_ls_create_ls(const char *qualified_hostname, const char *n
  *
  * @note the loadsensor process will be terminated [this_ls] the entries will be reinitialized
  */
-static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command)
-{
+static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command) {
+   DENTER(TOP_LAYER);
+
    int ret, exit_status;
    struct timeval t;
-
-   DENTER(TOP_LAYER);
 
    if (sge_ls_get_pid(this_ls) == -1) {
       DRETURN_VOID;
@@ -371,8 +365,7 @@ static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command)
  *
  * @return [this_ls] LS_incomplete and LS_complete will be modified.
  */
-static int read_ls()
-{
+static int read_ls() {
    DENTER(TOP_LAYER);
    char input[10000];
    char host[1000];
@@ -441,15 +434,14 @@ static int read_ls()
  *
  * @return success -1 - error
  */
-static int ls_send_command(lListElem *this_ls, const char *command)
-{
+static int ls_send_command(lListElem *this_ls, const char *command) {
+   DENTER(TOP_LAYER);
+
    fd_set writefds;
    struct timeval timeleft;
    int ret;
    FILE *file;
    int higest_fd;
-
-   DENTER(TOP_LAYER);
 
    FD_ZERO(&writefds);
    higest_fd = fileno((FILE *) lGetRef(this_ls, LS_in));
@@ -506,8 +498,7 @@ static int ls_send_command(lListElem *this_ls, const char *command)
  *
  * @param qidle 0 disables it, non-zero enables it
  */
-void sge_ls_qidle(int qidle)
-{
+void sge_ls_qidle(int qidle) {
    has_to_use_qidle = qidle;
 }
 
@@ -516,8 +507,7 @@ void sge_ls_qidle(int qidle)
  *
  * @param gnu_ls 0 disables it, non-zero enables it
  */
-void sge_ls_gnu_ls(int gnu_ls)
-{
+void sge_ls_gnu_ls(int gnu_ls) {
    has_to_use_gnu_load_sensor = gnu_ls;
 }
 
@@ -540,8 +530,7 @@ void sge_ls_gnu_ls(int gnu_ls)
  *
  * @return LS_OK
  */
-static int sge_ls_start(const char *qualified_hostname, const char *binary_path, char *scriptfiles)
-{
+static int sge_ls_start(const char *qualified_hostname, const char *binary_path, char *scriptfiles) {
    lListElem *nxt_ls_elem = nullptr;    /* LS_Type */
    char scriptfiles_buffer[MAX_STRING_SIZE];
    SGE_STRUCT_STAT stat_buffer;
@@ -656,8 +645,7 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
  *
  * Trigger the restart of all loadsensors
  */
-void trigger_ls_restart()
-{
+void trigger_ls_restart() {
    DENTER(TOP_LAYER);
 
    for_each_rw_lv(ls, ls_list) {
@@ -679,8 +667,7 @@ void trigger_ls_restart()
  *
  * @return pid was not a loadsensor 1 - we triggerd the restart because pid was a loadsensor
  */
-int sge_ls_stop_if_pid(pid_t pid)
-{
+int sge_ls_stop_if_pid(pid_t pid) {
    DENTER(TOP_LAYER);
 
    for_each_rw_lv(ls, ls_list) {
@@ -711,8 +698,7 @@ int sge_ls_stop_if_pid(pid_t pid)
  *
  * @return OK
  */
-int sge_ls_get(const char *qualified_hostname, const char *binary_path, lList **lpp)
-{
+int sge_ls_get(const char *qualified_hostname, const char *binary_path, lList **lpp) {
    DENTER(TOP_LAYER);
    char* load_sensor = nullptr;
 
@@ -787,11 +773,10 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, lList **
  *        them first, 1 means do not - which avoids communicating with a sensor
  *        that is already gone
  */
-void sge_ls_stop(int exited)
-{
-   lListElem *ls_elem;
-
+void sge_ls_stop(int exited) {
    DENTER(TOP_LAYER);
+
+   lListElem *ls_elem;
 
    for_each_rw(ls_elem, ls_list) {
       sge_ls_stop_ls(ls_elem, exited);
@@ -800,4 +785,3 @@ void sge_ls_stop(int exited)
 
    DRETURN_VOID;
 }
-

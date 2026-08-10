@@ -93,8 +93,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
  * @param from_qmaster whether the request came from qmaster rather than from a peer execd
  * @return 0 on success
  */
-int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb, bool from_qmaster)
-{
+int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb, bool from_qmaster) {
    DENTER(TOP_LAYER);
 
    int ret = 1;
@@ -183,13 +182,12 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
  * @param aMsg the received message
  * @return 0 on success
  */
-int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
-{
+int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
+   DENTER(TOP_LAYER);
+
    int ret = 1;
    lListElem *jelem, *ja_task;
    lList *answer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /*
    ** the check if the request has admin/root credentials is done by
@@ -432,11 +430,10 @@ Ignore:
  *
  * @return the new created JAT_granted_destin_identifier list
  */
-static lList *job_set_queue_info_in_task(const char *qualified_hostname, const char *qname, lListElem *petep)
-{
-   lListElem *jge;
-
+static lList *job_set_queue_info_in_task(const char *qualified_hostname, const char *qname, lListElem *petep) {
    DENTER(TOP_LAYER);
+
+   lListElem *jge;
 
    jge = lAddSubStr(petep, JG_qname, qname,
                     PET_granted_destin_identifier_list, JG_Type);
@@ -472,8 +469,7 @@ static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
                                                     lListElem *jatep,
                                                     lListElem *petep,
                                                     const char *qualified_hostname,
-                                                    const char *queuename)
-{
+                                                    const char *queuename) {
    DENTER(TOP_LAYER);
 
    for_each_ep_lv(petask, lGetList(jatep, JAT_task_list)) {
@@ -619,8 +615,9 @@ job_get_queue_for_task(uint32_t job_id, uint32_t ja_task_id, lListElem *jatep, l
 }
 
 
-static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id, sge_pack_buffer *apb)
-{
+static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id, sge_pack_buffer *apb) {
+   DENTER(TOP_LAYER);
+
    uint32_t jobid, jataskid;
    lListElem *jep   = nullptr;
    lListElem *pe    = nullptr;
@@ -633,8 +630,6 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    const char *progname = component_get_component_name();
    const char *qualified_hostname = component_get_qualified_hostname();
    const char *unqualified_hostname = component_get_unqualified_hostname();
-
-   DENTER(TOP_LAYER);
 
 #ifdef KERBEROS
    if (krb_verify_user(de->host, de->commproc, de->id,
@@ -813,12 +808,10 @@ Error:
  *
  * @see `job_verify()`
  */
-bool
-job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qualified_hostname)
-{
-   bool ret = true;
-
+bool job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qualified_hostname) {
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    ret = job_verify(job, answer_list, false);
 
@@ -918,4 +911,3 @@ job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qual
 
    DRETURN(ret);
 }
-

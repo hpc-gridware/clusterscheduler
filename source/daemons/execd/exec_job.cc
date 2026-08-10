@@ -150,9 +150,9 @@ static long get_next_addgrpid(lList *, long);
  * @return the queue instance
  */
 lListElem *responsible_queue(lListElem *jep, lListElem *jatep, lListElem *petep) {
-   lListElem *master_q = nullptr;
-
    DENTER(TOP_LAYER);
+
+   lListElem *master_q = nullptr;
 
    if (petep == nullptr) {
       master_q = lGetObject(lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)), JG_queue);
@@ -2207,11 +2207,11 @@ FCLOSE_ERROR:
  check whether a shell should be called as login shell
  *****************************************************/
 static int ck_login_sh(char *shell) {
+   DENTER(TOP_LAYER);
+
    char *cp;
    char *login_shells;
    int ret;
-
-   DENTER(TOP_LAYER);
 
    login_shells = mconf_get_login_shells();
 
@@ -2249,12 +2249,13 @@ static int ck_login_sh(char *shell) {
 
 static int
 get_nhosts(const lList *gdil_orig) {
+   DENTER(TOP_LAYER);
+
    int nhosts = 0;
    const lListElem *ep;
    lList *cache = lCreateList("", STU_Type);
    const char *hostname;
 
-   DENTER(TOP_LAYER);
    for_each_ep(ep, gdil_orig) {
       hostname = lGetHost(ep, JG_qhostname);
       if (lGetElemStr(cache, STU_name, hostname) == nullptr) {

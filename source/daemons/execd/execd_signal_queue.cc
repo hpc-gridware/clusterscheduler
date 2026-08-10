@@ -94,8 +94,7 @@ extern volatile int shut_me_down;
  * @param apb the buffer the answer is packed into
  * @return 0 on success
  */
-int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb)
-{
+int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb) {
    DENTER(TOP_LAYER);
 
    lListElem *jep;
@@ -247,12 +246,11 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
  * @param jatep the array task
  * @return 0 on success
  */
-int sge_execd_deliver_signal(uint32_t sig, const lListElem *jep, lListElem *jatep)
-{
+int sge_execd_deliver_signal(uint32_t sig, const lListElem *jep, lListElem *jatep) {
+   DENTER(TOP_LAYER);
+
    int queue_already_suspended;
    int getridofjob = 0;
-
-   DENTER(TOP_LAYER);
 
    INFO(MSG_JOB_SIGNALTASK_UUS, lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number), sge_sig2str(sig));
 
@@ -312,10 +310,9 @@ int sge_execd_deliver_signal(uint32_t sig, const lListElem *jep, lListElem *jate
  * @param jatep pointer to JAT_Type cull list element of job
  */
 void sge_send_suspend_mail(uint32_t signal, lListElem *master_q, lListElem *jep, lListElem *jatep) {
+   DENTER(TOP_LAYER);
 
    uint32_t mail_options;
-
-   DENTER(TOP_LAYER);
 
    mail_options = lGetUlong(jep, JB_mail_options);
 
@@ -474,8 +471,7 @@ void sge_send_suspend_mail(uint32_t signal, lListElem *master_q, lListElem *jep,
  * @param pe_task_id  pe-task id, or nullptr for the job shepherd.
  * @return  0 on success; -2 if the shepherd is gone; -1 on other errors.
  */
-int sge_kill(int pid, uint32_t sge_signal, uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id)
-{
+int sge_kill(int pid, uint32_t sge_signal, uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id) {
    int sig;
    int direct_signal;   /* deliver per signal or per file */
    char id_buffer[MAX_STRING_SIZE];
@@ -621,7 +617,7 @@ CheckShepherdStillRunning:
          DRETURN(-2);
       }
    }
-}
+   }
 
 /*------------------------------------------------------------
 
@@ -645,76 +641,75 @@ RETURN
  * @param signal the signal to send
  * @return 0 on success
  */
-int signal_job(uint32_t jobid, uint32_t jataskid, uint32_t signal)
-{
-   lListElem *jep;
-   uint32_t state;
-   lListElem *master_q;
-   lListElem *jatep = nullptr;
-   int getridofjob = 0;
+   int signal_job(uint32_t jobid, uint32_t jataskid, uint32_t signal) {
+      DENTER(TOP_LAYER);
 
-   int suspend_change = 0;
-   int send_mail = 0;
+      lListElem *jep;
+      uint32_t state;
+      lListElem *master_q;
+      lListElem *jatep = nullptr;
+      int getridofjob = 0;
 
-   DENTER(TOP_LAYER);
+      int suspend_change = 0;
+      int send_mail = 0;
 
-   /* search appropriate array task and job */
-   if (!execd_get_job_ja_task(jobid, jataskid, &jep, &jatep, false)) {
-      DRETURN(1);
-   }
-
-   master_q = lGetObject(lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)), JG_queue);
-
-   DPRINTF("sending %s to job " sge_u32 "." sge_u32 "\n", sge_sig2str(signal), jobid, jataskid);
-   if (signal == SGE_SIGCONT) {
-      state = lGetUlong(jatep, JAT_state);
-      if (ISSET(state, JSUSPENDED)) {
-         suspend_change = 1;
+      /* search appropriate array task and job */
+      if (!execd_get_job_ja_task(jobid, jataskid, &jep, &jatep, false)) {
+         DRETURN(1);
       }
-      CLEARBIT(JSUSPENDED, state);
-      SETBIT(JRUNNING, state);
-      lSetUlong(jatep, JAT_state, state);
 
-      /* If the one of the queues is suspended
+      master_q = lGetObject(lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)), JG_queue);
+
+      DPRINTF("sending %s to job " sge_u32 "." sge_u32 "\n", sge_sig2str(signal), jobid, jataskid);
+      if (signal == SGE_SIGCONT) {
+         state = lGetUlong(jatep, JAT_state);
+         if (ISSET(state, JSUSPENDED)) {
+            suspend_change = 1;
+         }
+         CLEARBIT(JSUSPENDED, state);
+         SETBIT(JRUNNING, state);
+         lSetUlong(jatep, JAT_state, state);
+
+         /* If the one of the queues is suspended
          and we unsuspend the job.
          The Job should stay sleeping */
 
-      if (!qinstance_state_is_manual_suspended(master_q)) {
-         getridofjob = sge_execd_deliver_signal(signal, jep, jatep);
-         if ((!getridofjob) && (suspend_change == 1) ) {
-            send_mail = 1;
+         if (!qinstance_state_is_manual_suspended(master_q)) {
+            getridofjob = sge_execd_deliver_signal(signal, jep, jatep);
+            if ((!getridofjob) && (suspend_change == 1)) {
+               send_mail = 1;
+            }
+         } else {
+            DPRINTF("Queue is suspended -> do nothing\n");
          }
       } else {
-         DPRINTF("Queue is suspended -> do nothing\n");
-      }
-   } else {
-      if ((signal == SGE_SIGSTOP) && (lGetUlong(jep, JB_checkpoint_attr) & CHECKPOINT_SUSPEND)) {
-         INFO(MSG_JOB_INITMIGRSUSPJ_UU, lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number));
-         signal = SGE_MIGRATE;
-         getridofjob = sge_execd_deliver_signal(signal, jep, jatep);
-      } else if (signal == SGE_SIGSTOP) {
-         state = lGetUlong(jatep, JAT_state);
-         if (!ISSET(state, JSUSPENDED)) {
-            suspend_change = 1;
-         }
-         SETBIT(JSUSPENDED, state);
-         CLEARBIT(JRUNNING, state);
-         lSetUlong(jatep, JAT_state, state);
+         if ((signal == SGE_SIGSTOP) && (lGetUlong(jep, JB_checkpoint_attr) & CHECKPOINT_SUSPEND)) {
+            INFO(MSG_JOB_INITMIGRSUSPJ_UU, lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number));
+            signal = SGE_MIGRATE;
+            getridofjob = sge_execd_deliver_signal(signal, jep, jatep);
+         } else if (signal == SGE_SIGSTOP) {
+            state = lGetUlong(jatep, JAT_state);
+            if (!ISSET(state, JSUSPENDED)) {
+               suspend_change = 1;
+            }
+            SETBIT(JSUSPENDED, state);
+            CLEARBIT(JRUNNING, state);
+            lSetUlong(jatep, JAT_state, state);
 
-         /* if this is a stop signal for a job
+            /* if this is a stop signal for a job
             which is in at least ONE queue
             which is already stopped we
             do not deliver the signal */
 
-         getridofjob = sge_execd_deliver_signal(signal, jep, jatep);
-         if ((!getridofjob) && (suspend_change == 1)) {
-            if (!qinstance_state_is_manual_suspended(master_q)) {
-               send_mail = 2;
+            getridofjob = sge_execd_deliver_signal(signal, jep, jatep);
+            if ((!getridofjob) && (suspend_change == 1)) {
+               if (!qinstance_state_is_manual_suspended(master_q)) {
+                  send_mail = 2;
+               }
             }
-         }
-      } else {
-         if (signal == SGE_SIGKILL) {
-            /*
+         } else {
+            if (signal == SGE_SIGKILL) {
+               /*
              * At this point job termination is triggered and JDELETED state is set.
              * Based on that state it should be possible to provide better diagnosis
              * information if the job dies due to a signal (Issue: #483). Possibly
@@ -722,31 +717,31 @@ int signal_job(uint32_t jobid, uint32_t jataskid, uint32_t signal)
              * ja_task_message_add(jatep, 1, err_str) could be used to intermediately
              * store job termination reason until it gets reaped later on.
              */
-            state = lGetUlong(jatep, JAT_state);
-            SETBIT(JDELETED, state);
-            lSetUlong(jatep, JAT_state, state);
-            DPRINTF("SIGKILL of job " sge_u32 "\n", jobid);
+               state = lGetUlong(jatep, JAT_state);
+               SETBIT(JDELETED, state);
+               lSetUlong(jatep, JAT_state, state);
+               DPRINTF("SIGKILL of job " sge_u32 "\n", jobid);
+            }
+            getridofjob = sge_execd_deliver_signal(signal, jep, jatep);
          }
-         getridofjob = sge_execd_deliver_signal(signal, jep, jatep);
-      }
-   }
-
-   /* now save this job/queue so we are up to date on restart */
-   if (!getridofjob) {
-      if (!mconf_get_simulate_jobs()) {
-         job_write_spool_file(jep, jataskid, nullptr, SPOOL_WITHIN_EXECD);
-         // set_enforce_cleanup_old_jobs();
-      }
-      /* write mail */
-      if (send_mail == 1) {
-         sge_send_suspend_mail(SGE_SIGCONT,master_q, jep, jatep);
-      }
-      if (send_mail == 2) {
-         sge_send_suspend_mail(SGE_SIGSTOP,master_q, jep, jatep);
       }
 
-   } else {
-      DPRINTF("Job  " sge_u32 "." sge_u32" is no longer running\n", jobid, jataskid);
+      /* now save this job/queue so we are up to date on restart */
+      if (!getridofjob) {
+         if (!mconf_get_simulate_jobs()) {
+            job_write_spool_file(jep, jataskid, nullptr, SPOOL_WITHIN_EXECD);
+            // set_enforce_cleanup_old_jobs();
+         }
+         /* write mail */
+         if (send_mail == 1) {
+            sge_send_suspend_mail(SGE_SIGCONT, master_q, jep, jatep);
+         }
+         if (send_mail == 2) {
+            sge_send_suspend_mail(SGE_SIGSTOP, master_q, jep, jatep);
+         }
+
+      } else {
+         DPRINTF("Job  " sge_u32 "." sge_u32 " is no longer running\n", jobid, jataskid);
+      }
+      DRETURN(getridofjob);
    }
-   DRETURN(getridofjob);
-}

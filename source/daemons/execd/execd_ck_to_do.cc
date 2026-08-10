@@ -269,8 +269,7 @@ force_job_rlimit_apply_limit(double usage, double limit, const char *limit_name,
 
 
 /* force job resource limits */
-static void force_job_rlimit(const char* qualified_hostname)
-{
+static void force_job_rlimit(const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
    for_each_ep_lv(jep, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
@@ -367,8 +366,7 @@ static void force_job_rlimit(const char* qualified_hostname)
 #endif
 
 static uint64_t
-execd_get_wallclock_limit(const char *qualified_hostname, const lList *gdil_list, int limit_nm, uint64_t now)
-{
+execd_get_wallclock_limit(const char *qualified_hostname, const lList *gdil_list, int limit_nm, uint64_t now) {
    uint64_t ret = std::numeric_limits<uint64_t>::max();
    const lListElem *gdil;
    const void *iterator;
@@ -405,8 +403,7 @@ execd_get_wallclock_limit(const char *qualified_hostname, const lList *gdil_list
 }
 
 static void
-update_wallclock_usage(uint64_t now, const lListElem *job, const lListElem *ja_task)
-{
+update_wallclock_usage(uint64_t now, const lListElem *job, const lListElem *ja_task) {
    uint32_t job_id = lGetUlong(job, JB_job_number);
    uint32_t ja_task_id = lGetUlong(ja_task, JAT_task_number);
    uint64_t wallclock = now - lGetUlong64(ja_task, JAT_start_time);
@@ -678,9 +675,8 @@ int do_ck_to_do(bool is_qmaster_down) {
  *
  * @return true, if it is a tightly integrated job, else false
  */
-static bool 
-sge_execd_ja_task_is_tightly_integrated(const lListElem *ja_task)
-{
+static bool
+sge_execd_ja_task_is_tightly_integrated(const lListElem *ja_task) {
    bool ret = false;
 
    if (ja_task != nullptr) {
@@ -704,8 +700,7 @@ sge_execd_ja_task_is_tightly_integrated(const lListElem *ja_task)
  * @return true, if any task was found and could be signalled, else false
  */
 static bool
-sge_kill_petasks(const lListElem *job, const lListElem *ja_task)
-{
+sge_kill_petasks(const lListElem *job, const lListElem *ja_task) {
    bool ret = false;
 
    if (job != nullptr && ja_task != nullptr) {
@@ -724,8 +719,7 @@ sge_kill_petasks(const lListElem *job, const lListElem *ja_task)
 
 
 /*****************************************************************************/
-static int sge_start_jobs()
-{
+static int sge_start_jobs() {
    DENTER(TOP_LAYER);
    int state_changed;
    int jobs_started = 0;
@@ -759,16 +753,15 @@ static int sge_start_jobs()
 }
 
 
-static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
-{
+static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep) {
+   DENTER(TOP_LAYER);
+
    char err_str[10000];
    int pid;
    uint64_t now;
    uint32_t job_id, ja_task_id;
    const char *pe_task_id = nullptr;
    const char *qualified_hostname = component_get_qualified_hostname();
-
-   DENTER(TOP_LAYER);
 
    /* retrieve ids - we need them later on */
    job_id = lGetUlong(jep, JB_job_number);

@@ -130,8 +130,7 @@ static bool flush_lr = false;
 /** @brief When qmaster was last seen to restart
  * @return the time, or 0 when no restart has been seen
  */
-uint64_t sge_get_qmrestart_time()
-{
+uint64_t sge_get_qmrestart_time() {
    return qmrestart_time;
 }
 
@@ -143,48 +142,42 @@ uint64_t sge_get_qmrestart_time()
  *
  * @param qmr the time of the restart
  */
-void sge_set_qmrestart_time(uint64_t qmr)
-{
+void sge_set_qmrestart_time(uint64_t qmr) {
    qmrestart_time = qmr;
 }
 
 /** @brief Are job reports currently being held back?
  * @return true while they are delayed
  */
-bool sge_get_delay_job_reports_flag()
-{
+bool sge_get_delay_job_reports_flag() {
    return delay_job_reports;
 }
 
 /** @brief Hold back job reports, or stop doing so
  * @param new_val true to delay them
  */
-void sge_set_delay_job_reports_flag(bool new_val)
-{
+void sge_set_delay_job_reports_flag(bool new_val) {
    delay_job_reports = new_val;
 }
 
 /** @brief Is a load report due to be sent at the next opportunity?
  * @return true when one is pending
  */
-bool sge_get_flush_lr_flag()
-{
+bool sge_get_flush_lr_flag() {
    return flush_lr;
 }
 
 /** @brief Ask for a load report to be sent at the next opportunity
  * @param new_val true to request one
  */
-void sge_set_flush_lr_flag(bool new_val)
-{
+void sge_set_flush_lr_flag(bool new_val) {
    flush_lr = new_val;
 }
 
 /** @brief Fold the current load values into the report being assembled
  * @param seqno the report's sequence number
  */
-void execd_merge_load_report(uint32_t seqno)
-{
+void execd_merge_load_report(uint32_t seqno) {
    if (last_lr == nullptr || seqno != lGetUlong(last_lr, REP_seqno)) {
       return;
    } else {
@@ -228,13 +221,12 @@ void execd_trash_load_report() {
    send_all = true;
 }
 
-static int 
-execd_add_load_report(lList *report_list, uint64_t now, uint64_t *next_send)
-{
+static int
+execd_add_load_report(lList *report_list, uint64_t now, uint64_t *next_send) {
+   DENTER(TOP_LAYER);
+
    const char* qualified_hostname = component_get_qualified_hostname();
    const char* binary_path = ocs::Bootstrap::get_binary_path();
-
-   DENTER(TOP_LAYER);
 
    if (*next_send <= now || sge_get_flush_lr_flag()) {
       lSortOrder *order = lParseSortOrderVarArg(LR_Type, "%I+", LR_host);
@@ -323,12 +315,12 @@ execd_add_load_report(lList *report_list, uint64_t now, uint64_t *next_send)
 }
 
 
-static int 
-execd_add_conf_report(lList *report_list, uint64_t now, uint64_t *next_send)
-{
+static int
+execd_add_conf_report(lList *report_list, uint64_t now, uint64_t *next_send) {
+   DENTER(TOP_LAYER);
+
    const char* qualified_hostname = component_get_qualified_hostname();
 
-   DENTER(TOP_LAYER);
    if (*next_send <= now) {
       lListElem *report;
 
@@ -352,9 +344,8 @@ execd_add_conf_report(lList *report_list, uint64_t now, uint64_t *next_send)
    DRETURN(0);
 }
 
-static int 
-execd_add_license_report(lList *report_list, uint64_t now, uint64_t *next_send)
-{
+static int
+execd_add_license_report(lList *report_list, uint64_t now, uint64_t *next_send) {
    DENTER(TOP_LAYER);
    if (*next_send == 0) {
       const char* qualified_hostname = component_get_qualified_hostname();
@@ -390,15 +381,14 @@ execd_add_license_report(lList *report_list, uint64_t now, uint64_t *next_send)
    DRETURN(0);
 }
 
-static int 
-execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send)
-{
+static int
+execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send) {
+   DENTER(TOP_LAYER);
+
    bool do_send = false;
    bool only_flush = false;
    static uint64_t last_send = 0;
    const char* qualified_hostname = component_get_qualified_hostname();
-
-   DENTER(TOP_LAYER);
 
    /* return if no job reports are in the list */
    if (lGetNumberOfElem(jr_list) == 0) {
@@ -469,15 +459,14 @@ execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send)
  * @param binary_path where to find the load sensor binaries
  * @return the report
  */
-lList *sge_build_load_report(const char* qualified_hostname, const char* binary_path)
-{
+lList *sge_build_load_report(const char *qualified_hostname, const char *binary_path) {
+   DENTER(TOP_LAYER);
+
    lList *lp = nullptr;
    const lListElem *ep;
    int nprocs = 1;
    double load;
    const void *iterator = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* 
       adding load values to the load report 
@@ -636,8 +625,7 @@ static void sge_get_topology(const char* qualified_hostname, lList **lpp) {
    }
 }
 
-static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
-{
+static int sge_get_loadavg(const char *qualified_hostname, lList **lpp) {
    double avg[3];
    int loads;
    int nprocs; 
@@ -751,8 +739,7 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
 /** @brief Refresh the usage figures of every job running on this host
  * @param qualified_hostname this host, as the cluster knows it
  */
-void update_job_usage(const char* qualified_hostname)
-{
+void update_job_usage(const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
    if (mconf_get_simulate_jobs()) {
@@ -880,8 +867,7 @@ void update_job_usage(const char* qualified_hostname)
 //
 // @return the reserved memory
 static double
-calculate_reserved_memory(lListElem *queue, int nslots, int h_nm, int s_nm)
-{
+calculate_reserved_memory(lListElem *queue, int nslots, int h_nm, int s_nm) {
    double mem = 0.0;
 
 
@@ -911,11 +897,10 @@ calculate_reserved_memory(lListElem *queue, int nslots, int h_nm, int s_nm)
 }
 
 static lList *
-calculate_reserved_usage(const char* qualified_hostname, const lListElem *ja_task, const lListElem *pe_task,
+calculate_reserved_usage(const char *qualified_hostname, const lListElem *ja_task, const lListElem *pe_task,
                          uint32_t job_id, uint32_t ja_task_id,
                          const char *pe_task_id,
-                         const lListElem *pe, uint64_t now)
-{
+                         const lListElem *pe, uint64_t now) {
    lList *ul = nullptr;
    lListElem *jr;
 
@@ -971,11 +956,10 @@ calculate_reserved_usage(const char* qualified_hostname, const lListElem *ja_tas
 }
 
 static lListElem *
-calculate_reserved_usage_ja_task(const char* qualified_hostname, const lListElem *ja_task, 
+calculate_reserved_usage_ja_task(const char *qualified_hostname, const lListElem *ja_task,
                                  uint32_t job_id, uint32_t ja_task_id,
                                  const lListElem *pe, uint64_t now,
-                                 lListElem *new_job) 
-{
+                                 lListElem *new_job) {
    lList *usage_list;
    lListElem *new_ja_task;
 
@@ -998,14 +982,13 @@ calculate_reserved_usage_ja_task(const char* qualified_hostname, const lListElem
 }
 
 static lListElem *
-calculate_reserved_usage_pe_task(const char* qualified_hostname, 
-                                 const lListElem *ja_task, 
+calculate_reserved_usage_pe_task(const char *qualified_hostname,
+                                 const lListElem *ja_task,
                                  const lListElem *pe_task,
                                  uint32_t job_id, uint32_t ja_task_id,
-                                 const char *pe_task_id, 
+                                 const char *pe_task_id,
                                  const lListElem *pe, uint64_t now,
-                                 lListElem *new_job) 
-{
+                                 lListElem *new_job) {
    lListElem *new_ja_task, *new_pe_task;
    lList *usage_list;
 
@@ -1032,13 +1015,12 @@ calculate_reserved_usage_pe_task(const char* qualified_hostname,
 }
 
 /* calculate reserved resource usage */
-static void get_reserved_usage(const char *qualified_hostname, lList **job_usage_list)
-{
+static void get_reserved_usage(const char *qualified_hostname, lList **job_usage_list) {
+   DENTER(TOP_LAYER);
+
    lList *temp_job_usage_list;
    const lListElem *job;
    lEnumeration *what;
-
-   DENTER(TOP_LAYER);
 
    uint64_t now = sge_get_gmt64();
    what = lWhat("%T(%I %I)", JB_Type, JB_job_number, JB_ja_tasks);
@@ -1110,8 +1092,7 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
 }
 
 static void build_reserved_mem_usage(const lListElem *gdil_ep, int slots, double wallclock, double *mem, double *maxvmem,
-                                      double *maxrss)
-{
+                                     double *maxrss) {
    /* 
     * sum up memory usage (integral current memory * wallclock time)
     * and maxvmem (assume it is vmem)
@@ -1148,8 +1129,7 @@ static void build_reserved_mem_usage(const lListElem *gdil_ep, int slots, double
  * @note MT-NOTE: build_reserved_usage() is MT safe
  */
 void build_reserved_usage(const uint64_t now, const lListElem *ja_task, const lListElem *pe_task,
-                          double *wallclock, double *cpu, double *mem, double *maxvmem, double *maxrss)
-{
+                          double *wallclock, double *cpu, double *mem, double *maxvmem, double *maxrss) {
    uint64_t start_time;
 
    if (ja_task == nullptr || wallclock == nullptr || cpu == nullptr || mem == nullptr || maxvmem == nullptr) {
@@ -1240,4 +1220,3 @@ void build_reserved_usage(const uint64_t now, const lListElem *ja_task, const lL
       }
    }
 }
-
