@@ -529,6 +529,8 @@ static int cull_unpack_cont(
         const lDescr *dp,
         int flags
 ) {
+   DENTER(CULL_LAYER);
+
    int i, n, ret;
    bool only_at_bufferend = true;   /* Everything had PACK_SUCCESS or
                                      * PACK_FORMAT error happend but only at the
@@ -538,8 +540,6 @@ static int cull_unpack_cont(
    int last_error = PACK_SUCCESS;   /* error happend in last iteration 
                                      * or PACK_SUCCESS */
    lMultiType *cp = nullptr;
-
-   DENTER(CULL_LAYER);
 
    *mpp = nullptr;
    n = lCountDescr(dp);

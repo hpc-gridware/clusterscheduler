@@ -561,6 +561,8 @@ static lCondition *negfactor(
 }
 
 static lCondition *read_val(lDescr *dp, cull_parse_state *state, va_list *app) {
+   DENTER(CULL_LAYER);
+
    /*       
       without the usage of s insight throws
       a READ_OVERFLOW 
@@ -569,8 +571,6 @@ static lCondition *read_val(lDescr *dp, cull_parse_state *state, va_list *app) {
 
    lCondition *cp;
    int token;
-
-   DENTER(CULL_LAYER);
 
    if (!dp) {
       LERROR(LEDESCRNULL);
