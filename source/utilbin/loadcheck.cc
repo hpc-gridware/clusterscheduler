@@ -90,6 +90,8 @@ void usage() {
 }
 
 int main(int argc, char *argv[]) {
+   DENTER_MAIN(TOP_LAYER, "loadcheck");
+
    double avg[3];
    int loads;
    char *name;
@@ -114,8 +116,6 @@ int main(int argc, char *argv[]) {
 
    int pos = 0, print_as_int = 0, precision, core_binding = 0;
    const char *m;
-
-   DENTER_MAIN(TOP_LAYER, "loadcheck");
 
 #ifdef __SGE_COMPILE_WITH_GETTEXT__   
    /* init language output for gettext() , it will use the right language */
