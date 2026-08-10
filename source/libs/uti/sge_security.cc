@@ -443,6 +443,7 @@ int sge_ssl_setup_security_path(const char *progname, const char *user) {
 }
 
 static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char* value) {
+   DENTER(TOP_LAYER);
 
    /*
     *   CR:
@@ -456,8 +457,6 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
     *   no application specific context initalization. So never call functions within this callback 
     *   which need thread specific setup.
     */
-   DENTER(TOP_LAYER);
-
    DPRINTF("ssl_cert_verify_func()\n");
 
    if (value == nullptr) {
@@ -525,8 +524,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
  *
  * @note MT-NOTE: sge_security_exit() is MT safe
  */
-void sge_security_exit(int i)
-{
+void sge_security_exit(int i) {
    DENTER(TOP_LAYER);
 
 #ifdef SECURE
@@ -550,8 +548,7 @@ bool
  * @param gdi_user user the request claims to be from
  * @return true when the claim holds
  */
-sge_security_verify_user(const char *host, const char *commproc, uint32_t id, const char *gdi_user)
-{
+sge_security_verify_user(const char *host, const char *commproc, uint32_t id, const char *gdi_user) {
    DENTER(TOP_LAYER);
 
    if (gdi_user == nullptr || host == nullptr || commproc == nullptr) {
@@ -596,7 +593,6 @@ sge_security_verify_user(const char *host, const char *commproc, uint32_t id, co
  */
 bool sge_security_verify_unique_identifier(bool check_admin_user, const char* user, const char* progname,
         unsigned long progid, const char* hostname, const char* commproc, unsigned long commid) {
-
    DENTER(TOP_LAYER);
 
 #ifdef SECURE

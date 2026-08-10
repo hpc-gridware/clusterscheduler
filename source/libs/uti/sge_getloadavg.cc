@@ -154,10 +154,10 @@ static int sge_get_kernel_address(
 const char *name,
 long *address 
 ) {
+   DENTER(TOP_LAYER);
+
    int ret = 0;
    struct nlist kernel_nlist[2];
-
-   DENTER(TOP_LAYER);
 
    kernel_nlist[0].n_name = name;
    kernel_nlist[1].n_name = nullptr;
@@ -177,9 +177,9 @@ long *address
 static int sge_get_kernel_fd(
 kernel_fd_type *fd 
 ) {
-   char prefix[256] = "my_error:";
-
    DENTER(TOP_LAYER);
+
+   char prefix[256] = "my_error:";
 
    if (!kernel_initialized) {
       kernel_fd = kvm_open(nullptr, nullptr, nullptr, O_RDONLY, prefix);
@@ -272,8 +272,7 @@ if (nk == -1) { \
 if (nk != ok)\
   goto kcid_changed;
 
-int kupdate(int avenrun[3])
-{
+int kupdate(int avenrun[3]) {
    kstat_t *ks;
    kid_t nkcid;
    int i;
@@ -385,9 +384,11 @@ int kupdate(int avenrun[3])
 
    /* return the number of cpus found */
    return(ncpu);
-}
+   }
 
 double get_cpu_load() {
+   DENTER(CULL_LAYER);
+
    int cpus_found, i, j;
    double cpu_load = -1.0;
    static long cpu_time[CPUSTATES] = { 0L, 0L, 0L, 0L, 0L};
@@ -395,8 +396,6 @@ double get_cpu_load() {
    static long cpu_diff[CPUSTATES] = { 0L, 0L, 0L, 0L, 0L}; 
    double cpu_states[CPUSTATES];
    int avenrun[3];
-
-   DENTER(CULL_LAYER);
 
    /* use kstat to update all processor information */
    if ((cpus_found = kupdate(avenrun)) < 0 ) {
@@ -485,8 +484,7 @@ static double get_cpu_load() {
 
 #elif defined(FREEBSD)
 
-static double get_cpu_load()
-{
+static double get_cpu_load() {
    kernel_fd_type kernel_fd;
    long address = 0;
    static long cpu_time[CPUSTATES];
@@ -507,12 +505,11 @@ static double get_cpu_load()
       cpu_load = -1.0;
    }
    return cpu_load;
-}    
+}
 
 #elif defined(DARWIN)
 
-double get_cpu_load()
-{
+double get_cpu_load() {
    static long cpu_new[CPU_STATE_MAX];
    static long cpu_old[CPU_STATE_MAX];
    static long cpu_diff[CPU_STATE_MAX];
@@ -548,31 +545,29 @@ double get_cpu_load()
 
 #elif defined(NETBSD)
 
-double get_cpu_load()
-{
-  int mib[2];
-  static long cpu_time[CPUSTATES];
-  static long cpu_old[CPUSTATES];
-  static long cpu_diff[CPUSTATES];
-  double cpu_states[CPUSTATES];
-  double cpu_load;
-  size_t size;
+double get_cpu_load() {
+   int mib[2];
+   static long cpu_time[CPUSTATES];
+   static long cpu_old[CPUSTATES];
+   static long cpu_diff[CPUSTATES];
+   double cpu_states[CPUSTATES];
+   double cpu_load;
+   size_t size;
 
-  mib[0] = CTL_KERN;
-  mib[1] = KERN_CP_TIME;
+   mib[0] = CTL_KERN;
+   mib[1] = KERN_CP_TIME;
 
-  size = sizeof(cpu_time);
+   size = sizeof(cpu_time);
 
-  sysctl(mib, sizeof(mib)/sizeof(int), &cpu_time, &size, nullptr, 0);
-  percentages(CPUSTATES, cpu_states, cpu_time, cpu_old, cpu_diff);
-  cpu_load = cpu_states[0] + cpu_states[1] + cpu_states[2];
+   sysctl(mib, sizeof(mib) / sizeof(int), &cpu_time, &size, nullptr, 0);
+   percentages(CPUSTATES, cpu_states, cpu_time, cpu_old, cpu_diff);
+   cpu_load = cpu_states[0] + cpu_states[1] + cpu_states[2];
 
-  if (cpu_load < 0.0) {
-    cpu_load = -1.0;
-  }
+   if (cpu_load < 0.0) {
+      cpu_load = -1.0;
+   }
 
-  return cpu_load;
-
+   return cpu_load;
 }
 #endif
 
@@ -654,10 +649,10 @@ int sge_getloadavg(double loadavg[], int nelem) {
  * @return error state 0 - OK !0 - Error
  */
 int sge_getcpuload(double *cpu_load) {
+   DENTER(TOP_LAYER);
+
    double load;
    int ret;
-
-   DENTER(TOP_LAYER);
 
    if ((load = get_cpu_load()) < 0.0) {
       ret = -1;
@@ -670,13 +665,13 @@ int sge_getcpuload(double *cpu_load) {
 }
 
 static long percentages(int cnt, double *out, long *new_value, long *old_value, long *diffs) {
+   DENTER(CULL_LAYER);
+
    int i;
    long change;
    long total_change;
    long *dp;
    long half_total;
-
-   DENTER(CULL_LAYER);
 
    /* initialization */
    total_change = 0;

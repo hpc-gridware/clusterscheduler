@@ -115,9 +115,10 @@ sge_tq_task_compare_type(const void *data1, const void *data2) {
  */
 static bool
 sge_tq_task_create(sge_tq_task_t **task, sge_tq_type_t type, void *data) {
+   DENTER(TQ_LAYER);
+
    bool ret = true;
 
-   DENTER(TQ_LAYER);
    if (task != nullptr && type != SGE_TQ_UNKNOWN && data != nullptr) {
       sge_tq_task_t *new_task;
       int size = sizeof(sge_tq_task_t);
@@ -150,9 +151,10 @@ sge_tq_task_create(sge_tq_task_t **task, sge_tq_type_t type, void *data) {
  */
 bool
 sge_tq_task_destroy(sge_tq_task_t **task) {
+   DENTER(TQ_LAYER);
+
    bool ret = true;
 
-   DENTER(TQ_LAYER);
    if (task != nullptr && *task != nullptr) {
       sge_free(task);
    }
@@ -174,9 +176,10 @@ sge_tq_task_destroy(sge_tq_task_t **task) {
  */
 bool
 sge_tq_create(sge_tq_queue_t **queue) {
+   DENTER(TQ_LAYER);
+
    bool ret = true;
 
-   DENTER(TQ_LAYER);
    if (queue != nullptr) {
       sge_tq_queue_t *new_queue;
       int size = sizeof(sge_tq_queue_t);
@@ -242,9 +245,10 @@ sge_tq_destroy(sge_tq_queue_t **queue, sge_sl_destroy_f destroy_func) {
  */
 uint32_t
 sge_tq_get_task_count(sge_tq_queue_t *queue) {
+   DENTER(TQ_LAYER);
+
    uint32_t count = 0;
 
-   DENTER(TQ_LAYER);
    if (queue != nullptr) {
       count = sge_sl_get_elem_count(queue->list);
    }
@@ -268,9 +272,10 @@ sge_tq_get_task_count(sge_tq_queue_t *queue) {
  */
 uint32_t
 sge_tq_get_waiting_count(sge_tq_queue_t *queue) {
+   DENTER(TQ_LAYER);
+
    uint32_t count = 0;
 
-   DENTER(TQ_LAYER);
    if (queue != nullptr) {
       sge_mutex_lock(TQ_MUTEX_NAME, __func__, __LINE__, sge_sl_get_mutex(queue->list));
       count = queue->waiting;
@@ -302,9 +307,10 @@ sge_tq_get_waiting_count(sge_tq_queue_t *queue) {
  */
 bool
 sge_tq_store_notify(sge_tq_queue_t *queue, sge_tq_type_t type, void *data) {
+   DENTER(TQ_LAYER);
+
    bool ret = true;
 
-   DENTER(TQ_LAYER);
    if (queue != nullptr && type != SGE_TQ_UNKNOWN && data != nullptr) {
       sge_tq_task_t *new_task = nullptr;
 
@@ -382,9 +388,10 @@ sge_tq_wakeup_waiting(sge_tq_queue_t *queue) {
 bool
 sge_tq_wait_for_task(sge_tq_queue_t *queue, int seconds,
                      sge_tq_type_t type, void **data) {
+   DENTER(TQ_LAYER);
+
    bool ret = true;
 
-   DENTER(TQ_LAYER);
    if (queue != nullptr && data != nullptr) {
       sge_sl_elem_t *elem = nullptr;
       sge_tq_task_t key{};

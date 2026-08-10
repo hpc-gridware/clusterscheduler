@@ -61,12 +61,12 @@
  * @note MT-NOTE: sge_read_token() is MT safe.
  */
 char *sge_read_token(const char *file) {
+   DENTER(TOP_LAYER);
+
    SGE_STRUCT_STAT sb;
    int fd;
    char *tokenbuf;
    size_t size;
-
-   DENTER(TOP_LAYER);
 
    if (SGE_STAT(file, &sb)) {
       DRETURN(nullptr);
@@ -110,12 +110,12 @@ char *sge_read_token(const char *file) {
  */
 int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
                          int token_extend_time, char *err_str, size_t err_str_size) {
+   DENTER(TOP_LAYER);
+
    pid_t command_pid;
    FILE *fp_in, *fp_out, *fp_err;
    int ret;
    char cmdbuf[SGE_PATH_MAX + 128];
-
-   DENTER(TOP_LAYER);
 
    snprintf(cmdbuf, sizeof(cmdbuf), "%s %s %d", command, user, token_extend_time);
    if (err_str != nullptr) {

@@ -367,11 +367,11 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
  * @note MT-NOTE: sge_monitor_status() is MT safe
  */
 uint32_t sge_monitor_status(char **info_message, uint32_t monitor_time) {
+   DENTER(GDI_LAYER);
+
    uint32_t ret = 0;
    char date[40];
    dstring ddate;
-
-   DENTER(GDI_LAYER);
 
    if (info_message == nullptr) {
       DRETURN(3);

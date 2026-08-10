@@ -219,9 +219,10 @@ static bool sge_error_has_error(sge_error_class_t *eh) {
 }
 
 static bool sge_error_has_quality(sge_error_class_t *thiz, int error_quality) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
 
-   DENTER(TOP_LAYER);
    if (thiz) {
       auto *et = (sge_error_t *) thiz->sge_error_handle;
       sge_error_message_t *elem = et->first;
@@ -236,9 +237,10 @@ static bool sge_error_has_quality(sge_error_class_t *thiz, int error_quality) {
 }
 
 static bool sge_error_has_type(sge_error_class_t *thiz, int error_type) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
 
-   DENTER(TOP_LAYER);
    if (thiz) {
       auto *et = (sge_error_t *) thiz->sge_error_handle;
       sge_error_message_t *elem = et->first;
@@ -273,11 +275,10 @@ static sge_error_iterator_class_t *sge_error_iterator_class_create(sge_error_cla
 
 static void sge_error_verror(sge_error_class_t *thiz, int error_type, int error_quality,
                              const char *format, va_list ap) {
+   DENTER(TOP_LAYER);
 
    auto *et = (sge_error_t *) thiz->sge_error_handle;
    dstring ds = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
 
    auto *error = (sge_error_message_t *) sge_malloc(sizeof(sge_error_message_t));
    SGE_ASSERT(error != nullptr);

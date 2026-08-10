@@ -1874,9 +1874,9 @@ namespace ocs::uti {
     *               repeat the TCP accept() or connect() operation, just take up the interrupted connection again.
     */
    bool OpenSSL::OpenSSLConnection::wait_for_socket_ready(int reason, dstring *error_dstr) const {
-      // wait until the socket is ready for read or write
       DENTER(TOP_LAYER);
 
+      // wait until the socket is ready for read or write
       DPRINTF("waiting for socket %d to become ready for %s\n", fd, reason ? "read" : "write");
 
       bool ret = true;

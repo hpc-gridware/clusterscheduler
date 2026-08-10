@@ -87,8 +87,7 @@ int size
 }   
 
 /** @brief Work out how to convert page counts to megabytes on this host */
-void init_pageshift()
-{
+void init_pageshift() {
    int i;
    i = sysconf(_SC_PAGESIZE);
    pageshift = 0;
@@ -149,8 +148,9 @@ char *argv[]
 #include <sys/types.h>
 #include <fcntl.h>
 
-int sge_loadmem(sge_mem_info_t *mem_info) 
-{
+int sge_loadmem(sge_mem_info_t *mem_info) {
+   DENTER(TOP_LAYER);
+
    long total, fr;
    long cnt, i;
    long t, f, l;
@@ -160,8 +160,6 @@ int sge_loadmem(sge_mem_info_t *mem_info)
    int sz;
 
    long freemem;
-
-   DENTER(TOP_LAYER);
 
    init_pageshift();
    
@@ -306,21 +304,20 @@ int sge_loadmem(sge_mem_info_t *mem_info) {
 #include <mach/host_info.h>
 #include <sys/sysctl.h>
 
-int sge_loadmem(sge_mem_info_t *mem_info)
-{
-    uint64_t mem_total;
-    size_t len = sizeof(mem_total);
+int sge_loadmem(sge_mem_info_t *mem_info) {
+   uint64_t mem_total;
+   size_t len = sizeof(mem_total);
 
-    vm_statistics_data_t vm_info;
-    mach_msg_type_number_t info_count = HOST_VM_INFO_COUNT;
+   vm_statistics_data_t vm_info;
+   mach_msg_type_number_t info_count = HOST_VM_INFO_COUNT;
 
-    sysctlbyname("hw.memsize", &mem_total, &len, nullptr, 0);
-    mem_info->mem_total = mem_total / (1024*1024);
+   sysctlbyname("hw.memsize", &mem_total, &len, nullptr, 0);
+   mem_info->mem_total = mem_total / (1024 * 1024);
 
-    host_statistics(mach_host_self (), HOST_VM_INFO, (host_info_t)&vm_info, &info_count);
-    mem_info->mem_free = ((double)vm_info.free_count)*vm_page_size / (1024*1024);
+   host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t) &vm_info, &info_count);
+   mem_info->mem_free = ((double) vm_info.free_count) * vm_page_size / (1024 * 1024);
 
-    return 0;
+   return 0;
 }
 
 #endif /* DARWIN */
@@ -331,8 +328,7 @@ int sge_loadmem(sge_mem_info_t *mem_info)
 #include <fcntl.h>
 #include <kvm.h>
 
-int sge_loadmem(sge_mem_info_t *mem_info) 
-{
+int sge_loadmem(sge_mem_info_t *mem_info) {
    int			i, n;
    int			swap_count, usedswap_count;
    size_t		tmpsize;
@@ -408,27 +404,26 @@ int sge_loadmem(sge_mem_info_t *mem_info)
 #include <sys/param.h>
 #include <sys/sysctl.h>
 
-int sge_loadmem(sge_mem_info_t *mem_info)
-{
-  int mib[2];
-  size_t size;
-  struct uvmexp_sysctl uvmexp;
+int sge_loadmem(sge_mem_info_t *mem_info) {
+   int mib[2];
+   size_t size;
+   struct uvmexp_sysctl uvmexp;
 
-  mib[0] = CTL_VM;
-  mib[1] = VM_UVMEXP2;
-  size   = sizeof(uvmexp);
+   mib[0] = CTL_VM;
+   mib[1] = VM_UVMEXP2;
+   size = sizeof(uvmexp);
 
-  sysctl(mib, sizeof(mib)/sizeof(int), &uvmexp, &size, nullptr, 0);
+   sysctl(mib, sizeof(mib) / sizeof(int), &uvmexp, &size, nullptr, 0);
 
-  /* Memory */
-  mem_info->mem_total = (uvmexp.npages * uvmexp.pagesize) / (1024 * 1024);
-  mem_info->mem_free  = (uvmexp.free   * uvmexp.pagesize) / (1024 * 1024);
+   /* Memory */
+   mem_info->mem_total = (uvmexp.npages * uvmexp.pagesize) / (1024 * 1024);
+   mem_info->mem_free = (uvmexp.free * uvmexp.pagesize) / (1024 * 1024);
 
-  /* Swap */
-  mem_info->swap_total = (uvmexp.swpages * uvmexp.pagesize) / (1024 * 1024);
-  mem_info->swap_free = ((uvmexp.swpages - uvmexp.swpginuse) * uvmexp.pagesize) / (1024 * 1024);
+   /* Swap */
+   mem_info->swap_total = (uvmexp.swpages * uvmexp.pagesize) / (1024 * 1024);
+   mem_info->swap_free = ((uvmexp.swpages - uvmexp.swpginuse) * uvmexp.pagesize) / (1024 * 1024);
 
-  return 0;
+   return 0;
 }
 #endif /* NETBSD */
 

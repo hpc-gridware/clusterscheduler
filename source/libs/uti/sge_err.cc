@@ -90,9 +90,10 @@ sge_err_object_init(sge_err_object_t *object) {
 /* function that returns thread local storrage for this module */
 static bool
 sge_err_get_object(sge_err_object_t **object) {
+   DENTER(ERR_LAYER);
+
    bool ret = true;
 
-   DENTER(ERR_LAYER);
    *object = (sge_err_object_t *)pthread_getspecific(sge_err_key);
    if (*object == nullptr) {
       sge_err_object_t *new_object = (sge_err_object_t *) sge_malloc(sizeof(sge_err_object_t));
@@ -113,9 +114,10 @@ sge_err_get_object(sge_err_object_t **object) {
 /* local function that sets the error id and the error message (format + variable arguments) */
 static void
 sge_err_vset(sge_err_t id, const char *format, va_list args) {
+   DENTER(ERR_LAYER);
+
    sge_err_object_t *err_obj = nullptr;
 
-   DENTER(ERR_LAYER);
    sge_err_get_object(&err_obj);
    err_obj->id = id;
    vsnprintf(err_obj->message, SGE_ERR_MAX_MESSAGE_LENGTH, format, args);
@@ -161,9 +163,10 @@ static ErrorThreadInit error_obj{};
  */
 void
 sge_err_set(sge_err_t id, const char *format, ...) {
+   DENTER(ERR_LAYER);
+
    va_list args;
 
-   DENTER(ERR_LAYER);
    if (format != nullptr) {
       va_start(args, format);
       sge_err_vset(id, format, args);
@@ -211,10 +214,11 @@ sge_err_get(uint32_t pos, sge_err_t *id, char *message, size_t size) {
  */
 bool
 sge_err_has_error() {
+   DENTER(ERR_LAYER);
+
    sge_err_object_t *err_obj = nullptr;
    bool ret;
 
-   DENTER(ERR_LAYER);
    sge_err_get_object(&err_obj);
    ret = (err_obj->id != SGE_ERR_SUCCESS) ? true : false;
    DRETURN(ret);
@@ -228,9 +232,10 @@ sge_err_has_error() {
  */
 void
 sge_err_clear() {
+   DENTER(ERR_LAYER);
+
    sge_err_object_t *err_obj = nullptr;
 
-   DENTER(ERR_LAYER);
    sge_err_get_object(&err_obj);
    err_obj->id = SGE_ERR_SUCCESS;
    DRETURN_VOID;

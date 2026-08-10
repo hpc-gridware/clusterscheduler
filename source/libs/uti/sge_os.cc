@@ -90,12 +90,12 @@ static void sge_close_fd(int fd);
  * @note MT-NOTES: sge_get_pids() is not MT safe
  */
 int sge_get_pids(std::vector<pid_t> &pids, const char *name, const char *pscommand) {
+   DENTER(TOP_LAYER);
+
    FILE *fp_in, *fp_out, *fp_err;
    char buf[10000], *ptr;
    int last, len;
    pid_t pid, command_pid;
-
-   DENTER(TOP_LAYER);
 
    pids.clear();
 
@@ -178,12 +178,12 @@ bool sge_contains_pid(pid_t pid, const std::vector<pid_t> &pids) {
  * @note MT-NOTES: sge_checkprog() is not MT safe
  */
 int sge_checkprog(pid_t pid, const char *name, const char *pscommand) {
+   DENTER(TOP_LAYER);
+
    FILE *fp_in, *fp_out, *fp_err;
    char buf[1000], *ptr;
    pid_t command_pid, pidfound;
    int len, last, notfound;
-
-   DENTER(TOP_LAYER);
 
    command_pid = sge_peopen("/bin/sh", 0, pscommand, nullptr, nullptr,
                             &fp_in, &fp_out, &fp_err, false);
@@ -274,9 +274,9 @@ int redirect_to_dev_null(int target, int mode) {
  * @see #redirect_to_dev_null, #sge_close_all_fds
  */
 int sge_occupy_first_three() {
-   int ret = -1;
-
    DENTER(TOP_LAYER);
+
+   int ret = -1;
 
    ret = redirect_to_dev_null(0, O_RDONLY);
 

@@ -98,14 +98,14 @@ int sge_parse_args(
         const char *args, /* The argument string to parse by whitespace and quotes */
         char **pargs /* The array to contain the parsed arguments */
 ) {
+   DENTER(TOP_LAYER);
+
    const char *s;
    char *d;
    char quote;
    char *start;
    char *resreq;
    int finished, count = 0;
-
-   DENTER(TOP_LAYER);
 
    resreq = sge_malloc(strlen(args) + 1);
    d = resreq;

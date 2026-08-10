@@ -90,9 +90,9 @@ static int spawn_file(dstring *aBuffer, int *fd, dstring *error_message);
  * @note MT-NOTE: sge_tmpnam() is MT safe.
  */
 char *sge_tmpnam(char *aBuffer, int *fd, dstring *error_message) {
-   dstring s = DSTRING_INIT;
-
    DENTER(TOP_LAYER);
+
+   dstring s = DSTRING_INIT;
 
    if (aBuffer == nullptr) {
       sge_dstring_sprintf(error_message, MSG_TMPNAM_GOT_NULL_PARAMETER);

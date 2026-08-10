@@ -135,6 +135,8 @@ static struct servent *sge_getservbyname_r(struct servent *se_result, const char
  * @return the port number
  */
 int sge_get_qmaster_port(bool *from_services) {
+   DENTER(GDI_LAYER);
+
    char *port = nullptr;
    int int_port = -1;
 
@@ -142,8 +144,6 @@ int sge_get_qmaster_port(bool *from_services) {
    static long next_timeout = 0;
    static int cached_port = -1;
    static bool is_port_from_services_file = false;
-
-   DENTER(GDI_LAYER);
 
    sge_mutex_lock("get_qmaster_port_mutex", __func__, __LINE__, &get_qmaster_port_mutex);
 
@@ -222,14 +222,14 @@ int sge_get_qmaster_port(bool *from_services) {
  * @return the port number
  */
 int sge_get_execd_port() {
+   DENTER(TOP_LAYER);
+
    char *port = nullptr;
    int int_port = -1;
 
    struct timeval now;
    static long next_timeout = 0;
    static int cached_port = -1;
-
-   DENTER(TOP_LAYER);
 
    sge_mutex_lock("get_execd_port_mutex", __func__, __LINE__, &get_execd_port_mutex);
 
@@ -328,10 +328,10 @@ static pthread_mutex_t hostbyaddr_mutex = PTHREAD_MUTEX_INITIALIZER;
 struct hostent *sge_gethostbyname_retry(
         const char *name
 ) {
+   DENTER(TOP_LAYER);
+
    int i;
    struct hostent *he;
-
-   DENTER(TOP_LAYER);
 
    if (!name || name[0] == '\0') {
       DPRINTF("hostname to resolve is nullptr or has zero length\n");
@@ -376,10 +376,10 @@ struct hostent *sge_gethostbyname_retry(
  *       MT-NOTE: gethostbyname() must go through sge_gethostbyname() to be MT safe.
  */
 struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
+   DENTER(GDI_LAYER);
+
    struct hostent *he = nullptr;
    int l_errno = 0;
-
-   DENTER(GDI_LAYER);
 
    /* This method goes to great lengths to slip a reentrant gethostbyname into
     * the code without making changes to the rest of the source base.  That
@@ -506,11 +506,11 @@ struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
  * @note MT-NOTE: sge_copy_hostent() is MT safe
  */
 struct hostent *sge_copy_hostent(struct hostent *orig) {
+   DENTER(GDI_LAYER);
+
    struct hostent *copy = (struct hostent *) sge_malloc(sizeof(struct hostent));
    char **p = nullptr;
    int count = 0;
-
-   DENTER(GDI_LAYER);
 
    if (copy != nullptr) {
       /* reset the malloced memory */
@@ -595,10 +595,10 @@ struct hostent *sge_copy_hostent(struct hostent *orig) {
  *       MT-NOTE: sge_gethostbyaddr() to be MT safe.
  */
 struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_retval) {
+   DENTER(TOP_LAYER);
+
    struct hostent *he = nullptr;
    int l_errno;
-
-   DENTER(TOP_LAYER);
 
    /* This method goes to great lengths to slip a reentrant gethostbyaddr into
     * the code without making changes to the rest of the source base.  That

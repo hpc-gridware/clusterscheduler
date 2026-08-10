@@ -72,9 +72,9 @@
  * @note MT-NOTE: sge_basename() is MT safe
  */
 const char *sge_basename(const char *name, int delim) {
-   char *cp;
-
    DENTER(BASIS_LAYER);
+
+   char *cp;
 
    if (!name) {
       DRETURN(nullptr);
@@ -111,10 +111,10 @@ const char *sge_basename(const char *name, int delim) {
  * @see sge_basename(), sge_strtok()
  */
 const char *sge_jobname(const char *name) {
+   DENTER(BASIS_LAYER);
 
    const char *cp = nullptr;
 
-   DENTER(BASIS_LAYER);
    if (name && name[0] != '\0') {
       cp = sge_strtok(name, ";");
       // cp aliases sge_strtok()'s internal static buffer; re-tokenizing it is
@@ -145,9 +145,9 @@ const char *sge_jobname(const char *name) {
  *       MT-NOTE: sge_dirname() is MT safe
  */
 char *sge_dirname(const char *name, int delim) {
-   char *cp, *cp2;
-
    DENTER(BASIS_LAYER);
+
+   char *cp, *cp2;
 
    if (!name) {
       DRETURN(nullptr);
@@ -190,6 +190,8 @@ char *sge_dirname(const char *name, int delim) {
  * @see sge_strtok_r()
  */
 char *sge_strtok(const char *str, const char *delimitor) {
+   DENTER(BASIS_LAYER);
+
    char *cp;
    char *saved_cp;
    static char *static_cp = nullptr;
@@ -197,8 +199,6 @@ char *sge_strtok(const char *str, const char *delimitor) {
    static unsigned int alloc_len = 0;
    unsigned int n;
    bool done;
-
-   DENTER(BASIS_LAYER);
 
    if (str) {
       n = strlen(str);
@@ -349,12 +349,12 @@ size_t sge_strlcpy(char *dst, const char *src, size_t dstsize) {
  */
 char *sge_strtok_r(const char *str, const char *delimitor,
                    struct saved_vars_s **context) {
+   DENTER(BASIS_LAYER);
+
    char *cp;
    char *saved_cp;
    struct saved_vars_s *saved;
    bool done;
-
-   DENTER(BASIS_LAYER);
 
    if (str != nullptr) {
       if (*context != nullptr) {
@@ -484,9 +484,9 @@ char *sge_strdup(char *old_str, const char *s) {
  * @note MT-NOTE: sge_strip_blanks() is MT safe
  */
 void sge_strip_blanks(char *str) {
-   char *cp = str;
-
    DENTER(BASIS_LAYER);
+
+   char *cp = str;
 
    if (!str) {
       DRETURN_VOID;
@@ -572,10 +572,10 @@ void sge_strip_slash_at_eol(char *str) {
  * @note MT-NOTE: sge_delim_str() is MT safe
  */
 char *sge_delim_str(char *str, char **delim_pos, const char *delim) {
+   DENTER(BASIS_LAYER);
+
    char *cp = nullptr;
    char *tstr = nullptr;
-
-   DENTER(BASIS_LAYER);
 
    /* we want it non-destructive --> we need a copy of str */
    if ((tstr = strdup(str)) == nullptr) {
@@ -1015,10 +1015,10 @@ stra_from_str(const char *source_str, const char *delim) {
  * @note MT-NOTE: sge_compress_slashes() is MT safe
  */
 void sge_compress_slashes(char *str) {
-   char *p;
-   int compressed = 0;
    DENTER(BASIS_LAYER);
 
+   char *p;
+   int compressed = 0;
    for (p = str; *p; p++) {
       while (*p == '/' && *(p + 1) == '/') {
          compressed = 1;
@@ -1043,10 +1043,10 @@ void sge_compress_slashes(char *str) {
  * @note MT-NOTE: sge_strip_quotes() is MT safe
  */
 void sge_strip_quotes(char **pstr) {
+   DENTER(TOP_LAYER);
+
    char *cp = nullptr;
    char *cp2 = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (!pstr) {
       DRETURN_VOID;
@@ -1127,13 +1127,13 @@ size_t sge_strlen(const char *str) {
  *         frees it, but not the entries, which point into @p str
  */
 char **string_list(char *str, const char *delis, char **pstr) {
+   DENTER(BASIS_LAYER);
+
    unsigned int i = 0, j = 0;
    bool is_space = false;
    int found_first_quote = 0;
    char **head = nullptr;
    bool done;
-
-   DENTER(BASIS_LAYER);
 
    if (str == nullptr) {
       DRETURN(nullptr);

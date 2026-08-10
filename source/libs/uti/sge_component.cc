@@ -768,9 +768,10 @@ void component_set_thread_name(const char *thread_name) {
  * @brief Log the component details.
  */
 void component_do_log() {
+   DENTER(TOP_LAYER);
+
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
 
-   DENTER(TOP_LAYER);
    DPRINTF("THREAD ===\n");
    DPRINTF("   thread_name                      >%s<\n", tl->thread_name);
    DPRINTF("   thread_id                        >%d<\n", tl->thread_id);

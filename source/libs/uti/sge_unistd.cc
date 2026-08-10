@@ -88,9 +88,9 @@ static file_type_t sge_get_file_type(const char *name) {
 }
 
 static int sge_domkdir(const char *path_, int fmode, bool exit_on_error, bool may_not_exist) {
-   SGE_STRUCT_STAT stat_buffer{};
-
    DENTER(TOP_LAYER);
+
+   SGE_STRUCT_STAT stat_buffer{};
 
    if (mkdir(path_, (mode_t) fmode)) {
       if (errno == EEXIST) {
@@ -133,10 +133,10 @@ static int sge_domkdir(const char *path_, int fmode, bool exit_on_error, bool ma
  * @return error state true  - OK false - Error
  */
 bool sge_unlink(const char *prefix, const char *suffix) {
+   DENTER(TOP_LAYER);
+
    int status;
    stringT str;
-
-   DENTER(TOP_LAYER);
 
    if (!suffix) {
       ERROR(SFNMAX, MSG_POINTER_SUFFIXISNULLINSGEUNLINK);
@@ -266,10 +266,11 @@ void sge_exit(int i) {
  * @return error state 0 - OK -1 - Error (The function may never return)
  */
 int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exist) {
+   DENTER(TOP_LAYER);
+
    int i = 0;
    stringT path_;
 
-   DENTER(TOP_LAYER);
    if (path == nullptr) {
       if (exit_on_error) {
          CRITICAL(SFNMAX, MSG_VAR_PATHISNULLINSGEMKDIR);
@@ -316,10 +317,10 @@ int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exis
  * @note MT-NOTE: sge_mkdir2() is MT safe
  */
 int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_error) {
+   DENTER(TOP_LAYER);
+
    dstring path = DSTRING_INIT;
    int ret;
-
-   DENTER(TOP_LAYER);
 
    if (base_dir == nullptr || name == nullptr) {
       if (exit_on_error) {
@@ -477,9 +478,10 @@ int sge_is_file(const char *name) {
  * @return meaning depends on 'id'
  */
 uint32_t sge_sysconf(sge_sysconf_t id) {
+   DENTER(BASIS_LAYER);
+
    uint32_t ret = 0;
 
-   DENTER(BASIS_LAYER);
    switch (id) {
       case SGE_SYSCONF_NGROUPS_MAX:
          ret = sysconf(_SC_NGROUPS_MAX);
@@ -492,8 +494,7 @@ uint32_t sge_sysconf(sge_sysconf_t id) {
 }
 
 #ifdef TEST
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
    char err_str[1024];
  
    if (argc!=2) {

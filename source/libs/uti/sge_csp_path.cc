@@ -162,6 +162,7 @@ static bool is_daemon() {
 }
 
 static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char *value) {
+   DENTER(TOP_LAYER);
 
    /*
     *   CR:
@@ -175,8 +176,6 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
     *   no application specific context initalization. So never call functions within this callback 
     *   which need thread specific setup.
     */
-   DENTER(TOP_LAYER);
-
    DPRINTF("ssl_cert_verify_func()\n");
 
    if (value == nullptr) {
@@ -248,11 +247,10 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
  *         #sge_csp_path_class_destroy.
  */
 sge_csp_path_class_t *
-sge_csp_path_class_create(sge_error_class_t *eh)
-{
-   sge_csp_path_class_t *ret = nullptr;
-
+sge_csp_path_class_create(sge_error_class_t *eh) {
    DENTER(TOP_LAYER);
+
+   sge_csp_path_class_t *ret = nullptr;
 
    ret = (sge_csp_path_class_t *) sge_malloc(sizeof(sge_csp_path_class_t));
    if (ret == nullptr) {
@@ -320,9 +318,10 @@ void sge_csp_path_class_destroy(sge_csp_path_class_t **pst) {
    DRETURN_VOID;
 }
 
-static bool 
-sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_error_class_t *eh)
-{
+static bool
+sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_error_class_t *eh) {
+   DENTER(TOP_LAYER);
+
    char buffer[2*1024];
    dstring bw;
    const char *sge_root = nullptr;
@@ -338,8 +337,6 @@ sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_error_class_t *eh)
    SGE_STRUCT_STAT sbuf;
 /*    bool sge_no_ca_local_root = false;  */
    char ca_local_dir[SGE_PATH_MAX];
-
-   DENTER(TOP_LAYER);
 
    /* get the necessary info to build the paths */
    sge_root = bootstrap_get_sge_root();
@@ -481,9 +478,9 @@ sge_csp_path_setup(sge_csp_path_class_t *thiz, sge_error_class_t *eh)
 }
 
 static void sge_csp_path_destroy(void *theState) {
-   sge_csp_path_t *s = (sge_csp_path_t *) theState;
-
    DENTER(TOP_LAYER);
+
+   sge_csp_path_t *s = (sge_csp_path_t *) theState;
 
    sge_free(&(s->ca_root));
    sge_free(&(s->ca_local_root));
@@ -501,9 +498,9 @@ static void sge_csp_path_destroy(void *theState) {
 }
 
 static void sge_csp_path_dprintf(sge_csp_path_class_t *thiz) {
-   sge_csp_path_t *es = (sge_csp_path_t *) thiz->sge_csp_path_handle;
-
    DENTER(TOP_LAYER);
+
+   sge_csp_path_t *es = (sge_csp_path_t *) thiz->sge_csp_path_handle;
 
    DPRINTF("ca_root             >%s<\n", es->ca_root ? es->ca_root : "NA");
    DPRINTF("ca_local_root       >%s<\n", es->ca_local_root ? es->ca_local_root : "NA");

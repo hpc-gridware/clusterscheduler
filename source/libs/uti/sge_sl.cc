@@ -78,9 +78,10 @@
  */
 bool
 sge_sl_elem_create(sge_sl_elem_t **elem, void *data) {
+   DENTER(SL_LAYER);
+
    bool ret = true;
 
-   DENTER(SL_LAYER);
    if (elem != nullptr) {
       const size_t size = sizeof(sge_sl_elem_t);
       sge_sl_elem_t *new_elem;
@@ -135,9 +136,10 @@ sge_sl_elem_create(sge_sl_elem_t **elem, void *data) {
  */
 bool
 sge_sl_elem_destroy(sge_sl_elem_t **elem, sge_sl_destroy_f destroy) {
+   DENTER(SL_LAYER);
+
    bool ret = true;
 
-   DENTER(SL_LAYER);
    if (elem != nullptr && *elem != nullptr) {
       if (destroy != nullptr) {
          destroy(&(*elem)->data);
@@ -162,9 +164,10 @@ sge_sl_elem_destroy(sge_sl_elem_t **elem, sge_sl_destroy_f destroy) {
  */
 void *
 sge_sl_elem_data(sge_sl_elem_t *elem) {
+   DENTER(SL_LAYER);
+
    void *ret = nullptr;
 
-   DENTER(SL_LAYER);
    if (elem != nullptr) {
       ret = elem->data;
    }
@@ -188,9 +191,10 @@ sge_sl_elem_data(sge_sl_elem_t *elem) {
  */
 bool
 sge_sl_dechain(sge_sl_list_t *list, sge_sl_elem_t *elem) {
+   DENTER(SL_LAYER);
+
    bool ret = true;
 
-   DENTER(SL_LAYER);
    if (list != nullptr && elem != nullptr) {
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
       if (elem->prev) {
@@ -231,9 +235,10 @@ sge_sl_dechain(sge_sl_list_t *list, sge_sl_elem_t *elem) {
  */
 bool
 sge_sl_insert_before(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_elem_t *elem) {
+   DENTER(SL_LAYER);
+
    bool ret = true;
 
-   DENTER(SL_LAYER);
    if (list != nullptr && new_elem != nullptr && elem != nullptr) {
       sge_sl_elem_t *last;
 
@@ -272,9 +277,10 @@ sge_sl_insert_before(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_elem_t
  */
 bool
 sge_sl_append_after(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_elem_t *elem) {
+   DENTER(SL_LAYER);
+
    bool ret = true;
 
-   DENTER(SL_LAYER);
    if (list != nullptr && new_elem != nullptr && elem != nullptr) {
       sge_sl_elem_t *current;
 
@@ -349,9 +355,10 @@ sge_sl_append_after(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_elem_t 
 bool
 sge_sl_elem_next(sge_sl_list_t *list,
                  sge_sl_elem_t **elem, sge_sl_direction_t direction) {
+   DENTER(BASIS_LAYER);
+
    bool ret = true;
 
-   DENTER(BASIS_LAYER);
    if (list != nullptr && elem != nullptr) {
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
       if (*elem != nullptr) {
@@ -426,9 +433,10 @@ sge_sl_elem_next(sge_sl_list_t *list,
 bool
 sge_sl_elem_search(sge_sl_list_t *list, sge_sl_elem_t **elem, void *key,
                    sge_sl_compare_f compare, sge_sl_direction_t direction) {
+   DENTER(SL_LAYER);
+
    bool ret = true;
 
-   DENTER(SL_LAYER);
    if (list != nullptr && elem != nullptr && compare != nullptr) {
       sge_sl_elem_t *next = nullptr;
       sge_sl_elem_t *current = nullptr;
@@ -477,9 +485,10 @@ sge_sl_elem_search(sge_sl_list_t *list, sge_sl_elem_t **elem, void *key,
  */
 bool
 sge_sl_create(sge_sl_list_t **list) {
+   DENTER(SL_LAYER);
+
    bool ret = true;
 
-   DENTER(SL_LAYER);
    if (list != nullptr) {
       const size_t size = sizeof(sge_sl_list_t);
       sge_sl_list_t *new_list;
@@ -540,9 +549,10 @@ sge_sl_create(sge_sl_list_t **list) {
  */
 bool
 sge_sl_destroy(sge_sl_list_t **list, sge_sl_destroy_f destroy) {
+   DENTER(SL_LAYER);
+
    bool ret = true;
 
-   DENTER(SL_LAYER);
    if (list != nullptr && *list != nullptr) {
       sge_sl_elem_t *next;
       sge_sl_elem_t *current;
@@ -581,9 +591,10 @@ sge_sl_destroy(sge_sl_list_t **list, sge_sl_destroy_f destroy) {
  */
 bool
 sge_sl_lock(sge_sl_list_t *list) {
+   DENTER(SL_LAYER);
+
    bool ret = true;
 
-   DENTER(SL_LAYER);
    if (list != nullptr) {
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
    }
@@ -671,9 +682,10 @@ sge_sl_elem_insert(sge_sl_list_t *list, sge_sl_elem_t *new_elem, sge_sl_directio
  */
 bool
 sge_sl_insert(sge_sl_list_t *list, void *data, sge_sl_direction_t direction) {
+   DENTER(SL_LAYER);
+
    bool ret = true;
 
-   DENTER(SL_LAYER);
    if (list != nullptr) {
       sge_sl_elem_t *new_elem;
 
@@ -718,9 +730,10 @@ sge_sl_insert(sge_sl_list_t *list, void *data, sge_sl_direction_t direction) {
  */
 bool
 sge_sl_insert_search(sge_sl_list_t *list, void *data, sge_sl_compare_f compare) {
+   DENTER(SL_LAYER);
+
    bool ret = true;
 
-   DENTER(SL_LAYER);
    if (list != nullptr && compare != nullptr) {
       sge_sl_elem_t *new_elem;
 
@@ -812,9 +825,10 @@ sge_sl_data(sge_sl_list_t *list, void **data, sge_sl_direction_t direction) {
 bool
 sge_sl_data_search(sge_sl_list_t *list, void *key, void **data,
                    sge_sl_compare_f compare, sge_sl_direction_t direction) {
+   DENTER(SL_LAYER);
+
    bool ret = true;
 
-   DENTER(SL_LAYER);
    if (list != nullptr && data != nullptr && compare != nullptr) {
       sge_sl_elem_t *elem = nullptr;
 
@@ -848,9 +862,10 @@ sge_sl_data_search(sge_sl_list_t *list, void *key, void **data,
 bool
 sge_sl_delete(sge_sl_list_t *list,
               sge_sl_destroy_f destroy, sge_sl_direction_t direction) {
+   DENTER(SL_LAYER);
+
    bool ret = true;
 
-   DENTER(SL_LAYER);
    if (list != nullptr) {
       sge_sl_elem_t *elem;
 
@@ -892,9 +907,10 @@ sge_sl_delete(sge_sl_list_t *list,
 bool
 sge_sl_delete_search(sge_sl_list_t *list, void *key, sge_sl_destroy_f destroy,
                      sge_sl_compare_f compare, sge_sl_direction_t direction) {
+   DENTER(SL_LAYER);
+
    bool ret = true;
 
-   DENTER(SL_LAYER);
    if (list != nullptr && key != nullptr && compare != nullptr) {
       sge_sl_elem_t *elem = nullptr;
 
@@ -924,9 +940,10 @@ sge_sl_delete_search(sge_sl_list_t *list, void *key, sge_sl_destroy_f destroy,
  */
 uint32_t
 sge_sl_get_elem_count(sge_sl_list_t *list) {
+   DENTER(SL_LAYER);
+
    uint32_t elems = 0;
 
-   DENTER(SL_LAYER);
    if (list != nullptr) {
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
       elems = list->elements;
@@ -952,9 +969,10 @@ sge_sl_get_elem_count(sge_sl_list_t *list) {
  */
 bool
 sge_sl_sort(sge_sl_list_t *list, sge_sl_compare_f compare) {
+   DENTER(SL_LAYER);
+
    bool ret = true;
 
-   DENTER(SL_LAYER);
    if (list != nullptr && compare != nullptr) {
       void **pointer_array;
       size_t size;
@@ -1005,9 +1023,10 @@ sge_sl_sort(sge_sl_list_t *list, sge_sl_compare_f compare) {
  */
 pthread_mutex_t *
 sge_sl_get_mutex(sge_sl_list_t *list) {
+   DENTER(SL_LAYER);
+
    pthread_mutex_t *mutex = nullptr;
 
-   DENTER(SL_LAYER);
    if (list != nullptr) {
       mutex = &list->mutex;
    }
