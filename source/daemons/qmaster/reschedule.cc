@@ -115,6 +115,8 @@ get_from_reschedule_unknown_list(const lListElem *host, uint32_t job_number, uin
  * @note MT-NOTE: reschedule_unknown_event() is NOT MT safe
  */
 void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    const lListElem *qep;            /* QU_Type */
    lList *answer_list = nullptr; /* AN_Type */
    lListElem *hep;            /* EH_Type */
@@ -122,8 +124,6 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
    uint64_t timeout = sge_gmt32_to_gmt64(te_get_first_numeric_key(anEvent));
    uint64_t new_timeout;
    char *hostname = te_get_alphanumeric_key(anEvent);
-
-   DENTER(TOP_LAYER);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
@@ -282,6 +282,8 @@ reschedule_jobs(lListElem *ep, uint32_t force, lList **answer, monitoring_t *mon
 int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
                    uint32_t force, lList **answer, monitoring_t *monitor, bool is_manual,
                    const char *caller_user, const char *caller_host, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    lListElem *qep;               /* QU_Type */
    lListElem *hep;               /* EH_Type */
    lListElem *this_jatep;        /* JAT_Type */
@@ -292,8 +294,6 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
    uint32_t job_now;
    const char *hostname;
    int ret = 0;
-
-   DENTER(TOP_LAYER);
 
    job_number = lGetUlong(jep, JB_job_number);
 

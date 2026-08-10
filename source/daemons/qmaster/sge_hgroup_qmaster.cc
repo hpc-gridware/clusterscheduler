@@ -158,11 +158,11 @@ static bool
 hgroup_reserved_delta_is_strict(const lListElem *hgroup, lList **answer_list,
                                 const lList *delta_list, ocs::gdi::SubCommand sub_command,
                                 const lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
+
    const char *add_name;   /* as sge_c_gdi.cc named it   */
    const char *del_name;   /* as sge_del_host() named it */
    bool ret = true;
-
-   DENTER(TOP_LAYER);
 
    const char *group = lGetHost(hgroup, HGRP_name);
    if (group == nullptr) {
@@ -918,12 +918,12 @@ void hgroup_send_referencee_events(const lList *referencees, lList *master_hgrou
  */
 int
 hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hgroup, lListElem *old_hgroup, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    const char *name = lGetHost(hgroup, HGRP_name);
    lList *cqueue_list = nullptr;
    lList *master_hgroup_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
    lList *referencees = nullptr;   /* HR_Type */
-
-   DENTER(TOP_LAYER);
 
    hgroup_refresh_caches(hgroup, master_hgroup_list, &referencees);
 

@@ -865,10 +865,11 @@ unsuspend_all_tasks_in_slotwise_sub_tree(lListElem *qinstance, monitoring_t *mon
  */
 bool
 check_new_slotwise_subordinate_tree(lListElem *qinstance, lList *new_so_list, lList **answer_list) {
+   DENTER(TOP_LAYER);
+
    bool success = true;
    lListElem *root_qinstance = nullptr; /* QU_Type */
 
-   DENTER(TOP_LAYER);
    /*
     * Check if the queues that will be added to the "subordinate_list" are
     * already in the subordinate tree. If they are, there is a loop in the

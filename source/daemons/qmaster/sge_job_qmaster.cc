@@ -3824,6 +3824,8 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
                                        const lList *ja_structure, int *alltasks, uint32_t *deleted_tasks,
                                        uint64_t start_time, monitoring_t *monitor, int forced,
                                        bool *deletion_time_reached) {
+   DENTER(TOP_LAYER);
+
    int njobs = 0;
    const lListElem *rn;
    char *dupped_session = nullptr;
@@ -3846,8 +3848,6 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
     * the ja_task was buried WITHOUT dereferencing the possibly-freed
     * `job` element after the commit. */
    bool retention_enabled = (mconf_get_finished_jobs_keep_time() > 0 || mconf_get_finished_jobs_max() > 0);
-
-   DENTER(TOP_LAYER);
 
    /* In certain cases sge_commit_job() free's the job structure passed.
     * The session information is needed after sge_commit_job() so we make
