@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
+/** @file
+ * @brief The public interface of the spooling framework
+ */
+
 #include <ctime>
 
 #include "mir/sge_mirror.h"
@@ -44,200 +48,201 @@
 #include "sgeobj/cull/sge_spooling_SPT_L.h"
 #include "sgeobj/cull/sge_spooling_SPTR_L.h"
 
-/****** spool/--Spooling ***************************************
-*
-*  NAME
-*     Spooling -- Spooling framework
-*
-*  FUNCTION
-*     The spooling framework provides an abstraction layer between the 
-*     application requiring the spooling of configuration and data, 
-*     and the concrete data representation layer.
-*
-*  SEE ALSO
-*     spool/spool_create_context()
-*     spool/spool_free_context()
-*
-*     spool/spool_set_default_context()
-*     spool/spool_get_default_context()
-*
-*     spool/spool_context_search_rule()
-*     spool/spool_context_create_rule()
-*     spool/spool_context_search_type()
-*     spool/spool_context_create_type()
-*
-*     spool/spool_type_search_default_rule()
-*     spool/spool_type_add_rule()
-*
-*     spool/spool_startup_context()
-*     spool/spool_shutdown_context()
-*
-*     spool/spool_read_list()
-*     spool/spool_read_object()
-*     spool/spool_read_keys()
-*
-*     spool/spool_write_object()
-*
-*     spool/spool_delete_object()
-*
-*     spool/spool_compare_objects()
-*
-****************************************************************************
-*/
-/****** spool/-Spooling-Typedefs ***************************************
-*
-*  NAME
-*     Typedefs -- type definitions for the spooling framework
-*
-*  SYNOPSIS
-*     typedef bool (*spooling_startup_func)(lList **answer_list,
-*                                           const lListElem *rule, 
-*                                           bool check); 
-*     typedef bool (*spooling_shutdown_func)(lList **answer_list, 
-*                                            const lListElem *rule); 
-*
-*     typedef bool (*spooling_list_func)(lList **answer_list,
-*                                        const lListElem *type, 
-*                                        const lListElem *rule, 
-*                                        lList **list, 
-*                                        const sge_object_type object_type);
-*
-*     typedef bool (*spooling_write_func)(lList **answer_list,
-*                                         const lListElem *type, 
-*                                         const lListElem *rule, 
-*                                         const lListElem *object, 
-*                                         const char *key, 
-*                                         const sge_object_type object_type);
-*
-*     typedef lListElem *(*spooling_read_func)(lList **answer_list,
-*                                              const lListElem *type, 
-*                                              const lListElem *rule, 
-*                                              const char *key, 
-*                                              const sge_object_type object_type);
-*
-*     typedef bool (*spooling_delete_func)(lList **answer_list,
-*                                          const lListElem *type, 
-*                                          const lListElem *rule, 
-*                                          const char *key, 
-*                                          const sge_object_type object_type);
-*
-*     typedef bool (*spooling_validate_func)(lList **answer_list,
-*                                          const lListElem *type,
-*                                          const lListElem *rule, 
-*                                          lListElem *object, 
-*                                          const sge_object_type object_type);
-*
-*  FUNCTION
-*     These functions have to be provided by a target implementation for the 
-*     spooling framework.
-*
-*     The startup and shutdown function initialize the spooling system and
-*     shut it down (e.g. establish a database connection and close it again.
-*
-*     The list, read, write and delete functions are performing the data
-*     storage and retrieval into / from the used storage system.
-*
-*     Instances of these function types will be used as callback in calls
-*     to spool_startup_context, spool_shutdown_context, spool_read_list etc.
-*
-*  SEE ALSO
-*     spool/spool_startup_context()
-*     spool/spool_shutdown_context()
-*
-*     spool/spool_read_list()
-*     spool/spool_read_object()
-*     spool/spool_read_keys()
-*
-*     spool/spool_write_object()
-*
-*     spool/spool_delete_object()
-*
-****************************************************************************
-*/
+/** @defgroup spool_framework Spooling framework
+ * @brief An abstraction layer between what has to be spooled and where it goes
+ *
+ * The framework separates the application that wants configuration and data
+ * spooled from the storage system that actually holds it. The application
+ * talks to a **context**; the context knows nothing about files or databases.
+ *
+ * A context is built from two kinds of element:
+ *
+ * - a **rule** (`SPR_Type`) carries one storage backend as a set of callback
+ *   function pointers - the `spooling_*_func` types below - plus the URL and
+ *   whatever client data that backend needs;
+ * - a **type** (`SPT_Type`) stands for one #sge_object_type and lists the
+ *   rules that apply to it, exactly one of them marked as the default.
+ *
+ * So a write goes: application -> #spool_write_object -> the type for that
+ * object -> every rule of that type -> the backend's #spooling_write_func.
+ * That indirection is what makes it possible to spool jobs to one place and
+ * the configuration to another, and it is why the backends
+ * (`berkeleydb/`, `classic/`, `flatfile/`, `dynamic/`, `template/`) never
+ * appear in the application code.
+ *
+ * @note A rule may leave any callback as `nullptr`. What happens then is not
+ *       uniform - see the individual functions.
+ * @{
+ */
 
+/** @brief What #spool_maintain_context shall do to the spool database
+ *
+ * These are the commands `spoolinit` accepts on its command line, and the
+ * descriptions are the ones it prints in its own usage text.
+ *
+ * @warning Only #SPM_init is implemented by any backend in this tree. The
+ *          Berkeley DB backend answers every other value with *"unknown
+ *          maintenance command"*, and a backend that registers no
+ *          #spooling_maintenance_func at all - flatfile does not - makes
+ *          #spool_maintain_context succeed without doing anything.
+ */
 typedef enum {
-   SPM_init,
-   SPM_history,
-   SPM_backup,
-   SPM_purge,
-   SPM_vacuum,
-   SPM_info
+   SPM_init,      ///< Initialize the database, optionally with history enabled
+   SPM_history,   ///< Switch spooling with history on or off
+   SPM_backup,    ///< Back the database up to a path
+   SPM_purge,     ///< Remove historical data older than a given number of days
+   SPM_vacuum,    ///< Compress the database and update its statistics
+   SPM_info       ///< Output information about the database
 } spooling_maintenance_command;
 
+/** @brief What #spool_transaction shall do with the current transaction
+ *
+ * Used by the qmaster to make a multi-object modification atomic in the spool:
+ * begin, then commit or roll back depending on whether the modification
+ * succeeded.
+ *
+ * @note A backend without a #spooling_transaction_func silently does nothing
+ *       here, so the calls are safe to make regardless of the spooling
+ *       method - but only a transactional backend actually gives atomicity.
+ */
 typedef enum {
-   STC_begin,
-   STC_commit,
-   STC_rollback
+   STC_begin,     ///< Start a transaction
+   STC_commit,    ///< Make the changes of the running transaction permanent
+   STC_rollback   ///< Discard the changes of the running transaction
 } spooling_transaction_command;
 
+/** @name The callbacks a storage backend provides
+ *
+ * A rule is nothing but this set of function pointers plus the URL and the
+ * backend's own client data. The framework never knows what is behind them,
+ * which is the whole point: #spool_write_object looks up the rules for an
+ * object type and calls their #spooling_write_func, and whether that ends up
+ * in a file or in a database is the backend's business.
+ *
+ * A backend registers them in one call to #spool_context_create_rule and may
+ * pass `nullptr` for anything it does not implement.
+ * @{
+ */
+
+/** @brief Report the spooling method this shared library implements
+ *
+ * Used by the dynamic backend to identify a `libspool*` it has loaded, and by
+ * `spoolinit method` to print the compiled in method.
+ */
 typedef const char *
 (*spooling_get_method_func)();
 
+/** @brief Build the spooling context for this backend from its argument string
+ *
+ * The counterpart of #spool_create_context for a concrete backend; `args` is
+ * the method specific URL or option string, e.g. the spool directory.
+ */
 typedef lListElem *
 (*spooling_create_context_func)(lList **answer_list, const char *args);
 
+/** @brief Apply one backend specific option to a rule */
 typedef bool
 (*spooling_option_func)(lList **answer_list, lListElem *rule, 
                         const char *option); 
+/** @brief Open the storage
+ *
+ * For file based spooling this means changing into the spool directory, for
+ * database spooling it means opening the connection. When `check` is true the
+ * backend additionally verifies that what it found belongs to this version -
+ * which every operation wants except the one that creates the database.
+ */
 typedef bool
 (*spooling_startup_func)(lList **answer_list, const lListElem *rule, 
                          bool check); 
+/** @brief Flush unwritten data and close the storage again */
 typedef bool
 (*spooling_shutdown_func)(lList **answer_list, const lListElem *rule); 
 
+/** @brief Carry out a #spooling_maintenance_command on the storage
+ *
+ * @warning Every backend in this tree implements #SPM_init and nothing else.
+ */
 typedef bool 
 (*spooling_maintenance_func)(lList **answer_list, const lListElem *rule, 
                              const spooling_maintenance_command cmd, 
                              const char *args);
 
+/** @brief Do recurring housekeeping, and say when to be called again
+ *
+ * `trigger` is the time this call was due; the backend writes the time it
+ * wants to be called next into `next_trigger`. The Berkeley DB backend uses
+ * it for checkpointing and for trimming the transaction log.
+ */
 typedef bool
 (*spooling_trigger_func)(lList **answer_list, const lListElem *rule, 
                          uint64_t trigger, uint64_t *next_trigger);
                                   
+/** @brief Begin, commit or roll back a transaction on the storage */
 typedef bool
 (*spooling_transaction_func)(lList **answer_list, const lListElem *rule, 
                              spooling_transaction_command cmd);
                                   
+/** @brief Read every object of one type into a list
+ *
+ * This is also where the backend calls the validate callbacks: per object
+ * while reading, and #spooling_validate_list_func once the list is complete.
+ */
 typedef bool
 (*spooling_list_func)(lList **answer_list, 
                       const lListElem *type, const lListElem *rule, 
                       lList **list, 
                       const sge_object_type object_type);
                                   
+/** @brief Write one object to the storage under `key` */
 typedef bool
 (*spooling_write_func)(lList **answer_list, 
                        const lListElem *type, const lListElem *rule, 
                        const lListElem *object, const char *key, 
                        const sge_object_type object_type);
 
+/** @brief Read one object back from the storage by `key` */
 typedef lListElem *
 (*spooling_read_func)(lList **answer_list,
                       const lListElem *type, const lListElem *rule,
                       const char *key,
                       const sge_object_type object_type);
 
+/** @brief List the keys the storage holds below `key`
+ *
+ * Only the Berkeley DB backend implements this; flatfile spooling leaves it
+ * `nullptr`, which is what makes #spool_read_keys behave the way it does.
+ */
 typedef bool
 (*spooling_read_keys_func)(lList **answer_list,
                       const lListElem *rule, 
                       lList **list,
                       const char *key);
 
+/** @brief Remove the object stored under `key` */
 typedef bool
 (*spooling_delete_func)(lList **answer_list, 
                         const lListElem *type, const lListElem *rule, 
                         const char *key, 
                         const sge_object_type object_type);
 
+/** @brief Check and complete a single object that was just read */
 typedef bool
 (*spooling_validate_func)(lList **answer_list, 
                         const lListElem *type, const lListElem *rule, 
                         lListElem *object, 
                         const sge_object_type object_type);
 
+/** @brief Fix up a freshly read list as a whole
+ *
+ * @note Despite the name this is not a validation. The default implementation
+ *       merges the host list and sorts the complex entries - the work that
+ *       can only be done once every element of the list is present.
+ */
 typedef bool
 (*spooling_validate_list_func)(lList **answer_list, 
                         const lListElem *type, const lListElem *rule, 
                         const sge_object_type object_type);
+/** @} */
 
 /* creation and maintenance of the spooling context */
 lListElem *
@@ -341,6 +346,16 @@ spool_compare_objects(lList **answer_list, const lListElem *context,
                       const sge_object_type object_type, 
                       const lListElem *ep1, const lListElem *ep2);
 
+/** @brief The spooling method this binary or shared library was built with
+ *
+ * Implemented once per backend, not by the framework, and exported with C
+ * linkage so that the dynamic backend can resolve it with `dlsym()` in a
+ * `libspool*` it has just loaded.
+ *
+ * @return the method name, e.g. `"classic"` or `"berkeleydb"`
+ */
 extern "C" { 
 const char *get_spooling_method();
 }
+
+/** @} */

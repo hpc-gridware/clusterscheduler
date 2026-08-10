@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Access checks of the scheduler against user and project lists
+ */
+
 
 
 

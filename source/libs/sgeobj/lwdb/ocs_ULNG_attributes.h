@@ -24,19 +24,37 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Unsigned Long
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of ULNG
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   ULNG_value = 6850
+   ULNG_value = 6850   ///< Value
 };
 
+/** @brief The attribute ids of ULNG, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int ULNG_Type[] = {
    ULNG_value,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of ULNG
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define ULNG_ATTRIBUTES \
    {ULNG_value, "ULNG_value", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false} \
 

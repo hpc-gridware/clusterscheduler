@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The per-thread copies of the cluster's object lists
+ */
+
 #include <pthread.h>
 
 #include "uti/sge_log.h"
@@ -29,6 +33,7 @@
 #include "sge_object.h"
 #include "ocs_DataStore.h"
 
+/// Debug layer the data store traces are written to
 #define DATA_STORE_LAYER BASIS_LAYER
 
 namespace ocs {
@@ -79,8 +84,10 @@ namespace ocs {
       pthread_once(&obj_once, obj_thread_local_once_init);
    }
 
+   /// Runs the one time initialiser from its constructor, so the pthread key exists before main()
    class ObjectThreadInit {
    public:
+      /// Triggers the one time initialiser
       ObjectThreadInit() {
          obj_mt_init();
       }
@@ -115,9 +122,10 @@ namespace ocs {
    }
 
    /**
-    * Returns the master list (RW-access) of the currently active data store for the specified type.
+    * @brief Returns the master list (RW-access) of the currently active data store for the specified type.
     *
     * @param type master list type
+    * @param for_read true when the caller only reads, so a snapshot store may answer
     * @return pointer to the master list. will never be nullptr.
     */
    lList **

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Regression test for issue 1832: the DRMAA behaviour required by the -hold_jid_ad option
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -44,11 +48,11 @@
  * This test validates the required DRMAA functionality for the -hold_jid_ad option.
  */
 
-#define BULK_SIZE 12
+#define BULK_SIZE 12   ///< how many tasks the bulk jobs have
 
-int do_ps = 0;  /* do drmaa_job_ps() for progress bar information */
-int do_1st = 0; /* do first scenario only */
-int do_exit = 1; /* treat it as error when exit status can not be determined in all cases */
+int do_ps = 0;   ///< poll `drmaa_job_ps()` as well, for the progress bar
+int do_1st = 0;  ///< run only the first scenario
+int do_exit = 1; ///< fail when an exit status cannot be determined; clear it for a DRM that cannot report one
 
 static char errorbuf[DRMAA_ERROR_STRING_BUFFER];
 

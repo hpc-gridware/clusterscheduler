@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Parallel environments, and the slots booked against them
+ */
 #include <cstdio>
 #include <cstring>
 
@@ -66,6 +70,24 @@ static char object_name[] = "parallel environment";
 
 static void pe_update_categories(const lListElem *new_pe, const lListElem *old_pe, uint64_t gdi_session);
 
+/** @brief Apply one attribute change to a parallel environment
+ *
+ * The gdi_object_t::modifier for parallel environments; see sge_c_gdi.h for the sequence it is called from.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param new_pe the parallel environment
+ * @param pe the parallel environment
+ * @param add 1 for add, 0 for modify
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param object the table entry for this object type
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_pe, lListElem *pe, /* reduced */
        int add, const char *ruser, const char *rhost, gdi_object_t *object,
@@ -199,6 +221,17 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
    DRETURN(STATUS_EUNKNOWN);
 }
 
+/** @brief Write a parallel environment to the spool
+ *
+ * The gdi_object_t::writer for parallel environments.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param pep the parallel environment
+ * @param object the table entry for this object type
+ * @return 0 on success
+ */
 int
 pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *pep, gdi_object_t *object) {
    lList *answer_list = nullptr;
@@ -218,6 +251,19 @@ pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    DRETURN(dbret ? 0 : 1);
 }
 
+/** @brief Announce a parallel environment change once it is safely spooled
+ *
+ * The gdi_object_t::on_success for parallel environments.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep the object
+ * @param old_ep the object as it was, or nullptr on add
+ * @param object the table entry for this object type
+ * @param ppList receives information for post processing
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor) {
    const char *pe_name;
@@ -233,6 +279,16 @@ int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
    DRETURN(0);
 }
 
+/** @brief Delete a parallel environment, unless a queue still references it
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param pep the parallel environment (`PE_Type`)
+ * @param alpp receives messages for the caller
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return STATUS_OK on success
+ */
 int
 sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList **alpp, char *ruser, char *rhost) {
    int pos;
@@ -304,6 +360,10 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList
    DRETURN(STATUS_OK);
 }
 
+/** @brief Rebuild every parallel environment's slot booking from the running jobs
+ *
+ * @param pe_list the parallel environments
+ */
 void
 debit_all_jobs_from_pes(lList *pe_list) {
    DENTER(TOP_LAYER);
@@ -333,27 +393,19 @@ debit_all_jobs_from_pes(lList *pe_list) {
    DRETURN_VOID;
 }
 
-/****** sge_pe_qmaster/pe_diff_usersets() **************************************
-*  NAME
-*     pe_diff_usersets() -- Diff old/new PE usersets
-*
-*  SYNOPSIS
-*     void pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList
-*     **new_acl, lList **old_acl)
-*
-*  FUNCTION
-*     A diff new/old is made regarding PE acl/xacl.
-*     Userset references are returned in new_acl/old_acl.
-*
-*  INPUTS
-*     const lListElem *new_pe - New PE (PE_Type)
-*     const lListElem *old_pe - Old PE (PE_Type)
-*     lList **new_acl      - New userset references (US_Type)
-*     lList **old_acl      - Old userset references (US_Type)
-*
-*  NOTES
-*     MT-NOTE: pe_diff_usersets() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Diff old/new PE usersets
+ *
+ * A diff new/old is made regarding PE acl/xacl.
+ * Userset references are returned in new_acl/old_acl.
+ *
+ * @param new_pe New PE (PE_Type)
+ * @param old_pe Old PE (PE_Type)
+ * @param new_acl New userset references (US_Type)
+ * @param old_acl Old userset references (US_Type)
+ *
+ * @note MT-NOTE: pe_diff_usersets() is not MT safe
+ */
 void
 pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_acl, lList **old_acl) {
    const char *u;
@@ -392,25 +444,17 @@ pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_a
 }
 
 
-/****** sge_pe_qmaster/pe_update_categories() **********************************
-*  NAME
-*     pe_update_categories() -- Update categories wrts userset
-*
-*  SYNOPSIS
-*     static void pe_update_categories(const lListElem *new_pe, const lListElem
-*     *old_pe)
-*
-*  FUNCTION
-*     The userset information wrts categories is updated based
-*      on new/old PE configuration and events are sent upon changes.
-*
-*  INPUTS
-*     const lListElem *new_pe - New PE (PE_Type)
-*     const lListElem *old_pe - Old PE (PE_Type)
-*
-*  NOTES
-*     MT-NOTE: pe_update_categories() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Update categories wrts userset
+ *
+ * The userset information wrts categories is updated based
+ *  on new/old PE configuration and events are sent upon changes.
+ *
+ * @param new_pe New PE (PE_Type)
+ * @param old_pe Old PE (PE_Type)
+ *
+ * @note MT-NOTE: pe_update_categories() is not MT safe
+ */
 static void
 pe_update_categories(const lListElem *new_pe, const lListElem *old_pe, uint64_t gdi_session) {
    lList *old_lp = nullptr, *new_lp = nullptr;

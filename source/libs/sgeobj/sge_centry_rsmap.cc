@@ -18,6 +18,15 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Checks specific to RSMAP resources
+ *
+ * A resource map hands out named instances rather than a count, which
+ * constrains how it may be configured.
+ *
+ * @see sge_centry_rsmap.h
+ */
+
 #include <unordered_set>
 
 #include "sgeobj/sge_answer.h"
@@ -27,6 +36,17 @@
 
 #include "sgeobj/sge_centry_rsmap.h"
 
+/**
+ * @brief Reject an RSMAP resource that is not consumable
+ *
+ * A resource map hands out named instances, so it only makes sense as a
+ * consumable.
+ *
+ * @param[out] answer_list receives the reason it was rejected
+ * @param consumable the resource's `CE_consumable` setting
+ * @param attrname the resource's name, for the message
+ * @return true when the combination is allowed
+ */
 bool centry_check_rsmap(lList **answer_list, uint32_t consumable, const char *attrname) {
    bool ret = true;
 

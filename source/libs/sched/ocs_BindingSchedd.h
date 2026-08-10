@@ -19,11 +19,16 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The scheduler's side of core binding
+ */
+
 #include "cull/cull.h"
 
 #include "sge_select_queue.h"
 
 namespace ocs {
+   /** @brief Decides which topology units a job gets on a host */
    class BindingSchedd {
       static bool
       find_initial_in_use(const sge_assignment_t *a, const lListElem *host, TopologyString &host_in_use);

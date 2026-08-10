@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
+/** @file
+ * @brief Declarations for string lists, and the group list conversions around them
+ *
+ * @see sge_str.cc
+ */
+
 #include "uti/sge_uidgid.h"
 
 #include "cull/cull.h"

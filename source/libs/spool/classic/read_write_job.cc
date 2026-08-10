@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief The job spool directory: one file per job, array task and parallel task
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -271,54 +275,41 @@ static lListElem *pe_task_create_from_file(uint32_t job_id,
    
 }
 
-/****** spool/classic/job_write_spool_file() **********************************
-*  NAME
-*     job_write_spool_file() -- makes a job/task persistent 
-*
-*  SYNOPSIS
-*     int job_write_spool_file(lListElem *job, uint32_t ja_taskid,
-*                              sge_spool_flags_t flags) 
-*
-*  FUNCTION
-*     This function writes a job or a task of an array job into the spool 
-*     area. It may be used within the qmaster or execd code.
-*   
-*     The result from this function looks like this within the spool area
-*     of the master for the job 10001, the array job 10002.1-3, 
-*     the tightly integrated job 20011 (two pe_tasks).
-*     
-*   
-*     $SGE_ROOT/default/spool/qmaster/jobs
-*     +---00
-*         +---0001
-*         |   +---0001                     (JB_Type file)
-*         |   +---0002 
-*         |       +---common               (JB_Type without JB_ja_tasks)
-*         |       +---1-4096
-*         |           +---1                (JAT_Type file) 
-*         |           +---2                (JAT_Type file)
-*         |           +---3                (JAT_Type file)
-*         +---0002
-*             +---0011
-*                 +---common               (JB_Type without JB_ja_tasks)
-*                 +---1-4096
-*                     +---1
-*                         +--- common      (JAT_Type file witout JAT_task_list)
-*                         +--- 1.speedy    (PET_Type file)
-*                         +--- 2.speedy    (PET_Type file)
-*                         +--- past_usage  (PET_Type file)
-*
-*  INPUTS
-*     lListElem *job          - full job (JB_Type) 
-*     uint32_t ja_taskid      - 0 or a allowed array job task id
-*     const char *pe_task_id  - pe task id
-*     sge_spool_flags_t flags - where/how should we spool the object 
-*        SPOOL_WITHIN_EXECD       -> has to be used within the execd
-*        SPOOL_DEFAULT            -> if no other flags are needed
-*
-*  RESULT
-*     int - 0 on success otherwise != 0 
-******************************************************************************/
+/**
+ * @brief Makes a job/task persistent
+ *
+ * This function writes a job or a task of an array job into the spool
+ * area. It may be used within the qmaster or execd code.
+ * The result from this function looks like this within the spool area
+ * of the master for the job 10001, the array job 10002.1-3,
+ * the tightly integrated job 20011 (two pe_tasks).
+ * $SGE_ROOT/default/spool/qmaster/jobs
+ * +---00
+ *     +---0001
+ *     |   +---0001                     (JB_Type file)
+ *     |   +---0002
+ *     |       +---common               (JB_Type without JB_ja_tasks)
+ *     |       +---1-4096
+ *     |           +---1                (JAT_Type file)
+ *     |           +---2                (JAT_Type file)
+ *     |           +---3                (JAT_Type file)
+ *     +---0002
+ *         +---0011
+ *             +---common               (JB_Type without JB_ja_tasks)
+ *             +---1-4096
+ *                 +---1
+ *                     +--- common      (JAT_Type file witout JAT_task_list)
+ *                     +--- 1.speedy    (PET_Type file)
+ *                     +--- 2.speedy    (PET_Type file)
+ *                     +--- past_usage  (PET_Type file)
+ *
+ * @param job full job (JB_Type)
+ * @param ja_taskid 0 or a allowed array job task id
+ * @param pe_task_id pe task id
+ * @param flags where/how should we spool the object SPOOL_WITHIN_EXECD       -> has to be used within the execd SPOOL_DEFAULT            -> if no other flags are needed
+ *
+ * @return 0 on success otherwise != 0
+ */
 int job_write_spool_file(lListElem *job, uint32_t ja_taskid,
                          const char *pe_task_id,
                          sge_spool_flags_t flags) 
@@ -434,6 +425,15 @@ static int job_write_ja_task_part(lListElem *job, uint32_t ja_task_id,
    DRETURN(ret);
 }
 
+/**
+ * @brief Write the part of a job that all of its array tasks share
+ *
+ * @param job the job
+ * @param ja_task_id the array task the write was triggered by
+ * @param flags spooling flags, see `sge_spool_flags_t`
+ *
+ * @return 0 on success, else 1
+ */
 int job_write_common_part(lListElem *job, uint32_t ja_task_id,
                                  sge_spool_flags_t flags) 
 {
@@ -577,6 +577,20 @@ error:
    DRETURN(ret);
 }
 
+/**
+ * @brief Remove the spool file of a job, an array task or a parallel task
+ *
+ * Which of the three is removed depends on how much of the id is given: a
+ * `pe_task_id` removes one parallel task, a non-zero `ja_taskid` without it
+ * removes one array task, and neither removes the whole job directory.
+ *
+ * @param jobid the job
+ * @param ja_taskid the array task, or 0 for the whole job
+ * @param pe_task_id the parallel task, or nullptr
+ * @param flags spooling flags, see `sge_spool_flags_t`
+ *
+ * @return 0 on success, else 1
+ */
 int job_remove_spool_file(uint32_t jobid, uint32_t ja_taskid,
                           const char *pe_task_id,
                           sge_spool_flags_t flags)
@@ -721,6 +735,20 @@ static int job_remove_script_file(uint32_t job_id)
    DRETURN(ret);
 }
 
+/**
+ * @brief Read every spooled job back from the spool directory
+ *
+ * Walks the three level job directory structure and rebuilds the job list
+ * with its array tasks and parallel tasks.
+ *
+ * @param job_list receives the jobs
+ * @param list_name the name to give the list
+ * @param check verify each job after reading it
+ * @param flags spooling flags, see `sge_spool_flags_t`
+ * @param init_function called for each job that was read, may be nullptr
+ *
+ * @return 0 on success, else 1
+ */
 int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
                             sge_spool_flags_t flags, int (*init_function)(lListElem*)) 
 {

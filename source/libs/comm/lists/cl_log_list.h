@@ -33,20 +33,35 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The commlib log message queue
+ */
+
 /* Disable this to speed up the code, because no logging function is called anymore */
 /* TODO: build macro where the log decision is made to support a better log performance - CR */
 
+/** @name Logging
+ *
+ * What the commlib logs with. Each fills in the source line, function and
+ * file for the caller, so a log message can be traced back without the
+ * caller having to say where it is.
+ *
+ * @note The `#if 1` below is the switch that compiles logging out. Turning it
+ *       to `#if 0` leaves the calls in place and makes them expand to nothing.
+ * @{
+ */
 #if 1
-#define CL_LOG(log_type, log_text)              cl_log_list_log(log_type, __LINE__ , __func__ ,__FILE__ , log_text, nullptr)
-#define CL_LOG_STR(log_type, log_text, log_str) cl_log_list_log(log_type, __LINE__ , __func__ ,__FILE__ , log_text, log_str )
-#define CL_LOG_INT(log_type, log_text, log_str) cl_log_list_log_int(log_type, __LINE__ , __func__ ,__FILE__ , log_text, log_str )
-#define CL_LOG_STR_STR_INT(log_type, log_text, log_str1, log_str2, log_str3) cl_log_list_log_ssi(log_type, __LINE__ , __func__ ,__FILE__ , log_text, log_str1, log_str2, log_str3)
+#define CL_LOG(log_type, log_text)              cl_log_list_log(log_type, __LINE__ , __func__ ,__FILE__ , log_text, nullptr)   ///< Log a message
+#define CL_LOG_STR(log_type, log_text, log_str) cl_log_list_log(log_type, __LINE__ , __func__ ,__FILE__ , log_text, log_str )   ///< Log a message with a string appended
+#define CL_LOG_INT(log_type, log_text, log_str) cl_log_list_log_int(log_type, __LINE__ , __func__ ,__FILE__ , log_text, log_str )   ///< Log a message with a number appended
+#define CL_LOG_STR_STR_INT(log_type, log_text, log_str1, log_str2, log_str3) cl_log_list_log_ssi(log_type, __LINE__ , __func__ ,__FILE__ , log_text, log_str1, log_str2, log_str3)   ///< Log a message with two strings and a number appended
 #else
 #define CL_LOG(log_type, log_text)
 #define CL_LOG_STR(log_type, log_text, log_str)
 #define CL_LOG_INT(log_type, log_text, log_str)
 #define CL_LOG_STR_STR_INT(log_type, log_text, log_str1, log_str2, log_str3)
 #endif
+/** @} */
 
 
 /* basic functions */

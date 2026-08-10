@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief RBAC roles
+ */
+
 #include "sge_c_gdi.h"
 #include "uti/sge_monitor.h"
 

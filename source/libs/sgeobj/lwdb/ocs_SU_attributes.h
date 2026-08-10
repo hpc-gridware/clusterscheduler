@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Submit User
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of SU
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   SU_name = 7450,
-   SU_jobs
+   SU_name = 7450,   ///< Name
+   SU_jobs   ///< Jobs
 };
 
+/** @brief The attribute ids of SU, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int SU_Type[] = {
    SU_name,
    SU_jobs,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of SU
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define SU_ATTRIBUTES \
    {SU_name, "SU_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
    {SU_jobs, "SU_jobs", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

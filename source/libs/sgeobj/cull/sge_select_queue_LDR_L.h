@@ -24,37 +24,42 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Load Threshold Reference (unused)
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Load Threshold Reference (unused)
 *
-* @todo add description
+* A limit with references to the global, host and queue objects it was resolved against.
+* @warning No attribute of this type is read or written anywhere in either repository, and `LDR_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model.
 *
-*    SGE_LIST(LDR_queue_ref_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(LDR_queue_ref_list) - Queue References
+*    Part of the unused LDR object; see the object description.
 *
-*    SGE_STRING(LDR_limit) - @todo add summary
-*    @todo add description
+*    SGE_STRING(LDR_limit) - Limit
+*    Part of the unused LDR object; see the object description.
 *
-*    SGE_REF(LDR_global) - @todo add summary
-*    @todo add description
+*    SGE_REF(LDR_global) - Global Object
+*    Part of the unused LDR object; see the object description.
 *
-*    SGE_REF(LDR_host) - @todo add summary
-*    @todo add description
+*    SGE_REF(LDR_host) - Host Object
+*    Part of the unused LDR object; see the object description.
 *
-*    SGE_REF(LDR_queue) - @todo add summary
-*    @todo add description
+*    SGE_REF(LDR_queue) - Queue Object
+*    Part of the unused LDR object; see the object description.
 *
 */
 
 enum {
-   LDR_queue_ref_list = LDR_LOWERBOUND,
-   LDR_limit,
-   LDR_global,
-   LDR_host,
-   LDR_queue
+   LDR_queue_ref_list = LDR_LOWERBOUND,   ///< Queue References
+   LDR_limit,   ///< Limit
+   LDR_global,   ///< Global Object
+   LDR_host,   ///< Host Object
+   LDR_queue   ///< Queue Object
 };
 
 LISTDEF(LDR_Type)
@@ -73,6 +78,7 @@ NAMEDEF(LDRN)
    NAME("LDR_queue")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define LDR_SIZE sizeof(LDRN)/sizeof(char *)
 
 

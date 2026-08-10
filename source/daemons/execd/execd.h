@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief sge_execd - runs the jobs qmaster assigns to this host
+ */
+
 /* from execd.cc import the working dir of the execd */
 extern char execd_spool_dir[SGE_PATH_MAX];
 

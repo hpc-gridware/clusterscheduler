@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations of the cluster queue attribute verification functions
+ *
+ * @see sge_cqueue_verify.cc
+ */
+
 #include "sgeobj/sge_cqueue.h"
 
 bool

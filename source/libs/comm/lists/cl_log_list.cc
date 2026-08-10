@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The commlib log message queue
+ */
+
 #include <cstdio>
 #include <cerrno>
 #include <cstring>
@@ -151,6 +155,10 @@ static int cl_log_list_add_log(cl_raw_list_t *list_p, const char *thread_name, i
    return CL_RETVAL_OK;
 }
 
+/** @brief The name of a log level
+ * @param id the level
+ * @return its name, e.g. `"WARNING"`
+ */
 const char *cl_log_list_convert_type_id(cl_log_t id) {  /* CR check */
 
    switch (id) {
@@ -169,6 +177,11 @@ const char *cl_log_list_convert_type_id(cl_log_t id) {  /* CR check */
    }
 }
 
+/** @brief Set the level below which messages are dropped
+ * @param list_p the log list
+ * @param new_log_level the new level
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_log_list_set_log_level(cl_raw_list_t *list_p, cl_log_t new_log_level) {  /* CR check */
    cl_log_list_data_t *ldata = nullptr;
    cl_log_t log_level = CL_LOG_OFF;
@@ -199,6 +212,10 @@ int cl_log_list_set_log_level(cl_raw_list_t *list_p, cl_log_t new_log_level) {  
    return CL_RETVAL_LIST_DATA_IS_NULL;
 }
 
+/** @brief Remove and free the oldest queued message
+ * @param list_p the log list
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_log_list_del_log(cl_raw_list_t *list_p) {  /* CR check */
    cl_log_list_elem_t *elem = nullptr;
 
@@ -218,6 +235,10 @@ int cl_log_list_del_log(cl_raw_list_t *list_p) {  /* CR check */
    return CL_RETVAL_THREAD_NOT_FOUND;
 }
 
+/** @brief The oldest queued message
+ * @param list_p the log list
+ * @return the element, or nullptr when the queue is empty
+ */
 cl_log_list_elem_t *cl_log_list_get_first_elem(cl_raw_list_t *list_p) {   /* CR check */
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -272,6 +293,14 @@ static cl_log_list_elem_t* cl_log_list_get_last_elem(cl_raw_list_t* list_p, cl_l
 
    CL_RETVAL_XXX integer
 */
+/** @brief Create the log list
+ * @param list_p receives the new list
+ * @param creator_name name of the creating thread
+ * @param creator_id id of the creating thread
+ * @param flush_type when queued messages are written out
+ * @param flush_func the application's writer, may be nullptr for the default
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_log_list_setup(cl_raw_list_t **list_p, const char *creator_name, int creator_id,
                       cl_log_list_flush_method_t flush_type, cl_log_func_t flush_func) {
    int ret_val;
@@ -364,6 +393,10 @@ int cl_log_list_setup(cl_raw_list_t **list_p, const char *creator_name, int crea
    return CL_RETVAL_OK;
 }
 
+/** @brief Flush what is queued and free the log list
+ * @param list_p the list, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_log_list_cleanup(cl_raw_list_t **list_p) {          /* CR check */
    int ret_val;
    int ret_val2;
@@ -430,6 +463,19 @@ cl_thread_settings_t* cl_log_list_get_creator_thread(cl_thread_settings_t* threa
 }
 #endif
 
+/** @brief Queue one log message
+ *
+ * Behind #CL_LOG. Appends and returns; nothing is written here, so a thread
+ * holding a connection lock never blocks on the log file.
+ *
+ * @param log_type the level
+ * @param line the source line the message came from
+ * @param function_name the function it came from
+ * @param module_name the module it came from
+ * @param log_text the message
+ * @param log_param additional text, may be nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int
 cl_log_list_log(cl_log_t log_type, int line, const char *function_name, const char *module_name, const char *log_text,
                 const char *log_param) {
@@ -552,6 +598,20 @@ cl_log_list_log(cl_log_t log_type, int line, const char *function_name, const ch
    }
 }
 
+/** @brief Queue one log message with two strings and a number appended
+ *
+ * Behind #CL_LOG_STR_STR_INT.
+ *
+ * @param log_type the level
+ * @param line the source line the message came from
+ * @param function_name the function it came from
+ * @param module_name the module it came from
+ * @param log_text the message
+ * @param log_1 first string
+ * @param log_2 second string
+ * @param log_3 the number
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_log_list_log_ssi(cl_log_t log_type, int line, const char *function_name, const char *module_name,
                         const char *log_text,
                         const char *log_1, const char *log_2, int log_3) {
@@ -606,6 +666,18 @@ int cl_log_list_log_ssi(cl_log_t log_type, int line, const char *function_name, 
    return ret_val;
 }
 
+/** @brief Queue one log message with a number appended
+ *
+ * Behind #CL_LOG_INT.
+ *
+ * @param log_type the level
+ * @param line the source line the message came from
+ * @param function_name the function it came from
+ * @param module_name the module it came from
+ * @param log_text the message
+ * @param param the number
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_log_list_log_int(cl_log_t log_type, int line, const char *function_name, const char *module_name,
                         const char *log_text, int param) {
    int ret_val;
@@ -646,6 +718,9 @@ int cl_log_list_log_int(cl_log_t log_type, int line, const char *function_name, 
    return ret_val;
 }
 
+/** @brief Write out what is queued in the calling thread's log list
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_log_list_flush() {        /* CR check */
    cl_raw_list_t *list_p = nullptr;
    cl_thread_settings_t *thread_config = nullptr;
@@ -678,6 +753,10 @@ int cl_log_list_flush() {        /* CR check */
    return cl_log_list_flush_list(list_p);
 }
 
+/** @brief Write out what is queued in a given log list
+ * @param list_p the log list
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_log_list_flush_list(cl_raw_list_t *list_p) {        /* CR check */
    int ret_val;
    cl_log_list_elem_t *elem = nullptr;

@@ -33,30 +33,64 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The protocol layer under the public interface
+ *
+ * What #cl_commlib_send_message and friends are built on: opening and closing
+ * a connection, the GMSH/MIH read and write path, host name resolution and
+ * its cache, and the accept loop of a service.
+ *
+ * Nothing here is framework specific - a `cl_com_*` call in this file
+ * dispatches on #cl_com_connection_type::framework_type into
+ * `cl_tcp_framework.cc` or `cl_ssl_framework.cc`.
+ *
+ * @see @ref cl_commlib.h for the interface an application uses
+ */
+
 #include "comm/lists/cl_list_types.h"
 #include "comm/cl_data_types.h"
 #include "comm/cl_xml_parsing.h"
 #include "comm/cl_connection_list.h"
 
-#define CL_DEFINE_READ_TIMEOUT                       30
-#define CL_DEFINE_WRITE_TIMEOUT                      30
-#define CL_DEFINE_ACK_TIMEOUT                        60
-#define CL_DEFINE_MESSAGE_TIMEOUT                    3600 /* default timeout for trashing received but not application fetched messages */
-#define CL_DEFINE_GET_CLIENT_CONNECTION_DATA_TIMEOUT 60   /* default timeout for accepting a connection */
-#define CL_DEFINE_DELETE_MESSAGES_TIMEOUT_AFTER_CCRM 60   /* default timeout for unread message deletion after connection shutdown */
-#define CL_DEFINE_SYNCHRON_RECEIVE_TIMEOUT           60   /* default timeout for synchron send messages */
-#define CL_DEFINE_CLIENT_CONNECTION_LIFETIME         600  /* Cut off connection when client is not active for this time */
-#define CL_DEFINE_MESSAGE_DUP_LOG_TIMEOUT            30   /* timeout for marking duplicate application error messages */
+/** @name Default timeouts, in seconds
+ *
+ * These are the values a fresh handle starts with; an application can change
+ * most of them per handle afterwards.
+ * @{
+ */
+#define CL_DEFINE_READ_TIMEOUT                       30     ///< Give up on a read that makes no progress
+#define CL_DEFINE_WRITE_TIMEOUT                      30     ///< Give up on a write that makes no progress
+#define CL_DEFINE_ACK_TIMEOUT                        60     ///< Give up waiting for an acknowledgement
+#define CL_DEFINE_MESSAGE_TIMEOUT                    3600   ///< Discard a received message the application never took - an hour, because taking it is the application's business
+#define CL_DEFINE_GET_CLIENT_CONNECTION_DATA_TIMEOUT 60     ///< Give up on a client that connected but never sent its CM
+#define CL_DEFINE_DELETE_MESSAGES_TIMEOUT_AFTER_CCRM 60     ///< How long unread messages survive after the connection closed
+#define CL_DEFINE_SYNCHRON_RECEIVE_TIMEOUT           60     ///< How long a synchronous receive waits
+#define CL_DEFINE_CLIENT_CONNECTION_LIFETIME         600    ///< Cut a client off after this much silence
+#define CL_DEFINE_MESSAGE_DUP_LOG_TIMEOUT            30     ///< Within this window a repeated application error is marked as a duplicate instead of logged again
+/** @} */
 
 
-#define CL_DEFINE_DATA_BUFFER_SIZE                   1024 * 4           /* 4 KB buffer for reading/writing messages */
+/** @brief Size of a connection's read and write buffer */
+#define CL_DEFINE_DATA_BUFFER_SIZE                   1024 * 4
+
+/** @brief Highest message id before the counter wraps
+ *
+ * @warning Only 65535, because application code still stores client ids in a
+ *          `u_short`. The 32 bit value beside it in the source is disabled
+ *          behind `#if 0` and cannot be enabled until that is fixed - a busy
+ *          qmaster wraps a 16 bit counter quickly.
+ */
 #if 0
-/* TODO: enable this when application code is not using u_short with client ids !!! */
-#define CL_DEFINE_MAX_MESSAGE_ID                     4294967295UL       /* max unsigned long value for a 32 bit system */
+#define CL_DEFINE_MAX_MESSAGE_ID                     4294967295UL
 #else
-#define CL_DEFINE_MAX_MESSAGE_ID                     65535              /* max unsigned short value */
+#define CL_DEFINE_MAX_MESSAGE_ID                     65535
 #endif
 
+/** @brief Longest host name the commlib handles
+ *
+ * The system's `MAXHOSTNAMELEN` when that is larger than 256, otherwise 256 -
+ * some systems define it as 64, which is too short for a fully qualified name.
+ */
 #if defined(MAXHOSTNAMELEN) && MAXHOSTNAMELEN > 256
 #define CL_MAXHOSTNAMELEN MAXHOSTNAMELEN
 #else
@@ -66,6 +100,15 @@
 
 int cl_com_compare_endpoints(cl_com_endpoint_t *endpoint1, cl_com_endpoint_t *endpoint2);
 
+/** @brief Write an endpoint to the log
+ *
+ * @param endpoint the endpoint
+ * @param text prefix for the log line
+ *
+ * @note Defined only when `CL_DO_COMMUNICATION_DEBUG` is on, which it is not
+ *       by default - so this is documented here rather than at the
+ *       definition, which doxygen never reaches.
+ */
 void cl_com_dump_endpoint(cl_com_endpoint_t *endpoint, const char *text);
 
 int cl_com_endpoint_list_refresh(cl_raw_list_t *endpoint_list);
@@ -95,7 +138,15 @@ int cl_com_free_handle_statistic(cl_com_handle_statistic_t **statistic);
 int cl_com_free_hostent(cl_com_hostent_t **hostent_p);                    /* CR check */
 int cl_com_free_hostspec(cl_com_host_spec_t **hostspec);
 
-int cl_com_print_host_info(cl_com_hostent_t *hostent_p);                 /* CR check */
+/** @brief Write a resolver result to the log
+ *
+ * @param hostent_p the result
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ *
+ * @note Like #cl_com_dump_endpoint, defined only behind
+ *       `CL_DO_COMMUNICATION_DEBUG`.
+ */
+int cl_com_print_host_info(cl_com_hostent_t *hostent_p);
 
 
 int cl_com_create_debug_client_setup(cl_debug_client_setup_t **new_setup,
@@ -134,23 +185,23 @@ int cl_com_dup_ssl_setup(cl_ssl_setup_t **new_setup, cl_ssl_setup_t *source);
 
 int cl_com_free_ssl_setup(cl_ssl_setup_t **del_setup);
 
-const char *cl_com_get_framework_type(cl_com_connection_t *connection);
+/** @name Turning a connection's enum fields into names
+ *
+ * One per enum in #cl_com_connection_type. Their only caller is the
+ * diagnostic output - `qping -info` and the debug client - which is why they
+ * all return a static string rather than filling a buffer.
+ * @{
+ */
+const char *cl_com_get_framework_type(cl_com_connection_t *connection);        ///< Name of the transport
+const char *cl_com_get_connection_type(cl_com_connection_t *connection);       ///< Name of the direction
+const char *cl_com_get_service_handler_flag(cl_com_connection_t *connection);  ///< Whether it is the listening socket
+const char *cl_com_get_data_write_flag(cl_com_connection_t *connection);       ///< Whether there is data to write
+const char *cl_com_get_data_read_flag(cl_com_connection_t *connection);        ///< Whether there is data to read
+const char *cl_com_get_connection_state(cl_com_connection_t *connection);      ///< Name of the state
+const char *cl_com_get_connection_sub_state(cl_com_connection_t *connection);  ///< Name of the sub state
+const char *cl_com_get_data_flow_type(cl_com_connection_t *connection);        ///< Stream or message oriented
+/** @} */
 
-const char *cl_com_get_connection_type(cl_com_connection_t *connection);
-
-const char *cl_com_get_service_handler_flag(cl_com_connection_t *connection);
-
-const char *cl_com_get_data_write_flag(cl_com_connection_t *connection);
-
-const char *cl_com_get_data_read_flag(cl_com_connection_t *connection);
-
-const char *cl_com_get_connection_state(cl_com_connection_t *connection);
-
-const char *cl_com_get_connection_sub_state(cl_com_connection_t *connection);
-
-const char *cl_com_get_data_flow_type(cl_com_connection_t *connection);
-
-/* This can be called by an signal handler to trigger abort of communications */
 void cl_com_ignore_timeouts(bool flag);
 
 bool cl_com_get_ignore_timeouts_flag();
@@ -166,13 +217,12 @@ int cl_com_create_message(cl_com_message_t **message);
 int cl_com_free_message(cl_com_message_t **message);
 
 int cl_com_create_connection(cl_com_connection_t **connection);
-/*
-int cl_com_free_connection(cl_com_connection_t** connection);
-   use cl_com_close_connection();
-*/
 
-/* after this line are the main functions used by lib user */
-/* ======================================================= */
+/** @cond doxygen_note
+ * There is no `cl_com_free_connection()`; #cl_com_close_connection releases
+ * the connection as well.
+ * @endcond
+ */
 
 
 int cl_com_connection_complete_accept(cl_com_connection_t *connection,
@@ -197,8 +247,13 @@ cl_com_write(cl_com_connection_t *connection, cl_byte_t *message, unsigned long 
 
 
 
-/* This functions need service connection pointer = cl_com_connection_request_handler_setup */
-/* ======================================================================================== */
+/** @name Only valid on a service connection
+ *
+ * These need a connection that went through
+ * #cl_com_connection_request_handler_setup - the listening socket, not a
+ * connection to a peer.
+ * @{
+ */
 
 int cl_com_connection_get_connect_port(cl_com_connection_t *connection, int *port);
 
@@ -235,3 +290,4 @@ int cl_com_malloc_poll_array(cl_com_poll_t *poll_handle, unsigned long nr_of_mal
 
 int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connection_list_elem_t *elem, long timeout,
                                        cl_select_method_t select_mode);
+/** @} */

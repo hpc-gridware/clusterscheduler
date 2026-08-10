@@ -19,11 +19,16 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Holding one cluster object list together with its metadata
+ */
+
 #include <string>
 
 #include "cull/cull.h"
 
 namespace ocs {
+/// Checks shared by every list valued configuration object
 class ObjectContainer {
    public:
       static bool has_duplicates(const lList *obj_list, int nm, lList **answer_list, const std::string& object_name);

@@ -33,6 +33,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Suspending and unsuspending jobs on a queue's suspend thresholds
+ *
+ * A queue can carry suspend thresholds - load values at which it suspends
+ * jobs rather than letting them keep loading the host. The scheduler
+ * evaluates them once per interval and emits the suspend and unsuspend
+ * orders; `QU_nsuspend` limits how many jobs are affected per interval.
+ */
+
 #include "sge_orders.h"
 
 void suspend_job_in_queues(lList *susp_queues, lList *job_list, order_t *orders);

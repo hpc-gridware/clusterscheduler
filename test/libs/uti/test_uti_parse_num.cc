@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for parse num in `libs/uti`
+ */
+
 /*
  * Tests for parse_ulong_val() / extended_parse_ulong_val() - the type-aware
  * complex-attribute value parser.
@@ -43,6 +47,16 @@ using ocs::CEntry;
 
 static int s_fail = 0;
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \

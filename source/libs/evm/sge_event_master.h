@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations of the event master
+ *
+ * @see sge_event_master.cc
+ */
+
 #include <cinttypes>
 
 #include "sgeobj/sge_event.h"
@@ -48,44 +54,57 @@
  * event master, but for use by the program containing event master
  * (sge_qmaster).
  */
+/**
+ * @brief File descriptors the event master leaves to the rest of qmaster
+ *
+ * Every event client costs a commlib connection, i.e. a file descriptor. The
+ * limit on dynamic clients is derived from the process descriptor limit minus
+ * this reserve, so the daemon around the event master still has descriptors to
+ * work with.
+ */
 #define EVENT_MASTER_MIN_FREE_DESCRIPTORS 25
 
-/*
- ***** event_master_control_t definition ********************
+/**
+ * @brief One thread's open event transaction
  *
- * This struct contains all the control information needed
- * to have the event master running. It contains the references
- * to all lists, mutexes, and booleans.
- *
- ***********************************************************
+ * A request handler may produce several events that only make sense together.
+ * Between `sge_event_master_transaction_begin` and its commit the events are
+ * collected here instead of being handed to the delivery thread, so a client
+ * never sees half of a change. Thread local, keyed by
+ * #event_master_control_t::transaction_key.
  */
-
 typedef struct {
-   bool     is_transaction;                /* identifies, if a transaction is open, or not */
-   lList    *transaction_requests;         /* a list storing all event add requests happening, while a transaction is open */
+   bool     is_transaction;         ///< identifies, if a transaction is open, or not
+   lList    *transaction_requests;  ///< all event add requests collected while the transaction is open
 } event_master_transaction_t;
  
+/**
+ * @brief All state the event master runs on
+ *
+ * One global instance, #Event_Master_Control. Two mutexes guard it and they are
+ * not interchangeable: `mutex` is taken by the public entry points, `cond_mutex`
+ * by the internal ones together with `cond_var`. The request list has a third,
+ * `request_mutex`, so a producer can queue a request without contending with
+ * the delivery thread.
+ */
 typedef struct {
-   pthread_mutex_t  mutex;                 /* used for mutual exclusion. only use in public functions   */
-   pthread_cond_t   cond_var;              /* used for waiting                                          */
-   pthread_mutex_t  cond_mutex;            /* used for mutual exclusion. only use in internal functions */
-   bool             delivery_signaled;     /* signals that an event delivery has been signaled          */
-                                           /* protected by cond_mutex.                                  */
+   pthread_mutex_t  mutex;                 ///< mutual exclusion; only use in public functions
+   pthread_cond_t   cond_var;              ///< used for waiting
+   pthread_mutex_t  cond_mutex;            ///< mutual exclusion; only use in internal functions
+   bool             delivery_signaled;     ///< an event delivery has been signaled; protected by `cond_mutex`
 
-   uint32_t         max_event_clients;     /* contains the max number of custom event clients, the      */
-                                           /* scheduler is not accounted for. protected by mutex.       */
+   uint32_t         max_event_clients;     ///< max number of custom event clients, the scheduler not counted; protected by `mutex`
 
-   bool             is_prepare_shutdown;   /* is set, when the qmaster is going down. Do not accept     */
-                                           /* new event clients, when this is set to false. protected   */
-                                           /* by mutex.                                                 */
-   lList*           clients;               /* list of event master clients                              */
-   lList*           client_ids;            /* range list holding free event client ids                  */
-   lList*           requests;              /* event master requests (add/mod/del evc, add/ack event)    */
-   pthread_mutex_t  request_mutex;         /* used to protect access to the request list                */
+   bool             is_prepare_shutdown;   ///< set when qmaster is going down; no new event clients are accepted then; protected by `mutex`
+   lList*           clients;               ///< list of event master clients
+   lList*           client_ids;            ///< range list holding free event client ids
+   lList*           requests;              ///< event master requests (add/mod/del evc, add/ack event)
+   pthread_mutex_t  request_mutex;         ///< protects access to the request list
 
-   pthread_key_t     transaction_key;      /* key to access thread local transaction storage            */
+   pthread_key_t     transaction_key;      ///< key to access thread local transaction storage
 } event_master_control_t;
 
+/// The one event master instance; see @ref event_master_control_t
 extern event_master_control_t Event_Master_Control;
 void sge_cleanup_event_master_control(void *arg);
 void sge_event_master_flush_requests(bool force = false);

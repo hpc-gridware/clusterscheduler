@@ -24,16 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Spooling Context
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of SPC
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   SPC_name = 7550,
-   SPC_rules,
-   SPC_types
+   SPC_name = 7550,   ///< Name
+   SPC_rules,   ///< Rules
+   SPC_types   ///< Types
 };
 
+/** @brief The attribute ids of SPC, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int SPC_Type[] = {
    SPC_name,
    SPC_rules,
@@ -41,6 +55,10 @@ constexpr const int SPC_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of SPC
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define SPC_ATTRIBUTES \
    {SPC_name, "SPC_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
    {SPC_rules, "SPC_rules", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

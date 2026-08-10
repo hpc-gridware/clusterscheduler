@@ -31,6 +31,15 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief work - a job that consumes a requested amount of CPU, memory or I/O
+ *
+ * The load generator the tests submit. The "cheat options" are deliberate:
+ * they let a job ignore SIGXCPU, change its process group or daemonize, so
+ * that the resource limits and the process tracking can be tested against a
+ * job that actively tries to escape them.
+ */
 #include <cstdio>
 #include <cstring>
 #include <cerrno>
@@ -47,35 +56,38 @@
 
 #include "sgeobj/sge_daemonize.h"
 
-volatile int should_stop = 0;
+volatile int should_stop = 0;   ///< Set from the signal handler to end the run
 
 /* cpu load profile */
-int working_time = 0;
-int nproc = 0;
+int working_time = 0;   ///< Seconds to burn CPU for
+int nproc = 0;          ///< How many processes burn CPU in parallel
 
 /* mem load profile */
-int stack_mb = 0;
-int stack_kb = 0;
+int stack_mb = 0;   ///< Stack to reserve, in MB
+int stack_kb = 0;   ///< Stack to reserve, in KB
 
 #if defined(DARWIN) || defined(LINUX) || defined(FREEBSD)
-int malloc_mb = 0;
+int malloc_mb = 0;   ///< Heap to allocate, in MB
 #else
-size_t malloc_mb = 0;
+size_t malloc_mb = 0;   ///< Heap to allocate, in MB
 #endif
-int malloc_kb = 0;
+int malloc_kb = 0;   ///< Heap to allocate, in KB
 
 /* io load profile */
-int in = -1;
-int out = -1;
+int in = -1;    ///< Descriptor to read from, -1 when no read load was asked for
+int out = -1;   ///< Descriptor to write to, -1 when no write load was asked for
 
 /* cheat profile */   
-int block_sigxcpu = 0;
-int block_sigxfsz = 0;
-int change_pgrp = 0;
-int do_daemonize = 0;
+int block_sigxcpu = 0;   ///< Ignore SIGXCPU, to test what happens when a job outlives its CPU limit
+int block_sigxfsz = 0;   ///< Ignore SIGXFSZ, to test what happens when a job outgrows its file limit
+int change_pgrp = 0;     ///< Move into a new process group, to test whether the job is still tracked
+int do_daemonize = 0;    ///< Detach from the controlling terminal, for the same reason
 
 /* options */
 
+/** @brief Produce the requested load
+ * @param mmp which load profile to run: `cpu`, `io` or `mem`
+ */
 void work(char *mmp);
 static void reserve_stack_mem_mb(int n);
 static void reserve_stack_mem_kb(int n);
@@ -393,7 +405,9 @@ void work(char *mmp) {
    }
 }
 
-/* signal handler for SIGALRM */
+/** @brief Signal handler for SIGALRM: ends the run
+ * @param signo the signal that arrived
+ */
 void stop_work(int signo)
 {
    should_stop = 1;

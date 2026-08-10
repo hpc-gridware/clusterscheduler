@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Resource quota sets
+ */
+
 #include "sge_c_gdi.h"
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"

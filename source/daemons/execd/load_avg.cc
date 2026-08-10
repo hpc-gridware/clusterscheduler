@@ -33,6 +33,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Collecting this host's load values and assembling the load report
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -99,6 +103,11 @@ static void sge_get_sockets(const char *qualified_hostname, lList **lpp);
 static void sge_get_cores(const char *qualified_hostname, lList **lpp);
 static void sge_get_hwthreads(const char *qualified_hostname, lList **lpp);
 
+/** @brief What the execution daemon reports to qmaster, and how
+ *
+ * One entry per kind of report - load, configuration, processors, jobs - each
+ * with the function that fills it in. Terminated by a null entry.
+ */
 report_source execd_report_sources[] = {
    { NUM_REP_REPORT_LOAD, execd_add_load_report , 0 },
    { NUM_REP_REPORT_CONF, execd_add_conf_report , 0 },
@@ -107,48 +116,73 @@ report_source execd_report_sources[] = {
    { 0, nullptr }
 };
 
-lUlong sge_execd_report_seqno = 0;
-uint64_t qmrestart_time = 0;
+lUlong sge_execd_report_seqno = 0;   ///< Sequence number of the next report, so qmaster can spot a gap
+uint64_t qmrestart_time = 0;         ///< When qmaster was last seen to restart; job reports are delayed after one
 static bool delay_job_reports = false;
 static bool send_all = true;
 static lListElem *last_lr = nullptr;
 static lList *lr_list = nullptr;
 
-extern lList *jr_list;
+extern lList *jr_list;   ///< The job reports waiting to be sent; defined in job_report_execd.cc
 
 static bool flush_lr = false;
 
+/** @brief When qmaster was last seen to restart
+ * @return the time, or 0 when no restart has been seen
+ */
 uint64_t sge_get_qmrestart_time()
 {
    return qmrestart_time;
 }
 
 /* record qmaster restart time, need for use in delayed_reporting */
+/** @brief Record that qmaster has restarted
+ *
+ * Job reports are held back for a while afterwards, so that a qmaster still
+ * rebuilding its state is not flooded.
+ *
+ * @param qmr the time of the restart
+ */
 void sge_set_qmrestart_time(uint64_t qmr)
 {
    qmrestart_time = qmr;
 }
 
+/** @brief Are job reports currently being held back?
+ * @return true while they are delayed
+ */
 bool sge_get_delay_job_reports_flag()
 {
    return delay_job_reports;
 }
 
+/** @brief Hold back job reports, or stop doing so
+ * @param new_val true to delay them
+ */
 void sge_set_delay_job_reports_flag(bool new_val)
 {
    delay_job_reports = new_val;
 }
 
+/** @brief Is a load report due to be sent at the next opportunity?
+ * @return true when one is pending
+ */
 bool sge_get_flush_lr_flag()
 {
    return flush_lr;
 }
 
+/** @brief Ask for a load report to be sent at the next opportunity
+ * @param new_val true to request one
+ */
 void sge_set_flush_lr_flag(bool new_val)
 {
    flush_lr = new_val;
 }
 
+/** @brief Fold the current load values into the report being assembled
+ * @param seqno the report's sequence number
+ */
 void execd_merge_load_report(uint32_t seqno)
 {
    if (last_lr == nullptr || seqno != lGetUlong(last_lr, REP_seqno)) {
@@ -185,6 +219,11 @@ void execd_merge_load_report(uint32_t seqno)
    lFreeElem(&last_lr);
 }
 
+/** @brief Discard the report being assembled
+ *
+ * Used when qmaster restarted: the half-built report belongs to a
+ * conversation that no longer exists.
+ */
 void execd_trash_load_report() {
    send_all = true;
 }
@@ -422,6 +461,14 @@ execd_add_job_report(lList *report_list, uint64_t now, uint64_t *next_send)
    DRETURN(0);
 }
 
+/** @brief Collect every load value this host reports
+ *
+ * The built-in values plus whatever the configured load sensors produce.
+ *
+ * @param qualified_hostname this host, as the cluster knows it
+ * @param binary_path where to find the load sensor binaries
+ * @return the report
+ */
 lList *sge_build_load_report(const char* qualified_hostname, const char* binary_path)
 {
    lList *lp = nullptr;
@@ -511,28 +558,19 @@ lList *sge_build_load_report(const char* qualified_hostname, const char* binary_
    DRETURN(lp);
 }
 
-/****** load_avg/sge_get_sockets() *********************************************
-*  NAME
-*     sge_get_sockets() -- Appends the amount of sockets on a Linux platform 
-*
-*  SYNOPSIS
-*     static int sge_get_sockets(const char* qualified_hostname, lList **lpp) 
-*
-*  FUNCTION
-*     Appends to the given list of load values the amount of sockets on 
-*     Linux platform only
-*
-*  INPUTS
-*     const char* qualified_hostname - Hostname 
-*     lList **lpp                    - List with load values 
-*
-*  RESULT
-*     static int - 
-*
-*  NOTES
-*     MT-NOTE: sge_get_sockets() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Appends the amount of sockets on a Linux platform
+ *
+ * Appends to the given list of load values the amount of sockets on
+ * Linux platform only
+ *
+ * @param qualified_hostname Hostname
+ * @param lpp List with load values
+ *
+ * @note static int -
+ *
+ * @note MT-NOTE: sge_get_sockets() is MT safe
+ */
 static void sge_get_sockets(const char* qualified_hostname, lList **lpp) {
    DENTER(TOP_LAYER);
    int sockets = get_execd_amount_of_sockets();
@@ -540,28 +578,16 @@ static void sge_get_sockets(const char* qualified_hostname, lList **lpp) {
    DRETURN_VOID;
 }
 
-/****** load_avg/sge_get_cores() ***********************************************
-*  NAME
-*     sge_get_cores() -- ??? 
-*
-*  SYNOPSIS
-*     static int sge_get_cores(const char* qualified_hostname, lList **lpp) 
-*
-*  FUNCTION
-*     Appends to the given list of load values the amount of cores 
-*     on current system (Linux platform only). For other OSs it is 0.
-*
-*  INPUTS
-*     const char* qualified_hostname - Hostname 
-*     lList **lpp                    - List with load values 
-*
-*  RESULT
-*     static int - 0 if everything was ok
-*
-*  NOTES
-*     MT-NOTE: sge_get_cores() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Appends to the given list of load values the amount of cores
+ *
+ * @param qualified_hostname Hostname
+ * @param lpp List with load values
+ *
+ * @note static int - 0 if everything was ok
+ *
+ * @note MT-NOTE: sge_get_cores() is MT safe
+ */
 static void sge_get_cores(const char* qualified_hostname, lList **lpp) {
    DENTER(TOP_LAYER);
    int cores = get_execd_amount_of_cores();
@@ -569,27 +595,18 @@ static void sge_get_cores(const char* qualified_hostname, lList **lpp) {
    DRETURN_VOID;
 }
 
-/****** load_avg/sge_get_hwthreads() ***********************************************
-*  NAME
-*     sge_get_hwthreads() -- Sets the amount of threads.
-*
-*  SYNOPSIS
-*     static int sge_get_hwthreads(const char* qualified_hostname, lList **lpp)
-*
-*  FUNCTION
-*     Appends to the given list of load values the amount of threads.
-*
-*  INPUTS
-*     const char* qualified_hostname - name of the host
-*     lList **lpp                    - list with load values
-*
-*  RESULT
-*     static int - 0 per default
-*
-*  NOTES
-*     MT-NOTE: sge_get_hwthreads() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Sets the amount of threads
+ *
+ * Appends to the given list of load values the amount of threads.
+ *
+ * @param qualified_hostname name of the host
+ * @param lpp list with load values
+ *
+ * @note static int - 0 per default
+ *
+ * @note MT-NOTE: sge_get_hwthreads() is MT safe
+ */
 
 static void
 sge_get_hwthreads(const char* qualified_hostname, lList **lpp) {
@@ -731,6 +748,9 @@ static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)
    DRETURN(0);
 }
 
+/** @brief Refresh the usage figures of every job running on this host
+ * @param qualified_hostname this host, as the cluster knows it
+ */
 void update_job_usage(const char* qualified_hostname)
 {
    DENTER(TOP_LAYER);
@@ -1103,40 +1123,30 @@ static void build_reserved_mem_usage(const lListElem *gdil_ep, int slots, double
    *maxrss += calculate_reserved_memory(queue, slots, QU_h_rss, QU_s_rss);
 }
 
-/****** load_avg/build_reserved_usage() ****************************************
-*  NAME
-*     build_reserved_usage() -- calculate reserved usage for job or pe task
-*
-*  SYNOPSIS
-*     void build_reserved_usage(const uint32_t now, const lListElem *ja_task,
-*                               const lListElem *pe_task, double *wallclock, 
-*                               double *cpu, double *mem, double *maxvmem) 
-*
-*  FUNCTION
-*     Computes reserved usage for a job (array task) or the task of a tightly 
-*     integrated parallel job.
-*     The following values are computed and returned via call by reference:
-*     - wallclock time (current time - start time)
-*     - memory usage (integral of current memory usage times wallclock time)
-*       This can only be computed if the job requests memory (h_vmem/s_vmem).
-*     - maxvmem (assume the job will consume as much memory as possible (as
-*       requested by h_vmem or s_vmem).
-*
-*  INPUTS
-*     const uint32_t now       - current time
-*     const lListElem *ja_task - job array task
-*     const lListElem *pe_task - parallel task, or nullptr for job ja task
-*
-*  RESULT
-*     double *wallclock        - returns the wallclock time
-*     double *cpu              - returns the reserved cpu usage
-*     double *mem              - returns the reserved memory (integral vmem * wallclock)
-*     double *maxvmem          - returns the maximum virtual memory used
-*     double *maxrss           - returns the maximum resident memory used
-*
-*  NOTES
-*     MT-NOTE: build_reserved_usage() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Calculate reserved usage for job or pe task
+ *
+ * Computes reserved usage for a job (array task) or the task of a tightly
+ * integrated parallel job.
+ * The following values are computed and returned via call by reference:
+ * - wallclock time (current time - start time)
+ * - memory usage (integral of current memory usage times wallclock time)
+ *   This can only be computed if the job requests memory (h_vmem/s_vmem).
+ * - maxvmem (assume the job will consume as much memory as possible (as
+ *   requested by h_vmem or s_vmem).
+ *
+ * @param now current time
+ * @param ja_task job array task
+ * @param pe_task parallel task, or nullptr for job ja task
+ *
+ * @param[out] wallclock returns the wallclock time
+ * @param[out] cpu returns the reserved cpu usage
+ * @param[out] mem returns the reserved memory (integral vmem * wallclock)
+ * @param[out] maxvmem returns the maximum virtual memory used
+ * @param[out] maxrss returns the maximum resident memory used
+ *
+ * @note MT-NOTE: build_reserved_usage() is MT safe
+ */
 void build_reserved_usage(const uint64_t now, const lListElem *ja_task, const lListElem *pe_task,
                           double *wallclock, double *cpu, double *mem, double *maxvmem, double *maxrss)
 {

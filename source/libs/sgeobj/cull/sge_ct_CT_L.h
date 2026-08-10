@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Category
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -63,15 +67,15 @@
 */
 
 enum {
-   CT_id = CT_LOWERBOUND,
-   CT_str,
-   CT_refcount,
-   CT_rejected,
-   CT_cache,
-   CT_messages_added,
-   CT_resource_contribution,
-   CT_rc_valid,
-   CT_reservation_rejected
+   CT_id = CT_LOWERBOUND,   ///< Category ID
+   CT_str,   ///< Category String
+   CT_refcount,   ///< Reference Count
+   CT_rejected,   ///< Rejected
+   CT_cache,   ///< Cache
+   CT_messages_added,   ///< Messages Added
+   CT_resource_contribution,   ///< Resource Contribution
+   CT_rc_valid,   ///< Resource Contribution valid
+   CT_reservation_rejected   ///< Reservation Rejected
 };
 
 LISTDEF(CT_Type)
@@ -98,6 +102,7 @@ NAMEDEF(CTN)
    NAME("CT_reservation_rejected")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define CT_SIZE sizeof(CTN)/sizeof(char *)
 
 

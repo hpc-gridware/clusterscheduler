@@ -32,12 +32,22 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for no bin in `libs/drmaa`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include "drmaa.h"
 
-#define WD "/tmp"
+#define WD "/tmp"   ///< the working directory the job runs in
 
+/** @brief Handle code
+ *
+ * @param code see the description above
+ * @param msg see the description above
+ * @return non-zero or true when the case passed
+ */
 int handle_code(int code, char *msg);
 
 int main(int argc, char **argv) {

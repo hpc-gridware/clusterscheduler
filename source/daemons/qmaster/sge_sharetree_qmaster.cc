@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief The share tree, and carrying usage across a replacement
+ */
 /*
    This is the module for handling the SGE sharetree
    We save the sharetree to <spool>/qmaster/sharetree
@@ -55,11 +59,19 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
-/************************************************************
-  sge_add_sharetree - Master code
-
-  Add the sharetree
- ************************************************************/
+/** @brief Install a share tree
+ *
+ * Add the sharetree
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep the share tree
+ * @param lpp the master share tree list
+ * @param alpp receives messages for the caller
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return STATUS_OK on success
+ */
 int
 sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost) {
    int ret;
@@ -69,13 +81,21 @@ sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
    DRETURN(ret);
 }
 
-/************************************************************
-  sge_mod_sharetree - Master code
-
-  Modify a share tree
-  lListElem *ep,   This is the new share tree 
-  lList **lpp,     list to change 
- ************************************************************/
+/** @brief Replace the share tree as a whole
+ *
+ * Modify a share tree
+ * lListElem *ep,   This is the new share tree
+ * lList **lpp,     list to change
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep the new share tree
+ * @param lpp the master share tree list
+ * @param alpp receives messages for the caller
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return STATUS_OK on success
+ */
 int
 sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **lpp, lList **alpp, char *ruser, char *rhost) {
    int ret;
@@ -145,11 +165,18 @@ sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep,
    DRETURN(STATUS_OK);
 }
 
-/************************************************************
-  sge_del_sharetree - Master code
-
-  Delete the sharetree
- ************************************************************/
+/** @brief Remove the share tree
+ *
+ * Delete the sharetree
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param lpp the master share tree list
+ * @param alpp receives messages for the caller
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return STATUS_OK on success
+ */
 int
 sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, lList **alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
@@ -171,24 +198,31 @@ sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, l
    DRETURN(STATUS_OK);
 }
 
-/********************************************************
- ensure 
- - all nodes have a unique path in share tree
- - a project is not referenced more than once in share tree
- - a user appears only once in a project sub-tree
- - a user appears only once outside of a project sub-tree
- - a user does not appear as a non-leaf node
- - all leaf nodes in a project sub-tree reference a known
-   user object or the reserved name "default"
- - there are no sub-projects within a project sub-tree
- - all leaf nodes not in a project sub-tree reference a known
-   user or project object
- - all user leaf nodes in a project sub-tree have access
-   to the project
-
- found  - tmp list that contains one entry for each found u/p
-
- ********************************************************/
+/** @brief Verify a share tree node and everything below it
+ *
+ * ensure
+ * - all nodes have a unique path in share tree
+ * - a project is not referenced more than once in share tree
+ * - a user appears only once in a project sub-tree
+ * - a user appears only once outside of a project sub-tree
+ * - a user does not appear as a non-leaf node
+ * - all leaf nodes in a project sub-tree reference a known
+ * user object or the reserved name "default"
+ * - there are no sub-projects within a project sub-tree
+ * - all leaf nodes not in a project sub-tree reference a known
+ * user or project object
+ * - all user leaf nodes in a project sub-tree have access
+ * to the project
+ * found  - tmp list that contains one entry for each found u/p
+ *
+ * @param alpp receives messages for the caller
+ * @param node the node to check
+ * @param user_list the known users
+ * @param project_list the known projects
+ * @param project the project this subtree belongs to, or nullptr at the root
+ * @param found tmp list that contains one entry for each found u/p
+ * @return STATUS_OK when the subtree is valid
+ */
 int
 check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lList *project_list, lListElem *project,
                 lList **found) {
@@ -335,7 +369,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
             }
          }
 
-         /* make sure this user or project is in the non�project sub-tree 
+         /* make sure this user or project is in the non-project sub-tree 
             portion of the share tree only once */
          if (lGetElemStr(*found, STN_name, name)) {
             ERROR(MSG_STREE_USERPRJTWICE_SS, objname, name);
@@ -352,19 +386,21 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
    DRETURN(0);
 }
 
-/* ----------------------------------------------
-
-   dst  is the share tree to be updated
-   src  is a reduced share tree with at least
-
-      STN_name
-      STN_version
-      STN_m_share
-      STN_last_actual_proportion
-      STN_adjusted_current_proportion
-
-   Returns 0 on success, -1 on error.
-*/
+/** @brief Carry the accumulated usage from the old share tree into the new one
+ *
+ * dst  is the share tree to be updated
+ * src  is a reduced share tree with at least
+ * STN_name
+ * STN_version
+ * STN_m_share
+ * STN_last_actual_proportion
+ * STN_adjusted_current_proportion
+ * Returns 0 on success, -1 on error.
+ *
+ * @param dst the new tree, updated in place
+ * @param src the tree being replaced
+ * @return 0 on success, -1 on error
+ */
 int
 update_sharetree(lList *dst, const lList *src) {
    static int depth = 0;
@@ -428,7 +464,14 @@ update_sharetree(lList *dst, const lList *src) {
    DRETURN(0);
 }
 
-/* seek user/prj node (depends on node_type STT_USER|STT_PROJECT) in actual share tree */
+/** @brief Find the user or project node with a given name in a share tree
+ *
+ * @param share_tree the share tree (`STN_Type`) to search
+ * @param name the node name to look for
+ * @param node_type `STT_USER` or `STT_PROJECT`; only nodes of that type match
+ * @param recurse if non-zero, descend into the children of non-matching nodes
+ * @return the node, or `nullptr` if the tree is empty or holds no such node
+ */
 lListElem *
 getNode(const lList *share_tree, const char *name, int node_type, int recurse) {
    DENTER(TOP_LAYER);

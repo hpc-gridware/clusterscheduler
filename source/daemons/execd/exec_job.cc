@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Writing a job's configuration to disk and forking its shepherd
+ */
+
 #include <cstring>
 #include <pwd.h>
 #include <sys/types.h>
@@ -113,7 +117,9 @@
 #   include "sge_smf.h"
 #endif
 
+/** @brief Name of the file the job's environment is written to */
 #define ENVIRONMENT_FILE "environment"
+/** @brief Name of the file the job's configuration is written to */
 #define CONFIG_FILE "config"
 
 static int ck_login_sh(char *shell);
@@ -137,6 +143,12 @@ static long get_next_addgrpid(lList *, long);
    in case of tasks the queue is the appropriate entry in the gdil list of the slave job
 */
 
+/** @brief The queue instance a job, task or PE task is accounted against
+ * @param jep the job (`JB_Type`)
+ * @param jatep the array task
+ * @param petep the PE task, or nullptr
+ * @return the queue instance
+ */
 lListElem *responsible_queue(lListElem *jep, lListElem *jatep, lListElem *petep) {
    lListElem *master_q = nullptr;
 
@@ -285,6 +297,36 @@ sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, ocs:
         err_str set to error string
         err_length size of err_str
  ************************************************************************/
+/** @def WRITE_COMPLEX_AND_CONSUMABLE_ATTR
+ * @brief Write one resource limit to the shepherd config, and whether it is a job consumable
+ *
+ * Defined inside sge_exec_job() and used only there; relies on the local `fp`,
+ * `master_q`, `jatep`, `petep` and `qualified_hostname`.
+ *
+ * @param A the attribute's name, used both as text and as a `QU_` field suffix
+ * @param T the attribute's type
+ */
+
+/** @def WRITE_COMPLEX_ATTR
+ * @brief #WRITE_COMPLEX_AND_CONSUMABLE_ATTR without the consumable flag
+ * @param A the attribute's name
+ * @param T the attribute's type
+ */
+
+/** @brief Write the job's configuration to disk and fork its shepherd
+ *
+ * Everything the shepherd will need - the `config` file, the `environment`
+ * file, the job script - is written into the job's active_jobs directory
+ * first, because once the shepherd is forked the daemon can no longer tell it
+ * anything.
+ *
+ * @param jep the job (`JB_Type`)
+ * @param jatep the array task
+ * @param petep the PE task, or nullptr
+ * @param[out] err_str receives the reason on failure
+ * @param err_length size of that buffer
+ * @return 0 on success
+ */
 int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_str, int err_length) {
    int i;
    char ps_name[128];

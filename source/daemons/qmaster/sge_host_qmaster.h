@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Execution, submit and admin hosts
+ */
+
 #include "uti/sge_monitor.h"
 
 #include "sgeobj/sge_daemonize.h"

@@ -19,22 +19,34 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Reading and writing the per-instance characteristics of an RSMAP
+ */
+
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
 
-/* RSMAP per-instance-characteristics grammar:
- *    gpu0[device=/dev/nvidia0,memory=80G]
- * The characteristics block is enclosed in RSMAP_CHARACTERISTICS_OPEN /
- * RSMAP_CHARACTERISTICS_CLOSE and its individual name=value entries are
- * separated by RSMAP_CHARACTERISTIC_SEPARATOR. The framework's flatfile
- * value-capture is bracket-depth aware (see sge_flatfile.cc), so the ','
- * inside [...] is preserved even though ',' is the field separator of the
- * enclosing complex_values list.
+/** @name The grammar of an RSMAP characteristics block
+ *
+ * An RSMAP instance may carry name/value characteristics:
+ *
+ *     gpu0[device=/dev/nvidia0,memory=80G]
+ *
+ * The block is enclosed in #RSMAP_CHARACTERISTICS_OPEN and
+ * #RSMAP_CHARACTERISTICS_CLOSE, its entries separated by
+ * #RSMAP_CHARACTERISTIC_SEPARATOR.
+ *
+ * @note That separator is a comma, and so is the field separator of the
+ *       `complex_values` list this whole thing sits inside. The flatfile
+ *       value capture is bracket-depth aware for exactly this reason, so the
+ *       inner commas survive.
+ * @{
  */
-#define RSMAP_CHARACTERISTICS_OPEN         '['
-#define RSMAP_CHARACTERISTICS_CLOSE        ']'
-#define RSMAP_CHARACTERISTIC_SEPARATOR     ','
-#define RSMAP_CHARACTERISTIC_SEPARATOR_STR ","
+#define RSMAP_CHARACTERISTICS_OPEN         '['   ///< Opens the characteristics block
+#define RSMAP_CHARACTERISTICS_CLOSE        ']'   ///< Closes the characteristics block
+#define RSMAP_CHARACTERISTIC_SEPARATOR     ','   ///< Between two characteristics
+#define RSMAP_CHARACTERISTIC_SEPARATOR_STR ","   ///< The same separator, as a string, for `strtok`-style use
+/** @} */
 
 int read_CE_stringval_host(lListElem *ep, int nm, const char *buf,
                            lList **alp);

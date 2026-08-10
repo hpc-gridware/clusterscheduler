@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Message definitions of the DRMAA library
+ */
+
 #include "uti/sge_string.h"
 
 #include "basis_types.h"

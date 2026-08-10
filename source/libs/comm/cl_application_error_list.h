@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Errors the commlib wants the application to see
+ */
+
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 

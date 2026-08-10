@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Receiving a message and routing it to the thread that answers it
+ */
+
 #include "sge_qmaster_process_message.h"
 
 #include <cstring>
@@ -197,28 +201,19 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
 }
 
 
-/****** qmaster/sge_qmaster_process_message/sge_qmaster_process_message() ******
-*  NAME
-*     sge_qmaster_process_message() -- Entry point for qmaster message handling
-*
-*  SYNOPSIS
-*     void* sge_qmaster_process_message(void *anArg)
-*
-*  FUNCTION
-*     Get a pending message. Handle message based on message tag.
-*
-*  INPUTS
-*     void *anArg - none
-*
-*  RESULT
-*     void* - none
-*
-*  NOTES
-*     MT-NOTE: thread safety needs to be verified!
-*     MT-NOTE:
-*     MT-NOTE: This function should only be used as a 'thread function'
-*
-*******************************************************************************/
+/**
+ * @brief Entry point for qmaster message handling
+ *
+ * Get a pending message. Handle message based on message tag.
+ *
+ * @param monitor none
+ *
+ * @note void* - none
+ *
+ * @note MT-NOTE: thread safety needs to be verified!
+ *       MT-NOTE:
+ *       MT-NOTE: This function should only be used as a 'thread function'
+ */
 void
 sge_qmaster_process_message(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -272,6 +267,16 @@ sge_qmaster_process_message(monitoring_t *monitor) {
    DRETURN_VOID;
 } /* sge_qmaster_process_message */
 
+/** @brief The data store that satisfies both of two requirements
+ *
+ * A request that touches several object types has to be answered from one
+ * store, and that store must be at least as current as the strictest of them
+ * demands - otherwise part of the answer would come from a stale mirror.
+ *
+ * @param type1 one requirement
+ * @param type2 the other
+ * @return the more restrictive of the two
+ */
 ocs::DataStore::Id
 get_most_restrictive_datastore(ocs::DataStore::Id type1, ocs::DataStore::Id type2) {
    if (type1 == type2) {
@@ -529,25 +534,15 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
    DRETURN_VOID;
 }
 
-/****** sge_qmaster_process_message/do_report_request() ************************
-*  NAME
-*     do_report_request() -- Process execd load report
-*
-*  SYNOPSIS
-*     static void do_report_request(struct_msg_t *aMsg)
-*
-*  FUNCTION
-*     Process execd load reports (TAG_REPORT_REQUEST). Unpack a CULL list with
-*     the load report from the pack buffer, which is part of 'aMsg'. Process
-*     execd load report.
-*
-*  INPUTS
-*     struct_msg_t *aMsg - execd load report message
-*
-*  RESULT
-*     void - none
-*
-*******************************************************************************/
+/**
+ * @brief Process execd load report
+ *
+ * Process execd load reports (TAG_REPORT_REQUEST). Unpack a CULL list with
+ * the load report from the pack buffer, which is part of 'aMsg'. Process
+ * execd load report.
+ *
+ * @param aMsg execd load report message
+ */
 static void
 do_report_request(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -581,30 +576,18 @@ do_report_request(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *
    DRETURN_VOID;
 } /* do_report_request */
 
-/****** qmaster/sge_qmaster_process_message/do_event_client_exit() *************
-*  NAME
-*     do_event_client_exit() -- handle event client exit message
-*
-*  SYNOPSIS
-*     static void do_event_client_exit(const char *aHost, const char *aSender,
-*     sge_pack_buffer *aBuffer)
-*
-*  FUNCTION
-*     Handle event client exit message. Extract event client id from pack
-*     buffer. Remove event client.
-*
-*  INPUTS
-*     const char *aHost        - sender
-*     const char *aSender      - communication endpoint
-*     sge_pack_buffer *aBuffer - buffer
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: do_event_client_exit() is NOT MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Handle event client exit message
+ *
+ * Handle event client exit message. Extract event client id from pack
+ * buffer. Remove event client.
+ *
+ * @param aHost sender
+ * @param aSender communication endpoint
+ * @param aBuffer buffer
+ *
+ * @note MT-NOTE: do_event_client_exit() is NOT MT safe.
+ */
 static void
 do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *monitor) {
    uint32_t client_id = 0;
@@ -644,9 +627,6 @@ do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_
  *    - an execd sends an ack for a signal delivery
  *    - an external event client sends an ack for received events
  *
- * @param packet
- * @param task
- * @param monitor *
  * @param packet Pseudo GDI packet that contains an ACK request
  * @param task Pseudo GDI task containing the ACK list with one ACK element
  * @param monitor Monitoring object

@@ -33,6 +33,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Reaping shepherds and turning what they left behind into a job report
+ */
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
@@ -139,6 +143,11 @@ static const char *JAPI_SINGLE_SESSION_KEY = "JAPI_SSK";
   - submission time is before the qmaster restarted or if qmaster is currently down
   
  ****************************************************************************/
+/** @brief Reap the shepherds that have exited and report their jobs
+ * @param max_count how many to reap in this pass, so one call cannot block the daemon
+ * @param is_qmaster_down whether qmaster is currently unreachable
+ * @return the number reaped
+ */
 int sge_reap_children_execd(int max_count, bool is_qmaster_down)
 {
    DENTER(TOP_LAYER);
@@ -812,6 +821,16 @@ write_failed_info(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id, 
 }
 
 /* ------------------------- */
+/** @brief Delete a finished job's directory once qmaster has acknowledged it
+ *
+ * Not before: the active_jobs directory is the only record of what happened,
+ * and a report that never arrives has to be sendable again.
+ *
+ * @param job_id the job
+ * @param ja_task_id the array task
+ * @param pe_task_id the PE task, or nullptr
+ * @param jr the job report that was acknowledged
+ */
 void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id, lListElem *jr)
 {
    DENTER(TOP_LAYER);
@@ -1086,6 +1105,14 @@ void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_
  The master should not give us jobs in the future and the administrator
  should be informed about the problem (e.g. we cant write to a filesystem).
  **************************************************************************/
+/** @brief Report that a job could not be started at all
+ * @param jep the job (`JB_Type`)
+ * @param jatep the array task
+ * @param petep the PE task, or nullptr
+ * @param error_string what went wrong
+ * @param general whether the failure is the host's fault rather than the job's
+ * @return the job report that was built
+ */
 lListElem *execd_job_start_failure(
 lListElem *jep,
 lListElem *jatep,
@@ -1096,6 +1123,14 @@ int general
    return execd_job_failure(jep, jatep, petep, error_string, general, SSTATE_FAILURE_BEFORE_JOB);
 }
 
+/** @brief Report that a job started but then failed
+ * @param jep the job (`JB_Type`)
+ * @param jatep the array task
+ * @param petep the PE task, or nullptr
+ * @param error_string what went wrong
+ * @param general whether the failure is the host's fault rather than the job's
+ * @return the job report that was built
+ */
 lListElem *execd_job_run_failure(
 lListElem *jep,
 lListElem *jatep,
@@ -1163,6 +1198,15 @@ static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem 
  This is done very like the normal job finish and runs into the same
  functions in the qmaster.
  **************************************************************************/
+/** @brief Handle a job qmaster says it does not know about
+ *
+ * Happens after a qmaster restart from an older spool: the job is running here
+ * but no longer exists there, so it has to be cleaned up rather than reported.
+ *
+ * @param jobid the job
+ * @param jataskid the array task
+ * @param qname the queue instance it was running in
+ */
 void job_unknown(uint32_t jobid, uint32_t jataskid, char *qname)
 {
    DENTER(TOP_LAYER);
@@ -1316,7 +1360,7 @@ cleanup_jobs_and_states(bool startup, const std::vector<pid_t> &shepherd_pids) {
 
 
 /**
- * \brief Enforces the cleanup of old jobs.
+ * @brief Enforces the cleanup of old jobs.
  *
  * This function can be called to enforce the expensive handling of clean_up_old_jobs()
  * This is required when
@@ -1324,12 +1368,16 @@ cleanup_jobs_and_states(bool startup, const std::vector<pid_t> &shepherd_pids) {
  *    - or when state changes (delete, reschedule) are triggered during downtime of the execution daemon
  */
 static bool enforce_cleanup_old_jobs = true;
+/** @brief Clean up jobs left behind by a previous daemon even if they look alive
+ *
+ * Set when the daemon is told to start fresh rather than adopt what it finds.
+ */
 void set_enforce_cleanup_old_jobs() {
    enforce_cleanup_old_jobs = true;
 }
 
 /**
- * \brief Shepherds that were already running when this execd started.
+ * @brief Shepherds that were already running when this execd started.
  *
  * They are not children of this process, so waitpid() in sge_reap_children_execd()
  * never sees them and their exit produces no SIGCHLD here. Nothing else notices
@@ -1347,13 +1395,14 @@ void set_enforce_cleanup_old_jobs() {
  * table that CS-2532 removed.
  */
 struct adopted_shepherd_t {
-   pid_t pid;         ///< pid of the shepherd, as written to active_jobs/<job>/pid
+   pid_t pid;         ///< pid of the shepherd, as written to `active_jobs/<job>/pid`
    uint32_t job_id;   ///< the job it supervises -- part of the shepherd's process name
+
 };
 static std::vector<adopted_shepherd_t> adopted_shepherds;
 
 /**
- * \brief Is this pid still the shepherd of that job?
+ * @brief Is this pid still the shepherd of that job?
  *
  * Asking it that precisely matters because pids get reused. "Does a process with
  * this pid exist" would also be answered yes by another cluster's shepherd, or by
@@ -1369,9 +1418,9 @@ static std::vector<adopted_shepherd_t> adopted_shepherds;
  * is asked via kill(pid, 0). That is not a regression: it is strictly more than
  * the code did before, where nothing looked at these processes at all.
  *
- * \param pid    pid to check
- * \param job_id job the pid is supposed to belong to
- * \return true if the process is still that job's shepherd
+ * @param pid    pid to check
+ * @param job_id job the pid is supposed to belong to
+ * @return true if the process is still that job's shepherd
  */
 static bool
 adopted_shepherd_still_running(pid_t pid, uint32_t job_id) {
@@ -1431,7 +1480,7 @@ check_adopted_shepherds() {
 }
 
 /**
- * \brief Cleans up old jobs and reports them to the qmaster.
+ * @brief Cleans up old jobs and reports them to the qmaster.
  *
  * The work itself is a reconciliation between what is on disk and what the execd has
  * in memory:
@@ -1459,8 +1508,8 @@ check_adopted_shepherds() {
  *
  * During startup, the function produces more output.
  *
- * \param startup Indicates if execd is in the startup phase.
- * \return true if the cleanup was successful, false otherwise.
+ * @param startup Indicates if execd is in the startup phase.
+ * @return true if the cleanup was successful, false otherwise.
  */
 bool
 clean_up_old_jobs(bool startup) {
@@ -2020,6 +2069,10 @@ uint32_t *valuep
 
 
 /* send mail to users if requested */
+/** @brief Mail the user about a job that has ended, if they asked to be told
+ * @param jep the job (`JB_Type`)
+ * @param jr the job report, for the usage and exit status
+ */
 void
 reaper_sendmail(lListElem *jep, lListElem *jr) {
    const lList *mail_users; 
@@ -2193,32 +2246,25 @@ reaper_sendmail(lListElem *jep, lListElem *jr) {
    DRETURN();
 }
 
-/****** reaper_execd/execd_slave_job_exit() ************************************
-*  NAME
-*     execd_slave_job_exit() -- make pe slave job report exit
-*
-*  SYNOPSIS
-*     void execd_slave_job_exit(uint32_t job_id, uint32_t ja_task_id)
-*
-*  FUNCTION
-*     When the master task of a tightly integrated pe job exited,
-*     qmaster sends a request to all slave execds to report 
-*     the exit of the slave job container once all pe tasks
-*     have finished.
-*     This function sets the slave job to status JEXITING,
-*     if all pe tasks already exited, it triggers sending
-*     of the final slave job report.
-*     The ACK_SIGNAL_SLAVE is repeated by sge_qmaster until all
-*     slave tasks have finished and sge_execd sent the final
-*     report for this job.
-*
-*  INPUTS
-*     uint32_t job_id     - job id of the slave job
-*     uint32_t ja_task_id - ja_task id of the slave job
-*
-*  NOTES
-*     MT-NOTE: execd_slave_job_exit() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Make pe slave job report exit
+ *
+ * When the master task of a tightly integrated pe job exited,
+ * qmaster sends a request to all slave execds to report
+ * the exit of the slave job container once all pe tasks
+ * have finished.
+ * This function sets the slave job to status JEXITING,
+ * if all pe tasks already exited, it triggers sending
+ * of the final slave job report.
+ * The ACK_SIGNAL_SLAVE is repeated by sge_qmaster until all
+ * slave tasks have finished and sge_execd sent the final
+ * report for this job.
+ *
+ * @param job_id job id of the slave job
+ * @param ja_task_id ja_task id of the slave job
+ *
+ * @note MT-NOTE: execd_slave_job_exit() is MT safe
+ */
 void execd_slave_job_exit(uint32_t job_id, uint32_t ja_task_id)
 {
    lListElem *job = nullptr;
@@ -2239,31 +2285,19 @@ void execd_slave_job_exit(uint32_t job_id, uint32_t ja_task_id)
    }
 }
 
-/****** reaper_execd/clean_up_binding() ****************************************
-*  NAME
-*     clean_up_binding() -- Releases the resources used by a job for core binding. 
-*
-*  SYNOPSIS
-*     static void clean_up_binding(char* binding) 
-*
-*  FUNCTION
-*     Checks which cores the job was bound to and releases them (i.e. 
-*     the as used marked cores where marked as free so that other jobs 
-*     can be bound to any of these cores). 
-*
-*  INPUTS
-*     char* binding - Pointer to the "binding" line out of the config file. 
-*
-*  RESULT
-*     static void - void
-*
-*
-*  NOTES
-*     MT-NOTE: clean_up_binding() is not MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief Releases the resources used by a job for core binding
+ *
+ * Checks which cores the job was bound to and releases them (i.e.
+ * the as used marked cores where marked as free so that other jobs
+ * can be bound to any of these cores).
+ *
+ * @param binding Pointer to the "binding" line out of the config file.
+ *
+ * @note static void - void
+ *
+ * @note MT-NOTE: clean_up_binding() is not MT safe
+ */
 static void clean_up_binding(char* binding)
 {
    DENTER(TOP_LAYER);
@@ -2363,27 +2397,19 @@ static void clean_up_binding(char* binding)
    DRETURN_VOID;
 }
 
-/****** reaper_execd/count_master_tasks() ****************************************
-*  NAME
-*     count_master_tasks() -- Counts the number of master tasks present for a job
-*
-*  SYNOPSIS
-*     int count_master_tasks(const lList *lp, uint32_t job_id)
-*
-*  FUNCTION
-*     Counts the number of master tasks for a specific job that are present
-*     on the execd.
-*
-*  INPUTS
-*     const lList *lp - Pointer to the job list
-*     uint32_t job_id - Job number to count master tasks for
-*
-*  RESULT
-*     int             - Number of master tasks found
-*
-*  NOTES
-*     MT-NOTE: count_master_tasks() is MT safe
-*******************************************************************************/
+/**
+ * @brief Counts the number of master tasks present for a job
+ *
+ * Counts the number of master tasks for a specific job that are present
+ * on the execd.
+ *
+ * @param lp Pointer to the job list
+ * @param job_id Job number to count master tasks for
+ *
+ * @return Number of master tasks found
+ *
+ * @note MT-NOTE: count_master_tasks() is MT safe
+ */
 int count_master_tasks(const lList *lp, uint32_t job_id)
 {
    const void *iterator = nullptr;
@@ -2409,6 +2435,14 @@ int count_master_tasks(const lList *lp, uint32_t job_id)
    DRETURN(master_jobs);
 }
 
+/** @brief End a job that is only being simulated
+ *
+ * Simulated hosts run no shepherd, so their jobs have to be finished by hand.
+ *
+ * @param jep the job (`JB_Type`)
+ * @param jatep the array task
+ * @param sig the signal to report the job as having died from, 0 for a normal exit
+ */
 void simulated_job_exit(const lListElem *jep, lListElem *jatep, uint32_t sig) {
    DENTER(TOP_LAYER);
 

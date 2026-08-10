@@ -34,6 +34,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Starting the job itself: the environment, the shell, and the exec
+ *
+ * @see builtin_starter.h for why the environment is rebuilt rather than inherited.
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
@@ -65,13 +71,13 @@
 #include "execution_states.h"
 #include "qlogin_starter.h"
 
-/* The maximum number of env variables we can export. */
+/** @brief The maximum number of env variables we can export. */
 #define MAX_NUMBER_OF_ENV_VARS 1023
 
 extern bool g_new_interactive_job_support;
 
-extern int  g_noshell;
-extern int  g_newpgrp;
+extern int  g_noshell;   ///< Start the job directly rather than through a shell
+extern int  g_newpgrp;   ///< Put the job into a process group of its own
 
 static char* shepherd_env[MAX_NUMBER_OF_ENV_VARS + 1];
 static int shepherd_env_index = -1;
@@ -88,8 +94,8 @@ static void start_qrsh_job();
 static void set_inherit_env (bool inherit);
 #endif
 extern int  shepherd_state;
-extern char shepherd_job_dir[];
-extern char **environ;
+extern char shepherd_job_dir[];   ///< The job's active_jobs directory
+extern char **environ;            ///< The process environment the shepherd inherited
 
 /* Copy from clients/qrsh/qrsh_starter.c
  * Trying to include it caused dependency problems
@@ -830,25 +836,15 @@ void son(const char *childname, char *script_file, int truncate_stderr_out, bool
    sge_free(&buffer);
 }
 
-/****** Shepherd/sge_set_environment() *****************************************
-*  NAME
-*     sge_set_environment () -- Read the environment from the "environment" file
-*     and store it in the appropriate environment, inherited or internal.
-*
-*  SYNOPSIS
-*      int sge_set_environment()
-*
-*  FUNCTION
-*     This function reads the "environment" file written out by the execd and
-*     stores each environment variable entry in the appropriate environment,
-*     either internal or inherited.
-*
-*  RESULTS
-*     int - error code: 0: good, 1: bad
-*
-*  NOTES
-*      MT-NOTE: sge_set_environment() is not MT safe
-*******************************************************************************/
+/** @brief Build the job's environment from the `environment` file the execd wrote
+ *
+ * Each entry goes into either the inherited or the internal environment,
+ * depending on the configuration.
+ *
+ * @return 0 on success, 1 on error
+ *
+ * @note MT-NOTE: sge_set_environment() is not MT safe
+ */
 int sge_set_environment()
 {
    const char *const filename = "environment";
@@ -934,23 +930,11 @@ static void setup_environment()
    }
 }
 
-/****** Shepherd/sge_get_environment() *****************************************
-*  NAME
-*     sge_get_environment () -- Get a pointer to the current environment
-*
-*  SYNOPSIS
-*     char **sge_get_environment()
-*
-*  FUNCTION
-*     This function returns a point to the current environment, inherited or
-*     internal.
-*
-*  RESULTS
-*     char ** - pointer to the current environment
-*
-*  NOTES
-*      MT-NOTE: sge_get_environment() is not MT safe
-*******************************************************************************/
+/** @brief The environment the job will be started with
+ * @return the environment, inherited or internal depending on the configuration
+ *
+ * @note MT-NOTE: sge_get_environment() is not MT safe
+ */
 char** sge_get_environment()
 {
    /* Bugfix: Issuezilla 1300
@@ -963,27 +947,13 @@ char** sge_get_environment()
    }
 }
 
-/****** Shepherd/sge_set_env_value() *******************************************
-*  NAME
-*     sge_set_env_value () -- Set the value for the given environment variable
-*
-*  SYNOPSIS
-*     const int sge_set_env_value(const char *name, const char *value)
-*
-*  FUNCTION
-*     This function sets the value of the given environment variable in
-*     the appropriate environment, inherited or internal.
-*
-*  INPUT
-*     const char *name - the name of the environment variable
-*     const char *value - the value of the environment variable
-*
-*  RESULTS
-*     int - error code: -1: bad, 0: good
-*
-*  NOTES
-*      MT-NOTE: sge_set_env_value() is not MT safe
-*******************************************************************************/
+/** @brief Set one variable in the environment the job will be started with
+ * @param name the name of the environment variable
+ * @param value the value of the environment variable
+ * @return 0 on success, -1 on error
+ *
+ * @note MT-NOTE: sge_set_env_value() is not MT safe
+ */
 int sge_set_env_value(const char *name, const char* value)
 {
    int ret = -1;
@@ -1016,26 +986,12 @@ int sge_set_env_value(const char *name, const char* value)
    return ret;
 }
 
-/****** Shepherd/sge_get_env_value() *******************************************
-*  NAME
-*     sge_get_env_value () -- Get the value for the given environment variable
-*
-*  SYNOPSIS
-*     const char *sge_get_env_value(const char *name)
-*
-*  FUNCTION
-*     This function returns the value of the given environment variable from
-*     the appropriate environment, inherited or internal.
-*
-*  INPUT
-*     const char *name - the name of the environment variable
-*
-*  RESULTS
-*     const char * - the value of the environment variable
-*
-*  NOTES
-*      MT-NOTE: sge_get_env_value() is not MT safe
-*******************************************************************************/
+/** @brief Read one variable out of the environment the job will be started with
+ * @param name the name of the environment variable
+ * @return its value, or nullptr when it is not set
+ *
+ * @note MT-NOTE: sge_get_env_value() is not MT safe
+ */
 const char *sge_get_env_value(const char *name)
 {
    const char *ret = nullptr;
@@ -1068,6 +1024,7 @@ const char *sge_get_env_value(const char *name)
    return ret;
 }
 
+/** @brief What separates the arguments in a configured method string */
 #define PROC_ARG_DELIM " \t"
 static char **disassemble_proc_args(const char *script_file, char **preargs, int extra_args)
 {
@@ -1151,11 +1108,25 @@ static char **read_job_args(char **preargs, int extra_args)
    return args;
 }
 
-/*--------------------------------------------------------------------
- * set_shepherd_signal_mask
- * set signal mask that shepherd can handle signals from execd
- * If use_starter_method is set, then the shellpath contains the starter_method.
- *--------------------------------------------------------------------*/
+/** @brief Exec the job, through a shell or directly
+ *
+ * Does not return: the job replaces this process. Which of the several ways
+ * of starting it applies depends on @p shell_start_mode and on whether the job
+ * is interactive.
+ *
+ * @param childname what is being started, for the trace file: `job`, `prolog`, …
+ * @param shell_path the shell to start the job with; the starter method when
+ *        @p use_starter_method is set
+ * @param script_file the job script
+ * @param argv0 what the job should see as its argv[0]
+ * @param shell_start_mode `unix_behavior`, `posix_compliant` or `script_from_stdin`
+ * @param is_interactive whether the job is interactive
+ * @param is_qlogin whether the job came from `qlogin`
+ * @param is_rsh whether the job came from `qrsh`
+ * @param is_rlogin whether the job came from `qrlogin`
+ * @param str_title the window title for an interactive job
+ * @param use_starter_method whether @p shell_path holds the starter method
+ */
 void start_command(const char *childname, char *shell_path, char *script_file, char *argv0,
                    const char *shell_start_mode, int is_interactive, int is_qlogin, int is_rsh, int is_rlogin,
                    const char *str_title, int use_starter_method) {
@@ -1454,6 +1425,17 @@ void start_command(const char *childname, char *shell_path, char *script_file, c
    }
 }
 
+/** @brief Check that a configured method exists and can be executed
+ *
+ * A prolog, epilog or starter method that is missing or not executable should
+ * fail the job with a clear message rather than a confusing exec error.
+ *
+ * @param method the configured command line
+ * @param name what it is, for the message: `prolog`, `epilog`, …
+ * @param[out] err_str receives the reason when the check fails
+ * @param err_str_size size of that buffer
+ * @return 0 when the method is usable, non-zero otherwise
+ */
 int
 check_configured_method(const char *method, const char *name, char *err_str, size_t err_str_size) {
    SGE_STRUCT_STAT     statbuf;
@@ -1495,6 +1477,15 @@ check_configured_method(const char *method, const char *name, char *err_str, siz
    return ret;
 }
 
+/** @brief Build the path of one of the job's output files
+ *
+ * Expands the pseudo variables the user may use in a path - job id, job name,
+ * task id, host - and appends the job's own name when the configured path is a
+ * directory.
+ *
+ * @param type which file: standard output, standard error or standard input
+ * @return the path, which the caller owns; nullptr when it could not be built
+ */
 char *
 build_path(int type) {
    SGE_STRUCT_STAT statbuf{};

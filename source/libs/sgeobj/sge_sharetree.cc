@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The share tree: the hierarchy the fair share policy distributes tickets over
+ *
+ * Each node is a user or a project and carries a share of its parent. A node
+ * is addressed either by name - which need not be unique - or by its path from
+ * the root, which is.
+ *
+ * @see sge_sharetree.h
+ */
+
 #include <cstring>
 
 #include "uti/sge_log.h"
@@ -50,6 +60,18 @@
 /************************************************************************
    id_sharetree - set the sharetree node id
 ************************************************************************/
+/**
+ * @brief Number the share tree nodes
+ *
+ * Walks the tree from `ep` and gives every node an id, so nodes can be
+ * referred to by number rather than by path.
+ *
+ * @param[out] alpp receives error messages
+ * @param ep the node to start at
+ * @param id the id to give this node
+ * @param[out] ret_id receives the next unused id
+ * @return true when the whole subtree could be numbered
+ */
 bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id)
 {
    DENTER(TOP_LAYER);
@@ -82,6 +104,15 @@ bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id)
   display a tree representation of sharetree 
 
  ************************************************************************/
+/**
+ * @brief Print a share tree as an indented tree
+ *
+ * Writes `name=shares` per node to stdout, one level of indentation per depth.
+ *
+ * @param ep the node to start at
+ * @param indent the string one level of depth is indented by
+ * @return 0 on success, -1 when `ep` is nullptr
+ */
 int show_sharetree(
 const lListElem *ep,
 const char *indent
@@ -113,6 +144,16 @@ const char *indent
   display a path representation of sharetree 
 
  ************************************************************************/
+/**
+ * @brief Print a share tree as one path per node
+ *
+ * Writes the full path of every node to stdout, which is the form `qconf`
+ * accepts back.
+ *
+ * @param root the node to start at
+ * @param path the path prefix the printed paths start with
+ * @return 0 on success, 1 when `root` is nullptr
+ */
 int show_sharetree_path(
 lListElem *root,
 const char *path 
@@ -166,6 +207,16 @@ const char *path
 /***************************************************
  Generate a Template for a sharetreenode
  ***************************************************/
+/**
+ * @brief A share tree node template, valid as a share tree on its own
+ *
+ * The node is named `default` rather than `template` on purpose: `default` is
+ * the catch-all that matches every user, so the offered template is a share
+ * tree an administrator can accept unchanged. A leaf named `template` would be
+ * rejected, since it names neither a user nor a project.
+ *
+ * @return the new node; the caller owns it
+ */
 lListElem *getSNTemplate()
 {
    lListElem *ep;
@@ -189,6 +240,17 @@ lListElem *getSNTemplate()
  Search for a share tree node with a given name in a
  share tree
  ********************************************************/
+/**
+ * @brief Find the first share tree node with a given name
+ *
+ * Searches depth first from `ep`. A name may occur more than once in a share
+ * tree, so the first match wins - use #search_named_node_path when the exact
+ * node matters.
+ *
+ * @param ep root of the tree
+ * @param name the node name to look for
+ * @return the node, or nullptr when no node has that name
+ */
 lListElem *search_named_node(lListElem *ep,  /* root of the tree */
                              const char *name )
 {
@@ -223,6 +285,14 @@ lListElem *search_named_node(lListElem *ep,  /* root of the tree */
 /********************************************************
  Free internals of ancestors structure
  ********************************************************/
+/**
+ * @brief Release the node array of an ancestors structure
+ *
+ * The structure itself is not freed; only the array #ancestors_t::nodes points
+ * at. The nodes themselves belong to the share tree and are not touched.
+ *
+ * @param[in,out] ancestors the structure to clean up; nullptr is ignored
+ */
 void free_ancestors( ancestors_t *ancestors )
 {
    if (ancestors && ancestors->nodes) {
@@ -296,6 +366,19 @@ search_by_path( lListElem *ep,  /* root of the [sub]tree */
  Search for a share tree node with a given path in a
  share tree
  ********************************************************/
+/**
+ * @brief Find a share tree node by its path
+ *
+ * The path components are separated by `.` or `/`; `*` matches any node name.
+ * Unlike #search_named_node this identifies exactly one node even when the
+ * same name occurs several times in the tree.
+ *
+ * @param ep root of the tree
+ * @param path the path to resolve
+ * @param[out] ancestors receives the nodes from the root down to the match;
+ *             may be nullptr. The caller frees it with #free_ancestors.
+ * @return the node, or nullptr when the path does not resolve
+ */
 lListElem *
 search_named_node_path( lListElem *ep,  /* root of the tree */
                         const char *path,
@@ -329,6 +412,19 @@ lListElem *search_ancestor_list( lListElem *ep,  /* root of the tree */
 
 #endif
 
+/**
+ * @brief Find a node by name and record the path that led to it
+ *
+ * Like #search_named_node, but additionally fills `ancestors` with the nodes
+ * from the root down to the match, in that order.
+ *
+ * @param ep root of the [sub]tree
+ * @param name the node name to look for
+ * @param[out] ancestors receives the path; the caller frees it with
+ *             #free_ancestors
+ * @param depth the depth `ep` sits at, 1 for the root
+ * @return the node, or nullptr when no node has that name
+ */
 lListElem *
 search_ancestors( lListElem *ep,
                   const char *name,
@@ -365,25 +461,17 @@ search_ancestors( lListElem *ep,
    DRETURN(nullptr);
 }
 
-/****** sge_search_unspecified_node() ******************************************
-*  NAME
-*     sge_search_unspecified_node() -- search for a node which is not specified
-*
-*  SYNOPSIS
-*     static lListElem *sge_search_unspecified_node(lListElem *ep)
-*
-*
-*  FUNCTION
-*     The function walks through the sharetree looking for the first node which
-*     has no name.  A node with no name means that it was created as a result of
-*     a dangling or circular child reference.
-*
-*  INPUTS
-*     ep - root of the tree
-*
-*  RESULT
-*     the first node which has no name or nullptr if all nodes have names
-******************************************************************************/
+/**
+ * @brief Search for a node which is not specified
+ *
+ * The function walks through the sharetree looking for the first node which
+ * has no name.  A node with no name means that it was created as a result of
+ * a dangling or circular child reference.
+ *
+ * @param ep root of the tree
+ *
+ * @return the first node which has no name or nullptr if all nodes have names
+ */
 lListElem *sge_search_unspecified_node(lListElem *ep)
 {
    DENTER(TOP_LAYER);

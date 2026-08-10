@@ -24,32 +24,46 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Accounting Summary
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of QAJ
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   QAJ_host = 3050,
-   QAJ_queue,
-   QAJ_group,
-   QAJ_owner,
-   QAJ_project,
-   QAJ_department,
-   QAJ_ru_wallclock,
-   QAJ_ru_utime,
-   QAJ_ru_stime,
-   QAJ_ru_maxrss,
-   QAJ_ru_inblock,
-   QAJ_granted_pe,
-   QAJ_slots,
-   QAJ_cpu,
-   QAJ_mem,
-   QAJ_io,
-   QAJ_iow,
-   QAJ_maxvmem,
-   QAJ_arid
+   QAJ_host = 3050,   ///< Host Name
+   QAJ_queue,   ///< Cluster Queue Name
+   QAJ_group,   ///< User Group
+   QAJ_owner,   ///< Owner
+   QAJ_project,   ///< Project
+   QAJ_department,   ///< Department
+   QAJ_ru_wallclock,   ///< Rusage Wallclock
+   QAJ_ru_utime,   ///< Rusage User Time
+   QAJ_ru_stime,   ///< Rusage System Time
+   QAJ_ru_maxrss,   ///< Rusage Maximum RSS
+   QAJ_ru_inblock,   ///< Rusage Block Input
+   QAJ_granted_pe,   ///< Granted Parallel Environment
+   QAJ_slots,   ///< Slots
+   QAJ_cpu,   ///< Cpu Usage
+   QAJ_mem,   ///< Integral Memory Usage
+   QAJ_io,   ///< IO Usage
+   QAJ_iow,   ///< IO Wait Time
+   QAJ_maxvmem,   ///< Maximum Virtual Memory
+   QAJ_arid   ///< AR Id
 };
 
+/** @brief The attribute ids of QAJ, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int QAJ_Type[] = {
    QAJ_host,
    QAJ_queue,
@@ -73,6 +87,10 @@ constexpr const int QAJ_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of QAJ
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define QAJ_ATTRIBUTES \
    {QAJ_host, "QAJ_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {QAJ_queue, "QAJ_queue", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Dispatching a procedure call that arrived over GDI
+ */
+
 #include "sge_c_gdi.h"
 
 #include "gdi/ocs_gdi_Packet.h"

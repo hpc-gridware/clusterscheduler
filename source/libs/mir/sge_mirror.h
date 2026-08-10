@@ -33,6 +33,21 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The event mirror: a local copy of the master lists, kept current
+ *
+ * A component that needs the master's object lists - a scheduler, a proxy, a
+ * monitoring tool - subscribes to the event client interface and applies every
+ * event to its own copy. This layer sits on top of that interface and does the
+ * applying, so the component only says *what* it wants mirrored.
+ *
+ * Mirroring can be restricted to certain event or object types, and a callback
+ * can be installed per type to do something beyond the pure mirroring.
+ *
+ * @see sge_mirror.cc
+ * @see @ref evc
+ */
+
 #include "cull/cull.h"
 
 #include "sgeobj/sge_object.h"
@@ -40,125 +55,58 @@
 
 #include "evc/sge_event_client.h"
 
-/****** Eventmirror/--Eventmirror ***************************************
-*
-*  NAME
-*     Eventmirror -- mirroring of master lists through event client interface
-*
-*  FUNCTION
-*     The event mirror interface provides a means to easily implement 
-*     Cluster Scheduler components that need to have access to the masters 
-*     object lists and therefore have to mirror them.
-*     
-*     Such components can be schedulers, proxies, monitoring tools etc.
-*  
-*     It is designed as a layer above the event client interface.
-*
-*     Mirroring can be restricted to certain event types / object types.
-*     Callback functions can be installed to perform actions additional to 
-*     pure mirroring.
-*
-*  SEE ALSO
-*     Eventmirror/-Eventmirror-Typedefs
-*     Eventmirror/sge_mirror_initialize()
-*     Eventmirror/sge_mirror_shutdown()
-*     Eventmirror/sge_mirror_subscribe()
-*     Eventmirror/sge_mirror_unsubscribe()
-*     Eventmirror/sge_mirror_process_events()
-*     Eventmirror/sge_mirror_update_master_list()
-*     Eventmirror/sge_mirror_update_master_list_host_key()
-*     Eventmirror/sge_mirror_update_master_list_str_key()
-*     Eventmirror/sge_mirror_strerror()
-****************************************************************************
-*/
-
-/****** Eventmirror/-Eventmirror-Typedefs ***************************************
-*
-*  NAME
-*     Eventmirror -- mirroring of master lists through event client interface
-*
-*  SYNOPSIS
-*     typedef enum {
-*        ...
-*     } sge_event_action;
-*     
-*     typedef enum {
-*        ...
-*     } sge_mirror_error;
-*     
-*     typedef int (*sge_mirror_callback)(sge_object_type type, 
-*                                        sge_event_action action, 
-*                                        lListElem *event, void *clientdata);
-*     
-*
-*  FUNCTION
-*     The following types are defined for use with the event mirroring 
-*     interface:
-*
-*
-*     Different event actions are defined in the enumeration sge_event_action:
-*        SGE_EMA_LIST      - the whole master list has been sent 
-*                            (used at initialization)
-*        SGE_EMA_ADD       - a new object has been created
-*        SGE_EMA_MOD       - an object has been modified
-*        SGE_EMA_DEL       - an object has been deleted
-*        SGE_EMA_TRIGGER   - a certain action has been triggered, 
-*                            e.g. a scheduling run or a shutdown.
-*   
-*     Most functions of the event mirroring interface return error codes that 
-*     are defined in the enumeration sge_mirror_error:
-*        SGE_EM_OK              - action performed successfully
-*        SGE_EM_NOT_INITIALIZED - the interface is not yet initialized 
-*        SGE_EM_BAD_ARG         - some input parameter was incorrect
-*        SGE_EM_TIMEOUT         - a timeout occurred
-*        SGE_EM_DUPLICATE_KEY   - an object should be added, but an object 
-*                                 with the same unique identifier already 
-*                                 exists.
-*        SGE_EM_KEY_NOT_FOUND   - an object with the given key was not found.
-*        SGE_EM_CALLBACK_FAILED - a callback function failed
-*        SGE_EM_PROCESS_ERRORS  - an error occurred during event processing
-*
-*     The event mirroring interface allows to install callback funktions for
-*     actions on certain event types. These callback functions have to have 
-*     the same prototype as given by the function typedef sge_mirror_callback.
-*  
-****************************************************************************
-*/
+/// What an event asks the mirror to do
 typedef enum {
-   SGE_EMA_LIST = 1,
-   SGE_EMA_ADD,
-   SGE_EMA_MOD,
-   SGE_EMA_DEL,
-   SGE_EMA_TRIGGER
+   SGE_EMA_LIST = 1, ///< the whole master list has been sent; used at initialization
+   SGE_EMA_ADD,      ///< a new object has been created
+   SGE_EMA_MOD,      ///< an object has been modified
+   SGE_EMA_DEL,      ///< an object has been deleted
+   SGE_EMA_TRIGGER   ///< a certain action has been triggered, e.g. a scheduling run or a shutdown
 } sge_event_action;
 
+/// What a callback tells the mirror to do with the event it was given
 typedef enum {
-   SGE_EMA_FAILURE = 0, /* the processing of events is stoped */
-   SGE_EMA_OK = 1,      /* everything is fine */
-   SGE_EMA_IGNORE = 2   /* no further processing for this event is done */
+   SGE_EMA_FAILURE = 0, ///< the processing of events is stopped
+   SGE_EMA_OK = 1,      ///< everything is fine
+   SGE_EMA_IGNORE = 2   ///< no further processing for this event is done
 } sge_callback_result;
 
+/**
+ * @brief Called for every event of a type the component installed it for
+ *
+ * Runs *before* the mirror applies the event, so the callback still sees the
+ * old state and can stop the event from being applied at all - see
+ * @ref sge_callback_result.
+ *
+ * @param evc the event client the event arrived on
+ * @param type the object type the event is about
+ * @param action what the event asks for
+ * @param event the event element
+ * @param clientdata whatever was passed when the callback was installed
+ * @return whether the mirror should apply the event
+ */
 typedef sge_callback_result (*sge_mirror_callback)(sge_evc_class_t *evc,
                                                    sge_object_type type, 
                                                    sge_event_action action, 
                                                    lListElem *event, 
                                                    void *clientdata);
 
+/// What most of the event mirror functions return
 typedef enum {
-   SGE_EM_OK = 0,
-   SGE_EM_NOT_INITIALIZED,
+   SGE_EM_OK = 0,          ///< action performed successfully
+   SGE_EM_NOT_INITIALIZED, ///< the interface is not yet initialized
    
-   SGE_EM_BAD_ARG,
-   SGE_EM_TIMEOUT,
+   SGE_EM_BAD_ARG,         ///< some input parameter was incorrect
+   SGE_EM_TIMEOUT,         ///< a timeout occurred
    
-   SGE_EM_DUPLICATE_KEY,
-   SGE_EM_KEY_NOT_FOUND,
+   SGE_EM_DUPLICATE_KEY,   ///< an object should be added, but one with the same unique identifier already exists
+   SGE_EM_KEY_NOT_FOUND,   ///< an object with the given key was not found
 
-   SGE_EM_CALLBACK_FAILED,
+   SGE_EM_CALLBACK_FAILED, ///< a callback function failed
 
-   SGE_EM_PROCESS_ERRORS,
+   SGE_EM_PROCESS_ERRORS,  ///< an error occurred during event processing
 
-   SGE_EM_LAST_ERRNO
+   SGE_EM_LAST_ERRNO       ///< not an error; the number of values above
 } sge_mirror_error;
 
 /* Initialization - Shutdown */

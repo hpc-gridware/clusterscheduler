@@ -32,6 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
+/** @file
+ * @brief Job submission verifiers: the instances and their life cycle
+ *
+ * A JSV is an external script that inspects and may modify every job as it is
+ * submitted. It runs either in the submit client or in qmaster.
+ *
+ * @see sge_jsv.h
+ */
+
 #include <fcntl.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -56,6 +65,7 @@
 /*
  * defines the timeout between the soft shutdown signal and the kill
  */
+/// Seconds to wait for a JSV script to exit before killing it
 #define JSV_QUIT_TIMEOUT (5)
 
 /*
@@ -70,34 +80,23 @@ static pthread_mutex_t jsv_mutex = PTHREAD_MUTEX_INITIALIZER;
  */
 static lList *jsv_list = nullptr;   /* JSV_Type */
 
-/****** sgeobj/jsv/jsv_create() ***************************************************
-*  NAME
-*     jsv_create() -- creates a new JSV object and initializes its attributes 
-*
-*  SYNOPSIS
-*     static lListElem * 
-*     jsv_create(const char *name, const char *context, lList **answer_list, 
-*                const char *jsv_url, const char *type, const char *user, 
-*                const char *scriptfile) 
-*
-*  FUNCTION
-*     Returns a new JSV instance. 
-*
-*  INPUTS
-*     const char *name       - Name od the new JSV element 
-*     const char *context    - JSV_CONTEXT_CLIENT or thread name
-*     lList **answer_list    - AN_Type list 
-*     const char *jsv_url    - JSV URL 
-*     const char *type       - type part of 'jsv_url' 
-*     const char *user       - user part of 'jsv_url'
-*     const char *scriptfile - path part of 'jsv_url'
-*
-*  RESULT
-*     static lListElem * - JSV_Type element
-*
-*  NOTES
-*     MT-NOTE: jsv_create() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Creates a new JSV object and initializes its attributes
+ *
+ * Returns a new JSV instance.
+ *
+ * @param name Name od the new JSV element
+ * @param context JSV_CONTEXT_CLIENT or thread name
+ * @param answer_list AN_Type list
+ * @param jsv_url JSV URL
+ * @param type type part of 'jsv_url'
+ * @param user user part of 'jsv_url'
+ * @param scriptfile path part of 'jsv_url'
+ *
+ * @return JSV_Type element
+ *
+ * @note MT-NOTE: jsv_create() is MT safe
+ */
 static lListElem *
 jsv_create(const char *name, const char *context, lList **answer_list, const char *jsv_url,
            const char *type, const char *user, const char *scriptfile)
@@ -243,34 +242,21 @@ jsv_send_data(lListElem *jsv, lList **answer_list, const char *buffer, size_t si
    DRETURN(ret);
 }
 
-/****** sgeobj/jsv/jsv_start() **********************************************
-*  NAME
-*     jsv_start() -- Start a JSV isntance 
-*
-*  SYNOPSIS
-*     bool jsv_start(lListElem *jsv, lList **answer_list) 
-*
-*  FUNCTION
-*     A call to this function starts a new JSV instance if it is 
-*     currently not running. Handles to pipe ends will be stored
-*     internally so that it is possible to communicate with the
-*     process which was started by this function.
-*
-*  INPUTS
-*     lListElem *jsv      - JSV_Type data structure 
-*     lList **answer_list - AN_Type list where error messages are stored. 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: jsv_start() is not MT safe 
-*
-*  SEE ALSO
-*     sgeobj/jsv/jsv_start 
-*******************************************************************************/
+/**
+ * @brief Start a JSV isntance
+ *
+ * A call to this function starts a new JSV instance if it is
+ * currently not running. Handles to pipe ends will be stored
+ * internally so that it is possible to communicate with the
+ * process which was started by this function.
+ *
+ * @param jsv JSV_Type data structure
+ * @param answer_list AN_Type list where error messages are stored.
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: jsv_start() is not MT safe
+ */
 bool 
 jsv_start(lListElem *jsv, lList **answer_list) 
 {
@@ -322,37 +308,26 @@ jsv_start(lListElem *jsv, lList **answer_list)
    DRETURN(ret);
 }
 
-/****** sge_jsv/jsv_stop() *****************************************************
-*  NAME
-*     jsv_stop() -- Stop a JSV instance which was previously started 
-*
-*  SYNOPSIS
-*     bool jsv_stop(lListElem *jsv, lList **answer_list, bool try_soft_quit) 
-*
-*  FUNCTION
-*     Stop a running JSV instance which was previously started. If the
-*     variable 'try_soft_quit' is set to 'true' then this function tries
-*     to communicate with the process. It will then send a "QUIT" string
-*     to pipe end which is connected with the stdin of the JSV process.
-*     If the script does then not terminate within JSV_QUIT_TIMEOUT 
-*     seconds then it will be terminated hard via kill signal.
-*
-*  INPUTS
-*     lListElem *jsv      - JSV_Type element 
-*     lList **answer_list - AN_Type element 
-*     bool try_soft_quit  - "true" if the JSV should terminate itself 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: jsv_stop() is MT safe 
-*
-*  SEE ALSO
-*     sgeobj/jsv/jsv_start() 
-*******************************************************************************/
+/**
+ * @brief Stop a JSV instance which was previously started
+ *
+ * Stop a running JSV instance which was previously started. If the
+ * variable 'try_soft_quit' is set to 'true' then this function tries
+ * to communicate with the process. It will then send a "QUIT" string
+ * to pipe end which is connected with the stdin of the JSV process.
+ * If the script does then not terminate within JSV_QUIT_TIMEOUT
+ * seconds then it will be terminated hard via kill signal.
+ *
+ * @param jsv JSV_Type element
+ * @param answer_list AN_Type element
+ * @param try_soft_quit "true" if the JSV should terminate itself
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: jsv_stop() is MT safe
+ *
+ * @see #jsv_start
+ */
 bool 
 jsv_stop(lListElem *jsv, lList **answer_list, bool try_soft_quit) {
    bool ret = true;
@@ -395,50 +370,34 @@ jsv_stop(lListElem *jsv, lList **answer_list, bool try_soft_quit) {
    DRETURN(ret);
 }
 
-/****** sgeobj/jsv/jsv_url_parse() ************************************************
-*  NAME
-*     jsv_url_parse() -- parses a JSV URL 
-*
-*  SYNOPSIS
-*     bool 
-*     jsv_url_parse(dstring *jsv_url, lList **answer_list, dstring *type, 
-*                   dstring *user, dstring *path, bool in_client) 
-*
-*  FUNCTION
-*     This function parses the given 'jsv_url' and fills the dstring 'type', 
-*     'user' and 'path' with the parsed elements. If one of the elements was
-*     not specified with the JSV URL then the corresponding variable will 
-*     not be changed. 
-*
-*     A JSV URL has following format:
-*     
-*        jsi_url := client_jsv_url | server_jsv_url ;
-*        server_jsi_url := [ type ":" ] [ user "@" ] path ;
-*        client_jsi_url := [ type ":" ] path ;
-*
-*     Within client JSVs it is not allowed to specify a user. This function
-*     has to be used with value 'true' for the parameter 'in_client'. 
-*     If an error happens during parsing then this function will fill
-*     'answer_list' with a corresponding message and the function will
-*     return with value 'false' otherwiese 'true' will be returned.
-*
-*  INPUTS
-*     dstring *jsv_url    - dstring containing a JSV url 
-*     lList **answer_list - answer_list
-*     dstring *type       - "script" 
-*     dstring *user       - specified username or nullptr
-*     dstring *path       - absolute path to a script or binary 
-*     bool in_client      - true in commandline clients
-*                           false within qmaster 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: jsv_url_parse() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Parses a JSV URL
+ *
+ * This function parses the given 'jsv_url' and fills the dstring 'type',
+ * 'user' and 'path' with the parsed elements. If one of the elements was
+ * not specified with the JSV URL then the corresponding variable will
+ * not be changed.
+ * A JSV URL has following format:
+ *    jsi_url := client_jsv_url | server_jsv_url ;
+ *    server_jsi_url := [ type ":" ] [ user "@" ] path ;
+ *    client_jsi_url := [ type ":" ] path ;
+ * Within client JSVs it is not allowed to specify a user. This function
+ * has to be used with value 'true' for the parameter 'in_client'.
+ * If an error happens during parsing then this function will fill
+ * 'answer_list' with a corresponding message and the function will
+ * return with value 'false' otherwiese 'true' will be returned.
+ *
+ * @param jsv_url dstring containing a JSV url
+ * @param answer_list answer_list
+ * @param type "script"
+ * @param user specified username or nullptr
+ * @param path absolute path to a script or binary
+ * @param in_client true in commandline clients false within qmaster
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: jsv_url_parse() is MT safe
+ */
 bool jsv_url_parse(dstring *jsv_url, lList **answer_list, dstring *type, 
                    dstring *user, dstring *path, bool in_client)
 {
@@ -521,31 +480,20 @@ bool jsv_url_parse(dstring *jsv_url, lList **answer_list, dstring *type,
    DRETURN(success);
 }
 
-/****** sgeobj/jsv/jsv_send_command() *********************************************
-*  NAME
-*     jsv_send_command() -- sends a command to a JSV script 
-*
-*  SYNOPSIS
-*     bool 
-*     jsv_send_command(lListElem *jsv, lList **answer_list, const char *message) 
-*
-*  FUNCTION
-*     Sends the 'message' to the 'jsv' script. If this fails then 
-*     'answer_list' will be filled.
-*
-*  INPUTS
-*     lListElem *jsv      - JSV element 
-*     lList **answer_list - answer list 
-*     const char *message - null terminated string 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - failed
-*
-*  NOTES
-*     MT-NOTE: jsv_send_command() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Sends a command to a JSV script
+ *
+ * Sends the 'message' to the 'jsv' script. If this fails then
+ * 'answer_list' will be filled.
+ *
+ * @param jsv JSV element
+ * @param answer_list answer list
+ * @param message null terminated string
+ *
+ * @return error state true  - success false - failed
+ *
+ * @note MT-NOTE: jsv_send_command() is MT safe
+ */
 bool 
 jsv_send_command(lListElem *jsv, lList **answer_list, const char *message) 
 {
@@ -562,45 +510,29 @@ jsv_send_command(lListElem *jsv, lList **answer_list, const char *message)
    DRETURN(ret);
 }
 
-/****** sgeobj/jsv/jsv_list_add() *************************************************
-*  NAME
-*     jsv_list_add() -- adds a new JSV  
-*
-*  SYNOPSIS
-*     bool 
-*     jsv_list_add(const char *name, const char *context, 
-*                  lList **answer_list, const char *jsv_url) 
-*
-*  FUNCTION
-*     By calling this function a new JSV element will be registered internally.
-*     The JSV will be initialized with the values 'name", 'context', and
-*     'jsv_url'. The 'name' and 'context' will be used to identify the JSV.
-*     In command line clients the 'context' string JSV_CONTEXT_CLIENT should
-*     be passed to this function. Within qmaster the name of the thread
-*     which calls this function sould be used as 'context' string.
-*
-*     The JSV data structures will be initialized but the JSV is not started
-*     when this function returns. 
-*
-*     In case of any errors the 'answer_list' will be filled and the function
-*     will return with the value 'false' instead of 'true'.
-*
-*
-*  INPUTS
-*     const char *name    - JSV name (used for error messages) 
-*     const char *context - JSV context name (to identify this JSV)
-*     lList **answer_list - AN_Type answer list
-*     const char *jsv_url - JSV URL 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - false 
-*
-*  NOTES
-*     MT-NOTE: jsv_list_add() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Adds a new JSV
+ *
+ * By calling this function a new JSV element will be registered internally.
+ * The JSV will be initialized with the values 'name", 'context', and
+ * 'jsv_url'. The 'name' and 'context' will be used to identify the JSV.
+ * In command line clients the 'context' string JSV_CONTEXT_CLIENT should
+ * be passed to this function. Within qmaster the name of the thread
+ * which calls this function sould be used as 'context' string.
+ * The JSV data structures will be initialized but the JSV is not started
+ * when this function returns.
+ * In case of any errors the 'answer_list' will be filled and the function
+ * will return with the value 'false' instead of 'true'.
+ *
+ * @param name JSV name (used for error messages)
+ * @param context JSV context name (to identify this JSV)
+ * @param answer_list AN_Type answer list
+ * @param jsv_url JSV URL
+ *
+ * @return error state true  - success false - false
+ *
+ * @note MT-NOTE: jsv_list_add() is MT safe
+ */
 bool 
 jsv_list_add(const char *name, const char *context, lList **answer_list, const char *jsv_url)
 {
@@ -637,28 +569,18 @@ jsv_list_add(const char *name, const char *context, lList **answer_list, const c
    DRETURN(ret);
 }
 
-/****** sgeobj/jsv/jsv_list_remove() *******************************************
-*  NAME
-*     jsv_list_remove() -- remove a JSV script 
-*
-*  SYNOPSIS
-*     bool jsv_list_remove(const char *name, const char *context) 
-*
-*  FUNCTION
-*     Remove all JSV scripts were 'name' and 'context' matches. 
-*
-*  INPUTS
-*     const char *name    - name of a JSV script 
-*     const char *context - JSV_CLIENT_CONTEXT or thread name 
-*
-*  RESULT
-*     bool - error status
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: jsv_list_remove() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Remove a JSV script
+ *
+ * Remove all JSV scripts were 'name' and 'context' matches.
+ *
+ * @param name name of a JSV script
+ * @param context JSV_CLIENT_CONTEXT or thread name
+ *
+ * @return error status true  - success false - error
+ *
+ * @note MT-NOTE: jsv_list_remove() is MT safe
+ */
 bool 
 jsv_list_remove(const char *name, const char *context)
 {
@@ -684,29 +606,19 @@ jsv_list_remove(const char *name, const char *context)
    DRETURN(ret);
 }
 
-/****** sgeobj/jsv/jsv_is_enabled() ********************************************
-*  NAME
-*     jsv_is_enabled() -- is JSV enabled in the given context 
-*
-*  SYNOPSIS
-*     bool jsv_is_enabled() 
-*
-*  FUNCTION
-*     Returns if there are active JSV instances which have to be triggered. 
-*     As a side effect the function updates the JSV (restart) if the
-*     configuration setting changed in master.
-*
-*  INPUTS
-*     void - NONE
-*
-*  RESULT
-*     bool - is jsv active
-*        true  - there are active JSVs
-*        false - JSV is not configured
-*
-*  NOTES
-*     MT-NOTE: jsv_is_enabled() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Is JSV enabled in the given context
+ *
+ * Returns if there are active JSV instances which have to be triggered.
+ * As a side effect the function updates the JSV (restart) if the
+ * configuration setting changed in master.
+ *
+ * @param context the context to ask about, e.g. #JSV_CONTEXT_CLIENT
+ *
+ * @return is jsv active true  - there are active JSVs false - JSV is not configured
+ *
+ * @note MT-NOTE: jsv_is_enabled() is MT safe
+ */
 bool 
 jsv_is_enabled(const char *context) {
    bool ret = true;
@@ -723,27 +635,15 @@ jsv_is_enabled(const char *context) {
    DRETURN(ret);
 }
 
-/****** sgeobj/jsv/jsv_list_remove_all() ***************************************
-*  NAME
-*     jsv_list_remove_all() -- Remove all JSV elements 
-*
-*  SYNOPSIS
-*     bool jsv_list_remove_all() 
-*
-*  FUNCTION
-*     Remove all JSV elements from the global 'jsv_list' 
-*
-*  INPUTS
-*     void - None 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - failed
-*
-*  NOTES
-*     MT-NOTE: jsv_list_remove_all() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Remove all JSV elements
+ *
+ * Remove all JSV elements from the global 'jsv_list'
+ *
+ * @return error state true  - success false - failed
+ *
+ * @note MT-NOTE: jsv_list_remove_all() is MT safe
+ */
 bool 
 jsv_list_remove_all()
 {
@@ -763,43 +663,30 @@ jsv_list_remove_all()
    DRETURN(ret);
 }
 
-/****** sgeobj/jsv/jsv_list_update() **********************************************
-*  NAME
-*     jsv_list_update() -- update configuration and state of a JSV 
-*
-*  SYNOPSIS
-*     bool 
-*     jsv_list_update(const char *name, const char *context, 
-*                     lList **answer_list, const char *jsv_url) 
-*
-*  FUNCTION
-*     A call to this function either updates the configuration and/or
-*     state of a existing JSV or it creates a new one. 'name' and
-*     'context' are used to identify if the JSV already exists. If
-*     it does not exist then it will be created. 
-*
-*     If the JSV exists then it is tested if the provided 'jsv_url'
-*     is different from the jsv_url stored in the JSV element. In
-*     that case the provided 'jsv_url' will be used as new
-*     configuration value. If the JSV process is already running
-*     then it will be stopped. The process will also be stopped
-*     if the script file which was used to create the JSV process
-*     has been changed.
-*
-*  INPUTS
-*     const char *name    - name of the JSV element 
-*     const char *context - context string which indentifies JSVs 
-*     lList **answer_list - AN_Type answer list 
-*     const char *jsv_url - JSV URL string 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: jsv_list_update() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Update configuration and state of a JSV
+ *
+ * A call to this function either updates the configuration and/or
+ * state of a existing JSV or it creates a new one. 'name' and
+ * 'context' are used to identify if the JSV already exists. If
+ * it does not exist then it will be created.
+ * If the JSV exists then it is tested if the provided 'jsv_url'
+ * is different from the jsv_url stored in the JSV element. In
+ * that case the provided 'jsv_url' will be used as new
+ * configuration value. If the JSV process is already running
+ * then it will be stopped. The process will also be stopped
+ * if the script file which was used to create the JSV process
+ * has been changed.
+ *
+ * @param name name of the JSV element
+ * @param context context string which indentifies JSVs
+ * @param answer_list AN_Type answer list
+ * @param jsv_url JSV URL string
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: jsv_list_update() is not MT safe
+ */
 bool 
 jsv_list_update(const char *name, const char *context,
                 lList **answer_list, const char *jsv_url) 
@@ -915,70 +802,48 @@ jsv_list_update(const char *name, const char *context,
    DRETURN(ret);
 }
 
-/****** sgeobj/jsv/jsv_do_verify() *********************************************
-*  NAME
-*     jsv_do_verify() -- verify a job using JSV's 
-*
-*  SYNOPSIS
-*     bool 
-*     jsv_do_verify(sge_gdi_ctx_class_t* ctx, const char *context, 
-*                   lListElem **job, lList **answer_list, bool holding_lock) 
-*
-*  FUNCTION
-*     This function verifies a job specification using one or multiple 
-*     JSVs. The 'context' string will be used to identify which JSV's
-*     should be executed. 
-*
-*     In commandline clients the string "JSV_CONTEXT_CLIENT" has to be 
-*     passed to this function. In qmaster context the name of the thread 
-*     which calls this function has to be provided.
-*
-*     If multiple JSVs should be executed then the job specification
-*     of 'job' will be passed to the first JSV. This specification might
-*     be changed during the verification process. The result will be 
-*     passed to the second JSV process which might also adjust job
-*     specification parameters. This will either continue until the
-*     last JSV returns successfully or until a JSV rejects the job.
-*
-*     'job' is input and output parameter. It might either be unchanged,
-*     partially changed or completely removed. Therfore 'job' might not be 
-*     element in a list when the function is called.
-*
-*     'holding_lock' notifies the function that the calling function
-*     is holding the global lock. In that case the global lock will be
-*     released during the verification process. After that the global
-*     lock will be aquired again.
-*
-*     This function will return 'true' if the verification process
-*     was successful. In that case 'job' contains the job specification
-*     of the verified job with all adjustments which might have been 
-*     requested during the verification process of all JSV's.
-*
-*     If the job was rejected by one of the JSVs then the return value
-*     of this funtion will be 'false' and the answer list will eiter 
-*     contain the error reason which was provided by the rejecting JSV 
-*     script/binary or it will contain a uniform message that the
-*     job was rejected due to JSV verification. If the job is acceped
-*     or accepted with modifications the returned value will be 'true'.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t* ctx - context object
-*     const char *context      - JSV_CONTEXT_CLIENT or thread name
-*     lListElem **job          - pointer or a job (JB_Type) 
-*     lList **answer_list      - answer_list for messages 
-*     bool holding_lock        - is the calling thread holding the
-*                                global lock 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*                job is accepted or accepted with modifications
-*        false - error
-*                job is rejected
-*
-*  NOTES
-*     MT-NOTE: jsv_do_verify() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Verify a job using JSV's
+ *
+ * This function verifies a job specification using one or multiple
+ * JSVs. The 'context' string will be used to identify which JSV's
+ * should be executed.
+ * In commandline clients the string "JSV_CONTEXT_CLIENT" has to be
+ * passed to this function. In qmaster context the name of the thread
+ * which calls this function has to be provided.
+ * If multiple JSVs should be executed then the job specification
+ * of 'job' will be passed to the first JSV. This specification might
+ * be changed during the verification process. The result will be
+ * passed to the second JSV process which might also adjust job
+ * specification parameters. This will either continue until the
+ * last JSV returns successfully or until a JSV rejects the job.
+ * 'job' is input and output parameter. It might either be unchanged,
+ * partially changed or completely removed. Therfore 'job' might not be
+ * element in a list when the function is called.
+ * 'holding_lock' notifies the function that the calling function
+ * is holding the global lock. In that case the global lock will be
+ * released during the verification process. After that the global
+ * lock will be aquired again.
+ * This function will return 'true' if the verification process
+ * was successful. In that case 'job' contains the job specification
+ * of the verified job with all adjustments which might have been
+ * requested during the verification process of all JSV's.
+ * If the job was rejected by one of the JSVs then the return value
+ * of this funtion will be 'false' and the answer list will eiter
+ * contain the error reason which was provided by the rejecting JSV
+ * script/binary or it will contain a uniform message that the
+ * job was rejected due to JSV verification. If the job is acceped
+ * or accepted with modifications the returned value will be 'true'.
+ *
+ * @param context JSV_CONTEXT_CLIENT or thread name
+ * @param job pointer or a job (JB_Type)
+ * @param answer_list answer_list for messages
+ * @param holding_lock is the calling thread holding the global lock
+ *
+ * @return error state true  - success job is accepted or accepted with modifications false - error job is rejected
+ *
+ * @note MT-NOTE: jsv_do_verify() is MT safe
+ */
 bool 
 jsv_do_verify(const char *context, lListElem **job,
               lList **answer_list, bool holding_lock) 

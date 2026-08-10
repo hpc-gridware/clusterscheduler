@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief What the commlib knows about other components
+ */
+
 #include <sys/time.h>
 
 #include "uti/sge_stdlib.h"
@@ -39,6 +43,14 @@
 #include "comm/cl_endpoint_list.h"
 #include "comm/cl_commlib.h"
 
+/** @brief Create the endpoint list
+ * @param list_p receives the new list
+ * @param list_name name for log messages
+ * @param entry_life_time how long an entry survives untouched
+ * @param refresh_interval seconds between two sweeps for expired entries
+ * @param create_hash build the lookup table
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_endpoint_list_setup(cl_raw_list_t **list_p,
                            const char *list_name,
                            long entry_life_time,
@@ -101,6 +113,11 @@ int cl_endpoint_list_setup(cl_raw_list_t **list_p,
    return ret_val;
 }
 
+/** @brief How long an entry survives untouched
+ * @param list_p the list
+ * @param entry_life_time the lifetime in seconds
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_endpoint_list_set_entry_life_time(cl_raw_list_t *list_p, long entry_life_time) {
    cl_endpoint_list_data_t *ldata = nullptr;
 
@@ -115,6 +132,10 @@ int cl_endpoint_list_set_entry_life_time(cl_raw_list_t *list_p, long entry_life_
    return CL_RETVAL_PARAMS;
 }
 
+/** @brief The list's own state
+ * @param list_p the list
+ * @return its #cl_endpoint_list_data_t
+ */
 cl_endpoint_list_data_t *cl_endpoint_list_get_data(cl_raw_list_t *list_p) {
 
    cl_endpoint_list_data_t *ldata = nullptr;
@@ -134,6 +155,10 @@ cl_endpoint_list_data_t *cl_endpoint_list_get_data(cl_raw_list_t *list_p) {
    return ldata;
 }
 
+/** @brief Free the endpoint list and everything in it
+ * @param list_p the list, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_endpoint_list_cleanup(cl_raw_list_t **list_p) {
    cl_endpoint_list_data_t *ldata = nullptr;
    cl_endpoint_list_elem_t *elem = nullptr;
@@ -170,6 +195,18 @@ int cl_endpoint_list_cleanup(cl_raw_list_t **list_p) {
    return cl_raw_list_cleanup(list_p);
 }
 
+/** @brief Record what is known about a component
+ *
+ * Updates the entry when it is already there, which is also what refreshes
+ * its last-used time.
+ *
+ * @param list_p the list
+ * @param endpoint who it is
+ * @param service_port the port it listens on
+ * @param autoclose whether its connections may be closed to make room
+ * @param is_static true for an entry that must never expire
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_endpoint_list_define_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint, int service_port,
                                      cl_xml_connection_autoclose_t autoclose, bool is_static) {
 
@@ -258,6 +295,12 @@ int cl_endpoint_list_define_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *e
    return CL_RETVAL_OK;
 }
 
+/** @brief The recorded autoclose mode of a component
+ * @param list_p the list
+ * @param endpoint who it is
+ * @param autoclose receives the mode
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_endpoint_list_get_autoclose_mode(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint,
                                         cl_xml_connection_autoclose_t *autoclose) {
    int back = CL_RETVAL_UNKNOWN_ENDPOINT;
@@ -290,6 +333,12 @@ int cl_endpoint_list_get_autoclose_mode(cl_raw_list_t *list_p, cl_com_endpoint_t
    return back;
 }
 
+/** @brief The recorded port of a component
+ * @param list_p the list
+ * @param endpoint who it is
+ * @param service_port receives the port
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_endpoint_list_get_service_port(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint, int *service_port) {
    int back = CL_RETVAL_UNKNOWN_ENDPOINT;
    int ret_val = CL_RETVAL_OK;
@@ -320,6 +369,12 @@ int cl_endpoint_list_get_service_port(cl_raw_list_t *list_p, cl_com_endpoint_t *
    return back;
 }
 
+/** @brief When a component was last heard from
+ * @param list_p the list
+ * @param endpoint who it is
+ * @param touch_time receives the time
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int
 cl_endpoint_list_get_last_touch_time(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint, unsigned long *touch_time) {
 
@@ -361,6 +416,11 @@ cl_endpoint_list_get_last_touch_time(cl_raw_list_t *list_p, cl_com_endpoint_t *e
 
 }
 
+/** @brief Forget a component
+ * @param list_p the list
+ * @param endpoint who it is
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_endpoint_list_undefine_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint) {
    int back = CL_RETVAL_UNKNOWN_ENDPOINT;
    int ret_val = CL_RETVAL_OK;
@@ -397,6 +457,10 @@ int cl_endpoint_list_undefine_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t 
    return back;
 }
 
+/** @brief The first endpoint
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_endpoint_list_elem_t *cl_endpoint_list_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -405,6 +469,10 @@ cl_endpoint_list_elem_t *cl_endpoint_list_get_first_elem(cl_raw_list_t *list_p) 
    return nullptr;
 }
 
+/** @brief The last endpoint
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_endpoint_list_elem_t *cl_endpoint_list_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
    if (raw_elem) {
@@ -413,6 +481,10 @@ cl_endpoint_list_elem_t *cl_endpoint_list_get_least_elem(cl_raw_list_t *list_p) 
    return nullptr;
 }
 
+/** @brief The element after this one
+ * @param elem the current element
+ * @return the next element, or nullptr at the end
+ */
 cl_endpoint_list_elem_t *cl_endpoint_list_get_next_elem(cl_endpoint_list_elem_t *elem) {
    cl_raw_list_elem_t *next_raw_elem = nullptr;
 
@@ -426,6 +498,10 @@ cl_endpoint_list_elem_t *cl_endpoint_list_get_next_elem(cl_endpoint_list_elem_t 
    return nullptr;
 }
 
+/** @brief The element before this one
+ * @param elem the current element
+ * @return the previous element, or nullptr at the start
+ */
 cl_endpoint_list_elem_t *cl_endpoint_list_get_last_elem(cl_endpoint_list_elem_t *elem) {
    cl_raw_list_elem_t *last_raw_elem = nullptr;
 
@@ -439,6 +515,11 @@ cl_endpoint_list_elem_t *cl_endpoint_list_get_last_elem(cl_endpoint_list_elem_t 
    return nullptr;
 }
 
+/** @brief Find the entry for a component
+ * @param list_p the list
+ * @param endpoint who it is
+ * @return the element, or nullptr
+ */
 cl_endpoint_list_elem_t *cl_endpoint_list_get_elem_endpoint(cl_raw_list_t *list_p, cl_com_endpoint_t *endpoint) {
    cl_endpoint_list_elem_t *elem = nullptr;
 

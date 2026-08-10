@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
+/** @file
+ * @brief Unit tests for mt in `libs/spool`
+ */
+
 
 /* system */
 #include <pthread.h>
@@ -57,8 +61,8 @@ static const int loops = 2000;
 
 static int delay = 0;
 
-#define LOCAL_TRANSACTION 0
-#define SGE_LOCKING 1
+#define LOCAL_TRANSACTION 0   ///< wrap each write in its own transaction rather than sharing one
+#define SGE_LOCKING 1         ///< take the cluster's own locks as well as the backend's
 
 /* JG: TODO: test:
  * - do we have the locking problems, if the keys are more different?
@@ -69,7 +73,7 @@ static int delay = 0;
  */
 
 #if SGE_LOCKING
-pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;   ///< serialises the threads where the test wants them serialised
 #endif
 
 static bool add_job(int job_id)

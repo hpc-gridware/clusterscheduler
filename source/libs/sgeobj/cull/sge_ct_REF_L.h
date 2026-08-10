@@ -24,21 +24,26 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Generic Reference (unused)
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Generic Reference (unused)
 *
-* @todo add description
+* A bare pointer to another element, for building temporary reference lists.
+* @warning No attribute of this type is read or written anywhere in either repository, and `REF_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model.
 *
-*    SGE_REF(REF_ref) - @todo add summary
-*    @todo add description
+*    SGE_REF(REF_ref) - Referenced Element
+*    Part of the unused REF object; see the object description.
 *
 */
 
 enum {
-   REF_ref = REF_LOWERBOUND
+   REF_ref = REF_LOWERBOUND   ///< Referenced Element
 };
 
 LISTDEF(REF_Type)
@@ -49,6 +54,7 @@ NAMEDEF(REFN)
    NAME("REF_ref")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define REF_SIZE sizeof(REFN)/sizeof(char *)
 
 

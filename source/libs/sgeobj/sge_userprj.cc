@@ -32,6 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Users and projects, which share their usage bookkeeping
+ *
+ * The two objects are separate but nearly parallel: both carry shares,
+ * override tickets and the accumulated usage the share tree policy decays.
+ *
+ * @see sge_userprj.h
+ */
+
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
@@ -42,23 +51,16 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-/****** sgeobj/userprj/prj_list_locate() **********************************
-*  NAME
-*     prj_list_locate() -- Find project in list 
-*
-*  SYNOPSIS
-*     lListElem* prj_list_locate(lList *lp, const char *name) 
-*
-*  FUNCTION
-*     Find project in list. 
-*
-*  INPUTS
-*     lList *lp        - PR_Type list 
-*     const char *name - project name 
-*
-*  RESULT
-*     lListElem* - nullptr or element pointer
-*******************************************************************************/
+/**
+ * @brief Find project in list
+ *
+ * Find project in list.
+ *
+ * @param lp PR_Type list
+ * @param name project name
+ *
+ * @return nullptr or element pointer
+ */
 lListElem *prj_list_locate(const lList *lp, const char *name) 
 {
    lListElem *ep = nullptr;
@@ -70,23 +72,16 @@ lListElem *prj_list_locate(const lList *lp, const char *name)
    DRETURN(ep);
 }
 
-/****** sgeobj/userprj/user_list_locate() **********************************
-*  NAME
-*     user_list_locate() -- Find user in list 
-*
-*  SYNOPSIS
-*     lListElem* user_list_locate(lList *lp, const char *name) 
-*
-*  FUNCTION
-*     Find user in list. 
-*
-*  INPUTS
-*     lList *lp        - UU_Type list 
-*     const char *name - user name 
-*
-*  RESULT
-*     lListElem* - nullptr or element pointer
-*******************************************************************************/
+/**
+ * @brief Find user in list
+ *
+ * Find user in list.
+ *
+ * @param lp UU_Type list
+ * @param name user name
+ *
+ * @return nullptr or element pointer
+ */
 lListElem *user_list_locate(const lList *lp, const char *name) 
 {
    lListElem *ep = nullptr;
@@ -99,23 +94,16 @@ lListElem *user_list_locate(const lList *lp, const char *name)
 }
 
 
-/****** sgeobj/userprj/prj_list_append_to_dstring() **********************************
-*  NAME
-*     prj_list_append_to_dstring() -- append prj from list to dstring
-*
-*  SYNOPSIS
-*     const char* prj_list_append_to_dstring(lList *lp, dstring *string) 
-*
-*  FUNCTION
-*     Append all projects in list lp to dstring string.
-*
-*  INPUTS
-*     lList *lp        - PR_Type list 
-*     dstring *string  - dstring to append to
-*
-*  RESULT
-*     const char* - nullptr or resulting string of dstring
-*******************************************************************************/
+/**
+ * @brief Append prj from list to dstring
+ *
+ * Append all projects in list lp to dstring string.
+ *
+ * @param this_list PR_Type list
+ * @param string dstring to append to
+ *
+ * @return nullptr or resulting string of dstring
+ */
 const char *prj_list_append_to_dstring(const lList *this_list, dstring *string)
 {
    const char *ret = nullptr;
@@ -139,6 +127,14 @@ const char *prj_list_append_to_dstring(const lList *this_list, dstring *string)
    DRETURN(ret);
 }
 
+/**
+ * @brief Is every project of a list defined?
+ *
+ * @param this_list the defined projects to check against
+ * @param[out] answer_list receives the name of the first project that is missing
+ * @param prj_list the projects to look for
+ * @return true when all of them exist
+ */
 bool
 prj_list_do_all_exist(const lList *this_list, lList **answer_list,
                       const lList *prj_list)
@@ -163,6 +159,11 @@ prj_list_do_all_exist(const lList *this_list, lList **answer_list,
 /***************************************************
  Generate a Template for a user
  ***************************************************/
+/**
+ * @brief A user object template, as `qconf -suser template` prints it
+ *
+ * @return the new element; the caller owns it
+ */
 lListElem *getUserTemplate()
 {
    lListElem *ep;
@@ -185,6 +186,11 @@ lListElem *getUserTemplate()
 /***************************************************
  Generate a Template for a user or project
  ***************************************************/
+/**
+ * @brief A project object template, as `qconf -sprj template` prints it
+ *
+ * @return the new element; the caller owns it
+ */
 lListElem *getPrjTemplate()
 {
    lListElem *ep;

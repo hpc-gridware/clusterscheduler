@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base of the views: rendering a model as plain text, XML or JSON
+ */
+
 #include <ostream>
 #include <chrono>
 #include <cfloat>                  // DBL_MAX (unlimited resource value, CS-2318)
@@ -31,7 +35,13 @@
 #include "sgeobj/ocs_CEntry.h"
 #include "sgeobj/cull/sge_centry_CE_L.h"
 
-/** @brief Escapes a string so that it can be printed to JSON output
+/** @brief Escape a raw string for safe embedding in a JSON value.
+ *
+ * Escapes `"`, `\`, and control characters (including `\n`, `\t`, etc.)
+ * according to the JSON specification (RFC 8259).
+ *
+ * @param input the string to escape
+ * @return the escaped string, without surrounding quotes
  */
 std::string ocs::ProcedureView::raw2JSON(const std::string &input) {
    DENTER(TOP_LAYER);
@@ -72,6 +82,10 @@ std::string ocs::ProcedureView::raw2JSON(const std::string &input) {
    DRETURN(output);
 }
 
+/** @brief Return @p input as a quoted, JSON-escaped string (including the surrounding `""`).
+ * @param input the string to escape and quote
+ * @return the quoted, escaped string
+ */
 std::string ocs::ProcedureView::raw2quotedJSON(const std::string &input) {
    DENTER(TOP_LAYER);
    std::string output;
@@ -82,6 +96,17 @@ std::string ocs::ProcedureView::raw2quotedJSON(const std::string &input) {
    DRETURN(output);
 }
 
+/** @brief `const char*` overload of raw2quotedJSON() that is NULL-safe.
+ *
+ * Server-supplied object strings are typically obtained via `lGetString()`,
+ * which returns `const char*` and may be NULL. Routing such a value through
+ * the `const std::string&` overload would construct `std::string(nullptr)`
+ * (undefined behaviour / crash). This overload renders NULL as an empty
+ * JSON string `""` (CWE-476). All `const char*` call sites bind here.
+ *
+ * @param input string to escape and quote, or NULL for an empty JSON string
+ * @return the quoted, JSON-escaped representation (`""` when @p input is NULL)
+ */
 std::string ocs::ProcedureView::raw2quotedJSON(const char *input) {
    DENTER(TOP_LAYER);
    // NULL-safe: a NULL server string renders as an empty JSON string instead of
@@ -194,7 +219,14 @@ uint32_t ocs::ProcedureView::add_saturating_u32(uint32_t a, uint32_t b) {
    return a + b;
 }
 
-/** @brief convert the timestamp to ISO 8601 format
+/** @brief Write @p time (microseconds since epoch) as an ISO 8601 timestamp to @p os.
+ *
+ * Format: `YYYY-MM-DDTHH:MM:SS.mmmZ` (millisecond precision, always UTC).
+ * Millisecond precision is intentional — JSON schema validators typically
+ * reject sub-millisecond fractions.
+ *
+ * @param os stream to write to
+ * @param time microseconds since the epoch
  */
 void ocs::ProcedureView::show_ISO_8601_timestamp(std::ostream &os, uint64_t time) {
    DENTER(TOP_LAYER);
@@ -212,6 +244,14 @@ void ocs::ProcedureView::show_ISO_8601_timestamp(std::ostream &os, uint64_t time
    DRETURN_VOID;
 }
 
+/** @brief Write a CULL resource element as its natural JSON type to @p os.
+ *
+ * String-typed resources (STR, CSTR, HOST, RESTR) are emitted as JSON strings,
+ * DOUBLE as a JSON number, BOOL as `true`/`false`, and all others as an integer.
+ *
+ * @param os stream to write to
+ * @param resource the resource element (`CE_Type`)
+ */
 void ocs::ProcedureView::show_resource_as_JSON_type(std::ostream &os, const lListElem *resource) {
    DENTER(TOP_LAYER);
    // get the dominant value of the resource for this host
@@ -242,6 +282,14 @@ void ocs::ProcedureView::show_resource_as_JSON_type(std::ostream &os, const lLis
    DRETURN_VOID;
 }
 
+/** @brief Write @p output to @p os.
+ *
+ * The base implementation writes the string as-is.  Subclasses override
+ * this method to add format-specific wrapping (XML root element, JSON object, …).
+ *
+ * @param os      Destination stream (typically stdout).
+ * @param output  Pre-rendered text from the model; may be empty but never null.
+ */
 void ocs::ProcedureView::show(std::ostream &os, const char *output) {
    DENTER(TOP_LAYER);
    os << output;

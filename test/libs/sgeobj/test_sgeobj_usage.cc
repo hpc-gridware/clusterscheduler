@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for usage in `libs/sgeobj`
+ */
+
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -44,6 +48,16 @@
 
 static int s_fail = 0;
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \
@@ -54,6 +68,17 @@ static int s_fail = 0;
       } \
    } while (0)
 
+/** @brief #CHECK for a floating point value, within a tolerance
+ *
+ * Usage figures come out of arithmetic on doubles, so an exact comparison would
+ * fail on a rounding difference that means nothing.
+ *
+ * @param id the test number
+ * @param label what the check is about
+ * @param actual the value produced
+ * @param expected the value wanted
+ * @param tol how far apart the two may be
+ */
 #define CHECK_NEAR(id, label, actual, expected, tol) \
    do { \
       const double a = (actual); \

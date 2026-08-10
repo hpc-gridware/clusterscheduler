@@ -33,11 +33,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief A commlib list of strings
+ */
+
 #include "comm/lists/cl_lists.h"
 
+/** @brief One string in a string list */
 typedef struct cl_string_list_elem_t {
-   char *string;     /* data */
-   cl_raw_list_elem_t *raw_elem;
+   char *string;                   ///< The string, owned by the list
+   cl_raw_list_elem_t *raw_elem;   ///< Back pointer into the raw list
 } cl_string_list_elem_t;
 
 

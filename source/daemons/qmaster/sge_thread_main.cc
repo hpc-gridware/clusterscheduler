@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qmaster's threads, and the state the main thread keeps about them
+ */
+
 #include <fcntl.h>
 
 #include "uti/sge_rmon_macros.h"
@@ -41,6 +45,7 @@
 #include "sge_thread_main.h"
 #include "sge_thread_signaler.h"
 
+/** @brief @copybrief main_control_t */
 main_control_t Main_Control = {
         0,
         nullptr,
@@ -55,6 +60,14 @@ main_control_t Main_Control = {
         {},
 };
 
+/** @brief Ask the signal thread to bring qmaster down
+ *
+ * Shutdown has to happen on the signal thread rather than wherever the
+ * decision was made, so that the thread pools are torn down in order.
+ *
+ * @param i the exit state to end with
+ * @return 0 on success
+ */
 int
 sge_qmaster_shutdown_via_signal_thread(int i) {
    int ret = 0;
@@ -67,16 +80,29 @@ sge_qmaster_shutdown_via_signal_thread(int i) {
    DRETURN(ret);
 }
 
+/** @brief How qmaster is going to exit
+ * @return the exit state; 100 means another master took over
+ */
 int
 sge_qmaster_get_exit_state() {
    return Main_Control.exit_state;
 }
 
+/** @brief Record how qmaster is going to exit
+ * @param new_state the exit state
+ */
 void
 sge_qmaster_set_exit_state(int new_state) {
    Main_Control.exit_state = new_state;
 }
 
+/** @brief Write everything still in memory to the spool before exiting
+ *
+ * The last chance for anything that was deferred - share tree usage, the job
+ * number - to reach disk.
+ *
+ * @return true on success
+ */
 bool
 sge_qmaster_do_final_spooling() {
    /*

@@ -56,6 +56,17 @@
 
 #include "msg_common.h"
 
+/**
+ * @brief Send a single-task GDI request and wait for the answer
+ *
+ * @param target which object list to act on
+ * @param cmd what to do
+ * @param sub_cmd modifiers refining @p cmd
+ * @param lpp the objects to send; receives the ones read back
+ * @param cp which objects to act on, from `lWhere()`
+ * @param enp which fields to transfer, from `lWhat()`
+ * @return the answer list; the caller owns it
+ */
 lList *
 ocs::gdi::Client::sge_gdi(Target target, Command cmd, SubCommand sub_cmd,
                           lList **lpp, lCondition *cp, lEnumeration *enp) {
@@ -88,6 +99,10 @@ ocs::gdi::Client::sge_gdi(Target target, Command cmd, SubCommand sub_cmd,
 ** NOTES
 **    MT-NOTE: gdi_tsm() is MT safe (assumptions)
 */
+/**
+ * @brief Trigger a scheduling run
+ * @return the answer list; the caller owns it
+ */
 lList *ocs::gdi::Client::gdi_tsm() {
    DENTER(GDI_LAYER);
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SC_LIST, ocs::gdi::Command::TRIGGER,
@@ -113,6 +128,13 @@ lList *ocs::gdi::Client::gdi_tsm() {
 ** NOTES
 **    MT-NOTE: gdi_kill() is MT safe (assumptions)
 */
+/**
+ * @brief Shut components down, or start a qmaster thread
+ *
+ * @param id_list which instances to act on, e.g. host names; nullptr for all
+ * @param action_flag a combination of #MASTER_KILL and its neighbours
+ * @return the answer list; the caller owns it
+ */
 lList *ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
    DENTER(GDI_LAYER);
    bool id_list_created = false;
@@ -186,6 +208,16 @@ lList *ocs::gdi::Client::gdi_kill(lList *id_list, uint32_t action_flag) {
    DRETURN(alp);
 }
 
+/**
+ * @brief Ask qmaster which permissions the caller has
+ *
+ * @param[out] alpp receives the reason on failure
+ * @param[out] is_manager true when the user is a cluster manager
+ * @param[out] is_operator true when the user is a cluster operator
+ * @param[out] is_admin_host true when the call comes from an admin host
+ * @param[out] is_submit_host true when the call comes from a submit host
+ * @return true when the permissions could be determined
+ */
 bool
 ocs::gdi::Client::sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *is_operator,
                        bool *is_admin_host, bool *is_submit_host) {
@@ -260,6 +292,14 @@ ocs::gdi::Client::sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *i
  *   This function was introduced to make execution hosts independent
  *   of being able to mount the local_conf directory.
  *-------------------------------------------------------------------------*/
+/**
+ * @brief Fetch the global and the host local configuration
+ *
+ * @param config_name host whose local configuration is wanted
+ * @param[out] gepp receives the global configuration
+ * @param[out] lepp receives the host local one, or nullptr when there is none
+ * @return 0 on success, otherwise an error code
+ */
 int
 ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gepp, lListElem **lepp) {
    DENTER(GDI_LAYER);

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
+/** @file
+ * @brief Choosing between dynamic and compiled in spooling
+ */
+
 #include <cstring>
 
 #include "uti/sge_rmon_macros.h"
@@ -56,37 +60,24 @@
 
 #include "spool/loader/sge_spooling_loader.h"
 
-/****** spool/spool_create_dynamic_context() *********************
-*  NAME
-*     spool_create_dynamic_context() -- create a spooling context
-*
-*  SYNOPSIS
-*     lListElem * 
-*     spool_create_dynamic_context(lList **answer_list, 
-*                                  const char *shlib_name, const char *args) 
-*
-*  FUNCTION
-*     Create a spooling context.
-*     Which spooling context to use can either be defined at compile time, e.g. 
-*     by calling "aimk -spool-classic" or "aimk -spool-flatfile".
-*
-*     Or dynamic loading of a spooling framework is activated (by building
-*     with "aimk -spool-dynamic".
-*     In this case a shared library is dynamically loaded and the spooling
-*     framework implementation of that shared library is used.
-*
-*  INPUTS
-*     lList **answer_list    - to return error messages
-*     const char *shlib_name - name of a shared lib
-*     const char *args       - arguments to be passed to the initialization
-*                              function in the specified shared lib.
-*
-*  RESULT
-*     lListElem * - on success a spooling context, else nullptr.
-*
-*  SEE ALSO
-*     spool/--Spooling
-*******************************************************************************/
+/**
+ * @brief Create a spooling context
+ *
+ * Create a spooling context.
+ * Which spooling context to use can either be defined at compile time, e.g.
+ * by calling "aimk -spool-classic" or "aimk -spool-flatfile".
+ * Or dynamic loading of a spooling framework is activated (by building
+ * with "aimk -spool-dynamic".
+ * In this case a shared library is dynamically loaded and the spooling
+ * framework implementation of that shared library is used.
+ *
+ * @param answer_list to return error messages
+ * @param method name of the spooling method the shared lib must implement
+ * @param shlib_name name of a shared lib
+ * @param args arguments to be passed to the initialization function in the specified shared lib.
+ *
+ * @return on success a spooling context, else nullptr.
+ */
 lListElem *
 spool_create_dynamic_context(lList **answer_list, const char *method,
                              const char *shlib_name, const char *args)

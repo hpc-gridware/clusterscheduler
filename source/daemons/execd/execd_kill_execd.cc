@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Handling qmaster's request to shut this daemon down
+ */
+
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
@@ -54,6 +58,10 @@
 
 extern int shut_me_down;
 
+/** @brief Handle the shutdown message from qmaster
+ * @param aMsg the received message
+ * @return 0 on success
+ */
 int do_kill_execd(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    DENTER(TOP_LAYER);
 

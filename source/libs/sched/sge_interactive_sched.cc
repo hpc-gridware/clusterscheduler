@@ -32,6 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Immediate jobs - the ones that must run now or not at all
+ *
+ * A job submitted with `-now yes` (`qrsh`, `qlogin`, an immediate `qsub`) is
+ * not queued: if the scheduler cannot dispatch it in this run, it has to be
+ * removed and the submitter told so. This module produces those removal
+ * orders.
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_ja_task.h"
@@ -46,37 +55,24 @@ static void
 order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task,
                                  order_t *orders);
 
-/****** SCHEDD/remove_immediate_jobs()******************************************
-*  NAME
-*     remove_immediate_jobs() -- test for and remove immediate jobs which can't
-*                                be scheduled
-*
-*  SYNOPSIS
-*     int remove_immediate_jobs(lList *pending_job_list,
-                                lList *running_job_list, order_t *orders)
-*
-*  FUNCTION
-*     Goes through all jobs in the pending list to see if any are immediate and
-*     not idle.  If any are, they are removed.  This is done by generating an
-*     order of type ORT_remove_immediate_job.  If any array jobs are removed,
-*     the running list is checked for tasks belonging to the job, which are
-*     also removed.  This is done by removing the ORT_start_job orders and
-*     adding an order of type ORT_remove_immediate_job.
-*
-*  INPUTS
-*     lList *pending_job_list   - The list of pending jobs for this scheduler
-*                                 pass (JB_Type)
-*     lList *running_job_list   - The list of running jobs for this scheduler
-*                                 pass (JB_Type)
-*     order_t *orders           - The order structure for this scheduler pass
-*
-*  RESULT
-*     int - Error code: 0 = OK, 1 = Errors -- always returns 0
-*
-*  NOTES
-*     MT-NOTE: remove_immediate_jobs() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Test for and remove immediate jobs which can't
+ *
+ * Goes through all jobs in the pending list to see if any are immediate and
+ * not idle.  If any are, they are removed.  This is done by generating an
+ * order of type ORT_remove_immediate_job.  If any array jobs are removed,
+ * the running list is checked for tasks belonging to the job, which are
+ * also removed.  This is done by removing the ORT_start_job orders and
+ * adding an order of type ORT_remove_immediate_job.
+ *
+ * @param pending_job_list The list of pending jobs for this scheduler pass (JB_Type)
+ * @param running_job_list The list of running jobs for this scheduler pass (JB_Type)
+ * @param orders The order structure for this scheduler pass
+ *
+ * @return Error code: 0 = OK, 1 = Errors -- always returns 0
+ *
+ * @note MT-NOTE: remove_immediate_jobs() is MT safe
+ */
 int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, order_t *orders) 
 {
    lListElem *next_job, *job;
@@ -118,33 +114,21 @@ int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, orde
    DRETURN(0);
 }
 
-/****** SCHEDD/remove_immediate_job()*******************************************
-*  NAME
-*     remove_immediate_job() -- test for and remove immediate job which can't
-*                                be scheduled
-*
-*  SYNOPSIS
-*     int remove_immediate_job(lList *job_list, lListElem *job, order_t *orders,
-                               int remove_orders)
-*
-*  FUNCTION
-*     Removes immediate jobs which cannot be scheduled from the given job list.
-*     This is done by generating an order of type ORT_remove_immediate_job.  If
-*     remove_orders is set, the ORT_start_job orders are first removed from the
-*     order list before adding the remove order.
-*
-*  INPUTS
-*     lList     *job_list     - The list of jobs from which the job should be
-*                               removed (JB_Type)
-*     lListElem *job          - The job to remove (JB_Type)
-*     order_t *orders         - The order structure for this scheduler pass
-*     int       remove_orders - Whether the ORT_start_job orders should also be
-*                               be removed
-*
-*  NOTES
-*     MT-NOTE: remove_immediate_job() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Test for and remove immediate job which can't
+ *
+ * Removes immediate jobs which cannot be scheduled from the given job list.
+ * This is done by generating an order of type ORT_remove_immediate_job.  If
+ * remove_orders is set, the ORT_start_job orders are first removed from the
+ * order list before adding the remove order.
+ *
+ * @param job_list The list of jobs from which the job should be removed (JB_Type)
+ * @param job The job to remove (JB_Type)
+ * @param orders The order structure for this scheduler pass
+ * @param remove_orders Whether the ORT_start_job orders should also be be removed
+ *
+ * @note MT-NOTE: remove_immediate_job() is MT safe
+ */
 void 
 remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remove_orders) 
 {
@@ -181,31 +165,21 @@ remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remov
    DRETURN_VOID;
 }
 
-/****** SCHEDD/order_remove_order_and_immediate()*******************************
-*  NAME
-*     order_remove_order_and_immediate() -- add a remove order for the job task
-*
-*  SYNOPSIS
-*     int order_remove_order_and_immediate(lListElem *job, lListElem *ja_task,
-                                 order_t *orders)
-*
-*  FUNCTION
-*     Generates an order of type ORT_remove_immediate_job for the given job
-*     task.  Also removes the ORT_start_job order for this task from the order
-*     list.
-*
-*  INPUTS
-*     lListElem *job       - The job to remove  (JB_Type)
-*     lListElem *ja_task   - The task to remove (JAT_Type)
-*     order_t *orders      - The order structurestructure  for this scheduler pass be removed
-*
-*  RESULT
-*     int - Error code: 0 = OK, 1 = Errors
-*
-*  NOTES
-*     MT-NOTE: order_remove_order_and_immediate() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Add a remove order for the job task
+ *
+ * Generates an order of type ORT_remove_immediate_job for the given job
+ * task.  Also removes the ORT_start_job order for this task from the order
+ * list.
+ *
+ * @param job The job to remove  (JB_Type)
+ * @param ja_task The task to remove (JAT_Type)
+ * @param orders The order structurestructure  for this scheduler pass be removed
+ *
+ * @note int - Error code: 0 = OK, 1 = Errors
+ *
+ * @note MT-NOTE: order_remove_order_and_immediate() is MT safe
+ */
 static void 
 order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders)
 {
@@ -240,30 +214,20 @@ order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task,
    DRETURN_VOID;
 }
 
-/****** SCHEDD/order_remove_immediate()*****************************************
-*  NAME
-*     order_remove_immediate() -- add a remove order for the job task
-*
-*  SYNOPSIS
-*     int order_remove_immediate(lListElem *job, lListElem *ja_task,
-                                 order_t *orders)
-*
-*  FUNCTION
-*     Generates an order of type ORT_remove_immediate_job for the given job
-*     task.
-*
-*  INPUTS
-*     lListElem *job       - The job to remove (JB_Type)
-*     lListElem *ja_task   - The task to remove (JAT_Type)
-*     order_t *orders      - The order structure will be extended by one del order
-*
-*  RESULT
-*     int - Error code: 0 = OK, 1 = Errors
-*
-*  NOTES
-*     MT-NOTE: order_remove_immediate() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Add a remove order for the job task
+ *
+ * Generates an order of type ORT_remove_immediate_job for the given job
+ * task.
+ *
+ * @param job The job to remove (JB_Type)
+ * @param ja_task The task to remove (JAT_Type)
+ * @param orders The order structure will be extended by one del order
+ *
+ * @return Error code: 0 = OK, 1 = Errors
+ *
+ * @note MT-NOTE: order_remove_immediate() is MT safe
+ */
 int 
 order_remove_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders)
 {

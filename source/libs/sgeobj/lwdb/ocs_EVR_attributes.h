@@ -24,20 +24,34 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Event Master Request
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of EVR
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   EVR_operation = 12200,
-   EVR_timestamp,
-   EVR_event_client_id,
-   EVR_event_number,
-   EVR_session,
-   EVR_event_client,
-   EVR_event_list
+   EVR_operation = 12200,   ///< Operation
+   EVR_timestamp,   ///< Timestamp
+   EVR_event_client_id,   ///< Event Client Id
+   EVR_event_number,   ///< Event Number
+   EVR_session,   ///< Session
+   EVR_event_client,   ///< Event Client
+   EVR_event_list   ///< Events
 };
 
+/** @brief The attribute ids of EVR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int EVR_Type[] = {
    EVR_operation,
    EVR_timestamp,
@@ -49,6 +63,10 @@ constexpr const int EVR_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of EVR
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define EVR_ATTRIBUTES \
    {EVR_operation, "EVR_operation", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EVR_timestamp, "EVR_timestamp", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

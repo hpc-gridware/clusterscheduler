@@ -24,16 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Resource Quota Rule Filter
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of RQRF
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   RQRF_expand = 11600,
-   RQRF_scope,
-   RQRF_xscope
+   RQRF_expand = 11600,   ///< Expand
+   RQRF_scope,   ///< Scope
+   RQRF_xscope   ///< Excluded Scope
 };
 
+/** @brief The attribute ids of RQRF, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int RQRF_Type[] = {
    RQRF_expand,
    RQRF_scope,
@@ -41,6 +55,10 @@ constexpr const int RQRF_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of RQRF
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define RQRF_ATTRIBUTES \
    {RQRF_expand, "RQRF_expand", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {RQRF_scope, "RQRF_scope", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

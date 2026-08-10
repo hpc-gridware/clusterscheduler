@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Talking to systemd: running as a service, and scoping the shepherds
+ */
+
 #include <limits>
 
 #include "cull/cull.h"
@@ -82,7 +86,8 @@ namespace ocs::execd {
     * while we have running jobs (with their shepherds also staying alive).
     *
     * It connects to Systemd and attempts to move the shepherd process to the appropriate scope.
-    * Returns true on success, false on failure.
+    *
+    * @return true on success, false on failure
     */
    bool
    execd_move_shepherd_to_scope() {

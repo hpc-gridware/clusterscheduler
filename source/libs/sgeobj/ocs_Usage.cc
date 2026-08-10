@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Resource usage reported for a job or task
+ */
+
 #include <cstring>
 #include <math.h>
 
@@ -105,6 +109,12 @@ ocs::Usage::calculate_default_decay_constant(const int halftime) {
    sconf_set_decay_constant(sge_decay_constant);
 }
 
+/**
+ * @brief Add one named decay constant to a decay list
+ * @param[in,out] decay_list the list to extend
+ * @param value the decay constant
+ * @param name the usage attribute it applies to
+ */
 void ocs::Usage::add_decay_element(lList **decay_list, double value, const char *name) {
    double decay_rate, decay_constant;
    calculate_decay_constant(value, &decay_rate, &decay_constant);
@@ -492,6 +502,18 @@ book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lLi
  * user and project objects for the specified job
  *--------------------------------------------------------------------*/
 
+/**
+ * @brief Decay the already booked usage and add this job's scaled usage on top
+ * @param job the finished job
+ * @param ja_task the finished array task
+ * @param node the job owner's share tree node
+ * @param user the submitting user's object
+ * @param project the job's project
+ * @param decay_list the decay constants, one per usage attribute
+ * @param usage_weight_list the weights each usage attribute is scaled by
+ * @param seqno the current usage sequence number, so usage is decayed only once
+ * @param curr_time now, in seconds, as the base of the decay
+ */
 void
 ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem * /* node */, lListElem *user,
                                 lListElem *project, lList *decay_list, const lList *usage_weight_list, u_long seqno,
@@ -499,6 +521,20 @@ ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem * 
    book_user_project_usage(job, ja_task, user, project, decay_list, usage_weight_list, seqno, curr_time, true);
 }
 
+/**
+ * @brief Sum a finished job's scaled usage into UU_usage / PR_usage / UPP_usage
+ *
+ * No decay is applied. This is the worker-thread booking path introduced
+ * in CS-1239: decay moved to a periodic Timed Event Thread task, and only
+ * the additive part of #decay_and_sum_usage runs at finish time.
+ * `usage_time_stamp` is left untouched; the TET decay task owns it.
+ *
+ * @param job the finished job
+ * @param ja_task the finished array task
+ * @param user the submitting user's object, booked into `UU_usage`
+ * @param project the job's project, booked into `PR_usage` and `UPP_usage`
+ * @param usage_weight_list the weights each usage attribute is scaled by
+ */
 void
 ocs::Usage::sum_usage(lListElem *job, lListElem *ja_task, lListElem *user, lListElem *project,
                       const lList *usage_weight_list) {
@@ -506,15 +542,19 @@ ocs::Usage::sum_usage(lListElem *job, lListElem *ja_task, lListElem *user, lList
 }
 
 
-/** @brief Remove usage attributes that are irrelevant for share tree usage.
+/**
+ * @brief Remove usage attributes that are irrelevant for share tree usage
  *
  * Older versions accumulated all online usage attributes (vmem, rss, all
- * ru_* and acct_* values, ...) into the user/project usage lists, which made
- * those objects and their spooled representation grow huge (CS-1385). This
- * function strips a usage list down to the attributes that are actually
- * relevant for share tree usage and returns true if at least one element was
- * removed, so the caller can decide whether the owning object needs to be
- * re-spooled. A nullptr usage_list is treated as an empty list.
+ * `ru_*` and `acct_*` values, ...) into the user/project usage lists, which
+ * made those objects and their spooled representation grow huge (CS-1385).
+ * This strips a usage list down to the attributes that actually matter for
+ * share tree usage.
+ *
+ * @param usage_list the list to strip; nullptr is treated as an empty list
+ * @param usage_weight_list the weights; an attribute without a weight is irrelevant
+ * @return true when at least one element was removed, so the caller knows the
+ *         owning object has to be re-spooled
  */
 bool
 ocs::Usage::strip_irrelevant_usage(lList *usage_list, const lList *usage_weight_list) {
@@ -536,6 +576,11 @@ ocs::Usage::strip_irrelevant_usage(lList *usage_list, const lList *usage_weight_
  * build_usage_list - create a new usage list from an existing list
  *--------------------------------------------------------------------*/
 
+/** @brief Build a named usage list, reusing the values of an existing one
+ * @param name the name the resulting list is stored under
+ * @param old_usage_list the list to take the existing values from; may be nullptr
+ * @return the new list
+ */
 lList *
 ocs::Usage::build_usage_list(const char *name, lList *old_usage_list)
 {
@@ -569,6 +614,11 @@ ocs::Usage::build_usage_list(const char *name, lList *old_usage_list)
 /*--------------------------------------------------------------------
  * get_usage - return usage entry based on name
  *--------------------------------------------------------------------*/
+/** @brief Look up one usage attribute by name
+ * @param usage_list the list to search
+ * @param name the attribute to find
+ * @return the element, or nullptr when the attribute is not booked
+ */
 lListElem *
 ocs::Usage::get_usage(lList *usage_list, const char *name) {
    return lGetElemStrRW(usage_list, UA_name, name);
@@ -578,6 +628,10 @@ ocs::Usage::get_usage(lList *usage_list, const char *name) {
 /*--------------------------------------------------------------------
  * create_usage_elem - create a new usage element
  *--------------------------------------------------------------------*/
+/** @brief Create a usage element for the named attribute, initialised to zero
+ * @param name the attribute name
+ * @return the new element
+ */
 lListElem *
 ocs::Usage::create_usage_elem( const char *name ) {
    lListElem *usage = lCreateElem(UA_Type);

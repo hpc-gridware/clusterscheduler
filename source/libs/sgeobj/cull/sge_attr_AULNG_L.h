@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Ulong
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   AULNG_href = AULNG_LOWERBOUND,
-   AULNG_value
+   AULNG_href = AULNG_LOWERBOUND,   ///< Host Reference
+   AULNG_value   ///< Value
 };
 
 LISTDEF(AULNG_Type)
@@ -56,6 +60,7 @@ NAMEDEF(AULNGN)
    NAME("AULNG_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define AULNG_SIZE sizeof(AULNGN)/sizeof(char *)
 
 

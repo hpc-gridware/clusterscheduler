@@ -24,26 +24,40 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Commandline Argument
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of SPA
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   SPA_number = 3150,
-   SPA_argtype,
-   SPA_switch_val,
-   SPA_switch_arg,
-   SPA_occurrence,
-   SPA_argval_lDoubleT,
-   SPA_argval_lUlongT,
-   SPA_argval_lUlong64T,
-   SPA_argval_lLongT,
-   SPA_argval_lBoolT,
-   SPA_argval_lIntT,
-   SPA_argval_lStringT,
-   SPA_argval_lListT
+   SPA_number = 3150,   ///< Option Number
+   SPA_argtype,   ///< Argument Type
+   SPA_switch_val,   ///< Switch
+   SPA_switch_arg,   ///< Switch Argument
+   SPA_occurrence,   ///< Occurence
+   SPA_argval_lDoubleT,   ///< Parsed Double Argument
+   SPA_argval_lUlongT,   ///< Parsed Ulong Argument
+   SPA_argval_lUlong64T,   ///< Parsed Ulong64 Argument
+   SPA_argval_lLongT,   ///< Parsed Long Argument
+   SPA_argval_lBoolT,   ///< Parsed Char Argument
+   SPA_argval_lIntT,   ///< Parsed Int Argument
+   SPA_argval_lStringT,   ///< String Argument
+   SPA_argval_lListT   ///< Parsed List Argument
 };
 
+/** @brief The attribute ids of SPA, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int SPA_Type[] = {
    SPA_number,
    SPA_argtype,
@@ -61,6 +75,10 @@ constexpr const int SPA_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of SPA
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define SPA_ATTRIBUTES \
    {SPA_number, "SPA_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {SPA_argtype, "SPA_argtype", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

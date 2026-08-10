@@ -33,24 +33,32 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
+/** @file
+ * @brief A skeleton backend to copy when writing a new one
+ */
+
 #include "cull/cull.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/sge_spooling_utilities.h"
 
-/****** spool/flatfile/--Spooling-Template ************************************
-*
-*  NAME
-*     xxx spooling - spooling of data in xxx
-*
-*  FUNCTION
-*     The module provides functions and a spooling framework instantiation
-*     for data input/output xxxx
-*
-*  SEE ALSO
-****************************************************************************
-*/
+/** @defgroup spool_template Template spooling backend
+ * @brief The skeleton to copy when writing a new storage backend
+ *
+ * Every callback of #spool_context_create_rule appears here with the right
+ * signature and an empty body, so that a new backend can start from a file
+ * that already compiles and only has to fill in the storage specific parts.
+ *
+ * @note Nothing links this backend into a running system, and
+ *       #spool_template_create_context returns nullptr. It is documentation
+ *       in the form of code.
+ * @{
+ */
 
+/** @brief Report `"template"` as this library's spooling method
+ *
+ * @return the string `"template"`
+ */
 #ifdef SPOOLING_template
 const char *get_spooling_method();
 #else
@@ -64,6 +72,13 @@ bool
 spool_template_default_startup_func(lList **answer_list, 
                                     const lListElem *rule, bool check);
 
+/** @brief The part of the startup that is the same in master and clients
+ *
+ * @param answer_list to return error messages
+ * @param rule        the spooling rule being started up
+ *
+ * @return true if the startup succeeded, else false
+ */
 bool 
 spool_template_common_startup_func(lList **answer_list, 
                                    const lListElem *rule);
@@ -99,3 +114,5 @@ spool_template_default_delete_func(lList **answer_list,
                                    const lListElem *rule, 
                                    const char *key, 
                                    const sge_object_type object_type);
+
+/** @} */

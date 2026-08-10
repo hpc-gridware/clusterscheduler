@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The execution daemon's main loop: receive a message, act on it, repeat
+ */
+
 #include <cstdio>
 #include <unistd.h>
 #include <cstring>
@@ -72,10 +76,20 @@
 #   include "sge_smf.h"
 #endif
 
+/** @brief Shortest interval between two checks that qmaster is still there */
 #define SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL 2*60
+/** @brief How long to wait after losing contact before checking again */
 #define SGE_EXECD_ALIVE_CHECK_DELAY 30
+/** @brief How long finished-job reports are held back after a qmaster restart
+ *
+ * A qmaster still rebuilding its state would otherwise be flooded by every
+ * execution host at once.
+ */
 #define DELAYED_FINISHED_JOB_REPORTING_INTERVAL 600
 
+/** @brief The daemon's main loop: receive a message, act on it, repeat
+ * @return the exit status the daemon should end with
+ */
 int sge_execd_process_messages() {
    DENTER(TOP_LAYER);
 

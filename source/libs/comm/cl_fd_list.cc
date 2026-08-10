@@ -32,15 +32,28 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Application file descriptors registered with a handle
+ */
+
 #include "uti/sge_stdlib.h"
 
 #include "comm/cl_fd_list.h"
 #include "comm/cl_commlib.h"
 
+/** @brief Create the descriptor list
+ * @param list_p receives the new list
+ * @param list_name name for log messages
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_fd_list_setup(cl_raw_list_t **list_p, const char *list_name) {
    return cl_raw_list_setup(list_p, list_name, 1);
 }
 
+/** @brief Free the descriptor list and everything in it
+ * @param list_p the list, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_fd_list_cleanup(cl_raw_list_t **list_p) {
    cl_fd_list_elem_t *elem = nullptr;
 
@@ -58,6 +71,12 @@ int cl_fd_list_cleanup(cl_raw_list_t **list_p) {
    return cl_raw_list_cleanup(list_p);
 }
 
+/** @brief Add an application descriptor
+ * @param list_p the list
+ * @param fd the descriptor and its callback, taken over by the list
+ * @param lock_list take the list lock; pass 0 when the caller already holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_fd_list_register_fd(cl_raw_list_t *list_p, cl_com_fd_data_t *fd, int lock_list) {
 
    int ret_val;
@@ -102,6 +121,12 @@ int cl_fd_list_register_fd(cl_raw_list_t *list_p, cl_com_fd_data_t *fd, int lock
    return CL_RETVAL_OK;
 }
 
+/** @brief Take an application descriptor out
+ * @param list_p the list
+ * @param elem the entry to remove
+ * @param lock_list take the list lock; pass 0 when the caller already holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_fd_list_unregister_fd(cl_raw_list_t *list_p, cl_fd_list_elem_t *elem, int lock_list) {
    int ret_val = CL_RETVAL_OK;
 
@@ -129,6 +154,10 @@ int cl_fd_list_unregister_fd(cl_raw_list_t *list_p, cl_fd_list_elem_t *elem, int
    return ret_val;
 }
 
+/** @brief The first descriptor
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_fd_list_elem_t *cl_fd_list_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -137,6 +166,10 @@ cl_fd_list_elem_t *cl_fd_list_get_first_elem(cl_raw_list_t *list_p) {
    return nullptr;
 }
 
+/** @brief The last descriptor
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_fd_list_elem_t *cl_fd_list_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
    if (raw_elem) {
@@ -145,6 +178,10 @@ cl_fd_list_elem_t *cl_fd_list_get_least_elem(cl_raw_list_t *list_p) {
    return nullptr;
 }
 
+/** @brief The element after this one
+ * @param elem the current element
+ * @return the next element, or nullptr at the end
+ */
 cl_fd_list_elem_t *cl_fd_list_get_next_elem(cl_fd_list_elem_t *elem) {
    cl_raw_list_elem_t *next_raw_elem = nullptr;
 
@@ -158,6 +195,10 @@ cl_fd_list_elem_t *cl_fd_list_get_next_elem(cl_fd_list_elem_t *elem) {
    return nullptr;
 }
 
+/** @brief The element before this one
+ * @param elem the current element
+ * @return the previous element, or nullptr at the start
+ */
 cl_fd_list_elem_t *cl_fd_list_get_last_elem(cl_fd_list_elem_t *elem) {
    cl_raw_list_elem_t *last_raw_elem = nullptr;
 

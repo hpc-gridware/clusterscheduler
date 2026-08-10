@@ -33,4 +33,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The scheduler's side of suspend on subordinate
+ *
+ * A queue that is subordinate to another one is suspended by qmaster as soon
+ * as the superordinate queue is full. The scheduler has to know that in
+ * advance, or it would dispatch a job into a queue that is about to be
+ * suspended.
+ */
+
 int sos_schedd(const char *qname, lList *qlist);

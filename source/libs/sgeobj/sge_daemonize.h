@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for putting a component into the background
+ *
+ * @see sge_daemonize.cc
+ */
+
 bool
 sge_daemonize_prepare();
 

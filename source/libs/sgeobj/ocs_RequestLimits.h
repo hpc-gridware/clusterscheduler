@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Limits on how large or frequent a GDI request may be
+ */
+
 #include <string>
 #include <ostream>
 #include <vector>

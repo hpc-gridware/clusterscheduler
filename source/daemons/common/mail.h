@@ -33,4 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Sending a message to a list of recipients through the configured mailer
+ */
+
 void cull_mail(uint32_t progid, const lList *user_list, const char *subj, const char *buf, const char *mail_type);

@@ -32,6 +32,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: message throughput per thread mode
+ *
+ * Usage: `test_thread_throughput <none|rw|pool>`
+ *
+ * @warning **Broken.** `main()` prints *"This module test does not work!"*
+ *          and exits before parsing its arguments.
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <sys/time.h>
@@ -44,17 +55,28 @@
 #include "comm/cl_commlib.h"
 
 /* some global things */
-int test_server_port = 0;
-char *test_server_host = nullptr;
+int test_server_port = 0;   ///< Port the throughput server listens on
+char *test_server_host = nullptr;   ///< Host the throughput server runs on
 
+/** @brief Note the signal so the client loop can leave
+ * @param sig the signal that arrived
+ */
 void sighandler_client(int sig);
 
 static int do_shutdown = 0;
 
-cl_raw_list_t *thread_list = nullptr;
+cl_raw_list_t *thread_list = nullptr;   ///< The threads this test started
 
+/** @brief Receiver thread of the throughput test
+ * @param t_conf the thread's settings
+ * @return nullptr
+ */
 void *my_receive_thread(void *t_conf);
 
+/** @brief Sender thread of the throughput test
+ * @param t_conf the thread's settings
+ * @return nullptr
+ */
 void *my_sender_thread(void *t_conf);
 
 void sighandler_client(
@@ -75,6 +97,9 @@ void sighandler_client(
    do_shutdown = 1;
 }
 
+/** @brief Thread cleanup handler
+ * @param thread_config the thread's settings
+ */
 void my_cleanup_func(cl_thread_settings_t *thread_config) {
    cl_com_handle_t *handle = nullptr;
    printf("my thread cleanup called: thread state is: %s\n", cl_thread_get_state(thread_config));
@@ -86,6 +111,18 @@ void my_cleanup_func(cl_thread_settings_t *thread_config) {
    }
 }
 
+/** @def TEST_RECEIVER_COUNT
+ * @brief How many receiver threads the throughput test starts
+ *
+ * @note Defined inside `main()`, so the block sits at file scope - doxygen
+ *       lists it as a file macro and takes no comment beside it.
+ */
+
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 extern int main(int argc, char **argv) {
    cl_thread_settings_t *thread_p = nullptr;
    cl_thread_settings_t *dummy_thread_p = nullptr;

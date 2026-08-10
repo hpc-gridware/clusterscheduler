@@ -24,19 +24,33 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief RBAC Role
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of RL
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   RL_name = 13100,
-   RL_enabled,
-   RL_user_list,
-   RL_parent_role_list,
-   RL_perm_list,
-   RL_joker
+   RL_name = 13100,   ///< Role Name
+   RL_enabled,   ///< Enabled
+   RL_user_list,   ///< User List
+   RL_parent_role_list,   ///< Parent Role List
+   RL_perm_list,   ///< Permission List
+   RL_joker   ///< Joker
 };
 
+/** @brief The attribute ids of RL, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int RL_Type[] = {
    RL_name,
    RL_enabled,
@@ -47,6 +61,10 @@ constexpr const int RL_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of RL
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define RL_ATTRIBUTES \
    {RL_name, "RL_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {RL_enabled, "RL_enabled", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

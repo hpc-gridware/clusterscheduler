@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
+/** @file
+ * @brief Id lists: the objects a request names
+ *
+ * @see sge_id.h
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "cull/cull_list.h"
@@ -43,10 +49,21 @@
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
+/// Debug layer the id list traces are written to
 #define ID_LAYER BASIS_LAYER
 
 /* EB: ADOC: add commets */
 
+/**
+ * @brief Turn a list of textual ids into an id list
+ *
+ * @param[out] id_list receives the parsed ids
+ * @param[out] answer_list receives the message naming an unparsable entry
+ * @param str_list the texts to parse
+ * @param transition the `QI_DO_*` action the ids are meant for
+ * @param option the `QI_TRANSITION_*` option that goes with it
+ * @return true when every entry could be parsed
+ */
 bool
 id_list_build_from_str_list(lList **id_list, 
                             lList **answer_list,

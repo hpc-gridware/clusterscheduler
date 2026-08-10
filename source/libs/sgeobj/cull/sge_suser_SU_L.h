@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Submit User
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   SU_name = SU_LOWERBOUND,
-   SU_jobs
+   SU_name = SU_LOWERBOUND,   ///< Name
+   SU_jobs   ///< Jobs
 };
 
 LISTDEF(SU_Type)
@@ -56,6 +60,7 @@ NAMEDEF(SUN)
    NAME("SU_jobs")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define SU_SIZE sizeof(SUN)/sizeof(char *)
 
 

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The generic GDI request path: one table, every configuration object
+ */
+
 #include <cstring>
 #include <cstdlib>
 #include <cerrno>
@@ -195,6 +199,7 @@ static gdi_object_t gdi_object[] = {
 
 /* *INDENT-ON* */
 
+/** @brief Release every master list, at shutdown */
 void sge_clean_lists() {
    int i = 0;
 
@@ -207,6 +212,18 @@ void sge_clean_lists() {
 
 }
 
+/** @brief Handle the part of a request that the listener thread can do alone
+ *
+ * A read-only request that can be answered from the listener's own view never
+ * reaches a worker at all, which is what keeps `qstat` cheap on a busy master.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param answer_list receives messages for the caller
+ * @param monitor for monitoring qmaster threads
+ * @param has_next whether further tasks follow in the same packet
+ * @return true when the request was fully answered here
+ */
 bool
 sge_c_gdi_process_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                               lList **answer_list, monitoring_t *monitor, bool has_next) {
@@ -253,6 +270,11 @@ sge_c_gdi_process_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
    DRETURN(false);
 }
 
+/** @brief May this client execute this request at all?
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @return true when the request is permitted
+ */
 bool
 sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    DENTER(TOP_LAYER);
@@ -297,6 +319,13 @@ sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *t
 }
 
 /* ------------------------------------------------------------ */
+/** @brief Handle a request that needs a worker thread
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param answer_list receives messages for the caller
+ * @param monitor for monitoring qmaster threads
+ * @param has_next whether further tasks follow in the same packet
+ */
 void
 sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                             lList **answer_list, monitoring_t *monitor, bool has_next) {
@@ -978,34 +1007,16 @@ sge_gdi_tigger_thread_state_transition(ocs::gdi::Packet *packet,
    DRETURN_VOID;
 }
 
-/****** qmaster/sge_c_gdi_process_in_worker/sge_gdi_shutdown_event_client() **********************
-*  NAME
-*     ocs::gdi::Client::sge_gdi_shutdown_event_client() -- shutdown event client
-*
-*  SYNOPSIS
-*     static void
-*     ocs::gdi::Client::sge_gdi_shutdown_event_client(sge_gdi_ctx_class_t *ctx,
-*                                   ocs::gdi::Packet *packet,
-*                                   ocs::gdi::Task *task,
-*                                   monitoring_t *monitor)
-*
-*  FUNCTION
-*     Shutdown event clients by client id. tasks data_list does contain a list of
-*     client id's. This is a list of 'ID_Type' elements.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context
-*     ocs::gdi::Client::sge_gdi_packet_class_t *packet - request packet
-*     ocs::gdi::Task *task - request task
-*     monitoring_t *monitor - the monitoring structure
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: ocs::gdi::Client::sge_gdi_shutdown_event_client() is NOT MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Shutdown event client
+ *
+ * Shutdown event clients by client id. tasks data_list does contain a list of
+ * client id's. This is a list of 'ID_Type' elements.
+ *
+ * @param monitor the monitoring structure
+ *
+ * @note MT-NOTE: ocs::gdi::Client::sge_gdi_shutdown_event_client() is NOT MT safe.
+ */
 static void
 sge_gdi_shutdown_event_client(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -1052,32 +1063,22 @@ sge_gdi_shutdown_event_client(const ocs::gdi::Packet *packet, ocs::gdi::Task *ta
    DRETURN_VOID;
 } /* ocs::gdi::Client::sge_gdi_shutdown_event_client() */
 
-/****** qmaster/sge_c_gdi_process_in_worker/get_client_id() **************************************
-*  NAME
-*     get_client_id() -- get client id from ID_Type element.
-*
-*  SYNOPSIS
-*     static int get_client_id(lListElem *anElem, int *anID)
-*
-*  FUNCTION
-*     Get client id from ID_Type element. The client id is converted to an
-*     integer and stored in 'anID'.
-*
-*  INPUTS
-*     lListElem *anElem - ID_Type element
-*     int *anID         - will contain client id on return
-*
-*  RESULT
-*     EINVAL - failed to extract client id.
-*     0      - otherwise
-*
-*  NOTES
-*     MT-NOTE: get_client_id() is MT safe.
-*
-*     Using 'errno' to check for 'strtol' error situations is recommended
-*     by POSIX.
-*
-*******************************************************************************/
+/**
+ * @brief Get client id from ID_Type element
+ *
+ * Get client id from ID_Type element. The client id is converted to an
+ * integer and stored in 'anID'.
+ *
+ * @param anElem ID_Type element
+ * @param anID will contain client id on return
+ *
+ * @return failed to extract client id. 0      - otherwise
+ *
+ * @note MT-NOTE: get_client_id() is MT safe.
+ *
+ *       Using 'errno' to check for 'strtol' error situations is recommended
+ *       by POSIX.
+ */
 static int get_client_id(lListElem *anElem, int *anID) {
    const char *id = nullptr;
 
@@ -1099,32 +1100,13 @@ static int get_client_id(lListElem *anElem, int *anID) {
    DRETURN(0);
 } /* get_client_id() */
 
-/****** qmaster/sge_c_gdi_process_in_worker/trigger_scheduler_monitoring() ***********************
-*  NAME
-*     trigger_scheduler_monitoring() -- trigger scheduler monitoring
-*
-*  SYNOPSIS
-*     static void
-*     trigger_scheduler_monitoring(sge_gdi_packet_class_t *packet, ocs::gdi::Task *task,
-*                                  monitoring_t *monitor)
-*
-*  FUNCTION
-*     Trigger scheduler monitoring.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_packet_class_t *packet - request packet
-*     ocs::gdi::Task *task - request task
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: trigger_scheduler_monitoring() is MT safe, using global lock
-*
-*  SEE ALSO
-*     qconf -tsm
-*
-*******************************************************************************/
+/**
+ * @brief Trigger scheduler monitoring
+ *
+ * Trigger scheduler monitoring.
+ *
+ * @note MT-NOTE: trigger_scheduler_monitoring() is MT safe, using global lock
+ */
 static void
 trigger_scheduler_monitoring(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                              monitoring_t *monitor) {
@@ -1436,6 +1418,26 @@ sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    on success create events
    replace old object by new queue
 */
+/** @brief Add or modify one configuration object, whatever its type
+ *
+ * The sequence every object type shares: validate each attribute through
+ * gdi_object_t::modifier, spool through gdi_object_t::writer, then let
+ * gdi_object_t::on_success announce it.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param instructions the object as the client wants it to become
+ * @param add 1 for add, 0 for modify
+ * @param object the table entry for this object type
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param tmp_list receives information for post processing
+ * @param monitor for monitoring qmaster threads
+ * @return STATUS_OK on success, an error status otherwise
+ */
 int
 sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *instructions, int add, gdi_object_t *object, const char *ruser,
                         const char *rhost, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, lList **tmp_list, monitoring_t *monitor) {
@@ -1600,6 +1602,10 @@ sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **
 
 /*
  * MT-NOTE: get_gdi_object() is MT safe
+ */
+/** @brief The table entry for one GDI target
+ * @param target the object type
+ * @return its entry, or nullptr when the target has no generic handling
  */
 gdi_object_t *get_gdi_object(ocs::gdi::Target target) {
    DENTER(TOP_LAYER);

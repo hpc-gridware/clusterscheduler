@@ -33,4 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Handling qmaster's request to shut this daemon down
+ */
+
 int do_kill_execd(ocs::gdi::ClientServerBase::struct_msg_t *aMsg);

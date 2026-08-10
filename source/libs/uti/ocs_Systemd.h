@@ -135,17 +135,6 @@ namespace ocs::uti {
          static const std::string shepherd_scope_name;
 
          // static methods
-         /**
-          * @brief Open libsystemd and work out how this process is running
-          *
-          * Resolves the sd-bus entry points, then determines whether the
-          * process is itself running as a systemd service, which cgroup
-          * version is in use and which systemd version.
-          *
-          * @param service_name_in name of the service this process runs as
-          * @param[out] error_dstr receives the reason on failure
-          * @return true on success
-          */
          static bool initialize(const std::string &service_name_in, dstring *error_dstr);
          static bool is_systemd_available();  // we can load the systemd library and connect to systemd
          static bool is_running_as_service(); // the process is running as a systemd service

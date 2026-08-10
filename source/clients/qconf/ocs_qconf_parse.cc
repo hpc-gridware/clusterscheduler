@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief qconf - one handler per configuration switch, and the table that dispatches to them
+ */
 #include <cstring>
 #include <cstdlib>
 #include <cstdarg>
@@ -163,7 +167,7 @@ static char **sge_parser_get_next(char **arg)
 static bool qconf_opt_dry_run = false;   /* H3 (-dry):    validate/report, do not send */
 static bool qconf_opt_force = false;     /* H6 (-f):      skip the bulk-delete prompt */
 static bool qconf_opt_strict = false;    /* H2 (-strict): apply nothing unless all files valid */
-spool_flatfile_format qconf_opt_format = SP_FORM_ASCII;  /* CS-2313a (-fmt): plain|json (see ocs_qconf_parse.h) */
+spool_flatfile_format qconf_opt_format = SP_FORM_ASCII;  ///< see the declaration in `ocs_qconf_parse.h`
 
 /**
  * @brief Print a message-catalogue line (plus newline) to stdout.
@@ -1807,6 +1811,16 @@ qconf_json_type_load_values(lListElem *host, int load_list_nm)
 }
 
 /*------------------------------------------------------------*/
+/** @brief Work through the `qconf` command line, one switch at a time
+ *
+ * `qconf` accepts several switches in one invocation and applies them in the
+ * order given, so this is a loop over the arguments rather than a single
+ * dispatch. Most switches are handled by the table in #object_info_entry; the
+ * ones that are not have their own handlers in this file.
+ *
+ * @param argv the arguments, not including `argv[0]`
+ * @return 0 when every switch succeeded
+ */
 int sge_parse_qconf(char *argv[])
 {
    int status;
@@ -7275,40 +7289,31 @@ static int sge_error_and_exit(const char *ptr) {
    DRETURN(1); /* to prevent warning */
 }
 
-/****** qconf/mod_reserved_hgroup() *******************************************
-*  NAME
-*     mod_reserved_hgroup() -- add/remove hosts in a reserved host group
-*
-*  FUNCTION
-*     CS-2438. Admin and submit hosts live in the reserved host groups
-*     "@admin_hosts" and "@submit_hosts", so qconf -ah/-dh/-as/-ds modify those
-*     groups instead of the retired AH_LIST/SH_LIST targets.
-*
-*     The request is a GDI MOD on HGRP_LIST with the sublist sub-command
-*     APPEND or REMOVE -- the mechanism behind "qconf -aattr/-dattr". It is
-*     deliberately NOT a read-modify-write of HGRP_host_list in the client:
-*     read-modify-write loses a concurrent "-as" issued between the read and the
-*     write, which the old dedicated ADD/DEL target could not do. The qmaster
-*     merges the sublist under its own lock (attr_mod_sub_list() via
-*     hgroup_mod_hostlist()), so two concurrent additions cannot lose each other.
-*
-*     Privilege is unchanged: AH_LIST, SH_LIST and HGRP_LIST are labels of the
-*     same manager-only case in sge_c_gdi.cc, so redirecting the target neither
-*     grants nor removes any right.
-*
-*     One request per host, as before, so a failure names the host it belongs to
-*     rather than failing a whole batch.
-*
-*  INPUTS
-*     lList *arglp                    - HR_Type list of names as parsed from the
-*                                       command line
-*     const char *group               - ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP
-*     ocs::gdi::SubCommand sub_command - APPEND to add, REMOVE to delete
-*     const char *what                - "administrative host" / "submit host", for messages
-*
-*  RESULT
-*     bool - true if every request succeeded
-*******************************************************************************/
+/**
+ * @brief Add/remove hosts in a reserved host group
+ *
+ * CS-2438. Admin and submit hosts live in the reserved host groups
+ * "@admin_hosts" and "@submit_hosts", so qconf -ah/-dh/-as/-ds modify those
+ * groups instead of the retired AH_LIST/SH_LIST targets.
+ * The request is a GDI MOD on HGRP_LIST with the sublist sub-command
+ * APPEND or REMOVE -- the mechanism behind "qconf -aattr/-dattr". It is
+ * deliberately NOT a read-modify-write of HGRP_host_list in the client:
+ * read-modify-write loses a concurrent "-as" issued between the read and the
+ * write, which the old dedicated ADD/DEL target could not do. The qmaster
+ * merges the sublist under its own lock (attr_mod_sub_list() via
+ * hgroup_mod_hostlist()), so two concurrent additions cannot lose each other.
+ * Privilege is unchanged: AH_LIST, SH_LIST and HGRP_LIST are labels of the
+ * same manager-only case in sge_c_gdi.cc, so redirecting the target neither
+ * grants nor removes any right.
+ * One request per host, as before, so a failure names the host it belongs to
+ * rather than failing a whole batch.
+ *
+ * @param arglp HR_Type list of names as parsed from the command line
+ * @param group ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP ocs::gdi::SubCommand sub_command - APPEND to add, REMOVE to delete
+ * @param what "administrative host" / "submit host", for messages
+ *
+ * @return true if every request succeeded
+ */
 static bool mod_reserved_hgroup(lList *arglp, const char *group,
                                 ocs::gdi::SubCommand sub_command, const char *what)
 {
@@ -7930,43 +7935,36 @@ static bool show_object_list(ocs::gdi::Target target, lDescr *type, int keynm, c
    DRETURN(ret);
 }
 
-/****** qconf/show_reserved_hgroup_hosts() ************************************
-*  NAME
-*     show_reserved_hgroup_hosts() -- qconf -sh / -ss from the reserved group
-*
-*  FUNCTION
-*     CS-2438 chunk 5. Prints the membership of "@admin_hosts"/"@submit_hosts"
-*     now that they, and not AH_LIST/SH_LIST, are the source of truth.
-*
-*     Deliberately prints the DIRECT entries -- host names and "@group"
-*     references -- rather than the resolved set. For a cluster that does not
-*     nest, which is every cluster on the day after the upgrade because
-*     migration replays a flat list, the output is byte-identical to 9.1.
-*     Where an admin did introduce nesting, the direct entries are the honest
-*     answer: they are what "-dh/-ds" operate on. The resolved view already has
-*     its own command, "qconf -shgrp_resolved @submit_hosts".
-*
-*     The three behaviours of show_object_list() that scripts depend on are
-*     reproduced exactly, and for the same reasons:
-*       1. output sorted ascending by name, not stored order;
-*       2. entries starting with COMMENT_CHAR skipped;
-*       3. an empty list prints to STDERR and returns false, i.e. non-zero exit.
-*
-*  INPUTS
-*     const char *group     - ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP
-*     const char *json_type - envelope name for -fmt json ("adminhost"/"submithost")
-*     const char *name      - "administrative host" / "submit host", for the message
-*
-*  RESULT
-*     bool - false if nothing is defined or the request failed
-*
-*  NOTES
-*     json_type has to be passed in: the entries are HR_Type elements, which are
-*     not a registered object type, so the envelope would derive as "unknown"
-*     and both the $id and the array key would change. It is only used when the
-*     list is non-empty, because the empty list produced the generic "names" key
-*     before and has to keep producing it.
-*******************************************************************************/
+/**
+ * @brief Qconf -sh / -ss from the reserved group
+ *
+ * CS-2438 chunk 5. Prints the membership of "@admin_hosts"/"@submit_hosts"
+ * now that they, and not AH_LIST/SH_LIST, are the source of truth.
+ * Deliberately prints the DIRECT entries -- host names and "@group"
+ * references -- rather than the resolved set. For a cluster that does not
+ * nest, which is every cluster on the day after the upgrade because
+ * migration replays a flat list, the output is byte-identical to 9.1.
+ * Where an admin did introduce nesting, the direct entries are the honest
+ * answer: they are what "-dh/-ds" operate on. The resolved view already has
+ * its own command, "qconf -shgrp_resolved @submit_hosts".
+ * The three behaviours of show_object_list() that scripts depend on are
+ * reproduced exactly, and for the same reasons:
+ *   1. output sorted ascending by name, not stored order;
+ *   2. entries starting with COMMENT_CHAR skipped;
+ *   3. an empty list prints to STDERR and returns false, i.e. non-zero exit.
+ *
+ * @param group ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP
+ * @param json_type envelope name for -fmt json ("adminhost"/"submithost")
+ * @param name "administrative host" / "submit host", for the message
+ *
+ * @return false if nothing is defined or the request failed
+ *
+ * @note json_type has to be passed in: the entries are HR_Type elements, which are
+ *       not a registered object type, so the envelope would derive as "unknown"
+ *       and both the $id and the array key would change. It is only used when the
+ *       list is non-empty, because the empty list produced the generic "names" key
+ *       before and has to keep producing it.
+ */
 static bool show_reserved_hgroup_hosts(const char *group, const char *json_type, const char *name)
 {
    DENTER(TOP_LAYER);
@@ -8026,27 +8024,23 @@ static bool show_reserved_hgroup_hosts(const char *group, const char *json_type,
    DRETURN(ret);
 }
 
-/****** show_manop_list() *****************************************************
-*  NAME
-*     show_manop_list() -- print the managers/operators (qconf -sm/-so)
-*
-*  FUNCTION
-*     CS-2394: managers and operators are the members of the reserved
-*     "manager"/"operator" access lists (usersets). This reads that access list
-*     and prints its member names, reproducing the historical -sm/-so output: a
-*     sorted plain name list (one per line), or, with -fmt json, the name-list
-*     JSON envelope. Because the names now come from the userset entries
-*     (UE_Type), the JSON envelope identity reflects the access-list-entry type
-*     rather than the retired "manager"/"operator" object type - the plain text
-*     output is unchanged.
-*
-*  INPUTS
-*     userset_name - the reserved userset ("manager" or "operator")
-*     display_name - name used in the "no X defined" message
-*
-*  RESULT
-*     bool - true on success, false on error or when the list is empty
-******************************************************************************/
+/**
+ * @brief Print the managers/operators (qconf -sm/-so)
+ *
+ * CS-2394: managers and operators are the members of the reserved
+ * "manager"/"operator" access lists (usersets). This reads that access list
+ * and prints its member names, reproducing the historical -sm/-so output: a
+ * sorted plain name list (one per line), or, with -fmt json, the name-list
+ * JSON envelope. Because the names now come from the userset entries
+ * (UE_Type), the JSON envelope identity reflects the access-list-entry type
+ * rather than the retired "manager"/"operator" object type - the plain text
+ * output is unchanged.
+ *
+ * @param userset_name the reserved userset ("manager" or "operator")
+ * @param display_name name used in the "no X defined" message
+ *
+ * @return true on success, false on error or when the list is empty
+ */
 static bool show_manop_list(const char *userset_name, const char *display_name)
 {
    DENTER(TOP_LAYER);
@@ -8833,56 +8827,29 @@ qconf_is_manager_on_admin_host(const char *user, const char *host) {
    DRETURN(0);
 }
 
-/****** src/qconf_modify_attribute() ******************************************
-*  NAME
-*     qconf_modify_attribute() -- sends a modify request to the master 
-*
-*  SYNOPSIS
-*
-*     static int qconf_modify_attribute(lList **alpp, int from_file,
-*                                        char ***spp, int sub_command,
-*                                        struct object_info_entry *info_entry); 
-*
-*
-*  FUNCTION
-*     The function performs a SGE_GDI_MOD request to the qmaster.
-*     It will get all necessary infomation from commandline or
-*     file. 
-*     Depending on the parameters specified, the function will
-*     modify only parts of an object. It is possible to address
-*     only parts of a sublist of an object.
-*     
-*
-*  INPUTS
-*     alpp        - reference to an answer list where the master will
-*                 store necessary messages for the user 
-*
-*     from_file   - if set to 1 then the next commandline parameter 
-*                   (stored in spp) will contain a filename. 
-*                   This file contains the 
-*                   attributes which should be modified 
-*
-*     spp         - pending list of commandline parameter
-*
-*     epp         - this reference will contain the reduced
-*                   element which will be parsed from commandline or file
-*                   after this function was called
-*
-*     sub_command - bitmask which will be added to the "command"
-*                   parameter of the ocs::gdi::Client::sge_gdi-request:
-*        SGE_GDI_CHANGE - modify sublist elements
-*        SGE_GDI_APPEND - add elements to a sublist
-*        SGE_GDI_REMOVE - remove sublist elements
-*        SGE_GDI_SET - replace the complete sublist
-*
-*     info_entry -  pointer to a structure with function 
-*                   pointers, string pointers, and CULL names
-*
-*  RESULT
-*     [alpp] Masters answer for the gdi request
-*     1 for error
-*     0 for success
-******************************************************************************/
+/**
+ * @brief Sends a modify request to the master
+ *
+ * The function performs a SGE_GDI_MOD request to the qmaster.
+ * It will get all necessary infomation from commandline or
+ * file.
+ * Depending on the parameters specified, the function will
+ * modify only parts of an object. It is possible to address
+ * only parts of a sublist of an object.
+ *
+ * @param alpp reference to an answer list where the master will store necessary messages for the user
+ * @param from_file if set to 1 then the next commandline parameter (stored in spp) will contain a filename. This file contains the attributes which should be modified
+ * @param spp pending list of commandline parameter
+ * @param epp this reference will contain the reduced element which will be parsed from commandline or file after this function was called
+ * @param sub_command bitmask which will be added to the "command" parameter of the ocs::gdi::Client::sge_gdi-request:
+ * @param SGE_GDI_CHANGE modify sublist elements
+ * @param SGE_GDI_APPEND add elements to a sublist
+ * @param SGE_GDI_REMOVE remove sublist elements
+ * @param SGE_GDI_SET replace the complete sublist
+ * @param info_entry pointer to a structure with function pointers, string pointers, and CULL names
+ *
+ * @return [alpp] Masters answer for the gdi request 1 for error 0 for success
+ */
 static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp,
                                   lListElem **epp, ocs::gdi::SubCommand sub_command,
                                   struct object_info_entry *info_entry) 

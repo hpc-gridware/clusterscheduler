@@ -31,6 +31,13 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief checkprog - is a given pid still running the expected program?
+ *
+ * Compares the first eight characters of the process basename, which is what
+ * `ps` reports on every supported platform, and exits 0 when they match.
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
@@ -50,6 +57,13 @@ int main(int, char *[]);
  * sge_exit_wrapper
  * wrapper for standalone program
  *----------------------------------------------------------------------*/
+/** @brief Exit hook, so the shared code can end a standalone program
+ *
+ * The library calls out to an exit function that the daemons use to shut
+ * themselves down cleanly; here there is nothing to shut down.
+ *
+ * @param i the exit status
+ */
 void sge_exit_wrapper(
 int i 
 ) {
@@ -57,6 +71,7 @@ int i
 }
    
 /*----------------------------------------------------------------------*/
+/** @brief Print the usage of `checkprog` and exit */
 void usage_checkprog()
 {
    fprintf(stderr, "\n%s\n", MSG_COMMAND_USAGECHECKPROG);
@@ -68,6 +83,7 @@ void usage_checkprog()
 }
 
 /*----------------------------------------------------------------------*/
+/** @brief Print the usage of `getprogs` and exit */
 void usage_getprogs()
 {
    fprintf(stderr, "\n%s\n", MSG_COMMAND_USAGEGETPROGS );

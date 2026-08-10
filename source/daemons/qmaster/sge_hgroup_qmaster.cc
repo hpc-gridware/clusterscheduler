@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Host groups, and the queue instances that follow their membership
+ */
+
 #include <cstdio>
 #include <cctype>
 #include <cstring>
@@ -72,26 +76,21 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
 static void
 hgroup_rollback(lListElem *this_elem);
 
-/****** qmaster/hgroup/hgroup_nesting_that_contains() *************************
-*  NAME
-*     hgroup_nesting_that_contains() -- which nested group reaches this host?
-*
-*  FUNCTION
-*     CS-2438 chunk 4. Walks the DIRECT entries of a reserved group, and for
-*     each "@group" reference among them asks whether that group contains the
-*     host. Appends the names of those that do, comma-separated.
-*
-*     Only used to build an error message, so it is allowed to be the slow path.
-*
-*  INPUTS
-*     const lList *current            - direct HR_Type entries of the reserved group
-*     const char *hostname            - host that could not be removed directly
-*     const lList *master_hgroup_list - list the references resolve against
-*     dstring *groups                 - receives the comma-separated names
-*
-*  RESULT
-*     bool - true if at least one nested group contains the host
-*******************************************************************************/
+/**
+ * @brief Which nested group reaches this host?
+ *
+ * CS-2438 chunk 4. Walks the DIRECT entries of a reserved group, and for
+ * each "@group" reference among them asks whether that group contains the
+ * host. Appends the names of those that do, comma-separated.
+ * Only used to build an error message, so it is allowed to be the slow path.
+ *
+ * @param current direct HR_Type entries of the reserved group
+ * @param hostname host that could not be removed directly
+ * @param master_hgroup_list list the references resolve against
+ * @param groups receives the comma-separated names
+ *
+ * @return true if at least one nested group contains the host
+ */
 static bool
 hgroup_nesting_that_contains(const lList *current, const char *hostname,
                              const lList *master_hgroup_list, dstring *groups)
@@ -119,52 +118,43 @@ hgroup_nesting_that_contains(const lList *current, const char *hostname,
    return found;
 }
 
-/****** qmaster/hgroup/hgroup_reserved_delta_is_strict() **********************
-*  NAME
-*     hgroup_reserved_delta_is_strict() -- 9.1 membership errors for -ah/-dh/-as/-ds
-*
-*  FUNCTION
-*     CS-2438. attr_mod_sub_list() is deliberately TOLERANT: appending a member
-*     that is already there, or removing one that is not, is reported as an INFO
-*     answer with STATUS_OK and the request otherwise succeeds. That is right for
-*     "qconf -aattr" on an ordinary host group, and it is what made this check
-*     necessary -- once chunk 3 redirected "qconf -ah/-dh/-as/-ds" onto that
-*     path, both cases started exiting 0 where 9.1 exited 1, and "-ah" reported
-*     a host as added that it had not added.
-*
-*     Silently succeeding is the wrong answer for these two groups in
-*     particular. They are the admin and submit host lists: a script that says
-*     "qconf -ds host || alert" has to keep failing when the removal did not
-*     happen.
-*
-*     Scoped to @admin_hosts and @submit_hosts, so "-aattr/-dattr" on every
-*     other host group keeps the tolerant behaviour it has always had.
-*     @exec_hosts needs no entry -- it is system-maintained and every write to
-*     it is refused earlier.
-*
-*     Checked against the PRE-state, unlike the qmaster-host guard below which
-*     checks the end state: "was this host already a member" is a question about
-*     the state before the merge, and after attr_mod_sub_list() has run the two
-*     cases are indistinguishable from a successful one. Called after
-*     href_list_resolve_hostnames() so a short name and its FQDN compare equal.
-*
-*  INPUTS
-*     const lListElem *hgroup           - the group as it is BEFORE the merge
-*     lList **answer_list               - for returning the errors
-*     const lList *delta_list           - HR_Type entries the request carries
-*     ocs::gdi::SubCommand sub_command  - APPEND, REMOVE or neither
-*     const lList *master_hgroup_list   - to resolve nested references (chunk 4)
-*
-*  RESULT
-*     bool - false if any entry was already/not a member; the request must fail
-*
-*  NOTES
-*     The two messages are not symmetric, and that is not a slip: 9.1 produced
-*     MSG_SGETEXT_ALREADYEXISTS_SS with the GDI object name ("adminhost") from
-*     sge_c_gdi.cc and MSG_SGETEXT_DOESNOTEXIST_SS with the spelt-out name
-*     ("administrative host") from sge_del_host(). Both are reproduced as they
-*     were rather than unified, so no script parsing either one has to change.
-*******************************************************************************/
+/**
+ * @brief 9.1 membership errors for -ah/-dh/-as/-ds
+ *
+ * CS-2438. attr_mod_sub_list() is deliberately TOLERANT: appending a member
+ * that is already there, or removing one that is not, is reported as an INFO
+ * answer with STATUS_OK and the request otherwise succeeds. That is right for
+ * "qconf -aattr" on an ordinary host group, and it is what made this check
+ * necessary -- once chunk 3 redirected "qconf -ah/-dh/-as/-ds" onto that
+ * path, both cases started exiting 0 where 9.1 exited 1, and "-ah" reported
+ * a host as added that it had not added.
+ * Silently succeeding is the wrong answer for these two groups in
+ * particular. They are the admin and submit host lists: a script that says
+ * "qconf -ds host || alert" has to keep failing when the removal did not
+ * happen.
+ * Scoped to @admin_hosts and @submit_hosts, so "-aattr/-dattr" on every
+ * other host group keeps the tolerant behaviour it has always had.
+ * @exec_hosts needs no entry -- it is system-maintained and every write to
+ * it is refused earlier.
+ * Checked against the PRE-state, unlike the qmaster-host guard below which
+ * checks the end state: "was this host already a member" is a question about
+ * the state before the merge, and after attr_mod_sub_list() has run the two
+ * cases are indistinguishable from a successful one. Called after
+ * href_list_resolve_hostnames() so a short name and its FQDN compare equal.
+ *
+ * @param hgroup the group as it is BEFORE the merge
+ * @param answer_list for returning the errors
+ * @param delta_list HR_Type entries the request carries ocs::gdi::SubCommand sub_command  - APPEND, REMOVE or neither
+ * @param master_hgroup_list to resolve nested references (chunk 4)
+ *
+ * @return false if any entry was already/not a member; the request must fail
+ *
+ * @note The two messages are not symmetric, and that is not a slip: 9.1 produced
+ *       MSG_SGETEXT_ALREADYEXISTS_SS with the GDI object name ("adminhost") from
+ *       sge_c_gdi.cc and MSG_SGETEXT_DOESNOTEXIST_SS with the spelt-out name
+ *       ("administrative host") from sge_del_host(). Both are reproduced as they
+ *       were rather than unified, so no script parsing either one has to change.
+ */
 static bool
 hgroup_reserved_delta_is_strict(const lListElem *hgroup, lList **answer_list,
                                 const lList *delta_list, ocs::gdi::SubCommand sub_command,
@@ -357,6 +347,11 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
    DRETURN(ret);
 }
 
+/** @brief Make the pending changes to a host group permanent
+ *
+ * @param hgroup the host group
+ * @param gdi_session the session the change belongs to
+ */
 void
 hgroup_commit(lListElem *hgroup, uint64_t gdi_session) {
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
@@ -380,6 +375,10 @@ hgroup_commit(lListElem *hgroup, uint64_t gdi_session) {
    DRETURN_VOID;
 }
 
+/** @brief Discard the pending changes to a host group
+ *
+ * @param this_elem the object
+ */
 static void
 hgroup_rollback(lListElem *this_elem) {
    DENTER(TOP_LAYER);
@@ -387,13 +386,37 @@ hgroup_rollback(lListElem *this_elem) {
    DRETURN_VOID;
 }
 
-/* CS-2438 chunk 7: same rollback, reachable from the @exec_hosts sync in
- * sge_host_qmaster.cc, which builds the pending queue copies the same way. */
+/** @brief Discard the pending queue copies a failed host group change built
+ *
+ * CS-2438 chunk 7: same rollback as hgroup_rollback(), reachable from the
+ * `@exec_hosts` sync in `sge_host_qmaster.cc`, which builds the pending queue
+ * copies the same way.
+ *
+ * @param hgroup the host group
+ */
 void
 hgroup_rollback_cqueues(lListElem *hgroup) {
    hgroup_rollback(hgroup);
 }
 
+/** @brief Apply one attribute change to a host group
+ *
+ * The gdi_object_t::modifier for host groups; see sge_c_gdi.h for the sequence it is called from.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param answer_list receives messages for the caller
+ * @param hgroup the host group
+ * @param reduced_elem the reduced element the client sent
+ * @param add 1 for add, 0 for modify
+ * @param remote_user the requesting user
+ * @param remote_host the requesting host
+ * @param object the table entry for this object type
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *hgroup, lListElem *reduced_elem, int add,
            const char *remote_user, const char *remote_host, gdi_object_t *object,
@@ -690,6 +713,16 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
    }
 }
 
+/** @brief Delete a host group
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param this_elem the object
+ * @param answer_list receives messages for the caller
+ * @param remote_user the requesting user
+ * @param remote_host the requesting host
+ * @return STATUS_OK on success
+ */
 int
 hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
    int ret = true;
@@ -802,29 +835,22 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
    }
 }
 
-/****** qmaster/hgroup/hgroup_refresh_caches() ********************************
-*  NAME
-*     hgroup_refresh_caches() -- recompute this group's cache and its referencees'
-*
-*  FUNCTION
-*     CS-2451: the resolved host list of this group just changed, and with it
-*     that of every group referencing it -- transitively, since @a may contain
-*     @b which contains @c. Refresh all of them BEFORE any event goes out, so
-*     no event carries a cache that disagrees with the master list.
-*
-*     The caller must have chained the new object into the master list already,
-*     so resolving here sees the new state.
-*
-*  INPUTS
-*     lListElem *hgroup           - the group whose membership changed
-*     lList *master_hgroup_list   - the (already updated) master list
-*     lList **referencees         - OUT, HR_Type names of the refreshed
-*                                   referencees; the CALLER frees it, because it
-*                                   still needs them to send one event each
-*
-*  NOTES
-*     MT-NOTE: call under the write lock, like every other writer of the list
-*******************************************************************************/
+/**
+ * @brief Recompute this group's cache and its referencees'
+ *
+ * CS-2451: the resolved host list of this group just changed, and with it
+ * that of every group referencing it -- transitively, since `@a` may contain
+ * `@b` which contains `@c`. Refresh all of them BEFORE any event goes out, so
+ * no event carries a cache that disagrees with the master list.
+ * The caller must have chained the new object into the master list already,
+ * so resolving here sees the new state.
+ *
+ * @param hgroup the group whose membership changed
+ * @param master_hgroup_list the (already updated) master list
+ * @param referencees OUT, HR_Type names of the refreshed referencees; the CALLER frees it, because it still needs them to send one event each
+ *
+ * @note MT-NOTE: call under the write lock, like every other writer of the list
+ */
 void
 hgroup_refresh_caches(lListElem *hgroup, lList *master_hgroup_list, lList **referencees)
 {
@@ -852,18 +878,19 @@ hgroup_refresh_caches(lListElem *hgroup, lList *master_hgroup_list, lList **refe
    DRETURN_VOID;
 }
 
-/****** qmaster/hgroup/hgroup_send_referencee_events() ************************
-*  NAME
-*     hgroup_send_referencee_events() -- one HGROUP_MOD per refreshed referencee
-*
-*  FUNCTION
-*     CS-2451. One event per referencee so the mirrors pick up their refreshed
-*     cache. sge_add_event(), not sge_event_spool(): HGRP_cached_hosts is not
-*     spooled and nothing in the referencees' own configuration changed, so
-*     rewriting their spool files would be pure I/O.
-*
-*     Send these AFTER the event for the group that actually changed.
-*******************************************************************************/
+/**
+ * @brief One HGROUP_MOD per refreshed referencee
+ *
+ * CS-2451. One event per referencee so the mirrors pick up their refreshed
+ * cache. sge_add_event(), not sge_event_spool(): HGRP_cached_hosts is not
+ * spooled and nothing in the referencees' own configuration changed, so
+ * rewriting their spool files would be pure I/O.
+ * Send these AFTER the event for the group that actually changed.
+ *
+ * @param referencees the host groups whose cache was refreshed (`HR_Type`)
+ * @param master_hgroup_list the master host group list
+ * @param gdi_session the session the change belongs to
+ */
 void
 hgroup_send_referencee_events(const lList *referencees, lList *master_hgroup_list, uint64_t gdi_session)
 {
@@ -879,6 +906,19 @@ hgroup_send_referencee_events(const lList *referencees, lList *master_hgroup_lis
    }
 }
 
+/** @brief Announce a host group change once it is safely spooled
+ *
+ * The gdi_object_t::on_success for host groups.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param hgroup the host group
+ * @param old_hgroup see the declaration
+ * @param object the table entry for this object type
+ * @param ppList receives information for post processing
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hgroup, lListElem *old_hgroup, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    const char *name = lGetHost(hgroup, HGRP_name);
@@ -911,6 +951,17 @@ hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hgroup
 }
 
 
+/** @brief Write a host group to the spool
+ *
+ * The gdi_object_t::writer for host groups.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param answer_list receives messages for the caller
+ * @param this_elem the object
+ * @param object the table entry for this object type
+ * @return 0 on success
+ */
 int
 hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *this_elem, gdi_object_t *object) {
    bool tmp_ret = true;

@@ -1,19 +1,19 @@
 {
    "className": "ResourceQuotaRuleFilter",
-   "summary": "@todo add summary",
+   "summary": "Resource Quota Rule Filter",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "One of a rule's five filters: the set of names it matches, and whether the limit is shared or per name."
       }
    ],
    "cullPrefix": "RQRF",
    "attributes": [
       {
          "name": "expand",
-         "summary": "@todo add summary",
+         "summary": "Expand",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "False means one limit shared by everything the filter matches; true means a separate limit for each matched name. This is what distinguishes \"100 slots between all users\" from \"100 slots each\"."
             }
          ],
          "type": "lBoolT",
@@ -28,10 +28,10 @@
       },
       {
          "name": "scope",
-         "summary": "@todo add summary",
+         "summary": "Scope",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The names the filter matches (`ST_Type`). A single `*` entry means everything."
             }
          ],
          "type": "lListT",
@@ -48,10 +48,10 @@
       },
       {
          "name": "xscope",
-         "summary": "@todo add summary",
+         "summary": "Excluded Scope",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Names explicitly excluded, applied after RQRF_scope."
             }
          ],
          "type": "lListT",

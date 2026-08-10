@@ -33,6 +33,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Handling qmaster's request to start a job, as master or as slave host
+ */
 #include <cerrno>
 #include <climits>
 #include <pwd.h>
@@ -83,6 +87,12 @@ extern volatile int jobs_to_start;
 static int handle_job(lListElem *jelem, lListElem *jatep, int slave);
 static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id, sge_pack_buffer *apb);
 
+/** @brief Handle qmaster's request to start a job on this host
+ * @param aMsg the received message
+ * @param apb the buffer the answer is packed into
+ * @param from_qmaster whether the request came from qmaster rather than from a peer execd
+ * @return 0 on success
+ */
 int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb, bool from_qmaster)
 {
    DENTER(TOP_LAYER);
@@ -165,6 +175,14 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
    DRETURN(0);
 }
 
+/** @brief Handle the request to prepare this host as a slave of a parallel job
+ *
+ * A slave host holds the job's slots and runs its PE tasks, but the master
+ * host is the one that starts the job script.
+ *
+ * @param aMsg the received message
+ * @return 0 on success
+ */
 int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
 {
    int ret = 1;
@@ -401,26 +419,19 @@ Ignore:
    DRETURN(-1);
 }
 
-/****** execd/job/job_set_queue_info_in_task() ********************************
-*  NAME
-*     job_set_queue_info_in_task() -- set queue to use for task
-*
-*  SYNOPSIS
-*     static lList *job_set_queue_info_in_task(char *qname, lListElem *pe_task);
-*
-*  FUNCTION
-*     Extend the task structure of task <jatask> by a
-*     JAT_granted_destin_identifier list, which contains
-*     the queue <qname> and uses one slot.
-*
-*  INPUTS
-*     qualified_hostname - name of host
-*     qname   - name of queue to set
-*     pe_task - task structure
-*
-*  RESULT
-*     the new created JAT_granted_destin_identifier list
-******************************************************************************/
+/**
+ * @brief Set queue to use for task
+ *
+ * Extend the task structure of task `jatask` by a
+ * JAT_granted_destin_identifier list, which contains
+ * the queue `qname` and uses one slot.
+ *
+ * @param qualified_hostname name of host
+ * @param qname name of queue to set
+ * @param pe_task task structure
+ *
+ * @return the new created JAT_granted_destin_identifier list
+ */
 static lList *job_set_queue_info_in_task(const char *qualified_hostname, const char *qname, lListElem *petep)
 {
    lListElem *jge;
@@ -436,41 +447,27 @@ static lList *job_set_queue_info_in_task(const char *qualified_hostname, const c
    DRETURN(lGetListRW(petep, PET_granted_destin_identifier_list));
 }
 
-/****** execd/job/job_get_queue_with_task_about_to_exit() *********************
-*  NAME
-*     job_get_queue_with_task_about_to_exit -- find Q with already exited task
-*
-*  SYNOPSIS
-*     static lList *job_get_queue_with_task_about_to_exit(lListElem *jatep,
-*                                                         lListElem *jatask,
-*                                                         uint32_t jobid,
-*                                                         uint32_t jataskid);
-*
-*  FUNCTION
-*     tries to find a pe task in the job (array task) <jatep> that has
-*     already exited, but which is not yet cleaned up by the execd.
-*
-*     On exit of a qrsh pe task, the shepherd creates a file
-*     "shepherd_about_to_exit" in the active_jobs directory of the pe task.
-*     This function tries to find this file, if it exists, the slot of
-*     the exited task can be reused before being freed by the execd.
-*
-*     The check is done for all running tasks of the job, if one is found,
-*     the corresponding queue is set to be used by the new task.
-*
-*  INPUTS
-*     jatep    - the actual job (substructure job array task)
-*     jatask   - the new pe task
-*     jobid    - the jobid of the job
-*     jataskid - the task id of the job array task
-*
-*  RESULT
-*     on success, the JAT_granted_destin_identifier list of the new pe task
-*     else nullptr
-*
-*  SEE ALSO
-*     execd/job/job_set_queue_info_in_task()
-******************************************************************************/
+/**
+ * @brief Find Q with already exited task
+ *
+ * tries to find a pe task in the job (array task) `jatep` that has
+ * already exited, but which is not yet cleaned up by the execd.
+ * On exit of a qrsh pe task, the shepherd creates a file
+ * "shepherd_about_to_exit" in the active_jobs directory of the pe task.
+ * This function tries to find this file, if it exists, the slot of
+ * the exited task can be reused before being freed by the execd.
+ * The check is done for all running tasks of the job, if one is found,
+ * the corresponding queue is set to be used by the new task.
+ *
+ * @param jatep the actual job (substructure job array task)
+ * @param jatask the new pe task
+ * @param jobid the jobid of the job
+ * @param jataskid the task id of the job array task
+ *
+ * @return on success, the JAT_granted_destin_identifier list of the new pe task else nullptr
+ *
+ * @see #job_set_queue_info_in_task
+ */
 static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
                                                     lListElem *jatep,
                                                     lListElem *petep,
@@ -516,39 +513,24 @@ static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
    DRETURN(nullptr);
 }
 
-/****** execd/job/job_get_queue_for_task() ************************************
-*  NAME
-*     job_get_queue_for_task() -- find a queue suited for task execution
-*
-*  SYNOPSIS
-*     static lList *job_get_queue_for_task(uint32_t   job_id,
-*                                          uint32_t   ja_task_id,
-*                                          lListElem  *jatep,
-*                                          lListElem  *jatask,
-*                                          const char *queuename);
-*
-*  FUNCTION
-*     Search for a queue, that
-*        - may be used by job in which new task shall be started
-*        - resides on the host of this execd
-*        - has free slots for the job in which new task shall be started
-*     If a suited queue is found, it is set to be used by the new task.
-*
-*  INPUTS
-*     job_id
-*     ja_task_id
-*     jatep     - the actual job (substructure job array task)
-*     petep     - the new pe task
-*     qualified_hostname - qualfied hostname
-*     queuename - optional: request a certain queue
-*
-*  RESULT
-*     on success, the JAT_granted_destin_identifier list of the new pe task
-*     else nullptr
-*
-*  SEE ALSO
-*     execd/job/job_set_queue_info_in_task()
-******************************************************************************/
+/**
+ * @brief Find a queue suited for task execution
+ *
+ * Search for a queue, that
+ *    - may be used by job in which new task shall be started
+ *    - resides on the host of this execd
+ *    - has free slots for the job in which new task shall be started
+ * If a suited queue is found, it is set to be used by the new task.
+ *
+ * @param jatep the actual job (substructure job array task)
+ * @param petep the new pe task
+ * @param qualified_hostname qualfied hostname
+ * @param queuename optional: request a certain queue
+ *
+ * @return on success, the JAT_granted_destin_identifier list of the new pe task else nullptr
+ *
+ * @see #job_set_queue_info_in_task
+ */
 static lList *
 job_get_queue_for_task(uint32_t job_id, uint32_t ja_task_id, lListElem *jatep, lListElem *petep,
                        const char *qualified_hostname, const char *queuename) {
@@ -810,38 +792,27 @@ Error:
    DRETURN(-1);
 }
 
-/****** execd/job/job_verify_execd_job() *****************************************
-*  NAME
-*     job_verify_execd_job() -- verify a job entering execd
-*
-*  SYNOPSIS
-*     bool
-*     job_verify_execd_job(const lListElem *job, lList **answer_list)
-*
-*  FUNCTION
-*     Verifies a job object entering execd.
-*     Does generic tests by calling job_verify, like verifying the cull
-*     structure, and makes sure a number of job attributes are set
-*     correctly.
-*
-*  INPUTS
-*     const lListElem *job - the job to verify
-*     lList **answer_list  - answer list to pass back error messages
-*
-*  RESULT
-*     bool - true on success,
-*            false on error with error message in answer_list
-*
-*  NOTES
-*     MT-NOTE: job_verify_execd_job() is MT safe
-*
-*  BUGS
-*     The function is far from being complete.
-*     Currently, only the CULL structure is verified, not the contents.
-*
-*  SEE ALSO
-*     sge_job/job_verify()
-*******************************************************************************/
+/**
+ * @brief Verify a job entering execd
+ *
+ * Verifies a job object entering execd.
+ * Does generic tests by calling job_verify, like verifying the cull
+ * structure, and makes sure a number of job attributes are set
+ * correctly.
+ *
+ * @param job the job to verify
+ * @param answer_list answer list to pass back error messages
+ * @param qualified_hostname this host, as the cluster knows it
+ *
+ * @return true on success, false on error with error message in answer_list
+ *
+ * @note MT-NOTE: job_verify_execd_job() is MT safe
+ *
+ * @bug The function is far from being complete.
+ *      Currently, only the CULL structure is verified, not the contents.
+ *
+ * @see `job_verify()`
+ */
 bool
 job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qualified_hostname)
 {

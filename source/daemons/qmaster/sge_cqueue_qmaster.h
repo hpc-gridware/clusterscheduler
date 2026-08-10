@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Cluster queues, and the queue instances they expand into
+ */
+
 #include "sge_c_gdi.h"
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
@@ -50,6 +54,16 @@ cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListEl
 void
 cqueue_commit(lListElem *cqueue, uint64_t gdi_session);
 
+/** @brief Discard the pending changes of a cluster queue
+ *
+ * Counterpart of #cqueue_commit for the failure path of a queue modification.
+ *
+ * @note This function is declared here but defined nowhere in the source tree,
+ *       and nothing calls it. The rollback of a failed queue modification is
+ *       done by discarding the working copy of the queue instead.
+ *
+ * @param cqueue the cluster queue (`CQ_Type`) whose changes are discarded
+ */
 void
 cqueue_rollback(lListElem *cqueue);
 

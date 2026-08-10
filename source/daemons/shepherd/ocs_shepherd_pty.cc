@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Forking the job with a pseudo terminal, or with three pipes
+ */
+
 #include <unistd.h>
 #include <sys/stat.h>
 #include <cerrno>
@@ -270,38 +274,23 @@ ptys_open(int fdm, char *pts_name) {
 
 #endif
 
-/****** uti/pty/fork_pty() *****************************************************
-*  NAME
-*     fork_pty() -- Opens a pty, forks and redirects the std handles
-*
-*  SYNOPSIS
-*     pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg)
-*
-*  FUNCTION
-*     Opens a pty, forks and redirects stdin, stdout and stderr of the child
-*     to the pty.
-*
-*  INPUTS
-*     int *ptrfdm      - Receives the file descriptor of the master side of
-*                        the pty.
-*     int *fd_pipe_err - A int[2] array that receives the file descriptors
-*                        of a pipe to separately redirect stderr.
-*                        To achieve the same behaviour like rlogin/rsh, this
-*                        is normally disabled, compile with
-*                        -DUSE_PTY_AND_PIPE_ERR to enable this feature.
-*     dstring *err_msg - Receives an error string in case of error.
-*
-*  RESULT
-*     pid_t - -1 in case of error,
-*              0 in the child process,
-*              or the pid of the child process in the parent process.
-*
-*  NOTES
-*     MT-NOTE: fork_pty() is not MT safe
-*
-*  SEE ALSO
-*     pty/fork_no_pty
-*******************************************************************************/
+/** @brief Open a pty, fork, and redirect the child's standard handles to it
+ *
+ * An interactive job that asked for a terminal needs one, or line editing and
+ * job control do not work.
+ *
+ * @param[out] ptrfdm Receives the file descriptor of the master side of the pty.
+ * @param[out] fd_pipe_err An int[2] array that receives the file descriptors of
+ *        a pipe to separately redirect stderr. To achieve the same behaviour
+ *        as rlogin/rsh this is normally disabled; compile with
+ *        `-DUSE_PTY_AND_PIPE_ERR` to enable it.
+ * @param[out] err_msg Receives an error string in case of error.
+ * @return -1 in case of error, 0 in the child process, or the pid of the child
+ *         process in the parent process.
+ *
+ * @note MT-NOTE: fork_pty() is not MT safe
+ * @see fork_no_pty()
+ */
 pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
    pid_t pid;
    int fdm, fds;
@@ -427,35 +416,21 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
    }
 }
 
-/****** uti/pty/fork_no_pty() **************************************************
-*  NAME
-*     fork_no_pty() -- Opens pipes, forks and redirects the std handles
-*
-*  SYNOPSIS
-*     pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out, int *fd_pipe_err,
-*     dstring *err_msg)
-*
-*  FUNCTION
-*     Opens three pipes, forks and redirects stdin, stdout and stderr of the
-*     child to the pty.
-*
-*  INPUTS
-*     int *fd_pipe_in  - int[2] array for the two stdin pipe file descriptors
-*     int *fd_pipe_out - int[2] array for the two stdout pipe file descriptors
-*     int *fd_pipe_err - int[2] array for the two stderr pipe file descriptors
-*     dstring *err_msg - Receives an error string in case of error.
-*
-*  RESULT
-*     pid_t - -1 in case of error,
-*              0 in the child process,
-*              or the pid of the child process in the parent process.
-*
-*  NOTES
-*     MT-NOTE: fork_no_pty() is not MT safe
-*
-*  SEE ALSO
-*     pty/fork_pty()
-*******************************************************************************/
+/** @brief Open three pipes, fork, and redirect the child's standard handles to them
+ *
+ * For an interactive job that did not ask for a terminal, e.g. `qrsh` with a
+ * command.
+ *
+ * @param[out] fd_pipe_in int[2] array for the two stdin pipe file descriptors
+ * @param[out] fd_pipe_out int[2] array for the two stdout pipe file descriptors
+ * @param[out] fd_pipe_err int[2] array for the two stderr pipe file descriptors
+ * @param[out] err_msg Receives an error string in case of error.
+ * @return -1 in case of error, 0 in the child process, or the pid of the child
+ *         process in the parent process.
+ *
+ * @note MT-NOTE: fork_no_pty() is not MT safe
+ * @see fork_pty()
+ */
 pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out,
                   int *fd_pipe_err, dstring *err_msg) {
    int ret;

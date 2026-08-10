@@ -54,7 +54,25 @@ OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/doc_doxygen_strict/
 QUIET                  = YES
 
 # No diagrams either - they cost time and produce no warnings
-HAVE_DOT               = NO
+# HAVE_DOT must be YES, or doxygen ignores every @dot block and warns
+# "ignoring \dot command because HAVE_DOT is not set" - which makes a legitimate
+# diagram fail the gate (found 2026-08-10 converting the qinstance state chart).
+#
+# Every *automatic* graph is switched off below, so dot is invoked only for the
+# handful of explicit @dot blocks in the tree. That keeps the gate fast: it is
+# the automatic class, collaboration and include graphs that cost minutes, not
+# the explicit ones.
+HAVE_DOT               = YES
+CLASS_GRAPH            = NO
+COLLABORATION_GRAPH    = NO
+GROUP_GRAPHS           = NO
+INCLUDE_GRAPH          = NO
+INCLUDED_BY_GRAPH      = NO
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+GRAPHICAL_HIERARCHY    = NO
+DIRECTORY_GRAPH        = NO
+DOT_CLEANUP            = YES
 
 #---------------------------------------------------------------------------
 # Input: the whole tree, deliberately
@@ -66,14 +84,29 @@ HAVE_DOT               = NO
 # could not be resolved" and the gate rejects correct documentation.
 #
 # So the whole tree is parsed - measured at ~3 seconds - and the *warnings* are
-# filtered down to the converted modules afterwards by dxm-check.sh. INPUT is
-# therefore inherited unchanged from the main Doxyfile above.
+# filtered down to the converted modules afterwards by dxm-check.sh.
 #
 # Consequence worth knowing while the migration is in progress: a #reference to
 # a macro in a module that has not been converted yet still fails, because a
 # file without an @file block contributes no link targets. Use backticks for
 # those and upgrade them to #reference once that module is converted.
+#
+# INPUT is the one input setting that is NOT inherited unchanged. The main
+# Doxyfile covers source/ only, and it stays that way: the module tests under
+# test/ are gated but deliberately kept out of the published documentation
+# (decision 2026-08-09). Repeating the tag here overrides the value @INCLUDE
+# brought along, the same mechanism as EXCLUDE_PATTERNS below.
+#
+# Without this the tests are invisible to the gate, and invisible in the worst
+# way: doxygen reports nothing for a file it never read, which looks exactly
+# like a clean file. dxm-check.sh guards against the total case with its
+# "parsed no input files" check, but not against a subtree quietly missing.
 #---------------------------------------------------------------------------
+
+INPUT                  = ./clusterscheduler/source/ \
+                         ./gcs-extensions/source/ \
+                         ./clusterscheduler/test/ \
+                         ./gcs-extensions/test/
 
 RECURSIVE              = YES
 
@@ -84,10 +117,73 @@ RECURSIVE              = YES
 # whole is still wanted, and the main Doxyfile still documents these files; only
 # the "every macro must be documented" requirement is lifted here.
 #
+# sge_spooling_flatfile_scanner.cc is flex output, checked in rather than
+# regenerated at build time (the CMakeLists only compiles it with -Wno-error).
+# It is the only generated scanner or parser in the tree, so it is named
+# explicitly instead of matched by a */*_scanner.cc pattern that would also
+# swallow a hand written file of that name.
+#
 # EXCLUDE_PATTERNS is repeated rather than appended because @INCLUDE brings the
 # main Doxyfile's value along, and doxygen has no += for it.
+# source/3rdparty, source/dist and source/experimental are the three subtrees
+# "06 Exclusions and generated code" rules out - vendored code, distribution
+# scripts, and code that is not built. The note says they are excluded from both
+# Doxyfiles; in fact neither excluded them until 2026-08-10, and they accounted
+# for 420 of the published build's warnings. One of them also broke the PDF: a
+# Readme.md under source/dist/r/clustermq carries a U+2265, which is one of the
+# two characters LaTeX cannot set (see "01"), and it stopped refman.pdf being
+# produced at all.
+#
+# source/scripts holds shell and DTrace scripts, not C/C++. monitor.d is matched
+# only because doxygen's FILE_PATTERNS lists *.d for the D language; it then
+# misparses the DTrace probe syntax. Same ruling as source/dist: scripts are not
+# C/C++ API. Decision 2026-08-10.
+#
+# source/security/gss and source/security/krb are the Sun-era Kerberos and GSSAPI
+# support: 16 files, ~4900 lines. Neither directory has a CMakeLists.txt, neither
+# is named by any add_subdirectory or any other build file, and the one place the
+# rest of the tree reaches them - ocs_gdi_security.h - does so under
+# `#ifdef KERBEROS`, which no cmake file in the repository ever defines. The code
+# therefore cannot be built as the tree stands.
+#
+# Excluded on the same criterion `06` already applies to source/experimental:
+# out of scope while it is not built, revisit if it ever is. source/security's
+# third subdirectory, coshepherd, IS built and stays in scope.
+# Decision 2026-08-10.
 EXCLUDE_PATTERNS       = */._* \
-                         */msg_*.h
+                         */msg_*.h \
+                         */sge_spooling_flatfile_scanner.cc \
+                         */com_sun_grid_drmaa_SessionImpl.h \
+                         */jdrmaa/*.java \
+                         */source/scripts/* \
+                         */source/3rdparty/* \
+                         */source/dist/* \
+                         */source/experimental/* \
+                         */source/security/gss/* \
+                         */source/security/krb/* \
+                         */dump_cull_schema/cJSON.*
+
+# cJSON is vendored third-party (Dave Gamble and contributors, MIT), checked in
+# rather than fetched, and carries its own upstream documentation. Same reason
+# the generated flex scanner above is excluded: it is not ours to document, and
+# reformatting its comments would make the next upstream update a manual merge.
+# Decision 2026-08-10.
+
+# main() and usage() exist once per program, with the same signature every time,
+# and doxygen treats same-named file-scope functions across translation units as
+# ONE symbol for the @param/@return bookkeeping but as SEPARATE symbols for the
+# "is documented" check. With more than one program in the tree those two rules
+# contradict each other: give every main() a full block and doxygen reports
+# duplicate @param sections, give it a brief only and it reports missing @param.
+# Documenting `int usage()` in utilbin/gethostname.cc likewise makes
+# `void usage()` in libs/comm/test_commlib_issue.cc wrong, and the other way
+# round - there is no placement that satisfies both.
+#
+# Excluded rather than worked around, because neither name carries information
+# the @file brief does not already give: main() is the entry point and usage()
+# prints the help text. Decision 2026-08-09, when source/utilbin made the first
+# five main() functions visible to the gate.
+EXCLUDE_SYMBOLS        = main usage
 
 #---------------------------------------------------------------------------
 # What has to be documented
@@ -126,3 +222,32 @@ WARN_IF_INCOMPLETE_DOC = YES
 WARN_NO_PARAMDOC       = YES
 WARN_IF_UNDOC_ENUM_VAL = YES
 WARN_AS_ERROR          = FAIL_ON_WARNINGS
+
+#---------------------------------------------------------------------------
+# Preprocessing
+#---------------------------------------------------------------------------
+# PREDEFINED decides which #if branch doxygen reads, and a branch it does not
+# read is invisible to the gate - it reports nothing, which looks exactly like
+# a clean file.  The value is repeated here rather than appended because
+# @INCLUDE brings the main Doxyfile's along and doxygen has no += for it.
+#
+# COMPILE_DC added 2026-08-09.  cmake/ArchitectureSpecificSettings.cmake:70
+# defines it for every target, but the Doxyfile did not, so doxygen was reading
+# the `#if !defined(COMPILE_DC)` branch of daemons/common/pdc.cc - a single
+# dummy int - and skipping the ~1200 lines of the process data collector that
+# are actually compiled.  execd and shepherd have COMPILE_DC blocks too.
+#
+# Still not aligned with the build: SECURE and SGE_MT are predefined here but
+# the build defines neither (SECURE is commented out in
+# cmake/BuildThirdParty.cmake:184).  Left as it is on purpose - documenting a
+# branch that is not compiled is the safe direction, and changing it would move
+# 16 files in already registered modules.  See task 40 in `07`.
+PREDEFINED             = LINUX \
+                         TARGET_64BIT \
+                         SGE_MT \
+                         SECURE \
+                         OCS_WITH_OPENSSL \
+                         OCS_WITH_MUNGE \
+                         OCS_WITH_SYSTEMD \
+                         OCS_HWLOC \
+                         COMPILE_DC

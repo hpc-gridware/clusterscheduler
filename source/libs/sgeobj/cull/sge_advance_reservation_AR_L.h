@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Advance Reservation
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -85,9 +89,8 @@
 *    The list of queues requested by the advance reservation (qrsub -q).
 *    Just one hard queue list. @todo The -scope feature is still missing.
 *
-*    SGE_LIST(AR_granted_slots) - @todo add summary
-*    The list of queues and the number of slots which are reserved for the advance reservation.
-*    Equivalent to the JAT_granted_destin_identifier_list in running jobs/array tasks.
+*    SGE_LIST(AR_granted_slots) - Granted Slots
+*    The queue instances and slot counts the reservation holds (`JG_Type`), the same shape as a job's granted destination identifier list. Set once when the reservation is confirmed.
 *
 *    SGE_LIST(AR_reserved_hosts) - Reserved Hosts
 *    Will hold the list of hosts which are reserved for the advance reservation
@@ -155,41 +158,41 @@
 */
 
 enum {
-   AR_id = AR_LOWERBOUND,
-   AR_name,
-   AR_account,
-   AR_owner,
-   AR_group,
-   AR_submission_time,
-   AR_start_time,
-   AR_end_time,
-   AR_duration,
-   AR_verify,
-   AR_error_handling,
-   AR_state,
-   AR_checkpoint_name,
-   AR_resource_list,
-   AR_resource_utilization,
-   AR_queue_list,
-   AR_granted_slots,
-   AR_reserved_hosts,
-   AR_reserved_queues,
-   AR_mail_options,
-   AR_mail_list,
-   AR_pe,
-   AR_pe_range,
-   AR_granted_pe,
-   AR_master_queue_list,
-   AR_acl_list,
-   AR_xacl_list,
-   AR_type,
-   AR_qi_errors,
-   AR_request_set_list,
-   AR_joker,
-   AR_granted_resources_list,
-   AR_binding,
-   AR_project,
-   AR_pe_object
+   AR_id = AR_LOWERBOUND,   ///< AR Id
+   AR_name,   ///< AR Name
+   AR_account,   ///< Account
+   AR_owner,   ///< Owner
+   AR_group,   ///< Group
+   AR_submission_time,   ///< Submission Time
+   AR_start_time,   ///< Start Time
+   AR_end_time,   ///< End Time
+   AR_duration,   ///< Duration
+   AR_verify,   ///< Verify
+   AR_error_handling,   ///< Error Handling
+   AR_state,   ///< State
+   AR_checkpoint_name,   ///< Checkpoint Name
+   AR_resource_list,   ///< Resource List
+   AR_resource_utilization,   ///< Resource Utilization
+   AR_queue_list,   ///< Queue List
+   AR_granted_slots,   ///< Granted Slots
+   AR_reserved_hosts,   ///< Reserved Hosts
+   AR_reserved_queues,   ///< Reserved Queues
+   AR_mail_options,   ///< Mail Options
+   AR_mail_list,   ///< Mail List
+   AR_pe,   ///< Parallel Environment
+   AR_pe_range,   ///< PE Range
+   AR_granted_pe,   ///< Granted PE
+   AR_master_queue_list,   ///< Master Queue List
+   AR_acl_list,   ///< ACL List
+   AR_xacl_list,   ///< XACL List
+   AR_type,   ///< Type
+   AR_qi_errors,   ///< QI Errors
+   AR_request_set_list,   ///< Request Set List
+   AR_joker,   ///< Joker
+   AR_granted_resources_list,   ///< Granted Resources
+   AR_binding,   ///< Binding Strategy
+   AR_project,   ///< Project
+   AR_pe_object   ///< PE Object
 };
 
 LISTDEF(AR_Type)
@@ -268,6 +271,7 @@ NAMEDEF(ARN)
    NAME("AR_pe_object")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define AR_SIZE sizeof(ARN)/sizeof(char *)
 
 

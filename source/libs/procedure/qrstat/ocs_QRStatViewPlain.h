@@ -19,19 +19,31 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Plain text rendering of `qrstat`
+ */
+
 #include <ostream>
 
 #include "ocs_QRStatViewBase.h"
 #include "cull/cull.h"
 
 namespace ocs {
+   /** @brief Renders the `qrstat` report as the plain text a terminal expects
+    *
+    * The nested lists are printed as comma separated values on one line, so the
+    * view has to know whether it is at the first entry of a list - that is what
+    * the `first_*` flags are for.
+    *
+    * @ingroup libprocedure
+    */
    class QRStatViewPlain : public QRStatViewBase {
-      bool header_printed = false;
-      bool first_resource = false;
-      bool first_exec_queue = false;
-      bool first_mail = false;
-      bool first_acl = false;
-      bool first_xacl = false;
+      bool header_printed = false;     ///< Whether the summary table already has its header line
+      bool first_resource = false;     ///< Whether no resource has been written for this reservation yet
+      bool first_exec_queue = false;   ///< Whether no granted queue has been written yet
+      bool first_mail = false;         ///< Whether no mail recipient has been written yet
+      bool first_acl = false;          ///< Whether no allowed user has been written yet
+      bool first_xacl = false;         ///< Whether no barred user has been written yet
    public:
       QRStatViewPlain(const QRStatParameter &parameter);
       ~QRStatViewPlain() override = default;

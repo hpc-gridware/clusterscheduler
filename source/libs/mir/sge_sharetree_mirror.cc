@@ -32,6 +32,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Mirroring the share tree
+ *
+ * @see sge_sharetree_mirror.h
+ * @see sge_mirror.h
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/ocs_DataStore.h"
@@ -39,37 +46,25 @@
 #include "mir/sge_mirror.h"
 #include "mir/sge_sharetree_mirror.h"
 
-/****** Eventmirror/sharetree/sharetree_update_master_list() *******************
-*  NAME
-*     sharetree_update_master_list() -- update the master sharetree list
-*
-*  SYNOPSIS
-*     bool 
-*     sharetree_update_master_list(sge_object_type type, sge_event_action action,
-*                                  lListElem *event, void *clientdata)
-*
-*  FUNCTION
-*     Update the global master list for the sharetree
-*     based on an event.
-*     The function is called from the event mirroring interface.
-*     Sharetree events always contain the whole sharetree, that
-*     replaces an existing sharetree in the master list.
-*
-*  INPUTS
-*     sge_object_type type     - event type
-*     sge_event_action action - action to perform
-*     lListElem *event        - the raw event
-*     void *clientdata        - client data
-*
-*  RESULT
-*     bool - true, if update is successful, else false
-*
-*  NOTES
-*     The function should only be called from the event mirror interface.
-*
-*  SEE ALSO
-*     Eventmirror/--Eventmirror
-*******************************************************************************/
+/**
+ * @brief Update the master sharetree list
+ *
+ * Update the global master list for the sharetree
+ * based on an event.
+ * The function is called from the event mirroring interface.
+ * Sharetree events always contain the whole sharetree, that
+ * replaces an existing sharetree in the master list.
+ *
+ * @param evc the event client the event arrived on
+ * @param type event type
+ * @param action action to perform
+ * @param event the raw event
+ * @param clientdata client data
+ *
+ * @return true, if update is successful, else false
+ *
+ * @note The function should only be called from the event mirror interface.
+ */
 sge_callback_result
 sharetree_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
                              lListElem *event, void *clientdata)

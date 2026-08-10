@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Limits on how large or frequent a GDI request may be
+ */
+
 #include "uti/sge_mtutil.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -68,6 +72,13 @@ ocs::RequestLimits::parse_from_config(lList **answer_list) {
    DRETURN(false);
 }
 
+/**
+ * @brief Would answering this request break a configured request limit?
+ * @param packet the request being handled
+ * @param task the single task within the packet that is checked
+ * @param[out] answer_list receives the message naming the limit that was hit
+ * @return true when the request has to be rejected
+ */
 bool
 ocs::RequestLimits::will_exceed_limit(gdi::Packet *packet, gdi::Task *task, lList **answer_list) {
    DENTER(TOP_LAYER);

@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Event Type
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -82,15 +86,15 @@
 */
 
 enum {
-   ET_unique_id = ET_LOWERBOUND,
-   ET_number,
-   ET_timestamp,
-   ET_type,
-   ET_intkey,
-   ET_intkey2,
-   ET_strkey,
-   ET_strkey2,
-   ET_new_version
+   ET_unique_id = ET_LOWERBOUND,   ///< unique ID for an event within qmaster.
+   ET_number,   ///< serial number
+   ET_timestamp,   ///< event generation time
+   ET_type,   ///< event type
+   ET_intkey,   ///< first integer key
+   ET_intkey2,   ///< second integer key
+   ET_strkey,   ///< first string key
+   ET_strkey2,   ///< second string key
+   ET_new_version   ///< new version of the data
 };
 
 LISTDEF(ET_Type)
@@ -117,6 +121,7 @@ NAMEDEF(ETN)
    NAME("ET_new_version")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define ET_SIZE sizeof(ETN)/sizeof(char *)
 
 

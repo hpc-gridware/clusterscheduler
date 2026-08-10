@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief What the two reporting file writers share
+ */
+
 #include "uti/sge_time.h"
 
 #include "sgeobj/sge_conf.h"

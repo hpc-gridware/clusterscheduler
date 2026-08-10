@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
+/** @file
+ * @brief The attribute list to spool, per object type
+ */
+
 #include <cstring>
 #include <strings.h>
 #include <cctype>
@@ -610,6 +614,10 @@ static void create_spooling_field (
    }
 }
 
+/** @brief Build the field list of a project
+ * @param spool include the usage, the long term usage and the debited job usage
+ * @return the field list, to be freed with #spool_free_spooling_fields
+ */
 spooling_field *sge_build_PR_field_list(bool spool)
 {
    /* There are 11 possible PR_Type fields. */
@@ -636,6 +644,10 @@ spooling_field *sge_build_PR_field_list(bool spool)
    return fields;
 }
 
+/** @brief Build the field list of a user
+ * @param spool include the accumulated usage, as for a project
+ * @return the field list, to be freed with #spool_free_spooling_fields
+ */
 spooling_field *sge_build_UU_field_list(bool spool)
 {
    /* There are 11 possible UU_Type fields. */
@@ -662,6 +674,12 @@ spooling_field *sge_build_UU_field_list(bool spool)
    return fields;
 }
 
+/** @brief Build the field list of a share tree node
+ * @param spool   include the accumulated usage
+ * @param recurse include the child nodes, which is what makes a whole tree
+ *                one object to write
+ * @return the field list, to be freed with #spool_free_spooling_fields
+ */
 spooling_field *sge_build_STN_field_list(bool spool, bool recurse)
 {
    /* There are 7 possible STN_Type fields. */
@@ -702,6 +720,12 @@ spooling_field *sge_build_STN_field_list(bool spool, bool recurse)
  *
  * @return a freshly allocated, self-referential spooling field list (caller frees)
  */
+/** @brief Build the field list of a share tree node for JSON output
+ *
+ * No `recurse` flag: in JSON the nesting is expressed by the format itself.
+ *
+ * @return the field list, to be freed with #spool_free_spooling_fields
+ */
 spooling_field *sge_build_STN_json_field_list()
 {
    /* name, type, shares, childnodes, terminator = 5 fields */
@@ -722,6 +746,12 @@ spooling_field *sge_build_STN_json_field_list()
  * EH_reschedule_unknown_list field from a classic spooling file because
  * classic spooling uses two different field delimiters to represent the
  * field values. */
+/** @brief Build the field list of an execution host
+ * @param spool     include the fields the qmaster owns
+ * @param to_stdout use the layout `qhost` prints rather than the spool layout
+ * @param history   include the reporting fields
+ * @return the field list, to be freed with #spool_free_spooling_fields
+ */
 spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
                                         bool history)
 {
@@ -933,6 +963,11 @@ static int read_CF_value(lListElem *ep, int nm, const char *buf,
    DRETURN(1);
 }
 
+/** @brief Build the field list of a global or local configuration
+ * @param spool_config write the spool file layout rather than the one
+ *                     `qconf -sconf` shows
+ * @return the field list, to be freed with #spool_free_spooling_fields
+ */
 spooling_field *sge_build_CONF_field_list(bool spool_config)
 {
    /* There are 4 possible CONF_Type fields. */
@@ -950,6 +985,11 @@ spooling_field *sge_build_CONF_field_list(bool spool_config)
    return fields;
 }
 
+/** @brief Build the field list of a queue instance
+ * @param to_stdout use the layout `qconf -sq` shows
+ * @param to_file   use the spool file layout
+ * @return the field list, to be freed with #spool_free_spooling_fields
+ */
 spooling_field *sge_build_QU_field_list(bool to_stdout, bool to_file)
 {
    /* There are 52 possible QU_Type fields. */
@@ -1407,31 +1447,20 @@ static int write_CE_stringval(const lListElem *ep, int nm, dstring *buffer,
    return 1;
 }
 
-/****** sge_flatfile_obj/read_RQR_obj() ****************************************
-*  NAME
-*     read_RQR_obj() -- parse a RQR object from string
-*
-*  SYNOPSIS
-*     static int read_RQR_obj(lListElem *ep, int nm, const char *buffer, lList 
-*     **alp) 
-*
-*  FUNCTION
-*     Reads in a RQR Element from string
-*
-*  INPUTS
-*     lListElem *ep      - Store for parsed Elem
-*     int nm             - nm to be parsed 
-*     const char *buffer - String of the elem to be parsed
-*     lList **alp        - Answer list
-*
-*  RESULT
-*     static int - 1 on success
-*                  0 on error
-*
-*  NOTES
-*     MT-NOTE: read_RQR_obj() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Parse a RQR object from string
+ *
+ * Reads in a RQR Element from string
+ *
+ * @param ep Store for parsed Elem
+ * @param nm nm to be parsed
+ * @param buffer String of the elem to be parsed
+ * @param alp Answer list
+ *
+ * @return 1 on success 0 on error
+ *
+ * @note MT-NOTE: read_RQR_obj() is MT safe
+ */
 static int read_RQR_obj(lListElem *ep, int nm, const char *buffer,
                              lList **alp) {
    lListElem *filter = nullptr;
@@ -1446,31 +1475,20 @@ static int read_RQR_obj(lListElem *ep, int nm, const char *buffer,
    DRETURN(ret);
 }
 
-/****** sge_flatfile_obj/write_RQR_obj() ***************************************
-*  NAME
-*     write_RQR_obj() -- converts a element to string
-*
-*  SYNOPSIS
-*     static int write_RQR_obj(const lListElem *ep, int nm, dstring *buffer, lList 
-*     **alp) 
-*
-*  FUNCTION
-*     Prints out a RQR Element to a string
-*
-*  INPUTS
-*     const lListElem *ep - Elem to be converted
-*     int nm              - nm of Elem
-*     dstring *buffer     - Element as string
-*     lList **alp         - Answer List
-*
-*  RESULT
-*     static int - 1 on success
-*                  0 on error
-*
-*  NOTES
-*     MT-NOTE: write_RQR_obj() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Converts a element to string
+ *
+ * Prints out a RQR Element to a string
+ *
+ * @param ep Elem to be converted
+ * @param nm nm of Elem
+ * @param buffer Element as string
+ * @param alp Answer List
+ *
+ * @return 1 on success 0 on error
+ *
+ * @note MT-NOTE: write_RQR_obj() is MT safe
+ */
 static int write_RQR_obj(const lListElem *ep, int nm, dstring *buffer,
                        lList **alp) {
    return rqs_append_filter_to_dstring(lGetObject(ep, nm), buffer, alp);

@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Client side model of `qquota`: fetches the lists over GDI
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_answer.h"

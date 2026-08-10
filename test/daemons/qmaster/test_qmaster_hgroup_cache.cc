@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for hgroup cache in `daemons/qmaster`
+ */
+
 #include <cstdio>
 #include <cstring>
 
@@ -63,12 +67,30 @@
  * check can drive it.
  */
 
-#define GRP_LEAF "@test_cs2451_leaf"
-#define GRP_MID  "@test_cs2451_mid"
-#define GRP_TOP  "@test_cs2451_top"
+/** @name The three host groups the test builds, one containing the next
+ *
+ * A three-level chain is the smallest shape that shows whether a change to the
+ * innermost group reaches the outermost one's cache, which is what CS-2451 was
+ * about. Removed again at the end of the run.
+ * @{
+ */
+#define GRP_LEAF "@test_cs2451_leaf"   ///< the innermost group, holding the hosts
+#define GRP_MID  "@test_cs2451_mid"    ///< contains #GRP_LEAF
+#define GRP_TOP  "@test_cs2451_top"    ///< contains #GRP_MID
+/** @} */
 
 static int s_fail = 0;
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \

@@ -24,28 +24,42 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Granted Destination Identifier
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of JG
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   JG_qname = 2850,
-   JG_qversion,
-   JG_qhostname,
-   JG_slots,
-   JG_queue,
-   JG_tag_slave_job,
-   JG_ticket,
-   JG_oticket,
-   JG_fticket,
-   JG_sticket,
-   JG_jcoticket,
-   JG_jcfticket,
-   JG_processors,
-   JG_binding_to_use,
-   JG_granted_rsmaps
+   JG_qname = 2850,   ///< Queue Instance Name
+   JG_qversion,   ///< Queue Version
+   JG_qhostname,   ///< Qualified Hostname
+   JG_slots,   ///< Number of Slots
+   JG_queue,   ///< Queue Object
+   JG_tag_slave_job,   ///< Tag for Slave Job Delivery
+   JG_ticket,   ///< Total Tickets
+   JG_oticket,   ///< Override Tickets
+   JG_fticket,   ///< Functional Tickets
+   JG_sticket,   ///< Sharetree Tickets
+   JG_jcoticket,   ///< Job Class Override Tickets
+   JG_jcfticket,   ///< Job Class Functional Tickets
+   JG_processors,   ///< Processor Set
+   JG_binding_to_use,   ///< Binding that should be used
+   JG_granted_rsmaps   ///< Granted RSMAP IDs
 };
 
+/** @brief The attribute ids of JG, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int JG_Type[] = {
    JG_qname,
    JG_qversion,
@@ -65,6 +79,10 @@ constexpr const int JG_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of JG
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define JG_ATTRIBUTES \
    {JG_qname, "JG_qname", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {JG_qversion, "JG_qversion", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

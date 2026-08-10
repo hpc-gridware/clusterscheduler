@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Unit tests for perf in `libs/drmaa`
+ */
 #include <cstdio>
 #include <unistd.h>
 #include <cstring>
@@ -47,19 +51,24 @@
 #include <uti/sge_log.h>
 #include <uti/sge_stdlib.h>
 
-/* program defaults */
-int njobs    = 100;
-int nthreads = 1;
-int dowait   = 1;
-int quiet   = 0;
-const char *native_spec = "-w n";
-char *job_path = nullptr;
-char **job_args = nullptr;
+/** @name What the benchmark run does, set from the command line
+ *
+ * Globals because the submitting threads take a fixed signature.
+ * @{
+ */
+int njobs    = 100;   ///< how many jobs to submit in total
+int nthreads = 1;     ///< how many threads share that total
+int dowait   = 1;     ///< also wait for the jobs, rather than only submitting
+int quiet   = 0;      ///< print only the timings, not the per-job progress
+const char *native_spec = "-w n";   ///< the native specification every job carries; `-w n` skips verification, which would otherwise dominate the measurement
+char *job_path = nullptr;   ///< the job to submit
+char **job_args = nullptr;  ///< its arguments
 
-char *scenario = nullptr;
-char *site_b = nullptr;
+char *scenario = nullptr;   ///< which submission pattern to run
+char *site_b = nullptr;     ///< the second cluster, for the cross-site scenarios
 
-drmaa_job_template_t *jt;
+drmaa_job_template_t *jt;   ///< the template every job is submitted from
+/** @} */
 
 
 static drmaa_job_template_t *create_job_template(const char *job_path, const char *project, int i);
@@ -86,6 +95,10 @@ static void usage()
    return;
 }
 
+/** @brief The seconds between two `timeval`s, as a double
+ * @param t1 the earlier time
+ * @param t2 the later time
+ */
 #define DELTA_SECONDS(t1, t2) (((double)t2.tv_sec - (double)t1.tv_sec) + ((double)t2.tv_usec - (double)t1.tv_usec)/1000000)
 
 int main(int argc, char *argv[])

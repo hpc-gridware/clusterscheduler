@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Localisable message catalogue of the execution daemon
+ */
+
 
 #include <cinttypes>
 

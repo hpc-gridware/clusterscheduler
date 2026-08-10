@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Access checks of the scheduler against user and project lists
+ */
 #include <cstring>
 
 #include "uti/ocs_Pattern.h"
@@ -48,32 +52,24 @@
 
 
 
-/****** valid_queue_user/sge_ar_queue_have_users_access() ***********************
-*  NAME
-*     sge_ar_queue_have_users_access() -- verify that all users of an AR have queue
-*                                        access
-*
-*  SYNOPSIS
-*     bool sge_ar_queue_have_users_access(lList **alpp, lListElem *ar, lListElem 
-*     *queue, lList *master_userset_list) 
-*
-*  FUNCTION
-*     Iterates over the AR_acl_list and proves that every entry has queue access.
-*     If only one has no access the function returns false
-*
-*  INPUTS
-*     lList **alpp               - answer list
-*     lListElem *ar              - advance reservation object (AR_Type)
-*     lListElem *queue           - queue instance object (QU_Type)
-*     lList *master_userset_list - master userset list
-*
-*  RESULT
-*     bool - true if all have access
-*            false if only one has no access
-*
-*  NOTES
-*     MT-NOTE: sge_ar_queue_have_users_access() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Verify that all users of an AR have access
+ *
+ * Iterates over the AR_acl_list and proves that every entry has queue access.
+ * If only one has no access the function returns false
+ *
+ * @param[out] alpp                answer list
+ * @param[in]  ar                  advance reservation object (`AR_Type`)
+ * @param[in]  name                name of the object access is checked for,
+ *                                 used in the message written to `alpp`
+ * @param[in]  acl_list            the access lists of the object
+ * @param[in]  xacl_list           the deny lists of the object
+ * @param[in]  master_userset_list master userset list
+ *
+ * @return true if all have access false if only one has no access
+ *
+ * @note MT-NOTE: sge_ar_queue_have_users_access() is MT safe
+ */
 bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, const lList *acl_list,
                                     const lList *xacl_list, const lList *master_userset_list)
 {

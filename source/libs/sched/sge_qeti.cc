@@ -32,6 +32,20 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief QETI - the queue end time iterator
+ *
+ * To find out when a job could start, the scheduler has to know at which
+ * points in time the utilization of the resources it needs drops. Those
+ * points are the end times of the jobs currently holding them, and only
+ * those - between two of them nothing changes, so nothing has to be checked.
+ *
+ * A QETI iterates exactly over those instants, in **descending** order, for
+ * one job: sge_qeti_first() gives the latest one and sge_qeti_next() walks
+ * backwards towards the present, which is how the scheduler finds the
+ * earliest start time rather than just any.
+ */
+
 #include <cstring>
 
 #include "uti/sge_rmon_macros.h"
@@ -60,11 +74,17 @@
  * example to enhance sge_qeti_t towards keeping all information required
  * for decide very quickly about eligibility of each host/queue.
  */
+/**
+ * @brief The references an iterator keeps, one list per resource level
+ *
+ * Only references are kept, not copies: what is iterated is the resource
+ * utilization of the objects the job could run on.
+ */
 struct sge_qeti_s {
-   lList *cr_refs_pe;
-   lList *cr_refs_global;
-   lList *cr_refs_host;
-   lList *cr_refs_queue;
+   lList *cr_refs_pe;       ///< Utilization of the parallel environment
+   lList *cr_refs_global;   ///< Utilization of the global host
+   lList *cr_refs_host;     ///< Utilization of the eligible execution hosts
+   lList *cr_refs_queue;    ///< Utilization of the eligible queue instances
 };
 
 /*
@@ -95,30 +115,19 @@ struct sge_qeti_s {
 
 
 
-/****** sge_qeti/sge_qeti_list_add() *******************************************
-*  NAME
-*     sge_qeti_list_add() -- Adds a resource utilization to QETI resource list
-*
-*  SYNOPSIS
-*     static int sge_qeti_list_add(lList **lpp, const char *name, lList*
-*     rue_lp, double total, bool must_exist)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     lList **lpp      - QETI resource list
-*     const char *name - Name of the resource
-*     lList* rue_lp    - Resource utilization entry (RUE_Type)
-*     double total     - Total resource amount
-*     bool must_exist  - If true the entry must exist in 'lpp'.
-*
-*  RESULT
-*     static int -  0 on success
-*
-*  NOTES
-*     MT-NOTE: sge_qeti_list_add() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Adds a resource utilization to QETI resource list
+ *
+ * @param lpp QETI resource list
+ * @param name Name of the resource
+ * @param rue_lp Resource utilization entry (RUE_Type)
+ * @param total Total resource amount
+ * @param must_exist If true the entry must exist in 'lpp'.
+ *
+ * @return 0 on success
+ *
+ * @note MT-NOTE: sge_qeti_list_add() is not MT safe
+ */
 static int sge_qeti_list_add(lList **lpp, const char *name, const lList* rue_lp, double total, bool must_exist)
 {
    lListElem *tmp_cr_ref;
@@ -179,7 +188,15 @@ sge_add_qeti_resource_container(lList **qeti_to_add, const lList* rue_list,
    DRETURN(0);
 }
 
-// used only in module test
+/**
+ * @brief Creates an iterator over one resource utilization list
+ *
+ * @param[in] cr_list the resource utilization list to iterate
+ *
+ * @return the iterator, or nullptr if it could not be allocated
+ *
+ * @note Only used by the module test.
+ */
 sge_qeti_t *sge_qeti_allocate2(lList *cr_list)
 {
    sge_qeti_t *iter;
@@ -192,6 +209,17 @@ sge_qeti_t *sge_qeti_allocate2(lList *cr_list)
    return iter;
 }
 
+/**
+ * @brief Creates an iterator over the relevant queue end times of a job
+ *
+ * Collects the utilization lists of every level the job takes resources from
+ * - PE, global, hosts, queue instances - so that the iterator only has to
+ * walk what can actually change for this job.
+ *
+ * @param[in] a the assignment describing the job and what it requests
+ *
+ * @return the iterator, or nullptr if it could not be allocated
+ */
 sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
 {
    DENTER(TOP_LAYER);
@@ -353,25 +381,14 @@ static void sge_qeti_switch_to_next(const char *layer, uint64_t time, lList *cre
    DRETURN_VOID;
 }
 
-/****** sge_qeti/sge_qeti_next_before() ****************************************
-*  NAME
-*     sge_qeti_next_before() -- ???
-*
-*  SYNOPSIS
-*     void sge_qeti_next_before(sge_qeti_t *qeti, uint64_t start)
-*
-*  FUNCTION
-*     All queue end next references are set in a way that will
-*     sge_qeti_next() return a time value that is before (i.e. less than)
-*     start.
-*
-*  INPUTS
-*     sge_qeti_t *qeti - ???
-*     uint64_t start   - ???
-*
-*  NOTES
-*     MT-NOTE: sge_qeti_next_before() is MT safe
-*******************************************************************************/
+/**
+ * @brief All queue end next references are set in a way that will
+ *
+ * @param qeti
+ * @param start
+ *
+ * @note MT-NOTE: sge_qeti_next_before() is MT safe
+ */
 void sge_qeti_next_before(sge_qeti_t *qeti, uint64_t start)
 {
    sge_qeti_switch_to_next("P", start, qeti->cr_refs_pe);
@@ -381,29 +398,19 @@ void sge_qeti_next_before(sge_qeti_t *qeti, uint64_t start)
 }
 
 
-/****** sge_resource_utilization/sge_qeti_first() ******************************
-*  NAME
-*     sge_qeti_first() --
-*
-*  SYNOPSIS
-*     uint64_t sge_qeti_first(sge_qeti_t *qeti)
-*
-*  FUNCTION
-*     Initialize/Reinitialize Queue End Time Iterator. All queue end next
-*     references are initialized to the queue end of all resourece instances.
-*     Before we return the time that is most in the future queue end next
-*     references are switched to the next entry that is earlier than the time
-*     that was returned.
-*
-*  INPUTS
-*     sge_qeti_t *qeti - ???
-*
-*  RESULT
-*     uint64_t -
-*
-*  NOTES
-*     MT-NOTE: sge_qeti_first() is MT safe
-*******************************************************************************/
+/**
+ * @brief Rewinds the iterator and returns the latest queue end time
+ *
+ * All levels are switched to their last entry, so the following
+ * sge_qeti_next() calls walk backwards from here towards the present.
+ *
+ * @param[in,out] qeti the iterator
+ *
+ * @return the latest time at which the utilization of a resource of this job
+ *         changes
+ *
+ * @note MT-NOTE: sge_qeti_first() is MT safe
+ */
 uint64_t sge_qeti_first(sge_qeti_t *qeti)
 {
    DENTER(TOP_LAYER);
@@ -434,27 +441,16 @@ uint64_t sge_qeti_first(sge_qeti_t *qeti)
    DRETURN(all_resources_queue_end_time);
 }
 
-/****** sge_resource_utilization/sge_qeti_next() *******************************
-*  NAME
-*     sge_qeti_next() -- ???
-*
-*  SYNOPSIS
-*     uint64_t sge_qeti_next(sge_qeti_t *qeti)
-*
-*  FUNCTION
-*     Return next the time that is most in the future. Then queue end next
-*     references are switched to the next entry that is earlier than the time
-*     that was returned.
-*
-*  INPUTS
-*     sge_qeti_t *qeti - ???
-*
-*  RESULT
-*     uint64_t -
-*
-*  NOTES
-*     MT-NOTE: sge_qeti_next() is MT safe
-*******************************************************************************/
+/**
+ * @brief Returns the next earlier queue end time
+ *
+ * @param[in,out] qeti the iterator
+ *
+ * @return the next time at which the utilization changes, or
+ *         `DISPATCH_TIME_NOW` once the iterator has reached the present
+ *
+ * @note MT-NOTE: sge_qeti_next() is MT safe
+ */
 uint64_t sge_qeti_next(sge_qeti_t *qeti)
 {
    DENTER(TOP_LAYER);
@@ -479,23 +475,16 @@ uint64_t sge_qeti_next(sge_qeti_t *qeti)
    DRETURN(all_resources_queue_end_time);
 }
 
-/****** sge_resource_utilization/sge_qeti_release() ****************************
-*  NAME
-*     sge_qeti_release() -- Release queue end time iterator
-*
-*  SYNOPSIS
-*     void sge_qeti_release(sge_qeti_t *qeti)
-*
-*  FUNCTION
-*     Release all resources of the queue end time iterator. Refered
-*     resource utilization diagrams are not affected.
-*
-*  INPUTS
-*     sge_qeti_t *qeti - ???
-*
-*  NOTES
-*     MT-NOTE: sge_qeti_release() is MT safe
-*******************************************************************************/
+/**
+ * @brief Release queue end time iterator
+ *
+ * Release all resources of the queue end time iterator. Refered
+ * resource utilization diagrams are not affected.
+ *
+ * @param qeti
+ *
+ * @note MT-NOTE: sge_qeti_release() is MT safe
+ */
 void sge_qeti_release(sge_qeti_t **qeti)
 {
    if (qeti == nullptr || *qeti == nullptr) {

@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Scheduling categories: deciding once for every job that looks alike
+ */
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_dstring.h"
@@ -68,6 +72,15 @@
  *
  ******************************************************/
 
+/** @brief Prepare the projects and user sets the categories are built from
+ *
+ * @param master_project_list the projects
+ * @param master_userset_list the user sets
+ * @param master_rqs_list the resource quota sets
+ * @param master_cqueue_list the cluster queues
+ * @param master_pe_list the parallel environments
+ * @param master_host_list the execution hosts
+ */
 void
 ocs::CategoryQmaster::initialize_prj_and_uset_for_categories(lList *master_project_list, lList *master_userset_list,
                                                              const lList *master_rqs_list, const lList *master_cqueue_list,
@@ -131,6 +144,20 @@ ocs::CategoryQmaster::initialize_prj_and_uset_for_categories(lList *master_proje
    lFreeList(&u_list);
 }
 
+/** @brief Build the categories for every job at startup
+ *
+ * Projects and user sets have to be prepared first, because a category is
+    * partly defined by the access rights a job has.
+ *
+ * @param master_category_list the categories
+ * @param master_job_list the jobs
+ * @param master_project_list the projects
+ * @param master_userset_list the user sets
+ * @param master_rqs_list the resource quota sets
+ * @param master_cqueue_list the cluster queues
+ * @param master_pe_list the parallel environments
+ * @param master_host_list the execution hosts
+ */
 void
 ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(lList **master_category_list, lList *master_job_list,
                                                                 lList *master_project_list, lList *master_userset_list,
@@ -146,6 +173,17 @@ ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(lList **master_c
                    master_rqs_list, false, SessionManager::GDI_SESSION_NONE);
 }
 
+/** @brief Work out a job's category and attach it
+ *
+ * @param master_category_list the categories
+ * @param job the job (`JB_Type`)
+ * @param master_userset_list the user sets
+ * @param master_project_list the projects
+ * @param master_rqs_list the resource quota sets
+ * @param send_events whether to announce the category change to the event clients
+ * @param gdi_session the session the change belongs to
+ * @return true when the job was attached
+ */
 bool
 ocs::CategoryQmaster::attach_job(lList **master_category_list, lListElem *job,
                                  const lList *master_userset_list, const lList *master_project_list, const lList *master_rqs_list,
@@ -194,6 +232,14 @@ ocs::CategoryQmaster::attach_job(lList **master_category_list, lListElem *job,
    DRETURN(true);
 }
 
+/** @brief Detach a job from its category, dropping the category when it empties
+ *
+ * @param master_category_list the categories
+ * @param job the job (`JB_Type`)
+ * @param send_events whether to announce the category change to the event clients
+ * @param gdi_session the session the change belongs to
+ * @return true when the job was detached
+ */
 bool
 ocs::CategoryQmaster::detach_job(lList **master_category_list, lListElem *job, bool send_events, uint32_t gdi_session) {
    DENTER(TOP_LAYER);
@@ -229,6 +275,17 @@ ocs::CategoryQmaster::detach_job(lList **master_category_list, lListElem *job, b
    DRETURN(true);
 }
 
+/** @brief Recompute a job's category and move it if it changed
+ *
+ * @param master_category_list the categories
+ * @param job the job (`JB_Type`)
+ * @param master_userset_list the user sets
+ * @param master_project_list the projects
+ * @param master_rqs_list the resource quota sets
+ * @param send_events whether to announce the category change to the event clients
+ * @param now the current time
+ * @param gdi_session the session the change belongs to
+ */
 void
 ocs::CategoryQmaster::reattach_job(lList **master_category_list, lListElem *job,
                                    const lList *master_userset_list, const lList *master_project_list, const lList *master_rqs_list,
@@ -246,6 +303,16 @@ ocs::CategoryQmaster::reattach_job(lList **master_category_list, lListElem *job,
    DRETURN_VOID;
 }
 
+/** @brief Attach every job to a category
+ *
+ * @param master_job_list the jobs
+ * @param master_category_list the categories
+ * @param master_userset_list the user sets
+ * @param master_project_list the projects
+ * @param master_rqs_list the resource quota sets
+ * @param send_events whether to announce the category change to the event clients
+ * @param gdi_session the session the change belongs to
+ */
 void
 ocs::CategoryQmaster::attach_all_jobs(lList *master_job_list, lList **master_category_list,
                                       const lList *master_userset_list, const lList *master_project_list, const lList *master_rqs_list,
@@ -259,6 +326,18 @@ ocs::CategoryQmaster::attach_all_jobs(lList *master_job_list, lList **master_cat
    DRETURN_VOID;
 }
 
+/** @brief Recompute every job's category
+ *
+ * Needed after a change to anything a category depends on - a project, a
+    * user set, a resource quota or a queue.
+ *
+ * @param master_job_list the jobs
+ * @param master_userset_list the user sets
+ * @param master_project_list the projects
+ * @param master_rqs_list the resource quota sets
+ * @param send_events whether to announce the category change to the event clients
+ * @param gdi_session the session the change belongs to
+ */
 void
 ocs::CategoryQmaster::reattach_all_jobs(lList *master_job_list,
                                         const lList *master_userset_list, const lList *master_project_list, const lList *master_rqs_list,
@@ -273,29 +352,21 @@ ocs::CategoryQmaster::reattach_all_jobs(lList *master_job_list,
    DRETURN_VOID;
 }
 
-/****** sge_category/sge_reset_job_category() **********************************
-*  NAME
-*     sge_reset_job_category() -- resets the category temp information
-*
-*  SYNOPSIS
-*     int sge_reset_job_category()
-*
-*  FUNCTION
-*     Some information in the category should only life throu one scheduling run.
-*     These informations are reseted in the call:
-*     - dispatching messages
-*     - soft violations
-*     - not suitable cluster
-*     - the flag that identifies, if the messages are already added to the schedd infos
-*     - something with the resource reservation
-*
-*  RESULT
-*     int - always 0
-*
-*  NOTES
-*     MT-NOTE: sge_reset_job_category() is not MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Resets the category temp information
+ *
+ * Some information in the category should only life throu one scheduling run.
+ * These informations are reseted in the call:
+ * - dispatching messages
+ * - soft violations
+ * - not suitable cluster
+ * - the flag that identifies, if the messages are already added to the schedd infos
+ * - something with the resource reservation
+ *
+ * @param master_category_list the categories to reset
+ *
+ * @note MT-NOTE: sge_reset_job_category() is not MT safe
+ */
 void
 ocs::CategoryQmaster::reset_tmp_data(lList *master_category_list) {
    DENTER(TOP_LAYER);
@@ -325,6 +396,11 @@ ocs::CategoryQmaster::reset_tmp_data(lList *master_category_list) {
    DRETURN_VOID;
 }
 
+/** @brief Copy the category's cached decisions back into the job
+ *
+ * @param master_category_list the categories
+ * @param job the job (`JB_Type`)
+ */
 void
 ocs::CategoryQmaster::refresh_cat_data_in_job(lList *master_category_list, lListElem *job) {
    DENTER(TOP_LAYER);
@@ -337,6 +413,11 @@ ocs::CategoryQmaster::refresh_cat_data_in_job(lList *master_category_list, lList
    DRETURN_VOID;
 }
 
+/** @brief Refresh the cached category data in every job
+ *
+ * @param master_category_list the categories
+ * @param master_job_list the jobs
+ */
 void
 ocs::CategoryQmaster::refresh_cat_data_all_jobs(lList *master_category_list, lList *master_job_list) {
    DENTER(TOP_LAYER);

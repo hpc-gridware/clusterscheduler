@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Client side parameters of `qrstat`: parsed from argv and the environment
+ */
+
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_io.h"
@@ -36,6 +40,7 @@
 #include "msg_common.h"
 #include "usage.h"
 
+/** @brief The process environment, which the parameter parsing reads */
 extern char **environ;
 
 
@@ -153,6 +158,12 @@ ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, lList **cmdlin
    DRETURN(ret);
 }
 
+/** @brief Parse the command line and the environment into this object
+ * @param answer_list receives error messages
+ * @param argv the arguments, without the program name
+ * @param envp the environment
+ * @return true when the parameters are usable
+ */
 bool
 ocs::QRStatParameterClient::parse_parameters(lList **answer_list, const char **argv, char **envp) {
    DENTER(TOP_LAYER);

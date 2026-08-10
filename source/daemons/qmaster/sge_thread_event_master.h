@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The thread that ships events to the event clients
+ */
+
 void
 sge_event_master_initialize();
 

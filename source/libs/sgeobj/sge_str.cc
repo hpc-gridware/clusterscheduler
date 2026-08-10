@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
+/** @file
+ * @brief String lists, and the group list conversions around them
+ *
+ * @see sge_str.h
+ */
+
 #include <cstring>
 
 #include "uti/sge_rmon_macros.h"
@@ -43,36 +49,26 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
+/// Debug layer the string list traces are written to
 #define STR_LAYER BASIS_LAYER
 
-/****** sgeobj/str/str_list_append_to_dstring() *******************************
-*  NAME
-*     str_list_append_to_dstring() -- append strings to dstring 
-*
-*  SYNOPSIS
-*     const char * 
-*     str_list_append_to_dstring(const lList *this_list, 
-*                                dstring *string, 
-*                                const char delimiter) 
-*
-*  FUNCTION
-*     Append the strings contained in "this_list" to the dstring 
-*     "string". Separate them by the character contained in 
-*     "delimiter". 
-*     If "this_list" is nullptr or conaines no elements, "NONE" will
-*     be added to the dstring.
-*
-*  INPUTS
-*     const lList *this_list - ST_Type list 
-*     dstring *string        - dynamic string 
-*     const char delimiter   - delimiter  
-*
-*  RESULT
-*     const char * - pointer to the given "string"-buffer 
-*
-*  SEE ALSO
-*     sgeobj/str/str_list_parse_from_string()
-*******************************************************************************/
+/**
+ * @brief Append strings to dstring
+ *
+ * Append the strings contained in "this_list" to the dstring
+ * "string". Separate them by the character contained in
+ * "delimiter".
+ * If "this_list" is nullptr or conaines no elements, "NONE" will
+ * be added to the dstring.
+ *
+ * @param this_list ST_Type list
+ * @param string dynamic string
+ * @param delimiter delimiter
+ *
+ * @return pointer to the given "string"-buffer
+ *
+ * @see #str_list_parse_from_string
+ */
 const char *
 str_list_append_to_dstring(const lList *this_list, dstring *string,
                            const char delimiter)
@@ -98,37 +94,23 @@ str_list_append_to_dstring(const lList *this_list, dstring *string,
    DRETURN(ret);
 }
 
-/****** sgeobj/str/str_list_parse_from_string() *******************************
-*  NAME
-*     str_list_parse_from_string() -- Parse a list of strings 
-*
-*  SYNOPSIS
-*     bool 
-*     str_list_parse_from_string(lList **this_list, 
-*                                const char *string, 
-*                                const char *delimitor) 
-*
-*  FUNCTION
-*     Parse a list of strings from "string". The strings have to be 
-*     separated by a token contained in "delimitor". for each string
-*     an element of type ST_Type will be added to "this_list". 
-*     
-*  INPUTS
-*     lList **this_list     - ST_Type list
-*     const char *string    - string to be parsed 
-*     const char *delimitor - delimitor string 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error 
-*
-*  SEE ALSO
-*     sgeobj/str/str_list_append_to_dstring()
-* 
-*  NOTES
-*     MT-NOTE: str_list_parse_from_string() is MT safe
-*******************************************************************************/
+/**
+ * @brief Parse a list of strings
+ *
+ * Parse a list of strings from "string". The strings have to be
+ * separated by a token contained in "delimitor". for each string
+ * an element of type ST_Type will be added to "this_list".
+ *
+ * @param this_list ST_Type list
+ * @param string string to be parsed
+ * @param delimitor delimitor string
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: str_list_parse_from_string() is MT safe
+ *
+ * @see #str_list_append_to_dstring
+ */
 bool 
 str_list_parse_from_string(lList **this_list,
                            const char *string, const char *delimitor)
@@ -150,26 +132,16 @@ str_list_parse_from_string(lList **this_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/str/str_list_is_valid() ****************************************
-*  NAME
-*     str_list_is_valid() -- Are all strings valid 
-*
-*  SYNOPSIS
-*     bool 
-*     str_list_is_valid(const lList *this_list, lList **answer_list) 
-*
-*  FUNCTION
-*     Does each element in "this_list" contain a valid string (!= nullptr).
-*
-*  INPUTS
-*     const lList *this_list - ST_Type list 
-*     lList **answer_list    - AN_Type list 
-*
-*  RESULT
-*     bool - result
-*        true  - all strings are != nullptr
-*        false - at least one entry is nullptr
-*******************************************************************************/
+/**
+ * @brief Are all strings valid
+ *
+ * Does each element in "this_list" contain a valid string (!= nullptr).
+ *
+ * @param this_list ST_Type list
+ * @param answer_list AN_Type list
+ *
+ * @return result true  - all strings are != nullptr false - at least one entry is nullptr
+ */
 bool
 str_list_is_valid(const lList *this_list, lList **answer_list)
 {
@@ -188,6 +160,17 @@ str_list_is_valid(const lList *this_list, lList **answer_list)
    DRETURN(ret);
 }
 
+/**
+ * @brief Replace the placeholder for "the current user" in a string list
+ *
+ * A user may write `$user` where a user name is expected; this substitutes the
+ * name the request came from.
+ *
+ * @param[in,out] this_list the list to rewrite
+ * @param[out] answer_list receives error messages
+ * @param username the name to substitute
+ * @return true when the list could be rewritten
+ */
 bool
 str_list_transform_user_list(lList **this_list, lList **answer_list, const char *username)
 {
@@ -217,6 +200,13 @@ str_list_transform_user_list(lList **this_list, lList **answer_list, const char 
    DRETURN(ret);
 }
 
+/**
+ * @brief Turn a supplementary group array into a CULL list
+ *
+ * @param amount how many entries `grp_array` has
+ * @param grp_array the groups to convert
+ * @return the new list; the caller owns it
+ */
 lList *
 grp_list_array2list(int amount, ocs_grp_elem_t *grp_array) {
    DENTER(TOP_LAYER);

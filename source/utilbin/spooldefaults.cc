@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief spooldefaults - write the initial cluster configuration into the spool
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

@@ -24,18 +24,32 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Load Report
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of LR
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   LR_name = 1250,
-   LR_value,
-   LR_global,
-   LR_is_static,
-   LR_host
+   LR_name = 1250,   ///< Load Variable Name
+   LR_value,   ///< Load Variable Value
+   LR_global,   ///< Is Global
+   LR_is_static,   ///< Is Static
+   LR_host   ///< Host Name
 };
 
+/** @brief The attribute ids of LR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int LR_Type[] = {
    LR_name,
    LR_value,
@@ -45,6 +59,10 @@ constexpr const int LR_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of LR
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define LR_ATTRIBUTES \
    {LR_name, "LR_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
    {LR_value, "LR_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

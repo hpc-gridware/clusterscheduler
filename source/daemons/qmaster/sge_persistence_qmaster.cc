@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Spooling an object and announcing the change as one operation
+ */
+
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_component.h"
 #include "uti/sge_time.h"
@@ -55,6 +59,11 @@
 
 static unsigned long spooling_wait_time = 0;
 
+/** @brief Open the spooling backend at startup
+ *
+ * @param answer_list receives messages for the caller
+ * @return true on success
+ */
 bool
 sge_initialize_persistence(lList **answer_list) {
    DENTER(TOP_LAYER);
@@ -92,6 +101,8 @@ sge_initialize_persistence(lList **answer_list) {
    DRETURN(ret);
 }
 
+/** @brief Arm the timer that flushes deferred spool writes
+ */
 void
 sge_initialize_persistance_timer() {
    te_event_t ev = nullptr;
@@ -107,6 +118,11 @@ sge_initialize_persistance_timer() {
    DRETURN_VOID;
 }
 
+/** @brief Flush and close the spooling backend
+ *
+ * @param answer_list receives messages for the caller
+ * @return true on success
+ */
 bool
 sge_shutdown_persistence(lList **answer_list) {
    bool ret = true;
@@ -142,6 +158,11 @@ sge_shutdown_persistence(lList **answer_list) {
    DRETURN(ret);
 }
 
+/** @brief Flush whatever is waiting to be spooled
+ *
+ * @param anEvent the timed event that fired
+ * @param monitor for monitoring qmaster threads
+ */
 void
 spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
    uint64_t next_trigger = 0;
@@ -170,53 +191,36 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
-/****** sge_persistence_qmaster/sge_event_spool() ******************************
-*  NAME
-*     sge_event_spool() -- send event and spool
-*
-*  SYNOPSIS
-*     bool
-*     sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event,
-*                     uint32_t intkey1, uint32_t intkey2, const char *strkey,
-*                     const char *strkey2, const char *session,
-*                     lListElem *object, lListElem *sub_object1,
-*                     lListElem *sub_object2, bool send_event, bool spool)
-*
-*  FUNCTION
-*     Spools (writes or deletes) an object.
-*     If spooling was successful, send the given event.
-*     Finally, the changed bits (information, which fields of the object
-*     and it's subobjects were changed) is cleared.
-*
-*  INPUTS
-*     lList **answer_list    - to return error messages
-*     uint64_t timestamp     - timestamp of object change, if 0 is passed,
-*                              use current date/time
-*     ev_event event         - the event to send
-*     uint32_t intkey1       - an integer key (job_id)
-*     uint32_t intkey2       - a second integer key (ja_task_id)
-*     const char *strkey     - a string key (all other keys)
-*     const char *strkey2    - a string key (all other keys)
-*     const char *session    - events session key
-*     lListElem *object      - the object to spool and send
-*     lListElem *sub_object1 - optionally a sub object (ja_task)
-*     lListElem *sub_object2 - optionally a sub sub object (pe_task)
-*     bool send_event        - shall we send an event, or only spool?
-*     bool spool             - shall we spool or only send an event?
-*
-*  RESULT
-*     bool - true on success,
-*            false on error. answer_list will contain an error description
-*  NOTES
-*     From an academic standpoint, the parameter spool shouldn't be needed.
-*     Whenever an object changes and a change event is created, the data
-*     basis should also be updated (spooled).
-*
-*  BUGS
-*
-*  SEE ALSO
-*
-*******************************************************************************/
+/**
+ * @brief Send event and spool
+ *
+ * Spools (writes or deletes) an object.
+ * If spooling was successful, send the given event.
+ * Finally, the changed bits (information, which fields of the object
+ * and it's subobjects were changed) is cleared.
+ *
+ * @param answer_list to return error messages
+ * @param timestamp timestamp of object change, if 0 is passed, use current date/time
+ * @param event the event to send
+ * @param intkey1 an integer key (job_id)
+ * @param intkey2 a second integer key (ja_task_id)
+ * @param strkey a string key (all other keys)
+ * @param strkey2 a string key (all other keys)
+ * @param session events session key
+ * @param object the object to spool and send
+ * @param sub_object1 optionally a sub object (ja_task)
+ * @param sub_object2 optionally a sub sub object (pe_task)
+ * @param send_event shall we send an event, or only spool?
+ * @param spool shall we spool or only send an event?
+ *
+ * @return true on success, false on error. answer_list will contain an error description
+ *
+ * @param gdi_session the session the change belongs to
+ *
+ * @note From an academic standpoint, the parameter spool shouldn't be needed.
+ *       Whenever an object changes and a change event is created, the data
+ *       basis should also be updated (spooled).
+ */
 bool
 sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_t intkey1,
                 uint32_t intkey2, const char *strkey, const char *strkey2, const char *session, lListElem *object,

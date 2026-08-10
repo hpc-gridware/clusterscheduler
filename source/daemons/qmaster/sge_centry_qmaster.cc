@@ -33,6 +33,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Complex entries: the resources a cluster knows about
+ */
 #include <cstring>
 
 #include "uti/sge_log.h"
@@ -65,8 +69,22 @@
 #include "msg_qmaster.h"
 
 
-/* ------------------------------------------------------------ */
-
+/** @brief Apply one attribute change to a complex entry
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param answer_list receives messages for the caller
+ * @param centry see the description above
+ * @param reduced_elem see the description above
+ * @param add 1 for add, 0 for modify
+ * @param remote_user see the description above
+ * @param remote_host see the description above
+ * @param object the table entry for this object type
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return see the description above
+ */
 int
 centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *centry, lListElem *reduced_elem, int add,
            const char *remote_user, const char *remote_host, gdi_object_t *object,
@@ -239,8 +257,15 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
    }
 }
 
-/* ------------------------------------------------------------ */
-
+/** @brief Write a complex entry to the spool
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param cep see the description above
+ * @param object the table entry for this object type
+ * @return see the description above
+ */
 int
 centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
    lList *answer_list = nullptr;
@@ -262,60 +287,53 @@ centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
 
 /* ------------------------------------------------------------ */
 
-/****** sge_centry_qmaster/centry_success() ************************************
-*  NAME
-*     centry_success() -- ???
-*
-*  SYNOPSIS
-*     int centry_success(lListElem *ep, lListElem *old_ep, gdi_object_t
-*     *object)
-*
-*  FUNCTION
-*
-*
-*  INPUTS
-*     lListElem *ep        - ???
-*     lListElem *old_ep    - ???
-*     gdi_object_t *object - ???
-*
-*  RESULT
-*     int -
-*
-*  EXAMPLE
-*     ???
-*
-*  NOTES
-*     MT-NOTE: centry_success() is not MT safe
-*
-*  BUGS
-*     This function is the cause for huge overhead with processing complex
-*     entry change requests: Each change with complex configuration causes
-*     debitations for ALL resources be re-done with all hosts and queues
-*     based on per job resource requests. There should be a chance to notably
-*     lower resource consumption doing this only for those complexes where
-*     changes actually occurred.
-*
-*     There is no need sort centry list each time a change occurs (fixed).
-*
-*     Reporting needs to be updated only for the changed complex entry (minor issue).
-*
-*     No updates have to be done for the ADD operation - the centry cannot be
-*     referenced anywhere at ADD time (fixed).
-*
-*     Update is only required, if the consumable attribute changed or
-*     the centry is a consumable and the default request changed (fixed).
-*
-*     The whole update mechanism wouldn't be required, if the granted resources
-*     would be stored in the job object for running jobs. It is only required,
-*     as the granted resources are not stored in the job and therefore a change
-*     of the default request would result in a wrong number of resources freed
-*     for the consumable at job end.
-*     Storing the granted resources in the job object would have further
-*     advantages: - qstat -j would display the default requests for consumables
-*                 - qstat -j would display granted soft requests
-*                 - soft requests on consumables could be enabled
-*
-*******************************************************************************/
+/**
+ * @brief Apply the consequences of an added or modified complex entry
+ *
+ * Called after a centry has been written. A changed complex may alter what
+ * every job's resource requests mean, so the resource debitations of all
+ * running jobs are re-done against all hosts and queues, and the change is
+ * announced as an event. See the `@bug` below for the cost of that.
+ *
+ * @param ep the new or modified complex entry (`CE_Type`)
+ * @param old_ep the previous version, or `nullptr` when the entry was added
+ * @param object the GDI object description for complex entries
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ppList see the brief above
+ * @param monitor for monitoring qmaster threads
+ *
+ * @return 0 on success
+ *
+ * @note MT-NOTE: centry_success() is not MT safe
+ *
+ * @bug This function is the cause for huge overhead with processing complex
+ *      entry change requests: Each change with complex configuration causes
+ *      debitations for ALL resources be re-done with all hosts and queues
+ *      based on per job resource requests. There should be a chance to notably
+ *      lower resource consumption doing this only for those complexes where
+ *      changes actually occurred.
+ *
+ *      There is no need sort centry list each time a change occurs (fixed).
+ *
+ *      Reporting needs to be updated only for the changed complex entry (minor issue).
+ *
+ *      No updates have to be done for the ADD operation - the centry cannot be
+ *      referenced anywhere at ADD time (fixed).
+ *
+ *      Update is only required, if the consumable attribute changed or
+ *      the centry is a consumable and the default request changed (fixed).
+ *
+ *      The whole update mechanism wouldn't be required, if the granted resources
+ *      would be stored in the job object for running jobs. It is only required,
+ *      as the granted resources are not stored in the job and therefore a change
+ *      of the default request would result in a wrong number of resources freed
+ *      for the consumable at job end.
+ *      Storing the granted resources in the job object would have further
+ *      advantages: - qstat -j would display the default requests for consumables
+ *      - qstat -j would display granted soft requests
+ *      - soft requests on consumables could be enabled
+ */
 int
 centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor) {
@@ -353,6 +371,16 @@ centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
    DRETURN(0);
 }
 
+/** @brief Delete a complex entry, unless something still requests it
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param centry the complex entry (`CE_Type`)
+ * @param answer_list receives messages for the caller
+ * @param remote_user the requesting user
+ * @param remote_host the requesting host
+ * @return STATUS_OK on success
+ */
 int
 sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *centry, lList **answer_list, char *remote_user, char *remote_host) {
    bool ret = true;
@@ -456,33 +484,25 @@ sge_change_queue_version_centry(uint64_t gdi_version) {
    DRETURN_VOID;
 }
 
-/****** sge_centry_qmaster/centry_redebit_consumables() ************************
-*  NAME
-*     centry_redebit_consumables() -- recompute consumable debitation
-*
-*  SYNOPSIS
-*     void
-*     centry_redebit_consumables(const lList *centries)
-*
-*  FUNCTION
-*     Recomputes the complete consumable debitation for all queues, hosts and
-*     jobs.
-*
-*  INPUTS
-*     const lList *centries - list of centries that acually require
-*                             recomputation.
-*
-*  NOTES
-*     MT-NOTE: centry_redebit_consumables() maybe not MT safe (the functions
-*     qinstance_debit_consumable and host_debit_consumable have no MT-NOTE).
-*
-*     TODO: This function could be highly optimized by taking into account the
-*     centry list passed as parameter.
-*     This would not only increase performance by only recomputing the
-*     debitation for only the changed centries (and spooling only the actually
-*     affected queues instead of all), but also reduce the number of scheduling
-*     decisions trashed due to a changed queue version number.
-*******************************************************************************/
+/**
+ * @brief Recompute consumable debitation
+ *
+ * Recomputes the complete consumable debitation for all queues, hosts and
+ * jobs.
+ *
+ * @param centries list of centries that acually require recomputation.
+ * @param gdi_version see the brief above
+ *
+ * @note MT-NOTE: centry_redebit_consumables() maybe not MT safe (the functions
+ *       qinstance_debit_consumable and host_debit_consumable have no MT-NOTE).
+ *
+ *       TODO: This function could be highly optimized by taking into account the
+ *       centry list passed as parameter.
+ *       This would not only increase performance by only recomputing the
+ *       debitation for only the changed centries (and spooling only the actually
+ *       affected queues instead of all), but also reduce the number of scheduling
+ *       decisions trashed due to a changed queue version number.
+ */
 void centry_redebit_consumables(const lList *centries, uint64_t gdi_version) {
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);

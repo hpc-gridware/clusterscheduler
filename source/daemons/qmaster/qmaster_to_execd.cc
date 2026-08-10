@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Telling an execution host something, and coping when it is unreachable
+ */
 #include <cstring>
 
 #include "uti/sge_log.h"
@@ -45,46 +49,29 @@
 #include "qmaster_to_execd.h"
 #include "msg_qmaster.h"
 
-/****** qmaster/host/host_notify_about_X() *************************************
-*  NAME
-*     host_notify_about_X() -- Send X to comproc 
-*
-*  SYNOPSIS
-*     static int host_notify_about_X(lListElem *host, 
-*                                    uint32_t x,
-*                                    int tag, 
-*                                    int progname_id) 
-*
-*  FUNCTION
-*     Sends the information "x" which will be tagged with "tag" to
-*     the comproc on "host" which is identified by "progname_id". 
-*
-*     Following combinations are meaningfull in the moment:
-*
-*        x              tag                  progname_id
-*        -------------- -------------------- ------------
-*        0 or 1         TAG_KILL_EXECD       EXECD               
-*        *              TAG_GET_NEW_CONF     EXECD
-*
-*  INPUTS
-*     lListElem *host  - EH_Type element 
-*     uint32_t x       - data
-*     int tag          - tag for data 
-*     int progname_id  - programm name id 
-*
-*  RESULT
-*     int - error state
-*         0 - no error
-*        -1 - error
-*        -2 - comproc with id "progname_id" not known on "host" 
-*
-*  NOTES
-*     We send an unacknowledged request for the moment. 
-*     I would have a better feelin if we make some sort of acknowledgement. 
-*
-*  SEE ALSO
-*     qmaster/host/host_notify_about_featureset()
-*******************************************************************************/
+/**
+ * @brief Send X to comproc
+ *
+ * Sends the information "x" which will be tagged with "tag" to
+ * the comproc on "host" which is identified by "progname_id".
+ * Following combinations are meaningfull in the moment:
+ *    x              tag                  progname_id
+ *    -------------- -------------------- ------------
+ *    0 or 1         TAG_KILL_EXECD       EXECD
+ *    *              TAG_GET_NEW_CONF     EXECD
+ *
+ * @param host EH_Type element
+ * @param x data
+ * @param tag tag for data
+ * @param progname_id programm name id
+ *
+ * @return error state 0 - no error -1 - error -2 - comproc with id "progname_id" not known on "host"
+ *
+ * @note We send an unacknowledged request for the moment.
+ *       I would have a better feelin if we make some sort of acknowledgement.
+ *
+ * @see `host_notify_about_featureset()`
+ */
 static int
 host_notify_about_X(lListElem *host, uint32_t x, ocs::gdi::ClientServerBase::ClientServerBaseTag tag, ProgName progname_id) {
    DENTER(TOP_LAYER);
@@ -119,53 +106,42 @@ host_notify_about_X(lListElem *host, uint32_t x, ocs::gdi::ClientServerBase::Cli
    DRETURN(ret);
 }
 
-/****** qmaster/host/host_notify_about_new_conf() *****************************
-*  NAME
-*     host_notify_about_new_conf() -- Notify execd about new config. 
-*
-*  SYNOPSIS
-*     int host_notify_about_new_conf(lListElem *host) 
-*
-*  FUNCTION
-*     Notify execd that there is a new configuration available.
-*
-*  INPUTS
-*     lListElem *host - EH_Type element 
-*
-*  RESULT
-*     int - see host_notify_about_X() 
-*
-*  SEE ALSO
-*     qmaster/host/host_notify_about_X()
-*******************************************************************************/
+/**
+ * @brief Notify execd about new config
+ *
+ * Notify execd that there is a new configuration available.
+ *
+ * @param host EH_Type element
+ *
+ * @return see host_notify_about_X()
+ *
+ * @see `host_notify_about_X()`
+ */
 int host_notify_about_new_conf(lListElem *host) {
    return host_notify_about_X(host, 0, ocs::gdi::ClientServerBase::TAG_GET_NEW_CONF, EXECD);
 }
 
-/****** qmaster/host/host_notify_about_kill() *********************************
-*  NAME
-*     host_notify_about_kill() -- Send kill command to execd 
-*
-*  SYNOPSIS
-*     int host_notify_about_kill(lListElem *host, int kill_command) 
-*
-*  FUNCTION
-*     Send the given "kill_command" to the execution "host". 
-*
-*  INPUTS
-*     lListElem *host - EH_Type 
-*     int kill_command   - command 
-*
-*  RESULT
-*     int - see host_notify_about_X() 
-*
-*  SEE ALSO
-*     qmaster/host/host_notify_about_X()
-*******************************************************************************/
+/**
+ * @brief Send kill command to execd
+ *
+ * Send the given "kill_command" to the execution "host".
+ *
+ * @param host EH_Type
+ * @param kill_command command
+ *
+ * @return see host_notify_about_X()
+ *
+ * @see `host_notify_about_X()`
+ */
 int host_notify_about_kill(lListElem *host, int kill_command) {
    return host_notify_about_X(host, kill_command, ocs::gdi::ClientServerBase::TAG_KILL_EXECD, EXECD);
 }
 
+/** @brief Ask an execution host to send its complete load report rather than a delta
+ *
+ * @param host the execution host
+ * @return 0 on success
+ */
 int host_notify_about_full_load_report(lListElem *host) {
    return host_notify_about_X(host, 0, ocs::gdi::ClientServerBase::TAG_FULL_LOAD_REPORT, EXECD);
 }

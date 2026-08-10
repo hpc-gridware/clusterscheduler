@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief String Object
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   ST_name = ST_LOWERBOUND,
-   ST_id
+   ST_name = ST_LOWERBOUND,   ///< String Name
+   ST_id   ///< String ID
 };
 
 LISTDEF(ST_Type)
@@ -56,6 +60,7 @@ NAMEDEF(STN)
    NAME("ST_id")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define ST_SIZE sizeof(STN)/sizeof(char *)
 
 

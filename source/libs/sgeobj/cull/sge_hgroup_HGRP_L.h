@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Host Group
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -92,7 +96,7 @@
 * @see hgroup_list_exists()
 *
 *    SGE_HOST(HGRP_name) - Name
-*    Name of the hostgroup. Always starts with '@', e.g. '@allhosts'.
+*    Name of the hostgroup. Always starts with '@', e.g. `@allhosts`.
 *
 *    SGE_LIST(HGRP_host_list) - Host List
 *    List of hosts and/or other host groups which are referenced by the host group.
@@ -135,12 +139,12 @@
 */
 
 enum {
-   HGRP_name = HGRP_LOWERBOUND,
-   HGRP_host_list,
-   HGRP_cqueue_list,
-   HGRP_joker,
-   HGRP_cached_hosts,
-   HGRP_cache_version
+   HGRP_name = HGRP_LOWERBOUND,   ///< Name
+   HGRP_host_list,   ///< Host List
+   HGRP_cqueue_list,   ///< Cluster Queue List
+   HGRP_joker,   ///< Joker
+   HGRP_cached_hosts,   ///< Cached Resolved Host List
+   HGRP_cache_version   ///< Cache Validity
 };
 
 LISTDEF(HGRP_Type)
@@ -161,6 +165,7 @@ NAMEDEF(HGRPN)
    NAME("HGRP_cache_version")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define HGRP_SIZE sizeof(HGRPN)/sizeof(char *)
 
 

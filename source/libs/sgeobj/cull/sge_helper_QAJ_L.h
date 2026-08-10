@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Accounting Summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -94,25 +98,25 @@
 */
 
 enum {
-   QAJ_host = QAJ_LOWERBOUND,
-   QAJ_queue,
-   QAJ_group,
-   QAJ_owner,
-   QAJ_project,
-   QAJ_department,
-   QAJ_ru_wallclock,
-   QAJ_ru_utime,
-   QAJ_ru_stime,
-   QAJ_ru_maxrss,
-   QAJ_ru_inblock,
-   QAJ_granted_pe,
-   QAJ_slots,
-   QAJ_cpu,
-   QAJ_mem,
-   QAJ_io,
-   QAJ_iow,
-   QAJ_maxvmem,
-   QAJ_arid
+   QAJ_host = QAJ_LOWERBOUND,   ///< Host Name
+   QAJ_queue,   ///< Cluster Queue Name
+   QAJ_group,   ///< User Group
+   QAJ_owner,   ///< Owner
+   QAJ_project,   ///< Project
+   QAJ_department,   ///< Department
+   QAJ_ru_wallclock,   ///< Rusage Wallclock
+   QAJ_ru_utime,   ///< Rusage User Time
+   QAJ_ru_stime,   ///< Rusage System Time
+   QAJ_ru_maxrss,   ///< Rusage Maximum RSS
+   QAJ_ru_inblock,   ///< Rusage Block Input
+   QAJ_granted_pe,   ///< Granted Parallel Environment
+   QAJ_slots,   ///< Slots
+   QAJ_cpu,   ///< Cpu Usage
+   QAJ_mem,   ///< Integral Memory Usage
+   QAJ_io,   ///< IO Usage
+   QAJ_iow,   ///< IO Wait Time
+   QAJ_maxvmem,   ///< Maximum Virtual Memory
+   QAJ_arid   ///< AR Id
 };
 
 LISTDEF(QAJ_Type)
@@ -159,6 +163,7 @@ NAMEDEF(QAJN)
    NAME("QAJ_arid")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define QAJ_SIZE sizeof(QAJN)/sizeof(char *)
 
 

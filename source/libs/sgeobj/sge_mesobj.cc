@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Message lists: why an object is in the state it is in
+ *
+ * @see sge_mesobj.h
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "cull/cull_list.h"
@@ -85,6 +91,18 @@ qim_list_trash_all_of_type_X(lList **this_list, uint32_t type)
    DRETURN(ret);
 }
 
+/**
+ * @brief Add a message to an object's message list
+ *
+ * Queue instances and jobs carry a list of messages explaining their state;
+ * this appends one.
+ *
+ * @param[in,out] this_elem the object to add to
+ * @param name the attribute holding the message list
+ * @param type the message type, so it can be trashed selectively
+ * @param message the text
+ * @return true when the message was added
+ */
 bool
 object_message_add(lListElem *this_elem, int name, 
                    uint32_t type, const char *message)
@@ -102,6 +120,14 @@ object_message_add(lListElem *this_elem, int name,
    DRETURN(ret);
 }
 
+/**
+ * @brief Remove every message of the given types from an object
+ *
+ * @param[in,out] this_elem the object to clean up
+ * @param name the attribute holding the message list
+ * @param type a mask of the message types to remove
+ * @return true when the list was changed
+ */
 bool
 object_message_trash_all_of_type_X(lListElem *this_elem, int name,
                                    uint32_t type)

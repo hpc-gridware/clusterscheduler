@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The commlib return codes and their texts
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -41,6 +45,12 @@
 #include "comm/lists/cl_errors.h"
 #include "comm/lists/msg_commlistslib.h"
 
+/** @brief Is this a commlib code rather than an `errno` value?
+ *
+ * @param error_id the code to test
+ *
+ * @return 1 if the code is in the commlib range, else 0
+ */
 int cl_is_commlib_error(int error_id) {
    if (error_id >= CL_RETVAL_OK && error_id < CL_RETVAL_LAST_ID) {
       return 1;
@@ -49,6 +59,14 @@ int cl_is_commlib_error(int error_id) {
    }
 }
 
+/** @brief The message text belonging to a commlib code
+ *
+ * @param error_id the code
+ *
+ * @return the text, or #CL_RETVAL_UNDEFINED_STR for a code with no case -
+ *         see the warnings on #CL_RETVAL_DUP_SOCKET_FD_ERROR and
+ *         #CL_RETVAL_SSL_CANT_GET_LIB_PATH
+ */
 const char *cl_get_error_text(int error_id) {
    switch (error_id) {
       case CL_RETVAL_OK                        : {

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The job object and the operations on it
+ */
+
 #include <cstring>
 
 #include "uti/ocs_Systemd.h"
@@ -114,6 +118,17 @@ void ocs::Job::sgeee_sort_jobs(lList *job_list) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief The systemd slice and scope names a job's processes run under
+ *
+ * @param job the job
+ * @param ja_task the array task, or nullptr
+ * @param pe_task the parallel task, or nullptr
+ * @param[out] slice receives the slice name
+ * @param[out] scope receives the scope name
+ * @param[out] error_dstr receives the reason on failure
+ * @return true when both names could be built
+ */
 bool
 ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task,
                                           std::string &slice, std::string &scope, dstring *error_dstr) {
@@ -194,61 +209,134 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
    DRETURN(ret);
 }
 
+/**
+ * @brief The binding sub-object, created on first access
+ *
+ * @param job the job to read or extend
+ * @param[out] answer_list receives the reason when it could not be created
+ * @return the binding sub-object, or nullptr on error
+ */
 lListElem *
 ocs::Job::binding_get_or_create_elem(lListElem *job, lList **answer_list) {
    return Binding::binding_get_or_create_elem(job, answer_list, JB_binding);
 }
 
+/**
+ * @brief Was a binding requested at all?
+ *
+ * @param job the job carrying the binding request
+ * @return true when the object carries a binding request
+ */
 bool
 ocs::Job::binding_was_requested(const lListElem *job) {
    return Binding::binding_was_requested(job, JB_binding);
 }
 
+/**
+ * @brief Who applies the binding
+ *
+ * @param job the job carrying the binding request
+ * @return the requested @ref ocs::BindingType::Type
+ */
 ocs::BindingType::Type
 ocs::Job::binding_get_type(const lListElem *job) {
    return Binding::binding_get_type(job, JB_binding);
 }
 
+/**
+ * @brief The hardware unit the binding counts in
+ *
+ * @param job the job carrying the binding request
+ * @return the requested @ref ocs::BindingUnit::Unit
+ */
 ocs::BindingUnit::Unit
 ocs::Job::binding_get_unit(const lListElem *job) {
    return Binding::binding_get_unit(job, JB_binding);
 }
 
+/**
+ * @brief How the selected hardware is ordered
+ *
+ * @param job the job carrying the binding request
+ * @return the sort specification, empty when none was given
+ */
 std::string
 ocs::Job::binding_get_sort(const lListElem *job) {
    return Binding::binding_get_sort(job, JB_binding);
 }
 
+/**
+ * @brief Where on the topology the binding starts
+ *
+ * @param job the job carrying the binding request
+ * @return the requested @ref ocs::BindingStart::Start
+ */
 ocs::BindingStart::Start
 ocs::Job::binding_get_start(const lListElem *job) {
    return Binding::binding_get_start(job, JB_binding);
 }
 
+/**
+ * @brief Where the binding stops
+ *
+ * @param job the job carrying the binding request
+ * @return the requested @ref ocs::BindingStop::Stop
+ */
 ocs::BindingStop::Stop
 ocs::Job::binding_get_stop(const lListElem *job) {
    return Binding::binding_get_end(job, JB_binding);
 }
 
+/**
+ * @brief How the binding walks the topology
+ *
+ * @param job the job carrying the binding request
+ * @return the requested @ref ocs::BindingStrategy::Strategy
+ */
 ocs::BindingStrategy::Strategy
 ocs::Job::binding_get_strategy(const lListElem *job) {
    return Binding::binding_get_strategy(job, JB_binding);
 }
 
+/**
+ * @brief Which instance of the job the binding applies to
+ *
+ * @param job the job carrying the binding request
+ * @return the requested @ref ocs::BindingInstance::Instance
+ */
 ocs::BindingInstance::Instance
 ocs::Job::binding_get_instance(const lListElem *job) {
    return Binding::binding_get_instance(job, JB_binding);
 }
 
+/**
+ * @brief Which hardware the binding is restricted to
+ *
+ * @param job the job carrying the binding request
+ * @return the filter expression, empty when none was given
+ */
 std::string
 ocs::Job::binding_get_filter(const lListElem *job) {
    return Binding::binding_get_filter(job, JB_binding);
 }
 
+/**
+ * @brief How many units the binding asks for
+ *
+ * @param job the job carrying the binding request
+ * @return the requested amount
+ */
 uint32_t
 ocs::Job::binding_get_amount(const lListElem *job) {
    return Binding::binding_get_amount(job, JB_binding);
 }
 
+/**
+ * @brief Fill in the binding fields the request left out
+ *
+ * @param job the job whose binding request is completed
+ * @param[out] answer_list receives the reason on failure
+ */
 void ocs::Job::binding_set_missing_defaults(lListElem *job, lList **answer_list) {
    return Binding::binding_set_missing_defaults(job, answer_list, JB_binding);
 }

@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: the commlib parameter list, from outside the library
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <sys/time.h>
@@ -43,6 +49,9 @@
 
 #include "uti/sge_stdlib.h"
 
+/** @brief Run the test
+ * @return 0 on success, 1 on failure
+ */
 extern int main() {
    int retval;
    const char *param2 = "param2";

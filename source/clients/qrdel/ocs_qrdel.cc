@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qrdel - deletes advance reservations
+ */
+
 #include <cstring>
 #include <cinttypes>
 
@@ -55,6 +59,12 @@
 static bool sge_parse_cmdline_qrdel(char **argv, char **envp, lList **ppcmdline, lList **alpp);
 static bool sge_parse_qrdel(lList **ppcmdline, lList **ppid_list, lList **alpp);
 
+/** @brief The process environment, as the C library defines it
+ *
+ * Declared here rather than included, and passed to the command line parser so
+ * that options which read an environment variable resolve it against the
+ * submitting user's environment rather than against `getenv()`.
+ */
 extern char **environ;
 
 /************************************************************************/

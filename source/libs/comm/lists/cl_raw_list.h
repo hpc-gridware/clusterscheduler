@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The double linked, mutex guarded list every commlib list is built on
+ */
+
 
 int cl_raw_list_setup(cl_raw_list_t **list_p, const char *list_name, int enable_list_locking);         /* CR check */
 int cl_raw_list_cleanup(cl_raw_list_t **list_p);                                 /* CR check */

@@ -31,6 +31,13 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief gethostbyname - resolve a host name through the commlib, as the daemons do
+ *
+ * A diagnostic: it uses the same resolution path and host aliasing as the
+ * cluster itself, so its answer is the one the daemons will get.
+ */
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

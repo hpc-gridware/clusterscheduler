@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Plain text rendering of plain `qstat`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <sstream>
@@ -36,6 +40,15 @@
 
 #include "msg_clients_common.h"
 
+/** @brief Print a double in eight columns, whatever its magnitude
+ *
+ * A fixed point rendering is easier to read, but a value that no longer fits
+ * eight columns would push the whole line out of alignment, so those fall back
+ * to the general format.
+ *
+ * @param os stream to write to
+ * @param value the value
+ */
 inline void opti_print8(std::ostream& os, double value) {
    DENTER(TOP_LAYER);
    if (value > 99999999) {
@@ -46,6 +59,11 @@ inline void opti_print8(std::ostream& os, double value) {
    DRETURN_VOID;
 }
 
+/** @brief Write the header of a job section
+ * @param os stream to write to
+ * @param parameter the call's parameters, which decide the columns
+ * @param title the section's title
+ */
 void ocs::QStatDefaultViewPlain::show_header_with_title(std::ostream &os, const QStatParameter &parameter, const char *title) {
    DENTER(TOP_LAYER);
    const bool sge_ext = (parameter.show_ & QSTAT_DISPLAY_EXTENDED);
@@ -559,6 +577,12 @@ void ocs::QStatDefaultViewPlain::report_sub_tasks_finished(std::ostream &os) {
    DRETURN_VOID;
 }
 
+/** @brief Write one indented `name: value` line under a job
+ * @param os stream to write to
+ * @param subtitle which extra column this is
+ * @param name the label to print
+ * @param value its value
+ */
 void ocs::QStatDefaultViewPlain::show_header_with_subtitle(std::ostream &os, job_additional_info_t subtitle, const char *name, const char *value) {
    DENTER(TOP_LAYER);
 
@@ -643,6 +667,12 @@ void ocs::QStatDefaultViewPlain::report_hard_requested_queues_finished(std::ostr
    DRETURN_VOID;
 }
 
+/** @brief Write the label introducing a request list
+ * @param os stream to write to
+ * @param scope which request scope the list belongs to: global, master or slave
+ * @param queue true for a queue request list, false for a resource list
+ * @param hard true for hard requests, false for soft ones
+ */
 void ocs::QStatDefaultViewPlain::show_queues_or_resource_started(std::ostream &os, int scope, bool queue, bool hard) {
    DENTER(TOP_LAYER);
 

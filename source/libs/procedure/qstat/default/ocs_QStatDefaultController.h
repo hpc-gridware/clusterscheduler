@@ -19,13 +19,24 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Controller of plain `qstat`: runs the request and drives the view
+ */
+
 #include "qstat/ocs_QStatParameter.h"
 #include "qstat/ocs_QStatModelClient.h"
 #include "ocs_QStatDefaultViewBase.h"
 
 namespace ocs {
+   /** @brief Runs one plain `qstat` request: queues, then the jobs in them, then the waiting jobs
+    *
+    * The walk lives here rather than in the view, so that all three output
+    * formats report the same structure.
+    *
+    * @ingroup libprocedure
+    */
    class QStatDefaultController {
-      std::ostream &out_;
+      std::ostream &out_;   ///< Where the view writes
 
       void remove_tagged_jobs(lList *job_list);
 
@@ -47,6 +58,9 @@ namespace ocs {
 
 
    public:
+      /** @brief Bind a controller to an output stream
+       * @param out the stream the view will write to
+       */
       explicit QStatDefaultController(std::ostream &out) : out_(out) {
       }
 

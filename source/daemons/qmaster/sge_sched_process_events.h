@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Deciding which events should trigger a scheduling run
+ */
+
 #include "evc/sge_event_client.h"
 #include "mir/sge_mirror.h"
 #include "sge_sched_prepare_data.h"

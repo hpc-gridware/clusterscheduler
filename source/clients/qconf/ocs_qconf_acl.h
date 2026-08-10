@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the qconf userset and access list switches
+ */
+
 #include "sgeobj/sge_daemonize.h"
 
 /*

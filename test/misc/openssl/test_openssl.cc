@@ -7,6 +7,10 @@
  *  https://www.openssl.org/source/license.html
  */
 
+/** @file
+ * @brief Unit tests for openssl
+ */
+
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -23,7 +27,11 @@
 #include "uti/sge_string.h"
 #include "basis_types.h"
 
-#define SOCKET int
+#define SOCKET int   ///< the socket type, spelled the way Windows spells it
+
+/** @brief Close a socket, spelled the way Windows spells it
+ * @param s the socket to close
+ */
 #define closesocket(s) close(s)
 
 static const int server_port = 4433;
@@ -73,7 +81,7 @@ static void usage(void)
     exit(EXIT_FAILURE);
 }
 
-#define BUFFERSIZE 1024
+#define BUFFERSIZE 1024   ///< size of the read and write buffers
 int main(int argc, char **argv)
 {
     bool isServer;

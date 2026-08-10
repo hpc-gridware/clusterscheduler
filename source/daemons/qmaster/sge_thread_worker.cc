@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The threads that answer requests which change something
+ */
+
 #include <pthread.h>
 #include <cstring>
 
@@ -74,6 +78,10 @@
 #include "sge_qmaster_process_message.h"
 #include "msg_qmaster.h"
 
+/** @brief Release the monitoring state when the worker thread ends
+ *
+ * @param arg the thread argument
+ */
 static void
 sge_worker_cleanup_monitor(void *arg) {
    DENTER(TOP_LAYER);
@@ -82,6 +90,8 @@ sge_worker_cleanup_monitor(void *arg) {
    DRETURN_VOID;
 }
 
+/** @brief Start the worker thread pool
+ */
 void
 sge_worker_initialize() {
    const int max_initial_worker_threads = ocs::Bootstrap::get_worker_thread_count();
@@ -110,6 +120,8 @@ sge_worker_initialize() {
    DRETURN_VOID;
 }
 
+/** @brief Stop the worker threads and wait for them
+ */
 void
 sge_worker_terminate() {
    bool do_final_spooling;
@@ -180,6 +192,11 @@ sge_worker_terminate() {
    DRETURN_VOID;
 }
 
+/** @brief One worker thread: take a request, answer it, repeat
+ *
+ * @param arg see the brief above
+ * @return never returns; the thread is cancelled at shutdown
+ */
 [[noreturn]] void *
 sge_worker_main(void *arg) {
    auto *thread_config = (cl_thread_settings_t *) arg;

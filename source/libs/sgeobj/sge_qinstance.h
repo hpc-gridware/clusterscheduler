@@ -35,22 +35,33 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations and state constants of the queue instance object
+ *
+ * @see sge_qinstance.cc
+ */
+
 #include "uti/sge_dstring.h"
 
 #include "gdi/ocs_gdi_Packet.h"
 
 #include "sgeobj/cull/sge_qinstance_QU_L.h"
 
-/* 
- * Q types values for QU_qtype 
+/**
+ * @brief Values for `QU_qtype`
+ *
+ * Only these two are stored. A queue also counts as parallel or
+ * checkpointing, but that is derived from whether it references a PE or a
+ * checkpointing environment rather than stored as a bit.
  */
 enum {
-   BQ = 0x01,                /* batch Q */
-   IQ = 0x02                 /* interactive Q */
+   BQ = 0x01,                ///< batch queue
+   IQ = 0x02                 ///< interactive queue
 };
 
+/// Flags for queue instance modification requests
 enum {
-   GDI_DO_LATER = 0x01
+   GDI_DO_LATER = 0x01       ///< apply the change when the queue next becomes idle, not now
 };
 
 bool
@@ -127,8 +138,20 @@ qinstance_message_add(lListElem *this_elem, uint32_t type, const char *message);
 bool
 qinstance_message_trash_all_of_type_X(lListElem *this_elem, uint32_t type);
 
-/* EB: TODO: queue -> qinstance */
-
+/**
+ * @brief Do all queues named in a reference list exist?
+ *
+ * @param[out] alpp receives the name of the first queue that does not exist
+ * @param qr_list the queue references to check
+ * @param attr_name the attribute the list belongs to, used in the message
+ * @param obj_descr the kind of object holding the list, used in the message
+ * @param obj_name the object's name, used in the message
+ * @return 0 when every referenced queue exists
+ *
+ * @todo Rename from `queue` to `qinstance`.
+ *
+ * @warning Declared here but defined nowhere in the tree, and never called.
+ */
 int queue_reference_list_validate(lList **alpp, lList *qr_list,
                                   const char *attr_name, const char *obj_descr,
                                   const char *obj_name);

@@ -33,5 +33,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The startup and shutdown banners every daemon logs
+ */
+
 void starting_up();
 void sge_shutdown(int i);

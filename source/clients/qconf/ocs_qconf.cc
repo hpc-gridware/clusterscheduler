@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qconf - the entry point of the cluster configuration client
+ */
+
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
@@ -43,6 +47,12 @@
 #include "ocs_qconf_parse.h"
 #include "sig_handlers.h"
 
+/** @brief The process environment, as the C library defines it
+ *
+ * Declared here rather than included, and passed to the command line parser so
+ * that options which read an environment variable resolve it against the
+ * submitting user's environment rather than against `getenv()`.
+ */
 extern char **environ;
 
 /************************************************************************/

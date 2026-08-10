@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base model of `qrstat`: the lists the report is built from
+ */
+
 #include "cull/cull_list.h"
 
 #include "uti/sge_rmon_macros.h"
@@ -37,6 +41,14 @@ ocs::QRStatModelBase::~QRStatModelBase() {
    DRETURN_VOID;
 }
 
+/** @brief The advance reservation fields the report needs
+ *
+ * Which fields those are depends on the parameters - a summary needs far
+ * fewer than a full listing.
+ *
+ * @param parameter the parsed parameters
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QRStatModelBase::get_ar_what(QRStatParameter& parameter) {
    // Core attributes
    constexpr int core_nm[] = {
@@ -125,6 +137,10 @@ lEnumeration *ocs::QRStatModelBase::get_ar_what(QRStatParameter& parameter) {
    return what;
 }
 
+/** @brief Build the CULL condition selecting the reservations to report
+ * @param parameter the parsed parameters, holding the id and user filters
+ * @return the condition, which the caller owns; nullptr when nothing was filtered
+ */
 lCondition *ocs::QRStatModelBase::get_ar_where(QRStatParameter& parameter) {
    DENTER(TOP_LAYER);
    lCondition *where_AR_Type = nullptr;
@@ -173,12 +189,26 @@ lCondition *ocs::QRStatModelBase::get_ar_where(QRStatParameter& parameter) {
    return where_AR_Type;
 }
 
+/** @brief Fetch the AR list into ar_list_.
+ *
+ * Overridden by QRStatModelClient (GDI call) and QRStatModelServer (master list).
+ *
+ * @param answer_list receives error messages
+ * @param parameter the parsed parameters
+ * @return true when the list could be fetched
+ */
 bool ocs::QRStatModelBase::fetch_data(lList **answer_list, QRStatParameter& parameter) {
    DENTER(TOP_LAYER);
    // has to be overwritten by child classes
    DRETURN(true);
 }
 
+/** @brief Run the full pipeline: fetch_data, then hand off to the view.
+ *
+ * @param answer_list  Receives error messages on failure.
+ * @param parameter    Parsed qrstat parameters.
+ * @return true if fetch_data succeeded.
+ */
 bool ocs::QRStatModelBase::make_snapshot(lList **answer_list, QRStatParameter &parameter) {
    DENTER(TOP_LAYER);
 

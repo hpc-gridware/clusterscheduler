@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The binding request stored on a job
+ */
+
 #include <string>
 
 #include "cull/cull.h"
@@ -44,6 +48,12 @@
 #include "ocs_BindingInstance.h"
 
 namespace ocs {
+   /**
+    * @brief Reading a binding request out of any object that can carry one
+    *
+    * The field number makes this generic: @ref ocs::Job and
+    * @ref ocs::AdvanceReservation are thin wrappers that pass their own field.
+    */
    class Binding {
    public:
       static lListElem *binding_get_or_create_elem(lListElem *parent, lList **answer_list, int nm);

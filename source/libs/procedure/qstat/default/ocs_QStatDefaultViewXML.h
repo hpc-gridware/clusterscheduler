@@ -19,21 +19,37 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief XML rendering of plain `qstat`
+ */
+
 #include "ocs_QStatDefaultViewBase.h"
 
 namespace ocs {
+   /** @brief Renders plain `qstat` as XML
+    *
+    * Unlike the other two formats this one does not write as it goes: it builds
+    * a CULL tree from the hook calls and lets the generic XML writer serialise
+    * it at the end. The members below are the nodes currently being filled.
+    *
+    * @ingroup libprocedure
+    */
    class QStatDefaultViewXML : public QStatDefaultViewBase {
-      lListElem *queue_list_elem = nullptr;
-      lListElem *queue_elem = nullptr;
+      lListElem *queue_list_elem = nullptr;   ///< The element holding all queue instances
+      lListElem *queue_elem = nullptr;        ///< The queue instance being filled
 
-      lListElem *job_list_elem = nullptr;
-      lList     *job_list = nullptr;
-      lListElem *job_elem = nullptr;
+      lListElem *job_list_elem = nullptr;     ///< The element holding the current job section
+      lList     *job_list = nullptr;          ///< The jobs of that section
+      lListElem *job_elem = nullptr;          ///< The job being filled
 
 
       void qstat_xml_create_job_list();
+
       void qstat_xml_finish_job_list(const char* state, lList* target_list);
    public:
+      /** @brief Build the XML view
+       * @param parameter the call's parameters
+       */
       explicit QStatDefaultViewXML(const ProcedureParameter& parameter) : QStatDefaultViewBase(parameter) {};
       ~QStatDefaultViewXML() override = default;
 

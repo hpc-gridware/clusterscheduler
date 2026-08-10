@@ -114,6 +114,17 @@ namespace ocs::uti {
    // @return true if initialization was successful, false otherwise
    // @note This function should be called before using any other methods of the Systemd class.
    // @note Must be root when calling this function (in our daemons before switching to admin user).
+   /**
+    * @brief Open libsystemd and work out how this process is running
+    *
+    * Resolves the sd-bus entry points, then determines whether the
+    * process is itself running as a systemd service, which cgroup
+    * version is in use and which systemd version.
+    *
+    * @param service_name_in name of the service this process runs as
+    * @param[out] error_dstr receives the reason on failure
+    * @return true on success
+    */
    bool
    Systemd::initialize(const std::string &service_name_in, dstring *error_dstr) {
       DENTER(TOP_LAYER);

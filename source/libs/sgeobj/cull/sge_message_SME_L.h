@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job SchedulingInfo
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -41,8 +45,8 @@
 */
 
 enum {
-   SME_message_list = SME_LOWERBOUND,
-   SME_global_message_list
+   SME_message_list = SME_LOWERBOUND,   ///< Message List
+   SME_global_message_list   ///< Global Message List
 };
 
 LISTDEF(SME_Type)
@@ -55,6 +59,7 @@ NAMEDEF(SMEN)
    NAME("SME_global_message_list")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define SME_SIZE sizeof(SMEN)/sizeof(char *)
 
 

@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Enforcing the resource limits of running jobs
+ */
+
 void
 sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor);
 

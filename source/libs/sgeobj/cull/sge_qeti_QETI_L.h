@@ -24,29 +24,34 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Queue End Time Iterator
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Queue End Time Iterator
 *
-* @todo add description
+* Walks the points in time at which a resource frees up, newest first.
+* Reservation scheduling has to answer "when could this job start". Rather than sampling time, the iterator visits only the instants at which some booking ends, because the answer can only change there.
 *
-*    SGE_DOUBLE(QETI_total) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(QETI_total) - Total Capacity
+*    The resource's full capacity, the value utilization is compared against.
 *
-*    SGE_REF(QETI_resource_instance) - @todo add summary
-*    @todo add description
+*    SGE_REF(QETI_resource_instance) - Resource Instance
+*    Reference to the resource being walked (`RUE_Type`), whose utilization diagram holds the bookings.
 *
-*    SGE_REF(QETI_queue_end_next) - @todo add summary
-*    @todo add description
+*    SGE_REF(QETI_queue_end_next) - Next Position
+*    Cursor into that utilization diagram: the next booking end this iterator will report.
 *
 */
 
 enum {
-   QETI_total = QETI_LOWERBOUND,
-   QETI_resource_instance,
-   QETI_queue_end_next
+   QETI_total = QETI_LOWERBOUND,   ///< Total Capacity
+   QETI_resource_instance,   ///< Resource Instance
+   QETI_queue_end_next   ///< Next Position
 };
 
 LISTDEF(QETI_Type)
@@ -61,6 +66,7 @@ NAMEDEF(QETIN)
    NAME("QETI_queue_end_next")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define QETI_SIZE sizeof(QETIN)/sizeof(char *)
 
 

@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Implementation of the scheduler's load and capacity correction
+ */
 #include <cstdio>
 #include <cstring>
 
@@ -51,6 +55,35 @@
 #include "schedd_monitor.h"
 #include "load_correction.h"
 
+/**
+ * @brief Adds an artificial load for recently started jobs
+ *
+ * The load an execution host reports lags behind reality by minutes, so a job
+ * that just started is invisible to the scheduler. For every job younger than
+ * `decay_time` this function adds a correction to the host's
+ * `EH_load_correction_factor`, linear in the age of the job:
+ *
+ *     correction(t) = 1 - t / decay_time
+ *
+ * so a job that just started contributes 1 and one whose decay time has
+ * expired contributes 0. The value is multiplied by the number of slots the
+ * job got on the host, and stored multiplied by 100 so that an integer field
+ * can hold it.
+ *
+ * The factor is used to sort the hosts by load, to decide about the load
+ * thresholds of the queues, and to resort the hosts after each scheduled job.
+ *
+ * @param[in]     running_jobs     the running jobs (`JB_Type`)
+ * @param[in]     queue_list       the queue instances, to resolve the granted
+ *                                 queue of a task
+ * @param[in,out] host_list        the execution hosts, whose correction
+ *                                 factors are updated
+ * @param[in]     decay_time       age at which a job stops contributing
+ * @param[in]     monitor_next_run whether the next run writes the scheduler
+ *                                 monitoring log
+ *
+ * @return 0 on success, 1 if no queue list or host list was passed
+ */
 int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
                   uint64_t decay_time, bool monitor_next_run)
 {
@@ -152,9 +185,18 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
 }
 
 
-/*
- * Do load scaling and capacity correction for all consumable 
- * attributes where also load values are available
+/**
+ * @brief Load scaling and capacity correction for consumables
+ *
+ * For every consumable attribute that also has a load value the reported load
+ * is scaled and the remaining capacity of the host is corrected accordingly.
+ * That is what lets a consumable be tracked by its load value rather than
+ * only by the bookings of the scheduler.
+ *
+ * @param[in,out] host_list   the execution hosts
+ * @param[in]     centry_list the complex entries (`CE_Type`)
+ *
+ * @return always 0
  */
 int 
 correct_capacities(lList *host_list, const lList *centry_list) 

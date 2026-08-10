@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Client side parameters of `qquota`: parsed from argv and the environment
+ */
+
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_string.h"
@@ -257,6 +261,12 @@ ocs::QQuotaParameterClient::parse_switch_list(lList **switch_list, lList **answe
    DRETURN(ret);
 }
 
+/** @brief Parse the command line and the environment into this object
+ * @param answer_list receives error messages
+ * @param argv the arguments, without the program name
+ * @param envp the environment
+ * @return true when the parameters are usable
+ */
 bool ocs::QQuotaParameterClient::parse_parameters(lList **answer_list, char **argv, char **envp) {
    DENTER(TOP_LAYER);
    lList *pcmdline = nullptr;

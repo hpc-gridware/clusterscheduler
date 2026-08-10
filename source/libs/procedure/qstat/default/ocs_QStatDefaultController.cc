@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Controller of plain `qstat`: runs the request and drives the view
+ */
+
 #include <limits>
 #include <sstream>
 #include <iostream>
@@ -1303,6 +1307,11 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
    DRETURN_VOID;
 }
 
+/** @brief Run the request
+ * @param parameter the parsed parameters
+ * @param model the model, client or server side
+ * @param view the view for the requested output format
+ */
 void ocs::QStatDefaultController::process_request(QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
 

@@ -18,4 +18,8 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base view of `qquota`, and the interface the three output formats implement
+ */
+
 #include "ocs_QQuotaViewBase.h"

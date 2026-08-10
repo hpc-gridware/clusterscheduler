@@ -24,19 +24,33 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Category Cache Entry
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of CCT
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   CCT_pe_name = 11000,
-   CCT_ignore_queues,
-   CCT_ignore_hosts,
-   CCT_job_messages,
-   CCT_pe_job_slots,
-   CCT_pe_job_slot_count
+   CCT_pe_name = 11000,   ///< Parallel Environment
+   CCT_ignore_queues,   ///< Rejected Queues
+   CCT_ignore_hosts,   ///< Rejected Hosts
+   CCT_job_messages,   ///< Scheduler Messages
+   CCT_pe_job_slots,   ///< Possible Slot Counts
+   CCT_pe_job_slot_count   ///< Slot Count Size
 };
 
+/** @brief The attribute ids of CCT, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int CCT_Type[] = {
    CCT_pe_name,
    CCT_ignore_queues,
@@ -47,6 +61,10 @@ constexpr const int CCT_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of CCT
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define CCT_ATTRIBUTES \
    {CCT_pe_name, "CCT_pe_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {CCT_ignore_queues, "CCT_ignore_queues", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

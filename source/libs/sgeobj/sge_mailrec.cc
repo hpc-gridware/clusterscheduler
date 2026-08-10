@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Mail recipients and the occasions mail is sent on
+ *
+ * @see sge_mailrec.h
+ */
+
 #include "uti/sge_bitfield.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
@@ -46,32 +52,21 @@
 
 #include "msg_common.h"
 
-/****** sgeobj/mailrec/mailrec_parse() ****************************************
-*  NAME
-*     mailrec_parse() -- Parse a list of mail recipients 
-*
-*  SYNOPSIS
-*     int mailrec_parse(lList **lpp, const char *mail_str) 
-*
-*  FUNCTION
-*     Parse a list of mail recipients.
-*     user[@host][,user[@host],...] 
-*
-*  INPUTS
-*     lList **lpp          - MR_Type list 
-*     const char *mail_str - stringlist of mail recipients 
-*
-*  RESULT
-*     int - error state
-*        0 - success
-*       >0 - error
-*
-*  SEE ALSO
-*     sgeobj/mailrec/mailrec_unparse() 
-*
-*  NOTES
-*     MT-NOTE: mailrec_parse() is MT safe
-*******************************************************************************/
+/**
+ * @brief Parse a list of mail recipients
+ *
+ * Parse a list of mail recipients.
+ * user[`@host`][,user[`@host`],...]
+ *
+ * @param lpp MR_Type list
+ * @param mail_str stringlist of mail recipients
+ *
+ * @return error state 0 - success >0 - error
+ *
+ * @note MT-NOTE: mailrec_parse() is MT safe
+ *
+ * @see #mailrec_unparse
+ */
 int mailrec_parse(lList **lpp, const char *mail_str) 
 {
    const char *user;
@@ -137,30 +132,19 @@ int mailrec_parse(lList **lpp, const char *mail_str)
    DRETURN(0);
 }
 
-/****** sgeobj/mailrec/mailrec_unparse() **************************************
-*  NAME
-*     mailrec_unparse() -- Build a string of mail reipients 
-*
-*  SYNOPSIS
-*     int mailrec_unparse(lList *head, char *mail_str, 
-*                         unsigned int mail_str_len) 
-*
-*  FUNCTION
-*     Build a string of mail reipients ("user@host,user,...") 
-*
-*  INPUTS
-*     lList *head               - MR_Type list
-*     char *mail_str            - buffer to be filled 
-*     unsigned int mail_str_len - size of buffer 
-*
-*  RESULT
-*     int - error state
-*        0 - success
-*       >0 - error
-*
-*  SEE ALSO
-*     sgeobj/mailrec/mailrec_parse() 
-*******************************************************************************/
+/**
+ * @brief Build a string of mail reipients
+ *
+ * Build a string of mail reipients ("`user@host`,user,...")
+ *
+ * @param head MR_Type list
+ * @param mail_str buffer to be filled
+ * @param mail_str_len size of buffer
+ *
+ * @return error state 0 - success >0 - error
+ *
+ * @see #mailrec_parse
+ */
 int mailrec_unparse(const lList *head, char *mail_str, unsigned int mail_str_len)
 {
    int len=0;
@@ -198,6 +182,13 @@ int mailrec_unparse(const lList *head, char *mail_str, unsigned int mail_str_len
    return 0;
 }
 
+/**
+ * @brief Render the mail options as the letters a user writes
+ *
+ * @param opt the mail option bit field
+ * @param[out] string receives the letters, appended
+ * @return true when something was written
+ */
 bool
 sge_mailopt_to_dstring(uint32_t opt, dstring *string)
 {
@@ -224,6 +215,14 @@ sge_mailopt_to_dstring(uint32_t opt, dstring *string)
 
 /***********************************************************************/
 /* MT-NOTE: sge_parse_mail_options() is MT safe */
+/**
+ * @brief Parse the `-m` letters into the mail option bit field
+ *
+ * @param[out] alpp receives the message naming an unknown letter
+ * @param mail_str the letters the user wrote
+ * @param prog_number the calling program, since not every client accepts every letter
+ * @return the mail option bit field
+ */
 int 
 sge_parse_mail_options(lList **alpp, const char *mail_str, uint32_t prog_number)
 {

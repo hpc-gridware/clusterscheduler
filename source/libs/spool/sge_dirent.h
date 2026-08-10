@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Reading directory entries, for the file based spooling backends
+ */
+
 lList *sge_get_dirents(const char *path);
 
 uint32_t sge_count_dirents(char *path);

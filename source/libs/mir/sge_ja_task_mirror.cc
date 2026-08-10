@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Mirroring the array tasks of a job
+ *
+ * Array tasks are a sublist of their job, so an event about one is applied by
+ * finding its job first.
+ *
+ * @see sge_ja_task_mirror.h
+ * @see sge_mirror.h
+ */
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -42,29 +52,19 @@
 #include "mir/msg_mirlib.h"
 #include "mir/sge_ja_task_mirror.h"
 
-/****** Eventmirror/ja_task/ja_task_update_master_list_usage() *****************
-*  NAME
-*     ja_task_update_master_list_usage() -- update an array tasks usage
-*
-*  SYNOPSIS
-*     bool 
-*     ja_task_update_master_list_usage(lList *job_list, lListElem *event)
-*
-*  FUNCTION
-*     Updates the scaled usage of an array task (also task data structure
-*     of a non array job).
-*
-*  INPUTS
-*     lListElem *event - event object containing the new usage list
-*     lList *job_list  - master job list
-*
-*  RESULT
-*     bool - true, if the operation succeeds, else false
-*
-*  SEE ALSO
-*     Eventmirror/job/job_update_master_list_usage()
-*     Eventmirror/ja_task/pe_task_update_master_list_usage()
-*******************************************************************************/
+/**
+ * @brief Update an array tasks usage
+ *
+ * Updates the scaled usage of an array task (also task data structure
+ * of a non array job).
+ *
+ * @param event event object containing the new usage list
+ * @param job_list master job list
+ *
+ * @return true, if the operation succeeds, else false
+ *
+ * @see `job_update_master_list_usage()`, `pe_task_update_master_list_usage()`
+ */
 sge_callback_result
 ja_task_update_master_list_usage(lList *job_list, lListElem *event)
 {
@@ -101,40 +101,28 @@ ja_task_update_master_list_usage(lList *job_list, lListElem *event)
    DRETURN(SGE_EMA_OK);
 }
 
-/****** Eventmirror/ja_task/ja_task_update_master_list() ***********************
-*  NAME
-*     ja_task_update_master_list() -- update array tasks of a job
-*
-*  SYNOPSIS
-*     bool 
-*     ja_task_update_master_list(sge_object_type type, sge_event_action action,
-*                                lListElem *event, void *clientdata)
-*
-*  FUNCTION
-*     Update the list of array tasks of a job
-*     based on an event.
-*     The function is called from the event mirroring interface.
-*
-*     An array tasks list of parallel tasks and the
-*     scaled usage list are not updated in this function,
-*     as this data is maintained by separate events.
-*
-*  INPUTS
-*     sge_object_type type     - event type
-*     sge_event_action action - action to perform
-*     lListElem *event        - the raw event
-*     void *clientdata        - client data
-*
-*  RESULT
-*     bool - true, if update is successful, else false
-*
-*  NOTES
-*     The function should only be called from the event mirror interface.
-*
-*  SEE ALSO
-*     Eventmirror/--Eventmirror
-*     Eventmirror/sge_mirror_update_master_list()
-*******************************************************************************/
+/**
+ * @brief Update array tasks of a job
+ *
+ * Update the list of array tasks of a job
+ * based on an event.
+ * The function is called from the event mirroring interface.
+ * An array tasks list of parallel tasks and the
+ * scaled usage list are not updated in this function,
+ * as this data is maintained by separate events.
+ *
+ * @param evc the event client the event arrived on
+ * @param type event type
+ * @param action action to perform
+ * @param event the raw event
+ * @param clientdata client data
+ *
+ * @return true, if update is successful, else false
+ *
+ * @note The function should only be called from the event mirror interface.
+ *
+ * @see `sge_mirror_update_master_list()`
+ */
 sge_callback_result
 ja_task_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                            sge_event_action action, lListElem *event, void *clientdata)

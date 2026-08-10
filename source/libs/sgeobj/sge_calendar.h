@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for the calendar object
+ *
+ * @see sge_calendar.cc
+ */
+
 #include <ctime>
 
 #include "sgeobj/cull/sge_calendar_CAL_L.h"

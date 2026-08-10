@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Carrying a cull answer list as a C++ exception
+ */
+
 #include "ocs_AnswerException.h"
 
 // Do not delete this file otherwise symbols will be missing during linking

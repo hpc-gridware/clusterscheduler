@@ -35,6 +35,18 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Reaping shepherds and turning what they left behind into a job report
+ *
+ * When a shepherd exits, the daemon reads the files it left in the job's
+ * `active_jobs` directory - usage, exit status, error, and the
+ * `shepherd_about_to_exit` marker - and builds the report qmaster gets. A
+ * missing marker means the shepherd died rather than finished, and the job is
+ * reported as failed even if the job itself ran.
+ *
+ * This is also where jobs left behind by a daemon restart are cleaned up.
+ */
+
 #include "cull/cull.h"
 
 #include "sgeobj/sge_daemonize.h"

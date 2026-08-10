@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief The heartbeat file the qmaster bumps and the shadow daemons watch
+ */
 #include <cstdio>
 #include <cerrno>
 #include <cstring>
@@ -46,15 +50,16 @@
 static uint32_t sge_testmode_timeout_value = 0;
 static int sge_testmode_timeout_at_heartbeat = 0;
 
-/*--------------------------------------------------------------
- * Name:   get_qmaster_heartbeat
- * Descr:  get number found in qmaster heartbeat file
- * Return: > 0 number found in given heartbeat file 
- *         -1   can't open file 
- *         -2   can't read entry
- *         -3   read timeout
- *         -4   fclose error
- *-------------------------------------------------------------*/
+/** @brief Read the heartbeat counter
+ *
+ * The timeout matters: the file usually lives on a shared file system, and a
+ * read that hangs must not stall the shadow daemon's loop.
+ *
+ * @param file the heartbeat file, normally #QMASTER_HEARTBEAT_FILE
+ * @param read_timeout seconds to allow for the read
+ * @return the counter (> 0), -1 can't open file, -2 can't read entry,
+ *         -3 read timeout, -4 fclose error
+ */
 int get_qmaster_heartbeat(const char *file, time_t read_timeout) {
    FILE *fp   = nullptr;
    int hb     = 0; 
@@ -121,6 +126,16 @@ FCLOSE_ERROR:
  *
  * Notice:   if return != 0 then beat_value is not written !
  *-------------------------------------------------------------*/
+/** @brief Bump the heartbeat counter
+ *
+ * Called by the qmaster itself, once per interval.
+ *
+ * @param file the heartbeat file
+ * @param write_timeout seconds to allow for the write
+ * @param[out] beat_value receives the new counter; untouched on error
+ * @return 0 on success, -1 can't open file, -2 seek error, -3 write error,
+ *         -4 write took longer than write_timeout seconds, -5 fclose error
+ */
 int inc_qmaster_heartbeat(const char *file, time_t write_timeout , int* beat_value) {
 
    FILE *fp = nullptr;
@@ -201,6 +216,13 @@ FCLOSE_ERROR:
    DRETURN(-5);
 }
 
+/** @brief Make the next heartbeat write hang, so a takeover can be tested
+ *
+ * Without this a test would have to wait for a real qmaster to become
+ * unresponsive.
+ *
+ * @param value seconds to stall for; 0 turns the test mode off
+ */
 void set_inc_qmaster_heartbeat_test_mode(uint32_t value) {
    if (value > 0) {
       sge_testmode_timeout_value = value;  

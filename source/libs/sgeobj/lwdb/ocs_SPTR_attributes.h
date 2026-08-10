@@ -24,16 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Spooling Type Rule Mapping
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of SPTR
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   SPTR_is_default = 7850,
-   SPTR_rule_name,
-   SPTR_rule
+   SPTR_is_default = 7850,   ///< Is Default
+   SPTR_rule_name,   ///< Rule Name
+   SPTR_rule   ///< Rule
 };
 
+/** @brief The attribute ids of SPTR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int SPTR_Type[] = {
    SPTR_is_default,
    SPTR_rule_name,
@@ -41,6 +55,10 @@ constexpr const int SPTR_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of SPTR
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define SPTR_ATTRIBUTES \
    {SPTR_is_default, "SPTR_is_default", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {SPTR_rule_name, "SPTR_rule_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_NON_UNIQUE, false, false}, \

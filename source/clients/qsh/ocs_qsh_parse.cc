@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief qsh - command line parsing specific to the interactive clients
+ */
 #include <cstring>
 #include <climits>
 #include <unistd.h>
@@ -58,22 +62,27 @@
 #include "symbols.h"
 #include "msg_common.h"
 
-/*
-** NAME
-**   cull_parse_qsh_parameter
-** PARAMETER
-**   cmdline            - nullptr or SPA_Type, if nullptr, *pjob is initialised with defaults
-**   pjob               - pointer to job element, is filled according to cmdline
-**
-** RETURN
-**   answer list, AN_Type or nullptr if everything ok, the following stati can occur:
-**   STATUS_EUNKNOWN   - bad internal error like nullptr pointer received or no memory
-**   STATUS_EDISK      - getcwd() failed
-**   STATUS_ENOIMP     - unknown switch or -help occurred
-** EXTERNAL
-**   me
-** DESCRIPTION
-*/
+/** @brief Fill in a job object from a parsed `qsh`/`qlogin`/`qrsh` command line
+ *
+ * The interactive counterpart of #cull_parse_job_parameter. It differs mainly
+ * in the defaults: an interactive job is not rerunnable, gets no output files,
+ * and is submitted with `-now yes` unless told otherwise.
+ *
+ * @param prog_number which of `qsh`, `qlogin` and `qrsh` is running
+ * @param uid the submitting user's uid
+ * @param username the submitting user's name
+ * @param cell_root the cell directory, for resolving the default files
+ * @param unqualified_hostname the submit host, unqualified
+ * @param qualified_hostname the submit host, fully qualified
+ * @param cmdline the parsed options (`SPA_Type`), or `nullptr` for defaults only
+ * @param pjob the job (`JB_Type`) to fill in
+ *
+ * @return `nullptr` when everything was fine, otherwise an answer list
+ *         (`AN_Type`) carrying one of
+ *         - `STATUS_EUNKNOWN` - an internal error, a null pointer or out of memory
+ *         - `STATUS_EDISK` - `getcwd()` failed
+ *         - `STATUS_ENOIMP` - an unknown switch, or `-help`
+ */
 lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *username, const char *cell_root,
                                 const char *unqualified_hostname, const char *qualified_hostname, lList *cmdline, lListElem **pjob) 
 {

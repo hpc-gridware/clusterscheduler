@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for lock fifo in `libs/uti`
+ */
+
 
 #include <unistd.h>
 #include <cstdio>
@@ -41,8 +45,8 @@
 #include "uti/sge_lock.h"
 #include "uti/sge_time.h"
 
-#define THREAD_COUNT 8
-#define THREAD_RUN_TIME 15
+#define THREAD_COUNT 8      ///< how many threads contend for the lock
+#define THREAD_RUN_TIME 15   ///< how long they keep at it, in seconds
 
 static int thread_count;
 static uint32_t maxlocks;
@@ -62,6 +66,9 @@ int get_thread_demand() {
    return (int) p;
 }
 
+/** @brief The function this test's threads run
+ * @return a pointer to the thread function
+ */
 void *(*get_thread_func())(void *anArg) {
    return thread_function;
 }

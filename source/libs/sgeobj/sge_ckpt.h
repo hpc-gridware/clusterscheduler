@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for checkpointing environments
+ *
+ * @see sge_ckpt.cc
+ */
+
 #include "sgeobj/cull/sge_ckpt_CK_L.h"
 
 bool 

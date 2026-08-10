@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Errors the commlib wants the application to see
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -41,6 +45,11 @@
 #include "comm/cl_application_error_list.h"
 #include "comm/cl_commlib.h"
 
+/** @brief Create the error queue
+ * @param list_p receives the new list
+ * @param list_name name for log messages
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_application_error_list_setup(cl_raw_list_t **list_p, const char *list_name) {
    int ret_val = CL_RETVAL_OK;
    int ret_val2 = CL_RETVAL_OK;
@@ -67,6 +76,10 @@ int cl_application_error_list_setup(cl_raw_list_t **list_p, const char *list_nam
    return ret_val;
 }
 
+/** @brief Free the error queue and everything in it
+ * @param list_p the list, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_application_error_list_cleanup(cl_raw_list_t **list_p) {
    cl_application_error_list_elem_t *elem = nullptr;
    int ret_val = CL_RETVAL_OK;
@@ -102,6 +115,20 @@ int cl_application_error_list_cleanup(cl_raw_list_t **list_p) {
    return ret_val;
 }
 
+/** @brief Queue an error for the application
+ *
+ * A repeat of an error already queued within
+ * `CL_DEFINE_MESSAGE_DUP_LOG_TIMEOUT` seconds is marked as a duplicate rather
+ * than added again - which is what keeps a connection failing once a second
+ * from filling the log.
+ *
+ * @param list_p the queue
+ * @param cl_err_type the level
+ * @param cl_error the `CL_RETVAL_*` code
+ * @param cl_info additional text, may be nullptr
+ * @param lock_list take the list lock; pass 0 when the caller already holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_application_error_list_push_error(cl_raw_list_t *list_p, cl_log_t cl_err_type, int cl_error, const char *cl_info,
                                          int lock_list) {
 
@@ -226,6 +253,10 @@ int cl_application_error_list_push_error(cl_raw_list_t *list_p, cl_log_t cl_err_
    return CL_RETVAL_OK;
 }
 
+/** @brief The first error
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_application_error_list_elem_t *cl_application_error_list_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -234,6 +265,10 @@ cl_application_error_list_elem_t *cl_application_error_list_get_first_elem(cl_ra
    return nullptr;
 }
 
+/** @brief The last error
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_application_error_list_elem_t *cl_application_error_list_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
    if (raw_elem) {
@@ -242,6 +277,10 @@ cl_application_error_list_elem_t *cl_application_error_list_get_least_elem(cl_ra
    return nullptr;
 }
 
+/** @brief The element after this one
+ * @param elem the current element
+ * @return the next element, or nullptr at the end
+ */
 cl_application_error_list_elem_t *cl_application_error_list_get_next_elem(cl_application_error_list_elem_t *elem) {
    cl_raw_list_elem_t *next_raw_elem = nullptr;
 
@@ -255,6 +294,10 @@ cl_application_error_list_elem_t *cl_application_error_list_get_next_elem(cl_app
    return nullptr;
 }
 
+/** @brief The element before this one
+ * @param elem the current element
+ * @return the previous element, or nullptr at the start
+ */
 cl_application_error_list_elem_t *cl_application_error_list_get_last_elem(cl_application_error_list_elem_t *elem) {
    cl_raw_list_elem_t *last_raw_elem = nullptr;
 

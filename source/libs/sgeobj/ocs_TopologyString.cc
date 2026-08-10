@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The compact string describing a host's CPU topology
+ */
+
 #include <algorithm>
 #include <array>
 #include <cctype>
@@ -42,6 +46,10 @@
 #include "sge_conf.h"
 
 // e.g., "(N[size=4096](S(X[size=512](Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))(E(T))(E(T))))))"
+/**
+ * @brief Parse a topology string into its tree form
+ * @param topology the string to parse
+ */
 ocs::TopologyString::TopologyString(const std::string& topology) {
    reset_topology(topology);
 }
@@ -750,7 +758,7 @@ void ocs::TopologyString::reset_topology(const std::string &topology) {
  * and refreshes internal characteristics by rebuilding the topology string.
  *
  * @param id The ID of the node to mark
- * @param do_mark_used If true, mark as used (lowercase); if false, mark as unused (uppercase)
+ * @param mark_used If true, mark as used (lowercase); if false, mark as unused (uppercase)
  */
 void
 ocs::TopologyString::mark_node_as_used_or_unused(const int id, const bool do_mark_used) {
@@ -939,7 +947,7 @@ ocs::TopologyString::is_empty() const {
  * @param bamount The number of units to find (must be greater than 0)
  * @param bunit The binding unit type (e.g., socket, core, thread)
  * @param bstart The binding start criteria (e.g., any, free, used)
- * @param bstop The binding stop criteria (e.g., any, free, used)
+ * @param stop The binding stop criteria (e.g., any, free, used)
  * @return A vector of IDs of the found packed units
  */
 std::vector<int>

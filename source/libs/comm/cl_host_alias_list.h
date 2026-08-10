@@ -33,13 +33,23 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The host alias table
+ */
+
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
+/** @brief One line of the host alias file
+ *
+ * An alias lets a cluster refer to a host by a name the resolver does not
+ * give back, which is how hosts with several interfaces or a renamed domain
+ * stay one endpoint rather than two.
+ */
 typedef struct cl_host_alias_list_elem_t {
-   cl_raw_list_elem_t *raw_elem;
-   char *local_resolved_hostname;
-   char *alias_name;
+   cl_raw_list_elem_t *raw_elem;    ///< Back pointer into the raw list
+   char *local_resolved_hostname;   ///< The name the resolver returns
+   char *alias_name;                ///< The name the cluster uses instead
 } cl_host_alias_list_elem_t;
 
 

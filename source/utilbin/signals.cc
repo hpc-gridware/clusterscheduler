@@ -31,10 +31,22 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief signals - run a program with every signal reset to its default
+ *
+ * A job inherits the signal mask of whatever started it; this clears that so
+ * the program under test starts from a known state.
+ */
 #include <cstdio>
 #include <csignal>
 #include <unistd.h>
 
+/** @brief Entry point of signals
+ * @param argc argument count
+ * @param argv argument vector
+ * @return the program's exit status
+ */
 int main(int argc, char **argv)
 {
    int block_sigusr1 = 1;

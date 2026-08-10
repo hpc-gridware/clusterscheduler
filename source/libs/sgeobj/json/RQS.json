@@ -1,19 +1,22 @@
 {
    "className": "ResourceQuotaSet",
-   "summary": "@todo add summary",
+   "summary": "Resource Quota Set",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "A named, enableable set of rules that limit resource use across the object model."
+      },
+      {
+         "line": "Where a queue or host limits what it can give, a resource quota set limits what a *combination* may take - \"this project may use 100 slots in total, wherever they are\". The rules are tried in order and the first that matches decides."
       }
    ],
    "cullPrefix": "RQS",
    "attributes": [
       {
          "name": "name",
-         "summary": "@todo add summary",
+         "summary": "Name",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The set's name, as used by `qconf -mrqs`."
             }
          ],
          "type": "lStringT",
@@ -37,10 +40,10 @@
       },
       {
          "name": "description",
-         "summary": "@todo add summary",
+         "summary": "Description",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Free text describing what the set is for."
             }
          ],
          "type": "lStringT",
@@ -55,10 +58,10 @@
       },
       {
          "name": "enabled",
-         "summary": "@todo add summary",
+         "summary": "Enabled",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Whether the set is applied. A disabled set stays configured but limits nothing."
             }
          ],
          "type": "lBoolT",
@@ -73,10 +76,10 @@
       },
       {
          "name": "rule",
-         "summary": "@todo add summary",
+         "summary": "Rules",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The rules (`RQR_Type`), in the order they are tried."
             }
          ],
          "type": "lListT",
@@ -109,7 +112,9 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {"name": "SPOOL"}
+            {
+               "name": "SPOOL"
+            }
          ]
       }
    ]

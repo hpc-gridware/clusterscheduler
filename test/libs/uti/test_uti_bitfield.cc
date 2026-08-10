@@ -32,6 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for bitfield in `libs/uti`
+ */
+
+/** @brief Report the process's memory use alongside the timings
+ *
+ * A bitfield is a memory optimisation, so a run that reported only time would
+ * miss the point of it.
+ */
 #define XMALLINFO
 
 #include <cstdio>
@@ -52,6 +61,16 @@
 
 static int s_fail = 0;
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \
@@ -62,8 +81,8 @@ static int s_fail = 0;
       } \
    } while (0)
 
-const unsigned int test_bf_max_size = 100;
-unsigned int test_bf_loops = 1000000;
+const unsigned int test_bf_max_size = 100;   ///< largest bitfield the test builds, in bits
+unsigned int test_bf_loops = 1000000;        ///< how many operations the benchmark does; overridable as `argv[1]`
 
 static void test_null_safety(int *id) {
    printf("\n--- null-pointer safety ---\n");

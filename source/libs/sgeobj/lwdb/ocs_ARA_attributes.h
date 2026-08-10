@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Advance Reservation Access List Entry
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of ARA
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   ARA_name = 12000,
-   ARA_group
+   ARA_name = 12000,   ///< Name
+   ARA_group   ///< Group
 };
 
+/** @brief The attribute ids of ARA, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int ARA_Type[] = {
    ARA_name,
    ARA_group,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of ARA
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define ARA_ATTRIBUTES \
    {ARA_name, "ARA_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {ARA_group, "ARA_group", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \

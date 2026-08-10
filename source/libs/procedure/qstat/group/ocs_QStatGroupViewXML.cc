@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief XML rendering of `qstat -g c`
+ */
+
 #include "sgeobj/sge_cull_xml.h"
 
 #include "qstat/group/ocs_QStatGroupViewXML.h"

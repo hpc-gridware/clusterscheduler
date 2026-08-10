@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Handling qmaster's request to start a job, as master or as slave host
+ */
+
 #include "gdi/ocs_gdi_ClientServerBase.h"
 
 int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb, bool from_qmaster);

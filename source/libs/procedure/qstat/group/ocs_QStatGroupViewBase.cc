@@ -18,4 +18,8 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base view of `qstat -g c`, and the interface the three output formats implement
+ */
+
 #include "qstat/group/ocs_QStatGroupViewBase.h"

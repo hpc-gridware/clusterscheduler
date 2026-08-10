@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Generic access to any CULL object, without knowing its type
+ *
+ * The implementation behind `sge_object.h`: the type table, the attribute
+ * conversion helpers, and the verification the GDI layer runs on incoming
+ * objects.
+ *
+ * @see sge_object.h
+ */
+
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -70,6 +80,7 @@
 
 #include "msg_common.h"
 
+/// Debug layer the generic object access traces are written to
 #define OBJECT_LAYER BASIS_LAYER
 
 /* One entry per event type */
@@ -108,48 +119,30 @@ static object_description object_base[SGE_TYPE_ALL] = {
 
 
 
-/****** sgeobj/object/object_append_raw_field_to_dstring() *********************
-*  NAME
-*     object_append_raw_field_to_dstring() -- object field to string
-*
-*  SYNOPSIS
-*     const char *
-*     object_append_raw_field_to_dstring(const lListElem *object,
-*                                        lList **answer_list,
-*                                        dstring *buffer, const int nm,
-*                                        char string_quotes)
-*
-*  FUNCTION
-*     Returns a string representation of a given object attribute.
-*     If errors arrise they are returned in the given answer_list.
-*     Data will be created in the given dynamic string buffer.
-*     For some fields a special handling is implemented, e.g. mapping
-*     bitfields to string lists.
-*
-*  INPUTS
-*     const lListElem *object - object to use
-*     lList **answer_list     - used to return error messages
-*     dstring *buffer         - buffer used to format the result
-*     const int nm            - attribute to output
-*     char string_quotes      - character to be used for string quoting
-*                               '\0' means no quoting
-*
-*  RESULT
-*     const char * - string representation of the attribute value
-*                    (pointer to the string in the dynamic string
-*                    buffer, or nullptr if an error occurred.
-*
-*  NOTES
-*     For sublists, subobjects and references nullptr is returned.
-*
-*  BUGS
-*     For the handled special cases, the dstring is cleared,
-*     the default handling appends to the dstring buffer.
-*
-*  SEE ALSO
-*     sgeobj/object/--GDI-object-Handling
-*     sgeobj/object/object_parse_field_from_string()
-*******************************************************************************/
+/**
+ * @brief Object field to string
+ *
+ * Returns a string representation of a given object attribute.
+ * If errors arrise they are returned in the given answer_list.
+ * Data will be created in the given dynamic string buffer.
+ * For some fields a special handling is implemented, e.g. mapping
+ * bitfields to string lists.
+ *
+ * @param object object to use
+ * @param answer_list used to return error messages
+ * @param buffer buffer used to format the result
+ * @param nm attribute to output
+ * @param string_quotes character to be used for string quoting '\0' means no quoting
+ *
+ * @return string representation of the attribute value (pointer to the string in the dynamic string buffer, or nullptr if an error occurred.
+ *
+ * @note For sublists, subobjects and references nullptr is returned.
+ *
+ * @bug For the handled special cases, the dstring is cleared,
+ *      the default handling appends to the dstring buffer.
+ *
+ * @see #object_parse_field_from_string
+ */
 static const char *
 object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list, dstring *buffer, int nm,
                                    char string_quotes) {
@@ -226,38 +219,24 @@ object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list,
    DRETURN(result);
 }
 
-/****** sgeobj/object/object_parse_raw_field_from_string() ************************
-*  NAME
-*     object_parse_raw_field_from_string() -- set object attr. from str
-*
-*  SYNOPSIS
-*     bool
-*     object_parse_raw_field_from_string(lListElem *object,
-*                                        lList **answer_list,
-*                                        const int nm, const char *value)
-*
-*  FUNCTION
-*     Sets a new value for a certain object attribute.
-*     The new value is passed as parameter in string format.
-*
-*  INPUTS
-*     lListElem *object   - the object to change
-*     lList **answer_list - used to return error messages
-*     const int nm        - the attribute to change
-*     const char *value   - the new value
-*
-*  RESULT
-*     bool - true on success,
-*            false, on error, error description in answer_list
-*
-*  NOTES
-*     Sublists, subobjects and references cannot be set with this
-*     function.
-*
-*  SEE ALSO
-*     sgeobj/object/--GDI-object-Handling
-*     sgeobj/object/object_append_field_to_dstring()
-******************************************************************************/
+/**
+ * @brief Set object attr. from str
+ *
+ * Sets a new value for a certain object attribute.
+ * The new value is passed as parameter in string format.
+ *
+ * @param object the object to change
+ * @param answer_list used to return error messages
+ * @param nm the attribute to change
+ * @param value the new value
+ *
+ * @return true on success, false, on error, error description in answer_list
+ *
+ * @note Sublists, subobjects and references cannot be set with this
+ *       function.
+ *
+ * @see #object_append_field_to_dstring
+ */
 static bool
 object_parse_raw_field_from_string(lListElem *object, lList **answer_list, const int nm, const char *value) {
    DENTER(OBJECT_LAYER);
@@ -319,34 +298,24 @@ object_parse_raw_field_from_string(lListElem *object, lList **answer_list, const
    DRETURN(ret);
 }
 
-/****** sgeobj/object/object_has_type() ***************************************
-*  NAME
-*     object_has_type() -- has an object a certain type?
-*
-*  SYNOPSIS
-*     bool 
-*     object_has_type(const lListElem *object, const lDescr *descr) 
-*
-*  FUNCTION
-*     Checks if an object has a certain type.
-*     The check is done by looking up the primary key field in descr and
-*     checking, if this key field is contained in the given object.
-*
-*  INPUTS
-*     const lListElem *object - object to check
-*     const lDescr *descr     - type to check against
-*
-*  RESULT
-*     bool - true, if the object has the given type, else false
-*
-*  NOTES
-*     As looking up the primary key of an object is only implemented
-*     for selected types, this function also will work only for these
-*     object types.
-*
-*  SEE ALSO
-*     sgeobj/object/object_get_primary_key()
-*******************************************************************************/
+/**
+ * @brief Has an object a certain type?
+ *
+ * Checks if an object has a certain type.
+ * The check is done by looking up the primary key field in descr and
+ * checking, if this key field is contained in the given object.
+ *
+ * @param object object to check
+ * @param descr type to check against
+ *
+ * @return true, if the object has the given type, else false
+ *
+ * @note As looking up the primary key of an object is only implemented
+ *       for selected types, this function also will work only for these
+ *       object types.
+ *
+ * @see #object_get_primary_key
+ */
 bool
 object_has_type(const lListElem *object, const lDescr *descr) {
    bool ret = false;
@@ -365,26 +334,18 @@ object_has_type(const lListElem *object, const lDescr *descr) {
    return ret;
 }
 
-/****** sgeobj/object/object_get_type() ***************************************
-*  NAME
-*     object_get_type() -- return type (descriptor) for object
-*
-*  SYNOPSIS
-*     const lDescr * object_get_type(const lListElem *object) 
-*
-*  FUNCTION
-*     Returns the cull type (descriptor) for a certain object.
-*     This descriptor can be different from the objects descriptor,
-*     as the objects descriptor can come from an object created from
-*     communication, can be a partial descriptor etc.
-*
-*  INPUTS
-*     const lListElem *object - the object to analyze
-*
-*  RESULT
-*     const lDescr * - the object type / descriptor
-*
-*******************************************************************************/
+/**
+ * @brief Return type (descriptor) for object
+ *
+ * Returns the cull type (descriptor) for a certain object.
+ * This descriptor can be different from the objects descriptor,
+ * as the objects descriptor can come from an object created from
+ * communication, can be a partial descriptor etc.
+ *
+ * @param object the object to analyze
+ *
+ * @return the object type / descriptor
+ */
 const lDescr *
 object_get_type(const lListElem *object) {
    const lDescr *ret = nullptr;
@@ -416,31 +377,22 @@ object_get_type(const lListElem *object) {
    return ret;
 }
 
-/****** sgeobj/object/object_get_primary_key() ********************************
-*  NAME
-*     object_get_primary_key() -- get primary key for object type
-*
-*  SYNOPSIS
-*     int object_get_primary_key(const lDescr *descr) 
-*
-*  FUNCTION
-*     Returns the primary key field for a given object type.
-*
-*  INPUTS
-*     const lDescr *descr - the object type (descriptor)
-*
-*  RESULT
-*     int - name (nm) of the primary key field or 
-*           NoName (-1) on error.
-*
-*  NOTES
-*     Only implemented for selected object types.
-*     It would be better to have the necessary data in the object 
-*     description, e.g. via a field property CULL_PRIMARY_KEY.
-*
-*     Function interface breaks style guide - either we would have to 
-*     pass an object, or call it descr_get_primary_key.
-*******************************************************************************/
+/**
+ * @brief Get primary key for object type
+ *
+ * Returns the primary key field for a given object type.
+ *
+ * @param descr the object type (descriptor)
+ *
+ * @return name (nm) of the primary key field or NoName (-1) on error.
+ *
+ * @note Only implemented for selected object types.
+ *       It would be better to have the necessary data in the object
+ *       description, e.g. via a field property CULL_PRIMARY_KEY.
+ *
+ *       Function interface breaks style guide - either we would have to
+ *       pass an object, or call it descr_get_primary_key.
+ */
 int
 object_get_primary_key(const lDescr *descr) {
    int ret = NoName;
@@ -464,39 +416,29 @@ object_get_primary_key(const lDescr *descr) {
    return ret;
 }
 
-/****** sgeobj/object/object_get_name_prefix() ********************************
-*  NAME
-*     object_get_name_prefix() -- get prefix of cull attribute name
-*
-*  SYNOPSIS
-*     const char *
-*     object_get_name_prefix(const lDescr *descr, dstring *buffer) 
-*
-*  FUNCTION
-*     Returns the prefix that is used in attribute names characterizing 
-*     the object type (e.g. "QU_" for the QU_Type).
-*
-*  INPUTS
-*     const lDescr *descr - object type to use
-*     dstring *buffer     - buffer that is used to return the result
-*
-*  RESULT
-*     const char * - the prefix or
-*                    nullptr, if an error occurred
-*
-*  EXAMPLE
-*     object_get_name_prefix(QU_Type, buffer) = "QU_"
-*     object_get_name_prefix(JB_Type, buffer) = "JB_"
-*
-*  NOTES
-*     The function relies on object_get_primary_key. This function only
-*     is implemented for some object types.
-*     For types not handled in object_get_primary_key, nullptr will be
-*     returned.
-*
-*  SEE ALSO
-*     sgeobj/object/object_get_primary_key()
-*******************************************************************************/
+/**
+ * @brief Get prefix of cull attribute name
+ *
+ * Returns the prefix that is used in attribute names characterizing
+ * the object type (e.g. "QU_" for the QU_Type).
+ *
+ * @code
+ * object_get_name_prefix(QU_Type, buffer) = "QU_"
+ * object_get_name_prefix(JB_Type, buffer) = "JB_"
+ * @endcode
+ *
+ * @param descr object type to use
+ * @param buffer buffer that is used to return the result
+ *
+ * @return the prefix or nullptr, if an error occurred
+ *
+ * @note The function relies on object_get_primary_key. This function only
+ *       is implemented for some object types.
+ *       For types not handled in object_get_primary_key, nullptr will be
+ *       returned.
+ *
+ * @see #object_get_primary_key
+ */
 const char *
 object_get_name_prefix(const lDescr *descr, dstring *buffer) {
    int nm;
@@ -523,31 +465,23 @@ object_get_name_prefix(const lDescr *descr, dstring *buffer) {
    return nullptr;
 }
 
-/****** sge_object/object_get_name() *******************************************
-*  NAME
-*     object_get_name() -- get the object name by object descriptor
-*
-*  SYNOPSIS
-*     const char *
-*     object_get_name(const lDescr *descr) 
-*
-*  FUNCTION
-*     Returns the object name for a given descriptor.
-*     If the descriptor doesn't match a descriptor in object_base,
-*     return "unknown".
-*
-*  INPUTS
-*     const lDescr *descr - descriptor.
-*
-*  RESULT
-*     const char * - the object name
-*
-*  EXAMPLE
-*     object_get_name(JOB_Type) returns "JOB"
-*
-*  NOTES
-*     MT-NOTE: object_get_name() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Get the object name by object descriptor
+ *
+ * Returns the object name for a given descriptor.
+ * If the descriptor doesn't match a descriptor in object_base,
+ * return "unknown".
+ *
+ * @code
+ * object_get_name(JOB_Type) returns "JOB"
+ * @endcode
+ *
+ * @param descr descriptor.
+ *
+ * @return the object name
+ *
+ * @note MT-NOTE: object_get_name() is MT safe
+ */
 const char *
 object_get_name(const lDescr *descr) {
    const char *name = "unknown";
@@ -598,48 +532,30 @@ object_get_type_name(const lListElem *object) {
    return name;
 }
 
-/****** sgeobj/object/object_append_field_to_dstring() ************************
-*  NAME
-*     object_append_field_to_dstring() -- object field to string
-*
-*  SYNOPSIS
-*     const char *
-*     object_append_field_to_dstring(const lListElem *object, 
-*                                    lList **answer_list, 
-*                                    dstring *buffer, const int nm,
-*                                    char string_quotes) 
-*
-*  FUNCTION
-*     Returns a string representation of a given object attribute.
-*     If errors arrise they are returned in the given answer_list.
-*     Data will be created in the given dynamic string buffer.
-*     For some fields a special handling is implemented, e.g. mapping
-*     bitfields to string lists.
-*
-*  INPUTS
-*     const lListElem *object - object to use
-*     lList **answer_list     - used to return error messages
-*     dstring *buffer         - buffer used to format the result
-*     const int nm            - attribute to output
-*     char string_quotes      - character to be used for string quoting 
-*                               '\0' means no quoting
-*
-*  RESULT
-*     const char * - string representation of the attribute value 
-*                    (pointer to the string in the dynamic string 
-*                    buffer, or nullptr if an error occurred.
-*
-*  NOTES
-*     For sublists, subobjects and references nullptr is returned.
-*
-*  BUGS
-*     For the handled special cases, the dstring is cleared,
-*     the default handling appends to the dstring buffer.
-*
-*  SEE ALSO
-*     sgeobj/object/--GDI-object-Handling
-*     sgeobj/object/object_parse_field_from_string()
-*******************************************************************************/
+/**
+ * @brief Object field to string
+ *
+ * Returns a string representation of a given object attribute.
+ * If errors arrise they are returned in the given answer_list.
+ * Data will be created in the given dynamic string buffer.
+ * For some fields a special handling is implemented, e.g. mapping
+ * bitfields to string lists.
+ *
+ * @param object object to use
+ * @param answer_list used to return error messages
+ * @param buffer buffer used to format the result
+ * @param nm attribute to output
+ * @param string_quotes character to be used for string quoting '\0' means no quoting
+ *
+ * @return string representation of the attribute value (pointer to the string in the dynamic string buffer, or nullptr if an error occurred.
+ *
+ * @note For sublists, subobjects and references nullptr is returned.
+ *
+ * @bug For the handled special cases, the dstring is cleared,
+ *      the default handling appends to the dstring buffer.
+ *
+ * @see #object_parse_field_from_string
+ */
 const char *
 object_append_field_to_dstring(const lListElem *object, lList **answer_list,
                                dstring *buffer, int nm,
@@ -727,40 +643,26 @@ object_append_field_to_dstring(const lListElem *object, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/object/object_parse_field_from_string() ************************
-*  NAME
-*     object_parse_field_from_string() -- set object attr. from str
-*
-*  SYNOPSIS
-*     bool 
-*     object_parse_field_from_string(lListElem *object, 
-*                                    lList **answer_list, 
-*                                    const int nm, const char *value) 
-*
-*  FUNCTION
-*     Sets a new value for a certain object attribute.
-*     The new value is passed as parameter in string format.
-*     For some fields a special handling is implemented, e.g. mapping
-*     string lists to bitfields.
-*
-*  INPUTS
-*     lListElem *object   - the object to change
-*     lList **answer_list - used to return error messages
-*     const int nm        - the attribute to change
-*     const char *value   - the new value
-*
-*  RESULT
-*     bool - true on success,
-*            false, on error, error description in answer_list 
-*
-*  NOTES
-*     Sublists, subobjects and references cannot be set with this 
-*     function.
-*
-*  SEE ALSO
-*     sgeobj/object/--GDI-object-Handling
-*     sgeobj/object/object_append_field_to_dstring()
-******************************************************************************/
+/**
+ * @brief Set object attr. from str
+ *
+ * Sets a new value for a certain object attribute.
+ * The new value is passed as parameter in string format.
+ * For some fields a special handling is implemented, e.g. mapping
+ * string lists to bitfields.
+ *
+ * @param object the object to change
+ * @param answer_list used to return error messages
+ * @param nm the attribute to change
+ * @param value the new value
+ *
+ * @return true on success, false, on error, error description in answer_list
+ *
+ * @note Sublists, subobjects and references cannot be set with this
+ *       function.
+ *
+ * @see #object_append_field_to_dstring
+ */
 bool
 object_parse_field_from_string(lListElem *object, lList **answer_list,
                                int nm, const char *value) {
@@ -894,25 +796,16 @@ object_parse_field_from_string(lListElem *object, lList **answer_list,
 }
 
 
-/****** sgeobj/object/object_delete_range_id() ********************************
-*  NAME
-*     object_delete_range_id() -- del certain id from an range_list
-*
-*  SYNOPSIS
-*     void 
-*     object_delete_range_id(lListElem *object, lList **answer_list, 
-*                            const int rnm, const uint32_t id)
-*
-*  FUNCTION
-*     Deletes a certain id from an objects sublist that is a range list.
-*
-*  INPUTS
-*     lListElem *object   - the object to handle
-*     lList **answer_list - error messages will be put here
-*     const int rnm       - attribute containing the range list
-*     const uint32_t id   - id to delete
-*
-*******************************************************************************/
+/**
+ * @brief Del certain id from an range_list
+ *
+ * Deletes a certain id from an objects sublist that is a range list.
+ *
+ * @param object the object to handle
+ * @param answer_list error messages will be put here
+ * @param rnm attribute containing the range list
+ * @param id id to delete
+ */
 void
 object_delete_range_id(lListElem *object, lList **answer_list,
                        int rnm, uint32_t id) {
@@ -924,33 +817,23 @@ object_delete_range_id(lListElem *object, lList **answer_list,
    lXchgList(object, rnm, &range_list);
 }
 
-/****** sgeobj/object/object_set_range_id() **********************************
-*  NAME
-*     object_set_range_id() -- store the initial range ids in "job"
-*
-*  SYNOPSIS
-*     int object_set_range_id(lListElem *job, uint32_t start,
-*                                 uint32_t end, uint32_t step)
-*
-*  FUNCTION
-*     The function stores the initial range id values ("start", "end" 
-*     and "step") in the range list of an object. It should only be used 
-*     in functions initializing objects range lists.
-*
-*  INPUTS
-*     lListElem *object - object to handle
-*     const int rnm     - attribute containing the range list
-*     uint32_t start    - first id
-*     uint32_t end      - last id
-*     uint32_t step     - step size
-*
-*  RESULT
-*     int - 0 -> OK
-*           1 -> no memory
-*
-*  NOTES
-*     MT-NOTE: object_set_range_id() is MT safe
-******************************************************************************/
+/**
+ * @brief Store the initial range ids in "job"
+ *
+ * The function stores the initial range id values ("start", "end"
+ * and "step") in the range list of an object. It should only be used
+ * in functions initializing objects range lists.
+ *
+ * @param object object to handle
+ * @param rnm attribute containing the range list
+ * @param start first id
+ * @param end last id
+ * @param step step size
+ *
+ * @return 0 -> OK 1 -> no memory
+ *
+ * @note MT-NOTE: object_set_range_id() is MT safe
+ */
 int
 object_set_range_id(lListElem *object, int rnm, uint32_t start, uint32_t end,
                     uint32_t step) {
@@ -983,30 +866,21 @@ object_set_range_id(lListElem *object, int rnm, uint32_t start, uint32_t end,
 }
 
 
-/****** sgeobj/object/object_type_get_name() *********************************
-*  NAME
-*     object_type_get_name() -- get a printable name for event type
-*
-*  SYNOPSIS
-*     const char* object_type_get_name(const sge_object_type type) 
-*
-*  FUNCTION
-*     Returns a printable name for an event type.
-*
-*  INPUTS
-*     const sge_object_type type - the event type
-*
-*  RESULT
-*     const char* - string describing the type
-*
-*  EXAMPLE
-*     object_type_get_name(SGE_TYPE_JOB) will return "JOB"
-*
-*  SEE ALSO
-*     sgeobj/object/ocs::DataStore::get_master_list()
-*     sgeobj/object/object_type_get_descr()
-*     sgeobj/object/object_type_get_key_nm()
-*******************************************************************************/
+/**
+ * @brief Get a printable name for event type
+ *
+ * Returns a printable name for an event type.
+ *
+ * @code
+ * object_type_get_name(SGE_TYPE_JOB) will return "JOB"
+ * @endcode
+ *
+ * @param type the event type
+ *
+ * @return string describing the type
+ *
+ * @see #object_type_get_descr, #object_type_get_key_nm
+ */
 const char *object_type_get_name(sge_object_type type) {
    const char *ret = "unknown";
 
@@ -1023,27 +897,19 @@ const char *object_type_get_name(sge_object_type type) {
    DRETURN(ret);
 }
 
-/****** sgeobj/object/object_name_get_type() **********************************
-*  NAME
-*     object_name_get_type() -- Return type id of a certain object 
-*
-*  SYNOPSIS
-*     sge_object_type object_name_get_type(const char *name) 
-*
-*  FUNCTION
-*     returns the type id a an object given by "name" 
-*     We allow to pass in names in the form <object_name>:<key>, e.g.
-*     USERSET:deadlineusers.
-*
-*  INPUTS
-*     const char *name - object name 
-*
-*  RESULT
-*     sge_object_type - type of the object
-*
-*  NOTES
-*     MT-NOTE: object_name_get_type() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Return type id of a certain object
+ *
+ * returns the type id a an object given by "name"
+ * We allow to pass in names in the form `object_name`:`key`, e.g.
+ * USERSET:deadlineusers.
+ *
+ * @param name object name
+ *
+ * @return type of the object
+ *
+ * @note MT-NOTE: object_name_get_type() is MT safe
+ */
 sge_object_type object_name_get_type(const char *name) {
    sge_object_type ret = SGE_TYPE_ALL;
    int i;
@@ -1069,34 +935,24 @@ sge_object_type object_name_get_type(const char *name) {
    DRETURN(ret);
 }
 
-/****** sgeobj/object/object_type_get_descr() ********************************
-*  NAME
-*     object_type_get_descr() -- get the descriptor for an event type
-*
-*  SYNOPSIS
-*     const lDescr* object_type_get_descr(const sge_object_type type) 
-*
-*  FUNCTION
-*     Returns the CULL element descriptor for the object type 
-*     associated with the given event.
-*
-*  INPUTS
-*     const sge_object_type type - the event type
-*
-*  RESULT
-*     const lDescr* - the descriptor, or nullptr, if no descriptor is
-*                     associated with the type
-*
-*  EXAMPLE
-*     object_type_get_descr(SGE_TYPE_JOB) will return the descriptor 
-*        JB_Type,
-*     object_type_get_descr(SGE_TYPE_SHUTDOWN) will return nullptr
-*
-*  SEE ALSO
-*     sgeobj/object/ocs::DataStore::get_master_list()
-*     sgeobj/object/object_type_get_name()
-*     sgeobj/object/object_type_get_key_nm()
-*******************************************************************************/
+/**
+ * @brief Get the descriptor for an event type
+ *
+ * Returns the CULL element descriptor for the object type
+ * associated with the given event.
+ *
+ * @code
+ * object_type_get_descr(SGE_TYPE_JOB) will return the descriptor
+ *    JB_Type,
+ * object_type_get_descr(SGE_TYPE_SHUTDOWN) will return nullptr
+ * @endcode
+ *
+ * @param type the event type
+ *
+ * @return the descriptor, or nullptr, if no descriptor is associated with the type
+ *
+ * @see #object_type_get_name, #object_type_get_key_nm
+ */
 const lDescr *object_type_get_descr(sge_object_type type) {
    const lDescr *ret = nullptr;
 
@@ -1111,33 +967,23 @@ const lDescr *object_type_get_descr(sge_object_type type) {
    DRETURN(ret);
 }
 
-/****** sgeobj/object/object_type_get_key_nm() *******************************
-*  NAME
-*     object_type_get_key_nm() -- get the primary key attribute for type
-*
-*  SYNOPSIS
-*     int object_type_get_key_nm(const sge_object_type type) 
-*
-*  FUNCTION
-*     Returns the primary key attribute for the object type associated 
-*     with the given event type.
-*
-*  INPUTS
-*     const sge_object_type type - event type
-*
-*  RESULT
-*     int - the key number (struct element nm of the descriptor), or
-*           -1, if no object type is associated with the event type
-*
-*  EXAMPLE
-*     object_type_get_key_nm(SGE_TYPE_JOB) will return JB_job_number
-*     object_type_get_key_nm(SGE_TYPE_SHUTDOWN) will return -1
-*
-*  SEE ALSO
-*     sgeobj/object/ocs::DataStore::get_master_list()
-*     sgeobj/object/object_type_get_name()
-*     sgeobj/object/object_type_get_descr()
-*******************************************************************************/
+/**
+ * @brief Get the primary key attribute for type
+ *
+ * Returns the primary key attribute for the object type associated
+ * with the given event type.
+ *
+ * @code
+ * object_type_get_key_nm(SGE_TYPE_JOB) will return JB_job_number
+ * object_type_get_key_nm(SGE_TYPE_SHUTDOWN) will return -1
+ * @endcode
+ *
+ * @param type event type
+ *
+ * @return the key number (struct element nm of the descriptor), or -1, if no object type is associated with the event type
+ *
+ * @see #object_type_get_name, #object_type_get_descr
+ */
 int object_type_get_key_nm(sge_object_type type) {
    int ret = NoName;
 
@@ -1152,6 +998,16 @@ int object_type_get_key_nm(sge_object_type type) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse a boolean and store it in a field *
+ * Accepts `true`/`t`/`1`/`yes`/`y` and `false`/`f`/`0`/`no`/`n`, each
+ * case insensitively. *
+ * @param[in,out] this_elem the element whose field is set
+ * @param[out] answer_list receives the parse error
+ * @param name the field to set
+ * @param string the text to parse; nullptr is an error
+ * @return true when the value was parsed and stored
+ */
 bool
 object_parse_bool_from_string(lListElem *this_elem, lList **answer_list,
                               int name, const char *string) {
@@ -1180,6 +1036,16 @@ object_parse_bool_from_string(lListElem *this_elem, lList **answer_list,
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse a time specification and store it in a field *
+ * The text is validated as a time value and then stored verbatim, so the
+ * field keeps the form the user wrote. *
+ * @param[in,out] this_elem the element whose field is set
+ * @param[out] answer_list receives the parse error
+ * @param name the field to set
+ * @param string the text to parse; nullptr is an error
+ * @return true when the value was parsed and stored
+ */
 bool
 object_parse_time_from_string(lListElem *this_elem, lList **answer_list,
                               int name, const char *string) {
@@ -1204,6 +1070,16 @@ object_parse_time_from_string(lListElem *this_elem, lList **answer_list,
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse an interval and store it in a field *
+ * @note Identical to #object_parse_time_from_string - an interval is validated
+ *       as a time value and stored verbatim. *
+ * @param[in,out] this_elem the element whose field is set
+ * @param[out] answer_list receives the parse error
+ * @param name the field to set
+ * @param string the text to parse; nullptr is an error
+ * @return true when the value was parsed and stored
+ */
 bool
 object_parse_inter_from_string(lListElem *this_elem, lList **answer_list,
                                int name, const char *string) {
@@ -1228,6 +1104,19 @@ object_parse_inter_from_string(lListElem *this_elem, lList **answer_list,
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse a whitespace or comma separated list and store it in a field
+ *
+ * The single word `NONE` yields an empty field rather than a one element list.
+ *
+ * @param[in,out] this_elem the element whose field is set
+ * @param[out] answer_list receives the parse error
+ * @param name the field to set
+ * @param string the text to parse; nullptr is an error
+ * @param descr the descriptor of the list elements to create
+ * @param nm the field within each element the words are stored in
+ * @return true when the value was parsed and stored
+ */
 bool
 object_parse_list_from_string(lListElem *this_elem, lList **answer_list,
                               int name, const char *string,
@@ -1262,6 +1151,15 @@ object_parse_list_from_string(lListElem *this_elem, lList **answer_list,
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse a complex entry list and store it in a field *
+ * Each entry is a `name=value` pair, as in a complex request. *
+ * @param[in,out] this_elem the element whose field is set
+ * @param[out] answer_list receives the parse error
+ * @param name the field to set
+ * @param string the text to parse; nullptr is an error
+ * @return true when the value was parsed and stored
+ */
 bool
 object_parse_celist_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
    DENTER(TOP_LAYER);
@@ -1288,6 +1186,16 @@ object_parse_celist_from_string(lListElem *this_elem, lList **answer_list, int n
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse a subordinate list and store it in a field *
+ * Two forms are accepted: queue wise (`A.q=3,B.q=4`) and slot wise
+ * (`slots=4(A.q:1:lr, B.q:2:sr)`). *
+ * @param[in,out] this_elem the element whose field is set
+ * @param[out] answer_list receives the parse error
+ * @param name the field to set
+ * @param string the text to parse; nullptr is an error
+ * @return true when the value was parsed and stored
+ */
 bool
 object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
    DENTER(OBJECT_LAYER);
@@ -1457,6 +1365,15 @@ object_parse_solist_from_string(lListElem *this_elem, lList **answer_list, int n
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse a queue type list and store it in a field *
+ * The text is a bitfield of queue type names. *
+ * @param[in,out] this_elem the element whose field is set
+ * @param[out] answer_list receives the parse error
+ * @param name the field to set
+ * @param string the text to parse; nullptr is an error
+ * @return true when the value was parsed and stored
+ */
 bool
 object_parse_qtlist_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
    DENTER(TOP_LAYER);
@@ -1481,6 +1398,16 @@ object_parse_qtlist_from_string(lListElem *this_elem, lList **answer_list, int n
 }
 
 
+/**
+ * @brief Parse a memory specification and store it in a field *
+ * The text is validated as a memory value, e.g. `4G`, and then stored
+ * verbatim. *
+ * @param[in,out] this_elem the element whose field is set
+ * @param[out] answer_list receives the parse error
+ * @param name the field to set
+ * @param string the text to parse; nullptr is an error
+ * @return true when the value was parsed and stored
+ */
 bool
 object_parse_mem_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
    bool ret = true;
@@ -1504,6 +1431,14 @@ object_parse_mem_from_string(lListElem *this_elem, lList **answer_list, int name
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse a 32 bit unsigned integer and store it in a field *
+ * @param[in,out] this_elem the element whose field is set
+ * @param[out] answer_list receives the parse error
+ * @param name the field to set
+ * @param string the text to parse; nullptr is an error
+ * @return true when the value was parsed and stored
+ */
 bool
 object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
    DENTER(OBJECT_LAYER);
@@ -1550,6 +1485,14 @@ object_parse_ulong32_from_string(lListElem *this_elem, lList **answer_list, int 
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse a 64 bit unsigned integer and store it in a field *
+ * @param[in,out] this_elem the element whose field is set
+ * @param[out] answer_list receives the parse error
+ * @param name the field to set
+ * @param string the text to parse; nullptr is an error
+ * @return true when the value was parsed and stored
+ */
 bool
 object_parse_ulong64_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
    DENTER(OBJECT_LAYER);
@@ -1596,6 +1539,14 @@ object_parse_ulong64_from_string(lListElem *this_elem, lList **answer_list, int 
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse an int and store it in a field *
+ * @param[in,out] this_elem the element whose field is set
+ * @param[out] answer_list receives the parse error
+ * @param name the field to set
+ * @param string the text to parse; nullptr is an error
+ * @return true when the value was parsed and stored
+ */
 bool
 object_parse_int_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
    DENTER(OBJECT_LAYER);
@@ -1619,6 +1570,14 @@ object_parse_int_from_string(lListElem *this_elem, lList **answer_list, int name
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse a long and store it in a field *
+ * @param[in,out] this_elem the element whose field is set
+ * @param[out] answer_list receives the parse error
+ * @param name the field to set
+ * @param string the text to parse; nullptr is an error
+ * @return true when the value was parsed and stored
+ */
 bool
 object_parse_long_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
    DENTER(OBJECT_LAYER);
@@ -1642,6 +1601,14 @@ object_parse_long_from_string(lListElem *this_elem, lList **answer_list, int nam
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse a double and store it in a field *
+ * @param[in,out] this_elem the element whose field is set
+ * @param[out] answer_list receives the parse error
+ * @param name the field to set
+ * @param string the text to parse; nullptr is an error
+ * @return true when the value was parsed and stored
+ */
 bool
 object_parse_double_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
    DENTER(OBJECT_LAYER);
@@ -1666,6 +1633,18 @@ object_parse_double_from_string(lListElem *this_elem, lList **answer_list, int n
    DRETURN(ret);
 }
 
+/**
+ * @brief Set a field of any CULL type from an untyped pointer
+ *
+ * The field's own type decides how `value` is dereferenced, so the caller has
+ * to pass a pointer to a value of the matching type. A list field is set to a
+ * copy of the list.
+ *
+ * @param[in,out] this_elem the element whose field is set
+ * @param name the field to set
+ * @param value pointer to the new value, of the field's type
+ * @return true when the field was set; false for a field type this cannot handle
+ */
 bool
 object_set_any_type(lListElem *this_elem, int name, void *value) {
    DENTER(OBJECT_LAYER);
@@ -1701,6 +1680,21 @@ object_set_any_type(lListElem *this_elem, int name, void *value) {
    DRETURN(cull_ret == 0 ? true : false);
 }
 
+/**
+ * @brief Copy one field of any CULL type from another element
+ *
+ * Both elements are addressed by the same field name, so they need not share a
+ * descriptor.
+ *
+ * @param[in,out] this_elem the element whose field is set
+ * @param name the field to copy
+ * @param org_elem the element to copy the value from
+ * @return true when the field was copied; false for a field type this cannot handle
+ *
+ * @note Unlike #object_set_any_type and #object_get_any_type this has no branch
+ *       for list fields, so a list attribute is never copied and false is
+ *       returned instead.
+ */
 bool
 object_replace_any_type(lListElem *this_elem, int name, lListElem *org_elem) {
    int cull_ret;
@@ -1752,6 +1746,17 @@ object_replace_any_type(lListElem *this_elem, int name, lListElem *org_elem) {
    DRETURN(cull_ret == 0 ? true : false);
 }
 
+/**
+ * @brief Read a field of any CULL type into an untyped pointer
+ *
+ * The field's own type decides what is written through `value`, so the caller
+ * has to pass a pointer to a variable of the matching type. A list field
+ * yields the list pointer itself, not a copy.
+ *
+ * @param this_elem the element to read
+ * @param name the field to read
+ * @param[out] value pointer to a variable of the field's type
+ */
 void
 object_get_any_type(const lListElem *this_elem, int name, void *value) {
    DENTER(OBJECT_LAYER);
@@ -1787,6 +1792,18 @@ object_get_any_type(const lListElem *this_elem, int name, void *value) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Do two elements differ in any attribute?
+ *
+ * Walks both descriptors in parallel and compares attribute by attribute. Two
+ * elements whose descriptors disagree on a name or a type at the same position
+ * count as different rather than as an error.
+ *
+ * @param this_elem the element to compare
+ * @param[out] answer_list receives error messages
+ * @param old_elem the element to compare against
+ * @return true when the elements differ, or when only one of them is nullptr
+ */
 bool
 object_has_differences(const lListElem *this_elem, lList **answer_list, const lListElem *old_elem) {
    DENTER(TOP_LAYER);
@@ -1916,6 +1933,16 @@ object_has_differences(const lListElem *this_elem, lList **answer_list, const lL
    DRETURN(ret);
 }
 
+/**
+ * @brief Do two lists differ in any element?
+ *
+ * @param this_list the list to compare
+ * @param[out] answer_list receives error messages
+ * @param old_list the list to compare against
+ * @return true when the lists differ in length or in any element
+ *
+ * @see #object_has_differences
+ */
 bool
 object_list_has_differences(const lList *this_list, lList **answer_list, const lList *old_list) {
    DENTER(BASIS_LAYER);
@@ -1943,37 +1970,26 @@ object_list_has_differences(const lList *this_list, lList **answer_list, const l
    DRETURN(ret);
 }
 
-/****** sge_object/object_list_verify_cull() ***********************************
-*  NAME
-*     object_list_verify_cull() -- verify cull list structure
-*
-*  SYNOPSIS
-*     bool 
-*     object_list_verify_cull(const lList *lp, const lDescr *descr) 
-*
-*  FUNCTION
-*     Verifies that a cull list, including all its objects and sublists,
-*     is a valid object of a defined type.
-*  
-*     There are cases, where the type of a list cannot be verified, when the
-*     type of a sublist is set to CULL_ANY_SUBTYPE in the cull list definition.
-*     In this case, the list descriptor is not checked, but still all list
-*     objects and there sublists are verified.
-*
-*  INPUTS
-*     const lList *lp     - list to verify
-*     const lDescr *descr - expected descriptor (or nullptr, see above)
-*
-*  RESULT
-*     bool - true, if the object is OK, else false
-*
-*  NOTES
-*     MT-NOTE: object_list_verify_cull() is MT safe 
-*
-*  SEE ALSO
-*     sge_object/object_verify_cull()
-*     cull/list/lCompListDescr()
-*******************************************************************************/
+/**
+ * @brief Verify cull list structure
+ *
+ * Verifies that a cull list, including all its objects and sublists,
+ * is a valid object of a defined type.
+ *
+ * There are cases, where the type of a list cannot be verified, when the
+ * type of a sublist is set to CULL_ANY_SUBTYPE in the cull list definition.
+ * In this case, the list descriptor is not checked, but still all list
+ * objects and there sublists are verified.
+ *
+ * @param lp list to verify
+ * @param descr expected descriptor (or nullptr, see above)
+ *
+ * @return true, if the object is OK, else false
+ *
+ * @note MT-NOTE: object_list_verify_cull() is MT safe
+ *
+ * @see #object_verify_cull, `lCompListDescr()`
+ */
 bool
 object_list_verify_cull(const lList *lp, const lDescr *descr) {
    bool ret = true;
@@ -2009,38 +2025,27 @@ object_list_verify_cull(const lList *lp, const lDescr *descr) {
    return ret;
 }
 
-/****** sge_object/object_verify_cull() ****************************************
-*  NAME
-*     object_verify_cull() -- verify cull object structure
-*
-*  SYNOPSIS
-*     bool 
-*     object_verify_cull(const lListElem *ep, const lDescr *descr) 
-*
-*  FUNCTION
-*     Verifies that a cull object, including all its sublists and subobjects,
-*     is a valid object of a defined type.
-*  
-*     The type (descr) argument may be zero in two cases:
-*        - the descriptor has already been checked. This is the case when called
-*          from object_list_verify_cull().
-*        - we don't know the type of a subobject (if it is defined as 
-*          CULL_ANY_SUBTYPE in the cull object definition
-*
-*  INPUTS
-*     const lListElem *ep - the object to verify
-*     const lDescr *descr - expected object type, or nullptr (see above)
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     MT-NOTE: object_verify_cull() is MT safe 
-*
-*  SEE ALSO
-*     sge_object/object_verify_cull()
-*     cull/list/lCompListDescr()
-*******************************************************************************/
+/**
+ * @brief Verify cull object structure
+ *
+ * Verifies that a cull object, including all its sublists and subobjects,
+ * is a valid object of a defined type.
+ *
+ * The type (descr) argument may be zero in two cases:
+ *    - the descriptor has already been checked. This is the case when called
+ *      from object_list_verify_cull().
+ *    - we don't know the type of a subobject (if it is defined as
+ *      CULL_ANY_SUBTYPE in the cull object definition
+ *
+ * @param ep the object to verify
+ * @param descr expected object type, or nullptr (see above)
+ *
+ * @return true on success, else false
+ *
+ * @note MT-NOTE: object_verify_cull() is MT safe
+ *
+ * @see #object_verify_cull, `lCompListDescr()`
+ */
 bool
 object_verify_cull(const lListElem *ep, const lDescr *descr) {
    bool ret = true;
@@ -2093,33 +2098,21 @@ object_verify_cull(const lListElem *ep, const lDescr *descr) {
    return ret;
 }
 
-/****** sge_object/object_verify_ulong_not_null() ******************************
-*  NAME
-*     object_verify_ulong_not_null() -- verify ulong attribute not null
-*
-*  SYNOPSIS
-*     bool 
-*     object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, 
-*                                  int nm) 
-*
-*  FUNCTION
-*     Verify that a certain ulong attribute in an object is not 0
-*
-*  INPUTS
-*     const lListElem *ep - object to verify
-*     lList **answer_list - answer list to pass back error messages
-*     int nm              - the attribute to verify
-*
-*  RESULT
-*     bool - true on success,
-*            false on error with error message in answer_list
-*
-*  NOTES
-*     MT-NOTE: object_verify_ulong_not_null() is MT safe 
-*
-*  SEE ALSO
-*     sge_object/object_verify_string_not_null()
-*******************************************************************************/
+/**
+ * @brief Verify ulong attribute not null
+ *
+ * Verify that a certain ulong attribute in an object is not 0
+ *
+ * @param ep object to verify
+ * @param answer_list answer list to pass back error messages
+ * @param nm the attribute to verify
+ *
+ * @return true on success, false on error with error message in answer_list
+ *
+ * @note MT-NOTE: object_verify_ulong_not_null() is MT safe
+ *
+ * @see #object_verify_string_not_null
+ */
 bool
 object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
@@ -2133,6 +2126,22 @@ object_verify_ulong_not_null(const lListElem *ep, lList **answer_list, int nm) {
    return ret;
 }
 
+/**
+ * @brief Verify that a certain ulong64 attribute in an object is not 0
+ *
+ * @param ep object to verify
+ * @param[out] answer_list answer list to pass back error messages
+ * @param nm the attribute to verify
+ * @return true on success, false on error with error message in answer_list
+ *
+ * @warning Despite the name this reads the attribute with `lGetUlong`, not
+ *          `lGetUlong64`, and reports it with the 32 bit message. CULL aborts
+ *          on an accessor/type mismatch, so calling this on a real `lUlong64T`
+ *          attribute would not merely misreport - it would terminate the
+ *          component. The function currently has no callers.
+ *
+ * @note MT-NOTE: object_verify_ulong64_not_null() is MT safe
+ */
 bool
 object_verify_ulong64_not_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
@@ -2146,33 +2155,21 @@ object_verify_ulong64_not_null(const lListElem *ep, lList **answer_list, int nm)
    return ret;
 }
 
-/****** sge_object/object_verify_ulong_null() ******************************
-*  NAME
-*     object_verify_ulong_null() -- verify ulong attribute null
-*
-*  SYNOPSIS
-*     bool 
-*     object_verify_ulong_null(const lListElem *ep, lList **answer_list, 
-*                                  int nm) 
-*
-*  FUNCTION
-*     Verify that a certain ulong attribute in an object is 0
-*
-*  INPUTS
-*     const lListElem *ep - object to verify
-*     lList **answer_list - answer list to pass back error messages
-*     int nm              - the attribute to verify
-*
-*  RESULT
-*     bool - true on success,
-*            false on error with error message in answer_list
-*
-*  NOTES
-*     MT-NOTE: object_verify_ulong_null() is MT safe 
-*
-*  SEE ALSO
-*     sge_object/object_verify_string_not_null()
-*******************************************************************************/
+/**
+ * @brief Verify ulong attribute null
+ *
+ * Verify that a certain ulong attribute in an object is 0
+ *
+ * @param ep object to verify
+ * @param answer_list answer list to pass back error messages
+ * @param nm the attribute to verify
+ *
+ * @return true on success, false on error with error message in answer_list
+ *
+ * @note MT-NOTE: object_verify_ulong_null() is MT safe
+ *
+ * @see #object_verify_string_not_null
+ */
 bool
 object_verify_ulong_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
@@ -2186,6 +2183,16 @@ object_verify_ulong_null(const lListElem *ep, lList **answer_list, int nm) {
    return ret;
 }
 
+/**
+ * @brief Verify that a certain ulong64 attribute in an object is 0
+ *
+ * @param ep object to verify
+ * @param[out] answer_list answer list to pass back error messages
+ * @param nm the attribute to verify
+ * @return true on success, false on error with error message in answer_list
+ *
+ * @note MT-NOTE: object_verify_ulong64_null() is MT safe
+ */
 bool
 object_verify_ulong64_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
@@ -2199,33 +2206,21 @@ object_verify_ulong64_null(const lListElem *ep, lList **answer_list, int nm) {
    return ret;
 }
 
-/****** sge_object/object_verify_ulong_null() ******************************
-*  NAME
-*     object_verify_double_null() -- verify double attribute null
-*
-*  SYNOPSIS
-*     bool 
-*     object_verify_ulong_null(const lListElem *ep, lList **answer_list, 
-*                                  int nm) 
-*
-*  FUNCTION
-*     Verify that a certain double attribute in an object is 0
-*
-*  INPUTS
-*     const lListElem *ep - object to verify
-*     lList **answer_list - answer list to pass back error messages
-*     int nm              - the attribute to verify
-*
-*  RESULT
-*     bool - true on success,
-*            false on error with error message in answer_list
-*
-*  NOTES
-*     MT-NOTE: object_verify_double_null() is MT safe 
-*
-*  SEE ALSO
-*     sge_object/object_verify_string_not_null()
-*******************************************************************************/
+/**
+ * @brief Verify double attribute null
+ *
+ * Verify that a certain double attribute in an object is 0
+ *
+ * @param ep object to verify
+ * @param answer_list answer list to pass back error messages
+ * @param nm the attribute to verify
+ *
+ * @return true on success, false on error with error message in answer_list
+ *
+ * @note MT-NOTE: object_verify_double_null() is MT safe
+ *
+ * @see #object_verify_string_not_null
+ */
 bool
 object_verify_double_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
@@ -2239,33 +2234,21 @@ object_verify_double_null(const lListElem *ep, lList **answer_list, int nm) {
    return ret;
 }
 
-/****** sge_object/object_verify_string_not_null() *****************************
-*  NAME
-*     object_verify_string_not_null() -- verify string attribute not null
-*
-*  SYNOPSIS
-*     bool 
-*     object_verify_string_not_null(const lListElem *ep, lList **answer_list, 
-*                                   int nm) 
-*
-*  FUNCTION
-*     Verifies that a string attribute of a certain object is not nullptr.
-*
-*  INPUTS
-*     const lListElem *ep - the object to verify
-*     lList **answer_list - answer list to pass back error messages
-*     int nm              - the attribute to verify
-*
-*  RESULT
-*     bool - true on success,
-*            false on error with error message in answer_list
-*
-*  NOTES
-*     MT-NOTE: object_verify_string_not_null() is MT safe 
-*
-*  SEE ALSO
-*     sge_object/object_verify_ulong_not_null()
-*******************************************************************************/
+/**
+ * @brief Verify string attribute not null
+ *
+ * Verifies that a string attribute of a certain object is not nullptr.
+ *
+ * @param ep the object to verify
+ * @param answer_list answer list to pass back error messages
+ * @param nm the attribute to verify
+ *
+ * @return true on success, false on error with error message in answer_list
+ *
+ * @note MT-NOTE: object_verify_string_not_null() is MT safe
+ *
+ * @see #object_verify_ulong_not_null
+ */
 bool
 object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm) {
    bool ret = true;
@@ -2279,30 +2262,18 @@ object_verify_string_not_null(const lListElem *ep, lList **answer_list, int nm) 
    return ret;
 }
 
-/****** sge_object/object_verify_expression_syntax() *****************************
-*  NAME
-*     object_verify_expression_syntax() -- verify string attribute expression syntax
-*
-*  SYNOPSIS
-*     bool 
-*     object_verify_expression_syntax(const lListElem *ep, lList **answer_list) 
-*
-*  FUNCTION
-*     Verifies that a string is expression in correct format.
-*
-*  INPUTS
-*     const lListElem *ep - the object to verify
-*     lList **answer_list - answer list to pass back error messages
-*
-*  RESULT
-*     bool - true on success,
-*            false on error with error message in answer_list
-*
-*  NOTES
-*     MT-NOTE: object_verify_expression_syntax() is MT safe 
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Verify string attribute expression syntax
+ *
+ * Verifies that a string is expression in correct format.
+ *
+ * @param elem the object to verify
+ * @param answer_list answer list to pass back error messages
+ *
+ * @return true on success, false on error with error message in answer_list
+ *
+ * @note MT-NOTE: object_verify_expression_syntax() is MT safe
+ */
 bool
 object_verify_expression_syntax(const lListElem *elem, lList **answer_list) {
    bool ret = true;
@@ -2323,30 +2294,25 @@ object_verify_expression_syntax(const lListElem *elem, lList **answer_list) {
 }
 
 
-/****** sge_object/object_verify_name() *****************************************
-*  NAME
-*     object_verify_name() - verifies object name
-*
-*  SYNOPSIS
-*     int object_verify_name(const lListElem *object, lList **alpp, int name, object_descr) 
-*
-*  FUNCTION
-*     These checks are done for the attribute JB_object_name of 'object':
-*     #1 reject object name if it starts with a digit
-*     A detailed problem description is added to the answer list.
-*
-*  INPUTS
-*     const lListElem *object  - JB_Type elemente
-*     lList **alpp             - the answer list
-*     int   name               - object name  
-*     char *object_descr       - used for the text in the answer list 
-*
-*  RESULT
-*     int - returns != 0 if there is a problem with the object name
-*
-*  MT-NOTE: sge_resolve_host() is MT safe
-*
-******************************************************************************/
+/**
+ * @brief Verify that a name attribute is usable as an object name
+ *
+ * Two checks are applied to the attribute:
+ *
+ * 1. the name must not start with a digit, and
+ * 2. it must pass the general key check for the qsub character table.
+ *
+ * A detailed problem description is added to the answer list. An attribute
+ * that is not set at all passes.
+ *
+ * @param object the element carrying the name
+ * @param[out] answer_list receives the problem description
+ * @param name the attribute holding the object name
+ *
+ * @return 0 when the name is usable, otherwise `STATUS_EUNKNOWN`
+ *
+ * @note MT-NOTE: object_verify_name() is MT safe
+ */
 int
 object_verify_name(const lListElem *object, lList **answer_list, int name) {
    DENTER(TOP_LAYER);
@@ -2369,33 +2335,22 @@ object_verify_name(const lListElem *object, lList **answer_list, int name) {
 }
 
 
-/****** sge_object/object_verify_pe_range() **********************************
-*  NAME
-*     object_verify_pe_range() -- Verify validness of a jobs PE range request
-*
-*  SYNOPSIS
-*     int object_verify_pe_range(lList **alpp, const char *pe_name,
-*     lList *pe_range)
-*
-*  FUNCTION
-*     Verifies a jobs PE range is valid. Currently the following is done
-*     - make PE range list normalized and ascending
-*     - ensure PE range min/max not 0
-*     - in case multiple PEs match the PE request in GEEE ensure
-*       the urgency slots setting is non-ambiguous
-*
-*  INPUTS
-*     lList **alpp        - Returns answer list with error context.
-*     const char *pe_name - PE request
-*     lList *pe_range     - PE range to be verified
-*     const char *object_descr - object description for user messages
-*
-*  RESULT
-*     static int - STATUS_OK on success
-*
-*  NOTES
-*
-*******************************************************************************/
+/**
+ * @brief Verify validness of a jobs PE range request
+ *
+ * Verifies a jobs PE range is valid. Currently the following is done
+ * - make PE range list normalized and ascending
+ * - ensure PE range min/max not 0
+ * - in case multiple PEs match the PE request in GEEE ensure
+ *   the urgency slots setting is non-ambiguous
+ *
+ * @param alpp Returns answer list with error context.
+ * @param pe_name PE request
+ * @param pe_range PE range to be verified
+ * @param object_descr object description for user messages
+ *
+ * @return STATUS_OK on success
+ */
 int
 object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const char *object_descr) {
    DENTER(TOP_LAYER);
@@ -2436,29 +2391,19 @@ object_verify_pe_range(lList **alpp, const char *pe_name, lList *pe_range, const
    DRETURN(STATUS_OK);
 }
 
-/****** sge_objectcompress_ressources() **********************************
-*  NAME
-*     compress_ressources() --  remove multiple requests for one resource
-*
-*  SYNOPSIS
-*     int compress_ressources(lList **alpp, lList *rl, const char *object_descr )
-*
-*  FUNCTION
-*     remove multiple requests for one resource
-*     this can't be done fully in clients without having complex definitions
-*     -l arch=linux -l a=sun4
-*
-*  INPUTS
-*     lList **alpp        - Returns answer list with error context.
-*     lList *rl           - object description for user messages
-*     const char *object_descr - object description 
-*
-*  RESULT
-*     static int - 0 on success
-*
-*  NOTES
-*
-*******************************************************************************/
+/**
+ * @brief Remove multiple requests for one resource
+ *
+ * remove multiple requests for one resource
+ * this can't be done fully in clients without having complex definitions
+ * -l arch=linux -l a=sun4
+ *
+ * @param alpp Returns answer list with error context.
+ * @param rl object description for user messages
+ * @param object_descr object description
+ *
+ * @return 0 on success
+ */
 int compress_ressources(lList **alpp, lList *rl, const char *object_descr) {
    DENTER(TOP_LAYER);
    const lListElem *ep;
@@ -2491,35 +2436,24 @@ int compress_ressources(lList **alpp, lList *rl, const char *object_descr) {
    DRETURN(0);
 }
 
-/****** sge_object/object_unpack_elem_verify() *********************************
-*  NAME
-*     object_unpack_elem_verify() -- unpack and verify an object
-*
-*  SYNOPSIS
-*     bool 
-*     object_unpack_elem_verify(lList **answer_list, sge_pack_buffer *pb, 
-*                               lListElem **epp, const lDescr *descr) 
-*
-*  FUNCTION
-*     Unpacks the given packbuffer.
-*     If unpacking was successful, verifies the object
-*     against the given descriptor.
-*
-*  INPUTS
-*     lList **answer_list - answer list to report errors
-*     sge_pack_buffer *pb - the packbuffer containing the object
-*     lListElem **epp     - element pointer to pass back the unpacked object
-*     const lDescr *descr - the expected object type
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     MT-NOTE: object_unpack_elem_verify() is MT safe 
-*
-*  SEE ALSO
-*     sge_object/object_verify_cull()
-*******************************************************************************/
+/**
+ * @brief Unpack and verify an object
+ *
+ * Unpacks the given packbuffer.
+ * If unpacking was successful, verifies the object
+ * against the given descriptor.
+ *
+ * @param answer_list answer list to report errors
+ * @param pb the packbuffer containing the object
+ * @param epp element pointer to pass back the unpacked object
+ * @param descr the expected object type
+ *
+ * @return true on success, else false
+ *
+ * @note MT-NOTE: object_unpack_elem_verify() is MT safe
+ *
+ * @see #object_verify_cull
+ */
 bool object_unpack_elem_verify(lList **answer_list, sge_pack_buffer *pb, lListElem **epp, const lDescr *descr) {
    DENTER(TOP_LAYER);
    bool ret = true;

@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Load Report
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -58,11 +62,11 @@
 */
 
 enum {
-   LR_name = LR_LOWERBOUND,
-   LR_value,
-   LR_global,
-   LR_is_static,
-   LR_host
+   LR_name = LR_LOWERBOUND,   ///< Load Variable Name
+   LR_value,   ///< Load Variable Value
+   LR_global,   ///< Is Global
+   LR_is_static,   ///< Is Static
+   LR_host   ///< Host Name
 };
 
 LISTDEF(LR_Type)
@@ -81,6 +85,7 @@ NAMEDEF(LRN)
    NAME("LR_host")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define LR_SIZE sizeof(LRN)/sizeof(char *)
 
 

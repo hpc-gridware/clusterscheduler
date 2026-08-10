@@ -35,6 +35,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Localisable message catalogue of qmaster
+ */
+
 
 #include "uti/sge_string.h"
 

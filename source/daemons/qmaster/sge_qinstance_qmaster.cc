@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Queue instances: the state a queue has on one host
+ */
+
 #include <cstdio>
 #include <cstring>
 
@@ -71,24 +75,59 @@
 #include "sge_advance_reservation_qmaster.h"
 #include "msg_qmaster.h"
 
+/** @brief One row of the table driving a queue instance state change
+ *
+ * A `qmod` command is a transition, and each transition is described by which
+ * state it looks at, what that state has to be for the command to apply, and
+ * what to set it to. Adding a state means adding a row rather than another
+ * branch in the command handler.
+ */
 typedef struct {
-   uint32_t transition;
-   long state_mask;
+   uint32_t transition;   ///< The `qmod` transition this row applies to
+   long state_mask;       ///< The state bit it concerns
 
-   bool (*has_state)(const lListElem *this_elem);
+   bool (*has_state)(const lListElem *this_elem);   ///< Reads that state from a queue instance
 
-   bool is;
+   bool is;               ///< What #has_state must return for this row to apply
 
-   bool (*set_state)(lListElem *this_elem, bool set, uint64_t gdi_session);
+   bool (*set_state)(lListElem *this_elem, bool set, uint64_t gdi_session);   ///< Writes that state
 
-   bool set;
-   const char *success_msg;
+   bool set;              ///< What #set_state is called with
+   const char *success_msg;   ///< What to report when the transition worked
 } change_state_t;
 
 static bool
 qinstance_change_state_on_calender_(lListElem *qi_elem, uint32_t cal_order,
                                     lList **state_change_list, monitoring_t *monitor, uint64_t gdi_session);
 
+/** @brief Resolve one cluster queue attribute down to this queue instance
+ *
+ * A cluster queue configures an attribute per host or host group, and a queue
+ * instance has to end up with exactly one value. Where two host groups both
+ * match and disagree, the instance becomes *ambiguous* rather than picking
+ * one - that is what @p is_ambiguous reports.
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param answer_list receives messages for the caller
+ * @param cqueue the cluster queue the value comes from
+ * @param attribute_name the queue instance field being set
+ * @param cqueue_attibute_name the cluster queue field it comes from
+ * @param sub_host_name the field holding the host name in the configured list
+ * @param sub_value_name the field holding the value in that list
+ * @param subsub_key the key field of a sublist value
+ * @param[out] matching_host_or_group receives what the value was matched by
+ * @param[out] matching_group receives the host group, when it was one
+ * @param[out] is_ambiguous receives whether two groups disagreed
+ * @param[out] has_changed_conf_attr receives whether a configuration attribute changed
+ * @param[out] has_changed_state_attr receives whether a state attribute changed
+ * @param initial_modify whether the queue instance is being created
+ * @param[out] need_reinitialize receives whether the instance has to be rebuilt
+ * @param monitor for monitoring qmaster threads
+ * @param master_hgroup_list the host groups, to resolve `@group`
+ * @param master_cqueue_list the cluster queues
+ * @param gdi_session the session the change belongs to
+ * @return true on success
+ */
 bool
 qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lListElem *cqueue,
                            int attribute_name, int cqueue_attibute_name, int sub_host_name, int sub_value_name,
@@ -641,6 +680,23 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
    DRETURN(ret);
 }
 
+/** @brief Apply a `qmod` command to one queue instance
+ *
+ * Walks the #change_state_t table to find the row for this transition, checks
+ * that the caller is allowed to make it, and reports what happened.
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param answer_list receives messages for the caller
+ * @param transition which `qmod` transition was asked for
+ * @param force_transition whether to force it through
+ * @param user the requesting user
+ * @param host the requesting host
+ * @param is_operator whether the user is an operator
+ * @param is_owner whether the user owns the queue
+ * @param monitor for monitoring qmaster threads
+ * @param gdi_session the session the change belongs to
+ * @return true when the transition was made
+ */
 bool
 qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
                                   uint32_t transition, bool force_transition, const char *user, const char *host,
@@ -770,28 +826,20 @@ qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
 }
 
 
-/****** sge_qinstance_qmaster/qinstance_change_state_on_calendar() *************
-*  NAME
-*     qinstance_change_state_on_calendar() --- changes the state of a given qi (wraper)
-*
-*  SYNOPSIS
-*     bool qinstance_change_state_on_calendar(lListElem *this_elem, const 
-*     lListElem *calendar) 
-*
-*  FUNCTION
-*     Changes the state of a given qi based on its calendar.
-*
-*  INPUTS
-*     lListElem *this_elem      - quinstance
-*     const lListElem *calendar - calendar
-*
-*  RESULT
-*     bool - state got changed or not
-*
-*  NOTES
-*     MT-NOTE: qinstance_change_state_on_calendar() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief - changes the state of a given qi (wraper)
+ *
+ * Changes the state of a given qi based on its calendar.
+ *
+ * @param this_elem quinstance
+ * @param calendar calendar
+ * @param monitor for monitoring qmaster threads
+ * @param gdi_session the session the change belongs to
+ *
+ * @return state got changed or not
+ *
+ * @note MT-NOTE: qinstance_change_state_on_calendar() is MT safe
+ */
 bool
 qinstance_change_state_on_calendar(lListElem *this_elem, const lListElem *calendar, monitoring_t *monitor, uint64_t gdi_session) {
    bool ret = true;
@@ -811,30 +859,20 @@ qinstance_change_state_on_calendar(lListElem *this_elem, const lListElem *calend
    DRETURN(ret);
 }
 
-/****** sge_qinstance_qmaster/qinstance_change_state_on_calendar_all() *********
-*  NAME
-*     qinstance_change_state_on_calendar_all() -- changes the state of all qis (wraper)
-*
-*  SYNOPSIS
-*     bool qinstance_change_state_on_calendar_all(const char* cal_name, 
-*     uint32_t cal_order, const lList *state_change_list)
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     const char* cal_name     - calendar name
-*     uint32_t cal_order       - calendar state (todo)
-*     const lList *state_change_list - state list for the qis
-*
-*  RESULT
-*     bool - true, if it worked
-*
-*  NOTES
-*     MT-NOTE: qinstance_change_state_on_calendar_all() is not MT safe 
-*     Directly access the cluster queue list
-*
-*******************************************************************************/
+/**
+ * @brief Changes the state of all qis (wraper)
+ *
+ * @param cal_name calendar name
+ * @param cal_order calendar state (todo)
+ * @param state_change_list state list for the qis
+ * @param monitor for monitoring qmaster threads
+ * @param gdi_session the session the change belongs to
+ *
+ * @return true, if it worked
+ *
+ * @note MT-NOTE: qinstance_change_state_on_calendar_all() is not MT safe
+ *       Directly access the cluster queue list
+ */
 bool
 qinstance_change_state_on_calendar_all(const char *cal_name, uint32_t cal_order,
                                        const lList *state_change_list, monitoring_t *monitor, uint64_t gdi_session) {
@@ -857,29 +895,17 @@ qinstance_change_state_on_calendar_all(const char *cal_name, uint32_t cal_order,
    DRETURN(ret);
 }
 
-/****** sge_qinstance_qmaster/qinstance_change_state_on_calender_() ************
-*  NAME
-*     qinstance_change_state_on_calender_() -- changes qi state based on calendar
-*
-*  SYNOPSIS
-*     static bool qinstance_change_state_on_calender_(lListElem *this_elem, 
-*     uint32_t cal_order, lList **state_change_list)
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     lListElem *this_elem     - qi
-*     uint32_t cal_order       - next state (order)
-*     lList **state_change_list - qi state list
-*
-*  RESULT
-*     static bool - true, if it worked
-*
-*  NOTES
-*     MT-NOTE: qinstance_change_state_on_calender_() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Changes qi state based on calendar
+ *
+ * @param this_elem qi
+ * @param cal_order next state (order)
+ * @param state_change_list qi state list
+ *
+ * @return true, if it worked
+ *
+ * @note MT-NOTE: qinstance_change_state_on_calender_() is MT safe
+ */
 static bool qinstance_change_state_on_calender_(lListElem *this_elem, uint32_t cal_order,
                                                 lList **state_change_list, monitoring_t *monitor, uint64_t gdi_session) {
    bool ret = true;
@@ -925,6 +951,15 @@ static bool qinstance_change_state_on_calender_(lListElem *this_elem, uint32_t c
    DRETURN(ret);
 }
 
+/** @brief Mark a queue instance as disabled by an administrator, or no longer so
+ *
+ * Announces the change to the event clients when the state actually moved.
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param set_state true to set the state, false to clear it
+ * @param gdi_session the session the change belongs to
+ * @return true when the state changed
+ */
 bool
 sge_qmaster_qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_state, uint64_t gdi_session) {
    bool changed;
@@ -938,6 +973,15 @@ sge_qmaster_qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_s
    return changed;
 }
 
+/** @brief Mark a queue instance as suspended by an administrator, or no longer so
+ *
+ * Announces the change to the event clients when the state actually moved.
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param set_state true to set the state, false to clear it
+ * @param gdi_session the session the change belongs to
+ * @return true when the state changed
+ */
 bool
 sge_qmaster_qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_state, uint64_t gdi_session) {
    bool changed;
@@ -952,6 +996,15 @@ sge_qmaster_qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_
    return changed;
 }
 
+/** @brief Mark a queue instance as unreachable, because its execution host stopped answering, or no longer so
+ *
+ * Announces the change to the event clients when the state actually moved.
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param set_state true to set the state, false to clear it
+ * @param gdi_session the session the change belongs to
+ * @return true when the state changed
+ */
 bool
 sge_qmaster_qinstance_state_set_unknown(lListElem *this_elem, bool set_state, uint64_t gdi_session) {
    bool changed;
@@ -971,6 +1024,15 @@ sge_qmaster_qinstance_state_set_unknown(lListElem *this_elem, bool set_state, ui
    return changed;
 }
 
+/** @brief Mark a queue instance as in error state, because a job could not be started there, or no longer so
+ *
+ * Announces the change to the event clients when the state actually moved.
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param set_state true to set the state, false to clear it
+ * @param gdi_session the session the change belongs to
+ * @return true when the state changed
+ */
 bool
 sge_qmaster_qinstance_state_set_error(lListElem *this_elem, bool set_state, uint64_t gdi_session) {
    bool changed;
@@ -985,6 +1047,15 @@ sge_qmaster_qinstance_state_set_error(lListElem *this_elem, bool set_state, uint
    return changed;
 }
 
+/** @brief Mark a queue instance as suspended by a subordinate relationship, or no longer so
+ *
+ * Announces the change to the event clients when the state actually moved.
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param set_state true to set the state, false to clear it
+ * @param gid_session the session the change belongs to
+ * @return true when the state changed
+ */
 bool
 sge_qmaster_qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state, uint64_t gid_session) {
    bool changed;
@@ -996,6 +1067,15 @@ sge_qmaster_qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state
    return changed;
 }
 
+/** @brief Mark a queue instance as disabled by its calendar, or no longer so
+ *
+ * Announces the change to the event clients when the state actually moved.
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param set_state true to set the state, false to clear it
+ * @param gid_session the session the change belongs to
+ * @return true when the state changed
+ */
 bool
 sge_qmaster_qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_state, uint64_t gid_session) {
    bool changed;
@@ -1007,6 +1087,13 @@ sge_qmaster_qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_stat
    return changed;
 }
 
+/** @brief Mark a queue instance as suspended by its calendar, or no longer so
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param set_state true to set the state, false to clear it
+ * @param gid_session the session the change belongs to
+ * @return true when the state changed
+ */
 bool
 sge_qmaster_qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_state, uint64_t gid_session) {
    bool changed;
@@ -1018,6 +1105,13 @@ sge_qmaster_qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_sta
    return changed;
 }
 
+/** @brief Mark a queue instance as orphaned - deleted but still holding jobs
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param set_state true to set the state, false to clear it
+ * @param gid_session the session the change belongs to
+ * @return true when the state changed
+ */
 bool
 sge_qmaster_qinstance_state_set_orphaned(lListElem *this_elem, bool set_state, uint64_t gid_session) {
    bool changed;
@@ -1029,6 +1123,15 @@ sge_qmaster_qinstance_state_set_orphaned(lListElem *this_elem, bool set_state, u
    return changed;
 }
 
+/** @brief Mark a queue instance as ambiguously configured, so it cannot be used, or no longer so
+ *
+ * Announces the change to the event clients when the state actually moved.
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param set_state true to set the state, false to clear it
+ * @param gid_session the session the change belongs to
+ * @return true when the state changed
+ */
 bool
 sge_qmaster_qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state, uint64_t gid_session) {
    bool changed;
@@ -1044,6 +1147,16 @@ sge_qmaster_qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state, 
 }
 
 /* ret: did the state change */
+/** @brief Put a newly created queue instance into the state its configuration asks for
+ *
+ * A queue may be configured to start out disabled, and a calendar may already
+ * apply to it, so the state is not simply "enabled" at creation.
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param gdi_session the session the change belongs to
+ *
+ * @return true if the initial configuration changed the state
+ */
 bool
 sge_qmaster_qinstance_set_initial_state(lListElem *this_elem, uint64_t gdi_session) {
    bool ret = false;
@@ -1066,30 +1179,18 @@ sge_qmaster_qinstance_set_initial_state(lListElem *this_elem, uint64_t gdi_sessi
    DRETURN(ret);
 }
 
-/****** daemons/qmaster/qinstance_reinit_consumable_actual_list() ************
-*  NAME
-*     qinstance_reinit_consumable_actual_list() -- as it says 
-*
-*  SYNOPSIS
-*     static bool 
-*     qinstance_reinit_consumable_actual_list(lListElem *this_elem, 
-*                                             lList **answer_list) 
-*
-*  FUNCTION
-*     Reinitialize the consumable actual values. 
-*
-*  INPUTS
-*     lListElem *this_elem - QU_Type element 
-*     lList **answer_list  - AN_Type element 
-*
-*  RESULT
-*     static bool - error result
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: qinstance_reinit_consumable_actual_list() is MT safe 
-*******************************************************************************/
+/**
+ * @brief As it says
+ *
+ * Reinitialize the consumable actual values.
+ *
+ * @param this_elem QU_Type element
+ * @param answer_list AN_Type element
+ *
+ * @return error result true  - success false - error
+ *
+ * @note MT-NOTE: qinstance_reinit_consumable_actual_list() is MT safe
+ */
 bool
 qinstance_reinit_consumable_actual_list(lListElem *this_elem,
                                         lList **answer_list) {

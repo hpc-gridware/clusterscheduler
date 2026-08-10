@@ -51,9 +51,6 @@
 
 void log_state_set_log_level(uint32_t);
 
-/** @brief Set the file log messages are written to
- * @param file path of the message file
- */
 void log_state_set_log_file(const char *file);
 
 void log_state_set_log_verbose(int i);
@@ -66,15 +63,6 @@ const char *log_state_get_log_file();
 
 int log_state_get_log_verbose();
 
-/** @brief Write one message to the message file and, when verbose, to stderr
- *
- * Called by the logging macros; use those rather than this directly.
- *
- * @param log_level severity, one of the `LOG_*` values
- * @param msg the message text
- * @param file source file the message originates from
- * @param line source line the message originates from
- */
 void
 sge_log(int log_level, const char *msg, const char *file, int line);
 

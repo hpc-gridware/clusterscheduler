@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Object containing scheduler configuration attributes
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -150,42 +154,42 @@
 */
 
 enum {
-   SC_algorithm = SC_LOWERBOUND,
-   SC_schedule_interval,
-   SC_maxujobs,
-   SC_queue_sort_method,
-   SC_job_load_adjustments,
-   SC_load_adjustment_decay_time,
-   SC_load_formula,
-   SC_schedd_job_info,
-   SC_flush_submit_sec,
-   SC_flush_finish_sec,
-   SC_params,
-   SC_reprioritize_interval,
-   SC_halftime,
-   SC_usage_weight_list,
-   SC_compensation_factor,
-   SC_weight_user,
-   SC_weight_project,
-   SC_weight_department,
-   SC_weight_job,
-   SC_weight_tickets_functional,
-   SC_weight_tickets_share,
-   SC_weight_tickets_override,
-   SC_share_override_tickets,
-   SC_share_functional_shares,
-   SC_max_functional_jobs_to_schedule,
-   SC_report_pjob_tickets,
-   SC_max_pending_tasks_per_job,
-   SC_halflife_decay_list,
-   SC_policy_hierarchy,
-   SC_weight_ticket,
-   SC_weight_waiting_time,
-   SC_weight_deadline,
-   SC_weight_urgency,
-   SC_weight_priority,
-   SC_max_reservation,
-   SC_default_duration
+   SC_algorithm = SC_LOWERBOUND,   ///< Scheduler Algorithm
+   SC_schedule_interval,   ///< Scheduling Interval
+   SC_maxujobs,   ///< Maximum User Jobs
+   SC_queue_sort_method,   ///< Queue Sort Method
+   SC_job_load_adjustments,   ///< Job Load Adjustments
+   SC_load_adjustment_decay_time,   ///< Load Adjustment Decay Time
+   SC_load_formula,   ///< Load Formula
+   SC_schedd_job_info,   ///< Schedd Job Info
+   SC_flush_submit_sec,   ///< Flush Submit Sec
+   SC_flush_finish_sec,   ///< Flush Finish Sec
+   SC_params,   ///< Params
+   SC_reprioritize_interval,   ///< Reprioritize Interval
+   SC_halftime,   ///< Halftime
+   SC_usage_weight_list,   ///< Usage Weight List
+   SC_compensation_factor,   ///< Compensation Factor
+   SC_weight_user,   ///< Weight User
+   SC_weight_project,   ///< Weight Project
+   SC_weight_department,   ///< Weight Department
+   SC_weight_job,   ///< Weight Job
+   SC_weight_tickets_functional,   ///< Weight Tickets Functional
+   SC_weight_tickets_share,   ///< Weight Tickets Share
+   SC_weight_tickets_override,   ///< Weight Tickets Override
+   SC_share_override_tickets,   ///< Share Override Tickets
+   SC_share_functional_shares,   ///< Share Functional Shares
+   SC_max_functional_jobs_to_schedule,   ///< Max Functional Jobs to Schedule
+   SC_report_pjob_tickets,   ///< Report Pending Job Tickets
+   SC_max_pending_tasks_per_job,   ///< Maximum Pending Tasks Per Job
+   SC_halflife_decay_list,   ///< Halflife Decay List
+   SC_policy_hierarchy,   ///< Policy Hierarchy
+   SC_weight_ticket,   ///< Weight Ticket
+   SC_weight_waiting_time,   ///< Weight Waiting Time
+   SC_weight_deadline,   ///< Weight Deadline
+   SC_weight_urgency,   ///< Weight Urgency
+   SC_weight_priority,   ///< Weight Priority
+   SC_max_reservation,   ///< Maximum Number of Reservations
+   SC_default_duration   ///< Default Duration
 };
 
 LISTDEF(SC_Type)
@@ -266,6 +270,7 @@ NAMEDEF(SCN)
    NAME("SC_default_duration")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define SC_SIZE sizeof(SCN)/sizeof(char *)
 
 

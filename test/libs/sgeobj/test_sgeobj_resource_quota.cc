@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for resource quota in `libs/sgeobj`
+ */
+
 #include <cstdio>
 
 #include "uti/sge_rmon_macros.h"
@@ -30,19 +34,29 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_resource_quota.h"
 
+/** @brief The six filter parts of a resource quota rule, as written in the configuration
+ *
+ * Each is the text that would appear after `users`, `projects` and so on in a
+ * `qconf -mrqs` rule - a list, possibly negated, possibly `*`.
+ */
 typedef struct {
-   const char* users;
-   const char* group;
-   const char* projects;
-   const char* pes;
-   const char* hosts;
-   const char* queues;
+   const char* users;      ///< the `users` part
+   const char* group;      ///< the group part of `users`
+   const char* projects;   ///< the `projects` part
+   const char* pes;        ///< the `pes` part
+   const char* hosts;      ///< the `hosts` part
+   const char* queues;     ///< the `queues` part
 } filter_t;
 
+/** @brief One matching test: does a rule apply to a given request?
+ *
+ * The point of the table is the *pair*: `rule` is what an administrator wrote,
+ * `query` is what a job asks for, and the test checks whether the two match.
+ */
 typedef struct {
-   filter_t    rule;
-   filter_t    query;
-   const char* label;
+   filter_t    rule;    ///< the rule as configured
+   filter_t    query;   ///< the request to match against it
+   const char* label;   ///< what this pair is checking, printed on failure
 } filter_test_t;
 
 // ---------------------------------------------------------------------------
@@ -51,6 +65,16 @@ typedef struct {
 
 static int s_fail = 0;
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \

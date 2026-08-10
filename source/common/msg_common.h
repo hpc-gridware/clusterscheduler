@@ -35,6 +35,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Message strings shared by more than one program
+ */
+
 #include "uti/sge_string.h"
 
 // clang-format off

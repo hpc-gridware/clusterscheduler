@@ -33,54 +33,87 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations and attribute positions of the user and project objects
+ *
+ * @see sge_userprj.cc
+ */
+
 #include "sgeobj/cull/sge_userprj_PR_L.h"
 #include "sgeobj/cull/sge_userprj_UU_L.h"
 #include "sgeobj/cull/sge_userprj_UPU_L.h"
 #include "sgeobj/cull/sge_userprj_UPP_L.h"
 
-// make sure that the following enum is in sync with libs/sgeobj/json/UU.json
+/**
+ * @brief The position of each attribute within the object
+ *
+ * Reading by position skips the lookup by name, which pays off where the
+ * same attribute is read for every element of a long list.
+ *
+ * @warning Must stay in sync with `libs/sgeobj/json/UU.json`, which is what
+ *          the attribute order is generated from. A value inserted there and
+ *          not here makes every position below it read the wrong attribute.
+ */
 enum {
-   UU_name_POS = 0,
-   UU_oticket_POS,
-   UU_fshare_POS,
-   UU_delete_time_POS,
-   UU_job_cnt_POS,
-   UU_pending_job_cnt_POS,
-   UU_usage_POS,
-   UU_usage_time_stamp_POS,
-   UU_usage_seqno_POS,
-   UU_long_term_usage_POS,
-   UU_project_POS,
-   UU_debited_job_usage_POS,
-   UU_default_project_POS,
-   UU_version_POS,
-   UU_consider_with_categories_POS
+   UU_name_POS = 0,                        ///< position of `UU_name`
+   UU_oticket_POS,                         ///< position of `UU_oticket`
+   UU_fshare_POS,                          ///< position of `UU_fshare`
+   UU_delete_time_POS,                     ///< position of `UU_delete_time`
+   UU_job_cnt_POS,                         ///< position of `UU_job_cnt`
+   UU_pending_job_cnt_POS,                 ///< position of `UU_pending_job_cnt`
+   UU_usage_POS,                           ///< position of `UU_usage`
+   UU_usage_time_stamp_POS,                ///< position of `UU_usage_time_stamp`
+   UU_usage_seqno_POS,                     ///< position of `UU_usage_seqno`
+   UU_long_term_usage_POS,                 ///< position of `UU_long_term_usage`
+   UU_project_POS,                         ///< position of `UU_project`
+   UU_debited_job_usage_POS,               ///< position of `UU_debited_job_usage`
+   UU_default_project_POS,                 ///< position of `UU_default_project`
+   UU_version_POS,                         ///< position of `UU_version`
+   UU_consider_with_categories_POS         ///< position of `UU_consider_with_categories`
 };
 
-// make sure that the following enum is in sync with libs/sgeobj/json/PR.json
+/**
+ * @brief The position of each attribute within the object
+ *
+ * Reading by position skips the lookup by name, which pays off where the
+ * same attribute is read for every element of a long list.
+ *
+ * @warning Must stay in sync with `libs/sgeobj/json/PR.json`, which is what
+ *          the attribute order is generated from. A value inserted there and
+ *          not here makes every position below it read the wrong attribute.
+ */
 enum {
-   PR_name_POS = 0,
-   PR_oticket_POS,
-   PR_fshare_POS,
-   PR_job_cnt_POS,
-   PR_pending_job_cnt_POS,
-   PR_usage_POS,
-   PR_usage_time_stamp_POS,
-   PR_usage_seqno_POS,
-   PR_long_term_usage_POS,
-   PR_project_POS,
-   PR_acl_POS,
-   PR_xacl_POS,
-   PR_debited_job_usage_POS,
-   PR_version_POS,
-   PR_consider_with_categories_POS
+   PR_name_POS = 0,                        ///< position of `PR_name`
+   PR_oticket_POS,                         ///< position of `PR_oticket`
+   PR_fshare_POS,                          ///< position of `PR_fshare`
+   PR_job_cnt_POS,                         ///< position of `PR_job_cnt`
+   PR_pending_job_cnt_POS,                 ///< position of `PR_pending_job_cnt`
+   PR_usage_POS,                           ///< position of `PR_usage`
+   PR_usage_time_stamp_POS,                ///< position of `PR_usage_time_stamp`
+   PR_usage_seqno_POS,                     ///< position of `PR_usage_seqno`
+   PR_long_term_usage_POS,                 ///< position of `PR_long_term_usage`
+   PR_project_POS,                         ///< position of `PR_project`
+   PR_acl_POS,                             ///< position of `PR_acl`
+   PR_xacl_POS,                            ///< position of `PR_xacl`
+   PR_debited_job_usage_POS,               ///< position of `PR_debited_job_usage`
+   PR_version_POS,                         ///< position of `PR_version`
+   PR_consider_with_categories_POS         ///< position of `PR_consider_with_categories`
 };
 
-// make sure that the following enum is in sync with libs/sgeobj/json/UPP.json
+/**
+ * @brief The position of each attribute within the object
+ *
+ * Reading by position skips the lookup by name, which pays off where the
+ * same attribute is read for every element of a long list.
+ *
+ * @warning Must stay in sync with `libs/sgeobj/json/UPP.json`, which is what
+ *          the attribute order is generated from. A value inserted there and
+ *          not here makes every position below it read the wrong attribute.
+ */
 enum {
-   UPP_name_POS = 0,
-   UPP_usage_POS,
-   UPP_long_term_usage_POS
+   UPP_name_POS = 0,                       ///< position of `UPP_name`
+   UPP_usage_POS,                          ///< position of `UPP_usage`
+   UPP_long_term_usage_POS                 ///< position of `UPP_long_term_usage`
 };
 
 lListElem *prj_list_locate(const lList *prj_list,

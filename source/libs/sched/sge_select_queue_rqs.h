@@ -33,6 +33,20 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Matching a job against the resource quota sets
+ *
+ * A resource quota rule limits a resource for a set of users, projects,
+ * hosts, queues or PEs, and the **first matching rule** of a rule set wins -
+ * which is why a rule can be *shadowed* by an earlier one and why the skip
+ * lists can be filled from a rule that matched.
+ *
+ * Unlike the object limits, a quota is not attached to the object being
+ * matched, so every candidate queue instance has to be checked against every
+ * enabled rule set; that is what the limit list cached in the assignment
+ * exists for.
+ */
+
 #include "sge_select_queue.h"
 
 /* parallel assignments */

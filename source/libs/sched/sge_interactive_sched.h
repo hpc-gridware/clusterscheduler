@@ -33,6 +33,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Immediate jobs - the ones that must run now or not at all
+ *
+ * A job submitted with `-now yes` (`qrsh`, `qlogin`, an immediate `qsub`) is
+ * not queued: if the scheduler cannot dispatch it in this run, it has to be
+ * removed and the submitter told so. This module produces those removal
+ * orders.
+ */
+
 #include "sge_orders.h"
 
 void remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remove_orders);

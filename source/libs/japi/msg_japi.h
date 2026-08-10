@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Message definitions of the JAPI library
+ */
+
 #include <cinttypes>
 
 #include "basis_types.h"

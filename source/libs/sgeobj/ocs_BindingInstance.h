@@ -19,18 +19,28 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief One concrete binding of a job to hardware
+ */
+
 #include <string>
 
 namespace ocs {
+   /**
+    * @brief Who acts on a binding once the job starts
+    *
+    * The request is the same in each case; what differs is who enforces it.
+    */
    class BindingInstance {
       BindingInstance() = default; // prevent instantiation
    public:
+      /// Who acts on the binding
       enum Instance {
-         UNINITIALIZED = 0,
-         NONE,
-         SET,
-         ENV,
-         PE,
+         UNINITIALIZED = 0, ///< not set; the request has not been parsed yet
+         NONE,              ///< nobody; no binding is applied
+         SET,               ///< the shepherd applies the cpuset itself; the default
+         ENV,               ///< only `$SGE_BINDING` is exported, and the job binds itself
+         PE,                ///< the binding is written into a rankfile for the parallel environment
       };
 
       static std::string to_string(Instance mode);

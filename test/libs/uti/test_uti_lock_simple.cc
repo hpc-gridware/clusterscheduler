@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for lock simple in `libs/uti`
+ */
+
 
 #include <unistd.h>
 #include <cstdio>
@@ -53,6 +57,9 @@ int get_thread_demand() {
    return (int) p;
 }
 
+/** @brief The function this test's threads run
+ * @return a pointer to the thread function
+ */
 void *(*get_thread_func())(void *anArg) {
    return thread_function;
 }

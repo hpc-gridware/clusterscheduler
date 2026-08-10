@@ -31,25 +31,26 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Maps an `SSTATE_*` code to the text that ends up in the job error message
+ */
 #include "execution_states.h"
 
 
 int shepherd_state = SSTATE_BEFORE_PROLOG;
 pid_t coshepherd_pid = -999;
 
-/*
-** NAME
-**   get_sstate_description
-** PARAMETER
-**   sstate    -    shepherd exit states
-** RETURN
-**   char *    -    description string
-**                  "invalid execution state" if exit state is unknown
-** EXTERNAL
-**
-** DESCRIPTION
-**   string description of execution exit states
-*/
+/** @brief The phrase naming the step an `SSTATE_*` value stands for
+ *
+ * The text is meant to be read as the tail of a sentence - "failed @em before
+ * @em job", "failed @em in @em prolog" - which is why the entries read as
+ * fragments rather than as complete descriptions.
+ *
+ * @param sstate a shepherd exit state
+ * @return the description, or `"invalid execution state"` for a value the
+ *         table does not know. Never `nullptr`.
+ */
 const char *
 get_sstate_description(int sstate) {
    unsigned int i;

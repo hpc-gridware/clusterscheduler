@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for host groups: named sets of hosts, written with a leading `@`
+ *
+ * @see sge_hgroup.cc
+ */
+
 #include "sgeobj/cull/sge_hgroup_HGRP_L.h"
 
 /* Reserved host groups backing the admin/submit host lists (CS-2438), the
@@ -46,8 +52,11 @@
  * (qconf -ah/-dh/-as/-ds) as well as the host group CLI; EXEC is derived from
  * the execution host list and is read-only for everyone, managers included.
  */
+/// The reserved host group holding every admin host
 #define ADMIN_HOSTGROUP    "@admin_hosts"
+/// The reserved host group holding every submit host
 #define SUBMIT_HOSTGROUP   "@submit_hosts"
+/// The reserved host group holding every execution host; read-only
 #define EXEC_HOSTGROUP     "@exec_hosts"
 
 bool hgroup_check_name(lList **answer_list, const char* name);
@@ -133,6 +142,11 @@ lListElem *
 hgroup_list_locate(const lList *this_list, const char *group);
 
 lList **
+/**
+ * @brief The host groups of the active data store
+ *
+ * @return a pointer to the master list of host groups
+ */
 hgroup_list_get_master_list();
 
 bool

@@ -24,24 +24,38 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Test Object
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of TEST
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   TEST_bool = 12800,
-   TEST_uint32,
-   TEST_uint64,
-   TEST_int,
-   TEST_long,
-   TEST_double,
-   TEST_host,
-   TEST_string,
-   TEST_ref,
-   TEST_obj_jb,
-   TEST_obj_any
+   TEST_bool = 12800,   ///< Boolean type attribute
+   TEST_uint32,   ///< uint32_t type attribute
+   TEST_uint64,   ///< uint64_t type attribute
+   TEST_int,   ///< int type attribute
+   TEST_long,   ///< long type attribute
+   TEST_double,   ///< double type attribute
+   TEST_host,   ///< host type attribute
+   TEST_string,   ///< string type attribute
+   TEST_ref,   ///< reference type attribute to store a pointer
+   TEST_obj_jb,   ///< object type attribute to store JB_Type an object
+   TEST_obj_any   ///< object type attribute to store any other object
 };
 
+/** @brief The attribute ids of TEST, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int TEST_Type[] = {
    TEST_bool,
    TEST_uint32,
@@ -57,6 +71,10 @@ constexpr const int TEST_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of TEST
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define TEST_ATTRIBUTES \
    {TEST_bool, "TEST_bool", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, true}, \
    {TEST_uint32, "TEST_uint32", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_NON_UNIQUE, true, true}, \

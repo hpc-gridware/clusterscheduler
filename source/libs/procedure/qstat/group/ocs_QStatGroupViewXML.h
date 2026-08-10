@@ -19,14 +19,28 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief XML rendering of `qstat -g c`
+ */
+
 #include <ostream>
 
 #include "ocs_QStatGroupViewBase.h"
 
 namespace ocs {
+   /** @brief Renders `qstat -g c` as XML
+    *
+    * Like the other XML views this one builds a CULL tree from the hook calls
+    * and lets the generic XML writer serialise it at the end.
+    *
+    * @ingroup libprocedure
+    */
    class QStatGroupViewXML : public QStatGroupViewBase {
-      lList *xml_elems = nullptr;
+      lList *xml_elems = nullptr;   ///< The cluster queues collected so far
    public:
+      /** @brief Build the XML view
+       * @param parameter the call's parameters
+       */
       explicit QStatGroupViewXML(const ProcedureParameter &parameter) : QStatGroupViewBase(parameter) {};
       ~QStatGroupViewXML() override { lFreeList(&xml_elems); }
 

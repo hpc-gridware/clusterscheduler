@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Talking to systemd: running as a service, and scoping the shepherds
+ */
+
 namespace ocs::execd {
 
    bool

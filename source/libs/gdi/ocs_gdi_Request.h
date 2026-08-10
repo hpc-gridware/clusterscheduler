@@ -49,34 +49,9 @@ namespace ocs::gdi {
       /// Wait until the answer to a request sent asynchronously has arrived
       void wait();
 
-      /**
-       * @brief Add a task to this request, and send it when asked to
-       *
-       * @param[out] alpp receives errors detected before sending
-       * @param mode @ref Mode::RECORD to only collect, @ref Mode::SEND to send now
-       * @param target which object list to act on
-       * @param cmd what to do
-       * @param sub_cmd modifiers refining @p cmd
-       * @param lp the objects to send
-       * @param cp which objects to act on, from `lWhere()`
-       * @param enp which fields to transfer, from `lWhat()`
-       * @param do_copy true to copy the arguments instead of taking them over
-       * @return the task id to pass to #get_response, or 0 on error
-       */
       int request(lList **alpp, Mode mode, Target target, Command cmd,
                   SubCommand, lList **lp, lCondition *cp, lEnumeration *enp, bool do_copy);
 
-      /**
-       * @brief Take one task's answer out of a sent request
-       *
-       * @param[out] alpp receives the answer list of that task
-       * @param cmd the command the task carried
-       * @param sub_cmd the modifiers the task carried
-       * @param target the target the task addressed
-       * @param id the task id #request returned
-       * @param[out] list receives the objects read back, if any
-       * @return true when the task succeeded
-       */
       bool get_response(lList **alpp, Command cmd, SubCommand, Target target, int id, lList **list) const;
    };
 }

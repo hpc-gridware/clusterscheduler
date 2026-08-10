@@ -32,6 +32,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Calendars: when a queue disables or suspends itself on its own
+ *
+ * A calendar is written as a `year` and a `week` specification, both parsed
+ * here into CULL lists. The scheduler then asks
+ * #calender_state_changes what the queue's state is now and when it changes
+ * next, so the timed event thread knows when to look again.
+ *
+ * @see sge_calendar.h
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cctype>
@@ -55,22 +66,24 @@
 #include "msg_qmaster.h"
 
 
+/// The tokens a calendar specification is made of
 enum {
-   DOT = 1,
-   COLON,
-   EQUAL_SIGN,
-   MINUS,
-   COMMA,
-   SPACE,
-   NUMBER,
-   STRING,
-   NO_TOKEN,
-   ERR_TOKEN
+   DOT = 1,              ///< a `.`
+   COLON,                ///< a `:`
+   EQUAL_SIGN,           ///< an `=`
+   MINUS,                ///< a `-`
+   COMMA,                ///< a `,`
+   SPACE,                ///< whitespace
+   NUMBER,               ///< a number
+   STRING,               ///< a word
+   NO_TOKEN,             ///< the input was exhausted
+   ERR_TOKEN             ///< not a token; the input could not be tokenized
 };
 
+/// One entry of the calendar parser's token table
 typedef struct {
-   int token;
-   const char *text;
+   int token;         ///< the token id the text stands for
+   const char *text;  ///< the text an administrator writes
 } token_set_t;
 
 
@@ -81,6 +94,13 @@ static token_set_t statev[] = {
    { -1, nullptr },
 };
 
+/**
+ * @brief Orders two calendar entries
+ *
+ * @param t1 the first entry
+ * @param t2 the second entry
+ * @return negative, zero or positive as `t1` sorts before, with or after `t2`
+ */
 typedef int (*cmp_func_t)(const lListElem *t1, const lListElem *t2); 
 
 static char old_error[1000];
@@ -387,38 +407,27 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
    DRETURN(QI_DO_ENABLE);
 }
 
-/****** sge_calendar/is_week_entry_active() ************************************
-*  NAME
-*     is_week_entry_active() -- computes the current queue state and the next change
-*
-*  SYNOPSIS
-*     static uint32_t is_week_entry_active(lListElem *tm, lListElem
-*     *week_entry, time_t *limit, int rec_count) 
-*
-*  FUNCTION
-*     Computes the current queue state based on its calendar setting. It also figures
-*     out how long this state lasts and when the next change will be. The function
-*     for the next change has a short comming, that it will generate an state end, when
-*     the current day changes. 
-*     Therefore this function calles itself recursivly, if such an event happens. It can
-*     only happen, when the callendar contains a state changes during a day. In Theory, it
-*     should not call itself more than 1 time. With the extra call, it should have found a
-*     new state change on the next day, or the day, when the next change comes.
-*
-*
-*  INPUTS
-*     lListElem *tm         - TM_Type - represeting now (time)
-*     lListElem *week_entry - CA_Type - calendar entries for the week setup
-*     time_t    *limit      - next state changea (0, if there is no further state change)
-*     int       rec_count   - current recoursion level
-*
-*  RESULT
-*     static uint32_t - the current state
-*
-*  NOTES
-*     MT-NOTE: is_week_entry_active() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Computes the current queue state and the next change
+ *
+ * Computes the current queue state based on its calendar setting. It also figures
+ * out how long this state lasts and when the next change will be. The function
+ * for the next change has a short comming, that it will generate an state end, when
+ * the current day changes.
+ * Therefore this function calles itself recursivly, if such an event happens. It can
+ * only happen, when the callendar contains a state changes during a day. In Theory, it
+ * should not call itself more than 1 time. With the extra call, it should have found a
+ * new state change on the next day, or the day, when the next change comes.
+ *
+ * @param tm TM_Type - represeting now (time)
+ * @param week_entry CA_Type - calendar entries for the week setup
+ * @param limit next state changea (0, if there is no further state change)
+ * @param rec_count current recoursion level
+ *
+ * @return the current state
+ *
+ * @note MT-NOTE: is_week_entry_active() is MT safe
+ */
 static uint32_t is_week_entry_active(lListElem *tm, lListElem *week_entry, time_t *limit, uint32_t *next_state, int rec_count) {
    uint32_t state;
    bool in_wday_range, in_daytime_range = false;
@@ -487,42 +496,30 @@ lListElem *tm,         TM_Type
 lListElem *year_entry, CA_Type 
 */
 
-/****** sge_calendar/is_year_entry_active() ************************************
-*  NAME
-*     is_year_entry_active() -- computes the current queue state and the next change
-*
-*  SYNOPSIS
-*     static uint32_t is_year_entry_active(lListElem *tm, lListElem
-*     *week_entry, time_t *limit) 
-*
-*  FUNCTION
-*     Computes the current queue state based on its calendar setting. It also figures
-*     out how long this state lasts and when the next change will be. The function
-*     for the next change has a short comming, that it will generate an state end, when
-*     the current day changes. 
-*     Therefore this function calles itself recursivly, if such an event happens. It can
-*     only happen, when the callendar contains a state changes during a day. In Theory, it
-*     should not call itself more than 1 time. With the extra call, it should have found a
-*     new state change on the next day, or the day, when the next change comes.
-*
-*     This function has problem, when two calendar entries overlap themselfs and one has
-*     day changes, the otherone has not. It will report those day changes, even though there
-*     are none. It makse a mistake in figuring out, which calendar setting is the more important
-*     one.
-*
-*
-*  INPUTS
-*     lListElem *tm         - TM_Type - represeting now (time)
-*     lListElem *week_entry - CA_Type - calendar entries for the week setup
-*     time_t *limit         - next state changea (0, if there is no further state change)
-*
-*  RESULT
-*     static uint32_t - the current state
-*
-*  NOTES
-*     MT-NOTE: is_week_entry_active() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Computes the current queue state and the next change
+ *
+ * Computes the current queue state based on its calendar setting. It also figures
+ * out how long this state lasts and when the next change will be. The function
+ * for the next change has a short comming, that it will generate an state end, when
+ * the current day changes.
+ * Therefore this function calles itself recursivly, if such an event happens. It can
+ * only happen, when the callendar contains a state changes during a day. In Theory, it
+ * should not call itself more than 1 time. With the extra call, it should have found a
+ * new state change on the next day, or the day, when the next change comes.
+ * This function has problem, when two calendar entries overlap themselfs and one has
+ * day changes, the otherone has not. It will report those day changes, even though there
+ * are none. It makse a mistake in figuring out, which calendar setting is the more important
+ * one.
+ *
+ * @param tm TM_Type - represeting now (time)
+ * @param week_entry CA_Type - calendar entries for the week setup
+ * @param limit next state changea (0, if there is no further state change)
+ *
+ * @return the current state
+ *
+ * @note MT-NOTE: is_week_entry_active() is MT safe
+ */
 static uint32_t is_year_entry_active(lListElem *tm, lListElem *year_entry, time_t *limit) {
    uint32_t state;
    bool in_yday_range, in_daytime_range = false;
@@ -572,37 +569,25 @@ static uint32_t is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
 }
 
 
-/****** sge_calendar/calender_state_changes() **********************************
-*  NAME
-*     calender_state_changes() -- calendar states and calendar state list
-*
-*  SYNOPSIS
-*     uint32_t calender_state_changes(const lListElem *cep, lList
-*     **state_changes_list, uint64_t *when)
-*
-*  FUNCTION
-*   Computes the current state and generates a calendar state list. Right now it
-*   only does it for the current state and the next state. But it could be extended
-*   to handle more states.
-*
-*  Based on the shortcomings of the methods it is using, it has to check, wether they
-*  reported a state change and if not, call the methods again with a new time stamp. It
-*  is starting with now and goes into the future, based on the reported state changes.
-*
-*  INPUTS
-*     const lListElem *cep       - (in) calendar (CAL_Type)
-*     lList **state_changes_list - (out) a pointer to a list pointer (CQU_Type)
-*     uint64_t *when               - (out) when will the next change be, or 0
-*     uint64_t *now                - (in) should be nullptr, or the current time
-*                                  (only for the test programm)
-*
-*  RESULT
-*     uint32_t - new state (QI_DO_NOTHING, QI_DO_DISABLE, QI_DO_SUSPEND)
-*
-*  NOTES
-*     MT-NOTE: calender_state_changes() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Calendar states and calendar state list
+ *
+ * Computes the current state and generates a calendar state list. Right now it
+ * only does it for the current state and the next state. But it could be extended
+ * to handle more states.
+ * Based on the shortcomings of the methods it is using, it has to check, wether they
+ * reported a state change and if not, call the methods again with a new time stamp. It
+ * is starting with now and goes into the future, based on the reported state changes.
+ *
+ * @param cep (in) calendar (CAL_Type)
+ * @param state_changes_list (out) a pointer to a list pointer (CQU_Type)
+ * @param when64 (out) when will the next change be, or 0
+ * @param now64 (in) should be nullptr, or the current time (only for the test program)
+ *
+ * @return new state (QI_DO_NOTHING, QI_DO_DISABLE, QI_DO_SUSPEND)
+ *
+ * @note MT-NOTE: calender_state_changes() is MT safe
+ */
 uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list, uint64_t *when64, uint64_t *now64) {
    time_t temp_when = 0;
    time_t temp_now= 0;
@@ -688,52 +673,38 @@ uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list
 }
 
 
-/****** sge_calendar/compute_limit() *******************************************
-*  NAME
-*     compute_limit() -- compute the next state change
-*
-*  SYNOPSIS
-*     static time_t compute_limit(bool today, bool active, const lList 
-*     *year_time, const lList *week_time, const lList *day_time, const 
-*     lListElem *now, bool *is_end_of_day_reached) 
-*
-*  FUNCTION
-*     This function computes the next state change based on the three booleans:
-*     today, active, and is_full_day. 
-*
-*     There are some special calendar states, which result in special code to 
-*     handle thus states. They are all special to the week calendar.
-*
-*     - A week calendar can specify a range beyond the week borders. For example
-*       Wed-Mon. This will be broken down to two structures:
-*        - Wed-Sat (day 3 till 6)
-*        - Sun-Mon. (day 0 till 1)
-*       Since it is one range, the actual break down will look as follows:
-*        - Wed-Mon (day 3 till 8)
-*        - Sun-Mon (day 0 till 1)
-*       The first range, which is too big, allows us to recognize the whole range,
-*       thus we are not issuing a state change at 0 a.m. on Sunday but 0 a.m on
-*       Tuesday.
-*
-*    - An other special case is a calendar, which disables a queue for a whole week.
-*      There is special code to recognize that.
-*
-*  INPUTS
-*     bool today                  - does the state change happen today?
-*     bool active                 - is a calendar entry active?
-*     const lList *year_time      - year_time structure or nullptr, if week_time is set
-*     const lList *week_time      - week_time strucutre or nullptr, if year_time is set
-*     const lList *day_time       - day_time changes, if the exist
-*     const lListElem *now        - a now cull representation
-*     bool *is_end_of_day_reached - (out) is the end of day reached? 
-*
-*  RESULT
-*     static time_t - time of the next change or end of the day
-*
-*  NOTES
-*     MT-NOTE: compute_limit() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Compute the next state change
+ *
+ * This function computes the next state change based on the three booleans:
+ * today, active, and is_full_day.
+ * There are some special calendar states, which result in special code to
+ * handle thus states. They are all special to the week calendar.
+ * - A week calendar can specify a range beyond the week borders. For example
+ *   Wed-Mon. This will be broken down to two structures:
+ *    - Wed-Sat (day 3 till 6)
+ *    - Sun-Mon. (day 0 till 1)
+ *   Since it is one range, the actual break down will look as follows:
+ *    - Wed-Mon (day 3 till 8)
+ *    - Sun-Mon (day 0 till 1)
+ *   The first range, which is too big, allows us to recognize the whole range,
+ *   thus we are not issuing a state change at 0 a.m. on Sunday but 0 a.m on
+ *   Tuesday.
+ * - An other special case is a calendar, which disables a queue for a whole week.
+ *  There is special code to recognize that.
+ *
+ * @param today does the state change happen today?
+ * @param active is a calendar entry active?
+ * @param year_time year_time structure or nullptr, if week_time is set
+ * @param week_time week_time strucutre or nullptr, if year_time is set
+ * @param day_time day_time changes, if the exist
+ * @param now a now cull representation
+ * @param is_end_of_day_reached (out) is the end of day reached?
+ *
+ * @return time of the next change or end of the day
+ *
+ * @note MT-NOTE: compute_limit() is MT safe
+ */
 static time_t compute_limit(bool today, bool active, const lList *year_time, const lList *week_time, 
                             const lList *day_time, const lListElem *now, bool *is_end_of_day_reached) {
 
@@ -1882,24 +1853,16 @@ static int week_day_range_list(lList **wdrl) {
    DRETURN(0);
 }
 
-/****** sge_calendar/join_wday_range() *****************************************
-*  NAME
-*     join_wday_range() -- join overlapping ranges
-*
-*  SYNOPSIS
-*     static void join_wday_range(lList *week_day) 
-*
-*  FUNCTION
-*     A user can define overlapping ranges in the week calendar. This function
-*     will join them into one definition.
-*
-*  INPUTS
-*     lList *week_day - week calendar def. list
-*
-*  NOTES
-*     MT-NOTE: join_wday_range() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Join overlapping ranges
+ *
+ * A user can define overlapping ranges in the week calendar. This function
+ * will join them into one definition.
+ *
+ * @param week_day week calendar def. list
+ *
+ * @note MT-NOTE: join_wday_range() is MT safe
+ */
 static void join_wday_range(lList *week_day) 
 {
    lListElem *day_range1;
@@ -1971,25 +1934,17 @@ static void join_wday_range(lList *week_day)
    }
 }
 
-/****** sge_calendar/extend_wday_range() ***************************************
-*  NAME
-*     extend_wday_range() -- extend ranges over the week border....
-*
-*  SYNOPSIS
-*     static void extend_wday_range(lList *week_day) 
-*
-*  FUNCTION
-*     extend the range over the one week border. The week ends on Sunday, but the
-*      range can go till Monday or longer. But the beginning till the end will never
-*      contain more than 7 days (a week).  This is needed!!
-*
-*  INPUTS
-*     lList *week_day - calendar list for a week
-*
-*  NOTES
-*     MT-NOTE: extend_wday_range() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Extend ranges over the week border
+ *
+ * extend the range over the one week border. The week ends on Sunday, but the
+ *  range can go till Monday or longer. But the beginning till the end will never
+ *  contain more than 7 days (a week).  This is needed!!
+ *
+ * @param week_day calendar list for a week
+ *
+ * @note MT-NOTE: extend_wday_range() is MT safe
+ */
 static void extend_wday_range(lList *week_day) 
 {
    lListElem *day_range1;
@@ -2359,6 +2314,15 @@ static int tm_daytime_cmp(const lListElem *t1, const lListElem *t2) {
    return lGetUlong(t1, TM_sec) - lGetUlong(t2, TM_sec);
 }
 
+/**
+ * @brief Copy a `struct tm` into a CULL element
+ *
+ * The calendar computation works on CULL elements so intermediate results can
+ * be put into a list; this is the conversion in.
+ *
+ * @param[out] tm_ep the element to fill
+ * @param tm_now the time to copy
+ */
 void 
 cullify_tm(lListElem *tm_ep, struct tm *tm_now) 
 {
@@ -2373,6 +2337,12 @@ cullify_tm(lListElem *tm_ep, struct tm *tm_now)
    lSetUlong(tm_ep, TM_isdst, tm_now->tm_isdst);
 }
 
+/**
+ * @brief Copy a CULL element back into a `struct tm`
+ *
+ * @param tm_ep the element to read
+ * @param[out] tm_now the structure to fill
+ */
 void 
 uncullify_tm(const lListElem *tm_ep, struct tm *tm_now) 
 {
@@ -2387,6 +2357,13 @@ uncullify_tm(const lListElem *tm_ep, struct tm *tm_now)
    tm_now->tm_isdst = lGetUlong(tm_ep, TM_isdst);
 }
 
+/**
+ * @brief Parse a calendar's `year` specification
+ *
+ * @param[in,out] cal the calendar whose parsed form is stored
+ * @param[out] answer_list receives the syntax error
+ * @return true when the specification was understood
+ */
 bool 
 calendar_parse_year(lListElem *cal, lList **answer_list) 
 {
@@ -2405,6 +2382,13 @@ calendar_parse_year(lListElem *cal, lList **answer_list)
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse a calendar's `week` specification
+ *
+ * @param[in,out] cal the calendar whose parsed form is stored
+ * @param[out] answer_list receives the syntax error
+ * @return true when the specification was understood
+ */
 bool calendar_parse_week(lListElem *cal, lList **answer_list) {
    bool ret = true;
    lList *wc = nullptr;
@@ -2420,30 +2404,20 @@ bool calendar_parse_week(lListElem *cal, lList **answer_list) {
    DRETURN(ret);
 }
 
-/****** sge_calendar/calendar_get_current_state_and_end() **********************
-*  NAME
-*     calendar_get_current_state_and_end() -- generates the TODO orders
-*
-*  SYNOPSIS
-*     uint32_t calendar_get_current_state_and_end(const lListElem *cep, time_t
-*     *then, time_t *now) 
-*
-*  FUNCTION
-*     It calles the routins to compute the current state and next change. The current
-*     state is than changed into todo orders.
-*
-*  INPUTS
-*     const lListElem *cep - (in) calendar (CAL_Type)
-*     time_t *then         - (out) next state change
-*     time_t *now          - (in) now
-*
-*  RESULT
-*     uint32_t - what to do? what is the current state
-*
-*  NOTES
-*     MT-NOTE: calendar_get_current_state_and_end() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Generates the TODO orders
+ *
+ * It calles the routins to compute the current state and next change. The current
+ * state is than changed into todo orders.
+ *
+ * @param cep (in) calendar (CAL_Type)
+ * @param then (out) next state change
+ * @param now (in) now
+ *
+ * @return what to do? what is the current state
+ *
+ * @note MT-NOTE: calendar_get_current_state_and_end() is MT safe
+ */
 static uint32_t calendar_get_current_state_and_end(const lListElem *cep, time_t *then, time_t *now) {
    uint32_t new_state;
    const lList *year_list = nullptr;
@@ -2479,6 +2453,16 @@ static uint32_t calendar_get_current_state_and_end(const lListElem *cep, time_t 
    DRETURN(new_state);
 }
 
+/**
+ * @brief Is a calendar used by any cluster queue?
+ *
+ * Callers use it to refuse deleting a calendar a queue still refers to.
+ *
+ * @param calendar the calendar to look for
+ * @param[out] answer_list receives the name of the first queue using it
+ * @param master_cqueue_list the cluster queues to search
+ * @return true when at least one queue refers to it
+ */
 bool 
 calendar_is_referenced(const lListElem *calendar, lList **answer_list,
                        const lList *master_cqueue_list)
@@ -2518,6 +2502,12 @@ calendar_is_referenced(const lListElem *calendar, lList **answer_list,
       nullptr on error
 
 */
+/**
+ * @brief A calendar object template, as `qconf -scal template` prints it
+ *
+ * @param cal_name the name to give the template
+ * @return the new element; the caller owns it
+ */
 lListElem* sge_generic_cal(char *cal_name) {
    lListElem *calp;
 
@@ -2530,31 +2520,20 @@ lListElem* sge_generic_cal(char *cal_name) {
    DRETURN(calp);
 }
 
-/****** sge_calendar/calendar_open_in_time_frame() *****************************
-*  NAME
-*     calendar_open_in_time_frame() -- check if calender is open in given time
-*     frame
-*
-*  SYNOPSIS
-*     bool calendar_open_in_time_frame(const lListElem *cep, uint64_t
-*     start_time, uint64_t duration)
-*
-*  FUNCTION
-*     Returns the state (only open or closed) of a calendar in a given time
-*     frame
-*
-*  INPUTS
-*     const lListElem *cep - calendar object (CAL_Type)
-*     uint64_t start_time  - time frame start
-*     uint64_t duration    - time frame duration
-*
-*  RESULT
-*     bool - true if open
-*            false if closed
-*
-*  NOTES
-*     MT-NOTE: calendar_open_in_time_frame() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Check if calender is open in given time
+ *
+ * Returns the state (only open or closed) of a calendar in a given time
+ * frame
+ *
+ * @param cep calendar object (CAL_Type)
+ * @param start_time time frame start
+ * @param duration time frame duration
+ *
+ * @return true if open false if closed
+ *
+ * @note MT-NOTE: calendar_open_in_time_frame() is MT safe
+ */
 bool calendar_open_in_time_frame(const lListElem *cep, uint64_t start_time, uint64_t duration)
 {
    bool ret = true;

@@ -19,16 +19,31 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The per-thread copies of the cluster's object lists
+ */
+
 #include "sge_object.h"
 
 #include "sge_event.h"
 
 namespace ocs {
+   /**
+    * @brief Thread local access to the master lists, one snapshot per reader kind
+    *
+    * qmaster keeps several copies of the object model: one read-write store the
+    * worker threads modify, and snapshots the scheduler, the listeners and the
+    * readers work on without blocking writers. Each thread selects the store it
+    * belongs to once via #select_active_ds; every later `get_master_list*` call
+    * on that thread then resolves against it, so callers never pass a store
+    * around.
+    */
    class DataStore {
    private:
       // no private attributes because data is store thread local
 
    public:
+      /// The data stores a thread can be attached to
       enum Id {
          GLOBAL = 0,   ///< RW-DS (used by worker threads to handle RO-requests)
          SCHEDULER,    ///< Scheduler Snapshot (used by main scheduler thread)
@@ -59,6 +74,11 @@ namespace ocs {
       static void
       free_all_master_lists();
 
+      /**
+       * @brief The event client id feeding a snapshot store
+       * @param data_store_id the store to ask about
+       * @return the event client registration id that keeps it up to date
+       */
       static ev_registration_id
       get_ev_id_for_data_store(ocs::DataStore::Id data_store_id) {
          switch (data_store_id) {

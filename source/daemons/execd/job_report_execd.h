@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The job reports waiting to be acknowledged by qmaster
+ */
+
 #include "gdi/ocs_gdi_ClientServerBase.h"
 
 void sge_set_flush_jr_flag(bool value);
@@ -44,6 +48,12 @@ lListElem *get_job_report(uint32_t jobid, uint32_t jataskid, const char *petaski
 
 void del_job_report(lListElem *jr);
 void cleanup_job_report(uint32_t jobid, uint32_t jataskid);
+/** @brief Write the pending job reports to the trace log
+ *
+ * @note The definition in `job_report_execd.cc` is inside an `#if 0`, so this
+ *       is declared but not built. The block sits here because there is no
+ *       visible definition to attach it to.
+ */
 void trace_jr();
 
 int add_usage(lListElem *jr, const char *name, const char *uval_as_str, double val);

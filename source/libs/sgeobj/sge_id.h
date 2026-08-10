@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
+/** @file
+ * @brief Declarations for id lists: the objects a request names
+ *
+ * @see sge_id.cc
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_id_ID_L.h"
 

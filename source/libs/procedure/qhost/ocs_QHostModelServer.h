@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Server side model of `qhost`: reads the lists inside qmaster
+ */
+
 #include "gdi/ocs_gdi_Client.h"
 
 #include "ocs_QHostModelBase.h"
@@ -43,6 +47,10 @@ namespace ocs {
 
    public:
 
+      /** @brief Build the server side model
+       * @param packet the originating client packet, so permission checks see the real caller
+       * @param task the GDI task being answered
+       */
       QHostModelServer(gdi::Packet *packet, gdi::Task *task) : packet(packet), task(task) {};
       ~QHostModelServer() override = default;
    };

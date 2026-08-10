@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Parameter
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of PARA
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   PARA_name = 10000,
-   PARA_value
+   PARA_name = 10000,   ///< Name
+   PARA_value   ///< Value
 };
 
+/** @brief The attribute ids of PARA, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int PARA_Type[] = {
    PARA_name,
    PARA_value,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of PARA
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define PARA_ATTRIBUTES \
    {PARA_name, "PARA_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
    {PARA_value, "PARA_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

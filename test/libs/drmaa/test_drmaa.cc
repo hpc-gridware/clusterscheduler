@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Unit tests for drmaa
+ */
 #include <cstdio>
 #include <cstring>
 #include <unistd.h>
@@ -40,7 +44,7 @@
 
 #include <pthread.h>
 
-/* this timeout is in effect with SGE commprocs */
+/** @brief How long a commproc may be silent before the test gives up, in seconds */
 #define SGE_COMMPROC_TIMEOUT 60*5
 
 #include "japi/drmaa.h"
@@ -67,84 +71,88 @@
 
 #include <uti/sge_log.h>
 
-#define JOB_CHUNK 8
-#define NTHREADS 3
-#define NBULKS 3
+#define JOB_CHUNK 8   ///< how many jobs a test case submits at a time
+#define NTHREADS 3    ///< how many application threads the multi-threaded cases run
+#define NBULKS 3      ///< how many bulk jobs the bulk cases submit
 
+/** @brief Consume the next command line argument and return it
+ * @param argc pointer to the remaining count, decremented
+ * @param argv pointer to the remaining vector, advanced
+ */
 #define NEXT_ARGV(argc, argv) \
       ((*argc)--, (*argv)++, (*argv)[0])
 
 enum {
-   ALL_TESTS = 0,    
+   ALL_TESTS = 0,    ///< run every automated case, up to #FIRST_NON_AUTOMATED_TEST    
 
    ST_SUBMIT_WAIT,    
-      /* - one thread 
+      /**< - one thread 
          - submit jobs 
          - wait for jobend */
 
    ST_SUBMIT_NO_RUN_WAIT,    
-      /* - one thread 
+      /**< - one thread 
          - submit jobs that won't run
          - wait for jobend */
 
    MT_SUBMIT_WAIT,        
-      /* - multiple submission threads
+      /**< - multiple submission threads
          - wait is done by main thread */
 
    MT_SUBMIT_BEFORE_INIT_WAIT,
-      /* - no drmaa_init() was called
+      /**< - no drmaa_init() was called
          - multiple threads try to submit but fail
          - when drmaa_init() is called by main thread
            submission proceed
          - wait is done by main thread */
 
    ST_MULT_INIT,
-      /* - drmaa_init() is called multiple times 
+      /**< - drmaa_init() is called multiple times 
          - first time it must succeed - second time it must fail
          - then drmaa_exit() is called */
 
    ST_MULT_EXIT,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - then drmaa_exit() is called multiple times
          - first time it must succeed - second time it must fail */
 
    MT_EXIT_DURING_SUBMIT,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - multiple submission threads submitting (delayed) a series 
            of jobs
          - during submission main thread does drmaa_exit() */
 
    MT_SUBMIT_MT_WAIT,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - multiple submission threads submit jobs and wait these jobs
          - when all threads are finished main thread calls drmaa_exit() */
 
    MT_EXIT_DURING_SUBMIT_OR_WAIT,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - multiple submission threads submit jobs and wait these jobs
          - while submission threads are waiting their jobs the main 
            thread calls drmaa_exit() */
 
    ST_BULK_SUBMIT_WAIT,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - a bulk job is submitted and waited 
          - then drmaa_exit() is called */
 
    ST_BULK_SINGLESUBMIT_WAIT_INDIVIDUAL,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - bulk and sequential jobs are submitted
          - all jobs are waited individually
          - then drmaa_exit() is called */
 
    ST_SUBMITMIXTURE_SYNC_ALL_DISPOSE,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - submit a mixture of single and bulk jobs
          - do drmaa_synchronize(DRMAA_JOB_IDS_SESSION_ALL, dispose) 
            to wait for all jobs to finish
          - then drmaa_exit() is called */
 
    ST_SUBMITMIXTURE_SYNC_ALL_NODISPOSE,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - submit a mixture of single and bulk jobs
          - do drmaa_synchronize(DRMAA_JOB_IDS_SESSION_ALL, no-dispose) 
            to wait for all jobs to finish
@@ -153,14 +161,14 @@ enum {
          - then drmaa_exit() is called */
 
    ST_SUBMITMIXTURE_SYNC_ALLIDS_DISPOSE,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - submit a mixture of single and bulk jobs
          - do drmaa_synchronize(all_jobids, dispose) 
            to wait for all jobs to finish
          - then drmaa_exit() is called */
 
    ST_SUBMITMIXTURE_SYNC_ALLIDS_NODISPOSE,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - submit a mixture of single and bulk jobs
          - do drmaa_synchronize(all_jobids, no-dispose) 
            to wait for all jobs to finish
@@ -170,17 +178,17 @@ enum {
 
 
    ST_SUBMIT_PAUSE_SUBMIT_SYNC,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - a job is submitted 
          - do a long sleep(SGE_COMMPROC_TIMEOUT+)
          - another job is submitted 
          - do drmaa_synchronize(DRMAA_JOB_IDS_SESSION_ALL, dispose) 
          - then drmaa_exit() is called */
 
-   ST_INPUT_FILE_FAILURE,
-   ST_OUTPUT_FILE_FAILURE,
+   ST_INPUT_FILE_FAILURE,    ///< as ST_ERROR_FILE_FAILURE below, for the input path
+   ST_OUTPUT_FILE_FAILURE,   ///< as ST_ERROR_FILE_FAILURE below, for the output path
    ST_ERROR_FILE_FAILURE,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - a job is submitted with input/output/error path specification 
            that must cause the job to fail
          - use drmaa_synchronize() to ensure job was started
@@ -189,7 +197,7 @@ enum {
          - then drmaa_exit() is called */
 
    ST_SUBMIT_IN_HOLD_RELEASE,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - a job is submitted with a user hold 
          - use drmaa_job_ps() to verify user hold state
          - hold state is released using drmaa_control()
@@ -199,7 +207,7 @@ enum {
       */
 
    ST_SUBMIT_IN_HOLD_DELETE,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - a job is submitted with a user hold 
          - use drmaa_job_ps() to verify user hold state
          - job is terminated using drmaa_control()
@@ -209,7 +217,7 @@ enum {
       */
 
    ST_BULK_SUBMIT_IN_HOLD_SINGLE_RELEASE,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - a bulk job is submitted with a user hold 
          - hold state is released separately for each task using drmaa_control()
          - the job ids are waited
@@ -218,7 +226,7 @@ enum {
       */
 
    ST_BULK_SUBMIT_IN_HOLD_SESSION_RELEASE,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - a bulk job is submitted with a user hold 
          - hold state is released for the session using drmaa_control()
          - the job ids are waited
@@ -227,7 +235,7 @@ enum {
       */
 
    ST_BULK_SUBMIT_IN_HOLD_SESSION_DELETE,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - a bulk job is submitted with a user hold 
          - use drmaa_job_ps() to verify user hold state
          - all session jobs are terminated using drmaa_control()
@@ -237,7 +245,7 @@ enum {
       */
 
    ST_BULK_SUBMIT_IN_HOLD_SINGLE_DELETE,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - a bulk job is submitted with a user hold 
          - use drmaa_job_ps() to verify user hold state
          - all session jobs are terminated using drmaa_control()
@@ -247,7 +255,7 @@ enum {
       */
 
    ST_INPUT_BECOMES_OUTPUT,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - job input is prepared in local file 
          - a job is submitted that echoes it's input to output 
          - the job is waited
@@ -256,7 +264,7 @@ enum {
            (this requires manual testing) */
 
    ST_DRMAA_JOB_PS,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - drmaa_job_ps() is used to retrieve DRMAA state 
            for each jobid passed *manually* in argv
          - then drmaa_exit() is called 
@@ -264,7 +272,7 @@ enum {
       */
 
    ST_DRMAA_CONTROL,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - drmaa_control() is used to change DRMAA job state 
            for each jobid passed *manually* in argv
          - drmaa_control() must return with the exit status passed in argv
@@ -273,7 +281,7 @@ enum {
       */
 
    ST_EXIT_STATUS,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - 255 job are submitted
          - job i returns i as exit status (8 bit)
          - drmaa_wait() verifies each job returned the 
@@ -281,23 +289,23 @@ enum {
          - then drmaa_exit() is called */
 
    ST_SUPPORTED_ATTR,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - drmaa_get_attribute_names() is called
          - the names of all supported non vector attributes are printed
          - then drmaa_exit() is called */
 
    ST_SUPPORTED_VATTR,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - drmaa_get_vector_attribute_names() is called
          - the names of all supported vector attributes are printed
          - then drmaa_exit() is called */
 
    ST_VERSION,
-      /* - drmaa_version() is called 
+      /**< - drmaa_version() is called 
          - version information is printed */
 
    ST_CONTACT,
-      /* - drmaa_get_contact() is called
+      /**< - drmaa_get_contact() is called
          - the contact string is printed
          - drmaa_init() is called 
          - drmaa_get_contact() is called
@@ -305,7 +313,7 @@ enum {
          - then drmaa_exit() is called */
 
    ST_DRM_SYSTEM,
-      /* - drmaa_get_DRM_system() is called
+      /**< - drmaa_get_DRM_system() is called
          - the contact string is printed
          - drmaa_init() is called 
          - drmaa_get_DRM_system() is called
@@ -313,7 +321,7 @@ enum {
          - then drmaa_exit() is called */
 
    ST_DRMAA_IMPL,
-      /* - drmaa_get_DRM_system() is called
+      /**< - drmaa_get_DRM_system() is called
          - the contact string is printed
          - drmaa_init() is called 
          - drmaa_get_DRMAA_implementation() is called
@@ -321,27 +329,27 @@ enum {
          - then drmaa_exit() is called */
 
    ST_EMPTY_SESSION_WAIT,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - drmaa_wait() must return DRMAA_ERRNO_INVALID_JOB
          - then drmaa_exit() is called */
 
    ST_EMPTY_SESSION_SYNCHRONIZE_DISPOSE,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - drmaa_synchronize(DRMAA_JOB_IDS_SESSION_ALL, dispose=true) must return DRMAA_ERRNO_SUCCESS
          - then drmaa_exit() is called */
 
    ST_EMPTY_SESSION_SYNCHRONIZE_NODISPOSE,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - drmaa_synchronize(DRMAA_JOB_IDS_SESSION_ALL, dispose=false) must return DRMAA_ERRNO_SUCCESS
          - then drmaa_exit() is called */
 
    ST_EMPTY_SESSION_CONTROL,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - drmaa_control(DRMAA_JOB_IDS_SESSION_ALL, <passed control operation>) must return DRMAA_ERRNO_SUCCESS
          - then drmaa_exit() is called */
 
    ST_SUBMIT_SUSPEND_RESUME_WAIT,
-      /*  - drmaa_init() is called
+      /**<  - drmaa_init() is called
           - a single job is submitted 
           - drmaa_job_ps() is used to actively wait until job is running
           - drmaa_control() is used to suspend the job
@@ -352,31 +360,31 @@ enum {
           - then drmaa_exit() is called */
 
    ST_SUBMIT_POLLING_WAIT_TIMEOUT, 
-      /*  - drmaa_init() is called
+      /**<  - drmaa_init() is called
           - a single job is submitted 
           - repeatedly drmaa_wait() with a timeout is used until job is finished
           - then drmaa_exit() is called */
 
    ST_SUBMIT_POLLING_WAIT_ZEROTIMEOUT,
-      /*  - drmaa_init() is called
+      /**<  - drmaa_init() is called
           - a single job is submitted 
           - repeatedly do drmaa_wait(DRMAA_TIMEOUT_NO_WAIT) + sleep() until job is finished
           - then drmaa_exit() is called */
 
    ST_SUBMIT_POLLING_SYNCHRONIZE_TIMEOUT,
-      /*  - drmaa_init() is called
+      /**<  - drmaa_init() is called
           - a single job is submitted 
           - repeatedly drmaa_synchronize() with a timeout is used until job is finished
           - then drmaa_exit() is called */
 
    ST_SUBMIT_POLLING_SYNCHRONIZE_ZEROTIMEOUT,
-      /*  - drmaa_init() is called
+      /**<  - drmaa_init() is called
           - a single job is submitted 
           - repeatedly do drmaa_synchronize(DRMAA_TIMEOUT_NO_WAIT) + sleep() until job is finished
           - then drmaa_exit() is called */
 
    ST_ATTRIBUTE_CHECK,
-      /* Need to test all DRMAA attributes:
+      /**< Need to test all DRMAA attributes:
          DRMAA_REMOTE_COMMAND - implicit
          DRMAA_JS_STATE
          DRMAA_WD
@@ -393,35 +401,35 @@ enum {
          DRMAA_V_EMAIL
          DRMAA_V_ENV */
    ST_USAGE_CHECK,
-      /* - one thread 
+      /**< - one thread 
          - submit jobs 
          - wait for jobend
          - print job usage */
-   ST_TRANSFER_FILES_SINGLE_JOB,
+   ST_TRANSFER_FILES_SINGLE_JOB,   ///< as ST_TRANSFER_FILES_BULK_JOB below, for a single job
    ST_TRANSFER_FILES_BULK_JOB,
-      /* Set Job InputHost:/InputPath, OutputHost:/OutputPath, ErrorHost:/ErrorPath */
+      /**< Set Job InputHost:/InputPath, OutputHost:/OutputPath, ErrorHost:/ErrorPath */
 
    ST_RESERVATION_FINISH_ORDER,
-      /* ensure three jobs finish in the order foreseen for reservation */
+      /**< ensure three jobs finish in the order foreseen for reservation */
 
    ST_BACKFILL_FINISH_ORDER,
-      /* ensure three jobs finish in the order foreseen for backfilling */
+      /**< ensure three jobs finish in the order foreseen for backfilling */
             
    ST_WILD_PARALLEL,
-      /* ensure 7 jobs finish in the order foreseen for wildcard parallel jobs */
+      /**< ensure 7 jobs finish in the order foreseen for wildcard parallel jobs */
    
    ST_UNSUPPORTED_ATTR,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - drmaa_set_attribute() is called for an invalid attribute
          - then drmaa_exit() is called */
    
    ST_UNSUPPORTED_VATTR,
-      /* - drmaa_init() is called
+      /**< - drmaa_init() is called
          - drmaa_set_vector_attribute() is called for an invalid attribute
          - then drmaa_exit() is called */
    
    ST_SYNCHRONIZE_NONEXISTANT,
-      /* - Init session.
+      /**< - Init session.
          - Create job template.
          - Run job.
          - Delete job template.
@@ -431,7 +439,7 @@ enum {
          - Exit session. */
    
    ST_RECOVERABLE_SESSION,
-      /* - Init session.
+      /**< - Init session.
          - Create job template.
          - Run job.
          - Delete job template.
@@ -441,14 +449,23 @@ enum {
          - Exit session. */
    
    ST_ERROR_CODES
-      /* - Test that each error code has the right value. */
+      /**< - Test that each error code has the right value. */
 };
 
+/** @var test_map
+ * @brief The table of every test case, its name and its arguments
+ */
+
+/** @brief The table that turns a test name on the command line into a test case
+ *
+ * The test program runs one case per invocation, named as `argv[1]`, so this is
+ * both the dispatch table and the source of the `-help` output.
+ */
 const struct test_name2number_map {
-   const char *test_name;       /* name of the test                                    */
-   int test_number;       /* number the test is internally mapped to             */
-   int nargs;             /* number of test case arguments required              */
-   const char *opt_arguments;   /* description of test case arguments for usage output */
+   const char *test_name;       ///< the name typed on the command line
+   int test_number;             ///< the `ST_*` / `MT_*` value it maps to
+   int nargs;                   ///< how many further arguments the case needs
+   const char *opt_arguments;   ///< those arguments, as shown in the usage text
 } test_map[] = {
 
    /* all automated tests - ST_* and MT_* tests */
@@ -528,6 +545,12 @@ const struct test_name2number_map {
 
    { nullptr,                                       0 }
 };
+/** @brief Where the automated cases end in #test_map
+ *
+ * `ALL_AUTOMATED` runs the table from the start up to this value. Everything at
+ * or after it needs a human to set something up or to look at the result, so it
+ * can only be asked for by name.
+ */
 #define FIRST_NON_AUTOMATED_TEST ST_INPUT_BECOMES_OUTPUT
 
 static int test(int *argc, char **argv[], int parse_args);
@@ -548,6 +571,10 @@ static void report_session_key();
 static void *submit_and_wait_thread (void *v);
 static void *submit_sleeper_thread (void *v);
 
+/** @brief The `DRMAA_PS_*` value with a given name
+ * @param str the name, as spelled in the DRMAA specification
+ * @return the value, or -1 when the name is unknown
+ */
 int str2drmaa_state(const char *str);
 static int str2drmaa_ctrl(const char *str);
 static int str2drmaa_errno(const char *str);
@@ -569,9 +596,14 @@ static bool test_error_code(const char *name, int code, int expected);
 static void report_wrong_job_finish(const char *comment, const char *jobid,
                                     int stat);
 
+/** @brief One job in a dispatch-order test
+ *
+ * The dispatch-order cases submit several jobs that differ only in their native
+ * specification and runtime, then check the order they actually ran in.
+ */
 typedef struct {
-   char *native;
-   int time;
+   char *native;   ///< the native specification to submit it with
+   int time;       ///< how long it should run, in seconds
 } test_job_t;
 static int test_dispatch_order_njobs(int n, test_job_t jobs[], const char *jsr_str);
 static int job_run_sequence_verify(int pos, const char *all_jobids[], int *order[]);
@@ -580,15 +612,21 @@ static int **job_run_sequence_parse(const char *jrs_str);
 static int test_case;
 static int is_sun_grid_engine;
 
-/* global test case parameters */
-const char *sleeper_job = nullptr,
-     *exit_job = nullptr,
-     *mirror_job = nullptr,
-     *input_path = nullptr,
-     *output_path = nullptr,
-     *error_path = nullptr,
-     *email_addr = nullptr;
-int ctrl_op = -1;
+/** @name The test case parameters, taken from the command line
+ *
+ * Globals rather than parameters because the case bodies are one giant switch
+ * and the helpers they call take fixed signatures.
+ * @{
+ */
+const char *sleeper_job = nullptr,   ///< a job that sleeps for a given time
+     *exit_job = nullptr,            ///< a job that exits with a given status
+     *mirror_job = nullptr,          ///< a job that copies its input to its output
+     *input_path = nullptr,          ///< the input path to submit with
+     *output_path = nullptr,         ///< the output path to submit with
+     *error_path = nullptr,          ///< the error path to submit with
+     *email_addr = nullptr;          ///< the address the mail cases send to
+int ctrl_op = -1;                    ///< the `DRMAA_CONTROL_*` operation to apply
+/** @} */
 
 static void init_jobids(const char *jobids[], int size)
 {
@@ -5178,9 +5216,14 @@ static init_signal_handling()
 #endif
 
 
+/** @var errno_vector
+ * @brief The table of every DRMAA error code and its name
+ */
+
+/** @brief Maps a DRMAA error code to its name, so failures name the value rather than the number */
 const struct drmaa_errno_descr_s {
-  const char *descr;
-  int drmaa_errno;
+  const char *descr;   ///< the name, as it is spelled in the DRMAA specification
+  int drmaa_errno;   ///< the value
 } errno_vector[] = {
   { "DRMAA_ERRNO_SUCCESS",                      DRMAA_ERRNO_SUCCESS },
   { "DRMAA_ERRNO_INTERNAL_ERROR",               DRMAA_ERRNO_INTERNAL_ERROR },
@@ -5260,9 +5303,14 @@ static const char *drmaa_errno2str(int drmaa_errno)
   return "DRMAA_ERRNO_???UNKNOWN???";
 }
 
+/** @var ctrl_vector
+ * @brief The table of every DRMAA control operation and its name
+ */
+
+/** @brief Maps a DRMAA control operation to its name, so failures name the value rather than the number */
 const struct ctrl_descr_s {
-  const char *descr;
-  int ctrl;
+  const char *descr;   ///< the name, as it is spelled in the DRMAA specification
+  int ctrl;   ///< the value
 } ctrl_vector[] = {
   { "DRMAA_CONTROL_SUSPEND",          DRMAA_CONTROL_SUSPEND },
   { "DRMAA_CONTROL_RESUME",           DRMAA_CONTROL_RESUME },
@@ -5324,9 +5372,14 @@ static int str2drmaa_ctrl(const char *str)
   return -1;
 }
 
+/** @var state_vector
+ * @brief The table of every DRMAA job state and its name
+ */
+
+/** @brief Maps a DRMAA job state to its name, so failures name the value rather than the number */
 const struct state_descr_s {
-  const char *descr;
-  int state;
+  const char *descr;   ///< the name, as it is spelled in the DRMAA specification
+  int state;   ///< the value
 } state_vector[] = {
   { "DRMAA_PS_UNDETERMINED",          DRMAA_PS_UNDETERMINED },
   { "DRMAA_PS_QUEUED_ACTIVE",         DRMAA_PS_QUEUED_ACTIVE },
@@ -5714,8 +5767,8 @@ static int job_run_sequence_verify(int pos, const char *all_jobids[], int *order
 *        int st2[] = { 3, -1 };
 *        int *st_order[] = { st0, st1, st2, nullptr };
 *******************************************************************************/
-#define GROUP_CHUNK 5
-#define NUMBER_CHUNK 10
+#define GROUP_CHUNK 5     ///< how many job groups the dispatch-order case builds
+#define NUMBER_CHUNK 10   ///< how many jobs go into each of those groups
 static int **job_run_sequence_parse(const char *jrs_str)
 {
    char *s = nullptr, *group_str = nullptr;

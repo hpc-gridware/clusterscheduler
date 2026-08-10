@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Stored Procedure Parameter
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of SPP
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   SPP_name = 13000,
-   SPP_value_list
+   SPP_name = 13000,   ///< Parameter name
+   SPP_value_list   ///< List of value for this parameter.
 };
 
+/** @brief The attribute ids of SPP, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int SPP_Type[] = {
    SPP_name,
    SPP_value_list,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of SPP
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define SPP_ATTRIBUTES \
    {SPP_name, "SPP_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {SPP_value_list, "SPP_value_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \

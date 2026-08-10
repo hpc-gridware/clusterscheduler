@@ -32,6 +32,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief echo_raw - `echo` that does not interpret its arguments
+ *
+ * Exists because the `echo` built into the various shells differs in how it
+ * treats backslashes and leading dashes.
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

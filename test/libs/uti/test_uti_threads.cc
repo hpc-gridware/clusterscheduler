@@ -32,11 +32,20 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for threads in `libs/uti`
+ */
+
 #include <cstdio>
 #include <cerrno>
 #include <unistd.h>
 #include <pthread.h>
 
+/** @brief T1 errno
+ *
+ * @param args see the description above
+  * @return the thread's result; the tests ignore it
+ */
 void *t1_errno(void *args) {
    int i;
    int *ret = (int *) args;
@@ -56,6 +65,11 @@ void *t1_errno(void *args) {
    return nullptr;
 }
 
+/** @brief T2 errno
+ *
+ * @param args see the description above
+  * @return the thread's result; the tests ignore it
+ */
 void *t2_errno(void *args) {
    int i;
    int *ret = (int *) args;

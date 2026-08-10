@@ -33,6 +33,19 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The SSL transport
+ *
+ * The counterpart of `cl_tcp_framework.h`: the same operations, over a
+ * TLS connection rather than a bare socket. Which of the two a connection
+ * uses is its #cl_com_connection_type::framework_type, and nothing above
+ * `cl_communication.cc` knows the difference.
+ *
+ * Beyond the transport it also carries what TCP has no equivalent for:
+ * building the SSL contexts, verifying the peer's certificate against the
+ * application's #cl_ssl_verify_func_t, and the CRL check.
+ */
+
 #ifdef SECURE
 #include <cl_data_types.h>
 #include <cstdio>
@@ -49,6 +62,11 @@
 #include <netinet/in.h>
 
 
+/** @def ENABLE_CRL
+ * @brief Check peer certificates against a revocation list
+ *
+ * Always defined; there is no build that turns it off.
+ */
 #define ENABLE_CRL
 
 #ifdef LOAD_OPENSSL
@@ -91,8 +109,17 @@
 #include "uti/sge_string.h"
 #include "uti/sge_arch.h"
 
+/** @def OPENSSL_CONST
+ * @brief `const` where OpenSSL 0.9.7 added it, empty before
+ *
+ * Lets one source compile against both, without `const` casts scattered
+ * through the calls.
+ */
 #if (OPENSSL_VERSION_NUMBER < 0x0090700fL)
 #define OPENSSL_CONST
+/** @def NID_userId
+ * @brief The name OpenSSL 0.9.7 gave to what was `NID_uniqueIdentifier`
+ */
 #if (OPENSSL_VERSION_NUMBER < 0x0090700fL)
 #define NID_userId NID_uniqueIdentifier
 #endif
@@ -106,29 +133,43 @@
 #endif
 
 
-/* @todo need to distinguish between openssl 1.x and 3.x
- *       3.x has functions SSL_CTX_set_mode and SSL_CTX_set_options,
- *       as well as the getter functions
- *       no need for the macros anymore
+/** @name Mode and option accessors built on `SSL_CTX_ctrl()`
+ *
+ * Old OpenSSL exposed setting a mode or an option only through the generic
+ * `*_ctrl()` call; these give it the names the newer API has, so the code
+ * reads the same either way.
+ *
+ * @todo OpenSSL 3.x provides `SSL_CTX_set_mode()`, `SSL_CTX_set_options()`
+ *       and their getters directly - once 1.x is dropped these macros can go.
+ * @{
  */
+/** @brief Set a mode on a context */
 #define cl_com_ssl_func__SSL_CTX_set_mode(ctx,op) \
    cl_com_ssl_func__SSL_CTX_ctrl((ctx),SSL_CTRL_MODE,(op),nullptr)
+/** @brief Read the mode of a context */
 #define cl_com_ssl_func__SSL_CTX_get_mode(ctx) \
    cl_com_ssl_func__SSL_CTX_ctrl((ctx),SSL_CTRL_MODE,0,nullptr)
+/** @brief Set a mode on a connection */
 #define cl_com_ssl_func__SSL_set_mode(ssl,op) \
    cl_com_ssl_func__SSL_ctrl((ssl),SSL_CTRL_MODE,(op),nullptr)
+/** @brief Read the mode of a connection */
 #define cl_com_ssl_func__SSL_get_mode(ssl) \
         cl_com_ssl_func__SSL_ctrl((ssl),SSL_CTRL_MODE,0,nullptr)
 
 
+/** @brief Set options on a context */
 #define cl_com_ssl_func__SSL_CTX_set_options(ctx,op) \
    cl_com_ssl_func__SSL_CTX_ctrl((ctx),SSL_CTRL_OPTIONS,(op),nullptr)
+/** @brief Read the options of a context */
 #define cl_com_ssl_func__SSL_CTX_get_options(ctx) \
    cl_com_ssl_func__SSL_CTX_ctrl((ctx),SSL_CTRL_OPTIONS,0,nullptr)
+/** @brief Set options on a connection */
 #define cl_com_ssl_func__SSL_set_options(ssl,op) \
    cl_com_ssl_func__SSL_ctrl((ssl),SSL_CTRL_OPTIONS,(op),nullptr)
+/** @brief Read the options of a connection */
 #define cl_com_ssl_func__SSL_get_options(ssl) \
         cl_com_ssl_func__SSL_ctrl((ssl),SSL_CTRL_OPTIONS,0,nullptr)
+/** @} */
 
 /*
  * bugfix for HP and AIX:
@@ -252,20 +293,30 @@ static int                  (*cl_com_ssl_func__X509_STORE_set_default_paths)    
 static int                  (*cl_com_ssl_func__X509_STORE_load_locations)           (X509_STORE *ctx, const char *file, const char *dir);
 static void                 (*cl_com_ssl_func__X509_STORE_free)                     (X509_STORE *v);
 
+/** @brief Attach the commlib's own pointer to a context */
 #define cl_com_ssl_func__SSL_CTX_set_app_data(ctx,arg)      (cl_com_ssl_func__SSL_CTX_set_ex_data(ctx,0,(char *)arg))
+/** @brief Read that pointer back */
 #define cl_com_ssl_func__SSL_CTX_get_app_data(ctx)  (cl_com_ssl_func__SSL_CTX_get_ex_data(ctx,0))
+/** @brief Free memory OpenSSL allocated */
 #define cl_com_ssl_func__OPENSSL_free(addr)   cl_com_ssl_func__CRYPTO_free(addr)
+/** @brief Read that pointer back */
 #define cl_com_ssl_func__SSL_CTX_get_app_data(ctx)  (cl_com_ssl_func__SSL_CTX_get_ex_data(ctx,0))
+/** @brief Read a revocation list from a file */
 #define cl_com_ssl_func__PEM_read_X509_CRL(fp,x,cb,u) (X509_CRL *)cl_com_ssl_func__PEM_ASN1_read( \
    (char *(*)())cl_com_ssl_func__d2i_X509_CRL,PEM_STRING_X509_CRL,fp,(char **)x,cb,u)
+/** @brief When a revocation list expires */
 #define cl_com_ssl_func__X509_CRL_get_nextUpdate(x) ((x)->crl->nextUpdate)
+/** @brief The revoked certificates of a list */
 #define cl_com_ssl_func__X509_CRL_get_REVOKED(x) ((x)->crl->revoked)
+/** @brief Install the verification callback on a store */
 #define cl_com_ssl_func__X509_STORE_set_verify_cb_func(ctx,func) ((ctx)->verify_cb=(func))
 
 #endif
 
+/** @brief Read a certificate from a BIO */
 #define  cl_com_ssl_func__PEM_read_bio_X509(bp,x,cb,u) (X509 *)cl_com_ssl_func__PEM_ASN1_read_bio( \
    (void *(*)())cl_com_ssl_func__d2i_X509,PEM_STRING_X509,bp,(void **)x,cb,u)
+/** @brief Read a private key from a BIO */
 #define  cl_com_ssl_func__PEM_read_bio_PrivateKey(bp,x,cb,u) (EVP_PKEY *)cl_com_ssl_func__PEM_ASN1_read_bio( \
    (void *(*)())cl_com_ssl_func__d2i_AutoPrivateKey,PEM_STRING_EVP_PKEY,bp,(void **)x,cb,u)
 
@@ -285,50 +336,54 @@ static PKCS8_PRIV_KEY_INFO* cl_com_ssl_func__PEM_read_bio_PKCS8_PRIV_KEY_INFO(BI
  *   freed with cl_com_ssl_free_com_private(). A pointer to the 
  *   malloced structure can be obtained with cl_com_ssl_get_private()
  */
+/** @brief The loaded certificate revocation list
+ *
+ * Kept per process and reloaded only when the file changed, because parsing a
+ * CRL on every handshake would be expensive.
+ */
 typedef struct cl_ssl_verify_crl_data_type {
-   time_t last_modified;
-   X509_STORE *store;
+   time_t last_modified;   ///< Modification time of the CRL file when it was last read
+   X509_STORE *store;      ///< The parsed list, handed to OpenSSL during verification
 } cl_ssl_verify_crl_data_t;
 
+/** @brief What the SSL framework hangs off a connection
+ *
+ * Reached through #cl_com_connection_type::com_private, which is why nothing
+ * above `cl_communication.cc` needs to know that SSL exists.
+ */
 typedef struct cl_com_ssl_private_type {
-   /* TCP/IP specific */
-   int                server_port;         /* used port for server setup */
-   int                connect_port;        /* port to connect to */
-   int                connect_in_port;     /* port from where client is connected (used for reserved port check) */
-   int                sockfd;              /* socket file descriptor */
-   int                pre_sockfd;          /* socket which was prepared for later listen call (only_prepare_service == TRUE */
-   struct sockaddr_in client_addr;         /* used in connect for storing client addr of connection partner */ 
+   int                server_port;      ///< Port a service listens on
+   int                connect_port;     ///< Port a client connects to
+   int                connect_in_port;  ///< Remote port the client came from, for the reserved port check
+   int                sockfd;           ///< The socket
+   int                pre_sockfd;       ///< A socket bound but not yet listening, for #CL_COMMLIB_DELAYED_LISTEN
+   struct sockaddr_in client_addr;      ///< Address of the peer
 
-   /* SSL specific */
-   int                ssl_last_error;      /* last error value from SSL_get_error() */
-   SSL_CTX*           ssl_ctx;             /* create with SSL_CTX_new() , free with SSL_CTX_free() */
-   SSL*               ssl_obj;             /* ssl object for the connection */
-   BIO*               ssl_bio_socket;      /* bio socket for the connection */ 
-   cl_ssl_setup_t*    ssl_setup;           /* ssl setup structure */
+   int                ssl_last_error;   ///< Last value from `SSL_get_error()`
+   SSL_CTX*           ssl_ctx;          ///< The context, from `SSL_CTX_new()`
+   SSL*               ssl_obj;          ///< The TLS connection itself
+   BIO*               ssl_bio_socket;   ///< The BIO wrapping the socket
+   cl_ssl_setup_t*    ssl_setup;        ///< Certificates and keys in use
 
-   char*              ssl_unique_id;       /* uniqueIdentifier for this connection */
-   cl_ssl_verify_crl_data_t* ssl_crl_data; /* contains crl specific data configuration */
+   char*              ssl_unique_id;    ///< Identity taken out of the peer's certificate
+   cl_ssl_verify_crl_data_t* ssl_crl_data;   ///< The loaded revocation list
 } cl_com_ssl_private_t;
 
 /* 
  *   global ssl struct (not used from outside) 
  *   =========================================
  */
-typedef struct cl_com_ssl_global_type {
-
-/* 
- * global init bool  
- */
-   bool          ssl_initialized;
-
-
-/* 
- * global mutex array for ssl thread lock initialization 
+/** @brief The SSL framework's process wide state
  *
- * only modify when cl_com_ssl_global_config_mutex is locked 
+ * OpenSSL of this vintage is not thread safe on its own - it calls back into
+ * the application for locking, which is what the mutex array is for. One
+ * mutex per lock id OpenSSL asks about.
  */
-   pthread_mutex_t*   ssl_lib_lock_mutex_array; /* ssl lib lock array */
-   int                ssl_lib_lock_num;   /* nr of ssl lib lock mutexes */
+typedef struct cl_com_ssl_global_type {
+   bool          ssl_initialized;   ///< Set once the library and its locks are up
+
+   pthread_mutex_t*   ssl_lib_lock_mutex_array;   ///< One mutex per OpenSSL lock id. @warning Modify only while `cl_com_ssl_global_config_mutex` is held
+   int                ssl_lib_lock_num;           ///< How many mutexes the array holds
 
 } cl_com_ssl_global_t;
 
@@ -2344,6 +2399,9 @@ static cl_com_ssl_private_t* cl_com_ssl_get_private(cl_com_connection_t* connect
    return nullptr;
 }
 
+/** @brief Initialise the SSL library, once per process
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_framework_setup() {
    int ret_val = CL_RETVAL_OK;
    pthread_mutex_lock(&cl_com_ssl_global_config_mutex);
@@ -2362,6 +2420,9 @@ int cl_com_ssl_framework_setup() {
    return ret_val;
 }
 
+/** @brief Release what #cl_com_ssl_framework_setup allocated
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_framework_cleanup() {
    int ret_val = CL_RETVAL_OK;
    int counter = 0;
@@ -2417,6 +2478,9 @@ int cl_com_ssl_framework_cleanup() {
    return ret_val;
 }
 
+/** @brief Write a connection's SSL state to the log
+ * @param connection the connection
+ */
 void cl_dump_ssl_private(cl_com_connection_t* connection) {
 
    cl_com_ssl_private_t* com_private = nullptr;
@@ -2457,6 +2521,11 @@ void cl_dump_ssl_private(cl_com_connection_t* connection) {
    }
 }
 
+/** @brief The port a connection connects to
+ * @param connection the connection
+ * @param port receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_get_connect_port(cl_com_connection_t* connection, int* port) {
    cl_com_ssl_private_t* com_private = nullptr;
 
@@ -2470,6 +2539,11 @@ int cl_com_ssl_get_connect_port(cl_com_connection_t* connection, int* port) {
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief The socket behind a connection
+ * @param connection the connection
+ * @param fd receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_get_fd(cl_com_connection_t* connection, int* fd) {
    cl_com_ssl_private_t* com_private = nullptr;
 
@@ -2487,6 +2561,11 @@ int cl_com_ssl_get_fd(cl_com_connection_t* connection, int* fd) {
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief Set the port a connection connects to
+ * @param connection the connection
+ * @param port the port
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_set_connect_port(cl_com_connection_t* connection, int port) {
 
    cl_com_ssl_private_t* com_private = nullptr;
@@ -2500,6 +2579,11 @@ int cl_com_ssl_set_connect_port(cl_com_connection_t* connection, int port) {
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief The port a service connection listens on
+ * @param connection the connection
+ * @param port receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_get_service_port(cl_com_connection_t* connection, int* port) {
    cl_com_ssl_private_t* com_private = nullptr;
 
@@ -2514,6 +2598,15 @@ int cl_com_ssl_get_service_port(cl_com_connection_t* connection, int* port) {
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief The remote port a client connected from
+ *
+ * Below 1024 means the peer was privileged, which is what makes reserved
+ * port security checkable.
+ *
+ * @param connection the connection
+ * @param port receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_get_client_socket_in_port(cl_com_connection_t* connection, int* port) {
    cl_com_ssl_private_t* com_private = nullptr;
    if (connection == nullptr || port == nullptr) {
@@ -2527,6 +2620,18 @@ int cl_com_ssl_get_client_socket_in_port(cl_com_connection_t* connection, int* p
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief Build an SSL connection object
+ * @param connection receives the new connection
+ * @param server_port the port to listen on, for a service
+ * @param connect_port the port to connect to, for a client
+ * @param data_flow_type stream or message oriented
+ * @param auto_close_mode whether a service may close it to make room
+ * @param framework_type the framework, #CL_CT_SSL here
+ * @param data_format_type binary or XML payload
+ * @param tcp_connect_mode whether to use a reserved local port
+ * @param ssl_setup the certificates and keys to use
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_setup_connection(cl_com_connection_t**          connection,
                                 int                            server_port,
                                 int                            connect_port,
@@ -2737,6 +2842,10 @@ int cl_com_ssl_setup_connection(cl_com_connection_t**          connection,
    return CL_RETVAL_OK;
 }
 
+/** @brief Close a connection and release its SSL state
+ * @param connection the connection, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_close_connection(cl_com_connection_t** connection) {
    cl_com_ssl_private_t* com_private = nullptr;
    int sock_fd = -1;
@@ -2770,6 +2879,10 @@ int cl_com_ssl_close_connection(cl_com_connection_t** connection) {
    return ret_val;
 }
 
+/** @brief Carry an SSL connection through its shutdown handshake
+ * @param connection the connection
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_connection_complete_shutdown(cl_com_connection_t*  connection) {
    cl_com_ssl_private_t* com_private = nullptr;
    int back = 0;
@@ -2821,6 +2934,11 @@ int cl_com_ssl_connection_complete_shutdown(cl_com_connection_t*  connection) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Carry an incoming SSL connection through its handshake
+ * @param connection the connection
+ * @param timeout when to give up
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_connection_complete_accept(cl_com_connection_t*  connection,
                                           long                  timeout) {
 
@@ -2980,6 +3098,11 @@ int cl_com_ssl_connection_complete_accept(cl_com_connection_t*  connection,
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief Connect outwards over SSL
+ * @param connection the connection
+ * @param timeout when to give up
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_open_connection(cl_com_connection_t* connection, int timeout) {
    cl_com_ssl_private_t* com_private = nullptr;
    int tmp_error = CL_RETVAL_OK;
@@ -3332,6 +3455,12 @@ int cl_com_ssl_open_connection(cl_com_connection_t* connection, int timeout) {
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief Read the length prefix over SSL
+ * @param connection the connection
+ * @param only_one_read when set, do a single read rather than looping;
+ *        receives how many bytes came in
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_read_GMSH(cl_com_connection_t* connection, unsigned long *only_one_read) {
    int retval = CL_RETVAL_OK;
    unsigned long data_read = 0;
@@ -3465,6 +3594,12 @@ static int cl_com_ssl_connection_request_handler_setup_finalize(cl_com_connectio
    return CL_RETVAL_OK;
 }
 
+/** @brief Create the listening socket of a service
+ * @param connection the connection
+ * @param only_prepare_service bind but do not listen yet, which is how
+ *        #CL_COMMLIB_DELAYED_LISTEN defers accepting
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_connection_request_handler_setup(cl_com_connection_t* connection, bool only_prepare_service) {
    int ret;
    int sockfd = 0;
@@ -3564,6 +3699,11 @@ int cl_com_ssl_connection_request_handler_setup(cl_com_connection_t* connection,
    return cl_com_ssl_connection_request_handler_setup_finalize(connection);
 }
 
+/** @brief Accept one waiting client
+ * @param connection the connection
+ * @param new_connection receives the accepted connection
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_connection_request_handler(cl_com_connection_t* connection,cl_com_connection_t** new_connection) {
    cl_com_connection_t* tmp_connection = nullptr;
    struct sockaddr_in cli_addr;
@@ -3673,6 +3813,10 @@ int cl_com_ssl_connection_request_handler(cl_com_connection_t* connection,cl_com
    return CL_RETVAL_OK;
 }
 
+/** @brief Close the listening socket of a service
+ * @param connection the connection
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_connection_request_handler_cleanup(cl_com_connection_t* connection) {
    cl_com_ssl_private_t* com_private = nullptr;
 
@@ -3693,6 +3837,17 @@ int cl_com_ssl_connection_request_handler_cleanup(cl_com_connection_t* connectio
    return CL_RETVAL_OK;
 }
 
+/** @brief Poll a handle's connections and mark what is ready
+ *
+ * @param poll_handle the `poll()` arrays, reused between calls
+ * @param handle the handle
+ * @param connection_list its connections
+ * @param service_connection the listening socket, or nullptr
+ * @param timeout_val_sec how long to wait, seconds
+ * @param timeout_val_usec how long to wait, microseconds
+ * @param select_mode whether to watch for reading, writing or both
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_open_connection_request_handler(cl_com_poll_t* poll_handle, cl_com_handle_t* handle, cl_raw_list_t* connection_list, cl_com_connection_t* service_connection, int timeout_val_sec, int timeout_val_usec, cl_select_method_t select_mode)
 {
 
@@ -4367,6 +4522,14 @@ int cl_com_ssl_open_connection_request_handler(cl_com_poll_t* poll_handle, cl_co
    return retval;
 }
 
+/** @brief Write to a connection over SSL
+ * @param connection the connection
+ * @param message the bytes
+ * @param size how many
+ * @param only_one_write when set, do a single write rather than looping;
+ *        receives how many bytes went out
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_write(cl_com_connection_t* connection, cl_byte_t* message, unsigned long size, unsigned long *only_one_write) {
    size_t int_size = sizeof(int);
    struct timeval now;
@@ -4452,6 +4615,14 @@ int cl_com_ssl_write(cl_com_connection_t* connection, cl_byte_t* message, unsign
    return CL_RETVAL_OK;
 }
 
+/** @brief Read from a connection over SSL
+ * @param connection the connection
+ * @param message buffer to read into
+ * @param size how many bytes are wanted
+ * @param only_one_read when set, do a single read rather than looping;
+ *        receives how many bytes came in
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_read(cl_com_connection_t* connection, cl_byte_t* message, unsigned long size, unsigned long *only_one_read) {
    size_t int_size = sizeof(int);
    struct timeval now;
@@ -4540,6 +4711,19 @@ int cl_com_ssl_read(cl_com_connection_t* connection, cl_byte_t* message, unsigne
    return CL_RETVAL_OK;
 }
 
+/** @brief The identity the peer's certificate carries
+ *
+ * What the commlib can tell the application about who is really at the other
+ * end - the user name out of the certificate rather than the one the peer
+ * claims.
+ *
+ * @param handle the handle
+ * @param un_resolved_hostname host of the peer
+ * @param component_name name of the peer component
+ * @param component_id id of the peer component
+ * @param uniqueIdentifier receives the identity; the caller frees it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_ssl_get_unique_id(cl_com_handle_t* handle,
                              char* un_resolved_hostname, char* component_name, unsigned long component_id, 
                              char** uniqueIdentifier) {

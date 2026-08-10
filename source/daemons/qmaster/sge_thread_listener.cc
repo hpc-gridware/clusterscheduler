@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The threads that accept connections and answer what they can alone
+ */
+
 #include <pthread.h>
 #include <cstring>
 
@@ -54,6 +58,10 @@
 #include "sge_thread_listener.h"
 #include "ocs_ReportingFileWriter.h"
 
+/** @brief Release the monitoring state when the listener thread ends
+ *
+ * @param monitor for monitoring qmaster threads
+ */
 static void
 sge_listener_cleanup_monitor(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -61,6 +69,8 @@ sge_listener_cleanup_monitor(monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
+/** @brief Start the listener thread pool
+ */
 void
 sge_listener_initialize() {
    DENTER(TOP_LAYER);
@@ -77,6 +87,8 @@ sge_listener_initialize() {
    DRETURN_VOID;
 }
 
+/** @brief Stop the listener threads and wait for them
+ */
 void
 sge_listener_terminate() {
    DENTER(TOP_LAYER);
@@ -128,6 +140,11 @@ sge_listener_terminate() {
    DRETURN_VOID;
 }
 
+/** @brief One the listener thread: it accepts connections and answers what it can without a worker
+ *
+ * @param arg the thread argument
+ * @return the thread's exit value
+ */
 [[noreturn]] void *
 sge_listener_main(void *arg) {
    DENTER(TOP_LAYER);

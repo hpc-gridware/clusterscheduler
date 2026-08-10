@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qconf - the userset and manager/operator list switches
+ */
+
 #include <cstdio>
 
 #include "uti/sge_log.h"
@@ -59,6 +63,16 @@
       -1 on error
 
 */
+/** @brief Add users to access lists, the `qconf -au` switch
+ *
+ * Every named user is added to every named list, so one invocation can be a
+ * cross product rather than a single pair.
+ *
+ * @param alpp used to return error messages
+ * @param user_args the users to add (`UE_Type`)
+ * @param acl_args the access lists to add them to (`US_Type`)
+ * @return 0 on success, -1 on error, with `alpp` filled
+ */
 int
 sge_client_add_user(lList **alpp, lList *user_args, lList *acl_args) {
    DENTER(TOP_LAYER);
@@ -145,6 +159,15 @@ sge_client_add_user(lList **alpp, lList *user_args, lList *acl_args) {
       -1 on error
 
 */
+/** @brief Remove users from access lists, the `qconf -du` switch
+ *
+ * The counterpart of #sge_client_add_user, and a cross product in the same way.
+ *
+ * @param alpp used to return error messages
+ * @param user_args the users to remove (`UE_Type`)
+ * @param acl_args the access lists to remove them from (`US_Type`)
+ * @return 0 on success, -1 on error, with `alpp` filled
+ */
 int
 sge_client_del_user(lList **alpp, lList *user_args, lList *acl_args) {
    DENTER(TOP_LAYER);
@@ -235,6 +258,13 @@ sge_client_del_user(lList **alpp, lList *user_args, lList *acl_args) {
       0 on success
 
 */
+/** @brief Fetch the named access lists from qmaster
+ *
+ * @param alpp used to return error messages
+ * @param acl_args the lists to fetch, as elements carrying `US_name`
+ * @param dst receives the fetched access lists (`US_Type`)
+ * @return 0 on success, -1 on error, with `alpp` filled
+ */
 int
 sge_client_get_acls(lList **alpp, lList *acl_args, lList **dst) {
    DENTER(TOP_LAYER);

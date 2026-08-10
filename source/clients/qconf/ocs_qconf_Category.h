@@ -19,11 +19,23 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Interface of the qconf job category switches
+ */
+
 #include "cull/cull.h"
 
 #include "sgeobj/ocs_Category.h"
 
 namespace ocs {
+   /** @brief The `qconf` switches that show job categories
+    *
+    * Categories are derived, not configured: qmaster groups jobs that make the
+    * same requests so the scheduler can decide once per group instead of once
+    * per job. So unlike every other `qconf` object there is nothing to add,
+    * change or delete here - only `-scat` and `-scatl` to look at what the
+    * master has worked out.
+    */
    class CategoryQconf {
    public:
       static bool

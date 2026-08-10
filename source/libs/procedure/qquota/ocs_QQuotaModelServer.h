@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Server side model of `qquota`: reads the lists inside qmaster
+ */
+
 #include "cull/cull.h"
 
 #include "gdi/ocs_gdi_Request.h"
@@ -39,6 +43,10 @@ namespace ocs {
       [[maybe_unused]] gdi::Packet *packet = nullptr;
       [[maybe_unused]] gdi::Task *task = nullptr;
    public:
+      /** @brief Build the server side model
+       * @param packet the originating client packet, so permission checks see the real caller
+       * @param task the GDI task being answered
+       */
       QQuotaModelServer(gdi::Packet *packet, gdi::Task *task) : packet(packet), task(task) {};
       ~QQuotaModelServer() override = default;
 

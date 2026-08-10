@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief host load value
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -52,10 +56,10 @@
 */
 
 enum {
-   HL_name = HL_LOWERBOUND,
-   HL_value,
-   HL_last_update,
-   HL_is_static
+   HL_name = HL_LOWERBOUND,   ///< name of the load variable
+   HL_value,   ///< value of the load variable
+   HL_last_update,   ///< date/time of last update
+   HL_is_static   ///< is it a static load value?
 };
 
 LISTDEF(HL_Type)
@@ -72,6 +76,7 @@ NAMEDEF(HLN)
    NAME("HL_is_static")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define HL_SIZE sizeof(HLN)/sizeof(char *)
 
 

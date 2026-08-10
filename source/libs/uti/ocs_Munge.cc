@@ -46,10 +46,27 @@ namespace ocs::uti {
    munge_enum_int_to_str_func_t Munge::munge_enum_int_to_str_func = nullptr;
    munge_enum_str_to_int_func_t Munge::munge_enum_str_to_int_func = nullptr;
 
+   /**
+    * @brief Has libmunge been loaded successfully?
+    *
+    * @return true when #initialize has succeeded and the function pointers are
+    *         usable
+    */
    bool Munge::is_initialized() {
       return lib_handle != nullptr;
    }
 
+   /**
+    * @brief Open libmunge and resolve the functions this code uses
+    *
+    * Fails if it has already succeeded — it is not idempotent, so call it once
+    * per process.
+    *
+    * @param[out] error_dstr receives the reason on failure: already
+    *        initialised, the library could not be opened, or a symbol was
+    *        missing
+    * @return true on success
+    */
    bool Munge::initialize(dstring *error_dstr) {
       DENTER(TOP_LAYER);
 

@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for performance in `libs/sgeobj`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 
@@ -42,9 +46,9 @@
  *    - c++ way to generate random data
  */
 
-int num_jobs = 10;
-uint32_t *random_array = nullptr;
-lList *master_job_list = nullptr;
+int num_jobs = 10;                  ///< how many jobs the benchmark builds
+uint32_t *random_array = nullptr;   ///< the ids to look up, in random order, so the measurement is not helped by locality
+lList *master_job_list = nullptr;   ///< the list under test
 
 static bool
 load_rand_file(const char *filename)

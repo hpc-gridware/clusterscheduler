@@ -35,6 +35,18 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Localisable message catalogue of the sgeobj library
+ *
+ * Each entry pairs an id with its text; the id is what the message catalogue is
+ * keyed on and must never be reused for different text.
+ *
+ * Do not write the message macro's name followed by an opening parenthesis
+ * anywhere in this file's comments: the testsuite parses these headers line by
+ * line looking for exactly that string, and a prose line carrying it fails
+ * `update_macro_messages_list` during test setup.
+ */
+
 #include "uti/sge_string.h"
 
 // clang-format off

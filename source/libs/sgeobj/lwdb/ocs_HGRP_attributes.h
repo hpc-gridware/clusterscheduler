@@ -24,19 +24,33 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Host Group
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of HGRP
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   HGRP_name = 6950,
-   HGRP_host_list,
-   HGRP_cqueue_list,
-   HGRP_joker,
-   HGRP_cached_hosts,
-   HGRP_cache_version
+   HGRP_name = 6950,   ///< Name
+   HGRP_host_list,   ///< Host List
+   HGRP_cqueue_list,   ///< Cluster Queue List
+   HGRP_joker,   ///< Joker
+   HGRP_cached_hosts,   ///< Cached Resolved Host List
+   HGRP_cache_version   ///< Cache Validity
 };
 
+/** @brief The attribute ids of HGRP, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int HGRP_Type[] = {
    HGRP_name,
    HGRP_host_list,
@@ -47,6 +61,10 @@ constexpr const int HGRP_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of HGRP
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define HGRP_ATTRIBUTES \
    {HGRP_name, "HGRP_name", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {HGRP_host_list, "HGRP_host_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

@@ -24,17 +24,31 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Configuration Element
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of CF
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   CF_name = 2550,
-   CF_value,
-   CF_sublist,
-   CF_local
+   CF_name = 2550,   ///< Configuration Name
+   CF_value,   ///< Configuration Value
+   CF_sublist,   ///< Configuration Sublist
+   CF_local   ///< Local Configuration
 };
 
+/** @brief The attribute ids of CF, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int CF_Type[] = {
    CF_name,
    CF_value,
@@ -43,6 +57,10 @@ constexpr const int CF_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of CF
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define CF_ATTRIBUTES \
    {CF_name, "CF_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {CF_value, "CF_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

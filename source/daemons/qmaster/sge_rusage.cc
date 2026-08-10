@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief One finished job, as it is written to the accounting and reporting files
+ */
 #include <cstring>
 
 #include "uti/ocs_Pattern.h"
@@ -59,54 +63,56 @@
 #include "sge_rusage.h"
 #include "msg_qmaster.h"
 
+/** @brief The field layout of one classic accounting record
+ *
+ * The order and count of the conversions here must match drusage field for
+ * field, and must not change: `qacct` and every site's own parser read this
+ * file positionally.
+ */
 #define ACTFILE_FPRINTF_FORMAT \
 "%s%c%s%c%s%c%s%c%s%c" sge_u32 "%c%s%c" sge_u32 "%c" sge_u64 "%c" sge_u64 "%c" sge_u64 "%c" sge_u32 "%c%d%c" \
 sge_u32 "%c%f%c%f%c%f%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c%f%c" \
 sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c" sge_u32 "%c%s%c%s%c%s%c%d%c" sge_u32 "%c%f%c%f%c%f%c%s%c%f%c%s%c%f%c" sge_u32 "%c" sge_u64 "" \
 "\n"
 
+/** @brief Fill in a default where the job report left a string unset
+ *
+ * The accounting record is positional, so an absent field would shift every
+ * later one; a placeholder keeps the line parseable.
+ *
+ * @param jr the job report
+ * @param nm the field
+ * @param s the default to use
+ */
 #define SET_STR_DEFAULT(jr, nm, s) if (lGetString(jr, nm) == nullptr) \
                                       lSetString(jr, nm, s)
 
-/****** sge_rusage/reporting_get_ulong_usage() ********************************
-*  NAME
-*     reporting_get_ulong_usage() -- return usage of a certain attribute
-*
-*  SYNOPSIS
-*     static uint32_t
-*     reporting_get_ulong_usage(const lList *usage_list, lList *reported_list,
-*                               const char *name, const char *rname, uint32_t def)
-*
-*  FUNCTION
-*     Return the usage information of a certain attribute (e.g. cpu, mem, ...).
-*     If already usage had been reported for the same job (ja_task, pe_task),
-*     do only report the newly added usage.
-*     If no usage information is available for the given attribute, a default
-*     value will be returned.
-*
-*     name and rname may differ, as already reported usage is taken from job
-*     online usage, e.g. attr USAGE_ATTR_CPU, whereas the final usage
-*     is reported in the attr USAGE_ATTR_CPU_ACCT. When we report final usage,
-*     we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract
-*     already reported usage coming from online usage USAGE_ATTR_CPU.
-*
-*  INPUTS
-*     const lList *usage_list - the usage (of a ja_task or pe_task)
-*     lList *reported_list    - the already (earlier) reported usage
-*     const char *name        - the name of the attribute
-*     const char *rname       - the name of the attribute in the already
-*                               reported usage
-*     uint32_t def            - default value
-*
-*  RESULT
-*     static uint32_t - the usage
-*
-*  NOTES
-*     MT-NOTE: reporting_get_ulong_usage() is MT safe
-*
-*  SEE ALSO
-*     sgeobj/usage/usage_list_get_ulong_usage()
-*******************************************************************************/
+/**
+ * @brief Return usage of a certain attribute
+ *
+ * Return the usage information of a certain attribute (e.g. cpu, mem, ...).
+ * If already usage had been reported for the same job (ja_task, pe_task),
+ * do only report the newly added usage.
+ * If no usage information is available for the given attribute, a default
+ * value will be returned.
+ * name and rname may differ, as already reported usage is taken from job
+ * online usage, e.g. attr USAGE_ATTR_CPU, whereas the final usage
+ * is reported in the attr USAGE_ATTR_CPU_ACCT. When we report final usage,
+ * we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract
+ * already reported usage coming from online usage USAGE_ATTR_CPU.
+ *
+ * @param usage_list the usage (of a ja_task or pe_task)
+ * @param reported_list the already (earlier) reported usage
+ * @param name the name of the attribute
+ * @param rname the name of the attribute in the already reported usage
+ * @param def default value
+ *
+ * @return the usage
+ *
+ * @note MT-NOTE: reporting_get_ulong_usage() is MT safe
+ *
+ * @see #usage_list_get_ulong_usage
+ */
 static uint32_t
 reporting_get_ulong_usage(const lList *usage_list, lList *reported_list,
                           const char *name, const char *rname, uint32_t def) {
@@ -131,52 +137,38 @@ reporting_get_ulong_usage(const lList *usage_list, lList *reported_list,
    return usage;
 }
 
-/****** sge_rusage/reporting_get_ulong_usage_sum() ****************************
-*  NAME
-*     reporting_get_ulong_usage_sum() -- return usage for a certain attribute
-*
-*  SYNOPSIS
-*     static uint32_t
-*     reporting_get_ulong_usage_sum(const lList *usage_list, lList *reported_list,
-*                                   bool accounting_summary, const lListElem *ja_task,
-*                                   const char *name, const char *rname, uint32_t def)
-*
-*  FUNCTION
-*     Return the usage information of a certain attribute (e.g. cpu, mem, ...).
-*     If already usage had been reported for the same job (ja_task, pe_task),
-*     do only report the newly added usage.
-*     If no usage information is available for the given attribute, a default
-*     value will be returned.
-*     If accounting_summary is true, the usage of all pe_tasks in the given
-*     ja_task object will be summed up as well.
-*     If reported_usage is nullptr, no usage will be booked as already reported,
-*     e.g. for maximum values.
-*
-*     name and rname may differ, as already reported usage is taken from job
-*     online usage, e.g. attr USAGE_ATTR_CPU, whereas the final usage
-*     is reported in the attr USAGE_ATTR_CPU_ACCT. When we report final usage,
-*     we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract
-*     already reported usage coming from online usage USAGE_ATTR_CPU.
-*
-*  INPUTS
-*     const lList *usage_list  - the usage (of a ja_task or pe_task)
-*     lList *reported_list     - the already (earlier) reported usage
-*     bool accounting_summary  - shall we sum up pe_task usage?
-*     const lListElem *ja_task - ja_task having pe_tasks
-*     const char *name         - the name of the attribute
-*     const char *rname        - the name of the attribute in the already
-*                                reported usage
-*     uint32_t def             - default value
-*
-*  RESULT
-*     static uint32_t - the usage
-*
-*  NOTES
-*     MT-NOTE: reporting_get_ulong_usage_sum() is MT safe
-*
-*  SEE ALSO
-*     sge_rusage/reporting_get_ulong_usage()
-*******************************************************************************/
+/**
+ * @brief Return usage for a certain attribute
+ *
+ * Return the usage information of a certain attribute (e.g. cpu, mem, ...).
+ * If already usage had been reported for the same job (ja_task, pe_task),
+ * do only report the newly added usage.
+ * If no usage information is available for the given attribute, a default
+ * value will be returned.
+ * If accounting_summary is true, the usage of all pe_tasks in the given
+ * ja_task object will be summed up as well.
+ * If reported_usage is nullptr, no usage will be booked as already reported,
+ * e.g. for maximum values.
+ * name and rname may differ, as already reported usage is taken from job
+ * online usage, e.g. attr USAGE_ATTR_CPU, whereas the final usage
+ * is reported in the attr USAGE_ATTR_CPU_ACCT. When we report final usage,
+ * we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract
+ * already reported usage coming from online usage USAGE_ATTR_CPU.
+ *
+ * @param usage_list the usage (of a ja_task or pe_task)
+ * @param reported_list the already (earlier) reported usage
+ * @param accounting_summary shall we sum up pe_task usage?
+ * @param ja_task ja_task having pe_tasks
+ * @param name the name of the attribute
+ * @param rname the name of the attribute in the already reported usage
+ * @param def default value
+ *
+ * @return the usage
+ *
+ * @note MT-NOTE: reporting_get_ulong_usage_sum() is MT safe
+ *
+ * @see #reporting_get_ulong_usage
+ */
 static uint32_t
 reporting_get_ulong_usage_sum(const lList *usage_list, lList *reported_list, bool accounting_summary,
                               const lListElem *ja_task, const char *name, const char *rname, uint32_t def) {
@@ -202,45 +194,32 @@ reporting_get_ulong_usage_sum(const lList *usage_list, lList *reported_list, boo
    return usage;
 }
 
-/****** sge_rusage/reporting_get_double_usage() ********************************
-*  NAME
-*     reporting_get_double_usage() -- return usage of a certain attribute
-*
-*  SYNOPSIS
-*     static double
-*     reporting_get_double_usage(const lList *usage_list, lList *reported_list,
-*                                const char *name, const char *rname, double def)
-*
-*  FUNCTION
-*     Return the usage information of a certain attribute (e.g. cpu, mem, ...).
-*     If already usage had been reported for the same job (ja_task, pe_task),
-*     do only report the newly added usage.
-*     If no usage information is available for the given attribute, a default
-*     value will be returned.
-*
-*     name and rname may differ, as already reported usage is taken from job
-*     online usage, e.g. attr USAGE_ATTR_CPU, whereas the final usage
-*     is reported in the attr USAGE_ATTR_CPU_ACCT. When we report final usage,
-*     we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract
-*     already reported usage coming from online usage USAGE_ATTR_CPU.
-*
-*  INPUTS
-*     const lList *usage_list - the usage (of a ja_task or pe_task)
-*     lList *reported_list    - the already (earlier) reported usage
-*     const char *name        - the name of the attribute
-*     const char *rname       - the name of the attribute in the already
-*                               reported usage
-*     double def              - default value
-*
-*  RESULT
-*     static double - the usage
-*
-*  NOTES
-*     MT-NOTE: reporting_get_double_usage() is MT safe
-*
-*  SEE ALSO
-*     sgeobj/usage/usage_list_get_double_usage()
-*******************************************************************************/
+/**
+ * @brief Return usage of a certain attribute
+ *
+ * Return the usage information of a certain attribute (e.g. cpu, mem, ...).
+ * If already usage had been reported for the same job (ja_task, pe_task),
+ * do only report the newly added usage.
+ * If no usage information is available for the given attribute, a default
+ * value will be returned.
+ * name and rname may differ, as already reported usage is taken from job
+ * online usage, e.g. attr USAGE_ATTR_CPU, whereas the final usage
+ * is reported in the attr USAGE_ATTR_CPU_ACCT. When we report final usage,
+ * we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract
+ * already reported usage coming from online usage USAGE_ATTR_CPU.
+ *
+ * @param usage_list the usage (of a ja_task or pe_task)
+ * @param reported_list the already (earlier) reported usage
+ * @param name the name of the attribute
+ * @param rname the name of the attribute in the already reported usage
+ * @param def default value
+ *
+ * @return the usage
+ *
+ * @note MT-NOTE: reporting_get_double_usage() is MT safe
+ *
+ * @see `usage_list_get_double_usage()`
+ */
 static double
 reporting_get_double_usage(const lList *usage_list, lList *reported_list, const char *name, const char *rname,
                            double def) {
@@ -265,52 +244,38 @@ reporting_get_double_usage(const lList *usage_list, lList *reported_list, const 
    return usage;
 }
 
-/****** sge_rusage/reporting_get_double_usage_sum() ****************************
-*  NAME
-*     reporting_get_double_usage_sum() -- return usage for a certain attribute
-*
-*  SYNOPSIS
-*     static double
-*     reporting_get_double_usage_sum(const lList *usage_list, lList *reported_list,
-*                                    bool accounting_summary, const lListElem *ja_task,
-*                                    const char *name, const char *rname, double def)
-*
-*  FUNCTION
-*     Return the usage information of a certain attribute (e.g. cpu, mem, ...).
-*     If already usage had been reported for the same job (ja_task, pe_task),
-*     do only report the newly added usage.
-*     If no usage information is available for the given attribute, a default
-*     value will be returned.
-*     If accounting_summary is true, the usage of all pe_tasks in the given
-*     ja_task object will be summed up as well.
-*     If reported_usage is nullptr, no usage will be booked as already reported,
-*     e.g. for maximum values.
-*
-*     name and rname may differ, as already reported usage is taken from job
-*     online usage, e.g. attr USAGE_ATTR_CPU, whereas the final usage
-*     is reported in the attr USAGE_ATTR_CPU_ACCT. When we report final usage,
-*     we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract
-*     already reported usage coming from online usage USAGE_ATTR_CPU.
-*
-*  INPUTS
-*     const lList *usage_list  - the usage (of a ja_task or pe_task)
-*     lList *reported_list     - the already (earlier) reported usage
-*     bool accounting_summary  - shall we sum up pe_task usage?
-*     const lListElem *ja_task - ja_task having pe_tasks
-*     const char *name         - the name of the attribute
-*     const char *rname        - the name of the attribute in the already
-*                                reported usage
-*     double def               - default value
-*
-*  RESULT
-*     static double - the usage
-*
-*  NOTES
-*     MT-NOTE: reporting_get_double_usage_sum() is MT safe
-*
-*  SEE ALSO
-*     sge_rusage/reporting_get_double_usage()
-*******************************************************************************/
+/**
+ * @brief Return usage for a certain attribute
+ *
+ * Return the usage information of a certain attribute (e.g. cpu, mem, ...).
+ * If already usage had been reported for the same job (ja_task, pe_task),
+ * do only report the newly added usage.
+ * If no usage information is available for the given attribute, a default
+ * value will be returned.
+ * If accounting_summary is true, the usage of all pe_tasks in the given
+ * ja_task object will be summed up as well.
+ * If reported_usage is nullptr, no usage will be booked as already reported,
+ * e.g. for maximum values.
+ * name and rname may differ, as already reported usage is taken from job
+ * online usage, e.g. attr USAGE_ATTR_CPU, whereas the final usage
+ * is reported in the attr USAGE_ATTR_CPU_ACCT. When we report final usage,
+ * we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract
+ * already reported usage coming from online usage USAGE_ATTR_CPU.
+ *
+ * @param usage_list the usage (of a ja_task or pe_task)
+ * @param reported_list the already (earlier) reported usage
+ * @param accounting_summary shall we sum up pe_task usage?
+ * @param ja_task ja_task having pe_tasks
+ * @param name the name of the attribute
+ * @param rname the name of the attribute in the already reported usage
+ * @param def default value
+ *
+ * @return the usage
+ *
+ * @note MT-NOTE: reporting_get_double_usage_sum() is MT safe
+ *
+ * @see #reporting_get_double_usage
+ */
 static double
 reporting_get_double_usage_sum(const lList *usage_list, lList *reported_list, bool accounting_summary,
                                const lListElem *ja_task, const char *name, const char *rname, double def) {
@@ -357,6 +322,24 @@ none_string(const char *str) {
    return ret;
 }
 
+/** @brief Write one job's accounting or reporting record
+ *
+ * The same data serves both files, so the caller says which by passing either
+ * a @p buffer (the delimiter-separated accounting format) or a @p writer (the
+ * JSON reporting format).
+ *
+ * @param buffer receives the record in delimiter-separated form, or nullptr
+ * @param writer receives the record as JSON, or nullptr
+ * @param jr the job report the execution host sent
+ * @param job the job (`JB_Type`)
+ * @param ja_task the array task
+ * @param category_str the job's scheduling category
+ * @param usage_patterns which of the reported usage values to include
+ * @param delimiter what separates the fields of the accounting format
+ * @param intermediate whether this is an intermediate record for a still running job
+ * @param is_reporting whether the record is for the reporting file rather than accounting
+ * @return true on success
+ */
 bool
 sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *writer, lListElem *jr, lListElem *job,
                  lListElem *ja_task, const char *category_str, std::vector<std::pair<std::string, std::string>> *usage_patterns, const char delimiter,

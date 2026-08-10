@@ -16,6 +16,10 @@
  *
  ***************************************************************************/
 
+/** @file
+ * @brief Base view of `qhost`, and the interface the three output formats implement
+ */
+
 #include <cstdlib>
 #include <cstring>
 #include <sys/stat.h>
@@ -64,11 +68,27 @@
 
 #include "ocs_QHostViewJSON.h"
 
+/** @brief Build a view for one qhost call
+ * @param parameter the call's parameters; the view keeps what it needs for formatting
+ */
 ocs::QHostViewBase::QHostViewBase(const QHostParameter &parameter) : ProcedureView(parameter) {
    full_listing_ = parameter.get_show();
 }
 
 /*-------------------------------------------------------------------------*/
+/** @brief Render one execution host and everything under it
+
+ * @param os stream to write to
+
+ * @param hep the execution host (`EH_Type`)
+
+ * @param parameter the call's parameters
+
+ * @param model the fetched lists
+
+ * @param report_handler the view whose hooks are called; normally `*this`
+ */
+
 void
 ocs::QHostViewBase::show_host(std::ostream &os, const lListElem *hep, const QHostParameter &parameter, const QHostModelBase &model, QHostViewBase &report_handler) {
    DENTER(TOP_LAYER);
@@ -252,6 +272,13 @@ ocs::QHostViewBase::show_host(std::ostream &os, const lListElem *hep, const QHos
 }
 
 /*-------------------------------------------------------------------------*/
+/** @brief Render the queues of one host
+ * @param os stream to write to
+ * @param host the execution host (`EH_Type`)
+ * @param parameter the call's parameters
+ * @param model the fetched lists
+ * @param report_handler the view whose hooks are called
+ */
 void
 ocs::QHostViewBase::show_host_queues(std::ostream &os, lListElem *host, QHostParameter &parameter, QHostModelBase &model, QHostViewBase &report_handler) {
    DENTER(TOP_LAYER);
@@ -338,6 +365,13 @@ ocs::QHostViewBase::show_host_queues(std::ostream &os, lListElem *host, QHostPar
 }
 
 
+/** @brief Render the resources of one host
+ * @param os stream to write to
+ * @param host the execution host (`EH_Type`)
+ * @param parameter the call's parameters
+ * @param model the fetched lists
+ * @param report_handler the view whose hooks are called
+ */
 void
 ocs::QHostViewBase::show_host_resources(std::ostream &os, lListElem *host, const QHostParameter &parameter, const QHostModelBase &model, QHostViewBase &report_handler) {
    DENTER(TOP_LAYER);
@@ -414,6 +448,13 @@ ocs::QHostViewBase::show_host_resources(std::ostream &os, lListElem *host, const
    DRETURN_VOID;
 }
 
+/** @brief Re-render a double that was already formatted as text
+ *
+ * @param new_string receives the result
+ * @param result_size size of that buffer
+ * @param format the format to apply
+ * @param old_string the value as it was formatted before
+ */
 void
 ocs::QHostViewBase::reformat_double_string(char *new_string, const size_t result_size, const char *format, const char *old_string)
 {
@@ -446,6 +487,31 @@ ocs::QHostViewBase::reformat_double_string(char *new_string, const size_t result
 
 
 // slots_per_line: number of slots to be printed in slots column when 0 is passed the number of requested slots printed
+/** @brief Render one job line
+ *
+ * The parameter list is long because the caller has already worked out
+ * everything about the job's place in the listing - which slot of which
+ * queue, how wide the name column is, whether the id still has to be
+ * printed - and the hook only formats.
+ *
+ * @param os stream to write to
+ * @param job the job (`JB_Type`)
+ * @param jatep the array task (`JAT_Type`)
+ * @param qep the queue instance the task runs in
+ * @param print_jobid whether the job id still has to be printed on this line
+ * @param master name of the master queue for a parallel job
+ * @param dyn_task_str the task range, pre-rendered
+ * @param full_listing which optional columns the user asked for
+ * @param slots slots the task holds in this queue
+ * @param slot which slot this line is about
+ * @param indent leading whitespace for this nesting level
+ * @param group_opt how tasks of an array job are grouped
+ * @param slots_per_line how many slots fit on one line
+ * @param queue_name_length width of the queue name column
+ * @param parameter the call's parameters
+ * @param model the fetched lists
+ * @param report_handler the view whose hooks are called
+ */
 void
 ocs::QHostViewBase::show_job(std::ostream &os, lListElem *job, lListElem *jatep, lListElem *qep, int print_jobid, const char *master,
                                   dstring *dyn_task_str, uint32_t full_listing, int slots, int slot,
@@ -869,6 +935,19 @@ ocs::QHostViewBase::show_job(std::ostream &os, lListElem *job, lListElem *jatep,
 /*-------------------------------------------------------------------------*/
 /* print jobs per queue                                                    */
 /*-------------------------------------------------------------------------*/
+/** @brief Render the jobs running in one queue instance
+ *
+ * @param os stream to write to
+ * @param qep the queue instance (`QU_Type`)
+ * @param print_jobs_of_queue whether the jobs are listed at all
+ * @param full_listing which optional columns the user asked for
+ * @param indent leading whitespace for this nesting level
+ * @param group_opt how tasks of an array job are grouped
+ * @param queue_name_length width of the queue name column
+ * @param parameter the call's parameters
+ * @param model the fetched lists
+ * @param report_handler the view whose hooks are called
+ */
 void
 ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, lListElem *qep, int print_jobs_of_queue, uint32_t full_listing,
                                         const char *indent, uint32_t group_opt, int queue_name_length,

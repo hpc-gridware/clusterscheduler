@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief JSON rendering of `qrstat`
+ */
+
 #include "ocs_QRStatViewJSON.h"
 
 #include <ostream>
@@ -31,6 +35,9 @@
 
 #include "qrstat/ocs_QRStatViewJSON.h"
 
+/** @brief Build the JSON view
+ * @param parameter the call's parameters
+ */
 ocs::QRStatViewJSON::QRStatViewJSON(const QRStatParameter &parameter) : QRStatViewBase(parameter) {
 };
 

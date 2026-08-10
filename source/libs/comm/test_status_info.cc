@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: asking a peer for its status
+ *
+ * Sends a SIM and prints the SIRM - the same exchange `qping -info` makes.
+ *
+ * Usage: `test_status_info <server host> <port>`
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 
 #include <cstdio>
 #include <cstdlib>
@@ -44,8 +54,11 @@
 #include "comm/cl_connection_list.h"
 
 
-#define CL_DO_SLOW 1
+#define CL_DO_SLOW 1   ///< Insert sleeps between the steps, so the exchange can be followed by eye
 
+/** @brief Note the signal so the client loop can leave
+ * @param sig the signal that arrived
+ */
 void sighandler_client(int sig);
 
 static int do_shutdown = 0;
@@ -68,6 +81,11 @@ void sighandler_client(
    do_shutdown = 1;
 }
 
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 extern int main(int argc, char **argv) {
    struct sigaction sa;
    int i;

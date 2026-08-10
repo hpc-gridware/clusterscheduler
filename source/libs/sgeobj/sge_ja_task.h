@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for array tasks: one task of a job array
+ *
+ * @see sge_ja_task.cc
+ */
+
 #include "uti/sge_dstring.h"
 
 #include "sgeobj/cull/sge_ja_task_JAT_L.h"

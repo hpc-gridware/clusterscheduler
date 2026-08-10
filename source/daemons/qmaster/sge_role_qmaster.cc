@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief RBAC roles
+ */
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -38,6 +42,24 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
+/** @brief Apply one attribute change to a RBAC role
+ *
+ * The gdi_object_t::modifier for RBAC roles; see sge_c_gdi.h for the sequence it is called from.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param new_ep see the declaration
+ * @param ep the object
+ * @param add 1 for add, 0 for modify
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param object the table entry for this object type
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ep, lListElem *ep, int add,
          const char *ruser, const char *rhost, gdi_object_t *object,
@@ -115,6 +137,17 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    DRETURN(0);
 }
 
+/** @brief Write a RBAC role to the spool
+ *
+ * The gdi_object_t::writer for RBAC roles.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param ep the object
+ * @param object the table entry for this object type
+ * @return 0 on success
+ */
 int
 role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
@@ -133,6 +166,19 @@ role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    DRETURN(dbret ? 0 : 1);
 }
 
+/** @brief Announce a RBAC role change once it is safely spooled
+ *
+ * The gdi_object_t::on_success for RBAC roles.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep the object
+ * @param old_ep the object as it was, or nullptr on add
+ * @param object the table entry for this object type
+ * @param ppList receives information for post processing
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
              lList **ppList, monitoring_t *monitor) {
@@ -144,6 +190,17 @@ role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
    DRETURN(0);
 }
 
+/** @brief Delete a role from the master role list
+ *
+ * @param packet the GDI packet holding the request
+ * @param task the GDI task within that packet
+ * @param ep an element carrying at least the `RL_name` of the role to delete
+ * @param alpp used to return error messages
+ * @param ruser the user who requested the deletion
+ * @param rhost the host the request came from
+ * @return `STATUS_OK`, or one of `STATUS_EUNKNOWN` / `STATUS_EEXIST` with
+ *         `alpp` filled
+ */
 int
 sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
    lList **master_role_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_RL);

@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The host name cache
+ */
+
 #include <cstdio>
 #include <cerrno>
 #include <cstring>
@@ -50,6 +54,18 @@ static struct in_addr *cl_com_copy_in_addr(struct in_addr *in_addr);
 
 static cl_com_hostent_t *cl_com_copy_hostent(cl_com_hostent_t *hostent);
 
+/** @brief Create the host cache
+ * @param list_p receives the new list
+ * @param list_name name for log messages
+ * @param method whether names are compared short or fully qualified
+ * @param host_alias_file path to the alias file, may be nullptr
+ * @param local_domain_name the domain stripped for short comparison
+ * @param entry_life_time how long an entry survives untouched
+ * @param entry_update_time how long a resolution stays valid
+ * @param entry_reresolve_time how soon an unresolvable name is retried
+ * @param create_hash build the lookup table
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_host_list_setup(cl_raw_list_t **list_p,
                        const char *list_name,
                        cl_host_resolve_method_t method,
@@ -251,6 +267,12 @@ int cl_host_list_setup(cl_raw_list_t **list_p,
    return ret_val;
 }
 
+/** @brief Copy a host cache, locking the source
+ * @param destination receives the copy
+ * @param source the list to copy
+ * @param create_hash build a lookup table for the copy
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_host_list_copy(cl_raw_list_t **destination, cl_raw_list_t *source, bool create_hash) {
    int ret_val = CL_RETVAL_OK;
    cl_host_list_data_t *ldata_source = nullptr;
@@ -387,6 +409,10 @@ int cl_host_list_copy(cl_raw_list_t **destination, cl_raw_list_t *source, bool c
    return ret_val;
 }
 
+/** @brief The cache's own state
+ * @param list_p the cache
+ * @return its #cl_host_list_data_t
+ */
 cl_host_list_data_t *cl_host_list_get_data(cl_raw_list_t *list_p) {
 
    cl_host_list_data_t *ldata = nullptr;
@@ -406,6 +432,10 @@ cl_host_list_data_t *cl_host_list_get_data(cl_raw_list_t *list_p) {
    return ldata;
 }
 
+/** @brief Mark the alias file as needing to be read again
+ * @param list_p the cache
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_host_list_set_alias_file_dirty(cl_raw_list_t *list_p) {
    int ret_val;
    cl_host_list_data_t *ldata = nullptr;
@@ -437,6 +467,11 @@ int cl_host_list_set_alias_file_dirty(cl_raw_list_t *list_p) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Point the cache at an alias file
+ * @param list_p the cache
+ * @param host_alias_file the path
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_host_list_set_alias_file(cl_raw_list_t *list_p, const char *host_alias_file) {
    int ret_val;
    cl_host_list_data_t *ldata = nullptr;
@@ -478,6 +513,10 @@ int cl_host_list_set_alias_file(cl_raw_list_t *list_p, const char *host_alias_fi
    return CL_RETVAL_OK;
 }
 
+/** @brief Free the host cache and everything in it
+ * @param list_p the list, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_host_list_cleanup(cl_raw_list_t **list_p) {
    cl_host_list_data_t *ldata = nullptr;
    cl_host_list_elem_t *elem = nullptr;
@@ -520,6 +559,12 @@ int cl_host_list_cleanup(cl_raw_list_t **list_p) {
    return cl_raw_list_cleanup(list_p);
 }
 
+/** @brief Add a resolved host to the cache
+ * @param list_p the cache
+ * @param host the entry, taken over by the list
+ * @param lock_list take the list lock; pass 0 when the caller already holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_host_list_append_host(cl_raw_list_t *list_p, cl_com_host_spec_t *host, int lock_list) {
 
    int ret_val;
@@ -572,6 +617,12 @@ int cl_host_list_append_host(cl_raw_list_t *list_p, cl_com_host_spec_t *host, in
    return CL_RETVAL_OK;
 }
 
+/** @brief Take a host out of the cache
+ * @param list_p the cache
+ * @param host the entry to remove
+ * @param lock_list take the list lock; pass 0 when the caller already holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_host_list_remove_host(cl_raw_list_t *list_p, cl_com_host_spec_t *host, int lock_list) {
    int ret_val = CL_RETVAL_OK;
    int function_return = CL_RETVAL_UNKNOWN_HOST_ERROR;
@@ -614,6 +665,11 @@ int cl_host_list_remove_host(cl_raw_list_t *list_p, cl_com_host_spec_t *host, in
    return function_return;
 }
 
+/** @brief Find a cache entry by name
+ * @param list_p the cache
+ * @param unresolved_hostname the name to look for, as written by the caller
+ * @return the element, or nullptr
+ */
 cl_host_list_elem_t *cl_host_list_get_elem_host(cl_raw_list_t *list_p, const char *unresolved_hostname) {
    cl_host_list_elem_t *elem = nullptr;
 
@@ -641,6 +697,10 @@ cl_host_list_elem_t *cl_host_list_get_elem_host(cl_raw_list_t *list_p, const cha
    return nullptr;
 }
 
+/** @brief The first cached host
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_host_list_elem_t *cl_host_list_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -649,6 +709,10 @@ cl_host_list_elem_t *cl_host_list_get_first_elem(cl_raw_list_t *list_p) {
    return nullptr;
 }
 
+/** @brief The last cached host
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_host_list_elem_t *cl_host_list_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
    if (raw_elem) {
@@ -657,6 +721,10 @@ cl_host_list_elem_t *cl_host_list_get_least_elem(cl_raw_list_t *list_p) {
    return nullptr;
 }
 
+/** @brief The element after this one
+ * @param elem the current element
+ * @return the next element, or nullptr at the end
+ */
 cl_host_list_elem_t *cl_host_list_get_next_elem(cl_host_list_elem_t *elem) {
    cl_raw_list_elem_t *next_raw_elem = nullptr;
 
@@ -670,6 +738,10 @@ cl_host_list_elem_t *cl_host_list_get_next_elem(cl_host_list_elem_t *elem) {
    return nullptr;
 }
 
+/** @brief The element before this one
+ * @param elem the current element
+ * @return the previous element, or nullptr at the start
+ */
 cl_host_list_elem_t *cl_host_list_get_last_elem(cl_host_list_elem_t *elem) {
    cl_raw_list_elem_t *last_raw_elem = nullptr;
 

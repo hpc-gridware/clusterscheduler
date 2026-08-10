@@ -33,6 +33,20 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The generic GDI request path: one table, every configuration object
+ *
+ * Adding, modifying and deleting a calendar, a queue, a user or a project is
+ * the same sequence every time - validate, spool, announce - and only the
+ * validation and the spooling differ. So each object type contributes one
+ * #gdi_object_t giving its list, its key field and those few functions, and
+ * sge_gdi_add_mod_generic() does the rest.
+ *
+ * That is why a new configuration object needs a table entry rather than a new
+ * request handler, and why a bug in the sequence is a bug for every object at
+ * once.
+ */
+
 #include "uti/sge_monitor.h"
 
 #include "cull/cull.h"
@@ -42,8 +56,12 @@
 #include "sgeobj/sge_daemonize.h"
 #include "gdi/ocs_gdi_Packet.h"
 
-typedef struct _gdi_object_t gdi_object_t;
+typedef struct _gdi_object_t gdi_object_t;   ///< @copybrief _gdi_object_t
 
+/** @brief Validates one attribute change and applies it to the destination object
+ *
+ * Called once per attribute the client wants changed.
+ */
 typedef int (*modifier_func_t)(
         ocs::gdi::Packet *packet,
         ocs::gdi::Task *task,
@@ -59,6 +77,7 @@ typedef int (*modifier_func_t)(
         monitoring_t *monitor
 );
 
+/** @brief Spools the object once every change has been validated */
 typedef int (*writer_func_t)(
         ocs::gdi::Packet *packet,
         ocs::gdi::Task *task,
@@ -67,9 +86,15 @@ typedef int (*writer_func_t)(
         gdi_object_t *thiz   /* some kind of "this" */
 );
 
-/* allows to retrieve a master list */
+/** @brief allows to retrieve a master list */
 typedef lList **(*getMasterList)();
 
+/** @brief Does whatever has to happen once the object is safely spooled
+ *
+ * Anything that must not be done before the change is on disk - announcing it
+ * to the event clients, triggering a scheduling run - belongs here rather than
+ * in the modifier.
+ */
 typedef int (*on_success_func_t)(
         ocs::gdi::Packet *packet,
         ocs::gdi::Task *task,
@@ -80,15 +105,16 @@ typedef int (*on_success_func_t)(
         monitoring_t *monitor  /* monitoring structure */
 );
 
+/** @brief Everything the generic request path needs to know about one object type */
 struct _gdi_object_t {
-   ocs::gdi::Target target;          /* SGE_QUEUE_LIST */
-   int key_nm;          /* QU_qname */
-   lDescr *type;           /* QU_Type */
-   const char *object_name;    /* "queue" */
-   sge_object_type list_type;       /* identifier to retrive the master list via ocs::DataStore::get_master_list*/
-   modifier_func_t modifier;        /* responsible for validating each our attribute modifier */
-   writer_func_t writer;          /* function that spools our object */
-   on_success_func_t on_success;      /* do everything what has to be done on successful writing */
+   ocs::gdi::Target target;          ///< Which GDI target this is, e.g. `SGE_QUEUE_LIST`
+   int key_nm;          ///< The field that identifies an object, e.g. `QU_qname`
+   lDescr *type;           ///< The CULL type, e.g. `QU_Type`
+   const char *object_name;    ///< Its name in messages, e.g. `"queue"`
+   sge_object_type list_type;       ///< identifier to retrive the master list via ocs::DataStore::get_master_list
+   modifier_func_t modifier;        ///< responsible for validating each our attribute modifier
+   writer_func_t writer;          ///< function that spools our object
+   on_success_func_t on_success;      ///< do everything what has to be done on successful writing
 };
 
 gdi_object_t *get_gdi_object(ocs::gdi::Target);

@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base model of `qhost`: the lists the report is built from
+ */
+
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge.h"
@@ -50,11 +54,28 @@ ocs::QHostModelBase::~QHostModelBase() {
    DRETURN_VOID;
 }
 
+/** @brief Fetch raw CULL lists into the member variables.
+ *
+ * Overridden by QHostModelClient (GDI calls) and QHostModelServer (master lists).
+ *
+ * @param answer_list receives error messages
+ * @param hostname_list the hosts the user asked for; all hosts when empty
+ * @param user_name_list the users the user asked for; all users when empty
+ * @param show which of queues, jobs and resources were requested
+ * @return true when everything could be fetched
+ */
 bool ocs::QHostModelBase::fetch_data(lList **answer_list, const lList *hostname_list, const lList *user_name_list, uint32_t show) {
    // Nothing common to do
    return true;
 }
 
+/** @brief Post-process fetched lists (e.g. resolve hostgroup references).
+ *
+ * @param answer_list receives error messages
+ * @param resource_match_list the resource filter the user gave
+ * @param show which of queues, jobs and resources were requested
+ * @return true when the lists could be prepared
+ */
 bool ocs::QHostModelBase::prepare_data(lList **answer_list, const lList *resource_match_list, uint32_t show) const {
    DENTER(TOP_LAYER);
    // tag jobs for printing if they should be shown
@@ -83,6 +104,10 @@ bool ocs::QHostModelBase::prepare_data(lList **answer_list, const lList *resourc
    DRETURN(true);
 }
 
+/** @brief Apply the resource-match filter to the exec host list.
+ *
+ * @param resource_match_list the resource filter the user gave
+ */
 void ocs::QHostModelBase::filter_data(const lList *resource_match_list) {
    DENTER(TOP_LAYER);
 
@@ -141,6 +166,7 @@ void ocs::QHostModelBase::filter_data(const lList *resource_match_list) {
    DRETURN_VOID;
 }
 
+/** @brief Sort the exec host list for deterministic view output. */
 void ocs::QHostModelBase::sort_data() {
    DENTER(TOP_LAYER);
 
@@ -159,6 +185,12 @@ void ocs::QHostModelBase::sort_data() {
    DRETURN_VOID;
 }
 
+/** @brief Run the full pipeline: fetch_data → prepare_data → filter_data → sort_data.
+ *
+ * @param answer_list  Receives error messages on failure.
+ * @param parameter    Parsed qhost parameters.
+ * @return true if all pipeline steps succeeded.
+ */
 bool
 ocs::QHostModelBase::make_snapshot(lList **answer_list, QHostParameter &parameter) {
    DENTER(TOP_LAYER);
@@ -186,6 +218,9 @@ ocs::QHostModelBase::make_snapshot(lList **answer_list, QHostParameter &paramete
 }
 
 /** @brief Returns a hostname filter.
+ *
+ * @param hostname_list the hosts the user asked for
+ * @return the condition, which the caller owns; nullptr when no host was named
  */
 lCondition *
 ocs::QHostModelBase::get_host_where(const lList *hostname_list) {
@@ -218,14 +253,25 @@ ocs::QHostModelBase::get_host_where(const lList *hostname_list) {
    DRETURN(where);
 }
 
+/** @brief The execution host fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QHostModelBase::get_host_what() {
    return lWhat("%T(ALL)", EH_Type);
 }
 
+/** @brief The queue instance fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QHostModelBase::get_queue_what() {
    return lWhat("%T(ALL)", QU_Type);
 }
 
+/** @brief Build the CULL condition selecting the jobs to report
+ * @param user_name_list the users the user asked for; all users when empty
+ * @param show which of queues, jobs and resources were requested
+ * @return the condition, which the caller owns
+ */
 lCondition * ocs::QHostModelBase::get_job_where(const lList *user_name_list, const uint32_t show) {
    DENTER(TOP_LAYER);
    lCondition *where = nullptr;
@@ -256,6 +302,9 @@ lCondition * ocs::QHostModelBase::get_job_where(const lList *user_name_list, con
    DRETURN(where);
 }
 
+/** @brief The job fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QHostModelBase::get_job_what() {
    //                    1           5              10             15             20             25
    return  lWhat("%T(%I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I)",
@@ -268,14 +317,23 @@ lEnumeration *ocs::QHostModelBase::get_job_what() {
                          JB_ja_a_h_ids);
 }
 
+/** @brief The complex entry fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QHostModelBase::get_centry_what() {
    return lWhat("%T(ALL)", CE_Type);
 }
 
+/** @brief The parallel environment fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QHostModelBase::get_pe_what() {
    return lWhat("%T(ALL)", PE_Type);
 }
 
+/** @brief The user set fields the model needs
+ * @return the enumeration, which the caller owns
+ */
 lEnumeration *ocs::QHostModelBase::get_user_set_what() {
    return lWhat("%T(ALL)", US_Type);
 }

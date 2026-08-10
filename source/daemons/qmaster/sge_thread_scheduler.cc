@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Starting and stopping the scheduler thread while qmaster runs
+ */
+
 #include <pthread.h>
 #include <cstring>
 #include <cerrno>
@@ -77,12 +81,18 @@
 #include "ocs_Bootstrap.h"
 #include "ocs_gperf.h"
 
+/** @brief Seconds the scheduler thread waits for work before looking around
+ *
+ * A wake-up is normally driven by the event trigger; this bounds how long the
+ * thread sleeps when nothing happens at all.
+ */
 #define SCHEDULER_TIMEOUT_S 10
 
 static char schedule_log_path[SGE_PATH_MAX + 1] = "";
 static const char *schedule_log_file = "schedule";
 static int SGE_TEST_DELAY_SCHEDULING = 0;
 
+/** @brief @copybrief master_scheduler_class_t */
 master_scheduler_class_t Master_Scheduler = {
         PTHREAD_MUTEX_INITIALIZER,
         false,
@@ -148,6 +158,10 @@ schedd_serf_newline() {
 }
 
 
+/** @brief Release the monitoring state when the scheduler thread ends
+ *
+ * @param arg the thread argument
+ */
 static void
 sge_scheduler_cleanup_monitor(void *arg) {
    DENTER(TOP_LAYER);
@@ -156,6 +170,10 @@ sge_scheduler_cleanup_monitor(void *arg) {
    DRETURN_VOID;
 }
 
+/** @brief Deregister the scheduler as an event client when the thread ends
+ *
+ * @param arg the thread argument
+ */
 static void
 sge_scheduler_cleanup_event_client(void *arg) {
    DENTER(TOP_LAYER);
@@ -164,6 +182,10 @@ sge_scheduler_cleanup_event_client(void *arg) {
    DRETURN_VOID;
 }
 
+/** @brief Release the scheduler's event subscription
+ *
+ * @param where_what the subscription to release
+ */
 static void
 sge_scheduler_cleanup_where_what(void *where_what) {
    DENTER(TOP_LAYER);
@@ -172,6 +194,12 @@ sge_scheduler_cleanup_where_what(void *where_what) {
    DRETURN_VOID;
 }
 
+/** @brief Wait until the events for the next scheduling run have arrived
+ *
+ * @param evc the event client
+ * @param event_list receives the events that arrived
+ * @return true when events arrived, false on shutdown
+ */
 static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_list) {
    int wait_ret;
    bool do_ack = false;
@@ -212,44 +240,25 @@ static void sge_scheduler_wait_for_event(sge_evc_class_t *evc, lList **event_lis
    DRETURN_VOID;
 }
 
-/****** qmaster/threads/sge_scheduler_initialize() ***************************
-*  NAME
-*     sge_scheduler_initialize() -- setup and start the scheduler thread
-*
-*  SYNOPSIS
-*     void sge_scheduler_initialize(sge_gdi_ctx_class_t *ctx)
-*
-*  FUNCTION
-*     A call to this function initializes the scheduler thread if it is
-*     not already running.
-*
-*     The first call to this function (during qmaster start) starts
-*     the scheduler thread only if it is enabled in the bootstrap file.
-*     Otherwise the scheduler will not be started.
-*
-*     Each subsequent call (triggered from GDI) will definitely start
-*     the scheduler thread if it is not running.
-*
-*     Main routine for the created thread is sge_scheduler_main().
-*
-*     'Master_Scheduler' is accessed by this function.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context object
-*     lList **answer_list      - answer list
-*
-*  RESULT
-*     void - None
-*
-*  NOTES
-*     MT-NOTE: sge_scheduler_initialize() is MT safe
-*
-*  SEE ALSO
-*     qmaster/threads/sge_scheduler_initialize()
-*     qmaster/threads/sge_scheduler_cleanup_thread()
-*     qmaster/threads/sge_scheduler_terminate()
-*     qmaster/threads/sge_scheduler_main()
-*******************************************************************************/
+/**
+ * @brief Setup and start the scheduler thread
+ *
+ * A call to this function initializes the scheduler thread if it is
+ * not already running.
+ * The first call to this function (during qmaster start) starts
+ * the scheduler thread only if it is enabled in the bootstrap file.
+ * Otherwise the scheduler will not be started.
+ * Each subsequent call (triggered from GDI) will definitely start
+ * the scheduler thread if it is not running.
+ * Main routine for the created thread is sge_scheduler_main().
+ * 'Master_Scheduler' is accessed by this function.
+ *
+ * @param answer_list answer list
+ *
+ * @note MT-NOTE: sge_scheduler_initialize() is MT safe
+ *
+ * @see #sge_scheduler_initialize, #sge_scheduler_cleanup_thread, #sge_scheduler_terminate, #sge_scheduler_main
+ */
 void
 sge_scheduler_initialize(lList **answer_list) {
    DENTER(TOP_LAYER);
@@ -317,37 +326,23 @@ sge_scheduler_initialize(lList **answer_list) {
    DRETURN_VOID;
 }
 
-/****** qmaster/threads/sge_scheduler_cleanup_thread() ********************
-*  NAME
-*     sge_scheduler_cleanup_thread() -- cleanup the scheduler thread
-*
-*  SYNOPSIS
-*     void sge_scheduler_cleanup_thread()
-*
-*  FUNCTION
-*     Cleanup the scheduler thread.
-*
-*     This function has to be executed only by the scheduler thread.
-*     Ideally it should be the last function executed when the
-*     pthread cancellation point is passed.
-*
-*     'Master_Scheduler' is accessed by this function.
-*
-*  INPUTS
-*     void - None
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: sge_scheduler_cleanup_thread() is MT safe
-*
-*  SEE ALSO
-*     qmaster/threads/sge_scheduler_initialize()
-*     qmaster/threads/sge_scheduler_cleanup_thread()
-*     qmaster/threads/sge_scheduler_terminate()
-*     qmaster/threads/sge_scheduler_main()
-*******************************************************************************/
+/**
+ * @brief Cleanup the scheduler thread
+ *
+ * Cleanup the scheduler thread.
+ * This function has to be executed only by the scheduler thread.
+ * Ideally it should be the last function executed when the
+ * pthread cancellation point is passed.
+ * 'Master_Scheduler' is accessed by this function.
+ *
+ * @note MT-NOTE: sge_scheduler_cleanup_thread() is MT safe
+ *
+ * @see #sge_scheduler_initialize, #sge_scheduler_cleanup_thread, #sge_scheduler_terminate, #sge_scheduler_main
+ */
+/** @brief Release what the scheduler thread allocated
+ *
+ * @param arg the thread argument
+ */
 void
 sge_scheduler_cleanup_thread([[maybe_unused]] void *arg) {
    DENTER(TOP_LAYER);
@@ -386,35 +381,19 @@ sge_scheduler_cleanup_thread([[maybe_unused]] void *arg) {
    DRETURN_VOID;
 }
 
-/****** qmaster/threads/sge_scheduler_terminate() ****************************
-*  NAME
-*     sge_scheduler_terminate() -- terminate the scheduler
-*
-*  SYNOPSIS
-*     void sge_scheduler_terminate(sge_gdi_ctx_class_t *ctx)
-*
-*  FUNCTION
-*     Terminates the scheduler if it was started previously. This
-*     function will return only when it is sure that the pthread canceled.
-*
-*     'Master_Scheduler' is accessed by this function.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context object
-*     lList **answer_list      - answer list
-*
-*  RESULT
-*     void - None
-*
-*  NOTES
-*     MT-NOTE: sge_scheduler_terminate() is MT safe
-*
-*  SEE ALSO
-*     qmaster/threads/sge_scheduler_initialize()
-*     qmaster/threads/sge_scheduler_cleanup_thread()
-*     qmaster/threads/sge_scheduler_terminate()
-*     qmaster/threads/sge_scheduler_main()
-*******************************************************************************/
+/**
+ * @brief Terminate the scheduler
+ *
+ * Terminates the scheduler if it was started previously. This
+ * function will return only when it is sure that the pthread canceled.
+ * 'Master_Scheduler' is accessed by this function.
+ *
+ * @param answer_list answer list
+ *
+ * @note MT-NOTE: sge_scheduler_terminate() is MT safe
+ *
+ * @see #sge_scheduler_initialize, #sge_scheduler_cleanup_thread, #sge_scheduler_terminate, #sge_scheduler_main
+ */
 void
 sge_scheduler_terminate(lList **answer_list) {
    DENTER(TOP_LAYER);
@@ -451,34 +430,22 @@ sge_scheduler_terminate(lList **answer_list) {
    DRETURN_VOID;
 }
 
-/****** qmaster/threads/sge_scheduler_main() **********************************
-*  NAME
-*     sge_scheduler_main() -- main function of the scheduler thread
-*
-*  SYNOPSIS
-*     void * sge_scheduler_main(void *arg)
-*
-*  FUNCTION
-*     Main function of the scheduler thread,
-*
-*  INPUTS
-*     void *arg - pointer to the thread function (type cl_thread_settings_t*)
-*
-*  RESULT
-*     void * - always nullptr
-*
-*  NOTES
-*     MT-NOTE: sge_scheduler_main() is MT safe
-*
-*     MT-NOTE: this is a thread function. Do NOT use this function
-*     MT-NOTE: in any other way!
-*
-*  SEE ALSO
-*     qmaster/threads/sge_scheduler_initialize()
-*     qmaster/threads/sge_scheduler_cleanup_thread()
-*     qmaster/threads/sge_scheduler_terminate()
-*     qmaster/threads/sge_scheduler_main()
-*******************************************************************************/
+/**
+ * @brief Main function of the scheduler thread
+ *
+ * Main function of the scheduler thread,
+ *
+ * @param arg pointer to the thread function (type cl_thread_settings_t*)
+ *
+ * @return always nullptr
+ *
+ * @note MT-NOTE: sge_scheduler_main() is MT safe
+ *
+ *       MT-NOTE: this is a thread function. Do NOT use this function
+ *       MT-NOTE: in any other way!
+ *
+ * @see #sge_scheduler_initialize, #sge_scheduler_cleanup_thread, #sge_scheduler_terminate, #sge_scheduler_main
+ */
 [[noreturn]] void *
 sge_scheduler_main(void *arg) {
    auto *thread_config = (cl_thread_settings_t *) arg;
@@ -957,6 +924,9 @@ sge_scheduler_main(void *arg) {
    // pthread_cleanup_push()/pthread_cleanup_pop() before the call of cl_thread_func_testcancel()
 }
 
+/** @brief Is the scheduler thread currently running?
+ * @return true when it is
+ */
 bool
 sge_scheduler_is_running() {
    return Master_Scheduler.is_running;

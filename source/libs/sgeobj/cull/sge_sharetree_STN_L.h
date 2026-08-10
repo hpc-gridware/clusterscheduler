@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Share Tree Node
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -131,10 +135,8 @@
 *    Node usage list.
 *    Used during scheduling of pending of pending jobs.
 *
-*    SGE_ULONG(STN_version) - @todo add summary
-*    Version of share tree.
-*    Set/increased in qmaster when sharetree changes.
-*    Skip scheduling decisions based on an older version of the sharetree.
+*    SGE_ULONG(STN_version) - Share Tree Version
+*    Incremented on every change to the tree, and again by the timer thread when usage is recomputed. Lets a reader tell whether the tree it holds is still current.
 *
 *    SGE_LIST(STN_joker) - Joker
 *    Placeholder which can be used for arbitrary data.
@@ -144,37 +146,37 @@
 */
 
 enum {
-   STN_name = STN_LOWERBOUND,
-   STN_type,
-   STN_id,
-   STN_shares,
-   STN_children,
-   STN_job_ref_count,
-   STN_active_job_ref_count,
-   STN_project,
-   STN_proportion,
-   STN_adjusted_proportion,
-   STN_combined_usage,
-   STN_pass2_seqno,
-   STN_sum_priority,
-   STN_actual_proportion,
-   STN_m_share,
-   STN_last_actual_proportion,
-   STN_adjusted_current_proportion,
-   STN_temp,
-   STN_stt,
-   STN_ostt,
-   STN_ltt,
-   STN_oltt,
-   STN_shr,
-   STN_sort,
-   STN_ref,
-   STN_tickets,
-   STN_jobid,
-   STN_taskid,
-   STN_usage_list,
-   STN_version,
-   STN_joker
+   STN_name = STN_LOWERBOUND,   ///< Node Name
+   STN_type,   ///< Node Type
+   STN_id,   ///< Node Id
+   STN_shares,   ///< Shares
+   STN_children,   ///< Children
+   STN_job_ref_count,   ///< Job Reference Count
+   STN_active_job_ref_count,   ///< Active Job Reference Count
+   STN_project,   ///< Is Project
+   STN_proportion,   ///< Proportion
+   STN_adjusted_proportion,   ///< Adjusted Proportion
+   STN_combined_usage,   ///< Combined Usage
+   STN_pass2_seqno,   ///< Pass Two Sequence Number
+   STN_sum_priority,   ///< Sum of Priorities
+   STN_actual_proportion,   ///< Actual Proportion
+   STN_m_share,   ///< M Share
+   STN_last_actual_proportion,   ///< Last Actual Proportion
+   STN_adjusted_current_proportion,   ///< Adjusted Current Proportion
+   STN_temp,   ///< Temporary Node
+   STN_stt,   ///< Short Term Targeted Proportion
+   STN_ostt,   ///< Overall Short Term Targeted Proportion
+   STN_ltt,   ///< Long Term Targeted Proportion
+   STN_oltt,   ///< Overall Long Term Targeted Proportion
+   STN_shr,   ///< Share
+   STN_sort,   ///< Sort Value
+   STN_ref,   ///< Reference
+   STN_tickets,   ///< Tickets
+   STN_jobid,   ///< Job Id
+   STN_taskid,   ///< Task Id
+   STN_usage_list,   ///< Usage List
+   STN_version,   ///< Share Tree Version
+   STN_joker   ///< Joker
 };
 
 LISTDEF(STN_Type)
@@ -245,6 +247,7 @@ NAMEDEF(STNN)
    NAME("STN_joker")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define STN_SIZE sizeof(STNN)/sizeof(char *)
 
 

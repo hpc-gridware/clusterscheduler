@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The threads that keep the read-only data stores current
+ */
+
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
 
@@ -35,6 +39,13 @@ namespace ocs {
       return mirror_thread->main(arg);
    }
 
+   /** @brief Start the event mirror threads, one per read-only data store
+    *
+    * Two are created: the reader mirror and the listener mirror. Each keeps its
+    * own data store up to date from the event master, so that GDI read requests
+    * and event clients can be served without taking a lock on the data the
+    * worker threads are modifying.
+    */
    void
    event_mirror_initialize() {
       DENTER(TOP_LAYER);
@@ -69,6 +80,12 @@ namespace ocs {
       }
    }
 
+   /** @brief Cancel and join every event mirror thread
+    *
+    * A mirror thread normally blocks waiting for events, so cancelling alone is
+    * not enough: it is woken up as well so it can reach its cancellation point.
+    * Returns once every thread has been joined.
+    */
    void
    event_mirror_terminate() {
       DENTER(TOP_LAYER);

@@ -60,13 +60,6 @@ typedef struct {
  */
 void eat_token(cull_parse_state *state);
 
-/**
- * @brief Return the next token of a cull format string
- *
- * @param s the format string to start scanning, or nullptr to continue
- * @param state the scanner state
- * @return the token, one of #NO_TOKEN and its neighbours
- */
 int scan(const char *s, cull_parse_state *state);
 
 

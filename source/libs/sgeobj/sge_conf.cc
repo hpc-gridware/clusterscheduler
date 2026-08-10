@@ -33,6 +33,24 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief The cluster configuration: defaults, merging, and thread safe access
+ *
+ * The global and each host's local configuration arrive as CULL lists.
+ * #merge_configuration layers them - compiled in defaults, then the global
+ * configuration, then the local one - and writes the result into the file
+ * static `Master_Config`, which the rest of the component reads through the
+ * `mconf_get_*` accessors rather than by parsing lists again.
+ *
+ * Every accessor takes `LOCK_MASTER_CONF` as a read lock, so a caller sees a
+ * consistent value even while a new configuration is being applied. The two
+ * free form attributes `qmaster_params` and `execd_params` are parsed into
+ * separate file static variables, which is why many accessors do not name a
+ * #confel member.
+ *
+ * @see sge_conf.h
+ */
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -70,91 +88,107 @@
 
 #include <cinttypes>
 
+/// Name of the binary directory below `$SGE_ROOT`
 #define SGE_BIN "bin"
+/// Default `stree_spool_time`: seconds between two share tree spool runs
 #define STREESPOOLTIMEDEF 240
 
-/* CS-1239: STREE_TICK_INTERVAL bounds (seconds) for the periodic share-tree
- * decay + republish tick driven from the Timed Event Thread. Values outside
- * [MIN, MAX] are clamped at read time. */
-#define STREE_TICK_INTERVAL_DEF 5
-#define STREE_TICK_INTERVAL_MIN 1
-#define STREE_TICK_INTERVAL_MAX 300
+/**
+ * @name STREE_TICK_INTERVAL bounds
+ *
+ * Seconds between two runs of the periodic share tree decay and republish
+ * tick, which the Timed Event Thread drives (CS-1239). A configured value
+ * outside the range is clamped when it is read.
+ * @{
+ */
+#define STREE_TICK_INTERVAL_DEF 5   ///< default when `qmaster_params` does not set it
+#define STREE_TICK_INTERVAL_MIN 1   ///< smallest accepted value
+#define STREE_TICK_INTERVAL_MAX 300 ///< largest accepted value
+/** @} */
 
-/* CS-1908: finished-job retention qmaster_params bounds for the sweep-behaviour
- * pair (finished_jobs_sweep_interval, finished_jobs_sweep_batch). These are
- * tuning knobs, so they live in qmaster_params. The retention-semantics pair
- * (finished_jobs_keep_time, finished_jobs_max) are top-level global-config
- * attributes -- see the struct confel additions further down. */
-#define FINISHED_JOBS_SWEEP_INTERVAL_DEF   10       /* seconds between sweep ticks */
-#define FINISHED_JOBS_SWEEP_INTERVAL_MIN   1
-#define FINISHED_JOBS_SWEEP_INTERVAL_MAX   3600     /* 1 hour */
-#define FINISHED_JOBS_SWEEP_BATCH_DEF      100      /* max prunes per tick (R18 cap) */
-#define FINISHED_JOBS_SWEEP_BATCH_MIN      1
-#define FINISHED_JOBS_SWEEP_BATCH_MAX      100000
+/**
+ * @name Finished job sweep bounds
+ *
+ * Bounds for the sweep behaviour pair `finished_jobs_sweep_interval` and
+ * `finished_jobs_sweep_batch` (CS-1908). These are tuning knobs, so they live
+ * in `qmaster_params`. The retention semantics pair - `finished_jobs_keep_time`
+ * and `finished_jobs_max` - are top level global configuration attributes
+ * instead; see #confel.
+ * @{
+ */
+#define FINISHED_JOBS_SWEEP_INTERVAL_DEF   10       ///< default seconds between sweep ticks
+#define FINISHED_JOBS_SWEEP_INTERVAL_MIN   1        ///< smallest accepted interval
+#define FINISHED_JOBS_SWEEP_INTERVAL_MAX   3600     ///< largest accepted interval, one hour
+#define FINISHED_JOBS_SWEEP_BATCH_DEF      100      ///< default maximum prunes per tick
+#define FINISHED_JOBS_SWEEP_BATCH_MIN      1        ///< smallest accepted batch size
+#define FINISHED_JOBS_SWEEP_BATCH_MAX      100000   ///< largest accepted batch size
+/** @} */
 
 /* This list is *ONLY* used by the execd and should be moved eventually */
 lList *Execd_Config_List = nullptr;
 
-struct confel {                       /* cluster configuration parameters */
-   char        *execd_spool_dir;     /* sge_spool directory base path */
-   char        *mailer;              /* path to e-mail delivery agent */
-   char        *xterm;               /* xterm path for interactive jobs */
-   char        *load_sensor;         /* path to a load sensor executable */
-   char        *prolog;              /* start before jobscript may be none */
-   char        *epilog;              /* start after jobscript may be none */
-   char        *shell_start_mode;    /* script_from_stdin/posix_compliant/unix_behavior */
-   char        *login_shells;        /* list of shells to call as login shell */
-   uint32_t    min_uid;              /* lower bound on UIDs that can qsub */
-   uint32_t    min_gid;              /* lower bound on GIDs that can qsub */
-   uint32_t    load_report_time;     /* how often to send in load */
-   uint32_t    max_unheard;          /* how long before sge_execd considered dead */
-   uint32_t    loglevel;             /* qmaster event logging level */
-   char        *enforce_project;     /* SGEEE attribute: "true" or "false" */
-   char        *enforce_user;        /* SGEEE attribute: "true" or "false" */
-   char        *administrator_mail;  /* list of mail addresses */
-   char        *mail_tag;            /* mail tag */
-   lList       *user_lists;          /* allowed user lists */
-   lList       *xuser_lists;         /* forbidden users lists */
-   lList       *projects;            /* allowed project list */
-   lList       *xprojects;           /* forbiddent project list */
-   char        *set_token_cmd;
-   char        *pag_cmd;
-   uint32_t    token_extend_time;
-   char        *shepherd_cmd;
-   char        *qmaster_params;
-   char        *execd_params;
-   char        *reporting_params;
+/// The cluster configuration, as one C struct rather than a CULL element
+struct confel {
+   char        *execd_spool_dir;     ///< sge_spool directory base path
+   char        *mailer;              ///< path to e-mail delivery agent
+   char        *xterm;               ///< xterm path for interactive jobs
+   char        *load_sensor;         ///< path to a load sensor executable
+   char        *prolog;              ///< start before jobscript may be none
+   char        *epilog;              ///< start after jobscript may be none
+   char        *shell_start_mode;    ///< script_from_stdin/posix_compliant/unix_behavior
+   char        *login_shells;        ///< list of shells to call as login shell
+   uint32_t    min_uid;              ///< lower bound on UIDs that can qsub
+   uint32_t    min_gid;              ///< lower bound on GIDs that can qsub
+   uint32_t    load_report_time;     ///< how often to send in load
+   uint32_t    max_unheard;          ///< how long before sge_execd considered dead
+   uint32_t    loglevel;             ///< qmaster event logging level
+   char        *enforce_project;     ///< SGEEE attribute: "true" or "false"
+   char        *enforce_user;        ///< SGEEE attribute: "true" or "false"
+   char        *administrator_mail;  ///< list of mail addresses
+   char        *mail_tag;            ///< mail tag
+   lList       *user_lists;          ///< allowed user lists
+   lList       *xuser_lists;         ///< forbidden users lists
+   lList       *projects;            ///< allowed project list
+   lList       *xprojects;           ///< forbiddent project list
+   char        *set_token_cmd;       ///< command that acquires an AFS token, from `set_token_cmd`
+   char        *pag_cmd;             ///< command that puts the job into its own PAG, from `pag_cmd`
+   uint32_t    token_extend_time;    ///< how long an AFS token is extended for, in seconds
+   char        *shepherd_cmd;        ///< replacement for the built in shepherd, from `shepherd_cmd`
+   char        *qmaster_params;      ///< free form `KEY=VALUE` list of qmaster tuning parameters
+   char        *execd_params;        ///< free form `KEY=VALUE` list of execd tuning parameters
+   char        *reporting_params;    ///< free form `KEY=VALUE` list of reporting parameters
    char        *gid_range;           ///< Range of additional group ids
    char        *port_range;          ///< Range of ports for qrsh client to bind to
-   char        *qlogin_daemon;       /* eg /usr/sbin/in.telnetd */
-   char        *qlogin_command;      /* eg telnet $HOST $PORT */
-   char        *rsh_daemon;          /* eg /usr/sbin/in.rshd */
-   char        *rsh_command;         /* eg rsh -p $PORT $HOST command */
-   char        *jsv_url;             /* jsv url */
-   char        *jsv_allowed_mod;     /* allowed modifications for end users if JSV is enabled */
-   char        *gdi_request_limits;  /* request limits for GDI commands */
-   char        *rlogin_daemon;       /* eg /usr/sbin/in.rlogind */
-   char        *rlogin_command;      /* eg rlogin -p $PORT $HOST */
-   uint32_t    reschedule_unknown;   /* timout value used for auto. resch. */
-   uint32_t    max_aj_instances;     /* max. number of ja instances of a job */
-   uint32_t    max_aj_tasks;         /* max. size of an array job */
-   uint32_t    max_u_jobs;           /* max. number of jobs per user */
-   uint32_t    max_jobs;             /* max. number of jobs in the system */
-   uint32_t    max_advance_reservations; /* max. number of advance reservations in the system */
-   uint32_t    auto_user_fshare;     /* SGEEE automatic user fshare */
-   uint32_t    auto_user_oticket;    /* SGEEE automatic user oticket */
-   char        *auto_user_default_project; /* SGEEE automatic user default project */
-   uint32_t    auto_user_delete_time; /* SGEEE automatic user delete time */
-   char        *delegated_file_staging; /*drmaa attribute: "true" or "false" */
-   char        *libjvm_path;         /* libjvm_path for jvm_thread */
-   char        *additional_jvm_args; /* additional_jvm_args for jvm_thread */
-   char        *binding_params;      //< string containing al binding specific parameters
-   char        *jsv_params;          //< string containing jsv specific parameters
-   char        *topology_file;       //< None or path to a hwloc topology file
-   uint32_t    finished_jobs_keep_time; /* CS-1908: seconds a finished ja_task is retained; 0 = time dimension off */
-   uint32_t    finished_jobs_max;    /* CS-1908: global count ceiling on retained finished ja_tasks; 0 = count dimension off */
+   char        *qlogin_daemon;       ///< eg /usr/sbin/in.telnetd
+   char        *qlogin_command;      ///< eg telnet $HOST $PORT
+   char        *rsh_daemon;          ///< eg /usr/sbin/in.rshd
+   char        *rsh_command;         ///< eg rsh -p $PORT $HOST command
+   char        *jsv_url;             ///< jsv url
+   char        *jsv_allowed_mod;     ///< allowed modifications for end users if JSV is enabled
+   char        *gdi_request_limits;  ///< request limits for GDI commands
+   char        *rlogin_daemon;       ///< eg /usr/sbin/in.rlogind
+   char        *rlogin_command;      ///< eg rlogin -p $PORT $HOST
+   uint32_t    reschedule_unknown;   ///< timout value used for auto. resch.
+   uint32_t    max_aj_instances;     ///< max. number of ja instances of a job
+   uint32_t    max_aj_tasks;         ///< max. size of an array job
+   uint32_t    max_u_jobs;           ///< max. number of jobs per user
+   uint32_t    max_jobs;             ///< max. number of jobs in the system
+   uint32_t    max_advance_reservations; ///< max. number of advance reservations in the system
+   uint32_t    auto_user_fshare;     ///< SGEEE automatic user fshare
+   uint32_t    auto_user_oticket;    ///< SGEEE automatic user oticket
+   char        *auto_user_default_project; ///< SGEEE automatic user default project
+   uint32_t    auto_user_delete_time; ///< SGEEE automatic user delete time
+   char        *delegated_file_staging; ///< drmaa attribute: "true" or "false"
+   char        *libjvm_path;         ///< libjvm_path for jvm_thread
+   char        *additional_jvm_args; ///< additional_jvm_args for jvm_thread
+   char        *binding_params;      ///< string containing al binding specific parameters
+   char        *jsv_params;          ///< string containing jsv specific parameters
+   char        *topology_file;       ///< None or path to a hwloc topology file
+   uint32_t    finished_jobs_keep_time; ///< CS-1908: seconds a finished ja_task is retained; 0 = time dimension off
+   uint32_t    finished_jobs_max;    ///< CS-1908: global count ceiling on retained finished ja_tasks; 0 = count dimension off
 };
 
+/// The cluster configuration; see #confel
 typedef struct confel sge_conf_type;
 
 static sge_conf_type Master_Config = {
@@ -186,12 +220,15 @@ static int  s_ijs_keepalive_interval = 60;  ///< seconds between IJS keepalive p
 static int  s_ijs_keepalive_count    = 3;   ///< max consecutive unanswered keepalives before disconnect (qmaster_params ijs_keepalive_count)
 static int  s_ijs_reconnect_timeout  = 0;   ///< seconds shepherd waits for a reconnect before killing the job; 0 = disabled (qmaster_params ijs_reconnect_timeout)
 
+/// Default for `DISABLE_SECONDARY_DS_READER`: reader threads use the snapshot store
 #define DEFAULT_DISABLE_SECONDARY_DS_READER (false)
 static bool disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
 
+/// Default for `DISABLE_SECONDARY_DS_EXECD`: execd requests use the snapshot store
 #define DEFAULT_DISABLE_SECONDARY_DS_EXECD (false)
 static bool disable_secondary_ds_execd = DEFAULT_DISABLE_SECONDARY_DS_EXECD;
 
+/// Default for `DISABLE_AUTOMATIC_SESSIONS`: sessions are created automatically
 #define DEFAULT_DISABLE_AUTOMATIC_SESSIONS (false)
 static bool disable_automatic_sessions = DEFAULT_DISABLE_AUTOMATIC_SESSIONS;
 
@@ -292,7 +329,7 @@ static int sharetree_tick_interval = STREE_TICK_INTERVAL_DEF;
 static int finished_jobs_sweep_interval = FINISHED_JOBS_SWEEP_INTERVAL_DEF;
 static int finished_jobs_sweep_batch    = FINISHED_JOBS_SWEEP_BATCH_DEF;
 
-// Maximum time in milliseconds to wait before update of secondary DS is enforced
+/// Default `MAX_DS_DEVIATION`: milliseconds before an update of the secondary data store is enforced
 #define DEFAULT_DS_DEVIATION (1000)
 static int max_ds_deviation = DEFAULT_DS_DEVIATION;
 
@@ -326,9 +363,13 @@ static bool enable_hwloc = true;
 static bool enable_submit_lib_path = false;
 static bool enable_submit_ld_preload = false;
 
+/// Default `GPERF_NAME`: base name of the gperftools profile files
 #define GPERF_NAME_DEFAULT "gperf"
+/// Default `GPERF_THREADS`: which threads are profiled
 #define GPERF_THREADS_DEFAULT "none"
+/// Current `GPERF_NAME` value; guarded by the master configuration lock
 std::string gperf_name = GPERF_NAME_DEFAULT;
+/// Current `GPERF_THREADS` value; guarded by the master configuration lock
 std::string gperf_threads = GPERF_THREADS_DEFAULT;
 
 /*
@@ -345,12 +386,13 @@ static char* notify_susp = nullptr;
 static int   notify_kill_type = 1;
 static char* notify_kill = nullptr;
 
+/// One entry of the built in default configuration
 typedef struct {
-  const char *name;              /* name of parameter */
-  int local;               /* 0 | 1 -> local -> may be overidden by local conf */
-  const char *value;             /* value of parameter */
-  int isSet;               /* 0 | 1 -> is already set */
-  char *envp;              /* pointer to environment variable */
+  const char *name;              ///< name of parameter
+  int local;               ///< 0 | 1 -> local -> may be overidden by local conf
+  const char *value;             ///< value of parameter
+  int isSet;               ///< 0 | 1 -> is already set
+  char *envp;              ///< pointer to environment variable
 } tConfEntry;
 
 static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg);
@@ -368,28 +410,59 @@ static int max_job_deletion_time = 3;
 static int jsv_timeout = 10;
 static int jsv_threshold = 5000;
 
+/**
+ * @name Compiled in defaults of the global configuration
+ *
+ * These are what `sge_set_defined_defaults` writes into a configuration that
+ * an administrator has never touched. Each corresponds to one attribute of
+ * `qconf -sconf`.
+ * @{
+ */
+/// `mailer`: the mail delivery agent
 #define MAILER                    "/bin/mail"
+/// `prolog`: script run before the job script
 #define PROLOG                    "none"
+/// `epilog`: script run after the job script
 #define EPILOG                    "none"
+/// `shell_start_mode`: how the job script is handed to the shell
 #define SHELL_START_MODE          "posix_compliant"
+/// `login_shells`: shells that are started as a login shell
 #define LOGIN_SHELLS              "none"
+/// `min_uid`: lowest uid allowed to submit
 #define MIN_UID                   "0"
+/// `min_gid`: lowest gid allowed to submit
 #define MIN_GID                   "0"
+/// `max_unheard`: how long an execd may stay silent before it counts as unknown
 #define MAX_UNHEARD               "0:2:30"
+/// `load_report_time`: how often an execd reports load
 #define LOAD_LOG_TIME             "0:0:40"
+/// `stat_log_time`: how often statistics are logged
 #define STAT_LOG_TIME             "0:15:0"
+/// `loglevel`: how much qmaster logs
 #define LOGLEVEL                  "log_info"
+/// `admin_user`: the account the daemons run as
 #define ADMIN_USER                "none"
+/// `reschedule_unknown`: how long to wait before rescheduling jobs of an unknown host
 #define RESCHEDULE_UNKNOWN        "0:0:0"
+/// `ignore_fqdn`: compare host names without their domain
 #define IGNORE_FQDN               "true"
+/// `max_aj_instances`: how many tasks of one array job may run at a time
 #define MAX_AJ_INSTANCES          "2000"
+/// `max_aj_tasks`: largest array job that may be submitted
 #define MAX_AJ_TASKS              "75000"
+/// `max_u_jobs`: jobs one user may have in the system; 0 is unlimited
 #define MAX_U_JOBS                "0"
+/// `max_jobs`: jobs in the whole system; 0 is unlimited
 #define MAX_JOBS                  "0"
+/// `max_advance_reservations`: advance reservations in the system; 0 is unlimited
 #define MAX_ADVANCE_RESERVATIONS  "0"
-#define FINISHED_JOBS_KEEP_TIME   "0"    /* CS-1908: seconds, 0 = time dimension off */
-#define FINISHED_JOBS_MAX         "0"    /* CS-1908: JAT count, 0 = count dimension off */
+/// `finished_jobs_keep_time`: seconds a finished task is retained; 0 turns the time dimension off
+#define FINISHED_JOBS_KEEP_TIME   "0"
+/// `finished_jobs_max`: ceiling on retained finished tasks; 0 turns the count dimension off
+#define FINISHED_JOBS_MAX         "0"
+/// `reporting_params`: what is written to the reporting and accounting files
 #define REPORTING_PARAMS          "accounting=true reporting=false flush_time=00:00:15 joblog=false sharelog=00:00:00"
+/** @} */
 
 static tConfEntry conf_entries[] = {
  { "execd_spool_dir",            1, nullptr,                   1, nullptr},
@@ -529,14 +602,14 @@ config_param_value_type(const char *name)
 }
 
 /**
- * \brief Initialize config list with compiled in values.
+ * @brief Initialize config list with compiled in values.
  *
- * \details
+ * @details
  * This function sets the spool directories from the cell and initializes
  * the configuration list with compiled in values.
  *
- * \param cell_root The root directory of the cell.
- * \param lpCfg Pointer to the configuration list.
+ * @param cell_root The root directory of the cell.
+ * @param lpCfg Pointer to the configuration list.
  */
 static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg)
 {
@@ -569,17 +642,17 @@ static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg)
 }
 
 /**
- * \brief Seeks for a config attribute "name", frees old value (if string) from *cpp and writes new value into *cpp.
+ * @brief Seeks for a config attribute "name", frees old value (if string) from *cpp and writes new value into *cpp.
  *
- * \details
+ * @details
  * This function searches for a configuration attribute by its name, frees the old value if it is a string,
  * and writes the new value into the provided pointer. Logging is done to a file.
  *
- * \param lp_cfg The configuration list.
- * \param name The name of the configuration attribute.
- * \param cpp Pointer to the old value to be replaced.
- * \param val Pointer to the new value to be set.
- * \param type The type of the value.
+ * @param lp_cfg The configuration list.
+ * @param name The name of the configuration attribute.
+ * @param cpp Pointer to the old value to be replaced.
+ * @param val Pointer to the new value to be set.
+ * @param type The type of the value.
  */
 static void
 chg_conf_val(lList *lp_cfg, const char *name, char **cpp, uint32_t *val, ocs::CEntry::Type type) {
@@ -608,14 +681,14 @@ chg_conf_val(lList *lp_cfg, const char *name, char **cpp, uint32_t *val, ocs::CE
 }
 
 /**
- * \brief set the master configuration from cull
+ * @brief set the master configuration from cull
  *
- * \details
+ * @details
  * This function sets the master configuration from cull.
  *
- * \param lpCfg The configuration list.
+ * @param lpCfg The configuration list.
  *
- * \note
+ * @note
  * MT-NOTE: setConfFromCull() is not MT safe, caller needs LOCK_MASTER_CONF as write lock.
  */
 static void
@@ -719,15 +792,12 @@ setConfFromCull(lList *lpCfg) {
 }
 
 /**
- * \brief getConfEntry
+ * @brief Find a configuration entry by name
  *
- * \details
- * Return a pointer to the config element "name".
+ * @param name The name of the configuration element.
+ * @param conf The array of configuration entries.
  *
- * \param name The name of the configuration element.
- * \param conf The array of configuration entries.
- *
- * \return A pointer to the configuration entry.
+ * @return A pointer to the configuration entry.
  */
 static tConfEntry *
 getConfEntry(const char *name, tConfEntry conf[]) {
@@ -741,19 +811,22 @@ getConfEntry(const char *name, tConfEntry conf[]) {
 }
 
 /**
- * \brief merge global and local configuration
+ * @brief merge global and local configuration
  *
- * \details
+ * @details
  * Merge global and local configuration and set lpp list and
  * set conf struct from lpp.
  *
- * \param global Global configuration.
- * \param local Local configuration.
- * \param lpp Target configuration.
+ * @param[out] answer_list receives error messages
+ * @param progid the component asking, so component specific parameters are applied
+ * @param cell_root the cell directory, used to build the compiled in defaults
+ * @param global Global configuration.
+ * @param local Local configuration.
+ * @param[in,out] lpp Target configuration; when nullptr a temporary list is used and freed
  *
- * \return 0 on success, -2 if no global configuration.
+ * @return 0 on success, -2 if no global configuration.
  *
- * \note
+ * @note
  * MT-NOTE: merge_configuration() is MT safe.
  */
 int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_root, const lListElem *global, const lListElem *local, lList **lpp) {
@@ -1504,13 +1577,10 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
 }
 
 /**
- * \brief sge\_show\_conf
+ * @brief Print the master configuration, in debug mode only
  *
- * \details
- * In debug mode, prints out the master configuration.
- *
- * \note
- * MT-NOTE: sge\_show\_conf() is MT safe.
+ * @note
+ * MT-NOTE: sge_show_conf() is MT safe.
  */
 void sge_show_conf()
 {
@@ -1604,13 +1674,10 @@ void sge_show_conf()
 }
 
 /**
- * \brief clean\_conf
+ * @brief Free the whole master configuration
  *
- * \details
- * Frees the whole master configuration.
- *
- * \note
- * MT-NOTE: clean\_conf() is not MT safe, caller needs LOCK\_MASTER\_CONF as write lock.
+ * @note
+ * MT-NOTE: clean_conf() is not MT safe, caller needs LOCK_MASTER_CONF as write lock.
  */
 static void clean_conf() {
 
@@ -1663,15 +1730,16 @@ static void clean_conf() {
 }
 
 /**
- * \brief
- * Enables or disables profiling for thread(s) according to the actual
+ * @brief Enable or disable profiling for threads
+ *
+ * Follows the actual
  * global config, qmaster_params.
  *
  * If no thread name (nullptr pointer) is given, profiling information of all
  * threads is updated.
  * If a name is given, all threads with that name are updated.
  *
- * \param thread_name Thread name, nullptr for all threads.
+ * @param thread_name Thread name, nullptr for all threads.
  */
 void conf_update_thread_profiling(const char *thread_name)
 {
@@ -1703,7 +1771,16 @@ void conf_update_thread_profiling(const char *thread_name)
    DRETURN_VOID;
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `execd_spool_dir` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_execd_spool_dir() {
    char* execd_spool_dir = nullptr;
 
@@ -1716,7 +1793,16 @@ char* mconf_get_execd_spool_dir() {
    DRETURN(execd_spool_dir);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `mailer` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_mailer() {
    char* mailer = nullptr;
 
@@ -1729,7 +1815,16 @@ char* mconf_get_mailer() {
    DRETURN(mailer);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `xterm` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_xterm() {
    char* xterm = nullptr;
 
@@ -1743,7 +1838,16 @@ char* mconf_get_xterm() {
 
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `load_sensor` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_load_sensor() {
    char* load_sensor = nullptr;
 
@@ -1756,7 +1860,16 @@ char* mconf_get_load_sensor() {
    DRETURN(load_sensor);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `prolog` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_prolog() {
    char* prolog = nullptr;
 
@@ -1769,7 +1882,16 @@ char* mconf_get_prolog() {
    DRETURN(prolog);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `epilog` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_epilog() {
    char* epilog = nullptr;
 
@@ -1782,7 +1904,16 @@ char* mconf_get_epilog() {
    DRETURN(epilog);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `shell_start_mode` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_shell_start_mode() {
    char* shell_start_mode = nullptr;
 
@@ -1795,7 +1926,16 @@ char* mconf_get_shell_start_mode() {
    DRETURN(shell_start_mode);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `login_shells` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_login_shells() {
    char* login_shells = nullptr;
 
@@ -1808,6 +1948,14 @@ char* mconf_get_login_shells() {
    DRETURN(login_shells);
 }
 
+/**
+ * @brief The `min_uid` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_min_uid() {
    uint32_t min_uid;
 
@@ -1820,6 +1968,14 @@ uint32_t mconf_get_min_uid() {
    DRETURN(min_uid);
 }
 
+/**
+ * @brief The `min_gid` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_min_gid() {
    uint32_t min_gid;
 
@@ -1832,6 +1988,14 @@ uint32_t mconf_get_min_gid() {
    DRETURN(min_gid);
 }
 
+/**
+ * @brief The `load_report_time` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_load_report_time() {
    uint32_t load_report_time;
 
@@ -1844,6 +2008,14 @@ uint32_t mconf_get_load_report_time() {
    DRETURN(load_report_time);
 }
 
+/**
+ * @brief The `max_unheard` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_max_unheard() {
    uint32_t max_unheard;
 
@@ -1856,6 +2028,14 @@ uint32_t mconf_get_max_unheard() {
    DRETURN(max_unheard);
 }
 
+/**
+ * @brief The `loglevel` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_loglevel() {
    uint32_t loglevel;
 
@@ -1868,7 +2048,16 @@ uint32_t mconf_get_loglevel() {
    DRETURN(loglevel);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `enforce_project` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_enforce_project() {
    char* enforce_project = nullptr;
 
@@ -1881,7 +2070,16 @@ char* mconf_get_enforce_project() {
    DRETURN(enforce_project);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `enforce_user` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_enforce_user() {
    char* enforce_user = nullptr;
 
@@ -1895,7 +2093,16 @@ char* mconf_get_enforce_user() {
 }
 
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `administrator_mail` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_administrator_mail() {
    char* administrator_mail = nullptr;
 
@@ -1908,7 +2115,16 @@ char* mconf_get_administrator_mail() {
    DRETURN(administrator_mail);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `mail_tag` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_mail_tag() {
    char* mail_tag = nullptr;
 
@@ -1921,7 +2137,14 @@ char* mconf_get_mail_tag() {
    DRETURN(mail_tag);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `user_lists` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 lList* mconf_get_user_lists() {
    lList* user_lists = nullptr;
 
@@ -1934,7 +2157,14 @@ lList* mconf_get_user_lists() {
    DRETURN(user_lists);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `xuser_lists` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 lList* mconf_get_xuser_lists() {
    lList* xuser_lists = nullptr;
 
@@ -1947,7 +2177,14 @@ lList* mconf_get_xuser_lists() {
    DRETURN(xuser_lists);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `projects` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 lList* mconf_get_projects() {
    lList* projects = nullptr;
 
@@ -1960,7 +2197,14 @@ lList* mconf_get_projects() {
    DRETURN(projects);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `xprojects` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 lList* mconf_get_xprojects() {
    lList* xprojects = nullptr;
 
@@ -1973,7 +2217,16 @@ lList* mconf_get_xprojects() {
    DRETURN(xprojects);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `set_token_cmd` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_set_token_cmd() {
    char* set_token_cmd = nullptr;
 
@@ -1986,7 +2239,16 @@ char* mconf_get_set_token_cmd() {
    DRETURN(set_token_cmd);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `pag_cmd` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_pag_cmd() {
    char* pag_cmd = nullptr;
 
@@ -1999,6 +2261,14 @@ char* mconf_get_pag_cmd() {
    DRETURN(pag_cmd);
 }
 
+/**
+ * @brief The `token_extend_time` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_token_extend_time() {
    uint32_t token_extend_time;
 
@@ -2011,7 +2281,16 @@ uint32_t mconf_get_token_extend_time() {
    DRETURN(token_extend_time);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `shepherd_cmd` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_shepherd_cmd() {
    char* shepherd_cmd = nullptr;
 
@@ -2024,7 +2303,16 @@ char* mconf_get_shepherd_cmd() {
    DRETURN(shepherd_cmd);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `qmaster_params` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_qmaster_params() {
    char* qmaster_params = nullptr;
 
@@ -2037,7 +2325,16 @@ char* mconf_get_qmaster_params() {
    DRETURN(qmaster_params);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `execd_params` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_execd_params() {
    char* execd_params = nullptr;
 
@@ -2050,7 +2347,16 @@ char* mconf_get_execd_params() {
    DRETURN(execd_params);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `reporting_params` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_reporting_params() {
    char* reporting_params = nullptr;
 
@@ -2063,7 +2369,16 @@ char* mconf_get_reporting_params() {
    DRETURN(reporting_params);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `binding_params` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_binding_params() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -2074,7 +2389,16 @@ char* mconf_get_binding_params() {
    DRETURN(binding_params);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `jsv_params` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_jsv_params() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -2085,7 +2409,16 @@ char* mconf_get_jsv_params() {
    DRETURN(jsv_params);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `gid_range` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_gid_range() {
    char* gid_range = nullptr;
 
@@ -2098,7 +2431,16 @@ char* mconf_get_gid_range() {
    DRETURN(gid_range);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `port_range` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_port_range() {
    char* port_range = nullptr;
 
@@ -2111,7 +2453,16 @@ char* mconf_get_port_range() {
    DRETURN(port_range);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `qlogin_daemon` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_qlogin_daemon() {
    char* qlogin_daemon = nullptr;
 
@@ -2124,7 +2475,16 @@ char* mconf_get_qlogin_daemon() {
    DRETURN(qlogin_daemon);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `qlogin_command` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_qlogin_command() {
    char* qlogin_command = nullptr;
 
@@ -2137,7 +2497,16 @@ char* mconf_get_qlogin_command() {
    DRETURN(qlogin_command);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `rsh_daemon` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_rsh_daemon() {
    char* rsh_daemon = nullptr;
 
@@ -2150,6 +2519,13 @@ char* mconf_get_rsh_daemon() {
    DRETURN(rsh_daemon);
 }
 
+/**
+ * @brief Set the `is_new_config` setting of the master configuration
+ *
+ * Takes the master configuration write lock.
+ *
+ * @param new_config the new value
+ */
 void mconf_set_new_config(bool new_config)
 {
    DENTER(BASIS_LAYER);
@@ -2162,6 +2538,14 @@ void mconf_set_new_config(bool new_config)
 }
 
 /* make chached values from configuration invalid. */
+/**
+ * @brief The `is_new_config` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_is_new_config() {
    bool is;
 
@@ -2174,7 +2558,16 @@ bool mconf_is_new_config() {
    DRETURN(is);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `rsh_command` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_rsh_command() {
    char* rsh_command = nullptr;
 
@@ -2187,7 +2580,16 @@ char* mconf_get_rsh_command() {
    DRETURN(rsh_command);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `jsv_url` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_jsv_url() {
    char* jsv_url = nullptr;
 
@@ -2201,7 +2603,16 @@ char* mconf_get_jsv_url() {
    DRETURN(jsv_url);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `jsv_allowed_mod` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_jsv_allowed_mod() {
    char* jsv_allowed_mod = nullptr;
 
@@ -2215,7 +2626,16 @@ char* mconf_get_jsv_allowed_mod() {
    DRETURN(jsv_allowed_mod);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `gdi_request_limits` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_gdi_request_limits() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -2225,7 +2645,16 @@ char* mconf_get_gdi_request_limits() {
    DRETURN(gdi_request_limits);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `rlogin_daemon` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_rlogin_daemon() {
    char* rlogin_daemon = nullptr;
 
@@ -2238,7 +2667,16 @@ char* mconf_get_rlogin_daemon() {
    DRETURN(rlogin_daemon);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `rlogin_command` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_rlogin_command() {
    char* rlogin_command = nullptr;
 
@@ -2251,6 +2689,14 @@ char* mconf_get_rlogin_command() {
    DRETURN(rlogin_command);
 }
 
+/**
+ * @brief The `reschedule_unknown` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_reschedule_unknown() {
    uint32_t reschedule_unknown;
 
@@ -2263,6 +2709,14 @@ uint32_t mconf_get_reschedule_unknown() {
    DRETURN(reschedule_unknown);
 }
 
+/**
+ * @brief The `max_aj_instances` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_max_aj_instances() {
    uint32_t max_aj_instances;
 
@@ -2275,6 +2729,14 @@ uint32_t mconf_get_max_aj_instances() {
    DRETURN(max_aj_instances);
 }
 
+/**
+ * @brief The `max_aj_tasks` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_max_aj_tasks() {
    uint32_t max_aj_tasks;
 
@@ -2287,6 +2749,14 @@ uint32_t mconf_get_max_aj_tasks() {
    DRETURN(max_aj_tasks);
 }
 
+/**
+ * @brief The `max_u_jobs` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_max_u_jobs() {
    uint32_t max_u_jobs;
 
@@ -2299,6 +2769,14 @@ uint32_t mconf_get_max_u_jobs() {
    DRETURN(max_u_jobs);
 }
 
+/**
+ * @brief The `max_jobs` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_max_jobs() {
    uint32_t max_jobs;
 
@@ -2311,6 +2789,14 @@ uint32_t mconf_get_max_jobs() {
    DRETURN(max_jobs);
 }
 
+/**
+ * @brief The `max_advance_reservations` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_max_advance_reservations() {
    uint32_t max_advance_reservations;
 
@@ -2326,6 +2812,14 @@ uint32_t mconf_get_max_advance_reservations() {
 /* CS-1908: retention "age at which a finished ja_task is prunable", in seconds.
  * 0 disables the time dimension (retention bounded only by finished_jobs_max).
  * Default 0 = feature off. Top-level global-config attribute. */
+/**
+ * @brief The `finished_jobs_keep_time` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_finished_jobs_keep_time() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -2339,6 +2833,14 @@ uint32_t mconf_get_finished_jobs_keep_time() {
 /* CS-1908: retention global count ceiling across master_job_list. 0 disables
  * the count dimension (retention bounded only by finished_jobs_keep_time).
  * Default 0 = feature off. Top-level global-config attribute. */
+/**
+ * @brief The `finished_jobs_max` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_finished_jobs_max() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -2349,6 +2851,14 @@ uint32_t mconf_get_finished_jobs_max() {
    DRETURN(value);
 }
 
+/**
+ * @brief The `auto_user_fshare` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_auto_user_fshare() {
    uint32_t auto_user_fshare;
 
@@ -2361,6 +2871,14 @@ uint32_t mconf_get_auto_user_fshare() {
    DRETURN(auto_user_fshare);
 }
 
+/**
+ * @brief The `auto_user_oticket` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_auto_user_oticket() {
    uint32_t auto_user_oticket;
 
@@ -2373,7 +2891,16 @@ uint32_t mconf_get_auto_user_oticket() {
    DRETURN(auto_user_oticket);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `auto_user_default_project` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_auto_user_default_project() {
    char* auto_user_default_project = nullptr;
 
@@ -2386,6 +2913,14 @@ char* mconf_get_auto_user_default_project() {
    DRETURN(auto_user_default_project);
 }
 
+/**
+ * @brief The `auto_user_delete_time` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_auto_user_delete_time() {
    uint32_t auto_user_delete_time;
 
@@ -2398,7 +2933,16 @@ uint32_t mconf_get_auto_user_delete_time() {
    DRETURN(auto_user_delete_time);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `delegated_file_staging` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_delegated_file_staging() {
    char* delegated_file_staging = nullptr;
 
@@ -2413,6 +2957,14 @@ char* mconf_get_delegated_file_staging() {
 
 
 /* params */
+/**
+ * @brief The `is_monitor_message` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_is_monitor_message() {
   bool is;
 
@@ -2425,6 +2977,14 @@ bool mconf_is_monitor_message() {
    DRETURN(is);
 }
 
+/**
+ * @brief The `use_qidle` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_use_qidle() {
    bool idle;
 
@@ -2437,6 +2997,14 @@ bool mconf_get_use_qidle() {
    DRETURN(idle);
 }
 
+/**
+ * @brief The `forbid_reschedule` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_forbid_reschedule() {
    bool ret;
 
@@ -2449,6 +3017,14 @@ bool mconf_get_forbid_reschedule() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `forbid_apperror` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_forbid_apperror() {
    bool ret;
 
@@ -2461,6 +3037,14 @@ bool mconf_get_forbid_apperror() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `do_credentials` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_do_credentials() {
    bool ret;
 
@@ -2473,6 +3057,14 @@ bool mconf_get_do_credentials() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `do_authentication` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_do_authentication() {
    bool ret;
 
@@ -2485,6 +3077,14 @@ bool mconf_get_do_authentication() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `acct_reserved_usage` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_acct_reserved_usage() {
    bool ret;
 
@@ -2497,6 +3097,14 @@ bool mconf_get_acct_reserved_usage() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `sharetree_reserved_usage` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_sharetree_reserved_usage() {
    bool ret;
 
@@ -2509,6 +3117,14 @@ bool mconf_get_sharetree_reserved_usage() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `keep_active` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 keep_active_t mconf_get_keep_active() {
    keep_active_t ret;
 
@@ -2521,6 +3137,14 @@ keep_active_t mconf_get_keep_active() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `usage_collection` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 usage_collection_t mconf_get_usage_collection() {
    DENTER(BASIS_LAYER);
 
@@ -2533,6 +3157,14 @@ usage_collection_t mconf_get_usage_collection() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `enable_mem_details` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_enable_mem_details() {
    bool ret;
 
@@ -2544,6 +3176,14 @@ bool mconf_get_enable_mem_details() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `enable_addgrp_kill` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_enable_addgrp_kill() {
    bool ret;
 
@@ -2563,6 +3203,14 @@ bool mconf_get_enable_addgrp_kill() {
  *
  * @return The value of the pdc_interval configuration parameter.
  */
+/**
+ * @brief The `pdc_interval` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint64_t mconf_get_pdc_interval() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -2571,6 +3219,14 @@ uint64_t mconf_get_pdc_interval() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `enable_reschedule_kill` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_enable_reschedule_kill() {
    bool ret;
 
@@ -2582,6 +3238,14 @@ bool mconf_get_enable_reschedule_kill() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `enable_reschedule_slave` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_enable_reschedule_slave() {
    bool ret;
 
@@ -2593,6 +3257,14 @@ bool mconf_get_enable_reschedule_slave() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `old_reschedule_behavior` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_old_reschedule_behavior() {
    bool ret;
 
@@ -2604,6 +3276,14 @@ bool mconf_get_old_reschedule_behavior() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `GPERF_NAME` setting from `qmaster_params`
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 std::string mconf_get_gperf_name() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -2612,6 +3292,14 @@ std::string mconf_get_gperf_name() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `GPERF_THREADS` setting from `qmaster_params`
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 std::string mconf_get_gperf_threads() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -2620,6 +3308,14 @@ std::string mconf_get_gperf_threads() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `old_reschedule_behavior_array_job` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_old_reschedule_behavior_array_job() {
    bool ret;
 
@@ -2631,6 +3327,14 @@ bool mconf_get_old_reschedule_behavior_array_job() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `simulate_execds` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_simulate_execds() {
    bool ret;
 
@@ -2643,6 +3347,14 @@ bool mconf_get_simulate_execds() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `simulate_jobs` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_simulate_jobs() {
    bool ret;
 
@@ -2655,6 +3367,14 @@ bool mconf_get_simulate_jobs() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `ptf_max_priority` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 long mconf_get_ptf_max_priority() {
    long ret;
 
@@ -2667,6 +3387,14 @@ long mconf_get_ptf_max_priority() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `ptf_min_priority` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 long mconf_get_ptf_min_priority() {
    long ret;
 
@@ -2679,6 +3407,14 @@ long mconf_get_ptf_min_priority() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `use_qsub_gid` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_use_qsub_gid() {
    bool ret;
 
@@ -2691,6 +3427,14 @@ bool mconf_get_use_qsub_gid() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `notify_susp_type` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_notify_susp_type() {
    int ret;
 
@@ -2703,7 +3447,16 @@ int mconf_get_notify_susp_type() {
    DRETURN(ret);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `notify_susp` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_notify_susp() {
    char* ret = nullptr;
 
@@ -2716,6 +3469,14 @@ char* mconf_get_notify_susp() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `notify_kill_type` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_notify_kill_type() {
    int ret;
 
@@ -2728,7 +3489,16 @@ int mconf_get_notify_kill_type() {
    DRETURN(ret);
 }
 
-/* returned pointer needs to be freed */
+/**
+ * @brief The `notify_kill` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @return the configured value
+ */
 char* mconf_get_notify_kill() {
    char* ret = nullptr;
 
@@ -2741,6 +3511,14 @@ char* mconf_get_notify_kill() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `disable_reschedule` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_disable_reschedule() {
    bool ret;
 
@@ -2753,6 +3531,14 @@ bool mconf_get_disable_reschedule() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `disable_secondary_ds` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_disable_secondary_ds() {
    bool ret;
 
@@ -2765,6 +3551,14 @@ bool mconf_get_disable_secondary_ds() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `disable_secondary_ds_reader` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_disable_secondary_ds_reader() {
    bool ret;
 
@@ -2777,6 +3571,14 @@ bool mconf_get_disable_secondary_ds_reader() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `disable_secondary_ds_execd` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_disable_secondary_ds_execd() {
    bool ret;
 
@@ -2789,6 +3591,14 @@ bool mconf_get_disable_secondary_ds_execd() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `disable_automatic_sessions` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_disable_automatic_session() {
    bool ret;
 
@@ -2801,6 +3611,14 @@ bool mconf_get_disable_automatic_session() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `scheduler_timeout` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_scheduler_timeout() {
    int timeout;
 
@@ -2813,6 +3631,13 @@ int mconf_get_scheduler_timeout() {
    DRETURN(timeout);
 }
 
+/**
+ * @brief Set the `max_dynamic_event_clients` setting of the master configuration
+ *
+ * Takes the master configuration write lock.
+ *
+ * @param value the new value
+ */
 void mconf_set_max_dynamic_event_clients(int value) {
 
    DENTER(BASIS_LAYER);
@@ -2824,6 +3649,14 @@ void mconf_set_max_dynamic_event_clients(int value) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief The `max_dynamic_event_clients` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_max_dynamic_event_clients() {
    int ret;
 
@@ -2836,6 +3669,14 @@ int mconf_get_max_dynamic_event_clients() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `set_lib_path` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_set_lib_path() {
    bool ret;
 
@@ -2848,6 +3689,14 @@ bool mconf_get_set_lib_path() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `inherit_env` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_inherit_env() {
    bool ret;
 
@@ -2860,6 +3709,14 @@ bool mconf_get_inherit_env() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `enable_hwloc` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_enable_hwloc() {
    DENTER(BASIS_LAYER);
 
@@ -2871,6 +3728,14 @@ bool mconf_get_enable_hwloc() {
 }
 
 // spooling interval in seconds
+/**
+ * @brief The `spool_time` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_spool_time() {
    int ret;
 
@@ -2888,6 +3753,14 @@ int mconf_get_spool_time() {
  * STREE_TICK_INTERVAL value, clamped into
  * [STREE_TICK_INTERVAL_MIN, STREE_TICK_INTERVAL_MAX]. The configured
  * value defaults to STREE_TICK_INTERVAL_DEF if not set. */
+/**
+ * @brief The `sharetree_tick_interval` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_sharetree_tick_interval() {
    DENTER(BASIS_LAYER);
 
@@ -2906,6 +3779,14 @@ int mconf_get_sharetree_tick_interval() {
 
 /* CS-1908: retention sweep tick interval in seconds. Dedicated to CS-1908 —
  * NOT shared with sharetree_tick_interval. Clamped into [MIN, MAX] at read time. */
+/**
+ * @brief The `finished_jobs_sweep_interval` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_finished_jobs_sweep_interval() {
    DENTER(BASIS_LAYER);
 
@@ -2925,6 +3806,14 @@ int mconf_get_finished_jobs_sweep_interval() {
 /* CS-1908: retention sweep per-tick prune cap enforcing R18. When the
  * eligible-prune queue exceeds this cap, overflow defers to subsequent ticks.
  * Clamped into [MIN, MAX] at read time. */
+/**
+ * @brief The `finished_jobs_sweep_batch` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_finished_jobs_sweep_batch() {
    DENTER(BASIS_LAYER);
 
@@ -2941,6 +3830,14 @@ int mconf_get_finished_jobs_sweep_batch() {
    DRETURN(value);
 }
 
+/**
+ * @brief The `max_ds_deviation` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_max_ds_deviation() {
    int ret;
 
@@ -2953,6 +3850,14 @@ int mconf_get_max_ds_deviation() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `monitor_time` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_monitor_time() {
    uint32_t monitor;
 
@@ -2966,6 +3871,14 @@ uint32_t mconf_get_monitor_time() {
 
 }
 
+/**
+ * @brief The `do_accounting` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_do_accounting() {
    bool ret;
 
@@ -2979,6 +3892,14 @@ bool mconf_get_do_accounting() {
 
 }
 
+/**
+ * @brief The `do_reporting` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_do_reporting() {
    bool ret;
 
@@ -2992,6 +3913,14 @@ bool mconf_get_do_reporting() {
 
 }
 
+/**
+ * @brief The `do_monitoring` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_do_monitoring() {
    bool ret;
 
@@ -3005,6 +3934,14 @@ bool mconf_get_do_monitoring() {
 
 }
 
+/**
+ * @brief The `do_joblog` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_do_joblog() {
    bool ret;
 
@@ -3018,6 +3955,14 @@ bool mconf_get_do_joblog() {
 
 }
 
+/**
+ * @brief The `reporting_flush_time` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_reporting_flush_time() {
    int ret;
 
@@ -3031,6 +3976,14 @@ int mconf_get_reporting_flush_time() {
 
 }
 
+/**
+ * @brief The `accounting_flush_time` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_accounting_flush_time() {
    int ret;
 
@@ -3049,6 +4002,14 @@ int mconf_get_accounting_flush_time() {
  * sync_write; defaults to false. See CS-2411 for the NFSv3 "Stale file handle"
  * scenario that motivates this option.
  */
+/**
+ * @brief The `reporting_sync_write` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_reporting_sync_write() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3059,6 +4020,14 @@ bool mconf_get_reporting_sync_write() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `old_accounting` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_old_accounting() {
    bool ret;
 
@@ -3071,6 +4040,14 @@ bool mconf_get_old_accounting() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `old_reporting` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_old_reporting() {
    bool ret;
 
@@ -3083,6 +4060,14 @@ bool mconf_get_old_reporting() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `sharelog_time` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_sharelog_time() {
    int ret;
 
@@ -3095,6 +4080,14 @@ int mconf_get_sharelog_time() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `log_consumables` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_log_consumables() {
    int ret;
 
@@ -3107,6 +4100,14 @@ int mconf_get_log_consumables() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `usage_patterns` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 std::string mconf_get_usage_patterns() {
    std::string ret;
 
@@ -3127,13 +4128,16 @@ std::string mconf_get_usage_patterns() {
  * rejected. An empty whole value is the disabled case and is valid; it
  * produces an empty `out_vars`.
  *
- * On success: returns true; `out_vars` holds the parsed tokens.
- * On failure: returns false; explanatory entries are appended to
- * `answer_list`; `out_vars` content is unspecified.
- *
- * Used both by check_config() in qmaster (pre-commit rejection of bad
- * configurations from qconf -Mconf) and by merge_configuration()
+ * Used both by `check_config()` in qmaster (pre-commit rejection of bad
+ * configurations from `qconf -Mconf`) and by #merge_configuration
  * (parse-time defence in depth).
+ *
+ * @param[out] answer_list receives the explanation when the value is rejected
+ * @param value the `online_usage` value to parse; nullptr and the empty
+ *              string are the disabled case and are valid
+ * @param[out] out_vars receives the parsed tokens; its content is unspecified
+ *                      when the function fails
+ * @return true when the whole value was accepted
  */
 bool
 parse_online_usage_value(lList **answer_list, const char *value,
@@ -3177,6 +4181,14 @@ parse_online_usage_value(lList **answer_list, const char *value,
  *
  * @see merge_configuration()
  */
+/**
+ * @brief The `online_usage_vars` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 std::vector<std::string> mconf_get_online_usage_vars() {
    std::vector<std::string> ret;
 
@@ -3189,6 +4201,14 @@ std::vector<std::string> mconf_get_online_usage_vars() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `enable_forced_qdel` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_enable_forced_qdel() {
    bool ret;
 
@@ -3202,6 +4222,14 @@ bool mconf_get_enable_forced_qdel() {
 
 }
 
+/**
+ * @brief The `enable_sup_grp_eval` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_enable_sup_grp_eval() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3214,6 +4242,16 @@ bool mconf_get_enable_sup_grp_eval() {
 
 }
 
+/**
+ * @brief Set the `enable_sup_grp_eval` setting of the master configuration
+ *
+ * Takes the master configuration write lock.
+ *
+ * @param value the new value
+ *
+ * @note The assignment is compiled only with `WITH_EXTENSIONS`. Without it the
+ *       call still takes the write lock and then does nothing.
+ */
 void mconf_set_enable_sup_grp_eval(bool value) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
@@ -3224,6 +4262,14 @@ void mconf_set_enable_sup_grp_eval(bool value) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief The `enable_enforce_master_limit` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_enable_enforce_master_limit() {
    bool ret;
 
@@ -3235,6 +4281,14 @@ bool mconf_get_enable_enforce_master_limit() {
 
 }
 
+/**
+ * @brief The `enable_test_sleep_after_request` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_enable_test_sleep_after_request() {
    bool ret;
 
@@ -3246,6 +4300,14 @@ bool mconf_get_enable_test_sleep_after_request() {
 
 }
 
+/**
+ * @brief The `enable_forced_qdel_if_unknown` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_enable_forced_qdel_if_unknown() {
    bool ret;
 
@@ -3256,6 +4318,14 @@ bool mconf_get_enable_forced_qdel_if_unknown() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `ignore_ngroups_max_limit` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_ignore_ngroups_max_limit() {
    bool ret;
 
@@ -3266,6 +4336,14 @@ bool mconf_get_ignore_ngroups_max_limit() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `enable_systemd` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_enable_systemd() {
    bool ret;
 
@@ -3276,6 +4354,14 @@ bool mconf_get_enable_systemd() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `enable_submit_lib_path` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_enable_submit_lib_path() {
    int ret;
 
@@ -3288,6 +4374,14 @@ bool mconf_get_enable_submit_lib_path() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `enable_submit_ld_preload` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_get_enable_submit_ld_preload() {
    int ret;
 
@@ -3300,6 +4394,14 @@ bool mconf_get_enable_submit_ld_preload() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `max_job_deletion_time` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_max_job_deletion_time() {
    int deletion_time;
 
@@ -3312,6 +4414,16 @@ int mconf_get_max_job_deletion_time() {
    DRETURN(deletion_time);
 }
 
+/**
+ * @brief Read the `h_descriptors` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @param[out] pret receives the value
+ */
 void mconf_get_h_descriptors(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3322,6 +4434,16 @@ void mconf_get_h_descriptors(char **pret) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Read the `s_descriptors` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @param[out] pret receives the value
+ */
 void mconf_get_s_descriptors(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3332,6 +4454,16 @@ void mconf_get_s_descriptors(char **pret) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Read the `h_maxproc` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @param[out] pret receives the value
+ */
 void mconf_get_h_maxproc(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3342,6 +4474,16 @@ void mconf_get_h_maxproc(char **pret) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Read the `s_maxproc` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @param[out] pret receives the value
+ */
 void mconf_get_s_maxproc(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3352,6 +4494,16 @@ void mconf_get_s_maxproc(char **pret) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Read the `h_memorylocked` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @param[out] pret receives the value
+ */
 void mconf_get_h_memorylocked(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3362,6 +4514,16 @@ void mconf_get_h_memorylocked(char **pret) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Read the `s_memorylocked` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @param[out] pret receives the value
+ */
 void mconf_get_s_memorylocked(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3372,6 +4534,16 @@ void mconf_get_s_memorylocked(char **pret) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Read the `h_locks` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @param[out] pret receives the value
+ */
 void mconf_get_h_locks(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3382,6 +4554,16 @@ void mconf_get_h_locks(char **pret) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Read the `s_locks` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @note The returned string is freshly allocated; the caller frees it.
+ *
+ * @param[out] pret receives the value
+ */
 void mconf_get_s_locks(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3392,6 +4574,14 @@ void mconf_get_s_locks(char **pret) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief The `jsv_threshold` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_jsv_threshold() {
    int threshold;
 
@@ -3404,6 +4594,14 @@ int mconf_get_jsv_threshold() {
    DRETURN(threshold);
 }
 
+/**
+ * @brief The `jsv_timeout` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_jsv_timeout() {
    int timeout;
 
@@ -3416,6 +4614,14 @@ int mconf_get_jsv_timeout() {
    DRETURN(timeout);
 }
 
+/**
+ * @brief The `script_timeout` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 uint32_t mconf_get_script_timeout() {
    uint32_t ret;
 
@@ -3428,6 +4634,14 @@ uint32_t mconf_get_script_timeout() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `do_monitoring` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 std::tuple<uint32_t, bool, bool> mconf_get_monitoring_options() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3442,6 +4656,14 @@ std::tuple<uint32_t, bool, bool> mconf_get_monitoring_options() {
  *
  * This value is cached in the assignment structure for the scheduler to avoid calling this function.
  */
+/**
+ * @brief The `is_binding_enabled` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_is_binding_enabled() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3450,6 +4672,14 @@ bool mconf_is_binding_enabled() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `do_implicit_binding` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_do_implicit_binding() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3458,6 +4688,14 @@ bool mconf_do_implicit_binding() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `schedule_on_any_host` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 bool mconf_schedule_on_any_host() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3466,6 +4704,14 @@ bool mconf_schedule_on_any_host() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `binding_mode` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 binding_mode_t mconf_get_binding_mode() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3474,6 +4720,14 @@ binding_mode_t mconf_get_binding_mode() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `default_binding_unit` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 ocs::BindingUnit::Unit mconf_get_default_binding_unit() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3482,6 +4736,14 @@ ocs::BindingUnit::Unit mconf_get_default_binding_unit() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `binding_filter` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 std::string mconf_get_binding_filter() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3490,6 +4752,14 @@ std::string mconf_get_binding_filter() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `topology_file` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 std::string mconf_get_topology_file() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3498,6 +4768,14 @@ std::string mconf_get_topology_file() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `s_ijs_escape_char` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 char mconf_get_ijs_escape_char() {
    char ret;
    DENTER(BASIS_LAYER);
@@ -3507,6 +4785,14 @@ char mconf_get_ijs_escape_char() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `s_ijs_keepalive_interval` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_ijs_keepalive_interval() {
    int ret;
    DENTER(BASIS_LAYER);
@@ -3516,6 +4802,14 @@ int mconf_get_ijs_keepalive_interval() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `s_ijs_keepalive_count` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_ijs_keepalive_count() {
    int ret;
    DENTER(BASIS_LAYER);
@@ -3525,6 +4819,14 @@ int mconf_get_ijs_keepalive_count() {
    DRETURN(ret);
 }
 
+/**
+ * @brief The `s_ijs_reconnect_timeout` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * @return the configured value
+ */
 int mconf_get_ijs_reconnect_timeout() {
    int ret;
    DENTER(BASIS_LAYER);

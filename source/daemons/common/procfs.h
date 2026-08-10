@@ -32,6 +32,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Walking `/proc`: attributing processes to jobs, and signalling them
+ */
 #if defined(LINUX) || defined(SOLARIS)
 
 #include "err_trace.h"

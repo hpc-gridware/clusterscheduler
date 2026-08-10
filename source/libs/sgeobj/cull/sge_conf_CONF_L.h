@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Host Configuration
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -46,9 +50,9 @@
 */
 
 enum {
-   CONF_name = CONF_LOWERBOUND,
-   CONF_version,
-   CONF_entries
+   CONF_name = CONF_LOWERBOUND,   ///< Host Name
+   CONF_version,   ///< Configuration Version
+   CONF_entries   ///< Configuration Entries
 };
 
 LISTDEF(CONF_Type)
@@ -63,6 +67,7 @@ NAMEDEF(CONFN)
    NAME("CONF_entries")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define CONF_SIZE sizeof(CONFN)/sizeof(char *)
 
 

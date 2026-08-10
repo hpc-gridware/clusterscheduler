@@ -35,6 +35,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations of the host object and the standard load value names
+ *
+ * @see sge_host.cc
+ */
+
 #include <string>
 
 #include "sgeobj/cull/sge_host_EH_L.h"
@@ -43,48 +49,69 @@
 #include "sgeobj/cull/sge_host_HS_L.h"
 #include "sgeobj/cull/sge_host_RESL_L.h"
 
-/* 
- * sge standard load value names
+/**
+ * @name Standard load value names
  *
- * use these defined names for refering
+ * Use these names rather than the string literals: an execution host reports
+ * its load under exactly these keys, and a load formula or a resource request
+ * refers to the same key.
+ * @{
  */
-
-/* static load parameters */
+/// The load value reporting the host architecture, e.g. `lx-amd64`
 #define LOAD_ATTR_ARCH           "arch"
+/// The load value reporting how many processors the host has
 #define LOAD_ATTR_NUM_PROC       "num_proc"
 
-/* raw load parameters */
+/// The load value reporting the raw one minute load average
 #define LOAD_ATTR_LOAD_SHORT     "load_short"
+/// The load value reporting the raw five minute load average
 #define LOAD_ATTR_LOAD_MEDIUM    "load_medium"
+/// The load value reporting the raw fifteen minute load average
 #define LOAD_ATTR_LOAD_LONG      "load_long"
+/// The load value reporting the raw load average the scheduler sorts by
 #define LOAD_ATTR_LOAD_AVG       "load_avg"
 
-/* values divided by LOAD_ATTR_NUM_PROC */
+/// The load value reporting the one minute load average divided by the processor count
 #define LOAD_ATTR_NP_LOAD_SHORT  "np_load_short"
+/// The load value reporting the five minute load average divided by the processor count
 #define LOAD_ATTR_NP_LOAD_MEDIUM "np_load_medium"
+/// The load value reporting the fifteen minute load average divided by the processor count
 #define LOAD_ATTR_NP_LOAD_LONG   "np_load_long"
+/// The load value reporting the load average divided by the processor count
 #define LOAD_ATTR_NP_LOAD_AVG    "np_load_avg"
+/// The load value reporting unused physical memory
 #define LOAD_ATTR_MEM_FREE       "mem_free"
+/// The load value reporting unused swap space
 #define LOAD_ATTR_SWAP_FREE      "swap_free"
+/// The load value reporting unused memory and swap together
 #define LOAD_ATTR_VIRTUAL_FREE   "virtual_free"
+/// The load value reporting installed physical memory
 #define LOAD_ATTR_MEM_TOTAL      "mem_total"
+/// The load value reporting configured swap space
 #define LOAD_ATTR_SWAP_TOTAL     "swap_total"
+/// The load value reporting physical memory and swap together
 #define LOAD_ATTR_VIRTUAL_TOTAL  "virtual_total"
+/// The load value reporting physical memory in use
 #define LOAD_ATTR_MEM_USED       "mem_used"
+/// The load value reporting swap space in use
 #define LOAD_ATTR_SWAP_USED      "swap_used"
+/// The load value reporting memory and swap in use together
 #define LOAD_ATTR_VIRTUAL_USED   "virtual_used"
+/// The load value reporting swap space reserved but not yet written
 #define LOAD_ATTR_SWAP_RSVD      "swap_rsvd"
 
-/* values for job to core binding */
+/// The load value reporting the host's CPU topology string; see @ref ocs::TopologyString
 #define LOAD_ATTR_TOPOLOGY       "m_topology"
+/// The load value reporting how many sockets the host has
 #define LOAD_ATTR_SOCKETS        "m_socket"
+/// The load value reporting how many cores the host has
 #define LOAD_ATTR_CORES          "m_core"
+/// The load value reporting how many hardware threads the host has
 #define LOAD_ATTR_THREADS        "m_thread"
 
-/* CS-2462: consumed by the shepherd's systemd DeviceAllow via config
- * entry devices_allow. Populated on the qmaster side from the "devices"
- * characteristic of an RSMAP granted to the job. */
+/// The load value reporting the devices the shepherd's systemd `DeviceAllow` is filled from (CS-2462); populated on the qmaster side from the `devices` characteristic of an RSMAP granted to the job
 #define LOAD_ATTR_DEVICES        "devices"
+/** @} */
 
 bool host_is_referenced(const lListElem *host, lList **answer_list,
                         const lList *queue_list, const lList *hgrp_list);

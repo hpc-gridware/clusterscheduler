@@ -32,6 +32,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief read_raw - copy standard input to standard output without interpreting it
+ *
+ * The counterpart of echo_raw, for the shell scripts that have to move data
+ * they must not alter.
+ */
+
 #include <cstdio>
 #include <cstring>
 
@@ -48,6 +55,7 @@
  * command.
  */
 
+/** @brief Size of the copy buffer */
 #define BUF_SIZE 8 * 1024
 
 int main(int argc, char *argv[])

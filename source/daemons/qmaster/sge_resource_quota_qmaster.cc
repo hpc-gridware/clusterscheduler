@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Resource quota sets
+ */
 #include <cstring>
 #include <fnmatch.h>
 
@@ -76,51 +80,33 @@ static bool
 filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList **scope_ref, int nm, const lDescr *dp,
                                        const lList *master_list);
 
-/****** sge_resource_quota_qmaster/rqs_mod() **************************************
-*  NAME
-*     rqs_mod() -- gdi callback function for modifing resource quota sets
-*
-*  SYNOPSIS
-*     int rqs_mod(lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, 
-*     const char *ruser, const char *rhost, gdi_object_t *object, int 
-*     sub_command, monitoring_t *monitor) 
-*
-*  FUNCTION
-*     This function is called from the framework that
-*     add/modify/delete generic gdi objects.
-*     The purpose of this function is it to add new rqs 
-*     objects or modify existing resource quota sets.
-*
-*  INPUTS
-*     lList **alpp          - reference to an answer list
-*     lListElem *new_rqs    - if a new rqs object will be created by this
-*                             function, then new_rqs is a newly initialized
-*                             CULL object.
-*                             if this function was called due to a modify request
-*                             than new_rqs will contain the old data
-*     lListElem *rqs        - a reduced rqs object which contains all
-*                             necessary information to create a new object
-*                             or modify parts of an existing one
-*     int add               - 1 if a new element should be added to the master list
-*                             0 to modify an existing object
-*     const char *ruser     - username who invoked this gdi request
-*     const char *rhost     - hostname of where the gdi request was invoked
-*     gdi_object_t *object  - structure of the gdi framework which contains
-*                             additional information to perform the request
-*     int sub_command       - how should we handle sublist elements
-*              SGE_GDI_CHANGE - modify sublist elements
-*              SGE_GDI_APPEND - add elements to a sublist
-*              SGE_GDI_REMOVE - remove sublist elements
-*              SGE_GDI_SET - replace the complete sublist                        
-*     monitoring_t *monitor - monitoring structure
-*
-*  RESULT
-*     int - 0 on success
-*           STATUS_EUNKNOWN if an error occurred
-*
-*  NOTES
-*     MT-NOTE: rqs_mod() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Gdi callback function for modifing resource quota sets
+ *
+ * This function is called from the framework that
+ * add/modify/delete generic gdi objects.
+ * The purpose of this function is it to add new rqs
+ * objects or modify existing resource quota sets.
+ *
+ * @param alpp reference to an answer list
+ * @param new_rqs if a new rqs object will be created by this function, then new_rqs is a newly initialized CULL object. if this function was called due to a modify request than new_rqs will contain the old data
+ * @param rqs a reduced rqs object which contains all necessary information to create a new object or modify parts of an existing one
+ * @param add 1 if a new element should be added to the master list 0 to modify an existing object
+ * @param ruser username who invoked this gdi request
+ * @param rhost hostname of where the gdi request was invoked
+ * @param object structure of the gdi framework which contains additional information to perform the request
+ * @param sub_command how should we handle sublist elements: `SGE_GDI_CHANGE`
+ *        modifies them, `SGE_GDI_APPEND` adds to the sublist, `SGE_GDI_REMOVE`
+ *        removes from it, `SGE_GDI_SET` replaces the whole sublist
+ * @param monitor monitoring structure
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cmd the command being executed
+ *
+ * @return 0 on success STATUS_EUNKNOWN if an error occurred
+ *
+ * @note MT-NOTE: rqs_mod() is MT safe
+ */
 int
 rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_rqs, lListElem *rqs, int add, const char *ruser,
         const char *rhost, gdi_object_t *object, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
@@ -192,34 +178,24 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem 
 DRETURN(STATUS_EUNKNOWN);
 }
 
-/****** sge_resource_quota_qmaster/rqs_spool() ************************************
-*  NAME
-*     rqs_spool() -- gdi callback funktion to spool a rqs object
-*
-*  SYNOPSIS
-*     int rqs_spool(lList **alpp, lListElem *ep, gdi_object_t *object) 
-*
-*  FUNCTION
-*     This function will be called from the framework which will
-*     add/modify/delete generic gdi objects.
-*     After an object was modified/added successfully it
-*     is necessary to spool the current state to the filesystem.
-*
-*  INPUTS
-*     lList **alpp         - reference to an answer list.
-*     lListElem *ep        - rqs object which should be spooled
-*     gdi_object_t *object - structure of the gdi framework which contains 
-*                            additional information to perform the request
-*                            (function pointers, names, CULL-types)
-*
-*  RESULT
-*     [alpp] - error messages will be added to this list
-*     0 - success
-*     STATUS_EEXIST - an error occurred
-*
-*  NOTES
-*     MT-NOTE: rqs_spool() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Gdi callback funktion to spool a rqs object
+ *
+ * This function will be called from the framework which will
+ * add/modify/delete generic gdi objects.
+ * After an object was modified/added successfully it
+ * is necessary to spool the current state to the filesystem.
+ *
+ * @param alpp reference to an answer list.
+ * @param ep rqs object which should be spooled
+ * @param object structure of the gdi framework which contains additional information to perform the request (function pointers, names, CULL-types)
+ * @param packet the client request
+ * @param task the GDI task being answered
+ *
+ * @return [alpp] - error messages will be added to this list 0 - success STATUS_EEXIST - an error occurred
+ *
+ * @note MT-NOTE: rqs_spool() is MT safe
+ */
 int
 rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
    lList *answer_list = nullptr;
@@ -239,38 +215,28 @@ rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEle
    DRETURN(dbret ? 0 : 1);
 }
 
-/****** sge_resource_quota_qmaster/rqs_success() **********************************
-*  NAME
-*     rqs_success() -- does something after a successful modify
-*
-*  SYNOPSIS
-*     int rqs_success(lListElem *ep, lListElem *old_ep, gdi_object_t *object, 
-*     lList **ppList, monitoring_t *monitor) 
-*
-*  FUNCTION
-*     This function will be called from the framework which will
-*     add/modify/delete generic gdi objects.
-*     After an object was modified/added and spooled successfully 
-*     it is possibly necessary to perform additional tasks.
-*     For example it is necessary to send some events to
-*     other daemon.
-*
-*  INPUTS
-*     lListElem *ep         - new rqs object
-*     lListElem *old_ep     - old rqs object before modification or
-*                             nullptr if a new object was added
-*     gdi_object_t *object  - structure of the gdi framework which contains 
-*                             additional information to perform the request
-*                             (function pointers, names, CULL-types) 
-*     lList **ppList        - ??? 
-*     monitoring_t *monitor - monitoring structure
-*
-*  RESULT
-*     int - 0 success
-*
-*  NOTES
-*     MT-NOTE: rqs() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Does something after a successful modify
+ *
+ * This function will be called from the framework which will
+ * add/modify/delete generic gdi objects.
+ * After an object was modified/added and spooled successfully
+ * it is possibly necessary to perform additional tasks.
+ * For example it is necessary to send some events to
+ * other daemon.
+ *
+ * @param ep new rqs object
+ * @param old_ep old rqs object before modification or nullptr if a new object was added
+ * @param object structure of the gdi framework which contains additional information to perform the request (function pointers, names, CULL-types)
+ * @param ppList
+ * @param monitor monitoring structure
+ * @param packet the client request
+ * @param task the GDI task being answered
+ *
+ * @return 0 success
+ *
+ * @note MT-NOTE: rqs() is MT safe
+ */
 int
 rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -280,33 +246,25 @@ rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList
    DRETURN(0);
 }
 
-/****** sge_resource_quota_qmaster/rqs_del() ************************
-*  NAME
-*     rqs_del() -- delete rqs object in master resource quota set list
-*
-*  SYNOPSIS
-*     int rqs_del(lListElem *ep, lList **alpp, lList 
-*     **rqs_list, char *ruser, char *rhost) 
-*
-*  FUNCTION
-*     This function will be called from the framework which will
-*     add/modify/delete generic gdi objects.
-*     The purpose of this function is it to delete ckpt objects. 
-*
-*  INPUTS
-*     lListElem *ep     - element which should be deleted
-*     lList **alpp      - reference to an answer list.
-*     lList **rqs_list  - reference to the Master_RQS_LIST
-*     char *ruser       - username of person who invoked this gdi request
-*     char *rhost       - hostname of the host where someone initiated an gdi call
-*
-*  RESULT
-*     0 - success
-*     STATUS_EUNKNOWN - an error occurred
-*
-*  NOTES
-*     MT-NOTE: rqs_del() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Delete rqs object in master resource quota set list
+ *
+ * This function will be called from the framework which will
+ * add/modify/delete generic gdi objects.
+ * The purpose of this function is it to delete ckpt objects.
+ *
+ * @param ep element which should be deleted
+ * @param alpp reference to an answer list.
+ * @param rqs_list reference to the Master_RQS_LIST
+ * @param ruser username of person who invoked this gdi request
+ * @param rhost hostname of the host where someone initiated an gdi call
+ * @param packet the client request
+ * @param task the GDI task being answered
+ *
+ * @return success STATUS_EUNKNOWN - an error occurred
+ *
+ * @note MT-NOTE: rqs_del() is MT safe
+ */
 int
 rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **rqs_list, char *ruser, char *rhost) {
    const char *rqs_name;
@@ -357,29 +315,19 @@ rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **a
    DRETURN(STATUS_OK);
 }
 
-/****** sge_resource_quota_qmaster/rqs_reinit_consumable_actual_list() **************
-*  NAME
-*     rqs_reinit_consumable_actual_list() -- debit running jobs
-*
-*  SYNOPSIS
-*     static bool rqs_reinit_consumable_actual_list(lListElem *rqs, lList 
-*     **answer_list) 
-*
-*  FUNCTION
-*     Newly added resource quota sets need to be debited for all running jos
-*     This is done by this function
-*
-*  INPUTS
-*     lListElem *rqs     - resource quota set (RQS_Type)
-*     lList **answer_list - answer list
-*
-*  RESULT
-*     bool - always true
-*
-*  NOTES
-*     MT-NOTE: rqs_reinit_consumable_actual_list() is not MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Debit running jobs
+ *
+ * Newly added resource quota sets need to be debited for all running jos
+ * This is done by this function
+ *
+ * @param rqs resource quota set (RQS_Type)
+ * @param answer_list answer list
+ *
+ * @return always true
+ *
+ * @note MT-NOTE: rqs_reinit_consumable_actual_list() is not MT safe
+ */
 static bool
 rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
    bool ret = true;
@@ -436,40 +384,27 @@ rqs_reinit_consumable_actual_list(lListElem *rqs, lList **answer_list) {
    DRETURN(ret);
 }
 
-/****** sge_resource_quota_qmaster/filter_diff_usersets_or_projects_scope() ********
-*  NAME
-*     filter_diff_usersets_or_projects_scope() -- diff single scope
-*
-*  SYNOPSIS
-*     static bool filter_diff_usersets_or_projects_scope(lList *filter_scope, 
-*     int filter_nm, lList **scope_ref, int nm, const lDescr *dp, lList 
-*     *master_list) 
-*
-*  FUNCTION
-*     This function iterates over a scope and generates
-*     a list with all referenced names.
-*     This function resolves wildcards by using fnmatch for patterned scopes.
-*
-*     This function can only be used for usersets or projects
-*
-*  INPUTS
-*     const lListElem *filter_scope  - filter scope (RQRF_type)
-*     int filter_nm         - nm of the filter type (eg. RQR_filter_users)
-*     lList **scope_ref     - generated resolved list
-*     int nm                - nm of the names of the list
-*     const lDescr *dp      - type of the generated list
-*     lList* master_list    - master list, needed for resolving
-*
-*  RESULT
-*     static bool - true if one or more scopes where found
-*                   false if all projects or usersets are referenced
-*
-*  NOTES
-*     MT-NOTE: filter_diff_usersets_or_projects_scope() is MT safe 
-*
-*  SEE ALSO
-*     sge_resource_quota_qmaster/filter_diff_usersets_or_projects()
-*******************************************************************************/
+/**
+ * @brief Diff single scope
+ *
+ * This function iterates over a scope and generates
+ * a list with all referenced names.
+ * This function resolves wildcards by using fnmatch for patterned scopes.
+ * This function can only be used for usersets or projects
+ *
+ * @param filter_scope filter scope (RQRF_type)
+ * @param filter_nm nm of the filter type (eg. RQR_filter_users)
+ * @param scope_ref generated resolved list
+ * @param nm nm of the names of the list
+ * @param dp type of the generated list
+ * @param master_list master list, needed for resolving
+ *
+ * @return true if one or more scopes where found false if all projects or usersets are referenced
+ *
+ * @note MT-NOTE: filter_diff_usersets_or_projects_scope() is MT safe
+ *
+ * @see #filter_diff_usersets_or_projects
+ */
 static bool
 filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList **scope_ref, int nm, const lDescr *dp,
                                        const lList *master_list) {
@@ -524,38 +459,25 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
    DRETURN(ret);
 }
 
-/****** sge_resource_quota_qmaster/filter_diff_usersets_or_projects() **************
-*  NAME
-*     filter_diff_usersets_or_projects() -- generate list of referenced usersets
-*                                           or projects in given rule
-*
-*  SYNOPSIS
-*     static bool filter_diff_usersets_or_projects(const lListElem *rule, int 
-*     filter_nm, lList **scope_l, int nm, const lDescr *dp, lList* master_list) 
-*
-*  FUNCTION
-*     This function iterates over the project of user scope of a rule and generates
-*     a list with all referenced names.
-*     This function resolves wildcards by using fnmatch for patterned scopes.
-*
-*     This function can only be used for usersets or projects
-*
-*  INPUTS
-*     const lListElem *rule - resource quota rule (RQR_Type)
-*     int filter_nm         - nm of the filter type (eg. RQR_filter_users)
-*     lList **scope_l       - generated resolved list
-*     int nm                - nm of the names of the list
-*     const lDescr *dp      - type of the generated list
-*     lList* master_list    - master list, needed for resolving
-*
-*  RESULT
-*     static bool - true if one or more scopes where found
-*                   false if all projects or usersets are referenced
-*
-*  NOTES
-*     MT-NOTE: filter_diff_usersets_or_projects() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Generate list of referenced usersets
+ *
+ * This function iterates over the project of user scope of a rule and generates
+ * a list with all referenced names.
+ * This function resolves wildcards by using fnmatch for patterned scopes.
+ * This function can only be used for usersets or projects
+ *
+ * @param rule resource quota rule (RQR_Type)
+ * @param filter_nm nm of the filter type (eg. RQR_filter_users)
+ * @param scope_l generated resolved list
+ * @param nm nm of the names of the list
+ * @param dp type of the generated list
+ * @param master_list master list, needed for resolving
+ *
+ * @return true if one or more scopes where found false if all projects or usersets are referenced
+ *
+ * @note MT-NOTE: filter_diff_usersets_or_projects() is MT safe
+ */
 static bool
 filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **scope_l, int nm, const lDescr *dp,
                                  const lList *master_list) {
@@ -585,35 +507,25 @@ filter_diff_usersets_or_projects(const lListElem *rule, int filter_nm, lList **s
    DRETURN(ret);
 }
 
-/****** sge_resource_quota_qmaster/rqs_diff_usersets() ****************************
-*  NAME
-*     rqs_diff_usersets() -- diff referenced usersets in rqs
-*
-*  SYNOPSIS
-*     bool rqs_diff_usersets(const lListElem *new_rqs, const lListElem 
-*     *old_rqs, lList **new_list, lList **old_list) 
-*
-*  FUNCTION
-*     This function generates a list of all usersets referenced in a resource quota set.
-*     After locating the usersets a diff beween the usersets found in old_list and new_list
-*     is done and the usersets referenced in both are removed.
-*
-*  INPUTS
-*     const lListElem *new_rqs - new resource quota set list (RQS_Type)
-*     const lListElem *old_rqs - old resource quota set list (RQS_Type)
-*     lList **new_list          - list of referenced usersets in new_rqs (US_Type)
-*     lList **old_list          - list of referenced usersets in old_rqs (US_Type)
-*
-*  RESULT
-*     bool - true if some or none userset is referenced
-*            false if all userset are referenced in new_list
-*
-*  NOTES
-*     MT-NOTE: rqs_diff_usersets() is MT safe 
-*
-*  SEE ALSO
-*     sge_resource_quota_qmaster/rqs_diff_projects()
-*******************************************************************************/
+/**
+ * @brief Diff referenced usersets in rqs
+ *
+ * This function generates a list of all usersets referenced in a resource quota set.
+ * After locating the usersets a diff beween the usersets found in old_list and new_list
+ * is done and the usersets referenced in both are removed.
+ *
+ * @param new_rqs new resource quota set list (RQS_Type)
+ * @param old_rqs old resource quota set list (RQS_Type)
+ * @param new_list list of referenced usersets in new_rqs (US_Type)
+ * @param old_list list of referenced usersets in old_rqs (US_Type)
+ * @param master_userset_list see the brief above
+ *
+ * @return true if some or none userset is referenced false if all userset are referenced in new_list
+ *
+ * @note MT-NOTE: rqs_diff_usersets() is MT safe
+ *
+ * @see #rqs_diff_projects
+ */
 bool
 rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list, lList **old_list,
                   const lList *master_userset_list) {
@@ -647,35 +559,25 @@ rqs_diff_usersets(const lListElem *new_rqs, const lListElem *old_rqs, lList **ne
    DRETURN(ret);
 }
 
-/****** sge_resource_quota_qmaster/rqs_diff_projects() ****************************
-*  NAME
-*     rqs_diff_projects() -- diff referenced usersets in rqs
-*
-*  SYNOPSIS
-*     bool rqs_diff_projects(const lListElem *new_rqs, const lListElem 
-*     *old_rqs, lList **new_list, lList **old_list, lList *master_project_list) 
-*
-*  FUNCTION
-*     This function generates a list of all projects referenced in a resource quota set.
-*     After locating the projects a diff beween the projects found in old_list and new_list
-*     is done and the projects referenced in both are removed.
-*
-*  INPUTS
-*     const lListElem *new_rqs - new resource quota set list (RQS_Type)
-*     const lListElem *old_rqs - old resource quota set list (RQS_Type)
-*     lList **new_list          - list of referenced projects in new_rqs (PR_Type)
-*     lList **old_list          - list of referenced projects in old_rqs (PR_Type)
-*
-*  RESULT
-*     bool - true if some or none project is referenced
-*            false if all projects are referenced in new_list
-*
-*  NOTES
-*     MT-NOTE: rqs_diff_projects() is MT safe 
-*
-*  SEE ALSO
-*     sge_resource_quota_qmaster/rqs_diff_usersets()
-*******************************************************************************/
+/**
+ * @brief Diff referenced usersets in rqs
+ *
+ * This function generates a list of all projects referenced in a resource quota set.
+ * After locating the projects a diff beween the projects found in old_list and new_list
+ * is done and the projects referenced in both are removed.
+ *
+ * @param new_rqs new resource quota set list (RQS_Type)
+ * @param old_rqs old resource quota set list (RQS_Type)
+ * @param new_list list of referenced projects in new_rqs (PR_Type)
+ * @param old_list list of referenced projects in old_rqs (PR_Type)
+ * @param master_project_list see the brief above
+ *
+ * @return true if some or none project is referenced false if all projects are referenced in new_list
+ *
+ * @note MT-NOTE: rqs_diff_projects() is MT safe
+ *
+ * @see #rqs_diff_usersets
+ */
 bool
 rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **new_list, lList **old_list,
                   const lList *master_project_list) {
@@ -711,27 +613,18 @@ rqs_diff_projects(const lListElem *new_rqs, const lListElem *old_rqs, lList **ne
    DRETURN(ret);
 }
 
-/****** sge_resource_quota_qmaster/rqs_update_categories() ************************
-*  NAME
-*     rqs_update_categories() -- update categories after rqs change
-*
-*  SYNOPSIS
-*     static void rqs_update_categories(const lListElem *new_rqs, const 
-*     lListElem *old_rqs) 
-*
-*  FUNCTION
-*     This function generates a list of referenced usersets and projects by the
-*     new and the old resource quota set and updates the "consider_with_categories"
-*     flag for the relevant objects.
-*
-*  INPUTS
-*     const lListElem *new_rqs - new resource quota set (RQS_Type)
-*     const lListElem *old_rqs - old resource quota set (RQS_Type)
-*
-*  NOTES
-*     MT-NOTE: rqs_update_categories() is not MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Update categories after rqs change
+ *
+ * This function generates a list of referenced usersets and projects by the
+ * new and the old resource quota set and updates the "consider_with_categories"
+ * flag for the relevant objects.
+ *
+ * @param new_rqs new resource quota set (RQS_Type)
+ * @param old_rqs old resource quota set (RQS_Type)
+ *
+ * @note MT-NOTE: rqs_update_categories() is not MT safe
+ */
 static void
 rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs, uint64_t gdi_session) {
    lList *old_lp = nullptr, *new_lp = nullptr;
@@ -753,38 +646,25 @@ rqs_update_categories(const lListElem *new_rqs, const lListElem *old_rqs, uint64
    DRETURN_VOID;
 }
 
-/****** sge_resource_quota_qmaster/scope_is_referenced_rqs() **********************
-*  NAME
-*     scope_is_referenced_rqs() -- check if the name is referenced in the resource 
-*                                  quota set
-*
-*  SYNOPSIS
-*     bool scope_is_referenced_rqs(const lListElem *rqs, int nm, const char 
-*     *name) 
-*
-*  FUNCTION
-*     This function iterates over all rules of a rule set and check if the given name
-*     is referenced in the scope list of the rules.
-*     The compare is done with fnmatch(), so wildcards are allowed.
-*
-*     userset note:
-*     usersets in the resource quota sets have a preleading @ like hostgroups. This must be
-*     consideres if usersets are searched with this function. If the name has no preleading @
-*     this function searches for users instead of usersets.
-*
-*  INPUTS
-*     const lListElem *rqs - resource quota set to search (RQS_Type)
-*     int nm                - type of the filter scope
-*     const char *name      - name so search
-*
-*  RESULT
-*     bool - true if name is referenced
-*            false if no reference was found
-*
-*  NOTES
-*     MT-NOTE: scope_is_referenced_rqs() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Check if the name is referenced in the resource
+ *
+ * This function iterates over all rules of a rule set and check if the given name
+ * is referenced in the scope list of the rules.
+ * The compare is done with fnmatch(), so wildcards are allowed.
+ * userset note:
+ * usersets in the resource quota sets have a preleading @ like hostgroups. This must be
+ * consideres if usersets are searched with this function. If the name has no preleading @
+ * this function searches for users instead of usersets.
+ *
+ * @param rqs resource quota set to search (RQS_Type)
+ * @param nm type of the filter scope
+ * @param name name so search
+ *
+ * @return true if name is referenced false if no reference was found
+ *
+ * @note MT-NOTE: scope_is_referenced_rqs() is MT safe
+ */
 bool
 scope_is_referenced_rqs(const lListElem *rqs, int nm, const char *name) {
    const lListElem *rule;

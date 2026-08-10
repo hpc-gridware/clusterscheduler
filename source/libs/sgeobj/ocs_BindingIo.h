@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Reading and writing binding specifications
+ */
+
 #include <string>
 
 #include "cull/cull_list.h"
@@ -40,6 +44,7 @@
 
 
 namespace ocs {
+   /// Rendering a binding request back into the textual form users typed it in
    class BindingIo {
    public:
       static void

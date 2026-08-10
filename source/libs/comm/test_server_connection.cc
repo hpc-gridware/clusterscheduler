@@ -32,6 +32,14 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: a service with a connection limit
+ *
+ * Usage: `test_server_connection <debug_level> <port> <max connections>`
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -41,6 +49,9 @@
 
 #include "comm/cl_commlib.h"
 
+/** @brief Note the signal so the service loop can leave
+ * @param sig the signal that arrived
+ */
 void sighandler_server(int sig);
 
 static int do_shutdown = 0;
@@ -61,10 +72,21 @@ void sighandler_server(
    do_shutdown = 1;
 }
 
+/** @brief The #cl_app_status_func_t this test registers
+ *
+ * What a SIM asking for status gets back.
+ *
+ * @return the numeric status
+ */
 unsigned long my_application_status() {
    return (unsigned long) 1;
 }
 
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 extern int main(int argc, char **argv) {
    struct sigaction sa;
 

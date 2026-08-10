@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Parallel environments, and the slots booked against them
+ */
+
 #include "sge_c_gdi.h"
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
@@ -59,9 +63,29 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *, lList **
 void
 debit_all_jobs_from_pes(lList *pe_list);
 
+/** @brief Book a job's slots against a parallel environment
+ *
+ * @param pep see the brief above
+ * @param slots see the brief above
+ * @param job_id see the brief above
+ *
+ * @warning Declared here but defined nowhere in the tree, and called from
+ *          nowhere either. Kept because removing a declaration is a code
+ *          change; see the dead-declaration list.
+ */
 void
 debit_job_from_pe(lListElem *pep, int slots, uint32_t job_id);
 
+/** @brief Give a job's slots back to a parallel environment
+ *
+ * @param pep see the brief above
+ * @param slots see the brief above
+ * @param job_id see the brief above
+ *
+ * @warning Declared here but defined nowhere in the tree, and called from
+ *          nowhere either. Kept because removing a declaration is a code
+ *          change; see the dead-declaration list.
+ */
 void
 reverse_job_from_pe(lListElem *pep, int slots, uint32_t job_id);
 

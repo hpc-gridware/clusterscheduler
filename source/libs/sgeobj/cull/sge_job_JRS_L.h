@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Request Set
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -61,13 +65,13 @@
 */
 
 enum {
-   JRS_scope = JRS_LOWERBOUND,
-   JRS_hard_resource_list,
-   JRS_soft_resource_list,
-   JRS_hard_queue_list,
-   JRS_soft_queue_list,
-   JRS_allocation_rule,
-   JRS_ignore_slave_requests_on_master_host
+   JRS_scope = JRS_LOWERBOUND,   ///< Scope
+   JRS_hard_resource_list,   ///< Hard Resource List
+   JRS_soft_resource_list,   ///< Soft Resource List
+   JRS_hard_queue_list,   ///< Hard Queue List
+   JRS_soft_queue_list,   ///< Soft Queue List
+   JRS_allocation_rule,   ///< Allocation Rule
+   JRS_ignore_slave_requests_on_master_host   ///< Ignore Slave Requests on Master Host
 };
 
 LISTDEF(JRS_Type)
@@ -90,6 +94,7 @@ NAMEDEF(JRSN)
    NAME("JRS_ignore_slave_requests_on_master_host")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define JRS_SIZE sizeof(JRSN)/sizeof(char *)
 
 

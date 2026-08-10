@@ -48,9 +48,20 @@ CANON = {
 
 
 def parse_sections(block):
+    """Split a banner into its NAME/FUNCTION/INPUTS/... sections.
+
+    Two banner styles exist in the tree and both must parse: the comment lines
+    may start at column 0 ("*  NAME") or be indented by one space (" *  NAME").
+    Matching only the first silently produced an EMPTY section dict, and the
+    caller then wrote "@brief TODO document this" over a complete banner -
+    prose, inputs and notes included. Gate A sees only comments and the doxygen
+    gate sees a brief, so nothing catches it. Strip the leading whitespace
+    before the '*' so both styles reach the same code.
+    """
     secs, cur = {}, None
     for line in block:
-        body = line[1:] if line.startswith('*') else line
+        lead = line.lstrip()
+        body = lead[1:] if lead.startswith('*') else line
         m = SECTION_RE.match(body.rstrip())
         if m:
             cur = CANON.get(m.group(1).strip())
@@ -59,6 +70,11 @@ def parse_sections(block):
         elif cur:
             secs[cur].append(body[5:] if body.startswith('     ') else body.strip())
     return secs
+
+
+def is_placeholder(text):
+    """Banners in this tree use '???' where the author never wrote anything."""
+    return not text or not text.strip().strip('?').strip()
 
 
 def trim(lines):
@@ -82,7 +98,7 @@ def see_also(entry, local_symbols):
     return None
 
 
-def convert_block(block, local_symbols):
+def convert_block(block, local_symbols, returns_void=False):
     s = parse_sections(block)
     out = []
 
@@ -91,20 +107,20 @@ def convert_block(block, local_symbols):
         if '--' in line:
             brief = line.split('--', 1)[1].strip()
             break
-    if not brief:
-        fn = trim(s.get('FUNCTION', []))
+    if is_placeholder(brief):
+        fn = [x for x in trim(s.get('FUNCTION', [])) if not is_placeholder(x)]
         brief = fn[0] if fn else 'TODO document this'
     brief = brief.rstrip('. ')
     if brief:
         brief = brief[0].upper() + brief[1:]
     out.append(' * @brief ' + brief)
 
-    fn = trim(s.get('FUNCTION', []))
-    if fn:
+    fn = [x for x in trim(s.get('FUNCTION', [])) if not is_placeholder(x)]
+    if fn and fn[0].strip() != brief:
         out.append(' *')
         out.extend((' * ' + line).rstrip() for line in fn)
 
-    ex = trim(s.get('EXAMPLE', []))
+    ex = [x for x in trim(s.get('EXAMPLE', [])) if not is_placeholder(x)]
     if ex:
         out.append(' *')
         out.append(' * @code')
@@ -115,20 +131,52 @@ def convert_block(block, local_symbols):
     for line in trim(s.get('INPUTS', [])) + trim(s.get('OUTPUTS', [])):
         m = re.match(r'^\s*(?:[\w \*\[\]]+?[ \*])?(\w+)\s+-\s+(.*)$', line)
         if m:
+            # "void - ???" documents the absence of parameters, not a parameter
+            # called void; @param void is a doxygen warning.
+            if m.group(1) == 'void':
+                continue
             params.append([m.group(1), m.group(2).strip()])
         elif params and line.strip():
             params[-1][1] += ' ' + line.strip()
     if params:
         out.append(' *')
         for name, desc in params:
+            desc = '' if is_placeholder(desc) else desc
             out.append((' * @param %s %s' % (name, desc)).rstrip())
 
     ret = trim(s.get('RESULT', []))
+    mt_note = None
+    if ret:
+        # Some banners put the MT-NOTE inside RESULT instead of NOTES, where it
+        # would otherwise be appended to the @return text.
+        keep = []
+        for line in ret:
+            if re.match(r'^\s*MT-NOTE\b', line):
+                mt_note = line.strip()
+            else:
+                keep.append(line)
+        ret = trim(keep)
     if ret:
         txt = ' '.join(x.strip() for x in ret if x.strip())
-        txt = re.sub(r'^[\w \*]+?\s+-\s+', '', txt)
+        # A RESULT section on a void function still describes something, but
+        # @return on a function that returns nothing is a doxygen warning.
+        # Drop the boilerplate ones and demote the rest to a @note.
+        m = re.match(r'^void\s*(?:-\s*(.*))?$', txt)
+        if m or returns_void:
+            rest = (m.group(1) if m else txt) or ''
+            rest = rest.strip().rstrip('.')
+            if rest and rest.lower() not in ('none', 'nothing', 'no result'):
+                out.append(' *')
+                out.append(' * @note ' + rest)
+        else:
+            txt = re.sub(r'^[\w \*]+?\s*-\s*', '', txt)
+            if is_placeholder(txt):
+                txt = 'TODO document the return value'
+            out.append(' *')
+            out.append(' * @return ' + txt)
+    if mt_note:
         out.append(' *')
-        out.append(' * @return ' + txt)
+        out.append(' * @note ' + mt_note)
 
     notes = trim(s.get('NOTES', []))
     if notes:
@@ -149,12 +197,44 @@ def convert_block(block, local_symbols):
         out.append(' *')
         out.append(' * @see ' + ', '.join(refs))
 
-    return ['/**'] + out + [' */']
+    return ['/**'] + [placeholders(x) for x in out] + [' */']
+
+
+def placeholders(line):
+    """`<name>` is banner-speak for "the parameter called name".
+
+    Doxygen reads it as an HTML tag instead and warns about every one of them,
+    so turn it into inline code. A '<' that follows an identifier character is
+    left alone - that is a template argument such as vector<int>, not a
+    placeholder.
+    """
+    line = re.sub(r'(?<![\w>])<([A-Za-z_]\w*)>', r'`\1`', line)
+    # A queue instance is written cqueue@host, a mail address user@host - in
+    # both cases doxygen reads the @word as a command it does not know. The
+    # token is always a name here, so inline code is the right rendering.
+    return re.sub(r'(?<![`\w])([\w.*]+@+[\w.*]+)(?![`\w])', r'`\1`', line)
 
 
 def local_symbol_names(text):
     """Function-ish names defined or declared in this file."""
     return set(re.findall(r'^[\w:<>,\* &\[\]]*?\b(\w+)\s*\(', text, re.M))
+
+
+def returns_void(lines, start):
+    """Does the declaration following a banner return void?
+
+    A RESULT section is not reliable here: plenty of banners describe what a
+    void function changed ("'this_range' will be modified") without naming the
+    type, and @return on a void function is a doxygen warning. The signature is
+    the only thing that actually knows.
+    """
+    for line in lines[start:start + 4]:
+        if not line.strip():
+            continue
+        sig = line.strip()
+        # The return type is sometimes on a line of its own, above the name.
+        return re.match(r'^(static\s+)?void(\s+[\w:]+\s*\(|\s*$)', sig) is not None
+    return False
 
 
 def process(path):
@@ -176,7 +256,8 @@ def process(path):
                 skipped.append(name)
                 out.extend(lines[i:j + 1])
             else:
-                out.extend(convert_block(lines[i + 1:j], symbols))
+                out.extend(convert_block(lines[i + 1:j], symbols,
+                                         returns_void(lines, j + 1)))
                 converted += 1
             i = j + 1
             continue

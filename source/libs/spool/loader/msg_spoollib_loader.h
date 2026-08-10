@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Message catalogue of the spooling loader
+ */
+
 #include <cinttypes>
 
 #define MSG_SPOOL_ERRORCREATINGCONTEXT_S   _MESSAGE(211000, _("error creating a " SFQ " spooling context"))

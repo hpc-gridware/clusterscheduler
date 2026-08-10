@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Subordinate queues, including the slot-wise suspension tree
+ */
+
 #include <cstring>
 
 #include "uti/sge_bitfield.h"
@@ -63,29 +67,18 @@ qinstance_x_on_subordinate(lListElem *this_elem, bool suspend,
                            bool send_event, monitoring_t *monitor, uint64_t gdi_session);
 
 
-/****** sge_subordinate_qmaster/get_slotwise_sos_threshold() *******************
-*  NAME
-*     get_slotwise_sos_threshold() -- Retrieves the "threshold" value of the
-*                                     slotwise sos configuration of the queue
-*
-*  SYNOPSIS
-*     static uint32_t get_slotwise_sos_threshold(lListElem *qinstance)
-*
-*  FUNCTION
-*     Retrieves the "threshold" value of the slotwise sos configuration. This
-*     is the value after the "slots=" keyword.
-*
-*  INPUTS
-*     lListElem *qinstance - The qinstance from which the threshold is to
-*                            be retrieved.
-*
-*  RESULT
-*     uint32_t - The "threshold" value. 0 if no slotwise suspend on
-*                subordinate is defined.
-*
-*  NOTES
-*     MT-NOTE: get_slotwise_sos_threshold() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Retrieves the "threshold" value of the
+ *
+ * Retrieves the "threshold" value of the slotwise sos configuration. This
+ * is the value after the "slots=" keyword.
+ *
+ * @param qinstance The qinstance from which the threshold is to be retrieved.
+ *
+ * @return The "threshold" value. 0 if no slotwise suspend on subordinate is defined.
+ *
+ * @note MT-NOTE: get_slotwise_sos_threshold() is MT safe
+ */
 static uint32_t
 get_slotwise_sos_threshold(const lListElem *qinstance) {
    uint32_t slots_sum = 0;
@@ -104,39 +97,22 @@ get_slotwise_sos_threshold(const lListElem *qinstance) {
    return slots_sum;
 }
 
-/****** sge_subordinate_qmaster/slotwise_x_on_subordinate() ********************
-*  NAME
-*     slotwise_x_on_subordinate() -- Execute the (un)suspend
-*
-*  SYNOPSIS
-*     static bool slotwise_x_on_subordinate(sge_gdi_ctx_class_t *ctx, lListElem 
-*     *qinstance_where_task_is_running, uint32_t job_id, uint32_t task_id, bool
-*     suspend, bool send_signal, monitoring_t *monitor) 
-*
-*  FUNCTION
-*     Executes the (un)suspend of the specified task. 
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx                   - GDI context
-*     lListElem *qinstance_where_task_is_running - QU_Type Element of the qinstance
-*                                                  in which the task to (un)suspend
-*                                                  is running/suspended.
-*     uint32_t job_id                            - Job ID of the task to (un)suspend
-*     uint32_t task_id                           - Task ID of the task to (un)suspend
-*     bool suspend                               - suspend or unsuspend
-*     monitoring_t *monitor                      - monitor
-*
-*  RESULT
-*     bool - true:  Task is (un)suspended.
-*            false: An error occcurred.
-*
-*  NOTES
-*     MT-NOTE: slotwise_x_on_subordinate() is not MT safe, the global lock
-*              must be set outside before calling this function
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief Execute the (un)suspend
+ *
+ * Executes the (un)suspend of the specified task.
+ *
+ * @param qinstance_where_task_is_running QU_Type Element of the qinstance in which the task to (un)suspend is running/suspended.
+ * @param job_id Job ID of the task to (un)suspend
+ * @param task_id Task ID of the task to (un)suspend
+ * @param suspend suspend or unsuspend
+ * @param monitor monitor
+ *
+ * @return true:  Task is (un)suspended. false: An error occcurred.
+ *
+ * @note MT-NOTE: slotwise_x_on_subordinate() is not MT safe, the global lock
+ *       must be set outside before calling this function
+ */
 static bool
 slotwise_x_on_subordinate(lListElem *qinstance_where_task_is_running, uint32_t job_id,
                           uint32_t task_id, bool suspend, monitoring_t *monitor) {
@@ -177,38 +153,20 @@ slotwise_x_on_subordinate(lListElem *qinstance_where_task_is_running, uint32_t j
    DRETURN(ret);
 }
 
-/****** sge_subordinate_qmaster/get_slotwise_sos_tree_root() *******************
-*  NAME
-*     get_slotwise_sos_tree_root() -- Gets the root qinstance of the slotwise
-*        suspend on subordinate tree.
-*
-*  SYNOPSIS
-*     static lListElem* get_slotwise_sos_tree_root(lListElem 
-*     *node_queue_instance) 
-*
-*  FUNCTION
-*     Returns the qinstance that is the root of the slotwise suspend on
-*     subordinate tree where the provided qinstance is a member of.
-*     Returns nullptr if the give qinstance is not a member of a slotwise suspend
-*     on subordinate tree.
-*
-*  INPUTS
-*     lListElem *node_queue_instance -  For this queue instance the slotwise
-*                                       suspend on subordinate tree root is
-*                                       searched.
-*
-*  RESULT
-*     lListElem* - The root node of the slotwise suspend on subordinate
-*                  tree, node_queue_instance if it is the root node,
-*                  or nullptr if node_queue_instance is not part of any
-*                  slotwise suspend on subordinate definition.
-*
-*  NOTES
-*     MT-NOTE: get_slotwise_sos_tree_root() is not MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief Gets the root qinstance of the slotwise
+ *
+ * Returns the qinstance that is the root of the slotwise suspend on
+ * subordinate tree where the provided qinstance is a member of.
+ * Returns nullptr if the give qinstance is not a member of a slotwise suspend
+ * on subordinate tree.
+ *
+ * @param node_queue_instance For this queue instance the slotwise suspend on subordinate tree root is searched.
+ *
+ * @return The root node of the slotwise suspend on subordinate tree, node_queue_instance if it is the root node, or nullptr if node_queue_instance is not part of any slotwise suspend on subordinate definition.
+ *
+ * @note MT-NOTE: get_slotwise_sos_tree_root() is not MT safe
+ */
 /* TODO: HP: Use get_slotwise_super_qinstance() recursively instead of this function */
 static lListElem *
 get_slotwise_sos_tree_root(lListElem *node_queue_instance) {
@@ -261,34 +219,19 @@ get_slotwise_sos_tree_root(lListElem *node_queue_instance) {
    DRETURN(root_qinstance);
 }
 
-/****** sge_subordinate_qmaster/get_slotwise_suspend_superordinate() ***********
-*  NAME
-*     get_slotwise_suspend_superordinate() -- Get the superordinate of the
-*                                             qinstance with the provided name
-*
-*  SYNOPSIS
-*     static lListElem* get_slotwise_suspend_superordinate(const char 
-*     *queue_name, const char *hostname) 
-*
-*  FUNCTION
-*     Returns the slotwise superordinated queue instance of the queue instance
-*     with the provided name.
-*
-*  INPUTS
-*     const char *queue_name - cluster queue name of the subordinated qeueue
-*                              instance
-*     const char *hostname   - host name of the subordinated queue instance
-*
-*  RESULT
-*     lListElem* - The slotwise superordinated queue instance (QU_Type) of
-*                  the provided queue instance, or nullptr if there is none.
-*
-*  NOTES
-*     MT-NOTE: get_slotwise_suspend_superordinate() is not MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief Get the superordinate of the
+ *
+ * Returns the slotwise superordinated queue instance of the queue instance
+ * with the provided name.
+ *
+ * @param queue_name cluster queue name of the subordinated qeueue instance
+ * @param hostname host name of the subordinated queue instance
+ *
+ * @return The slotwise superordinated queue instance (QU_Type) of the provided queue instance, or nullptr if there is none.
+ *
+ * @note MT-NOTE: get_slotwise_suspend_superordinate() is not MT safe
+ */
 static lListElem *
 get_slotwise_suspend_superordinate(const char *queue_name, const char *hostname) {
    const lListElem *cqueue = nullptr;
@@ -318,31 +261,18 @@ get_slotwise_suspend_superordinate(const char *queue_name, const char *hostname)
    DRETURN(super_qinstance);
 }
 
-/****** sge_subordinate_qmaster/get_slotwise_sos_super_qinstance() *************
-*  NAME
-*     get_slotwise_sos_super_qinstance() -- Get the superordinate of the
-*                                           qinstance with the provided name
-*
-*  SYNOPSIS
-*     static lListElem* get_slotwise_sos_super_qinstance(lListElem *qinstance) 
-*
-*  FUNCTION
-*     Returns the slotwise superordinated queue instance of the provided queue
-*     instance.
-*
-*  INPUTS
-*     lListElem *qinstance - The subordinated queue instance (QU_Type)
-*
-*  RESULT
-*     lListElem* - The slotwise superordinated queue instance (QU_Type) of
-*                  the provided queue instance, or nullptr if there is none.
-*
-*  NOTES
-*     MT-NOTE: get_slotwise_sos_super_qinstance() is not MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief Get the superordinate of the
+ *
+ * Returns the slotwise superordinated queue instance of the provided queue
+ * instance.
+ *
+ * @param qinstance The subordinated queue instance (QU_Type)
+ *
+ * @return The slotwise superordinated queue instance (QU_Type) of the provided queue instance, or nullptr if there is none.
+ *
+ * @note MT-NOTE: get_slotwise_sos_super_qinstance() is not MT safe
+ */
 static lListElem *
 get_slotwise_sos_super_qinstance(lListElem *qinstance) {
    lListElem *super_qinstance = nullptr;
@@ -357,43 +287,39 @@ get_slotwise_sos_super_qinstance(lListElem *qinstance) {
    return super_qinstance;
 }
 
+/** @brief One running task that slot-wise suspension may act on */
 typedef struct {
-   uint32_t job_id;
-   lListElem *task; /* JAT_Type */
+   uint32_t job_id;   ///< The job the task belongs to
+   lListElem *task;   ///< JAT_Type
 } ssos_task_t;
 
+/** @brief One queue instance in the slot-wise suspension tree
+ *
+ * Slot-wise subordination is a *tree*, not a pair: a queue instance may be
+ * subordinate to one queue and superordinate to another, so suspending one
+ * slot can cascade downwards. #depth is how far down this instance sits, which
+ * decides the order the tree is walked in.
+ */
 typedef struct {
-   uint32_t depth;
-   uint32_t seq_no;     /* from the parents QU_subordinate_list */
-   uint32_t action;     /* from the parents QU_subordinate_list */
-   lListElem *qinstance; /* QU_Type */
-   lListElem *parent;    /* QU_Type */
-   sge_sl_list_t *tasks;
+   uint32_t depth;       ///< How deep in the subordination tree this instance sits
+   uint32_t seq_no;     ///< from the parents QU_subordinate_list
+   uint32_t action;     ///< from the parents QU_subordinate_list
+   lListElem *qinstance; ///< QU_Type
+   lListElem *parent;    ///< QU_Type - the superordinate instance, nullptr at the root
+   sge_sl_list_t *tasks; ///< The tasks running here, as #ssos_task_t
 } ssos_qinstance_t;
 
-/****** sge_subordinate_qmaster/destroy_slotwise_sos_task_elem() ***************
-*  NAME
-*     destroy_slotwise_sos_task_elem() -- Destructor for the elements of a 
-*                                         sge simple list of ssos_taks_t elements
-*
-*  SYNOPSIS
-*     static bool destroy_slotwise_sos_task_elem(ssos_task_t **ssos_task) 
-*
-*  FUNCTION
-*     Destroys the data members of sge simple list of ssos_task_t elements.
-*
-*  INPUTS
-*     ssos_task_t **ssos_task - The ssos_task_t element to destroy
-*
-*  RESULT
-*     bool -  Always true to continue the destruction of all list elements.
-*
-*  NOTES
-*     MT-NOTE: destroy_slotwise_sos_task_elem() is MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief Destructor for the elements of a
+ *
+ * Destroys the data members of sge simple list of ssos_task_t elements.
+ *
+ * @param ssos_task The ssos_task_t element to destroy
+ *
+ * @return Always true to continue the destruction of all list elements.
+ *
+ * @note MT-NOTE: destroy_slotwise_sos_task_elem() is MT safe
+ */
 static bool
 destroy_slotwise_sos_task_elem(ssos_task_t **ssos_task) {
    if (ssos_task != nullptr && *ssos_task != nullptr) {
@@ -402,34 +328,19 @@ destroy_slotwise_sos_task_elem(ssos_task_t **ssos_task) {
    return true;
 }
 
-/****** sge_subordinate_qmaster/destroy_slotwise_sos_tree_elem() ***************
-*  NAME
-*     destroy_slotwise_sos_tree_elem() -- Destructor for the elements of a
-*                                         sge simple list of ssos_qinstance_t
-*                                         elements
-*
-*  SYNOPSIS
-*     static bool destroy_slotwise_sos_tree_elem(ssos_qinstance_t 
-*     **ssos_qinstance) 
-*
-*  FUNCTION
-*     Destroys the data members of a sge simple list of ssos_qinstance_t
-*     elements. Takes care of the destruction of the sge simple list sublist of
-*     ssos_task_t members.
-*
-*  INPUTS
-*     ssos_qinstance_t **ssos_qinstance - The ssos_qinstance_t element to
-*                                         destroy
-*
-*  RESULT
-*     bool - Always true to continue the destruction of all list elements.
-*
-*  NOTES
-*     MT-NOTE: destroy_slotwise_sos_tree_elem() is MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief Destructor for the elements of a
+ *
+ * Destroys the data members of a sge simple list of ssos_qinstance_t
+ * elements. Takes care of the destruction of the sge simple list sublist of
+ * ssos_task_t members.
+ *
+ * @param ssos_qinstance The ssos_qinstance_t element to destroy
+ *
+ * @return Always true to continue the destruction of all list elements.
+ *
+ * @note MT-NOTE: destroy_slotwise_sos_tree_elem() is MT safe
+ */
 static bool
 destroy_slotwise_sos_tree_elem(ssos_qinstance_t **ssos_qinstance) {
    if (ssos_qinstance != nullptr && *ssos_qinstance != nullptr) {
@@ -442,40 +353,25 @@ destroy_slotwise_sos_tree_elem(ssos_qinstance_t **ssos_qinstance) {
    return true;
 }
 
-/****** sge_subordinate_qmaster/is_ssos() **************************************
-*  NAME
-*     is_ssos() -- Checks if a task is suspended by slotwise subordination
-*                  and not suspended otherwise, too.
-*
-*  SYNOPSIS
-*     static bool is_ssos(bool only_ssos, lListElem *task) 
-*
-*  FUNCTION
-*     If only_ssos is true, this function checks if a task is suspended by
-*     slotwise subordination and not suspended otherwise at the same time, too.
-*     If only_ssos is false, this function checks if a task is suspended by
-*     slotwise subordination. This task may additionally be suspended by
-*     another suspend method.
-*     A task that is suspended by slotwise subordination could also be suspended
-*     manually, or by threshold, or by queue wise subordination or by calendar,
-*     too.
-*
-*  INPUTS
-*     bool only_ssos  - If true, checks if task is only suspended by slotwise
-*                       suspend on subordinate,
-*                       if false, checks if task is suspended by slotwise
-*                       suspend on subordinate, but it might be also
-*                       suspended by some other suspend method at the same time.
-*     lListElem *task - The task to check. CULL type "JAT_Type". 
-*
-*  RESULT
-*     bool - true if the task is (only) suspended by slotwise suspend
-*            on subordinate.
-*            false else.
-*
-*  NOTES
-*     MT-NOTE: is_ssos() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Checks if a task is suspended by slotwise subordination
+ *
+ * If only_ssos is true, this function checks if a task is suspended by
+ * slotwise subordination and not suspended otherwise at the same time, too.
+ * If only_ssos is false, this function checks if a task is suspended by
+ * slotwise subordination. This task may additionally be suspended by
+ * another suspend method.
+ * A task that is suspended by slotwise subordination could also be suspended
+ * manually, or by threshold, or by queue wise subordination or by calendar,
+ * too.
+ *
+ * @param only_ssos If true, checks if task is only suspended by slotwise suspend on subordinate, if false, checks if task is suspended by slotwise suspend on subordinate, but it might be also suspended by some other suspend method at the same time.
+ * @param task The task to check. CULL type "JAT_Type".
+ *
+ * @return true if the task is (only) suspended by slotwise suspend on subordinate. false else.
+ *
+ * @note MT-NOTE: is_ssos() is MT safe
+ */
 static bool
 is_ssos(bool only_ssos, lListElem *task) {
    bool ret = false;
@@ -495,44 +391,28 @@ is_ssos(bool only_ssos, lListElem *task) {
    return ret;
 }
 
-/****** sge_subordinate_qmaster/has_ssos_task() ********************************
-*  NAME
-*     has_ssos_task() -- Checks if a qinstance has tasks that are suspended
-*                        by slotwise suspend on subordinate (only).
-*
-*  SYNOPSIS
-*     static bool has_ssos_task(bool only_ssos_task, ssos_qinstance_t 
-*     *ssos_qinstance) 
-*
-*  FUNCTION
-*     If only_ssos is true, this function checks if this queue has at least one
-*     task that is suspended by slotwise subordination and not suspended
-*     otherwise at the same time, too.
-*     If only_ssos is false, this function checks if this queue has at least one
-*     task that is suspended by slotwise subordination. This task may
-*     additionally by suspended by some other suspend method.
-*     A task that is suspended by slotwise subordination could also be suspended
-*     manually, or by threshold, or by queue wise subordination or by calendar,
-*     too.
-*
-*  INPUTS
-*     bool only_ssos  - If true, checks if task is only suspended by ssos,
-*                       if false, checks if task is suspended by ssos, but
-*                       it might also be suspended by other methods at the
-*                       same time.
-*     ssos_qinstance_t *ssos_qinstance - The qinstance to check.
-*
-*  RESULT
-*     bool - true if the qinstance has at least one task that is
-*            suspended by slotwise suspend on subordinate (only).
-*            false if there is no such task.
-*
-*  NOTES
-*     MT-NOTE: has_ssos_task() is MT safe 
-*
-*  SEE ALSO
-*     sge_subordinate_qmaster/is_ssos()
-*******************************************************************************/
+/**
+ * @brief Checks if a qinstance has tasks that are suspended
+ *
+ * If only_ssos is true, this function checks if this queue has at least one
+ * task that is suspended by slotwise subordination and not suspended
+ * otherwise at the same time, too.
+ * If only_ssos is false, this function checks if this queue has at least one
+ * task that is suspended by slotwise subordination. This task may
+ * additionally by suspended by some other suspend method.
+ * A task that is suspended by slotwise subordination could also be suspended
+ * manually, or by threshold, or by queue wise subordination or by calendar,
+ * too.
+ *
+ * @param only_ssos If true, checks if task is only suspended by ssos, if false, checks if task is suspended by ssos, but it might also be suspended by other methods at the same time.
+ * @param ssos_qinstance The qinstance to check.
+ *
+ * @return true if the qinstance has at least one task that is suspended by slotwise suspend on subordinate (only). false if there is no such task.
+ *
+ * @note MT-NOTE: has_ssos_task() is MT safe
+ *
+ * @see #is_ssos
+ */
 static bool
 has_ssos_task(bool only_ssos_task, ssos_qinstance_t *ssos_qinstance) {
    bool ret = false;
@@ -549,49 +429,21 @@ has_ssos_task(bool only_ssos_task, ssos_qinstance_t *ssos_qinstance) {
    return ret;
 }
 
-/****** sge_subordinate_qmaster/get_task_to_x_in_depth() ***********************
-*  NAME
-*     get_task_to_x_in_depth() -- Searches the slotwise subordinate tree in a
-*                                 specific depth for a task to (un)suspend
-*
-*  SYNOPSIS
-*     static void get_task_to_x_in_depth(sge_sl_list_t 
-*     *slotwise_sos_tree_qinstances, uint32_t depth, bool suspend,
-*     bool only_slotwise_suspended, ssos_qinstance_t **ssos_qinstance_to_x,
-*     ssos_task_t **ssos_task_to_x) 
-*
-*  FUNCTION
-*     Searches in the provided slotwise subordination tree in a specific depth
-*     for a task to (un)suspend.
-*
-*  INPUTS
-*     sge_sl_list_t *slotwise_sos_tree_qinstances - The slotwise suspend on
-*                                                   subordinate tree as a list
-*     uint32_t depth                              - The depth in this tree where
-*                                                   the task is to be searched
-*     bool suspend                                - Are we going to suspend or
-*                                                   unsuspend a task?
-*     bool only_slotwise_suspended                - Are we looking for tasks to
-*                                                   unsuspend that are only
-*                                                   slotwise suspended, or are
-*                                                   we looking for tasks that are
-*                                                   also suspended manually, by
-*                                                   threshold or by queue wise
-*                                                   subordination?
-*                                                   Ignored if suspend is true.
-*     ssos_qinstance_t **ssos_qinstance_to_x      - The queue instance where
-*                                                   the found task is running
-*     ssos_task_t **ssos_task_to_x                - The task we found
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: get_task_to_x_in_depth() is MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief Searches the slotwise subordinate tree in a
+ *
+ * Searches in the provided slotwise subordination tree in a specific depth
+ * for a task to (un)suspend.
+ *
+ * @param slotwise_sos_tree_qinstances The slotwise suspend on subordinate tree as a list
+ * @param depth The depth in this tree where the task is to be searched
+ * @param suspend Are we going to suspend or unsuspend a task?
+ * @param only_slotwise_suspended Are we looking for tasks to unsuspend that are only slotwise suspended, or are we looking for tasks that are also suspended manually, by threshold or by queue wise subordination? Ignored if suspend is true.
+ * @param ssos_qinstance_to_x The queue instance where the found task is running
+ * @param ssos_task_to_x The task we found
+ *
+ * @note MT-NOTE: get_task_to_x_in_depth() is MT safe
+ */
 static void
 get_task_to_x_in_depth(sge_sl_list_t *slotwise_sos_tree_qinstances, uint32_t depth, bool suspend,
                        bool only_slotwise_suspended, ssos_qinstance_t **ssos_qinstance_to_x,
@@ -658,35 +510,19 @@ get_task_to_x_in_depth(sge_sl_list_t *slotwise_sos_tree_qinstances, uint32_t dep
    }
 }
 
-/****** sge_subordinate_qmaster/remove_task_from_slotwise_sos_tree() ***********
-*  NAME
-*     remove_task_from_slotwise_sos_tree() -- Removes a task from the slotwise
-*                                             suspend on subordinate tree list
-*
-*  SYNOPSIS
-*     static void remove_task_from_slotwise_sos_tree(sge_sl_list_t 
-*     *slotwise_sos_tree_qinstances, uint32_t job_id, uint32_t task_id)
-*
-*  FUNCTION
-*     Removes a specific task from the slotwiese suspend on subordinate tree
-*     list. For this, it searches the task in all queue instances of the
-*     list.
-*
-*  INPUTS
-*     sge_sl_list_t *slotwise_sos_tree_qinstances - The slotwise suspend on
-*                                                   subordinate tree as a list
-*     uint32_t job_id                             - The job ID of the task
-*     uint32_t task_id                            - The task ID of the task
-*
-*  RESULT
-*     void - none 
-*
-*  NOTES
-*     MT-NOTE: remove_task_from_slotwise_sos_tree() is not MT safe 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief Removes a task from the slotwise
+ *
+ * Removes a specific task from the slotwiese suspend on subordinate tree
+ * list. For this, it searches the task in all queue instances of the
+ * list.
+ *
+ * @param slotwise_sos_tree_qinstances The slotwise suspend on subordinate tree as a list
+ * @param job_id The job ID of the task
+ * @param task_id The task ID of the task
+ *
+ * @note MT-NOTE: remove_task_from_slotwise_sos_tree() is not MT safe
+ */
 static void
 remove_task_from_slotwise_sos_tree(sge_sl_list_t *slotwise_sos_tree_qinstances, uint32_t job_id, uint32_t task_id) {
    sge_sl_elem_t *ssos_tree_elem = nullptr;
@@ -974,30 +810,17 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
    return sum;
 }
 
-/****** sge_subordinate_qmaster/unsuspend_all_tasks_in_slotwise_sub_tree() *****
-*  NAME
-*     unsuspend_all_tasks_in_slotwise_sub_tree() -- unsuspends all slotwise
-*        suspended tasks in the subtree of this qinstance
-*
-*  SYNOPSIS
-*     void unsuspend_all_task_in_slotwise_sub_tree(sge_gdi_ctx_class_t *ctx,
-*     lListElem *qinstance, monitoring_t *monitor) 
-*
-*  FUNCTION
-*     Unsuspends all slotwise suspended tasks in the subtree of the provided
-*     qinstance.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context class
-*     lListElem *qinstance     - The root of the slotwise preemption sub tree.
-*     monitoring_t *monitor    - monitor
-*
-*  RESULT
-*     void -  none
-*
-*  NOTES
-*     MT-NOTE: unsuspend_all_tasks_in_slotwise_sub_tree() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Unsuspends all slotwise
+ *
+ * Unsuspends all slotwise suspended tasks in the subtree of the provided
+ * qinstance.
+ *
+ * @param qinstance The root of the slotwise preemption sub tree.
+ * @param monitor monitor
+ *
+ * @note MT-NOTE: unsuspend_all_tasks_in_slotwise_sub_tree() is MT safe
+ */
 void
 unsuspend_all_tasks_in_slotwise_sub_tree(lListElem *qinstance, monitoring_t *monitor) {
    const bool suspend = false;
@@ -1026,32 +849,20 @@ unsuspend_all_tasks_in_slotwise_sub_tree(lListElem *qinstance, monitoring_t *mon
    }
 }
 
-/****** sge_subordinate_qmaster/check_new_slotwise_subordinate_tree() **********
-*  NAME
-*     check_new_slotwise_subordinate_tree() -- checks if the new slotwise
-*        preemption configuration is valid
-*
-*  SYNOPSIS
-*     bool check_new_slotwise_subordinate_tree(lListElem *qinstance, lList 
-*     *new_so_list, lList **answer_list) 
-*
-*  FUNCTION
-*     Checks if the slotwise preemption configuration would still be valid if
-*     a specific change would be made.
-*
-*  INPUTS
-*     lListElem *qinstance - For this qinstance, the "subordinate_list"
-*                            configuration value is to be changed.
-*     lList *new_so_list   - These configuration will be added to the existing
-*                            one.
-*     lList **answer_list  - answer list for errors.
-*
-*  RESULT
-*     bool - true if the new config will be valid, false otherwise.
-*
-*  NOTES
-*     MT-NOTE: check_new_slotwise_subordinate_tree() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Checks if the new slotwise
+ *
+ * Checks if the slotwise preemption configuration would still be valid if
+ * a specific change would be made.
+ *
+ * @param qinstance For this qinstance, the "subordinate_list" configuration value is to be changed.
+ * @param new_so_list These configuration will be added to the existing one.
+ * @param answer_list answer list for errors.
+ *
+ * @return true if the new config will be valid, false otherwise.
+ *
+ * @note MT-NOTE: check_new_slotwise_subordinate_tree() is MT safe
+ */
 bool
 check_new_slotwise_subordinate_tree(lListElem *qinstance, lList *new_so_list, lList **answer_list) {
    bool success = true;
@@ -1112,39 +923,22 @@ check_new_slotwise_subordinate_tree(lListElem *qinstance, lList *new_so_list, lL
    DRETURN(success);
 }
 
-/****** sge_subordinate_qmaster/do_slotwise_x_on_subordinate_check() ***********
-*  NAME
-*     do_slotwise_x_on_subordinate_check() -- 'calculates' and executes all
-*        suspends and unsuspends for the slotwise subordination tree where the
-*        provided qinstance is member of
-*                                               
-*
-*  SYNOPSIS
-*     bool do_slotwise_x_on_subordinate_check(sge_gdi_ctx_class_t *ctx, 
-*     lListElem *qinstance, bool suspend, bool check_subtree_only, monitoring_t 
-*     *monitor) 
-*
-*  FUNCTION
-*     Calculates and executes all suspends and unsuspends for the tasks in the
-*     qinstances on the same host as the provided qinstance for the slotwise
-*     subordination tree where the provided qinstance is member of.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - context
-*     lListElem *qinstance     - start from this qinstance doing this check
-*     bool suspend             - calculate for suspend or for unsuspend?
-*     bool check_subtree_only  - check only the subtree of the provided
-*                                qinstance, not the whole slotwise subordinate
-*                                tree the provided qinstance is member of
-*     monitoring_t *monitor    - monitor
-*
-*  RESULT
-*     bool - true if the provided qinstance is member of a slotwise subordinate
-*            tree, false if it is not.
-*
-*  NOTES
-*     MT-NOTE: do_slotwise_x_on_subordinate_check() is MT safe 
-*******************************************************************************/
+/**
+ * @brief 'calculates' and executes all
+ *
+ * Calculates and executes all suspends and unsuspends for the tasks in the
+ * qinstances on the same host as the provided qinstance for the slotwise
+ * subordination tree where the provided qinstance is member of.
+ *
+ * @param qinstance start from this qinstance doing this check
+ * @param suspend calculate for suspend or for unsuspend?
+ * @param check_subtree_only check only the subtree of the provided qinstance, not the whole slotwise subordinate tree the provided qinstance is member of
+ * @param monitor monitor
+ *
+ * @return true if the provided qinstance is member of a slotwise subordinate tree, false if it is not.
+ *
+ * @note MT-NOTE: do_slotwise_x_on_subordinate_check() is MT safe
+ */
 bool
 do_slotwise_x_on_subordinate_check(lListElem *qinstance, bool suspend, bool check_subtree_only, monitoring_t *monitor) {
    sge_sl_list_t *qinstances_in_slotwise_sos_tree = nullptr;
@@ -1217,31 +1011,19 @@ do_slotwise_x_on_subordinate_check(lListElem *qinstance, bool suspend, bool chec
    return true;
 }
 
-/****** sge_subordinate_qmaster/do_slotwise_subordinate_lists_differ() *********
-*  NAME
-*     do_slotwise_subordinate_lists_differ() -- checks if the old and the new
-*                                         subordinate list of this queue differ
-*
-*  SYNOPSIS
-*     bool do_slotwise_subordinate_lists_differ(const lList* old_so_list, const 
-*     lList *new_so_list) 
-*
-*  FUNCTION
-*     Compares the old and the new subordinate list configured in a queue and
-*     returns true if they differ. The order of subordinates doesn't matter.
-*
-*  INPUTS
-*     const lList* old_so_list - The old subordinate list. SO_Type list.
-*     const lList *new_so_list - The new subordinate list. SO_Type list.
-*
-*  RESULT
-*     bool - true if the lists differ, false if they are identical. If just the
-*            order of subordinates is changed, the lists are considered as
-*            identical.
-*
-*  NOTES
-*     MT-NOTE: do_slotwise_subordinate_lists_differ() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Checks if the old and the new
+ *
+ * Compares the old and the new subordinate list configured in a queue and
+ * returns true if they differ. The order of subordinates doesn't matter.
+ *
+ * @param old_so_list The old subordinate list. SO_Type list.
+ * @param new_so_list The new subordinate list. SO_Type list.
+ *
+ * @return true if the lists differ, false if they are identical. If just the order of subordinates is changed, the lists are considered as identical.
+ *
+ * @note MT-NOTE: do_slotwise_subordinate_lists_differ() is MT safe
+ */
 bool
 do_slotwise_subordinate_lists_differ(const lList *old_so_list, const lList *new_so_list) {
    bool ret = false;
@@ -1291,6 +1073,18 @@ do_slotwise_subordinate_lists_differ(const lList *old_so_list, const lList *new_
       we assume the associated job is already/still
       debited on all the queues that are referenced in gdil
 */
+/** @brief Suspend or resume the queue instances subordinate to a job's granted list
+ *
+ * Called when a job starts or ends: the queues subordinate to the ones it now
+ * occupies have to follow.
+ *
+ * @param master_cqueue_list the cluster queues
+ * @param suspend true to suspend, false to resume
+ * @param gdil the granted destination list of the job that changed
+ * @param monitor for monitoring qmaster threads
+ * @param gdi_session the session the change belongs to
+ * @return true if every affected queue instance could be signalled
+ */
 bool
 cqueue_list_x_on_subordinate_gdil(const lList *master_cqueue_list, bool suspend,
                                   const lList *gdil, monitoring_t *monitor, uint64_t gdi_session) {
@@ -1445,6 +1239,15 @@ qinstance_x_on_subordinate(lListElem *this_elem, bool suspend, bool send_event, 
    DRETURN(ret);
 }
 
+/** @brief Suspend or resume an already resolved set of subordinate queue instances
+ * @param master_cqueue_list the cluster queues
+ * @param answer_list receives messages for the caller
+ * @param suspend true to suspend, false to resume
+ * @param resolved_so_list the queue instances to act on
+ * @param monitor for monitoring qmaster threads
+ * @param gdi_session the session the change belongs to
+ * @return true if every affected queue instance could be signalled
+ */
 bool
 cqueue_list_x_on_subordinate_so(lList *master_cqueue_list, lList **answer_list, bool suspend,
                                 const lList *resolved_so_list, monitoring_t *monitor, uint64_t gdi_session) {
@@ -1471,6 +1274,12 @@ cqueue_list_x_on_subordinate_so(lList *master_cqueue_list, lList **answer_list, 
    DRETURN(ret);
 }
 
+/** @brief Collect the queue instances currently suspended because of this one
+ * @param this_elem the superordinate queue instance
+ * @param answer_list receives messages for the caller
+ * @param[out] resolved_so_list receives the suspended subordinates
+ * @param master_cqueue_list the cluster queues
+ */
 void
 qinstance_find_suspended_subordinates(const lListElem *this_elem, lList **answer_list, lList **resolved_so_list,
                                       const lList *master_cqueue_list) {
@@ -1518,6 +1327,17 @@ qinstance_find_suspended_subordinates(const lListElem *this_elem, lList **answer
    DRETURN_VOID;
 }
 
+/** @brief Work out whether a queue instance starts life suspended by a superordinate
+ *
+ * A newly created or reconfigured instance may already be subordinate to a
+ * queue that is full, in which case it must not accept jobs.
+ *
+ * @param this_elem the queue instance (`QU_Type`)
+ * @param monitor for monitoring qmaster threads
+ * @param master_cqueue_list the cluster queues
+ * @param gdi_session the session the change belongs to
+ * @return true if the instance starts out suspended by a superordinate queue
+ */
 bool
 qinstance_initialize_sos_attr(lListElem *this_elem, monitoring_t *monitor, const lList *master_cqueue_list, uint64_t gdi_session) {
    bool ret = true;

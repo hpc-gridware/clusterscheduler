@@ -32,6 +32,28 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Path aliases: rewriting paths that differ between hosts
+ *
+ * The directory structure is not always the same on every submit and execution
+ * host, so certain paths have to be mapped per host. Administrators and users
+ * activate the mechanism by creating one or both of #PATH_ALIAS_COMMON_FILE
+ * and #PATH_ALIAS_HOME_FILE; the file format is documented on
+ * `path_alias_read_from_file`.
+ *
+ * The order is:
+ *
+ * 1. a submit client determines the current working directory, then reads the
+ *    cluster global alias file and the user's own one after it, as if the
+ *    second were appended to the first;
+ * 2. the resulting alias information travels with the job;
+ * 3. on the execution host it is evaluated, and the leading part of the
+ *    working directory is replaced where an entry's host matches the executing
+ *    host.
+ *
+ * @see sge_path_alias.h
+ */
+
 #include <cstring>
 #include <pwd.h>
 #include <cerrno>
@@ -57,87 +79,34 @@
 #include "msg_common.h"
 #include "msg_daemons_common.h"
 
-/****** sgeobj/path_alias/-PathAlias *******************************************
-*  NAME
-*     PathAlias - Path aliasing mechanism for SGE/EE
-*
-*  FUNCTION
-*     Sometimes the directory structure on the different submit,
-*     execution hosts is not exactly the same. This makes it 
-*     necessary to map certain paths for specific hosts.
-*
-*     The administrators/users have the possibility to
-*     activate path aliasing by creating one or more of following
-*     files:
-*
-*        $SGE_ROOT/$CELL/common/sge_aliases
-*        $HOME/.sge_aliases 
-*
-*     The file format is documentied in the ADOC commet for the 
-*     function path_alias_read_from_file().
-*
-*     The files are interpreted as follows:
-*        - after a submit client (qsub, qmon, ...) has retrieved 
-*          the current working directory, the cluster global
-*          path aliasing file is read, if present. The user
-*          path aliasing file is read afterwards, as if it were 
-*          appended to the global file.
-*        - as soon as both files are read, the path aliasing
-*          information is passed along with the submitted job.
-*        - On the execution host the aliasing information will be
-*          evaluated. The leading part of the current working 
-*          directory will be replaced if the execution host entry of
-*          the path alias matches the executing host.
-*
-*  SEE ALSO
-*     sgeobj/path_alias/path_alias_read_from_file()
-*     sgeobj/path_alias/path_alias_list_initialize()
-*     sgeobj/path_alias/path_alias_list_get_path()
-******************************************************************************/
-
 static int path_alias_read_from_file(lList **path_alias_list, lList **alpp, 
                                      char *file_name);
 
-/****** sgeobj/path_alias/path_alias_read_from_file() *************************
-*  NAME
-*     path_alias_read_from_file() -- read file content to list
-*
-*  SYNOPSIS
-*     #include <sgeobj/sge_path_alias.h>
-*  
-*     static int path_alias_read_from_file(lList **path_alias_list, 
-*                                          lList **alpp, 
-*                                          char *file_name) 
-*
-*  FUNCTION
-*     Read and parse the file with the name "file_name" and append
-*     entries into "path_alias_list". Errors will be logged in "alpp". 
-*
-*     File format:
-*     - Blank lines and lines beginning with a # sign in the first
-*       column are skipped.
-*     - Each line - other than a blank line or a line preceded by # - 
-*       must contain four strings separated by any number of blanks 
-*       or tabs.
-*     - The first string specifies a source path, the second a submit
-*       host, the third an execution host, and the fourth the source 
-*       path replacement.
-*     - Both the submit and the execution host entries may consist
-*       of only a * sign, which matches any host.
-*
-*  INPUTS
-*     lList **path_alias_list - PA_Type list pointer
-*     lList **alpp            - AN_Type list pointer 
-*     char *file_name         - name of an alias file 
-*
-*  RESULT
-*     static int - error state
-*        -1 - Error
-*         0 - OK 
-*
-*  NOTES
-*     MT-NOTE: path_alias_read_from_file() is MT safe
-******************************************************************************/
+/**
+ * @brief Read file content to list
+ *
+ * Read and parse the file with the name "file_name" and append
+ * entries into "path_alias_list". Errors will be logged in "alpp".
+ * File format:
+ * - Blank lines and lines beginning with a # sign in the first
+ *   column are skipped.
+ * - Each line - other than a blank line or a line preceded by # -
+ *   must contain four strings separated by any number of blanks
+ *   or tabs.
+ * - The first string specifies a source path, the second a submit
+ *   host, the third an execution host, and the fourth the source
+ *   path replacement.
+ * - Both the submit and the execution host entries may consist
+ *   of only a * sign, which matches any host.
+ *
+ * @param path_alias_list PA_Type list pointer
+ * @param alpp AN_Type list pointer
+ * @param file_name name of an alias file
+ *
+ * @return error state -1 - Error 0 - OK
+ *
+ * @note MT-NOTE: path_alias_read_from_file() is MT safe
+ */
 static int path_alias_read_from_file(lList **path_alias_list, lList **alpp,
                                      char *file_name)
 {
@@ -241,39 +210,25 @@ FCLOSE_ERROR:
    return -1;
 }
 
-/****** sgeobj/path_alias/path_alias_list_initialize() ************************
-*  NAME
-*     path_alias_list_initialize() -- initialize path_alias_list 
-*
-*  SYNOPSIS
-*     int path_alias_list_initialize(lList **path_alias_list, 
-*                                    lList **alpp, 
-*                                    const char *user, 
-*                                    const char *host) 
-*
-*  FUNCTION
-*     Intitialize "path_alias_list" according to the different
-*     path aliasing files. 
-*
-*     Following files will be used if available:
-*
-*        $SGE_ROOT/$CELL/common/sge_aliases
-*        $HOME/.sge_aliases 
-*
-*  INPUTS
-*     lList **path_alias_list - PA_Type list pointer
-*     lList **alpp            - AN_Type list pointer 
-*     const char *user        - username
-*     const char *host        - hostname 
-*
-*  RESULT
-*     int - return state
-*        -1 - error
-*         0 - OK
-*
-*  NOTES
-*     MT-NOTE: path_alias_list_initialize() is MT safe
-******************************************************************************/
+/**
+ * @brief Initialize path_alias_list
+ *
+ * Intitialize "path_alias_list" according to the different
+ * path aliasing files.
+ * Following files will be used if available:
+ *    $SGE_ROOT/$CELL/common/sge_aliases
+ *    $HOME/.sge_aliases
+ *
+ * @param path_alias_list PA_Type list pointer
+ * @param alpp AN_Type list pointer
+ * @param user username
+ * @param host hostname
+ * @param cell_root the cell directory the common alias file lives under
+ *
+ * @return return state -1 - error 0 - OK
+ *
+ * @note MT-NOTE: path_alias_list_initialize() is MT safe
+ */
 int path_alias_list_initialize(lList **path_alias_list, 
                                lList **alpp,
                                const char *cell_root,
@@ -347,38 +302,23 @@ int path_alias_list_initialize(lList **path_alias_list,
    DRETURN(0);
 }
 
-/****** sgeobj/path_alias/path_alias_list_get_path() **************************
-*  NAME
-*     path_alias_list_get_path() -- map path according alias table 
-*
-*  SYNOPSIS
-*     int path_alias_list_get_path(const lList *path_aliases, 
-*                                  lList **alpp, 
-*                                  const char *inpath, 
-*                                  const char *myhost,
-*                                  char *outpath, 
-*                                  int outmax)
-*
-*  FUNCTION
-*     "path_aliases" is used to map "inpath" for the host "myhost"
-*     into its alias path which will be written into the buffer 
-*     "outpath" of size "outmax". 
-*
-*  INPUTS
-*     const lList *path_aliases - alias table (PA_Type) 
-*     lList **alpp              - AN_Type list pointer 
-*     const char *inpath        - input path 
-*     const char *myhost        - hostname 
-*     char *outpath             - result path 
-*     int outmax                - size of "outpath" 
-*
-*  RESULT
-*     int - return state
-*        0 - OK
-*
-*  NOTES
-*     MT-NOTE: path_alias_list_get_path() is MT safe
-*******************************************************************************/
+/**
+ * @brief Map path according alias table
+ *
+ * "path_aliases" is used to map "inpath" for the host "myhost"
+ * into its alias path which will be written into the buffer
+ * "outpath" of size "outmax".
+ *
+ * @param path_aliases alias table (PA_Type)
+ * @param alpp AN_Type list pointer
+ * @param inpath input path
+ * @param myhost hostname
+ * @param outpath result path
+ *
+ * @return return state 0 - OK
+ *
+ * @note MT-NOTE: path_alias_list_get_path() is MT safe
+ */
 int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
                              const char *inpath, const char *myhost,
                              dstring *outpath)
@@ -447,32 +387,20 @@ int path_alias_list_get_path(const lList *path_aliases, lList **alpp,
 
 }
 
-/****** sge_path_alias/path_verify() *******************************************
-*  NAME
-*     path_verify() -- verify a path string
-*
-*  SYNOPSIS
-*     bool 
-*     path_verify(const char *path, lList **answer_list, const char *name,
-*                 bool absolute)
-*
-*  FUNCTION
-*     Verifies if a path string has valid contents.
-*
-*  INPUTS
-*     const char *path    - the string to verify
-*     lList **answer_list - answer list to pass back error messages
-*     const char *name    - name of the path to check, e.g. "prolog"
-*                           for error output
-*     bool absolute       - does it have to be an absolute path?
-*
-*  RESULT
-*     bool - true on success,
-*            false on error with error message in answer_list
-*
-*  NOTES
-*     MT-NOTE: path_verify() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Verify a path string
+ *
+ * Verifies if a path string has valid contents.
+ *
+ * @param path the string to verify
+ * @param answer_list answer list to pass back error messages
+ * @param name name of the path to check, e.g. "prolog" for error output
+ * @param absolute does it have to be an absolute path?
+ *
+ * @return true on success, false on error with error message in answer_list
+ *
+ * @note MT-NOTE: path_verify() is MT safe
+ */
 bool 
 path_verify(const char *path, lList **answer_list, const char *name, bool absolute)
 {
@@ -512,32 +440,21 @@ path_verify(const char *path, lList **answer_list, const char *name, bool absolu
    return ret;
 }
 
-/****** sge_path_alias/path_alias_verify() *************************************
-*  NAME
-*     path_alias_verify() -- verify path alias list
-*
-*  SYNOPSIS
-*     bool 
-*     path_alias_verify(const lList *path_aliases, lList **answer_list) 
-*
-*  FUNCTION
-*     Verify a path alias list as it is sent with job or pe task start orders
-*     to sge_execd.
-*
-*  INPUTS
-*     const lList *path_aliases - path alias list
-*     lList **answer_list       - answer list to pass back error messages
-*
-*  RESULT
-*     bool - true on success,
-*            false on error with error message in answer_list
-*
-*  NOTES
-*     MT-NOTE: path_alias_verify() is MT safe 
-*
-*  SEE ALSO
-*     sge_path_alias/path_verify()
-*******************************************************************************/
+/**
+ * @brief Verify path alias list
+ *
+ * Verify a path alias list as it is sent with job or pe task start orders
+ * to sge_execd.
+ *
+ * @param path_aliases path alias list
+ * @param answer_list answer list to pass back error messages
+ *
+ * @return true on success, false on error with error message in answer_list
+ *
+ * @note MT-NOTE: path_alias_verify() is MT safe
+ *
+ * @see #path_verify
+ */
 bool 
 path_alias_verify(const lList *path_aliases, lList **answer_list)
 {
@@ -574,30 +491,20 @@ path_alias_verify(const lList *path_aliases, lList **answer_list)
    return ret;
 }
 
-/****** sge_path_alias/path_list_verify() **************************************
-*  NAME
-*     path_list_verify() -- verify a path list
-*
-*  SYNOPSIS
-*     bool 
-*     path_list_verify(const lList *path_list, lList **answer_list, 
-*                      const char *name) 
-*
-*  FUNCTION
-*     Verify a path list, e.g. the path specification in JB_stdout_path_list,
-*     coming from a qsub -o <path_list>.
-*
-*  INPUTS
-*     const lList *path_list - the path list to verify
-*     lList **answer_list    - answer list to pass back error messages
-*     const char *name       - name of the checked attribute for error output
-*
-*  RESULT
-*     bool - true: everything ok, else false
-*
-*  NOTES
-*     MT-NOTE: path_list_verify() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Verify a path list
+ *
+ * Verify a path list, e.g. the path specification in JB_stdout_path_list,
+ * coming from a qsub -o `path_list`.
+ *
+ * @param path_list the path list to verify
+ * @param answer_list answer list to pass back error messages
+ * @param name name of the checked attribute for error output
+ *
+ * @return true: everything ok, else false
+ *
+ * @note MT-NOTE: path_list_verify() is MT safe
+ */
 bool 
 path_list_verify(const lList *path_list, lList **answer_list, const char *name)
 {

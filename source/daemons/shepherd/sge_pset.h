@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Solaris processor sets: giving the job processors of its own
+ */
+
 void sge_pset_create_processor_set();
 
 void sge_pset_free_processor_set();

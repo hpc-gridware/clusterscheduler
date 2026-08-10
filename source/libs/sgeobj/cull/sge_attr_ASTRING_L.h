@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute String
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -43,8 +47,8 @@
 */
 
 enum {
-   ASTRING_href = ASTRING_LOWERBOUND,
-   ASTRING_value
+   ASTRING_href = ASTRING_LOWERBOUND,   ///< Host Reference
+   ASTRING_value   ///< Value
 };
 
 LISTDEF(ASTRING_Type)
@@ -57,6 +61,7 @@ NAMEDEF(ASTRINGN)
    NAME("ASTRING_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define ASTRING_SIZE sizeof(ASTRINGN)/sizeof(char *)
 
 

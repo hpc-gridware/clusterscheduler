@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Holding one cluster object list together with its metadata
+ */
+
 #include <string>
 #include <unordered_set>
 
@@ -32,7 +36,7 @@
 #include "msg_sgeobjlib.h"
 
 /** @brief Check for duplicate string entries in a list
-
+ *
  *  @param obj_list cull list to check for duplicates
  *  @param nm name of the attribute that holds the names to check for duplicates (type string)
  *  @param answer_list If not nullptr, error messages are added to this list

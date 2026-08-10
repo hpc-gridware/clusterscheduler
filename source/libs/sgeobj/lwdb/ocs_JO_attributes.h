@@ -24,22 +24,36 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief OS Job
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of JO
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   JO_OS_job_ID = 4750,
-   JO_OS_job_ID2,
-   JO_systemd_scope,
-   JO_usage_collection,
-   JO_ja_task_ID,
-   JO_task_id_str,
-   JO_state,
-   JO_usage_list,
-   JO_pid_list
+   JO_OS_job_ID = 4750,   ///< OS Job Id
+   JO_OS_job_ID2,   ///< OS Job Id 2
+   JO_systemd_scope,   ///< Systemd Scope
+   JO_usage_collection,   ///< Usage Collection Mode
+   JO_ja_task_ID,   ///< Array Task Id
+   JO_task_id_str,   ///< Task Id String
+   JO_state,   ///< State
+   JO_usage_list,   ///< Usage List
+   JO_pid_list   ///< Pid List
 };
 
+/** @brief The attribute ids of JO, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int JO_Type[] = {
    JO_OS_job_ID,
    JO_OS_job_ID2,
@@ -53,6 +67,10 @@ constexpr const int JO_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of JO
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define JO_ATTRIBUTES \
    {JO_OS_job_ID, "JO_OS_job_ID", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JO_OS_job_ID2, "JO_OS_job_ID2", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

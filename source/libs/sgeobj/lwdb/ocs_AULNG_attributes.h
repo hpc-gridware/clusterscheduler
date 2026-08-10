@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Ulong
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of AULNG
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   AULNG_href = 8350,
-   AULNG_value
+   AULNG_href = 8350,   ///< Host Reference
+   AULNG_value   ///< Value
 };
 
+/** @brief The attribute ids of AULNG, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int AULNG_Type[] = {
    AULNG_href,
    AULNG_value,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of AULNG
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define AULNG_ATTRIBUTES \
    {AULNG_href, "AULNG_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {AULNG_value, "AULNG_value", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

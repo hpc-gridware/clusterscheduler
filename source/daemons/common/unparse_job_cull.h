@@ -33,8 +33,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Turning a job back into the command line that would submit it again
+ */
+
 #include "sgeobj/sge_daemonize.h"
 
+/** @brief Render every option, not only the ones that differ from the defaults */
 #define FLG_FULL_CMDLINE 1
 
 lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags);

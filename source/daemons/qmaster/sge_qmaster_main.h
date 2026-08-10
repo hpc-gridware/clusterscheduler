@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief sge_qmaster - the cluster's master daemon
+ */
+
 #include "sgeobj/sge_daemonize.h"
 
 int 

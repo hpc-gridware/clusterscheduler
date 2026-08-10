@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Attribute modification helpers shared by the configuration objects
+ */
+
 
 #include "cull/cull.h"
 #include "sgeobj/sge_answer.h"

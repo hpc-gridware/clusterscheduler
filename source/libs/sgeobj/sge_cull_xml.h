@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for rendering CULL objects as XML
+ *
+ * @see sge_cull_xml.cc
+ */
+
 #include <cstdio>
 #include <ostream>
 

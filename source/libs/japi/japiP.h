@@ -33,59 +33,82 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Definition of the structs behind the opaque DRMAA data types
+ *
+ * `drmaa.h` hands the application pointers to `drmaa_job_template_t`,
+ * `drmaa_attr_names_t`, `drmaa_attr_values_t` and `drmaa_job_ids_t` without
+ * ever showing what they contain. This header contains those definitions and
+ * is therefore private to the implementation - an application including it
+ * would depend on details the DRMAA specification deliberately hides.
+ *
+ * The three opaque string vectors are the same layout: a discriminator plus a
+ * union of the two iterator implementations, one over the job ids of a bulk
+ * job and one over a cull list of strings.
+ */
+
 #include "cull/cull.h"
 
+/** @brief The attributes of a job template, both scalar and vector ones */
 struct drmaa_job_template_s {
-   lList *strings;        /* VA_Type  */
-   lList *string_vectors; /* NSV_Type */
+   lList *strings;        ///< The scalar attributes as `VA_Type`, name and value
+   lList *string_vectors; ///< The vector attributes as `NSV_Type`, name and list of values
 };
 
-/* 
- * This iterator is returned by 
- *   drmaa_run_bulk_jobs()             - vector of vector of job ids
+/**
+ * @brief Iterator over the job ids of a bulk job
+ *
+ * Returned by drmaa_run_bulk_jobs(). The ids are not stored, they are
+ * computed from the task range while the iterator runs.
  */
 struct drmaa_bulk_jobid_iterator_s {
-   uint32_t jobid;
-   int start;
-   int end;
-   int incr;
-   /* next position of iterator */
+   uint32_t jobid;   ///< The job id all tasks of the bulk job share
+   int start;        ///< First task number of the range
+   int end;          ///< Last task number of the range
+   int incr;         ///< Step between two task numbers
+   /** Task number the next call returns, past `end` once the iterator is exhausted */
    int next_pos;
 };
 
-/* 
- * This iterator is returned by 
- *   japi_get_vector_attribute()       - vector of attribute values
- *   japi_get_attribute_names()        - vector of attribute name 
- *   japi_get_vector_attribute_names() - vector of attribute name 
- *   japi_wait()                       - vector of rusage strings 
+/**
+ * @brief Iterator over a list of strings
+ *
+ * Returned by japi_get_vector_attribute(), japi_get_attribute_names(),
+ * japi_get_vector_attribute_names() and japi_wait() - the last one for the
+ * rusage strings of a finished job.
  */
 struct drmaa_string_array_iterator_s {
-   lList *strings;  /* STR_Type  */
-   /* next position of iterator */
+   lList *strings;  ///< The strings as `STR_Type`, owned by the iterator
+   /** Element the next call returns, `nullptr` once the iterator is exhausted */
    lListElem *next_pos;
 };
 
-/*
- * Transparent use of two different iterators 
+/**
+ * @brief Discriminator of the union in the opaque string vectors
  */
-enum { JAPI_ITERATOR_BULK_JOBS, JAPI_ITERATOR_STRINGS };
+enum {/** The `ji` member of the union is in use */JAPI_ITERATOR_BULK_JOBS,/** The `si` member of the union is in use */JAPI_ITERATOR_STRINGS };
+/** @brief Opaque vector of attribute names */
 struct drmaa_attr_names_s {
-   int iterator_type; 
+   int iterator_type;   ///< Which member of `it` is in use, see #JAPI_ITERATOR_STRINGS
+   /** The iterator itself, in one of its two implementations */
    union {
       struct drmaa_bulk_jobid_iterator_s ji;
       struct drmaa_string_array_iterator_s si;
    } it;
 };
+/** @brief Opaque vector of attribute values */
 struct drmaa_attr_values_s {
-   int iterator_type; 
+   int iterator_type;   ///< Which member of `it` is in use, see #JAPI_ITERATOR_STRINGS
+   /** The iterator itself, in one of its two implementations */
    union {
       struct drmaa_bulk_jobid_iterator_s ji;
       struct drmaa_string_array_iterator_s si;
    } it;
 };
+/** @brief Opaque vector of job ids */
 struct drmaa_job_ids_s {
-   int iterator_type; 
+   int iterator_type;   ///< Which member of `it` is in use, see #JAPI_ITERATOR_STRINGS
+   /** The iterator itself, in one of its two implementations */
    union {
       struct drmaa_bulk_jobid_iterator_s ji;
       struct drmaa_string_array_iterator_s si;

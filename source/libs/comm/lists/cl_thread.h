@@ -33,91 +33,131 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-/*
-   thread states 
-   =============
+/** @file
+ * @brief The commlib's thread wrapper
+ *
+ * A thin layer over pthreads that gives every thread a name, an id, a state
+ * and an event condition it can sleep on, so that the commlib and the
+ * qmaster can list their threads and wake one of them without knowing what
+ * it does.
+ *
+ * ## Writing a thread function
+ *
+ * A thread implementation receives a #cl_thread_settings_t pointer and must
+ * bracket itself:
+ *
+ * @code
+ * void *timeout_thread_main(void *t_conf) {
+ *    auto *thread_config = (cl_thread_settings_t *)t_conf;
+ *    pthread_cleanup_push((void *)cl_thread_default_cleanup_function, (void *)thread_config);
+ *
+ *    // ... initialisation
+ *
+ *    cl_thread_func_startup(thread_config);
+ *
+ *    // ... thread main
+ *
+ *    cl_thread_func_cleanup(thread_config);
+ *    pthread_cleanup_pop(0);
+ *    return nullptr;
+ * }
+ * @endcode
+ *
+ * #cl_thread_func_startup releases the creator, which is waiting on the
+ * startup condition; without it #cl_thread_setup times out. The
+ * `pthread_cleanup_push` is what keeps the state correct when the thread is
+ * cancelled rather than returning.
+ */
 
-   This defines are used to set the cl_thread_settings_t->thread_state
-   varialbe.
-*/
+/** @name Thread states
+ *
+ * The value of #cl_thread_settings_type::thread_state.
+ * @{
+ */
+#define CL_THREAD_STARTING 1   ///< Created, has not reached #cl_thread_func_startup yet
+#define CL_THREAD_RUNNING  2   ///< Doing work
+#define CL_THREAD_WAITING  3   ///< Sleeping in #cl_thread_wait_for_event
+#define CL_THREAD_EXIT     4   ///< Left its main function
+#define CL_THREAD_CANCELED 5   ///< Cancelled rather than returned
+#define CL_THREAD_CREATOR  6   ///< Not a created thread at all: the one that called #cl_thread_setup
+/** @} */
 
 
-#define CL_THREAD_STARTING 1
-#define CL_THREAD_RUNNING  2
-#define CL_THREAD_WAITING  3
-#define CL_THREAD_EXIT     4
-#define CL_THREAD_CANCELED 5
-#define CL_THREAD_CREATOR  6
 
 
-
-
-/* 
-   cl_thread_settings_t struct
-   ===========================
-
-   This is are the internal thread settings. Each thread has a pointer
-   to his own cl_thread_settings_t struct.
-*/
-
-/* define cleanup functio type */
+/** @brief Called when a thread ends, however it ends
+ *
+ * @param thread_config the thread's settings
+ */
 typedef void  (*cl_thread_cleanup_func_t)(cl_thread_settings_t *thread_config);
 
+/** @brief What kind of thread this is
+ *
+ * The commlib does not act on most of these; they exist so that a thread can
+ * be identified in a listing, and so that the qmaster's threads can be told
+ * apart in `qping -info`. Only #CL_TT_COMMLIB has behaviour attached, and it
+ * must not be given to a thread created outside the commlib.
+ */
 typedef enum cl_thread_type_def {
-   CL_TT_UNDEFINED = 0,  /* free */
-   CL_TT_CREATOR,        /* creator thread (main()) */
-   CL_TT_COMMLIB,        /* commlib thread (do not use for threads created outside commlib) */
-   CL_TT_LISTENER,       /* qmaster */
-   CL_TT_WORKER,         /* qmaster */
-   CL_TT_READER,         /* qmaster */
-   CL_TT_EVENT_MASTER,   /* qmaster */
-   CL_TT_EVENT_MIRROR,   /* qmaster */
-   CL_TT_SCHEDULER,      /* qmaster */
-   CL_TT_SIGNALER,       /* qmaster */
-   CL_TT_UNUSED,         /* qmaster */
-   CL_TT_TIMER,          /* qmaster */
-   CL_TT_IJS,            /* interactive job support */
-   CL_TT_IJS_REGISTER,   /* interactive job support */
-   CL_TT_USER1,          /* free */
-   CL_TT_USER2,          /* free */
-   CL_TT_USER3,          /* free */
-   CL_TT_USER4,          /* free */
-   CL_TT_USER5           /* free */
+   CL_TT_UNDEFINED = 0,  ///< Unset
+   CL_TT_CREATOR,        ///< The `main()` thread, which created the others
+   CL_TT_COMMLIB,        ///< A commlib thread - never set this on a thread created elsewhere
+   CL_TT_LISTENER,       ///< qmaster: accepts GDI requests
+   CL_TT_WORKER,         ///< qmaster: carries them out
+   CL_TT_READER,         ///< qmaster: serves read-only requests
+   CL_TT_EVENT_MASTER,   ///< qmaster: distributes events
+   CL_TT_EVENT_MIRROR,   ///< qmaster: keeps a mirrored copy of the master lists
+   CL_TT_SCHEDULER,      ///< qmaster: the scheduler
+   CL_TT_SIGNALER,       ///< qmaster: turns signals into events
+   CL_TT_UNUSED,         ///< qmaster: unused
+   CL_TT_TIMER,          ///< qmaster: recurring tasks
+   CL_TT_IJS,            ///< Interactive job support
+   CL_TT_IJS_REGISTER,   ///< Interactive job support, registration
+   CL_TT_USER1,          ///< Free for an application
+   CL_TT_USER2,          ///< Free for an application
+   CL_TT_USER3,          ///< Free for an application
+   CL_TT_USER4,          ///< Free for an application
+   CL_TT_USER5           ///< Free for an application
 } cl_thread_type_t;
 
 
+/** @brief Everything the commlib knows about one thread
+ *
+ * Each thread holds a pointer to its own, reachable from inside the thread
+ * with #cl_thread_get_thread_config.
+ */
 struct cl_thread_settings_type {
 #ifdef CL_DO_COMMLIB_DEBUG
-   struct timeval           thread_last_cancel_test_time; /* time when thread did the last cl_thread_func_testcancel() call */
+   struct timeval           thread_last_cancel_test_time;   ///< When the thread last called #cl_thread_func_testcancel - a thread that stops testing can no longer be cancelled
 #endif
-   char *thread_name;                  /* name of thread */
-   int thread_id;                    /* thread id */
-   int thread_state;                 /* thread state, e.g. CL_THREAD_WAITING */
-   unsigned long thread_event_count;           /* number of cl_thread_wait_for_event() calls */
-   cl_raw_list_t *thread_log_list;              /* list for log ( can be nullptr ) */
-   pthread_t *thread_pointer;               /* pointer to thread (pthread lib) */
-   cl_thread_condition_t *thread_event_condition;       /* event call conditions */
-   cl_thread_condition_t *thread_startup_condition;     /* startup condition ( used by cl_thread_setup() ) */
-   cl_thread_cleanup_func_t thread_cleanup_func;          /* thread cleanup function pointer */
-   cl_thread_type_t thread_type;                  /* thread type identifier */
-   void *thread_user_data;             /* any user data ( e.g.: a pointer to a struct ) ) */
+   char *thread_name;             ///< Name of the thread, as it appears in logs and in `qping -info`
+   int thread_id;                 ///< Id of the thread
+   int thread_state;              ///< One of the `CL_THREAD_*` states
+   unsigned long thread_event_count;   ///< How often #cl_thread_wait_for_event has returned
+   cl_raw_list_t *thread_log_list;     ///< The log list to append to, may be nullptr
+   pthread_t *thread_pointer;          ///< The pthread itself
+   cl_thread_condition_t *thread_event_condition;     ///< What the thread sleeps on and is woken through
+   cl_thread_condition_t *thread_startup_condition;   ///< What the creator waits on until #cl_thread_func_startup signals it
+   cl_thread_cleanup_func_t thread_cleanup_func;      ///< Called when the thread ends
+   cl_thread_type_t thread_type;       ///< What kind of thread this is
+   void *thread_user_data;             ///< Free for the thread's own use
 };
 
+/** @brief A condition variable with its mutex and a trigger counter
+ *
+ * The counter is what makes a wake-up that arrives before the wait not get
+ * lost: #cl_thread_wait_for_thread_condition returns at once when triggers
+ * are pending rather than sleeping through them.
+ */
 struct cl_thread_condition_type {
-   pthread_mutex_t *thread_mutex_lock;    /* mutex and condition variable for thread's */
-   pthread_cond_t *thread_cond_var;      /* event wait/trigger :     */
+   pthread_mutex_t *thread_mutex_lock;   ///< Guards the condition variable
+   pthread_cond_t *thread_cond_var;      ///< What a waiting thread sleeps on
 
-   pthread_mutex_t *trigger_count_mutex;  /* used to lock trigger_count */
-   unsigned long trigger_count;        /* counts nr of cl_thread_trigger_thread_condition() calls for this condition */
+   pthread_mutex_t *trigger_count_mutex; ///< Guards `trigger_count`
+   unsigned long trigger_count;          ///< Pending #cl_thread_trigger_thread_condition calls
 };
 
 
-/* 
-   thread functions 
-   ================
-
-   This functions are more used more or less internal
-*/
 int cl_thread_setup(cl_thread_settings_t *thread_config,
                     cl_raw_list_t *log_list,
                     const char *name,
@@ -163,7 +203,6 @@ int cl_thread_trigger_thread_condition(cl_thread_condition_t *condition, int do_
 int cl_thread_clear_triggered_conditions(cl_thread_condition_t *condition);
 
 
-/* thread_func functions  */
 int cl_thread_func_startup(cl_thread_settings_t *thread_config);
 
 int cl_thread_func_testcancel(cl_thread_settings_t *thread_config);
@@ -176,43 +215,4 @@ void cl_thread_default_cleanup_function(cl_thread_settings_t *thread_config);
 
 
 
-/*
-    thread_func functions 
-    =====================
 
-    This functions must be used in thread_func ( thread function ) implementations
-    additional the first call of the thread implementation has to be
-
-->  pthread_cleanup_push((void *) cl_thread_default_cleanup_function, (void*) thread_config );
-
-    and the last has to be
-
-->  pthread_cleanup_pop(0);
-
-    the thread implementation gets one parameter: a pointer to cl_thread_settings_t structure
-
-    After setup of thread:
-
-->  cl_thread_func_startup(thread_config); 
-
-    After thread main work:
-
-->  cl_thread_func_cleanup(thread_config);
- 
-    Example:
-
-    void *timeout_thread_main(void *t_conf) {
-       cl_thread_settings_t *thread_config = (cl_thread_settings_t*)t_conf; 
-       pthread_cleanup_push((void *) cl_thread_default_cleanup_function, (void*) thread_config );
-
-       ...  initalization
-
-       cl_thread_func_startup(thread_config);
-
-       ...  thread main 
-   
-       cl_thread_func_cleanup(thread_config);  
-       pthread_cleanup_pop(0);
-       return (nullptr);
-    }
-*/

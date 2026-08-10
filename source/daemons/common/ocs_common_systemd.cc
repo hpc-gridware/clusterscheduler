@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Talking to systemd: notifying readiness and placing jobs in scopes
+ */
+
 #include "uti/ocs_Systemd.h"
 
 #include "ocs_common_systemd.h"

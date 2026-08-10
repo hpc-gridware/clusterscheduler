@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for tq in `libs/uti`
+ */
+
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -45,6 +49,16 @@
 
 static int s_fail = 0;
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \
@@ -58,25 +72,39 @@ static int s_fail = 0;
 /*
  * Producer and consumer maximum should be a multiple of 2 and 3
  */
-#define TEST_SL_MAX_CONSUMER 24
-#define TEST_SL_MAX_PRODUCER 24
+#define TEST_SL_MAX_CONSUMER 24   ///< how many consumer threads the test starts
+#define TEST_SL_MAX_PRODUCER 24   ///< how many producer threads the test starts
 
-#define TEST_SL_MAX_ELEMENTS 10000
+#define TEST_SL_MAX_ELEMENTS 10000   ///< how many tasks the producers put in altogether
 
+/** @brief What the producer and consumer threads share
+ *
+ * `sequence` is the point of the test: every thread appends what it did, so the
+ * order the tasks came out in can be checked afterwards rather than guessed at
+ * from timing.
+ */
 struct _test_sl_thread_cp_t {
-   pthread_mutex_t mutex;
-   sge_tq_queue_t *queue;
-   uint32_t counter;
-   dstring sequence;
-   volatile bool do_terminate;
+   pthread_mutex_t mutex;        ///< guards `counter` and `sequence`
+   sge_tq_queue_t *queue;        ///< the task queue under test
+   uint32_t counter;             ///< how many tasks have been handled
+   dstring sequence;             ///< what each thread did, in order
+   volatile bool do_terminate;   ///< set to tell the threads to stop
    bool thread_error; ///< set by any thread that detects an unexpected outcome
 };
 
+/** @brief Shorthand for #_test_sl_thread_cp_t */
 typedef struct _test_sl_thread_cp_t test_sl_thread_cp_t;
 
 // matches every element regardless of type; used by sge_tq_move_from_to_if tests
 static int match_all(const void * /*key*/, const void * /*elem*/) { return 0; }
 
+/** @brief Test case: thread consumer template
+ *
+ * @param arg see the description above
+ * @param type see the description above
+ * @param type_string see the description above
+  * @return the thread's result; the tests ignore it
+ */
 void *
 test_thread_consumer_template(void *arg, sge_tq_type_t type, const char *type_string) {
    void *ret = nullptr;
@@ -114,6 +142,13 @@ test_thread_consumer_template(void *arg, sge_tq_type_t type, const char *type_st
    DRETURN(ret);
 }
 
+/** @brief Test case: thread producer template
+ *
+ * @param arg see the description above
+ * @param type see the description above
+ * @param type_string see the description above
+  * @return the thread's result; the tests ignore it
+ */
 void *
 test_thread_producer_template(void *arg, sge_tq_type_t type, const char *type_string) {
    void *ret = nullptr;
@@ -137,26 +172,51 @@ test_thread_producer_template(void *arg, sge_tq_type_t type, const char *type_st
    DRETURN(ret);
 }
 
+/** @brief Test case: thread consumer type1
+ *
+ * @param arg see the description above
+  * @return the thread's result; the tests ignore it
+ */
 void *
 test_thread_consumer_type1(void *arg) {
    return test_thread_consumer_template(arg, SGE_TQ_TYPE1, "type_1");
 }
 
+/** @brief Test case: thread consumer type2
+ *
+ * @param arg see the description above
+  * @return the thread's result; the tests ignore it
+ */
 void *
 test_thread_consumer_type2(void *arg) {
    return test_thread_consumer_template(arg, SGE_TQ_TYPE2, "type_2");
 }
 
+/** @brief Test case: thread consumer unknown
+ *
+ * @param arg see the description above
+  * @return the thread's result; the tests ignore it
+ */
 void *
 test_thread_consumer_unknown(void *arg) {
    return test_thread_consumer_template(arg, SGE_TQ_UNKNOWN, "type_?");
 }
 
+/** @brief Test case: thread producer type1
+ *
+ * @param arg see the description above
+  * @return the thread's result; the tests ignore it
+ */
 void *
 test_thread_producer_type1(void *arg) {
    return test_thread_producer_template(arg, SGE_TQ_TYPE1, "type_1");
 }
 
+/** @brief Test case: thread producer type2
+ *
+ * @param arg see the description above
+  * @return the thread's result; the tests ignore it
+ */
 void *
 test_thread_producer_type2(void *arg) {
    return test_thread_producer_template(arg, SGE_TQ_TYPE2, "type_2");

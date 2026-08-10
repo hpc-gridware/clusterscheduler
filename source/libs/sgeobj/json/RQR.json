@@ -1,19 +1,22 @@
 {
    "className": "ResourceQuotaRule",
-   "summary": "@todo add summary",
+   "summary": "Resource Quota Rule",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "One rule of a resource quota set: what it matches, and what it then limits."
+      },
+      {
+         "line": "The five filters are ANDed. An empty filter matches everything, so a rule with no filters is the catch-all."
       }
    ],
    "cullPrefix": "RQR",
    "attributes": [
       {
          "name": "name",
-         "summary": "@todo add summary",
+         "summary": "Name",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Optional rule name, so `qquota` and the error messages can say which rule bit."
             }
          ],
          "type": "lStringT",
@@ -37,10 +40,10 @@
       },
       {
          "name": "filter_users",
-         "summary": "@todo add summary",
+         "summary": "User Filter",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Which submitting users the rule applies to (`RQRF_Type`)."
             }
          ],
          "type": "lObjectT",
@@ -57,10 +60,10 @@
       },
       {
          "name": "filter_projects",
-         "summary": "@todo add summary",
+         "summary": "Project Filter",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Which projects the rule applies to."
             }
          ],
          "type": "lObjectT",
@@ -77,10 +80,10 @@
       },
       {
          "name": "filter_pes",
-         "summary": "@todo add summary",
+         "summary": "Parallel Environment Filter",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Which parallel environments the rule applies to."
             }
          ],
          "type": "lObjectT",
@@ -97,10 +100,10 @@
       },
       {
          "name": "filter_queues",
-         "summary": "@todo add summary",
+         "summary": "Queue Filter",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Which cluster queues the rule applies to."
             }
          ],
          "type": "lObjectT",
@@ -117,10 +120,10 @@
       },
       {
          "name": "filter_hosts",
-         "summary": "@todo add summary",
+         "summary": "Host Filter",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Which execution hosts the rule applies to."
             }
          ],
          "type": "lObjectT",
@@ -137,10 +140,10 @@
       },
       {
          "name": "limit",
-         "summary": "@todo add summary",
+         "summary": "Limits",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "What the rule limits and by how much (`RQRL_Type`), one entry per resource."
             }
          ],
          "type": "lListT",
@@ -157,10 +160,10 @@
       },
       {
          "name": "level",
-         "summary": "@todo add summary",
+         "summary": "Limit Level",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "How far the limit is spread: shared by everything matched, or one limit each per host, cluster queue or queue instance. See the `RQR_*` values in `sge_resource_quota.h`."
             }
          ],
          "type": "lUlongT",

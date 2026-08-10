@@ -24,16 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Project Usage
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of UPP
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   UPP_name = 6150,
-   UPP_usage,
-   UPP_long_term_usage
+   UPP_name = 6150,   ///< Name
+   UPP_usage,   ///< Usage
+   UPP_long_term_usage   ///< Long Term Usage
 };
 
+/** @brief The attribute ids of UPP, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int UPP_Type[] = {
    UPP_name,
    UPP_usage,
@@ -41,6 +55,10 @@ constexpr const int UPP_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of UPP
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define UPP_ATTRIBUTES \
    {UPP_name, "UPP_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {UPP_usage, "UPP_usage", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

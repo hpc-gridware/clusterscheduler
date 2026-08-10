@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for the spooling framework
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -250,6 +254,15 @@ static bool read_spooled_data()
    DRETURN(true);
 }
 
+/** @brief Spool event before
+ *
+ * @param evc see the description above
+ * @param type see the description above
+ * @param action see the description above
+ * @param event see the description above
+ * @param clientdata see the description above
+  * @return `SGE_EMA_OK` to let the mirror carry on
+ */
 sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
                                        sge_event_action action, lListElem *event, [[maybe_unused]] void *clientdata)
 {
@@ -416,6 +429,15 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
    DRETURN(SGE_EMA_OK);
 }
 
+/** @brief Spool event after
+ *
+ * @param evc see the description above
+ * @param type see the description above
+ * @param action see the description above
+ * @param event see the description above
+ * @param clientdata see the description above
+  * @return `SGE_EMA_OK` to let the mirror carry on
+ */
 sge_callback_result
 spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
                   lListElem *event, [[maybe_unused]] void *clientdata)
@@ -555,6 +577,14 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
 
    DRETURN(ret);
 }
+
+/** @def defstring
+ * @brief The macro argument as a string literal
+ *
+ * Defined inside the function that uses it.
+ *
+ * @param str the text to stringify
+ */
 
 int main(int argc, char *argv[])
 {

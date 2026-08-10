@@ -33,12 +33,24 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Resource usage reported for a job or task
+ */
+
 #include "cull/cull.h"
 
-// usage interval in seconds (as double to avoid integer division)
+/// Length of one usage interval in seconds; a double so the decay maths does not divide integers
 constexpr double sge_usage_interval = 60.0;
 
 namespace ocs {
+   /**
+    * @brief Accumulating and decaying the resource usage the share tree is scheduled on
+    *
+    * Usage is booked additively when a job finishes and decays over time, so
+    * recent consumption weighs more than old consumption. Both halves used to
+    * run at finish time; since CS-1239 the decay half runs periodically in the
+    * Timed Event Thread and only #sum_usage runs on the worker.
+    */
    class Usage {
    public:
       static void calculate_default_decay_constant(int halftime);
@@ -54,12 +66,6 @@ namespace ocs {
       static void decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *node, lListElem *user, lListElem *project,
                                       lList *decay_list, const lList *usage_weight_list, u_long seqno, uint64_t curr_time);
 
-      /** Sum a finished job's scaled usage into UU_usage / PR_usage / UPP_usage
-       *  without applying decay. Used by the worker-thread booking path
-       *  introduced in CS-1239: decay is moved to a periodic Timed Event Thread
-       *  task, and only the additive part of decay_and_sum_usage runs at finish
-       *  time. usage_time_stamp is left untouched; the TET decay task owns it.
-       */
       static void sum_usage(lListElem *job, lListElem *ja_task, lListElem *user, lListElem *project,
                             const lList *usage_weight_list);
 

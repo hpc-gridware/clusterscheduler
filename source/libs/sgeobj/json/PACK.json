@@ -1,19 +1,22 @@
 {
    "className": "Packing",
-   "summary": "@todo add summary",
+   "summary": "Packed Condition",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "A `where` or `what` condition in its packed form, so it can be sent over GDI."
+      },
+      {
+         "line": "The scheduler and the clients build `lCondition` and `lEnumeration` structures locally; those cannot be sent as they are, so they are packed into this and unpacked on the other side."
       }
    ],
    "cullPrefix": "PACK",
    "attributes": [
       {
          "name": "id",
-         "summary": "@todo add summary",
+         "summary": "Kind",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "`SGE_WHERE` or `SGE_WHAT`, saying which of the two the packed data is."
             }
          ],
          "type": "lUlongT",
@@ -21,10 +24,10 @@
       },
       {
          "name": "string",
-         "summary": "@todo add summary",
+         "summary": "Packed Data",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The condition in packed form."
             }
          ],
          "type": "lStringT",

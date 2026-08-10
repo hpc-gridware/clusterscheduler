@@ -34,15 +34,41 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-/* Number of threads needed */
+/** @file
+ * @brief Interface shared by the locking tests
+ */
+
+/** @name The five hooks each locking test implements
+ *
+ * `test_uti_lock_main.cc` owns the `main()` that starts the threads, waits for
+ * them and reports; each locking test supplies only these, so the harness is
+ * written once and the tests differ only in what their threads do.
+ * @{
+ */
+
+/** @brief How many threads this test wants
+ * @return the number of threads to start
+ */
 int get_thread_demand();
 
-/* Thread function to execute */
+/** @brief The function those threads run
+ * @return a pointer to the thread function
+ */
 void *(*get_thread_func())(void *anArg);
 
-/* Arguments to hand over to the thread function */
+/** @brief What to pass each thread
+ * @return the argument handed to every thread
+ */
 void *get_thread_func_arg();
 
+/** @brief Tell the test how many threads were actually started
+ * @param count the number started, which may be fewer than requested
+ */
 void set_thread_count(int count);
 
+/** @brief Decide whether the test passed
+ * @param count the number of threads that ran
+ * @return 0 when the test passed
+ */
 int validate(int count);
+/** @} */

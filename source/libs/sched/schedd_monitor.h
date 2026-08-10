@@ -33,21 +33,46 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The scheduler run log
+ *
+ * The scheduler explains its decisions in two places, and both go through
+ * schedd_log(): the file `<cell>/common/schedd_runlog`, written when
+ * monitoring was switched on with `qconf -tsm`, and an answer list, used by
+ * `qalter -w v` to tell a user why a job would not be scheduled. Which of the
+ * two a call reaches is decided by its arguments, so most callers pass both
+ * through from the top of the scheduling run.
+ */
+
 #include "sgeobj/sge_daemonize.h"
 
+/** Name of the scheduler run log file, below `<cell root>/common` */
 #define SCHED_LOG_NAME "schedd_runlog"
 
-/* retunrs string representation of jobid */
 const char *job_descr(uint32_t jobid);
 
-/* if monitor_next_run flag is set adds log string to 
-   registered answer list or writes to schedd runlog file otherwise */
 int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run);
 
-/* used for multiple calling schedd_log() and generating list of items such as jobids */
 int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *logstr, lList *lp, int nm);
 
+/**
+ * @brief Sets whether the next scheduling run writes the run log
+ *
+ * @param[in] set true to switch monitoring on for the next run
+ *
+ * @warning Declared but never defined, and nothing in the source tree calls
+ *          it. The flag is passed through the call chain as a parameter
+ *          instead. See also schedd_is_monitor_next_run().
+ */
 void schedd_set_monitor_next_run(bool set);
+/**
+ * @brief Returns whether the next scheduling run writes the run log
+ *
+ * @return true if monitoring is on for the next run
+ *
+ * @warning Declared but never defined, and nothing in the source tree calls
+ *          it. See schedd_set_monitor_next_run().
+ */
 bool schedd_is_monitor_next_run();
 
 void schedd_set_schedd_log_file();

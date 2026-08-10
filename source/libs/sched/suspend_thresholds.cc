@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Implementation of the suspend threshold handling
+ */
 #include <cstring>
 #include <ctime>
 
@@ -53,9 +57,18 @@
 static int select4suspension(lList *job_list, lListElem *queues, lListElem **jepp, lListElem **ja_taskp);
 static int select4unsuspension(lList *job_list, lListElem *queues, lListElem **jepp, lListElem **ja_taskp);
 
-/*
-   select and suspend jobs in susp_queues 
-*/
+/**
+ * @brief Selects and suspends jobs in queues that exceed their thresholds
+ *
+ * Per queue at most `QU_nsuspend` jobs are suspended, and only once per
+ * `QU_suspend_interval` - a queue whose interval has not expired is skipped.
+ * A queue without an interval, without `QU_nsuspend` or without thresholds
+ * has the feature disabled.
+ *
+ * @param[in]     susp_queues queues that are over their suspend thresholds
+ * @param[in]     job_list    the jobs, to pick the ones to suspend
+ * @param[in,out] orders      the suspend orders are appended here
+ */
 void 
 suspend_job_in_queues( lList *susp_queues, lList *job_list, order_t *orders) 
 {
@@ -113,6 +126,16 @@ suspend_job_in_queues( lList *susp_queues, lList *job_list, order_t *orders)
 }
 
 
+/**
+ * @brief Unsuspends jobs in queues that are below their thresholds again
+ *
+ * The counterpart of suspend_job_in_queues(), with the same per interval and
+ * per queue limits.
+ *
+ * @param[in]     queue_list  the queues to look at
+ * @param[in]     job_list    the jobs, to pick the ones to unsuspend
+ * @param[in,out] orders      the unsuspend orders are appended here
+ */
 void 
 unsuspend_job_in_queues( lList *queue_list, lList *job_list, order_t *orders) 
 {

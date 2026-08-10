@@ -32,6 +32,18 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: the log queue and its flushing
+ *
+ * Starts a logging thread and a worker, lets the worker log through
+ * #CL_LOG while the logging thread flushes, and prints what came out.
+ *
+ * Asks interactively whether to use the default flush function or the one
+ * defined here, so it needs a terminal.
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 
 #include <cstdio>
 #include <cstring>
@@ -43,12 +55,24 @@
 
 #include "comm/lists/cl_lists.h"
 
-cl_raw_list_t *thread_list = nullptr;
+cl_raw_list_t *thread_list = nullptr;   ///< The threads this test started
 
+/** @brief Thread that logs messages for the flusher to pick up
+ * @param t_conf the thread's settings
+ * @return nullptr
+ */
 void *my_test_thread(void *t_conf);
 
+/** @brief Thread that flushes the log queue in a loop
+ * @param t_conf the thread's settings
+ * @return nullptr
+ */
 void *my_log_thread(void *t_conf);
 
+/** @brief The test's own flush function
+ * @param list_p the log list to drain
+ * @return #CL_RETVAL_OK
+ */
 int my_log_flush_list(cl_raw_list_t *list_p) {
    int ret_val;
    cl_log_list_elem_t *elem = nullptr;
@@ -80,6 +104,11 @@ int my_log_flush_list(cl_raw_list_t *list_p) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success
+ */
 extern int main(int argc, char **argv) {
    cl_raw_list_t *log_list = nullptr;
    cl_thread_settings_t *thread_p = nullptr;

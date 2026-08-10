@@ -34,6 +34,13 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief fstype - report the file system type of a directory
+ *
+ * Used to decide whether a spool or job directory is on NFS, which changes
+ * how the daemons handle locking and file visibility.
+ */
+
 #include <cstdio>
 #include <cerrno>
 #include <cstring>
@@ -55,6 +62,7 @@
 #include <nfs/nfs_clnt.h>
 #endif
 
+/** @brief Size of the buffer the mount table is read into */
 #define BUF_SIZE 8 * 1024
 
 int main(int argc, char *argv[]) {

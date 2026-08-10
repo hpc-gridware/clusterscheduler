@@ -1,19 +1,19 @@
 {
    "className": "ReprioritizeTickets",
-   "summary": "@todo add summary",
+   "summary": "Resource Ticket Host Entry",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "The tickets granted on one host, as the scheduler reports them back with its orders."
       }
    ],
    "cullPrefix": "RTIC",
    "attributes": [
       {
          "name": "host",
-         "summary": "@todo add summary",
+         "summary": "Host",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The execution host the tickets belong to."
             }
          ],
          "type": "lHostT",
@@ -31,10 +31,10 @@
       },
       {
          "name": "tickets",
-         "summary": "@todo add summary",
+         "summary": "Tickets",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The per-job ticket values for that host."
             }
          ],
          "type": "lListT",

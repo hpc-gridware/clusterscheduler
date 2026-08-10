@@ -24,22 +24,36 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Date Time
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of TM
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   TM_mday = 5950,
-   TM_mon,
-   TM_year,
-   TM_sec,
-   TM_min,
-   TM_hour,
-   TM_wday,
-   TM_yday,
-   TM_isdst
+   TM_mday = 5950,   ///< Month Day
+   TM_mon,   ///< Month
+   TM_year,   ///< Year
+   TM_sec,   ///< Seconds
+   TM_min,   ///< Minute
+   TM_hour,   ///< Hor
+   TM_wday,   ///< Week Day
+   TM_yday,   ///< Year Day
+   TM_isdst   ///< Is Daylight Saving Time
 };
 
+/** @brief The attribute ids of TM, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int TM_Type[] = {
    TM_mday,
    TM_mon,
@@ -53,6 +67,10 @@ constexpr const int TM_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of TM
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define TM_ATTRIBUTES \
    {TM_mday, "TM_mday", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {TM_mon, "TM_mon", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

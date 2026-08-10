@@ -35,6 +35,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Debiting a scheduled job on the objects it consumes
+ *
+ * When the scheduler has decided where a job runs it has to book that
+ * decision on its own copy of the cluster state - slots, consumables, load -
+ * or the next job of the same scheduling run would be offered resources that
+ * are already given away.
+ */
+
 #include "sched/sge_select_queue.h"
 
 /* responsible for all debitations that have to be done */

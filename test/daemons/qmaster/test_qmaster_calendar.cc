@@ -19,6 +19,10 @@
  ************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for calendar in `daemons/qmaster`
+ */
+
 #include <cstdio>
 #include <ctime>
 
@@ -34,12 +38,19 @@
 #include "sge_calendar_qmaster.h"
 #include "msg_common.h"
 
+/** @brief One calendar definition to parse and check */
 typedef struct {
    const char *year_cal;    ///< year calendar definition
    const char *week_cal;    ///< week calendar definition
    const char *description; ///< human-readable description for test output
 } cal_entry_t;
 
+/** @brief One moment to check a calendar against
+ *
+ * A calendar answers two questions at once - what state the queue is in now,
+ * and when it next changes - so a case carries both, twice over for the
+ * calendars that change state twice.
+ */
 typedef struct {
    int       cal_nr;   ///< index into calendars[]
    struct tm now;      ///< simulated current date/time
@@ -49,6 +60,11 @@ typedef struct {
    int       state2;   ///< expected second state (-1 = no second entry)
 } date_entry_t;
 
+/** @brief One time frame to check a calendar against
+ *
+ * A calendar says what state the queue should be in at a given moment, so a
+ * test case is a calendar, a moment, and the state expected then.
+ */
 typedef struct {
    int       cal_nr;     ///< index into calendars[]
    struct tm start_time; ///< start of the time frame under test
@@ -384,6 +400,16 @@ static bool run_time_frame_test(time_frame_entry_t *t, cal_entry_t *cal)
 
 static int s_fail = 0;
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \

@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief UserSet Entry
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -33,12 +37,12 @@
 * An object of this type represents one entry in an user set.
 *
 *    SGE_STRING(UE_name) - User or Group name
-*    Name of an user or a UNIX user group. Groups have the prefix @, e.g. @tape
+*    Name of an user or a UNIX user group. Groups have the prefix @, e.g. `@tape`
 *
 */
 
 enum {
-   UE_name = UE_LOWERBOUND
+   UE_name = UE_LOWERBOUND   ///< User or Group name
 };
 
 LISTDEF(UE_Type)
@@ -49,6 +53,7 @@ NAMEDEF(UEN)
    NAME("UE_name")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define UE_SIZE sizeof(UEN)/sizeof(char *)
 
 

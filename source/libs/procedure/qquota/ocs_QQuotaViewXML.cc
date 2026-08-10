@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief XML rendering of `qquota`
+ */
+
 #include <sstream>
 
 #include "uti/sge_rmon_macros.h"
@@ -28,6 +32,9 @@
 #include "ocs_QQuotaViewXML.h"
 
 
+/** @brief Build the XML view
+ * @param parameter the call's parameters
+ */
 ocs::QQuotaViewXML::QQuotaViewXML(const QQuotaParameter &parameter) : QQuotaViewBase(parameter) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;

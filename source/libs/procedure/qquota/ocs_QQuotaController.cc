@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Controller of `qquota`: runs the request and drives the view
+ */
+
 #include <sstream>
 #include "fnmatch.h"
 
@@ -126,6 +130,11 @@ ocs::QQuotaController::qquota_print_out_rule(std::ostream &os, const lListElem *
    view.report_limit_rule_finished(os);
 }
 
+/** @brief Run the request
+ * @param parameter the parsed parameters
+ * @param model the model, client or server side
+ * @param view the view for the requested output format
+ */
 void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaModelBase &model, QQuotaViewBase &view) {
    DENTER(TOP_LAYER);
 

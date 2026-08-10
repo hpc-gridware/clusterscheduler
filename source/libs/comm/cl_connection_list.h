@@ -33,21 +33,26 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief A handle's connections
+ */
+
 #include "uti/sge_htable.h"
 
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
+/** @brief One connection of a handle */
 typedef struct cl_connection_list_elem_t {
-   cl_com_connection_t *connection;   /* data */
-   cl_raw_list_elem_t *raw_elem;
+   cl_com_connection_t *connection;   ///< The connection
+   cl_raw_list_elem_t *raw_elem;      ///< Back pointer into the raw list
 } cl_connection_list_elem_t;
 
-typedef struct cl_connection_list_data_type {                      /* list specific data */
-   /* this is for tcp/ip */
-   int last_nr_of_descriptors;
-   int select_not_called_count;
-   htable r_ht;                /* receiver endpoint hashtable */
+/** @brief The connection list's own state */
+typedef struct cl_connection_list_data_type {
+   int last_nr_of_descriptors;    ///< How many descriptors the last `poll()` was sized for
+   int select_not_called_count;   ///< How often the list changed without a `poll()` in between
+   htable r_ht;                   ///< Lookup by remote endpoint, so a send finds its connection without walking the list
 } cl_connection_list_data_t;
 
 

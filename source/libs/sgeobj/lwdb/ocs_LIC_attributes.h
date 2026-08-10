@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief License Report
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of LIC
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   LIC_processors = 4450,
-   LIC_arch
+   LIC_processors = 4450,   ///< Processors
+   LIC_arch   ///< Architecture
 };
 
+/** @brief The attribute ids of LIC, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int LIC_Type[] = {
    LIC_processors,
    LIC_arch,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of LIC
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define LIC_ATTRIBUTES \
    {LIC_processors, "LIC_processors", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {LIC_arch, "LIC_arch", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

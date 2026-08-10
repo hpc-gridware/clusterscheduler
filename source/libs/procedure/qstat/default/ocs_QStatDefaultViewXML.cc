@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief XML rendering of plain `qstat`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 
@@ -44,6 +48,7 @@ static const char* ADDITIONAL_TAG_NAMES[] = {
    "granted_pe"
 };
 
+/** @brief Start a new job section */
 void ocs::QStatDefaultViewXML::qstat_xml_create_job_list() {
    DENTER(TOP_LAYER);
 
@@ -52,6 +57,10 @@ void ocs::QStatDefaultViewXML::qstat_xml_create_job_list() {
    DRETURN_VOID;
 }
 
+/** @brief Close the current job section and file it under its state
+ * @param state the section's name in the document, e.g. `pending_jobs`
+ * @param target_list the list the section is appended to
+ */
 void ocs::QStatDefaultViewXML::qstat_xml_finish_job_list(const char* state, lList* target_list) {
    DENTER(TOP_LAYER);
    lListElem *state_elem = nullptr;

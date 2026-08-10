@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Queue instances: the state a queue has on one host
+ */
+
 #include <cinttypes>
 #include "cull/cull.h"
 #include "sgeobj/sge_daemonize.h"

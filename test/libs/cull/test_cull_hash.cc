@@ -32,7 +32,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for hash in `libs/cull`
+ */
+
 /* #define HASH_STATISTICS */
+
+/** @brief Report the process's memory use alongside the timings
+ *
+ * A hash index trades memory for speed, so a run that only reported time would
+ * hide half of what the change costs.
+ */
 #define XMALLINFO
 
 #include <cstdio>
@@ -48,6 +58,12 @@
 
 #include <cinttypes>
 
+/** @brief Make this translation unit the one that defines the CULL descriptors
+ *
+ * The generated headers define the descriptors only where this is set, so
+ * exactly one file per program must set it. In a test that file is the test
+ * itself, which is why the marker appears here rather than in a library.
+ */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
 #include "cull/cull.h"
@@ -61,10 +77,11 @@
 
 #ifdef TEST_USE_JOBL
 #include "sge_jobL.h"
-int NM_ULONG  = JB_job_number;
-int NM_STRING = JB_owner;
-lDescr *DESCR = JB_Type;
+int NM_ULONG  = JB_job_number;   ///< the numeric attribute the benchmark hashes on
+int NM_STRING = JB_owner;        ///< the string attribute it hashes on
+lDescr *DESCR = JB_Type;         ///< the object type the benchmark builds lists of
 
+/** @brief The name space registering the synthetic type with CULL */
 lNameSpace my_nmv[] = {
    {1, JBS, JBN },
    {0, 0, nullptr}
@@ -72,8 +89,8 @@ lNameSpace my_nmv[] = {
 
 #else
 enum {
-   TEST_ulong = 1,
-   TEST_string
+   TEST_ulong = 1,   ///< an unsigned long attribute
+   TEST_string   ///< a string attribute
 };
 
 LISTDEF(TEST_Type)
@@ -86,12 +103,13 @@ NAMEDEF(TEST_Name)
                 NAME("TEST_string")
 NAMEEND
 
-#define TEST_Size sizeof(TEST_Name) / sizeof(char *)
+#define TEST_Size sizeof(TEST_Name) / sizeof(char *)   ///< number of attributes of the synthetic type
 
-int NM_ULONG = TEST_ulong;
-int NM_STRING = TEST_string;
-lDescr *DESCR = TEST_Type;
+int NM_ULONG = TEST_ulong;     ///< the numeric attribute the benchmark hashes on
+int NM_STRING = TEST_string;   ///< the string attribute it hashes on
+lDescr *DESCR = TEST_Type;     ///< the object type the benchmark builds lists of
 
+/** @brief The name space registering the synthetic type with CULL */
 lNameSpace my_nmv[] = {
         {1, TEST_Size, TEST_Name, TEST_Type},
         {0, 0, nullptr, nullptr}
@@ -100,6 +118,16 @@ lNameSpace my_nmv[] = {
 
 static int s_fail = 0;
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \
@@ -110,9 +138,15 @@ static int s_fail = 0;
       } \
    } while (0)
 
+/** @brief What one benchmark run measured, in seconds per operation
+ *
+ * The hash test is as much a benchmark as a correctness test: it reports the
+ * cost of each operation with and without a hash index, so a change that makes
+ * lookups faster but insertion far slower is visible rather than hidden.
+ */
 struct BenchTimes {
-   double create, copy, lookup, iter_str, mod_key, mod_str, del_key, del_str;
-   int objs_del_key, objs_del_str;
+   double create,/**< building the list */copy,/**< copying it */lookup,/**< finding elements by key */iter_str,/**< walking it in string-key order */mod_key,/**< changing the hashed key of elements */mod_str,/**< changing a non-key string */del_key,/**< deleting by key */del_str;/**< deleting by string */
+   int objs_del_key,/**< how many elements the del_key pass removed */objs_del_str;/**< how many the del_str pass removed */
 };
 
 static void usage(const char *argv0) {
@@ -136,10 +170,10 @@ static const char *random_string(int length) {
    return strdup(buf);
 }
 
-const char **names = nullptr;
+const char **names = nullptr;   ///< the attribute names of #DESCR, for the output
 
-const char *HEADER_FORMAT = "%s %s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s\n";
-const char *DATA_FORMAT   = "%s %s %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf (%6d) %8.3lf (%6d) %8ld\n";
+const char *HEADER_FORMAT = "%s %s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s\n";   ///< column headings of the timing table
+const char *DATA_FORMAT   = "%s %s %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf (%6d) %8.3lf (%6d) %8ld\n";   ///< one row of it, matching #HEADER_FORMAT
 
 static double elapsed(const struct timespec &a, const struct timespec &b) {
    return (b.tv_sec - a.tv_sec) + (b.tv_nsec - a.tv_nsec) * 1e-9;

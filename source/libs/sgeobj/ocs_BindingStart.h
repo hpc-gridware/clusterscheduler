@@ -19,25 +19,31 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Where on the topology a binding starts
+ */
+
 #include <string>
 
 namespace ocs {
+   /// Where on the host topology a binding starts
    class BindingStart {
       BindingStart() = default; // prevent instantiation
    public:
+      /// Which topology object the binding starts at
       enum Start {
-         UNINITIALIZED = 0,
-         NONE,
-         FIRST_FREE_SOCKET,
-         FIRST_USED_SOCKET,
-         FIRST_FREE_CORE,
-         FIRST_USED_CORE,
-         FIRST_FREE_NUMA,
-         FIRST_USED_NUMA,
-         FIRST_FREE_CACHE3,
-         FIRST_USED_CACHE3,
-         FIRST_FREE_CACHE2,
-         FIRST_USED_CACHE2,
+         UNINITIALIZED = 0,      ///< not set; the request has not been parsed yet
+         NONE,                   ///< no anchor given
+         FIRST_FREE_SOCKET,      ///< the first socket with no job bound to it
+         FIRST_USED_SOCKET,      ///< the first socket that already carries a job
+         FIRST_FREE_CORE,        ///< the first unbound core
+         FIRST_USED_CORE,        ///< the first core that already carries a job
+         FIRST_FREE_NUMA,        ///< the first unbound NUMA node
+         FIRST_USED_NUMA,        ///< the first NUMA node that already carries a job
+         FIRST_FREE_CACHE3,      ///< the first unbound level 3 cache domain
+         FIRST_USED_CACHE3,      ///< the first level 3 cache domain already in use
+         FIRST_FREE_CACHE2,      ///< the first unbound level 2 cache domain
+         FIRST_USED_CACHE2,      ///< the first level 2 cache domain already in use
       };
 
       static std::string to_string(Start mode);

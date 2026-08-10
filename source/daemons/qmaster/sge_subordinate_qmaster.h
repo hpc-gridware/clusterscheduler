@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Subordinate queues, including the slot-wise suspension tree
+ */
+
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_daemonize.h"
 

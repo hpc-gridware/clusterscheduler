@@ -506,16 +506,10 @@
       },
       {
          "name": "version",
-         "summary": "@todo add summary",
+         "summary": "Share Tree Version",
          "description": [
             {
-               "line": "Version of share tree."
-            },
-            {
-               "line": "Set/increased in qmaster when sharetree changes."
-            },
-            {
-               "line": "Skip scheduling decisions based on an older version of the sharetree."
+               "line": "Incremented on every change to the tree, and again by the timer thread when usage is recomputed. Lets a reader tell whether the tree it holds is still current."
             }
          ],
          "type": "lUlongT",
@@ -543,7 +537,9 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {"name": "SPOOL"}
+            {
+               "name": "SPOOL"
+            }
          ]
       }
    ]

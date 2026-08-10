@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Queue Instance Message
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of QIM
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   QIM_type = 9700,
-   QIM_message
+   QIM_type = 9700,   ///< Message Type
+   QIM_message   ///< Message
 };
 
+/** @brief The attribute ids of QIM, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int QIM_Type[] = {
    QIM_type,
    QIM_message,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of QIM
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define QIM_ATTRIBUTES \
    {QIM_type, "QIM_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {QIM_message, "QIM_message", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \

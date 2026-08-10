@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Parsing and printing the numeric values users write
+ *
+ * A value may carry a unit (`4G`, `1:30:00`) or be the word `infinity`, and
+ * which forms are accepted depends on the resource's type. These are the
+ * conversions in both directions.
+ *
+ * @see sge_ulong.h
+ */
+
 #include <math.h>
 #include <cfloat>
 #include <ctime>
@@ -53,12 +63,21 @@
 
 #include <cinttypes>
 
+/// Debug layer the value parsing and printing traces are written to
 #define ULONG_LAYER TOP_LAYER
 
-/*
-* NOTES
-*     MT-NOTE: double_print_infinity_to_dstring() is MT safe
-*/
+/**
+ * @brief Render a double as the literal `infinity` when it is infinite
+ *
+ * Nothing is written for a finite value, so the type specific printers call
+ * this first and only render the number themselves when it returns false.
+ *
+ * @param value the value to render
+ * @param[out] string receives the text, appended
+ * @return true when the value was infinite and something was written
+ *
+ * @note MT-NOTE: double_print_infinity_to_dstring() is MT safe
+ */
 bool double_print_infinity_to_dstring(double value, dstring *string)
 {
    bool ret = true;
@@ -81,10 +100,29 @@ bool double_print_infinity_to_dstring(double value, dstring *string)
 * NOTES
 *     MT-NOTE: double_print_time_to_dstring() is MT safe
 */
+/**
+ * @brief Render a double as a time span as `h:mm:ss`
+ *
+ * @param value the value to render
+ * @param[out] string receives the text, appended
+ * @return true when something was written
+ *
+ * @note MT-NOTE: double_print_time_to_dstring() is MT safe
+ */
 bool double_print_time_to_dstring(double value, dstring *string) {
    return double_print_time_to_dstring(value, string, false);
 }
 
+/**
+ * @brief Render a double as a time span, optionally with microseconds
+ *
+ * @param value the value to render
+ * @param[out] string receives the text, appended
+ * @param with_microseconds true to append the fractional part
+ * @return true when something was written
+ *
+ * @note MT-NOTE: double_print_time_to_dstring() is MT safe
+ */
 bool double_print_time_to_dstring(double value, dstring *string, bool with_microseconds) {
    bool ret = true;
 
@@ -124,6 +162,15 @@ bool double_print_time_to_dstring(double value, dstring *string, bool with_micro
 * NOTES
 *     MT-NOTE: double_print_memory_to_dstring() is MT safe
 */
+/**
+ * @brief Render a double as a memory size with its unit suffix, e.g. `4.000G`
+ *
+ * @param value the value to render
+ * @param[out] string receives the text, appended
+ * @return true when something was written
+ *
+ * @note MT-NOTE: double_print_memory_to_dstring() is MT safe
+ */
 bool double_print_memory_to_dstring(double value, dstring *string)
 {
    bool ret = true;
@@ -157,28 +204,18 @@ bool double_print_memory_to_dstring(double value, dstring *string)
    DRETURN(ret);
 }
 
-/****** sgeobj/double_print_int_to_dstring() ***********************************
-*  NAME
-*     double_print_int_to_dstring() -- Print a double into a dstring as an int
-*
-*  SYNOPSIS
-*     lListElem * 
-*     double_print_int_to_dstring(double value, dstring *string)
-*
-*  FUNCTION
-*    Print a double into a dstring as an int.
-*
-*  INPUTS
-*     double value      - the value to print
-*     dstring *string   - the dstring to receive the value
-*
-*  RESULT
-*     bool - returns false if value is out of range for an int
-*
-*  NOTES
-*     MT-NOTE: double_print_int_to_dstring() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Print a double into a dstring as an int
+ *
+ * Print a double into a dstring as an int.
+ *
+ * @param value the value to print
+ * @param string the dstring to receive the value
+ *
+ * @return returns false if value is out of range for an int
+ *
+ * @note MT-NOTE: double_print_int_to_dstring() is MT safe
+ */
 bool double_print_int_to_dstring(double value, dstring *string)
 {
    bool ret = true;
@@ -201,28 +238,18 @@ bool double_print_int_to_dstring(double value, dstring *string)
    DRETURN(ret);
 }
 
-/****** sgeobj/double_print_to_dstring() ***********************************
-*  NAME
-*     double_print_to_dstring() -- Print a double into a dstring
-*
-*  SYNOPSIS
-*     lListElem * 
-*     double_print_to_dstring(double value, dstring *string)
-*
-*  FUNCTION
-*    Print a double into a dstring.
-*
-*  INPUTS
-*     double value      - the value to print
-*     dstring *string   - the dstring to receive the value
-*
-*  RESULT
-*     bool - returns false if something goes wrong
-*
-*  NOTES
-*     MT-NOTE: double_print_to_dstring() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Print a double into a dstring
+ *
+ * Print a double into a dstring.
+ *
+ * @param value the value to print
+ * @param string the dstring to receive the value
+ *
+ * @return returns false if something goes wrong
+ *
+ * @note MT-NOTE: double_print_to_dstring() is MT safe
+ */
 bool double_print_to_dstring(double value, dstring *string)
 {
    bool ret = true;
@@ -236,6 +263,14 @@ bool double_print_to_dstring(double value, dstring *string)
    DRETURN(ret);
 }
 
+/**
+ * @brief Render a double the way its resource type is written
+ *
+ * @param value the value to render
+ * @param[out] string receives the text, appended
+ * @param type the resource type deciding the format
+ * @return true when something was written
+ */
 bool double_print_to_dstring(double value, dstring *string, ocs::CEntry::Type type) {
    switch (type) {
       case ocs::CEntry::Type::TIME:
@@ -493,6 +528,14 @@ ulong_parse_date_time_from_string(uint32_t *this_ulong,
    DRETURN(true);
 }
 
+/**
+ * @brief Parse a complex entry type name, e.g. `INT` or `MEMORY`
+ *
+ * @param[out] this_ulong receives the parsed value
+ * @param[out] answer_list receives the message naming the bad text
+ * @param string the text to parse
+ * @return true when the text was understood
+ */
 bool
 ulong_parse_centry_type_from_string(uint32_t *this_ulong,
                                     lList **answer_list, const char *string)
@@ -519,6 +562,14 @@ ulong_parse_centry_type_from_string(uint32_t *this_ulong,
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse a complex entry relational operator, e.g. `>=`
+ *
+ * @param[out] this_ulong receives the parsed value
+ * @param[out] answer_list receives the message naming the bad text
+ * @param string the text to parse
+ * @return true when the text was understood
+ */
 bool
 ulong_parse_centry_relop_from_string(uint32_t *this_ulong,
                                      lList **answer_list, const char *string)
@@ -542,6 +593,14 @@ ulong_parse_centry_relop_from_string(uint32_t *this_ulong,
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse a plain unsigned integer
+ *
+ * @param[out] this_ulong receives the parsed value
+ * @param[out] answer_list receives the message naming the bad text
+ * @param string the text to parse
+ * @return true when the text was understood
+ */
 bool
 ulong_parse_from_string(uint32_t *this_ulong,
                         lList **answer_list, const char *string) 
@@ -560,6 +619,15 @@ ulong_parse_from_string(uint32_t *this_ulong,
 }
 
 
+/**
+ * @brief Parse a delimited list of unsigned integers
+ *
+ * @param[out] this_list receives the parsed values
+ * @param[out] answer_list receives the message naming the bad text
+ * @param string the text to parse
+ * @param delimitor the characters separating two values
+ * @return true when the whole text was understood
+ */
 bool
 ulong_list_parse_from_string(lList **this_list, lList **answer_list,
                              const char *string, const char *delimitor)
@@ -588,7 +656,16 @@ ulong_list_parse_from_string(lList **this_list, lList **answer_list,
    DRETURN(ret);
 }
 
-/* EB: TODO: JSV: add ADOC */
+/**
+ * @brief Parse a POSIX job priority
+ *
+ * The accepted range is -1023 to 1024.
+ *
+ * @param[out] answer_list receives the message naming the bad value
+ * @param[out] valp receives the parsed value
+ * @param priority_str the text to parse
+ * @return true when the text was understood
+ */
 bool
 ulong_parse_priority(lList **answer_list, int *valp, const char *priority_str) 
 {
@@ -605,6 +682,16 @@ ulong_parse_priority(lList **answer_list, int *valp, const char *priority_str)
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse the number of cores a binding request asks for
+ *
+ * A negative value is rejected.
+ *
+ * @param[out] answer_list receives the message naming the bad value
+ * @param[out] valp receives the parsed value
+ * @param bamount_str the text to parse
+ * @return true when the text was understood
+ */
 bool
 ulong_parse_binding_amount(lList **answer_list, int *valp, const char *bamount_str)
 {
@@ -622,6 +709,16 @@ ulong_parse_binding_amount(lList **answer_list, int *valp, const char *bamount_s
 }
 
 /* DG: TODO: add ADOC */
+/**
+ * @brief Parse a value that may carry a unit or be `infinity`
+ *
+ * Accepts the memory and time forms as well as a plain number.
+ *
+ * @param[out] this_ulong receives the parsed value
+ * @param[out] answer_list receives the message naming the bad text
+ * @param string the text to parse
+ * @return true when the text was understood
+ */
 bool
 ulong_parse_value_from_string(uint32_t *this_ulong,
                            lList **answer_list, const char *string)
@@ -641,6 +738,16 @@ ulong_parse_value_from_string(uint32_t *this_ulong,
    DRETURN(ret);
 }
 
+/**
+ * @brief Parse the array task concurrency limit
+ *
+ * A negative value is rejected.
+ *
+ * @param[out] answer_list receives the message naming the bad value
+ * @param[out] valp receives the parsed value
+ * @param task_concurrency_str the text to parse
+ * @return true when the text was understood
+ */
 bool
 ulong_parse_task_concurrency(lList **answer_list, int *valp, const char *task_concurrency_str)
 {

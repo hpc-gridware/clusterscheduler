@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Handling qmaster's notification that the configuration changed
+ */
+
 #include <cstring>
 
 #include "uti/sge_log.h"
@@ -68,6 +72,10 @@
 **   executed on startup. This function is triggered by the execd
 **   dispatcher table when the tag TAG_GET_NEW_CONF is received.
 */
+/** @brief Handle the new configuration message from qmaster
+ * @param aMsg the received message
+ * @return 0 on success
+ */
 int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    DENTER(TOP_LAYER);
    int ret;

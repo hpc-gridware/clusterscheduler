@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Granted Resource
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -62,12 +66,12 @@
 */
 
 enum {
-   GRU_type = GRU_LOWERBOUND,
-   GRU_name,
-   GRU_amount,
-   GRU_resource_map_list,
-   GRU_binding_inuse,
-   GRU_host
+   GRU_type = GRU_LOWERBOUND,   ///< Type
+   GRU_name,   ///< Name
+   GRU_amount,   ///< Granted Amount
+   GRU_resource_map_list,   ///< Resource Map List
+   GRU_binding_inuse,   ///< Grant Binding In Use
+   GRU_host   ///< Host
 };
 
 LISTDEF(GRU_Type)
@@ -88,6 +92,7 @@ NAMEDEF(GRUN)
    NAME("GRU_host")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define GRU_SIZE sizeof(GRUN)/sizeof(char *)
 
 

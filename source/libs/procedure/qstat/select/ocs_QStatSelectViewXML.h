@@ -19,10 +19,18 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief XML rendering of `qselect`
+ */
+
 #include "ocs_QStatSelectViewBase.h"
 #include "../ocs_QStatParameter.h"
 
 namespace ocs {
+   /** @brief Renders the `qselect` answer as XML
+    *
+    * @ingroup libprocedure
+    */
    class QStatSelectViewXML : public QStatSelectViewBase {
    public:
       explicit QStatSelectViewXML(const QStatParameter &parameter);

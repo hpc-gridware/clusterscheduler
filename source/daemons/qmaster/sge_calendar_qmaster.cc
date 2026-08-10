@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Calendars, and the queue states they drive
+ */
 #include <cstdio>
 #include <cstring>
 #include <sys/time.h>
@@ -62,6 +66,10 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
+/** @brief Arm the timers for every calendar known at startup
+ *
+ * @param monitor for monitoring qmaster threads
+ */
 void
 calendar_initalize_timer(monitoring_t *monitor) {
    lListElem *cep;
@@ -88,6 +96,24 @@ calendar_initalize_timer(monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
+/** @brief Apply one attribute change to a calendar
+ *
+ * The gdi_object_t::modifier for calendars; see sge_c_gdi.h for the sequence it is called from.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param new_cal see the declaration
+ * @param cep see the declaration
+ * @param add 1 for add, 0 for modify
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param object the table entry for this object type
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_cal, lListElem *cep, int add,
              const char *ruser, const char *rhost, gdi_object_t *object,
@@ -141,6 +167,17 @@ calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
 DRETURN(STATUS_EUNKNOWN);
 }
 
+/** @brief Write a calendar to the spool
+ *
+ * The gdi_object_t::writer for calendars.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param cep see the declaration
+ * @param object the table entry for this object type
+ * @return 0 on success
+ */
 int
 calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *cep, gdi_object_t *object) {
    lList *answer_list = nullptr;
@@ -159,6 +196,16 @@ calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLi
    DRETURN(dbret ? 0 : 1);
 }
 
+/** @brief Delete a calendar, unless a queue still follows it
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cep the calendar
+ * @param alpp receives messages for the caller
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return STATUS_OK on success
+ */
 int
 sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lList **alpp, char *ruser, char *rhost) {
    const char *cal_name;
@@ -214,26 +261,16 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep,
    DRETURN(STATUS_OK);
 }
 
-/****** qmaster/sge_calendar_qmaster/sge_calendar_event_handler() **************
-*  NAME
-*     sge_calendar_event_handler() -- calendar event handler
-*
-*  SYNOPSIS
-*     void sge_calendar_event_handler(te_event_t anEvent) 
-*
-*  FUNCTION
-*     Handle calendar events. 
-*
-*  INPUTS
-*     te_event_t anEvent - calendar event
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: sge_calendar_event_handler() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Calendar event handler
+ *
+ * Handle calendar events.
+ *
+ * @param anEvent calendar event
+ * @param monitor for monitoring qmaster threads
+ *
+ * @note MT-NOTE: sge_calendar_event_handler() is MT safe
+ */
 void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    lListElem *cep;
    const char *cal_name = te_get_alphanumeric_key(anEvent);
@@ -263,6 +300,21 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    DRETURN_VOID;
 } /* sge_calendar_event_handler() */
 
+/** @brief Put the queues following a calendar into the state it now prescribes
+ *
+ * Runs both when the calendar is changed and when a calendar event fires, so a
+ * queue reaches the right state whether the change came from an administrator
+ * or from the clock.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cep the calendar
+ * @param old_cep the calendar as it was, or nullptr when a timer triggered this
+ * @param object the table entry for calendars, or nullptr when a timer triggered this
+ * @param ppList receives information for post processing
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lListElem *old_cep, gdi_object_t *object,
                                  lList **ppList, monitoring_t *monitor) {
    const char *cal_name = lGetString(cep, CAL_name);

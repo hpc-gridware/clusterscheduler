@@ -24,16 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Host Configuration
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of CONF
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   CONF_name = 2450,
-   CONF_version,
-   CONF_entries
+   CONF_name = 2450,   ///< Host Name
+   CONF_version,   ///< Configuration Version
+   CONF_entries   ///< Configuration Entries
 };
 
+/** @brief The attribute ids of CONF, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int CONF_Type[] = {
    CONF_name,
    CONF_version,
@@ -41,6 +55,10 @@ constexpr const int CONF_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of CONF
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define CONF_ATTRIBUTES \
    {CONF_name, "CONF_name", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {CONF_version, "CONF_version", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

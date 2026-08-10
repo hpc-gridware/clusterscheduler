@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Default ASan/LSan options, linked into the clients when built with a sanitizer
+ */
+
 /*
  * LSan-runtime hook.
  *
@@ -43,6 +47,9 @@
  * alone is not sufficient on GCC.
  */
 #ifndef __has_feature
+/** @brief Stand-in for the clang feature test on compilers that lack it
+ * @param x the feature being asked about; the answer is always "no"
+ */
 #  define __has_feature(x) 0
 #endif
 

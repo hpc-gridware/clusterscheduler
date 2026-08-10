@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Client side model of `qstat`: fetches the lists over GDI
+ */
+
 #include <sstream>
 
 #include "uti/sge_rmon_macros.h"

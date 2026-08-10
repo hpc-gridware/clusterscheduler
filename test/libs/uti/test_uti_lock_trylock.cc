@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for lock trylock in `libs/uti`
+ */
+
 #include <random>
 
 #include <unistd.h>
@@ -31,8 +35,8 @@
 
 //#define THREAD_COUNT 64
 //#define THREAD_RUN_TIME 120
-#define THREAD_COUNT 8
-#define THREAD_RUN_TIME 60
+#define THREAD_COUNT 8      ///< how many threads contend for the lock
+#define THREAD_RUN_TIME 60   ///< how long they keep at it, in seconds
 
 static int thread_count;
 #if 0
@@ -50,6 +54,9 @@ int get_thread_demand() {
    return THREAD_COUNT;
 }
 
+/** @brief The function this test's threads run
+ * @return a pointer to the thread function
+ */
 void *(*get_thread_func())(void *anArg) {
    return thread_function;
 }
@@ -58,21 +65,31 @@ void *get_thread_func_arg() {
    return nullptr;
 }
 
-pthread_mutex_t mutex_lock = PTHREAD_MUTEX_INITIALIZER;
-long lock_counter = 0;
+pthread_mutex_t mutex_lock = PTHREAD_MUTEX_INITIALIZER;   ///< the lock the threads fight over
+long lock_counter = 0;   ///< how many times the lock was taken, across all threads
 
+/** @brief Incr counter
+ */
 void incr_counter() {
    pthread_mutex_lock(&mutex_lock);
    lock_counter++;
    pthread_mutex_unlock(&mutex_lock);
 }
 
+/** @brief Decr counter
+ */
 void decr_counter() {
    pthread_mutex_lock(&mutex_lock);
    lock_counter--;
    pthread_mutex_unlock(&mutex_lock);
 }
 
+/** @brief Getrandomnumber
+ *
+ * @param min smallest value to return
+ * @param max largest value to return
+ * @return a value between @p min and @p max
+ */
 int getRandomNumber(const int min = 20, const int max = 1000) {
     std::random_device rd; // Seed for the random number engine
     std::mt19937 gen(rd()); // Mersenne Twister engine
@@ -153,6 +170,13 @@ static void *thread_function(void *anArg) {
    DRETURN(nullptr);
 }
 
+/** @brief Is in tolerance
+ *
+ * @param value1 see the description above
+ * @param value2 see the description above
+ * @param accepted_tolerance see the description above
+ * @return non-zero or true when the case passed
+ */
 int is_in_tolerance(uint32_t value1, uint32_t value2, u_int accepted_tolerance) {
    return 0;
 }

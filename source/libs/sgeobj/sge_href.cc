@@ -32,6 +32,14 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Host reference lists: names that are either a host or a host group
+ *
+ * Many configuration objects accept both. A host reference (`HR_Type`) stores
+ * the name without deciding which it is; resolving a list splits it into the
+ * hosts it names directly and the hosts reached through its groups.
+ */
+
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_hostname.h"
@@ -50,34 +58,24 @@
 #include <cinttypes>
 #include "msg_common.h"
 
+/// Debug layer the host reference traces are written to
 #define HOSTREF_LAYER BASIS_LAYER
 
-/****** sgeobj/href/href_list_add() *******************************************
-*  NAME
-*     href_list_add() -- Add host or hostgroup reference.
-*
-*  SYNOPSIS
-*     bool 
-*     href_list_add(lList **this_list, lList **answer_list, 
-*                   const char *host_or_group) 
-*
-*  FUNCTION
-*     Add a host or hostgroup given by 'host_or_group' into the list 
-*     'this_list'. If the function is successful then the function
-*     returns 'true' otherwise it will add an entry into 'answer_list'
-*     and return with 'false'. If 'this_list' does not exist than it
-*     will be created.
-*
-*  INPUTS
-*     lList **this_list         - HR_Type list 
-*     lList **answer_list       - AN_Type list 
-*     const char *host_or_group - host or group name  
-*
-*  RESULT
-*     bool - error state
-*        true - Success
-*        false - Error
-*******************************************************************************/
+/**
+ * @brief Add host or hostgroup reference
+ *
+ * Add a host or hostgroup given by 'host_or_group' into the list
+ * 'this_list'. If the function is successful then the function
+ * returns 'true' otherwise it will add an entry into 'answer_list'
+ * and return with 'false'. If 'this_list' does not exist than it
+ * will be created.
+ *
+ * @param this_list HR_Type list
+ * @param answer_list AN_Type list
+ * @param host_or_group host or group name
+ *
+ * @return error state true - Success false - Error
+ */
 bool 
 href_list_add(lList **this_list, lList **answer_list, const char *host_or_group)
 {
@@ -103,28 +101,17 @@ href_list_add(lList **this_list, lList **answer_list, const char *host_or_group)
    DRETURN(ret);
 }
 
-/****** sgeobj/href/href_list_has_member() ************************************
-*  NAME
-*     href_list_has_member() -- Is reference already in list 
-*
-*  SYNOPSIS
-*     bool 
-*     href_list_has_member(const lList *this_list, 
-*                          const char *host_or_group) 
-*
-*  FUNCTION
-*     Is the given host or hostgroup ('host_or_group') already
-*     contained in the reference list?
-*
-*  INPUTS
-*     const lList *this_list    - HR_Type list 
-*     const char *host_or_group - hostname or hgroup 
-*
-*  RESULT
-*     bool - error state
-*        true  - Success
-*        false - Error
-*******************************************************************************/
+/**
+ * @brief Is reference already in list
+ *
+ * Is the given host or hostgroup ('host_or_group') already
+ * contained in the reference list?
+ *
+ * @param this_list HR_Type list
+ * @param host_or_group hostname or hgroup
+ *
+ * @return error state true  - Success false - Error
+ */
 bool 
 href_list_has_member(const lList *this_list, const char *host_or_group)
 {
@@ -145,49 +132,35 @@ href_list_has_member(const lList *this_list, const char *host_or_group)
    DRETURN(ret);
 }
 
-/****** sgeobj/href/href_list_compare() ***************************************
-*  NAME
-*     href_list_compare() -- Finds additional entries in list 
-*
-*  SYNOPSIS
-*     bool 
-*     href_list_compare(const lList *this_list, lList **answer_list, 
-*                       const lList *list, lList **add_hosts, 
-*                       lList **add_groups, lList **equity_hosts,
-*                       lList **equity_groups) 
-*
-*  FUNCTION
-*     This function will find differences between two hostref lists
-*     given by 'this_list' and 'list'. Hosts and hostgroups which are
-*     only in 'this_list' can be found in 'add_hosts' and 'add_groups'.
-*     References which are contained in both lists can be found in 
-*     'equity_hosts' and 'equity_groups' after a call to this function.
-*
-*     If the calling function is not interested in one ore more of the
-*     result lists than nullptr should be used as parameter. The calling
-*     function is responsible to free all result lists. 
-*
-*     If the callee is also interested in the references which are
-*     only part of 'list' than this function can not be used.
-*     href_list_find_diff() should be used in this case. 
-*
-*  INPUTS
-*     const lList *this_list - HR_Type list to comapre
-*     lList **answer_list    - AN_Type list 
-*     const lList *list      - 2nd HR_Type list to be compared
-*     lList **add_hosts      - HR_Type list 
-*     lList **add_groups     - HR_Type list 
-*     lList **equity_hosts   - HR_Type list
-*     lList **equity_groups  - HR_Type list
-*
-*  RESULT
-*     bool - error state
-*        true  - Success
-*        false - Error
-*
-*  SEE ALSO
-*     sgeobj/href/href_list_find_diff()
-*******************************************************************************/
+/**
+ * @brief Finds additional entries in list
+ *
+ * This function will find differences between two hostref lists
+ * given by 'this_list' and 'list'. Hosts and hostgroups which are
+ * only in 'this_list' can be found in 'add_hosts' and 'add_groups'.
+ * References which are contained in both lists can be found in
+ * 'equity_hosts' and 'equity_groups' after a call to this function.
+ *
+ * If the calling function is not interested in one ore more of the
+ * result lists than nullptr should be used as parameter. The calling
+ * function is responsible to free all result lists.
+ *
+ * If the callee is also interested in the references which are
+ * only part of 'list' than this function can not be used.
+ * href_list_find_diff() should be used in this case.
+ *
+ * @param this_list HR_Type list to comapre
+ * @param answer_list AN_Type list
+ * @param list 2nd HR_Type list to be compared
+ * @param add_hosts HR_Type list
+ * @param add_groups HR_Type list
+ * @param equity_hosts HR_Type list
+ * @param equity_groups HR_Type list
+ *
+ * @return error state true  - Success false - Error
+ *
+ * @see #href_list_find_diff
+ */
 bool 
 href_list_compare(const lList *this_list, lList **answer_list,
                   const lList *list, lList **add_hosts,
@@ -224,45 +197,31 @@ href_list_compare(const lList *this_list, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/href/href_list_find_diff() *************************************
-*  NAME
-*     href_list_find_diff() -- difference between two lists 
-*
-*  SYNOPSIS
-*     bool 
-*     href_list_find_diff(const lList *this_list, lList **answer_list, 
-*                         const lList *list, lList **add_hosts, 
-*                         lList **rem_hosts, lList **add_groups, 
-*                         lList **rem_groups) 
-*
-*  FUNCTION
-*     Will identify differences between 'this_list' and 'list'.
-*     hosts which are only in 'this_list' will be copied into 'add_hosts'
-*     hosts which are only in 'list' will be copied into 'rem_hosts'
-*     groups which are only in 'this_list' will be copied to 'add_groups'
-*     groups which are only in 'this' will be copied to 'rem_groups'
-*
-*     The calling context is responsible to free all result lists.
-*     If the callee is not interested in one or more of the resultlist
-*     than nullptr should be used as parameter for this function.
-*
-*  INPUTS
-*     const lList *this_list - HR_Type list to be compared
-*     lList **answer_list    - AN_Type list 
-*     const lList *list      - 2nd HR_Type list to be compared
-*     lList **add_hosts      - HR_Type list 
-*     lList **rem_hosts      - HR_Type list 
-*     lList **add_groups     - HR_Type list 
-*     lList **rem_groups     - HR_Type list 
-*
-*  RESULT
-*     bool - error state
-*        true  - Success
-*        false - Error
-*
-*  SEE ALSO
-*     sgeobj/href/href_list_find_diff()
-*******************************************************************************/
+/**
+ * @brief Difference between two lists
+ *
+ * Will identify differences between 'this_list' and 'list'.
+ * hosts which are only in 'this_list' will be copied into 'add_hosts'
+ * hosts which are only in 'list' will be copied into 'rem_hosts'
+ * groups which are only in 'this_list' will be copied to 'add_groups'
+ * groups which are only in 'this' will be copied to 'rem_groups'
+ *
+ * The calling context is responsible to free all result lists.
+ * If the callee is not interested in one or more of the resultlist
+ * than nullptr should be used as parameter for this function.
+ *
+ * @param this_list HR_Type list to be compared
+ * @param answer_list AN_Type list
+ * @param list 2nd HR_Type list to be compared
+ * @param add_hosts HR_Type list
+ * @param rem_hosts HR_Type list
+ * @param add_groups HR_Type list
+ * @param rem_groups HR_Type list
+ *
+ * @return error state true  - Success false - Error
+ *
+ * @see #href_list_find_diff
+ */
 bool 
 href_list_find_diff(const lList *this_list, lList **answer_list,
                     const lList *list, lList **add_hosts,
@@ -278,37 +237,22 @@ href_list_find_diff(const lList *this_list, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/href/href_list_find_effective_diff() ***************************
-*  NAME
-*     href_list_find_effective_diff() -- Resolves groups and creates diff
-*
-*  SYNOPSIS
-*     bool href_list_find_effective_diff(lList **answer_list, 
-*                                        const lList *add_groups, 
-*                                        const lList *rem_groups, 
-*                                        const lList *master_list, 
-*                                        lList **add_hosts, lList **rem_hosts) 
-*
-*  FUNCTION
-*     Resolves host names of all groups contained in "add_groups"
-*     and "rem_groups". Hostnames not part of both resulting hostgroup
-*     sets will be stored in "add_hosts" and "rem_hosts".
-*
-*  INPUTS
-*     lList **answer_list      - AN_Type list 
-*     const lList *add_groups  - HR_Type list1 (hgroups)
-*     const lList *rem_groups  - HR_Type list2 (hgroups)
-*     const lList *master_list - HGRP_Type list of all hgroups
-*     lList **add_hosts        - resolved "add_groups" hosts not part
-*                                of "rem_groups" 
-*     lList **rem_hosts        - resolved "rem_groups" hosts not part
-*                                of "add_hosts"
-*
-*  RESULT
-*     bool - error state
-*        true  - Success
-*        false - Error
-******************************************************************************/
+/**
+ * @brief Resolves groups and creates diff
+ *
+ * Resolves host names of all groups contained in "add_groups"
+ * and "rem_groups". Hostnames not part of both resulting hostgroup
+ * sets will be stored in "add_hosts" and "rem_hosts".
+ *
+ * @param answer_list AN_Type list
+ * @param add_groups HR_Type list1 (hgroups)
+ * @param rem_groups HR_Type list2 (hgroups)
+ * @param master_list HGRP_Type list of all hgroups
+ * @param add_hosts resolved "add_groups" hosts not part of "rem_groups"
+ * @param rem_hosts resolved "rem_groups" hosts not part of "add_hosts"
+ *
+ * @return error state true  - Success false - Error
+ */
 bool
 href_list_find_effective_diff(lList **answer_list, const lList *add_groups, 
                               const lList *rem_groups, const lList *master_list,
@@ -345,24 +289,16 @@ href_list_find_effective_diff(lList **answer_list, const lList *add_groups,
    DRETURN(ret);
 }
 
-/****** sgeobj/href/href_list_locate() ****************************************
-*  NAME
-*     href_list_locate() -- Find an entry in the reference list 
-*
-*  SYNOPSIS
-*     lListElem* 
-*     href_list_locate(const lList *this_list, const char *name) 
-*
-*  FUNCTION
-*     Find an entry in the reference list. 
-*
-*  INPUTS
-*     const lList *this_list - HR_Type 
-*     const char *name       - host or groupname 
-*
-*  RESULT
-*     lListElem* - Pointer to host or hostgroup element or nullptr
-*******************************************************************************/
+/**
+ * @brief Find an entry in the reference list
+ *
+ * Find an entry in the reference list.
+ *
+ * @param this_list HR_Type
+ * @param name host or groupname
+ *
+ * @return Pointer to host or hostgroup element or nullptr
+ */
 lListElem *
 href_list_locate(const lList *this_list, const char *name) 
 {
@@ -375,37 +311,23 @@ href_list_locate(const lList *this_list, const char *name)
    DRETURN(ret);
 }
 
-/****** sgeobj/href/href_list_find_references() *******************************
-*  NAME
-*     href_list_find_references() -- Find referenced hosts and groups 
-*
-*  SYNOPSIS
-*     bool 
-*     href_list_find_references(const lList *this_list, 
-*                               lList **answer_list, 
-*                               const lList *master_list, 
-*                               lList **referenced_hosts, 
-*                               lList **referenced_groups) 
-*
-*  FUNCTION
-*     Finds hosts and hostgroups, which are directy referenced
-*     in the hostgroups mentioned in 'this_list'. 'master_list' is
-*     the list of all existing hostgroups. Directly referenced hosts
-*     and hostgroups will be added to 'used_hosts' and 'used_groups'.
-*     In case of any errors 'answer_list' will be filled.
-*
-*  INPUTS
-*     const lList *this_list   - HR_Type 
-*     lList **answer_list      - AN_Type 
-*     const lList *master_list - HGRP_Type
-*     lList **used_hosts       - HR_Type 
-*     lList **used_groups      - HR_Type 
-*
-*  RESULT
-*     bool - error state
-*        true  - Success
-*        false - Error
-*******************************************************************************/
+/**
+ * @brief Find referenced hosts and groups
+ *
+ * Finds hosts and hostgroups, which are directy referenced
+ * in the hostgroups mentioned in 'this_list'. 'master_list' is
+ * the list of all existing hostgroups. Directly referenced hosts
+ * and hostgroups will be added to 'used_hosts' and 'used_groups'.
+ * In case of any errors 'answer_list' will be filled.
+ *
+ * @param this_list HR_Type
+ * @param answer_list AN_Type
+ * @param master_list HGRP_Type
+ * @param used_hosts HR_Type
+ * @param used_groups HR_Type
+ *
+ * @return error state true  - Success false - Error
+ */
 bool 
 href_list_find_references(const lList *this_list, lList **answer_list,
                           const lList *master_list, lList **used_hosts,
@@ -461,63 +383,48 @@ href_list_find_references(const lList *this_list, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/href/href_list_find_all_references() ***************************
-*  NAME
-*     href_list_find_all_references() -- Find referenced hosts and hgroups 
-*
-*  SYNOPSIS
-*     bool 
-*     href_list_find_all_references(const lList *this_list, 
-*                                   lList **answer_list, 
-*                                   const lList *master_list, 
-*                                   lList **used_hosts, 
-*                                   lList **used_groups) 
-*
-*  FUNCTION
-*     Finds all hosts and hostgroups which are directly and indirectly
-*     referenced by the hostgroups mentioned in 'this_list'. 
-*     'master_list' is the list of all existing hostgroups. Referenced 
-*     hosts and hostgroups will be added to 'used_hosts' and 'used_groups'.
-*     In case of any errors 'answer_list' will be filled.
-*
-*  INPUTS
-*     const lList *this_list   - RN_Type 
-*     lList **answer_list      - AN_Type 
-*     const lList *master_list - HGRP_Type 
-*     lList **used_hosts       - RN_Type 
-*     lList **used_groups      - RN_Type 
-*
-*  RESULT
-*     bool - error state
-*        true  - Success
-*        false - Error
-*
-*  NOTES
-*     This function walks the host group tree. It deliberately does NOT consult
-*     the resolved-host cache (HGRP_cached_hosts / HGRP_cache_version, CS-2451),
-*     even though every group carries one.
-*
-*     If that is ever changed, the two calls in hgroup_mod()'s swap block
-*     (sge_hgroup_qmaster.cc, around the lDechainElem()/lAppendElem() pair) MUST
-*     keep walking the tree. Inside that window the temporarily inserted element
-*     has no valid cache while the referencing groups still carry the old state,
-*     so a cached answer would return the PRE-modification host set as the
-*     "after" set. The cluster queue would then compute empty add/remove deltas
-*     and silently keep the wrong queue instances -- a data error, not a crash,
-*     and one no existing check would notice.
-*
-*     Add a "bool use_cache = true" parameter and pass false at those two call
-*     sites, in the same commit that starts using the cache here. Do NOT instead
-*     invalidate the caches at the start of hgroup_mod(): on rollback they would
-*     stay invalid with nothing left to rebuild them.
-*
-*     Measured 2026-08-07 (sperf_hgroup_resolution, medians above the no-RQS
-*     floor): the cache already collapsed the membership test in the hot path
-*     (qref_hgroup_rejected()), leaving 0.05-0.35 s that this function could
-*     still address, while the largest remaining item -- pattern scope at 0.54 s
-*     -- is out of its reach, because the reference side must keep matching group
-*     names as expressions (CS-2450). That is why this was left as a tree walk.
-*******************************************************************************/
+/**
+ * @brief Find referenced hosts and hgroups
+ *
+ * Finds all hosts and hostgroups which are directly and indirectly
+ * referenced by the hostgroups mentioned in 'this_list'.
+ * 'master_list' is the list of all existing hostgroups. Referenced
+ * hosts and hostgroups will be added to 'used_hosts' and 'used_groups'.
+ * In case of any errors 'answer_list' will be filled.
+ *
+ * @param this_list RN_Type
+ * @param answer_list AN_Type
+ * @param master_list HGRP_Type
+ * @param used_hosts RN_Type
+ * @param used_groups RN_Type
+ *
+ * @return error state true  - Success false - Error
+ *
+ * @note This function walks the host group tree. It deliberately does NOT consult
+ *       the resolved-host cache (HGRP_cached_hosts / HGRP_cache_version, CS-2451),
+ *       even though every group carries one.
+ *
+ *       If that is ever changed, the two calls in hgroup_mod()'s swap block
+ *       (sge_hgroup_qmaster.cc, around the lDechainElem()/lAppendElem() pair) MUST
+ *       keep walking the tree. Inside that window the temporarily inserted element
+ *       has no valid cache while the referencing groups still carry the old state,
+ *       so a cached answer would return the PRE-modification host set as the
+ *       "after" set. The cluster queue would then compute empty add/remove deltas
+ *       and silently keep the wrong queue instances -- a data error, not a crash,
+ *       and one no existing check would notice.
+ *
+ *       Add a "bool use_cache = true" parameter and pass false at those two call
+ *       sites, in the same commit that starts using the cache here. Do NOT instead
+ *       invalidate the caches at the start of hgroup_mod(): on rollback they would
+ *       stay invalid with nothing left to rebuild them.
+ *
+ *       Measured 2026-08-07 (sperf_hgroup_resolution, medians above the no-RQS
+ *       floor): the cache already collapsed the membership test in the hot path
+ *       (qref_hgroup_rejected()), leaving 0.05-0.35 s that this function could
+ *       still address, while the largest remaining item -- pattern scope at 0.54 s
+ *       -- is out of its reach, because the reference side must keep matching group
+ *       names as expressions (CS-2450). That is why this was left as a tree walk.
+ */
 bool
 href_list_find_all_references(const lList *this_list, lList **answer_list,
                               const lList *master_list, lList **used_hosts,
@@ -581,35 +488,22 @@ href_list_find_all_references(const lList *this_list, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/href/href_list_find_referencees() ******************************
-*  NAME
-*     href_list_find_referencees() --  Find occupying hosts and hgroups
-*
-*  SYNOPSIS
-*     bool 
-*     href_list_find_referencees(const lList *this_list, 
-*                                lList **answer_list, 
-*                                const lList *master_list, 
-*                                lList **occupant_groups) 
-*
-*  FUNCTION
-*     Finds hostgroup references which directly occupy at least one of the
-*     hostgroups mentioned in 'this_list'. 'master_list' is the list of 
-*     all existing hostgroups. Directly occupying hostgroups will be 
-*     added to 'occupant_groups'. In case of any errors 'answer_list' 
-*     will be filled.
-*
-*  INPUTS
-*     const lList *this_list   - HR_Type 
-*     lList **answer_list      - AN_Type 
-*     const lList *master_list - HGRP_Type 
-*     lList **occupant_groups  - HR_Type 
-*
-*  RESULT
-*     bool - error state
-*        true  - Success
-*        false - Error
-*******************************************************************************/
+/**
+ * @brief Find occupying hosts and hgroups
+ *
+ * Finds hostgroup references which directly occupy at least one of the
+ * hostgroups mentioned in 'this_list'. 'master_list' is the list of
+ * all existing hostgroups. Directly occupying hostgroups will be
+ * added to 'occupant_groups'. In case of any errors 'answer_list'
+ * will be filled.
+ *
+ * @param this_list HR_Type
+ * @param answer_list AN_Type
+ * @param master_list HGRP_Type
+ * @param occupant_groups HR_Type
+ *
+ * @return error state true  - Success false - Error
+ */
 bool 
 href_list_find_referencees(const lList *this_list, lList **answer_list,
                            const lList *master_list, lList **occupant_groups)
@@ -646,35 +540,22 @@ href_list_find_referencees(const lList *this_list, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/href/href_list_find_all_referencees() **************************
-*  NAME
-*     href_list_find_all_referencees() -- Find occupying hosts and groups 
-*
-*  SYNOPSIS
-*     bool 
-*     href_list_find_all_referencees(const lList *this_list, 
-*                                    lList **answer_list, 
-*                                    const lList *master_list, 
-*                                    lList **occupant_groups) 
-*
-*  FUNCTION
-*     Finds recursivly all hostgroups which occupy the hostgroups mentioned in 
-*     'this_list'. 'master_list' is the list of all
-*     existing hostgroups. Occupying hostgroups will be
-*     added to 'occupant_groups'. In case of any errors 'answer_list'
-*     will be filled.
-*
-*  INPUTS
-*     const lList *this_list   - RH_Type 
-*     lList **answer_list      - AN_Type
-*     const lList *master_list - HGRP_Type 
-*     lList **occupant_groups  - RH_Type 
-*
-*  RESULT
-*     bool - error state
-*        true  - Success
-*        false - Error
-*******************************************************************************/
+/**
+ * @brief Find occupying hosts and groups
+ *
+ * Finds recursivly all hostgroups which occupy the hostgroups mentioned in
+ * 'this_list'. 'master_list' is the list of all
+ * existing hostgroups. Occupying hostgroups will be
+ * added to 'occupant_groups'. In case of any errors 'answer_list'
+ * will be filled.
+ *
+ * @param this_list RH_Type
+ * @param answer_list AN_Type
+ * @param master_list HGRP_Type
+ * @param occupant_groups RH_Type
+ *
+ * @return error state true  - Success false - Error
+ */
 bool 
 href_list_find_all_referencees(const lList *this_list, lList **answer_list,
                                const lList *master_list, 
@@ -716,30 +597,19 @@ href_list_find_all_referencees(const lList *this_list, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/href/href_list_resolve_hostnames() *****************************
-*  NAME
-*     href_list_resolve_hostnames() -- resolve hostnames 
-*
-*  SYNOPSIS
-*     bool 
-*     href_list_resolve_hostnames(lList *this_list, 
-*                                 lList **answer_list, bool ignore_errors
-*
-*  FUNCTION
-*     Resolve hostnames contained in 'this_list'. Depending on the
-*     'ignore_errors' parameter the function will either fail if a
-*     host is not resolvable or this will be ignored.
-*
-*  INPUTS
-*     lList *this_list    - HR_Type list 
-*     lList **answer_list - AN_Type list 
-*     bool ignore_errors  - ignore if a host is not resolvable
-*
-*  RESULT
-*     bool - error state
-*        true  - Success
-*        false - Error
-*******************************************************************************/
+/**
+ * @brief Resolve hostnames
+ *
+ * Resolve hostnames contained in 'this_list'. Depending on the
+ * 'ignore_errors' parameter the function will either fail if a
+ * host is not resolvable or this will be ignored.
+ *
+ * @param this_list HR_Type list
+ * @param answer_list AN_Type list
+ * @param ignore_errors ignore if a host is not resolvable
+ *
+ * @return error state true  - Success false - Error
+ */
 bool 
 href_list_resolve_hostnames(lList *this_list, lList **answer_list,
                             bool ignore_errors) 
@@ -771,27 +641,16 @@ href_list_resolve_hostnames(lList *this_list, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/href/href_list_append_to_dstring() *****************************
-*  NAME
-*     href_list_append_to_dstring() -- Print href-list to dstring 
-*
-*  SYNOPSIS
-*     bool 
-*     href_list_append_to_dstring(const lList *this_list, 
-*                                 dstring *string) 
-*
-*  FUNCTION
-*     Print href-list to dstring 
-*
-*  INPUTS
-*     const lList *this_list - HR_Type  
-*     dstring *string        - dynamic string 
-*
-*  RESULT
-*     bool - Error state
-*        true  - Success
-*        false - Error
-*******************************************************************************/
+/**
+ * @brief Print href-list to dstring
+ *
+ * Print href-list to dstring
+ *
+ * @param this_list HR_Type
+ * @param string dynamic string
+ *
+ * @return Error state true  - Success false - Error
+ */
 bool 
 href_list_append_to_dstring(const lList *this_list, dstring *string)
 {
@@ -818,29 +677,18 @@ href_list_append_to_dstring(const lList *this_list, dstring *string)
    DRETURN(ret);
 }
 
-/****** sgeobj/href/href_list_remove_existing() *******************************
-*  NAME
-*     href_list_remove_existing() -- Removes entries from list 
-*
-*  SYNOPSIS
-*     bool href_list_remove_existing(lList **this_list, 
-*                                    lList **answer_list, 
-*                                    lList *list) 
-*
-*  FUNCTION
-*     Removes all entries contained in "list" will be removed from 
-*     "this_list" if they exist.
-*
-*  INPUTS
-*     lList **this_list   - HR_Type list 
-*     lList **answer_list - AN_Type list 
-*     lList *list         - HR_Type list 
-*
-*  RESULT
-*     bool - Error state
-*        true  - Success
-*        false - Error
-******************************************************************************/
+/**
+ * @brief Removes entries from list
+ *
+ * Removes all entries contained in "list" will be removed from
+ * "this_list" if they exist.
+ *
+ * @param this_list HR_Type list
+ * @param answer_list AN_Type list
+ * @param list HR_Type list
+ *
+ * @return Error state true  - Success false - Error
+ */
 bool
 href_list_remove_existing(lList **this_list, lList **answer_list,
                           lList *list)
@@ -866,24 +714,15 @@ href_list_remove_existing(lList **this_list, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/href/href_list_debug_print() ***********************************
-*  NAME
-*     href_list_debug_print() -- Prints HR_Type list into TOP_LAYER 
-*
-*  SYNOPSIS
-*     void href_list_debug_print(const lList *this_list, const char *prefix) 
-*
-*  FUNCTION
-*     Prints prefix and HR_Type "this_list" into TOP_LAYER of debug 
-*     output if this_list exists. 
-*
-*  INPUTS
-*     const lList *this_list - HR_Type list 
-*     const char *prefix     - prefix string 
-*
-*  RESULT
-*     void -  None
-******************************************************************************/
+/**
+ * @brief Prints HR_Type list into TOP_LAYER
+ *
+ * Prints prefix and HR_Type "this_list" into TOP_LAYER of debug
+ * output if this_list exists.
+ *
+ * @param this_list HR_Type list
+ * @param prefix prefix string
+ */
 void
 href_list_debug_print(const lList *this_list, const char *prefix) 
 {
@@ -911,23 +750,14 @@ href_list_debug_print(const lList *this_list, const char *prefix)
    DRETURN_VOID;
 }
 
-/****** sgeobj/href/href_list_make_uniq() *************************************
-*  NAME
-*     href_list_make_uniq() -- remove duplicates 
-*
-*  SYNOPSIS
-*     void href_list_make_uniq(lList *this_list, lList **answer_list) 
-*
-*  FUNCTION
-*     Remove duplicates from "this_list" 
-*
-*  INPUTS
-*     lList *this_list    - HR_Type list 
-*     lList **answer_list - AN_Type list 
-*
-*  RESULT
-*     void - none 
-*******************************************************************************/
+/**
+ * @brief Remove duplicates
+ *
+ * Remove duplicates from "this_list"
+ *
+ * @param this_list HR_Type list
+ * @param answer_list AN_Type list
+ */
 void
 href_list_make_uniq(lList *this_list, lList **answer_list)
 {

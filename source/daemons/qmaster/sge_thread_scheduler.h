@@ -33,8 +33,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Starting and stopping the scheduler thread while qmaster runs
+ */
+
 #include <pthread.h>
 
+/** @brief Whether the scheduler thread is running, and how to restart it
+ *
+ * The scheduler can be stopped and started while qmaster runs, so its state
+ * lives here rather than being implied by the thread's existence.
+ */
 struct master_scheduler_class_t {
    pthread_mutex_t mutex;  ///< mutex to gard all members of this structure
    bool is_running;        ///< is the scheduler thread running

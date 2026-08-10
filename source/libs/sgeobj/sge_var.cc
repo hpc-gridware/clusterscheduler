@@ -34,10 +34,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-/** @file libs/sgeobj/sge_var.c
- * @brief Functions handline variable lists
- * This file contains functions handling variable lists (VA_Type).
- * Blah blah blah.
+/** @file
+ * @brief Variable lists: name/value pairs such as the job environment
+ *
+ * Several places need to store variables and their values - the job
+ * environment, the job context and so on - in the form
+ *
+ *     variable[=value][,variable[=value],...]
+ *
+ * The `VA_Type` CULL element holds one such pair; the functions here work on
+ * lists of them.
  */
 
 #include <cstdio>
@@ -56,61 +62,25 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-/****** sgeobj/var/-VariableList **********************************************
-*  NAME
-*     VariableList - Object to store variable name/value pairs
-*
-*  FUNCTION
-*     In several places within SGE/EE it is necessary to store
-*     variables and their values (e.g. job environment variable,
-*     job context, ...) of following form: 
-*  
-*        variable[=value][,variable[=value],...]
-*
-*     The VA_Type CULL element is used to hold such data.
-*     Funktions in the SEE ALSO section might be used to
-*     work with VA_Type lists and elements.
-*
-*  SEE ALSO
-*     sgeobj/var/--VA_Type
-*     clients/var/var_list_parse_from_string()
-*     sgeobj/var/var_list_dump_to_file()
-*     sgeobj/var/var_list_copy_complex_vars_and_value()
-*     sgeobj/var/var_list_copy_prefix_vars()
-*     sgeobj/var/var_list_get_string()
-*     sgeobj/var/var_list_set_string()
-*     sgeobj/var/var_list_set_int()
-*     sgeobj/var/var_list_set_uint32t()
-*     sgeobj/var/var_list_set_sharedlib_path()
-*     sgeobj/var/var_list_remove_prefix_vars()
-******************************************************************************/
-
-/****** sgeobj/var/var_get_sharedlib_path_name() ******************************
-*  NAME
-*     var_get_sharedlib_path_name -- name of sharedlib path variable
-*
-*  SYNOPSIS
-*     static const char *var_get_sharedlib_path_name();
-*
-*  FUNCTION
-*     Returns the operating dependent name of the shared library path
-*     (e.g. LIBPATH, SHLIB_PATH, LD_LIBRARY_PATH).
-*     If the name of the sharedlib path is not known for an operating
-*     system (the port has not yet been done), a compile time error
-*     is raised.
-*
-*  RESULT
-*     Name of the shared lib path variable
-*
-*  NOTES
-*     Raising a compile time error (instead of e.g. just returning nullptr
-*     or LD_LIBRARY_PATH as default) has the following reason:
-*     Setting the shared lib path is a very sensible operation 
-*     concerning security.
-*     Example: If a shared linked rshd (called for qrsh execution) is
-*     executed with a faked shared lib path, operations defined in
-*     a non sge library libgdi.so might be executed as user root.
-******************************************************************************/
+/**
+ * @brief Name of sharedlib path variable
+ *
+ * Returns the operating dependent name of the shared library path
+ * (e.g. LIBPATH, SHLIB_PATH, LD_LIBRARY_PATH).
+ * If the name of the sharedlib path is not known for an operating
+ * system (the port has not yet been done), a compile time error
+ * is raised.
+ *
+ * @return Name of the shared lib path variable
+ *
+ * @note Raising a compile time error (instead of e.g. just returning nullptr
+ *       or LD_LIBRARY_PATH as default) has the following reason:
+ *       Setting the shared lib path is a very sensible operation
+ *       concerning security.
+ *       Example: If a shared linked rshd (called for qrsh execution) is
+ *       executed with a faked shared lib path, operations defined in
+ *       a non sge library libgdi.so might be executed as user root.
+ */
 const char *var_get_sharedlib_path_name()
 {
 #if defined(AIX)
@@ -125,30 +95,19 @@ const char *var_get_sharedlib_path_name()
 #endif
 }
 
-/****** sgeobj/var/var_list_set_string() **************************************
-*  NAME
-*     var_list_set_string -- add/change an variable
-*
-*  SYNOPSIS
-*     void var_list_set_string(lList **varl, 
-*                              const char *name, 
-*                              const char *value);
-*
-*  FUNCTION
-*     If the variable <name> does not already exist in <varl>, 
-*     it is created and initialized with <value>.
-*     Otherwise, its value is overwritten with <value>
-*
-*  INPUTS
-*     lList **varl      - VA_Type list
-*     const char *name  - the name of the variable
-*     const char *value - the (new) value of the variable
-*
-*  SEE ALSO
-*     sgeobj/var/var_list_set_int()
-*     sgeobj/var/var_list_set_uint32t()
-*     sgeobj/var/var_list_set_sharedlib_path()
-******************************************************************************/
+/**
+ * @brief Add/change an variable
+ *
+ * If the variable `name` does not already exist in `varl`,
+ * it is created and initialized with `value`.
+ * Otherwise, its value is overwritten with `value`
+ *
+ * @param varl VA_Type list
+ * @param name the name of the variable
+ * @param value the (new) value of the variable
+ *
+ * @see #var_list_set_int, #var_list_set_uint32t, #var_list_set_sharedlib_path
+ */
 void var_list_set_string(lList **varl, const char *name, const char *value) 
 {
    lListElem *elem;
@@ -165,24 +124,16 @@ void var_list_set_string(lList **varl, const char *name, const char *value)
    DRETURN_VOID;
 }
 
-/****** sgeobj/var/var_list_delete_string() ***********************************
-*  NAME
-*     var_list_delete_string -- delete a variable
-*
-*  SYNOPSIS
-*     void var_list_delete_string(lList **varl, 
-*                                 const char *name);
-*
-*  FUNCTION
-*     Deletes the variable <name> from the list <varl> if it exists.
-*
-*  INPUTS
-*     lList **varl      - VA_Type list
-*     const char *name  - the name of the variable
-*
-*  SEE ALSO
-*     sgeobj/var/var_list_set_string() 
-******************************************************************************/
+/**
+ * @brief Delete a variable
+ *
+ * Deletes the variable `name` from the list `varl` if it exists.
+ *
+ * @param varl VA_Type list
+ * @param name the name of the variable
+ *
+ * @see #var_list_set_string
+ */
 void var_list_delete_string(lList **varl, const char *name)
 {
    lListElem *elem;
@@ -198,30 +149,19 @@ void var_list_delete_string(lList **varl, const char *name)
    DRETURN_VOID;
 }
 
-/****** sgeobj/var/var_list_set_int() *****************************************
-*  NAME
-*     var_list_set_int -- add/change an variable
-*
-*  SYNOPSIS
-*     void var_list_set_int(lList *varl, 
-*                           const char *name, 
-*                           int value);
-*
-*  FUNCTION
-*     If the variable <name> does not already exist in <varl>, 
-*     it is created and initialized with <value>.
-*     Otherwise, its value is overwritten with <value>
-*
-*  INPUTS
-*     varl  - VA_Type list
-*     name  - the name of the variable
-*     value - the (new) value of the variable
-*
-*  SEE ALSO
-*     sgeobj/var/var_list_set_string()
-*     sgeobj/var/var_list_set_uint32t()
-*     sgeobj/var/var_list_set_sharedlib_path()
-******************************************************************************/
+/**
+ * @brief Add/change an variable
+ *
+ * If the variable `name` does not already exist in `varl`,
+ * it is created and initialized with `value`.
+ * Otherwise, its value is overwritten with `value`
+ *
+ * @param varl VA_Type list
+ * @param name the name of the variable
+ * @param value the (new) value of the variable
+ *
+ * @see #var_list_set_string, #var_list_set_uint32t, #var_list_set_sharedlib_path
+ */
 void var_list_set_int(lList **varl, const char *name, int value)
 {
    char buffer[2048];
@@ -232,30 +172,19 @@ void var_list_set_int(lList **varl, const char *name, int value)
    DRETURN_VOID;
 }
 
-/****** sgeobj/var/var_list_set_uint32t() *****************************************
-*  NAME
-*     var_list_set_uint32t -- add/change a variable
-*
-*  SYNOPSIS
-*     void var_list_set_uint32t(lList **varl,
-*                           const char *name, 
-*                           uint32_t value);
-*
-*  FUNCTION
-*     If the variable <name> does not already exist in <varl>, 
-*     it is created and initialized with <value>.
-*     Otherwise, its value is overwritten with <value>
-*
-*  INPUTS
-*     lList **varl      - VA_Type list
-*     const char *name  - the name of the variable
-*     uint32_t value    - the (new) value of the variable
-*
-*  SEE ALSO
-*     sgeobj/var/var_list_set_string()
-*     sgeobj/var/var_list_set_int()
-*     sgeobj/var/var_list_set_sharedlib_path()
-******************************************************************************/
+/**
+ * @brief Add/change a variable
+ *
+ * If the variable `name` does not already exist in `varl`,
+ * it is created and initialized with `value`.
+ * Otherwise, its value is overwritten with `value`
+ *
+ * @param varl VA_Type list
+ * @param name the name of the variable
+ * @param value the (new) value of the variable
+ *
+ * @see #var_list_set_string, #var_list_set_int, #var_list_set_sharedlib_path
+ */
 void var_list_set_uint32t(lList **varl, const char *name, uint32_t value)
 {
    DENTER(TOP_LAYER);
@@ -265,28 +194,18 @@ void var_list_set_uint32t(lList **varl, const char *name, uint32_t value)
    DRETURN_VOID;
 }
 
-/****** sgeobj/var/var_list_set_sharedlib_path() ******************************
-*  NAME
-*     var_list_set_sharedlib_path -- set shared lib path
-*
-*  SYNOPSIS
-*     void var_list_set_sharedlib_path(lList **varl);
-*
-*  FUNCTION
-*     Sets or replaces the shared lib path in the list of variables.
-*     The SGE shared lib path is always set to the beginning of the
-*     resulting shared lib path 
-*     (security, see var_get_sharedlib_path_name())
-*
-*  INPUTS
-*     lList **varl - list of nment variables
-*
-*  SEE ALSO
-*     sgeobj/var/var_get_sharedlib_path_name()
-*     sgeobj/var/var_list_set_string()
-*     sgeobj/var/var_list_set_int()
-*     sgeobj/var/var_list_set_uint32t()
-******************************************************************************/
+/**
+ * @brief Set shared lib path
+ *
+ * Sets or replaces the shared lib path in the list of variables.
+ * The SGE shared lib path is always set to the beginning of the
+ * resulting shared lib path
+ * (security, see var_get_sharedlib_path_name())
+ *
+ * @param varl list of nment variables
+ *
+ * @see #var_get_sharedlib_path_name, #var_list_set_string, #var_list_set_int, #var_list_set_uint32t
+ */
 void var_list_set_sharedlib_path(lList **varl)
 {
    char *sharedlib_path;
@@ -332,24 +251,18 @@ void var_list_set_sharedlib_path(lList **varl)
    DRETURN_VOID;
 }
 
-/****** sgeobj/var/var_list_dump_to_file() ************************************
-*  NAME
-*     var_list_dump_to_file -- dump variables from list to file
-*
-*  SYNOPSIS
-*     void var_list_dump_to_file(const lList *varl, FILE *file);
-*
-*  FUNCTION
-*     Parses the list of type VA_Type <varl> containing the
-*     description of variables.
-*     Dumps all list elements to <file> in the format:
-*     <name>=<value>
-*     <name> is read from VA_variable, <value> from VA_value.
-*
-*  INPUTS
-*     varl - list of variables
-*     file - filehandle of a previously opened (for writing) file
-******************************************************************************/
+/**
+ * @brief Dump variables from list to file
+ *
+ * Parses the list of type VA_Type `varl` containing the
+ * description of variables.
+ * Dumps all list elements to `file` in the format:
+ * `name`=`value`
+ * `name` is read from VA_variable, `value` from VA_value.
+ *
+ * @param varl list of variables
+ * @param file filehandle of a previously opened (for writing) file
+ */
 void var_list_dump_to_file(const lList *varl, FILE *file)
 {
    if (varl == nullptr || file == nullptr) {
@@ -374,31 +287,19 @@ void var_list_dump_to_file(const lList *varl, FILE *file)
    }
 }
 
-/****** sgeobj/var/var_list_get_string() **************************************
-*  NAME
-*     var_list_get_string() -- get value of certain variable 
-*
-*  SYNOPSIS
-*     const char* var_list_get_string(lList *varl, 
-*                                     const char *variable) 
-*
-*  FUNCTION
-*     Return the string value of a variable
-*     with the name "variable" which is stored in "varl". 
-*
-*  INPUTS
-*     lList *varl          - VA_Type list 
-*     const char *variable - variable name 
-*
-*  RESULT
-*     const char* - value or nullptr
-*
-*  SEE ALSO
-*     sgeobj/var/var_list_set_string()
-*     sgeobj/var/var_list_set_int()
-*     sgeobj/var/var_list_set_uint32t()
-*     sgeobj/var/var_list_set_sharedlib_path()
-******************************************************************************/
+/**
+ * @brief Get value of certain variable
+ *
+ * Return the string value of a variable
+ * with the name "variable" which is stored in "varl".
+ *
+ * @param varl VA_Type list
+ * @param variable variable name
+ *
+ * @return value or nullptr
+ *
+ * @see #var_list_set_string, #var_list_set_int, #var_list_set_uint32t, #var_list_set_sharedlib_path
+ */
 const char* var_list_get_string(const lList *varl, const char *variable)
 {
    const char *ret = nullptr;
@@ -410,33 +311,25 @@ const char* var_list_get_string(const lList *varl, const char *variable)
    return ret;
 }
 
-/****** sgeobj/var/var_list_copy_prefix_vars() ********************************
-*  NAME
-*     var_list_copy_prefix_vars() -- copy vars with certain prefix 
-*
-*  SYNOPSIS
-*     void var_list_copy_prefix_vars(lList **varl, 
-*                                    const lList *src_varl,
-*                                    const char *prefix, 
-*                                    const char *new_prefix) 
-*
-*  FUNCTION
-*     Make a copy of all entries in "src_varl" 
-*     beginning with "prefix". "prefix" is replaced by "new_prefix"
-*     for all created elements. The new elements will be added to 
-*     "varl".
-*
-*  INPUTS
-*     lList **varl           - VA_Type list 
-*     const char *prefix     - prefix string (e.g. VAR_PREFIX) 
-*     const char *new_prefix - new prefix string (e.g. "SGE_") 
-*
-*  EXAMPLE
-*     "__SGE_PREFIX__O_HOME" ===> "SGE_O_HOME 
-*
-*  SEE ALSO
-*     sgeobj/var/var_list_remove_prefix_vars()
-******************************************************************************/
+/**
+ * @brief Copy vars with certain prefix
+ *
+ * Make a copy of all entries in "src_varl"
+ * beginning with "prefix". "prefix" is replaced by "new_prefix"
+ * for all created elements. The new elements will be added to
+ * "varl".
+ *
+ * @code
+ * "__SGE_PREFIX__O_HOME" ===> "SGE_O_HOME
+ * @endcode
+ *
+ * @param[in,out] varl VA_Type list the copies are added to
+ * @param src_varl the list to copy from
+ * @param prefix prefix string (e.g. VAR_PREFIX)
+ * @param new_prefix new prefix string (e.g. "SGE_")
+ *
+ * @see #var_list_remove_prefix_vars
+ */
 void var_list_copy_prefix_vars(lList **varl, 
                                const lList *src_varl,
                                const char *prefix, 
@@ -466,34 +359,25 @@ void var_list_copy_prefix_vars(lList **varl,
    DRETURN_VOID;
 }
 
-/****** sgeobj/var/var_list_copy_prefix_vars_undef() **************************
-*  NAME
-*     var_list_copy_prefix_vars_undef() -- copy vars with certain prefix 
-*
-*  SYNOPSIS
-*     void 
-*     var_list_copy_prefix_vars_undef(lList **varl, 
-*                                     const lList *src_varl,
-*                                     const char *prefix, 
-*                                     const char *new_prefix) 
-*
-*  FUNCTION
-*     Make a copy of all entries in "src_varl" 
-*     beginning with "prefix". "prefix" is replaced by "new_prefix"
-*     for all created elements. The new elements will be added to 
-*     "varl" if it is undefined in "varl".
-*
-*  INPUTS
-*     lList **varl           - VA_Type list 
-*     const char *prefix     - prefix string (e.g. VAR_PREFIX_NR) 
-*     const char *new_prefix - new prefix string (e.g. "SGE_") 
-*
-*  EXAMPLE
-*     "__SGE_PREFIX2__TASK_ID" ===> "SGE_TASK_ID 
-*
-*  SEE ALSO
-*     sgeobj/var/var_list_remove_prefix_vars()
-******************************************************************************/
+/**
+ * @brief Copy vars with certain prefix
+ *
+ * Make a copy of all entries in "src_varl"
+ * beginning with "prefix". "prefix" is replaced by "new_prefix"
+ * for all created elements. The new elements will be added to
+ * "varl" if it is undefined in "varl".
+ *
+ * @code
+ * "__SGE_PREFIX2__TASK_ID" ===> "SGE_TASK_ID
+ * @endcode
+ *
+ * @param[in,out] varl VA_Type list the copies are added to
+ * @param src_varl the list to copy from
+ * @param prefix prefix string (e.g. VAR_PREFIX_NR)
+ * @param new_prefix new prefix string (e.g. "SGE_")
+ *
+ * @see #var_list_remove_prefix_vars
+ */
 void var_list_copy_prefix_vars_undef(lList **varl, 
                                      const lList *src_varl,
                                      const char *prefix, 
@@ -526,28 +410,19 @@ void var_list_copy_prefix_vars_undef(lList **varl,
    DRETURN_VOID;
 }
 
-/****** sgeobj/var/var_list_copy_env_vars_and_value() *************************
-*  NAME
-*     var_list_copy_env_vars_and_value() -- Copy env. vars 
-*
-*  SYNOPSIS
-*     void 
-*     var_list_copy_env_vars_and_value(lList **varl, 
-*                                      const lList *src_varl, 
-*                                      const char *ignore_prefix) 
-*
-*  FUNCTION
-*     Copy all variables from "src_varl" into "varl". Ignore
-*     all variables beginning with "ignore_prefix".
-*
-*  INPUTS
-*     lList **varl              - VA_Type list 
-*     const lList *src_varl     - source VA_Type list 
-*     const char *ignore_prefix - prefix 
-*
-*  RESULT
-*     void - none
-******************************************************************************/
+/**
+ * @brief Copy env. vars
+ *
+ * Copies every variable from `src_varl` into `varl`. A variable without a
+ * value is copied as the empty string, never as nullptr.
+ *
+ * @param[in,out] varl VA_Type list the copies are added to
+ * @param src_varl source VA_Type list
+ *
+ * @note The banner this was converted from also described an `ignore_prefix`
+ *       parameter that filtered the copied variables. Neither the parameter
+ *       nor the filtering exist any more.
+ */
 void var_list_copy_env_vars_and_value(lList **varl,
                                       const lList* src_varl)
 {
@@ -560,25 +435,17 @@ void var_list_copy_env_vars_and_value(lList **varl,
    }
 }
 
-/****** sgeobj/var/var_list_remove_prefix_vars() ******************************
-*  NAME
-*     var_list_remove_prefix_vars() -- remove vars with certain prefix 
-*
-*  SYNOPSIS
-*     void var_list_remove_prefix_vars(lList **varl, 
-*                                      const char *prefix) 
-*
-*  FUNCTION
-*     Remove all entries from "varl" where the name
-*     beginns with "prefix" 
-*
-*  INPUTS
-*     lList **varl       - VA_Type list 
-*     const char *prefix - prefix string (e.g. VAR_PREFIX) 
-*
-*  SEE ALSO
-*     sgeobj/var/var_list_remove_prefix_vars()
-******************************************************************************/
+/**
+ * @brief Remove vars with certain prefix
+ *
+ * Remove all entries from "varl" where the name
+ * beginns with "prefix"
+ *
+ * @param varl VA_Type list
+ * @param prefix prefix string (e.g. VAR_PREFIX)
+ *
+ * @see #var_list_remove_prefix_vars
+ */
 void var_list_remove_prefix_vars(lList **varl, const char *prefix)
 {
    int prefix_len = strlen(prefix);
@@ -598,31 +465,19 @@ void var_list_remove_prefix_vars(lList **varl, const char *prefix)
    DRETURN_VOID;
 }
 
-/****** sgeobj/var/var_list_split_prefix_vars() *******************************
-*  NAME
-*     var_list_split_prefix_vars() -- split a list of variables 
-*
-*  SYNOPSIS
-*     void var_list_split_prefix_vars(lList **varl, 
-*                                     lList **pefix_vars, 
-*                                     const char *prefix) 
-*
-*  FUNCTION
-*     Move all variable elements from "varl" to "pefix_vars" which
-*     begin with "prefix". *pefix_vars will be created if is does not
-*     exist.
-*
-*  INPUTS
-*     lList **varl        - VA_Type list 
-*     lList **pefix_vars - pointer to VA_Type list 
-*     const char *prefix - string (e.g. VAR_PREFIX) 
-*
-*  RESULT
-*     void - None
-*
-*  SEE ALSO
-*     sgeobj/var/var_list_remove_prefix_vars()
-******************************************************************************/
+/**
+ * @brief Split a list of variables
+ *
+ * Move all variable elements from "varl" to "pefix_vars" which
+ * begin with "prefix". *pefix_vars will be created if is does not
+ * exist.
+ *
+ * @param varl VA_Type list
+ * @param pefix_vars pointer to VA_Type list
+ * @param prefix string (e.g. VAR_PREFIX)
+ *
+ * @see #var_list_remove_prefix_vars
+ */
 void var_list_split_prefix_vars(lList **varl, 
                                 lList **pefix_vars, 
                                 const char *prefix)
@@ -650,29 +505,20 @@ void var_list_split_prefix_vars(lList **varl,
    DRETURN_VOID;
 }
 
-/****** sgeobj/var/var_list_add_as_set() ***************************************
-*  NAME
-*     var_list_add_as_set() -- Concatenate two lists as sets
-*
-*  SYNOPSIS
-*     int var_list_add_as_set(lList *lp0, lList *lp1) 
-*
-*  FUNCTION
-*     Concatenate two lists of equal type throwing away the second list.
-*     Elements in the second list will replace elements with the same key in the
-*     the first list.  If the first list contains duplicate element keys, only
-*     the first element with a given key will be replaced by an element from the
-*     second list with the same key.
-*
-*  INPUTS
-*     lList *lp0 - first list 
-*     lList *lp1 - second list 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Concatenate two lists as sets
+ *
+ * Concatenate two lists of equal type throwing away the second list.
+ * Elements in the second list will replace elements with the same key in the
+ * the first list.  If the first list contains duplicate element keys, only
+ * the first element with a given key will be replaced by an element from the
+ * second list with the same key.
+ *
+ * @param lp0 first list
+ * @param lp1 second list
+ *
+ * @return error state 0 - OK -1 - Error
+ */
 int var_list_add_as_set(lList *lp0, lList *lp1) 
 {
    lListElem *ep0, *ep1;
@@ -725,29 +571,19 @@ int var_list_add_as_set(lList *lp0, lList *lp1)
    DRETURN(0);
 }
 
-/****** sge_var/var_list_verify() **********************************************
-*  NAME
-*     var_list_verify() -- verify contents of a variable list
-*
-*  SYNOPSIS
-*     bool 
-*     var_list_verify(const lList *lp, lList **answer_list) 
-*
-*  FUNCTION
-*     Verifies the contents of a variable list.
-*     Variable names may not be nullptr or empty strings.
-*
-*  INPUTS
-*     const lList *lp     - the list to verify
-*     lList **answer_list - answer list to pass back error messages
-*
-*  RESULT
-*     bool - true on success, 
-*            false in case of errors, error message in answer_list
-*
-*  NOTES
-*     MT-NOTE: var_list_verify() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Verify contents of a variable list
+ *
+ * Verifies the contents of a variable list.
+ * Variable names may not be nullptr or empty strings.
+ *
+ * @param lp the list to verify
+ * @param answer_list answer list to pass back error messages
+ *
+ * @return true on success, false in case of errors, error message in answer_list
+ *
+ * @note MT-NOTE: var_list_verify() is MT safe
+ */
 bool 
 var_list_verify(const lList *lp, lList **answer_list)
 {
@@ -868,36 +704,24 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
    DRETURN(0);
 }
 
-/****** sge_var/getenv_and_set() *******************************
-*  NAME
-*     getenv_and_set() -- obtain value for environment name, 
-*                         remove \n characters from value string
-*                         and set VA_Value member of *ep.
-*
-*  SYNOPSIS
-*     void getenv_and_set(lListElem *ep, char *variable)
-*
-*  FUNCTION
-*     Obtain value for environment name; check for any \n 
-*     characters in input string. Shell enters this character 
-*     for multi-line environment variables. If nothing found, 
-*     just store value in VA_Value member of *ep.
-*
-*     Otherwise, count number of newline characters, figure out
-*     string length and allocate new memory for the modified 
-*     string. Next, copy over string, skipping over \n characters.
-*     Then, store value in VA_Value member of *ep.
-*
-*  INPUTS
-*     lListElem *ep                  - target list element
-*     char *variable                 - environment variable
-*
-*  RESULT
-*     void
-*
-*  NOTES
-*     MT-NOTE: remove_newline_chars() is MT safe
-*******************************************************************************/
+/**
+ * @brief Obtain value for environment name,
+ *
+ * Obtain value for environment name; check for any \n
+ * characters in input string. Shell enters this character
+ * for multi-line environment variables. If nothing found,
+ * just store value in VA_Value member of *ep.
+ *
+ * Otherwise, count number of newline characters, figure out
+ * string length and allocate new memory for the modified
+ * string. Next, copy over string, skipping over \n characters.
+ * Then, store value in VA_Value member of *ep.
+ *
+ * @param ep target list element
+ * @param variable environment variable
+ *
+ * @note MT-NOTE: remove_newline_chars() is MT safe
+ */
 
 void getenv_and_set(lListElem *ep, char *variable)
 {

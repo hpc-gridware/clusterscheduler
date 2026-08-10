@@ -32,10 +32,26 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
+/** @file
+ * @brief Rendering cull objects as text, and parsing them back
+ */
+
+/** @def NO_SGE_COMPILE_DEBUG
+ * @brief Compiles the rmon tracing out of this whole file
+ *
+ * Defined before `uti/sge_rmon_macros.h` is included, which turns every
+ * #DENTER, #DRETURN and `DPRINTF` below into nothing. The calls are all still
+ * written out, so the file reads as though it were traceable; it is not.
+ */
 #ifndef NO_SGE_COMPILE_DEBUG
 #define NO_SGE_COMPILE_DEBUG
 #endif
 
+/** @def FLATFILE_LAYER
+ * @brief The rmon layer this module would trace on
+ *
+ * Only ever passed to #DENTER, which the line above has already made empty.
+ */
 #define FLATFILE_LAYER BASIS_LAYER
 
 /* system */
@@ -499,6 +515,17 @@ static void debug_flatfile(const char *msg, int line, int token,
    DRETURN_VOID;
 }
 #else
+/** @def FF_DEBUG
+ * @brief Trace one step of the parser, naming the token it is looking at
+ *
+ * @param msg what the parser is about to do
+ *
+ * @note `DEBUG_FLATFILE` is not defined anywhere in the tree, so this and
+ *       `debug_flatfile()` are unreachable. Defining it would not help
+ *       either: `debug_flatfile()` prints through `DPRINTF`, which
+ *       #NO_SGE_COMPILE_DEBUG at the top of this same file has already
+ *       silenced. Two switches, one of them permanently off.
+ */
 #define FF_DEBUG(msg)
 #endif
 
@@ -630,30 +657,20 @@ _spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
 
 static spooling_field *get_recursion_field_list (const spool_flatfile_instr *instr);
 
-/****** spool/flatfile/spool_flatfile_align_object() ********************
-*  NAME
-*     spool_flatfile_align_object() -- align object output
-*
-*  SYNOPSIS
-*     bool 
-*     spool_flatfile_align_object(lList **answer_list,
-*                                 spooling_field *fields) 
-*
-*  FUNCTION
-*     Computes the maximum length of the field names stored in <fields>
-*     and sets the width value for all fields stored in <fields> to this 
-*     maximum.
-*
-*  INPUTS
-*     lList **answer_list     - answer list used to report errors
-*     spooling_field *fields  - field description used for alignment
-*
-*  RESULT
-*     bool - true on success, false if an error occurred
-*
-*  SEE ALSO
-*     spool/flatfile/spool_flatfile_align_list()
-*******************************************************************************/
+/**
+ * @brief Align object output
+ *
+ * Computes the maximum length of the field names stored in `fields`
+ * and sets the width value for all fields stored in `fields` to this
+ * maximum.
+ *
+ * @param answer_list answer list used to report errors
+ * @param fields field description used for alignment
+ *
+ * @return true on success, false if an error occurred
+ *
+ * @see #spool_flatfile_align_list
+ */
 bool 
 spool_flatfile_align_object(lList **answer_list, spooling_field *fields)
 {
@@ -676,34 +693,24 @@ spool_flatfile_align_object(lList **answer_list, spooling_field *fields)
 }
 
 
-/****** spool/flatfile/spool_flatfile_align_list() **********************
-*  NAME
-*     spool_flatfile_align_list() -- align list data for table output
-*
-*  SYNOPSIS
-*     bool 
-*     spool_flatfile_align_list(lList **answer_list, const lList *list, 
-*                               spooling_field *fields) 
-*
-*  FUNCTION
-*     Computes the maximum width of field name and field contents for 
-*     fields described in <fields> and data in <list>.
-*     Stores the computed maxima in <fields>.
-*
-*  INPUTS
-*     lList **answer_list    - answer list for error reporting
-*     const lList *list      - list with data to align
-*     spooling_field *fields - field description
-*
-*  RESULT
-*     bool -  true on success, else false
-*
-*  NOTES
-*     Sublists are not regarded.
-*
-*  SEE ALSO
-*     spool/flatfile/spool_flatfile_align_object()
-*******************************************************************************/
+/**
+ * @brief Align list data for table output
+ *
+ * Computes the maximum width of field name and field contents for
+ * fields described in `fields` and data in `list`.
+ * Stores the computed maxima in `fields`.
+ *
+ * @param answer_list answer list for error reporting
+ * @param list list with data to align
+ * @param fields field description
+ * @param padding extra columns added to every computed width
+ *
+ * @return true on success, else false
+ *
+ * @note Sublists are not regarded.
+ *
+ * @see #spool_flatfile_align_object
+ */
 bool 
 spool_flatfile_align_list(lList **answer_list, const lList *list, 
                           spooling_field *fields, int padding)
@@ -735,53 +742,35 @@ spool_flatfile_align_list(lList **answer_list, const lList *list,
    DRETURN(true);
 }
 
-/****** spool/flatfile/spool_flatfile_write_list() **********************
-*  NAME
-*     spool_flatfile_write_list() -- write (spool) a complete list
-*
-*  SYNOPSIS
-*     const char* 
-*     spool_flatfile_write_list(lList **answer_list, const lList *list, 
-*                               const spooling_field *fields_in, 
-*                               const spool_flatfile_instr *instr, 
-*                               const spool_flatfile_destination destination, 
-*                               const spool_flatfile_format format, 
-*                               const char *filepath) 
-*
-*  FUNCTION
-*     Writes all data of a list according to the directives given with the
-*     parameters.
-*
-*     Which fields to write can either be passed to the function by setting
-*     the parameter <fields_in>, or the function will generate this information
-*     using the spooling instructions passed in <instr>.
-*
-*     <destination> defines the spooling destination, e.g. to stdout, to 
-*     a temporary file, to a named file (name is passed in <filepath>.
-*  
-*     The data format to use (e.g. ASCII format) is passed in <format>.
-*
-*     On success, the function returns the name of the output file/stream.
-*     It is in the responsibility of the caller to free the memory used
-*     by the file/stream name.
-*
-*  INPUTS
-*     lList **answer_list                          - for error reporting
-*     const lList *list                            - list to write
-*     const spooling_field *fields_in              - optional, field description
-*     const spool_flatfile_instr *instr            - spooling instructions
-*     const spool_flatfile_destination destination - destination
-*     const spool_flatfile_format format           - format
-*     const char *filepath                         - if destination == 
-*                                                    SP_DEST_SPOOL, path to the 
-*                                                    spool file
-*
-*  RESULT
-*     const char* - on success the name of the spool file / stream, else nullptr
-*
-*  SEE ALSO
-*     spool/flatfile/spool_flatfile_write_object()
-*******************************************************************************/
+/**
+ * @brief Write (spool) a complete list
+ *
+ * Writes all data of a list according to the directives given with the
+ * parameters.
+ * Which fields to write can either be passed to the function by setting
+ * the parameter `fields_in`, or the function will generate this information
+ * using the spooling instructions passed in `instr`.
+ * `destination` defines the spooling destination, e.g. to stdout, to
+ * a temporary file, to a named file (name is passed in `filepath`.
+ * The data format to use (e.g. ASCII format) is passed in `format`.
+ * On success, the function returns the name of the output file/stream.
+ * It is in the responsibility of the caller to free the memory used
+ * by the file/stream name.
+ *
+ * @param answer_list for error reporting
+ * @param list list to write
+ * @param fields_in optional, field description
+ * @param instr spooling instructions
+ * @param destination destination
+ * @param format format
+ * @param filepath if destination == SP_DEST_SPOOL, path to the spool file
+ * @param print_header prepend the product version as a comment line; ASCII
+ *                     output only
+ *
+ * @return on success the name of the spool file / stream, else nullptr
+ *
+ * @see #spool_flatfile_write_object
+ */
 const char *
 spool_flatfile_write_list(lList **answer_list,
                           const lList *list,
@@ -927,46 +916,34 @@ spool_flatfile_write_list(lList **answer_list,
    DRETURN(result);
 }
 
-/****** spool/flatfile/spool_flatfile_write_object() ********************
-*  NAME
-*     spool_flatfile_write_object() -- write (spool) an object 
-*
-*  SYNOPSIS
-*     const char * 
-*     spool_flatfile_write_object(lList **answer_list, const lListElem *object,
-*                                 const spooling_field *fields_in, 
-*                                 const spool_flatfile_instr *instr, 
-*                                 const spool_flatfile_destination destination,
-*                                 const spool_flatfile_format format, 
-*                                 const char *filepath) 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     lList **answer_list                          - ??? 
-*     const lListElem *object                      - ??? 
-*     const spooling_field *fields_in              - ??? 
-*     const spool_flatfile_instr *instr            - ??? 
-*     const spool_flatfile_destination destination - ??? 
-*     const spool_flatfile_format format           - ??? 
-*     const char *filepath                         - ??? 
-*
-*  RESULT
-*     const char * - 
-*
-*  EXAMPLE
-*     ??? 
-*
-*  NOTES
-*     ??? 
-*
-*  BUGS
-*     ??? 
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief Write (spool) a single object
+ *
+ * The single object counterpart of #spool_flatfile_write_list. Which fields
+ * are written comes either from `fields_in` or, when that is nullptr, from
+ * the #spool_flatfile_instr::spool_instr of `instr`.
+ *
+ * @param answer_list    for error reporting
+ * @param object         the object to write
+ * @param is_root        false while recursing into the children of a share
+ *                       tree node, so that #recursion_info::supress_field is
+ *                       written for the root element only
+ * @param fields_in      optional field description; generated from `instr`
+ *                       when nullptr
+ * @param instr          the layout to write in
+ * @param destination    stdout, stderr, a temporary file or a named file
+ * @param format         ASCII, XML, CULL or JSON
+ * @param filepath       the file to write when `destination` is #SP_DEST_SPOOL
+ * @param print_header   prepend the product version as a comment line; ASCII
+ *                       output only
+ * @param json_type_name overrides the `$id` type that JSON output would
+ *                       otherwise derive from the content
+ *
+ * @return on success the name of the file or stream written, which the caller
+ *         has to free, else nullptr
+ *
+ * @see #spool_flatfile_write_list, #spool_flatfile_read_object
+ */
 const char * 
 spool_flatfile_write_object(lList **answer_list, const lListElem *object,
                             bool is_root, const spooling_field *fields_in,
@@ -1224,32 +1201,21 @@ spool_flatfile_open_file(lList **answer_list,
    DRETURN(fd);
 }
 
-/****** spool/flatfile/spool_flatfile_close_file() **********************
-*  NAME
-*     spool_flatfile_close_file() -- close spool file / stream
-*
-*  SYNOPSIS
-*     static bool 
-*     spool_flatfile_close_file(lList **answer_list, FILE *file, 
-*                               const char *filepath, 
-*                               const spool_flatfile_destination destination) 
-*
-*  FUNCTION
-*     Closes the given file or stream.
-*     Streams (stdout, strerr) are not really closed, but just unlocked.
-*
-*  INPUTS
-*     lList **answer_list                          - to return errors
-*     FILE *file                                   - file handle to close
-*     const char *filepath                         - filename
-*     const spool_flatfile_destination destination - destination
-*
-*  RESULT
-*     static bool - true on success, else false
-*
-*  SEE ALSO
-*     spool/flatfile/spool_flatfile_open_file()
-*******************************************************************************/
+/**
+ * @brief Close spool file / stream
+ *
+ * Closes the given file or stream.
+ * Streams (stdout, strerr) are not really closed, but just unlocked.
+ *
+ * @param answer_list to return errors
+ * @param file file handle to close
+ * @param filepath filename
+ * @param destination destination
+ *
+ * @return true on success, else false
+ *
+ * @see #spool_flatfile_open_file
+ */
 #ifdef USE_FOPEN
 static bool 
 spool_flatfile_close_file(lList **answer_list, FILE *fd, const char *filepath,
@@ -1631,48 +1597,32 @@ spool_flatfile_write_list_fields(lList **answer_list, const lList *list,
    DRETURN(ret);
 }
 
-/****** spool/flatfile/spool_flatfile_read_object() *********************
-*  NAME
-*     spool_flatfile_read_object() -- read an object from file / stream
-*
-*  SYNOPSIS
-*     lListElem * 
-*     spool_flatfile_read_object(lList **answer_list, const lDescr *descr, 
-*                                const spooling_field *fields_in, 
-*                                int fields_out[], 
-*                                const spool_flatfile_instr *instr, 
-*                                const spool_flatfile_format format, 
-*                                FILE *file, const char *filepath) 
-*
-*  FUNCTION
-*     Read an object of type <descr> from the stream <file> or a file described
-*     by <filepath>.
-*
-*     <fields_in> names the fields that can be contained in the input.
-*
-*     The fields actually read are stored in <fields_out>.
-*
-*     <format> and <instr> describe the data format to expect.
-*
-*  INPUTS
-*     lList **answer_list                - to report any errors
-*     const lDescr *descr                - object type to read
-*     lListElem *root                    - 
-*     const spooling_field *fields_in    - fields that can be contained in input
-*     int fields_out[]                   - field actually read
-*     const spool_flatfile_instr *instr  - spooling instruction
-*     const spool_flatfile_format format - spooling format
-*     FILE *file                         - filehandle to read from
-*     const char *filepath               - if <file> == nullptr, <filepath> is
-*                                          opened
-*
-*  RESULT
-*     lListElem * - on success the read object, else nullptr
-*
-*  SEE ALSO
-*     spool/flatfile/spool_flatfile_write_object()
-*     spool/flatfile/spool_flatfile_read_list()
-*******************************************************************************/
+/**
+ * @brief Read an object from file / stream
+ *
+ * Read an object of type `descr` from the stream `file` or a file described
+ * by `filepath`.
+ * `fields_in` names the fields that can be contained in the input.
+ * The fields actually read are stored in `fields_out`.
+ * `format` and `instr` describe the data format to expect.
+ *
+ * @param answer_list to report any errors
+ * @param descr object type to read
+ * @param root the element the read object is a child of, or nullptr at the
+ *             top level - only the share tree passes anything here
+ * @param fields_in fields that can be contained in the input
+ * @param fields_out receives the fields actually read, terminated by `NoName`
+ * @param parse_values convert each value to its attribute type; when false
+ *                     the values are kept as the strings they were read as
+ * @param instr spooling instruction
+ * @param format spooling format
+ * @param file filehandle to read from
+ * @param filepath if `file` == nullptr, `filepath` is opened
+ *
+ * @return on success the read object, else nullptr
+ *
+ * @see #spool_flatfile_write_object, #spool_flatfile_read_list
+ */
 lListElem * 
 spool_flatfile_read_object(lList **answer_list, const lDescr *descr, 
                            lListElem *root, const spooling_field *fields_in,
@@ -2314,47 +2264,30 @@ FF_DEBUG("after parsing object");
    DRETURN_VOID;
 }
 
-/****** spool/flatfile/spool_flatfile_read_list() ***********************
-*  NAME
-*     spool_flatfile_read_list() -- read a list from file / stream
-*
-*  SYNOPSIS
-*     lList * 
-*     spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
-*                              const spooling_field *fields_in, 
-*                              int fields_out[], 
-*                              const spool_flatfile_instr *instr, 
-*                              const spool_flatfile_format format, 
-*                              FILE *file, const char *filepath) 
-*
-*  FUNCTION
-*     Read a list of type <descr> from the stream <file> or a file described
-*     by <filepath>.
-*
-*     <fields_in> names the fields that can be contained in the input.
-*
-*     The fields actually read are stored in <fields_out>.
-*
-*     <format> and <instr> describe the data format to expect.
-*
-*  INPUTS
-*     lList **answer_list                - to report any errors
-*     const lDescr *descr                - list type
-*     const spooling_field *fields_in    - fields that can be contained in input
-*     int fields_out[]                   - fields actually read
-*     const spool_flatfile_instr *instr  - spooling instructions
-*     const spool_flatfile_format format - data format
-*     FILE *file                         - file to read or nullptr if <filepath>
-*                                          shall be opened
-*     const char *filepath               - file to open if <file> == nullptr
-*
-*  RESULT
-*     lList * - the list read on success, else nullptr
-*
-*  SEE ALSO
-*     spool/flatfile/spool_flatfile_write_list()
-*     spool/flatfile/spool_flatfile_read_object()
-*******************************************************************************/
+/**
+ * @brief Read a list from file / stream
+ *
+ * Read a list of type `descr` from the stream `file` or a file described
+ * by `filepath`.
+ * `fields_in` names the fields that can be contained in the input.
+ * The fields actually read are stored in `fields_out`.
+ * `format` and `instr` describe the data format to expect.
+ *
+ * @param answer_list to report any errors
+ * @param descr list type
+ * @param fields_in fields that can be contained in the input
+ * @param fields_out receives the fields actually read, terminated by `NoName`
+ * @param parse_values convert each value to its attribute type; when false
+ *                     the values are kept as the strings they were read as
+ * @param instr spooling instructions
+ * @param format data format
+ * @param file file to read or nullptr if `filepath` shall be opened
+ * @param filepath file to open if `file` == nullptr
+ *
+ * @return the list read on success, else nullptr
+ *
+ * @see #spool_flatfile_write_list, #spool_flatfile_read_object
+ */
 lList * 
 spool_flatfile_read_list(lList **answer_list, const lDescr *descr, 
                          const spooling_field *fields_in, int fields_out[],
@@ -2642,6 +2575,19 @@ static spooling_field *get_recursion_field_list(const spool_flatfile_instr *inst
    return fields;
 }
 
+/**
+ * @brief Find the first expected field that the input did not contain
+ *
+ * Used after a read to tell the user which attribute is missing from the file
+ * they just edited, rather than failing with a generic parse error.
+ *
+ * @param in   the fields that were expected, terminated by `NoName`
+ * @param out  the fields actually read, terminated by `NoName`
+ * @param alpp receives a message naming the first missing attribute
+ *
+ * @return the cull attribute number of the first field of `in` that is not in
+ *         `out`, or `NoName` if the input was complete
+ */
 int spool_get_unprocessed_field(spooling_field in[], int out[], lList **alpp)
 {
    int count = 0;
@@ -2669,6 +2615,18 @@ int spool_get_unprocessed_field(spooling_field in[], int out[], lList **alpp)
    return NoName;
 }
 
+/**
+ * @brief Count the entries of a field array
+ *
+ * @param fields the array, terminated by a `NoName` entry
+ *
+ * @return the number of entries **including** the terminator, so one more
+ *         than the number of real fields
+ *
+ * @note The single caller allocates `spool_get_number_of_fields(fields) + 1`
+ *       integers, which is therefore two more than it needs. Harmless, but it
+ *       reads as though the terminator were not counted.
+ */
 int spool_get_number_of_fields(const spooling_field fields[])
 {
    int count = 0;
@@ -2678,29 +2636,18 @@ int spool_get_number_of_fields(const spooling_field fields[])
    return count;
 }
 
-/****** spool/flatfile/spool_flatfile_add_line_breaks() ************************
-*  NAME
-*     spool_flatfile_add_line_breaks() -- breaks up long lines by splitting on
-*                                         commas and whitespace and inserting
-*                                         backslashes at the ends of broken
-*                                         lines
-*
-*  SYNOPSIS
-*     static void spool_flatfile_add_line_breaks (dstring *buffer)
-*
-*  FUNCTION
-*     Splits lines greater than MAX_LINE_LENGTH on commas and whitespace.  It
-*     tries to choose the most convenient place to insert the break.  The break
-*     consists of a space followed by a backslash followed by a new line
-*     followed by enough spaces to indent the next line to the beginning of the
-*     second word in the first line.  Lines are considered to be demarkated by
-*     newlines.
-*
-*  INPUTS
-*     dstring *buffer - The output to be split.  The dstring will be cleared,
-*                       and the new output will be stored in it.
-*
-*******************************************************************************/
+/**
+ * @brief Breaks up long lines by splitting on
+ *
+ * Splits lines greater than MAX_LINE_LENGTH on commas and whitespace.  It
+ * tries to choose the most convenient place to insert the break.  The break
+ * consists of a space followed by a backslash followed by a new line
+ * followed by enough spaces to indent the next line to the beginning of the
+ * second word in the first line.  Lines are considered to be demarkated by
+ * newlines.
+ *
+ * @param buffer The output to be split.  The dstring will be cleared, and the new output will be stored in it.
+ */
 static void spool_flatfile_add_line_breaks(dstring *buffer)
 {
    size_t index = 0;

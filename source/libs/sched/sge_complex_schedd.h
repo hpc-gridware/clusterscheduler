@@ -33,6 +33,21 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Assembling the complex attributes the scheduler matches against
+ *
+ * An attribute can be defined at three levels - global, execution host, queue
+ * instance - and a job's `-l` request has to be matched against the value
+ * that actually applies. Which level wins is what the **dominance** of an
+ * attribute records, and monitor_dominance() renders it as the `g`/`h`/`q`
+ * prefix seen in `qstat -F` output.
+ *
+ * get_attribute() answers for one level, get_attribute_by_name() resolves
+ * across all three, and host_complexes2scheduler() and
+ * queue_complexes2scheduler() build the complete attribute list of one object
+ * for the scheduler to match a request against.
+ */
+
 #include "cull/cull_list.h"
 
 #include "sgeobj/ocs_CEntry.h"

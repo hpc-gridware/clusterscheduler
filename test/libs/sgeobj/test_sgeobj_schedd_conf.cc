@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for schedd conf in `libs/sgeobj`
+ */
+
 #include <cstdio>
 
 #include "uti/sge_component.h"
@@ -45,6 +49,16 @@
 
 static int s_fail = 0;
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \
@@ -55,12 +69,14 @@ static int s_fail = 0;
       } \
    } while (0)
 
+/** @brief One value to try on the attribute under test, and what should happen */
 typedef struct {
    const char *test_value;   ///< value to set on the attribute under test
    bool        result;       ///< true if the value should pass validation
    const char *desc;         ///< human-readable check label
 } conf_settings_t;
 
+/** @brief Which scheduler configuration attribute a block of settings applies to */
 typedef struct {
    u_long      test_attribute;   ///< CULL attribute to set (e.g. SC_halflife_decay_list)
    u_long      type;             ///< CULL attribute type (lStringT, lDoubleT, lUlongT)

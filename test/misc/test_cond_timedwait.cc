@@ -18,12 +18,19 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for timedwait in `cond`
+ */
+
 #include <iostream>
 #include <chrono>
 
 #include <time.h>
 #include <pthread.h>
 
+/** @brief Get milli
+  * @return the value
+ */
 long get_milli() {
    const auto now = std::chrono::system_clock::now();
    const auto epoch = now.time_since_epoch();

@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Assembling and sending the daemon's periodic reports
+ */
 #include <cstring>
 
 #include "uti/sge_log.h"
@@ -65,6 +69,12 @@ extern lUlong sge_execd_report_seqno;
 
 
 /*-------------------------------------------------------------------------*/
+/** @brief Send whichever reports are due
+ * @param now the current time
+ * @param which a mask of the report types to consider, 0 for all of them
+ * @param report_sources the table of report kinds
+ * @return 0 on success
+ */
 int sge_send_all_reports(uint64_t now, int which, report_source *report_sources)
 {
    int ret = 0;
@@ -117,6 +127,14 @@ int sge_send_all_reports(uint64_t now, int which, report_source *report_sources)
    add a double value to the load report list lpp 
  
 */
+/** @brief Add one floating point load value to a report
+ * @param[in,out] lpp the report being assembled
+ * @param name the load value's name
+ * @param value its value
+ * @param host the host it belongs to
+ * @param units the unit to report it in, or nullptr
+ * @return 0 on success
+ */
 int sge_add_double2load_report(lList **lpp, const char *name, double value,
                                const char *host, const char *units)
 {
@@ -135,6 +153,13 @@ int sge_add_double2load_report(lList **lpp, const char *name, double value,
    add an integer value to the load report list lpp
 
 */
+/** @brief Add one integer load value to a report
+ * @param[in,out] lpp the report being assembled
+ * @param name the load value's name
+ * @param value its value
+ * @param host the host it belongs to
+ * @return 0 on success
+ */
 int sge_add_int2load_report(lList **lpp, const char *name, int value,
                             const char *host)
 {
@@ -154,6 +179,13 @@ int sge_add_int2load_report(lList **lpp, const char *name, int value,
    add a string value to the load report list lpp
 
 */
+/** @brief Add one string load value to a report
+ * @param[in,out] lpp the report being assembled
+ * @param name the load value's name
+ * @param value its value
+ * @param host the host it belongs to
+ * @return 0 on success
+ */
 int sge_add_str2load_report(lList **lpp, const char *name, const char *value, const char *host)
 {
    lListElem *ep = nullptr;

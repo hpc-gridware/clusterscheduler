@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Talking to systemd: notifying readiness and placing jobs in scopes
+ */
+
 #include "sgeobj/sge_conf.h"
 
 namespace ocs::common {

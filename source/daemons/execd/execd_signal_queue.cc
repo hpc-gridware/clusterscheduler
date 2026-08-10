@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Delivering signals to jobs, and resending the ones they ignore
+ */
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
@@ -85,6 +89,11 @@ extern volatile int shut_me_down;
 
  counterpart in qmaster: c_qmod.c
  **************************************************************************/
+/** @brief Handle qmaster's request to signal a queue or the jobs in it
+ * @param aMsg the received message
+ * @param apb the buffer the answer is packed into
+ * @return 0 on success
+ */
 int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb)
 {
    DENTER(TOP_LAYER);
@@ -227,6 +236,17 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
    1 if job is supposed to be not in a healthy state and thus
      should be removed by the calling context
  *************************************************************************/
+/** @brief Deliver a signal to a job, remembering it so it can be resent
+ *
+ * A job that does not react within #SIGNAL_RESEND_INTERVAL gets the signal
+ * again, which is what makes a delete eventually take effect on a job that is
+ * ignoring it.
+ *
+ * @param sig the signal
+ * @param jep the job (`JB_Type`)
+ * @param jatep the array task
+ * @return 0 on success
+ */
 int sge_execd_deliver_signal(uint32_t sig, const lListElem *jep, lListElem *jatep)
 {
    int queue_already_suspended;
@@ -277,31 +297,20 @@ int sge_execd_deliver_signal(uint32_t sig, const lListElem *jep, lListElem *jate
    DRETURN(getridofjob);
 }
 
-/****** execd_signal_queue/sge_send_suspend_mail() *****************************
-*  NAME
-*     sge_send_suspend_mail() -- send suspend / condinue mail if enabled
-*
-*  SYNOPSIS
-*     void sge_send_suspend_mail(uint32_t signal, lListElem *master_q,
-*     lListElem *jep, lListElem *jatep)
-*
-*  FUNCTION
-*     This function will send the suspend/continue mail to the job owner
-*     or to the users defined with the -M option of qsub. The mail is
-*     only sent when the user has specified the -m s flag.
-*
-*     The mail is sent when the execd is signaling the job with
-*     SGE_SIGSTOP(suspend) / SGE_SIGCONT(continue)
-*
-*  INPUTS
-*     uint32_t signal     - type of signal (SGE_SIGSTOP/SGE_SIGCONT)
-*     lListElem *master_q - pointer to QU_Type  cull list element
-*                           of job (not used)
-*     lListElem *jep      - pointer to JB_Type  cull list element
-*                           of job
-*     lListElem *jatep    - pointer to JAT_Type cull list element
-*                           of job
-*******************************************************************************/
+/**
+ * @brief Send suspend / condinue mail if enabled
+ *
+ * This function will send the suspend/continue mail to the job owner
+ * or to the users defined with the -M option of qsub. The mail is
+ * only sent when the user has specified the -m s flag.
+ * The mail is sent when the execd is signaling the job with
+ * SGE_SIGSTOP(suspend) / SGE_SIGCONT(continue)
+ *
+ * @param signal type of signal (SGE_SIGSTOP/SGE_SIGCONT)
+ * @param master_q pointer to QU_Type  cull list element of job (not used)
+ * @param jep pointer to JB_Type  cull list element of job
+ * @param jatep pointer to JAT_Type cull list element of job
+ */
 void sge_send_suspend_mail(uint32_t signal, lListElem *master_q, lListElem *jep, lListElem *jatep) {
 
    uint32_t mail_options;
@@ -630,6 +639,12 @@ RETURN
    1 job was not found you better get rid of it to prevent
      infinite pingpong effects
    ------------------------------------------------------------ */
+/** @brief Signal one job, through its shepherd
+ * @param jobid the job
+ * @param jataskid the array task
+ * @param signal the signal to send
+ * @return 0 on success
+ */
 int signal_job(uint32_t jobid, uint32_t jataskid, uint32_t signal)
 {
    lListElem *jep;

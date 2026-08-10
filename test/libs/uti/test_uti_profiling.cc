@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for profiling in `libs/uti`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <math.h>
@@ -43,8 +47,14 @@
 #include "uti/sge_string.h"
 #include "uti/sge_stdlib.h"
 
+/** @brief Do test
+ * @return non-zero or true when the case passed
+ */
 int do_test();
 
+/** @brief Test case: params
+ * @return non-zero or true when the case passed
+ */
 int test_params();
 
 void *do_sleep(void *);
@@ -209,6 +219,10 @@ int do_test() {
    return EXIT_SUCCESS;
 }
 
+/** @brief A worker that sleeps, so the profiler has wall time to attribute
+ * @param p unused
+ * @return the thread's result; the tests ignore it
+ */
 void *do_sleep(void *p) {
    dstring error = DSTRING_INIT;
 
@@ -295,6 +309,10 @@ void *do_sleep(void *p) {
 }
 
 
+/** @brief A worker that burns CPU, so the profiler has user time to attribute
+ * @param p unused
+ * @return the thread's result; the tests ignore it
+ */
 void *do_calc(void *p) {
    int num = 3000;
    int i = 0;
@@ -355,6 +373,10 @@ void *do_calc(void *p) {
    return nullptr;
 }
 
+/** @brief A worker that burns CPU differently, so two busy threads can be told apart
+ * @param p unused
+ * @return the thread's result; the tests ignore it
+ */
 void *do_calc2(void *p) {
    int num = 7000;
    int i = 0;
@@ -407,6 +429,10 @@ void *do_calc2(void *p) {
    return nullptr;
 }
 
+/** @brief A worker that allocates and frees, so the profiler sees a different kind of work
+ * @param p unused
+ * @return the thread's result; the tests ignore it
+ */
 void *do_malloc(void *p) {
    char *text;
    int count = 90000;

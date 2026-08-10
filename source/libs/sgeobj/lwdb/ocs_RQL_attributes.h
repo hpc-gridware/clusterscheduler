@@ -24,18 +24,32 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Resource Quota Scheduling Cache
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of RQL
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   RQL_name = 11800,
-   RQL_result,
-   RQL_time,
-   RQL_slots,
-   RQL_tagged4schedule
+   RQL_name = 11800,   ///< Limit Key
+   RQL_result,   ///< Cached Result
+   RQL_time,   ///< Earliest Time
+   RQL_slots,   ///< Slots
+   RQL_tagged4schedule   ///< Tagged For Schedule
 };
 
+/** @brief The attribute ids of RQL, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int RQL_Type[] = {
    RQL_name,
    RQL_result,
@@ -45,6 +59,10 @@ constexpr const int RQL_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of RQL
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define RQL_ATTRIBUTES \
    {RQL_name, "RQL_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {RQL_result, "RQL_result", AttributeStatic::INT, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

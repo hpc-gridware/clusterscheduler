@@ -163,6 +163,11 @@ ocs::gdi::Packet::~Packet() {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Add a task to this packet
+ * @param task the task to append; the packet takes it over
+ * @return the task's index, used to pick its answer out later
+ */
 int
 ocs::gdi::Packet::append_task(gdi::Task *task) {
    DENTER(TOP_LAYER);
@@ -170,6 +175,10 @@ ocs::gdi::Packet::append_task(gdi::Task *task) {
    DRETURN(tasks.size() - 1);
 }
 
+/**
+ * @brief Build the multi answer list from the tasks' individual answers
+ * @param[out] malpp receives one entry per task
+ */
 void
 ocs::gdi::Packet::create_multi_answer(lList **malpp) {
    DENTER(TOP_LAYER);
@@ -272,6 +281,14 @@ ocs::gdi::Packet::broadcast_that_handled()
    DRETURN_VOID;
 }
 
+/**
+ * @brief Pack this packet and send it to qmaster through the commlib
+ *
+ * The path an ordinary client takes.
+ *
+ * @param[out] answer_list receives packing or communication errors
+ * @return true when the packet was sent
+ */
 bool
 ocs::gdi::Packet::execute_external(lList **answer_list)
 {
@@ -534,6 +551,16 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
    DRETURN(ret);
 }
 
+/**
+ * @brief Hand this packet to a worker thread inside qmaster
+ *
+ * Fills in the caller's identity from the component, then puts the
+ * packet on #GlobalRequestQueue. Nothing is packed or sent — this is the
+ * path qmaster's own threads take.
+ *
+ * @param[out] answer_list receives errors detected while queueing
+ * @return true when the packet was queued
+ */
 bool
 ocs::gdi::Packet::execute_internal(lList **answer_list) {
    DENTER(TOP_LAYER);
@@ -558,6 +585,10 @@ ocs::gdi::Packet::execute_internal(lList **answer_list) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Wait for the reply to a packet sent by #execute_external
+ * @param[out] malpp receives the multi answer list
+ */
 void
 ocs::gdi::Packet::wait_for_result_external(lList **malpp) {
    DENTER(TOP_LAYER);
@@ -571,6 +602,10 @@ ocs::gdi::Packet::wait_for_result_external(lList **malpp) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Wait for a packet queued by #execute_internal and take its answers
+ * @param[out] malpp receives the multi answer list
+ */
 void
 ocs::gdi::Packet::wait_for_result_internal(lList **malpp) {
    DENTER(TOP_LAYER);
@@ -579,6 +614,10 @@ ocs::gdi::Packet::wait_for_result_internal(lList **malpp) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief How large a packbuffer this packet needs
+ * @return the size in bytes, measured by packing in counting mode
+ */
 uint32_t
 ocs::gdi::Packet::get_pb_size() {
    DENTER(TOP_LAYER);
@@ -596,6 +635,12 @@ ocs::gdi::Packet::get_pb_size() {
    DRETURN(ret);
 }
 
+/**
+ * @brief Read a whole packet, header and tasks, out of a packbuffer
+ * @param[out] answer_list receives the reason on failure
+ * @param pb the buffer to read from
+ * @return true on success
+ */
 bool
 ocs::gdi::Packet::unpack(lList **answer_list, sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
@@ -671,6 +716,12 @@ error_with_mapping:
    DRETURN(ret);
 }
 
+/**
+ * @brief Read only the header, so the receiver can decide who handles it
+ * @param[out] answer_list receives the reason on failure
+ * @param pb the buffer to read from
+ * @return true on success
+ */
 bool
 ocs::gdi::Packet::unpack_header(lList **answer_list, sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
@@ -695,6 +746,12 @@ error_with_mapping:
    DRETURN(ret);
 }
 
+/**
+ * @brief Write a whole packet, header and tasks, into a packbuffer
+ * @param[out] answer_list receives the reason on failure
+ * @param pb the buffer to append to
+ * @return true on success
+ */
 bool
 ocs::gdi::Packet::pack(lList **answer_list, sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
@@ -719,6 +776,12 @@ ocs::gdi::Packet::pack(lList **answer_list, sge_pack_buffer *pb) {
    DRETURN(true);
 }
 
+/**
+ * @brief Write only the header into a packbuffer
+ * @param[out] answer_list receives the reason on failure
+ * @param pb the buffer to append to
+ * @return true on success
+ */
 bool
 ocs::gdi::Packet::pack_header(lList **answer_list, sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
@@ -736,6 +799,14 @@ error_with_mapping:
    DRETURN(ret);
 }
 
+/**
+ * @brief Write one task into a packbuffer
+ * @param task the task to write
+ * @param[out] answer_list receives the reason on failure
+ * @param pb the buffer to append to
+ * @param has_next true when another task follows, so the reader keeps going
+ * @return true on success
+ */
 bool
 ocs::gdi::Packet::pack_task(Task *task, lList **answer_list, sge_pack_buffer *pb, bool has_next) {
    DENTER(TOP_LAYER);

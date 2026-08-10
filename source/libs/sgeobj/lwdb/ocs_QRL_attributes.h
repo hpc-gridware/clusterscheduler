@@ -24,19 +24,37 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Queue Reference
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of QRL
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   QRL_queue = 10900
+   QRL_queue = 10900   ///< Queue Instance
 };
 
+/** @brief The attribute ids of QRL, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int QRL_Type[] = {
    QRL_queue,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of QRL
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define QRL_ATTRIBUTES \
    {QRL_queue, "QRL_queue", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 

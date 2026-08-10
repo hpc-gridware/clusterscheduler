@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Queue references: `cqueue`, `@hostgroup` or `cqueue@host`
+ *
+ * Wherever a configuration or a request names queues, it does so through
+ * these. Resolving one means expanding host groups and bringing host names
+ * into their unique form.
+ *
+ * @see sge_qref.h
+ */
+
 #include <cstring>
 
 #include "uti/ocs_Pattern.h"
@@ -58,6 +68,7 @@
 #include "msg_common.h"
 #include "msg_clients_common.h"
 
+/// Debug layer the queue reference traces are written to
 #define QREF_LAYER TOP_LAYER
 
 
@@ -222,30 +233,18 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/qref/qref_list_add() *******************************************
-*  NAME
-*     qref_list_add() -- Add a queue reference to the list 
-*
-*  SYNOPSIS
-*     bool 
-*     qref_list_add(lList **this_list, 
-*                   lList **answer_list, 
-*                   const char *qref_string) 
-*
-*  FUNCTION
-*     Add the queue reference "qref_string" to the QR_type list "this_list".
-*     Errors will be reported via return value and "answer_list".  
-*
-*  INPUTS
-*     lList **this_list       - QR_Type 
-*     lList **answer_list     - AN_Type 
-*     const char *qref_string - queue reference 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*******************************************************************************/
+/**
+ * @brief Add a queue reference to the list
+ *
+ * Add the queue reference "qref_string" to the QR_type list "this_list".
+ * Errors will be reported via return value and "answer_list".
+ *
+ * @param this_list QR_Type
+ * @param answer_list AN_Type
+ * @param qref_string queue reference
+ *
+ * @return error state true  - success false - error
+ */
 bool
 qref_list_add(lList **this_list, lList **answer_list, const char *qref_string)
 {
@@ -270,65 +269,44 @@ qref_list_add(lList **this_list, lList **answer_list, const char *qref_string)
    DRETURN(ret);
 }
 
-/****** sgeobj/qref/qref_list_resolve() ****************************************
-*  NAME
-*     qref_list_resolve() -- resolves a list of queue reference patterns 
-*
-*  SYNOPSIS
-*     bool 
-*     qref_list_resolve(const lList *src_qref_list, 
-*                       lList **answer_list, 
-*                       lList **qref_list, 
-*                       bool *found_something, 
-*                       const lList *cqueue_list, 
-*                       const lList *hgroup_list, 
-*                       bool resolve_cqueue, 
-*                       bool resolve_qdomain) 
-*
-*  FUNCTION
-*     Resolves a list of queue reference patterns. "src_qref_list"
-*     is the list of input patterns to be resolved. "qref_list" contains
-*     all resolved names which matched at least one of the given
-*     patterns. The master lists "cqueue_list" and "hgroup_list" are
-*     needed to resolve the pattern. "resolve_cqueue" and 
-*     "resolve_qdomain" can be used to define how qreferenes are 
-*     resolved.
-*
-*     Examples:
-*
-*        <CQ-pattern> (e.g. "*")
-*           resolve_cqueue is false 
-*              => cq1 cq2
-*           resolve_cqueue is true 
-*              => cq1@hostA1 cq1@hostA2 cq1@hostB1 cq1@hostB2
-*                 cq2@hostA1 cq2@hostA2 cq2@hostB1 cq2@hostB2
-*
-*        <QD-pattern> (e.q "*@@hgrp*")
-*           resolve_qdomain is false
-*              => cq1@@hgrpA cq1@@hgrpB cq2@@hgrpA cq2@@hgrpB
-*           resolve_qdomain is true
-*              => cq1@hostA1 cq1@hostA2 cq1@hostB1 cq1@hostB2
-*                 cq2@hostA1 cq2@hostA2 cq2@hostB1 cq2@hostB2
-*
-*        <QI-pattern> (e.g "cq*@host?1")
-*              => cq1@hostA1 cq1@hostB1 
-*                 cq2@hostA1 cq2@hostB1
-*
-*  INPUTS
-*     const lList *src_qref_list - QR_Type list (input: pattern) 
-*     lList **answer_list        - AN_Type list 
-*     lList **qref_list          - QR_Type list (output: resolved qrefs)
-*     bool *found_something      - a pattern matched? (output) 
-*     const lList *cqueue_list   - master CQ_Type list 
-*     const lList *hgroup_list   - master HGRP_Type list 
-*     bool resolve_cqueue        - resolve cqueue pattern?
-*     bool resolve_qdomain       - resolve qdomain pattern? 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*******************************************************************************/
+/**
+ * @brief Resolves a list of queue reference patterns
+ *
+ * Resolves a list of queue reference patterns. "src_qref_list"
+ * is the list of input patterns to be resolved. "qref_list" contains
+ * all resolved names which matched at least one of the given
+ * patterns. The master lists "cqueue_list" and "hgroup_list" are
+ * needed to resolve the pattern. "resolve_cqueue" and
+ * "resolve_qdomain" can be used to define how qreferenes are
+ * resolved.
+ * Examples:
+ *    <CQ-pattern> (e.g. "*")
+ *       resolve_cqueue is false
+ *          => cq1 cq2
+ *       resolve_cqueue is true
+ *          => `cq1@hostA1` `cq1@hostA2` `cq1@hostB1` `cq1@hostB2`
+ *             `cq2@hostA1` `cq2@hostA2` `cq2@hostB1` `cq2@hostB2`
+ *    <QD-pattern> (e.q "`*@@hgrp*`")
+ *       resolve_qdomain is false
+ *          => `cq1@@hgrpA` `cq1@@hgrpB` `cq2@@hgrpA` `cq2@@hgrpB`
+ *       resolve_qdomain is true
+ *          => `cq1@hostA1` `cq1@hostA2` `cq1@hostB1` `cq1@hostB2`
+ *             `cq2@hostA1` `cq2@hostA2` `cq2@hostB1` `cq2@hostB2`
+ *    <QI-pattern> (e.g "`cq*@host`?1")
+ *          => `cq1@hostA1` `cq1@hostB1`
+ *             `cq2@hostA1` `cq2@hostB1`
+ *
+ * @param src_qref_list QR_Type list (input: pattern)
+ * @param answer_list AN_Type list
+ * @param qref_list QR_Type list (output: resolved qrefs)
+ * @param found_something a pattern matched? (output)
+ * @param cqueue_list master CQ_Type list
+ * @param hgroup_list master HGRP_Type list
+ * @param resolve_cqueue resolve cqueue pattern?
+ * @param resolve_qdomain resolve qdomain pattern?
+ *
+ * @return error state true  - success false - error
+ */
 bool
 qref_list_resolve(const lList *src_qref_list, lList **answer_list, 
                   lList **qref_list, bool *found_something,
@@ -401,31 +379,22 @@ qref_list_resolve(const lList *src_qref_list, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sge_qref/qref_cq_rejected() ********************************************
-*  NAME
-*     qref_cq_rejected() --  Check, if -q qref_list rejects (cluster) queue
-*
-*  SYNOPSIS
-*     bool qref_cq_rejected(const char *qref_pattern, const char *cqname, const
-*     char *hostname, const lList *hgroup_list)
-*
-*  FUNCTION
-*     Check if patter in -q qref_list rejects cluster queue and hostname,
-*     if passed. If nullptr is passed as hostname, cluster queue verfication
-*     is performed only.
-*
-*  INPUTS
-*     const char *qref_pattern - a wildcard pattern as defined for -q qref_list
-*     const char *cqname       - cluster queue name
-*     const char *hostname     - execution hostname (may be nullptr)
-*     const lList *hgroup_list - host group list
-*
-*  RESULT
-*     bool - true if rejected
-*
-*  NOTES
-*     MT-NOTE: qref_cq_rejected() is MT safe
-*******************************************************************************/
+/**
+ * @brief Check, if -q qref_list rejects (cluster) queue
+ *
+ * Check if patter in -q qref_list rejects cluster queue and hostname,
+ * if passed. If nullptr is passed as hostname, cluster queue verfication
+ * is performed only.
+ *
+ * @param qref_pattern a wildcard pattern as defined for -q qref_list
+ * @param cqname cluster queue name
+ * @param hostname execution hostname (may be nullptr)
+ * @param hgroup_list host group list
+ *
+ * @return true if rejected
+ *
+ * @note MT-NOTE: qref_cq_rejected() is MT safe
+ */
 bool
 qref_cq_rejected(const char *qref_pattern, const char *cqname,
       const char *hostname, const lList *hgroup_list)
@@ -459,31 +428,22 @@ qref_cq_rejected(const char *qref_pattern, const char *cqname,
 }
 
 
-/****** sge_qref/qref_list_cq_rejected() ***************************************
-*  NAME
-*     qref_list_cq_rejected() -- Check, if -q qref_list rejects (cluster) queue
-*
-*  SYNOPSIS
-*     bool qref_list_cq_rejected(const lList *qref_list, const char *cqname,
-*                        const char *hostname, const lList *hgroup_list)
-*
-*  FUNCTION
-*     Check if -q qref_list rejects cluster queue and hostname, if passed.
-*     If nullptr is passed as hostname, cluster queue verfication is performed
-*     only.
-*
-*  INPUTS
-*     const lList *qref_list - QR_Type list as usef for -q qref_list
-*     const char *cqname     - cluster queue name
-*     const char *hostname     - exeuction hostname
-*     const lList *hgroup_list - host group list
-*
-*  RESULT
-*     bool - true if rejected
-*
-*  NOTES
-*     MT-NOTE: qref_list_cq_rejected() is MT safe
-*******************************************************************************/
+/**
+ * @brief Check, if -q qref_list rejects (cluster) queue
+ *
+ * Check if -q qref_list rejects cluster queue and hostname, if passed.
+ * If nullptr is passed as hostname, cluster queue verfication is performed
+ * only.
+ *
+ * @param qref_list QR_Type list as usef for -q qref_list
+ * @param cqname cluster queue name
+ * @param hostname exeuction hostname
+ * @param hgroup_list host group list
+ *
+ * @return true if rejected
+ *
+ * @note MT-NOTE: qref_list_cq_rejected() is MT safe
+ */
 static bool
 qref_eh_rejected(const char *qref_pattern, const char *hostname, const lList *hgroup_list)
 {
@@ -502,6 +462,17 @@ qref_eh_rejected(const char *qref_pattern, const char *hostname, const lList *hg
    DRETURN(true);
 }
 
+/**
+ * @brief Does a queue reference list exclude a host entirely?
+ *
+ * Used to skip a host early: when no entry of the list can match any queue on
+ * it, the scheduler need not look at its queues at all.
+ *
+ * @param qref_list the queue references to check
+ * @param hostname the host in question
+ * @param hgroup_list the host groups, needed to resolve a group reference
+ * @return true when the host is rejected by all of them
+ */
 bool
 qref_list_eh_rejected(const lList *qref_list, const char *hostname, const lList *hgroup_list)
 {
@@ -526,6 +497,15 @@ qref_list_eh_rejected(const lList *qref_list, const char *hostname, const lList 
 }
 
 
+/**
+ * @brief Does a queue reference list exclude one cluster queue on one host?
+ *
+ * @param qref_list the queue references to check
+ * @param cqname the cluster queue in question
+ * @param hostname the host in question; nullptr checks the cluster queue alone
+ * @param hgroup_list the host groups, needed to resolve a group reference
+ * @return true when the queue is rejected by all of them
+ */
 bool
 qref_list_cq_rejected(const lList *qref_list, const char *cqname,
       const char *hostname, const lList *hgroup_list)
@@ -551,50 +531,35 @@ qref_list_cq_rejected(const lList *qref_list, const char *cqname,
 }
 
 
-/****** sge_qref/qref_hgroup_rejected() ****************************************
-*  NAME
-*     qref_hgroup_rejected() -- Check if a hostgroup contains a host
-*
-*  SYNOPSIS
-*     static bool qref_hgroup_rejected(const lListElem *hgroup, const char
-*     *hostname, const lList *hgroup_list)
-*
-*  FUNCTION
-*     Checks if "hostname" is a member of "hgroup", following nested
-*     hostgroup references.
-*
-*     Members are resolved *exactly*, never as patterns. sge_types(1) defines
-*     the content of a hostlist as
-*
-*        host_identifier := host_name | hostgroup_name
-*
-*     - there is no wildcard type on this side. Wildcard types (wc_host,
-*     wc_hostgroup, expression) are defined for the reference side only, i.e.
-*     for "-q wc_qdomain" and the RQS "hosts {...}" scopes.
-*
-*     This mirrors href_list_find_references(), which is what
-*     "qconf -shgrp_resolved" resolves with. Before CS-2450 the members were
-*     passed back into qref_list_host_rejected() and thus matched as
-*     expressions against *all* hostgroups, so the same configuration resolved
-*     to different host sets depending on the code path.
-*
-*     Cycles cannot occur: sge_hgroup_qmaster.cc rejects them when a hostgroup
-*     is added.
-*
-*  INPUTS
-*     const lListElem *hgroup  - hostgroup to search (HGRP_Type)
-*     const char *hostname     - the host in question
-*     const lList *hgroup_list - hostgroup list (HGRP_Type)
-*
-*  RESULT
-*     bool - True if the host is not a member.
-*
-*  NOTES
-*     MT-NOTE: qref_hgroup_rejected() is MT safe
-*
-*  SEE ALSO
-*     sgeobj/href/href_list_find_references()
-*******************************************************************************/
+/**
+ * @brief Check if a hostgroup contains a host
+ *
+ * Checks if "hostname" is a member of "hgroup", following nested
+ * hostgroup references.
+ * Members are resolved *exactly*, never as patterns. sge_types(1) defines
+ * the content of a hostlist as
+ *    host_identifier := host_name | hostgroup_name
+ * - there is no wildcard type on this side. Wildcard types (wc_host,
+ * wc_hostgroup, expression) are defined for the reference side only, i.e.
+ * for "-q wc_qdomain" and the RQS "hosts {...}" scopes.
+ * This mirrors href_list_find_references(), which is what
+ * "qconf -shgrp_resolved" resolves with. Before CS-2450 the members were
+ * passed back into qref_list_host_rejected() and thus matched as
+ * expressions against *all* hostgroups, so the same configuration resolved
+ * to different host sets depending on the code path.
+ * Cycles cannot occur: sge_hgroup_qmaster.cc rejects them when a hostgroup
+ * is added.
+ *
+ * @param hgroup hostgroup to search (HGRP_Type)
+ * @param hostname the host in question
+ * @param hgroup_list hostgroup list (HGRP_Type)
+ *
+ * @return True if the host is not a member.
+ *
+ * @note MT-NOTE: qref_hgroup_rejected() is MT safe
+ *
+ * @see #href_list_find_references
+ */
 static bool
 qref_hgroup_rejected(const lListElem *hgroup, const char *hostname, const lList *hgroup_list)
 {
@@ -641,38 +606,27 @@ qref_hgroup_rejected(const lListElem *hgroup, const char *hostname, const lList 
    DRETURN(true);
 }
 
-/****** sge_qref/qref_list_host_rejected() *************************************
-*  NAME
-*     qref_list_host_rejected() -- Check if -q ??@href rejects host
-*
-*  SYNOPSIS
-*     bool qref_list_host_rejected(const char *href, const char
-*     *hostname, const lList *hgroup_list)
-*
-*  FUNCTION
-*     Checks if a -q ??@href rejects host. The href may be either
-*     wc_hostgroup or wc_host.
-*
-*     "href" is the *reference* side, so expression semantics apply to it.
-*     The members of a matched hostgroup are resolved exactly by
-*     qref_hgroup_rejected() (CS-2450).
-*
-*     A reference without pattern characters is looked up via
-*     hgroup_list_locate(), i.e. a hash lookup on HGRP_name instead of a scan
-*     of the whole master hostgroup list. That is the common case and this
-*     function runs per RQS rule, per queue instance, per job.
-*
-*  INPUTS
-*     const char *href         - Host reference from -q ??@href
-*     const char *hostname     - the host in question
-*     const lList *hgroup_list - hostgroup list (HGRP_Type)
-*
-*  RESULT
-*     bool - True if rejected.
-*
-*  NOTES
-*     MT-NOTE: qref_list_host_rejected() is MT safe
-*******************************************************************************/
+/**
+ * @brief Check if -q ??`@href` rejects host
+ *
+ * Checks if a -q ??`@href` rejects host. The href may be either
+ * wc_hostgroup or wc_host.
+ * "href" is the *reference* side, so expression semantics apply to it.
+ * The members of a matched hostgroup are resolved exactly by
+ * qref_hgroup_rejected() (CS-2450).
+ * A reference without pattern characters is looked up via
+ * hgroup_list_locate(), i.e. a hash lookup on HGRP_name instead of a scan
+ * of the whole master hostgroup list. That is the common case and this
+ * function runs per RQS rule, per queue instance, per job.
+ *
+ * @param href Host reference from -q ??`@href`
+ * @param hostname the host in question
+ * @param hgroup_list hostgroup list (HGRP_Type)
+ *
+ * @return True if rejected.
+ *
+ * @note MT-NOTE: qref_list_host_rejected() is MT safe
+ */
 bool
 qref_list_host_rejected(const char *href, const char *hostname, const lList *hgroup_list)
 {
@@ -714,30 +668,19 @@ qref_list_host_rejected(const char *href, const char *hostname, const lList *hgr
    DRETURN(true);
 }
 
-/****** sgeobj/qref/qref_list_trash_some_elemts() *****************************
-*  NAME
-*     qref_list_trash_some_elemts() -- Remove some elements from list 
-*
-*  SYNOPSIS
-*     bool 
-*     qref_list_trash_some_elemts(lList **this_list, 
-*                                 const char *full_name) 
-*
-*  FUNCTION
-*     Remove all elements from "this_list" where either the cluster
-*     queue name is equivalent with the cluster queue part of "fullname"
-*     or if the hostname is different from the hostname part of 
-*     "fullname"
-*
-*  INPUTS
-*     lList **this_list     - QR_Type 
-*     const char *full_name - queue instance name  
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*******************************************************************************/
+/**
+ * @brief Remove some elements from list
+ *
+ * Remove all elements from "this_list" where either the cluster
+ * queue name is equivalent with the cluster queue part of "fullname"
+ * or if the hostname is different from the hostname part of
+ * "fullname"
+ *
+ * @param this_list QR_Type
+ * @param full_name queue instance name
+ *
+ * @return error state true  - success false - error
+ */
 bool
 qref_list_trash_some_elemts(lList **this_list, const char *full_name)
 {
@@ -804,33 +747,25 @@ qref_list_trash_some_elemts(lList **this_list, const char *full_name)
    DRETURN(ret);
 }
 
-/****** sgeobj/qref/qref_list_is_valid() **************************************
-*  NAME
-*     qref_list_is_valid() -- check queue reference list 
-*
-*  SYNOPSIS
-*     bool 
-*     qref_list_is_valid(const lList *this_list, lList **answer_list) 
-*
-*  FUNCTION
-*     This function will be used to check the hard and soft queue list.
-*     which will be defined during job submittion or redefined via
-*     qalter and qmon.
-*
-*     This function will return success when:
-*        - queues are requestable and
-*        - if the contained queue-pattern matches at least one 
-*          queue instance
-*
-*  INPUTS
-*     const lList *this_list - QR_Type 
-*     lList **answer_list    - AN_Type 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*******************************************************************************/
+/**
+ * @brief Check queue reference list
+ *
+ * This function will be used to check the hard and soft queue list.
+ * which will be defined during job submittion or redefined via
+ * qalter and qmon.
+ * This function will return success when:
+ *    - queues are requestable and
+ *    - if the contained queue-pattern matches at least one
+ *      queue instance
+ *
+ * @param this_list QR_Type
+ * @param answer_list AN_Type
+ * @param master_cqueue_list the cluster queues a reference may name
+ * @param master_hgroup_list the host groups a reference may name
+ * @param master_centry_list the complex entries a reference may name
+ *
+ * @return error state true  - success false - error
+ */
 bool
 qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *master_cqueue_list, 
                    const lList *master_hgroup_list, const lList *master_centry_list)
@@ -886,6 +821,11 @@ qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *mas
    DRETURN(ret);
 }
 
+/**
+ * @brief Resolve the host part of every queue reference in a list
+ *
+ * @param[in,out] this_list the references to rewrite
+ */
 void
 qref_list_resolve_hostname(lList *this_list) 
 {
@@ -897,6 +837,14 @@ qref_list_resolve_hostname(lList *this_list)
 }
 
 /* QR_name might be a pattern */
+/**
+ * @brief Resolve the host part of one queue reference
+ *
+ * A reference is written `cqueue@host`, and the host has to be brought into its
+ * unique form before it is compared or stored.
+ *
+ * @param[in,out] this_elem the reference to rewrite
+ */
 void
 qref_resolve_hostname(lListElem *this_elem) {
    DENTER(TOP_LAYER);
@@ -932,27 +880,18 @@ qref_resolve_hostname(lListElem *this_elem) {
    DRETURN_VOID;
 }
 
-/****** sge_qref/cull_parse_destination_identifier_list() **********************
-*  NAME
-*     cull_parse_destination_identifier_list() -- parse a queue reference list 
-*
-*  SYNOPSIS
-*     int 
-*     cull_parse_destination_identifier_list(lList **lpp, char *dest_str) 
-*
-*  FUNCTION
-*     Parse 'dest_str' and create a QR_type list. 
-*
-*  INPUTS
-*     lList **lpp    - QR_Type list 
-*     char *dest_str - input string 
-*
-*  RESULT
-*     int - error state
-*
-*  NOTES
-*     MT-NOTE: cull_parse_destination_identifier_list() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Parse a queue reference list
+ *
+ * Parse 'dest_str' and create a QR_type list.
+ *
+ * @param lpp QR_Type list
+ * @param dest_str input string
+ *
+ * @return error state
+ *
+ * @note MT-NOTE: cull_parse_destination_identifier_list() is MT safe
+ */
 int 
 cull_parse_destination_identifier_list(lList **lpp, const char *dest_str) 
 {

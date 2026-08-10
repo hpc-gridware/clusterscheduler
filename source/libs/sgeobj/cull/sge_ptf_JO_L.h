@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief OS Job
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -66,15 +70,15 @@
 */
 
 enum {
-   JO_OS_job_ID = JO_LOWERBOUND,
-   JO_OS_job_ID2,
-   JO_systemd_scope,
-   JO_usage_collection,
-   JO_ja_task_ID,
-   JO_task_id_str,
-   JO_state,
-   JO_usage_list,
-   JO_pid_list
+   JO_OS_job_ID = JO_LOWERBOUND,   ///< OS Job Id
+   JO_OS_job_ID2,   ///< OS Job Id 2
+   JO_systemd_scope,   ///< Systemd Scope
+   JO_usage_collection,   ///< Usage Collection Mode
+   JO_ja_task_ID,   ///< Array Task Id
+   JO_task_id_str,   ///< Task Id String
+   JO_state,   ///< State
+   JO_usage_list,   ///< Usage List
+   JO_pid_list   ///< Pid List
 };
 
 LISTDEF(JO_Type)
@@ -101,6 +105,7 @@ NAMEDEF(JON)
    NAME("JO_pid_list")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define JO_SIZE sizeof(JON)/sizeof(char *)
 
 

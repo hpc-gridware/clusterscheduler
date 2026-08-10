@@ -24,17 +24,31 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Acknowledgement
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of ACK
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   ACK_type = 12100,
-   ACK_id,
-   ACK_id2,
-   ACK_str
+   ACK_type = 12100,   ///< Acknowledgement Type
+   ACK_id,   ///< First Id
+   ACK_id2,   ///< Second Id
+   ACK_str   ///< Name
 };
 
+/** @brief The attribute ids of ACK, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int ACK_Type[] = {
    ACK_type,
    ACK_id,
@@ -43,6 +57,10 @@ constexpr const int ACK_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of ACK
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define ACK_ATTRIBUTES \
    {ACK_type, "ACK_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {ACK_id, "ACK_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

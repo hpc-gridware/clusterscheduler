@@ -156,7 +156,7 @@
                "line": "this Role. Each rule consists of exactly six colon-separated characteristics:"
             },
             {
-               "line": "  <source_of_request>:<origin_of_request>:<operation_type>:<object_type>:<object_key>:<object_value_constraint>"
+               "line": "  `<source_of_request>:<origin_of_request>:<operation_type>:<object_type>:<object_key>:<object_value_constraint>`"
             },
             {
                "line": "A request is authorized if at least one rule in the list matches all six characteristics."

@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Scheduler Order
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -79,17 +83,17 @@
 */
 
 enum {
-   OR_type = OR_LOWERBOUND,
-   OR_job_number,
-   OR_ja_task_number,
-   OR_job_version,
-   OR_queuelist,
-   OR_granted_resources_list,
-   OR_ticket,
-   OR_joker,
-   OR_pe,
-   OR_ntix,
-   OR_prio
+   OR_type = OR_LOWERBOUND,   ///< Order Type
+   OR_job_number,   ///< Job Number
+   OR_ja_task_number,   ///< Array Task Number
+   OR_job_version,   ///< Job Version
+   OR_queuelist,   ///< Queue Instances
+   OR_granted_resources_list,   ///< Granted Resources List
+   OR_ticket,   ///< Number of Tickets
+   OR_joker,   ///< Order Specific Data
+   OR_pe,   ///< PE Name
+   OR_ntix,   ///< Normalized Tickets
+   OR_prio   ///< Job Priority
 };
 
 LISTDEF(OR_Type)
@@ -120,6 +124,7 @@ NAMEDEF(ORN)
    NAME("OR_prio")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define OR_SIZE sizeof(ORN)/sizeof(char *)
 
 

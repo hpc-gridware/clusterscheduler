@@ -19,11 +19,23 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Binding the job's threads to the cores the scheduler granted it
+ */
+
 #include "uti/ocs_Topo.h"
 
 #include "sgeobj/ocs_BindingInstance.h"
 
 namespace ocs {
+   /** @brief Binding the job's threads to the cores it was granted
+    *
+    * The scheduler decides which cores a job gets; this applies that decision
+    * in the shepherd, just before the job is exec'd, so the job inherits the
+    * binding it cannot then escape.
+    *
+    * @ingroup libprocedure
+    */
    class BindingShepherd {
 
 #if defined(OCS_HWLOC) && !defined(SOLARIS)

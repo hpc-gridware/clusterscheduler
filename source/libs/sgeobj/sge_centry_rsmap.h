@@ -19,6 +19,12 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Declarations for checks specific to RSMAP resources
+ *
+ * @see sge_centry_rsmap.cc
+ */
+
 #include <cinttypes>
 #include "cull/cull_list.h"
 

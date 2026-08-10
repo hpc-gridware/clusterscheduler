@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Turning a job's resource requests into process limits
+ *
+ * @see setrlimits.h for why every limit has a floor.
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -43,10 +49,18 @@
 
 #include <sys/resource.h>
 
+/** @brief Name of the platform's limit struct */
 #define RLIMIT_STRUCT_TAG rlimit
+/** @brief The platform's "no limit" value */
 #define RLIMIT_INFINITY RLIM_INFINITY
 
-/* Format the value, if val == INFINITY, print INFINITY for logs sake */
+/** @brief Format a limit for the trace file, spelling out INFINITY
+ *
+ * Expands to two printf arguments - the value and a suffix - so it is used as
+ * `limit_fmt` with `FORMAT_LIMIT(x)` supplying both.
+ *
+ * @param x the limit
+ */
 #define FORMAT_LIMIT(x) (x==RLIMIT_INFINITY)?0:x, (x==RLIMIT_INFINITY)?"\bINFINITY":""
 
 #include <cinttypes>
@@ -115,6 +129,53 @@ static int sge_parse_limit(sge_rlim_t *rlvalp, char *s, char *error_str,
    return 1;
 }
 
+/** @def PARSE_IT
+ * @brief Read one limit out of the job configuration
+ *
+ * Defined inside setrlimits() and used only there; relies on the local `s` and
+ * `error_str`.
+ *
+ * @param dstp receives the parsed value
+ * @param attr the configuration entry's name
+ */
+
+/** @def PARSE_IT_UNDEF
+ * @brief #PARSE_IT for a limit that may be the string `UNDEFINED`
+ * @param dstp receives the parsed value, or `RLIMIT_UNDEFINED`
+ * @param attr the configuration entry's name
+ */
+
+/** @def RL_MAX
+ * @brief The larger of two limits, treating INFINITY as larger than anything
+ * @param r1 one limit
+ * @param r2 the other
+ */
+
+/** @def RL_MIN
+ * @brief The smaller of two limits, treating INFINITY as larger than anything
+ * @param r1 one limit
+ * @param r2 the other
+ */
+
+/** @def CHECK_FOR_CONSUMABLE_JOB
+ * @brief Scale a limit by the slots on this host unless it is a per-job consumable
+ *
+ * A per-job consumable is already the whole job's allowance, so it is used as
+ * it stands; anything else was configured per slot and has to be multiplied.
+ * Relies on the neighbouring `A_is_consumable_job` variable, so it only works
+ * inside setrlimits().
+ *
+ * @param A the limit variable, updated in place
+ */
+
+/** @brief Apply every configured limit to this process, before the job is exec'd
+ *
+ * Reads the `s_*` and `h_*` values out of the job's configuration, scales the
+ * job-wide ones by the slots held on this host, raises anything below the
+ * `LIMIT_*_MIN` floors, and calls `setrlimit()` for each.
+ *
+ * @param trace_rlimit write each limit to the shepherd's trace file as it is set
+ */
 void setrlimits(bool trace_rlimit) {
    sge_rlim_t s_cpu, s_cpu_is_consumable_job;
    sge_rlim_t h_cpu, h_cpu_is_consumable_job;
@@ -209,6 +270,7 @@ void setrlimits(bool trace_rlimit) {
    PARSE_IT_UNDEF(&h_locks,        "h_locks");
 
 #define RL_MAX(r1, r2) ((rlimcmp((r1), (r2))>0)?(r1):(r2))
+
 #define RL_MIN(r1, r2) ((rlimcmp((r1), (r2))<0)?(r1):(r2))
    /*
     * we have to define some minimum limits to make sure that
@@ -448,6 +510,10 @@ void setrlimits(bool trace_rlimit) {
                                                  NECSX 4/5
                                                  |         OTHER ARCHS
                                                  |         |          */
+/** @brief Every limit the shepherd knows how to set, with its per-platform scope
+ *
+ * Terminated by a row of zeroes.
+ */
 const struct resource_table_entry resource_table[] = {
    {RLIMIT_FSIZE,     "RLIMIT_FSIZE",            {RES_PROC, RES_PROC}},
    {RLIMIT_DATA,      "RLIMIT_DATA",             {RES_PROC, RES_PROC}},
@@ -476,6 +542,7 @@ const struct resource_table_entry resource_table[] = {
 #endif
    {0,                nullptr,                      {0, 0}}
 };
+/** @brief Printed for a limit the table has no name for */
 const char *unknown_string = "unknown";
 /* *INDENT-ON* */
 
@@ -500,6 +567,14 @@ static int get_resource_info(uint32_t resource, const char **name,
    *name = unknown_string;
    return 1;       
 }
+
+/** @def limit_fmt
+ * @brief printf conversion for a limit value on this platform
+ *
+ * Defined inside pushlimit() and used only there, always together with
+ * #FORMAT_LIMIT, which supplies both the value and the INFINITY suffix the
+ * trailing `%s` prints.
+ */
 
 static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp,
                       bool trace_rlimit)

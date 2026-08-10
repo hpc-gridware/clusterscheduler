@@ -18,13 +18,18 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The hardware unit a binding counts in: threads, cores, caches, NUMA nodes
+ */
+
 #include <string>
 
 #include "ocs_BindingUnit.h"
 
-/** @brief Returns the sort string form of a binding unit type
+/** @brief The letter a binding unit is written as in a topology string
  *
  * @param mode A binding unit type
+ * @return its letter, or `"???"` for an unknown value
  */
 std::string ocs::BindingUnit::to_string(const Unit mode) {
    switch (mode) {
@@ -51,6 +56,7 @@ std::string ocs::BindingUnit::to_string(const Unit mode) {
  * Single letter units automatically refer to power units.
  *
  * @param mode A Binding unit string.
+ * @return the unit, or #ocs::BindingUnit::UNINITIALIZED when it is not recognised
  */
 ocs::BindingUnit::Unit
 ocs::BindingUnit::from_string(const std::string& mode) {
@@ -92,6 +98,7 @@ ocs::BindingUnit::from_string(const std::string& mode) {
  * returns true.
  *
  * @param unit Enum value representing a binding unit.
+ * @return true for the performance variants (`C…`), false for the efficiency ones (`E…`)
  */
 bool ocs::BindingUnit::is_power_unit(const Unit unit) {
    if (unit == CSOCKET || unit == CCORE || unit == CTHREAD || unit == CCACHE2 || unit == CCACHE3 || unit == CNUMA) {

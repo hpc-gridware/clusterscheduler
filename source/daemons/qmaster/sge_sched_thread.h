@@ -33,42 +33,57 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The scheduler thread inside qmaster, and the lists it schedules from
+ *
+ * The scheduler does not read the master lists directly. It is an event client
+ * like any other: the mirror keeps it a private copy of everything it needs,
+ * and a scheduling run works entirely from that snapshot. That is what lets
+ * the run take as long as it takes without holding a lock on the live data.
+ */
+
 #include "evc/sge_event_client.h"
 #include "mir/sge_mirror.h"
 #include "sge_sched_prepare_data.h"
 
+/** @brief The scheduler's private snapshot of the cluster
+ *
+ * Maintained by the mirror from the event stream, so a scheduling run never
+ * touches the live master lists.
+ */
 typedef struct {
-   lList *host_list;        /* EH_Type */
-   lList *queue_list;       /* QU_Type */
-   lList *dis_queue_list;   /* QU_Type  contains the queues only for the reservation*/
-   lList *all_queue_list;   /* QU_Type */
-   lList *job_list;         /* JB_Type */
-   const lList *centry_list;      /* CE_Type */
-   lList *acl_list;         /* US_Type */
-   lList *pe_list;          /* PE_Type */
-   lList *user_list;        /* UP_Type */
-   lList *dept_list;        /* US_Type */
-   lList *project_list;     /* UP_Type */
-   lList *share_tree;       /* STN_Type */
-   const lList *ckpt_list;        /* CK_Type */
-   lList *running_per_user; /* JC_Type */
-   const lList *hgrp_list;        /* HGRP_Type */
-   lList *rqs_list;         /* RQS_Type */
-   lList *ar_list;          /* AR_Type */
-   lList *category_list;    /* CT_Type */
-   bool monitor_next_run;
+   lList *host_list;        ///< Execution hosts (`EH_Type`)
+   lList *queue_list;       ///< Queue instances that can take jobs (`QU_Type`)
+   lList *dis_queue_list;   ///< `QU_Type` - contains the queues only for the reservation
+   lList *all_queue_list;   ///< Every queue instance, including the unusable ones (`QU_Type`)
+   lList *job_list;         ///< Jobs (`JB_Type`)
+   const lList *centry_list;      ///< Complex entries (`CE_Type`)
+   lList *acl_list;         ///< Access control lists (`US_Type`)
+   lList *pe_list;          ///< Parallel environments (`PE_Type`)
+   lList *user_list;        ///< Users (`UP_Type`)
+   lList *dept_list;        ///< Departments (`US_Type`)
+   lList *project_list;     ///< Projects (`UP_Type`)
+   lList *share_tree;       ///< The share tree (`STN_Type`)
+   const lList *ckpt_list;        ///< Checkpointing environments (`CK_Type`)
+   lList *running_per_user; ///< How many jobs each user is running (`JC_Type`)
+   const lList *hgrp_list;        ///< Host groups (`HGRP_Type`)
+   lList *rqs_list;         ///< Resource quota sets (`RQS_Type`)
+   lList *ar_list;          ///< Advance reservations (`AR_Type`)
+   lList *category_list;    ///< Scheduling categories, so jobs that look alike are decided once (`CT_Type`)
+   bool monitor_next_run;   ///< Whether the next run writes a scheduling decision profile
 } scheduler_all_data_t;
 
+/** @brief How the rest of qmaster wakes the scheduler up */
 typedef struct {
-   pthread_mutex_t mutex;      /* used for mutual exclusion                         */
-   pthread_cond_t cond_var;   /* used for waiting                                  */
-   bool exit;       /* true -> exit event delivery                       */
-   bool triggered;  /* new events added, a scheduling run is triggered  */
-   lList *new_events; /* the storage for new events                       */
-   bool new_global_conf;
+   pthread_mutex_t mutex;      ///< used for mutual exclusion
+   pthread_cond_t cond_var;   ///< used for waiting
+   bool exit;       ///< true -> exit event delivery
+   bool triggered;  ///< new events added, a scheduling run is triggered
+   lList *new_events; ///< the storage for new events
+   bool new_global_conf;   ///< The global configuration changed and has to be re-read
 } scheduler_control_t;
 
-extern scheduler_control_t Scheduler_Control;
+extern scheduler_control_t Scheduler_Control;   ///< The scheduler thread's wake-up state
 
 void
 st_set_flag_new_global_conf(bool new_value);

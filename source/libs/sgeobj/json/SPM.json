@@ -1,19 +1,22 @@
 {
    "className": "SPM",
-   "summary": "@todo add summary",
+   "summary": "Spooling Map Entry (unused)",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "A mapping from a spool key to an object id, with a tag and a sublist."
+      },
+      {
+         "line": "@warning No attribute of this type is read or written anywhere in either repository, and `SPM_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
       }
    ],
    "cullPrefix": "SPM",
    "attributes": [
       {
          "name": "key",
-         "summary": "@todo add summary",
+         "summary": "Spool Key",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SPM object; see the object description."
             }
          ],
          "type": "lStringT",
@@ -28,10 +31,10 @@
       },
       {
          "name": "id",
-         "summary": "@todo add summary",
+         "summary": "Object Id",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SPM object; see the object description."
             }
          ],
          "type": "lStringT",
@@ -39,10 +42,10 @@
       },
       {
          "name": "tag",
-         "summary": "@todo add summary",
+         "summary": "Tag",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SPM object; see the object description."
             }
          ],
          "type": "lBoolT",
@@ -50,10 +53,10 @@
       },
       {
          "name": "sublist",
-         "summary": "@todo add summary",
+         "summary": "Sublist",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SPM object; see the object description."
             }
          ],
          "type": "lListT",

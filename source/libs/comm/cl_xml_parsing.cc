@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The commlib's wire protocol: nine XML messages and their parsers
+ */
+
 #include <cstdlib>
 #include <cstring>
 
@@ -44,12 +48,22 @@
 #include "uti/sge_string.h"
 #include "uti/sge_stdlib.h"
 
+/** @def CL_DO_XML_DEBUG
+ * @brief Log every parse step of every message
+ *
+ * Off by default; useful only when a peer sends XML this parser rejects.
+ */
 #define CL_DO_XML_DEBUG 0
 
+/** @brief One entry of the XML escape table
+ *
+ * The length is stored rather than measured because the table is walked for
+ * every character of every message.
+ */
 typedef struct cl_xml_sequence_type {
-   char character;
-   const char *sequence;
-   int sequence_length;
+   char character;          ///< The character in a plain string
+   const char *sequence;    ///< What it is written as in XML
+   int sequence_length;     ///< Length of `sequence`, precomputed
 } cl_xml_sequence_t;
 
 /* 
@@ -57,6 +71,10 @@ typedef struct cl_xml_sequence_type {
  * and cl_com_transformString2XML(). The first character has to be an "&" for sequence.
  * This is because cl_com_transformXML2String() is only checking for "&" characters when
  * parsing XML string in order to find sequences.
+ */
+/** @brief Number of entries in the XML escape table
+ *
+ * @warning Must match `cl_com_sequence_array`; nothing checks it.
  */
 #define CL_XML_SEQUENCE_ARRAY_SIZE 8
 static const cl_xml_sequence_t cl_com_sequence_array[CL_XML_SEQUENCE_ARRAY_SIZE] = {
@@ -106,46 +124,41 @@ static char *cl_xml_parse_version(char *charptr, unsigned long buffer_length) {
    return ret;
 }
 
-/****** commlib/cl_xml_parsing/cl_com_transformXML2String() ****************************
-*  NAME
-*     cl_com_transformXML2String() -- convert xml escape sequences to string
-*
-*  SYNOPSIS
-*     int cl_com_transformXML2String(const char* input, char** output) 
-*
-*  FUNCTION
-*     Converts a xml string into standard string witout XML escape sequences.
-*
-*
-*     Character      XML escape sequence        name
-*
-*       '\n'         "&#x0D;"                   carriage return
-*       '\r'         "&#x0A;"                   linefeed
-*       '\t'         "&#x09;"                   tab
-*       '&'          "&amp;"                    amp
-*       '<'          "&lt;"                     lower than
-*       '>'          "&gt;"                     greater than
-*       '"'          "&quot;"                   quote
-*       '\''         "&apos;"                   apostrophe
-*
-*  INPUTS
-*     const char* input - xml sequence string
-*     char** output     - pointer to empty string pointer. The function will
-*                         malloc() memory for the output string and return
-*                         the input string with xml escape sequences converted to
-*                         standard string characters.
-*
-*  RESULT
-*     int - CL_RETVAL_OK     - no errors
-*           CL_RETVAL_PARAMS - input or output are not correctly initialized
-*           CL_RETVAL_MALLOC - can't malloc() memory for output string
-*
-*  NOTES
-*     MT-NOTE: cl_com_transformXML2String() is MT safe 
-*
-*  SEE ALSO
-*     commlib/cl_xml_parsing/cl_com_transformString2XML()
-*******************************************************************************/
+/**
+ * @brief Convert xml escape sequences to string
+ *
+ * Converts a xml string into standard string witout XML escape sequences.
+ *
+ * @code
+ * Character      XML escape sequence        name
+ *   '\n'         "&#x0D;"                   carriage return
+ *   '\r'         "&#x0A;"                   linefeed
+ *   '\t'         "&#x09;"                   tab
+ *   '&'          "&amp;"                    amp
+ *   '<'          "&lt;"                     lower than
+ *   '>'          "&gt;"                     greater than
+ *   '"'          "&quot;"                   quote
+ *   '\''         "&apos;"                   apostrophe
+ * @endcode
+ *
+ * @warning The first two rows are **swapped**, here and in
+ *          `cl_com_sequence_array` that they describe: `'\n'` is linefeed
+ *          (0x0A) and `'\r'` is carriage return (0x0D), but the array maps
+ *          `'\n'` to `&#x0D;` and `'\r'` to `&#x0A;`. Two commlib peers
+ *          round-trip correctly because both ends use the same table, which
+ *          is why this has never shown up - but the XML on the wire carries
+ *          the wrong character, and anything else reading it sees a carriage
+ *          return where a newline was meant.
+ *
+ * @param input xml sequence string
+ * @param output pointer to empty string pointer. The function will malloc() memory for the output string and return the input string with xml escape sequences converted to standard string characters.
+ *
+ * @return CL_RETVAL_OK     - no errors CL_RETVAL_PARAMS - input or output are not correctly initialized CL_RETVAL_MALLOC - can't malloc() memory for output string
+ *
+ * @note MT-NOTE: cl_com_transformXML2String() is MT safe
+ *
+ * @see #cl_com_transformString2XML
+ */
 int cl_com_transformXML2String(const char *input, char **output) {
    int i, pos, s;
    int input_length = 0;
@@ -198,46 +211,46 @@ int cl_com_transformXML2String(const char *input, char **output) {
    return CL_RETVAL_OK;
 }
 
-/****** commlib/cl_xml_parsing/cl_com_transformString2XML() ****************************
-*  NAME
-*     cl_com_transformString2XML() -- convert special chars to escape sequences
-*
-*  SYNOPSIS
-*     int cl_com_transformString2XML(const char* input, char** output) 
-*
-*  FUNCTION
-*     This function will parse the input char string and replace the character
-*     by escape sequences in the output string. The user has to sge_free() the 
-*     output string.
-*
-*  INPUTS
-*     const char* input - input string without xml escape sequences
-*     char** output     - pointer to empty string pointer. The function will
-*                         malloc() memory for the output string and return
-*                         the input string with xml escape squences.
-*
-*     Character      XML escape sequence        name
-*
-*       '\n'         "&#x0D;"                   carriage return
-*       '\r'         "&#x0A;"                   linefeed
-*       '\t'         "&#x09;"                   tab
-*       '&'          "&amp;"                    amp
-*       '<'          "&lt;"                     lower than
-*       '>'          "&gt;"                     greater than
-*       '"'          "&quot;"                   quote
-*       '\''         "&apos;"                   apostrophe
-*
-*  RESULT
-*     int - CL_RETVAL_OK     - no errors
-*           CL_RETVAL_PARAMS - input or output are not correctly initialized
-*           CL_RETVAL_MALLOC - can't malloc() memory for output string
-*
-*  NOTES
-*     MT-NOTE: cl_com_transformString2XML() is MT safe 
-*
-*  SEE ALSO
-*     commlib/cl_xml_parsing/cl_com_transformXML2String()
-*******************************************************************************/
+/**
+ * @brief Convert special chars to escape sequences
+ *
+ * This function will parse the input char string and replace the character
+ * by escape sequences in the output string. The user has to sge_free() the
+ * output string.
+ *
+ * @param input input string without xml escape sequences
+ * The mapping it applies:
+ *
+ * @code
+ * Character      XML escape sequence        name
+ *   '\n'         "&#x0D;"                   carriage return
+ *   '\r'         "&#x0A;"                   linefeed
+ *   '\t'         "&#x09;"                   tab
+ *   '&'          "&amp;"                    amp
+ *   '<'          "&lt;"                     lower than
+ *   '>'          "&gt;"                     greater than
+ *   '"'          "&quot;"                   quote
+ *   '\''         "&apos;"                   apostrophe
+ * @endcode
+ *
+ * @warning The first two rows are **swapped**, here and in
+ *          `cl_com_sequence_array` that they describe: `'\n'` is linefeed
+ *          (0x0A) and `'\r'` is carriage return (0x0D), but the array maps
+ *          `'\n'` to `&#x0D;` and `'\r'` to `&#x0A;`. Two commlib peers
+ *          round-trip correctly because both ends use the same table, which
+ *          is why this has never shown up - but the XML on the wire carries
+ *          the wrong character, and anything else reading it sees a carriage
+ *          return where a newline was meant.
+ *
+ * @param output pointer to an empty string pointer; the function allocates the
+ *        output string, which the caller frees
+ *
+ * @return CL_RETVAL_OK     - no errors CL_RETVAL_PARAMS - input or output are not correctly initialized CL_RETVAL_MALLOC - can't malloc() memory for output string
+ *
+ * @note MT-NOTE: cl_com_transformString2XML() is MT safe
+ *
+ * @see #cl_com_transformXML2String
+ */
 int cl_com_transformString2XML(const char *input, char **output) {
    int input_length, i, s;
    int used = 0;
@@ -280,6 +293,10 @@ int cl_com_transformString2XML(const char *input, char **output) {
    return CL_RETVAL_OK;
 }
 
+/** @brief The `mat` string a #cl_xml_ack_type_t is written as
+ * @param mat the value
+ * @return the string that goes into the MIH, e.g. `"ack"`
+ */
 const char *cl_com_get_mih_mat_string(cl_xml_ack_type_t mat) {
    switch (mat) {
       case CL_MIH_MAT_NAK:
@@ -294,6 +311,10 @@ const char *cl_com_get_mih_mat_string(cl_xml_ack_type_t mat) {
    return "undefined";
 }
 
+/** @brief The `df` string a #cl_xml_mih_data_format_t is written as
+ * @param df the value
+ * @return the string that goes into the MIH, e.g. `"bin"`
+ */
 const char *cl_com_get_mih_df_string(cl_xml_mih_data_format_t df) {
    switch (df) {
       case CL_MIH_DF_BIN:
@@ -320,6 +341,10 @@ const char *cl_com_get_mih_df_string(cl_xml_mih_data_format_t df) {
    return "undefined";
 }
 
+/** @brief Release the length prefix
+ * @param header the message, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_gmsh_header(cl_com_GMSH_t **header) {
    if (header == nullptr || *header == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -328,6 +353,10 @@ int cl_com_free_gmsh_header(cl_com_GMSH_t **header) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Release a client's connect message
+ * @param message the message, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_cm_message(cl_com_CM_t **message) {   /* CR check */
    if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -342,6 +371,10 @@ int cl_com_free_cm_message(cl_com_CM_t **message) {   /* CR check */
    return CL_RETVAL_OK;
 }
 
+/** @brief Release a message information header
+ * @param message the message, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_mih_message(cl_com_MIH_t **message) {   /* CR check */
    if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -351,6 +384,10 @@ int cl_com_free_mih_message(cl_com_MIH_t **message) {   /* CR check */
    return CL_RETVAL_OK;
 }
 
+/** @brief Release an acknowledgement
+ * @param message the message, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_am_message(cl_com_AM_t **message) {   /* CR check */
    if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -360,6 +397,10 @@ int cl_com_free_am_message(cl_com_AM_t **message) {   /* CR check */
    return CL_RETVAL_OK;
 }
 
+/** @brief Release a status request
+ * @param message the message, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_sim_message(cl_com_SIM_t **message) {
    if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -369,6 +410,10 @@ int cl_com_free_sim_message(cl_com_SIM_t **message) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Release a status answer
+ * @param message the message, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_sirm_message(cl_com_SIRM_t **message) {
    if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -379,6 +424,10 @@ int cl_com_free_sirm_message(cl_com_SIRM_t **message) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Release a close request
+ * @param message the message, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_ccm_message(cl_com_CCM_t **message) {   /* CR check */
    if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -388,6 +437,10 @@ int cl_com_free_ccm_message(cl_com_CCM_t **message) {   /* CR check */
    return CL_RETVAL_OK;
 }
 
+/** @brief Release a close answer
+ * @param message the message, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_ccrm_message(cl_com_CCRM_t **message) {   /* CR check */
    if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -397,6 +450,10 @@ int cl_com_free_ccrm_message(cl_com_CCRM_t **message) {   /* CR check */
    return CL_RETVAL_OK;
 }
 
+/** @brief Release a service's connect answer
+ * @param message the message, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_crm_message(cl_com_CRM_t **message) {   /* CR check */
    if (message == nullptr || *message == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -410,6 +467,13 @@ int cl_com_free_crm_message(cl_com_CRM_t **message) {   /* CR check */
    return CL_RETVAL_OK;
 }
 
+/** @brief Parse the length prefix out of a buffer
+ * @param buffer the received bytes
+ * @param buffer_length how many
+ * @param header receives the parsed message
+ * @param used_buffer_length receives how much of the buffer was consumed
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_xml_parse_GMSH(unsigned char *buffer, unsigned long buffer_length, cl_com_GMSH_t *header,
                       unsigned long *used_buffer_length) {
 
@@ -472,6 +536,12 @@ int cl_xml_parse_GMSH(unsigned char *buffer, unsigned long buffer_length, cl_com
    return CL_RETVAL_OK;
 }
 
+/** @brief Parse a client's connect message out of a buffer
+ * @param buffer the received bytes
+ * @param buffer_length how many
+ * @param message receives the parsed message
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_CM_t **message) {
 
    unsigned long i;
@@ -843,6 +913,12 @@ int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_C
    return CL_RETVAL_OK;
 }
 
+/** @brief Parse a service's connect answer out of a buffer
+ * @param buffer the received bytes
+ * @param buffer_length how many
+ * @param message receives the parsed message
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_xml_parse_CRM(unsigned char *buffer, unsigned long buffer_length, cl_com_CRM_t **message) {
 
    unsigned long i;
@@ -1108,6 +1184,12 @@ static bool cl_xml_parse_is_version(const char *buffer, unsigned long start, uns
    return found;
 }
 
+/** @brief Parse a message information header out of a buffer
+ * @param buffer the received bytes
+ * @param buffer_length how many
+ * @param message receives the parsed message
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_xml_parse_MIH(unsigned char *buffer, unsigned long buffer_length, cl_com_MIH_t **message) {
    unsigned long buf_pointer = 0;
    int in_tag = 0;
@@ -1301,6 +1383,12 @@ int cl_xml_parse_MIH(unsigned char *buffer, unsigned long buffer_length, cl_com_
    return CL_RETVAL_OK;
 }
 
+/** @brief Parse a status answer out of a buffer
+ * @param buffer the received bytes
+ * @param buffer_length how many
+ * @param message receives the parsed message
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_xml_parse_SIRM(unsigned char *buffer, unsigned long buffer_length, cl_com_SIRM_t **message) {
    unsigned long buf_pointer = 0;
    int in_tag = 0;
@@ -1498,6 +1586,12 @@ int cl_xml_parse_SIRM(unsigned char *buffer, unsigned long buffer_length, cl_com
    return CL_RETVAL_OK;
 }
 
+/** @brief Parse an acknowledgement out of a buffer
+ * @param buffer the received bytes
+ * @param buffer_length how many
+ * @param message receives the parsed message
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_xml_parse_AM(unsigned char *buffer, unsigned long buffer_length, cl_com_AM_t **message) {
    unsigned long buf_pointer = 0;
    int in_tag = 0;
@@ -1586,6 +1680,12 @@ int cl_xml_parse_AM(unsigned char *buffer, unsigned long buffer_length, cl_com_A
 
 }
 
+/** @brief Parse a close request out of a buffer
+ * @param buffer the received bytes
+ * @param buffer_length how many
+ * @param message receives the parsed message
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_xml_parse_CCM(unsigned char *buffer, unsigned long buffer_length, cl_com_CCM_t **message) {
    unsigned long buf_pointer = 0;
    int in_tag = 0;
@@ -1647,6 +1747,12 @@ int cl_xml_parse_CCM(unsigned char *buffer, unsigned long buffer_length, cl_com_
    return CL_RETVAL_OK;
 }
 
+/** @brief Parse a close answer out of a buffer
+ * @param buffer the received bytes
+ * @param buffer_length how many
+ * @param message receives the parsed message
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_xml_parse_CCRM(unsigned char *buffer, unsigned long buffer_length, cl_com_CCRM_t **message) {
    unsigned long buf_pointer = 0;
    int in_tag = 0;
@@ -1711,6 +1817,12 @@ int cl_xml_parse_CCRM(unsigned char *buffer, unsigned long buffer_length, cl_com
    return CL_RETVAL_OK;
 }
 
+/** @brief Parse a status request out of a buffer
+ * @param buffer the received bytes
+ * @param buffer_length how many
+ * @param message receives the parsed message
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_xml_parse_SIM(unsigned char *buffer, unsigned long buffer_length, cl_com_SIM_t **message) {
    unsigned long buf_pointer = 0;
    int in_tag = 0;
@@ -1783,6 +1895,10 @@ int cl_xml_parse_SIM(unsigned char *buffer, unsigned long buffer_length, cl_com_
       - *endpoint is set to nullptr
       - int - CL_RETVAL_XXXX error number
 */
+/** @brief Release an endpoint
+ * @param endpoint the endpoint, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_free_endpoint(cl_com_endpoint_t **endpoint) { /* CR check */
    if (endpoint == nullptr || *endpoint == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -1800,6 +1916,10 @@ int cl_com_free_endpoint(cl_com_endpoint_t **endpoint) { /* CR check */
    return CL_RETVAL_OK;
 }
 
+/** @brief Copy an endpoint
+ * @param endpoint the original
+ * @return the copy, which the caller frees, or nullptr
+ */
 cl_com_endpoint_t *cl_com_dup_endpoint(cl_com_endpoint_t *endpoint) {
    if (endpoint == nullptr || endpoint->comp_host == nullptr || endpoint->comp_name == nullptr) {
       return nullptr;
@@ -1807,6 +1927,13 @@ cl_com_endpoint_t *cl_com_dup_endpoint(cl_com_endpoint_t *endpoint) {
    return cl_com_create_endpoint(endpoint->comp_host, endpoint->comp_name, endpoint->comp_id, &endpoint->addr);
 }
 
+/** @brief Build an endpoint from its three parts
+ * @param host host the component runs on
+ * @param name component name
+ * @param id component id
+ * @param in_addr resolved address of the host, may be nullptr
+ * @return the new endpoint, which the caller frees, or nullptr
+ */
 cl_com_endpoint_t *cl_com_create_endpoint(const char *host, const char *name,
                                           unsigned long id, const struct in_addr *in_addr) {
    cl_com_endpoint_t *endpoint = nullptr;

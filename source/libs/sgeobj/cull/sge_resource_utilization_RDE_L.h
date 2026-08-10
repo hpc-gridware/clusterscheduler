@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Resource Diagram Entry
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -73,10 +77,10 @@
 */
 
 enum {
-   RDE_time = RDE_LOWERBOUND,
-   RDE_amount,
-   RDE_resource_map_list,
-   RDE_binding_inuse
+   RDE_time = RDE_LOWERBOUND,   ///< Time
+   RDE_amount,   ///< Amount
+   RDE_resource_map_list,   ///< Resource Map List
+   RDE_binding_inuse   ///< Binding
 };
 
 LISTDEF(RDE_Type)
@@ -93,6 +97,7 @@ NAMEDEF(RDEN)
    NAME("RDE_binding_inuse")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RDE_SIZE sizeof(RDEN)/sizeof(char *)
 
 

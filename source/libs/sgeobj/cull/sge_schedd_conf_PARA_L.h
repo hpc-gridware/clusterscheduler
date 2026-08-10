@@ -24,25 +24,29 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Parameter
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Parameter
 *
-* @todo add description
+* A name/value pair, used for the free-form `params` settings of the scheduler configuration.
 *
-*    SGE_STRING(PARA_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(PARA_name) - Name
+*    The parameter name, e.g. `profile`.
 *
-*    SGE_STRING(PARA_value) - @todo add summary
-*    @todo add description
+*    SGE_STRING(PARA_value) - Value
+*    Its value, always as text; the reader parses it.
 *
 */
 
 enum {
-   PARA_name = PARA_LOWERBOUND,
-   PARA_value
+   PARA_name = PARA_LOWERBOUND,   ///< Name
+   PARA_value   ///< Value
 };
 
 LISTDEF(PARA_Type)
@@ -55,6 +59,7 @@ NAMEDEF(PARAN)
    NAME("PARA_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define PARA_SIZE sizeof(PARAN)/sizeof(char *)
 
 

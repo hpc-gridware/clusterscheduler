@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Queue Reference
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -33,12 +37,12 @@
 * Reference to a queue instance by name.
 *
 *    SGE_STRING(QR_name) - Queue Instance Name
-*    Name of the Queue Instance in the form cluster_queue_name@host_name.
+*    Name of the Queue Instance in the form `cluster_queue_name@host_name`.
 *
 */
 
 enum {
-   QR_name = QR_LOWERBOUND
+   QR_name = QR_LOWERBOUND   ///< Queue Instance Name
 };
 
 LISTDEF(QR_Type)
@@ -49,6 +53,7 @@ NAMEDEF(QRN)
    NAME("QR_name")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define QR_SIZE sizeof(QRN)/sizeof(char *)
 
 

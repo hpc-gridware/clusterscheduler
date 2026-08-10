@@ -24,21 +24,25 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Group Id
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Group Id
 *
-* @todo add description
+* A single UNIX group id, used where a list of supplementary groups is needed.
 *
-*    SGE_ULONG(GR_group) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(GR_group) - Group Id
+*    The numeric group id. Read positionally by the process data collector.
 *
 */
 
 enum {
-   GR_group = GR_LOWERBOUND
+   GR_group = GR_LOWERBOUND   ///< Group Id
 };
 
 LISTDEF(GR_Type)
@@ -49,6 +53,7 @@ NAMEDEF(GRN)
    NAME("GR_group")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define GR_SIZE sizeof(GRN)/sizeof(char *)
 
 

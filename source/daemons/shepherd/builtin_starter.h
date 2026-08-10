@@ -33,6 +33,19 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Starting the job itself: the environment, the shell, and the exec
+ *
+ * The last thing the shepherd does before the job replaces it. Everything the
+ * job will see - its environment, its shell, its arguments, its standard
+ * streams - is set up here, in the child process, after the limits are applied
+ * and the privileges dropped.
+ *
+ * The environment is not simply inherited. The execution daemon writes an
+ * `environment` file, and the shepherd builds the job's environment from that,
+ * either on top of its own or from nothing, depending on the configuration.
+ */
+
 void son(const char *childname, char *script_file, int truncate_stderr_out, bool is_interactive_job);
 int sge_set_environment();
 char** sge_get_environment();

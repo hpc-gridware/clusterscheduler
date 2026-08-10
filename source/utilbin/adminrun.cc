@@ -31,6 +31,13 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief adminrun - run a command as another user
+ *
+ * Used by the installation and by the daemons to drop from root to the admin
+ * user for one command.
+ */
 #include <cstdio>
 #include <csignal>
 #include <unistd.h>
@@ -53,6 +60,11 @@ void usage()
    exit(1);
 }
 
+/** @brief Entry point of adminrun
+ * @param argc argument count
+ * @param argv argument vector
+ * @return the program's exit status
+ */
 int main(int argc, char **argv)
 {
    struct passwd *pw = nullptr;

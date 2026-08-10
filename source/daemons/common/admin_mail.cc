@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Mailing the administrator about job failures, without flooding them
+ */
 #include <cstring>
 #include <cerrno>
 
@@ -63,6 +67,7 @@
 *     * SSTATE_PROCSET_NOTFREED is missing
 *     * possibly further issues, compare against state definition in execution_states.h
  */
+/** @brief The mailing rule for each job failure state, as a `BIT_ADM_*` value */
 int admail_states[MAX_SSTATE + 1] = {
                                       0,
                                       0,
@@ -102,13 +107,22 @@ int admail_states[MAX_SSTATE + 1] = {
 /* 35 SSTATE_UNUSED5             */   0,
 /* 36 SSTATE_CHECK_DAEMON_CONFIG */   0 };
 
+/** @brief When each state was last mailed about, for the `BIT_ADM_HOUR` rule */
 uint64_t admail_times[MAX_SSTATE + 1];
 
-/*
-** this functions reports job failures to the admin
-** it might not be apt to report on errors that
-** have nothing to do with a particular job
-*/
+/** @brief Report a job failure to the administrator, subject to the rate rules
+ *
+ * The mail carries the job's own trace and error files, because by the time
+ * the administrator reads it the spool directory may already be gone.
+ *
+ * @param progid which daemon is reporting
+ * @param jr the job report carrying the failure
+ * @param is_array whether the job is an array job
+ * @param job_owner the submitting user
+ *
+ * @note This reports on errors that have nothing to do with a particular job
+ *       as well; it might not be apt for those.
+ */
 void job_related_adminmail(uint32_t progid, lListElem *jr, int is_array, const char *job_owner)
 {
    static int first = 1;
@@ -327,6 +341,10 @@ FCLOSE_ERROR:
    DRETURN_VOID;
 }
 
+/** @brief Forget that a state was already mailed about, so the next one is sent
+ * @param state the failure state, or 0 to reset every state
+ * @return 0
+ */
 int adm_mail_reset(int state)
 {
    int i;

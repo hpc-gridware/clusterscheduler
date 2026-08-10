@@ -34,6 +34,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The shepherd: one process per job, from fork to exit status
+ *
+ * @see shepherd.h for why a job gets a process of its own.
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -108,27 +114,33 @@ pid_t wait3(int *, int, struct rusage *);
 
 
 
-#define NO_CKPT          0x000
-#define CKPT             0x001     /* set for all ckpt jobs                  */
-#define CKPT_KERNEL      0x002     /* set for kernel level ckpt jobs         */
-#define CKPT_USER        0x004     /* set for user-defined ckpt job           */
-#define CKPT_TRANS       0x008     /* set for transparent ckpt jobs          */
-#define CKPT_HIBER       0x010     /* set for hibernator ckpt jobs           */
-#define CKPT_CPR         0x020     /* set for cpr ckpt jobs                  */
-#define CKPT_CRAY        0x040     /* set for cray ckpt jobs                 */
-#define CKPT_REST_KERNEL 0x080     /* set for all restarted kernel ckpt jobs */
-#define CKPT_REST        0x100     /* set for all restarted ckpt jobs        */
-#define CKPT_APPLICATION 0x200     /* application checkpointing              */
+/** @name How the job is checkpointed, as a bitmask in ckpt_info_t::type
+ * @{
+ */
+#define NO_CKPT          0x000     ///< Not a checkpointing job
+#define CKPT             0x001     ///< set for all ckpt jobs
+#define CKPT_KERNEL      0x002     ///< set for kernel level ckpt jobs
+#define CKPT_USER        0x004     ///< set for user-defined ckpt job
+#define CKPT_TRANS       0x008     ///< set for transparent ckpt jobs
+#define CKPT_HIBER       0x010     ///< set for hibernator ckpt jobs
+#define CKPT_CPR         0x020     ///< set for cpr ckpt jobs
+#define CKPT_CRAY        0x040     ///< set for cray ckpt jobs
+#define CKPT_REST_KERNEL 0x080     ///< set for all restarted kernel ckpt jobs
+#define CKPT_REST        0x100     ///< set for all restarted ckpt jobs
+#define CKPT_APPLICATION 0x200     ///< application checkpointing
+/** @} */
 
+/** @brief Exit status telling the daemon to put the job back in the queue */
 #define RESCHEDULE_EXIT_STATUS 99
+/** @brief Exit status telling the daemon the job failed for an application reason */
 #define APPERROR_EXIT_STATUS 100
 
 /* global variables */
-bool g_new_interactive_job_support = false;
-int  g_noshell = 0;
+bool g_new_interactive_job_support = false;   ///< Whether the built-in interactive job support is in use
+int  g_noshell = 0;   ///< Start the job directly rather than through a shell
 
-char shepherd_job_dir[2048];
-int  received_signal=0;  /* set by signal handler, when a signal arrives */
+char shepherd_job_dir[2048];   ///< The job's active_jobs directory, where the report files go
+int  received_signal=0;  ///< set by signal handler, when a signal arrives
 int  g_sr_fifo_fd=-1;    ///< CS-2226: per-job signal_pipe FIFO read fd; carries job control signals (suspend/resume + arbitrary qsig signals); -1 = none/legacy
 
 
@@ -150,8 +162,8 @@ static int signalled_ckpt_job = 0; /* marker if signalled a ckpt job */
  * the job kept running until the qmaster resent the signal 60 s later.
  * A failed SIGSTOP/SIGCONT delivery is therefore retried from the SIGALRM
  * path until it sticks (the window is a few tens of milliseconds). */
-#define SUSPEND_RETRY_DELAY  1   /* seconds between two delivery attempts */
-#define SUSPEND_RETRY_MAX   15   /* give up after that many attempts      */
+#define SUSPEND_RETRY_DELAY  1   ///< seconds between two delivery attempts
+#define SUSPEND_RETRY_MAX   15   ///< give up after that many attempts
 
 /* CS-2476: signals which arrived before the job child was forked are kept in
  * the signal ring buffer and delivered from the SIGALRM path this many seconds
@@ -162,6 +174,10 @@ static int signalled_ckpt_job = 0; /* marker if signalled a ckpt job */
  * take 10 seconds. Measured setup time of the child is ~23 ms, so 1 s is still
  * ~40x headroom, and a delivery that is nevertheless too early is now retried
  * (see deliver_signal_or_method_with_retry()) instead of being dropped. */
+/** @brief Seconds to wait after the fork before delivering a queued signal
+ *
+ * See the comment above for why this is 1 and not the 10 it used to be.
+ */
 #define SIGNAL_DELIVERY_DELAY_AFTER_FORK  1
 static int suspend_retry_signal = 0; /* SIGSTOP/SIGCONT awaiting a retry, 0 = none */
 static int suspend_retry_count = 0;  /* attempts already made for suspend_retry_signal */
@@ -2522,7 +2538,7 @@ static void handle_signals_and_methods(
  *
  * Implementation: the raw syscall is used (not the glibc pidfd_open()
  * wrapper, which only exists since glibc 2.36) so it builds against old
- * libc. __NR_pidfd_open comes from <sys/syscall.h>; the #ifndef ... 434
+ * libc. `__NR_pidfd_open` comes from <sys/syscall.h>; the `#ifndef` ... 434
  * fallback covers tool-chains whose headers predate it (434 is the
  * syscall number on the common architectures' generic table).
  *
@@ -2615,6 +2631,21 @@ static int sr_fifo_drain() {
    return enq;
 }
 
+/** @brief Wait for the job to end, checkpointing and signalling it meanwhile
+ *
+ * This is where the shepherd spends nearly all its life. It reaps the child,
+ * services the queued signals, triggers checkpoints on the configured
+ * interval, and enforces the notify delay.
+ *
+ * @param pid the job process
+ * @param childname what the child is, for the trace file: `job`, `prolog`, …
+ * @param timeout seconds to wait before giving up; 0 for no timeout
+ * @param p_ckpt_info the checkpointing configuration, or nullptr
+ * @param[out] rusage receives what the kernel accounted for the child
+ * @param fd_pty_master the pty master for an interactive job, -1 otherwise
+ * @param fd_std_err the child's standard error, for an interactive job
+ * @return the child's exit status
+ */
 int wait_my_child(
 int pid,                   /* pid of job */
 const char *childname,     /* "job", "pe_start", ...     */
@@ -3235,6 +3266,15 @@ static void start_clean_command(char *cmd)
  for SIGSTOP/SIGCONT usually means the job child has not created its process
  group / systemd scope yet, see deliver_signal_or_method_with_retry().
  ****************************************************************/
+/** @brief Deliver a signal to the job, by whichever route reaches all of it
+ *
+ * Prefers the systemd scope or the additional group id over the process group,
+ * because a job that changed its process group would otherwise escape.
+ *
+ * @param pid the job process
+ * @param sig the signal
+ * @return true when the signal was delivered
+ */
 bool
 shepherd_signal_job(pid_t pid, int sig) {
    /*

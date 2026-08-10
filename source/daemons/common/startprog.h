@@ -33,4 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Starting another program and waiting for it, for the daemons
+ */
+
 int startprog(int out, int err, char *, char *, char *, ...);

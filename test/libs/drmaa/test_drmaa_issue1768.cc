@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Regression test for issue 1768: drmaa_wait() on a job id that was never submitted
+ */
 #include <cstdio>
 #include <cstring>
 

@@ -24,24 +24,38 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Checkpoint
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of CK
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   CK_name = 4950,
-   CK_interface,
-   CK_ckpt_command,
-   CK_migr_command,
-   CK_rest_command,
-   CK_ckpt_dir,
-   CK_when,
-   CK_signal,
-   CK_job_pid,
-   CK_clean_command,
-   CK_joker
+   CK_name = 4950,   ///< Name
+   CK_interface,   ///< Interface
+   CK_ckpt_command,   ///< Checkpoint Command
+   CK_migr_command,   ///< Migration Command
+   CK_rest_command,   ///< Restart Command
+   CK_ckpt_dir,   ///< Checkpoint Directory
+   CK_when,   ///< When
+   CK_signal,   ///< Signal
+   CK_job_pid,   ///< Job Pid
+   CK_clean_command,   ///< Clean Command
+   CK_joker   ///< Joker
 };
 
+/** @brief The attribute ids of CK, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int CK_Type[] = {
    CK_name,
    CK_interface,
@@ -57,6 +71,10 @@ constexpr const int CK_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of CK
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define CK_ATTRIBUTES \
    {CK_name, "CK_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {CK_interface, "CK_interface", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

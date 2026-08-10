@@ -33,14 +33,19 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The integer types the process data collector interface is built on
+ */
+
 #ifndef INSTCO_H
-typedef unsigned long uint64;   /* This should work on all current machines */
+typedef unsigned long uint64;   ///< 64 bit unsigned; this should work on all current machines
 #endif /* INSTCO_H */
 
+/** @brief printf conversion for a #uint64 */
 #define UINT64_FMT "%ld"
 
 #if !defined(LINUX) && !defined(SOLARIS) && !defined(DARWIN)
-typedef uint64 JobID_t;
+typedef uint64 JobID_t;   ///< The operating system's job identifier
 #else
-typedef pid_t JobID_t;
+typedef pid_t JobID_t;    ///< The operating system's job identifier; a pid where there is no native job id
 #endif

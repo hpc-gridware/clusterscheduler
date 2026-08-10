@@ -190,7 +190,7 @@
          "summary": "Name",
          "description": [
             {
-               "line": "Name of the hostgroup. Always starts with '@', e.g. '@allhosts'."
+               "line": "Name of the hostgroup. Always starts with '@', e.g. `@allhosts`."
             }
          ],
          "type": "lHostT",

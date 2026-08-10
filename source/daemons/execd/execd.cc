@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief sge_execd - runs the jobs qmaster assigns to this host
+ */
 #include <cstring>
 #include <sys/stat.h>
 #include <cerrno>
@@ -94,15 +98,20 @@
 
 
 
+/** @brief Set from a signal handler when jobs may be started
+ *
+ * The daemon does not start jobs while it is still working out what is already
+ * running on this host.
+ */
 volatile int jobs_to_start = 1;
 
 /* only used when running as SGE execd */
-volatile int waiting4osjid = 1;
+volatile int waiting4osjid = 1;   ///< Still waiting for an operating system job id to become available
 
 /* Store the directory the execd runs in when in normal operation.
  * avoid calling getcwd, cause this catches zombies on sun and is a !?GRML call!
  */
-char execd_spool_dir[SGE_PATH_MAX];
+char execd_spool_dir[SGE_PATH_MAX];   ///< Where the daemon spools; see the comment above for why it is cached
 
 static void execd_exit_func(int i);
 static void parse_cmdline_execd(char **argv);
@@ -110,45 +119,36 @@ static lList *sge_parse_cmdline_execd(char **argv, lList **ppcmdline);
 static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist, uint32_t *help);
 
 static uint64_t last_qmaster_registration_time = 0;
+/** @brief When this daemon last registered with qmaster
+ * @return the time, or 0 when it never has
+ */
 uint64_t get_last_qmaster_register_time() {
    return last_qmaster_registration_time;
 }
 
-/****** execd/sge_execd_application_status() ***********************************
-*  NAME
-*     sge_execd_application_status() -- commlib status callback function
-*
-*  SYNOPSIS
-*     unsigned long sge_execd_application_status(char** info_message)
-*
-*  FUNCTION
-*      This is the implementation of the commlib application status callback
-*      function. This function is called from the commlib when a connected
-*      client wants to get a SIRM (Status Information Response Message).
-*      The standard client for this action is the qping command.
-*
-*      The callback function is set with cl_com_set_status_func() after
-*      commlib initalization.
-*
-*      The function is called by a commlib function which may not run in the
-*      context of the execd application. This means no execd specific
-*      functions should be called (e.g. locking of global variables).
-*
-*      status 0:  no errors
-*      status 1:  dispatcher has reached warning timeout
-*      status 2:  dispatcher has reached error timeout
-*      status 3:  dispatcher alive timeout struct not initalized
-*
-*  INPUTS
-*     char** info_message - pointer to an char* inside commlib.
-*                           info message must be malloced, commlib will
-*                           free this memory.
-*  RESULT
-*     unsigned long status - status of application
-*
-*  NOTES
-*     This function is MT save
-*******************************************************************************/
+/**
+ * @brief Commlib status callback function
+ *
+ *  This is the implementation of the commlib application status callback
+ *  function. This function is called from the commlib when a connected
+ *  client wants to get a SIRM (Status Information Response Message).
+ *  The standard client for this action is the qping command.
+ *  The callback function is set with cl_com_set_status_func() after
+ *  commlib initalization.
+ *  The function is called by a commlib function which may not run in the
+ *  context of the execd application. This means no execd specific
+ *  functions should be called (e.g. locking of global variables).
+ *  status 0:  no errors
+ *  status 1:  dispatcher has reached warning timeout
+ *  status 2:  dispatcher has reached error timeout
+ *  status 3:  dispatcher alive timeout struct not initalized
+ *
+ * @param info_message pointer to an char* inside commlib. info message must be malloced, commlib will free this memory.
+ *
+ * @return status of application
+ *
+ * @note This function is MT save
+ */
 unsigned long sge_execd_application_status(char** info_message)
 {
    return sge_monitor_status(info_message, 0);
@@ -436,27 +436,17 @@ static void execd_exit_func(int i)
    DRETURN_VOID;
 }
 
-/****** execd/sge_execd_register_at_qmaster() **********************************
-*  NAME
-*     sge_execd_register_at_qmaster() -- modify execd list at qmaster site
-*
-*  SYNOPSIS
-*     int sge_execd_register_at_qmaster()
-*
-*  FUNCTION
-*     add local execd name to SGE_EH_LIST in order to register at
-*     qmaster
-*
-*  INPUTS
-*     void - no input
-*
-*  RESULT
-*     int - 0 = success / 1 = error
-*
-*  NOTES
-*     MT-NOTE: sge_execd_register_at_qmaster() is not MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Modify execd list at qmaster site
+ *
+ * add local execd name to SGE_EH_LIST in order to register at
+ * qmaster
+ *
+ * @param is_restart whether the daemon is re-registering after losing contact
+ * @return 0 = success / 1 = error
+ *
+ * @note MT-NOTE: sge_execd_register_at_qmaster() is not MT safe
+ */
 int sge_execd_register_at_qmaster(bool is_restart) {
    DENTER(TOP_LAYER);
 
@@ -650,31 +640,22 @@ static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist,
 }
 
 /* JG: TODO: we have this searching code in many places!! */
-/****** execd/execd_get_job_ja_task() ******************************************
-*  NAME
-*     execd_get_job_ja_task() -- search job and ja_task by id
-*
-*  SYNOPSIS
-*     bool
-*     execd_get_job_ja_task(uint32_t job_id, uint32_t ja_task_id,
-*                           lListElem **job, lListElem **ja_task)
-*
-*  FUNCTION
-*     Searches the execd master lists for job and ja_task
-*     defined by job_id and ja_task_id.
-*
-*  INPUTS
-*     uint32_t job_id     - job id
-*     uint32_t ja_task_id - ja_task id
-*     lListElem **job     - returns job or nullptr if not found
-*     lListElem **ja_task - returns ja_task or nullptr if not found
-*
-*  RESULT
-*     bool - true if both job and ja_task are found, else false
-*
-*  NOTES
-*     MT-NOTE: execd_get_job_ja_task() is MT safe
-*******************************************************************************/
+/**
+ * @brief Search job and ja_task by id
+ *
+ * Searches the execd master lists for job and ja_task
+ * defined by job_id and ja_task_id.
+ *
+ * @param job_id job id
+ * @param ja_task_id ja_task id
+ * @param[out] job returns job or nullptr if not found
+ * @param[out] ja_task returns ja_task or nullptr if not found
+ * @param ignore_missing_job_task do not log when the job or task is absent
+ *
+ * @return true if both job and ja_task are found, else false
+ *
+ * @note MT-NOTE: execd_get_job_ja_task() is MT safe
+ */
 bool execd_get_job_ja_task(uint32_t job_id, uint32_t ja_task_id, lListElem **job, lListElem **ja_task, bool ignore_missing_job_task)
 {
    const void *iterator = nullptr;

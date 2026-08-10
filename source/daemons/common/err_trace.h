@@ -33,9 +33,27 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-typedef int (*tShepherd_trace)(const char *format, ...); 
+/** @file
+ * @brief The shepherd's three report files: trace, error and exit_status
+ *
+ * A shepherd runs as the job's user, in the job's spool directory, with no way
+ * to talk back to the execution daemon once it has forked. What it leaves
+ * behind in those three files is the only account of what happened, and the
+ * daemon reads them after the shepherd is gone.
+ *
+ * The files are opened before the shepherd drops to the job owner and then
+ * kept open, because the directory may live on an NFS mount the job owner
+ * cannot write to. `shepherd_trace_chown()` hands them over afterwards.
+ */
 
-extern bool foreground; // make shepherd_trace() write to both trace file and stdout for debugging
+/** @brief The trace callback the process data collector is given
+ *
+ * Lets code that must not depend on the shepherd still write into its trace
+ * file when it is running inside one.
+ */
+typedef int (*tShepherd_trace)(const char *format, ...);  
+
+extern bool foreground; ///< make shepherd_trace() write to both trace file and stdout for debugging
 
 void shepherd_trace_init();
 void shepherd_trace_exit();

@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute String List
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   ASTRLIST_href = ASTRLIST_LOWERBOUND,
-   ASTRLIST_value
+   ASTRLIST_href = ASTRLIST_LOWERBOUND,   ///< Host Reference
+   ASTRLIST_value   ///< Value
 };
 
 LISTDEF(ASTRLIST_Type)
@@ -56,6 +60,7 @@ NAMEDEF(ASTRLISTN)
    NAME("ASTRLIST_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define ASTRLIST_SIZE sizeof(ASTRLISTN)/sizeof(char *)
 
 

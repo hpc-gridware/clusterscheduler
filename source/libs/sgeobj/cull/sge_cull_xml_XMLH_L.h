@@ -24,37 +24,42 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief XML Document Header
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief XML Document Header
 *
-* @todo add description
+* The head of a generated XML document: its version, root element name, stylesheets and attributes.
+* Used by the clients' `-xml` output. See `sge_cull_xml.cc`.
 *
-*    SGE_STRING(XMLH_Version) - @todo add summary
-*    @todo add description
+*    SGE_STRING(XMLH_Version) - XML Version
+*    The version string written into the XML declaration.
 *
-*    SGE_STRING(XMLH_Name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(XMLH_Name) - Root Element Name
+*    Name of the document's root element.
 *
-*    SGE_LIST(XMLH_Stylesheet) - @todo add summary
-*    @todo add description
+*    SGE_LIST(XMLH_Stylesheet) - Stylesheets
+*    Stylesheet processing instructions (`XMLS_Type`) emitted before the root element.
 *
-*    SGE_LIST(XMLH_Attribute) - @todo add summary
-*    @todo add description
+*    SGE_LIST(XMLH_Attribute) - Root Attributes
+*    Attributes (`XMLA_Type`) placed on the root element, such as the schema location.
 *
-*    SGE_LIST(XMLH_Element) - @todo add summary
-*    @todo add description
+*    SGE_LIST(XMLH_Element) - Content
+*    The document body (`XMLE_Type`).
 *
 */
 
 enum {
-   XMLH_Version = XMLH_LOWERBOUND,
-   XMLH_Name,
-   XMLH_Stylesheet,
-   XMLH_Attribute,
-   XMLH_Element
+   XMLH_Version = XMLH_LOWERBOUND,   ///< XML Version
+   XMLH_Name,   ///< Root Element Name
+   XMLH_Stylesheet,   ///< Stylesheets
+   XMLH_Attribute,   ///< Root Attributes
+   XMLH_Element   ///< Content
 };
 
 LISTDEF(XMLH_Type)
@@ -73,6 +78,7 @@ NAMEDEF(XMLHN)
    NAME("XMLH_Element")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define XMLH_SIZE sizeof(XMLHN)/sizeof(char *)
 
 

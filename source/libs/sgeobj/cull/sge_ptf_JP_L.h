@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Pid
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -41,8 +45,8 @@
 */
 
 enum {
-   JP_pid = JP_LOWERBOUND,
-   JP_background
+   JP_pid = JP_LOWERBOUND,   ///< Pid
+   JP_background   ///< Background
 };
 
 LISTDEF(JP_Type)
@@ -55,6 +59,7 @@ NAMEDEF(JPN)
    NAME("JP_background")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define JP_SIZE sizeof(JPN)/sizeof(char *)
 
 

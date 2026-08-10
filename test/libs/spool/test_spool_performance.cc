@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for performance in `libs/spool`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
@@ -235,6 +239,8 @@ static void write_csv(const char *scenario, prof_level level)
    fclose(csv);
 }
 
+/** @brief Clear caches
+ */
 void clear_caches()
 {
    printf("\n===> clear the filesystem caches\n");
@@ -243,6 +249,34 @@ void clear_caches()
    getc(stdin);
    printf("... continuing\n");
 }
+
+/** @def defstring
+ * @brief The macro argument as a string literal
+ *
+ * Defined inside the function that uses it.
+ *
+ * @param str the text to stringify
+ */
+
+/** @name The `what` filters the benchmark reads with
+ *
+ * Defined inside `main()`. Reading fewer attributes should be faster; these
+ * four make that measurable rather than assumed.
+ * @{
+ */
+/** @def NM10
+ * @brief A `what` selecting 10 attributes
+ */
+/** @def NM5
+ * @brief A `what` selecting 5 attributes
+ */
+/** @def NM2
+ * @brief A `what` selecting 2 attributes
+ */
+/** @def NM1
+ * @brief A `what` selecting 1 attribute
+ */
+/** @} */
 
 int main(int argc, char *argv[])
 {

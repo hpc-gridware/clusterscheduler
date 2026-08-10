@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Memory
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of AMEM
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   AMEM_href = 8650,
-   AMEM_value
+   AMEM_href = 8650,   ///< Host Reference
+   AMEM_value   ///< Value
 };
 
+/** @brief The attribute ids of AMEM, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int AMEM_Type[] = {
    AMEM_href,
    AMEM_value,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of AMEM
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define AMEM_ATTRIBUTES \
    {AMEM_href, "AMEM_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {AMEM_value, "AMEM_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

@@ -19,9 +19,20 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Client side parameters of `qhost`: parsed from argv and the environment
+ */
+
 #include "ocs_QHostParameter.h"
 
 namespace ocs {
+   /** @brief The `qhost` parameters as the client builds them, from argv and the environment
+    *
+    * The server side never parses a command line - it receives the marshalled
+    * bundle - so everything here is client only.
+    *
+    * @ingroup libprocedure
+    */
    class QHostParameterClient : public QHostParameter {
 
 #pragma region Client Side Parsing
@@ -40,6 +51,9 @@ namespace ocs {
 #pragma region Constructor/Destructor
 
    public:
+      /** @brief Build empty client side parameters
+       * @param procedure_name the command being run
+       */
       explicit QHostParameterClient(std::string procedure_name) : QHostParameter(std::move(procedure_name)) {};
       ~QHostParameterClient() override = default;
 

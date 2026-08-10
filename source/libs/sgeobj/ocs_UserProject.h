@@ -33,9 +33,14 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Users and projects, and the attributes they share
+ */
+
 #include "cull/cull.h"
 
 namespace ocs {
+   /// Operations shared by the user and the project object, which have the same usage layout
    class UserProject {
    public:
       static void decay_userprj_usage(lListElem *userprj, bool user, const lList *decay_list, u_long seqno, uint64_t curr_time);

@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief XML rendering of `qrstat`
+ */
+
 #include <format>
 
 #include "uti/sge_rmon_macros.h"
@@ -29,6 +33,9 @@
 #include "ocs_QRStatParameterClient.h"
 #include "qrstat/ocs_QRStatViewXML.h"
 
+/** @brief Build the XML view
+ * @param parameter the call's parameters
+ */
 ocs::QRStatViewXML::QRStatViewXML(const QRStatParameter &parameter) : QRStatViewBase(parameter) {
 }
 

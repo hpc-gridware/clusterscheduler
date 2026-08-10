@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for basic in `libs/mir`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 
@@ -50,8 +54,8 @@
 #include "sig_handlers.h"
 #include "msg_clients_common.h"
 
-int events;
-uint32_t events_size;
+int events;             ///< how many events the mirror has seen
+uint32_t events_size;   ///< how many bytes they took on the wire, to show what a subscription costs
 
 static sge_callback_result
 print_event(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata)

@@ -24,16 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Range Element
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of RN
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   RN_min = 1750,
-   RN_max,
-   RN_step
+   RN_min = 1750,   ///< Lower Bound
+   RN_max,   ///< Upper Bound
+   RN_step   ///< Step Size
 };
 
+/** @brief The attribute ids of RN, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int RN_Type[] = {
    RN_min,
    RN_max,
@@ -41,6 +55,10 @@ constexpr const int RN_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of RN
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define RN_ATTRIBUTES \
    {RN_min, "RN_min", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
    {RN_max, "RN_max", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

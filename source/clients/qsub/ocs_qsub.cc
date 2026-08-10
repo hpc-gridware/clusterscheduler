@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief qsub - submits a batch job
+ */
 #include <cstring>
 #include <sys/stat.h>
 #include <cerrno>
@@ -65,6 +69,12 @@
 #include "procedure/qstat/job/ocs_QStatJobViewPlain.h"
 
 
+/** @brief The process environment, as the C library defines it
+ *
+ * Declared here rather than included, and passed to the command line parser so
+ * that options which read an environment variable resolve it against the
+ * submitting user's environment rather than against `getenv()`.
+ */
 extern char **environ;
 static pthread_mutex_t exit_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t exit_cv = PTHREAD_COND_INITIALIZER;
@@ -494,29 +504,21 @@ Error:
    DRETURN(exit_status);
 }
 
-/****** get_bulk_jobid_string() ************************************************
-*  NAME
-*     get_bulk_jobid_string() -- Turn the job id and parameters into a string
-*
-*  SYNOPSIS
-*     char *get_bulk_jobid_string(long job_id, int start, int end, int step)
-*
-*  FUNCTION
-*     Creates a string from the job id, start task, end task, and task step.
-*     The return job id string must be freed by the caller.
-*
-*  INPUT
-*     long job_id   - The job's id number
-*     int start     - The number of the first task in the job
-*     int end       - The number of the last task in the job
-*     int step      - The increment between job task numbers
-*
-*  RESULT
-*     static char * - The job id string
-*
-*  NOTES
-*     MT-NOTES: get_bulk_jobid_string() is MT safe
-*******************************************************************************/
+/**
+ * @brief Turn the job id and parameters into a string
+ *
+ * Creates a string from the job id, start task, end task, and task step.
+ * The return job id string must be freed by the caller.
+ *
+ * @param job_id The job's id number
+ * @param start The number of the first task in the job
+ * @param end The number of the last task in the job
+ * @param step The increment between job task numbers
+ *
+ * @return The job id string
+ *
+ * @note MT-NOTES: get_bulk_jobid_string() is MT safe
+ */
 static char *get_bulk_jobid_string(long job_id, int start, int end, int step)
 {
    size_t jobid_str_size = sizeof(char) * 1024;
@@ -530,19 +532,13 @@ static char *get_bulk_jobid_string(long job_id, int start, int end, int step)
    return ret_str;
 }
 
-/****** qsub_setup_sig_handlers() **********************************************
-*  NAME
-*     qsub_setup_sig_handlers() -- Set up the signal handlers
-*
-*  SYNOPSIS
-*     void qsub_setup_sig_handlers()
-*
-*  FUNCTION
-*     Blocks all signals so that the signal handler thread receives them.
-*
-*  NOTES
-*     MT-NOTES: get_bulk_jobid_string() is MT safe
-*******************************************************************************/
+/**
+ * @brief Set up the signal handlers
+ *
+ * Blocks all signals so that the signal handler thread receives them.
+ *
+ * @note MT-NOTES: get_bulk_jobid_string() is MT safe
+ */
 static void qsub_setup_sig_handlers()
 {
    sigset_t sig_set;
@@ -551,19 +547,13 @@ static void qsub_setup_sig_handlers()
    pthread_sigmask(SIG_BLOCK, &sig_set, nullptr);
 }
 
-/****** qsub_terminate() *******************************************************
-*  NAME
-*     qsub_terminate() -- Terminates qsub
-*
-*  SYNOPSIS
-*     void qsub_terminate()
-*
-*  FUNCTION
-*     Prints out messages that qsub is ending and exits JAPI.
-*
-*  NOTES
-*     MT-NOTES: qsub_terminate() is MT safe
-*******************************************************************************/
+/**
+ * @brief Terminates qsub
+ *
+ * Prints out messages that qsub is ending and exits JAPI.
+ *
+ * @note MT-NOTES: qsub_terminate() is MT safe
+ */
 static void qsub_terminate()
 {
    dstring diag = DSTRING_INIT;
@@ -592,25 +582,17 @@ static void qsub_terminate()
    sge_mutex_unlock("qsub_exit_mutex", "qsub_terminate", __LINE__, &exit_mutex);
 }
 
-/****** sig_thread() ***********************************************************
-*  NAME
-*     sig_thread() -- Signal handler thread
-*
-*  SYNOPSIS
-*     void *sig_thread(void *dummy)
-*
-*  FUNCTION
-*     Waits for a SIGINT or SIGTERM and then calls qsub_terminate().
-*
-*  INPUT
-*     void *dummy - Unused
-*
-*  RESULT
-*     static void * - Always nullptr
-*
-*  NOTES
-*     MT-NOTES: sig_thread() is MT safe
-*******************************************************************************/
+/**
+ * @brief Signal handler thread
+ *
+ * Waits for a SIGINT or SIGTERM and then calls qsub_terminate().
+ *
+ * @param dummy Unused
+ *
+ * @return Always nullptr
+ *
+ * @note MT-NOTES: sig_thread() is MT safe
+ */
 static void *sig_thread(void *dummy)
 {
    int sig;
@@ -634,26 +616,18 @@ static void *sig_thread(void *dummy)
    return (void *)nullptr;
 }
 
-/****** report_exit_status() ***************************************************
-*  NAME
-*     report_exit_status() -- Prints a job's exit status
-*
-*  SYNOPSIS
-*     static int report_exit_status(int stat, const char *jobid)
-*
-*  FUNCTION
-*     Prints a job's exit status to stdout.
-*
-*  INPUT
-*     int stat          - The job's exit status
-*     const char *jobid - The job id string
-*
-*  RESULT
-*     static int        - The exit code of the job
-*
-*  NOTES
-*     MT-NOTES: report_exit_status() is MT safe
-*******************************************************************************/
+/**
+ * @brief Prints a job's exit status
+ *
+ * Prints a job's exit status to stdout.
+ *
+ * @param stat The job's exit status
+ * @param jobid The job id string
+ *
+ * @return The exit code of the job
+ *
+ * @note MT-NOTES: report_exit_status() is MT safe
+ */
 static int report_exit_status(int stat, const char *jobid)
 {
    int aborted, exited, signaled;
@@ -689,22 +663,15 @@ static int report_exit_status(int stat, const char *jobid)
    return exit_status;
 }
 
-/****** error_handler() ********************************************************
-*  NAME
-*     error_handler() -- Prints JAPI error messages
-*
-*  SYNOPSIS
-*     static void error_handler(const char *message)
-*
-*  FUNCTION
-*     Prints error messages from JAPI event client thread to stderr
-*
-*  INPUT
-*     const char *message - The message to print
-*
-*  NOTES
-*     MT-NOTES: error_handler() is MT safe
-*******************************************************************************/
+/**
+ * @brief Prints JAPI error messages
+ *
+ * Prints error messages from JAPI event client thread to stderr
+ *
+ * @param message The message to print
+ *
+ * @note MT-NOTES: error_handler() is MT safe
+ */
 static void error_handler(const char *message)
 {
    fprintf(stderr, "%s", message != nullptr ? message : "nullptr japi message");

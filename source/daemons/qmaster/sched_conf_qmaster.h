@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The scheduler configuration object
+ */
+
 #include "sgeobj/sge_daemonize.h"
 
 int

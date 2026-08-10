@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Unique String
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -38,7 +42,7 @@
 */
 
 enum {
-   STU_name = STU_LOWERBOUND
+   STU_name = STU_LOWERBOUND   ///< String Name
 };
 
 LISTDEF(STU_Type)
@@ -49,6 +53,7 @@ NAMEDEF(STUN)
    NAME("STU_name")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define STU_SIZE sizeof(STUN)/sizeof(char *)
 
 

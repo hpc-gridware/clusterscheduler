@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Plain text rendering of `qrstat`
+ */
+
 #include <ostream>
 #include <sstream>
 
@@ -30,6 +34,9 @@
 
 #include <format>
 
+/** @brief Build the plain text view
+ * @param parameter the call's parameters
+ */
 ocs::QRStatViewPlain::QRStatViewPlain(const QRStatParameter &parameter) : QRStatViewBase(parameter) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;

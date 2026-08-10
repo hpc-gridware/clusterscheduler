@@ -19,14 +19,24 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief A minimal class used to exercise the build and the test harness
+ */
+
 #include <string>
 
 namespace ocs {
+   /** @brief A minimal class used to exercise the build and the test harness
+    *
+    * Not part of qmaster's behaviour; it exists so the unit test framework has
+    * something trivial to link against.
+    */
    class TestClass {
    private:
    protected:
    public:
       explicit TestClass(const std::string &name);
+
       static void method(const std::string &arg1);
    };
 }

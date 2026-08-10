@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Spooling Type
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -54,9 +58,9 @@
 */
 
 enum {
-   SPT_type = SPT_LOWERBOUND,
-   SPT_name,
-   SPT_rules
+   SPT_type = SPT_LOWERBOUND,   ///< Type
+   SPT_name,   ///< Name
+   SPT_rules   ///< Rules
 };
 
 LISTDEF(SPT_Type)
@@ -71,6 +75,7 @@ NAMEDEF(SPTN)
    NAME("SPT_rules")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define SPT_SIZE sizeof(SPTN)/sizeof(char *)
 
 

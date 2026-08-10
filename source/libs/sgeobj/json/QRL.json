@@ -1,19 +1,19 @@
 {
    "className": "QueueReferenceList",
-   "summary": "@todo add summary",
+   "summary": "Queue Reference",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "A bare reference to a queue instance, for building the scheduler's temporary candidate lists."
       }
    ],
    "cullPrefix": "QRL",
    "attributes": [
       {
          "name": "queue",
-         "summary": "@todo add summary",
+         "summary": "Queue Instance",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Reference to the queue instance (`QU_Type`). Not owned by this element."
             }
          ],
          "type": "lRefT",

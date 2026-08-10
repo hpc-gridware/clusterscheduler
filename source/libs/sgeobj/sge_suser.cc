@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Submit users: the per user job counter behind `max_u_jobs`
+ *
+ * @see sge_suser.h
+ */
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -42,31 +48,20 @@
 #include <cinttypes>
 #include "msg_qmaster.h"
 
-/****** sgeobj/suser/suser_list_add() *****************************************
-*  NAME
-*     suser_list_add() -- Add a new entry (uniq) entry into a list 
-*
-*  SYNOPSIS
-*     lListElem* suser_list_add(lList **suser_list, lList **answer_list, 
-*                               const char *suser_name) 
-*
-*  FUNCTION
-*     This function creates a new CULL element for the user "susername" 
-*     into the "suser_list". The newly created element will be returned.
-*     If an element for this user already exists than this element will
-*     be returned.
-*
-*  INPUTS
-*     lList **suser_list     - SU_Type list 
-*     lList **answer_list    - AN_Type list 
-*     const char *suser_name - username 
-*
-*  RESULT
-*     lListElem* - SU_Type element or nullptr
-*
-*  SEE ALSO
-*     sgeobj/suser/SU_Type
-******************************************************************************/
+/**
+ * @brief Add a new entry (uniq) entry into a list
+ *
+ * This function creates a new CULL element for the user "susername"
+ * into the "suser_list". The newly created element will be returned.
+ * If an element for this user already exists than this element will
+ * be returned.
+ *
+ * @param suser_list SU_Type list
+ * @param answer_list AN_Type list
+ * @param suser_name username
+ *
+ * @return SU_Type element or nullptr
+ */
 lListElem *suser_list_add(lList **suser_list, lList **answer_list,
                           const char *suser_name)
 {
@@ -81,28 +76,17 @@ lListElem *suser_list_add(lList **suser_list, lList **answer_list,
    return ret;
 }
 
-/****** sgeobj/suser/suser_list_find() ****************************************
-*  NAME
-*     suser_list_find() -- find a user entry in a list 
-*
-*  SYNOPSIS
-*     lListElem* suser_list_find(lList *suser_list, 
-*                                const char *suser_name) 
-*
-*  FUNCTION
-*     This function tries to find the first entry for user "suser_name" 
-*     in the list "suser_list".
-*
-*  INPUTS
-*     lList *suser_list      - SU_Type list 
-*     const char *suser_name - username 
-*
-*  RESULT
-*     lListElem* - SU_Type element pointer or nullptr
-*
-*  SEE ALSO
-*     sgeobj/suser/SU_Type
-******************************************************************************/
+/**
+ * @brief Find a user entry in a list
+ *
+ * This function tries to find the first entry for user "suser_name"
+ * in the list "suser_list".
+ *
+ * @param suser_list SU_Type list
+ * @param suser_name username
+ *
+ * @return SU_Type element pointer or nullptr
+ */
 lListElem *suser_list_find(const lList *suser_list, const char *suser_name)
 {
    lListElem *ret = nullptr;
@@ -113,25 +97,13 @@ lListElem *suser_list_find(const lList *suser_list, const char *suser_name)
    return ret;
 }
 
-/****** sgeobj/suser/suser_increase_job_counter() *****************************
-*  NAME
-*     suser_increase_job_counter() -- increase the users job counter 
-*
-*  SYNOPSIS
-*     void suser_increase_job_counter(lListElem *suser) 
-*
-*  FUNCTION
-*     The job counter within "suser" will be increased by one 
-*
-*  INPUTS
-*     lListElem *suser - SU_Type list 
-*
-*  RESULT
-*     void - NONE
-*
-*  SEE ALSO
-*     sgeobj/suser/SU_Type
-******************************************************************************/
+/**
+ * @brief Increase the users job counter
+ *
+ * The job counter within "suser" will be increased by one
+ *
+ * @param suser SU_Type list
+ */
 void suser_increase_job_counter(lListElem *suser)
 {
    if (suser != nullptr) {
@@ -139,25 +111,13 @@ void suser_increase_job_counter(lListElem *suser)
    }
 }
 
-/****** sgeobj/suser/suser_decrease_job_counter() *****************************
-*  NAME
-*     suser_decrease_job_counter() -- decrease the users job counter 
-*
-*  SYNOPSIS
-*     void suser_decrease_job_counter(lListElem *suser) 
-*
-*  FUNCTION
-*     The job counter within "suser" will be decreased by one 
-*
-*  INPUTS
-*     lListElem *suser - SU_Type list 
-*
-*  RESULT
-*     void - NONE
-*
-*  SEE ALSO
-*     sgeobj/suser/SU_Type
-******************************************************************************/
+/**
+ * @brief Decrease the users job counter
+ *
+ * The job counter within "suser" will be decreased by one
+ *
+ * @param suser SU_Type list
+ */
 void suser_decrease_job_counter(lListElem *suser)
 {
    DENTER(TOP_LAYER);
@@ -174,25 +134,15 @@ void suser_decrease_job_counter(lListElem *suser)
    DRETURN_VOID;
 }
 
-/****** sgeobj/suser/suser_get_job_counter() **********************************
-*  NAME
-*     suser_get_job_counter() -- return the users job counter 
-*
-*  SYNOPSIS
-*     uint32_t suser_get_job_counter(lListElem *suser)
-*
-*  FUNCTION
-*     Returns the current number of jobs registed for "suser" 
-*
-*  INPUTS
-*     lListElem *suser - SU_Type element 
-*
-*  RESULT
-*     uint32_t - number of jobs
-*
-*  SEE ALSO
-*     sgeobj/suser/SU_Type
-******************************************************************************/
+/**
+ * @brief Return the users job counter
+ *
+ * Returns the current number of jobs registed for "suser"
+ *
+ * @param suser SU_Type element
+ *
+ * @return number of jobs
+ */
 uint32_t suser_get_job_counter(lListElem *suser)
 {
    uint32_t ret = 0;
@@ -203,30 +153,21 @@ uint32_t suser_get_job_counter(lListElem *suser)
    return ret;
 }
 
-/****** sgeobj/suser/suser_check_new_job() ************************************
-*  NAME
-*     suser_check_new_job() -- checks, if a job can be registered
-*
-*  SYNOPSIS
-*     int suser_check_new_job(const lListElem *job, uint32_t max_u_jobs,
-*                                int force_registration) 
-*
-*  FUNCTION
-*     This function checks whether a new "job" would exceed the maxium
-*     number of allowed jobs per user ("max_u_jobs"). JB_owner of "job" 
-*     is the username which will be used by this function to compare
-*     the current number of registered jobs with "max_u_jobs". If the
-*     limit would be exceeded than the function will return 1 otherwise 0.
-*
-*  INPUTS
-*     const lListElem *job   - JB_Type element 
-*     uint32_t max_u_jobs    - maximum number of allowed jobs per user
-*     int force_registration - force job registration 
-*
-*  RESULT
-*     int - 1 => limit would be exceeded
-*           0 => otherwise
-******************************************************************************/
+/**
+ * @brief Checks, if a job can be registered
+ *
+ * This function checks whether a new "job" would exceed the maxium
+ * number of allowed jobs per user ("max_u_jobs"). JB_owner of "job"
+ * is the username which will be used by this function to compare
+ * the current number of registered jobs with "max_u_jobs". If the
+ * limit would be exceeded than the function will return 1 otherwise 0.
+ *
+ * @param job JB_Type element
+ * @param max_u_jobs maximum number of allowed jobs per user
+ * @param master_suser_list the submit users to count in
+ *
+ * @return 1 => limit would be exceeded 0 => otherwise
+ */
 int suser_check_new_job(const lListElem *job, uint32_t max_u_jobs, lList *master_suser_list)
 {
    const char *submit_user = nullptr;
@@ -245,39 +186,28 @@ int suser_check_new_job(const lListElem *job, uint32_t max_u_jobs, lList *master
    DRETURN(ret);
 }
 
-/****** sgeobj/suser/suser_register_new_job() *********************************
-*  NAME
-*     suser_register_new_job() -- try to register a new job 
-*
-*  SYNOPSIS
-*     int suser_register_new_job(const lListElem *job, 
-*                                uint32_t max_u_jobs,
-*                                int force_registration) 
-*
-*  FUNCTION
-*     This function checks whether a new "job" would exceed the maximum
-*     number of allowed jobs per user ("max_u_jobs"). JB_owner of "job" 
-*     is the username which will be used by this function to compare
-*     the current number of registered jobs with "max_u_jobs". If the
-*     limit would be exceeded than the function will return 1 otherwise
-*     it will increase the jobcounter of the job owner and return 0.
-*     In some situation it may be necessary to force the incrementation
-*     of the jobcounter (reading jobs from spool area). This may be done
-*     with "force_registration".
-*
-*  INPUTS
-*     const lListElem *job   - JB_Type element 
-*     uint32_t max_u_jobs    - maximum number of allowed jobs per user
-*     int force_registration - force job registration 
-*
-*  RESULT
-*     int - 1 => limit would be exceeded
-*           0 => otherwise
-*
-*  SEE ALSO
-*     sgeobj/suser/SU_Type
-*     qmaster/job/job_list_register_new_job()
-******************************************************************************/
+/**
+ * @brief Try to register a new job
+ *
+ * This function checks whether a new "job" would exceed the maximum
+ * number of allowed jobs per user ("max_u_jobs"). JB_owner of "job"
+ * is the username which will be used by this function to compare
+ * the current number of registered jobs with "max_u_jobs". If the
+ * limit would be exceeded than the function will return 1 otherwise
+ * it will increase the jobcounter of the job owner and return 0.
+ * In some situation it may be necessary to force the incrementation
+ * of the jobcounter (reading jobs from spool area). This may be done
+ * with "force_registration".
+ *
+ * @param job JB_Type element
+ * @param master_suser_list the submit users to look in
+ * @param max_u_jobs maximum number of allowed jobs per user
+ * @param force_registration force job registration
+ *
+ * @return 1 => limit would be exceeded 0 => otherwise
+ *
+ * @see `job_list_register_new_job()`
+ */
 int suser_register_new_job(const lListElem *job, uint32_t max_u_jobs,
                            int force_registration, lList *master_suser_list)
 {
@@ -299,22 +229,16 @@ int suser_register_new_job(const lListElem *job, uint32_t max_u_jobs,
    DRETURN(ret);
 }
 
-/****** sgeobj/suser/suser_get_job_count() ************************************
-*  NAME
-*     suser_job_count() - number of jobs for a given user
-*
-*  SYNOPSIS
-*     void suser_job_count(const lListElem *job) 
-*
-*  FUNCTION
-*     number of jobs for a given user
-*
-*  INPUTS
-*     const lListElem *job - JB_Type element 
-*
-*  RESULT
-*     number of jobs in the system
-******************************************************************************/
+/**
+ * @brief Number of jobs for a given user
+ *
+ * number of jobs for a given user
+ *
+ * @param job JB_Type element
+ * @param master_suser_list the submit users to unregister from
+ *
+ * @return number of jobs in the system
+ */
 uint32_t suser_job_count(const lListElem *job, const lList *master_suser_list)
 {
    const char *submit_user = nullptr;
@@ -330,25 +254,14 @@ uint32_t suser_job_count(const lListElem *job, const lList *master_suser_list)
    DRETURN(ret);
 }
 
-/****** sgeobj/suser/suser_unregister_job() ***********************************
-*  NAME
-*     suser_unregister_job() -- unregister a job 
-*
-*  SYNOPSIS
-*     void suser_unregister_job(const lListElem *job) 
-*
-*  FUNCTION
-*     Decrease the jobcounter for the job owner of "job".
-*
-*  INPUTS
-*     const lListElem *job - JB_Type element 
-*
-*  RESULT
-*     void - NONE
-*
-*  SEE ALSO
-*     sgeobj/suser/SU_Type
-******************************************************************************/
+/**
+ * @brief Unregister a job
+ *
+ * Decrease the jobcounter for the job owner of "job".
+ *
+ * @param job JB_Type element
+ * @param master_suser_list the submit users to unregister from
+ */
 void suser_unregister_job(const lListElem *job, const lList *master_suser_list)
 {
    const char *submit_user = nullptr;

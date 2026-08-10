@@ -19,9 +19,19 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The read-only data store the listener threads answer from
+ */
+
 #include "ocs_MirrorServerDataStore.h"
 
 namespace ocs {
+   /** @brief The data store the listener threads answer from
+    *
+    * Subscribes to less than the reader store: a listener answers only what it
+    * can settle without a worker, so it needs no session tracking - hence the
+    * empty `update_sessions_and_move_requests()`.
+    */
    class MirrorListenerDataStore : public MirrorServerDataStore {
    public:
       MirrorListenerDataStore() : MirrorServerDataStore(DataStore::Id::LISTENER, LOCK_LISTENER) {};

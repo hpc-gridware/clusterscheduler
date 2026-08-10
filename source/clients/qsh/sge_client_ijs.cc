@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The client half of an interactive job's terminal traffic
+ */
+
 #include <algorithm>
 #include <atomic>
 #include <cstdlib>
@@ -101,9 +105,14 @@ static volatile sig_atomic_t received_window_change_signal = 1;
 static volatile sig_atomic_t received_broken_pipe_signal = 0;
 static volatile sig_atomic_t quit_pending; /* Set non-zero to quit the loop. */
 
+/** @brief The signal a handler saw, or 0
+ *
+ * Read by the forwarding loop, which is the only place that may act on it.
+ */
 volatile sig_atomic_t received_signal = 0;
 
 /* X11 forwarding state — set by run_ijs_server before worker threads start */
+/** @brief How many X11 connections one interactive job may forward at once */
 #define X11_MAX_CONNS 64
 static bool             g_forward_x11 = false;         ///< true when -X was given
 static char             g_x11_display[256] = "";       ///< client's DISPLAY (e.g. ":0.0")
@@ -1264,6 +1273,9 @@ void* commlib_to_tty(void *t_conf)
  * @param suspend_remote Ternary::Yes to suspend the remote process on Ctrl-Z.
  * @param forward_x11    If true, fetch the MIT-MAGIC-COOKIE-1 for $DISPLAY
  *                       and enable X11 forwarding to the job.
+ * @param escape_char    The character that introduces an escape sequence,
+ *                       `~` by default, so that `~.` disconnects the session
+ *                       without ending the job.
  * @param[out] p_exit_status Exit status of the remote command (128+signal if
  *                           killed by a signal).
  * @param[out] p_err_msg     Error description on failure.
@@ -1453,6 +1465,42 @@ cleanup:
    thread_cleanup_lib(&thread_lib_handle);
    DRETURN(ret_val);
 }
+/**
+ * @brief Switch run_ijs_server into reconnect mode (CS-2144).
+ *
+ * When set to a non-null token, commlib_to_tty expects the first inbound message
+ * from the shepherd to be RECONNECT_REQUEST_MSG carrying this exact token.  A match
+ * causes RECONNECT_ACCEPT_MSG to be sent and the session to be marked connected
+ * without re-issuing X11_AUTH_MSG/SETTINGS_CTRL_MSG (the shell is already running).
+ * A mismatch causes RECONNECT_REJECT_MSG to be sent and the session to be torn down.
+ *
+ * Pass nullptr to clear (default — normal qsub/qrsh fresh-session mode).
+ * The pointer must outlive run_ijs_server's invocation.
+ *
+ * @param token the token the shepherd must present, or `nullptr` to clear
+ */
+
+void set_expected_reconnect_token(const char *token) {
+   g_expected_reconnect_token = token;
+}
+/**
+ * @brief Did run_ijs_server exit because the user pressed the ~. escape?
+ *
+ * Set during tty_to_commlib's processing of the ~. escape sequence (and also
+ * on keepalive-detected dead connections, which take the same disconnect-not-
+ * stdin-close path). Cleared at the start of each run_ijs_server invocation.
+ *
+ * Used by ocs_qsh.cc after run_ijs_server returns: when this returns true
+ * the user explicitly disconnected, so qrsh must NOT tell qmaster to delete
+ * the job — the shepherd's reconnect grace period (CS-2118 / CS-2155) keeps
+ * the job alive for `ijs_reconnect_timeout` seconds so the user can reattach.
+ *
+ * @return true when the last run ended in a disconnect rather than a job end
+ */
+
+bool ijs_was_escape_disconnect() {
+   return g_escape_disconnect;
+}
 
 /**
  * @brief Start the commlib server for builtin interactive job support (IJS).
@@ -1483,14 +1531,6 @@ cleanup:
  *         2 if connection parameters could not be set.
  * @note MT-NOTE: not MT-safe.
  */
-void set_expected_reconnect_token(const char *token) {
-   g_expected_reconnect_token = token;
-}
-
-bool ijs_was_escape_disconnect() {
-   return g_escape_disconnect;
-}
-
 int start_ijs_server(cl_framework_t communication_framework, const char *hostname,
                      const char* username, const lList *port_range,
                      COMM_HANDLE **phandle, dstring *p_err_msg)
@@ -1553,38 +1593,22 @@ int start_ijs_server(cl_framework_t communication_framework, const char *hostnam
    DRETURN(ret_val);
 }
 
-/****** sge_client_ijs/stop_ijs_server() ***************************************
-*  NAME
-*     stop_ijs_server() -- stops the commlib server for the builtin
-*                          interactive job support
-*
-*  SYNOPSIS
-*     int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg)
-*
-*  FUNCTION
-*     Stops the commlib server for the commlib connection between the shepherd
-*     of the interactive job (qrsh/qlogin) and the qrsh/qlogin command.
-*     Over this connectin the stdin/stdout/stderr input/output is transferred.
-*
-*  INPUTS
-*     COMM_HANDLE **phandle - Pointer to the COMM server handle. Gets set to
-*                             nullptr in this function.
-*     dstring *p_err_msg    - Contains the error reason in case of error.
-*
-*  RESULT
-*     int - 0: OK
-*           1: Invalid Parameter: phandle = nullptr
-*           2: General error shutting down the COMM server,
-*              see p_err_msg for details
-*
-*  NOTES
-*     MT-NOTE: stop_ijs_server() is not MT safe
-*
-*  SEE ALSO
-*     sge_client_ijs/start_ijs_server()
-*     sge_client_ijs/run_ijs_server()
-*     sge_client_ijs/force_ijs_server_shutdown()
-*******************************************************************************/
+/**
+ * @brief Stops the commlib server for the builtin
+ *
+ * Stops the commlib server for the commlib connection between the shepherd
+ * of the interactive job (qrsh/qlogin) and the qrsh/qlogin command.
+ * Over this connectin the stdin/stdout/stderr input/output is transferred.
+ *
+ * @param phandle Pointer to the COMM server handle. Gets set to nullptr in this function.
+ * @param p_err_msg Contains the error reason in case of error.
+ *
+ * @return 0: OK 1: Invalid Parameter: phandle = nullptr 2: General error shutting down the COMM server, see p_err_msg for details
+ *
+ * @note MT-NOTE: stop_ijs_server() is not MT safe
+ *
+ * @see #start_ijs_server, #run_ijs_server, #force_ijs_server_shutdown
+ */
 int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg)
 {
    int ret = 0;
@@ -1611,38 +1635,22 @@ int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg)
    DRETURN(ret);
 }
 
-/****** sge_client_ijs/force_ijs_server_shutdown() *****************************
-*  NAME
-*     force_ijs_server_shutdown() -- forces the commlib server for the builtin
-*                                    interactive job support to shut down
-*
-*  SYNOPSIS
-*     int force_ijs_server_shutdown(COMM_HANDLE **phandle, const char
-*     *this_component, dstring *p_err_msg)
-*
-*  FUNCTION
-*     Forces the commlib server for the builtin interactive job support to shut
-*     down immediately and ensures it is shut down.
-*
-*  INPUTS
-*     COMM_HANDLE **phandle      - Handle of the COMM connection, gets set to
-*                                  nullptr in this function.
-*     const char *this_component - Name of this component.
-*     dstring *p_err_msg         - Contains the error reason in case of error.
-*
-*  RESULT
-*     int - 0: OK
-*           1: Invalid parameter: phandle == nullptr or *phandle == nullptr
-*           2: Can't shut down connection, see p_err_msg for details
-*
-*  NOTES
-*     MT-NOTE: force_ijs_server_shutdown() is not MT safe
-*
-*  SEE ALSO
-*     sge_client_ijs/start_ijs_server()
-*     sge_client_ijs/run_ijs_server()
-*     sge_client_ijs/stop_ijs_server_shutdown()
-*******************************************************************************/
+/**
+ * @brief Forces the commlib server for the builtin
+ *
+ * Forces the commlib server for the builtin interactive job support to shut
+ * down immediately and ensures it is shut down.
+ *
+ * @param phandle Handle of the COMM connection, gets set to nullptr in this function.
+ * @param this_component Name of this component.
+ * @param p_err_msg Contains the error reason in case of error.
+ *
+ * @return 0: OK 1: Invalid parameter: phandle == nullptr or *phandle == nullptr 2: Can't shut down connection, see p_err_msg for details
+ *
+ * @note MT-NOTE: force_ijs_server_shutdown() is not MT safe
+ *
+ * @see #start_ijs_server, #run_ijs_server, `stop_ijs_server_shutdown()`
+ */
 int force_ijs_server_shutdown(COMM_HANDLE **phandle,
                               const char *this_component,
                               dstring *p_err_msg)

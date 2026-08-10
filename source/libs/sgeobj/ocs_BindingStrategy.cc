@@ -18,10 +18,19 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief How a binding walks the topology: linear, striding or explicit
+ */
+
 #include <string>
 
 #include "ocs_BindingStrategy.h"
 
+/**
+ * @brief The keyword for a strategy, as written in a request
+ * @param mode the strategy to name
+ * @return its keyword, or `"???"` for an unknown value
+ */
 std::string ocs::BindingStrategy::to_string(const Strategy mode) {
    switch (mode) {
       case NONE: return "NONE";
@@ -30,6 +39,11 @@ std::string ocs::BindingStrategy::to_string(const Strategy mode) {
    }
 }
 
+/**
+ * @brief Parse a strategy keyword
+ * @param mode the keyword to parse
+ * @return the strategy, or #UNINITIALIZED when it is not recognised
+ */
 ocs::BindingStrategy::Strategy
 ocs::BindingStrategy::from_string(const std::string& mode) {
    if (mode == "NONE") {

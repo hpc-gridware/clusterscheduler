@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Cluster queues, and the queue instances they expand into
+ */
+
 #include <cstdio>
 #include <cstring>
 
@@ -367,6 +371,20 @@ cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_e
    DRETURN(ret);
 }
 
+/** @brief Bring a cluster queue's instances into line with its new configuration
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cqueue see the brief above
+ * @param answer_list receives messages for the caller
+ * @param reduced_elem see the brief above
+ * @param refresh_all_values see the brief above
+ * @param is_startup see the brief above
+ * @param monitor for monitoring qmaster threads
+ * @param master_hgroup_list the host groups
+ * @param master_cqueue_list the cluster queues
+ * @return true on success
+ */
 bool
 cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                       bool refresh_all_values, bool is_startup, monitoring_t *monitor, const lList *master_hgroup_list,
@@ -540,6 +558,21 @@ cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
    DRETURN(ret);
 }
 
+/** @brief Create and delete queue instances as a cluster queue gains and loses hosts
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cqueue see the brief above
+ * @param answer_list receives messages for the caller
+ * @param reduced_elem see the brief above
+ * @param add_hosts see the brief above
+ * @param rem_hosts see the brief above
+ * @param refresh_all_values see the brief above
+ * @param monitor for monitoring qmaster threads
+ * @param master_hgroup_list the host groups
+ * @param master_cqueue_list the cluster queues
+ * @return true on success
+ */
 bool
 cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                          lList *add_hosts, lList *rem_hosts, bool refresh_all_values, monitoring_t *monitor,
@@ -561,6 +594,24 @@ cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListEl
    DRETURN(ret);
 }
 
+/** @brief Apply one attribute change to a cluster queue
+ *
+ * The gdi_object_t::modifier for cluster queues; see sge_c_gdi.h for the sequence it is called from.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param answer_list receives messages for the caller
+ * @param cqueue the cluster queue
+ * @param reduced_elem the reduced element the client sent
+ * @param add 1 for add, 0 for modify
+ * @param remote_user the requesting user
+ * @param remote_host the requesting host
+ * @param object the table entry for this object type
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *cqueue, lListElem *reduced_elem, int add,
            const char *remote_user, const char *remote_host, gdi_object_t *object,
@@ -667,6 +718,19 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
    }
 }
 
+/** @brief Announce a cluster queue change once it is safely spooled
+ *
+ * The gdi_object_t::on_success for cluster queues.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cqueue the cluster queue
+ * @param old_cqueue see the declaration
+ * @param object the table entry for this object type
+ * @param ppList receives information for post processing
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lListElem *old_cqueue, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -755,6 +819,11 @@ cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue
    DRETURN(0);
 }
 
+/** @brief Make the pending changes to a cluster queue permanent
+ *
+ * @param cqueue the cluster queue
+ * @param gdi_session the session the change belongs to
+ */
 void
 cqueue_commit(lListElem *cqueue, uint64_t gdi_session) {
    lList *qinstances = lGetListRW(cqueue, CQ_qinstances);
@@ -799,6 +868,17 @@ cqueue_commit(lListElem *cqueue, uint64_t gdi_session) {
    DRETURN_VOID;
 }
 
+/** @brief Write a cluster queue to the spool
+ *
+ * The gdi_object_t::writer for cluster queues.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param answer_list receives messages for the caller
+ * @param cqueue the cluster queue
+ * @param object the table entry for this object type
+ * @return 0 on success
+ */
 int
 cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *cqueue, gdi_object_t *object) {
    DENTER(TOP_LAYER);
@@ -838,6 +918,16 @@ cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
    DRETURN(ret);
 }
 
+/** @brief Delete a cluster queue
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param this_elem the object
+ * @param answer_list receives messages for the caller
+ * @param remote_user the requesting user
+ * @param remote_host the requesting host
+ * @return STATUS_OK on success
+ */
 int
 cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
    bool ret = true;
@@ -950,6 +1040,14 @@ cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
    }
 }
 
+/** @brief Delete the orphaned instances of one cluster queue
+ *
+ * @param this_elem the object
+ * @param answer_list receives messages for the caller
+ * @param ehname see the brief above
+ * @param gdi_session the session the change belongs to
+ * @return true when anything was deleted
+ */
 bool
 cqueue_del_all_orphaned(lListElem *this_elem, lList **answer_list, const char *ehname, uint64_t gdi_session) {
    bool ret = true;
@@ -1011,6 +1109,15 @@ cqueue_del_all_orphaned(lListElem *this_elem, lList **answer_list, const char *e
    DRETURN(ret);
 }
 
+/** @brief Delete every orphaned queue instance in the list
+ *
+ * @param this_list the list to work on
+ * @param answer_list receives messages for the caller
+ * @param cqname see the brief above
+ * @param ehname see the brief above
+ * @param gdi_session the session the change belongs to
+ * @return true when anything was deleted
+ */
 bool
 cqueue_list_del_all_orphaned(lList *this_list, lList **answer_list, const char *cqname, const char *ehname, uint64_t gdi_session) {
    bool ret = true;
@@ -1033,6 +1140,14 @@ cqueue_list_del_all_orphaned(lList *this_list, lList **answer_list, const char *
    DRETURN(ret);
 }
 
+/** @brief Mark the instances on one host unknown, or clear that state
+ *
+ * @param this_list the list to work on
+ * @param hostname the host
+ * @param send_events whether to announce the change to the event clients
+ * @param is_unknown see the brief above
+ * @param gdi_session the session the change belongs to
+ */
 void
 cqueue_list_set_unknown_state(lList *this_list, const char *hostname, bool send_events, bool is_unknown, uint64_t gdi_session) {
    const lListElem *cqueue;
@@ -1062,32 +1177,23 @@ cqueue_list_set_unknown_state(lList *this_list, const char *hostname, bool send_
 }
 
 
-/****** sge_cqueue_qmaster/cqueue_diff_sublist() *******************************
-*  NAME
-*     cqueue_diff_sublist() -- Diff cluster queue sublists
-*
-*  SYNOPSIS
-*     static void cqueue_diff_sublist(const lListElem *new_cqueue, const lListElem
-*     *old_cqueue, int snm1, int snm2, int sublist_nm, int key_nm, const lDescr *dp,
-*     lList **new_sublist, lList **old_sublist)
-*
-*  FUNCTION
-*     Determine new/old refereneces in a cluster queue configuration sublist.
-*
-*  INPUTS
-*     const lListElem *new_cqueue - New cluster queue (CQ_Type)
-*     const lListElem *old_cqueue - Old cluster queue (CQ_Type)
-*     int snm1             - First cluster queue sublist field
-*     int snm2             - Second cluster queue sublist field
-*     int sublist_nm       - Subsub list field
-*     int key_nm           - Field with key in subsublist
-*     const lDescr *dp     - Type for outgoing sublist arguments
-*     lList **new_sublist  - List of new references
-*     lList **old_sublist  - List of old references
-*
-*  NOTES
-*     MT-NOTE: cqueue_diff_sublist() is MT safe
-*******************************************************************************/
+/**
+ * @brief Diff cluster queue sublists
+ *
+ * Determine new/old refereneces in a cluster queue configuration sublist.
+ *
+ * @param new_cqueue New cluster queue (CQ_Type)
+ * @param old_cqueue Old cluster queue (CQ_Type)
+ * @param snm1 First cluster queue sublist field
+ * @param snm2 Second cluster queue sublist field
+ * @param sublist_nm Subsub list field
+ * @param key_nm Field with key in subsublist
+ * @param dp Type for outgoing sublist arguments
+ * @param new_sublist List of new references
+ * @param old_sublist List of old references
+ *
+ * @note MT-NOTE: cqueue_diff_sublist() is MT safe
+ */
 static void
 cqueue_diff_sublist(const lListElem *new_cqueue, const lListElem *old_cqueue, int snm1, int snm2, int sublist_nm,
                     int key_nm, const lDescr *dp, lList **new_sublist, lList **old_sublist) {
@@ -1135,27 +1241,19 @@ cqueue_diff_sublist(const lListElem *new_cqueue, const lListElem *old_cqueue, in
    DRETURN_VOID;
 }
 
-/****** sge_cqueue_qmaster/cqueue_diff_projects() ******************************
-*  NAME
-*     cqueue_diff_projects() -- Diff old/new cluster queue projects
-*
-*  SYNOPSIS
-*     void cqueue_diff_projects(const lListElem *new_cqueue, const lListElem *old_cqueue,
-*     lList **new_prj, lList **old_prj)
-*
-*  FUNCTION
-*     A diff new/old is made regarding cluster queue projects/xprojects.
-*     Project references are returned in new_prj/old_prj.
-*
-*  INPUTS
-*     const lListElem *new_cqueue - New cluster queue (CQ_Type)
-*     const lListElem *old_cqueue - Old cluster queue (CQ_Type)
-*     lList **new_prj      - New project references (PR_Type)
-*     lList **old_prj      - Old project references (PR_Type)
-*
-*  NOTES
-*     MT-NOTE: cqueue_diff_projects() is MT safe
-*******************************************************************************/
+/**
+ * @brief Diff old/new cluster queue projects
+ *
+ * A diff new/old is made regarding cluster queue projects/xprojects.
+ * Project references are returned in new_prj/old_prj.
+ *
+ * @param new_cqueue New cluster queue (CQ_Type)
+ * @param old_cqueue Old cluster queue (CQ_Type)
+ * @param new_prj New project references (PR_Type)
+ * @param old_prj Old project references (PR_Type)
+ *
+ * @note MT-NOTE: cqueue_diff_projects() is MT safe
+ */
 void
 cqueue_diff_projects(const lListElem *new_cqueue, const lListElem *old_cqueue, lList **new_prj, lList **old_prj) {
    cqueue_diff_sublist(new_cqueue, old_cqueue, CQ_projects, CQ_xprojects,
@@ -1163,27 +1261,19 @@ cqueue_diff_projects(const lListElem *new_cqueue, const lListElem *old_cqueue, l
    lDiffListStr(PR_name, new_prj, old_prj);
 }
 
-/****** sge_cqueue_qmaster/cqueue_diff_usersets() ******************************
-*  NAME
-*     cqueue_diff_projects() -- Diff old/new cluster queue usersets
-*
-*  SYNOPSIS
-*     void cqueue_diff_projects(const lListElem *new_cqueue, const lListElem *old_cqueue,
-*     lList **new_prj, lList **old_prj)
-*
-*  FUNCTION
-*     A diff new/old is made regarding cluster queue acl/xacl.
-*     Userset references are returned in new_acl/old_acl.
-*
-*  INPUTS
-*     const lListElem *new_cqueue - New cluster queue (CQ_Type)
-*     const lListElem *old_cqueue - Old cluster queue (CQ_Type)
-*     lList **new_acl      - New userset references (US_Type)
-*     lList **old_acl      - Old userset references (US_Type)
-*
-*  NOTES
-*     MT-NOTE: cqueue_diff_usersets() is MT safe
-*******************************************************************************/
+/**
+ * @brief Diff old/new cluster queue usersets
+ *
+ * A diff new/old is made regarding cluster queue acl/xacl.
+ * Userset references are returned in new_acl/old_acl.
+ *
+ * @param new_cqueue New cluster queue (CQ_Type)
+ * @param old_cqueue Old cluster queue (CQ_Type)
+ * @param new_acl New userset references (US_Type)
+ * @param old_acl Old userset references (US_Type)
+ *
+ * @note MT-NOTE: cqueue_diff_usersets() is MT safe
+ */
 void
 cqueue_diff_usersets(const lListElem *new_cqueue, const lListElem *old_cqueue, lList **new_acl, lList **old_acl) {
    cqueue_diff_sublist(new_cqueue, old_cqueue, CQ_acl, CQ_xacl,
@@ -1192,26 +1282,18 @@ cqueue_diff_usersets(const lListElem *new_cqueue, const lListElem *old_cqueue, l
 }
 
 
-/****** sge_cqueue_qmaster/cqueue_update_categories() **************************
-*  NAME
-*     cqueue_update_categories() -- Update categories wrts userset/project
-*
-*  SYNOPSIS
-*     static void cqueue_update_categories(const lListElem *new_cq, const
-*     lListElem *old_cq)
-*
-*  FUNCTION
-*     The userset/project information wrts categories is updated based
-*     on new/old cluster queue configuration and events are sent upon
-*     changes.
-*
-*  INPUTS
-*     const lListElem *new_cq - New cluster queue (CQ_Type)
-*     const lListElem *old_cq - Old cluster queue (CQ_Type)
-*
-*  NOTES
-*     MT-NOTE: cqueue_update_categories() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Update categories wrts userset/project
+ *
+ * The userset/project information wrts categories is updated based
+ * on new/old cluster queue configuration and events are sent upon
+ * changes.
+ *
+ * @param new_cq New cluster queue (CQ_Type)
+ * @param old_cq Old cluster queue (CQ_Type)
+ *
+ * @note MT-NOTE: cqueue_update_categories() is not MT safe
+ */
 static void
 cqueue_update_categories(const lListElem *new_cq, const lListElem *old_cq, uint64_t gdi_session) {
    lList *old_lp = nullptr, *new_lp = nullptr;
@@ -1227,28 +1309,17 @@ cqueue_update_categories(const lListElem *new_cq, const lListElem *old_cq, uint6
    lFreeList(&new_lp);
 }
 
-/****** sgeobj/qinstance/qinstance_check_unknown_state() **********************
-*  NAME
-*     qinstance_check_unknown_state() -- Modifies the number of used slots 
-*
-*  SYNOPSIS
-*     void
-*     qinstance_check_unknown_state(lListElem *this_elem)
-*
-*  FUNCTION
-*     Checks if there are nonstatic load values available for the
-*     qinstance. If this is the case, then then the "unknown" state 
-*     of that machine will be released. 
-*
-*  INPUTS
-*     lListElem *this_elem - QU_Type 
-*
-*  RESULT
-*     void - NONE 
-*
-*  NOTES
-*     MT-NOTE: qinstance_check_unknown_state() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Modifies the number of used slots
+ *
+ * Checks if there are nonstatic load values available for the
+ * qinstance. If this is the case, then then the "unknown" state
+ * of that machine will be released.
+ *
+ * @param this_elem QU_Type
+ *
+ * @note MT-NOTE: qinstance_check_unknown_state() is MT safe
+ */
 static void
 qinstance_check_unknown_state(lListElem *this_elem, const lList *master_exechost_list, uint64_t gdi_session) {
    DENTER(TOP_LAYER);

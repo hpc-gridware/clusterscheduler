@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Scheduling categories: deciding once for every job that looks alike
+ */
+
 #include "cull/cull.h"
 
 #include "gdi/ocs_gdi_Packet.h"
@@ -27,6 +31,19 @@
 #include "sge_c_gdi.h"
 
 namespace ocs {
+   /** @brief The scheduling categories jobs are sorted into
+    *
+    * Two jobs that request the same things, from the same user, against the
+    * same access rights will always be scheduled the same way. A *category*
+    * groups them, so the scheduler makes that decision once instead of once
+    * per job - which is what makes a cluster with thousands of identical
+    * pending jobs schedulable at all.
+    *
+    * A category therefore depends on more than the job: on the projects, the
+    * user sets, the resource quotas and the queues. When any of those change,
+    * every job's category has to be recomputed, which is what the
+    * `*_all_jobs` variants are for.
+    */
    class CategoryQmaster {
       static void
       initialize_prj_and_uset_for_categories(lList *master_project_list, lList *master_userset_list,

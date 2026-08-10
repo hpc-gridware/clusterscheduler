@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Receiving load and job reports from the execution hosts
+ */
+
 #include "cull/cull.h"
 #include "uti/sge_monitor.h"
 

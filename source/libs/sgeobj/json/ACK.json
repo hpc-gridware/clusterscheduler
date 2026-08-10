@@ -1,19 +1,19 @@
 {
    "className": "Acknowledge",
-   "summary": "@todo add summary",
+   "summary": "Acknowledgement",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "A short acknowledgement message, identifying what is being acknowledged rather than carrying data."
       }
    ],
    "cullPrefix": "ACK",
    "attributes": [
       {
          "name": "type",
-         "summary": "@todo add summary",
+         "summary": "Acknowledgement Type",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "What is being acknowledged, e.g. a job report or a signal. Dispatched on by the receiver."
             }
          ],
          "type": "lUlongT",
@@ -25,10 +25,10 @@
       },
       {
          "name": "id",
-         "summary": "@todo add summary",
+         "summary": "First Id",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Primary key of the acknowledged thing, usually a job id."
             }
          ],
          "type": "lUlongT",
@@ -40,10 +40,10 @@
       },
       {
          "name": "id2",
-         "summary": "@todo add summary",
+         "summary": "Second Id",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Secondary key, usually an array task id."
             }
          ],
          "type": "lUlongT",
@@ -55,10 +55,10 @@
       },
       {
          "name": "str",
-         "summary": "@todo add summary",
+         "summary": "Name",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "String key, used where the acknowledged thing is named rather than numbered."
             }
          ],
          "type": "lStringT",

@@ -24,25 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Resource Quota Set
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Resource Quota Set
 *
-* @todo add description
+* A named, enableable set of rules that limit resource use across the object model.
+* Where a queue or host limits what it can give, a resource quota set limits what a *combination* may take - "this project may use 100 slots in total, wherever they are". The rules are tried in order and the first that matches decides.
 *
-*    SGE_STRING(RQS_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(RQS_name) - Name
+*    The set's name, as used by `qconf -mrqs`.
 *
-*    SGE_STRING(RQS_description) - @todo add summary
-*    @todo add description
+*    SGE_STRING(RQS_description) - Description
+*    Free text describing what the set is for.
 *
-*    SGE_BOOL(RQS_enabled) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(RQS_enabled) - Enabled
+*    Whether the set is applied. A disabled set stays configured but limits nothing.
 *
-*    SGE_LIST(RQS_rule) - @todo add summary
-*    @todo add description
+*    SGE_LIST(RQS_rule) - Rules
+*    The rules (`RQR_Type`), in the order they are tried.
 *
 *    SGE_LIST(RQS_joker) - Joker
 *    Placeholder which can be used for arbitrary data.
@@ -52,11 +57,11 @@
 */
 
 enum {
-   RQS_name = RQS_LOWERBOUND,
-   RQS_description,
-   RQS_enabled,
-   RQS_rule,
-   RQS_joker
+   RQS_name = RQS_LOWERBOUND,   ///< Name
+   RQS_description,   ///< Description
+   RQS_enabled,   ///< Enabled
+   RQS_rule,   ///< Rules
+   RQS_joker   ///< Joker
 };
 
 LISTDEF(RQS_Type)
@@ -75,6 +80,7 @@ NAMEDEF(RQSN)
    NAME("RQS_joker")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RQS_SIZE sizeof(RQSN)/sizeof(char *)
 
 

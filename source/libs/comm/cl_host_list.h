@@ -34,35 +34,50 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The host name cache
+ */
+
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 #include "uti/sge_htable.h"
 
-#define CL_HOST_LIST_DEFAULT_RERESOLVE_TIME  1  * 60       /*  1 min */
-#define CL_HOST_LIST_DEFAULT_UPDATE_TIME     2  * 60       /*  2 min */
-#define CL_HOST_LIST_DEFAULT_LIFE_TIME      10  * 60       /* 10 min */
+/** @name How long a cached resolution is kept
+ *
+ * Three different ages because the three cases differ: a name that failed to
+ * resolve is retried soonest, a successful entry is refreshed less often, and
+ * an untouched entry is dropped last. The `MAX_` values bound what an
+ * administrator may configure.
+ * @{
+ */
+#define CL_HOST_LIST_DEFAULT_RERESOLVE_TIME  1  * 60        ///< Retry a name that did not resolve, after a minute
+#define CL_HOST_LIST_DEFAULT_UPDATE_TIME     2  * 60        ///< Re-resolve a good entry after two minutes
+#define CL_HOST_LIST_DEFAULT_LIFE_TIME      10  * 60        ///< Drop an entry nobody asked for after ten minutes
 
-#define CL_HOST_LIST_MAX_RERESOLVE_TIME  10 * 60       /* 10 min */
-#define CL_HOST_LIST_MAX_UPDATE_TIME     30 * 60       /* 30 min */
-#define CL_HOST_LIST_MAX_LIFE_TIME       24 * 60 * 60  /*  1 day */
+#define CL_HOST_LIST_MAX_RERESOLVE_TIME  10 * 60            ///< Upper bound for the retry interval
+#define CL_HOST_LIST_MAX_UPDATE_TIME     30 * 60            ///< Upper bound for the refresh interval
+#define CL_HOST_LIST_MAX_LIFE_TIME       24 * 60 * 60       ///< Upper bound for the entry lifetime
+/** @} */
 
+/** @brief One cached host */
 typedef struct cl_host_list_elem_t {
-   cl_com_host_spec_t *host_spec;     /* data */
-   cl_raw_list_elem_t *raw_elem;
+   cl_com_host_spec_t *host_spec;   ///< The cached resolution, successful or not
+   cl_raw_list_elem_t *raw_elem;    ///< Back pointer into the raw list
 } cl_host_list_elem_t;
 
 
-typedef struct cl_host_list_data_type {                      /* list specific data */
-   cl_host_resolve_method_t resolve_method;
-   char *host_alias_file;
-   int alias_file_changed;      /* if set, alias file has changed */
-   char *local_domain_name;
-   cl_raw_list_t *host_alias_list;
-   unsigned long entry_life_time;         /* max life time of an resolved host */
-   unsigned long entry_update_time;       /* max valid time of entry before reresolving */
-   unsigned long entry_reresolve_time;    /* time for reresolving if host is not resolvable */
-   long last_refresh_time;       /* last refresh check */
-   htable ht;                      /* hashtable for host_list */
+/** @brief The host cache's own state */
+typedef struct cl_host_list_data_type {
+   cl_host_resolve_method_t resolve_method;   ///< Whether names are compared short or fully qualified
+   char *host_alias_file;                     ///< Path to the alias file
+   int alias_file_changed;                    ///< Set when the file has to be read again
+   char *local_domain_name;                   ///< The domain stripped for short comparison
+   cl_raw_list_t *host_alias_list;            ///< The aliases read from the file
+   unsigned long entry_life_time;             ///< How long an entry survives untouched
+   unsigned long entry_update_time;           ///< How long a resolution stays valid
+   unsigned long entry_reresolve_time;        ///< How soon an unresolvable name is retried
+   long last_refresh_time;                    ///< When the last sweep ran
+   htable ht;                                 ///< Lookup by name
 } cl_host_list_data_t;
 
 

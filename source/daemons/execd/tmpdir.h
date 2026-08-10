@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The temporary directory a job runs with as $TMPDIR
+ */
+
 #include <cinttypes>
 #include "cull/cull.h"
 

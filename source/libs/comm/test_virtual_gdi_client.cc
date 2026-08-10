@@ -32,6 +32,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: a GDI client against `test_virtual_qmaster`
+ *
+ * Sends fixed size packages in a loop, so the throughput of the message path
+ * can be measured without a real qmaster.
+ *
+ * Usage: `test_virtual_gdi_client <debug_level> <vmaster_port> <vmaster_host> <reconnect> [no_output]`
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 
 #include <cstdio>
 #include <cstring>
@@ -45,14 +56,18 @@
 #include "uti/sge_stdlib.h"
 
 /* shutdown when test client can't connect for more than 15 min */
-#define SGE_TEST_VIRTUAL_CLIENT_SHUTDOWN_TIMEOUT 15*60
-#define DATA_SIZE 5000
+#define SGE_TEST_VIRTUAL_CLIENT_SHUTDOWN_TIMEOUT 15*60   ///< How long the virtual client waits for its shutdown to complete
+#define DATA_SIZE 5000   ///< Size of one test package, in bytes
+/** @brief Defined to make the client count the packages it sent */
 #define PACKAGE_COUNTER
 
 /* counters */
 static int rcv_messages = 0;
 static int snd_messages = 0;
 
+/** @brief Note the signal so the client loop can leave
+ * @param sig the signal that arrived
+ */
 void sighandler_client(int sig);
 
 static int do_shutdown = 0;
@@ -75,6 +90,11 @@ void sighandler_client(
    do_shutdown = 1;
 }
 
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 extern int main(int argc, char **argv) {
    struct sigaction sa;
 

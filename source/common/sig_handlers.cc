@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief The signal handlers every client and daemon installs at startup
+ */
 #include <cstdio>
 #include <csignal>
 #include <cstdlib>
@@ -50,18 +54,25 @@ static void sge_terminate(int);
 static void sge_sigpipe_handler(int);
 static void sge_alarmclock(int dummy);
 
-sigset_t default_mask;
-sigset_t omask;
-sigset_t io_mask;
-struct sigaction sigterm_vec, sigterm_ovec;
-struct sigaction sigalrm_vec, sigalrm_ovec;
-struct sigaction sigcld_pipe_vec, sigcld_pipe_ovec;
-volatile int shut_me_down                     = 0;
-volatile int sge_sig_handler_dead_children    = 0;
-volatile int sge_sig_handler_in_main_loop     = 1;
-volatile int sge_sig_handler_sigpipe_received = 0;
+sigset_t default_mask;   ///< the mask installed by #sge_setup_sig_handlers
+sigset_t omask;          ///< the mask that was in effect before, so it can be restored
+sigset_t io_mask;        ///< the mask to block under while doing I/O that must not be interrupted
+struct sigaction sigterm_vec, sigterm_ovec;   ///< the `SIGTERM`/`SIGINT` handler and the one it replaced
+struct sigaction sigalrm_vec, sigalrm_ovec;   ///< the `SIGALRM` handler and the one it replaced
+struct sigaction sigcld_pipe_vec, sigcld_pipe_ovec;   ///< the `SIGCHLD`/`SIGPIPE` handler and the one it replaced
+volatile int shut_me_down                     = 0;   ///< a termination signal arrived; the main loop should wind up
+volatile int sge_sig_handler_dead_children    = 0;   ///< a `SIGCHLD` arrived; someone should reap
+volatile int sge_sig_handler_in_main_loop     = 1;   ///< the process is in its main loop, so a signal can be handled by setting a flag rather than by exiting
+volatile int sge_sig_handler_sigpipe_received = 0;   ///< a `SIGPIPE` arrived; the write that caused it failed
 
 /********************************************************/
+/** @brief Install the signal handlers and the signal mask for this program
+ *
+ * Which handlers are installed depends on the program: a daemon wants `SIGCHLD`
+ * for reaping shepherds, a client does not.
+ *
+ * @param me_who the `prog_number` of the calling program
+ */
 void sge_setup_sig_handlers(
 int me_who 
 ) {
@@ -181,13 +192,29 @@ int me_who
    DRETURN_VOID;
 }
 
-/********************************************************/
+/** @brief Do nothing, deliberately
+ *
+ * `SIGALRM` is used only to interrupt a blocking system call, so that it
+ * returns `EINTR` and the caller can notice a timeout. There is nothing for the
+ * handler itself to do.
+ *
+ * @param dummy the signal number, unused
+ */
 static void sge_alarmclock(int dummy)
 {
    return;
 }
 
-/***************************************************************************/
+/** @brief Handle `SIGTERM` and `SIGINT`
+ *
+ * In the main loop this only sets #shut_me_down and tells the commlib to stop
+ * waiting, so the process can shut down in its own time. Outside the main loop
+ * there is nothing that would notice the flag, so it exits directly.
+ *
+ * @param dummy the signal number, unused
+ * @todo Remove the `exit()`; every application should be checking
+ *       #shut_me_down instead.
+ */
 static void sge_terminate(int dummy)
 {
    /* set shut-me-down variable */
@@ -212,13 +239,25 @@ static void sge_terminate(int dummy)
    }
 }
 
-/***************************************************************************/
+/** @brief Handle `SIGCHLD` by noting that there is something to reap
+ *
+ * The `wait()` happens in the main loop, not here: a signal handler may call
+ * almost nothing safely.
+ *
+ * @param dummy the signal number, unused
+ */
 void sge_reap(int dummy)
 {
    sge_sig_handler_dead_children = 1;
 }
 
-/***************************************************************************/
+/** @brief Handle `SIGPIPE` by noting that a write failed
+ *
+ * The handler exists mainly so the default action - killing the process - does
+ * not apply: a peer closing a connection must not take the whole process down.
+ *
+ * @param dummy the signal number, unused
+ */
 static void sge_sigpipe_handler(int dummy)
 {
    sge_sig_handler_sigpipe_received = 1;

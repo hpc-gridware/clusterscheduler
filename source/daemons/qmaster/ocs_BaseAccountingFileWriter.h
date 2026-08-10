@@ -19,15 +19,29 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief What the two accounting file writers share
+ */
+
 #include <utility>
 
 #include "ocs_ReportingFileWriter.h"
 
 namespace ocs {
+   /** @brief What the two accounting writers share
+    *
+    * An accounting record may be worth flushing immediately rather than on the
+    * timer: a site that reads the file to bill on wants the record there when
+    * the job ends, not up to a minute later.
+    */
    class BaseAccountingFileWriter : public ReportingFileWriter {
    protected:
-      bool accounting_immediate_flush;
+      bool accounting_immediate_flush;   ///< Flush after every record rather than on the timer
    public:
+      /** @brief Build an accounting writer
+       * @param filename the file to append to
+       * @param write_comment_header whether to start it with a column header
+       */
       explicit BaseAccountingFileWriter(std::string filename, bool write_comment_header)
       : ReportingFileWriter(std::move(filename), write_comment_header),
          accounting_immediate_flush(false) {

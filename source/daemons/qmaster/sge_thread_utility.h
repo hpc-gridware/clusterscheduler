@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Helpers shared by the qmaster threads
+ */
+
 #include "cull/cull_list.h"
 
 lList *

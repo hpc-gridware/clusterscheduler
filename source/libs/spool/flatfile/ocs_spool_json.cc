@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Rendering cull objects as JSON, for `qconf -fmt json`
+ */
+
 #include <cctype>
 #include <cmath>
 #include <cstdint>
@@ -57,9 +61,16 @@
 
 #include "ocs_spool_json.h"
 
+/** @def JSON_LAYER
+ * @brief The rmon layer this module traces on
+ */
 #define JSON_LAYER BASIS_LAYER
 
-/* default value format: compact unit/colon strings for TIME/MEM (see ocs_spool_json.h) */
+/** @brief The value format in effect
+ *
+ * Defaults to the compact unit and colon strings for TIME and MEM; see
+ * #ocs_json_value_format.
+ */
 ocs_json_value_format ocs_json_value_format_opt = OCS_JSON_VALUES_COMPACT;
 
 /* forward declarations (mutually recursive sublist handling) */
@@ -1346,7 +1357,7 @@ spool_json_write_typed_object(lList **answer_list, const lListElem *object,
  * @param answer_list    for returning errors
  * @param list           the list to serialize (a null list yields an empty array)
  * @param fields         spooling fields describing the elements
- * @param id_name        type name for the $id (ocs-qconf-<id_name>.schema.json)
+ * @param id_name        type name for the $id (`ocs-qconf-<id_name>.schema.json`)
  * @param envelope_name  the array key wrapping the records
  * @param out            dstring the JSON document is appended to
  * @return true on success, false on error (answer_list set)

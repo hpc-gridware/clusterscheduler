@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Verifying the names users choose for objects
+ *
+ * Which characters a name may contain depends on where it is used - a name
+ * that becomes a spool file key is checked more strictly than a job name. The
+ * character tables are #KEY_TABLE and #QSUB_TABLE.
+ *
+ * @see sge_utility.h
+ */
+
 #include <cctype>
 #include <cstring>
 
@@ -51,62 +61,49 @@
 
 #include <uti/sge_rmon_macros.h>
 
-/****** sge_utility/verify_str_key() *******************************************
-*  NAME
-*     verify_str_key() -- Generic function for verifying object names
-*
-*  SYNOPSIS
-*     an_status_t verify_str_key(lList **alpp, const char *str, size_t 
-*     str_length, const char *name, int table) 
-*
-*  FUNCTION
-*     Verifies object names. The follwing verification tables are 
-*     used
-*
-*        QSUB_TABLE    job account strings 
-*           (see qsub(1) -A for characters not allowed)
-*        QSUB_TABLE    job name
-*           (see qsub(1) -N for characters not allowed)
-*        KEY_TABLE     parallel environemnt names
-*           (see sge_pe(5))
-*        KEY_TABLE     calendar names 
-*           (see calendar_conf(5))
-*        KEY_TABLE     cluster queue names 
-*           (see queue_conf(5))
-*        KEY_TABLE     project names
-*           (see project(5))
-*        KEY_TABLE     userset names
-*           (see access_list(5))
-*        KEY_TABLE     department names
-*           (see access_list(5))
-*        KEY_TABLE     checkpoint interface name
-*           (see checkpoint(5))
-*        KEY_TABLE     user name
-*           (see user(5))
-*        KEY_TABLE     hostgroup names
-*           (see hostgroup(5))
-*
-*        KEY_TABLE     event client name (internal purposes only)
-*        KEY_TABLE     JAPI session key (internal purposes only)
-*
-*           Note, there is test_sge_utility
-*
-*  INPUTS
-*     lList **alpp      - answer list
-*     const char *str   - string to be verified
-*     size_t str_length - length of the string to be verified
-*     const char *name  - verbal description of the object
-*     int table         - verification table to be used
-*
-*  RESULT
-*     an_status_t - STATUS_OK upon success
-*
-*  NOTES
-*     MT-NOTE: verify_str_key() is MT safe 
-* 
-*  SEE ALSO
-*     There is a module test (test_sge_utility) for verify_str_key().
-*******************************************************************************/
+/**
+ * @brief Generic function for verifying object names
+ *
+ * Verifies object names. The follwing verification tables are
+ * used
+ *    QSUB_TABLE    job account strings
+ *       (see qsub(1) -A for characters not allowed)
+ *    QSUB_TABLE    job name
+ *       (see qsub(1) -N for characters not allowed)
+ *    KEY_TABLE     parallel environemnt names
+ *       (see sge_pe(5))
+ *    KEY_TABLE     calendar names
+ *       (see calendar_conf(5))
+ *    KEY_TABLE     cluster queue names
+ *       (see queue_conf(5))
+ *    KEY_TABLE     project names
+ *       (see project(5))
+ *    KEY_TABLE     userset names
+ *       (see access_list(5))
+ *    KEY_TABLE     department names
+ *       (see access_list(5))
+ *    KEY_TABLE     checkpoint interface name
+ *       (see checkpoint(5))
+ *    KEY_TABLE     user name
+ *       (see user(5))
+ *    KEY_TABLE     hostgroup names
+ *       (see hostgroup(5))
+ *    KEY_TABLE     event client name (internal purposes only)
+ *    KEY_TABLE     JAPI session key (internal purposes only)
+ *       Note, there is test_sge_utility
+ *
+ * @param alpp answer list
+ * @param str string to be verified
+ * @param str_length length of the string to be verified
+ * @param name verbal description of the object
+ * @param table verification table to be used, #KEY_TABLE or #QSUB_TABLE
+ * @param exceptions characters that are accepted although the table forbids
+ *                   them; nullptr for none
+ *
+ * @return STATUS_OK upon success
+ *
+ * @note MT-NOTE: verify_str_key() is MT safe
+ */
 an_status_t
 verify_str_key(lList **alpp, const char *str, size_t str_length, const char *name, int table,
                const char *exceptions) {
@@ -233,53 +230,38 @@ verify_str_key(lList **alpp, const char *str, size_t str_length, const char *nam
    return STATUS_OK;
 }
 
-/****** sge_utility/verify_obj_name() ******************************************
-*  NAME
-*     verify_obj_name() -- Verify the primary name of a configuration object
-*
-*  SYNOPSIS
-*     an_status_t verify_obj_name(lList **alpp, const char *str,
-*     size_t str_length, const char *name, const char *exceptions)
-*
-*  FUNCTION
-*     Verifies the name an object is created with, e.g. the group name of a
-*     host group or the name of a cluster queue. In addition to the checks
-*     done by verify_str_key() with KEY_TABLE the name must not contain any
-*     of the characters that make up a wildcard expression.
-*
-*     Object names and the references pointing at them share one namespace.
-*     Wildcards are a legal and intended means of *referencing* objects
-*     (RQS scopes, "-q wc_qdomain", "qsub -pe 'mpi*'"), so an object whose
-*     name carries such a character cannot be addressed unambiguously and
-*     resolves differently depending on the code path (CS-2450). Names are
-*     therefore restricted, references are not.
-*
-*     KEY_TABLE already rejects "[", "]", "|", "(" and ")", so in practice
-*     this function adds "*", "?", "&" and "!". The check is done via
-*     ocs::is_expression() so that validation and expression evaluation can
-*     never drift apart.
-*
-*     Do NOT use this function for references to objects - use
-*     verify_str_key() with KEY_TABLE there.
-*
-*  INPUTS
-*     lList **alpp            - answer list
-*     const char *str         - name to be verified
-*     size_t str_length       - maximum length of the name
-*     const char *name        - verbal description of the object
-*     const char *exceptions  - characters to be accepted although KEY_TABLE
-*                               forbids them (see verify_str_key())
-*
-*  RESULT
-*     an_status_t - STATUS_OK upon success
-*
-*  NOTES
-*     MT-NOTE: verify_obj_name() is MT safe
-*
-*  SEE ALSO
-*     sge_utility/verify_str_key()
-*     uti/ocs_Pattern/is_expression()
-*******************************************************************************/
+/**
+ * @brief Verify the primary name of a configuration object
+ *
+ * Verifies the name an object is created with, e.g. the group name of a
+ * host group or the name of a cluster queue. In addition to the checks
+ * done by verify_str_key() with KEY_TABLE the name must not contain any
+ * of the characters that make up a wildcard expression.
+ * Object names and the references pointing at them share one namespace.
+ * Wildcards are a legal and intended means of *referencing* objects
+ * (RQS scopes, "-q wc_qdomain", "qsub -pe 'mpi*'"), so an object whose
+ * name carries such a character cannot be addressed unambiguously and
+ * resolves differently depending on the code path (CS-2450). Names are
+ * therefore restricted, references are not.
+ * KEY_TABLE already rejects "[", "]", "|", "(" and ")", so in practice
+ * this function adds "*", "?", "&" and "!". The check is done via
+ * ocs::is_expression() so that validation and expression evaluation can
+ * never drift apart.
+ * Do NOT use this function for references to objects - use
+ * verify_str_key() with KEY_TABLE there.
+ *
+ * @param alpp answer list
+ * @param str name to be verified
+ * @param str_length maximum length of the name
+ * @param name verbal description of the object
+ * @param exceptions characters to be accepted although KEY_TABLE forbids them (see verify_str_key())
+ *
+ * @return STATUS_OK upon success
+ *
+ * @note MT-NOTE: verify_obj_name() is MT safe
+ *
+ * @see #verify_str_key
+ */
 an_status_t
 verify_obj_name(lList **alpp, const char *str, size_t str_length, const char *name,
                 const char *exceptions) {
@@ -303,11 +285,13 @@ verify_obj_name(lList **alpp, const char *str, size_t str_length, const char *na
  * @brief Verify that a hostname is acceptable.
  *
  * Rejects an empty/nullptr name, a name longer than CL_MAXHOSTNAMELEN, and a
- * name that is unsafe as a single filesystem path component — i.e. one that
+ * name that is unsafe as a single filesystem path component - i.e. one that
  * contains '/' or starts with '.' (".", "..", "../x", ".hidden"). The latter
- * matters because a host name becomes a spool-file key (EXECHOST_DIR/<name>),
- * so such a name could escape the spool directory (CS-2364, CWE-22).
- * MT-NOTE: verify_host_name() is MT safe.
+ * matters because a host name becomes a spool-file key
+ * (`EXECHOST_DIR/<name>`), so such a name could escape the spool directory
+ * (CS-2364, CWE-22).
+ *
+ * @note MT-NOTE: verify_host_name() is MT safe
  *
  * @param[out] answer_list answer list to receive the error message on failure
  * @param[in]  host_name   the hostname to verify
@@ -343,6 +327,14 @@ bool verify_host_name(lList **answer_list, const char *host_name)
    return ret;
 }
 
+/**
+ * @brief Resolve this host's own qualified name again
+ *
+ * Called after the configuration changed, since `ignore_fqdn` decides whether
+ * the domain is part of the name this component reports.
+ *
+ * @return `CL_RETVAL_OK` on success, otherwise a commlib error code
+ */
 int reresolve_qualified_hostname() {
    int ret = CL_RETVAL_OK;
 

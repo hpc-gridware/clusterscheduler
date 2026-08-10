@@ -32,6 +32,18 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: a `qping -dump` style debug client
+ *
+ * Attaches to a service as #CL_COM_DEBUG_CLIENT_NAME and prints the message
+ * stream it is then fed, one column per field of
+ * #CL_DEBUG_MESSAGE_FORMAT_STRING.
+ *
+ * Usage: `test_debug_client <debug_level> <port> <host> <comp> <comp_id>`
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 
 #include <cstdio>
 #include <cstring>
@@ -44,16 +56,20 @@
 #include "comm/cl_commlib.h"
 #include <cinttypes>
 
+/** @brief Note the signal so the client loop can leave
+ * @param sig the signal that arrived
+ */
 void sighandler_client(int sig);
 
 static int do_shutdown = 0;
 static cl_com_handle_t *handle = nullptr;
 
-#define ARGUMENT_COUNT 13
-char *cl_values[ARGUMENT_COUNT];
-int cl_show[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-int cl_alignment[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0};
-size_t cl_column_width[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40, 10};
+#define ARGUMENT_COUNT 13   ///< Number of columns in the debug stream
+char *cl_values[ARGUMENT_COUNT];   ///< Parsed fields of the debug line being printed
+int cl_show[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};   ///< Which columns to print
+int cl_alignment[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0};   ///< Whether each column is left or right aligned
+size_t cl_column_width[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40, 10};   ///< Width of each column
+/** @brief Heading of each column */
 const char *cl_description[] = {
         "time of debug output creation",
         "endpoint service name where debug client is connected",
@@ -70,6 +86,7 @@ const char *cl_description[] = {
         "additional information"
 };
 
+/** @brief Short name of each column */
 const char *cl_names[] = {
         "time",
         "local",
@@ -103,6 +120,12 @@ void sighandler_client(
    do_shutdown = 1;
 }
 
+/** @brief Print a value padded to a column width
+ * @param name the text
+ * @param length the column width
+ * @param c what to pad with
+ * @param before pad on the left rather than the right
+ */
 void printf_fill_up(const char *name, int length, char c, int before) {
    int n = strlen(name);
    int i;
@@ -119,6 +142,10 @@ void printf_fill_up(const char *name, int length, char c, int before) {
 
 }
 
+/** @brief Render a timestamp the way the debug stream carries it
+ * @param buffer the timestamp as received
+ * @param dest receives the formatted time
+ */
 void convert_time(char *buffer, char *dest) {
    time_t i;
    char *help;
@@ -138,6 +165,9 @@ void convert_time(char *buffer, char *dest) {
    sprintf(dest, "%02d:%02d:%02d.%s", tm->tm_hour, tm->tm_min, tm->tm_sec, help2);
 }
 
+/** @brief Print one line of the debug stream as columns
+ * @param buffer the raw line
+ */
 void print_line(char *buffer) {
    int i = 0;
    size_t max_name_length = 0;
@@ -201,6 +231,11 @@ void print_line(char *buffer) {
 
 }
 
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 extern int main(int argc, char **argv) {
    struct sigaction sa;
    int port;

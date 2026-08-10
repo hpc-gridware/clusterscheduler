@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for qref in `libs/sgeobj`
+ */
+
 /*
  * Unit tests for qref_list_host_rejected() - CS-2450.
  *
@@ -110,6 +114,16 @@ static void teardown_bootstrap() {
    rmdir(s_sge_root);
 }
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \
@@ -121,7 +135,22 @@ static void teardown_bootstrap() {
    } while (0)
 
 /* "rejected == false" reads badly in the scenarios below */
+/** @brief The queue reference applies to this host
+ *
+ * A readable spelling of the negated `qref_list_host_rejected()`, so the test
+ * cases read as the statements they check rather than as double negatives.
+ *
+ * @param href the queue reference
+ * @param host the host to test
+ * @param list the host group list to resolve against
+ */
 #define COVERS(href, host, list)     (!qref_list_host_rejected((href), (host), (list)))
+
+/** @brief The queue reference does not apply to this host
+ * @param href the queue reference
+ * @param host the host to test
+ * @param list the host group list to resolve against
+ */
 #define EXCLUDES(href, host, list)   (qref_list_host_rejected((href), (host), (list)))
 
 /*

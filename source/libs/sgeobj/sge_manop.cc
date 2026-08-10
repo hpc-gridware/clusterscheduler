@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Managers and operators
+ *
+ * @see sge_manop.h
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "cull/cull.h"

@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Server side model of `qstat`: reads the lists inside qmaster
+ */
+
 #include "cull/cull.h"
 
 #include "gdi/ocs_gdi_Client.h"
@@ -42,6 +46,10 @@ namespace ocs {
    protected:
       bool fetch_data(lList **answer_list, QStatParameter &parameter) override;
    public:
+      /** @brief Build the server side model
+       * @param packet the originating client packet, so permission checks see the real caller
+       * @param task the GDI task being answered
+       */
       QStatModelServer(gdi::Packet *packet, gdi::Task *task) : packet(packet), task(task) {
       };
 

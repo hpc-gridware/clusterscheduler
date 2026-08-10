@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Project Usage
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -47,9 +51,9 @@
 */
 
 enum {
-   UPP_name = UPP_LOWERBOUND,
-   UPP_usage,
-   UPP_long_term_usage
+   UPP_name = UPP_LOWERBOUND,   ///< Name
+   UPP_usage,   ///< Usage
+   UPP_long_term_usage   ///< Long Term Usage
 };
 
 LISTDEF(UPP_Type)
@@ -64,6 +68,7 @@ NAMEDEF(UPPN)
    NAME("UPP_long_term_usage")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define UPP_SIZE sizeof(UPPN)/sizeof(char *)
 
 

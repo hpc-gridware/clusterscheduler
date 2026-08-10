@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Variable Object
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   VA_variable = VA_LOWERBOUND,
-   VA_value
+   VA_variable = VA_LOWERBOUND,   ///< Variable Name
+   VA_value   ///< Variable Value
 };
 
 LISTDEF(VA_Type)
@@ -56,6 +60,7 @@ NAMEDEF(VAN)
    NAME("VA_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define VA_SIZE sizeof(VAN)/sizeof(char *)
 
 

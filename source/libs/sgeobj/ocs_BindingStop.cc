@@ -18,10 +18,19 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Where a binding stops, and what to do when it does not fit
+ */
+
 #include <string>
 
 #include "ocs_BindingStop.h"
 
+/**
+ * @brief The keyword for an anchor, as written in a request
+ * @param mode the anchor to name
+ * @return its keyword
+ */
 std::string ocs::BindingStop::to_string(const Stop mode) {
    switch (mode) {
       case NONE: return "NONE";
@@ -39,6 +48,11 @@ std::string ocs::BindingStop::to_string(const Stop mode) {
    }
 }
 
+/**
+ * @brief Parse an anchor keyword
+ * @param mode the keyword to parse
+ * @return the anchor, or #UNINITIALIZED when it is not recognised
+ */
 ocs::BindingStop::Stop
 ocs::BindingStop::from_string(const std::string& mode) {
    if (mode == "NONE") {

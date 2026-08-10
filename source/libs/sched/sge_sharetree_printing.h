@@ -33,20 +33,31 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Rendering a share tree, for `qconf -sst` and friends
+ *
+ * The share tree of the fair share policy is a tree of users and projects
+ * with configured shares and accumulated usage. This module renders it - as
+ * plain text or as JSON - with the field selection and the delimiters the
+ * caller asks for, which is how the same data feeds a human readable table
+ * and a machine readable dump.
+ */
+
 #include "cull/cull.h"
 
 #include "uti/sge_dstring.h"
 #include "rapidjson/writer.h"
 
+/** @brief How a share tree dump is formatted */
 typedef struct {
-   bool name_format;
-   bool format_times;
-   const char *delim;
-   const char *line_delim;
-   const char *rec_delim;
-   const char *str_format;
-   const char *field_names;
-   const char *line_prefix;
+   bool name_format;         ///< Print the node names rather than only the values
+   bool format_times;        ///< Render times as dates instead of as seconds
+   const char *delim;        ///< Delimiter between two fields
+   const char *line_delim;   ///< Delimiter between two lines
+   const char *rec_delim;    ///< Delimiter between two records
+   const char *str_format;   ///< Format used for string values
+   const char *field_names;  ///< Comma separated fields to print, nullptr for all
+   const char *line_prefix;  ///< String put in front of every line
 } format_t;
 
 void 

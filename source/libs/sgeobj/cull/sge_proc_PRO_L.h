@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Process Element
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -68,17 +72,17 @@
 */
 
 enum {
-   PRO_pid = PRO_LOWERBOUND,
-   PRO_utime,
-   PRO_stime,
-   PRO_vsize,
-   PRO_rss,
-   PRO_groups,
-   PRO_rel,
-   PRO_run,
-   PRO_io,
-   PRO_ioops,
-   PRO_iow
+   PRO_pid = PRO_LOWERBOUND,   ///< Pid
+   PRO_utime,   ///< User Time
+   PRO_stime,   ///< System Time
+   PRO_vsize,   ///< Virtual Memory
+   PRO_rss,   ///< Resident Set Size
+   PRO_groups,   ///< Groups
+   PRO_rel,   ///< Related to Cluster Scheduler Job
+   PRO_run,   ///< Running
+   PRO_io,   ///< IO
+   PRO_ioops,   ///< IOOPS
+   PRO_iow   ///< IOW
 };
 
 LISTDEF(PRO_Type)
@@ -109,6 +113,7 @@ NAMEDEF(PRON)
    NAME("PRO_iow")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define PRO_SIZE sizeof(PRON)/sizeof(char *)
 
 

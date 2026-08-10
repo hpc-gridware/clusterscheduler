@@ -32,6 +32,21 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The resource utilization diagram - what is booked, and when
+ *
+ * A consumable is not just "so much free right now". The scheduler keeps, per
+ * resource and per object, a **diagram** over time: a list of points at which
+ * the booked amount changes, so it can answer "how much of this is free
+ * between t and t+d" - which is what resource reservation and advance
+ * reservations need.
+ *
+ * utilization_add() books an interval into a diagram, utilization_max()
+ * answers the maximum booking within an interval, and
+ * prepare_resource_schedules() fills the diagrams of a whole scheduling run
+ * from the running and suspended jobs.
+ */
+
 #include <cstring>
 
 #include "uti/sge_log.h"
@@ -93,29 +108,18 @@ static lListElem *newResourceElem(uint64_t time, double amount);
 
 static bool print_resource_utilization = getenv("SGE_PRINT_RESOURCE_UTILIZATION") == nullptr ? false : true;
 
-/****** sge_resource_utilization/utilization_print_to_dstring() ****************
-*  NAME
-*     utilization_print_to_dstring() -- Print resource utilization to dstring
-*
-*  SYNOPSIS
-*     bool utilization_print_to_dstring(const lListElem *this_elem, dstring 
-*     *string) 
-*
-*  FUNCTION
-*     Print resource utlilzation as plain number to dstring.
-*
-*  INPUTS
-*     const lListElem *this_elem - A RUE_Type element
-*     dstring *string            - The string 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: utilization_print_to_dstring() is MT safe
-*******************************************************************************/
+/**
+ * @brief Print resource utilization to dstring
+ *
+ * Print resource utlilzation as plain number to dstring.
+ *
+ * @param this_elem A RUE_Type element
+ * @param string The string
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: utilization_print_to_dstring() is MT safe
+ */
 bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string)
 {
    if (!this_elem || !string) 
@@ -124,6 +128,14 @@ bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string)
 }
 
 
+/**
+ * @brief Writes the utilization diagrams of all objects to the debug output
+ *
+ * @param[in] pe_list    the parallel environments
+ * @param[in] host_list  the execution hosts
+ * @param[in] queue_list the queue instances
+ * @param[in] ar_list    the advance reservations
+ */
 void utilization_print_all(const lList* pe_list, const lList *host_list, const lList *queue_list, const lList *ar_list)
 {
    const char *name;
@@ -202,6 +214,15 @@ void utilization_print_all(const lList* pe_list, const lList *host_list, const l
    DRETURN_VOID;
 }
 
+/**
+ * @brief Writes one utilization diagram to the debug output
+ *
+ * @param[in] cr                 the resource utilization entry (`RUE_Type`)
+ * @param[in] object_name        name of the object the entry belongs to, may
+ *                               be nullptr
+ * @param[in] show_binding_inuse whether to also print the topology units in
+ *                               use
+ */
 void utilization_print(const lListElem *cr, const char *object_name, bool show_binding_inuse)
 {
    DENTER(TOP_LAYER);
@@ -257,39 +278,30 @@ static uint64_t utilization_endtime(uint64_t start, uint64_t duration)
    DRETURN(end_time);
 }
 
-/****** sge_resource_utilization/utilization_add() *****************************
-*  NAME
-*     utilization_add() -- Debit a jobs resource utilization
-*
-*  SYNOPSIS
-*     int utilization_add(lListElem *cr, uint64_t start_time, uint64_t
-*     duration, double utilization, uint32_t job_id, uint32_t ja_taskid,
-*     uint32_t level, const char *object_name, const char *type)
-*
-*  FUNCTION
-*     A jobs resource utilization is debited into the resource 
-*     utilization diagram at the given time for the given duration.
-*
-*  INPUTS
-*     lListElem *cr           - Resource utilization entry (RUE_Type)
-*     uint64_t start_time     - Start time of utilization
-*     uint64_t duration       - Duration
-*     double utilization      - Amount
-*     uint32_t job_id         - Job id
-*     uint32_t ja_taskid      - Task id
-*     uint32_t level          - *_TAG
-*     const char *object_name - The objects name
-*     const char *type        - String denoting type of utilization entry.
-*     bool is_job             - reserve for job or for advance reservation
-*     bool implicit_non_exclusive - add implicit entry for non-exclusive jobs
-*                                   requesting a exclusive centry
-*
-*  RESULT
-*     int - 0 on success
-*
-*  NOTES
-*     MT-NOTE: utilization_add() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Debit a jobs resource utilization
+ *
+ * A jobs resource utilization is debited into the resource
+ * utilization diagram at the given time for the given duration.
+ *
+ * @param cr Resource utilization entry (RUE_Type)
+ * @param start_time Start time of utilization
+ * @param duration Duration
+ * @param utilization Amount
+ * @param job_id Job id
+ * @param ja_taskid Task id
+ * @param level *_TAG
+ * @param object_name The objects name
+ * @param type String denoting type of utilization entry.
+ * @param for_job reserve for a job (true) or for an advance reservation (false)
+ * @param implicit_non_exclusive add implicit entry for non-exclusive jobs requesting a exclusive centry
+ * @param binding_touse the topology units the job will use, booked along with
+ *                      the amount
+ *
+ * @return 0 on success
+ *
+ * @note MT-NOTE: utilization_add() is not MT safe
+ */
 int utilization_add(lListElem *cr, uint64_t start_time, uint64_t duration, double utilization,
                      uint32_t job_id, uint32_t ja_taskid, uint32_t level, const char *object_name,
                      const char *type, bool for_job, bool implicit_non_exclusive, const lList *binding_touse) {
@@ -535,6 +547,24 @@ static void utilization_normalize(lList *diagram)
    return;
 }
 
+/**
+ * @brief Raises a utilization to what core binding actually blocks
+ *
+ * A job bound to topology units can make a resource unusable beyond the
+ * amount it booked - the remaining slots exist but have no units left to bind
+ * to. This returns the larger of the booked utilization and the one implied
+ * by the binding.
+ *
+ * @param[in]     a             the assignment, or nullptr to leave `util` as
+ *                              it is
+ * @param[in]     host          the execution host, or nullptr as above
+ * @param[in,out] binding_inuse the topology units already taken
+ * @param[in]     util          the utilization booked so far
+ * @param[in]     total         the total capacity of the resource
+ * @param[in]     slots         the number of slots in question
+ *
+ * @return the utilization to work with
+ */
 double increase_util_depending_on_binding(const sge_assignment_t *a, const lListElem *host, ocs::TopologyString &binding_inuse, double util, double total, double slots) {
    // no binding string => no util change
    if (a != nullptr && host != nullptr) {
@@ -544,27 +574,26 @@ double increase_util_depending_on_binding(const sge_assignment_t *a, const lList
    return util;
 }
 
-/****** sge_resource_utilization/utilization_queue_end() ***********************
-*  NAME
-*     utilization_queue_end() -- Determine utilization at queue end time
-*
-*  SYNOPSIS
-*     double utilization_queue_end(const lListElem *cr) 
-*
-*  FUNCTION
-*     Determine utilization at queue end time. Jobs that last until 
-*     ever can cause a non-zero utilization.
-*
-*  INPUTS
-*     const lListElem *cr - Resource utilization entry (RUE_utilized)
-*     bool for_excl_request - For exclusive request
-*
-*  RESULT
-*     double - queue end utilization
-*
-*  NOTES
-*     MT-NOTE: utilization_queue_end() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Determine utilization at queue end time
+ *
+ * Determine utilization at queue end time. Jobs that last until
+ * ever can cause a non-zero utilization.
+ *
+ * @param a                the assignment, or nullptr when no binding has to
+ *                         be taken into account
+ * @param host             the execution host, or nullptr as above
+ * @param cr               Resource utilization entry (`RUE_utilized`)
+ * @param total            the total capacity of the resource
+ * @param request          the amount the job requests
+ * @param slots            the number of slots in question
+ * @param for_excl_request For exclusive request
+ * @param[out] binding_inuse receives the topology units in use at that time
+ *
+ * @return queue end utilization
+ *
+ * @note MT-NOTE: utilization_queue_end() is MT safe
+ */
 double utilization_queue_end(const sge_assignment_t *a, const lListElem *host, const lListElem *cr, double total, double request, double slots, bool for_excl_request, ocs::TopologyString& binding_inuse) {
    DENTER(TOP_LAYER);
 
@@ -635,11 +664,19 @@ double utilization_queue_end(const sge_assignment_t *a, const lListElem *host, c
 
 /** @brief Returns the maximum utilization within a timeframe and additional details
  *
- * @param cr Resource utilization entry (RUE_utilized)
- * @param start_time Start time of the timeframe
- * @param duration Duration of timeframe
+ * @param a               the assignment, or nullptr when no binding has to be
+ *                        taken into account
+ * @param host            the execution host, or nullptr as above
+ * @param cr              Resource utilization entry (`RUE_utilized`)
+ * @param start_time      Start time of the timeframe
+ * @param duration        Duration of timeframe
+ * @param total           the total capacity of the resource
+ * @param request         the amount the job requests
+ * @param slots           the number of slots in question
  * @param for_excl_request Whether to check for exclusive requests
- * @param[out] binding_inuse Only available for slots on host level.
+ * @param[out] combined_binding_inuse the topology units in use over the
+ *                        timeframe; only filled for slots at host level
+ *
  * @return Maximum utilization value
  */
 double
@@ -975,31 +1012,22 @@ utilization_below(const sge_assignment_t *a, const lListElem *host, const lListE
    DRETURN(when); 
 }
 
-/****** sge_resource_utilization/add_job_utilization() *************************
-*  NAME
-*     add_job_utilization() -- Debit assignements' utilization to all schedules
-*
-*  SYNOPSIS
-*     int add_job_utilization(const sge_assignment_t *a, const char *type) 
-*
-*  FUNCTION
-*     The resouce utilization of an assignment is debited into the schedules 
-*     of global, host and queue instance resource containers and limitation
-*     rule sets. For parallel jobs debitation is made also with the parallel
-*     environement schedule.
-*
-*  INPUTS
-*     const sge_assignment_t *a - The assignement
-*     const char *type          - A string that is used to monitor assignment
-*                                 type
-*     bool for_job_scheduling   - utilize for job or for advance reservation
-*
-*  RESULT
-*     int - 
-*
-*  NOTES
-*     MT-NOTE: add_job_utilization() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Debit assignements' utilization to all schedules
+ *
+ * The resouce utilization of an assignment is debited into the schedules
+ * of global, host and queue instance resource containers and limitation
+ * rule sets. For parallel jobs debitation is made also with the parallel
+ * environement schedule.
+ *
+ * @param a The assignment
+ * @param type A string that is used to monitor assignment type
+ * @param for_job_scheduling utilize for job or for advance reservation
+ *
+ * @return always 0
+ *
+ * @note MT-NOTE: add_job_utilization() is MT safe
+ */
 int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_job_scheduling)
 {
    DENTER(TOP_LAYER);
@@ -1125,6 +1153,40 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
    DRETURN(0);
 }
 
+/**
+ * @brief Books a job's consumables into the diagrams of one object
+ *
+ * The object is passed generically: `ep` is the queue instance, host or PE,
+ * and `config_nm` / `actual_nm` name its configuration and utilization
+ * fields, which is why the same function serves all three levels.
+ *
+ * @param[in]     gdil                the granted destination identifier the
+ *                                    booking is made for
+ * @param[in,out] jep                 the job (`JB_Type`)
+ * @param[in]     pe                  the granted parallel environment
+ * @param[in]     task_id             id of the array task
+ * @param[in]     type                why the utilization is booked, one of
+ *                                    the SCHEDULING_RECORD_ENTRY_TYPE_*
+ *                                    strings
+ * @param[in,out] ep                  the object to book on - queue instance,
+ *                                    host or PE
+ * @param[in]     centry_list         the system wide attribute configuration
+ * @param[in]     slots               number of slots granted here
+ * @param[in]     config_nm           field of `ep` holding its consumable
+ *                                    configuration
+ * @param[in]     actual_nm           field of `ep` holding its utilization
+ * @param[in]     obj_name            name of the object, for messages
+ * @param[in]     start_time          start of the utilization
+ * @param[in]     duration            duration of the utilization
+ * @param[in]     tag                 the level tag - queue, host or global
+ * @param[in]     for_job_scheduling  book for a job (true) or for an advance
+ *                                    reservation (false)
+ * @param[in]     is_master_task      whether the master task runs here
+ * @param[in]     do_per_host_booking whether the per host consumables have to
+ *                                    be booked in this call
+ *
+ * @return the number of modifications made
+ */
 int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListElem *pe, uint32_t task_id, const char *type, lListElem *ep,
                            const lList *centry_list, int slots, int config_nm, int actual_nm, const char *obj_name,
                            uint64_t start_time, uint64_t duration, uint32_t tag, bool for_job_scheduling,
@@ -1249,43 +1311,27 @@ int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListEle
    DRETURN(mods);
 }
 
-/****** sge_resource_utilization/rqs_add_job_utilization() ********************
-*  NAME
-*     rqs_add_job_utilization() -- Debit assignment's utilization in a limitation
-*                                  rule
-*
-*  SYNOPSIS
-*     static int rqs_add_job_utilization(lListElem *jep, uint32_t task_id,
-*     const char *type, lListElem *rule, dstring rue_name, lList *centry_list, 
-*     int slots, const char *obj_name, uint64_t start_time, uint64_t duration,
-*     bool is_master_task) 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     lListElem *jep       - job element (JB_Type)
-*     uint32_t task_id     - task id to debit
-*     const char *type     - String denoting type of utilization entry 
-*     lListElem *rule      - limitation rule (RQR_Type)
-*     dstring rue_name     - rue_name where to debit
-*     lList *centry_list   - master centry list (CE_Type)
-*     int slots            - slots to debit
-*     const char *obj_name - name of the object where to debit
-*     uint64_t start_time  - start time of utilization
-*     uint64_t duration    - end time of utilization
-*     bool is_master_task  - is this the master task going to be debit
-*
-*  RESULT
-*     static int - amount of modified limits
-*
-*  NOTES
-*     MT-NOTE: rqs_add_job_utilization() is MT safe 
-*
-*  SEE ALSO
-*     sge_resource_utilization/rc_add_job_utilization()
-*     sge_resource_utilization/add_job_utilization()
-*******************************************************************************/
+/**
+ * @brief Debit assignment's utilization in a limitation
+ *
+ * @param jep job element (JB_Type)
+ * @param task_id task id to debit
+ * @param type String denoting type of utilization entry
+ * @param rule limitation rule (RQR_Type)
+ * @param rue_name rue_name where to debit
+ * @param centry_list master centry list (CE_Type)
+ * @param slots slots to debit
+ * @param obj_name name of the object where to debit
+ * @param start_time start time of utilization
+ * @param duration end time of utilization
+ * @param is_master_task is this the master task going to be debit
+ *
+ * @return amount of modified limits
+ *
+ * @note MT-NOTE: rqs_add_job_utilization() is MT safe
+ *
+ * @see #rc_add_job_utilization, #add_job_utilization
+ */
 static int 
 rqs_add_job_utilization(lListElem *jep, const lListElem *pe, uint32_t task_id, const char *type, lListElem *rule,
                         dstring rue_name, const lList *centry_list, int slots, const char *obj_name,
@@ -1499,39 +1545,29 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list, 
    DRETURN(0);
 }
 
-/****** sge_resource_utilization/prepare_resource_schedules() *********************************
-*  NAME
-*     prepare_resource_schedules() -- Debit non-pending jobs in resource schedule (resource diagram)
-*
-*  SYNOPSIS
-*     static void prepare_resource_schedules(const lList *running_jobs, const 
-*     lList *suspended_jobs, lList *pe_list, lList *host_list, lList 
-*     *queue_list, lList *centry_list, lList *rqs_list) 
-*
-*  FUNCTION
-*     In order to reflect current and future resource utilization of running 
-*     and suspended jobs in the schedule (resource diagram)
-*     we iterate through all jobs and debit
-*     resources requested by those jobs.
-*
-*  INPUTS
-*     const lList *running_jobs   - The running ones (JB_Type)
-*     const lList *suspended_jobs - The susepnded ones (JB_Type)
-*     lList *pe_list              - ??? 
-*     lList *host_list            - ??? 
-*     lList *queue_list           - ??? 
-*     lList *rqs_list             - configured resource quota sets
-*     lList *centry_list          - ??? 
-*     lList *acl_list             - ??? 
-*     lList *hgroup_list          - ??? 
-*     lList *prepare_resource_schedules - create schedule for job or advance reservation
-*                                         scheduling
-*     bool for_job_scheduling     - prepare for job or for advance reservation
-*     uint32_t now                - now time of assignment
-*
-*  NOTES
-*     MT-NOTE: prepare_resource_schedules() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Debit non-pending jobs in resource schedule (resource diagram)
+ *
+ * In order to reflect current and future resource utilization of running
+ * and suspended jobs in the schedule (resource diagram)
+ * we iterate through all jobs and debit
+ * resources requested by those jobs.
+ *
+ * @param running_jobs The running ones (JB_Type)
+ * @param suspended_jobs The susepnded ones (JB_Type)
+ * @param pe_list the parallel environments, whose diagrams are filled
+ * @param host_list the execution hosts, whose diagrams are filled
+ * @param queue_list the queue instances, whose diagrams are filled
+ * @param rqs_list configured resource quota sets
+ * @param centry_list the system wide attribute configuration
+ * @param acl_list the access lists, needed to evaluate the resource quotas
+ * @param hgroup_list the host groups, needed as above
+ * @param ar_list the advance reservations, whose diagrams are filled
+ * @param for_job_scheduling prepare for job or for advance reservation
+ * @param now now time of assignment
+ *
+ * @note MT-NOTE: prepare_resource_schedules() is not MT safe
+ */
 void prepare_resource_schedules(const lList *running_jobs, const lList *suspended_jobs, 
    lList *pe_list, lList *host_list, lList *queue_list, lList *rqs_list, const lList *centry_list,
    const lList *acl_list, const lList *hgroup_list, lList *ar_list, bool for_job_scheduling, uint64_t now)
@@ -1553,30 +1589,17 @@ void prepare_resource_schedules(const lList *running_jobs, const lList *suspende
    DRETURN_VOID;
 }
 
-/****** sge_resource_utilization/add_calendar_to_schedule() ***********************************
-*  NAME
-*     add_calendar_to_schedule() -- addes the queue calendar to the resource
-*                                   schedule
-*
-*  SYNOPSIS
-*     static void add_calendar_to_schedule(lList *queue_list) 
-*
-*  FUNCTION
-*     Adds the queue calendars to the resource schedule. It is using
-*     the slot entry for simulating and enabled / disabled calendar.
-*
-*  INPUTS
-*     lList *queue_list - all queues, which can posibly run jobs
-*     uint32_t now      - now time of assignment
-*
-*  NOTES
-*     MT-NOTE: add_calendar_to_schedule() is MT safe 
-*
-*  SEE ALSO
-*     sge_resource_utilization/set_utilization
-*     scheduler/newResourceElem
-*     scheduler/prepare_resource_schedules
-*******************************************************************************/
+/**
+ * @brief Addes the queue calendar to the resource
+ *
+ * Adds the queue calendars to the resource schedule. It is using
+ * the slot entry for simulating and enabled / disabled calendar.
+ *
+ * @param queue_list all queues, which can posibly run jobs
+ * @param now now time of assignment
+ *
+ * @note MT-NOTE: add_calendar_to_schedule() is MT safe
+ */
 static void 
 add_calendar_to_schedule(lList *queue_list, uint64_t now)
 {
@@ -1623,32 +1646,19 @@ add_calendar_to_schedule(lList *queue_list, uint64_t now)
    DRETURN_VOID;
 }
 
-/****** sge_resource_utilization/set_utilization() ********************************************
-*  NAME
-*     set_utilization() -- adds one specific calendar entry to the resource schedule
-*
-*  SYNOPSIS
-*     static void set_utilization(lList *uti_list, uint32_t from, uint32_t
-*     till, double uti) 
-*
-*  FUNCTION
-*     This set utilization function is unique for calendars. It removes all other
-*     uti settings in the given time interval and replaces it with the given one.
-*
-*  INPUTS
-*     lList *uti_list - the uti list for a specifiy resource and queue
-*     uint32_t from   - starting time for this uti
-*     uint32_t till   - endtime for this uti.
-*     double uti      - utilization (needs to bigger than 1 (schould be max)
-*
-*  NOTES
-*     MT-NOTE: set_utilization() is MT safe 
-*
-*  SEE ALSO
-*     sge_resource_utilization/add_calendar_to_schedule
-*     sge_resource_utilization/newResourceElem
-*     sge_resource_utilizationscheduler/prepare_resource_schedules
-*******************************************************************************/
+/**
+ * @brief Adds one specific calendar entry to the resource schedule
+ *
+ * This set utilization function is unique for calendars. It removes all other
+ * uti settings in the given time interval and replaces it with the given one.
+ *
+ * @param uti_list the uti list for a specifiy resource and queue
+ * @param from starting time for this uti
+ * @param till endtime for this uti.
+ * @param uti utilization (needs to bigger than 1 (schould be max)
+ *
+ * @note MT-NOTE: set_utilization() is MT safe
+ */
 static void 
 set_utilization(lList *uti_list, uint64_t from, uint64_t till, double uti)
 {
@@ -1716,31 +1726,18 @@ set_utilization(lList *uti_list, uint64_t from, uint64_t till, double uti)
    DRETURN_VOID;
 }
 
-/****** sge_resource_utilization/newResourceElem() ********************************************
-*  NAME
-*     newResourceElem() -- creates new resource schedule entry
-*
-*  SYNOPSIS
-*     static lListElem* newResourceElem(uint32_t time, double amount)
-*
-*  FUNCTION
-*     creates new resource schedule entry and returns it
-*
-*  INPUTS
-*     uint32_t time - specific time
-*     double amount - the utilized amount
-*
-*  RESULT
-*     static lListElem* - new resource schedule entry
-*
-*  NOTES
-*     MT-NOTE: newResourceElem() is MT safe 
-*
-*  SEE ALSO
-*     sge_resource_utilization/add_calendar_to_schedule
-*     sge_resource_utilization/set_utilization
-*     sge_resource_utilization/prepare_resource_schedules
-*******************************************************************************/
+/**
+ * @brief Creates new resource schedule entry
+ *
+ * creates new resource schedule entry and returns it
+ *
+ * @param time specific time
+ * @param amount the utilized amount
+ *
+ * @return new resource schedule entry
+ *
+ * @note MT-NOTE: newResourceElem() is MT safe
+ */
 
 static lListElem *newResourceElem(uint64_t time, double amount)
 {
@@ -1755,6 +1752,14 @@ static lListElem *newResourceElem(uint64_t time, double amount)
    return elem;
 }
 
+/**
+ * @brief How many slots of a queue instance are reserved at this moment?
+ *
+ * @param[in] this_elem the queue instance (`QU_Type`)
+ *
+ * @return the number of slots currently reserved, 0 if the queue instance has
+ *         no slot utilization entry
+ */
 int qinstance_slots_reserved_now(const lListElem *this_elem) {
    DENTER(TOP_LAYER);
    int ret = 0;

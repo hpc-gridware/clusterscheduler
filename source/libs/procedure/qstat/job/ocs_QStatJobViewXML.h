@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief XML rendering of `qstat -j`
+ */
+
 #include "cull/cull.h"
 
 #include "qstat/ocs_QStatParameter.h"
@@ -27,8 +31,18 @@
 #include "qstat/ocs_QStatModelBase.h"
 
 namespace ocs {
+   /** @brief Renders `qstat -j` as XML
+    *
+    * Each attribute becomes an element, and the tasks of a job become a nested
+    * element list.
+    *
+    * @ingroup libprocedure
+    */
    class QStatJobViewXML : public QStatJobViewBase {
    public:
+      /** @brief Build the XML view
+       * @param parameter the call's parameters
+       */
       explicit QStatJobViewXML(const ProcedureParameter &parameter) : QStatJobViewBase(parameter) {};
       ~QStatJobViewXML() override = default;
 

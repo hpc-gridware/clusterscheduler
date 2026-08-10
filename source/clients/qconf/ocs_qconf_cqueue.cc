@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qconf - the cluster queue switches
+ */
+
 #include <cstring>
 
 #include "uti/sge_edit.h"
@@ -74,6 +78,17 @@ static bool
 cqueue_provide_modify_context(lListElem **this_elem, lList **answer_list,
                               bool ignore_unchanged_message);
 
+/** @brief Send one cluster queue to qmaster
+ *
+ * The single point where the cluster queue switches reach the master.
+ *
+ * @param this_elem the cluster queue (`CQ_Type`) to send
+ * @param answer_list used to return error messages
+ * @param gdi_command `ADD`, `MOD` or `DEL`
+ * @param sub_cmd how a list-valued attribute is merged with the one already
+ *                stored: replaced wholesale, or added to
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool
 cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::Command gdi_command, ocs::gdi::SubCommand sub_cmd)
 {
@@ -102,6 +117,12 @@ cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::
    DRETURN(ret);
 }
 
+/** @brief Fetch one cluster queue from qmaster
+ *
+ * @param answer_list used to return error messages
+ * @param name the cluster queue to fetch
+ * @return the cluster queue (`CQ_Type`), or `nullptr` with `answer_list` filled
+ */
 lListElem *
 cqueue_get_via_gdi(lList **answer_list, const char *name)
 {
@@ -276,6 +297,17 @@ static bool cqueue_hgroup_get_via_gdi(lList **answer_list,
 }
 
 bool
+/** @brief Fetch the host groups and the cluster queues in one request
+ *
+ * They are fetched together because a queue's configuration is written in terms
+ * of host groups: resolving what a queue actually applies to needs both, and
+ * fetching them separately would leave a window in which they disagree.
+ *
+ * @param answer_list used to return error messages
+ * @param hgrp_list receives the host groups (`HGRP_Type`)
+ * @param cq_list receives the cluster queues (`CQ_Type`)
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 cqueue_hgroup_get_all_via_gdi(lList **answer_list,
                               lList **hgrp_list, lList **cq_list)
 {
@@ -407,6 +439,14 @@ cqueue_provide_modify_context(lListElem **this_elem, lList **answer_list,
    DRETURN(ret);
 }
 
+/** @brief Add a cluster queue, using the editor
+ *
+ * Builds a template, opens `$EDITOR` on it, and sends the result to qmaster.
+ *
+ * @param answer_list used to return error messages
+ * @param name the name of the cluster queue to create
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool 
 cqueue_add(lList **answer_list, const char *name)
 {
@@ -442,6 +482,14 @@ cqueue_add(lList **answer_list, const char *name)
    DRETURN(ret); 
 }
 
+/** @brief Add a cluster queue from a file, without the editor
+ *
+ * The non-interactive form: the file must already be complete.
+ *
+ * @param answer_list used to return error messages
+ * @param filename the file holding the cluster queue definition
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool 
 cqueue_add_from_file(lList **answer_list, const char *filename)
 {
@@ -484,6 +532,14 @@ cqueue_add_from_file(lList **answer_list, const char *filename)
    DRETURN(ret); 
 }
 
+/** @brief Change a cluster queue, using the editor
+ *
+ * Fetches the current definition, opens `$EDITOR` on it, and sends back what changed.
+ *
+ * @param answer_list used to return error messages
+ * @param name the cluster queue to change
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool 
 cqueue_modify(lList **answer_list, const char *name)
 {
@@ -511,6 +567,14 @@ cqueue_modify(lList **answer_list, const char *name)
    DRETURN(ret);
 }
 
+/** @brief Change a cluster queue from a file, without the editor
+ *
+ * The non-interactive form of #cqueue_modify.
+ *
+ * @param answer_list used to return error messages
+ * @param filename the file holding the new definition
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool 
 cqueue_modify_from_file(lList **answer_list, const char *filename)
 {
@@ -557,6 +621,12 @@ cqueue_modify_from_file(lList **answer_list, const char *filename)
    DRETURN(ret);
 }
 
+/** @brief Delete a cluster queue
+ *
+ * @param answer_list used to return error messages
+ * @param name the cluster queue to delete
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool 
 cqueue_delete(lList **answer_list, const char *name)
 {
@@ -575,22 +645,19 @@ cqueue_delete(lList **answer_list, const char *name)
    DRETURN(ret);
 }
 
-/****** resource_quota_qconf/qinstance_list_write() **************************
-*  NAME
-*     qinstance_list_write() -- print a list of resolved queue instances
-*
-*  FUNCTION
-*     Writes the resolved queue instances collected for a -sq <queue>@<host> or
-*     -sq <queue>@@<hostgroup> query. In json mode the instances are emitted as a
-*     single enveloped array ({ "qinstance": [ ... ] }) so the output is one valid
-*     json document even when the query matches several hosts; in ASCII mode each
-*     instance is printed as a separate block (blank-line separated), as before.
-*     The "qinstance" type name is passed explicitly because the QINSTANCE object
-*     type cannot be resolved from its content (it is mis-detected as exechost).
-*
-*  RESULT
-*     bool - true on success, false on error
-*******************************************************************************/
+/**
+ * @brief Print a list of resolved queue instances
+ *
+ * Writes the resolved queue instances collected for a -sq `queue`@`host` or
+ * -sq `queue`@@`hostgroup` query. In json mode the instances are emitted as a
+ * single enveloped array ({ "qinstance": [ ... ] }) so the output is one valid
+ * json document even when the query matches several hosts; in ASCII mode each
+ * instance is printed as a separate block (blank-line separated), as before.
+ * The "qinstance" type name is passed explicitly because the QINSTANCE object
+ * type cannot be resolved from its content (it is mis-detected as exechost).
+ *
+ * @return true on success, false on error
+ */
 static bool
 qinstance_list_write(lList **answer_list, const lList *qi_list)
 {
@@ -626,6 +693,13 @@ qinstance_list_write(lList **answer_list, const lList *qi_list)
    DRETURN(ret);
 }
 
+/** @brief Print the cluster queues matching a pattern list
+ *
+ * @param answer_list used to return error messages
+ * @param qref_pattern_list the queue references to print (`QR_Type`); each may
+ *                          be a wildcard pattern, so one call can print several
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool
 cqueue_show(lList **answer_list, const lList *qref_pattern_list)
 {
@@ -798,6 +872,16 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
    DRETURN(ret);
 }
 
+/** @brief Report cluster queues whose configuration cannot do what it says
+ *
+ * The `qconf -sick` check. A queue is "sick" when its configuration is
+ * accepted but cannot take effect - most often an attribute overridden for a
+ * host or host group that the queue does not actually contain, so the override
+ * is dead weight that reads as if it applied.
+ *
+ * @param answer_list used to return error messages
+ * @return true when the check ran; the findings are printed, not returned
+ */
 bool
 cqueue_list_sick(lList **answer_list)
 {
@@ -831,24 +915,16 @@ cqueue_list_sick(lList **answer_list)
    DRETURN(ret);
 }
 
-/****** insert_custom_complex_values_writer() **********************************
-*  NAME
-*     insert_custom_complex_values_writer() -- Inserts a custom writer for the
-*                                              complex_values field
-*
-*  SYNOPSIS
-*     static void insert_custom_complex_values_writer (spooling_field *fields)
-*
-*  FUNCTION
-*     Inserts a custom writer for the complex_values field of a QU field list
-*     which does not write out the "slots" complex value.
-*
-*  INPUT
-*     spooling_field *fields - The QU fields list to be used for spooling
-*
-*  NOTES
-*     MT-NOTES: insert_custom_complex_values_writer() is MT safe
-*******************************************************************************/
+/**
+ * @brief Inserts a custom writer for the
+ *
+ * Inserts a custom writer for the complex_values field of a QU field list
+ * which does not write out the "slots" complex value.
+ *
+ * @param fields The QU fields list to be used for spooling
+ *
+ * @note MT-NOTES: insert_custom_complex_values_writer() is MT safe
+ */
 static void insert_custom_complex_values_writer(spooling_field *fields)
 {
    /* First, find the complex_values field. */
@@ -868,25 +944,17 @@ static void insert_custom_complex_values_writer(spooling_field *fields)
    DRETURN_VOID;
 }
 
-/****** write_QU_consumable_config_list() **************************************
-*  NAME
-*     write_QU_consumable_config_list() -- Writes the complex_values field
-*                                          without including slots
-*
-*  SYNOPSIS
-*     static int write_QU_consumable_config_list(const lListElem *ep, int nm,
-*                                                dstring *buffer, lList **alp)
-*
-*  FUNCTION
-*     Writes the complex_values field to the buffer, but leaves out the slots
-*     entry.
-*
-*  INPUT
-*     const lListElem *ep - The QU element containing the complex_values
-*     int              nm - The nm of the field := QU_consumable_config_list
-*     dstring     *buffer - The dstring into which to print the field
-*     lList         **alp - Answer list for errors
-*******************************************************************************/
+/**
+ * @brief Writes the complex_values field
+ *
+ * Writes the complex_values field to the buffer, but leaves out the slots
+ * entry.
+ *
+ * @param ep The QU element containing the complex_values
+ * @param nm The nm of the field := QU_consumable_config_list
+ * @param buffer The dstring into which to print the field
+ * @param alp Answer list for errors
+ */
 static int write_QU_consumable_config_list(const lListElem *ep, int nm,
                                            dstring *buffer, lList **alp)
 {

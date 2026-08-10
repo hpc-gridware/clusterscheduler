@@ -33,6 +33,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The heartbeat file the qmaster bumps and the shadow daemons watch
+ */
+
+/** @brief Name of the file the qmaster bumps to show it is alive
+ *
+ * The shadow daemons watch it; a number that stops changing is what starts a
+ * takeover.
+ */
 #define QMASTER_HEARTBEAT_FILE "heartbeat"
 
 int get_qmaster_heartbeat(const char *file, time_t read_timeout);

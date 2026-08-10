@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Deciding which attributes of an object get spooled, and how
+ */
+
 #define NO_SGE_COMPILE_DEBUG
 
 #include <cstring>
@@ -118,46 +122,30 @@ static spooling_field *
 _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
                            const spool_instr_t *instr);
 
-/****** spool/utilities/spool_get_fields_to_spool() *********************
-*  NAME
-*     spool_get_fields_to_spool() -- which fields are to be spooled
-*
-*  SYNOPSIS
-*     spooling_field *
-*     spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
-*                               const spool_instr_t *instr)
-*
-*  FUNCTION
-*     Returns an array of field descriptions (sge_spooling_field).
-*     Which fields have to be spooled is retrieved from the CULL object
-*     definition given in <descr> and the spooling instruction <instr>.
-*
-*     For each attribute the function checks if the attribute information
-*     fulfils the selection given in <instr> (e.g. attribute property
-*     CULL_SPOOL).
-*
-*     If <instr> contains an in struction for sublists, the function will
-*     try to figure out the CULL object definition for the sublists
-*     (by calling object_get_subtype) and call itself recursively.
-*
-*  INPUTS
-*     lList **answer_list      - answer list to report errors
-*     const lDescr *descr      - object type to analyze
-*     const spool_instr_t *instr - spooing instructions to use
-*
-*  RESULT
-*     spooling_field * - an array of type spooling_field, or
-*                        nullptr, if an error occurred, error messages are returned
-*                        in answer_list
-*
-*  NOTES
-*     The returned spooling_field array has to be freed by the caller of this
-*     function using the function spool_free_spooling_fields().
-*
-*  SEE ALSO
-*     gdi/object/object_get_subtype()
-*     spool/utilities/spool_free_spooling_fields()
-*******************************************************************************/
+/**
+ * @brief Which fields are to be spooled
+ *
+ * Returns an array of field descriptions (sge_spooling_field).
+ * Which fields have to be spooled is retrieved from the CULL object
+ * definition given in `descr` and the spooling instruction `instr`.
+ * For each attribute the function checks if the attribute information
+ * fulfils the selection given in `instr` (e.g. attribute property
+ * CULL_SPOOL).
+ * If `instr` contains an in struction for sublists, the function will
+ * try to figure out the CULL object definition for the sublists
+ * (by calling object_get_subtype) and call itself recursively.
+ *
+ * @param answer_list answer list to report errors
+ * @param descr object type to analyze
+ * @param instr spooing instructions to use
+ *
+ * @return an array of type spooling_field, or nullptr, if an error occurred, error messages are returned in answer_list
+ *
+ * @note The returned spooling_field array has to be freed by the caller of this
+ *       function using the function spool_free_spooling_fields().
+ *
+ * @see `object_get_subtype()`, #spool_free_spooling_fields
+ */
 spooling_field *
 spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
                           const spool_instr_t *instr) {
@@ -290,25 +278,19 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
    DRETURN(fields);
 }
 
-/****** spool/utilities/spool_free_spooling_fields() ********************
-*  NAME
-*     spool_free_spooling_fields() -- free a spooling field array
-*
-*  SYNOPSIS
-*     spooling_field * spool_free_spooling_fields(spooling_field *fields)
-*
-*  FUNCTION
-*     Frees an array of spooling_field with all sublists and contained strings.
-*
-*  INPUTS
-*     spooling_field *fields - the field array to free
-*
-*  RESULT
-*     spooling_field * - nullptr
-*
-*  EXAMPLE
-*     fields = spool_free_spooling_fields(fields);
-*******************************************************************************/
+/**
+ * @brief Free a spooling field array
+ *
+ * Frees an array of spooling_field with all sublists and contained strings.
+ *
+ * @code
+ * fields = spool_free_spooling_fields(fields);
+ * @endcode
+ *
+ * @param fields the field array to free
+ *
+ * @return nullptr
+ */
 spooling_field *
 spool_free_spooling_fields(spooling_field *fields) {
    if (fields != nullptr) {
@@ -328,38 +310,22 @@ spool_free_spooling_fields(spooling_field *fields) {
    return nullptr;
 }
 
-/****** spool/utilities/spool_default_validate_func() ****************
-*  NAME
-*     spool_default_validate_func() -- validate objects
-*
-*  SYNOPSIS
-*     bool
-*     spool_default_validate_func(lList **answer_list,
-*                               const lListElem *type,
-*                               const lListElem *rule,
-*                               const lListElem *object,
-*                               const char *key,
-*                               const sge_object_type object_type)
-*
-*  FUNCTION
-*     Verifies an object.
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     const lListElem *type           - object type description
-*     const lListElem *rule           - rule to use
-*     const lListElem *object         - object to validate
-*     const sge_object_type object_type - object type
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     This function should not be called directly, it is called by the
-*     spooling framework.
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Validate objects
+ *
+ * Verifies an object.
+ *
+ * @param answer_list to return error messages
+ * @param type object type description
+ * @param rule rule to use
+ * @param object object to validate
+ * @param object_type object type
+ *
+ * @return true on success, else false
+ *
+ * @note This function should not be called directly, it is called by the
+ *       spooling framework.
+ */
 bool spool_default_validate_func(lList **answer_list,
                                  const lListElem *type,
                                  const lListElem *rule,
@@ -531,6 +497,24 @@ bool spool_default_validate_func(lList **answer_list,
 }
 
 
+/**
+ * @brief Finish a freshly read master list
+ *
+ * The default #spooling_validate_list_func, called by a backend once it has
+ * read every object of one type.
+ *
+ * @param answer_list to return error messages
+ * @param type        the spooling type element, unused here
+ * @param rule        the spooling rule, unused here
+ * @param object_type which master list was just read
+ *
+ * @return true if the list is usable, else false
+ *
+ * @note Despite the name this is not primarily a validation. It is the work
+ *       that can only be done once the whole list is present: merging the
+ *       host list, sorting the complex entries, resolving the host group
+ *       references. Only the scheduler configuration is really validated.
+ */
 bool
 spool_default_validate_list_func(lList **answer_list,
                                  const lListElem *type, const lListElem *rule,
@@ -570,6 +554,8 @@ spool_default_validate_list_func(lList **answer_list,
 }
 
 /**
+ * @brief Move the dynamic load values aside before an exec host is spooled
+ *
  * Strips all dynamic (non-static) load values from the EH_load_list of an
  * exec host object before it is spooled. Only static load values shall be
  * persisted; dynamic load values are volatile and will be reported again by
@@ -578,7 +564,11 @@ spool_default_validate_list_func(lList **answer_list,
  * The dynamic load values are moved (not copied) out of the object's load
  * list into a backup list which is returned to the caller. The caller has to
  * restore them after the object has been written by passing the backup to
- * spool_exechost_restore_load_list().
+ * #spool_exechost_restore_load_list.
+ *
+ * @param object the exec host object (`EH_Type`)
+ *
+ * @return the stripped dynamic load values, or nullptr if there were none
  */
 lList *
 spool_exechost_strip_dynamic_load(const lListElem *object) {
@@ -608,10 +598,16 @@ spool_exechost_strip_dynamic_load(const lListElem *object) {
 }
 
 /**
+ * @brief Put the dynamic load values back after the exec host was spooled
+ *
  * Restores the dynamic load values of an exec host object that were
- * previously moved aside with spool_exechost_strip_dynamic_load(). The backup
+ * previously moved aside with #spool_exechost_strip_dynamic_load. The backup
  * list is appended back to the object's EH_load_list and freed; the
  * backup_load_list pointer is set to nullptr.
+ *
+ * @param object            the exec host object (`EH_Type`)
+ * @param backup_load_list  the values returned by
+ *                          #spool_exechost_strip_dynamic_load, set to nullptr
  */
 void
 spool_exechost_restore_load_list(const lListElem *object, lList **backup_load_list) {

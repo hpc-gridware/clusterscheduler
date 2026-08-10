@@ -1,19 +1,22 @@
 {
    "className": "ResourceQuotaLimit",
-   "summary": "@todo add summary",
+   "summary": "Resource Quota Scheduling Cache",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "Per-scheduling-run cache of what a resource quota limit answered, so an expensive limit is evaluated once rather than once per queue instance."
+      },
+      {
+         "line": "Not configuration and not spooled: it lives in the scheduler's assignment structure for the duration of one run."
       }
    ],
    "cullPrefix": "RQL",
    "attributes": [
       {
          "name": "name",
-         "summary": "@todo add summary",
+         "summary": "Limit Key",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Identifies the limit this entry caches, built from the rule and resource being evaluated."
             }
          ],
          "type": "lStringT",
@@ -31,10 +34,10 @@
       },
       {
          "name": "result",
-         "summary": "@todo add summary",
+         "summary": "Cached Result",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The `dispatch_t` the limit returned last time it was asked in this run."
             }
          ],
          "type": "lIntT",
@@ -42,10 +45,10 @@
       },
       {
          "name": "time",
-         "summary": "@todo add summary",
+         "summary": "Earliest Time",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Earliest time the limit would allow the job to start, for reservation scheduling."
             }
          ],
          "type": "lTimestampT",
@@ -53,10 +56,10 @@
       },
       {
          "name": "slots",
-         "summary": "@todo add summary",
+         "summary": "Slots",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "How many slots the limit allows, cached alongside the result."
             }
          ],
          "type": "lIntT",
@@ -64,10 +67,10 @@
       },
       {
          "name": "tagged4schedule",
-         "summary": "@todo add summary",
+         "summary": "Tagged For Schedule",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Marks the entry as belonging to the run in progress, so stale entries are not believed."
             }
          ],
          "type": "lUlongT",

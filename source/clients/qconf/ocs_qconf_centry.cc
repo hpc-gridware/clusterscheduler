@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qconf - the complex entry switches
+ */
+
 #include <cstring>
 
 #include "sgeobj/msg_sgeobjlib.h"
@@ -62,6 +66,15 @@ static bool centry_provide_modify_context(lListElem **this_elem, lList **answer_
 
 static bool centry_list_provide_modify_context(lList **this_list, lList **answer_list);
 
+/** @brief Send one complex entry to qmaster
+ *
+ * The single point where the complex entry switches reach the master.
+ *
+ * @param this_elem the complex entry (`CE_Type`) to send
+ * @param answer_list used to return error messages
+ * @param gdi_command `ADD`, `MOD` or `DEL`
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool centry_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::Command gdi_command) {
    bool ret = false;
 
@@ -82,6 +95,12 @@ bool centry_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::
    DRETURN(ret);
 }
 
+/** @brief Fetch one complex entry from qmaster
+ *
+ * @param answer_list used to return error messages
+ * @param name the complex entry to fetch
+ * @return the complex entry (`CE_Type`), or `nullptr` with `answer_list` filled
+ */
 lListElem *centry_get_via_gdi(lList **answer_list, const char *name) {
    DENTER(TOP_LAYER);
 
@@ -177,6 +196,14 @@ static bool centry_provide_modify_context(lListElem **this_elem, lList **answer_
    DRETURN(ret);
 }
 
+/** @brief Add a complex entry, using the editor
+ *
+ * Builds a template, opens `$EDITOR` on it, and sends the result to qmaster.
+ *
+ * @param answer_list used to return error messages
+ * @param name the name of the complex entry to create
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool centry_add(lList **answer_list, const char *name) {
 
    DENTER(TOP_LAYER);
@@ -201,6 +228,14 @@ bool centry_add(lList **answer_list, const char *name) {
    DRETURN(ret);
 }
 
+/** @brief Add a complex entry from a file, without the editor
+ *
+ * The non-interactive form: the file must already be complete.
+ *
+ * @param answer_list used to return error messages
+ * @param filename the file holding the complex entry definition
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool centry_add_from_file(lList **answer_list, const char *filename) {
    bool ret = true;
    int fields_out[MAX_NUM_FIELDS];
@@ -240,6 +275,14 @@ bool centry_add_from_file(lList **answer_list, const char *filename) {
    DRETURN(ret);
 }
 
+/** @brief Change a complex entry, using the editor
+ *
+ * Fetches the current definition, opens `$EDITOR` on it, and sends back what changed.
+ *
+ * @param answer_list used to return error messages
+ * @param name the complex entry to change
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool centry_modify(lList **answer_list, const char *name) {
    DENTER(TOP_LAYER);
 
@@ -266,6 +309,14 @@ bool centry_modify(lList **answer_list, const char *name) {
    DRETURN(ret);
 }
 
+/** @brief Change a complex entry from a file, without the editor
+ *
+ * The non-interactive form of #centry_modify.
+ *
+ * @param answer_list used to return error messages
+ * @param filename the file holding the new definition
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool centry_modify_from_file(lList **answer_list, const char *filename) {
    bool ret = true;
    int fields_out[MAX_NUM_FIELDS];
@@ -308,6 +359,12 @@ bool centry_modify_from_file(lList **answer_list, const char *filename) {
    DRETURN(ret);
 }
 
+/** @brief Delete a complex entry
+ *
+ * @param answer_list used to return error messages
+ * @param name the complex entry to delete
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool centry_delete(lList **answer_list, const char *name) {
    bool ret = true;
 
@@ -325,6 +382,12 @@ bool centry_delete(lList **answer_list, const char *name) {
    DRETURN(ret);
 }
 
+/** @brief Print one complex entry
+ *
+ * @param answer_list used to return error messages
+ * @param name the complex entry to print
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool centry_show(lList **answer_list, const char *name) {
    DENTER(TOP_LAYER);
 
@@ -351,6 +414,11 @@ bool centry_show(lList **answer_list, const char *name) {
    DRETURN(ret);
 }
 
+/** @brief Print the names of all complex entrys
+ *
+ * @param answer_list used to return error messages
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool centry_list_show(lList **answer_list) {
    bool ret = true;
    lList *centry_list = nullptr;
@@ -375,6 +443,11 @@ bool centry_list_show(lList **answer_list) {
    DRETURN(ret);
 }
 
+/** @brief Fetch all complex entrys from qmaster
+ *
+ * @param answer_list used to return error messages
+ * @return the list (`CE_Type`), or `nullptr` with `answer_list` filled
+ */
 lList *centry_list_get_via_gdi(lList **answer_list) {
    lList *ret = nullptr;
    lList *gdi_answer_list = nullptr;
@@ -396,6 +469,15 @@ lList *centry_list_get_via_gdi(lList **answer_list) {
    DRETURN(ret);
 }
 
+/** @brief Send a whole complex entry list to qmaster
+ *
+ * Works out per element whether it is an add, a change or a delete, by comparing against the list as it was fetched.
+ *
+ * @param this_list the new list
+ * @param answer_list used to return error messages
+ * @param old_list the list as fetched, for the comparison
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool
 centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **old_list) {
    bool ret = true;
@@ -687,6 +769,13 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
    DRETURN(ret);
 }
 
+/** @brief Change the whole complex entry list, using the editor
+ *
+ * Complex entry is configured as one list rather than one object at a time.
+ *
+ * @param answer_list used to return error messages
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool centry_list_modify(lList **answer_list) {
    bool ret = true;
 
@@ -706,6 +795,14 @@ bool centry_list_modify(lList **answer_list) {
    DRETURN(ret);
 }
 
+/** @brief Change the whole complex entry list from a file
+ *
+ * The non-interactive form of #centry_list_modify.
+ *
+ * @param answer_list used to return error messages
+ * @param filename the file holding the new list
+ * @return true on success; false with `answer_list` filled otherwise
+ */
 bool centry_list_modify_from_file(lList **answer_list, const char *filename) {
    bool ret = true;
 

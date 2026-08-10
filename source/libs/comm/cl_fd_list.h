@@ -33,12 +33,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Application file descriptors registered with a handle
+ */
+
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
+/** @brief One registered application descriptor */
 typedef struct cl_fd_list_elem_t {
-   cl_com_fd_data_t *data;     /* actual data */
-   cl_raw_list_elem_t *raw_elem; /* needed for list chaining */
+   cl_com_fd_data_t *data;         ///< The descriptor and its callback
+   cl_raw_list_elem_t *raw_elem;   ///< Back pointer into the raw list
 } cl_fd_list_elem_t;
 
 /* basic functions */

@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Functional Category
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -63,15 +67,15 @@
 */
 
 enum {
-   FCAT_job_share = FCAT_LOWERBOUND,
-   FCAT_user_share,
-   FCAT_user,
-   FCAT_project_share,
-   FCAT_project,
-   FCAT_dept_share,
-   FCAT_dept,
-   FCAT_jobrelated_ticket_first,
-   FCAT_jobrelated_ticket_last
+   FCAT_job_share = FCAT_LOWERBOUND,   ///< Job Share
+   FCAT_user_share,   ///< User Share
+   FCAT_user,   ///< User
+   FCAT_project_share,   ///< Project Share
+   FCAT_project,   ///< Project
+   FCAT_dept_share,   ///< Department Share
+   FCAT_dept,   ///< Department
+   FCAT_jobrelated_ticket_first,   ///< First Job Related Ticket
+   FCAT_jobrelated_ticket_last   ///< Last Job Related Ticket
 };
 
 LISTDEF(FCAT_Type)
@@ -98,6 +102,7 @@ NAMEDEF(FCATN)
    NAME("FCAT_jobrelated_ticket_last")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define FCAT_SIZE sizeof(FCATN)/sizeof(char *)
 
 

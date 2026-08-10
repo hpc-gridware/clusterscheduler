@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Plain text rendering of `qstat -j`
+ */
+
 #include "qstat/ocs_QStatModelBase.h"
 
 #include "ocs_QStatJobViewBase.h"
@@ -26,14 +30,24 @@
 
 
 namespace ocs {
+   /** @brief Renders `qstat -j` as the two column plain text a terminal expects
+    *
+    * Every row is an attribute name padded to a fixed width, then its value, so
+    * the values line up down the page.
+    *
+    * @ingroup libprocedure
+    */
    class QStatJobViewPlain : public QStatJobViewBase {
-      const int left_width_short = 19;
-      const int mid_width = 11;
-      const int left_width = left_width_short + mid_width + 2;
-      const char *delis[3] = {nullptr, ",", "\n"};
+      const int left_width_short = 19;                          ///< Width of the name column on a task row
+      const int mid_width = 11;                                 ///< Width the task id occupies on a task row
+      const int left_width = left_width_short + mid_width + 2;  ///< Width of the name column on a job row
+      const char *delis[3] = {nullptr, ",", "\n"};              ///< Separators for the three nesting levels of a list value
 
       static void show_ce_type_list(std::ostream &os, const lList *cel, const char *indent, const char *separator);
    public:
+      /** @brief Build the plain text view
+       * @param parameter the call's parameters
+       */
       explicit QStatJobViewPlain(const ProcedureParameter &parameter) : QStatJobViewBase(parameter) {
       } ;
 

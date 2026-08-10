@@ -31,6 +31,15 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Execution hosts: load values, resource bookings and name resolution
+ *
+ * A host name can be written in many forms, so anything that stores or
+ * compares one resolves it first - see #sge_resolve_host.
+ *
+ * @see sge_host.h
+ */
 #include <cstring>
 
 #include "comm/commlib.h"
@@ -60,6 +69,15 @@
 
 #include "ocs_TopologyString.h"
 
+/**
+ * @brief Find an execution host by name
+ *
+ * The comparison resolves host name aliases, so an alias finds the host too.
+ *
+ * @param host_list the hosts to search; nullptr uses the active data store's
+ * @param hostname the host to look for
+ * @return the host, or nullptr when it is not defined
+ */
 lListElem *
 host_list_locate(const lList *host_list, const char *hostname) {
    lListElem *ret = nullptr;
@@ -93,39 +111,32 @@ host_list_locate(const lList *host_list, const char *hostname) {
    DRETURN(ret);
 }
 
-/****** sgeobj/host/host_is_in_reserved_hostgroup() ***************************
-*  NAME
-*     host_is_in_reserved_hostgroup() -- membership in a reserved host group
-*
-*  FUNCTION
-*     CS-2438 chunk 2b. The one place that answers "is this host in
-*     @admin_hosts / @submit_hosts", for both helpers below.
-*
-*     Locating the group is all this adds; the membership question itself is
-*     hgroup_contains_host(), which honours the CS-2451 contract (cache when
-*     there is one, tree walk when there is not) and is shared with the
-*     delete-semantics check in the qmaster.
-*
-*     Both steps are O(1) in the normal case: HGRP_name carries CULL_HASH, so
-*     locating the group is a hash lookup, and so is the membership test
-*     against HGRP_cached_hosts (HR_name, CULL_HASH). That matters because this
-*     runs on every GDI request -- it is the bar the classic flat AH_LIST set,
-*     which was itself a hashed lookup.
-*
-*  INPUTS
-*     const char *hostname   - resolved host name, normally packet->host
-*     const char *group_name - ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP
-*
-*  RESULT
-*     bool - true if the host is a member, directly or through nesting
-*
-*  NOTES
-*     MT-NOTE: host_is_in_reserved_hostgroup() is MT safe
-*
-*     A missing group answers false. The group cannot be deleted (chunk 1
-*     reserves the names) and setup_qmaster.cc re-seeds it on every startup,
-*     so this is the "qmaster is not up yet" case, not a reachable steady state.
-*******************************************************************************/
+/**
+ * @brief Membership in a reserved host group
+ *
+ * CS-2438 chunk 2b. The one place that answers "is this host in
+ * @admin_hosts / @submit_hosts", for both helpers below.
+ * Locating the group is all this adds; the membership question itself is
+ * hgroup_contains_host(), which honours the CS-2451 contract (cache when
+ * there is one, tree walk when there is not) and is shared with the
+ * delete-semantics check in the qmaster.
+ * Both steps are O(1) in the normal case: HGRP_name carries CULL_HASH, so
+ * locating the group is a hash lookup, and so is the membership test
+ * against HGRP_cached_hosts (HR_name, CULL_HASH). That matters because this
+ * runs on every GDI request -- it is the bar the classic flat AH_LIST set,
+ * which was itself a hashed lookup.
+ *
+ * @param hostname resolved host name, normally packet->host
+ * @param group_name ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP
+ *
+ * @return true if the host is a member, directly or through nesting
+ *
+ * @note MT-NOTE: host_is_in_reserved_hostgroup() is MT safe
+ *
+ *       A missing group answers false. The group cannot be deleted (chunk 1
+ *       reserves the names) and setup_qmaster.cc re-seeds it on every startup,
+ *       so this is the "qmaster is not up yet" case, not a reachable steady state.
+ */
 static bool
 host_is_in_reserved_hostgroup(const char *hostname, const char *group_name)
 {
@@ -141,102 +152,83 @@ host_is_in_reserved_hostgroup(const char *hostname, const char *group_name)
    DRETURN(hgroup_contains_host(hgroup, hostname, master_hgroup_list));
 }
 
-/****** sgeobj/host/host_is_admin_host() **************************************
-*  NAME
-*     host_is_admin_host() -- is this host an admin host?
-*
-*  FUNCTION
-*     CS-2438. The single place this question is answered, so that the dozen
-*     call sites on the GDI permission path do not each know WHERE the answer
-*     lives. Mirrors manop_is_manager() (sge_manop.cc), which does the same for
-*     the reserved manager userset.
-*
-*     Fetches the master list itself rather than taking it as a parameter --
-*     again like manop_is_manager() -- because a caller that has to name the
-*     list is a caller that has to be edited when the list changes, which is
-*     exactly what this helper exists to avoid.
-*
-*  INPUTS
-*     const char *hostname - resolved host name, normally packet->host
-*
-*  RESULT
-*     bool - true if the host may issue admin requests
-*
-*  NOTES
-*     MT-NOTE: host_is_admin_host() is MT safe
-*
-*     Backed by the reserved "@admin_hosts" host group since chunk 2b. AH_LIST
-*     is no longer consulted and is no longer written: qconf -ah/-dh maintain
-*     the group (chunk 3), and an existing cluster's members arrive through the
-*     -ah replay in load_config.sh (chunk 10). The two cannot be combined --
-*     a union with AH_LIST would keep granting admin rights to a host that
-*     qconf -dh has just removed from the group.
-*******************************************************************************/
+/**
+ * @brief Is this host an admin host?
+ *
+ * CS-2438. The single place this question is answered, so that the dozen
+ * call sites on the GDI permission path do not each know WHERE the answer
+ * lives. Mirrors manop_is_manager() (sge_manop.cc), which does the same for
+ * the reserved manager userset.
+ * Fetches the master list itself rather than taking it as a parameter --
+ * again like manop_is_manager() -- because a caller that has to name the
+ * list is a caller that has to be edited when the list changes, which is
+ * exactly what this helper exists to avoid.
+ *
+ * @param hostname resolved host name, normally packet->host
+ *
+ * @return true if the host may issue admin requests
+ *
+ * @note MT-NOTE: host_is_admin_host() is MT safe
+ *
+ *       Backed by the reserved "@admin_hosts" host group since chunk 2b. AH_LIST
+ *       is no longer consulted and is no longer written: qconf -ah/-dh maintain
+ *       the group (chunk 3), and an existing cluster's members arrive through the
+ *       -ah replay in load_config.sh (chunk 10). The two cannot be combined --
+ *       a union with AH_LIST would keep granting admin rights to a host that
+ *       qconf -dh has just removed from the group.
+ */
 bool
 host_is_admin_host(const char *hostname)
 {
    return host_is_in_reserved_hostgroup(hostname, ADMIN_HOSTGROUP);
 }
 
-/****** sgeobj/host/host_is_submit_host() *************************************
-*  NAME
-*     host_is_submit_host() -- is this host a submit host?
-*
-*  FUNCTION
-*     CS-2438. See host_is_admin_host() above; same role, same reason for
-*     fetching the master list itself, and backed by the reserved
-*     "@submit_hosts" host group since chunk 2b.
-*
-*  INPUTS
-*     const char *hostname - resolved host name, normally packet->host
-*
-*  RESULT
-*     bool - true if the host may submit
-*
-*  NOTES
-*     MT-NOTE: host_is_submit_host() is MT safe
-*******************************************************************************/
+/**
+ * @brief Is this host a submit host?
+ *
+ * CS-2438. See host_is_admin_host() above; same role, same reason for
+ * fetching the master list itself, and backed by the reserved
+ * "@submit_hosts" host group since chunk 2b.
+ *
+ * @param hostname resolved host name, normally packet->host
+ *
+ * @return true if the host may submit
+ *
+ * @note MT-NOTE: host_is_submit_host() is MT safe
+ */
 bool
 host_is_submit_host(const char *hostname)
 {
    return host_is_in_reserved_hostgroup(hostname, SUBMIT_HOSTGROUP);
 }
 
-/****** sgeobj/host/cqueue_reaches_host_without_exec_hosts() ******************
-*  NAME
-*     cqueue_reaches_host_without_exec_hosts() -- reference other than @exec_hosts?
-*
-*  FUNCTION
-*     CS-2438 chunk 7. Resolves a cluster queue's host list with the reserved
-*     "@exec_hosts" entry taken out, and reports whether the host is still
-*     reached.
-*
-*     This is what makes an exec host deletable again. @exec_hosts mirrors the
-*     execution host list, so every exec host is in it by definition; a queue
-*     that names @exec_hosts therefore has a queue instance on every exec host,
-*     and counting those instances as references would make every exec host
-*     permanently undeletable -- the very outcome chunk 1a avoided for the host
-*     group check, reintroduced through the queue instances instead.
-*
-*     A queue instance that exists ONLY because of @exec_hosts is not somebody's
-*     configuration naming this host. Removing the exec host removes it from
-*     @exec_hosts, and the (empty) queue instance goes with it, which is what
-*     host_sync_exec_hostgroup() drives through the cqueue machinery.
-*
-*     The boundary is the one chunk 1a already drew: a USER group that references
-*     @exec_hosts still counts. Only the queue's own direct "@exec_hosts" entry
-*     is filtered, because a user group naming it really is configuration the
-*     administrator wrote and can edit.
-*
-*  INPUTS
-*     const lListElem *cqueue - CQ_Type object
-*     const char *hostname    - host being deleted
-*     const lList *hgrp_list  - HGRP_Type master list
-*
-*  RESULT
-*     bool - true if the queue reaches the host by some route other than the
-*            reserved group, i.e. the reference is real and must block deletion
-******************************************************************************/
+/**
+ * @brief Reference other than @exec_hosts?
+ *
+ * CS-2438 chunk 7. Resolves a cluster queue's host list with the reserved
+ * "@exec_hosts" entry taken out, and reports whether the host is still
+ * reached.
+ * This is what makes an exec host deletable again. @exec_hosts mirrors the
+ * execution host list, so every exec host is in it by definition; a queue
+ * that names @exec_hosts therefore has a queue instance on every exec host,
+ * and counting those instances as references would make every exec host
+ * permanently undeletable -- the very outcome chunk 1a avoided for the host
+ * group check, reintroduced through the queue instances instead.
+ * A queue instance that exists ONLY because of @exec_hosts is not somebody's
+ * configuration naming this host. Removing the exec host removes it from
+ * @exec_hosts, and the (empty) queue instance goes with it, which is what
+ * host_sync_exec_hostgroup() drives through the cqueue machinery.
+ * The boundary is the one chunk 1a already drew: a USER group that references
+ * @exec_hosts still counts. Only the queue's own direct "@exec_hosts" entry
+ * is filtered, because a user group naming it really is configuration the
+ * administrator wrote and can edit.
+ *
+ * @param cqueue CQ_Type object
+ * @param hostname host being deleted
+ * @param hgrp_list HGRP_Type master list
+ *
+ * @return true if the queue reaches the host by some route other than the reserved group, i.e. the reference is real and must block deletion
+ */
 static bool
 cqueue_reaches_host_without_exec_hosts(const lListElem *cqueue, const char *hostname,
                                        const lList *hgrp_list) {
@@ -266,31 +258,21 @@ cqueue_reaches_host_without_exec_hosts(const lListElem *cqueue, const char *host
    return reaches;
 }
 
-/****** sgeobj/host/host_is_referenced() **************************************
-*  NAME
-*     host_is_referenced() -- Is a given host referenced in other objects?
-*
-*  SYNOPSIS
-*     bool host_is_referenced(const lListElem *host, 
-*                             lList **answer_list, 
-*                             const lList *queue_list
-*                             const lList *hgrp_list) 
-*
-*  FUNCTION
-*     This function returns true if the given "host" is referenced
-*     in a cqueue contained in "queue_list" or in a host group. 
-*     If this is the case than a corresponding message will be added 
-*     to the "answer_list". 
-*
-*  INPUTS
-*     const lListElem *host   - EH_Type object
-*     lList **answer_list     - AN_Type list 
-*     const lList *queue_list - CQ_Type list 
-*     const lList *hgrp_list  - HGRP_Type list (Master list)
-*
-*  RESULT
-*     int - true (1) or false (0) 
-******************************************************************************/
+/**
+ * @brief Is a given host referenced in other objects?
+ *
+ * This function returns true if the given "host" is referenced
+ * in a cqueue contained in "queue_list" or in a host group.
+ * If this is the case than a corresponding message will be added
+ * to the "answer_list".
+ *
+ * @param host EH_Type object
+ * @param answer_list AN_Type list
+ * @param queue_list CQ_Type list
+ * @param hgrp_list HGRP_Type list (Master list)
+ *
+ * @return true (1) or false (0)
+ */
 bool host_is_referenced(const lListElem *host,
                         lList **answer_list,
                         const lList *queue_list,
@@ -384,29 +366,22 @@ bool host_is_referenced(const lListElem *host,
    return ret;
 }
 
-/****** sgeobj/host/host_get_load_value() *************************************
-*  NAME
-*     host_get_load_value() -- return a load value of an exec host
-*
-*  SYNOPSIS
-*     const char* host_get_load_value(lListElem *host, const char *name) 
-*
-*  FUNCTION
-*     Returns a certain load value for a certain host.
-*
-*  INPUTS
-*     lListElem *host  - the host to query
-*     const char *name - the name of the load value
-*
-*  RESULT
-*     const char* - string describing the load value
-*
-*  EXAMPLE
-*     lListElem *host = lGetElemHost(Master_Host_List, EH_name, "myhost");
-*     const char *value = host_get_load_value(host, "np_load_avg");
-*     printf("The load on host myhost is %s\n", value);
-*
-*******************************************************************************/
+/**
+ * @brief Return a load value of an exec host
+ *
+ * Returns a certain load value for a certain host.
+ *
+ * @code
+ * lListElem *host = lGetElemHost(Master_Host_List, EH_name, "myhost");
+ * const char *value = host_get_load_value(host, "np_load_avg");
+ * printf("The load on host myhost is %s\n", value);
+ * @endcode
+ *
+ * @param host the host to query
+ * @param name the name of the load value
+ *
+ * @return string describing the load value
+ */
 const char *host_get_load_value(lListElem *host, const char *name)
 {
    const lListElem *load;
@@ -422,6 +397,17 @@ const char *host_get_load_value(lListElem *host, const char *name)
 }
 
 /* MT-NOTE: sge_resolve_host() is MT safe */
+/**
+ * @brief Replace a host name attribute with its resolved unique name
+ *
+ * Users write host names in whatever form they like; the object model stores
+ * exactly one form per host, so a name has to be resolved before it is
+ * compared or stored.
+ *
+ * @param[in,out] ep the element whose attribute is rewritten
+ * @param nm the host attribute to resolve
+ * @return `CL_RETVAL_OK` on success, otherwise a commlib error code
+ */
 int sge_resolve_host(lListElem *ep, int nm) {
    int pos;
    int ret = CL_RETVAL_OK;
@@ -482,6 +468,14 @@ int sge_resolve_host(lListElem *ep, int nm) {
 }
 
 /* MT-NOTE: sge_resolve_hostname() is MT safe */
+/**
+ * @brief Resolve a host name to its unique form
+ *
+ * @param hostname the name to resolve
+ * @param[out] unique receives the resolved name; must hold `CL_MAXHOSTNAMELEN` bytes
+ * @param nm the attribute the name belongs to, which decides how strictly it is resolved
+ * @return `CL_RETVAL_OK` on success, otherwise a commlib error code
+ */
 int sge_resolve_hostname(const char *hostname, char *unique, int nm) {
    int ret = CL_RETVAL_OK;
 
@@ -525,6 +519,16 @@ int sge_resolve_hostname(const char *hostname, char *unique, int nm) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Does an execution host refer to a complex entry at all?
+ *
+ * Checks the complex values, the load values and the report variables, so a
+ * complex entry that any of the three names cannot be deleted.
+ *
+ * @param this_elem the host to check; nullptr yields false
+ * @param centry the complex entry to look for
+ * @return true when the host refers to it
+ */
 bool
 host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry) {
    bool ret = false;
@@ -553,6 +557,16 @@ host_is_centry_referenced(const lListElem *this_elem, const lListElem *centry) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Does an execution host define a value for a complex entry?
+ *
+ * Narrower than #host_is_centry_referenced: only the complex values and the
+ * load values count, not the report variables.
+ *
+ * @param this_elem the host to check; nullptr yields false
+ * @param centry the complex entry to look for
+ * @return true when the host has a value for it
+ */
 bool
 host_is_centry_a_complex_value(const lListElem *this_elem,
                                const lListElem *centry) {
@@ -578,30 +592,20 @@ host_is_centry_a_complex_value(const lListElem *this_elem,
    DRETURN(ret);
 }
 
-/****** sgeobj/host/host_list_merge() ******************************************
-*  NAME
-*     host_list_merge() -- merge global host settings into exec hosts
-*
-*  SYNOPSIS
-*     bool 
-*     host_list_merge(lList *this_list) 
-*
-*  FUNCTION
-*     Merges settings from the global host to the exec hosts objects.
-*     Currently this applies only to the report_variables attribute.
-*
-*  INPUTS
-*     lList *this_list - the exec host list to work on
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     MT-NOTE: host_list_merge() is MT safe 
-*
-*  SEE ALSO
-*     sgeobj/host/host_merge()
-*******************************************************************************/
+/**
+ * @brief Merge global host settings into exec hosts
+ *
+ * Merges settings from the global host to the exec hosts objects.
+ * Currently this applies only to the report_variables attribute.
+ *
+ * @param this_list the exec host list to work on
+ *
+ * @return true on success, else false
+ *
+ * @note MT-NOTE: host_list_merge() is MT safe
+ *
+ * @see #host_merge
+ */
 bool
 host_list_merge(lList *this_list) {
    bool ret = true;
@@ -631,32 +635,22 @@ host_list_merge(lList *this_list) {
    DRETURN(ret);
 }
 
-/****** sgeobj/host/host_merge() **********************************************
-*  NAME
-*     host_merge() -- merge global host settings into an exec host
-*
-*  SYNOPSIS
-*     bool 
-*     host_merge(lListElem *host, const lListElem *global_host) 
-*
-*  FUNCTION
-*     Merges settings from the global host object into a specific exec host.
-*     Use the global settings, if no host specific settings are done.
-*     Currently this applies only to the report_variables attribute.
-*
-*  INPUTS
-*     lListElem *host              - the host object to hold the merged config
-*     const lListElem *global_host - the global host object
-*
-*  RESULT
-*     bool - true on success, else false
-*
-*  NOTES
-*     MT-NOTE: host_merge() is MT safe 
-*
-*  SEE ALSO
-*     sgeobj/host/host_list_merge()
-*******************************************************************************/
+/**
+ * @brief Merge global host settings into an exec host
+ *
+ * Merges settings from the global host object into a specific exec host.
+ * Use the global settings, if no host specific settings are done.
+ * Currently this applies only to the report_variables attribute.
+ *
+ * @param host the host object to hold the merged config
+ * @param global_host the global host object
+ *
+ * @return true on success, else false
+ *
+ * @note MT-NOTE: host_merge() is MT safe
+ *
+ * @see #host_list_merge
+ */
 bool
 host_merge(lListElem *host, const lListElem *global_host) {
    bool ret = true;
@@ -739,6 +733,20 @@ host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, in
    return mods;
 }
 
+/**
+ * @brief Book or release the cores a job was bound to
+ *
+ * Unlike a numeric consumable, a binding is booked as a *topology string*:
+ * which cores are in use matters, not how many. The booking is kept in the
+ * slots resource utilization entry.
+ *
+ * @param[in,out] host the execution host to book on
+ * @param ce_name the resource the binding belongs to
+ * @param resl the topology to book, as a string list element
+ * @param slots positive to book, negative to release
+ * @param[out] just_check if != nullptr do not book, only report whether it would fit
+ * @return the number of bookings that took place, or a negative value on error
+ */
 int
 host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, int slots, bool *just_check) {
    DENTER(TOP_LAYER);
@@ -802,6 +810,18 @@ host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, 
    DRETURN(mods);
 }
 
+/**
+ * @brief Should a per host consumable still be booked on this host?
+ *
+ * A parallel job occupies several slots on one host, but a `CONSUMABLE_HOST`
+ * resource is booked once per host. The caller walks the granted slots in host
+ * order and passes the same `last_hostname` each time; this answers true only
+ * the first time a host is seen.
+ *
+ * @param[in,out] last_hostname the host of the previous call; updated on a new host
+ * @param hostname the host of the current slot
+ * @return true when this is the first slot on that host
+ */
 bool
 host_do_per_host_booking(const char **last_hostname, const char *hostname)
 {

@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Project List
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   APRJLIST_href = APRJLIST_LOWERBOUND,
-   APRJLIST_value
+   APRJLIST_href = APRJLIST_LOWERBOUND,   ///< Host Reference
+   APRJLIST_value   ///< Value
 };
 
 LISTDEF(APRJLIST_Type)
@@ -56,6 +60,7 @@ NAMEDEF(APRJLISTN)
    NAME("APRJLIST_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define APRJLIST_SIZE sizeof(APRJLISTN)/sizeof(char *)
 
 

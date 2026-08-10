@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Following the scheduler's orders and booking the usage they imply
+ */
+
 #include "uti/sge_monitor.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_daemonize.h"

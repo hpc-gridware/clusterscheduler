@@ -32,6 +32,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The files the shepherd leaves in the job's active_jobs directory
+ *
+ * @see sge_fileio.h for why the shepherd reports through files.
+ */
+
 #include <sys/resource.h>
 #include <cstdio>
 #include <cstring>
@@ -48,6 +54,15 @@
 #include "execution_states.h"
 #include "msg_common.h"
 
+/** @brief Write the shepherd's own pid to the `pid` file
+ *
+ * The daemon needs it to signal the shepherd, and to notice on restart that
+ * this job already has one.
+ *
+ * @param pid the shepherd's process id
+ * @param[out] errmsg receives the reason on failure
+ * @return true on success
+ */
 bool shepherd_write_pid_file(pid_t pid, dstring *errmsg)
 {
    bool ret = true;
@@ -75,6 +90,14 @@ FCLOSE_ERROR:
    return false;
 }
 
+/** @brief Read the pid `qrsh_starter` recorded for the job it started
+ *
+ * @param filename the file to read
+ * @param[out] qrsh_pid receives the pid
+ * @param[out] replace_qrsh_pid receives whether the shepherd should track this
+ *        pid instead of the one it started
+ * @return true on success
+ */
 bool
 shepherd_read_qrsh_pid_file(const char *filename, pid_t *qrsh_pid,
                             int *replace_qrsh_pid)
@@ -117,6 +140,19 @@ FCLOSE_ERROR:
    return false;
 }
 
+/** @brief Write the job's resource usage to the `usage` file
+ *
+ * Written before the shepherd exits, because once it is gone nobody can ask
+ * the kernel about the job any more.
+ *
+ * @param wait_status the status `wait()` returned
+ * @param exit_status the job's exit status
+ * @param child_signal the signal that killed the job, if any
+ * @param start_time when the job started
+ * @param end_time when it finished
+ * @param rusage what the kernel accounted for it
+ * @return true on success
+ */
 bool
 shepherd_write_usage_file(uint32_t wait_status, int exit_status,
                           int child_signal, uint64_t start_time,
@@ -174,6 +210,10 @@ FCLOSE_ERROR:
    return false;
 }
 
+/** @brief Write the job's own pid, as opposed to the shepherd's
+ * @param job_pid the pid, already rendered
+ * @return true on success
+ */
 bool
 shepherd_write_job_pid_file(const char *job_pid)
 {
@@ -196,6 +236,12 @@ FCLOSE_ERROR:
    return false;
 }
 
+/** @brief Record that a task was signalled, and with what result
+ * @param filename the file to write
+ * @param task_id the task
+ * @param exit_status the status to record
+ * @return true on success
+ */
 bool
 shepherd_write_sig_info_file(const char *filename, const char *task_id, uint32_t exit_status)
 {
@@ -217,6 +263,10 @@ FCLOSE_ERROR:
    return false;
 }
 
+/** @brief Record which processor set the job was placed in
+ * @param proc_set the processor set
+ * @return true on success
+ */
 bool
 shepherd_write_processor_set_number_file(int proc_set)
 {
@@ -239,6 +289,14 @@ FCLOSE_ERROR:
    return false;
 }
 
+/** @brief Leave the marker that says the shepherd got as far as exiting cleanly
+ *
+ * Its absence is how the daemon tells a shepherd that crashed from one that
+ * finished: without it the job is reported as failed even when the job itself
+ * ran.
+ *
+ * @return true on success
+ */
 bool 
 shepherd_write_shepherd_about_to_exit_file()
 {
@@ -259,6 +317,10 @@ FCLOSE_ERROR:
    return false;
 }
 
+/** @brief Read the job's exit status back
+ * @param[out] return_code receives the status
+ * @return true on success
+ */
 bool 
 shepherd_read_exit_status_file(int *return_code)
 {
@@ -287,6 +349,11 @@ FCLOSE_ERROR:
    return false;
 }
 
+/** @brief Read a pid out of a `qrsh` pid file
+ * @param pid_file_name the file to read
+ * @param[out] qrsh_pid receives the pid
+ * @return true on success
+ */
 bool 
 shepherd_read_qrsh_file(const char* pid_file_name, pid_t *qrsh_pid)
 {
@@ -322,6 +389,10 @@ FCLOSE_ERROR:
    return false;
 }
 
+/** @brief Read back which processor set the job was placed in
+ * @param[out] proc_set receives the processor set
+ * @return true on success
+ */
 bool 
 shepherd_read_processor_set_number_file(int *proc_set)
 {
@@ -349,6 +420,9 @@ FCLOSE_ERROR:
    return false;
 }
 
+/** @brief Leave the marker that says the job has been checkpointed
+ * @param ckpt_is_in_arena whether the checkpoint lives in the checkpointing arena
+ */
 void 
 create_checkpointed_file(int ckpt_is_in_arena)
 {
@@ -371,6 +445,9 @@ FCLOSE_ERROR:
    return;
 }
 
+/** @brief Has the job been checkpointed?
+ * @return non-zero when the marker is there
+ */
 int 
 checkpointed_file_exists()
 {

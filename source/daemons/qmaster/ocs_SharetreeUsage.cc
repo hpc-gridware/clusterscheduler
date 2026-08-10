@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Deferred spooling and event emission for share tree usage
+ */
+
 #include <string>
 
 #include "evm/sge_event_master.h"
@@ -102,6 +106,12 @@ namespace {
    }
 }
 
+/** Mark a user object dirty for spooling. Names are de-duplicated: a
+ *  second call with the same name while the first is still queued is
+ *  a no-op.
+ *
+ *  @param name the user
+ */
 void
 ocs::SharetreeUsage::mark_user_spool_dirty(const char *name) {
    if (name == nullptr) {
@@ -110,6 +120,9 @@ ocs::SharetreeUsage::mark_user_spool_dirty(const char *name) {
    dirty_users_spool.push(name);
 }
 
+/** Mark a project object dirty for spooling. De-duplicated.
+ *  @param name the project
+ */
 void
 ocs::SharetreeUsage::mark_project_spool_dirty(const char *name) {
    if (name == nullptr) {
@@ -118,6 +131,12 @@ ocs::SharetreeUsage::mark_project_spool_dirty(const char *name) {
    dirty_projects_spool.push(name);
 }
 
+/** Mark a user object dirty for event emission. De-duplicated. The
+ *  next share-tree tick will emit sgeE_USER_MOD for this user inside
+ *  the publish transaction.
+ *
+ *  @param name the user
+ */
 void
 ocs::SharetreeUsage::mark_user_event_dirty(const char *name) {
    if (name == nullptr) {
@@ -126,6 +145,9 @@ ocs::SharetreeUsage::mark_user_event_dirty(const char *name) {
    dirty_users_event.push(name);
 }
 
+/** Mark a project object dirty for event emission. De-duplicated.
+ *  @param name the project
+ */
 void
 ocs::SharetreeUsage::mark_project_event_dirty(const char *name) {
    if (name == nullptr) {
@@ -134,11 +156,24 @@ ocs::SharetreeUsage::mark_project_event_dirty(const char *name) {
    dirty_projects_event.push(name);
 }
 
+/** Returns true if either event FIFO has at least one entry. The
+ *  share-tree tick handler uses this to decide whether to open an
+ *  event-master transaction at all.
+ *
+ *  @return true when either FIFO has an entry
+ */
 bool
 ocs::SharetreeUsage::has_event_dirty() {
    return !dirty_users_event.empty() || !dirty_projects_event.empty();
 }
 
+/** Drain the user event FIFO, emitting sgeE_USER_MOD for each entry
+ *  via sge_add_event. Must be called inside an open event-master
+ *  transaction (sge_set_commit_required ... sge_commit) so the events
+ *  ship as one package with the trailing sgeE_NEW_SHARETREE.
+ *
+ *  @param gdi_session the session the events belong to
+ */
 void
 ocs::SharetreeUsage::emit_dirty_user_events(uint64_t gdi_session) {
    while (!dirty_users_event.empty()) {
@@ -146,6 +181,11 @@ ocs::SharetreeUsage::emit_dirty_user_events(uint64_t gdi_session) {
    }
 }
 
+/** Drain the project event FIFO, emitting sgeE_PROJECT_MOD for each
+ *  entry. Same transaction-context contract as emit_dirty_user_events.
+ *
+ *  @param gdi_session the session the events belong to
+ */
 void
 ocs::SharetreeUsage::emit_dirty_project_events(uint64_t gdi_session) {
    while (!dirty_projects_event.empty()) {
@@ -153,12 +193,30 @@ ocs::SharetreeUsage::emit_dirty_project_events(uint64_t gdi_session) {
    }
 }
 
+/** Drain both event FIFOs entirely, emitting the queued MOD events.
+ *  Called from the qmaster shutdown sequence so finish-driven events
+ *  do not get dropped on the last tick interval. Caller is responsible
+ *  for the surrounding transaction (or for accepting the per-event
+ *  package overhead if shutdown speed beats atomicity here).
+ *
+ *  @param gdi_session the session the events belong to
+ */
 void
 ocs::SharetreeUsage::emit_events_all(uint64_t gdi_session) {
    emit_dirty_user_events(gdi_session);
    emit_dirty_project_events(gdi_session);
 }
 
+/** Drain the head of the user and project spool FIFOs to the spool
+ *  backend for up to budget_ms milliseconds. Returns the residual queue
+ *  size (sum of users + projects still spool-dirty). A non-zero return
+ *  means the caller should reschedule sooner; zero means the next idle
+ *  gap is fine.
+ *
+ *  @param budget_ms how long to spend spooling
+ *  @param gdi_session the session the change belongs to
+ *  @return the residual queue size
+ */
 int
 ocs::SharetreeUsage::spool_budget(int budget_ms, uint64_t gdi_session) {
    const uint64_t budget_end = sge_get_gmt64() + static_cast<uint64_t>(budget_ms) * 1000;
@@ -185,6 +243,12 @@ ocs::SharetreeUsage::spool_budget(int budget_ms, uint64_t gdi_session) {
    return static_cast<int>(dirty_users_spool.size() + dirty_projects_spool.size());
 }
 
+/** Drain both spool FIFOs entirely, ignoring any time budget. Called
+ *  from the qmaster shutdown sequence before the spool backend is torn
+ *  down.
+ *
+ *  @param gdi_session the session the change belongs to
+ */
 void
 ocs::SharetreeUsage::spool_all(uint64_t gdi_session) {
    while (!dirty_users_spool.empty()) {
@@ -195,11 +259,23 @@ ocs::SharetreeUsage::spool_all(uint64_t gdi_session) {
    }
 }
 
+/** CS-1239 step 5: mark the master share tree as "needs republish".
+ *  Set by the worker thread after sge_book_finished_job_usage sums a
+ *  finish into UU_/PR_/UPP_ usage, and by the TET decay handler after
+ *  a decay pass. Consumed (and cleared) by the TET share-tree tick
+ *  handler when it next emits sgeE_NEW_SHARETREE.
+ */
 void
 ocs::SharetreeUsage::mark_share_tree_dirty() {
    share_tree_dirty = true;
 }
 
+/** Returns true and clears the flag atomically (under LOCK_GLOBAL).
+ *  The tick handler uses this so the "saw dirty -> clear -> publish"
+ *  sequence cannot lose a concurrent mark.
+ *
+ *  @return true when the share tree needed republishing
+ */
 bool
 ocs::SharetreeUsage::consume_share_tree_dirty() {
    const bool was_dirty = share_tree_dirty;
@@ -207,6 +283,15 @@ ocs::SharetreeUsage::consume_share_tree_dirty() {
    return was_dirty;
 }
 
+/** CS-1239: re-schedule the periodic share-tree tick event with the *current*
+ *  mconf_get_sharetree_tick_interval() value. Drops the pending one-time event
+ *  and queues a fresh one at +5 s so a config change to STREE_TICK_INTERVAL
+ *  takes effect within seconds rather than after the remaining (up to 300 s)
+ *  lifetime of the already-queued event. Called from
+ *  configuration_qmaster.cc::do_mod_config after merge_configuration()
+ *  re-parses qmaster_params. Safe to call when no tick event is queued
+ *  (delete is a no-op in that case); also safe to call from any thread
+ *  (te_add_event / te_delete_one_time_event are MT-safe). */
 void
 sge_reschedule_sharetree_tick() {
    DENTER(TOP_LAYER);
@@ -222,6 +307,13 @@ sge_reschedule_sharetree_tick() {
    DRETURN_VOID;
 }
 
+/** CS-1239: re-schedule the periodic share-tree spool event. Same
+ *  rationale as sge_reschedule_sharetree_tick() but for STREE_SPOOL_INTERVAL:
+ *  a config change to STREE_SPOOL_INTERVAL would otherwise only take effect
+ *  after the already-queued event fires (up to 240 s away on default
+ *  configs), which made tests like issue_1385 - which pin the interval and
+ *  read the spool file shortly after - flake. Drops the pending event and
+ *  re-queues at +5 s. Same thread-safety / no-op-if-not-queued guarantees. */
 void
 sge_reschedule_sharetree_spool() {
    DENTER(TOP_LAYER);

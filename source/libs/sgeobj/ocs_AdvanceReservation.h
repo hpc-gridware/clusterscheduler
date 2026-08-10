@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Advance reservations: resources booked for a future time window
+ */
+
 #include <string>
 
 #include "cull/cull.h"
@@ -44,6 +48,13 @@
 #include "ocs_BindingInstance.h"
 
 namespace ocs {
+   /**
+    * @brief Operations on the advance reservation object
+    *
+    * The binding accessors mirror those on `ocs::Job`: a reservation can
+    * carry the same binding request a job can, so the hardware it books is
+    * described the same way.
+    */
    class AdvanceReservation {
    public:
       static lListElem *binding_get_or_create_elem(lListElem *pjob, lList**answer);

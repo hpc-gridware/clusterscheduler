@@ -24,33 +24,37 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief XML Element
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief XML Element
 *
-* @todo add description
+* One node of the XML document being built: its attributes, its children, and whether it is printed at all.
 *
-*    SGE_LIST(XMLE_Attribute) - @todo add summary
-*    @todo add description
+*    SGE_LIST(XMLE_Attribute) - Attributes
+*    The element's XML attributes (`XMLA_Type`).
 *
-*    SGE_BOOL(XMLE_Print) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(XMLE_Print) - Print
+*    Whether to emit this element. A node can be built and then suppressed, so the tree does not have to be pruned.
 *
-*    SGE_OBJECT(XMLE_Element) - @todo add summary
-*    @todo add description
+*    SGE_OBJECT(XMLE_Element) - Value
+*    The element's own value, when it is a leaf.
 *
-*    SGE_LIST(XMLE_List) - @todo add summary
-*    @todo add description
+*    SGE_LIST(XMLE_List) - Children
+*    The child elements (`XMLE_Type`), when it is not.
 *
 */
 
 enum {
-   XMLE_Attribute = XMLE_LOWERBOUND,
-   XMLE_Print,
-   XMLE_Element,
-   XMLE_List
+   XMLE_Attribute = XMLE_LOWERBOUND,   ///< Attributes
+   XMLE_Print,   ///< Print
+   XMLE_Element,   ///< Value
+   XMLE_List   ///< Children
 };
 
 LISTDEF(XMLE_Type)
@@ -67,6 +71,7 @@ NAMEDEF(XMLEN)
    NAME("XMLE_List")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define XMLE_SIZE sizeof(XMLEN)/sizeof(char *)
 
 

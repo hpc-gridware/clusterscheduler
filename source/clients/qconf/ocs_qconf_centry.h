@@ -33,11 +33,29 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the qconf complex entry switches
+ */
+
 #include "sgeobj/sge_daemonize.h"
 
 lListElem *
 centry_get_via_gdi(lList **answer_list, const char *group);
 
+/** @brief Send one complex entry to qmaster
+ *
+ * @param this_elem the complex entry (`CE_Type`) to send
+ * @param answer_list used to return error messages
+ * @param gdi_command `ADD`, `MOD` or `DEL`
+ * @return true on success; false with `answer_list` filled otherwise *
+ * @warning This declaration takes `uint32_t`, but the definition in the sibling
+ *          `.cc` takes `ocs::gdi::Command`, which is an `enum class` and so a
+ *          distinct type. The two are therefore different overloads: this one
+ *          is declared, never defined, and never called - every caller passes
+ *          an `ocs::gdi::Command` and binds to the definition. A caller that
+ *          did pass a plain `uint32_t` would fail to link. Left as it is;
+ *          changing a declaration is a code change.
+ */
 bool 
 centry_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list,
                            uint32_t gdi_command);

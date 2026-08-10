@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Implementation of the resource quota matching
+ */
+
 #include <climits>
 
 #include "uti/sge_log.h"
@@ -58,35 +62,22 @@
 #include "sge_select_queue_rqs.h"
 #include "sort_hosts.h"
 
-/****** sge_resource_quota_schedd/rqs_limitation_reached() *********************
-*  NAME
-*     rqs_limitation_reached() -- is the limitation reached for a queue instance
-*
-*  SYNOPSIS
-*     static bool rqs_limitation_reached(sge_assignment_t *a, lListElem *rule,
-*     const char* host, const char* queue)
-*
-*  FUNCTION
-*     The function verifies no limitation is reached for the specific job request
-*     and queue instance
-*
-*  INPUTS
-*     sge_assignment_t *a    - job info structure
-*     const lListElem *rule        - rqsource quota rule (RQR_Type)
-*     const char* host       - host name
-*     const char* queue      - queue name
-*    uint64_t *start         - start time of job
-*
-*  RESULT
-*     static dispatch_t - DISPATCH_OK job can be scheduled
-*                         DISPATCH_NEVER_CAT no jobs of this category will be scheduled
-*                         DISPATCH_NOT_AT_TIME job can be scheduled later
-*                         DISPATCH_MISSING_ATTR rule does not match requested attributes
-*
-*  NOTES
-*     MT-NOTE: rqs_limitation_reached() is not MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Is the limitation reached for a queue instance
+ *
+ * The function verifies no limitation is reached for the specific job request
+ * and queue instance
+ *
+ * @param a job info structure
+ * @param rule rqsource quota rule (RQR_Type)
+ * @param host host name
+ * @param queue queue name
+ * @param start start time of job
+ *
+ * @return DISPATCH_OK job can be scheduled DISPATCH_NEVER_CAT no jobs of this category will be scheduled DISPATCH_NOT_AT_TIME job can be scheduled later DISPATCH_MISSING_ATTR rule does not match requested attributes
+ *
+ * @note MT-NOTE: rqs_limitation_reached() is not MT safe
+ */
 static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *rule, const char* host, const char* queue, uint64_t *start)
 {
    DENTER(TOP_LAYER);
@@ -206,35 +197,25 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
 }
 
 
-/****** sge_resource_quota_schedd/rqs_exceeded_sort_out() **********************
-*  NAME
-*     rqs_exceeded_sort_out() -- Rule out queues/hosts whenever possible
-*
-*  SYNOPSIS
-*     bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule,
-*     const dstring *rule_name, const char* queue_name, const char* host_name)
-*
-*  FUNCTION
-*     This function tries to rule out hosts and cluster queues after a
-*     quota exeeding was found for a limitation rule with specific queue
-*     instance.
-*
-*     When a limitation was exeeded that applies to the entire
-*     cluster 'true' is returned, 'false' otherwise.
-*
-*  INPUTS
-*     sge_assignment_t *a      - Scheduler assignment type
-*     const lListElem *rule    - The exeeded rule
-*     const dstring *rule_name - Name of the rule (monitoring only)
-*     const char* queue_name   - Cluster queue name
-*     const char* host_name    - Host name
-*
-*  RESULT
-*     bool - True upon global limits exceeding
-*
-*  NOTES
-*     MT-NOTE: rqs_exceeded_sort_out() is MT safe
-*******************************************************************************/
+/**
+ * @brief Rule out queues/hosts whenever possible
+ *
+ * This function tries to rule out hosts and cluster queues after a
+ * quota exeeding was found for a limitation rule with specific queue
+ * instance.
+ * When a limitation was exeeded that applies to the entire
+ * cluster 'true' is returned, 'false' otherwise.
+ *
+ * @param a Scheduler assignment type
+ * @param rule The exeeded rule
+ * @param rule_name Name of the rule (monitoring only)
+ * @param queue_name Cluster queue name
+ * @param host_name Host name
+ *
+ * @return True upon global limits exceeding
+ *
+ * @note MT-NOTE: rqs_exceeded_sort_out() is MT safe
+ */
 static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, const dstring *rule_name,
    const char* queue_name, const char* host_name)
 {
@@ -315,30 +296,21 @@ static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, co
    }
 }
 
-/****** sge_resource_quota_schedd/rqs_exceeded_sort_out_par() ******************
-*  NAME
-*     rqs_exceeded_sort_out_par() -- Rule out queues/hosts whenever possible
-*
-*  SYNOPSIS
-*     void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem
-*     *rule, const dstring *rule_name, const char* queue_name, const char*
-*     host_name)
-*
-*  FUNCTION
-*     Function wrapper around rqs_exceeded_sort_out() for parallel jobs.
-*     In contrast to the sequential case global limit exeeding is handled
-*     by adding all cluster queue names to the a->skip_cqueue_list.
-*
-*  INPUTS
-*     sge_assignment_t *a      - Scheduler assignment type
-*     const lListElem *rule    - The exeeded rule
-*     const dstring *rule_name - Name of the rule (monitoring only)
-*     const char* queue_name   - Cluster queue name
-*     const char* host_name    - Host name
-*
-*  NOTES
-*     MT-NOTE: rqs_exceeded_sort_out_par() is MT safe
-*******************************************************************************/
+/**
+ * @brief Rule out queues/hosts whenever possible
+ *
+ * Function wrapper around rqs_exceeded_sort_out() for parallel jobs.
+ * In contrast to the sequential case global limit exeeding is handled
+ * by adding all cluster queue names to the a->skip_cqueue_list.
+ *
+ * @param a Scheduler assignment type
+ * @param rule The exeeded rule
+ * @param rule_name Name of the rule (monitoring only)
+ * @param queue_name Cluster queue name
+ * @param host_name Host name
+ *
+ * @note MT-NOTE: rqs_exceeded_sort_out_par() is MT safe
+ */
 static void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem *rule, const dstring *rule_name,
    const char* queue_name, const char* host_name)
 {
@@ -347,35 +319,25 @@ static void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem *rule
    }
 }
 
-/****** sge_resource_quota_schedd/parallel_rqs_slots_by_time() ******************
-*  NAME
-*     parallel_rqs_slots_by_time() -- Dertermine number of slots avail within
-*                                      time frame
-*
-*  SYNOPSIS
-*     dispatch_t parallel_rqs_slots_by_time(const sge_assignment_t *a,
-*     int *slots, const char *host, const char *queue)
-*
-*  FUNCTION
-*     This function iterates for a queue instance over all resource quota sets
-*     and evaluates the number of slots available.
-*
-*  INPUTS
-*     const sge_assignment_t *a - job info structure (in)
-*     int *slots                - out: # free slots
-*     lListElem *qep            - QU_Type Elem
-*
-*  RESULT
-*     static dispatch_t - DISPATCH_OK        got an assignment
-*                       - DISPATCH_NEVER_CAT no assignment for all jobs af that category
-*
-*  NOTES
-*     MT-NOTE: parallel_rqs_slots_by_time() is not MT safe
-*
-*  SEE ALSO
-*     ri_slots_by_time()
-*
-*******************************************************************************/
+/**
+ * @brief Dertermine number of slots avail within
+ *
+ * This function iterates for a queue instance over all resource quota sets
+ * and evaluates the number of slots available.
+ *
+ * @param a job info structure (in)
+ * @param slots out: # free slots
+ * @param qep queue instance (`QU_Type`)
+ * @param need_master a master task still has to be placed
+ * @param is_master_queue this queue instance already carries the master task
+ *
+ * @return #DISPATCH_OK when an assignment was found, #DISPATCH_NEVER_CAT when
+ *         no job of that category can ever get one
+ *
+ * @note MT-NOTE: parallel_rqs_slots_by_time() is not MT safe
+ *
+ * @see ri_time_by_slots()
+ */
 dispatch_t
 parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool need_master,
                            bool is_master_queue)
@@ -522,32 +484,22 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool
    DRETURN(result);
 }
 
-/****** sge_resource_quota_schedd/rqs_match_assignment() ***********************
-*  NAME
-*     rqs_match_assignment() -- match resource quota rule any queue instance
-*
-*  SYNOPSIS
-*     static bool rqs_match_assignment(const lListElem *rule, sge_assignment_t
-*     *a)
-*
-*  FUNCTION
-*     Check whether a resource quota rule can match any queue instance. If
-*     if does not match due to users/projects/pes scope one can rule this
-*     out.
-*
-*     Note: As long as rqs_match_assignment() is not used for parallel jobs
-*           passing nullptr as PE request is perfectly fine.
-*
-*  INPUTS
-*     const lListElem *rule - Resource quota rule
-*     sge_assignment_t *a   - Scheduler assignment
-*
-*  RESULT
-*     static bool - True if it matches
-*
-*  NOTES
-*     MT-NOTE: rqs_match_assignment() is MT safe
-*******************************************************************************/
+/**
+ * @brief Match resource quota rule any queue instance
+ *
+ * Check whether a resource quota rule can match any queue instance. If
+ * if does not match due to users/projects/pes scope one can rule this
+ * out.
+ * Note: As long as rqs_match_assignment() is not used for parallel jobs
+ *       passing nullptr as PE request is perfectly fine.
+ *
+ * @param rule Resource quota rule
+ * @param a Scheduler assignment
+ *
+ * @return True if it matches
+ *
+ * @note MT-NOTE: rqs_match_assignment() is MT safe
+ */
 static bool rqs_match_assignment(const lListElem *rule, sge_assignment_t *a)
 {
    return (rqs_filter_match(lGetObject(rule, RQR_filter_projects), FILTER_PROJECTS, a->project, nullptr, nullptr, nullptr, nullptr) &&
@@ -556,29 +508,21 @@ static bool rqs_match_assignment(const lListElem *rule, sge_assignment_t *a)
 }
 
 
-/****** sge_resource_quota_schedd/rqs_can_optimize() ***************************
-*  NAME
-*     rqs_can_optimize() -- Poke whether a queue/host negation can be made
-*
-*  SYNOPSIS
-*     static void rqs_can_optimize(const lListElem *rule, bool *host, bool
-*     *queue, sge_assignment_t *a)
-*
-*  FUNCTION
-*     A global limit was hit with 'rule'. This function helps to determine
-*     to what exend we can profit from that situation. If there is no
-*     previous matching rule within the same rule set any other queue/host
-*     can be skipped.
-*
-*  INPUTS
-*     const lListElem *rule - Rule
-*     bool *host            - Any previous rule with a host scope?
-*     bool *queue           - Any previous rule with a queue scope?
-*     sge_assignment_t *a   - Scheduler assignment
-*
-*  NOTES
-*     MT-NOTE: rqs_can_optimize() is MT safe
-*******************************************************************************/
+/**
+ * @brief Poke whether a queue/host negation can be made
+ *
+ * A global limit was hit with 'rule'. This function helps to determine
+ * to what exend we can profit from that situation. If there is no
+ * previous matching rule within the same rule set any other queue/host
+ * can be skipped.
+ *
+ * @param rule Rule
+ * @param host Any previous rule with a host scope?
+ * @param queue Any previous rule with a queue scope?
+ * @param a Scheduler assignment
+ *
+ * @note MT-NOTE: rqs_can_optimize() is MT safe
+ */
 void rqs_can_optimize(const lListElem *rule, bool *host, bool *queue, sge_assignment_t *a)
 {
    bool host_shadowed = false, queue_shadowed = false;
@@ -599,33 +543,24 @@ void rqs_can_optimize(const lListElem *rule, bool *host, bool *queue, sge_assign
    return;
 }
 
-/****** sge_resource_quota_schedd/check_and_debit_rqs_slots() *********************
-*  NAME
-*     check_and_debit_rqs_slots() -- Determine RQS limit slot amount and debit
-*
-*  SYNOPSIS
-*     static void check_and_debit_rqs_slots(sge_assignment_t *a, const char
-*     *host, const char *queue, int *slots, dstring
-*     *rule_name, dstring *rue_name, dstring *limit_name)
-*
-*  FUNCTION
-*     The function determines the final slot amount due
-*     to all resource quota limitations that apply for the queue instance.
-*     Both slot amounts get debited from the a->limit_list to keep track
-*     of still available amounts per resource quota limit.
-*
-*  INPUTS
-*     sge_assignment_t *a - Assignment data structure
-*     const char *host    - hostname
-*     const char *queue   - queuename
-*     int *slots          - needed/available slots
-*     dstring *rule_name  - caller maintained buffer
-*     dstring *rue_name   - caller maintained buffer
-*     dstring *limit_name - caller maintained buffer
-*
-*  NOTES
-*     MT-NOTE: check_and_debit_rqs_slots() is MT safe
-*******************************************************************************/
+/**
+ * @brief Determine RQS limit slot amount and debit
+ *
+ * The function determines the final slot amount due
+ * to all resource quota limitations that apply for the queue instance.
+ * Both slot amounts get debited from the a->limit_list to keep track
+ * of still available amounts per resource quota limit.
+ *
+ * @param a Assignment data structure
+ * @param host hostname
+ * @param queue queuename
+ * @param slots needed/available slots
+ * @param rule_name caller maintained buffer
+ * @param rue_name caller maintained buffer
+ * @param limit_name caller maintained buffer
+ *
+ * @note MT-NOTE: check_and_debit_rqs_slots() is MT safe
+ */
 void
 parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const char *queue, int *slots,
                                    dstring *rule_name, dstring *rue_name, dstring *limit_name) {
@@ -688,6 +623,21 @@ parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const 
    DRETURN_VOID;
 }
 
+/**
+ * @brief Gives back slots that were tentatively debited on the resource quotas
+ *
+ * The parallel matching debits the quotas as it goes so that the next queue
+ * instance sees the reduced limit. When the attempt fails the bookings have
+ * to be undone, which is what this does.
+ *
+ * @param[in,out] a          the assignment carrying the limit list
+ * @param[in]     host       the host the slots were debited for
+ * @param[in]     queue      the queue instance the slots were debited for
+ * @param[in]     slots      number of slots to give back
+ * @param[in,out] rule_name  scratch buffer for the rule name
+ * @param[in,out] rue_name   scratch buffer for the usage name
+ * @param[in,out] limit_name scratch buffer for the combined limit name
+ */
 void
 parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, const char *queue,
                                     int slots, dstring *rule_name, dstring *rue_name, dstring *limit_name) {
@@ -720,41 +670,30 @@ parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, const
    DRETURN_VOID;
 }
 
-/****** sge_resource_quota_schedd/rqs_by_slots() ***********************************
-*  NAME
-*     rqs_by_slots() -- Check queue instance suitability due to RQS
-*
-*  SYNOPSIS
-*     dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue,
-*     const char *host, uint64_t *tt_rqs_all, bool *is_global,
-*     dstring *rue_string, dstring *limit_name, dstring *rule_name)
-*
-*  FUNCTION
-*     Checks (or determines earliest time) queue instance suitability
-*     according to resource quota set limits.
-*
-*     For performance reasons RQS verification results are cached in
-*     a->limit_list. In addition unsuited queues and hosts are collected
-*     in a->skip_cqueue_list and a->skip_host_list so that ruling out
-*     chunks of queue instance becomes quite cheap.
-*
-*  INPUTS
-*     sge_assignment_t *a  - assignment
-*     const char *queue    - cluster queue name
-*     const char *host     - host name
-*     uint64_t *tt_rqs_all - returns earliest time over all resource quotas
-*     bool *is_global      - returns true if result is valid for any other queue
-*     dstring *rue_string  - caller maintained buffer
-*     dstring *limit_name  - caller maintained buffer
-*     dstring *rule_name   - caller maintained buffer
-*     uint64_t tt_best     - time of best solution found so far
-*
-*  RESULT
-*     static dispatch_t - usual return values
-*
-*  NOTES
-*     MT-NOTE: rqs_by_slots() is MT safe
-*******************************************************************************/
+/**
+ * @brief Check queue instance suitability due to RQS
+ *
+ * Checks (or determines earliest time) queue instance suitability
+ * according to resource quota set limits.
+ * For performance reasons RQS verification results are cached in
+ * a->limit_list. In addition unsuited queues and hosts are collected
+ * in a->skip_cqueue_list and a->skip_host_list so that ruling out
+ * chunks of queue instance becomes quite cheap.
+ *
+ * @param a assignment
+ * @param queue cluster queue name
+ * @param host host name
+ * @param tt_rqs_all returns earliest time over all resource quotas
+ * @param is_global returns true if result is valid for any other queue
+ * @param rue_string caller maintained buffer
+ * @param limit_name caller maintained buffer
+ * @param rule_name caller maintained buffer
+ * @param tt_best time of best solution found so far
+ *
+ * @return usual return values
+ *
+ * @note MT-NOTE: rqs_by_slots() is MT safe
+ */
 dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host,
   uint64_t *tt_rqs_all, bool *is_global, dstring *rue_string, dstring *limit_name, dstring *rule_name, uint64_t tt_best)
 {
@@ -847,23 +786,17 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
    DRETURN(result);
 }
 
-/****** sge_resource_quota_schedd/rqs_expand_cqueues() *************************
-*  NAME
-*     rqs_expand_cqueues() -- Add all matching cqueues to the list
-*
-*  SYNOPSIS
-*     void rqs_expand_cqueues(const lListElem *rule)
-*
-*  FUNCTION
-*     The names of all cluster queues that match the rule are added to
-*     the skip list without duplicates.
-*
-*  INPUTS
-*     const lListElem *rule    - RQR_Type
-*
-*  NOTES
-*     MT-NOTE: rqs_expand_cqueues() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Add all matching cqueues to the list
+ *
+ * The names of all cluster queues that match the rule are added to
+ * the skip list without duplicates.
+ *
+ * @param rule the rule (`RQR_Type`)
+ * @param a the assignment whose `skip_cqueue_list` is extended
+ *
+ * @note MT-NOTE: rqs_expand_cqueues() is not MT safe
+ */
 void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
 {
    lListElem *qfilter = lGetObject(rule, RQR_filter_queues);
@@ -881,25 +814,17 @@ void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
    DRETURN_VOID;
 }
 
-/****** sge_resource_quota_schedd/rqs_expand_hosts() ***************************
-*  NAME
-*     rqs_expand_hosts() -- Add all matching hosts to the list
-*
-*  SYNOPSIS
-*     void rqs_expand_hosts(const lListElem *rule, lList **skip_host_list,
-*     const lList *host_list, lList *hgrp_list)
-*
-*  FUNCTION
-*     The names of all hosts that match the rule are added to
-*     the skip list without duplicates.
-*
-*  INPUTS
-*     const lListElem *rule  - RQR_Type
-*     const lList *host_list - EH_Type
-*
-*  NOTES
-*     MT-NOTE: rqs_expand_hosts() is MT safe
-*******************************************************************************/
+/**
+ * @brief Add all matching hosts to the list
+ *
+ * The names of all hosts that match the rule are added to
+ * the skip list without duplicates.
+ *
+ * @param rule the rule (`RQR_Type`)
+ * @param a the assignment whose `skip_host_list` is extended
+ *
+ * @note MT-NOTE: rqs_expand_hosts() is MT safe
+ */
 void rqs_expand_hosts(const lListElem *rule, sge_assignment_t *a)
 {
    lListElem *hfilter = lGetObject(rule, RQR_filter_hosts);
@@ -915,32 +840,25 @@ void rqs_expand_hosts(const lListElem *rule, sge_assignment_t *a)
    return;
 }
 
-/****** sge_resource_quota_schedd/cqueue_shadowed() ****************************
-*  NAME
-*     cqueue_shadowed() -- Check for cluster queue rule before current rule
-*
-*  SYNOPSIS
-*     static bool cqueue_shadowed(const lListElem *rule, sge_assignment_t *a)
-*
-*  FUNCTION
-*     Check whether there is any cluster queue specific rule before the
-*     current rule.
-*
-*  INPUTS
-*     const lListElem *rule - Current rule
-*     sge_assignment_t *a   - Scheduler assignment
-*
-*  RESULT
-*     static bool - True if shadowed
-*
-*  EXAMPLE
-*     limit queue Q001 to F001=1
-*     limit host gridware to F001=0  (--> returns 'true' due to 'Q001' meaning
-*                               that gridware can't be generelly ruled out )
-*
-*  NOTES
-*     MT-NOTE: cqueue_shadowed() is MT safe
-*******************************************************************************/
+/**
+ * @brief Check for cluster queue rule before current rule
+ *
+ * Check whether there is any cluster queue specific rule before the
+ * current rule.
+ *
+ * @code
+ * limit queue Q001 to F001=1
+ * limit host gridware to F001=0  (--> returns 'true' due to 'Q001' meaning
+ *                           that gridware can't be generelly ruled out )
+ * @endcode
+ *
+ * @param rule Current rule
+ * @param a Scheduler assignment
+ *
+ * @return True if shadowed
+ *
+ * @note MT-NOTE: cqueue_shadowed() is MT safe
+ */
 bool cqueue_shadowed(const lListElem *rule, sge_assignment_t *a)
 {
    while ((rule = lPrev(rule))) {
@@ -951,32 +869,25 @@ bool cqueue_shadowed(const lListElem *rule, sge_assignment_t *a)
    return false;
 }
 
-/****** sge_resource_quota_schedd/host_shadowed() ******************************
-*  NAME
-*     host_shadowed() -- Check for host rule before current rule
-*
-*  SYNOPSIS
-*     static bool host_shadowed(const lListElem *rule, sge_assignment_t *a)
-*
-*  FUNCTION
-*     Check whether there is any host specific rule before the
-*     current rule.
-*
-*  INPUTS
-*     const lListElem *rule - Current rule
-*     sge_assignment_t *a   - Scheduler assignment
-*
-*  RESULT
-*     static bool - True if shadowed
-*
-*  EXAMPLE
-*     limit host gridware to F001=1
-*     limit queue Q001 to F001=0  (--> returns 'true' due to 'gridware' meaning
-*                               that Q001 can't be generelly ruled out )
-*
-*  NOTES
-*     MT-NOTE: host_shadowed() is MT safe
-*******************************************************************************/
+/**
+ * @brief Check for host rule before current rule
+ *
+ * Check whether there is any host specific rule before the
+ * current rule.
+ *
+ * @code
+ * limit host gridware to F001=1
+ * limit queue Q001 to F001=0  (--> returns 'true' due to 'gridware' meaning
+ *                           that Q001 can't be generelly ruled out )
+ * @endcode
+ *
+ * @param rule Current rule
+ * @param a Scheduler assignment
+ *
+ * @return True if shadowed
+ *
+ * @note MT-NOTE: host_shadowed() is MT safe
+ */
 bool host_shadowed(const lListElem *rule, sge_assignment_t *a)
 {
    while ((rule = lPrev(rule))) {
@@ -987,27 +898,21 @@ bool host_shadowed(const lListElem *rule, sge_assignment_t *a)
    return false;
 }
 
-/****** sge_resource_quota_schedd/rqs_excluded_cqueues() ***********************
-*  NAME
-*     rqs_excluded_cqueues() -- Find excluded queues
-*
-*  SYNOPSIS
-*     static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
-*
-*  FUNCTION
-*     Find queues that are excluded by previous rules.
-*
-*  INPUTS
-*     const lListElem *rule    - The rule
-*     sge_assignment_t *a      - Scheduler assignement
-*
-*  EXAMPLE
-*      limit        projects {*} queues !Q001 to F001=1
-*      limit        to F001=0   ( ---> returns Q001 in a->skip_cqueue_list)
-*
-*  NOTES
-*     MT-NOTE: rqs_excluded_cqueues() is MT safe
-*******************************************************************************/
+/**
+ * @brief Find excluded queues
+ *
+ * Find queues that are excluded by previous rules.
+ *
+ * @code
+ *  limit        projects {*} queues !Q001 to F001=1
+ *  limit        to F001=0   ( ---> returns Q001 in a->skip_cqueue_list)
+ * @endcode
+ *
+ * @param rule The rule
+ * @param a Scheduler assignement
+ *
+ * @note MT-NOTE: rqs_excluded_cqueues() is MT safe
+ */
 void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
 {
    const lListElem *prev;
@@ -1047,27 +952,21 @@ void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
    DRETURN_VOID;
 }
 
-/****** sge_resource_quota_schedd/rqs_excluded_hosts() *************************
-*  NAME
-*     rqs_excluded_hosts() -- Find excluded hosts
-*
-*  SYNOPSIS
-*     static void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a)
-*
-*  FUNCTION
-*     Find hosts that are excluded by previous rules.
-*
-*  INPUTS
-*     const lListElem *rule    - The rule
-*     sge_assignment_t *a      - Scheduler assignement
-*
-*  EXAMPLE
-*      limit        projects {*} queues !gridware to F001=1
-*      limit        to F001=0   ( ---> returns gridware in skip_host_list)
-*
-*  NOTES
-*     MT-NOTE: rqs_excluded_hosts() is MT safe
-*******************************************************************************/
+/**
+ * @brief Find excluded hosts
+ *
+ * Find hosts that are excluded by previous rules.
+ *
+ * @code
+ *  limit        projects {*} queues !gridware to F001=1
+ *  limit        to F001=0   ( ---> returns gridware in skip_host_list)
+ * @endcode
+ *
+ * @param rule The rule
+ * @param a Scheduler assignement
+ *
+ * @note MT-NOTE: rqs_excluded_hosts() is MT safe
+ */
 void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a)
 {
    const lListElem *prev;
@@ -1107,32 +1006,24 @@ void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a)
    DRETURN_VOID;
 }
 
-/****** sge_resource_quota_schedd/cqueue_shadowed_by() *************************
-*  NAME
-*     cqueue_shadowed_by() -- Check rules shadowing current cluster queue rule
-*
-*  SYNOPSIS
-*     static bool cqueue_shadowed_by(const char *cqname, const lListElem *rule,
-*     sge_assignment_t *a)
-*
-*  FUNCTION
-*     Check if cluster queue in current rule is shadowed.
-*
-*  INPUTS
-*     const char *cqname    - Cluster queue name to check
-*     const lListElem *rule - Current rule
-*     sge_assignment_t *a   - Assignment
-*
-*  RESULT
-*     static bool - True if shadowed
-*
-*  EXAMPLE
-*     limits queues Q001,Q002 to F001=1
-*     limits queues Q002,Q003 to F001=1 (--> returns 'true' for Q002 and 'false' for Q003)
-*
-*  NOTES
-*     MT-NOTE: cqueue_shadowed_by() is MT safe
-*******************************************************************************/
+/**
+ * @brief Check rules shadowing current cluster queue rule
+ *
+ * Check if cluster queue in current rule is shadowed.
+ *
+ * @code
+ * limits queues Q001,Q002 to F001=1
+ * limits queues Q002,Q003 to F001=1 (--> returns 'true' for Q002 and 'false' for Q003)
+ * @endcode
+ *
+ * @param cqname Cluster queue name to check
+ * @param rule Current rule
+ * @param a Assignment
+ *
+ * @return True if shadowed
+ *
+ * @note MT-NOTE: cqueue_shadowed_by() is MT safe
+ */
 bool cqueue_shadowed_by(const char *cqname, const lListElem *rule, sge_assignment_t *a)
 {
    while ((rule = lPrev(rule))) {
@@ -1145,32 +1036,24 @@ bool cqueue_shadowed_by(const char *cqname, const lListElem *rule, sge_assignmen
    return false;
 }
 
-/****** sge_resource_quota_schedd/host_shadowed_by() ***************************
-*  NAME
-*     host_shadowed_by() -- ???
-*
-*  SYNOPSIS
-*     static bool host_shadowed_by(const char *host, const lListElem *rule,
-*     sge_assignment_t *a)
-*
-*  FUNCTION
-*     Check if host in current rule is shadowed.
-*
-*  INPUTS
-*     const char *cqname    - Host name to check
-*     const lListElem *rule - Current rule
-*     sge_assignment_t *a   - Assignment
-*
-*  RESULT
-*     static bool - True if shadowed
-*
-*  EXAMPLE
-*     limits hosts host1,host2 to F001=1
-*     limits hosts host2,host3 to F001=1 (--> returns 'true' for host2 and 'false' for host3)
-*
-*  NOTES
-*     MT-NOTE: host_shadowed_by() is MT safe
-*******************************************************************************/
+/**
+ * @brief Check if host in current rule is shadowed
+ *
+ * Check if host in current rule is shadowed.
+ *
+ * @code
+ * limits hosts host1,host2 to F001=1
+ * limits hosts host2,host3 to F001=1 (--> returns 'true' for host2 and 'false' for host3)
+ * @endcode
+ *
+ * @param host Host name to check
+ * @param rule Current rule
+ * @param a Assignment
+ *
+ * @return True if shadowed
+ *
+ * @note MT-NOTE: host_shadowed_by() is MT safe
+ */
 bool host_shadowed_by(const char *host, const lListElem *rule, sge_assignment_t *a)
 {
    while ((rule = lPrev(rule))) {
@@ -1183,34 +1066,23 @@ bool host_shadowed_by(const char *host, const lListElem *rule, sge_assignment_t 
    return false;
 }
 
-/****** sge_resource_quota_schedd/rqs_set_dynamical_limit() ***********************
-*  NAME
-*     rqs_set_dynamical_limit() -- evaluate dynamical limit
-*
-*  SYNOPSIS
-*     bool rqs_set_dynamical_limit(lListElem *limit, lListElem
-*     *global_host, lListElem *exec_host, lList *centry)
-*
-*  FUNCTION
-*     The function evaluates if neccessary the dynamical limit for a host and
-*     sets the evaluated double value in the given limitation element (RQRL_dvalue).
-*
-*     A evaluation is neccessary if the limit boolean RQRL_dynamic is true. This
-*     field is set by qmaster during the rule set verification
-*
-*  INPUTS
-*     lListElem *limit       - limitation (RQRL_Type)
-*     lListElem *global_host - global host (EH_Type)
-*     lListElem *exec_host   - exec host (EH_Type)
-*     lList *centry          - consumable resource list (CE_Type)
-*
-*  RESULT
-*     bool - always true
-*
-*  NOTES
-*     MT-NOTE: rqs_set_dynamical_limit() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Evaluate dynamical limit
+ *
+ * The function evaluates if neccessary the dynamical limit for a host and
+ * sets the evaluated double value in the given limitation element (RQRL_dvalue).
+ * A evaluation is neccessary if the limit boolean RQRL_dynamic is true. This
+ * field is set by qmaster during the rule set verification
+ *
+ * @param limit limitation (RQRL_Type)
+ * @param global_host global host (EH_Type)
+ * @param exec_host exec host (EH_Type)
+ * @param centry consumable resource list (CE_Type)
+ *
+ * @return always true
+ *
+ * @note MT-NOTE: rqs_set_dynamical_limit() is MT safe
+ */
 bool
 rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exec_host, const lList *centry) {
 

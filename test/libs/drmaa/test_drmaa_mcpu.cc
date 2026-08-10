@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for mcpu in `libs/drmaa`
+ */
+
 #include <ctime>
 #include <pthread.h>
 #include <cstdio>
@@ -41,12 +45,25 @@
 #include <uti/sge_log.h>
 #include <uti/sge_stdlib.h>
 
-#define CELL "default"
-#define WD "/tmp"
-#define CMD "/tmp/sleeper.sh"
-#define CATEGORY "test"
+#define CELL "default"           ///< the cell the test submits into
+#define WD "/tmp"                 ///< the working directory the jobs run in
+#define CMD "/tmp/sleeper.sh"     ///< the job the test submits; must exist on the execution hosts
+#define CATEGORY "test"           ///< the job category, so the submitted jobs are recognisable
 
+/** @brief Handle code
+ *
+ * @param code see the description above
+ * @param msg see the description above
+ * @param r see the description above
+ * @param t see the description above
+ * @return non-zero or true when the case passed
+ */
 int handle_code(int code, char *msg, int r, int t);
+/** @brief Run
+ *
+ * @param arg see the description above
+  * @return the thread's result; the tests ignore it
+ */
 void *run(void *arg);
 
 int main(int argc, char **argv) {

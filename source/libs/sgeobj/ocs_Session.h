@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief GDI sessions, giving a client read-after-write consistency
+ */
+
 #include <unordered_map>
 
 #include <pthread.h>
@@ -30,20 +34,29 @@
 #include "sge_qmaster_timed_event.h"
 
 namespace ocs {
+   /**
+    * @brief Read-after-write consistency for clients that use the snapshot data stores
+    *
+    * A snapshot store lags the read-write store by the event delivery. Without
+    * this a client that just submitted a job could ask a reader thread and not
+    * see it. Each user gets a session recording the id of their last write; a
+    * later read waits until the snapshot has caught up to that id.
+    */
    class SessionManager {
    private:
       struct Session {
-         uint64_t write_time;           //< time when write_unique_id was set
-         uint64_t write_unique_id;      //< unique id for the last write event
+         uint64_t write_time;           ///< time when write_unique_id was set
+         uint64_t write_unique_id;      ///< unique id for the last write event
       };
 
-      static pthread_mutex_t mutex;                             //< mutex that saves access to the session_map
-      static std::unordered_map<uint64_t, Session> session_map; //< hashtable for sessions
-      static uint64_t process_unique_id;                        //< unique id for the last processed event
+      static pthread_mutex_t mutex;                             ///< mutex that saves access to the session_map
+      static std::unordered_map<uint64_t, Session> session_map; ///< hashtable for sessions
+      static uint64_t process_unique_id;                        ///< unique id for the last processed event
 
       static void remove_unused();
 
    public:
+      /// No session: the request has nothing to wait for and may be answered from any snapshot
       static constexpr uint64_t GDI_SESSION_NONE = 0LL;
       static uint64_t get_session_id(const char *user);
 

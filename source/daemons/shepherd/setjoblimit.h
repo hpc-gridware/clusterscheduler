@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The operating system job id the resource limits are set against
+ */
+
 #include "cull/cull.h"
 #include "ptf.h"
 

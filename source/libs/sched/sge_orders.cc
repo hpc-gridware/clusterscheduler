@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief The orders the scheduler sends back to qmaster
+ */
 #include <stdio.h>
 
 #include "uti/sge_rmon_macros.h"
@@ -48,31 +52,20 @@
 
 #include "msg_schedd.h"
 
-/****** sge_orders/sge_add_schedd_info() ***************************************
-*  NAME
-*     sge_add_schedd_info() -- retrieves the messages and generates an order out
-*                              of it.
-*
-*  SYNOPSIS
-*     lList* sge_add_schedd_info(lList *or_list, int *global_mes_count, int
-*     *job_mes_count)
-*
-*  FUNCTION
-*     retrieves all messages, puts them into an order package, and frees the
-*     orginal messages. It also returns the number of global and job messages.
-*
-*  INPUTS
-*     lList *or_list        - int: the order list to which the message order is added
-*     int *global_mes_count - out: global message count
-*     int *job_mes_count    - out: job message count
-*
-*  RESULT
-*     lList* - the order list
-*
-*  NOTES
-*     MT-NOTE: sge_add_schedd_info() is not MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Retrieves the messages and generates an order out
+ *
+ * retrieves all messages, puts them into an order package, and frees the
+ * orginal messages. It also returns the number of global and job messages.
+ *
+ * @param or_list int: the order list to which the message order is added
+ * @param global_mes_count out: global message count
+ * @param job_mes_count out: job message count
+ *
+ * @return the order list
+ *
+ * @note MT-NOTE: sge_add_schedd_info() is not MT safe
+ */
 lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_count)
 {
    lList *jlist;
@@ -119,38 +112,25 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
  *************************************************************/
 
 
-/****** sge_orders/sge_create_orders() *****************************************
-*  NAME
-*     sge_create_orders() -- Create a new order-list or add orders to an existing one
-*
-*  SYNOPSIS
-*     lList* sge_create_orders(lList *or_list, uint32_t type, lListElem *job,
-*     lListElem *ja_task, lList *granted, bool update_execd)
-*
-*  FUNCTION
-*     - If the or_list is nullptr, a new one will be generated
-*
-*     - in case of a clear_pri order, teh ja_task is improtant. If nullptr is put
-*       in for ja_task, only the pendin tasks of the spedified job are set to nullptr.
-*       If a ja_task is put in, all tasks of the job are set to nullptr
-*
-*  INPUTS
-*     lList *or_list     - the order list
-*     uint32_t type      - order type
-*     lListElem *job     - job
-*     lListElem *ja_task - ja_task ref or nullptr(there is only one case, where it can be nullptr)
-*     lList *granted     - granted queue list
-*     bool update_execd  - should the execd get new ticket values?
-*
-*  RESULT
-*     lList* - returns the orderlist
-*
-*  NOTES
-*     MT-NOTE: sge_create_orders() is MT safe
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief Create a new order-list or add orders to an existing one
+ *
+ * - If the or_list is nullptr, a new one will be generated
+ * - in case of a clear_pri order, teh ja_task is improtant. If nullptr is put
+ *   in for ja_task, only the pendin tasks of the spedified job are set to nullptr.
+ *   If a ja_task is put in, all tasks of the job are set to nullptr
+ *
+ * @param or_list the order list
+ * @param type order type
+ * @param job job
+ * @param ja_task ja_task ref or nullptr(there is only one case, where it can be nullptr)
+ * @param granted granted queue list
+ * @param update_execd should the execd get new ticket values?
+ *
+ * @return returns the orderlist
+ *
+ * @note MT-NOTE: sge_create_orders() is MT safe
+ */
 lList
 *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, const lListElem *ja_task,
                    const lList *granted , bool update_execd)
@@ -326,9 +306,18 @@ lList
 }
 
 
-/*************************************************************
-
- *************************************************************/
+/**
+ * @brief Sends a list of orders to qmaster
+ *
+ * The list is sent as one GDI request and is freed on success, so the caller
+ * must not reuse it.
+ *
+ * @param[in]     evc    the event client the scheduler runs on, for the GDI
+ *                       connection
+ * @param[in,out] orders the orders to send; freed and set to nullptr
+ *
+ * @return `STATUS_OK`, or the error status of the GDI request
+ */
 int
 sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
 {
@@ -372,28 +361,19 @@ sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
  * books usage and buries the job in one step), so the scheduler no longer
  * needs to emit ORT_remove_job orders. */
 
-/****** sge_orders/sge_join_orders() ******************************************
-*  NAME
-*     sge_join_orders() -- generates one order list from the order structure 
-*
-*  SYNOPSIS
-*     lLlist* sge_join_orders(order_t orders) 
-*
-*  FUNCTION
-*      generates one order list from the order structure, and cleans the
-*      the order structure. The orders, which have been send already, are
-*      removed.
-*
-*  INPUTS
-*     order_t orders - the order strucutre
-*
-*  RESULT
-*     lLlist* - a order list
-*
-*  NOTES
-*     MT-NOTE: sge_join_orders() is not  safe 
-*
-*******************************************************************************/
+/**
+ * @brief Generates one order list from the order structure
+ *
+ *  generates one order list from the order structure, and cleans the
+ *  the order structure. The orders, which have been send already, are
+ *  removed.
+ *
+ * @param orders the order strucutre
+ *
+ * @return a order list
+ *
+ * @note MT-NOTE: sge_join_orders() is not  safe
+ */
 lList *sge_join_orders(order_t *orders){
       lList *orderlist=nullptr;
    
@@ -426,26 +406,17 @@ lList *sge_join_orders(order_t *orders){
 }
 
 
-/****** sge_orders/sge_GetNumberOfOrders() *************************************
-*  NAME
-*     sge_GetNumberOfOrders() -- returns the number of orders generated
-*
-*  SYNOPSIS
-*     int sge_GetNumberOfOrders(order_t *orders) 
-*
-*  FUNCTION
-*     returns the number of orders generated
-*
-*  INPUTS
-*     order_t *orders - a structure of orders
-*
-*  RESULT
-*     int - number of orders in the structure
-*
-*  NOTES
-*     MT-NOTE: sge_GetNumberOfOrders() is  MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Returns the number of orders generated
+ *
+ * returns the number of orders generated
+ *
+ * @param orders a structure of orders
+ *
+ * @return number of orders in the structure
+ *
+ * @note MT-NOTE: sge_GetNumberOfOrders() is  MT safe
+ */
 int sge_GetNumberOfOrders(order_t *orders) {
    int count = 0;
 

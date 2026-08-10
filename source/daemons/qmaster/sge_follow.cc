@@ -33,6 +33,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Following the scheduler's orders and booking the usage they imply
+ */
 #include <cstring>
 #include <pthread.h>
 
@@ -80,18 +84,29 @@
 
 #include <ocs_gdi_ClientServerBase.h>
 
+/** @brief Whether the share tree should be spooled on this pass
+ *
+ * Decided once per interval and then reused, so that a burst of orders in the
+ * same interval does not each trigger a spool write.
+ */
 typedef enum {
-   NOT_DEFINED = 0,
-   DO_SPOOL,
-   DONOT_SPOOL
+   NOT_DEFINED = 0,   ///< Not yet decided for the current interval
+   DO_SPOOL,          ///< Spool the share tree on this pass
+   DONOT_SPOOL        ///< Leave it; the interval has not elapsed
 } spool_type;
 
+/** @brief What the order-following code remembers between orders
+ *
+ * The scheduler sends its decisions as a list of orders, and following them
+ * updates the share tree usage. Spooling that on every order would be far too
+ * expensive, so the decision is cached here for the length of an interval.
+ */
 typedef struct {
-   pthread_mutex_t last_update_mutex; /* guards the last_update access */
-   uint64_t next_update;               /* used to store the last time, when the usage was stored */
-   spool_type is_spooling;             /* identifies, if spooling should happen */
-   uint64_t now;                       /* stores the time of the last spool computation */
-   order_pos_t *cull_order_pos;        /* stores cull positions in the job, ja-task, and order structure */
+   pthread_mutex_t last_update_mutex; ///< guards the last_update access
+   uint64_t next_update;               ///< used to store the last time, when the usage was stored
+   spool_type is_spooling;             ///< identifies, if spooling should happen
+   uint64_t now;                       ///< stores the time of the last spool computation
+   order_pos_t *cull_order_pos;        ///< stores cull positions in the job, ja-task, and order structure
 } sge_follow_t;
 
 
@@ -147,6 +162,10 @@ set_next_stree_spooling_time() {
 /** @brief returns true if the scheduler should spool stree/prj/user objects
  *
  *  This function checks if the scheduler should spool.
+ *
+ * @return true if this call is the one that has to spool; false if the
+ *         spool interval has not elapsed, or another thread already took
+ *         the decision for this round
  */
 bool
 do_stree_spooling() {
@@ -1327,6 +1346,16 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
 /*
  * MT-NOTE: distribute_ticket_orders() is NOT MT safe
+ */
+/** @brief Send the scheduler's ticket decisions on to the execution hosts
+ *
+ * Tickets are what the priority translation facility on each host turns into
+ * nice values, so an order that never arrives leaves that host scheduling on
+ * stale entitlement.
+ *
+ * @param ticket_orders the orders to distribute
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
  */
 int distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor) {
    DENTER(TOP_LAYER);

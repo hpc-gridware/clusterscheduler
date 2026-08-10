@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The accounting file in JSON form
+ */
+
 #include "sgeobj/ocs_Category.h"
 #include "sgeobj/ocs_DataStore.h"
 

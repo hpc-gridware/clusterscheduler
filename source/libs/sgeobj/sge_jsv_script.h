@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
+/** @file
+ * @brief Declarations for talking to a job submission verifier script
+ *
+ * @see sge_jsv_script.cc
+ */
+
 #include "sgeobj/cull/sge_jsv_JSV_L.h"
 
 bool

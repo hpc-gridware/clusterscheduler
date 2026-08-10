@@ -19,6 +19,12 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Declarations for the resources a scheduling decision granted
+ *
+ * @see sge_grantedres.cc
+ */
+
 #include <string>
 
 #include "sgeobj/cull/sge_grantedres_GRU_L.h"

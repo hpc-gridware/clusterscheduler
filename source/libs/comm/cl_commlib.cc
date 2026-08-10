@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The commlib's public interface
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -66,10 +70,18 @@
 
 /* enable more commlib logging by definening CL_DO_COMMLIB_DEBUG at compile time */
 
-/* the next switch is used to send ack for messages when they arive
-   at commlib layer or when application removes them from commlib */
+/** @def CL_DO_SEND_ACK_AT_COMMLIB_LAYER
+ * @brief Acknowledge a message on arrival rather than on delivery
+ *
+ * Defined: the commlib acknowledges as soon as it has the message. Not
+ * defined: it waits until the application takes the message out.
+ *
+ * The difference is what an acknowledgement means to the sender - "it
+ * arrived" or "it was picked up". Only `CL_MIH_MAT_SYNC` promises the latter
+ * regardless.
+ */
 #if 1
-#define CL_DO_SEND_ACK_AT_COMMLIB_LAYER /* send ack when message arives */
+#define CL_DO_SEND_ACK_AT_COMMLIB_LAYER
 #endif
 
 static void cl_thread_read_write_thread_cleanup_function(cl_thread_settings_t *thread_config);
@@ -232,19 +244,19 @@ static pthread_mutex_t cl_com_external_fd_list_setup_mutex = PTHREAD_MUTEX_INITI
 
 /* this is the offical commlib boolean parameter setup
    TODO: merge all global settings into this structure */
+/** @brief The commlib's process wide settings
+ *
+ * @todo All global settings should be merged into this structure; most still
+ *       live in file scope variables beside it.
+ */
 typedef struct cl_com_global_settings_def {
-   bool delayed_listen;
+   bool delayed_listen;   ///< Do not accept connections until the application says it is ready
 } cl_com_global_settings_t;
 
-/*
- * This is a thread data struct used for the read and
- * the write thread. When the threads are started they
- * get a pointer to the communication handle and the
- * poll_handle when poll() is enabled.
- */
+/** @brief What the read and write threads are handed at startup */
 typedef struct cl_com_thread_data_def {
-   cl_com_handle_t *handle;
-   cl_com_poll_t *poll_handle;
+   cl_com_handle_t *handle;      ///< The handle the thread works for
+   cl_com_poll_t *poll_handle;   ///< The `poll()` arrays, when polling is enabled
 } cl_com_thread_data_t;
 
 static pthread_mutex_t cl_com_global_settings_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -282,6 +294,9 @@ static int cl_message_list_remove_receive(cl_com_connection_t *c, cl_com_message
    return cl_message_list_remove_message(c->received_message_list, m, l);
 }
 
+/** @brief The host name cache
+ * @return the list of #cl_com_host_spec_t, or nullptr before setup
+ */
 cl_raw_list_t *cl_com_get_host_list() {
    cl_raw_list_t *host_list = nullptr;
    pthread_mutex_lock(&cl_com_host_list_mutex);
@@ -290,6 +305,9 @@ cl_raw_list_t *cl_com_get_host_list() {
    return host_list;
 }
 
+/** @brief The endpoints the commlib knows about
+ * @return the list, or nullptr before setup
+ */
 cl_raw_list_t *cl_com_get_endpoint_list() {
    cl_raw_list_t *endpoint_list = nullptr;
    pthread_mutex_lock(&cl_com_endpoint_list_mutex);
@@ -298,6 +316,9 @@ cl_raw_list_t *cl_com_get_endpoint_list() {
    return endpoint_list;
 }
 
+/** @brief The commlib's log message queue
+ * @return the list, or nullptr before setup
+ */
 cl_raw_list_t *cl_com_get_log_list() {
    cl_raw_list_t *log_list = nullptr;
    pthread_mutex_lock(&cl_com_log_list_mutex);
@@ -306,6 +327,10 @@ cl_raw_list_t *cl_com_get_log_list() {
    return log_list;
 }
 
+/** @brief Register the hook answering a SIM, i.e. `qping -info`
+ * @param status_func the hook, or nullptr to unregister
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_set_status_func(cl_app_status_func_t status_func) {
    pthread_mutex_lock(&cl_com_application_mutex);
    cl_com_application_status_func = *status_func;
@@ -313,6 +338,11 @@ int cl_com_set_status_func(cl_app_status_func_t status_func) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Read one commlib parameter
+ * @param parameter the name
+ * @param value receives the value; the caller frees it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_get_parameter_list_value(const char *parameter, char **value) {
    cl_parameter_list_elem_t *elem = nullptr;
    int retval = CL_RETVAL_UNKNOWN_PARAMETER;
@@ -342,6 +372,10 @@ int cl_com_get_parameter_list_value(const char *parameter, char **value) {
    return retval;
 }
 
+/** @brief All parameters as one `name=value,...` string
+ * @param param_string receives the string; the caller frees it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_get_parameter_list_string(char **param_string) {
    int retval = CL_RETVAL_UNKNOWN_PARAMETER;
 
@@ -355,6 +389,11 @@ int cl_com_get_parameter_list_string(char **param_string) {
    return retval;
 }
 
+/** @brief Set one commlib parameter
+ * @param parameter the name
+ * @param value the value
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_set_parameter_list_value(const char *parameter, const char *value) {
    cl_parameter_list_elem_t *elem = nullptr;
    int retval = CL_RETVAL_UNKNOWN_PARAMETER;
@@ -390,6 +429,10 @@ int cl_com_set_parameter_list_value(const char *parameter, const char *value) {
    return retval;
 }
 
+/** @brief Forget one commlib parameter
+ * @param parameter the name
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_remove_parameter_list_value(const char *parameter) {
    int retval = CL_RETVAL_OK;
    pthread_mutex_lock(&cl_com_parameter_list_mutex);
@@ -398,6 +441,10 @@ int cl_com_remove_parameter_list_value(const char *parameter) {
    return retval;
 }
 
+/** @brief Apply a whole `name=value,...` parameter string at once
+ * @param parameter the string
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_update_parameter_list(char *parameter) {
    int retval = CL_RETVAL_OK;
    const char *param_token = nullptr;
@@ -448,6 +495,10 @@ int cl_com_update_parameter_list(char *parameter) {
     CL_RETVAL_UNKNOWN:             when CRM contains unexpected error
     CL_RETVAL_ACCESS_DENIED:       when CRM says that access to service is denied
     CL_CRM_CS_ENDPOINT_NOT_UNIQUE: when CRM says that there is already an endpoint with this id connected */
+/** @brief Register the hook taking queued commlib errors
+ * @param error_func the hook, or nullptr to unregister
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_set_error_func(cl_error_func_t error_func) {
    pthread_mutex_lock(&cl_com_error_mutex);
    cl_com_error_status_func = *error_func;
@@ -455,6 +506,10 @@ int cl_com_set_error_func(cl_error_func_t error_func) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Register the hook naming message tags for debug clients
+ * @param tag_name_func the hook, or nullptr to unregister
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_set_tag_name_func(cl_tag_name_func_t tag_name_func) {
    pthread_mutex_lock(&cl_com_tag_name_mutex);
    cl_com_tag_name_func = *tag_name_func;
@@ -462,6 +517,10 @@ int cl_com_set_tag_name_func(cl_tag_name_func_t tag_name_func) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Copy the registered hooks onto a new connection
+ * @param connection the connection
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_setup_callback_functions(cl_com_connection_t *connection) {
    if (connection == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -480,6 +539,16 @@ int cl_com_setup_callback_functions(cl_com_connection_t *connection) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Queue an error for the application to pick up
+ *
+ * The commlib cannot write to the application's log, so it queues errors and
+ * the application drains them - see #cl_application_error_list_elem_t.
+ *
+ * @param cl_err_type the level
+ * @param cl_error the `CL_RETVAL_*` code
+ * @param cl_info_text additional text, may be nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_commlib_push_application_error(cl_log_t cl_err_type, int cl_error, const char *cl_info_text) {
    const char *cl_info = cl_info_text;
    int retval = CL_RETVAL_OK;
@@ -561,27 +630,21 @@ static int cl_commlib_check_callback_functions() {
 }
 
 
-/****** cl_commlib/cl_com_setup_commlib_complete() *****************************
-*  NAME
-*     cl_com_setup_commlib_complete() -- check whether commlib setup was called
-*
-*  SYNOPSIS
-*     bool cl_com_setup_commlib_complete()
-*
-*  FUNCTION
-*     This function returns true when cl_com_setup_commlib() was called
-*     at least one time.
-*
-*  RESULT
-*     bool - true:  cl_com_setup_commlib() was done
-*                 false: There was no commlib setup till now
-*
-*  NOTES
-*     MT-NOTE: cl_com_setup_commlib_complete() is MT safe
-*
-*  SEE ALSO
-*     cl_commlib/cl_com_setup_commlib()
-*******************************************************************************/
+/**
+ * @brief Check whether commlib setup was called
+ *
+ * This function returns true when cl_com_setup_commlib() was called
+ * at least one time.
+ *
+ * @return true:  cl_com_setup_commlib() was done false: There was no commlib setup till now
+ *
+ * @note MT-NOTE: cl_com_setup_commlib_complete() is MT safe
+ *
+ * @see #cl_com_setup_commlib
+ */
+/** @brief Has #cl_com_setup_commlib finished?
+ * @return true when the commlib is ready for handles
+ */
 bool cl_com_setup_commlib_complete() {
    bool setup_complete = false;
 
@@ -597,14 +660,28 @@ bool cl_com_setup_commlib_complete() {
  * because the memory is malloced in cl_com_setup_commlib()
  * and freed in cl_com_cleanup_commlib()
  */
+/** @brief The hosts the cache resolved successfully
+ * @return a printable list; the caller frees it
+ */
 char *cl_com_get_resolvable_hosts() {
    return cl_commlib_debug_resolvable_hosts;
 }
 
+/** @brief The hosts the cache failed to resolve
+ *
+ * Failures are cached too, so that a host which does not resolve is not
+ * looked up again on every attempt - this is how to see them.
+ *
+ * @return a printable list; the caller frees it
+ */
 char *cl_com_get_unresolvable_hosts() {
    return cl_commlib_debug_unresolvable_hosts;
 }
 
+/** @brief Is this descriptor usable?
+ * @param fd the descriptor
+ * @return true when it is open and below the process limit
+ */
 bool cl_com_is_valid_fd(int fd) {
 
    if (fd < 0) {
@@ -615,6 +692,13 @@ bool cl_com_is_valid_fd(int fd) {
    return true;
 }
 
+/** @brief Start the commlib, once per process
+ *
+ * @param t_mode      whether the commlib runs threads of its own
+ * @param debug_level how much to log
+ * @param flush_func  the application's log writer, may be nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_setup_commlib(cl_thread_mode_t t_mode, cl_log_t debug_level, cl_log_func_t flush_func) {
    int ret_val = CL_RETVAL_OK;
    cl_thread_settings_t *thread_p = nullptr;
@@ -795,6 +879,9 @@ int cl_com_setup_commlib(cl_thread_mode_t t_mode, cl_log_t debug_level, cl_log_f
    return CL_RETVAL_OK;
 }
 
+/** @brief Shut the commlib down, once per process
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_cleanup_commlib() {
    int ret_val = CL_RETVAL_OK;
    cl_thread_settings_t *thread_p = nullptr;
@@ -896,6 +983,12 @@ int cl_com_cleanup_commlib() {
 }
 
 /*TODO check this function , check locking */
+/** @brief Set one of a handle's timeouts by number
+ * @param handle the handle
+ * @param parameter which timeout
+ * @param value the value
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_commlib_set_connection_param(cl_com_handle_t *handle, int parameter, int value) {
    if (handle != nullptr) {
       switch (parameter) {
@@ -911,6 +1004,12 @@ int cl_commlib_set_connection_param(cl_com_handle_t *handle, int parameter, int 
 }
 
 /*TODO check this function  , check locking*/
+/** @brief Read one of a handle's timeouts by number
+ * @param handle the handle
+ * @param parameter which timeout
+ * @param value receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_commlib_get_connection_param(cl_com_handle_t *handle, int parameter, int *value) {
    if (handle != nullptr) {
       switch (parameter) {
@@ -922,6 +1021,11 @@ int cl_commlib_get_connection_param(cl_com_handle_t *handle, int parameter, int 
    return CL_RETVAL_OK;
 }
 
+/** @brief Set a process wide commlib switch
+ * @param parameter which switch
+ * @param value the value
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_commlib_set_global_param(cl_global_settings_params_t parameter, bool value) {
    pthread_mutex_lock(&cl_com_global_settings_mutex);
    switch (parameter) {
@@ -934,6 +1038,10 @@ int cl_commlib_set_global_param(cl_global_settings_params_t parameter, bool valu
    return CL_RETVAL_OK;
 }
 
+/** @brief Read a process wide commlib switch
+ * @param parameter which switch
+ * @return its value
+ */
 bool cl_commlib_get_global_param(cl_global_settings_params_t parameter) {
    bool retval = false;
    pthread_mutex_lock(&cl_com_global_settings_mutex);
@@ -947,6 +1055,10 @@ bool cl_commlib_get_global_param(cl_global_settings_params_t parameter) {
    return retval;
 }
 
+/** @brief Install the process wide SSL configuration
+ * @param new_config the certificates and keys
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_specify_ssl_configuration(cl_ssl_setup_t *new_config) {
    int ret_val = CL_RETVAL_OK;
 
@@ -966,6 +1078,10 @@ int cl_com_specify_ssl_configuration(cl_ssl_setup_t *new_config) {
    return ret_val;
 }
 
+/** @brief Replace the process wide SSL configuration
+ * @param new_config the new certificates and keys
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_update_ssl_configuration(cl_ssl_setup_t *new_config) {
    int ret_val = CL_RETVAL_OK;
 
@@ -989,6 +1105,21 @@ int cl_com_update_ssl_configuration(cl_ssl_setup_t *new_config) {
    return ret_val;
 }
 
+/** @brief Create a participant
+ *
+ * @param commlib_error      receives the `CL_RETVAL_*` code, may be nullptr
+ * @param framework          transport to use
+ * @param data_flow_type     stream or message oriented
+ * @param service_provider   true to listen for clients
+ * @param handle_port        the port to listen on, or to connect to
+ * @param tcp_connect_mode   whether outgoing connects use a reserved port
+ * @param component_name     our own name, e.g. `"qmaster"`
+ * @param component_id       our own id
+ * @param select_sec_timeout how long one `poll()` waits
+ * @param select_usec_timeout microseconds added to that
+ *
+ * @return the new handle, or nullptr - in which case `commlib_error` says why
+ */
 cl_com_handle_t *cl_com_create_handle(int *commlib_error,
                                       cl_framework_t framework,
                                       cl_xml_connection_type_t data_flow_type,
@@ -1783,6 +1914,10 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
 }
 
 #if defined(OCS_WITH_OPENSSL)
+/** @brief Has this handle's client context been renewed since last asked?
+ * @param handle the handle
+ * @return true when it was renewed
+ */
 bool cl_commlib_handle_ssl_client_context_refreshed(cl_com_handle_t *handle) {
    bool ret = false;
 
@@ -1793,6 +1928,10 @@ bool cl_commlib_handle_ssl_client_context_refreshed(cl_com_handle_t *handle) {
    return ret;
 }
 
+/** @brief Rebuild this handle's SSL client context from the current configuration
+ * @param handle the handle
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_commlib_handle_update_ssl_client_context(cl_com_handle_t *handle) {
    int return_value = CL_RETVAL_OK;
 
@@ -1822,6 +1961,14 @@ int cl_commlib_handle_update_ssl_client_context(cl_com_handle_t *handle) {
 #endif
 
 static bool debug_commlib_shutdown = getenv("SGE_DEBUG_COMMLIB_SHUTDOWN") != nullptr;
+/** @brief Shut a handle down and release it
+ *
+ * @param handle the handle
+ * @param return_for_messages return #CL_RETVAL_MESSAGE_IN_BUFFER instead of
+ *        shutting down when messages are still unread, so the application can
+ *        drain them first
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages) {
    cl_thread_settings_t *thread_settings = nullptr;
    struct timeval now;
@@ -2190,6 +2337,11 @@ int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages
    return ret_val;
 }
 
+/** @brief Create a connection object for this handle's framework
+ * @param handle the handle
+ * @param connection receives the new connection
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_setup_connection(cl_com_handle_t *handle, cl_com_connection_t **connection) {
    int ret_val = CL_RETVAL_HANDLE_NOT_FOUND;
    if (handle != nullptr) {
@@ -2227,6 +2379,11 @@ int cl_com_setup_connection(cl_com_handle_t *handle, cl_com_connection_t **conne
    return ret_val;
 }
 
+/** @brief Whether connections this handle opens may be closed by the service
+ * @param handle the handle
+ * @param mode the setting
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_set_auto_close_mode(cl_com_handle_t *handle, cl_xml_connection_autoclose_t mode) {
    if (handle == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -2245,6 +2402,11 @@ int cl_com_set_auto_close_mode(cl_com_handle_t *handle, cl_xml_connection_autocl
    return CL_RETVAL_OK;
 }
 
+/** @brief Read that setting
+ * @param handle the handle
+ * @param mode receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_get_auto_close_mode(cl_com_handle_t *handle, cl_xml_connection_autoclose_t *mode) {
    if (handle == nullptr || mode == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -2253,6 +2415,11 @@ int cl_com_get_auto_close_mode(cl_com_handle_t *handle, cl_xml_connection_autocl
    return CL_RETVAL_OK;
 }
 
+/** @brief What to do when the connection limit is reached
+ * @param handle the handle
+ * @param mode the behaviour
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_set_max_connection_close_mode(cl_com_handle_t *handle, cl_max_count_t mode) {
 
    if (handle == nullptr) {
@@ -2263,6 +2430,11 @@ int cl_com_set_max_connection_close_mode(cl_com_handle_t *handle, cl_max_count_t
    return CL_RETVAL_OK;
 }
 
+/** @brief Read that behaviour
+ * @param handle the handle
+ * @param mode receives it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_get_max_connection_close_mode(cl_com_handle_t *handle, cl_max_count_t *mode) {
    if (handle == nullptr || mode == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -2271,6 +2443,11 @@ int cl_com_get_max_connection_close_mode(cl_com_handle_t *handle, cl_max_count_t
    return CL_RETVAL_OK;
 }
 
+/** @brief How many connections this handle accepts at once
+ * @param handle the handle
+ * @param value the limit
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_set_max_connections(cl_com_handle_t *handle, unsigned long value) {
    if (handle == nullptr || value < 1 || handle->connection_list == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -2286,6 +2463,11 @@ int cl_com_set_max_connections(cl_com_handle_t *handle, unsigned long value) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Read the connection limit
+ * @param handle the handle
+ * @param value receives the limit
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_get_max_connections(cl_com_handle_t *handle, unsigned long *value) {
    if (handle == nullptr || value == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -2295,6 +2477,11 @@ int cl_com_get_max_connections(cl_com_handle_t *handle, unsigned long *value) {
    return CL_RETVAL_OK;
 }
 
+/** @brief Find an existing handle by the name it was created under
+ * @param component_name the name
+ * @param component_id the id; 0 matches the first handle of that name
+ * @return the handle, or nullptr
+ */
 cl_com_handle_t *cl_com_get_handle(const char *component_name, unsigned long component_id) {
    cl_handle_list_elem_t *elem = nullptr;
    cl_com_handle_t *ret_handle = nullptr;
@@ -2349,10 +2536,17 @@ cl_com_handle_t *cl_com_get_handle(const char *component_name, unsigned long com
    return ret_handle;
 }
 
+/** @brief Which thread mode the commlib was set up in
+ * @return the mode passed to #cl_com_setup_commlib
+ */
 cl_thread_mode_t cl_commlib_get_thread_state() {
    return cl_com_create_threads;
 }
 
+/** @brief Point the commlib at a host alias file
+ * @param alias_file path to the file
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_set_alias_file(const char *alias_file) {
    int ret_val = CL_RETVAL_NO_FRAMEWORK_INIT;
 
@@ -2367,6 +2561,9 @@ int cl_com_set_alias_file(const char *alias_file) {
    return ret_val;
 }
 
+/** @brief Force the alias file to be read again on next use
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_set_alias_file_dirty() {
    int ret_val = CL_RETVAL_NO_FRAMEWORK_INIT;
 
@@ -2378,6 +2575,11 @@ int cl_com_set_alias_file_dirty() {
 
 }
 
+/** @brief Add one host alias
+ * @param local_resolved_name the name this host really has
+ * @param alias_name the name to accept for it as well
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_append_host_alias(char *local_resolved_name, char *alias_name) {
    int ret_val = CL_RETVAL_OK;
    cl_host_list_data_t *ldata = nullptr;
@@ -2399,6 +2601,10 @@ int cl_com_append_host_alias(char *local_resolved_name, char *alias_name) {
    return ret_val;
 }
 
+/** @brief Remove one host alias
+ * @param alias_name the alias
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_remove_host_alias(char *alias_name) {
    int ret_val = CL_RETVAL_OK;
    cl_host_list_data_t *ldata = nullptr;
@@ -2433,6 +2639,15 @@ int cl_com_remove_host_alias(char *alias_name) {
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief Record where a component can be reached, naming it by parts
+ * @param unresolved_comp_host host of the endpoint, as written by the caller
+ * @param comp_name name of the endpoint's component
+ * @param comp_id id of the endpoint's component
+ * @param comp_port the port it listens on
+ * @param autoclose whether its connections may be closed to make room
+ * @param is_static true for an entry that must not be forgotten again
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int
 cl_com_append_known_endpoint_from_name(char *unresolved_comp_host,
                                        const char *comp_name,
@@ -2469,25 +2684,52 @@ cl_com_append_known_endpoint_from_name(char *unresolved_comp_host,
    return retval;
 }
 
+/** @brief Record where a component can be reached
+ * @param endpoint the endpoint
+ * @param service_port the port it listens on
+ * @param autoclose whether its connections may be closed to make room
+ * @param is_static true for an entry that must not be forgotten again
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_append_known_endpoint(cl_com_endpoint_t *endpoint, int service_port, cl_xml_connection_autoclose_t autoclose,
                                  bool is_static) {
    return cl_endpoint_list_define_endpoint(cl_com_get_endpoint_list(), endpoint, service_port, autoclose, is_static);
 }
 
+/** @brief Forget a recorded endpoint
+ * @param endpoint the endpoint
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_remove_known_endpoint(cl_com_endpoint_t *endpoint) {
    return cl_endpoint_list_undefine_endpoint(cl_com_get_endpoint_list(), endpoint);
 }
 
+/** @brief The recorded autoclose mode of an endpoint
+ * @param endpoint the endpoint
+ * @param auto_close_mode receives the mode
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int
 cl_com_get_known_endpoint_autoclose_mode(cl_com_endpoint_t *endpoint, cl_xml_connection_autoclose_t *auto_close_mode) {
    return cl_endpoint_list_get_autoclose_mode(cl_com_get_endpoint_list(), endpoint, auto_close_mode);
 
 }
 
+/** @brief The recorded port of an endpoint
+ * @param endpoint the endpoint
+ * @param service_port receives the port
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_get_known_endpoint_port(cl_com_endpoint_t *endpoint, int *service_port) {
    return cl_endpoint_list_get_service_port(cl_com_get_endpoint_list(), endpoint, service_port);
 }
 
+/** @brief Forget a recorded endpoint, naming it by parts
+ * @param unresolved_comp_host host of the endpoint, as written by the caller
+ * @param comp_name name of the endpoint's component
+ * @param comp_id id of the endpoint's component
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int
 cl_com_remove_known_endpoint_from_name(const char *unresolved_comp_host, const char *comp_name, unsigned long comp_id) {
    int ret_val = CL_RETVAL_PARAMS;
@@ -2520,6 +2762,13 @@ cl_com_remove_known_endpoint_from_name(const char *unresolved_comp_host, const c
    return ret_val;
 }
 
+/** @brief The recorded autoclose mode of a component, naming it by parts
+ * @param unresolved_comp_host host of the endpoint, as written by the caller
+ * @param comp_name name of the endpoint's component
+ * @param comp_id id of the endpoint's component
+ * @param auto_close_mode receives the mode
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int
 cl_com_get_known_endpoint_autoclose_mode_from_name(char *unresolved_comp_host, const char *comp_name, unsigned long comp_id,
                                                    cl_xml_connection_autoclose_t *auto_close_mode) {
@@ -2553,6 +2802,13 @@ cl_com_get_known_endpoint_autoclose_mode_from_name(char *unresolved_comp_host, c
    return retval;
 }
 
+/** @brief The recorded port of a component, naming it by parts
+ * @param unresolved_comp_host host of the endpoint, as written by the caller
+ * @param comp_name name of the endpoint's component
+ * @param comp_id id of the endpoint's component
+ * @param service_port receives the port
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_get_known_endpoint_port_from_name(char *unresolved_comp_host, const char *comp_name, unsigned long comp_id,
                                              int *service_port) {
    int retval = CL_RETVAL_OK;
@@ -2585,6 +2841,12 @@ int cl_com_get_known_endpoint_port_from_name(char *unresolved_comp_host, const c
    return retval;
 }
 
+/** @brief The descriptors this handle is using
+ * @param handle the handle
+ * @param fdArrayBack receives the array; the caller frees it
+ * @param fdCountBack receives how many
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_set_handle_fds(cl_com_handle_t *handle, int **fdArrayBack, unsigned long *fdCountBack) {
    int fd = -1;
    int handle_fd = -1;
@@ -2672,6 +2934,11 @@ int cl_com_set_handle_fds(cl_com_handle_t *handle, int **fdArrayBack, unsigned l
    return ret_val;
 }
 
+/** @brief The port this handle listens on
+ * @param handle the handle
+ * @param port receives the port, 0 when this is not a service
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_get_service_port(cl_com_handle_t *handle, int *port) {
    if (handle == nullptr || port == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -2691,6 +2958,11 @@ int cl_com_get_service_port(cl_com_handle_t *handle, int *port) {
    return cl_com_connection_get_service_port(handle->service_handler, port);
 }
 
+/** @brief How long a synchronous receive waits
+ * @param handle the handle
+ * @param timeout seconds
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_set_synchron_receive_timeout(cl_com_handle_t *handle, int timeout) {
    if (handle == nullptr || timeout <= 0) {
       CL_LOG(CL_LOG_ERROR, "error setting synchron receive timeout");
@@ -2701,6 +2973,11 @@ int cl_com_set_synchron_receive_timeout(cl_com_handle_t *handle, int timeout) {
    return CL_RETVAL_OK;
 }
 
+/** @brief The port this handle connects to
+ * @param handle the handle
+ * @param port receives the port, 0 when this is a service
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_get_connect_port(cl_com_handle_t *handle, int *port) {
    if (handle == nullptr || port == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -2714,6 +2991,15 @@ int cl_com_get_connect_port(cl_com_handle_t *handle, int *port) {
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief Allow a host to connect to this service
+ *
+ * While the list is empty every host may connect; the first entry turns it
+ * into a whitelist.
+ *
+ * @param handle the handle
+ * @param hostname the host to allow
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_add_allowed_host(cl_com_handle_t *handle, char *hostname) {
    int retval = CL_RETVAL_OK;
    char *resolved_name = nullptr;
@@ -2741,6 +3027,11 @@ int cl_com_add_allowed_host(cl_com_handle_t *handle, char *hostname) {
    return retval;
 }
 
+/** @brief Take a host off the whitelist
+ * @param handle the handle
+ * @param hostname the host
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_remove_allowed_host(cl_com_handle_t *handle, char *hostname) {
    if (handle == nullptr) {
       CL_LOG(CL_LOG_ERROR, "no handle specified");
@@ -2753,6 +3044,16 @@ int cl_com_remove_allowed_host(cl_com_handle_t *handle, char *hostname) {
    return cl_string_list_remove_string(handle->allowed_host_list, hostname, 1);
 }
 
+/** @brief Let the commlib do its work
+ *
+ * In #CL_NO_THREAD mode this is the only thing that moves data - it has to be
+ * called from the application's main loop. In #CL_RW_THREAD mode the commlib's
+ * own threads do the work and this only waits.
+ *
+ * @param handle the handle
+ * @param synchron block until something happens, rather than returning at once
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_commlib_trigger(cl_com_handle_t *handle, int synchron) {
 
    cl_commlib_check_callback_functions();
@@ -4208,6 +4509,11 @@ static int cl_commlib_handle_debug_clients(cl_com_handle_t *handle, bool lock_li
    return CL_RETVAL_OK;
 }
 
+/** @brief The handle's current counters
+ * @param handle the handle
+ * @param statistics receives them
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_get_actual_statistic_data(cl_com_handle_t *handle, cl_com_handle_statistic_t **statistics) {
    int ret_val = CL_RETVAL_OK;
    if (handle == nullptr || statistics == nullptr || *statistics != nullptr) {
@@ -4268,6 +4574,18 @@ static int cl_commlib_external_fd_unregister(cl_com_handle_t *handle, int fd, in
    return ret_val;
 }
 
+/** @brief Put an application descriptor into the commlib's `poll()`
+ *
+ * Saves the application from running a second event loop beside the
+ * commlib's.
+ *
+ * @param handle the handle
+ * @param fd the descriptor
+ * @param callback called when it becomes ready
+ * @param mode what to watch it for
+ * @param user_data passed back to the callback
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_external_fd_register(cl_com_handle_t *handle,
                                 int fd,
                                 cl_fd_func_t callback,
@@ -4337,10 +4655,20 @@ int cl_com_external_fd_register(cl_com_handle_t *handle,
    return ret_val;
 }
 
+/** @brief Take an application descriptor back out
+ * @param handle the handle
+ * @param fd the descriptor
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_external_fd_unregister(cl_com_handle_t *handle, int fd) {
    return cl_commlib_external_fd_unregister(handle, fd, 1);
 }
 
+/** @brief Tell the commlib the application has something to write on a descriptor
+ * @param handle the handle
+ * @param fd the descriptor
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_external_fd_set_write_ready(cl_com_handle_t *handle, int fd) {
    int ret_val = CL_RETVAL_PARAMS;
    cl_fd_list_elem_t *elem = nullptr;
@@ -4367,6 +4695,10 @@ int cl_com_external_fd_set_write_ready(cl_com_handle_t *handle, int fd) {
    return ret_val;
 }
 
+/** @brief Register the hook told when a debug client attaches or detaches
+ * @param debug_client_callback_func the hook, or nullptr to unregister
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_set_application_debug_client_callback_func(cl_app_debug_client_func_t debug_client_callback_func) {
    pthread_mutex_lock(&cl_com_debug_client_callback_func_mutex);
    cl_com_debug_client_callback_func = *debug_client_callback_func;
@@ -4384,6 +4716,21 @@ static void cl_com_default_application_debug_client_callback(int dc_connected, i
    CL_LOG_INT(CL_LOG_INFO, "debug level is:", debug_level);
 }
 
+/** @def CL_DEBUG_DMT_APP_MESSAGE_FORMAT_STRING
+ * @brief Line format of an application message in the debug client stream
+ *
+ * Tag, timestamp and text, tab separated - `qping -dump` parses this.
+ *
+ * @note Defined inside the body of #cl_com_application_debug, which is why it
+ *       is documented here at file scope: doxygen lists it as a file macro but
+ *       takes no comment placed next to it.
+ */
+
+/** @brief Send a line of the application's own to attached debug clients
+ * @param handle the handle
+ * @param message the line
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_com_application_debug(cl_com_handle_t *handle, const char *message) {
 #define CL_DEBUG_DMT_APP_MESSAGE_FORMAT_STRING "%lu\t%.6f\t%s\n"
    int ret_val = CL_RETVAL_OK;
@@ -4447,6 +4794,16 @@ int cl_com_application_debug(cl_com_handle_t *handle, const char *message) {
 }
 
 #if defined(OCS_WITH_OPENSSL)
+/** @brief Renew the server context if its certificate changed on disk
+ *
+ * Lets a long running service pick up a replaced certificate without a
+ * restart.
+ *
+ * @param handle the handle
+ * @param was_renewed set true when the context was rebuilt
+ * @param error_dstr receives the reason when it could not be
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_commlib_check_refresh_server_context(cl_com_handle_t *handle, bool &was_renewed, dstring *error_dstr) {
    DENTER(TOP_LAYER);
    int ret_val = CL_RETVAL_OK;
@@ -5087,6 +5444,23 @@ static int cl_commlib_handle_connection_write(cl_com_connection_t *connection) {
 
 
 /* receive message from host, component, component id from handle */
+/** @brief Take the next received message
+ *
+ * @param handle the handle
+ * @param un_resolved_hostname host of the peer, as written by the caller
+ * @param component_name name of the peer component, e.g. `"qmaster"`
+ * @param component_id id of the peer component
+ * @param synchron     wait for a message rather than returning at once
+ * @param response_mid take only the answer to this message id, or 0 for any
+ * @param message      receives the message; the caller frees it
+ * @param sender       receives who sent it, may be nullptr
+ *
+ * @return #CL_RETVAL_OK, #CL_RETVAL_NO_MESSAGE when nothing is waiting, else
+ *         a `CL_RETVAL_*` code
+ *
+ * @note The host and component parameters filter what is taken; leave them
+ *       empty to take from any peer.
+ */
 int cl_commlib_receive_message(cl_com_handle_t *handle,
                                char *un_resolved_hostname,
                                char *component_name,
@@ -5363,6 +5737,16 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
  *   o un_resolved_hostname, component_name and component_id can be nullptr or 0
  *   o caller must free returned endpoint list with cl_endpoint_list_cleanup()
  *
+ */
+/** @brief Find endpoints matching a pattern
+ *
+ * @param handle the handle
+ * @param un_resolved_hostname host of the peer, as written by the caller
+ * @param component_name name of the peer component, e.g. `"qmaster"`
+ * @param component_id id of the peer component
+ * @param only_connected skip endpoints that are merely known
+ * @param endpoint_list receives the matches; the caller frees the list
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
  */
 int cl_commlib_search_endpoint(cl_com_handle_t *handle,
                                char *un_resolved_hostname, char *component_name, unsigned long component_id,
@@ -5694,6 +6078,16 @@ static int cl_commlib_send_ccrm_message(cl_com_connection_t *connection) {
    CL_MIH_MAT_ACK  = send message and block till communication partner application has read the message
    CL_MIH_MAT_SYNC = send message and block till communication partner application has processed all message actions (TODO)
 */
+/** @brief Has a sent message been acknowledged?
+ *
+ * @param handle the handle
+ * @param un_resolved_hostname host of the peer, as written by the caller
+ * @param component_name name of the peer component, e.g. `"qmaster"`
+ * @param component_id id of the peer component
+ * @param mid      the message id
+ * @param do_block wait for the acknowledgement rather than reporting now
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_commlib_check_for_ack(cl_com_handle_t *handle, char *un_resolved_hostname, const char *component_name,
                              unsigned long component_id, unsigned long mid, bool do_block) {
    int found_message = 0;
@@ -5829,6 +6223,16 @@ int cl_commlib_check_for_ack(cl_com_handle_t *handle, char *un_resolved_hostname
    return CL_RETVAL_UNKNOWN;
 }
 
+/** @brief Open a connection to a peer up front
+ *
+ * Not normally needed - sending to a peer opens the connection on demand.
+ *
+ * @param handle the handle
+ * @param un_resolved_hostname host of the peer, as written by the caller
+ * @param component_name name of the peer component, e.g. `"qmaster"`
+ * @param component_id id of the peer component
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_commlib_open_connection(cl_com_handle_t *handle, const char *un_resolved_hostname, const char *component_name,
                                unsigned long component_id) {
 
@@ -6099,6 +6503,15 @@ int cl_commlib_open_connection(cl_com_handle_t *handle, const char *un_resolved_
    return ret_val;
 }
 
+/** @brief Close the connection to a peer
+ *
+ * @param handle the handle
+ * @param un_resolved_hostname host of the peer, as written by the caller
+ * @param component_name name of the peer component, e.g. `"qmaster"`
+ * @param component_id id of the peer component
+ * @param return_for_messages refuse to close while messages are unread
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_commlib_close_connection(cl_com_handle_t *handle, char *un_resolved_hostname, const char *component_name,
                                 unsigned long component_id, bool return_for_messages) {
    int closed = 0;
@@ -6294,6 +6707,17 @@ int cl_commlib_close_connection(cl_com_handle_t *handle, char *un_resolved_hostn
    return CL_RETVAL_CONNECTION_NOT_FOUND;
 }
 
+/** @brief Ask a peer how it is doing
+ *
+ * Sends a SIM and returns the SIRM - this is what `qping` does.
+ *
+ * @param handle the handle
+ * @param un_resolved_hostname host of the peer, as written by the caller
+ * @param component_name name of the peer component, e.g. `"qmaster"`
+ * @param component_id id of the peer component
+ * @param status receives the peer's answer; the caller frees it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_commlib_get_endpoint_status(cl_com_handle_t *handle, char *un_resolved_hostname,
                                    const char *component_name, unsigned long component_id,
                                    cl_com_SIRM_t **status) {
@@ -6745,6 +7169,28 @@ static int cl_commlib_append_message_to_connection(cl_com_handle_t *handle,
    return return_value;
 }
 
+/** @brief Send a message
+ *
+ * @param handle the handle
+ * @param un_resolved_hostname host of the peer, as written by the caller
+ * @param component_name name of the peer component, e.g. `"qmaster"`
+ * @param component_id id of the peer component
+ * @param ack_type    whether and when the peer acknowledges
+ * @param data        the payload; see the warning below
+ * @param size        its length
+ * @param mid         receives the id given to this message, may be nullptr
+ * @param response_mid the message id this one answers, or 0
+ * @param tag         the application's own tag, passed through untouched
+ * @param copy_data   copy the payload rather than taking it over
+ * @param wait_for_ack block until the acknowledgement arrives
+ *
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ *
+ * @warning With `copy_data` false the commlib **takes the buffer over** and
+ *          sets `*data` to nullptr. The caller must not use or free it
+ *          afterwards. With true the caller keeps its buffer and the commlib
+ *          copies.
+ */
 int cl_commlib_send_message(cl_com_handle_t *handle,
                             const char *un_resolved_hostname, const char *component_name, unsigned long component_id,
                             cl_xml_ack_type_t ack_type,
@@ -6903,6 +7349,14 @@ int cl_commlib_send_message(cl_com_handle_t *handle,
    return return_value;
 }
 
+/** @brief When anything last arrived from a peer
+ * @param handle the handle
+ * @param un_resolved_hostname host of the peer, as written by the caller
+ * @param component_name name of the peer component, e.g. `"qmaster"`
+ * @param component_id id of the peer component
+ * @param message_time receives the time
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_commlib_get_last_message_time(cl_com_handle_t *handle,
                                      const char *un_resolved_hostname, const char *component_name,
                                      unsigned long component_id,
@@ -6958,6 +7412,14 @@ int cl_commlib_get_last_message_time(cl_com_handle_t *handle,
    return return_value;
 }
 
+/** @brief When the connection to a peer was established
+ * @param handle the handle
+ * @param un_resolved_hostname host of the peer, as written by the caller
+ * @param component_name name of the peer component, e.g. `"qmaster"`
+ * @param component_id id of the peer component
+ * @param connect_time receives the time
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_commlib_get_connect_time(cl_com_handle_t *handle,
                                 const char *un_resolved_hostname, const char *component_name,
                                 unsigned long component_id,
@@ -7869,6 +8331,12 @@ static void *cl_com_handle_write_thread(void *t_conf) {
 }
 
 /* MT-NOTE: getuniquehostname() is MT safe */
+/** @brief Resolve a host name to the canonical name the cluster uses
+ * @param hostin the name to resolve
+ * @param hostout receives the canonical name
+ * @param refresh_aliases re-read the alias file first
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int getuniquehostname(const char *hostin, char *hostout, int refresh_aliases) {
    char *resolved_host = nullptr;
    int ret_val;
@@ -7961,34 +8429,22 @@ static void cl_commlib_app_message_queue_cleanup(cl_com_handle_t *handle) {
    }
 }
 
-/****** cl_commlib/cl_com_messages_in_send_queue() ****************************
-*  NAME
-*     cl_com_messages_in_send_queue() -- Returns the number of messages in the
-*                                        send queue of the communication library
-*
-*  SYNOPSIS
-*     unsigned long cl_com_messages_in_send_queue(cl_com_handle_t *handle)
-*
-*  FUNCTION
-*     Returns the number of messages in the send queue of the commlib
-*     library, i.e. the messages that were placed into the send queue
-*     using the cl_commlib_send_message() function but were not
-*     immediately sent.
-*
-*  INPUTS
-*     cl_com_handle_t *handle - Handle of the commlib instance.
-*
-*  RESULT
-*     unsigned long - Number of messages in send queue.
-*
-*  NOTES
-*     MT-NOTE: cl_com_messages_in_send_queue() is MT safe
-*     @todo It only returns the number of messages in the *first* connection.
-*           What if we have multiple connections?
-*
-*  SEE ALSO
-*     cl_commlib/cl_commlib_send_message
-*******************************************************************************/
+/**
+ * @brief Returns the number of messages in the
+ *
+ * Returns the number of messages in the send queue of the commlib
+ * library, i.e. the messages that were placed into the send queue
+ * using the cl_commlib_send_message() function but were not
+ * immediately sent.
+ *
+ * @param handle Handle of the commlib instance.
+ *
+ * @return Number of messages in send queue.
+ *
+ * @note MT-NOTE: cl_com_messages_in_send_queue() is MT safe
+ *       @todo It only returns the number of messages in the *first* connection.
+ *       What if we have multiple connections?
+ */
 unsigned long cl_com_messages_in_send_queue(cl_com_handle_t *handle) {
    cl_connection_list_elem_t *con_elem = nullptr;
    unsigned long elems = 0;

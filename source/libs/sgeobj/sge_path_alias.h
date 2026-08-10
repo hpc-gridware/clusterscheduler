@@ -33,11 +33,19 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for path aliases: rewriting paths that differ between hosts
+ *
+ * @see sge_path_alias.cc
+ */
+
 #include "uti/sge_dstring.h"
 
 #include "sgeobj/cull/sge_path_alias_PA_L.h"
 
+/// The cluster wide path alias file, below the cell directory
 #define PATH_ALIAS_COMMON_FILE    "common/sge_aliases"
+/// The per user path alias file, in the submitting user's home directory
 #define PATH_ALIAS_HOME_FILE      ".sge_aliases"
 
 int path_alias_list_initialize(lList **path_alias_list,

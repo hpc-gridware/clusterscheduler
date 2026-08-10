@@ -33,8 +33,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Sorting the execution hosts by the load formula
+ */
+
 #include "cull/cull.h"
 
+/**
+ * Load value used when the load of a host cannot be computed. It is high
+ * enough that such a host sorts to the end, so a host with broken load
+ * reporting is treated as heavily loaded instead of as idle.
+ */
 #define ERROR_LOAD_VAL  9999
 
 int sort_host_list(lList *host_list, const lList *complex_list);

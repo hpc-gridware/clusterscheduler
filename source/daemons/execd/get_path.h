@@ -33,18 +33,31 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Working out where a job's output goes
+ *
+ * A user may give a path per host, or a directory rather than a file, or use
+ * the pseudo variables for job id, task id and host. Resolving all that into
+ * one concrete filename is what this does, and it has to happen on the
+ * execution host because that is the only place that knows which host it is.
+ */
+
 #include "uti/sge_dstring.h"
 
 #include "cull/cull.h"
 
 #include <cinttypes>
 
-#define SGE_STDIN           0x00100000
-#define SGE_STDOUT          0x00200000
-#define SGE_STDERR          0x00400000
-#define SGE_SHELL           0x04000000
-#define SGE_PAR_STDOUT      0x20000000
-#define SGE_PAR_STDERR      0x40000000
+/** @name Which of a job's paths is being resolved
+ * @{
+ */
+#define SGE_STDIN           0x00100000   ///< Standard input
+#define SGE_STDOUT          0x00200000   ///< Standard output
+#define SGE_STDERR          0x00400000   ///< Standard error
+#define SGE_SHELL           0x04000000   ///< The shell to start the job with
+#define SGE_PAR_STDOUT      0x20000000   ///< Standard output of a PE task
+#define SGE_PAR_STDERR      0x40000000   ///< Standard error of a PE task
+/** @} */
 
 int sge_get_path(const char *qualified_hostname, const lList *lp, const char *cwd, const char *owner, 
                  const char *job_name, uint32_t job_number,

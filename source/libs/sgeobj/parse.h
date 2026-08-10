@@ -33,13 +33,26 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for command line parsing
+ *
+ * @see parse.cc
+ */
+
 #include "sgeobj/cull/sge_parse_SPA_L.h"
 
-/* Group Option Constants */
-#define GROUP_DEFAULT            0x00000000
-#define GROUP_NO_TASK_GROUPS     0x00000001
-#define GROUP_NO_PETASK_GROUPS   0x00000002
-#define GROUP_CQ_SUMMARY         0x00000004
+/**
+ * @name Group option constants
+ *
+ * The `-g` switch of the query clients decides how much detail is collapsed
+ * into one output line.
+ * @{
+ */
+#define GROUP_DEFAULT            0x00000000 ///< no grouping; one line per task
+#define GROUP_NO_TASK_GROUPS     0x00000001 ///< do not collapse the tasks of an array job
+#define GROUP_NO_PETASK_GROUPS   0x00000002 ///< do not collapse the tasks of a parallel job
+#define GROUP_CQ_SUMMARY         0x00000004 ///< one line per cluster queue instead of per queue instance
+/** @} */
 
 char **parse_noopt(char **sp, const char *shortopt, const char *longopt, lList **ppcmdline, lList **alpp);
 
@@ -72,6 +85,14 @@ parse_u_longlist(lList **ppcmdline, const char *opt, lList **ppal, lList **value
 
 bool parse_multi_jobtaskslist(lList **ppcmdline, const char *opt, lList **ppal, lList **ppdestlist, bool include_names, uint32_t action);
 
+/**
+ * @brief Render a mail recipient list back into the form a user writes
+ *
+ * @param head the `MR_Type` list to render
+ * @param[out] mail_str receives the text
+ * @param mail_str_len the size of `mail_str`
+ * @return 0 on success, -1 when the text did not fit
+ */
 int sge_unparse_ma_list(lList *head, char *mail_str, unsigned int mail_str_len); 
 
 uint32_t parse_group_options(lList *string_list, lList **anser_list);

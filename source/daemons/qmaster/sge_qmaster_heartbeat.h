@@ -33,10 +33,19 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The heartbeat qmaster bumps so the shadow daemons see it alive
+ */
+
 #include "sgeobj/sge_daemonize.h"
 
 #include "sge_qmaster_timed_event.h"
 
+/** @brief Seconds between two bumps of the heartbeat file
+ *
+ * Must stay well below the shadow daemons' `GET_ACTIVE_INTERVAL`, or they
+ * would start a takeover while this qmaster is perfectly healthy.
+ */
 #define HEARTBEAT_INTERVAL 30
 
 void 

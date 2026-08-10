@@ -19,6 +19,10 @@
  ************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for category in `daemons/common`
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cctype>
@@ -39,24 +43,30 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_range.h"
 
+/** @brief One row of the category test table
+ *
+ * A category is the set of a job's scheduling-relevant properties, so two jobs
+ * with the same category can be scheduled with one decision. Each row here is
+ * one job description plus the category string it must produce.
+ */
 typedef struct {
-   int        test_nr;        //< test number
-   uint32_t   type;           //< the job type
-   const char *project;       //< the job project
-   const char *owner;         //< the job owner
-   const char *group;         //< the job group
-   const char *groups;        //< the job groups
-   const char *ckpt;          //< the checkpointing
-   const char *rqs;           //< the resource quota set
-   const char *g_h_r;         //< global hard requested resources
-   const char *g_s_r;         //< global soft requested resources
-   const char *m_h_r;         //< master hard requested resources
-   const char *s_h_r;         //< slave hard requested resources
-   const char *g_h_q;         //< global hard queue list
-   const char *m_h_q;         //< master hard queue list
-   const char *s_h_q;         //< slave hard queue list
-   const char *pe;            //< the requested pe
-   int        is_access_list; //< if 1, generate an access list
+   int        test_nr;        ///< test number
+   uint32_t   type;           ///< the job type
+   const char *project;       ///< the job project
+   const char *owner;         ///< the job owner
+   const char *group;         ///< the job group
+   const char *groups;        ///< the job groups
+   const char *ckpt;          ///< the checkpointing
+   const char *rqs;           ///< the resource quota set
+   const char *g_h_r;         ///< global hard requested resources
+   const char *g_s_r;         ///< global soft requested resources
+   const char *m_h_r;         ///< master hard requested resources
+   const char *s_h_r;         ///< slave hard requested resources
+   const char *g_h_q;         ///< global hard queue list
+   const char *m_h_q;         ///< master hard queue list
+   const char *s_h_q;         ///< slave hard queue list
+   const char *pe;            ///< the requested pe
+   int        is_access_list; ///< if 1, generate an access list
 } data_entry_t;
 
 // access list configuration: first token is the list name, rest are members
@@ -404,6 +414,16 @@ static std::string build_mem_cat(const char *val) {
 
 static int s_fail = 0;
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \

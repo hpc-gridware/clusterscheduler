@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Implementation of the scheduler job information messages
+ */
 #include <cstdarg>
 
 #include "uti/sge_rmon_macros.h"
@@ -124,16 +128,9 @@ static lList *schedd_mes_get_same_category_jids(lRef category,
    DRETURN(ret);
 }
 
-/****** schedd/schedd_mes/schedd_mes_initialize() *****************************
-*  NAME
-*     schedd_mes_initialize() -- Initialize module variables 
-*
-*  SYNOPSIS
-*     void schedd_mes_initialize() 
-*
-*  FUNCTION
-*     Initialize module variables 
-*******************************************************************************/
+/**
+ * @brief Initialize module variables
+ */
 void schedd_mes_initialize()
 {
    lListElem *sme = sconf_get_sme();
@@ -168,34 +165,24 @@ void schedd_mes_initialize()
    DRETURN_VOID;
 }
 
-/****** schedd/schedd_mes/schedd_mes_commit() *********************************
-*  NAME
-*     schedd_mes_commit() -- Complete message elements and move them
-*
-*  SYNOPSIS
-*     void schedd_mes_commit(lList *job_list, int ignore_category) 
-*
-*  FUNCTION
-*     Each message contained in "tmp_sme" contains only
-*     one job id. We have to find other jobs in "job_list" and
-*     add the job ids to the list of ids contained in "tmp_sme"
-*     message elements. After that we have to move all messages 
-*     contained in "tmp_sme" into "sme".
-*
-*     If "ignore_category" is 1 than the job category will be ignored.
-*     This means that all ids of "job_list" will be added to all
-*     messages contained in "tmp_sme". 
-*     
-*     If no category is passed in and ignore_category is false, the messages
-*     are only generated for the current job, meaning, they are just copied.
-*
-*  INPUTS
-*     lList *job_list     - JB_Type list 
-*     int ignore_category - if set to true, the messages with be generated for all jobs
-*                           in the list
-*     lRef jid_category   - if not nullptr, the function uses the category to ensure, that
-*                           every message is only added per category once.
-*******************************************************************************/
+/**
+ * @brief Complete message elements and move them
+ *
+ * Each message contained in "tmp_sme" contains only
+ * one job id. We have to find other jobs in "job_list" and
+ * add the job ids to the list of ids contained in "tmp_sme"
+ * message elements. After that we have to move all messages
+ * contained in "tmp_sme" into "sme".
+ * If "ignore_category" is 1 than the job category will be ignored.
+ * This means that all ids of "job_list" will be added to all
+ * messages contained in "tmp_sme".
+ * If no category is passed in and ignore_category is false, the messages
+ * are only generated for the current job, meaning, they are just copied.
+ *
+ * @param job_list JB_Type list
+ * @param ignore_category if set to true, the messages with be generated for all jobs in the list
+ * @param jid_category if not nullptr, the function uses the category to ensure, that every message is only added per category once.
+ */
 void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category) {
    lListElem *sme = sconf_get_sme();
    lListElem *tmp_sme = sconf_get_tmp_sme();
@@ -229,16 +216,11 @@ void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category) 
    }
 }
 
-/****** schedd/schedd_mes/schedd_mes_rollback() *******************************
-*  NAME
-*     schedd_mes_rollback() -- Free temporaryly generated messages 
-*
-*  SYNOPSIS
-*     void schedd_mes_rollback() 
-*
-*  FUNCTION
-*     Free temporaryly generated messages contained in "tmp_sme". 
-******************************************************************************/
+/**
+ * @brief Free temporaryly generated messages
+ *
+ * Free temporaryly generated messages contained in "tmp_sme".
+ */
 void schedd_mes_rollback()
 {
    lListElem *tmp_sme = sconf_get_tmp_sme();
@@ -251,27 +233,19 @@ void schedd_mes_rollback()
    }
 }
 
-/****** schedd/schedd_mes/schedd_mes_obtain_package() *************************
-*  NAME
-*     schedd_mes_obtain_package() -- Get message structure  
-*
-*  SYNOPSIS
-*     lListElem *schedd_mes_obtain_packagevoid) 
-*
-*  FUNCTION
-*     Returns message structure which containes all messages.
-*
-*  INPUTS
-*     int *global_mes_count - out: returns nr of global messages
-*     int *job_mes_count    - out: returns nr of job messages
-*
-*  NOTES
-*     The calling function is responsible to free the returned
-*     message structure if it is not needed anymore.
-*
-*  RESULT
-*     lListElem* - SME_Type element
-*******************************************************************************/
+/**
+ * @brief Get message structure
+ *
+ * Returns message structure which containes all messages.
+ *
+ * @param global_mes_count out: returns nr of global messages
+ * @param job_mes_count out: returns nr of job messages
+ *
+ * @return SME_Type element
+ *
+ * @note The calling function is responsible to free the returned
+ *       message structure if it is not needed anymore.
+ */
 lListElem *schedd_mes_obtain_package(int *global_mes_count, int *job_mes_count)
 {
    lListElem *ret;
@@ -315,41 +289,33 @@ lListElem *schedd_mes_obtain_package(int *global_mes_count, int *job_mes_count)
    DRETURN(ret);
 }
 
-/****** schedd/schedd_mes/schedd_mes_add() ************************************
-*  NAME
-*     schedd_mes_add() -- Add one entry into the message structure.
-*
-*  SYNOPSIS
-*     void schedd_mes_add(uint32_t job_number,
-*                         uint32_t message_number,
-*                         ...)
-*
-*  FUNCTION
-*     During the time the scheduler trys to dispatch jobs it might
-*     call this function to add messages into a temporary structure.
-*     This function might be called several times. Each call
-*     will add one element which containes one message describing
-*     a reason, why a job can't be dispatched and the concerned jid.
-*
-*     When it is clear if the job could be dispatched or not, one of
-*     following functions has to be called:
-*
-*        schedd_mes_commit()
-*        schedd_mes_rollback()
-*
-*  INPUTS
-*     uint32_t job_number     - job id
-*     uint32_t message_number - message number (sge_schedd_text.h)
-*     ...                     - arguments for format string
-*                               sge_schedd_text(message_number)
-*
-*  NOTES
-*     MT-NOTE: schedd_mes_add() is MT safe
-*
-*  SEE ALSO
-*     schedd/schedd_mes/schedd_mes_commit()
-*     schedd/schedd_mes/schedd_mes_rollback()
-*******************************************************************************/
+/**
+ * @brief Add one entry into the message structure
+ *
+ * During the time the scheduler trys to dispatch jobs it might
+ * call this function to add messages into a temporary structure.
+ * This function might be called several times. Each call
+ * will add one element which containes one message describing
+ * a reason, why a job can't be dispatched and the concerned jid.
+ * When it is clear if the job could be dispatched or not, one of
+ * following functions has to be called:
+ *    schedd_mes_commit()
+ *    schedd_mes_rollback()
+ *
+ * @param[in,out] monitor_alpp     answer list for `qalter -w v`, or nullptr
+ * @param[in]     monitor_next_run whether the message also goes into the
+ *                                 scheduler run log
+ * @param[in]     job_id           id of the job the message is about, 0 for
+ *                                 none
+ * @param[in]     message_number   message id from `sge_schedd_text.h`
+ * @param[in]     ...              arguments of the format string that
+ *                                 sge_schedd_text() returns for
+ *                                 `message_number`
+ *
+ * @note MT-NOTE: schedd_mes_add() is MT safe
+ *
+ * @see #schedd_mes_commit, #schedd_mes_rollback
+ */
 void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, uint32_t job_id, uint32_t message_number, ...)
 {
    DENTER(TOP_LAYER);
@@ -418,29 +384,22 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, uint32_t job_id
    DRETURN_VOID;
 }
 
-/****** schedd_message/schedd_mes_add_join() ***********************************
-*  NAME
-*     schedd_mes_add_join() -- same as schedd_mes_add, but joins messages based
-*                              on the message id.
-*
-*  SYNOPSIS
-*     void schedd_mes_add_join(uint32_t job_number, uint32_t message_number,
-*     ...)
-*
-*  FUNCTION
-*     same as schedd_mes_add, but joins messages based
-*     on the message id. But it only uses the temp message
-*     list and not the global one.
-*
-*  INPUTS
-*     uint32_t job_number     - job id
-*     uint32_t message_number - message number (sge_schedd_text.h)
-*     ...                     - arguments for format string
-*                               sge_schedd_text(message_number)
-*
-*  NOTES
-*     MT-NOTE: schedd_mes_add_join() is MT safe
-*******************************************************************************/
+/**
+ * @brief Like schedd_mes_add(), but joins messages with the same id
+ *
+ * Jobs that fail for the same reason end up in one message carrying the list
+ * of their job ids, instead of one message per job. Only the temporary
+ * message list is used, not the global one.
+ *
+ * @param[in] monitor_next_run whether the message also goes into the
+ *                             scheduler run log
+ * @param[in] job_number       id of the job the message is about
+ * @param[in] message_number   message id from `sge_schedd_text.h`
+ * @param[in] ...              arguments of the format string that
+ *                             sge_schedd_text() returns for `message_number`
+ *
+ * @note MT-NOTE: schedd_mes_add_join() is MT safe
+ */
 void schedd_mes_add_join(bool monitor_next_run, uint32_t job_number, uint32_t message_number, ...)
 {
    uint32_t schedd_job_info;
@@ -523,24 +482,21 @@ void schedd_mes_add_join(bool monitor_next_run, uint32_t job_number, uint32_t me
 }
 
 
-/****** schedd/schedd_mes/schedd_mes_add_global() *************************
-*  NAME
-*     schedd_mes_add_global() -- add a global message
-*
-*  SYNOPSIS
-*     void schedd_mes_add_global(uint32_t message_number, ...)
-*
-*  FUNCTION
-*     Add a global message into a message structure.
-*
-*  INPUTS
-*     uint32_t message_number - message number (sge_schedd_text.h)
-*     ...                     - arguments for format string
-*                               sge_schedd_text(message_number) 
-*
-*  NOTES
-*     MT-NOTE: schedd_mes_add_global() is MT safe
-*******************************************************************************/
+/**
+ * @brief Add a global message
+ *
+ * Add a global message into a message structure.
+ *
+ * @param[in,out] monitor_alpp     answer list for `qalter -w v`, or nullptr
+ * @param[in]     monitor_next_run whether the message also goes into the
+ *                                 scheduler run log
+ * @param[in]     message_number   message id from `sge_schedd_text.h`
+ * @param[in]     ...              arguments of the format string that
+ *                                 sge_schedd_text() returns for
+ *                                 `message_number`
+ *
+ * @note MT-NOTE: schedd_mes_add_global() is MT safe
+ */
 void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, uint32_t message_number, ...)
 {
 
@@ -581,20 +537,13 @@ void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, uint32_t
 }
 
 
-/****** schedd_message/schedd_mes_get_tmp_list() *******************************
-*  NAME
-*     schedd_mes_get_tmp_list() -- gets all messages for the current job 
-*
-*  SYNOPSIS
-*     lList* schedd_mes_get_tmp_list() 
-*
-*  FUNCTION
-*     returns a list of all messages for the current job 
-*
-*  RESULT
-*     lList* -  message list
-*
-*******************************************************************************/
+/**
+ * @brief Gets all messages for the current job
+ *
+ * returns a list of all messages for the current job
+ *
+ * @return message list
+ */
 lList *schedd_mes_get_tmp_list(){
    lList *ret = nullptr;
    const lListElem *tmp_sme = sconf_get_tmp_sme();
@@ -607,23 +556,16 @@ lList *schedd_mes_get_tmp_list(){
    DRETURN(ret);
 }
 
-/****** schedd_message/schedd_mes_set_tmp_list() *******************************
-*  NAME
-*     schedd_mes_set_tmp_list() -- sets the messages for a current job 
-*
-*  SYNOPSIS
-*     void schedd_mes_set_tmp_list(lListElem *category, int name, int name, uint32_t job_number)
-*
-*  FUNCTION
-*     Takes a mesage list, changes the job number to the current job and stores
-*     the list. 
-*
-*  INPUTS
-*     lListElem *category - an object, which stores the list 
-*     int name            - element id for the list
-*     uint32_t job_number - job number
-*
-*******************************************************************************/
+/**
+ * @brief Sets the messages for a current job
+ *
+ * Takes a mesage list, changes the job number to the current job and stores
+ * the list.
+ *
+ * @param category an object, which stores the list
+ * @param name element id for the list
+ * @param job_number job number
+ */
 void schedd_mes_set_tmp_list(lListElem *category, int name, uint32_t job_number)
 {
    DENTER(TOP_LAYER);

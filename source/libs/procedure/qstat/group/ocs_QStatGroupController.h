@@ -19,14 +19,22 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Controller of `qstat -g c`: runs the request and drives the view
+ */
+
 #include "qstat/ocs_QStatParameter.h"
 #include "qstat/ocs_QStatModelClient.h"
 
 #include "qstat/group/ocs_QStatGroupViewBase.h"
 
 namespace ocs {
+   /** @brief Runs one `qstat -g c` request: one line per cluster queue
+    *
+    * @ingroup libprocedure
+    */
    class QStatGroupController {
-      std::ostream &out_;
+      std::ostream &out_;   ///< Where the view writes
 
       bool cqueue_calculate_summary(const lListElem *cqueue, const lList *exechost_list, const lList *centry_list,
                                     double *load, bool *is_load_available, uint32_t *used, uint32_t *resv, uint32_t *total,
@@ -37,6 +45,9 @@ namespace ocs {
                                     uint32_t *manual_intervention);
 
    public:
+      /** @brief Bind a controller to an output stream
+       * @param out the stream the view will write to
+       */
       explicit QStatGroupController(std::ostream &out) : out_(out) {
       }
 

@@ -33,6 +33,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: the raw list and its locking
+ *
+ * Exercises setup, append, dechain, re-append, remove and the lock/unlock
+ * pair that callers are expected to use when walking the chain.
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <sys/time.h>
@@ -40,6 +49,9 @@
 
 #include "comm/lists/cl_lists.h"
 
+/** @brief Run the test
+ * @return 0 on success
+ */
 extern int main() {
    int ret;
    char *data1 = "string_1";

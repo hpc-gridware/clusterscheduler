@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Controller of `qrstat`: runs the request and drives the view
+ */
+
 #include <sstream>
 
 #include "uti/sge_rmon_macros.h"
@@ -42,6 +46,11 @@
 
 #include "uti/sge_string.h"
 
+/** @brief Run the request
+ * @param parameter the parsed parameters
+ * @param model the model, client or server side
+ * @param view the view for the requested output format
+ */
 void
 ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBase &model, QRStatViewBase &view) {
    DENTER(TOP_LAYER);

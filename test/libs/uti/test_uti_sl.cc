@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for sl in `libs/uti`
+ */
+
 #include <fnmatch.h>
 #include <cstdio>
 #include <cstdlib>
@@ -43,6 +47,16 @@
 
 static int s_fail = 0;
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \
@@ -54,25 +68,42 @@ static int s_fail = 0;
    } while (0)
 
 /* following is used in test_mt_support() */
-#define TEST_SL_MAX_THREADS 10
+#define TEST_SL_MAX_THREADS 10   ///< how many threads work on the list at once
 
+/** @brief What the worker threads share */
 struct _test_sl_thread_t {
-   pthread_mutex_t mutex;
-   sge_sl_list_t *list;
-   bool do_terminate;
+   pthread_mutex_t mutex;   ///< guards the list where the test needs it to
+   sge_sl_list_t *list;     ///< the list under test
+   bool do_terminate;       ///< set to tell the threads to stop
 };
 
+/** @brief Shorthand for #_test_sl_thread_t */
 typedef struct _test_sl_thread_t test_sl_thread_t;
 
-/* used in test to check the destroy sequence */
+/** @brief Records the order elements were destroyed in
+ *
+ * The destroy callback appends to it, so the test can check the sequence rather
+ * than only that everything was freed.
+ */
 dstring test_string = DSTRING_INIT;
 
+/** @brief Test case: destroy test
+ *
+ * @param data see the description above
+ * @return true when the case passed
+ */
 bool
 test_destroy_test(void **data) {
    sge_dstring_append(&test_string, *((char **) data));
    return true;
 }
 
+/** @brief Test case: compare ulong
+ *
+ * @param data1 the first item
+ * @param data2 the second item
+ * @return non-zero or true when the case passed
+ */
 int
 test_compare_ulong(const void *data1, const void *data2) {
    int ret = 0;
@@ -89,6 +120,12 @@ test_compare_ulong(const void *data1, const void *data2) {
    return ret;
 }
 
+/** @brief Test case: compare
+ *
+ * @param data1 the first item
+ * @param data2 the second item
+ * @return non-zero or true when the case passed
+ */
 int
 test_compare(const void *data1, const void *data2) {
    int ret = 0;
@@ -99,6 +136,12 @@ test_compare(const void *data1, const void *data2) {
    return ret;
 }
 
+/** @brief Test case: compare first char
+ *
+ * @param data1 the first item
+ * @param data2 the second item
+ * @return non-zero or true when the case passed
+ */
 int
 test_compare_first_char(const void *data1, const void *data2) {
    int ret = 0;
@@ -109,6 +152,15 @@ test_compare_first_char(const void *data1, const void *data2) {
    return ret;
 }
 
+/** @brief Test case: sequence
+ *
+ * @param list the list under test
+ * @param forward true to walk forwards
+ * @param expected the sequence the walk must produce
+ * @param elems how many elements it must see
+ * @param function the caller, for the failure message
+ * @return true when the case passed
+ */
 bool
 test_sequence(sge_sl_list_t *list, bool forward, const char *expected,
               uint32_t elems, const char *function) {
@@ -148,6 +200,16 @@ test_sequence(sge_sl_list_t *list, bool forward, const char *expected,
    DRETURN(ret);
 }
 
+/** @brief Test case: search sequence
+ *
+ * @param list the list under test
+ * @param forward true to walk forwards
+ * @param key the key to search for
+ * @param expected the sequence the walk must produce
+ * @param elems how many elements it must see
+ * @param function the caller, for the failure message
+ * @return true when the case passed
+ */
 bool
 test_search_sequence(sge_sl_list_t *list, bool forward, const char *key,
                      const char *expected, uint32_t elems, const char *function) {
@@ -190,6 +252,9 @@ test_search_sequence(sge_sl_list_t *list, bool forward, const char *key,
    DRETURN(ret);
 }
 
+/** @brief Test case: create insert destroy
+ * @return true when the case passed
+ */
 bool
 test_create_insert_destroy() {
    bool ret = true;
@@ -239,6 +304,9 @@ test_create_insert_destroy() {
    DRETURN(ret);
 }
 
+/** @brief Test case: create append
+ * @return true when the case passed
+ */
 bool
 test_create_append() {
    bool ret = true;
@@ -276,6 +344,9 @@ test_create_append() {
    DRETURN(ret);
 }
 
+/** @brief Test case: create insort
+ * @return true when the case passed
+ */
 bool
 test_create_insort() {
    bool ret = true;
@@ -314,6 +385,9 @@ test_create_insort() {
    DRETURN(ret);
 }
 
+/** @brief Test case: create insert sort
+ * @return true when the case passed
+ */
 bool
 test_create_insert_sort() {
    bool ret = true;
@@ -354,6 +428,9 @@ test_create_insert_sort() {
    DRETURN(ret);
 }
 
+/** @brief Test case: dechain before after
+ * @return true when the case passed
+ */
 bool
 test_dechain_before_after() {
    bool ret = true;
@@ -449,6 +526,9 @@ test_dechain_before_after() {
    DRETURN(ret);
 }
 
+/** @brief Test case: search forward backward
+ * @return true when the case passed
+ */
 bool
 test_search_forward_backward() {
    bool ret = true;
@@ -498,6 +578,9 @@ test_search_forward_backward() {
    DRETURN(ret);
 }
 
+/** @brief Test case: delete forward backward
+ * @return true when the case passed
+ */
 bool
 test_delete_forward_backward() {
    bool ret = true;
@@ -553,6 +636,9 @@ test_delete_forward_backward() {
    DRETURN(ret);
 }
 
+/** @brief Test case: delete search
+ * @return true when the case passed
+ */
 bool
 test_delete_search() {
    bool ret = true;
@@ -601,6 +687,9 @@ test_delete_search() {
    DRETURN(ret);
 }
 
+/** @brief Test case: for each ep
+ * @return true when the case passed
+ */
 bool
 test_for_each_ep() {
    bool ret = true;
@@ -637,6 +726,11 @@ test_for_each_ep() {
    DRETURN(ret);
 }
 
+/** @brief Test case: thread1 main
+ *
+ * @param arg see the description above
+  * @return the thread's result; the tests ignore it
+ */
 void *
 test_thread1_main(void *arg) {
    void *ret = nullptr;
@@ -748,6 +842,9 @@ test_thread1_main(void *arg) {
    DRETURN(ret);
 }
 
+/** @brief Test case: mt support
+ * @return true when the case passed
+ */
 bool
 test_mt_support() {
    bool ret = true;

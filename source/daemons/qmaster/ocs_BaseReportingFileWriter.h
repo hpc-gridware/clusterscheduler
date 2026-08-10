@@ -19,18 +19,31 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief What the two reporting file writers share
+ */
+
 #include <utility>
 
 #include "ocs_ReportingFileWriter.h"
 
 namespace ocs {
+   /** @brief What the two reporting writers share
+    *
+    * Reporting files, unlike accounting files, also carry the share tree
+    * snapshot, which is written on its own interval rather than per event.
+    */
    class BaseReportingFileWriter : public ReportingFileWriter {
    protected:
-      bool do_joblog;
-      bool log_consumables;
-      uint64_t sharelog_interval;
-      uint64_t next_sharelog;
+      bool do_joblog;             ///< Whether job life-cycle records are wanted
+      bool log_consumables;       ///< Whether consumable usage is recorded
+      uint64_t sharelog_interval; ///< How often a share tree snapshot is written; 0 for never
+      uint64_t next_sharelog;     ///< When the next snapshot falls due
    public:
+      /** @brief Build a reporting writer
+       * @param filename the file to append to
+       * @param write_comment_header whether to start it with a column header
+       */
       explicit BaseReportingFileWriter(std::string filename, bool write_comment_header)
       : ReportingFileWriter(std::move(filename), write_comment_header),
          do_joblog(false), log_consumables(false), sharelog_interval(0), next_sharelog(0) {
@@ -41,6 +54,9 @@ namespace ocs {
 
       void update_config() override;
 
+      /** @brief Write a share tree snapshot in this writer's format
+       * @param monitor the thread monitoring
+       */
       virtual void
       create_sharelog_record(monitoring_t *monitor) = 0;
    };

@@ -33,12 +33,25 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief A small queue for the signals the shepherd receives
+ *
+ * A signal handler may do almost nothing, and the shepherd may be in the
+ * middle of starting a job when one arrives. So the handler only appends the
+ * signal here, and the main loop takes them out when it is safe to act.
+ */
+
 
 int add_signal(int signal);
 int get_signal();
 int pending_sig(int sig);
 int get_n_sigs();
 void clear_queued_signals();
+/** @brief Write the queue's contents to the trace file
+ *
+ * @note The definition is inside an `#ifdef DEBUG`, so doxygen never sees it;
+ *       the block therefore sits on the declaration.
+ */
 void report_signal_queue();
 
 int shepherd_sys_str2signal(char *override_signal);

@@ -19,10 +19,21 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief XML rendering of `qrstat`
+ */
+
 #include "ocs_QRStatViewBase.h"
 #include "cull/cull.h"
 
 namespace ocs {
+   /** @brief Renders the `qrstat` report as XML
+    *
+    * Each `_start` hook opens an element and the matching `_finish` closes it,
+    * so the nesting of the report becomes the nesting of the document.
+    *
+    * @ingroup libprocedure
+    */
    class QRStatViewXML : public QRStatViewBase {
       public:
       explicit QRStatViewXML(const QRStatParameter &parameter);

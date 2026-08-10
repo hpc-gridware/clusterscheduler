@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The classic delimiter-separated accounting and reporting files
+ */
+
 #include <ctime>
 
 #include "uti/sge_dstring.h"
@@ -86,25 +90,17 @@
 *******************************************************************************/
 
 /* ------------- public functions ------------- */
-/****** qmaster/reporting/reporting_initialize() ***************************
-*  NAME
-*     reporting_initialize() -- initialize the reporting module
-*
-*  SYNOPSIS
-*     void reporting_initialize()
-*
-*  FUNCTION
-*     Register the event handler for the reporting trigger and create the
-*     ReportingFileWriters. Creating the writers also creates the reporting
-*     trigger itself.
-*
-*  NOTES
-*     MT-NOTE: reporting_initialize() is MT safe.
-*
-*  SEE ALSO
-*     qmaster/reporting/reporting_shutdown()
-*     Timeeventmanager/te_add()
-*******************************************************************************/
+/**
+ * @brief Initialize the reporting module
+ *
+ * Register the event handler for the reporting trigger and create the
+ * ReportingFileWriters. Creating the writers also creates the reporting
+ * trigger itself.
+ *
+ * @note MT-NOTE: reporting_initialize() is MT safe.
+ *
+ * @see #reporting_shutdown, `te_add()`
+ */
 void
 reporting_initialize() {
    DENTER(TOP_LAYER);
@@ -123,6 +119,13 @@ reporting_initialize() {
    DRETURN_VOID;
 }
 
+/** @brief Make the reporting trigger fire again immediately
+ *
+ * Called when the reporting configuration changed: the pending trigger was
+ * scheduled with the old interval, so it is dropped and a new one is queued for
+ * right now. The next handler run then re-reads the configuration and schedules
+ * itself with the new interval.
+ */
 void
 reporting_reinitialize_timed_event() {
    DENTER(TOP_LAYER);
@@ -135,30 +138,18 @@ reporting_reinitialize_timed_event() {
    DRETURN_VOID;
 }
 
-/****** qmaster/reporting/reporting_shutdown() *****************************
-*  NAME
-*     reporting_shutdown() -- shutdown the reporting module
-*
-*  SYNOPSIS
-*     bool reporting_shutdown(lList **answer_list, bool do_spool) 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     lList **answer_list - used to return error messages
-*     bool do_spool       - if set to true changes must be spooled
-*                           if set to false don't spool changes
-*
-*  RESULT
-*     bool - true on success, false on error.
-*
-*  NOTES
-*     MT-NOTE: reporting_shutdown() is MT safe
-*
-*  SEE ALSO
-*     qmaster/reporting/reporting_initialize()
-*******************************************************************************/
+/**
+ * @brief Shutdown the reporting module
+ *
+ * @param answer_list used to return error messages
+ * @param do_spool if set to true changes must be spooled if set to false don't spool changes
+ *
+ * @return true on success, false on error.
+ *
+ * @note MT-NOTE: reporting_shutdown() is MT safe
+ *
+ * @see #reporting_initialize
+ */
 bool
 reporting_shutdown(lList **answer_list, bool do_spool) {
    bool ret = true;
@@ -179,27 +170,16 @@ reporting_shutdown(lList **answer_list, bool do_spool) {
    DRETURN(ret);
 }
 
-/****** qmaster/reporting/reporting_trigger_handler() **********************
-*  NAME
-*     reporting_trigger_handler() -- process timed event
-*
-*  SYNOPSIS
-*     void 
-*     reporting_trigger_handler(te_event_t anEvent)
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     te_event_t - timed event
-*
-*  NOTES
-*     MT-NOTE: reporting_trigger_handler() is MT safe.
-*
-*  SEE ALSO
-*     Timeeventmanager/te_deliver()
-*     Timeeventmanager/te_add()
-*******************************************************************************/
+/**
+ * @brief Process timed event
+ *
+ * @param anEvent timed event
+ * @param monitor for monitoring qmaster threads
+ *
+ * @note MT-NOTE: reporting_trigger_handler() is MT safe.
+ *
+ * @see `te_deliver()`, `te_add()`
+ */
 void
 reporting_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
@@ -212,10 +192,15 @@ reporting_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
    DRETURN_VOID;
 } /* reporting_trigger_handler() */
 
-/*
-* NOTES
-*     MT-NOTE: intermediate_usage_written() is MT-safe
-*/
+/** @brief Has an interim accounting record already been written for this task?
+ *
+ * NOTES
+ * MT-NOTE: intermediate_usage_written() is MT-safe
+ *
+ * @param job_report see the description above
+ * @param ja_task the array task
+ * @return see the description above
+ */
 bool
 intermediate_usage_written(const lListElem *job_report, const lListElem *ja_task) {
    bool ret = false;
@@ -283,6 +268,15 @@ ocs::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListE
    DRETURN(ret);
 }
 
+/** @brief Append one line to the reporting buffer
+ *
+ * Writes `<timestamp>:<type>:<data>` under the buffer mutex. The timestamp is
+ * taken here rather than by the caller, so that the order of the lines in the
+ * file matches the order in which they were buffered.
+ *
+ * @param type the record type, the second field of a reporting file line
+ * @param data the already formatted remainder of the line
+ */
 void
 ocs::ClassicReportingFileWriter::create_record(const char *type, const char *data) {
    sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
@@ -294,39 +288,28 @@ ocs::ClassicReportingFileWriter::create_record(const char *type, const char *dat
    sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
 }
 
-/****** qmaster/reporting/create_acct_record() *******************
-*  NAME
-*     create_acct_record() -- create an accounting record
-*
-*  SYNOPSIS
-*     bool create_acct_record(lList **answer_list,
-*                                       lListElem *job_report,
-*                                       lListElem *job, lListElem *ja_task)
-*
-*  FUNCTION
-*     Create an accounting record.
-*     Depending on the cluster configuration, parameter reporting_params,
-*     accounting is written to the accounting file and/or the reporting file.
-*
-*     During the runtime of jobs, intermediate accounting records can be written
-*     to the reporting file. This is usually done at midnight, to have correct
-*     daily accounting information for long running jobs.
-*
-*  INPUTS
-*     lList **answer_list   - used to report error messages
-*     lListElem *job_report - job report from execd
-*     lListElem *job        - job referenced in report
-*     lListElem *ja_task    - array task that finished
-*     bool intermediate     - is this an intermediate accounting record?
-*
-*  RESULT
-*     bool - true on success, false on error
-*
-*  NOTES
-*     MT-NOTE: create_acct_record() is not MT safe as the
-*              MT safety of called functions sge_build_job_category and
-*              sge_write_rusage is not defined.
-*******************************************************************************/
+/**
+ * @brief Create an accounting record
+ *
+ * Create an accounting record.
+ * Depending on the cluster configuration, parameter reporting_params,
+ * accounting is written to the accounting file and/or the reporting file.
+ * During the runtime of jobs, intermediate accounting records can be written
+ * to the reporting file. This is usually done at midnight, to have correct
+ * daily accounting information for long running jobs.
+ *
+ * @param answer_list used to report error messages
+ * @param job_report job report from execd
+ * @param job job referenced in report
+ * @param ja_task array task that finished
+ * @param intermediate is this an intermediate accounting record?
+ *
+ * @return true on success, false on error
+ *
+ * @note MT-NOTE: create_acct_record() is not MT safe as the
+ *       MT safety of called functions sge_build_job_category and
+ *       sge_write_rusage is not defined.
+ */
 /* @todo: we should also pass pe_task. It is known in the code pieces where
  * create_acct_record is called and we needn't search it from ja_task
  */
@@ -516,34 +499,20 @@ ocs::ClassicReportingFileWriter::create_job_log(lList **answer_list, uint64_t ev
    DRETURN(ret);
 }
 
-/****** qmaster/reporting/reporting_write_consumables() ********************
-*  NAME
-*     reporting_write_consumables() -- dump consumables to a buffer
-*
-*  SYNOPSIS
-*     static bool
-*     reporting_write_consumables(lList **answer_list, dstring *buffer,
-*                                 const lList *actual, const lList *total
-*                                 const lListElem *host,
-*                                 const lListElem *job)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     lList **answer_list   - used to return error messages
-*     dstring *buffer       - target buffer
-*     const lList *actual   - actual consumable values
-*     const lList *total    - configured consumable values
-*     const lListElem *host - host for which to output data
-*     const lListElem *job  - optional: job which changes consumables
-*
-*  RESULT
-*     bool - true on success, false on error
-*
-*  NOTES
-*     MT-NOTE: reporting_write_consumables() is MT safe
-*******************************************************************************/
+/**
+ * @brief Dump consumables to a buffer
+ *
+ * @param answer_list used to return error messages
+ * @param buffer target buffer
+ * @param actual actual consumable values
+ * @param total configured consumable values
+ * @param host host for which to output data
+ * @param job optional: job which changes consumables
+ *
+ * @note bool - true on success, false on error
+ *
+ * @note MT-NOTE: reporting_write_consumables() is MT safe
+ */
 void
 ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list, dstring *buffer, const lList *actual, const lList *total,
                             const lListElem *host, const lListElem *job) const {
@@ -595,30 +564,17 @@ ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list
    DRETURN_VOID;
 }
 
-/****** qmaster/reporting/create_queue_record() *******************
-*  NAME
-*     create_queue_record() -- create queue reporting record
-*
-*  SYNOPSIS
-*     bool
-*     create_queue_record(lList **answer_list,
-*                                  const lListElem *queue,
-*                                  uint32_t report_time)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     lList **answer_list   - used to return error messages
-*     const lListElem *queue - the queue to output
-*     uint32_t report_time  - time of the last load report
-*
-*  RESULT
-*     bool - true on success, false on error
-*
-*  NOTES
-*     MT-NOTE: create_queue_record() is MT safe
-*******************************************************************************/
+/**
+ * @brief Create queue reporting record
+ *
+ * @param answer_list used to return error messages
+ * @param queue the queue to output
+ * @param report_time time of the last load report
+ *
+ * @return true on success, false on error
+ *
+ * @note MT-NOTE: create_queue_record() is MT safe
+ */
 bool
 ocs::ClassicReportingFileWriter::create_queue_record(lList **answer_list,
                                                 const lListElem *queue,
@@ -649,34 +605,19 @@ ocs::ClassicReportingFileWriter::create_queue_record(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** qmaster/reporting/create_queue_consumable_record() ********
-*  NAME
-*     create_queue_consumable_record() -- write queue consumables
-*
-*  SYNOPSIS
-*     bool
-*     create_queue_consumable_record(lList **answer_list,
-*                                              const lListElem *host,
-*                                              const lListElem *queue,
-*                                              const lListElem *job,
-*                                              uint32_t report_time)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     lList **answer_list    - used to return error messages
-*     const lListElem *host  - host on which the qinstance is located
-*     const lListElem *queue - queue instance to output
-*     const lListElem *job   - optional: job which changes consumables
-*     uint32_t report_time   - time when consumables changed
-*
-*  RESULT
-*     bool - true on success, false on error
-*
-*  NOTES
-*     MT-NOTE: create_queue_consumable_record() is MT safe
-*******************************************************************************/
+/**
+ * @brief Write queue consumables
+ *
+ * @param answer_list used to return error messages
+ * @param host host on which the qinstance is located
+ * @param queue queue instance to output
+ * @param job optional: job which changes consumables
+ * @param report_time time when consumables changed
+ *
+ * @return true on success, false on error
+ *
+ * @note MT-NOTE: create_queue_consumable_record() is MT safe
+ */
 bool
 ocs::ClassicReportingFileWriter::create_queue_consumable_record(lList **answer_list,
                                                            const lListElem *host,
@@ -722,30 +663,17 @@ ocs::ClassicReportingFileWriter::create_queue_consumable_record(lList **answer_l
    DRETURN(ret);
 }
 
-/****** qmaster/reporting/create_host_record() *******************
-*  NAME
-*     create_host_record() -- create host reporting record
-*
-*  SYNOPSIS
-*     bool
-*     create_host_record(lList **answer_list,
-*                                  const lListElem *host,
-*                                  uint32_t report_time)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     lList **answer_list   - used to return error messages
-*     const lListElem *host - the host to output
-*     uint32_t report_time  - time of the last load report
-*
-*  RESULT
-*     bool - true on success, false on error
-*
-*  NOTES
-*     MT-NOTE: create_host_record() is MT safe
-*******************************************************************************/
+/**
+ * @brief Create host reporting record
+ *
+ * @param answer_list used to return error messages
+ * @param host the host to output
+ * @param report_time time of the last load report
+ *
+ * @return true on success, false on error
+ *
+ * @note MT-NOTE: create_host_record() is MT safe
+ */
 bool
 ocs::ClassicReportingFileWriter::create_host_record(lList **answer_list,
                                                const lListElem *host,
@@ -782,32 +710,18 @@ ocs::ClassicReportingFileWriter::create_host_record(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** qmaster/reporting/create_host_consumable_record() ********
-*  NAME
-*     create_host_consumable_record() -- write host consumables
-*
-*  SYNOPSIS
-*     bool
-*     create_host_consumable_record(lList **answer_list,
-*                                             const lListElem *host,
-*                                             const lListElem *job,
-*                                             uint32_t report_time)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     lList **answer_list   - used to return error messages
-*     const lListElem *host - host to output
-*     const lListElem *job  - optional: job which changes consumables
-*     uint32_t report_time  - time when consumables changed
-*
-*  RESULT
-*     bool - true on success, false on error
-*
-*  NOTES
-*     MT-NOTE: create_host_consumable_record() is MT safe
-*******************************************************************************/
+/**
+ * @brief Write host consumables
+ *
+ * @param answer_list used to return error messages
+ * @param host host to output
+ * @param job optional: job which changes consumables
+ * @param report_time time when consumables changed
+ *
+ * @return true on success, false on error
+ *
+ * @note MT-NOTE: create_host_consumable_record() is MT safe
+ */
 bool
 ocs::ClassicReportingFileWriter::create_host_consumable_record(lList **answer_list,
                                                           const lListElem *host,
@@ -847,28 +761,16 @@ ocs::ClassicReportingFileWriter::create_host_consumable_record(lList **answer_li
    DRETURN(ret);
 }
 
-/****** qmaster/reporting/create_sharelog_record() ***************
-*  NAME
-*     create_sharelog_record() -- dump sharetree usage
-*
-*  SYNOPSIS
-*     bool
-*     create_sharelog_record(lList **answer_list)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     lList **answer_list   - used to return error messages
-*     monitoring_t *monitor - monitors the use of the global lock
-*
-*  RESULT
-*     bool -  true on success, false on error
-*
-*  NOTES
-*     MT-NOTE: create_sharelog_record() is most probably MT safe
-*              (depends on sge_sharetree_print with uncertain MT safety)
-*******************************************************************************/
+/**
+ * @brief Dump sharetree usage
+ *
+ * @param monitor monitors the use of the global lock
+ *
+ * @note bool -  true on success, false on error
+ *
+ * @note MT-NOTE: create_sharelog_record() is most probably MT safe
+ *       (depends on sge_sharetree_print with uncertain MT safety)
+ */
 void
 ocs::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
    const lList *master_stree_list = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
@@ -924,10 +826,21 @@ ocs::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
    }
 }
 
-/*
-* NOTES
-*     MT-NOTE: reporting_write_load_values() is MT-safe
-*/
+/** @brief Append the requested load values as a comma separated `name=value` list
+ *
+ * Only the variables named in `variables` are written, and only those that are
+ * actually reported in `load_list` - a variable that no execution daemon
+ * reports is skipped rather than written empty.
+ *
+ * @param answer_list used to return error messages
+ * @param buffer the record being built; the list is appended to it
+ * @param load_list the reported load values (`HL_Type`)
+ * @param variables the load values to write (`STU_Type`), from the reporting
+ *                  configuration
+ * @return true on success
+ *
+ * @note MT-NOTE: write_load_values() is MT-safe
+ */
 bool
 ocs::ClassicReportingFileWriter::write_load_values(lList **answer_list, dstring *buffer,
                                               const lList *load_list, const lList *variables) {
@@ -956,32 +869,20 @@ ocs::ClassicReportingFileWriter::write_load_values(lList **answer_list, dstring 
    DRETURN(ret);
 }
 
-/****** qmaster/create_new_ar_record() ******************************
-*  NAME
-*     create_new_ar_record() -- new ar record will be written
-*
-*  SYNOPSIS
-*     bool
-*     create_new_ar_record(lList **answer_list,
-*                                    const lListElem *ar,
-*                                    uint32_t report_time)
-*
-*  FUNCTION
-*     Flushs the information that into the accounting file that a new
-*     advance reservation has been created.
-*
-*  INPUTS
-*     lList **answer_list  - answer list
-*     const lListElem *ar  - the ar object which has been created
-*     uint32_t report_time - the corresponding timestamp
-*
-*  RESULT
-*     int - true  success
-*           false failure
-*
-*  NOTES
-*     MT-NOTE: reporting_flush() is MT-safe
-*******************************************************************************/
+/**
+ * @brief New ar record will be written
+ *
+ * Flushs the information that into the accounting file that a new
+ * advance reservation has been created.
+ *
+ * @param answer_list answer list
+ * @param ar the ar object which has been created
+ * @param report_time the corresponding timestamp
+ *
+ * @return true  success false failure
+ *
+ * @note MT-NOTE: reporting_flush() is MT-safe
+ */
 bool
 ocs::ClassicReportingFileWriter::create_new_ar_record(lList **answer_list,
                                                  const lListElem *ar,
@@ -1013,33 +914,21 @@ ocs::ClassicReportingFileWriter::create_new_ar_record(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** qmaster/create_ar_attribute_record() ************************
-*  NAME
-*     create_ar_attribute_record() -- writes ar attributes
-*
-*  SYNOPSIS
-*     bool
-*     create_ar_attribute_record(lList **answer_list,
-*                                          const lListElem *ar,
-*                                          uint32_t report_time)
-*
-*  FUNCTION
-*     Writes advance reservation attributes into the reporting file.
-*     This will be done whenever the ar settings change and when a new
-*     ar object is created.
-*
-*  INPUTS
-*     lList **answer_list  - answer list
-*     const lListElem *ar  - the ar object which has been created
-*     uint32_t report_time - the corresponding timestamp
-*
-*  RESULT
-*     int - true  success
-*           false failure
-*
-*  NOTES
-*     MT-NOTE: reporting_flush() is MT-safe
-*******************************************************************************/
+/**
+ * @brief Writes ar attributes
+ *
+ * Writes advance reservation attributes into the reporting file.
+ * This will be done whenever the ar settings change and when a new
+ * ar object is created.
+ *
+ * @param answer_list answer list
+ * @param ar the ar object which has been created
+ * @param report_time the corresponding timestamp
+ *
+ * @return true  success false failure
+ *
+ * @note MT-NOTE: reporting_flush() is MT-safe
+ */
 bool
 ocs::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
                                                        const lListElem *ar,
@@ -1092,36 +981,22 @@ ocs::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** qmaster/create_ar_log_record() ******************************
-*  NAME
-*     create_ar_log_record() -- writes status change info
-*
-*  SYNOPSIS
-*     bool
-*     create_ar_log_record(lList **answer_list,
-*                                    const lListElem *ar,
-*                                    ar_state_event_t event,
-*                                    const char *ar_description,
-*                                    uint32_t report_time)
-*
-*  FUNCTION
-*     Writes logging information into the reporting file whenever a status
-*     change of an advance reservation occures
-*
-*  INPUTS
-*     lList **answer_list  - answer list
-*     const lListElem *ar  - the ar object which has been created
-*     ar_state_event_t event  - the event if which caused the state change
-*     const char *ar_description  - a human readable description
-*     uint32_t report_time - the corresponding timestamp
-*
-*  RESULT
-*     int - true  success
-*           false failure
-*
-*  NOTES
-*     MT-NOTE: reporting_flush() is MT-safe
-*******************************************************************************/
+/**
+ * @brief Writes status change info
+ *
+ * Writes logging information into the reporting file whenever a status
+ * change of an advance reservation occures
+ *
+ * @param answer_list answer list
+ * @param ar the ar object which has been created
+ * @param event the event if which caused the state change
+ * @param ar_description a human readable description
+ * @param report_time the corresponding timestamp
+ *
+ * @return true  success false failure
+ *
+ * @note MT-NOTE: reporting_flush() is MT-safe
+ */
 bool
 ocs::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
                                                  const lListElem *ar,
@@ -1164,33 +1039,22 @@ ocs::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sge_reporting_qmaster/create_ar_acct_records() ***************
-*  NAME
-*     create_ar_acct_records() -- ar accounting records will be written
-*
-*  SYNOPSIS
-*     bool create_ar_acct_records(lList **answer_list, const
-*     lListElem *ar, uint32_t report_time)
-*
-*  FUNCTION
-*     This records will be written for all reserved qinstance whenever an
-*     advance reservation terminates.
-*
-*  INPUTS
-*     lList **answer_list  - answer list
-*     const lListElem *ar  - the ar object which has been created
-*     uint32_t report_time - the corresponding timestamp
-*
-*  RESULT
-*     int - true  success
-*           false failure
-*
-*  NOTES
-*     MT-NOTE: create_ar_acct_records() is MT safe
-*
-*  SEE ALSO
-*     qmaster/create_single_ar_acct_record()
-*******************************************************************************/
+/**
+ * @brief Ar accounting records will be written
+ *
+ * This records will be written for all reserved qinstance whenever an
+ * advance reservation terminates.
+ *
+ * @param answer_list answer list
+ * @param ar the ar object which has been created
+ * @param report_time the corresponding timestamp
+ *
+ * @return true  success false failure
+ *
+ * @note MT-NOTE: create_ar_acct_records() is MT safe
+ *
+ * @see #create_single_ar_acct_record
+ */
 bool ocs::ClassicReportingFileWriter::create_ar_acct_record(lList **answer_list, const lListElem *ar, uint64_t report_time) {
    bool ret = true;
    dstring dstr = DSTRING_INIT;
@@ -1223,38 +1087,23 @@ bool ocs::ClassicReportingFileWriter::create_ar_acct_record(lList **answer_list,
    return ret;
 }
 
-/****** qmaster/create_single_ar_acct_record() *****************************
-*  NAME
-*     create_ar_log_record() -- ar accounting record will be written
-*
-*  SYNOPSIS
-*     bool
-*     create_single_ar_acct_record(lList **answer_list,
-*                                     const lListElem *ar,
-*                                     const char *cqueue_name,
-*                                     const char *hostname,
-*                                     uint32_t slots,
-*                                     uint32_t report_time)
-*
-*  FUNCTION
-*     This record will be written for every qinstance whenever an
-*     advance reservation terminates.
-*
-*  INPUTS
-*     lList **answer_list     - answer list
-*     const lListElem *ar     - the ar object which has been created
-*     const char *cqueue_name - cluster queue name
-*     const char *hostname    - hostname of the qinstance
-*     uint32_t slots          - number of reserved slots
-*     uint32_t report_time    - the corresponding timestamp
-*
-*  RESULT
-*     int - true  success
-*           false failure
-*
-*  NOTES
-*     MT-NOTE: reporting_flush() is MT-safe
-*******************************************************************************/
+/**
+ * @brief Ar accounting record will be written
+ *
+ * This record will be written for every qinstance whenever an
+ * advance reservation terminates.
+ *
+ * @param dstr the record being built; the accounting line is appended to it
+ * @param ar the ar object which has been created
+ * @param cqueue_name cluster queue name
+ * @param hostname hostname of the qinstance
+ * @param slots number of reserved slots
+ * @param report_time the corresponding timestamp
+ *
+ * @note int - true  success false failure
+ *
+ * @note MT-NOTE: reporting_flush() is MT-safe
+ */
 void
 ocs::ClassicReportingFileWriter::create_single_ar_acct_record(dstring *dstr,
                                                          const lListElem *ar,

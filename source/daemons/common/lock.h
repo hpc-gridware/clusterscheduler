@@ -33,6 +33,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The qmaster start lock, so only one shadow daemon takes over
+ */
+
+/** @brief Name of the file that says a qmaster is starting on this host
+ *
+ * Created exclusively, so that of several shadow daemons reacting to the same
+ * dead heartbeat only one gets to start a qmaster.
+ */
 #define QMASTER_LOCK_FILE "lock"
 
 int qmaster_lock(const char *file);

@@ -19,14 +19,28 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief XML rendering of `qhost`
+ */
+
 #include <ostream>
 
 #include "ocs_QHostViewBase.h"
 #include "ocs_QHostParameter.h"
 
 namespace ocs {
+   /** @brief Renders `qhost` output as XML
+    *
+    * Each `_start` hook opens an element and the matching `_end` closes it, so
+    * the nesting of the traversal becomes the nesting of the document.
+    *
+    * @ingroup libprocedure
+    */
    class QHostViewXML : public QHostViewBase {
    public:
+      /** @brief Build the XML view
+       * @param parameter the call's parameters
+       */
       explicit QHostViewXML(const QHostParameter &parameter) : QHostViewBase(parameter) {};
       ~QHostViewXML() override = default;
 

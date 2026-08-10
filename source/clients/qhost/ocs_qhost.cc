@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief qhost - shows the execution hosts and their load
+ */
+
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -46,6 +50,12 @@
 
 #include "sig_handlers.h"
 
+/** @brief The process environment, as the C library defines it
+ *
+ * Declared here rather than included, and passed to the command line parser so
+ * that options which read an environment variable resolve it against the
+ * submitting user's environment rather than against `getenv()`.
+ */
 extern char **environ;
 
 int main(int argc, char **argv) {

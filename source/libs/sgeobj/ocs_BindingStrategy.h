@@ -19,16 +19,22 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief How a binding walks the topology: linear, striding or explicit
+ */
+
 #include <string>
 
 namespace ocs {
+   /// How a binding walks the topology when selecting hardware
    class BindingStrategy {
       BindingStrategy() = default; // prevent instantiation
    public:
+      /// The order in which hardware is selected
       enum Strategy {
-         UNINITIALIZED = 0,
-         NONE,
-         PACKED
+         UNINITIALIZED = 0, ///< not set; the request has not been parsed yet
+         NONE,              ///< no strategy given
+         PACKED             ///< fill each topology object completely before moving to the next
       };
 
 

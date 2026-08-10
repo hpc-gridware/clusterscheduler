@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The job object and the operations on it
+ */
+
 #include <string>
 
 #include "cull/cull.h"
@@ -44,6 +48,13 @@
 #include "ocs_BindingInstance.h"
 
 namespace ocs {
+   /**
+    * @brief Operations on the job object
+    *
+    * Besides the binding accessors, which mirror those on
+    * @ref ocs::AdvanceReservation, this holds the job-specific helpers such as
+    * fair-share sorting and the systemd unit names a job runs under.
+    */
    class Job {
    public:
       static void sgeee_sort_jobs(lList *job_list);

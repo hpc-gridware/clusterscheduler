@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Test Object
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -68,17 +72,17 @@
 */
 
 enum {
-   TEST_bool = TEST_LOWERBOUND,
-   TEST_uint32,
-   TEST_uint64,
-   TEST_int,
-   TEST_long,
-   TEST_double,
-   TEST_host,
-   TEST_string,
-   TEST_ref,
-   TEST_obj_jb,
-   TEST_obj_any
+   TEST_bool = TEST_LOWERBOUND,   ///< Boolean type attribute
+   TEST_uint32,   ///< uint32_t type attribute
+   TEST_uint64,   ///< uint64_t type attribute
+   TEST_int,   ///< int type attribute
+   TEST_long,   ///< long type attribute
+   TEST_double,   ///< double type attribute
+   TEST_host,   ///< host type attribute
+   TEST_string,   ///< string type attribute
+   TEST_ref,   ///< reference type attribute to store a pointer
+   TEST_obj_jb,   ///< object type attribute to store JB_Type an object
+   TEST_obj_any   ///< object type attribute to store any other object
 };
 
 LISTDEF(TEST_Type)
@@ -109,6 +113,7 @@ NAMEDEF(TESTN)
    NAME("TEST_obj_any")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define TEST_SIZE sizeof(TESTN)/sizeof(char *)
 
 

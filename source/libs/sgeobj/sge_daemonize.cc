@@ -32,6 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Putting a component into the background
+ *
+ * A multithreaded component cannot simply fork, so the single call is split
+ * into a prepare and a finalize half that the same thread has to make.
+ *
+ * @see sge_daemonize.h
+ */
+
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -60,44 +69,29 @@
 /* pipe for sge_daemonize_prepare() and sge_daemonize_finalize() */
 static int fd_pipe[2];
 
-/****** uti/os/sge_daemonize_prepare() *****************************************
-*  NAME
-*     sge_daemonize_prepare() -- prepare daemonize of process
-*
-*  SYNOPSIS
-*     int sge_daemonize_prepare() 
-*
-*  FUNCTION
-*     The parent process will wait for the child's successful daemonizing.
-*     The client process will report successful daemonizing by a call to
-*     sge_daemonize_finalize().
-*     The parent process will exit with one of the following exit states:
-*
-*     typedef enum uti_daemonize_state_type {
-*        SGE_DAEMONIZE_OK           = 0,  ok
-*        SGE_DAEMONIZE_DEAD_CHILD   = 1,  child exited before sending state 
-*        SGE_DAEMONIZE_TIMEOUT      = 2   timeout whild waiting for state 
-*     } uti_daemonize_state_t;
-*
-*     Daemonize the current application. Throws ourself into the
-*     background and dissassociates from any controlling ttys.
-*     Don't close filedescriptors mentioned in 'keep_open'.
-*      
-*     sge_daemonize_prepare() and sge_daemonize_finalize() will replace
-*     sge_daemonize() for multithreaded applications.
-*     
-*     sge_daemonize_prepare() must be called before starting any thread. 
-*
-*
-*  INPUTS
-*     void - none
-*
-*  RESULT
-*     int - true on success, false on error
-*
-*  SEE ALSO
-*     uti/os/sge_daemonize_finalize()
-*******************************************************************************/
+/**
+ * @brief Prepare daemonize of process
+ *
+ * The parent process will wait for the child's successful daemonizing.
+ * The client process will report successful daemonizing by a call to
+ * sge_daemonize_finalize().
+ * The parent process will exit with one of the following exit states:
+ * typedef enum uti_daemonize_state_type {
+ *    SGE_DAEMONIZE_OK           = 0,  ok
+ *    SGE_DAEMONIZE_DEAD_CHILD   = 1,  child exited before sending state
+ *    SGE_DAEMONIZE_TIMEOUT      = 2   timeout whild waiting for state
+ * } uti_daemonize_state_t;
+ * Daemonize the current application. Throws ourself into the
+ * background and dissassociates from any controlling ttys.
+ * Don't close filedescriptors mentioned in 'keep_open'.
+ * sge_daemonize_prepare() and sge_daemonize_finalize() will replace
+ * sge_daemonize() for multithreaded applications.
+ * sge_daemonize_prepare() must be called before starting any thread.
+ *
+ * @return true on success, false on error
+ *
+ * @see #sge_daemonize_finalize
+ */
 bool sge_daemonize_prepare() {
    pid_t pid;
    int fd;
@@ -228,32 +222,20 @@ bool sge_daemonize_prepare() {
    DRETURN(true);
 }
 
-/****** uti/os/sge_daemonize_finalize() ****************************************
-*  NAME
-*     sge_daemonize_finalize() -- finalize daemonize process
-*
-*  SYNOPSIS
-*     int sge_daemonize_finalize(fd_set *keep_open) 
-*
-*  FUNCTION
-*     report successful daemonizing to the parent process and close
-*     all file descriptors. Set file descirptors 0, 1 and 2 to /dev/null 
-*
-*     sge_daemonize_prepare() and sge_daemonize_finalize() will replace
-*     sge_daemonize() for multithreades applications.
-*
-*     sge_daemonize_finalize() must be called by the thread who have called
-*     sge_daemonize_prepare().
-*
-*  INPUTS
-*     fd_set *keep_open - file descriptor set to keep open
-*
-*  RESULT
-*     int - true on success
-*
-*  SEE ALSO
-*     uti/os/sge_daemonize_prepare()
-*******************************************************************************/
+/**
+ * @brief Finalize daemonize process
+ *
+ * report successful daemonizing to the parent process and close
+ * all file descriptors. Set file descirptors 0, 1 and 2 to /dev/null
+ * sge_daemonize_prepare() and sge_daemonize_finalize() will replace
+ * sge_daemonize() for multithreades applications.
+ * sge_daemonize_finalize() must be called by the thread who have called
+ * sge_daemonize_prepare().
+ *
+ * @note int - true on success
+ *
+ * @see #sge_daemonize_prepare
+ */
 void
 sge_daemonize_finalize() {
    int failed_fd;
@@ -301,30 +283,20 @@ sge_daemonize_finalize() {
    DRETURN_VOID;
 }
 
-/****** uti/os/sge_daemonize() ************************************************
-*  NAME
-*     sge_daemonize() -- Daemonize the current application
-*
-*  SYNOPSIS
-*     int sge_daemonize(fd_set *keep_open)
-*
-*  FUNCTION
-*     Daemonize the current application. Throws ourself into the
-*     background and dissassociates from any controlling ttys.
-*     Don't close filedescriptors mentioned in 'keep_open'.
-*
-*  INPUTS
-*     fd_set *keep_open - bitmask
-*     args   optional args
-*
-*  RESULT
-*     int - Successfull?
-*         1 - Yes
-*         0 - No
-*
-*  NOTES
-*     MT-NOTES: sge_daemonize() is not MT safe
-******************************************************************************/
+/**
+ * @brief Daemonize the current application
+ *
+ * Daemonize the current application. Throws ourself into the
+ * background and dissassociates from any controlling ttys.
+ * Don't close filedescriptors mentioned in 'keep_open'.
+ *
+ * @param keep_open file descriptors to keep open, terminated by -1
+ * @param nr_of_fds how many entries `keep_open` has
+ *
+ * @return Successfull? 1 - Yes 0 - No
+ *
+ * @note MT-NOTES: sge_daemonize() is not MT safe
+ */
 int sge_daemonize(int *keep_open, unsigned long nr_of_fds) {
 
    int fd;

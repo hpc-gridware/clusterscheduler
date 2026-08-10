@@ -24,22 +24,36 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief PE Task Request
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of PETR
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   PETR_jobid = 4150,
-   PETR_jataskid,
-   PETR_queuename,
-   PETR_owner,
-   PETR_cwd,
-   PETR_path_aliases,
-   PETR_environment,
-   PETR_submission_time,
-   PETR_cred
+   PETR_jobid = 4150,   ///< Job ID
+   PETR_jataskid,   ///< Array Task ID
+   PETR_queuename,   ///< Queue Name
+   PETR_owner,   ///< Owner
+   PETR_cwd,   ///< Current Working Directory
+   PETR_path_aliases,   ///< Path Aliases
+   PETR_environment,   ///< Environment
+   PETR_submission_time,   ///< Submission Time
+   PETR_cred   ///< TLS Credentials
 };
 
+/** @brief The attribute ids of PETR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int PETR_Type[] = {
    PETR_jobid,
    PETR_jataskid,
@@ -53,6 +67,10 @@ constexpr const int PETR_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of PETR
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define PETR_ATTRIBUTES \
    {PETR_jobid, "PETR_jobid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PETR_jataskid, "PETR_jataskid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

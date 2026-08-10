@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qstat - shows the jobs and queues of the cluster
+ */
+
 #include <memory>
 #include <sstream>
 #include <iostream>
@@ -78,6 +82,12 @@
 #include "qstat/group/ocs_QStatGroupViewJSON.h"
 #include "qstat/select/ocs_QStatSelectViewJSON.h"
 
+/** @brief The process environment, as the C library defines it
+ *
+ * Declared here rather than included, and passed to the command line parser so
+ * that options which read an environment variable resolve it against the
+ * submitting user's environment rather than against `getenv()`.
+ */
 extern char **environ;
 
 int main(int argc, char *argv[]) {

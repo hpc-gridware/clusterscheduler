@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The product version and its compatibility rules
+ */
+
 #include <cstdint>
 #include <string>
 #include <tuple>
@@ -27,6 +31,13 @@
 #include "cull/cull.h"
 
 namespace ocs {
+   /**
+    * @brief The product version, and whether two components may talk to each other
+    *
+    * Every GDI connection checks the peer's version with #do_versions_match, so
+    * a client of a different release is rejected cleanly instead of
+    * misinterpreting the data.
+    */
    class Version {
    public:
       static uint32_t get_version();
@@ -36,6 +47,7 @@ namespace ocs {
       static std::string get_short_product_name();
       static std::string get_long_product_name();
 
+      /// May a peer of this version talk to us?
       static bool do_versions_match(lList **alpp, uint32_t version, const char *host, const char *commproc, int id);
    };
 }

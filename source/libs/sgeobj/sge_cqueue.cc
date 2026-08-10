@@ -32,6 +32,18 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Cluster queues: the template the queue instances are derived from
+ *
+ * An administrator configures a cluster queue; qmaster derives one queue
+ * instance per host from it. Most attributes are therefore stored as a list of
+ * host or host group specific values, and #cqueue_attribute_array is the table
+ * saying, for each attribute, where its list lives and where the resolved
+ * value ends up in the instance.
+ *
+ * @see sge_cqueue.h
+ */
+
 #include <cstring>
 
 #include "uti/ocs_Pattern.h"
@@ -68,10 +80,12 @@
 #include "msg_clients_common.h"
 #include "msg_common.h"
 
+/// Debug layer the cluster queue traces are written to
 #define CQUEUE_LAYER TOP_LAYER
 
 /* *INDENT-OFF* */
 
+/// Every cluster queue attribute, terminated by an entry whose `cqueue_attr` is `NoName`
 list_attribute_struct cqueue_attribute_array[] = {
    { CQ_seq_no,                  QU_seq_no,                 AULNG_href,    AULNG_value,      NoName,     SGE_ATTR_SEQ_NO,            false,  false, nullptr},
    { CQ_nsuspend,                QU_nsuspend,               AULNG_href,    AULNG_value,      NoName,     SGE_ATTR_NSUSPEND,          false,  false, nullptr},
@@ -140,6 +154,17 @@ list_attribute_struct cqueue_attribute_array[] = {
 
 /* EB: ADOC: add commets */
 
+/**
+ * @brief Build the field selection for fetching cluster queues
+ *
+ * A GDI get can ask for only part of an object. The two flags pick the two
+ * halves that callers actually want: the queue instances, which are by far the
+ * bulk, and everything else. `CQ_name` is always included.
+ *
+ * @param fetch_all_qi true to include the queue instance sublist
+ * @param fetch_all_nqi true to include every attribute other than the instances
+ * @return the enumeration to pass to the GDI request
+ */
 lEnumeration *
 enumeration_create_reduced_cq(bool fetch_all_qi, bool fetch_all_nqi)
 {
@@ -172,40 +197,25 @@ enumeration_create_reduced_cq(bool fetch_all_qi, bool fetch_all_nqi)
    DRETURN(ret);
 }
 
-/****** sgeobj/cqueue/cqueue_name_split() *************************************
-*  NAME
-*     cqueue_name_split() -- Get the CQ and host part of a QI name 
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_name_split(const char *name, 
-*                       dstring *cqueue_name, 
-*                       dstring *host_domain, 
-*                       bool *has_hostname, 
-*                       bool *has_domain) 
-*
-*  FUNCTION
-*     Splits a qinstance name into its components.
-*
-*     Examples:
-*  
-*     QI-name         cqueue_name  host_domain  has_hostname  has_domain
-*     ------------------------------------------------------------------
-*     all.q           all.q        ""           false         false
-*     all.q@hostname  all.q        hostname     true          false
-*     all.q@@hgrp     all.q        @hgrp        false         true
-*
-*  INPUTS
-*     const char *name     - CQ/QD or QI name 
-*     dstring *cqueue_name - CQ part of the name 
-*     dstring *host_domain - host or hostgroup or nothing 
-*     bool *has_hostname   - is "host_domain" a hostname 
-*     bool *has_domain     - if "host_domain" a hostgroup 
-*
-*  RESULT
-*     bool - error state
-*     always true  - success
-*******************************************************************************/
+/**
+ * @brief Get the CQ and host part of a QI name
+ *
+ * Splits a qinstance name into its components.
+ * Examples:
+ * QI-name         cqueue_name  host_domain  has_hostname  has_domain
+ * ------------------------------------------------------------------
+ * all.q           all.q        ""           false         false
+ * `all.q@hostname`  all.q        hostname     true          false
+ * `all.q@@hgrp`     all.q        `@hgrp`        false         true
+ *
+ * @param name CQ/QD or QI name
+ * @param cqueue_name CQ part of the name
+ * @param host_domain host or hostgroup or nothing
+ * @param has_hostname is "host_domain" a hostname
+ * @param has_domain if "host_domain" a hostgroup
+ *
+ * @return error state always true  - success
+ */
 bool
 cqueue_name_split(const char *name, 
                   dstring *cqueue_name, dstring *host_domain, 
@@ -262,29 +272,19 @@ cqueue_name_split(const char *name,
    DRETURN(ret);
 }
 
-/****** sge_cqueue/cqueue_get_name_from_qinstance() ****************************
-*  NAME
-*     cqueue_get_name_from_qinstance() -- returns the cluster queue part of a queue
-*
-*  SYNOPSIS
-*     char* cqueue_get_name_from_qinstance(const char *queue_instance) 
-*
-*  FUNCTION
-*     Returns a character pointer to a newly malloced string containing the cluster
-*     queue part of a queue instance name.
-*
-*     The memory needs to be free'd by the caller
-*
-*  INPUTS
-*     const char *queue_instance - queue instance or cluster queue
-*
-*  RESULT
-*     char* - cluster queue name
-*
-*  NOTES
-*     MT-NOTE: cqueue_get_name_from_qinstance() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Returns the cluster queue part of a queue
+ *
+ * Returns a character pointer to a newly malloced string containing the cluster
+ * queue part of a queue instance name.
+ * The memory needs to be free'd by the caller
+ *
+ * @param queue_instance queue instance or cluster queue
+ *
+ * @return cluster queue name
+ *
+ * @note MT-NOTE: cqueue_get_name_from_qinstance() is MT safe
+ */
 char* cqueue_get_name_from_qinstance(const char *queue_instance)
 {
    char *at_sign = nullptr;
@@ -302,25 +302,16 @@ char* cqueue_get_name_from_qinstance(const char *queue_instance)
    return cqueue;
 }
 
-/****** sgeobj/cqueue/cqueue_create() *****************************************
-*  NAME
-*     cqueue_create() -- Create a new cluster queue object 
-*
-*  SYNOPSIS
-*     lListElem *
-*     cqueue_create(lList **answer_list, 
-*                   const char *name) 
-*
-*  FUNCTION
-*     Returns a new cluster queue object with the name "name". 
-*
-*  INPUTS
-*     lList **answer_list - AN_Type list 
-*     const char *name    - cluster queue name 
-*
-*  RESULT
-*     lListElem * - CQ_Type object or nullptr
-*******************************************************************************/
+/**
+ * @brief Create a new cluster queue object
+ *
+ * Returns a new cluster queue object with the name "name".
+ *
+ * @param answer_list AN_Type list
+ * @param name cluster queue name
+ *
+ * @return CQ_Type object or nullptr
+ */
 lListElem *
 cqueue_create(lList **answer_list, const char *name)
 {
@@ -340,31 +331,20 @@ cqueue_create(lList **answer_list, const char *name)
    DRETURN(ret);
 }
 
-/****** sgeobj/cqueue/cqueue_is_href_referenced() *****************************
-*  NAME
-*     cqueue_is_href_referenced() -- is a host/hostgroup referenced in cqueue 
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_is_href_referenced(const lListElem *this_elem, 
-*                               const lListElem *href, bool only_hostlist) 
-*
-*  FUNCTION
-*     Is the given "href" (host or hostgroup referenece) used in the
-*     definition of the cluster queue "this_elem"? If "only_hostlist" 
-*     is true then only the hostlist will be tested and all
-*     parameter lists will be ignored. 
-*
-*
-*  INPUTS
-*     const lListElem *this_elem - CQ_Type 
-*     const lListElem *href      - HR_Type 
-*     bool    only_hostlist      - check only hostlist and ignore 
-*                                  all parameter lists
-*
-*  RESULT
-*     bool - true if it is referenced
-*******************************************************************************/
+/**
+ * @brief Is a host/hostgroup referenced in cqueue
+ *
+ * Is the given "href" (host or hostgroup referenece) used in the
+ * definition of the cluster queue "this_elem"? If "only_hostlist"
+ * is true then only the hostlist will be tested and all
+ * parameter lists will be ignored.
+ *
+ * @param this_elem CQ_Type
+ * @param href HR_Type
+ * @param only_hostlist check only hostlist and ignore all parameter lists
+ *
+ * @return true if it is referenced
+ */
 bool 
 cqueue_is_href_referenced(const lListElem *this_elem, 
                           const lListElem *href, bool only_hostlist)
@@ -406,26 +386,17 @@ cqueue_is_href_referenced(const lListElem *this_elem,
    return ret;
 } 
 
-/****** sgeobj/cqueue/cqueue_is_hgroup_referenced() ***************************
-*  NAME
-*     cqueue_is_hgroup_referenced() -- is a hgroup referenced in cqueue 
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_is_hgroup_referenced(const lListElem *this_elem, 
-*                                 const lListElem *hgroup) 
-*
-*  FUNCTION
-*     Is the given "hgroup" object referenced in the cluster queue
-*     "this_elem".  
-*
-*  INPUTS
-*     const lListElem *this_elem - CQ_Type 
-*     const lListElem *hgroup    - HGRP_Type 
-*
-*  RESULT
-*     bool - true if "hgroup" is referenced
-*******************************************************************************/
+/**
+ * @brief Is a hgroup referenced in cqueue
+ *
+ * Is the given "hgroup" object referenced in the cluster queue
+ * "this_elem".
+ *
+ * @param this_elem CQ_Type
+ * @param hgroup HGRP_Type
+ *
+ * @return true if "hgroup" is referenced
+ */
 bool 
 cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hgroup)
 {
@@ -464,31 +435,20 @@ cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hgroup)
    return ret;
 }
 
-/****** sgeobj/cqueue/cqueue_is_a_href_referenced() ***************************
-*  NAME
-*     cqueue_is_a_href_referenced() -- Is one href referenced 
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_is_a_href_referenced(const lListElem *this_elem, 
-*                                 const lList *href_list, 
-*                                 bool only_hostlist) 
-*
-*  FUNCTION
-*     Returns true if at least one host contained in "href_list" is
-*     referenced in the cluster queue "this_elem". If "only_hostlist" 
-*     is true then only the hostlist will be tested and all
-*     parameter lists will be ignored. 
-*
-*  INPUTS
-*     const lListElem *this_elem - CQ_Type object
-*     const lList *href_list     - HR_Type list 
-*     bool only_hostlist         - check only hostlist and ignore 
-*                                  all parameter lists
-*
-*  RESULT
-*     bool - at least one object is referenced
-*******************************************************************************/
+/**
+ * @brief Is one href referenced
+ *
+ * Returns true if at least one host contained in "href_list" is
+ * referenced in the cluster queue "this_elem". If "only_hostlist"
+ * is true then only the hostlist will be tested and all
+ * parameter lists will be ignored.
+ *
+ * @param this_elem CQ_Type object
+ * @param href_list HR_Type list
+ * @param only_hostlist check only hostlist and ignore all parameter lists
+ *
+ * @return at least one object is referenced
+ */
 bool 
 cqueue_is_a_href_referenced(const lListElem *this_elem, 
                             const lList *href_list, bool only_hostlist)
@@ -506,29 +466,18 @@ cqueue_is_a_href_referenced(const lListElem *this_elem,
    return ret;
 } 
 
-/****** sgeobj/cqueue/cqueue_set_template_attributes() ************************
-*  NAME
-*     cqueue_set_template_attributes() -- Set default attributes 
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_set_template_attributes(lListElem *this_elem, 
-*                                    lList **answer_list) 
-*
-*  FUNCTION
-*     This function initializes all attributes of an empty cluster
-*     queue with default values. Please note that "this_elem" has to
-*     be "empty" before this function is called.  
-*
-*  INPUTS
-*     lListElem *this_elem - CQ_Type 
-*     lList **answer_list  - AN_Type 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*******************************************************************************/
+/**
+ * @brief Set default attributes
+ *
+ * This function initializes all attributes of an empty cluster
+ * queue with default values. Please note that "this_elem" has to
+ * be "empty" before this function is called.
+ *
+ * @param this_elem CQ_Type
+ * @param answer_list AN_Type
+ *
+ * @return error state true  - success false - error
+ */
 bool
 cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
 {
@@ -848,25 +797,16 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
    DRETURN(ret);
 }
 
-/****** sgeobj/cqueue/cqueue_list_add_cqueue() ********************************
-*  NAME
-*     cqueue_list_add_cqueue() -- Add a cluster queue to its master list 
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_list_add_cqueue(lListElem *queue) 
-*
-*  FUNCTION
-*     Add a cluster queue in its master list. 
-*
-*  INPUTS
-*     lListElem *queue - CQ_Type 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*******************************************************************************/
+/**
+ * @brief Add a cluster queue to its master list
+ *
+ * Add a cluster queue in its master list.
+ *
+ * @param this_list the master list to add to; nullptr uses the active data store's
+ * @param queue CQ_Type
+ *
+ * @return error state true  - success false - error
+ */
 bool
 cqueue_list_add_cqueue(lList *this_list, lListElem *queue)
 {
@@ -886,51 +826,33 @@ cqueue_list_add_cqueue(lList *this_list, lListElem *queue)
    DRETURN(ret);
 }
 
-/****** sgeobj/cqueue/cqueue_list_locate() ************************************
-*  NAME
-*     cqueue_list_locate() -- Find a cluster queue in list 
-*
-*  SYNOPSIS
-*     lListElem * 
-*     cqueue_list_locate(const lList *this_list, 
-*                        const char *name) 
-*
-*  FUNCTION
-*    Find the cluster queue with name "name" in the list "this_list". 
-*
-*  INPUTS
-*     const lList *this_list - CQ_Type list 
-*     const char *name       - cluster queue name 
-*
-*  RESULT
-*     lListElem * - cluster queue object or nullptr
-*******************************************************************************/
+/**
+ * @brief Find a cluster queue in list
+ *
+ * Find the cluster queue with name "name" in the list "this_list".
+ *
+ * @param this_list CQ_Type list
+ * @param name cluster queue name
+ *
+ * @return cluster queue object or nullptr
+ */
 lListElem *
 cqueue_list_locate(const lList *this_list, const char *name)
 {
    return lGetElemStrRW(this_list, CQ_name, name);
 }
 
-/****** sgeobj/cqueue/cqueue_locate_qinstance() *******************************
-*  NAME
-*     cqueue_locate_qinstance() -- returns one qinstance from a cqueue 
-*
-*  SYNOPSIS
-*     lListElem * 
-*     cqueue_locate_qinstance(const lListElem *this_elem, 
-*                             const char *hostname) 
-*
-*  FUNCTION
-*     Finds the queue instance locateted on the host "hostname" of a
-*     given cluster queue "this_elem". 
-*
-*  INPUTS
-*     const lListElem *this_elem - CQ_Type object 
-*     const char *hostname       - resolved hostname  
-*
-*  RESULT
-*     lListElem * - qinstance object or nullptr
-*******************************************************************************/
+/**
+ * @brief Returns one qinstance from a cqueue
+ *
+ * Finds the queue instance locateted on the host "hostname" of a
+ * given cluster queue "this_elem".
+ *
+ * @param this_elem CQ_Type object
+ * @param hostname resolved hostname
+ *
+ * @return qinstance object or nullptr
+ */
 lListElem *
 cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname)
 {
@@ -939,38 +861,30 @@ cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname)
    return qinstance_list_locate(qinstance_list, hostname, nullptr);
 }
 
-/****** sgeobj/cqueue/cqueue_verify_attributes() ******************************
-*  NAME
-*     cqueue_verify_attributes() -- check all cluster queue attributes 
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_verify_attributes(lListElem *cqueue, 
-*                              lList **answer_list, 
-*                              lListElem *reduced_elem, 
-*                              bool in_master) 
-*
-*  FUNCTION
-*     Check all cluster queue settings (and correct them if possible).
-*
-*        - test that there is exact one default setting 
-*        - check that there is only one setting for used hgroups/hosts
-*        - resolve hostnames
-*        - test attribute values  
-*
-*  INPUTS
-*     lListElem *cqueue       - CQ_Type object to be verified 
-*     lList **answer_list     - AN_Type list 
-*     lListElem *reduced_elem - reduced CQ_Type. Containes
-*                               only those attributes to be checked  
-*     bool in_master          - true if this function is called in the
-*                               master code 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*******************************************************************************/
+/**
+ * @brief Check all cluster queue attributes
+ *
+ * Check all cluster queue settings (and correct them if possible).
+ *    - test that there is exact one default setting
+ *    - check that there is only one setting for used hgroups/hosts
+ *    - resolve hostnames
+ *    - test attribute values
+ *
+ * @param cqueue CQ_Type object to be verified
+ * @param answer_list AN_Type list
+ * @param reduced_elem reduced CQ_Type. Containes only those attributes to be checked
+ * @param in_master true if this function is called in the master code
+ * @param master_calendar_list the calendars an attribute may refer to
+ * @param master_ckpt_list the checkpointing environments an attribute may refer to
+ * @param master_pe_list the parallel environments an attribute may refer to
+ * @param master_userset_list the usersets an attribute may refer to
+ * @param master_project_list the projects an attribute may refer to
+ * @param master_centry_list the complex entries an attribute may refer to
+ * @param master_cqueue_list the cluster queues an attribute may refer to
+ * @param master_hgroup_list the host groups an attribute may refer to
+ *
+ * @return error state true  - success false - error
+ */
 bool 
 cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                          lListElem *reduced_elem, bool in_master, const lList *master_calendar_list, 
@@ -1098,37 +1012,23 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/cqueue/cqueue_list_find_all_matching_references() **************
-*  NAME
-*     cqueue_list_find_all_matching_references() -- as it says 
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_list_find_all_matching_references(const lList *this_list, 
-*                                              lList **answer_list, 
-*                                              const char *cqueue_pattern, 
-*                                              lList **qref_list) 
-*
-*  FUNCTION
-*     Find all cqueues in "this_list" where the cqueue name matches 
-*     the pattern "cqueue_pattern". The names of that cqueues will
-*     be added to the sublist "qref_list" (QR_Type). "answer_list" will
-*     contain an error message if this function failes.
-*
-*  INPUTS
-*     const lList *this_list     - CQ_Type 
-*     lList **answer_list        - AN_Type 
-*     const char *cqueue_pattern - fnmatch patterm 
-*     lList **qref_list          - QR_Type list 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error 
-*
-*  NOTES
-*     MT-NOTE: cqueue_list_find_all_matching_references() is MT safe 
-*******************************************************************************/
+/**
+ * @brief As it says
+ *
+ * Find all cqueues in "this_list" where the cqueue name matches
+ * the pattern "cqueue_pattern". The names of that cqueues will
+ * be added to the sublist "qref_list" (QR_Type). "answer_list" will
+ * contain an error message if this function failes.
+ *
+ * @param this_list CQ_Type
+ * @param answer_list AN_Type
+ * @param cqueue_pattern fnmatch patterm
+ * @param qref_list QR_Type list
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: cqueue_list_find_all_matching_references() is MT safe
+ */
 bool
 cqueue_list_find_all_matching_references(const lList *this_list,
                                          lList **answer_list,
@@ -1158,30 +1058,16 @@ cqueue_list_find_all_matching_references(const lList *this_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/cqueue/cqueue_xattr_pre_gdi() **********************************
-*  NAME
-*     cqueue_xattr_pre_gdi() --  
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list) 
-*
-*  FUNCTION
-*     This function makes sure that a cqueue elements has the necessary
-*     information before it is sent to qmaster as a modify gdi request
-*
-*  INPUTS
-*     lList *this_list    - CQ_Type 
-*     lList **answer_list - AN_Type 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error ("answer_list" containes more information
-*
-*  NOTES
-*     MT-NOTE: cqueue_xattr_pre_gdi() is MT safe 
-*******************************************************************************/
+/**
+ * @brief This function makes sure that a cqueue elements has the necessary
+ *
+ * @param this_list CQ_Type
+ * @param answer_list AN_Type
+ *
+ * @return error state true  - success false - error ("answer_list" containes more information
+ *
+ * @note MT-NOTE: cqueue_xattr_pre_gdi() is MT safe
+ */
 bool
 cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list) 
 {
@@ -1248,30 +1134,20 @@ cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list)
    DRETURN(ret);
 }
 
-/****** sgeobj/cqueue_is_used_in_subordinate() ****************************
-*  NAME
-*     cqueue_is_used_in_subordinate() -- checks for cqueue references
-*
-*  SYNOPSIS
-*     bool cqueue_is_used_in_subordinate(const char *cqueue_name, 
-*                                        lListElem *cqueue)
-*
-*  FUNCTION
-*     The function goes through all cq subordinate definition and looks
-*     for the cq_name handed in. If it is found, the function will return
-*     true.
-*
-*  INPUTS
-*     const char *cqueue_name - cq name to look for
-*     const lListElem *cqueue - cq to look in
-*     
-*
-*  RESULT
-*     bool - true - a reference was found     
-*
-*  NOTES
-*     MT-NOTE: cqueue_is_used_in_subordinate() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Checks for cqueue references
+ *
+ * The function goes through all cq subordinate definition and looks
+ * for the cq_name handed in. If it is found, the function will return
+ * true.
+ *
+ * @param cqueue_name cq name to look for
+ * @param cqueue cq to look in
+ *
+ * @return true - a reference was found
+ *
+ * @note MT-NOTE: cqueue_is_used_in_subordinate() is MT safe
+ */
 bool
 cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue)
 {
@@ -1297,36 +1173,22 @@ cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue)
    DRETURN(ret);
 }
 
-/****** sgeobj/cqueue/cqueue_list_find_hgroup_references() ********************
-*  NAME
-*     cqueue_list_find_hgroup_references() -- find hgroup references 
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_list_find_hgroup_references(const lList *this_list, 
-*                                        lList **answer_list, 
-*                                        const lListElem *hgroup, 
-*                                        lList **string_list) 
-*
-*  FUNCTION
-*     This function add each cqueue name contained in "this_list" 
-*     to "string_list" where "hgroup" is referenced. Errors will
-*     be reported via "answer_list".
-*
-*  INPUTS
-*     const lList *this_list  - CQ_Type 
-*     lList **answer_list     - AN_Type 
-*     const lListElem *hgroup - HGRP_Type 
-*     lList **string_list     - ST_Type 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: cqueue_list_find_hgroup_references() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Find hgroup references
+ *
+ * This function add each cqueue name contained in "this_list"
+ * to "string_list" where "hgroup" is referenced. Errors will
+ * be reported via "answer_list".
+ *
+ * @param this_list CQ_Type
+ * @param answer_list AN_Type
+ * @param hgroup HGRP_Type
+ * @param string_list ST_Type
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: cqueue_list_find_hgroup_references() is MT safe
+ */
 bool
 cqueue_list_find_hgroup_references(const lList *this_list, lList **answer_list,
                                    const lListElem *hgroup, lList **string_list)
@@ -1347,32 +1209,20 @@ cqueue_list_find_hgroup_references(const lList *this_list, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/cqueue/cqueue_list_set_tag() ***********************************
-*  NAME
-*     cqueue_list_set_tag() -- tags each cqueue and optionally qinstance 
-*
-*  SYNOPSIS
-*     void 
-*     cqueue_list_set_tag(lList *this_list, 
-*                         uint32_t tag_value, bool tag_qinstances)
-*
-*  FUNCTION
-*     Tags all cqueues contained in "this_list" with the value 
-*     "tag_value". Optionally all qinstances contained in the
-*     CQ_qinstances-sublist will be tagged too if "tag_qinstances" 
-*     is true. 
-*
-*  INPUTS
-*     lList *this_list    - CQ_Type 
-*     uint32_t tag_value  - value
-*     bool tag_qinstances - true if instances should be tagged 
-*
-*  RESULT
-*     void - None
-*
-*  NOTES
-*     MT-NOTE: cqueue_list_set_tag() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Tags each cqueue and optionally qinstance
+ *
+ * Tags all cqueues contained in "this_list" with the value
+ * "tag_value". Optionally all qinstances contained in the
+ * CQ_qinstances-sublist will be tagged too if "tag_qinstances"
+ * is true.
+ *
+ * @param this_list CQ_Type
+ * @param tag_value value
+ * @param tag_qinstances true if instances should be tagged
+ *
+ * @note MT-NOTE: cqueue_list_set_tag() is MT safe
+ */
 void
 cqueue_list_set_tag(lList *this_list, uint32_t tag_value, bool tag_qinstances)
 {
@@ -1390,58 +1240,39 @@ cqueue_list_set_tag(lList *this_list, uint32_t tag_value, bool tag_qinstances)
    DRETURN_VOID;
 }
 
-/****** sgeobj/cqueue/cqueue_list_locate_qinstance() **************************
-*  NAME
-*     cqueue_list_locate_qinstance() -- finds a certain qinstance 
-*
-*  SYNOPSIS
-*     lListElem * 
-*     cqueue_list_locate_qinstance(lList *cqueue_list, const char *full_name) 
-*
-*  FUNCTION
-*     Returns a certain qinstance with the name "full_name" from
-*     the master cqueue list given by "cqueue_list". 
-*
-*  INPUTS
-*     lList *cqueue_list    - CQ_Type 
-*     const char *full_name - qinstance name of the form <CQNAME>@<HOSTNAME> 
-*
-*  RESULT
-*     lListElem * - QU_Type
-*
-*  NOTES
-*     MT-NOTE: cqueue_list_locate_qinstance() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Finds a certain qinstance
+ *
+ * Returns a certain qinstance with the name "full_name" from
+ * the master cqueue list given by "cqueue_list".
+ *
+ * @param cqueue_list CQ_Type
+ * @param full_name qinstance name of the form `CQNAME@HOSTNAME`
+ *
+ * @return QU_Type
+ *
+ * @note MT-NOTE: cqueue_list_locate_qinstance() is MT safe
+ */
 lListElem *
 cqueue_list_locate_qinstance(const lList *cqueue_list, const char *full_name)
 {
    return cqueue_list_locate_qinstance_msg(cqueue_list, full_name, true);
 }
 
-/****** sgeobj/cqueue/cqueue_list_locate_qinstance_msg() ***********************
-*  NAME
-*     cqueue_list_locate_qinstance_msg() -- finds a certain qinstance 
-*
-*  SYNOPSIS
-*     lListElem * 
-*     cqueue_list_locate_qinstance_msg(lList *cqueue_list, const char *full_name, bool raise_error) 
-*
-*  FUNCTION
-*     Returns a certain qinstance with the name "full_name" from
-*     the master cqueue list given by "cqueue_list". 
-*
-*  INPUTS
-*     lList *cqueue_list    - CQ_Type 
-*     const char *full_name - qinstance name of the form <CQNAME>@<HOSTNAME> 
-*     bool raise_error      - true - show error messages
-*                           - false - suppress error messages
-*
-*  RESULT
-*     lListElem * - QU_Type
-*
-*  NOTES
-*     MT-NOTE: cqueue_list_locate_qinstance_msg() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Finds a certain qinstance
+ *
+ * Returns a certain qinstance with the name "full_name" from
+ * the master cqueue list given by "cqueue_list".
+ *
+ * @param cqueue_list CQ_Type
+ * @param full_name qinstance name of the form `CQNAME@HOSTNAME`
+ * @param raise_error true - show error messages - false - suppress error messages
+ *
+ * @return QU_Type
+ *
+ * @note MT-NOTE: cqueue_list_locate_qinstance_msg() is MT safe
+ */
 lListElem *
 cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name, bool raise_error) 
 {
@@ -1477,34 +1308,21 @@ cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name
    DRETURN(ret);
 }
 
-/****** sge_cqueue/cqueue_find_used_href() *************************************
-*  NAME
-*     cqueue_find_used_href() -- Finds used host references  
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_find_used_href(lListElem *this_elem, 
-*                           lList **answer_list, 
-*                           lList **href_list) 
-*
-*  FUNCTION
-*     This function returns all host references in "href_list"
-*     for which attribute specific overwritings exist in the cqueue 
-*     "this_elem". 
-*
-*  INPUTS
-*     lListElem *this_elem - CQ_Type 
-*     lList **answer_list  - AN_Type 
-*     lList **href_list    - HR_Type 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: cqueue_find_used_href() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Finds used host references
+ *
+ * This function returns all host references in "href_list"
+ * for which attribute specific overwritings exist in the cqueue
+ * "this_elem".
+ *
+ * @param this_elem CQ_Type
+ * @param answer_list AN_Type
+ * @param href_list HR_Type
+ *
+ * @return error state true  - success false - error
+ *
+ * @note MT-NOTE: cqueue_find_used_href() is MT safe
+ */
 bool
 cqueue_find_used_href(lListElem *this_elem, lList **answer_list, 
                       lList **href_list) 
@@ -1536,34 +1354,21 @@ cqueue_find_used_href(lListElem *this_elem, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sgeobj/cqueue/cqueue_trash_used_href_setting() ************************
-*  NAME
-*     cqueue_trash_used_href_setting() -- trash certain setting 
-*
-*  SYNOPSIS
-*     bool 
-*     cqueue_trash_used_href_setting(lListElem *this_elem, 
-*                                    lList **answer_list, 
-*                                    const char *hgroup_or_hostname) 
-*
-*  FUNCTION
-*     Trash all attribute specific overwritings in "this_elem" for
-*     the give host or hgroup "hgroup_or_hostname". Errors will be 
-*     reported in "answer_list". 
-*
-*  INPUTS
-*     lListElem *this_elem           - CQ_Type 
-*     lList **answer_list            - AN_Type 
-*     const char *hgroup_or_hostname - host or hgroup name 
-*
-*  RESULT
-*     bool - error result
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: cqueue_trash_used_href_setting() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Trash certain setting
+ *
+ * Trash all attribute specific overwritings in "this_elem" for
+ * the give host or hgroup "hgroup_or_hostname". Errors will be
+ * reported in "answer_list".
+ *
+ * @param this_elem CQ_Type
+ * @param answer_list AN_Type
+ * @param hgroup_or_hostname host or hgroup name
+ *
+ * @return error result true  - success false - error
+ *
+ * @note MT-NOTE: cqueue_trash_used_href_setting() is MT safe
+ */
 bool
 cqueue_trash_used_href_setting(lListElem *this_elem, lList **answer_list, 
                                const char *hgroup_or_hostname) 
@@ -1600,34 +1405,18 @@ cqueue_trash_used_href_setting(lListElem *this_elem, lList **answer_list,
    DRETURN(ret);
 }
 
-/****** sge_cqueue/cqueue_purge_host() *****************************************
-*  NAME
-*     cqueue_purge_host() -- purge attributes from queue
-*
-*  SYNOPSIS
-*     bool cqueue_purge_host(lListElem *this_elem, lList **answer_list, lList 
-*     *attr_list, const char *hgroup_or_hostname) 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     lListElem *this_elem           - cqueue list element 
-*     lList **answer_list            - answer list 
-*     lList *attr_list               - list with attributes to search for
-*                                      hgroup_or_hostname      
-*                                      wildcards allowed 
-*     const char *hgroup_or_hostname -  host group or hostname which should be purged 
-*
-*  RESULT
-*     bool -  
-*        true     - hostname found and purged
-*        false    - attribute or hostname not found    
-*
-*  NOTES
-*     MT-NOTE: cqueue_purge_host() is not MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Purge attributes from queue
+ *
+ * @param this_elem cqueue list element
+ * @param answer_list answer list
+ * @param attr_list list with attributes to search for hgroup_or_hostname wildcards allowed
+ * @param hgroup_or_hostname host group or hostname which should be purged
+ *
+ * @return true     - hostname found and purged false    - attribute or hostname not found
+ *
+ * @note MT-NOTE: cqueue_purge_host() is not MT safe
+ */
 bool 
 cqueue_purge_host(lListElem *this_elem, lList **answer_list, 
                   lList *attr_list, const char *hgroup_or_hostname)
@@ -1678,6 +1467,19 @@ cqueue_purge_host(lListElem *this_elem, lList **answer_list,
    DRETURN(ret);
 }
 
+/**
+ * @brief Report configuration settings that look wrong but are not errors
+ *
+ * Backs `qconf -sick`. Warns about attribute settings that can never take
+ * effect and about host group settings that do not cover every host in the
+ * queue's host list.
+ *
+ * @param cqueue the cluster queue to inspect
+ * @param[out] answer_list receives error messages
+ * @param master_hgroup_list the host groups, needed to resolve the host list
+ * @param[out] ds receives the human readable report
+ * @return true when the queue could be inspected
+ */
 bool
 cqueue_sick(lListElem *cqueue, lList **answer_list, 
             lList *master_hgroup_list, dstring *ds)

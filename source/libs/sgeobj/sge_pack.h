@@ -33,11 +33,18 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for packing CULL conditions for transport
+ *
+ * @see sge_pack.cc
+ */
+
 #include "sgeobj/cull/sge_pack_PACK_L.h"
 
+/// What a packed CULL condition object is
 enum {
-   SGE_WHAT=1,
-   SGE_WHERE
+   SGE_WHAT=1, ///< a field selection, as `lWhat` builds it
+   SGE_WHERE   ///< a filter condition, as `lWhere` builds it
 };
 
 lListElem *lWhereToElem(const lCondition *where);

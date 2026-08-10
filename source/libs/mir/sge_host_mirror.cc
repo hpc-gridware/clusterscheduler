@@ -32,6 +32,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Mirroring the host lists
+ *
+ * Admin, submit and execution hosts are three separate master lists fed by one
+ * callback, which picks the list from the event type.
+ *
+ * @see sge_host_mirror.h
+ * @see sge_mirror.h
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/ocs_DataStore.h"
@@ -39,39 +49,27 @@
 #include "mir/sge_mirror.h"
 #include "mir/sge_host_mirror.h"
 
-/****** Eventmirror/host/host_update_master_list() *****************************
-*  NAME
-*     host_update_master_list() -- update the master hostlists
-*
-*  SYNOPSIS
-*     sge_callback_result rqs_update_master_list(object_description 
-*     sge_object_type type, sge_event_action action, lListElem 
-*     *event, void *clientdata) 
-*
-*  FUNCTION
-*     Update the global master lists of hosts
-*     based on an event.
-*     The function is called from the event mirroring interface.
-*     Updates admin, submit or execution host list depending
-*     on the event received.
-*
-*  INPUTS
-*     sge_object_type type     - event type
-*     sge_event_action action - action to perform
-*     lListElem *event        - the raw event
-*     void *clientdata        - client data
-*
-*  RESULT
-*     bool - true, if update is successful, else false
-*
-*  NOTES
-*     The function should only be called from the event mirror interface.
-*
-*  SEE ALSO
-*     Eventmirror/--Eventmirror
-*     Eventmirror/sge_mirror_update_master_list()
-*     Eventmirror/sge_mirror_update_master_list_host_key()
-*******************************************************************************/
+/**
+ * @brief Update the master hostlists
+ *
+ * Update the global master lists of hosts
+ * based on an event.
+ * The function is called from the event mirroring interface.
+ * Updates admin, submit or execution host list depending
+ * on the event received.
+ *
+ * @param evc the event client the event arrived on
+ * @param type event type
+ * @param action action to perform
+ * @param event the raw event
+ * @param clientdata client data
+ *
+ * @return true, if update is successful, else false
+ *
+ * @note The function should only be called from the event mirror interface.
+ *
+ * @see `sge_mirror_update_master_list()`, `sge_mirror_update_master_list_host_key()`
+ */
 sge_callback_result
 host_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                         sge_event_action action, lListElem *event, void *clientdata)

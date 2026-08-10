@@ -33,9 +33,21 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Collecting the scheduler's reasons for not dispatching a job
+ *
+ * While the scheduler tries to dispatch a job it records why each candidate
+ * did not work, into a **temporary** structure. Once the outcome is known the
+ * collection is either kept - schedd_mes_commit() - or thrown away -
+ * schedd_mes_rollback(); a job that did get dispatched has no reasons worth
+ * keeping. What survives is what `qstat -j <job_id>` prints as scheduling
+ * info, and the ids of those messages are defined in `sge_schedd_text.h`.
+ */
+
 #include "cull/cull.h"
 #include "sge_select_queue.h"
 
+/** Size of the buffer one formatted scheduler message is built in */
 #define MAXMSGLEN 256
 
 

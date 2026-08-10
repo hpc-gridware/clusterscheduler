@@ -19,11 +19,16 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Resource quota sets: limits across users, projects and hosts
+ */
+
 #include <string>
 
 #include "cull/cull.h"
 
 namespace ocs {
+   /// Validation helpers for resource quota sets (RQS)
    class ResourceQuota {
    public:
       static bool has_duplicates(const lList *centry_list, lList **answer_list, const std::string& object_name);

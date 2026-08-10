@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief User sets, access lists and departments
+ */
 #include <cstring>
 
 #include "uti/sge_log.h"
@@ -77,6 +81,21 @@ static int acl_is_valid_acl(lListElem *acl, lList **answer_list);
 
    deletes an userset list from the global userset_list
  ******************************************************************/
+/** @brief Delete a user set from the master list
+ *
+ * Refuses while the set is still referenced - by a queue's access lists, a
+ * project, or a resource quota - because a dangling reference would silently
+ * change who may run where.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep the user set to delete
+ * @param alpp receives messages for the caller
+ * @param userset_list the master user set list
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @return STATUS_OK on success
+ */
 int
 sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, lList **userset_list, char *ruser, char *rhost) {
    lListElem *found;
@@ -193,6 +212,16 @@ sge_change_queue_version_acl(ocs::gdi::Packet *packet, ocs::gdi::Task *task, con
       STATUS_OK         - on success
       STATUS_ESEMANTIC  - on error
  ******************************************************/
+/** @brief Check that a user set may become, or remain, a department
+ *
+ * A user may belong to only one department, so a set marked as one must not
+ * overlap any other department.
+ *
+ * @param userset_list the existing user sets
+ * @param new_userset the set being added or changed
+ * @param alpp receives messages for the caller
+ * @return STATUS_OK when the departments stay consistent
+ */
 int
 sge_verify_department_entries(const lList *userset_list, lListElem *new_userset, lList **alpp) {
    DENTER(TOP_LAYER);
@@ -210,24 +239,16 @@ sge_verify_department_entries(const lList *userset_list, lListElem *new_userset,
    DRETURN(STATUS_OK);
 }
 
-/****** qmaster/dept/dept_is_valid_defaultdepartment() ************************
-*  NAME
-*     dept_is_valid_defaultdepartment() -- is defaultdepartment correct 
-*
-*  SYNOPSIS
-*     static int dept_is_valid_defaultdepartment(lListElem *dept, 
-*                                                lList **answer_list) 
-*
-*  FUNCTION
-*     Check if the given defaultdepartment "dept" is valid. 
-*
-*  INPUTS
-*     lListElem *dept     - US_Type defaultdepartment 
-*     lList **answer_list - AN_Type answer list 
-*
-*  RESULT
-*     static int - 0 or 1
-*******************************************************************************/
+/**
+ * @brief Is defaultdepartment correct
+ *
+ * Check if the given defaultdepartment "dept" is valid.
+ *
+ * @param dept US_Type defaultdepartment
+ * @param answer_list AN_Type answer list
+ *
+ * @return 0 or 1
+ */
 static int
 dept_is_valid_defaultdepartment(lListElem *dept, lList **answer_list) {
    int ret = 1;
@@ -250,23 +271,16 @@ dept_is_valid_defaultdepartment(lListElem *dept, lList **answer_list) {
    DRETURN(ret);
 }
 
-/****** qmaster/acl/acl_is_valid_acl() ****************************************
-*  NAME
-*     acl_is_valid_acl() -- is the acl correct 
-*
-*  SYNOPSIS
-*     static int acl_is_valid_acl(lListElem *acl, lList **answer_list) 
-*
-*  FUNCTION
-*     Check if the given "acl" is correct 
-*
-*  INPUTS
-*     lListElem *acl      - US_Type acl 
-*     lList **answer_list - AN_Type list 
-*
-*  RESULT
-*     static int - 0 or 1
-*******************************************************************************/
+/**
+ * @brief Is the acl correct
+ *
+ * Check if the given "acl" is correct
+ *
+ * @param acl US_Type acl
+ * @param answer_list AN_Type list
+ *
+ * @return 0 or 1
+ */
 static int
 acl_is_valid_acl(lListElem *acl, lList **answer_list) {
    int ret = 1;
@@ -289,6 +303,15 @@ acl_is_valid_acl(lListElem *acl, lList **answer_list) {
    DRETURN(ret);
 }
 
+/** @brief Is the job's owner a member of the given department?
+ *
+ * @param job the job (`JB_Type`) whose owner and groups are checked
+ * @param alpp used to return error messages; may be `nullptr` when the caller
+ *             is probing several departments and a non-match is not an error
+ * @param dept_name the department to check against
+ * @param userset_list the departments (`US_Type`)
+ * @return true if the owner is a member of `dept_name`
+ */
 bool
 job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, const lList *userset_list) {
    DENTER(TOP_LAYER);
@@ -337,6 +360,18 @@ job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, con
    DRETURN(false);
 }
 
+/** @brief Assign the job to the first department its owner belongs to
+ *
+ * The departments are tried in list order and the first match wins, so a user
+ * in several departments gets whichever comes first - the order is the
+ * assignment rule. `defaultdepartment` is skipped during the search and used
+ * as the fallback when no other department matches.
+ *
+ * @param job the job (`JB_Type`); `JB_department` is set on success
+ * @param alpp used to return error messages
+ * @param userset_list the departments (`US_Type`)
+ * @return true if a department could be assigned
+ */
 bool
 job_set_department(lListElem *job, lList **alpp, const lList *userset_list) {
    DENTER(TOP_LAYER);
@@ -469,30 +504,21 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
    DRETURN(ret);
 }
 
-/****** sge_userset_qmaster/userset_still_used() *******************************
-*  NAME
-*     userset_still_used() -- True, if userset still used 
-*
-*  SYNOPSIS
-*     static bool userset_still_used(const char *u)
-*
-*  FUNCTION
-*     Returns true, if userset is still used as ACL with host_conf(5),
-*     queue_conf(5), or sge_pe(5).
-* 
-*     Use of usersets as ACLs in sge_conf(5) play no role here, 
-*     since such ACLs are checked in qmaster and thus are not 
-*     relevant for the scheduling algorithm.
-*
-*  INPUTS
-*     const char *p - the userset
-*
-*  RESULT
-*     static bool - True, if userset still used
-*
-*  NOTES
-*     MT-NOTE: userset_still_used() is not MT safe
-*******************************************************************************/
+/**
+ * @brief True, if userset still used
+ *
+ * Returns true, if userset is still used as ACL with host_conf(5),
+ * queue_conf(5), or sge_pe(5).
+ * Use of usersets as ACLs in sge_conf(5) play no role here,
+ * since such ACLs are checked in qmaster and thus are not
+ * relevant for the scheduling algorithm.
+ *
+ * @param p the userset
+ *
+ * @return True, if userset still used
+ *
+ * @note MT-NOTE: userset_still_used() is not MT safe
+ */
 static bool userset_still_used(const char *u) {
    const lListElem *qc, *cq, *hep, *rqs;
    dstring ds = DSTRING_INIT;
@@ -529,25 +555,19 @@ static bool userset_still_used(const char *u) {
 }
 
 
-/****** sge_userset_qmaster/userset_update_categories() ************************
-*  NAME
-*     userset_update_categories() -- Update all usersets wrts categories
-*
-*  SYNOPSIS
-*     void userset_update_categories(const lList *added, const lList *removed)
-*
-*  FUNCTION
-*     Each added/removed userset is verified whether it is used first
-*     time/still as ACL for host_conf(5)/queue_conf(5)/sge_pe(5). If
-*     so an event is sent.
-*
-*  INPUTS
-*     const lList *added   - List of added userset references (US_Type)
-*     const lList *removed - List of removed userset references (US_Type)
-*
-*  NOTES
-*     MT-NOTE: userset_update_categories() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Update all usersets wrts categories
+ *
+ * Each added/removed userset is verified whether it is used first
+ * time/still as ACL for host_conf(5)/queue_conf(5)/sge_pe(5). If
+ * so an event is sent.
+ *
+ * @param added List of added userset references (US_Type)
+ * @param removed List of removed userset references (US_Type)
+ * @param gdi_session the session the change belongs to
+ *
+ * @note MT-NOTE: userset_update_categories() is not MT safe
+ */
 void userset_update_categories(const lList *added, const lList *removed, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    const lListElem *ep;
@@ -591,40 +611,29 @@ void userset_update_categories(const lList *added, const lList *removed, uint64_
    DRETURN_VOID;
 }
 
-/****** sge_userset_qmaster/userset_mod() **************************************
-*  NAME
-*     userset_mod() -- gdi callback function for adding/modifing a userset
-*
-*  SYNOPSIS
-*     int userset_mod(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem 
-*     *new_userset, lListElem *userset, int add, const char *ruser, const char 
-*     *rhost, gdi_object_t *object, int sub_command, monitoring_t *monitor) 
-*
-*  FUNCTION
-*     This function is called from the generic gdi framework when a userset is
-*     added or modified.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
-*     lList **alpp             - answer list
-*     lListElem *new_userset   - if add it's an empty userset that needs to
-*                                be filled
-*                                if mod it's the actual stored userset
-*     lListElem *userset       - reduced userset object with new/modified values
-*     int add                  - 1 for gdi add
-*                                0 for gdi mod
-*     const char *ruser        - user who invoked the gdi request
-*     const char *rhost        - host where the gid request was invoked
-*     gdi_object_t *object     - structure of the gdi framework
-*     int sub_command          - requested sub_commands
-*     monitoring_t *monitor    - monitoring structure
-*
-*  RESULT
-*     int - 0 on success
-*           STATUS_EUNKNOWN if an error occurred
-*  NOTES
-*     MT-NOTE: userset_mod() is not MT safe, needs global lock 
-*******************************************************************************/
+/**
+ * @brief Gdi callback function for adding/modifing a userset
+ *
+ * This function is called from the generic gdi framework when a userset is
+ * added or modified.
+ *
+ * @param alpp answer list
+ * @param new_userset if add it's an empty userset that needs to be filled if mod it's the actual stored userset
+ * @param userset reduced userset object with new/modified values
+ * @param add 1 for gdi add 0 for gdi mod
+ * @param ruser user who invoked the gdi request
+ * @param rhost host where the gid request was invoked
+ * @param object structure of the gdi framework
+ * @param sub_command requested sub_commands
+ * @param monitor monitoring structure
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cmd the command being executed
+ *
+ * @return 0 on success STATUS_EUNKNOWN if an error occurred
+ *
+ * @note MT-NOTE: userset_mod() is not MT safe, needs global lock
+ */
 int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_userset,
                 lListElem *userset, int add, const char *ruser,
                 const char *rhost, gdi_object_t *object,
@@ -785,32 +794,22 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
 DRETURN(STATUS_EUNKNOWN);
 }
 
-/****** sge_userset_qmaster/userset_spool() ************************************
-*  NAME
-*     userset_spool() -- gdi callback funtion to spool a userset
-*
-*  SYNOPSIS
-*     int userset_spool(sge_gdi_ctx_class_t *ctx, lList **alpp, lListElem 
-*     *userset, gdi_object_t *object) 
-*
-*  FUNCTION
-*     This function is called by the gdi framework after successfully adding or
-*     modifing a userset.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
-*     lList **alpp             - answer list
-*     lListElem *userset       - userset object to spool
-*     gdi_object_t *object     - structure of the gdi framework
-*
-*  RESULT
-*     [alpp] - error messages will be added to this list
-*     0 - success
-*     STATUS_EEXIST - an error occurred
-*
-*  NOTES
-*     MT-NOTE: userset_spool() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Gdi callback funtion to spool a userset
+ *
+ * This function is called by the gdi framework after successfully adding or
+ * modifing a userset.
+ *
+ * @param alpp answer list
+ * @param userset userset object to spool
+ * @param object structure of the gdi framework
+ * @param packet the client request
+ * @param task the GDI task being answered
+ *
+ * @return [alpp] - error messages will be added to this list 0 - success STATUS_EEXIST - an error occurred
+ *
+ * @note MT-NOTE: userset_spool() is not MT safe
+ */
 int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *userset, gdi_object_t *object) {
    lList *answer_list = nullptr;
    bool dbret;
@@ -830,32 +829,24 @@ int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, 
 
 }
 
-/****** sge_userset_qmaster/userset_success() **********************************
-*  NAME
-*     userset_success() -- do something after a successful add/mod
-*
-*  SYNOPSIS
-*     int userset_success(sge_gdi_ctx_class_t *ctx, lListElem *ep, lListElem 
-*     *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) 
-*
-*  FUNCTION
-*     This function is called from the framework after successfull add/mod and
-*     spool.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
-*     lListElem *ep            - new added userset
-*     lListElem *old_ep        - for mod the old userset
-*     gdi_object_t *object     - structure of the gdi framework
-*     lList **ppList           - additional list that is returned to the client
-*     monitoring_t *monitor    - monitoring structure
-*
-*  RESULT
-*     int - 0 on success
-*
-*  NOTES
-*     MT-NOTE: userset_success() is not MT safe 
-*******************************************************************************/
+/**
+ * @brief Do something after a successful add/mod
+ *
+ * This function is called from the framework after successfull add/mod and
+ * spool.
+ *
+ * @param ep new added userset
+ * @param old_ep for mod the old userset
+ * @param object structure of the gdi framework
+ * @param ppList additional list that is returned to the client
+ * @param monitor monitoring structure
+ * @param packet the client request
+ * @param task the GDI task being answered
+ *
+ * @return 0 on success
+ *
+ * @note MT-NOTE: userset_success() is not MT safe
+ */
 int userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                     monitoring_t *monitor) {
    DENTER(TOP_LAYER);

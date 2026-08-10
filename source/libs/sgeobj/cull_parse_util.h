@@ -33,26 +33,39 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for parsing textual lists into CULL lists
+ *
+ * @see cull_parse_util.cc
+ */
+
 #include <ostream>
 
 #include "cull/cull.h"
 
+/// Is this CULL type one whose value is printed as a number?
 #define L_IS_NUM_TYPE(x) ((x == lDoubleT) || (x == lUlongT) || (x == lLongT)  || (x == lIntT))
 
-/*
-** flags for uni_print_list
-*/
-#define FLG_NO_DELIS_STRINGS 1
-#define FLG_NO_DELIS_NUMBERS 2
-#define FLG_NO_VALUE_AS_EMPTY 4
+/**
+ * @name Flags for uni_print_list
+ * @{
+ */
+#define FLG_NO_DELIS_STRINGS 1  ///< do not put the delimiter between string values
+#define FLG_NO_DELIS_NUMBERS 2  ///< do not put the delimiter between numeric values
+#define FLG_NO_VALUE_AS_EMPTY 4 ///< print an unset value as nothing rather than as `NONE`
+/** @} */
 
-/*
-** flags for parse_list_simple
-*/
-#define FLG_LIST_APPEND   1
-#define FLG_LIST_REPLACE  2
-#define FLG_LIST_MERGE    4
-#define FLG_LIST_MERGE_DOUBLE_KEY    8
+/**
+ * @name Flags for parse_list_simple
+ *
+ * What to do when the option already has a value in the target object.
+ * @{
+ */
+#define FLG_LIST_APPEND   1 ///< append the parsed entries to the existing ones
+#define FLG_LIST_REPLACE  2 ///< replace the existing list with the parsed one
+#define FLG_LIST_MERGE    4 ///< merge by key; a parsed entry overrides one of the same name
+#define FLG_LIST_MERGE_DOUBLE_KEY    8 ///< like #FLG_LIST_MERGE, but the key is a name/value pair
+/** @} */
 
 int parse_list_simple(lList *cmdline, const char *option, lListElem *job, int field, int nm_var, int nm_value, uint32_t flags);
 

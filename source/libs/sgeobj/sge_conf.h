@@ -35,6 +35,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations of the cluster configuration accessors
+ *
+ * @see sge_conf.cc
+ */
+
 #include <string>
 #include <tuple>
 #include <limits>
@@ -46,37 +52,51 @@
 #include "sgeobj/ocs_BindingUnit.h"
 #include "sgeobj/ocs_CEntry.h"   /* ocs::CEntry::Type for config_param_value_type */
 
+/// Lowest group id the `gid_range` may hand out; ids below it belong to the system
 #define GID_RANGE_NOT_ALLOWED_ID 100
+/// Sentinel for a resource limit that the configuration does not set
 #define RLIMIT_UNDEFINED -9999
 
+/// `PDC_INTERVAL` value that switches the usage collector off entirely
 #define PDC_DISABLED std::numeric_limits<uint64_t>::max()
 
+/// `binding_params` as it reads before an administrator changes it
 #define BINDING_PARAMS_DEFAULT    "enabled=true,implicit=false,mode=default,default_unit=C,on_any_host=false,filter=NONE"
+/// `jsv_params` as it reads before an administrator changes it
 #define JSV_PARAMS_DEFAULT        NONE_STR
+/// Job attributes a JSV may modify unless `jsv_allowed_mod` says otherwise
 #define JSV_ALLOWED_MOD_DEFAULT   "ac,h,i,e,o,j,M,N,p,w"
 
+/// Which implementation applies a core binding request
 typedef enum {
-   BINDING_MODE_DEFAULT = 0,
-   BINDING_MODE_OCS,
-   BINDING_MODE_GCS
+   BINDING_MODE_DEFAULT = 0, ///< let the product decide
+   BINDING_MODE_OCS,         ///< the Open Cluster Scheduler implementation
+   BINDING_MODE_GCS          ///< the Gridware Cluster Scheduler implementation
 } binding_mode_t;
 
+/// What to do with a job's active directory after the job finished
 typedef enum {
-   KEEP_ACTIVE_TRUE = 0,
-   KEEP_ACTIVE_FALSE,
-   KEEP_ACTIVE_ERROR
+   KEEP_ACTIVE_TRUE = 0, ///< always keep it
+   KEEP_ACTIVE_FALSE,    ///< always remove it
+   KEEP_ACTIVE_ERROR     ///< keep it only when the job failed
 } keep_active_t;
 
+/// Where the execution daemon takes a job's resource usage from
 typedef enum {
-   USAGE_COLLECTION_NONE = 0,   // no usage collection
-   USAGE_COLLECTION_PDC,        // usage collection via PDC
-   USAGE_COLLECTION_HYBRID,     // usage collection via PDC and systemd
-   USAGE_COLLECTION_DEFAULT     // default: systemd if available, otherwise PDC
+   USAGE_COLLECTION_NONE = 0,   ///< no usage collection
+   USAGE_COLLECTION_PDC,        ///< usage collection via PDC
+   USAGE_COLLECTION_HYBRID,     ///< usage collection via PDC and systemd
+   USAGE_COLLECTION_DEFAULT     ///< default: systemd if available, otherwise PDC
 } usage_collection_t;
 
+/// Callback that puts the calling process into the background; returns 0 on success
 typedef int (*tDaemonizeFunc)(void *ctx);
 
-/* This list is *ONLY* used by the execd and should be moved eventually */
+/**
+ * @brief The local configuration of this execution host
+ *
+ * @todo Used *only* by the execution daemon and should move there.
+ */
 extern lList *Execd_Config_List;
 
 int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_root, const lListElem *global, const lListElem *local, lList **lpp);
@@ -158,6 +178,15 @@ bool mconf_get_sharetree_reserved_usage();
 keep_active_t mconf_get_keep_active();
 usage_collection_t mconf_get_usage_collection();
 bool mconf_get_enable_mem_details();
+/**
+ * @brief Is core binding enabled?
+ *
+ * @return the configured value
+ *
+ * @warning Declared but never defined anywhere in the tree, and never called.
+ *          Use #mconf_is_binding_enabled instead, which reads the `enabled`
+ *          key of `binding_params`.
+ */
 bool mconf_get_enable_binding();
 bool mconf_get_simulate_execds();
 bool mconf_get_simulate_jobs();
@@ -240,12 +269,17 @@ binding_mode_t mconf_get_binding_mode();
 ocs::BindingUnit::Unit mconf_get_default_binding_unit();
 std::string mconf_get_topology_file();
 
-/* CS-2313a: list-ness of a global/local config parameter, used to render its JSON value
- * as an array. Grounded in how the config loader (sge_conf.cc) parses each parameter. */
+/**
+ * @brief Whether a configuration parameter holds one value or a list
+ *
+ * Used to render the parameter's JSON value as an array rather than a string
+ * (CS-2313a). The classification follows how the configuration loader in
+ * `sge_conf.cc` actually parses each parameter.
+ */
 typedef enum {
-   CONF_PARAM_SCALAR = 0,      /* plain string value */
-   CONF_PARAM_VALUE_LIST,      /* " \t," separated values -> JSON array of strings */
-   CONF_PARAM_NAMEVALUE_LIST   /* ", " separated KEY=VALUE -> JSON array of {name,value} */
+   CONF_PARAM_SCALAR = 0,      ///< plain string value
+   CONF_PARAM_VALUE_LIST,      ///< `" \t,"` separated values, rendered as a JSON array of strings
+   CONF_PARAM_NAMEVALUE_LIST   ///< `", "` separated `KEY=VALUE`, rendered as a JSON array of `{name,value}`
 } conf_param_list_type_t;
 
 conf_param_list_type_t config_param_list_type(const char *name);

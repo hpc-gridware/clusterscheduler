@@ -24,16 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Spooling Type
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of SPT
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   SPT_type = 7750,
-   SPT_name,
-   SPT_rules
+   SPT_type = 7750,   ///< Type
+   SPT_name,   ///< Name
+   SPT_rules   ///< Rules
 };
 
+/** @brief The attribute ids of SPT, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int SPT_Type[] = {
    SPT_type,
    SPT_name,
@@ -41,6 +55,10 @@ constexpr const int SPT_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of SPT
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define SPT_ATTRIBUTES \
    {SPT_type, "SPT_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
    {SPT_name, "SPT_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

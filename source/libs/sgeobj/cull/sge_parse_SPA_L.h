@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Commandline Argument
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -86,19 +90,19 @@
 */
 
 enum {
-   SPA_number = SPA_LOWERBOUND,
-   SPA_argtype,
-   SPA_switch_val,
-   SPA_switch_arg,
-   SPA_occurrence,
-   SPA_argval_lDoubleT,
-   SPA_argval_lUlongT,
-   SPA_argval_lUlong64T,
-   SPA_argval_lLongT,
-   SPA_argval_lBoolT,
-   SPA_argval_lIntT,
-   SPA_argval_lStringT,
-   SPA_argval_lListT
+   SPA_number = SPA_LOWERBOUND,   ///< Option Number
+   SPA_argtype,   ///< Argument Type
+   SPA_switch_val,   ///< Switch
+   SPA_switch_arg,   ///< Switch Argument
+   SPA_occurrence,   ///< Occurence
+   SPA_argval_lDoubleT,   ///< Parsed Double Argument
+   SPA_argval_lUlongT,   ///< Parsed Ulong Argument
+   SPA_argval_lUlong64T,   ///< Parsed Ulong64 Argument
+   SPA_argval_lLongT,   ///< Parsed Long Argument
+   SPA_argval_lBoolT,   ///< Parsed Char Argument
+   SPA_argval_lIntT,   ///< Parsed Int Argument
+   SPA_argval_lStringT,   ///< String Argument
+   SPA_argval_lListT   ///< Parsed List Argument
 };
 
 LISTDEF(SPA_Type)
@@ -133,6 +137,7 @@ NAMEDEF(SPAN)
    NAME("SPA_argval_lListT")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define SPA_SIZE sizeof(SPAN)/sizeof(char *)
 
 

@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for load values an execution host reports
+ *
+ * @see sge_load.cc
+ */
+
 bool 
 sge_is_static_load_value(const char *name);
 

@@ -33,17 +33,25 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Interface of the command line to job object conversion
+ */
+
 /*
 ** flags for parse_script_file
 */
 
-#define FLG_HIGHER_PRIOR         0
-#define FLG_LOWER_PRIOR          1
-#define FLG_USE_NO_PSEUDOS       2
-#define FLG_DONT_ADD_SCRIPT      4
-#define FLG_IGNORE_EMBEDED_OPTS  8
-#define FLG_IGN_NO_FILE          16 
+#define FLG_HIGHER_PRIOR         0    ///< options from the script win over options on the command line
+#define FLG_LOWER_PRIOR          1    ///< options on the command line win over options in the script
+#define FLG_USE_NO_PSEUDOS       2    ///< do not turn the operands into pseudo-arguments
+#define FLG_DONT_ADD_SCRIPT      4    ///< do not add the script itself to the option list
+#define FLG_IGNORE_EMBEDED_OPTS  8    ///< ignore the `#$` lines in the script
+#define FLG_IGN_NO_FILE          16   ///< a missing script file is not an error  
 
+/** @brief The directive prefix used when the job did not ask for another one
+ *
+ * `"#$"` - the marker that makes a comment line in a job script an option line.
+ */
 extern const char *default_prefix;
 
 lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *cell_root, const char *unqualified_hostname,

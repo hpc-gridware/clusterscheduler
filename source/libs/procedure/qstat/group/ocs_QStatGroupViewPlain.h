@@ -19,11 +19,22 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Plain text rendering of `qstat -g c`
+ */
+
 #include "ocs_QStatGroupViewBase.h"
 
 namespace ocs {
+   /** @brief Renders `qstat -g c` as the columnar plain text a terminal expects
+    *
+    * @ingroup libprocedure
+    */
    class QStatGroupViewPlain : public QStatGroupViewBase {
    public:
+      /** @brief Build the plain text view
+       * @param parameter the call's parameters
+       */
       explicit QStatGroupViewPlain(const ProcedureParameter &parameter) : QStatGroupViewBase(parameter) {};
       ~QStatGroupViewPlain() override = default;
 

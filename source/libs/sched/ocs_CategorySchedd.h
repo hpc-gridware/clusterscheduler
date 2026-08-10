@@ -19,9 +19,23 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The scheduler's use of job categories
+ *
+ * Jobs whose requests are identical form a **category**. If one job of a
+ * category cannot be dispatched, no other job of it can either, so the
+ * scheduler marks the category as rejected and skips the rest of its jobs
+ * without evaluating them again. That is what keeps a scheduling run over
+ * thousands of identical jobs affordable.
+ *
+ * Rejection is tracked twice, because a job may be dispatchable now but not
+ * reservable, or the other way round.
+ */
+
 #include "cull/cull.h"
 
 namespace ocs {
+   /** @brief Marks and queries the rejected state of a job's category */
    class CategorySchedd {
    public:
       static void

@@ -33,6 +33,18 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/       
 
+/** @file
+ * @brief Generic access to any CULL object, without knowing its type
+ *
+ * Code that has to treat every object alike - spooling, the flat file
+ * readers/writers, the GDI verification layer - cannot name each attribute.
+ * These utilities let it ask an object what type it is, read and write an
+ * attribute given only its field number, and convert between an attribute and
+ * its string representation.
+ *
+ * @see sge_object.cc
+ */
+
 #include "uti/sge_dstring.h"
 
 #include "cull/cull.h"
@@ -40,76 +52,57 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 
-/****** sgeobj/object/--Object-Handling ***************************************
-*
-*  NAME
-*     Object Handling -- utilities for sgeobj object access
-*
-*  FUNCTION
-*     This module provides utility functions for accessing CULL 
-*     objects, e.g. getting a string representation for fields, 
-*     setting field contents from string representation etc.
-*
-*  NOTES
-*
-*  SEE ALSO
-*     sgeobj/Object/object_has_type()
-*     sgeobj/Object/object_get_type()
-*     sgeobj/Object/object_get_subtype()
-*     sgeobj/Object/object_get_primary_key()
-*     sgeobj/Object/object_get_name_prefix()
-*     sgeobj/Object/object_append_field_to_dstring()
-*     sgeobj/Object/object_parse_field_from_string()
-*     sgeobj/Object/ocs::DataStore::get_master_list()
-*     sgeobj/Object/object_type_get_name()
-*     sgeobj/Object/object_type_get_descr()
-*     sgeobj/Object/object_type_get_key_nm()
-******************************************************************************/
-
+/**
+ * @brief Replace the string "none" in a field with nullptr
+ *
+ * Users write `none` where the object model wants an unset field. The
+ * comparison is case insensitive; a field that is already nullptr is left
+ * alone.
+ */
 #define NULL_OUT_NONE(ep, nm) \
    if (lGetString(ep, nm) != nullptr && strcasecmp(lGetString(ep, nm), "none") == 0) { \
       lSetString(ep, nm, nullptr); \
    }
 
-/****** sgeobj/object/--Object-Typedefs ***************************************
-*
-*  NAME
-*     Object-Typedefs -- typedefs for generic object handling
-*
-*  SYNOPSIS
-*     The enumeration sge_object_type defines different object and 
-*     message types.
-*****************************************************************************/
+/**
+ * @brief The object and message types the master keeps a list of
+ *
+ * The value is an index, not a name: `object_base` in `sge_object.cc` and
+ * `dev_mirror_base` in `libs/mir/sge_mirror.cc` are both sized
+ * `[SGE_TYPE_ALL]` and indexed by this enum. Inserting or removing a value
+ * shifts every row below it in both tables, and the rows carry no type name to
+ * grep for, so the mistake is silent. Count the rows after editing.
+ */
 typedef enum {
-   SGE_TYPE_FIRST = 0,
-   SGE_TYPE_CALENDAR = SGE_TYPE_FIRST,
-   SGE_TYPE_CKPT,
-   SGE_TYPE_CONFIG,
-   SGE_TYPE_EXECHOST,
-   SGE_TYPE_JATASK, // 4
-   SGE_TYPE_PETASK,
-   SGE_TYPE_JOB,
-   SGE_TYPE_JOB_SCHEDD_INFO,
-   SGE_TYPE_SHARETREE,
-   SGE_TYPE_PE,
-   SGE_TYPE_PROJECT,
-   SGE_TYPE_CQUEUE,
-   SGE_TYPE_QINSTANCE, // 12
-   SGE_TYPE_SCHEDD_CONF,
-   SGE_TYPE_SCHEDD_MONITOR,
-   SGE_TYPE_SHUTDOWN,
-   SGE_TYPE_MARK_4_REGISTRATION,
-   SGE_TYPE_USER,
-   SGE_TYPE_USERSET,
-   SGE_TYPE_HGROUP,
-   SGE_TYPE_CENTRY,
-   SGE_TYPE_SUSER,
-   SGE_TYPE_RQS,
-   SGE_TYPE_AR,
-   SGE_TYPE_JOBSCRIPT,
-   SGE_TYPE_CATEGORY, // 25
-   SGE_TYPE_PROCEDURE,
-   SGE_TYPE_RL,
+   SGE_TYPE_FIRST = 0,                    ///< lowest valid value, for iteration
+   SGE_TYPE_CALENDAR = SGE_TYPE_FIRST,    ///< calendars
+   SGE_TYPE_CKPT,                         ///< checkpointing environments
+   SGE_TYPE_CONFIG,                       ///< global and host local configurations
+   SGE_TYPE_EXECHOST,                     ///< execution hosts
+   SGE_TYPE_JATASK,                       ///< array tasks of a job
+   SGE_TYPE_PETASK,                       ///< tasks of a parallel job
+   SGE_TYPE_JOB,                          ///< jobs
+   SGE_TYPE_JOB_SCHEDD_INFO,              ///< the scheduler's reason messages for pending jobs
+   SGE_TYPE_SHARETREE,                    ///< the share tree
+   SGE_TYPE_PE,                           ///< parallel environments
+   SGE_TYPE_PROJECT,                      ///< projects
+   SGE_TYPE_CQUEUE,                       ///< cluster queues
+   SGE_TYPE_QINSTANCE,                    ///< queue instances, one per cluster queue and host
+   SGE_TYPE_SCHEDD_CONF,                  ///< the scheduler configuration
+   SGE_TYPE_SCHEDD_MONITOR,               ///< the scheduler monitoring trigger; carries no object
+   SGE_TYPE_SHUTDOWN,                     ///< the shutdown notification; carries no object
+   SGE_TYPE_MARK_4_REGISTRATION,          ///< tells an event client to register again; carries no object
+   SGE_TYPE_USER,                         ///< users
+   SGE_TYPE_USERSET,                      ///< user sets
+   SGE_TYPE_HGROUP,                       ///< host groups
+   SGE_TYPE_CENTRY,                       ///< complex entries, i.e. the definitions of resources
+   SGE_TYPE_SUSER,                        ///< submit users, used to enforce the per user job limit
+   SGE_TYPE_RQS,                          ///< resource quota sets
+   SGE_TYPE_AR,                           ///< advance reservations
+   SGE_TYPE_JOBSCRIPT,                    ///< job scripts
+   SGE_TYPE_CATEGORY,                     ///< job categories
+   SGE_TYPE_PROCEDURE,                    ///< procedures; carries no object
+   SGE_TYPE_RL,                           ///< RBAC roles
 
 
    /*
@@ -127,16 +120,16 @@ typedef enum {
     * carry no type name to grep for. Count them after editing.
     */
 
-   SGE_TYPE_ALL,            /* must be the second to the last entry */
-   SGE_TYPE_NONE            /* this must the last entry */
+   SGE_TYPE_ALL,                          ///< number of real types; must be the second to the last entry
+   SGE_TYPE_NONE                          ///< not a type; must be the last entry
 } sge_object_type;
 
 
-/* Datastructure for internal storage of object/message related information */
+/// One row of the type table: what a #sge_object_type value actually refers to
 typedef struct {
-   const char *type_name;                 /* type name, e.g. "JOB"      */
-   lDescr *descr;                         /* descriptor, e.g. JB_Type       */
-   const int key_nm;                      /* nm of key attribute        */
+   const char *type_name;                 ///< type name, e.g. "JOB"
+   lDescr *descr;                         ///< descriptor, e.g. JB_Type; nullptr for a type that carries no object
+   const int key_nm;                      ///< nm of the key attribute, or `NoName` when the type has no key
 } object_description;
 
 const char *
@@ -160,6 +153,15 @@ object_has_type(const lListElem *object, const lDescr *descr);
 const lDescr *
 object_get_type(const lListElem *object);
 
+/**
+ * @brief The descriptor of the elements a list attribute holds
+ *
+ * @param nm the list attribute to ask about
+ * @return the element descriptor, or nullptr when `nm` is not a list attribute
+ *
+ * @note Defined in the generated `sgeobj/cull/sge_sub_object.cc`, which is
+ *       excluded from doxygen, so this declaration carries the documentation.
+ */
 const lDescr *
 object_get_subtype(int nm);
 

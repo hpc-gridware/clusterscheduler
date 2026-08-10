@@ -19,15 +19,27 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Controller of `qhost`: runs the request and drives the view
+ */
+
 #include "ocs_QHostParameter.h"
 #include "ocs_QHostModelClient.h"
 #include "ocs_QHostViewBase.h"
 
 namespace ocs {
+   /** @brief Runs one `qhost` request: let the model fetch, let the view render
+    *
+    * @ingroup libprocedure
+    */
    class QHostController {
-      std::ostream &out_;
+      std::ostream &out_;   ///< Where the view writes
    public:
+      /** @brief Bind a controller to an output stream
+       * @param out the stream the view will write to
+       */
       explicit QHostController(std::ostream &out) : out_(out) {};
+
       virtual ~QHostController() = default;
 
       virtual void process_request(QHostParameter &parameter, QHostModelBase &model, QHostViewBase &view);

@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base view of `qstat -j`, and the interface the three output formats implement
+ */
+
 #include <sstream>
 
 #include "uti/sge_bitfield.h"
@@ -34,6 +38,11 @@
 
 #include "qstat/job/ocs_QStatJobViewBase.h"
 
+/** @brief Report the selected jobs, and why the pending ones are waiting
+ * @param os stream to write to
+ * @param parameter the call's parameters
+ * @param model the fetched lists
+ */
 void ocs::QStatJobViewBase::show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) {
    DENTER(TOP_LAYER);
    bool first_job = true;
@@ -70,6 +79,12 @@ void ocs::QStatJobViewBase::show_jobs_and_reasons(std::ostream &os, QStatParamet
 }
 
 
+/** @brief Report one job, one hook call per row
+ * @param os stream to write to
+ * @param ilp the scheduler job info list, holding the reasons a job is not running
+ * @param job the job (`JB_Type`)
+ * @param flags which parts of the listing were requested
+ */
 void ocs::QStatJobViewBase::show_job(std::ostream &os, const lList *ilp, const lListElem *job, int flags) {
    DENTER(TOP_LAYER);
 
@@ -180,6 +195,10 @@ void ocs::QStatJobViewBase::show_job(std::ostream &os, const lList *ilp, const l
  * Enrolled tasks that already have the JERROR bit set in JAT_state are
  * excluded.
  */
+/** @brief Count the tasks of an array job that have not started yet
+ * @param job the job (`JB_Type`)
+ * @return the number of pending tasks
+ */
 uint32_t ocs::QStatJobViewBase::count_pending_tasks(const lListElem *job) {
    uint32_t pending = 0;
    const int range_fields[] = {
@@ -203,6 +222,32 @@ uint32_t ocs::QStatJobViewBase::count_pending_tasks(const lListElem *job) {
    return pending;
 }
 
+/** @def SUM_UP_JATASK_USAGE
+ * @brief Add one scaled usage attribute of an array task to a running total
+ *
+ * Defined inside accumulate_usage() and only used there; `uep` is the scratch
+ * element the enclosing function declares.
+ *
+ * @param ja_task the array task to read from
+ * @param dst the total to add to
+ * @param attr the usage attribute's name
+ */
+
+/** @def SUM_UP_PETASK_USAGE
+ * @brief Add one scaled usage attribute of a PE task to a running total
+ *
+ * The same as #SUM_UP_JATASK_USAGE but reading `PET_scaled_usage`, because a
+ * PE task keeps its usage in its own list.
+ *
+ * @param pe_task the PE task to read from
+ * @param dst the total to add to
+ * @param attr the usage attribute's name
+ */
+
+/** @brief Add one task's usage to a running total
+ * @param task the task whose usage is added
+ * @param usage the total, updated in place
+ */
 void ocs::QStatJobViewBase::accumulate_usage(const lListElem *task, Usage &usage) {
    DENTER(TOP_LAYER);
    usage.have_mem_details = lGetSubStr(task, UA_name, USAGE_ATTR_PSS, JAT_scaled_usage_list) != nullptr;

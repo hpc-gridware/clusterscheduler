@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Reading the shepherd's own configuration: methods, signals and notification
+ */
+
 #include "uti/sge_dstring.h"
 
 int shepconf_has_userdef_method(const char *method_name, dstring *method);

@@ -19,22 +19,30 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Rendering cull objects as JSON, for `qconf -fmt json`
+ */
+
 #include "cull/cull.h"
 #include "uti/sge_dstring.h"
 #include "spool/sge_spooling_utilities.h"
 
-/*
- * CS-2313a: selects how numeric TIME/MEM values are rendered in JSON. COMPACT (the
- * default) keeps the human-readable unit/colon strings ("2.000G", "0:5:0"); NUMERIC
- * renders them as native numbers (bytes / seconds). INT/DOUBLE are always numbers and
- * unlimited is always "INFINITY", in either mode. qconf sets this from -fmtval;
- * programmatic callers that need machine values (the event interface feeding the
- * python-api) pin NUMERIC so a user preference cannot break their contract.
+/** @brief How numeric TIME and MEM values are rendered in JSON (CS-2313a)
+ *
+ * `INT` and `DOUBLE` are always numbers and unlimited is always `"INFINITY"`,
+ * in either mode - only TIME and MEM are affected.
+ *
+ * `qconf` sets this from `-fmtval`. Programmatic callers that need machine
+ * values - the event interface feeding the python API - pin
+ * #OCS_JSON_VALUES_NUMERIC so that a user preference cannot change what they
+ * receive.
  */
 enum ocs_json_value_format {
-   OCS_JSON_VALUES_COMPACT,
-   OCS_JSON_VALUES_NUMERIC
+   OCS_JSON_VALUES_COMPACT,   ///< The human readable unit and colon strings, `"2.000G"`, `"0:5:0"` - the default
+   OCS_JSON_VALUES_NUMERIC    ///< Native numbers: bytes for MEM, seconds for TIME
 };
+
+/** @brief The value format in effect, see #ocs_json_value_format */
 extern ocs_json_value_format ocs_json_value_format_opt;
 
 /*

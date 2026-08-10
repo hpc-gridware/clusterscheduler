@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The product version and its compatibility rules
+ */
+
 #include <vector>
 #include <tuple>
 #include <cctype>
@@ -36,15 +40,26 @@
 
 // @todo CHANGE THE VERSION NUMBERS HERE. ADD A NEW VERSION TO THE LIST BELOW IF PACKING OR CULL CHANGES.
 // change dist/inst_sge also!
+/// Major release number; the first component of the version string
 #define OCS_VERSION_MAJOR 9
+/// Minor release number; the second component of the version string
 #define OCS_VERSION_MINOR 2
+/// Patch level; the third component of the version string
 #define OCS_VERSION_PATCH 0
+/// Release-stage suffix appended to the version string, e.g. `prealpha`
 #define OCS_VERSION_SUFFIX "prealpha"
 
+/// The human readable version, assembled from the four macros above
 const std::string OCS_VERSION_STRING{std::to_string(OCS_VERSION_MAJOR) + "."
          + std::to_string(OCS_VERSION_MINOR) + "." + std::to_string(OCS_VERSION_PATCH) + OCS_VERSION_SUFFIX};
 
 // When you change this the also add an entry to the table below
+/**
+ * @brief The version as a single comparable number, used in the GDI handshake
+ *
+ * Add a matching entry to the version table below whenever this changes,
+ * otherwise a peer cannot name this release in a mismatch message.
+ */
 const uint32_t OCS_VERSION{0x10009200};
 
 static const std::vector<std::tuple<uint32_t, std::string>> OCS_ALL_VERSIONS_VECTOR{
@@ -89,26 +104,46 @@ static const std::string OCS_LONG_PRODUCT_NAME{"Open Cluster Scheduler"};
 static const std::string OCS_SHORT_PRODUCT_NAME{"OCS"};
 #endif
 
+/**
+ * @brief The version as it is shown to users
+ * @return the version string
+ */
 std::string
 ocs::Version::get_version_string() {
    return OCS_VERSION_STRING; // e.g "9.0.2alpha"
 }
 
+/**
+ * @brief The version as a comparable number
+ * @return the encoded version
+ */
 std::uint32_t
 ocs::Version::get_version() {
    return OCS_VERSION;
 }
 
+/**
+ * @brief The abbreviated product name
+ * @return the short name
+ */
 std::string
 ocs::Version::get_short_product_name() {
    return OCS_SHORT_PRODUCT_NAME;
 }
 
+/**
+ * @brief The full product name
+ * @return the long name
+ */
 std::string
 ocs::Version::get_long_product_name() {
    return OCS_LONG_PRODUCT_NAME;
 }
 
+/**
+ * @brief The version split into its parts
+ * @return major, minor, patch level and the release suffix
+ */
 std::tuple<int, int, int, std::string>
 ocs::Version::get_version_token() {
    std::string version = ocs::Version::get_version_string();
@@ -180,12 +215,14 @@ ocs::Version::do_versions_match(lList **alpp, const uint32_t version, const char
 
 
 #if !(ADD_COPYRIGHT || ADD_HPC_GRIDWARE_COPYRIGHT)
+/// Acknowledgement of the Sun Microsystems code donation, printed by `-help`
 extern const char SFLN_ELN[]{"\n\
    Cluster Scheduler is based on code donated by Sun Microsystems.\n\
    The copyright is owned by Sun Microsystems and other contributors.\n\
    It has been made available to the open source community under the SISSL license.\n\
    For further information and the latest news visit: @fBhttp://gridengine.sunsource.net\n\n"};
 
+/// Acknowledgement of the Florida State University DQS program
 extern const char DQS_ACK[]{"\n\
 We would like to acknowledge and thank the efforts of the\n\
 Florida State University in creating the DQS program.\n"};
@@ -194,6 +231,7 @@ Florida State University in creating the DQS program.\n"};
 
 #ifndef ADD_HPC_GRIDWARE_COPYRIGHT
 
+/// The full SISSL license text, printed on request
 extern const char SISSL[]{"\n\
 The Contents of this file are made available subject to the terms of\n\
 the Sun Industry Standards Source License Version 1.2\n\

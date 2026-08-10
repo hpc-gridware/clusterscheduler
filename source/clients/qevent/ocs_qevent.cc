@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief qevent - an event client that prints the cluster event stream, for testing and diagnosis
+ */
+
 #include <unistd.h>
 #include <cstdio>
 #include <cstring>
@@ -73,8 +77,14 @@
 #include "sig_handlers.h"
 #include "msg_clients_common.h"
 
-u_long Global_jobs_running = 0;
-u_long Global_jobs_registered = 0;
+u_long Global_jobs_running = 0;      ///< jobs seen started but not yet finished, printed by the `-ts` mode
+u_long Global_jobs_registered = 0;   ///< jobs seen submitted, printed by the `-ts` mode
+
+/** @brief The parsed command line
+ *
+ * A global because the event callbacks take a fixed signature and still have to
+ * reach the trigger scripts the user asked for.
+ */
 qevent_options *Global_qevent_options;
 
 
@@ -700,34 +710,21 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
    DRETURN_VOID;
 }
 
-/****** qevent/qevent_subscribe_mode() *****************************************
-*  NAME
-*     qevent_subscribe_mode() -- ???
-*
-*  SYNOPSIS
-*     static void qevent_subscribe_mode(sge_evc_class_t *evc)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     sge_evc_class_t *evc - ???
-*
-*  RESULT
-*     static void -
-*
-*  EXAMPLE
-*     ???
-*
-*  NOTES
-*     MT-NOTE: qevent_subscribe_mode() is not MT safe
-*
-*  BUGS
-*     ???
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief `-ts` mode: subscribe and unsubscribe in a loop, to exercise the event master
+ *
+ * Not a diagnostic mode. It walks `event_type` through every `SGE_TYPE_*` value,
+ * subscribing one more each time round, then unsubscribes them all and starts
+ * over. The point is to keep the qmaster's subscription bookkeeping changing
+ * under load, which is what the testsuite wants to exercise; the events
+ * themselves are printed but not otherwise used.
+ *
+ * @param evc the event client to subscribe through
+ *
+ * @note MT-NOTE: qevent_subscribe_mode() is not MT safe
+ *
+ * @bug ???
+ */
 static void qevent_subscribe_mode(sge_evc_class_t *evc)
 {
    int event_type = SGE_TYPE_FIRST;

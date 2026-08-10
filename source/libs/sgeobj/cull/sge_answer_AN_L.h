@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief answer element
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -53,9 +57,9 @@
 */
 
 enum {
-   AN_status = AN_LOWERBOUND,
-   AN_text,
-   AN_quality
+   AN_status = AN_LOWERBOUND,   ///< answer status
+   AN_text,   ///< answer text
+   AN_quality   ///< answer quality
 };
 
 LISTDEF(AN_Type)
@@ -70,6 +74,7 @@ NAMEDEF(ANN)
    NAME("AN_quality")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define AN_SIZE sizeof(ANN)/sizeof(char *)
 
 

@@ -24,22 +24,36 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Queue Info in an Order
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of OQ
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   OQ_slots = 1450,
-   OQ_dest_queue,
-   OQ_dest_version,
-   OQ_ticket,
-   OQ_oticket,
-   OQ_fticket,
-   OQ_sticket,
-   OQ_binding_to_use,
-   OQ_granted_rsmaps
+   OQ_slots = 1450,   ///< Slots
+   OQ_dest_queue,   ///< Qinstance Name
+   OQ_dest_version,   ///< Qinstance Version
+   OQ_ticket,   ///< Total Tickets
+   OQ_oticket,   ///< Override Tickets
+   OQ_fticket,   ///< Functional Tickets
+   OQ_sticket,   ///< Sharetree Tickets
+   OQ_binding_to_use,   ///< Binding that should be used
+   OQ_granted_rsmaps   ///< Granted RSMAP IDs
 };
 
+/** @brief The attribute ids of OQ, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int OQ_Type[] = {
    OQ_slots,
    OQ_dest_queue,
@@ -53,6 +67,10 @@ constexpr const int OQ_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of OQ
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define OQ_ATTRIBUTES \
    {OQ_slots, "OQ_slots", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {OQ_dest_queue, "OQ_dest_queue", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

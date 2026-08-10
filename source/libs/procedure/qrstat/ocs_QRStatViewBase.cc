@@ -18,10 +18,17 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Base view of `qrstat`, and the interface the three output formats implement
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include "qrstat/ocs_QRStatViewBase.h"
 
+/** @brief Build a view for one qrstat call
+ * @param parameter the call's parameters
+ */
 ocs::QRStatViewBase::QRStatViewBase(const QRStatParameter &parameter) : ProcedureView(parameter) {
    DENTER(TOP_LAYER);
    show_summary = parameter.is_summary();

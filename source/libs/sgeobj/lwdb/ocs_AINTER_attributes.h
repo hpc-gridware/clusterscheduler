@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Interval
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of AINTER
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   AINTER_href = 8750,
-   AINTER_value
+   AINTER_href = 8750,   ///< Host Reference
+   AINTER_value   ///< Value
 };
 
+/** @brief The attribute ids of AINTER, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int AINTER_Type[] = {
    AINTER_href,
    AINTER_value,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of AINTER
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define AINTER_ATTRIBUTES \
    {AINTER_href, "AINTER_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {AINTER_value, "AINTER_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

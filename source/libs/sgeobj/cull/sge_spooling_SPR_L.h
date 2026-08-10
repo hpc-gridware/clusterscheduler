@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Spooling Rule
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -108,22 +112,22 @@
 */
 
 enum {
-   SPR_name = SPR_LOWERBOUND,
-   SPR_url,
-   SPR_option_func,
-   SPR_startup_func,
-   SPR_shutdown_func,
-   SPR_maintenance_func,
-   SPR_trigger_func,
-   SPR_transaction_func,
-   SPR_list_func,
-   SPR_read_func,
-   SPR_read_keys_func,
-   SPR_write_func,
-   SPR_delete_func,
-   SPR_validate_func,
-   SPR_validate_list_func,
-   SPR_clientdata
+   SPR_name = SPR_LOWERBOUND,   ///< Name
+   SPR_url,   ///< URL
+   SPR_option_func,   ///< Option Function
+   SPR_startup_func,   ///< Startup Function
+   SPR_shutdown_func,   ///< Shutdown Function
+   SPR_maintenance_func,   ///< Maintenance Function
+   SPR_trigger_func,   ///< Trigger Function
+   SPR_transaction_func,   ///< Transaction Function
+   SPR_list_func,   ///< List Function
+   SPR_read_func,   ///< Read Function
+   SPR_read_keys_func,   ///< Read Keys Function
+   SPR_write_func,   ///< Write Function
+   SPR_delete_func,   ///< Delete Function
+   SPR_validate_func,   ///< Validate Function
+   SPR_validate_list_func,   ///< Validate List Function
+   SPR_clientdata   ///< Client Data
 };
 
 LISTDEF(SPR_Type)
@@ -164,6 +168,7 @@ NAMEDEF(SPRN)
    NAME("SPR_clientdata")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define SPR_SIZE sizeof(SPRN)/sizeof(char *)
 
 

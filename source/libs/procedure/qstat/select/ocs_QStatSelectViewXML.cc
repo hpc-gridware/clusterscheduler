@@ -18,12 +18,19 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief XML rendering of `qselect`
+ */
+
 #include "uti/sge_rmon_macros.h"
 
 #include <sgeobj/ocs_EscapedString.h>
 
 #include "qstat/select/ocs_QStatSelectViewXML.h"
 
+/** @brief Build the XML view
+ * @param parameter the call's parameters
+ */
 ocs::QStatSelectViewXML::QStatSelectViewXML(const QStatParameter &parameter) : QStatSelectViewBase(parameter) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;

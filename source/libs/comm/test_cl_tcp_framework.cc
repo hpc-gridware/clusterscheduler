@@ -32,6 +32,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: the TCP framework below the commlib
+ *
+ * Talks to the framework directly rather than through a handle, with a
+ * server thread and a client thread in one process.
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 
 
 #include <unistd.h>
@@ -47,16 +56,32 @@
 #include "comm/cl_connection_list.h"
 
 
+/** @brief Note the signal so the test can leave
+ * @param sig the signal that arrived
+ */
 void sighandler(int sig);
 
+/** @brief The service side of the test, as a thread
+ * @param t_conf the thread's settings
+ * @return nullptr
+ */
 void *server_thread(void *t_conf);
 
+/** @brief The client side of the test, as a thread
+ * @param t_conf the thread's settings
+ * @return nullptr
+ */
 void *client_thread(void *t_conf);
 
 static int pipe_signal = 0;
 static int do_shutdown = 0;
-char data[] = "> * * * Welcome to the tcp framework module! * * * <";
+char data[] = "> * * * Welcome to the tcp framework module! * * * <";   ///< The payload the test sends
 
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 extern int main(int argc, char **argv) {
    char help[255];
    struct sigaction sa;
@@ -194,6 +219,9 @@ void sighandler(
    do_shutdown = 1;
 }
 
+/** @brief Release the service's connection list
+ * @param connection_list the list to release
+ */
 void server_cleanup_conlist(cl_raw_list_t **connection_list) {
    cl_com_handle_t handle;
    CL_LOG(CL_LOG_INFO, "start");
@@ -215,6 +243,9 @@ void server_cleanup_conlist(cl_raw_list_t **connection_list) {
    }
 }
 
+/** @brief Release the server thread's connection
+ * @param con the connection to release
+ */
 void server_cleanup(cl_com_connection_t **con) {
    CL_LOG(CL_LOG_INFO, "start");
 
@@ -378,6 +409,9 @@ void *server_thread(void *t_conf) {
    return (nullptr);
 }
 
+/** @brief Release the client thread's connection
+ * @param con the connection to release
+ */
 void client_cleanup_function(cl_com_connection_t **con) {
    if (con && *con) {
       int retval;

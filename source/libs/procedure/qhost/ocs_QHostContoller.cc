@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Controller of `qhost`: runs the request and drives the view
+ */
+
 #include <sstream>
 
 #include "uti/sge_rmon_macros.h"
@@ -27,6 +31,11 @@
 #include "qhost/ocs_QHostContoller.h"
 #include "qhost/ocs_QHostModelBase.h"
 
+/** @brief Run the request
+ * @param parameter the parsed parameters
+ * @param model the model, client or server side
+ * @param view the view for the requested output format
+ */
 void
 ocs::QHostController::process_request(QHostParameter &parameter, QHostModelBase &model, QHostViewBase &view) {
    DENTER(TOP_LAYER);

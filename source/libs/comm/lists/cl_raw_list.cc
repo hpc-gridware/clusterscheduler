@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The double linked, mutex guarded list every commlib list is built on
+ */
+
 #include <cstdio>
 #include <cerrno>
 #include <cstring>
@@ -56,6 +60,13 @@
 
    - On CL_RETVAL_OK the list must be freed by calling the function cl_raw_list_cleanup()
 */
+/** @brief Create a raw list
+ * @param list_p receives the new list
+ * @param list_name name for log messages
+ * @param enable_list_locking create the mutex; pass 0 only for a list that
+ *                            never leaves one thread
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_raw_list_setup(cl_raw_list_t **list_p, const char *list_name, int enable_list_locking) {  /* CR check */
 
    if (list_p == nullptr || list_name == nullptr) {
@@ -117,6 +128,13 @@ int cl_raw_list_setup(cl_raw_list_t **list_p, const char *list_name, int enable_
 
    
 */
+/** @brief Free a list and set the pointer to nullptr
+ *
+ * The list must be empty; its elements belong to whoever appended them.
+ *
+ * @param list_p the list to free
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_raw_list_cleanup(cl_raw_list_t **list_p) {  /* CR check */
    int ret_val;
 
@@ -200,6 +218,11 @@ int cl_raw_list_cleanup(cl_raw_list_t **list_p) {  /* CR check */
    pointer to a new list element (cl_raw_list_elem_t*) or nullptr
 
 */
+/** @brief Append a new element carrying `data`
+ * @param list_p the list
+ * @param data the caller's element
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 cl_raw_list_elem_t *cl_raw_list_append_elem(cl_raw_list_t *list_p, void *data) {
 
    cl_raw_list_elem_t *new_elem = nullptr;
@@ -231,6 +254,11 @@ cl_raw_list_elem_t *cl_raw_list_append_elem(cl_raw_list_t *list_p, void *data) {
 }
 
 
+/** @brief Put an element that was dechained earlier back at the end
+ * @param list_p the list
+ * @param dechain_elem the element from #cl_raw_list_dechain_elem
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_raw_list_append_dechained_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *dechain_elem) {
    if (dechain_elem == nullptr || list_p == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -255,6 +283,16 @@ int cl_raw_list_append_dechained_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t 
    return CL_RETVAL_OK;
 }
 
+/** @brief Unlink an element without freeing it
+ *
+ * The counterpart of #cl_raw_list_remove_elem for the case where the element
+ * is going to be appended again: it stays valid and the caller owns it until
+ * it is either re-appended or removed.
+ *
+ * @param list_p the list
+ * @param dechain_elem the element to unlink
+ * @return the unlinked element, or nullptr
+ */
 int cl_raw_list_dechain_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *dechain_elem) {
 
    if (dechain_elem == nullptr || list_p == nullptr) {
@@ -297,6 +335,11 @@ int cl_raw_list_dechain_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *dechain_
   return values:
 
   pointer to void: data element (caller must free the memory for the data */
+/** @brief Unlink an element and free the link, handing the data back
+ * @param list_p the list
+ * @param delete_elem the element to remove
+ * @return the data pointer the element carried; the caller frees it
+ */
 void *cl_raw_list_remove_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *delete_elem) {       /* CR check */
    void *old_data = nullptr;
 
@@ -322,6 +365,10 @@ void *cl_raw_list_remove_elem(cl_raw_list_t *list_p, cl_raw_list_elem_t *delete_
    return old_data;
 }
 
+/** @brief How many elements the list holds
+ * @param list_p the list
+ * @return the count, 0 for an empty or nullptr list
+ */
 unsigned long cl_raw_list_get_elem_count(cl_raw_list_t *list_p) {   /* CR check */
    if (list_p) {
       return list_p->elem_count;
@@ -329,6 +376,15 @@ unsigned long cl_raw_list_get_elem_count(cl_raw_list_t *list_p) {   /* CR check 
    return 0;
 }
 
+/** @brief Take the list lock
+ *
+ * Part of the interface, not an implementation detail: a caller that walks
+ * the chain must hold the lock, because the commlib is multi threaded
+ * throughout.
+ *
+ * @param list_p the list
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_raw_list_lock(cl_raw_list_t *list_p) {             /* CR check */
    if (list_p == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -377,6 +433,10 @@ int cl_raw_list_lock(cl_raw_list_t *list_p) {             /* CR check */
    return CL_RETVAL_OK;
 }
 
+/** @brief Release the list lock
+ * @param list_p the list
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_raw_list_unlock(cl_raw_list_t *list_p) {
    if (list_p == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -404,6 +464,10 @@ int cl_raw_list_unlock(cl_raw_list_t *list_p) {
    return CL_RETVAL_OK;
 }
 
+/** @brief The first element
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_raw_list_elem_t *cl_raw_list_get_first_elem(cl_raw_list_t *list_p) {   /* CR check */
    cl_raw_list_elem_t *elem = nullptr;
 
@@ -413,6 +477,10 @@ cl_raw_list_elem_t *cl_raw_list_get_first_elem(cl_raw_list_t *list_p) {   /* CR 
    return elem;
 }
 
+/** @brief The last element
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_raw_list_elem_t *cl_raw_list_get_least_elem(cl_raw_list_t *list_p) {   /* CR check */
    cl_raw_list_elem_t *elem = nullptr;
    if (list_p != nullptr) {
@@ -421,6 +489,11 @@ cl_raw_list_elem_t *cl_raw_list_get_least_elem(cl_raw_list_t *list_p) {   /* CR 
    return elem;
 }
 
+/** @brief Find the element carrying a given data pointer
+ * @param list_p the list
+ * @param data the pointer to look for, compared by identity
+ * @return the element, or nullptr
+ */
 cl_raw_list_elem_t *cl_raw_list_search_elem(cl_raw_list_t *list_p, void *data) {  /* CR check */
    cl_raw_list_elem_t *elem = nullptr;
 
@@ -438,6 +511,10 @@ cl_raw_list_elem_t *cl_raw_list_search_elem(cl_raw_list_t *list_p, void *data) {
    return elem;
 }
 
+/** @brief The element after this one
+ * @param elem the current element
+ * @return the next element, or nullptr at the end
+ */
 cl_raw_list_elem_t *cl_raw_list_get_next_elem(cl_raw_list_elem_t *elem) {       /* CR check */
    if (elem) {
       return elem->next;
@@ -445,6 +522,10 @@ cl_raw_list_elem_t *cl_raw_list_get_next_elem(cl_raw_list_elem_t *elem) {       
    return nullptr;
 }
 
+/** @brief The element before this one
+ * @param elem the current element
+ * @return the previous element, or nullptr at the start
+ */
 cl_raw_list_elem_t *cl_raw_list_get_last_elem(cl_raw_list_elem_t *elem) {       /* CR check */
    if (elem) {
       return elem->last;

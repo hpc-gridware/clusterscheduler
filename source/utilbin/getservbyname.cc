@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief getservbyname - look up a TCP service port, or check that a port is free
+ */
 #include <cstdio>
 #include <sys/types.h>
 #include <netdb.h>

@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Users and projects
+ */
 /*
    This is the module for handling users and projects.
    We save users to <spool>/qmaster/$USER_DIR and
@@ -78,6 +82,24 @@ static int
 do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *, lList **, monitoring_t *monitor);
 
 
+/** @brief Apply one attribute change to an user or project
+ *
+ * The gdi_object_t::modifier for user or projects; see sge_c_gdi.h for the sequence it is called from.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param modp see the declaration
+ * @param ep the object
+ * @param add 1 for add, 0 for modify
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param object the table entry for this object type
+ * @param cmd the command being executed
+ * @param sub_command what kind of modification this is
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
             const char *rhost, gdi_object_t *object,
@@ -234,6 +256,19 @@ userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListE
    DRETURN(STATUS_EUNKNOWN);
 }
 
+/** @brief Announce an user or project change once it is safely spooled
+ *
+ * The gdi_object_t::on_success for user or projects.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param ep the object
+ * @param old_ep the object as it was, or nullptr on add
+ * @param object the table entry for this object type
+ * @param ppList receives information for post processing
+ * @param monitor for monitoring qmaster threads
+ * @return 0 on success
+ */
 int
 userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    int user_flag = (object->target == ocs::gdi::Target::UU_LIST) ? 1 : 0;
@@ -278,6 +313,17 @@ userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, l
    DRETURN(0);
 }
 
+/** @brief Write an user or project to the spool
+ *
+ * The gdi_object_t::writer for user or projects.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param alpp receives messages for the caller
+ * @param upe see the declaration
+ * @param object the table entry for this object type
+ * @return 0 on success
+ */
 int
 userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *upe, gdi_object_t *object) {
    lList *answer_list = nullptr;
@@ -302,6 +348,19 @@ userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLis
 /***********************************************************************
    master code: delete a user or project
  ***********************************************************************/
+/** @brief Delete a user or a project
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param up_ep the user or project
+ * @param alpp receives messages for the caller
+ * @param upl the master list
+ * @param ruser the requesting user
+ * @param rhost the requesting host
+ * @param user the user
+ * @param / see the brief above
+ * @return STATUS_OK on success
+ */
 int
 sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *up_ep, lList **alpp, lList **upl,
                 const char *ruser, const char *rhost, int user /* =1 user, =0 project */ ) {
@@ -417,6 +476,15 @@ sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *up_ep
    DRETURN(STATUS_OK);
 }
 
+/** @brief Check that every named project exists
+ * @param alpp receives messages for the caller
+ * @param name_list the project names to verify
+ * @param prj_list the known projects
+ * @param attr_name the attribute the names came from, for the message
+ * @param obj_descr what kind of object it belongs to, for the message
+ * @param obj_name the object's name, for the message
+ * @return STATUS_OK when every project exists
+ */
 int
 verify_project_list(lList **alpp, const lList *name_list, const lList *prj_list, const char *attr_name,
                     const char *obj_descr, const char *obj_name) {
@@ -439,6 +507,11 @@ verify_project_list(lList **alpp, const lList *name_list, const lList *prj_list,
 /* sge_automatic_user_cleanup_handler - handles automatically deleting     */
 /* automatic user objects which have expired.                         */
 /*-------------------------------------------------------------------------*/
+/** @brief Remove automatically created users that have gone idle
+ *
+ * @param anEvent the timed event that fired
+ * @param monitor for monitoring qmaster threads
+ */
 void
 sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
    uint64_t auto_user_delete_time = sge_gmt32_to_gmt64(mconf_get_auto_user_delete_time());
@@ -506,6 +579,15 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
 /* sge_add_auto_user - handles automatically adding GEEE user objects      */
 /*    called in ocs::gdi::Client::sge_gdi_add_job                                            */
 /*-------------------------------------------------------------------------*/
+/** @brief Create a user object on demand, from the auto_user template
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param user the user
+ * @param alpp receives messages for the caller
+ * @param monitor for monitoring qmaster threads
+ * @return STATUS_OK on success
+ */
 int
 sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *user, lList **alpp, monitoring_t *monitor) {
    lListElem *uep;
@@ -564,17 +646,11 @@ sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *us
    DRETURN(status);
 }
 
-/****** qmaster/sge_userprj_qmaster/do_add_auto_user() *************************
-*  NAME
-*     do_add_auto_user() -- add auto user to SGE_UU_LIST
-*
-*  SYNOPSIS
-*     static int do_add_auto_user(lListElem*, lList**) 
-*
-*  NOTES
-*     MT-NOTE: do_add_auto_user() is not MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Add auto user to SGE_UU_LIST
+ *
+ * @note MT-NOTE: do_add_auto_user() is not MT safe
+ */
 static int do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *anUser, lList **anAnswer, monitoring_t *monitor) {
    int res = STATUS_EUNKNOWN;
    gdi_object_t *userList = nullptr;
@@ -610,23 +686,18 @@ static int do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lLis
    DRETURN(res);
 }
 
-/****** sge_userprj_qmaster/sge_userprj_spool() ********************************
-*  NAME
-*     sge_userprj_spool() -- updates the spooled user and projects
-*
-*  SYNOPSIS
-*     void sge_userprj_spool() 
-*
-*  FUNCTION
-*     The usage is only stored every 2 min. To have the acual usage stored when
-*     the qmaster is going down, we have to through all user/projects and store
-*     them again.
-*
-*  NOTES
-*     MT-NOTE: sge_userprj_spool() is not MT safe, because it is working on global
-*              master lists (only reading)
-*
-*******************************************************************************/
+/**
+ * @brief Updates the spooled user and projects
+ *
+ * The usage is only stored every 2 min. To have the acual usage stored when
+ * the qmaster is going down, we have to through all user/projects and store
+ * them again.
+ *
+ * @param gdi_session the session the spooling belongs to
+ *
+ * @note MT-NOTE: sge_userprj_spool() is not MT safe, because it is working on global
+ *       master lists (only reading)
+ */
 void sge_userprj_spool(uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    lList *answer_list = nullptr;
@@ -653,30 +724,21 @@ void sge_userprj_spool(uint64_t gdi_session) {
    DRETURN_VOID;
 }
 
-/****** sge_userprj_qmaster/project_still_used() *******************************
-*  NAME
-*     project_still_used() -- True, if project still used
-*
-*  SYNOPSIS
-*     static bool project_still_used(const char *p)
-*
-*  FUNCTION
-*     Returns true, if project is still used as ACL with host_conf(5),
-*     queue_conf(5).
-*
-*     Use of projects as ACLs in sge_conf(5) play no role here, 
-*     since such ACLs are checked in qmaster and thus are not 
-*     relevant for the scheduling algorithm.
-*
-*  INPUTS
-*     const char *p - the project
-*
-*  RESULT
-*     static bool - True, if project still used
-*
-*  NOTES
-*     MT-NOTE: project_still_used() is not MT safe
-*******************************************************************************/
+/**
+ * @brief True, if project still used
+ *
+ * Returns true, if project is still used as ACL with host_conf(5),
+ * queue_conf(5).
+ * Use of projects as ACLs in sge_conf(5) play no role here,
+ * since such ACLs are checked in qmaster and thus are not
+ * relevant for the scheduling algorithm.
+ *
+ * @param p the project
+ *
+ * @return True, if project still used
+ *
+ * @note MT-NOTE: project_still_used() is not MT safe
+ */
 static bool project_still_used(const char *p) {
    const lListElem *qc, *cq, *hep, *rqs;
 
@@ -709,25 +771,19 @@ static bool project_still_used(const char *p) {
 }
 
 
-/****** sge_userprj_qmaster/project_update_categories() ************************
-*  NAME
-*     project_update_categories() -- Update all projects wrts categories
-*
-*  SYNOPSIS
-*     void project_update_categories(const lList *added, const lList *removed)
-*
-*  FUNCTION
-*     Each added/removed project is verified whether it is used first
-*     time/still as ACL for host_conf(5)/queue_conf(5). If so an event
-*     is sent.
-*
-*  INPUTS
-*     const lList *added   - List of added project references (PR_Type)
-*     const lList *removed - List of removed project references (PR_Type)
-*
-*  NOTES
-*     MT-NOTE: project_update_categories() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Update all projects wrts categories
+ *
+ * Each added/removed project is verified whether it is used first
+ * time/still as ACL for host_conf(5)/queue_conf(5). If so an event
+ * is sent.
+ *
+ * @param added List of added project references (PR_Type)
+ * @param removed List of removed project references (PR_Type)
+ * @param gdi_session the session the change belongs to
+ *
+ * @note MT-NOTE: project_update_categories() is not MT safe
+ */
 void project_update_categories(const lList *added, const lList *removed, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    const lListElem *ep;

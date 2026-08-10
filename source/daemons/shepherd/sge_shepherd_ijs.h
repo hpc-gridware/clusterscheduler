@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The interactive job loop: relaying a job's terminal traffic to its client
+ */
+
 #include "comm/cl_data_types.h"
 
 #include "shepherd.h"

@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief CS-2447 probe: measures how long drmaa_wait() takes to return after a job has actually ended
+ */
+
 /*
  * CS-2447 probe. Measures how long drmaa_wait() takes to return *after a job
  * has actually ended*, i.e. with the job runtime taken out.
@@ -99,13 +103,21 @@
 
 #include "drmaa.h"
 
+/** @brief What is measured for one job
+ *
+ * The ticket is about the delay between a job *ending* and `drmaa_wait()`
+ * saying so, so both clocks are needed: `t_*` are taken in this process,
+ * `start_time` and `end_time` come from the job's rusage and are the execution
+ * host's. The interesting number is `t_wait_ret - end_time`, which takes the
+ * job's own runtime out of the measurement.
+ */
 typedef struct {
-   char   jobid[DRMAA_JOBNAME_BUFFER];
-   double t_submitted;    /* drmaa_run_job() returned */
-   double t_wait_ret;     /* drmaa_wait() returned for this job */
-   double start_time;     /* from rusage, execution host clock */
-   double end_time;       /* from rusage, execution host clock */
-   bool   reaped;
+   char   jobid[DRMAA_JOBNAME_BUFFER];   ///< the job this record is about
+   double t_submitted;    ///< when `drmaa_run_job()` returned, local clock
+   double t_wait_ret;     ///< when `drmaa_wait()` returned for it, local clock
+   double start_time;     ///< when it started, from rusage, execution host clock
+   double end_time;       ///< when it ended, from rusage, execution host clock
+   bool   reaped;         ///< `drmaa_wait()` has already returned this job
 } job_rec_t;
 
 static double

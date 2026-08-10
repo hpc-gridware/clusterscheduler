@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The threads that keep the read-only data stores current
+ */
+
 namespace ocs {
    void
    event_mirror_initialize();

@@ -18,12 +18,19 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Plain text rendering of `qselect`
+ */
+
 #include <sstream>
 
 #include "uti/sge_rmon_macros.h"
 
 #include "qstat/select/ocs_QStatSelectViewPlain.h"
 
+/** @brief Build the plain text view
+ * @param parameter the call's parameters
+ */
 ocs::QStatSelectViewPlain::QStatSelectViewPlain(const QStatParameter &parameter) : QStatSelectViewBase(parameter) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;

@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Client side parameters of `qhost`: parsed from argv and the environment
+ */
+
 
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_rmon_macros.h"
@@ -46,6 +50,7 @@
 #include "qstat/ocs_QStatParameter.h"
 #include "ocs_QHostParameterClient.h"
 
+/** @brief The process environment, which the parameter parsing reads */
 extern char **environ;
 
 bool
@@ -276,6 +281,12 @@ ocs::QHostParameterClient::parse_switch_list(lList **ppcmdline, lList **alpp) {
    DRETURN(ret);
 }
 
+/** @brief Parse the command line and the environment into this object
+ * @param alpp receives error messages
+ * @param argv the arguments, without the program name
+ * @param envp the environment
+ * @return true when the parameters are usable
+ */
 bool ocs::QHostParameterClient::parse_parameters(lList **alpp, char **argv, char **envp) {
    DENTER(TOP_LAYER);
 

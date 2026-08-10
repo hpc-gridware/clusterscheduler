@@ -19,22 +19,40 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief JSON rendering of `qhost`
+ */
+
 #include <iosfwd>
 
 #include "ocs_QHostParameter.h"
 #include "ocs_QHostViewBase.h"
 
 namespace ocs {
+   /** @brief Renders `qhost` output as JSON
+    *
+    * JSON needs more state than the other two formats: an array has to be
+    * opened before its first element and closed after the last, and a comma
+    * belongs between elements but not before the first. The traversal does not
+    * announce "this is the last host", so the view remembers what it has
+    * already opened and closes it when the next level starts or ends - that is
+    * what the `*_open` flags are for.
+    *
+    * @ingroup libprocedure
+    */
    class QHostViewJSON : public QHostViewBase {
-      int indent = 0;
-      bool host_list_open = false;
-      bool queue_list_open = false;
-      bool job_list_open = false;
-      bool resource_list_open = false;
-      bool host_open = false;
-      bool queue_open = false;
-      bool job_open = false;
+      int indent = 0;                     ///< Current indentation depth
+      bool host_list_open = false;        ///< The array of hosts has been opened
+      bool queue_list_open = false;       ///< The array of queues of the current host has been opened
+      bool job_list_open = false;         ///< The array of jobs of the current queue has been opened
+      bool resource_list_open = false;    ///< The array of resources of the current host has been opened
+      bool host_open = false;             ///< A host object is still open
+      bool queue_open = false;            ///< A queue object is still open
+      bool job_open = false;              ///< A job object is still open
    public:
+      /** @brief Build the JSON view
+       * @param parameter the call's parameters
+       */
       explicit QHostViewJSON(const QHostParameter &parameter) : QHostViewBase(parameter) {}
       ~QHostViewJSON() override = default;
 

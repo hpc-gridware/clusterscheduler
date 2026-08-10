@@ -33,6 +33,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Handing a job to an execution host, and burying it when it ends
+ */
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
@@ -190,6 +194,15 @@ static int queue_field[] = {QU_qhostname,
  Do everything to make sure the execd is prepared for receiving the job.
  ************************************************************************/
 /* pe = is nullptr for serial jobs*/
+/** @brief Send a job to the execution host that was granted it
+ * @param jep the job (`JB_Type`)
+ * @param jatep the array task
+ * @param master_qep the master queue instance
+ * @param hep the execution host
+ * @param monitor for monitoring qmaster threads
+ * @param gdi_session the session the change belongs to
+ * @return 0 on success
+ */
 int
 sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep, lListElem *hep, monitoring_t *monitor, uint64_t gdi_session) {
    const char *rhost;
@@ -235,32 +248,19 @@ sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep, lLis
 }
 
 
-/****** sge_give_jobs/send_slave_jobs() ****************************************
-*  NAME
-*     send_slave_jobs() -- send out slave tasks of a pe job
-*
-*  SYNOPSIS
-*     static int send_slave_jobs(lListElem *jep, lListElem *jatep)
-*
-*  FUNCTION
-*     It prepares the data for the sending out the pe slaves. Once that data
-*     is created, it calles the actual send_slave_method.
-*
-*  INPUTS
-*     lListElem *jep     - job structure
-*     lListElem *jatep   - ja-taks (template, not the actual one)
-*
-*  RESULT
-*     static int -  1 : no pe job
-*                   0 : send slaves
-*                  -1 : something went wrong
-*
-*  NOTES
-*     MT-NOTE: send_slave_jobs() is not MT safe
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
+/**
+ * @brief Send out slave tasks of a pe job
+ *
+ * It prepares the data for the sending out the pe slaves. Once that data
+ * is created, it calles the actual send_slave_method.
+ *
+ * @param jep job structure
+ * @param jatep ja-taks (template, not the actual one)
+ *
+ * @return 1 : no pe job 0 : send slaves -1 : something went wrong
+ *
+ * @note MT-NOTE: send_slave_jobs() is not MT safe
+ */
 static int
 send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
@@ -345,31 +345,20 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, uint64_
    DRETURN(ret);
 }
 
-/****** sge_give_jobs/send_slave_jobs_wc() *************************************
-*  NAME
-*     send_slave_jobs_wc() -- takes the prepared data end sends it out.
-*
-*  SYNOPSIS
-*     static int send_slave_jobs_wc(lListElem *tmpjep,
-*     lListElem *jatep, lListElem *pe, lList *qlp)
-*
-*  FUNCTION
-*     This is a helper function of send_slave_jobs. It handles the actual send.
-*
-*  INPUTS
-*     lListElem *tmpjep  - prepared job structure
-*     lListElem *jatep   - ja-taks (most likely the templete)
-*     lListElem *pe      - target pe
-*     lList *qlp         - prepared queue instance list
-*
-*  RESULT
-*     static int -  0 : everything is fine
-*                  -1 : an error
-*
-*  NOTES
-*     MT-NOTE: send_slave_jobs_wc() is not MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Takes the prepared data end sends it out
+ *
+ * This is a helper function of send_slave_jobs. It handles the actual send.
+ *
+ * @param tmpjep prepared job structure
+ * @param jatep ja-taks (most likely the templete)
+ * @param pe target pe
+ * @param qlp prepared queue instance list
+ *
+ * @return 0 : everything is fine -1 : an error
+ *
+ * @note MT-NOTE: send_slave_jobs_wc() is not MT safe
+ */
 static int
 send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, uint64_t gdi_session) {
    lList *saved_gdil = nullptr;
@@ -699,6 +688,13 @@ sge_job_resend_event_handler_sim_job_runtime(uint64_t now, const lListElem *job,
    return runtime;
 }
 
+/** @brief Redeliver a job whose execution host never confirmed it
+ *
+ * The handler for #TYPE_JOB_RESEND_EVENT.
+ *
+ * @param anEvent the timed event that fired
+ * @param monitor for monitoring qmaster threads
+ */
 void
 sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    lListElem *jep, *jatep;
@@ -807,6 +803,13 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
+/** @brief Stop resending a job to its execution host
+ *
+ * Called once the host confirms the job, or once the job is gone.
+ *
+ * @param jid the job
+ * @param ja_task_id the array task
+ */
 void
 cancel_job_resend(uint32_t jid, uint32_t ja_task_id) {
    DENTER(TOP_LAYER);
@@ -819,6 +822,18 @@ cancel_job_resend(uint32_t jid, uint32_t ja_task_id) {
 
 /*
  * if hep equals to nullptr, resend is triggered immediately
+ */
+/** @brief Arm a timer to deliver a job again if it is still unconfirmed
+ *
+ * Delivery is not acknowledged synchronously, so an unconfirmed job is simply
+ * sent again after @p delta seconds until the host accepts it or the job is
+ * cancelled.
+ *
+ * @param now the current time
+ * @param hep the execution host, or nullptr when it is not known yet
+ * @param jid the job
+ * @param ja_task_id the array task
+ * @param delta seconds to wait before the next attempt
  */
 void
 trigger_job_resend(uint64_t now, lListElem *hep, uint32_t jid, uint32_t ja_task_id, int delta) {
@@ -877,56 +892,45 @@ create_timed_events_for_simulated_jobs() {
    DRETURN_VOID;
 }
 
-/****** sge_give_jobs/sge_commit_job() *****************************************
-*  NAME
-*     sge_commit_job() -- Do job state transitions
-*
-*  SYNOPSIS
-*     void sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr,
-*     sge_commit_mode_t mode, sge_commit_flags_t commit_flags)
-*
-*  FUNCTION
-*     sge_commit_job() implements job state transitions. The mode parameter
-*     selects which transition:
-*
-*       COMMIT_ST_SENT             Dispatch order from schedd: send the job
-*                                  asynchronously to execd and mark JTRANSFERING.
-*       COMMIT_ST_ARRIVED          Job report from execd: mark JRUNNING.
-*       COMMIT_ST_FINISHED_FAILED  Tear down an unenrolled array task that
-*                                  never ran (callers pair this with
-*                                  COMMIT_UNENROLLED_TASK). Log, fire the
-*                                  DRMAA finish event, bury. No usage to book,
-*                                  no host/queue debits to release.
-*       COMMIT_ST_FINISHED_FAILED_EE  GEEE finish: clear host/queue debits,
-*                                  emit JOB_FINAL_USAGE events, book usage into
-*                                  UU_/PR_/UPP_, bury. Pre-CS-1239 the booking
-*                                  was done by the scheduler via the ORT_remove_job
-*                                  order and a follow-up COMMIT_ST_DEBITED_EE
-*                                  call; CS-1239 folded both into this mode.
-*       COMMIT_ST_NO_RESOURCES     Schedd's ORT_remove_immediate_job order: bury
-*                                  an interactive job that could not be scheduled.
-*       COMMIT_ST_RESCHEDULED /
-*         _USER_RESCHEDULED /
-*         _FAILED_AND_ERROR        Reset the ja_task back to JIDLE/JQUEUED for
-*                                  another scheduling pass; preserve previous usage.
-*       COMMIT_ST_DELIVERY_FAILED  Same as RESCHEDULED, but sge_clear_granted_
-*                                  resources() must not increase free slots.
-*
-*     sge_commit_job() spools the affected ja_task / job and emits the matching
-*     mirror events. For the finish modes it also burys the ja_task / job (and
-*     potentially the whole job, if this was the last ja_task).
-*
-*  INPUTS
-*     lListElem *jep                  - the job
-*     lListElem *jatep                - the array task
-*     lListElem *jr                   - the job report (may be nullptr)
-*     sge_commit_mode_t mode          - the 'mode' - actually the state transition
-*     sge_commit_flags_t commit_flags - additional flags for parametrizing
-*
-*  SEE ALSO
-*     See sge_commit_mode_t typedef for documentation on mode.
-*     See sge_commit_flags_t typedef for documentation on commit_flags.
-*******************************************************************************/
+/**
+ * @brief Do job state transitions
+ *
+ * sge_commit_job() implements job state transitions. The mode parameter
+ * selects which transition:
+ *   COMMIT_ST_SENT             Dispatch order from schedd: send the job
+ *                              asynchronously to execd and mark JTRANSFERING.
+ *   COMMIT_ST_ARRIVED          Job report from execd: mark JRUNNING.
+ *   COMMIT_ST_FINISHED_FAILED  Tear down an unenrolled array task that
+ *                              never ran (callers pair this with
+ *                              COMMIT_UNENROLLED_TASK). Log, fire the
+ *                              DRMAA finish event, bury. No usage to book,
+ *                              no host/queue debits to release.
+ *   COMMIT_ST_FINISHED_FAILED_EE  GEEE finish: clear host/queue debits,
+ *                              emit JOB_FINAL_USAGE events, book usage into
+ *                              UU_/PR_/UPP_, bury. Pre-CS-1239 the booking
+ *                              was done by the scheduler via the ORT_remove_job
+ *                              order and a follow-up COMMIT_ST_DEBITED_EE
+ *                              call; CS-1239 folded both into this mode.
+ *   COMMIT_ST_NO_RESOURCES     Schedd's ORT_remove_immediate_job order: bury
+ *                              an interactive job that could not be scheduled.
+ *   COMMIT_ST_RESCHEDULED /
+ *     _USER_RESCHEDULED /
+ *     _FAILED_AND_ERROR        Reset the ja_task back to JIDLE/JQUEUED for
+ *                              another scheduling pass; preserve previous usage.
+ *   COMMIT_ST_DELIVERY_FAILED  Same as RESCHEDULED, but sge_clear_granted_
+ *                              resources() must not increase free slots.
+ * sge_commit_job() spools the affected ja_task / job and emits the matching
+ * mirror events. For the finish modes it also burys the ja_task / job (and
+ * potentially the whole job, if this was the last ja_task).
+ *
+ * @param jep the job
+ * @param jatep the array task
+ * @param jr the job report (may be nullptr)
+ * @param mode the 'mode' - actually the state transition
+ * @param commit_flags additional flags for parametrizing, a `COMMIT_*` bitmask
+ * @param monitor for monitoring qmaster threads
+ * @param gdi_session the session the change belongs to
+ */
 void
 sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_t mode,
                int commit_flags, monitoring_t *monitor, uint64_t gdi_session) {
@@ -1891,6 +1895,18 @@ reduce_queue_limits(const lList *master_centry_list, const lListElem *gdil_ep, l
  * whether or not retention holds the JAT on master_job_list. Runs from
  * the legacy sge_bury_job wrapper today; under retention U4 calls this
  * directly  and defers sge_bury_ja_task to the U5 retention sweep. */
+/** @brief Book a finished task's usage and write its accounting record
+ *
+ * The first half of what used to be `sge_bury_job()`; the task itself survives
+ * until sge_bury_ja_task().
+ *
+ * @param sge_root the cluster root, for the accounting file
+ * @param job the job (`JB_Type`)
+ * @param job_id the job id
+ * @param ja_task the array task
+ * @param no_events whether to skip announcing the change
+ * @param gdi_session the session the change belongs to
+ */
 void
 sge_finish_ja_task(const char *sge_root, lListElem *job, uint32_t job_id, lListElem *ja_task, int no_events, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
@@ -1955,7 +1971,7 @@ sge_finish_ja_task(const char *sge_root, lListElem *job, uint32_t job_id, lListE
       suser_unregister_job(job, master_suser_list);
 
       /* CS-1908: category detach is deferred to sge_bury_ja_task's remove_job
-       * block. The invariant "JB is on master_job_list ⇒ its category is
+       * block. The invariant "JB is on master_job_list implies its category is
        * attached (JB_category_id != 0 and the CT element exists)" must hold
        * for the whole retention window, otherwise the scheduler thread's
        * refresh_cat_data_in_job trips its SGE_ASSERT. So the detach fires
@@ -1971,6 +1987,20 @@ sge_finish_ja_task(const char *sge_root, lListElem *job, uint32_t job_id, lListE
  * legacy sge_bury_job wrapper today; under retention U5's sweep calls this
  * directly. Idempotent on already-removed JATs is not guaranteed — callers
  * must ensure the JAT is on the list when invoking. */
+/** @brief Remove a finished task from qmaster
+ *
+ * The second half. With finished-job retention this runs long after
+ * sge_finish_ja_task(), from the retention sweep, so that `qstat -s f` can
+ * still report the task in the meantime.
+ *
+ * @param sge_root the cluster root
+ * @param job the job (`JB_Type`)
+ * @param job_id the job id
+ * @param ja_task the array task
+ * @param spool_job whether the job has to be spooled afterwards
+ * @param no_events whether to skip announcing the change
+ * @param gdi_session the session the change belongs to
+ */
 void
 sge_bury_ja_task(const char *sge_root, lListElem *job, uint32_t job_id, lListElem *ja_task, int spool_job, int no_events, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
@@ -2073,27 +2103,18 @@ sge_bury_job(const char *sge_root, lListElem *job, uint32_t job_id, lListElem *j
    sge_bury_ja_task(sge_root, job, job_id, ja_task, spool_job, no_events, gdi_session);
 }
 
-/****** sge_give_jobs/copyJob() ************************************************
-*  NAME
-*     copyJob() -- copy the job with only the specified ja task
-*
-*  SYNOPSIS
-*     static lListElem* copyJob(lListElem *job, lListElem *ja_task)
-*
-*  FUNCTION
-*     copy the job with only the specified ja task
-*
-*  INPUTS
-*     lListElem *job     - job structure
-*     lListElem *ja_task - ja-task (template)
-*
-*  RESULT
-*     static lListElem* -  nullptr, or new job structure
-*
-*  NOTES
-*     MT-NOTE: copyJob() is MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Copy the job with only the specified ja task
+ *
+ * copy the job with only the specified ja task
+ *
+ * @param job job structure
+ * @param ja_task ja-task (template)
+ *
+ * @return nullptr, or new job structure
+ *
+ * @note MT-NOTE: copyJob() is MT safe
+ */
 static lListElem *
 copyJob(lListElem *job, lListElem *ja_task) {
    lListElem *job_copy = nullptr;
@@ -2125,27 +2146,17 @@ copyJob(lListElem *job, lListElem *ja_task) {
 }
 
 
-/****** sge_give_jobs/setCheckpointObj() ***************************************
-*  NAME
-*     setCheckpointObj() -- sets the job checkpointing name
-*
-*  SYNOPSIS
-*     static int setCheckpointObj(lListElem *job)
-*
-*  FUNCTION
-*     sets the job checkpointing name
-*
-*  INPUTS
-*     lListElem *job - job to modify
-*
-*  RESULT
-*     static int -  0 : everything went find
-*                  -1 : something went wrong
-*
-*  NOTES
-*     MT-NOTE: setCheckpointObj() is not MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Sets the job checkpointing name
+ *
+ * sets the job checkpointing name
+ *
+ * @param job job to modify
+ *
+ * @return 0 : everything went find -1 : something went wrong
+ *
+ * @note MT-NOTE: setCheckpointObj() is not MT safe
+ */
 static int
 setCheckpointObj(lListElem *job) {
    const lListElem *ckpt = nullptr;
@@ -2175,6 +2186,17 @@ setCheckpointObj(lListElem *job) {
    DRETURN(ret);
 }
 
+/** @brief Release the queue instances a granted list points at that no longer exist
+ *
+ * A job can outlive the queue instance it was granted - the queue may be
+ * deleted or reconfigured while the job runs - and the slots would otherwise
+ * stay booked against something that is gone.
+ *
+ * @param gdil_list the granted destination list
+ * @param alpp receives messages for the caller
+ * @param gdi_session the session the change belongs to
+ * @return true when anything was released
+ */
 bool
 gdil_del_all_orphaned(const lList *gdil_list, lList **alpp, uint64_t gdi_session) {
    bool ret = true;

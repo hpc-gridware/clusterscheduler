@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for resource utilization in `libs/sched`
+ */
+
 #include <cstdio>
 #include <limits>
 
@@ -44,15 +48,31 @@
 #include "sge_resource_utilization.h"
 #include "sge_qeti.h"
 
+/** @brief One booking in a resource utilization test
+ *
+ * Resource utilization is stored as a series of changes over time rather than
+ * as a single number, so a test case is a list of bookings and the amounts they
+ * add or remove.
+ */
 typedef struct {
-   uint64_t    start_time;
-   uint64_t    duration;
-   double      uti;
-   const char *desc;
+   uint64_t    start_time;   ///< when the booking begins
+   uint64_t    duration;     ///< how long it lasts
+   double      uti;          ///< how much of the resource it takes
+   const char *desc;         ///< what this booking is checking, printed on failure
 } test_array_t;
 
 static int s_fail = 0;
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \

@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Localisable message catalogue of sge_shadowd
+ */
+
 #include <cinttypes>
 
 // clang-format off

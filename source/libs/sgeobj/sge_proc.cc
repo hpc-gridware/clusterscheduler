@@ -32,27 +32,26 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
 
+/** @file
+ * @brief The process table, as the execution daemon reads it
+ *
+ * @see sge_proc.h
+ */
+
 #include "sgeobj/sge_proc.h"
 
 static lList *procList;
 
-/****** sge_proc/get_pr() ******************************************************
-*  NAME
-*     get_pr() -- Look for a certain process entry in the proc table 
-*
-*  SYNOPSIS
-*     lListElem* get_pr(int pid) 
-*
-*  FUNCTION
-*     Looks for the element with the specified pid and return it.
-*     Otherwise return nullptr
-*
-*  INPUTS
-*     int pid - The process ID of the process we're looking for. 
-*
-*  RESULT
-*     lListElem* - PRO_Type object or nullptr
-*******************************************************************************/
+/**
+ * @brief Look for a certain process entry in the proc table
+ *
+ * Looks for the element with the specified pid and return it.
+ * Otherwise return nullptr
+ *
+ * @param pid The process ID of the process we're looking for.
+ *
+ * @return PRO_Type object or nullptr
+ */
 lListElem *get_pr (int pid)
 {
    if (procList == nullptr) {
@@ -63,6 +62,11 @@ lListElem *get_pr (int pid)
    return lGetElemUlongRW(procList, PRO_pid, pid);
 }
 
+/**
+ * @brief Append a process element to the process list
+ *
+ * @param pr the element to append; ownership passes to the list
+ */
 void append_pr (lListElem *pr)
 {
    if (procList == nullptr) {
@@ -71,47 +75,30 @@ void append_pr (lListElem *pr)
    lAppendElem(procList, pr);
 }
 
-/****** sge_proc/gen_procList() ************************************************
-*  NAME
-*     gen_procList() -- creates the proc table 
-*
-*  SYNOPSIS
-*     void gen_procList() 
-*
-*  FUNCTION
-*     Creates the hashed list procList
-*******************************************************************************/
+/**
+ * @brief Creates the proc table
+ *
+ * Creates the hashed list procList
+ */
 void gen_procList()
 {
    procList = lCreateListHash("procList", PRO_Type, true);
 }
 
-/****** sge_proc/free_procList() ***********************************************
-*  NAME
-*     free_procList() -- frees the formerly created procList 
-*
-*  SYNOPSIS
-*     void free_procList() 
-*
-*  FUNCTION
-*     Frees the formerly created procList
-*******************************************************************************/
+/**
+ * @brief Frees the formerly created procList
+ */
 void free_procList()
 {
    lFreeList(&procList);
 }
 
-/****** sge_proc/clean_procList() **********************************************
-*  NAME
-*     clean_procList() -- cleans the procList from already finished jobs 
-*
-*  SYNOPSIS
-*     void clean_procList() 
-*
-*  FUNCTION
-*     Remove all elements from procList which has not been marked as running.
-*     Mark all remaining elements as not running.
-*******************************************************************************/
+/**
+ * @brief Cleans the procList from already finished jobs
+ *
+ * Remove all elements from procList which has not been marked as running.
+ * Mark all remaining elements as not running.
+ */
 void clean_procList()
 {
 

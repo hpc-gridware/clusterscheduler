@@ -24,18 +24,32 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Event Subscription
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of EVS
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   EVS_id = 1050,
-   EVS_flush,
-   EVS_interval,
-   EVS_what,
-   EVS_where
+   EVS_id = 1050,   ///< Event Id
+   EVS_flush,   ///< Flush this Event
+   EVS_interval,   ///< Flushing Interval
+   EVS_what,   ///< Attribute Filter
+   EVS_where   ///< Object Filter
 };
 
+/** @brief The attribute ids of EVS, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int EVS_Type[] = {
    EVS_id,
    EVS_flush,
@@ -45,6 +59,10 @@ constexpr const int EVS_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of EVS
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define EVS_ATTRIBUTES \
    {EVS_id, "EVS_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EVS_flush, "EVS_flush", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

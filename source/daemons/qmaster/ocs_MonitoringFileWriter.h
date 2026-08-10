@@ -19,11 +19,21 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief qmaster's own monitoring snapshots
+ */
+
 #include <utility>
 
 #include "ocs_ReportingFileWriter.h"
 
 namespace ocs {
+   /** @brief Writes qmaster's own monitoring snapshots as JSON
+    *
+    * Derives from ReportingFileWriter rather than BaseReportingFileWriter
+    * because it carries no job or share tree records at all - only what the
+    * threads report about themselves.
+    */
    class MonitoringFileWriter : public ReportingFileWriter {
    public:
       explicit MonitoringFileWriter()

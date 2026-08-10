@@ -20,6 +20,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The compact string describing a host's CPU topology
+ */
+
 #include <algorithm>
 #include <array>
 #include <string>
@@ -35,8 +39,11 @@
 #include "sgeobj/ocs_BindingStart.h"
 #include "sgeobj/ocs_BindingStop.h"
 
+/// Letters for data-carrying objects; see TopologyString::DATA_NODE_CHARACTERS
 #define DATA_NODE_CHARACTERS_DEFINE "NABUVWXYZ"
+/// Letters for executing objects; see TopologyString::HARDWARE_NODE_CHARACTERS
 #define HARDWARE_NODE_CHARACTERS_DEFINE "SCEFGHT"
+/// Position value meaning "not found"; see TopologyString::NO_POS
 #define NO_POS_DEFINE (-1)
 
 static constexpr unsigned char ascii_to_upper(const unsigned char ch) {
@@ -69,6 +76,7 @@ make_char_to_index() {
                                               }
    return arr;
 }
+/// Maps a topology letter to its slot in Node::char_to_count, case-insensitively
 constexpr auto char_to_index = make_char_to_index();
 
 static constexpr int
@@ -76,46 +84,62 @@ get_char_to_index_size() {
    return *std::ranges::max_element(char_to_index) + 1;
 }
 
+/// Number of distinct topology letters, i.e. the size a lookup table indexed by letter needs
 constexpr auto char_to_index_size = get_char_to_index_size();
 
 namespace ocs {
-   // Product internal topology string representation
-   // e.g., "(N[size=4096](S(X[size=512](Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))(E(T))(E(T))))))"
+   /**
+    * @brief The nested string a host's CPU topology is reported as
+    *
+    * Each object is one letter — see @ref ocs::BindingUnit for the alphabet —
+    * and nesting is written with parentheses, so the whole machine fits in one
+    * value that can be reported as a complex and matched against a request:
+    *
+    * @code
+    * (N[size=4096](S(X[size=512](Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))(E(T))(E(T))))))
+    * @endcode
+    *
+    * That example is one NUMA node holding one socket, whose level 3 cache
+    * covers two performance cores with two threads each and four efficiency
+    * cores with one thread each.
+    */
    class TopologyString {
 
 
+      /// One object of the topology tree
       class Node {
       public:
-         unsigned char c; //< Character representing the node type
-         int id; //< Unique ID of the node
-         std::vector<Node> nodes; //< Child nodes
-         std::array<int, char_to_index_size> char_to_count; //< Count of child nodes by character (both upper and lower case)
+         unsigned char c;                ///< the letter naming this object's kind
+         int id;                         ///< unique id of this object within the tree
+         std::vector<Node> nodes;        ///< the objects nested inside this one
+         std::array<int, char_to_index_size> char_to_count; ///< how many children of each letter, counting upper and lower case together
 #ifdef WITH_BINDING_NODES_CHARACTERISTICS
-         std::unordered_map<std::string, long> characteristics; //< Characteristics of the node, e.g., size
+         std::unordered_map<std::string, long> characteristics; ///< extra properties such as `size`
 #endif
       };
 
-      // Tree structure representing the topology
-      std::vector<Node> nodes;
+      std::vector<Node> nodes; ///< the roots of the topology tree
 
       // Some internal service methods
       void parse_to_tree(const std::string &topology);
       void sort_tree_nodes(char node_type, char sort_characteristic, bool ascending = true);
 
    public:
-      // Maximum length of a topology string
+      /// Longest topology string that will be accepted
       static constexpr size_t MAX_LENGTH = 2560;
+      /// Position value meaning "not found"
       static constexpr int NO_POS = NO_POS_DEFINE;
 
-      /* Static constants for node characters.
-       *
-       * DATA_NODE_CHARACTERS / HARDWARE_NODE_CHARACTERS / STRUCTURE_CHARACTERS are
-       * defined inline in the header (constexpr std::string_view) to avoid ODR
-       * dup ation across the static-linked binaries and the dlopen'd spool
-       * plugin libraries. See ocs_TopologyString.h for details.
+      /* These three are defined inline in the header (constexpr
+       * std::string_view) to avoid ODR duplication across the static-linked
+       * binaries and the dlopen'd spool plugin libraries.
        */
+
+      /// Letters naming objects that carry data rather than compute, e.g. caches
       static constexpr std::string_view DATA_NODE_CHARACTERS = DATA_NODE_CHARACTERS_DEFINE;
+      /// Letters naming objects that execute, e.g. sockets, cores and threads
       static constexpr std::string_view HARDWARE_NODE_CHARACTERS = HARDWARE_NODE_CHARACTERS_DEFINE;
+      /// The characters that express nesting rather than an object
       static constexpr std::string_view STRUCTURE_CHARACTERS = "()";
 
       static std::string id_tuple2string(const std::vector<std::pair<int, int>> &ids);

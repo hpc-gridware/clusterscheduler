@@ -34,6 +34,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The commlib connection that carries an interactive job's terminal traffic
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -72,20 +76,27 @@ extern sig_atomic_t received_signal;
  * and remove these.
  */
 static pthread_mutex_t ijs_general_communication_error_mutex = PTHREAD_MUTEX_INITIALIZER;
-/* local static struct to store communication errors. The boolean
- * values com_access_denied and com_endpoint_not_unique will never be
- * restored to false again
+/** @brief The communication errors seen so far, remembered for the application
+ *
+ * The commlib reports an error through a callback, at a moment when there is
+ * nothing useful to do with it. The callback records it here and
+ * #comm_get_application_error turns it into a return value the next time the
+ * application asks.
+ *
+ * @note `com_access_denied` and `com_endpoint_not_unique` are never reset to
+ *       false. Both mean the connection can never work, so once seen they stay
+ *       seen.
  */
 typedef struct sge_gdi_com_error_type {
-   int  com_error;                        /* current commlib error */
-   bool com_was_error;                    /* set if there was an communication error (but not CL_RETVAL_ACCESS_DENIED or CL_RETVAL_ENDPOINT_NOT_UNIQUE)*/
-   int  com_last_error;                   /* last logged commlib error */
-   bool com_access_denied;                /* set when commlib reports CL_RETVAL_ACCESS_DENIED */
-   int  com_access_denied_counter;        /* counts access denied errors (TODO: workaround for BT: 6350264, IZ: 1893) */
-   time_t com_access_denied_time;         /* timeout for counts access denied errors (TODO: workaround for BT: 6350264, IZ: 1893) */
-   bool com_endpoint_not_unique;          /* set when commlib reports CL_RETVAL_ENDPOINT_NOT_UNIQUE */
-   int  com_endpoint_not_unique_counter;  /* counts access denied errors (TODO: workaround for BT: 6350264, IZ: 1893) */
-   time_t com_endpoint_not_unique_time;   /* timeout for counts access denied errors (TODO: workaround for BT: 6350264, IZ: 1893) */
+   int  com_error;                        ///< current commlib error
+   bool com_was_error;                    ///< a communication error occurred, other than access-denied or endpoint-not-unique
+   int  com_last_error;                   ///< last logged commlib error, so the same one is not logged twice
+   bool com_access_denied;                ///< commlib reported `CL_RETVAL_ACCESS_DENIED`
+   int  com_access_denied_counter;        ///< how often, a workaround for BT 6350264 / IZ 1893
+   time_t com_access_denied_time;         ///< when the count above started, a workaround for BT 6350264 / IZ 1893
+   bool com_endpoint_not_unique;          ///< commlib reported `CL_RETVAL_ENDPOINT_NOT_UNIQUE`
+   int  com_endpoint_not_unique_counter;  ///< how often, a workaround for BT 6350264 / IZ 1893
+   time_t com_endpoint_not_unique_time;   ///< when the count above started, a workaround for BT 6350264 / IZ 1893
 } sge_gdi_com_error_t;
 
 
@@ -299,6 +310,17 @@ void comm_reset_application_error() {
                     __func__, __LINE__, &ijs_general_communication_error_mutex);
 }
 
+/** @brief Report a communication error the commlib callback recorded earlier
+ *
+ * Only the two permanent errors are reported: access denied, and endpoint not
+ * unique. Both mean the connection can never work, so the caller should give up
+ * rather than retry.
+ *
+ * @param err_msg receives the error text when there is one
+ * @retval COMM_RETVAL_OK no permanent error was seen
+ * @retval COMM_ENDPOINT_NOT_UNIQUE another client is already using this endpoint
+ * @retval COMM_ACCESS_DENIED the other side refused the connection
+ */
 int comm_get_application_error(dstring *err_msg)
 {
    int ret = COMM_RETVAL_OK;
@@ -322,8 +344,15 @@ int comm_get_application_error(dstring *err_msg)
    DRETURN(ret);
 }
 
-/* redirects the commlib logging to a file */
-/* this is a modified copy of the cl_log_list_flush_list() */
+/** @brief Write the commlib log to `cl_log.txt` instead of to stderr
+ *
+ * A modified copy of `cl_log_list_flush_list()`. It exists because an
+ * interactive job's stderr carries the job's own output: anything the commlib
+ * logged there would be mixed into what the user sees.
+ *
+ * @param list_p the commlib log list to drain
+ * @return `CL_RETVAL_OK`, or a `CL_RETVAL_*` error from locking or draining the list
+ */
 int my_log_list_flush_list(cl_raw_list_t* list_p) {
    cl_log_list_elem_t *elem = nullptr;
    FILE               *fp = nullptr;
@@ -372,35 +401,22 @@ int my_log_list_flush_list(cl_raw_list_t* list_p) {
    return cl_raw_list_unlock(list_p);
 }
 
-/****** sge_ijs_comm/comm_init_lib() *******************************************
-*  NAME
-*     comm_init_lib() -- Initializes the communication library
-*
-*  SYNOPSIS
-*     int comm_init_lib(dstring *err_msg)
-*
-*  FUNCTION
-*     Initializes the communication library, call it before using any other
-*     communication function.
-*
-*  INPUTS
-*     dstring *err_msg - Gets the error reason in case of error.
-*     cl_log_func_t    - a commlib logging function which will print CL_LOG messages
-*
-*  RESULT
-*     int - COMM_RETVAL_OK:
-*              Communication library was successfully initialized.
-*
-*           COMM_CANT_SETUP_COMMLIB:
-*              Error initializing the communication library, err_msg contains
-*              the error reason.
-*
-*  NOTES
-*     MT-NOTE: comm_init_lib() is not MT safe
-*
-*  SEE ALSO
-*    communication/comm_cleanup_lib()
-*******************************************************************************/
+/**
+ * @brief Initializes the communication library
+ *
+ * Initializes the communication library, call it before using any other
+ * communication function.
+ *
+ * @param err_msg Gets the error reason in case of error.
+ * @param commlib_log_func a commlib logging function which will print CL_LOG messages
+ *
+ * @retval COMM_RETVAL_OK the communication library was successfully initialized
+ * @retval COMM_CANT_SETUP_COMMLIB see `err_msg` for the reason
+ *
+ * @note MT-NOTE: comm_init_lib() is not MT safe
+ *
+ * @see #comm_cleanup_lib
+ */
 int comm_init_lib(dstring *err_msg, cl_log_func_t commlib_log_func) {
    int ret, ret_val = COMM_RETVAL_OK;
 
@@ -460,35 +476,19 @@ int comm_init_lib(dstring *err_msg, cl_log_func_t commlib_log_func) {
    DRETURN(ret_val);
 }
 
-/****** sge_ijs_comm/comm_cleanup_lib() ***************************************
-*  NAME
-*     comm_cleanup_lib() -- Clean up the communication library
-*
-*  SYNOPSIS
-*     int comm_cleanup_lib(dstring *err_msg)
-*
-*  FUNCTION
-*     Cleans up the communication library. Call it when done using the library.
-*
-*  INPUTS
-*     dstring *err_msg - Pointer to a dstring that receives a static error
-*                        string. If no error happens it get's set to
-*                        "no error happened".
-*
-*  RESULT
-*     int - COMM_RETVAL_OK:
-*              Communication library was successfully cleaned up.
-*
-*           COMM_CANT_CLEANUP_COMMLIB:
-*              Error cleaning up the communication library, err_msg contains
-*              the error reason.
-*
-*  NOTES
-*     MT-NOTE: comm_cleanup_lib() is not MT safe
-*
-*  SEE ALSO
-*    communication/comm_init_lib()
-*******************************************************************************/
+/**
+ * @brief Clean up the communication library
+ *
+ * Cleans up the communication library. Call it when done using the library.
+ *
+ * @param err_msg Pointer to a dstring that receives a static error string. If no error happens it get's set to "no error happened".
+ *
+ * @return COMM_RETVAL_OK: Communication library was successfully cleaned up. COMM_CANT_CLEANUP_COMMLIB: Error cleaning up the communication library, err_msg contains the error reason.
+ *
+ * @note MT-NOTE: comm_cleanup_lib() is not MT safe
+ *
+ * @see #comm_init_lib
+ */
 int comm_cleanup_lib(dstring *err_msg)
 {
    int ret, ret_val = COMM_RETVAL_OK;
@@ -505,64 +505,31 @@ int comm_cleanup_lib(dstring *err_msg)
    DRETURN(ret_val);
 }
 
-/****** sge_ijs_comm/comm_open_connection() ***********************************
-*  NAME
-*     comm_open_connection() -- Connects to or starts a comm server
-*
-*  SYNOPSIS
-*     int comm_open_connection(bool b_server, int port,
-*            const char *component_name, bool b_secure, const char *user_name,
-*            COMM_HANDLE **handle, dstring *err_msg)
-*
-*  FUNCTION
-*     Either start a comm server or connect to a running comm server.
-*
-*  INPUTS
-*     bool       b_server         - If true, a comm server is started, if false
-*                                   a connection to a server is established.
-*     cl_framework_t communication_framework - which communication framework to use (TCP, CSP, SSL_TLS)
-*     const char *this_component  - A unique name for this end of the connection.
-*     int        port             - In case of server: Port on which the server
-*                                   should listen. If this is 0, a free port is
-*                                   selected.
-*                                   In case of client: Port on which the server
-*                                   listens.
-*     const char *other_component - The unique name of the other end of the
-*                                   connection.
-*     char       *hostname        - Name of the host to connect to if b_server is false.
-*                                   Local host name if b_server is true.
-*     const char *user_name       - For secured connections: Name of the user
-*                                   whose certificates are to be used.
-*                                   Ignored for unsecured connections.
-*     COMM_HANDLE **handle        - The address of a COMM_HANDLE pointer
-*                                   which must be initialized to nullptr.
-*     dstring *err_msg            - Pointer to an empty dstring to receive
-*                                   error messages.
-*
-*  OUTPUT
-*    COMM_HANDLE **handle - The COMM_HANDLE of the connection.
-*    dstring     *err_msg - In case of error: The error reason.
-*
-*
-*  RESULT
-*     int - COMM_RETVAL_OK:
-*              Connection was successfully opened.
-*
-*           COMM_INVALID_PARAMETER:
-*              The *handle is not nullptr.
-*
-*           COMM_CANT_SETUP_SSL:
-*              err_msg contains the reason.
-*
-*           COMM_CANT_CREATE_HANDLE:
-*              err_msg contains the reason.
-*
-*  NOTES
-*     MT-NOTE: comm_open_connection() is not MT safe
-*
-*  SEE ALSO
-*     communication/comm_shutdown_connection()
-*******************************************************************************/
+/**
+ * @brief Connects to or starts a comm server
+ *
+ * Either start a comm server or connect to a running comm server.
+ *
+ * @param b_server If true, a comm server is started, if false a connection to a server is established.
+ * @param communication_framework which communication framework to use (TCP, CSP, SSL_TLS)
+ * @param this_component A unique name for this end of the connection.
+ * @param port In case of server: Port on which the server should listen. If this is 0, a free port is selected. In case of client: Port on which the server listens.
+ * @param other_component The unique name of the other end of the connection.
+ * @param hostname Name of the host to connect to if b_server is false. Local host name if b_server is true.
+ * @param user_name For secured connections: Name of the user whose certificates are to be used. Ignored for unsecured connections.
+ * @param[in,out] handle in: the address of a `COMM_HANDLE` pointer, which must
+ *                be `nullptr`; out: the handle of the connection
+ * @param[in,out] err_msg in: an empty dstring; out: the error reason
+ *
+ * @retval COMM_RETVAL_OK the connection was successfully opened
+ * @retval COMM_INVALID_PARAMETER `*handle` was not `nullptr`
+ * @retval COMM_CANT_SETUP_SSL see `err_msg` for the reason
+ * @retval COMM_CANT_CREATE_HANDLE see `err_msg` for the reason
+ *
+ * @note MT-NOTE: comm_open_connection() is not MT safe
+ *
+ * @see #comm_shutdown_connection
+ */
 int comm_open_connection(bool        b_server,
                          cl_framework_t communication_framework,
                          const char  *this_component,
@@ -764,41 +731,22 @@ int comm_open_connection(bool        b_server,
    DRETURN(ret_val);
 }
 
-/****** sge_ijs_comm/comm_shutdown_connection() *******************************
-*  NAME
-*     comm_shutdown_connection() -- gracefully shuts down a connection
-*
-*  SYNOPSIS
-*     int comm_shutdown_connection(COMM_HANDLE *handle,
-*                                  const char *component_name, dstring *err_msg)
-*
-*  FUNCTION
-*     All connections get closed and then the communication handle gets freed.
-*
-*  INPUTS
-*     COMM_HANDLE *handle         - Handle of the connection to be shut down.
-*     const char  *component_name - Name of the remote component of the
-*                                   connection to be shut down.
-*     char        *remote_host    - Name of the server we are connected to.
-*                                   Ignored if we are a server.
-*     dstring     *err_msg        - Gets the error reason in case of error.
-*
-*  RESULT
-*     int - COMM_RETVAL_OK:
-*              Connection was successfully opened.
-*
-*           COMM_CANT_CLOSE_CONNECTION:
-*              err_msg contains the reason.
-*
-*           COMM_CANT_SHUTDOOWN_HANDLE:
-*              err_msg contains the reason.
-*
-*  NOTES
-*     MT-NOTE: comm_shutdown_connection() is not MT safe
-*
-*  SEE ALSO
-*     communication/comm_open_connection()
-*******************************************************************************/
+/**
+ * @brief Gracefully shuts down a connection
+ *
+ * All connections get closed and then the communication handle gets freed.
+ *
+ * @param handle Handle of the connection to be shut down.
+ * @param component_name Name of the remote component of the connection to be shut down.
+ * @param remote_host Name of the server we are connected to. Ignored if we are a server.
+ * @param err_msg Gets the error reason in case of error.
+ *
+ * @return COMM_RETVAL_OK: Connection was successfully opened. COMM_CANT_CLOSE_CONNECTION: err_msg contains the reason. COMM_CANT_SHUTDOOWN_HANDLE: err_msg contains the reason.
+ *
+ * @note MT-NOTE: comm_shutdown_connection() is not MT safe
+ *
+ * @see #comm_open_connection
+ */
 int comm_shutdown_connection(COMM_HANDLE *handle, const char *component_name,
                              char *remote_host, dstring *err_msg)
 {
@@ -832,36 +780,22 @@ int comm_shutdown_connection(COMM_HANDLE *handle, const char *component_name,
    DRETURN(ret_val);
 }
 
-/****** sge_ijs_comm/comm_set_connection_param() ******************************
-*  NAME
-*     comm_set_connection_param() -- Set several connection parameters.
-*
-*  SYNOPSIS
-*     int comm_set_connection_param(COMM_HANDLE *handle, int param,
-*                                   int value, dstring *err_msg)
-*
-*  FUNCTION
-*     Sets several connection parameter. Valid parameters are:
-*        HEARD_FROM_TIMEOUT: The time until the communication library will
-*                            treat a connection as lost.
-*
-*  INPUTS
-*     COMM_HANDLE *handle  - Handle of the connection.
-*     int         param    - ID of the param to set. Currently
-*                            HEARD_FROM_TIMEOUT (in seconds) is supported.
-*     int         value    - Value to set the param to.
-*     dstring     *err_msg - Gets the error reason in case of error.
-*
-*  RESULT
-*     int - COMM_RETVAL_OK:
-*              Connection was successfully opened.
-*
-*           COMM_CANT_SET_CONNECTION_PARAM:
-*              err_msg contains the reason.
-*
-*  NOTES
-*     MT-NOTE: comm_set_connection_param() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Set several connection parameters
+ *
+ * Sets several connection parameter. Valid parameters are:
+ *    HEARD_FROM_TIMEOUT: The time until the communication library will
+ *                        treat a connection as lost.
+ *
+ * @param handle Handle of the connection.
+ * @param param ID of the param to set. Currently HEARD_FROM_TIMEOUT (in seconds) is supported.
+ * @param value Value to set the param to.
+ * @param err_msg Gets the error reason in case of error.
+ *
+ * @return COMM_RETVAL_OK: Connection was successfully opened. COMM_CANT_SET_CONNECTION_PARAM: err_msg contains the reason.
+ *
+ * @note MT-NOTE: comm_set_connection_param() is not MT safe
+ */
 int comm_set_connection_param(COMM_HANDLE *handle, int param, int value,
                               dstring *err_msg)
 {
@@ -878,33 +812,19 @@ int comm_set_connection_param(COMM_HANDLE *handle, int param, int value,
    DRETURN(ret_val);
 }
 
-/****** sge_ijs_comm/comm_ignore_timeouts() ***********************************
-*  NAME
-*     comm_ignore_timeouts() -- Use timeouts or wait infinitely.
-*
-*  SYNOPSIS
-*     int comm_ignore_timeouts(bool b_ignore)
-*
-*  FUNCTION
-*     Tells the communication library to either use timeouts or just wait
-*     until all work is done.
-*
-*  INPUTS
-*     bool b_ignore    - If true, the comm. library ignores timeouts,
-*                        if false, timeouts are enabled.
-*     dstring *err_msg - Gets the error reason in case of error.
-*
-*
-*  RESULT
-*     int - COMM_RETVAL_OK:
-*              Connection was successfully opened.
-*
-*           COMM_CANT_SET_IGNORE_TIMEOUTS:
-*              err_msg contains the reason.
-*
-*  NOTES
-*     MT-NOTE: comm_ignore_timeouts() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Use timeouts or wait infinitely
+ *
+ * Tells the communication library to either use timeouts or just wait
+ * until all work is done.
+ *
+ * @param b_ignore If true, the comm. library ignores timeouts, if false, timeouts are enabled.
+ * @param err_msg Gets the error reason in case of error.
+ *
+ * @return COMM_RETVAL_OK: Connection was successfully opened. COMM_CANT_SET_IGNORE_TIMEOUTS: err_msg contains the reason.
+ *
+ * @note MT-NOTE: comm_ignore_timeouts() is not MT safe
+ */
 int comm_ignore_timeouts(bool b_ignore, dstring *err_msg)
 {
    int ret     = CL_RETVAL_OK;
@@ -921,46 +841,23 @@ int comm_ignore_timeouts(bool b_ignore, dstring *err_msg)
    DRETURN(ret_val);
 }
 
-/****** sge_ijs_comm/comm_wait_for_connection() *******************************
-*  NAME
-*     comm_wait_for_connection() -- Waits until at least one client has connected
-*
-*  SYNOPSIS
-*     int comm_wait_for_connection(COMM_HANDLE *handle, const char
-*         *component, int wait_secs, const char **host, dstring *err_msg)
-*
-*  FUNCTION
-*     On a server, waits until at least one client has connected.
-*
-*  INPUTS
-*     COMM_HANDLE *handle    - Handle of the connection.
-*     const char  *component - Wait for a client with this component name.
-*     int         wait_secs  - Wait at most wait_secs seconds.
-*     const char  **host     - Name of the host from where the client connects.
-*     dstring     *err_msg   - Gets the error reason in case of error.
-*
-*  RESULT
-*     int - COMM_RETVAL_OK:
-*              A client is connected to us.
-*
-*           COMM_GOT_TIMEOUT:
-*              'wait_seconds' have elapsed.
-*
-*           COMM_CANT_TRIGGER:
-*              err_msg contains the reason.
-*
-*           COMM_CANT_SEARCH_ENDPOINT:
-*              err_msg contains the reason.
-*
-*           COMM_INVALID_PARAMETER:
-*              handle = nullptr, err_msg doesn't contain an error reason.
-*
-*  NOTES
-*     MT-NOTE: comm_wait_for_connection() is not MT safe
-*
-*  SEE ALSO
-*     communication/comm_wait_for_no_connection()
-*******************************************************************************/
+/**
+ * @brief Waits until at least one client has connected
+ *
+ * On a server, waits until at least one client has connected.
+ *
+ * @param handle Handle of the connection.
+ * @param component Wait for a client with this component name.
+ * @param wait_secs Wait at most wait_secs seconds.
+ * @param host Name of the host from where the client connects.
+ * @param err_msg Gets the error reason in case of error.
+ *
+ * @return COMM_RETVAL_OK: A client is connected to us. COMM_GOT_TIMEOUT: 'wait_seconds' have elapsed. COMM_CANT_TRIGGER: err_msg contains the reason. COMM_CANT_SEARCH_ENDPOINT: err_msg contains the reason. COMM_INVALID_PARAMETER: handle = nullptr, err_msg doesn't contain an error reason.
+ *
+ * @note MT-NOTE: comm_wait_for_connection() is not MT safe
+ *
+ * @see `comm_wait_for_no_connection()`
+ */
 int comm_wait_for_connection(COMM_HANDLE *handle,
                              const char *component,
                              int wait_secs,
@@ -1059,33 +956,18 @@ int comm_wait_for_connection(COMM_HANDLE *handle,
    DRETURN(ret_val);
 }
 
-/****** sge_ijs_comm/comm_get_connection_count() ******************************
-*  NAME
-*     comm_get_connection_count() -- Retrieves the current number of connections
-*
-*  SYNOPSIS
-*     int comm_get_connection_count(COMM_HANDLE *handle, dstring *err_msg)
-*
-*  FUNCTION
-*     Retrieves the current number of connections.
-*
-*  INPUTS
-*     COMM_HANDLE *handle - Handle of the connection.
-*     dstring *err_msg    - Gets the error reason in case of error.
-*
-*  RESULT
-*     int - Number of connections.
-*           <0 in case of error:
-*           -COMM_CANT_LOCK_CONNECTION_LIST:
-*              err_msg contains the reason.
-*
-*           -COMM_CANT_UNLOCK_CONNECTION_LIST:
-*              err_msg contains the reason.
-*
-*
-*  NOTES
-*     MT-NOTE: comm_get_connection_count() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Retrieves the current number of connections
+ *
+ * Retrieves the current number of connections.
+ *
+ * @param handle Handle of the connection.
+ * @param err_msg Gets the error reason in case of error.
+ *
+ * @return Number of connections. <0 in case of error: -COMM_CANT_LOCK_CONNECTION_LIST: err_msg contains the reason. -COMM_CANT_UNLOCK_CONNECTION_LIST: err_msg contains the reason.
+ *
+ * @note MT-NOTE: comm_get_connection_count() is not MT safe
+ */
 int comm_get_connection_count(const COMM_HANDLE *handle, dstring *err_msg)
 {
    int                        ret;
@@ -1115,39 +997,24 @@ int comm_get_connection_count(const COMM_HANDLE *handle, dstring *err_msg)
    DRETURN(ret_val);
 }
 
-/****** sge_ijs_comm/comm_write_message() *************************************
-*  NAME
-*     comm_write_message() -- Write a message to the connection
-*
-*  SYNOPSIS
-*     unsigned long comm_write_message(COMM_HANDLE *handle, const char
-*     *unresolved_hostname, const char *component_name, unsigned long component_id,
-*     unsigned char *buffer, unsigned long size, unsigned char type, dstring
-*     *err_msg)
-*
-*  FUNCTION
-*     Writes a message to the connection.
-*
-*  INPUTS
-*     COMM_HANDLE *handle             - Handle of the connection.
-*     const char *unresolved_hostname - Hostname of the destination host.
-*     const char *component_name      - Component name of the destination.
-*     unsigned long component_id      - Component ID of the destination.
-*     unsigned char *buffer           - The message data.
-*     unsigned long size              - Message data length.
-*     unsigned char type              - Message type.
-*     dstring *err_msg                - Gets the error reason in case of error.
-*
-*  RESULT
-*     unsigned long - the number of bytes written.
-*                     0 in case of error.
-*
-*  NOTES
-*     MT-NOTE: comm_write_message() is not MT safe
-*
-*  SEE ALSO
-*     communication/comm_recv_message
-*******************************************************************************/
+/**
+ * @brief Write a message to the connection
+ *
+ * Writes a message to the connection.
+ *
+ * @param handle Handle of the connection.
+ * @param unresolved_hostname Hostname of the destination host.
+ * @param component_name Component name of the destination.
+ * @param component_id Component ID of the destination.
+ * @param buffer The message data.
+ * @param size Message data length.
+ * @param type Message type.
+ * @param err_msg Gets the error reason in case of error.
+ *
+ * @return the number of bytes written. 0 in case of error.
+ *
+ * @note MT-NOTE: comm_write_message() is not MT safe
+ */
 unsigned long comm_write_message(COMM_HANDLE *handle,
                             const char *unresolved_hostname,
                             const char *component_name,
@@ -1208,32 +1075,19 @@ unsigned long comm_write_message(COMM_HANDLE *handle,
    DRETURN(nwritten);
 }
 
-/****** sge_ijs_comm/comm_wait_for_all_messages_sent() ******************************
-*  NAME
-*     wait_for_all_messages_sent() -- Wait until all messages have been sent
-*
-*  SYNOPSIS
-*     int wait_for_all_messages_sent(COMM_HANDLE *handle, dstring *err_msg)
-*
-*  FUNCTION
-*     Waits until all sent messages have actually been sent by the commlib write thread
-*     or an error occurs.
-*
-*  INPUTS
-*     COMM_HANDLE *handle - Handle of the connection.
-*     dstring *err_msg    - Contains error message in case of error.
-*
-*  RESULT
-*     int - 0: Ok, all messages were sent.
-*          <0: Retries needed to flush all messages * -1
-*          >0: An error occurred, error number is a commlib error.
-*
-*  NOTES
-*     MT-NOTE: comm_flush_write_messages() is not MT safe
-*
-*  SEE ALSO
-*     communication/comm_write_message
-*******************************************************************************/
+/**
+ * @brief Wait until all messages have been sent
+ *
+ * Waits until all sent messages have actually been sent by the commlib write thread
+ * or an error occurs.
+ *
+ * @param handle Handle of the connection.
+ * @param err_msg Contains error message in case of error.
+ *
+ * @return 0: Ok, all messages were sent. <0: Retries needed to flush all messages * -1 >0: An error occurred, error number is a commlib error.
+ *
+ * @note MT-NOTE: comm_flush_write_messages() is not MT safe
+ */
 int comm_wait_for_all_messages_sent(COMM_HANDLE *handle, dstring *err_msg)
 {
    DENTER(TOP_LAYER);
@@ -1411,33 +1265,20 @@ int comm_recv_message(COMM_HANDLE *handle, recv_message_t *recv_mess, dstring *e
    DRETURN(ret_val);
 }
 
-/****** sge_ijs_comm/comm_free_message() **************************************
-*  NAME
-*     comm_free_message() -- free contents of a received message struct
-*
-*  SYNOPSIS
-*     int comm_free_message(recv_message_t *recv_mess, dstring *err_msg)
-*
-*  FUNCTION
-*     Frees the content of a received message struct.
-*
-*  INPUTS
-*     recv_message_t *recv_mess - The message struct that is to be freed.
-*     dstring *err_msg          - Gets the error reason in case of error.
-*
-*  RESULT
-*     int - COMM_RETVAL_OK:
-*              The message is freed.
-*
-*           COMM_CANT_FREE_MESSAGE:
-*              err_msg contains the error reason.
-*
-*  NOTES
-*     MT-NOTE: comm_free_message() is not MT safe
-*
-*  SEE ALSO
-*     communication/comm_recv_message()
-*******************************************************************************/
+/**
+ * @brief Free contents of a received message struct
+ *
+ * Frees the content of a received message struct.
+ *
+ * @param recv_mess The message struct that is to be freed.
+ * @param err_msg Gets the error reason in case of error.
+ *
+ * @return COMM_RETVAL_OK: The message is freed. COMM_CANT_FREE_MESSAGE: err_msg contains the error reason.
+ *
+ * @note MT-NOTE: comm_free_message() is not MT safe
+ *
+ * @see #comm_recv_message
+ */
 int comm_free_message(recv_message_t *recv_mess, dstring *err_msg)
 {
    int ret;
@@ -1457,34 +1298,20 @@ int comm_free_message(recv_message_t *recv_mess, dstring *err_msg)
 }
 
 
-/****** sge_ijs_comm/check_client_alive() *************************************
-*  NAME
-*     check_client_alive() -- Checks is a know, connected client is still alive
-*
-*  SYNOPSIS
-*     int check_client_alive(COMM_HANDLE *handle,
-*                            const char *component_name, dstring *err_msg)
-*
-*  FUNCTION
-*     Checks if a known, connected client is still alive.
-*
-*  INPUTS
-*     COMM_HANDLE *handle          - Handle to the connection.
-*     const char  *component_name  - Name of the comonent to check.
-*     char        *hostname        - Host of the client.
-*     dstring     *err_msg         - Gets the error reason in case of error.
-*
-*  RESULT
-*     int - COMM_RETVAL_OK:
-*              The client is alive.
-*
-*           COMM_CANT_GET_CLIENT_STATUS:
-*              err_msg contains the error reason.
-*
-*  NOTES
-*     MT-NOTE: check_client_alive() is not MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Checks is a know, connected client is still alive
+ *
+ * Checks if a known, connected client is still alive.
+ *
+ * @param handle Handle to the connection.
+ * @param component_name Name of the comonent to check.
+ * @param hostname Host of the client.
+ * @param err_msg Gets the error reason in case of error.
+ *
+ * @return COMM_RETVAL_OK: The client is alive. COMM_CANT_GET_CLIENT_STATUS: err_msg contains the error reason.
+ *
+ * @note MT-NOTE: check_client_alive() is not MT safe
+ */
 int check_client_alive(COMM_HANDLE *handle,
                        const char *component_name,
                        char *hostname,

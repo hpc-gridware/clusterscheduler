@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The thread that receives signals and drives an orderly shutdown
+ */
+
 #include <pthread.h>
 
 #include "sgeobj/sge_daemonize.h"

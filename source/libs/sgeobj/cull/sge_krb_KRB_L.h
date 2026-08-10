@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Kerberos Authentication
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -54,12 +58,12 @@
 */
 
 enum {
-   KRB_commproc = KRB_LOWERBOUND,
-   KRB_id,
-   KRB_host,
-   KRB_timestamp,
-   KRB_auth_context,
-   KRB_tgt_list
+   KRB_commproc = KRB_LOWERBOUND,   ///< Commproc Id
+   KRB_id,   ///< Id
+   KRB_host,   ///< Host
+   KRB_timestamp,   ///< Timestamp
+   KRB_auth_context,   ///< Authentication Context
+   KRB_tgt_list   ///< TGT List
 };
 
 LISTDEF(KRB_Type)
@@ -80,6 +84,7 @@ NAMEDEF(KRBN)
    NAME("KRB_tgt_list")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define KRB_SIZE sizeof(KRBN)/sizeof(char *)
 
 

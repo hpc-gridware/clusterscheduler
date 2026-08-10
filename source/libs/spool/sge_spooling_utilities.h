@@ -33,106 +33,73 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Deciding which attributes of an object get spooled, and how
+ */
+
 #include "uti/sge_dstring.h"
 
 #include "cull/cull.h"
 
 #include "sgeobj/sge_object.h"
 
-/****** spool/utilities/--Spooling-Utilities************************************
-*
-*  NAME
-*     Spooling Utilities -- common data structures and functions for spooling
-*
-*  FUNCTION
-*     The module provides utility functions used for spooling.
-*
-*  SEE ALSO
-*     spool/utilities/-Spooling-Utilities-Typedefs
-*     spool/utilities/spool_get_fields_to_spool()
-****************************************************************************
-*/
+/** @defgroup spool_utilities Spooling utilities
+ * @brief Which attributes of an object are spooled, and under what name
+ *
+ * A cull object has more attributes than belong in a spool file: runtime
+ * state, cached values, things derived on load. Which ones survive is not
+ * decided here but in the object's own definition - every field carries a
+ * `mt` bitmask, and #CULL_SPOOL is the bit that says "write me".
+ *
+ * This module turns that bitmask into something the backends can iterate.
+ * #spool_get_fields_to_spool walks a `lDescr` under a #spool_instr_t and
+ * returns the matching fields as a #spooling_field array, which is what the
+ * flatfile writer formats and the reader parses back.
+ * @{
+ */
 
-/****** spool/utilities/-Spooling-Utilities-Typedefs ***************************
-*
-*  NAME
-*     Typedefs -- type definitions for spooling utility functions
-*
-*  SYNOPSIS
-*     typedef struct spool_instr {
-*        int selection;
-*        bool copy_field_names;
-*        bool strip_field_prefix;
-*        const struct spool_instr *sub_instr;
-*     } spool_instr_t;
-*
-*     extern const spool_instr_t spool_config_instr;
-*
-*     typedef struct spooling_field {
-*        int nm;
-*        int width;
-*        const char *name;
-*        const struct spooling_field *sub_fields;
-*        int (*read_func) (lListElem *ep, int nm, const char *buffer, lList **alp);
-*        int (*write_func) (const lListElem *ep, int nm, dstring *buffer, lList **alp);
-*     } spooling_field;
-*
-*  FUNCTION
-*     spooling_instr
-*     Describes how the fields to be spooled are selected.
-*     The int field "selection" contains a bitmask that will be applied
-*     to the mt field of a field descriptor to check, if a field has to be
-*     spooled.
-*     sub_instr points to a spool_instr that will be used
-*     to spool elements in sublists.
-*
-*     spooling_field
-*     An array of spooling_fields is provides the necessary information
-*     for the formatted output of data.
-*     It contains the names and types of attributes to spool, information
-*     about field width (for formatted output), the attribute name that shall
-*     be used in output.
-*     For list fields, that shall be spooled, it contains an array of
-*     fields that shall be spooled in sublist objects.
-*
-*  NOTES
-*     May not allow really comprehensive output in all possible variations,
-*     but it seems to be sufficient for all spooling and output done in
-*     Cluster Scheduler.
-*
-*  SEE ALSO
-*     spool/utilities/spool_get_fields_to_spool()
-*     spool/utilities/spool_free_spooling_fields()
-****************************************************************************
-*/
 
+/** @brief How to select the fields of one object type for spooling */
 typedef struct spool_instr {
-   int selection;
-   bool copy_field_names;
-   bool strip_field_prefix;
-   const struct spool_instr *sub_instr;
-   const void *clientdata;
+   int selection;             ///< Bitmask ANDed with each field's `mt`, e.g. #CULL_SPOOL - a non-zero result means the field is spooled
+   bool copy_field_names;     ///< Copy the attribute name into the #spooling_field instead of pointing into the descriptor
+   bool strip_field_prefix;   ///< Drop the `XX_` type prefix from the name, so `QU_qname` is spooled as `qname`
+   const struct spool_instr *sub_instr;   ///< The instruction to apply to elements of sublist fields
+   const void *clientdata;    ///< Free for the caller; unused by the framework itself
 } spool_instr_t;
 
-extern const spool_instr_t spool_config_instr;
-extern const spool_instr_t spool_config_subinstr;
+/** @name The ready made selections
+ *
+ * Each `*_instr` is the top level instruction for one family of objects and
+ * points at the matching `*_subinstr` for whatever sublists it contains.
+ * @{
+ */
+extern const spool_instr_t spool_config_instr;      ///< The default: #CULL_SPOOL fields, names copied and un-prefixed
+extern const spool_instr_t spool_config_subinstr;   ///< Sublists of the above: #CULL_SUBLIST fields, names left alone
 
-extern const spool_instr_t spool_complex_instr;
-extern const spool_instr_t spool_complex_subinstr;
+extern const spool_instr_t spool_complex_instr;     ///< Complex entries: #CULL_SPOOL fields, names kept verbatim
+extern const spool_instr_t spool_complex_subinstr;  ///< Sublists of a complex entry
 
-extern const spool_instr_t spool_user_instr;
-extern const spool_instr_t spool_userprj_subinstr;
+extern const spool_instr_t spool_user_instr;        ///< Users and projects: #CULL_SPOOL plus #CULL_SPOOL_USER
+extern const spool_instr_t spool_userprj_subinstr;  ///< Sublists of a user or project - it names *itself* as its own `sub_instr`, so nesting to any depth uses the same selection
+/** @} */
 
+/** @brief One attribute to spool, as the backends see it
+ *
+ * #spool_get_fields_to_spool returns these as an array terminated by an entry
+ * with `nm == NoName`. The `free_*` flags say which pointers that array owns,
+ * so that #spool_free_spooling_fields can release exactly those.
+ */
 typedef struct spooling_field {
-   int nm;
-   int width;
-   const char *name;
-   bool free_name;
-   struct spooling_field *sub_fields;
-   bool free_sub_fields;
-   const void *clientdata;
-   int (*read_func) (lListElem *ep, int nm, const char *buffer, lList **alp);
-   int (*write_func) (const lListElem *ep, int nm, dstring *buffer, lList **alp);
+   int nm;                    ///< The cull attribute number, `NoName` in the terminating entry
+   int width;                 ///< Field width for formatted output, 0 for unformatted
+   const char *name;          ///< The name to write into the spool file
+   bool free_name;            ///< `name` was copied and must be freed with the array
+   struct spooling_field *sub_fields;   ///< For a list attribute, the fields to spool per element
+   bool free_sub_fields;      ///< `sub_fields` was built here and must be freed with the array
+   const void *clientdata;    ///< Free for the backend; the flatfile writer keeps its format info here
+   int (*read_func) (lListElem *ep, int nm, const char *buffer, lList **alp);   ///< Backend hook parsing this attribute out of `buffer`, instead of the default conversion
+   int (*write_func) (const lListElem *ep, int nm, dstring *buffer, lList **alp);   ///< Backend hook rendering this attribute into `buffer`
 } spooling_field;
 
 spooling_field *
@@ -159,3 +126,5 @@ spool_exechost_strip_dynamic_load(const lListElem *object);
 
 void
 spool_exechost_restore_load_list(const lListElem *object, lList **backup_load_list);
+
+/** @} */

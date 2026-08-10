@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief range - expand a lower/upper pair into the numbers between them
+ */
 #include <cstdio>
 #include <cstdlib>
 #include "msg_utilbin.h"

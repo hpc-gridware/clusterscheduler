@@ -30,6 +30,23 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The JNI bridge between the Java DRMAA binding and `libdrmaa`
+ *
+ * Every `native` method of `com.sun.grid.drmaa.SessionImpl` has its
+ * implementation here. Each one does the same three things: convert the Java
+ * arguments into C, call the matching `drmaa_*` function, and turn a non-OK
+ * DRMAA return into a Java exception of the class the error maps to.
+ *
+ * @note The header beside this file is `javah` output - it says *"DO NOT EDIT
+ *       THIS FILE - it is machine generated"* - and is excluded from the
+ *       documentation gate. Only this file is hand written.
+ *
+ * @note This file is not built from `libs/jdrmaa`; that directory is not in
+ *       the CMake build at all. It is pulled in by `libs/japi/CMakeLists.txt`
+ *       as `JNI_CODE`.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -43,91 +60,66 @@
 #include "japi/msg_drmaa.h"
 #include "com_sun_grid_drmaa_SessionImpl.h"
 
+/** @brief Size of the buffers the DRMAA calls write their output into */
 #define BUFFER_LENGTH 1024
+/** @brief How many job template attributes are handled in one call */
 #define TEMPLATE_LIST_LENGTH 1024
 
+/** @brief The DRMAA error codes, as the Java binding numbers them
+ *
+ * A copy of the `drmaa_errno` values with a `DRMAAJ_` prefix, kept in step
+ * with `org.ggf.drmaa` by hand.
+ *
+ * @warning Must stay in the same order as the exception class table below -
+ *          a code is turned into a Java exception by using it as an index.
+ */
 enum {
-   /* -------------- these are relevant to all sections ---------------- */
-   DRMAAJ_ERRNO_SUCCESS = 0, /* Routine returned normally with success. */
+   DRMAAJ_ERRNO_SUCCESS = 0,   ///< Routine returned normally with success
 
-   DRMAAJ_ERRNO_INTERNAL_ERROR, /* Unexpected or internal DRMAA error like
-                                   memory allocation, system call failure,
-                                   etc. */
-   DRMAAJ_ERRNO_DRM_COMMUNICATION_FAILURE, /* Could not contact DRM system for
-                                              this request. */
-   DRMAAJ_ERRNO_AUTH_FAILURE, /* The specified request is not processed
-                                 successfully due to authorization failure. */
-   DRMAAJ_ERRNO_INVALID_ARGUMENT, /* The input value for an argument is
-                                     invalid. */
-   DRMAAJ_ERRNO_NO_ACTIVE_SESSION, /* Exit routine failed because there is no
-                                      active session */
-   DRMAAJ_ERRNO_NO_MEMORY, /* failed allocating memory */
+   DRMAAJ_ERRNO_INTERNAL_ERROR,   ///< Unexpected or internal DRMAA error like memory allocation, system call failure, etc
+   DRMAAJ_ERRNO_DRM_COMMUNICATION_FAILURE,   ///< Could not contact DRM system for this request
+   DRMAAJ_ERRNO_AUTH_FAILURE,   ///< The specified request is not processed successfully due to authorization failure
+   DRMAAJ_ERRNO_INVALID_ARGUMENT,   ///< The input value for an argument is invalid
+   DRMAAJ_ERRNO_NO_ACTIVE_SESSION,   ///< Exit routine failed because there is no active session
+   DRMAAJ_ERRNO_NO_MEMORY,   ///< Failed allocating memory
 
    /* -------------- init and exit specific --------------- */
-   DRMAAJ_ERRNO_INVALID_CONTACT_STRING, /* Initialization failed due to invalid
-                                           contact string. */
-   DRMAAJ_ERRNO_DEFAULT_CONTACT_STRING_ERROR, /* DRMAA could not use the default
-                                                 contact string to connect to
-                                                 DRM system. */
-   DRMAAJ_ERRNO_NO_DEFAULT_CONTACT_STRING_SELECTED, /* No defaults contact
-                                                       string was provided or
-                                                       selected. DRMAA requires
-                                                       that the default contact
-                                                       string is selected when
-                                                       there is more than one
-                                                       default contact string
-                                                       due to multiple DRMAA
-                                                       implementation contained
-                                                       in the binary module. */
-   DRMAAJ_ERRNO_DRMS_INIT_FAILED, /* Initialization failed due to failure to
-                                     init DRM system. */
-   DRMAAJ_ERRNO_ALREADY_ACTIVE_SESSION, /* Initialization failed due to existing
-                                           DRMAA session. */
-   DRMAAJ_ERRNO_DRMS_EXIT_ERROR, /* DRM system disengagement failed. */
+   DRMAAJ_ERRNO_INVALID_CONTACT_STRING,   ///< Initialization failed due to invalid contact string
+   DRMAAJ_ERRNO_DEFAULT_CONTACT_STRING_ERROR,   ///< DRMAA could not use the default contact string to connect to DRM system
+   DRMAAJ_ERRNO_NO_DEFAULT_CONTACT_STRING_SELECTED,   ///< No defaults contact string was provided or selected. DRMAA requires that the default contact string is selected when there is more than one default contact string due to multiple DRMAA implementation contained in the binary module
+   DRMAAJ_ERRNO_DRMS_INIT_FAILED,   ///< Initialization failed due to failure to init DRM system
+   DRMAAJ_ERRNO_ALREADY_ACTIVE_SESSION,   ///< Initialization failed due to existing DRMAA session
+   DRMAAJ_ERRNO_DRMS_EXIT_ERROR,   ///< DRM system disengagement failed
 
    /* ---------------- job attributes specific -------------- */
-   DRMAAJ_ERRNO_INVALID_ATTRIBUTE_FORMAT, /* The format for the job attribute
-                                             value is invalid. */
-   DRMAAJ_ERRNO_INVALID_ATTRIBUTE_VALUE, /* The value for the job attribute is
-                                            invalid. */
-   DRMAAJ_ERRNO_CONFLICTING_ATTRIBUTE_VALUES, /* The value of this attribute is
-                                                 conflicting with a previously
-                                                 set attributes. */
+   DRMAAJ_ERRNO_INVALID_ATTRIBUTE_FORMAT,   ///< The format for the job attribute value is invalid
+   DRMAAJ_ERRNO_INVALID_ATTRIBUTE_VALUE,   ///< The value for the job attribute is invalid
+   DRMAAJ_ERRNO_CONFLICTING_ATTRIBUTE_VALUES,   ///< The value of this attribute is conflicting with a previously set attributes
 
    /* --------------------- job submission specific -------------- */
-   DRMAAJ_ERRNO_TRY_LATER, /* Could not pass job now to DRM system. A retry may
-                              succeed however (saturation). */
-   DRMAAJ_ERRNO_DENIED_BY_DRM, /* The DRM system rejected the job. The job will
-                                  never be accepted due to DRM configuration or
-                                  job template settings. */
+   DRMAAJ_ERRNO_TRY_LATER,   ///< Could not pass job now to DRM system. A retry may succeed however (saturation)
+   DRMAAJ_ERRNO_DENIED_BY_DRM,   ///< The DRM system rejected the job. The job will never be accepted due to DRM configuration or job template settings
 
    /* ------------------------------- job control specific ---------------- */
-   DRMAAJ_ERRNO_INVALID_JOB, /* The job specified by the 'jobid' does not
-                                exist. */
-   DRMAAJ_ERRNO_RESUME_INCONSISTENT_STATE, /* The job has not been suspended.
-                                              The RESUME request will not be
-                                              processed. */
-   DRMAAJ_ERRNO_SUSPEND_INCONSISTENT_STATE, /* The job has not been running, and
-                                               it cannot be suspended. */
-   DRMAAJ_ERRNO_HOLD_INCONSISTENT_STATE, /* The job cannot be moved to a HOLD
-                                           state. */
-   DRMAAJ_ERRNO_RELEASE_INCONSISTENT_STATE, /* The job is not in a HOLD
-                                               state. */
-   DRMAAJ_ERRNO_EXIT_TIMEOUT, /* We have encountered a time-out condition for
-                                 drmaa_synchronize or drmaa_wait. */
-   DRMAAJ_ERRNO_NO_RUSAGE, /* This error code is returned by drmaa_wait() when a
-                              job has finished but no rusage and stat data could
-                              be provided. */
-   DRMAAJ_ERRNO_INVALID_JOB_TEMPLATE, /* This error code is returned when an
-                                         invalid job template is passed to a
-                                         function. */
-   DRMAAJ_ERRNO_NULL_POINTER, /* This error code is used for
-                                 NullPointerExceptions */
+   DRMAAJ_ERRNO_INVALID_JOB,   ///< The job specified by the 'jobid' does not exist
+   DRMAAJ_ERRNO_RESUME_INCONSISTENT_STATE,   ///< The job has not been suspended. The RESUME request will not be processed
+   DRMAAJ_ERRNO_SUSPEND_INCONSISTENT_STATE,   ///< The job has not been running, and it cannot be suspended
+   DRMAAJ_ERRNO_HOLD_INCONSISTENT_STATE,   ///< The job cannot be moved to a HOLD state
+   DRMAAJ_ERRNO_RELEASE_INCONSISTENT_STATE,   ///< The job is not in a HOLD state
+   DRMAAJ_ERRNO_EXIT_TIMEOUT,   ///< We have encountered a time-out condition for drmaa_synchronize or drmaa_wait
+   DRMAAJ_ERRNO_NO_RUSAGE,   ///< This error code is returned by drmaa_wait() when a job has finished but no rusage and stat data could be provided
+   DRMAAJ_ERRNO_INVALID_JOB_TEMPLATE,   ///< This error code is returned when an invalid job template is passed to a function
+   DRMAAJ_ERRNO_NULL_POINTER,   ///< This error code is used for NullPointerExceptions
 /* DRMAAJ_ERRNO_NO_MORE_ELEMENTS is not listed here because it is unused in the
  * Java language binding. */
-   DRMAAJ_NO_ERRNO
+   DRMAAJ_NO_ERRNO   ///< Not an error: the sentinel that closes the list
 };
 
+/** @brief Marks a DRMAA error that has no Java exception class of its own
+ *
+ * @note The name is misspelled - `EXECEPTION` - and has been since the file
+ *       was written.
+ */
 #define NO_EXECEPTION_CLASS "Unable to locate class, " SFN ", for DRMAA error: " SFN2 ": " SFN2
 
 static pthread_mutex_t list_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -142,6 +134,15 @@ static char *get_exception_class_name (int errnum);
 static drmaa_job_template_t *get_from_list (int id);
 static int insert_into_list (drmaa_job_template_t *jt);
 
+/** @brief Act on a job: suspend, resume, hold, release or terminate
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ * @param jobId the job to act on
+ * @param action which action, as the DRMAA control constant
+ *
+ * @return nothing; a DRMAA failure is raised as a Java exception instead
+ */
 JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeControl
   (JNIEnv *env, jobject object, jstring jobId, jint action)
 {
@@ -167,6 +168,13 @@ JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeControl
    }  
 }
 
+/** @brief End the DRMAA session
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ *
+ * @return nothing; a DRMAA failure is raised as a Java exception instead
+ */
 JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeExit
   (JNIEnv *env, jobject object)
 {
@@ -203,6 +211,12 @@ JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeExit
    }  
 }
 
+/** @brief The contact string of the session
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ * @return the contact string
+ */
 JNIEXPORT jstring JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeGetContact
   (JNIEnv *env, jobject object)
 {
@@ -222,6 +236,12 @@ JNIEXPORT jstring JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeGetContact
    return (*env)->NewStringUTF (env, contact);
 }
 
+/** @brief Name and version of the DRM system
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ * @return the system's description
+ */
 JNIEXPORT jstring JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeGetDRMSInfo
   (JNIEnv *env, jobject object)
 {
@@ -241,6 +261,13 @@ JNIEXPORT jstring JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeGetDRMSInfo
    return (*env)->NewStringUTF (env, system);
 }
 
+/** @brief The state of one job
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ * @param jobId the job to ask about
+ * @return the DRMAA job state constant
+ */
 JNIEXPORT jint JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeGetJobProgramStatus
   (JNIEnv *env, jobject object, jstring jobId)
 {
@@ -271,6 +298,14 @@ JNIEXPORT jint JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeGetJobProgramSt
    return status;
 }
 
+/** @brief Start the DRMAA session
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ * @param contactString the contact string, or null for the default
+ *
+ * @return nothing; a DRMAA failure is raised as a Java exception instead
+ */
 JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeInit
   (JNIEnv *env, jobject object, jstring contactString)
 {
@@ -293,6 +328,16 @@ JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeInit
    }  
 }
 
+/** @brief Submit an array job
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ * @param id the job template's index
+ * @param start first task number
+ * @param end last task number
+ * @param step between task numbers
+ * @return the ids of the submitted tasks
+ */
 JNIEXPORT jobjectArray JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeRunBulkJobs
   (JNIEnv *env, jobject object, jint id, jint start, jint end, jint step)
 {
@@ -358,6 +403,13 @@ JNIEXPORT jobjectArray JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeRunBulk
    return ret_val;
 }
 
+/** @brief Submit a single job
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ * @param id the job template's index
+ * @return the id of the submitted job
+ */
 JNIEXPORT jstring JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeRunJob
   (JNIEnv *env, jobject object, jint id)
 {
@@ -387,6 +439,16 @@ JNIEXPORT jstring JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeRunJob
    return (*env)->NewStringUTF (env, job_id);
 }
 
+/** @brief Wait until the given jobs have finished
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ * @param ids the jobs to wait for
+ * @param timeout how long to wait, in seconds
+ * @param dispose discard each job's usage information once it is reaped
+ *
+ * @return nothing; a DRMAA failure is raised as a Java exception instead
+ */
 JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeSynchronize
   (JNIEnv *env, jobject object, jobjectArray ids, jlong timeout,
    jboolean dispose)
@@ -429,6 +491,14 @@ JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeSynchronize
    }
 }
 
+/** @brief Wait for one job and collect what it used
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ * @param jobId the job to wait for, or the any-job constant
+ * @param timeout how long to wait, in seconds
+ * @return the finished job's id, state and resource usage
+ */
 JNIEXPORT jobject JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeWait
   (JNIEnv *env, jobject object, jstring jobId, jlong timeout)
 {
@@ -534,6 +604,12 @@ JNIEXPORT jobject JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeWait
    return job_info;
 }
 
+/** @brief Create a job template
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ * @return the template's index, used by the calls below
+ */
 JNIEXPORT jint JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeAllocateJobTemplate
   (JNIEnv *env, jobject object)
 {
@@ -551,6 +627,16 @@ JNIEXPORT jint JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeAllocateJobTemp
    return insert_into_list (jt);
 }
 
+/** @brief Set a single valued attribute of a job template
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ * @param id the template's index
+ * @param nameStr the attribute
+ * @param valueStr its value
+ *
+ * @return nothing; a DRMAA failure is raised as a Java exception instead
+ */
 JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeSetAttributeValue
   (JNIEnv *env, jobject object, jint id, jstring nameStr, jstring valueStr)
 {
@@ -599,6 +685,16 @@ JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeSetAttributeVal
    }
 }
 
+/** @brief Set a multi valued attribute of a job template
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ * @param id the template's index
+ * @param nameStr the attribute
+ * @param values its values
+ *
+ * @return nothing; a DRMAA failure is raised as a Java exception instead
+ */
 JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeSetAttributeValues
   (JNIEnv *env, jobject object, jint id, jstring nameStr, jobjectArray values)
 {
@@ -668,6 +764,13 @@ JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeSetAttributeVal
    }
 }
 
+/** @brief The attributes a job template has set
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ * @param id the template's index
+ * @return the attribute names
+ */
 JNIEXPORT jobjectArray JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeGetAttributeNames
   (JNIEnv *env, jobject object, jint id)
 {
@@ -761,6 +864,14 @@ JNIEXPORT jobjectArray JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeGetAttr
    return retval;
 }
 
+/** @brief The values of one job template attribute
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ * @param id the template's index
+ * @param name the attribute
+ * @return its values
+ */
 JNIEXPORT jobjectArray JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeGetAttribute
   (JNIEnv *env, jobject object, jint id, jstring name)
 {
@@ -884,6 +995,14 @@ JNIEXPORT jobjectArray JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeGetAttr
    return retval;
 }
 
+/** @brief Release a job template
+ *
+ * @param env the JNI environment
+ * @param object the `SessionImpl` instance the call came from
+ * @param id the template's index
+ *
+ * @return nothing; a DRMAA failure is raised as a Java exception instead
+ */
 JNIEXPORT void JNICALL Java_com_sun_grid_drmaa_SessionImpl_nativeDeleteJobTemplate
   (JNIEnv *env, jobject object, jint id)
 {

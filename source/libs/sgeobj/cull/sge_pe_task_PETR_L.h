@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief PE Task Request
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -64,15 +68,15 @@
 */
 
 enum {
-   PETR_jobid = PETR_LOWERBOUND,
-   PETR_jataskid,
-   PETR_queuename,
-   PETR_owner,
-   PETR_cwd,
-   PETR_path_aliases,
-   PETR_environment,
-   PETR_submission_time,
-   PETR_cred
+   PETR_jobid = PETR_LOWERBOUND,   ///< Job ID
+   PETR_jataskid,   ///< Array Task ID
+   PETR_queuename,   ///< Queue Name
+   PETR_owner,   ///< Owner
+   PETR_cwd,   ///< Current Working Directory
+   PETR_path_aliases,   ///< Path Aliases
+   PETR_environment,   ///< Environment
+   PETR_submission_time,   ///< Submission Time
+   PETR_cred   ///< TLS Credentials
 };
 
 LISTDEF(PETR_Type)
@@ -99,6 +103,7 @@ NAMEDEF(PETRN)
    NAME("PETR_cred")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define PETR_SIZE sizeof(PETRN)/sizeof(char *)
 
 

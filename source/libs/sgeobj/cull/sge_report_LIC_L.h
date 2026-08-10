@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief License Report
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   LIC_processors = LIC_LOWERBOUND,
-   LIC_arch
+   LIC_processors = LIC_LOWERBOUND,   ///< Processors
+   LIC_arch   ///< Architecture
 };
 
 LISTDEF(LIC_Type)
@@ -56,6 +60,7 @@ NAMEDEF(LICN)
    NAME("LIC_arch")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define LIC_SIZE sizeof(LICN)/sizeof(char *)
 
 

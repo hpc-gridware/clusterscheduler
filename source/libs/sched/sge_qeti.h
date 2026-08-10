@@ -33,10 +33,30 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief QETI - the queue end time iterator
+ *
+ * To find out when a job could start, the scheduler has to know at which
+ * points in time the utilization of the resources it needs drops. Those
+ * points are the end times of the jobs currently holding them, and only
+ * those - between two of them nothing changes, so nothing has to be checked.
+ *
+ * A QETI iterates exactly over those instants, in **descending** order, for
+ * one job: sge_qeti_first() gives the latest one and sge_qeti_next() walks
+ * backwards towards the present, which is how the scheduler finds the
+ * earliest start time rather than just any.
+ */
+
 #include "sched/sge_select_queue.h"
 
 #include "sgeobj/cull/sge_qeti_QETI_L.h"
 
+/**
+ * @brief Opaque queue end time iterator
+ *
+ * The struct itself is private to `sge_qeti.cc`; it holds only references
+ * into the resource utilization lists that matter for one job.
+ */
 typedef struct sge_qeti_s sge_qeti_t;
 
 sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a);

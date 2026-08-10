@@ -18,9 +18,19 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Unit tests for list in `libs/cull`
+ */
+
 #include <cstdio>
 #include <cstring>
 
+/** @brief Make this translation unit the one that defines the CULL descriptors
+ *
+ * The generated headers define the descriptors only where this is set, so
+ * exactly one file per program must set it. In a test that file is the test
+ * itself, which is why the marker appears here rather than in a library.
+ */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
 #include "cull/cull.h"
@@ -31,17 +41,22 @@
 // Local CULL type used by all tests
 // ---------------------------------------------------------------------------
 
+/** @brief A synthetic CULL object type, defined only for these tests
+ *
+ * One attribute per CULL data type, so the tests can exercise every type
+ * without depending on a real object whose layout may change.
+ */
 enum {
-   TEST_int = 1,
-   TEST_host,
-   TEST_string,
-   TEST_double,
-   TEST_long,
-   TEST_ulong,
-   TEST_bool,
-   TEST_list,
-   TEST_object,
-   TEST_ref
+   TEST_int = 1,   ///< an int attribute
+   TEST_host,   ///< a host name attribute
+   TEST_string,   ///< a string attribute
+   TEST_double,   ///< a double attribute
+   TEST_long,   ///< a long attribute
+   TEST_ulong,   ///< an unsigned long attribute
+   TEST_bool,   ///< a bool attribute
+   TEST_list,   ///< a sublist attribute
+   TEST_object,   ///< a sub-object attribute
+   TEST_ref   ///< a reference attribute
 };
 
 LISTDEF(TEST_Type)
@@ -70,8 +85,9 @@ NAMEDEF(TEST_Name)
    NAME("TEST_ref")
 NAMEEND
 
-#define TEST_Size sizeof(TEST_Name) / sizeof(char *)
+#define TEST_Size sizeof(TEST_Name) / sizeof(char *)    ///< number of attributes of the synthetic type
 
+/** @brief The name space registering the synthetic types with CULL */
 lNameSpace nmv[] = {
    {1, TEST_Size, TEST_Name, TEST_Type},
    {0, 0, nullptr, nullptr}
@@ -83,6 +99,16 @@ lNameSpace nmv[] = {
 
 static int s_fail = 0;
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \

@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief checkuser - report a user id, group id, or whether a user exists
+ */
 #include <cstdio>
 #include <sys/types.h>
 #include <unistd.h>

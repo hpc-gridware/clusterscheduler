@@ -32,6 +32,58 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Reading, setting and rendering queue instance state
+ *
+ * Every write to `QU_state` goes through #qinstance_set_state, so the state
+ * bits and the letters qstat prints cannot drift apart.
+ *
+ * The eleven state bits are **orthogonal**: each is set and cleared
+ * independently of the others, and any combination can hold at once. There is
+ * no sequence between them and no single "current state" - which is why a
+ * queue instance shows several letters at the same time in `qstat`.
+ *
+ * What the grouping means: the left-hand causes suspend the jobs already
+ * running here, the right-hand ones stop new jobs being dispatched here. A
+ * queue instance can be in both groups at once.
+ *
+ * @dot
+ * digraph qinstance_state {
+ *   rankdir=LR; compound=true;
+ *   node [shape=box, fontname="Helvetica", fontsize=10];
+ *   graph [fontname="Helvetica", fontsize=10];
+ *
+ *   subgraph cluster_exists {
+ *     label="exists"; style=rounded;
+ *
+ *     subgraph cluster_susp {
+ *       label="running jobs are suspended"; style=rounded; color=grey40;
+ *       s [label="s\nby an administrator"];
+ *       A [label="A\nsuspend threshold"];
+ *       S [label="S\nsubordinate relation"];
+ *       C [label="C\nqueue calendar"];
+ *     }
+ *
+ *     subgraph cluster_unavail {
+ *       label="no new job is dispatched here"; style=rounded; color=grey40;
+ *       d [label="d\nby an administrator"];
+ *       D [label="D\nqueue calendar"];
+ *       u [label="u\nhost not reporting"];
+ *       a [label="a\nload threshold"];
+ *       E [label="E\njob start failed"];
+ *       c [label="c\nconfiguration ambiguous"];
+ *       o [label="o\ndeleted, jobs remain"];
+ *     }
+ *   }
+ * }
+ * @enddot
+ *
+ * Each letter is the one `qstat` prints; the bit behind it and its exact
+ * meaning are on the `QI_*` defines in the header.
+ *
+ * @see sge_qinstance_state.h
+ */
+
 #include <cstring>
 
 #include "uti/sge_log.h"
@@ -48,100 +100,7 @@
 
 #include "uti/sge.h"
 
-/****** sgeobj/qinstance_state/--State_Chart() ********************************
-*
-*         /---------------------------------------------------\
-*         |                     exists                        |
-*         |                                                   |
-* o-----> |                                                   |------->X
-*         |                               /-----------------\ |
-*         |                               |   (suspended)   | |
-*         |                               |                 | |
-*         |         /--------\            |    /-------\    | |   
-*         | o-----> |        |---------------> |       |    | |
-*         |         |   !s   |            |    |   s   |    | |
-*         |         |        | <---------------|       |    | | 
-*         |         \--------/            |    \-------/    | |
-*         |- - - - - - - - - - - - - - - -|- - - - - - - - -|-|
-*         |         /--------\            |    /-------\    | |   
-*         | o-----> |        |---------------> |       |    | |
-*         |         |   !S   |            |    |   S   |    | |
-*         |         |        | <---------------|       |    | | 
-*         |         \--------/            |    \-------/    | |
-*         |- - - - - - - - - - - - - - - -|- - - - - - - - -|-|
-*         |         /--------\            |    /-------\    | |   
-*         | o-----> |        |---------------> |       |    | |
-*         |         |   !A   |            |    |   A   |    | |
-*         |         |        | <---------------|       |    | | 
-*         |         \--------/            |    \-------/    | |
-*         |- - - - - - - - - - - - - - - -|- - - - - - - - -|-|
-*         |         /--------\            |    /-------\    | |   
-*         | o-----> |        |---------------> |       |    | |
-*         |         |   !C   |            |    |   C   |    | |
-*         |         |        | <---------------|       |    | | 
-*         |         \--------/            |    \-------/    | |
-*         |                               \-----------------/ |
-*         |- - - - - - - - - - - - - - - - - - - - - - - - - -|
-*         |                               /-----------------\ |
-*         |                               |   (disabled)    | |
-*         |                               |                 | |
-*         |         /--------\            |    /-------\    | |
-*         | o-----> |        |---------------> |       |    | |
-*         |         |   !u   |            |    |   u   |    | |
-*         |         |        | <---------------|       |    | |
-*         |         \--------/            |    \-------/    | | 
-*         |- - - - - - - - - - - - - - - -|- - - - - - - - - -|
-*         |         /--------\            |    /-------\    | |   
-*         | o-----> |        |---------------> |       |    | |
-*         |         |   !a   |            |    |   a   |    | |
-*         |         |        | <---------------|       |    | |
-*         |         \--------/            |    \-------/    | | 
-*         |- - - - - - - - - - - - - - - -|- - - - - - - - - -|
-*         |         /--------\            |    /-------\    | |   
-*         | o-----> |        |---------------> |       |    | |
-*         |         |   !d   |            |    |   d   |    | |
-*         |         |        | <---------------|       |    | | 
-*         |         \--------/            |    \-------/    | |
-*         |- - - - - - - - - - - - - - - -|- - - - - - - - -|-|
-*         |         /--------\            |    /-------\    | |   
-*         | o-----> |        |---------------> |       |    | |
-*         |         |   !D   |            |    |   D   |    | |
-*         |         |        | <---------------|       |    | | 
-*         |         \--------/            |    \-------/    | |
-*         |- - - - - - - - - - - - - - - -|- - - - - - - - -|-|
-*         |         /--------\            |    /-------\    | |   
-*         | o-----> |        |---------------> |       |    | |
-*         |         |   !E   |            |    |   E   |    | |
-*         |         |        | <---------------|       |    | | 
-*         |         \--------/            |    \-------/    | |
-*         |- - - - - - - - - - - - - - - -|- - - - - - - - -|-|
-*         |         /--------\            |    /-------\    | |   
-*         | o-----> |        |---------------> |       |    | |
-*         |         |   !c   |            |    |   c   |    | |
-*         |         |        | <---------------|       |    | | 
-*         |         \--------/            |    \-------/    | |
-*         |- - - - - - - - - - - - - - - -|- - - - - - - - -|-|
-*         |         /--------\            |    /-------\    | |   
-*         | o-----> |        |---------------> |       |    | |
-*         |         |   !o   |            |    |   o   |    | |
-*         |         |        | <---------------|       |    | | 
-*         |         \--------/            |    \-------/    | |
-*         |                               \-----------------/ |
-*         \---------------------------------------------------/
-*
-*         u := qinstance-host is unknown
-*         a := load alarm
-*         s := manual suspended
-*         A := suspended due to suspend_threshold
-*         S := suspended due to subordinate
-*         C := suspended due to calendar
-*         d := manual disabled
-*         D := disabled due to calendar
-*         c := configuration ambiguous
-*         o := orphaned
-*
-*******************************************************************************/
-
+/// Debug layer the queue instance state traces are written to
 #define QINSTANCE_STATE_LAYER TOP_LAYER
 
 /* EB: ADOC: add commets */
@@ -176,6 +135,17 @@ static const char letters[] = {
       '\0'
    };
 
+/**
+ * @brief Set or clear one state bit of a queue instance
+ *
+ * The single point where `QU_state` is written; the `qinstance_state_set_*`
+ * functions all go through it.
+ *
+ * @param[in,out] this_elem the queue instance to change
+ * @param set_state true to set the bit, false to clear it
+ * @param bit one of the `QI_*` state bits
+ * @return true when the bit actually changed
+ */
 bool
 qinstance_set_state(lListElem *this_elem, bool set_state, uint32_t bit)
 {
@@ -197,29 +167,20 @@ qinstance_set_state(lListElem *this_elem, bool set_state, uint32_t bit)
    return ret;
 }
 
-/****** sgeobj/qinstance_state/qinstance_has_state() **************************
-*  NAME
-*     qinstance_has_state() -- checks a qi for a given states 
-*
-*  SYNOPSIS
-*     bool qinstance_has_state(const lListElem *this_elem, uint32_t bit)
-*
-*  FUNCTION
-*     Takes a state mask and a queue instance and checks wheather the queue
-*     is in at least one of the states. If the state mask contains std::numeric_limits<uint32_t>::max()
-*     the function will always return true.
-*
-*  INPUTS
-*     const lListElem *this_elem - queue instance 
-*     uint32_t bit               - state mask
-*
-*  RESULT
-*     bool - true, if the queue instance has one of the requested states.
-*
-*  NOTES
-*     MT-NOTE: qinstance_has_state() is MT safe 
-*
-*******************************************************************************/
+/**
+ * @brief Checks a qi for a given states
+ *
+ * Takes a state mask and a queue instance and checks wheather the queue
+ * is in at least one of the states. If the state mask contains std::numeric_limits<uint32_t>::max()
+ * the function will always return true.
+ *
+ * @param this_elem queue instance
+ * @param bit state mask
+ *
+ * @return true, if the queue instance has one of the requested states.
+ *
+ * @note MT-NOTE: qinstance_has_state() is MT safe
+ */
 bool qinstance_has_state(const lListElem *this_elem, uint32_t bit) {
    bool ret = true;
 
@@ -229,31 +190,19 @@ bool qinstance_has_state(const lListElem *this_elem, uint32_t bit) {
    return ret;
 }
 
-/****** sgeobj/qinstance_state/transition_is_valid_for_qinstance() ************
-*  NAME
-*     transition_is_valid_for_qinstance() -- is transition valid 
-*
-*  SYNOPSIS
-*     bool 
-*     transition_is_valid_for_qinstance(uint32_t transition,
-*                                       lList **answer_list) 
-*
-*  FUNCTION
-*     Checks if the given transition is valid for a qinstance object.
-*     If the transition is valid, than true will be returned by this function. 
-*
-*  INPUTS
-*     uint32_t transition - transition id
-*     lList **answer_list - AN_Type list 
-*
-*  RESULT
-*     bool - test result
-*        true  - transition is valid
-*        false - transition is invalid
-*
-*  NOTES
-*     MT-NOTE: transition_is_valid_for_qinstance() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Is transition valid
+ *
+ * Checks if the given transition is valid for a qinstance object.
+ * If the transition is valid, than true will be returned by this function.
+ *
+ * @param transition transition id
+ * @param answer_list AN_Type list
+ *
+ * @return test result true  - transition is valid false - transition is invalid
+ *
+ * @note MT-NOTE: transition_is_valid_for_qinstance() is MT safe
+ */
 bool
 transition_is_valid_for_qinstance(uint32_t transition, lList **answer_list)
 {
@@ -289,6 +238,13 @@ transition_is_valid_for_qinstance(uint32_t transition, lList **answer_list)
 }
 
 /* EB: What is the purpose of this function? */
+/**
+ * @brief Is this a transition option a queue instance accepts?
+ *
+ * @param option the option to check
+ * @param[out] answer_list receives the rejection message
+ * @return true when the option is valid
+ */
 bool
 transition_option_is_valid_for_qinstance(uint32_t option, lList **answer_list)
 {
@@ -305,6 +261,12 @@ transition_option_is_valid_for_qinstance(uint32_t option, lList **answer_list)
    DRETURN(ret);
 }
 
+/**
+ * @brief The letter qstat prints for one state bit
+ *
+ * @param bit one of the `QI_*` state bits
+ * @return the letter, or nullptr when the bit is not a displayed state
+ */
 const char *
 qinstance_state_as_string(uint32_t bit)
 {
@@ -381,28 +343,20 @@ qinstance_state_as_string(uint32_t bit)
    DRETURN(ret);
 }
 
-/****** sgeobj/qinstance_state/qinstance_state_from_string() ******************
-*  NAME
-*     qinstance_state_from_string() -- takes a state string and returns an int 
-*
-*  SYNOPSIS
-*     uint32_t qinstance_state_from_string(const char* sstate)
-*
-*  FUNCTION
-*     Takes a string with character representations of the different states and
-*     generates a mask with the different states.
-*
-*  INPUTS
-*     const char* sstate - each character one state
-*     lList **answer_list - stores error messages
-*     uint32_t filter  - a bit filter for allowed states
-*
-*  RESULT
-*     uint32_t - new state or 0, if no state was set
-*
-*  NOTES
-*     MT-NOTE: qinstance_state_from_string() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Takes a state string and returns an int
+ *
+ * Takes a string with character representations of the different states and
+ * generates a mask with the different states.
+ *
+ * @param sstate each character one state
+ * @param answer_list stores error messages
+ * @param filter a bit filter for allowed states
+ *
+ * @return new state or 0, if no state was set
+ *
+ * @note MT-NOTE: qinstance_state_from_string() is MT safe
+ */
 uint32_t
 qinstance_state_from_string(const char* sstate, 
                             lList **answer_list, 
@@ -440,6 +394,15 @@ qinstance_state_from_string(const char* sstate,
 }
 
 
+/**
+ * @brief Render every set state bit as the letters qstat prints
+ *
+ * @param this_elem the queue instance to read
+ * @param[out] string receives the letters, appended
+ * @return always true
+ *
+ * @see #qinstance_state_as_string
+ */
 bool 
 qinstance_state_append_to_dstring(const lListElem *this_elem, dstring *string)
 {
@@ -458,6 +421,15 @@ qinstance_state_append_to_dstring(const lListElem *this_elem, dstring *string)
    DRETURN(ret);
 }
 
+/**
+ * @brief Set or clear #QI_ORPHANED
+ *
+ * That bit means the queue was deleted but still holds jobs.
+ *
+ * @param[in,out] this_elem the queue instance to change
+ * @param set_state true to set the bit, false to clear it
+ * @return true when the bit actually changed
+ */
 bool
 qinstance_state_set_orphaned(lListElem *this_elem, bool set_state)
 {
@@ -468,12 +440,29 @@ qinstance_state_set_orphaned(lListElem *this_elem, bool set_state)
    DRETURN(changed);
 }
 
+/**
+ * @brief Is #QI_ORPHANED set?
+ *
+ * That bit means the queue was deleted but still holds jobs.
+ *
+ * @param this_elem the queue instance to read
+ * @return true when the bit is set
+ */
 bool 
 qinstance_state_is_orphaned(const lListElem *this_elem)
 {
    return qinstance_has_state(this_elem, QI_ORPHANED);
 }
 
+/**
+ * @brief Set or clear #QI_AMBIGUOUS
+ *
+ * That bit means the cluster queue's configuration does not resolve for this host.
+ *
+ * @param[in,out] this_elem the queue instance to change
+ * @param set_state true to set the bit, false to clear it
+ * @return true when the bit actually changed
+ */
 bool
 qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state)
 {
@@ -484,12 +473,29 @@ qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state)
    DRETURN(changed);
 }
 
+/**
+ * @brief Is #QI_AMBIGUOUS set?
+ *
+ * That bit means the cluster queue's configuration does not resolve for this host.
+ *
+ * @param this_elem the queue instance to read
+ * @return true when the bit is set
+ */
 bool 
 qinstance_state_is_ambiguous(const lListElem *this_elem)
 {
    return qinstance_has_state(this_elem, QI_AMBIGUOUS);
 }
 
+/**
+ * @brief Set or clear #QI_ALARM
+ *
+ * That bit means a load threshold is exceeded.
+ *
+ * @param[in,out] this_elem the queue instance to change
+ * @param set_state true to set the bit, false to clear it
+ * @return true when the bit actually changed
+ */
 bool
 qinstance_state_set_alarm(lListElem *this_elem, bool set_state)
 {
@@ -500,12 +506,29 @@ qinstance_state_set_alarm(lListElem *this_elem, bool set_state)
    DRETURN(changed);
 }
 
+/**
+ * @brief Is #QI_ALARM set?
+ *
+ * That bit means a load threshold is exceeded.
+ *
+ * @param this_elem the queue instance to read
+ * @return true when the bit is set
+ */
 bool 
 qinstance_state_is_alarm(const lListElem *this_elem)
 {
    return qinstance_has_state(this_elem, QI_ALARM);
 }
 
+/**
+ * @brief Set or clear #QI_SUSPEND_ALARM
+ *
+ * That bit means a suspend threshold is exceeded.
+ *
+ * @param[in,out] this_elem the queue instance to change
+ * @param set_state true to set the bit, false to clear it
+ * @return true when the bit actually changed
+ */
 bool
 qinstance_state_set_suspend_alarm(lListElem *this_elem, bool set_state)
 {
@@ -516,12 +539,29 @@ qinstance_state_set_suspend_alarm(lListElem *this_elem, bool set_state)
    DRETURN(changed);
 }
 
+/**
+ * @brief Is #QI_SUSPEND_ALARM set?
+ *
+ * That bit means a suspend threshold is exceeded.
+ *
+ * @param this_elem the queue instance to read
+ * @return true when the bit is set
+ */
 bool 
 qinstance_state_is_suspend_alarm(const lListElem *this_elem)
 {
    return qinstance_has_state(this_elem, QI_SUSPEND_ALARM);
 }
 
+/**
+ * @brief Set or clear #QI_DISABLED
+ *
+ * That bit means an administrator disabled the queue.
+ *
+ * @param[in,out] this_elem the queue instance to change
+ * @param set_state true to set the bit, false to clear it
+ * @return true when the bit actually changed
+ */
 bool
 qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_state)
 {
@@ -532,12 +572,29 @@ qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_state)
    DRETURN(changed);
 }
 
+/**
+ * @brief Is #QI_DISABLED set?
+ *
+ * That bit means an administrator disabled the queue.
+ *
+ * @param this_elem the queue instance to read
+ * @return true when the bit is set
+ */
 bool 
 qinstance_state_is_manual_disabled(const lListElem *this_elem)
 {
    return qinstance_has_state(this_elem, QI_DISABLED);
 }
 
+/**
+ * @brief Set or clear #QI_SUSPENDED
+ *
+ * That bit means an administrator suspended the queue.
+ *
+ * @param[in,out] this_elem the queue instance to change
+ * @param set_state true to set the bit, false to clear it
+ * @return true when the bit actually changed
+ */
 bool
 qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_state)
 {
@@ -548,12 +605,29 @@ qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_state)
    DRETURN(changed);
 }
 
+/**
+ * @brief Is #QI_SUSPENDED set?
+ *
+ * That bit means an administrator suspended the queue.
+ *
+ * @param this_elem the queue instance to read
+ * @return true when the bit is set
+ */
 bool 
 qinstance_state_is_manual_suspended(const lListElem *this_elem)
 {
    return qinstance_has_state(this_elem, QI_SUSPENDED);
 }
 
+/**
+ * @brief Set or clear #QI_UNKNOWN
+ *
+ * That bit means the execution host has not reported for too long.
+ *
+ * @param[in,out] this_elem the queue instance to change
+ * @param set_state true to set the bit, false to clear it
+ * @return true when the bit actually changed
+ */
 bool
 qinstance_state_set_unknown(lListElem *this_elem, bool set_state)
 {
@@ -567,12 +641,29 @@ qinstance_state_set_unknown(lListElem *this_elem, bool set_state)
 }
 
 
+/**
+ * @brief Is #QI_UNKNOWN set?
+ *
+ * That bit means the execution host has not reported for too long.
+ *
+ * @param this_elem the queue instance to read
+ * @return true when the bit is set
+ */
 bool 
 qinstance_state_is_unknown(const lListElem *this_elem)
 {
    return qinstance_has_state(this_elem, QI_UNKNOWN);
 }
 
+/**
+ * @brief Set or clear #QI_ERROR
+ *
+ * That bit means a job could not be started here.
+ *
+ * @param[in,out] this_elem the queue instance to change
+ * @param set_state true to set the bit, false to clear it
+ * @return true when the bit actually changed
+ */
 bool
 qinstance_state_set_error(lListElem *this_elem, bool set_state)
 {
@@ -583,12 +674,29 @@ qinstance_state_set_error(lListElem *this_elem, bool set_state)
    DRETURN(changed);
 }
 
+/**
+ * @brief Is #QI_ERROR set?
+ *
+ * That bit means a job could not be started here.
+ *
+ * @param this_elem the queue instance to read
+ * @return true when the bit is set
+ */
 bool 
 qinstance_state_is_error(const lListElem *this_elem)
 {
    return qinstance_has_state(this_elem, QI_ERROR);
 }
 
+/**
+ * @brief Set or clear #QI_SUSPENDED_ON_SUBORDINATE
+ *
+ * That bit means a subordinate relation demanded the suspension.
+ *
+ * @param[in,out] this_elem the queue instance to change
+ * @param set_state true to set the bit, false to clear it
+ * @return true when the bit actually changed
+ */
 bool
 qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state)
 {
@@ -599,12 +707,29 @@ qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state)
    DRETURN(changed);
 }
 
+/**
+ * @brief Is #QI_SUSPENDED_ON_SUBORDINATE set?
+ *
+ * That bit means a subordinate relation demanded the suspension.
+ *
+ * @param this_elem the queue instance to read
+ * @return true when the bit is set
+ */
 bool 
 qinstance_state_is_susp_on_sub(const lListElem *this_elem)
 {
    return qinstance_has_state(this_elem, QI_SUSPENDED_ON_SUBORDINATE);
 }
 
+/**
+ * @brief Set or clear #QI_CAL_DISABLED
+ *
+ * That bit means the queue's calendar disabled it.
+ *
+ * @param[in,out] this_elem the queue instance to change
+ * @param set_state true to set the bit, false to clear it
+ * @return true when the bit actually changed
+ */
 bool
 qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_state)
 {
@@ -615,12 +740,29 @@ qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_state)
    DRETURN(changed);
 }
 
+/**
+ * @brief Is #QI_CAL_DISABLED set?
+ *
+ * That bit means the queue's calendar disabled it.
+ *
+ * @param this_elem the queue instance to read
+ * @return true when the bit is set
+ */
 bool 
 qinstance_state_is_cal_disabled(const lListElem *this_elem)
 {
    return qinstance_has_state(this_elem, QI_CAL_DISABLED);
 }
 
+/**
+ * @brief Set or clear #QI_CAL_SUSPENDED
+ *
+ * That bit means the queue's calendar suspended it.
+ *
+ * @param[in,out] this_elem the queue instance to change
+ * @param set_state true to set the bit, false to clear it
+ * @return true when the bit actually changed
+ */
 bool
 qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_state)
 {
@@ -631,18 +773,43 @@ qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_state)
    DRETURN(changed);
 }
 
+/**
+ * @brief Is #QI_CAL_SUSPENDED set?
+ *
+ * That bit means the queue's calendar suspended it.
+ *
+ * @param this_elem the queue instance to read
+ * @return true when the bit is set
+ */
 bool 
 qinstance_state_is_cal_suspended(const lListElem *this_elem)
 {
    return qinstance_has_state(this_elem, QI_CAL_SUSPENDED);
 }
 
+/**
+ * @brief Set or clear #QI_FULL
+ *
+ * That bit means every slot is in use.
+ *
+ * @param[in,out] this_elem the queue instance to change
+ * @param set_state true to set the bit, false to clear it
+ * @return true when the bit actually changed
+ */
 bool
 qinstance_state_set_full(lListElem *this_elem, bool set_state)
 {
    return qinstance_set_state(this_elem, set_state, QI_FULL);
 }
 
+/**
+ * @brief Is #QI_FULL set?
+ *
+ * That bit means every slot is in use.
+ *
+ * @param this_elem the queue instance to read
+ * @return true when the bit is set
+ */
 bool 
 qinstance_state_is_full(const lListElem *this_elem)
 {

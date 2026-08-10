@@ -24,48 +24,62 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Advance Reservation
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of AR
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   AR_id = 11900,
-   AR_name,
-   AR_account,
-   AR_owner,
-   AR_group,
-   AR_submission_time,
-   AR_start_time,
-   AR_end_time,
-   AR_duration,
-   AR_verify,
-   AR_error_handling,
-   AR_state,
-   AR_checkpoint_name,
-   AR_resource_list,
-   AR_resource_utilization,
-   AR_queue_list,
-   AR_granted_slots,
-   AR_reserved_hosts,
-   AR_reserved_queues,
-   AR_mail_options,
-   AR_mail_list,
-   AR_pe,
-   AR_pe_range,
-   AR_granted_pe,
-   AR_master_queue_list,
-   AR_acl_list,
-   AR_xacl_list,
-   AR_type,
-   AR_qi_errors,
-   AR_request_set_list,
-   AR_joker,
-   AR_granted_resources_list,
-   AR_binding,
-   AR_project,
-   AR_pe_object
+   AR_id = 11900,   ///< AR Id
+   AR_name,   ///< AR Name
+   AR_account,   ///< Account
+   AR_owner,   ///< Owner
+   AR_group,   ///< Group
+   AR_submission_time,   ///< Submission Time
+   AR_start_time,   ///< Start Time
+   AR_end_time,   ///< End Time
+   AR_duration,   ///< Duration
+   AR_verify,   ///< Verify
+   AR_error_handling,   ///< Error Handling
+   AR_state,   ///< State
+   AR_checkpoint_name,   ///< Checkpoint Name
+   AR_resource_list,   ///< Resource List
+   AR_resource_utilization,   ///< Resource Utilization
+   AR_queue_list,   ///< Queue List
+   AR_granted_slots,   ///< Granted Slots
+   AR_reserved_hosts,   ///< Reserved Hosts
+   AR_reserved_queues,   ///< Reserved Queues
+   AR_mail_options,   ///< Mail Options
+   AR_mail_list,   ///< Mail List
+   AR_pe,   ///< Parallel Environment
+   AR_pe_range,   ///< PE Range
+   AR_granted_pe,   ///< Granted PE
+   AR_master_queue_list,   ///< Master Queue List
+   AR_acl_list,   ///< ACL List
+   AR_xacl_list,   ///< XACL List
+   AR_type,   ///< Type
+   AR_qi_errors,   ///< QI Errors
+   AR_request_set_list,   ///< Request Set List
+   AR_joker,   ///< Joker
+   AR_granted_resources_list,   ///< Granted Resources
+   AR_binding,   ///< Binding Strategy
+   AR_project,   ///< Project
+   AR_pe_object   ///< PE Object
 };
 
+/** @brief The attribute ids of AR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int AR_Type[] = {
    AR_id,
    AR_name,
@@ -105,6 +119,10 @@ constexpr const int AR_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of AR
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define AR_ATTRIBUTES \
    {AR_id, "AR_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {AR_name, "AR_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

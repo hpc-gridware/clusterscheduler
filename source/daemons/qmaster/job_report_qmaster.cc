@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Reconciling an execution host's job reports with what qmaster believes
+ */
 #include <cstring>
 
 #include "uti/sge_bitfield.h"
@@ -70,10 +74,18 @@
  * Do not wait forever, but only n report intervals.
  * Could be made configurable in qmaster_params.
  */
+/** @brief How long a finished master task waits for its slave tasks before it gives up */
 #define MAX_MASTER_TASK_FINISH_BEFORE_EXIT 20
 
 static const char *status2str(uint32_t status);
 
+/** @brief Is a task in one of the states that mean it is on its way, or running?
+ *
+ * `JWRITTEN` and `JWAITING4OSJID` count as running because the job is already
+ * committed to a host even though it has not started yet.
+ *
+ * @param state the task state
+ */
 #define is_running(state) (state==JWRITTEN || state==JRUNNING|| state==JWAITING4OSJID)
 
 static const char *
@@ -133,37 +145,26 @@ status2str(uint32_t status) {
  *      the job is treated as finished.
  */
 
-/****** job_report_qmaster/process_job_report() ********************************
-*  NAME
-*     process_job_report() -- process a job report from execd
-*
-*  SYNOPSIS
-*     void 
-*     process_job_report(sge_gdi_ctx_class_t *ctx, lListElem *report,
-*                        lListElem *hep, char *rhost, char *commproc,
-*                        sge_pack_buffer *pb, monitoring_t *monitor) 
-*
-*  FUNCTION
-*     Process 'report' containing a job report list from 
-*     'commproc' at 'rhost'.
-*  
-*     The 'pb' may get used to collect requests that will be 
-*     generated in this process. The caller should reply it
-*     to the sender of this job report list if 'pb' remains
-*     not empty.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
-*     lListElem *report        - the job report
-*     lListElem *hep           - the host for which we got the job report
-*     char *rhost              - name of the remote host having sent the report
-*     char *commproc           - the commproc name
-*     sge_pack_buffer *pb      - pack buffer for sending answers (ACK)
-*     monitoring_t *monitor    - monitor
-*
-*  NOTES
-*     MT-NOTE: process_job_report() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Process a job report from execd
+ *
+ * Process 'report' containing a job report list from
+ * 'commproc' at 'rhost'.
+ * The 'pb' may get used to collect requests that will be
+ * generated in this process. The caller should reply it
+ * to the sender of this job report list if 'pb' remains
+ * not empty.
+ *
+ * @param report the job report
+ * @param hep the host for which we got the job report
+ * @param rhost name of the remote host having sent the report
+ * @param commproc the commproc name
+ * @param pb pack buffer for sending answers (ACK)
+ * @param monitor monitor
+ * @param gdi_session the session the change belongs to
+ *
+ * @note MT-NOTE: process_job_report() is MT safe
+ */
 void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *commproc,
                         sge_pack_buffer *pb, monitoring_t *monitor, uint64_t gdi_session) {
    DENTER(TOP_LAYER);

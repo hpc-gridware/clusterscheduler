@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Named String Vector
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -41,8 +45,8 @@
 */
 
 enum {
-   NSV_name = NSV_LOWERBOUND,
-   NSV_strings
+   NSV_name = NSV_LOWERBOUND,   ///< Name
+   NSV_strings   ///< Strings
 };
 
 LISTDEF(NSV_Type)
@@ -55,6 +59,7 @@ NAMEDEF(NSVN)
    NAME("NSV_strings")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define NSV_SIZE sizeof(NSVN)/sizeof(char *)
 
 

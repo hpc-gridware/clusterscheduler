@@ -33,12 +33,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief A connection's queued messages
+ */
+
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_data_types.h"
 
+/** @brief One queued message of a connection */
 typedef struct cl_message_list_elem_t {
-   cl_com_message_t *message;   /* data */
-   cl_raw_list_elem_t *raw_elem;
+   cl_com_message_t *message;      ///< The message
+   cl_raw_list_elem_t *raw_elem;   ///< Back pointer into the raw list
 } cl_message_list_elem_t;
 
 

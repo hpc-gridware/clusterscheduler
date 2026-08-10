@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The thread that receives signals and drives an orderly shutdown
+ */
+
 #include <csignal>
 #include <pthread.h>
 #include <cstring>
@@ -59,6 +63,8 @@
 #   include "sge_string.h"
 #endif
 
+/** @brief Start the signal thread
+ */
 void
 sge_signaler_initialize() {
    cl_thread_settings_t *dummy_thread_p = nullptr;
@@ -72,6 +78,8 @@ sge_signaler_initialize() {
    DRETURN_VOID;
 }
 
+/** @brief Ask the signal thread to stop
+ */
 void
 sge_signaler_initiate_termination() {
    DENTER(TOP_LAYER);
@@ -84,6 +92,8 @@ sge_signaler_initiate_termination() {
    DRETURN_VOID;
 }
 
+/** @brief Wait for the signal thread to end
+ */
 void
 sge_signaler_terminate() {
    DENTER(TOP_LAYER);
@@ -98,33 +108,22 @@ sge_signaler_terminate() {
 }
 
 
-/****** qmaster/sge_qmaster_main/signal_thread() *******************************
-*  NAME
-*     signal_thread() -- signal thread function
-*
-*  SYNOPSIS
-*     void* signal_thread(void* anArg) 
-*
-*  FUNCTION
-*     Signal handling thread function. Establish recognized signal set. Enter
-*     signal wait loop. Wait for signal. Handle signal.
-*
-*     If signal is 'SIGINT' or 'SIGTERM', kick-off shutdown and invalidate
-*     signal thread.
-*
-*     NOTE: The signal thread will terminate on return of this function.
-*
-*  INPUTS
-*     void* anArg - not used 
-*
-*  RESULT
-*     void* - none 
-*
-*  NOTES
-*     MT-NOTE: signal_thread() is a thread function. Do NOT use this function
-*     MT-NOTE: in any other way!
-*
-*******************************************************************************/
+/**
+ * @brief Signal thread function
+ *
+ * Signal handling thread function. Establish recognized signal set. Enter
+ * signal wait loop. Wait for signal. Handle signal.
+ * If signal is 'SIGINT' or 'SIGTERM', kick-off shutdown and invalidate
+ * signal thread.
+ * NOTE: The signal thread will terminate on return of this function.
+ *
+ * @param arg not used
+ *
+ * @return none
+ *
+ * @note MT-NOTE: signal_thread() is a thread function. Do NOT use this function
+ *       MT-NOTE: in any other way!
+ */
 void *
 sge_signaler_main(void *arg) {
    auto *thread_config = (cl_thread_settings_t *) arg;

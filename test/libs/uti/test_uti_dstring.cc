@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Unit tests for dstring in `libs/uti`
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -48,6 +52,16 @@
 
 static int s_fail = 0;
 
+/** @def CHECK
+ * @brief Assert one condition and record the result
+ *
+ * Prints `PASS`/`FAIL` with the test's id and label and counts the failure, so
+ * a run reports every problem rather than stopping at the first.
+ *
+ * @param id the test number, printed as `[Tnn]`
+ * @param label what the check is about, printed on failure
+ * @param expr the condition that must hold
+ */
 #define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \
@@ -58,7 +72,7 @@ static int s_fail = 0;
       } \
    } while (0)
 
-#define STATIC_SIZE 20
+#define STATIC_SIZE 20   ///< size of the stack buffer, small on purpose so the tests cross into heap allocation
 
 static void test_null_safety(int *id) {
    printf("\n--- null-pointer safety ---\n");

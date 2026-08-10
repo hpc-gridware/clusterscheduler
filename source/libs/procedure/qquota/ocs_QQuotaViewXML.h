@@ -19,12 +19,20 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief XML rendering of `qquota`
+ */
+
 #include <ostream>
 
 #include "ocs_QQuotaParameterClient.h"
 #include "ocs_QQuotaViewBase.h"
 
 namespace ocs {
+   /** @brief Renders the `qquota` report as XML
+    *
+    * @ingroup libprocedure
+    */
    class QQuotaViewXML : public QQuotaViewBase {
    public:
       explicit QQuotaViewXML(const QQuotaParameter &parameter);

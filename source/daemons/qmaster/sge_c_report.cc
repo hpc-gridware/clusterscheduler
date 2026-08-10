@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Receiving load and job reports from the execution hosts
+ */
+
 #include "sge_c_report.h"
 
 #include <cstring>
@@ -65,28 +69,19 @@ static int
 update_license_data(lListElem *hep, lList *lp_lic, uint64_t gdi_session);
 
 
-/****** sge_c_report() *******************************************************
-*  NAME
-*     sge_c_report() -- process execd load report
-*
-*  SYNOPSIS
-*     void sge_c_report(char *rhost, char *commproc, int id, lList *report_list)
-*
-*  FUNCTION
-*
-*  INPUTS
-*     char *rhost
-*     char *commproc
-*     int id
-*     lList *report_list
-*
-*  RESULT
-*     void - nothing
-*
-*  NOTES
-*     MT-NOTE: sge_c_report() is MT safe
-*
-******************************************************************************/
+/**
+ * @brief Process execd load report
+ *
+ * @param packet the GDI packet the report arrived in
+ * @param task the GDI task within that packet
+ * @param rhost the host the execution daemon sent the report from
+ * @param commproc the commlib component name of the sender (`execd`)
+ * @param id the commlib component id of the sender
+ * @param report_list the reports (`REP_Type`) to process
+ * @param monitor for monitoring qmaster threads
+ *
+ * @note MT-NOTE: sge_c_report() is MT safe
+ */
 void
 sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *rhost, char *commproc, int id, lList *report_list, monitoring_t *monitor) {
    lListElem *hep = nullptr;

@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for per host attributes: one value per host or host group
+ *
+ * @see sge_attr.cc
+ */
+
 #include "sgeobj/cull/sge_attr_ASTR_L.h"
 #include "sgeobj/cull/sge_attr_AULNG_L.h"
 #include "sgeobj/cull/sge_attr_ABOOL_L.h"
@@ -47,18 +53,37 @@
 #include "sgeobj/cull/sge_attr_ASOLIST_L.h"
 #include "sgeobj/cull/sge_attr_AQTLIST_L.h"
 
-#define HOSTATTR_DEFAULT            0x0000
-#define HOSTATTR_ALLOW_AMBIGUITY    0x0001
-#define HOSTATTR_OVERWRITE          0x0002
+/**
+ * @name Flags for per host attribute lists
+ *
+ * A value can be given for a host or for a host group, and a host may be in
+ * several groups - so two settings can both apply to it. These decide what
+ * happens then.
+ * @{
+ */
+#define HOSTATTR_DEFAULT            0x0000 ///< reject an ambiguous setting
+#define HOSTATTR_ALLOW_AMBIGUITY    0x0001 ///< accept it; the queue instance becomes ambiguous
+#define HOSTATTR_OVERWRITE          0x0002 ///< a later setting replaces an earlier one for the same host
+/** @} */
 
-/*
- * Internally this name should be handled as hostgroup name. Therefore it 
- * begins with a @ sign. The name does not cause a conflict with
- * user defined hostgroup names because in these names slashes are not
- * allowed.
- */ 
+/**
+ * @brief The host reference standing for "every host"
+ *
+ * Handled internally as a host group name, hence the leading `@`. The slash
+ * makes a collision with a user defined host group impossible, since those may
+ * not contain one.
+ */
 #define HOSTREF_DEFAULT             "@/"
 
+/**
+ * @brief Declare the whole function family for one per host attribute type
+ *
+ * Every attribute type needs the same set of functions - create, add, find,
+ * remove, render - differing only in the value's C type and the CULL
+ * descriptor.
+ *
+ * @see the matching `TEMPLATE_ATTR_IMPL` in sge_attr.cc
+ */
 #define TEMPLATE_ATTR_PROTO(PREFIX, TYPE, INTERNAL_TYPE)                      \
                                                                               \
 lListElem *                                                                   \

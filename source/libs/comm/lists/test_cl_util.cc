@@ -33,6 +33,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: the number-width and hex helpers
+ *
+ * Checks #cl_util_get_ulong_number_length and its siblings at their
+ * boundaries, and round-trips a byte buffer through
+ * #cl_util_get_ascii_hex_buffer and #cl_util_get_binary_buffer.
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <sys/time.h>
@@ -42,6 +52,9 @@
 
 #include "comm/lists/cl_util.h"
 
+/** @brief Run the test
+ * @return 0 on success
+ */
 int main() {
    unsigned long i = 0;
    int back = 0;

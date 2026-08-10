@@ -33,52 +33,60 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations, qualities and status codes of the answer list
+ *
+ * @see sge_answer.cc
+ */
+
 #include "uti/sge_error_class.h"
 #include "sgeobj/cull/sge_multi_MA_L.h"
 #include "sgeobj/cull/sge_answer_AN_L.h"
 
+/// How severe an answer element is; also selects the stream and macro it is printed with
 typedef enum {
-   ANSWER_QUALITY_CRITICAL = 0,
-   ANSWER_QUALITY_ERROR = 1,
-   ANSWER_QUALITY_WARNING = 2,
-   ANSWER_QUALITY_INFO = 3,
-   ANSWER_QUALITY_END = 4  /* needs to be last element */
+   ANSWER_QUALITY_CRITICAL = 0, ///< the operation failed and the component cannot continue
+   ANSWER_QUALITY_ERROR = 1,    ///< the operation failed
+   ANSWER_QUALITY_WARNING = 2,  ///< the operation succeeded, but not as asked for
+   ANSWER_QUALITY_INFO = 3,     ///< the operation succeeded; purely informational
+   ANSWER_QUALITY_END = 4       ///< not a quality; needs to be the last element
 } answer_quality_t;
 
-/* 
- * valid values for AN_status 
+/**
+ * @brief Valid values for `AN_status`
+ *
+ * The status is what a client turns into its exit code, so these values are
+ * part of the interface and must not be renumbered.
  */
 typedef enum {
-   STATUS_OK = 1,            /* everything was fine */
-   STATUS_ESEMANTIC,         /* semantic error */
-   STATUS_EEXIST,            /* elem does not exist OR it exists for a
-                              * "add" request */
-   STATUS_EUNKNOWN,          /* unknown error occurred */
-   STATUS_ENOIMP,            /* command not implemented for target */
-   STATUS_ENOKEY,            /* missing key field in case of add,del,mod */
-   STATUS_ESYNTAX,           /* syntax error parsing a_source field */
-   STATUS_EDENIED2HOST,      /* operation denied to this host */
-   STATUS_ENOMGR,            /* operation needs manager privileges */
-   STATUS_ENOOPR,            /* operation needs operator privileges */
-   STATUS_NOQMASTER,         /* failed to reach sge_qmaster */
-   STATUS_NOCOMMD,           /* failed to reach commd */
-   STATUS_NOCONFIG,          /* missing dir/conf (cell, common, bootstrap) */
-   STATUS_EDISK,             /* disk operation failed */
-   STATUS_ENOSUCHUSER,       /* can't resolve user */
-   STATUS_NOSUCHGROUP,       /* can't resolve group */
-   STATUS_EMALLOC,           /* can't allocate memory */
-   STATUS_ENOTOWNER,         /* need to be owner for this operation */
-   STATUS_ESUBHLIC,          /* too few submit host licenses */
-   STATUS_DENIED,            /* not allowed to do whatever you try */
-   STATUS_EVERSION,          /* qmaster GDI version differs from clients
-                              * GDI version */
-   STATUS_ELIMIT,            /* limit exceeded */
-   STATUS_ERROR1,            /* general error 1 */
-   STATUS_ERROR2,            /* general error 2 */
-   STATUS_ERROR3,            /* general error 3 */
-   STATUS_OK_DOAGAIN,        //< everything was fine but transaction
-   STATUS_NOTOK_DOAGAIN,     //< transaction was rejected. Try again later (value will be used as return value for qsub)
-   STATUS_ENOTAVAILABLE      //< requested feature not available in this product version
+   STATUS_OK = 1,            ///< everything was fine
+   STATUS_ESEMANTIC,         ///< semantic error
+   STATUS_EEXIST,            ///< elem does not exist OR it exists for an "add" request
+   STATUS_EUNKNOWN,          ///< unknown error occurred
+   STATUS_ENOIMP,            ///< command not implemented for target
+   STATUS_ENOKEY,            ///< missing key field in case of add, del, mod
+   STATUS_ESYNTAX,           ///< syntax error parsing a_source field
+   STATUS_EDENIED2HOST,      ///< operation denied to this host
+   STATUS_ENOMGR,            ///< operation needs manager privileges
+   STATUS_ENOOPR,            ///< operation needs operator privileges
+   STATUS_NOQMASTER,         ///< failed to reach sge_qmaster
+   STATUS_NOCOMMD,           ///< failed to reach commd
+   STATUS_NOCONFIG,          ///< missing dir/conf (cell, common, bootstrap)
+   STATUS_EDISK,             ///< disk operation failed
+   STATUS_ENOSUCHUSER,       ///< can't resolve user
+   STATUS_NOSUCHGROUP,       ///< can't resolve group
+   STATUS_EMALLOC,           ///< can't allocate memory
+   STATUS_ENOTOWNER,         ///< need to be owner for this operation
+   STATUS_ESUBHLIC,          ///< too few submit host licenses
+   STATUS_DENIED,            ///< not allowed to do whatever you try
+   STATUS_EVERSION,          ///< qmaster GDI version differs from clients GDI version
+   STATUS_ELIMIT,            ///< limit exceeded
+   STATUS_ERROR1,            ///< general error 1
+   STATUS_ERROR2,            ///< general error 2
+   STATUS_ERROR3,            ///< general error 3
+   STATUS_OK_DOAGAIN,        ///< everything was fine but the transaction has to be repeated
+   STATUS_NOTOK_DOAGAIN,     ///< transaction was rejected, try again later (used as qsub's exit code)
+   STATUS_ENOTAVAILABLE      ///< requested feature not available in this product version
 } an_status_t;
 
 

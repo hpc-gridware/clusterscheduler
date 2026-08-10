@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Deciding which events should trigger a scheduling run
+ */
 #include <cstring>
 #include <pthread.h>
 
@@ -53,26 +57,24 @@
 #include "sge_sched_process_events.h"
 #include "sge_sched_prepare_data.h"
 
-/****** qmaster/sge_thread_scheduler/event_update_func() **************************
-*  NAME
-*     event_update_func() -- 
-*
-*  SYNOPSIS
-*     void event_update_func(lList **alpp, lList *event_list)
-*
-*  FUNCTION
-*
-*  INPUTS
-*     lList **alpp - answer list
-*     lList *event_list - a report list, the event are stored in REP_list
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: is MT safe. 
-*
-*******************************************************************************/
+/**
+ * @brief Hand a batch of freshly delivered events to the scheduler thread
+ *
+ * The event client's delivery callback. It does not process anything: it moves
+ * the events out of `event_list` into #Scheduler_Control under the mutex, sets
+ * `triggered` and signals the condition variable, so the scheduler thread wakes
+ * up and does the work. Delivery must not block on a scheduling run.
+ *
+ * The list is moved with lXchgList() rather than copied, so the caller's
+ * `event_list` is left empty.
+ *
+ * @param ec_id the event client id the events were delivered for
+ * @param alpp answer list
+ * @param event_list a report list, the event are stored in REP_list
+ * @param arg unused
+ *
+ * @note MT-NOTE: is MT safe.
+ */
 void
 event_update_func(uint32_t ec_id, lList **alpp, lList *event_list, void *arg)
 {
@@ -101,8 +103,10 @@ event_update_func(uint32_t ec_id, lList **alpp, lList *event_list, void *arg)
 
 /*********************************************/
 /*  event client registration stuff          */
-/*********************************************/
-
+/** @brief Decide whether a job change should trigger a scheduling run
+ *
+ * @param evc see the description above
+ */
 void
 set_job_flushing(sge_evc_class_t *evc)
 {
@@ -122,6 +126,23 @@ set_job_flushing(sge_evc_class_t *evc)
    evc->ec_set_flush(evc, sgeE_JATASK_DEL, flush, interval);
 }
 
+/** @brief Subscribe the scheduler to the events it needs, with the right flush delays
+ *
+ * The scheduler does not want every event immediately. Subscribing without a
+ * flush means the event master delivers on its regular interval; the events
+ * that should shorten a scheduling interval - a job submitted, a job finished -
+ * are subscribed with a flush delay taken from `flush_submit_sec` /
+ * `flush_finish_sec`, so that a new run starts soon after they happen rather
+ * than at the end of the interval.
+ *
+ * The subscription also decides what the mirror keeps, so it has to cover
+ * exactly the lists in #scheduler_all_data_t and no more.
+ *
+ * @param evc the event client the scheduler runs as
+ * @param where_what the `where`/`what` filters limiting each subscription to
+ *                   the fields the scheduler actually reads
+ * @return 0 on success
+ */
 int
 subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what)
 {

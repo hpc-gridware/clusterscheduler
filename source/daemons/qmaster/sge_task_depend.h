@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Array task dependencies
+ */
+
 #include "sgeobj/sge_object.h"
 
 bool

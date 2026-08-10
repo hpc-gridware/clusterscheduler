@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Turning a job back into the command line that would submit it again
+ */
 #include <cstring>
 
 #include "uti/sge_bitfield.h"
@@ -71,6 +75,16 @@ static int sge_unparse_pe(lListElem *job, lList **pcmdline, lList **alpp);
 static int sge_unparse_resource_list(lList *resource_list, bool hard, lList **pcmdline, lList **alpp);
 static int sge_unparse_string_option(lListElem *job, int nm, const char *option, lList **pcmdline, lList **alpp);
 
+/** @brief Turn a job back into the command line that would submit it again
+ *
+ * The inverse of the submit-time parsing, used by `qalter -w` and by the
+ * `submit_cmd_line` row of `qstat -j`.
+ *
+ * @param[out] pcmdline receives the rendered options
+ * @param job the job
+ * @param flags #FLG_FULL_CMDLINE to render defaults as well
+ * @return an answer list on error, nullptr on success
+ */
 lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
 {
    const char *cp;

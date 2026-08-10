@@ -33,26 +33,52 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The priority translation facility: turning tickets into nice values
+ *
+ * The scheduler expresses entitlement as *tickets*, which are relative and
+ * cluster-wide. The operating system understands only a nice value, which is
+ * absolute and local. The PTF is what converts one into the other, on each
+ * execution host, every #PTF_SCHEDULE_TIME seconds.
+ *
+ * It does that by comparing what each job has actually consumed against what
+ * its tickets entitled it to, and nudging the nice value of the jobs that are
+ * ahead or behind. Because it is a feedback loop rather than a calculation,
+ * the decay and compensation constants below matter: they decide how fast it
+ * reacts and how much it overshoots.
+ */
+
 #include <sys/types.h>
 
 #include "cull/cull.h"
 
 #include "sgeobj/sge_conf.h"
 
+/** @brief How hard a job that fell behind is compensated
+ *
+ * A job that used less than its share is allowed up to this multiple of its
+ * entitlement while it catches up.
+ */
 #define PTF_COMPENSATION_FACTOR 2.0
 
-typedef pid_t osjobid_t;
-typedef unsigned int u_osjobid_t;
+typedef pid_t osjobid_t;          ///< The operating system's own job identifier
+typedef unsigned int u_osjobid_t; ///< #osjobid_t as an unsigned value
+/** @brief printf conversion for an #osjobid_t */
 #define OSJOBID_FMT pid_t_fmt
 
-typedef gid_t addgrpid_t;
-#define ADDGRPID_FMT gid_t_fmt  
+typedef gid_t addgrpid_t;         ///< The additional group id a job's processes carry
+/** @brief printf conversion for an #addgrpid_t */
+#define ADDGRPID_FMT gid_t_fmt    
 
 /* job states */
 
-#define JL_JOB_ACTIVE	0x00
-#define JL_JOB_COMPLETE	0x01
-#define JL_JOB_DELETED	0x02
+/** @name State of a job in the PTF's own list
+ * @{
+ */
+#define JL_JOB_ACTIVE	0x00   ///< Still running, still being adjusted
+#define JL_JOB_COMPLETE	0x01   ///< Finished; kept until its usage has been collected
+#define JL_JOB_DELETED	0x02   ///< Gone; the entry may be reused
+/** @} */
 
 /*-----------------------------------------------------
 
@@ -60,15 +86,35 @@ typedef gid_t addgrpid_t;
 
 */
 
+/** @brief Seconds between two rounds of priority adjustment */
 #define PTF_SCHEDULE_TIME 2
 
+/** @brief How fast past usage is forgotten
+ *
+ * 1.0 means it is not forgotten at all, so entitlement is measured over the
+ * whole life of the job.
+ */
 #define PTF_USAGE_DECAY_FACTOR 1.0
 
 /* #define PTF_MIN_JOB_USAGE 0.001 */
+/** @brief Usage assumed for a job that has not consumed anything measurable yet
+ *
+ * Without a floor the share calculation would divide by nearly zero and give a
+ * brand new job an unbounded priority.
+ */
 #define PTF_MIN_JOB_USAGE 1.0
 
+/** @brief Adjust priorities through the nice value
+ *
+ * The only mechanism still built. `PTF_NDPRI_BASED` and `PTF_SLICE_BASED`
+ * below were for platforms this no longer runs on.
+ */
 #define PTF_NICE_BASED
 
+/** @brief How much of the previous round's correction is carried forward
+ *
+ * Damps the feedback loop; without it the nice value would oscillate.
+ */
 #define PTF_DIFF_DECAY_CONSTANT 0.8
 
 #ifdef PTF_NICE_BASED
@@ -79,11 +125,11 @@ typedef gid_t addgrpid_t;
 #    define PTF_OS_MIN_PRIORITY   20l
 #    define PTF_OS_MAX_PRIORITY  -20l
 #  elif defined(LINUX)
-#    define ENFORCE_PRI_RANGE     1
-#    define PTF_MIN_PRIORITY      20
-#    define PTF_MAX_PRIORITY      0
-#    define PTF_OS_MIN_PRIORITY   20l
-#    define PTF_OS_MAX_PRIORITY  -20l
+#    define ENFORCE_PRI_RANGE     1   ///< Clamp to the range below rather than letting the OS refuse
+#    define PTF_MIN_PRIORITY      20  ///< Least favourable priority the PTF will hand out
+#    define PTF_MAX_PRIORITY      0   ///< Most favourable; 0 rather than -20, so jobs never outrank the daemons
+#    define PTF_OS_MIN_PRIORITY   20l ///< Least favourable nice value the platform accepts
+#    define PTF_OS_MAX_PRIORITY  -20l ///< Most favourable nice value the platform accepts
 #  elif defined(DARWIN)
 #    define ENFORCE_PRI_RANGE     1
 #    define PTF_MIN_PRIORITY      20
@@ -97,10 +143,19 @@ typedef gid_t addgrpid_t;
 #    define PTF_OS_MIN_PRIORITY   20l
 #    define PTF_OS_MAX_PRIORITY  -20l
 #  endif
+/** @brief Share below which a job is treated as a background job */
 #  define PTF_BACKGROUND_JOB_PROPORTION 0.015
+/** @brief The priority such a background job is given */
 #  define PTF_BACKGROUND_JOB_PRIORITY NDPLOMAX
 #endif
 
+/** @brief Convert a PTF priority into the platform's own scale
+ *
+ * The identity on every platform still supported; the indirection is left in
+ * place for the ones where the two scales differed.
+ *
+ * @param priority the PTF priority
+ */
 #define PTF_PRIORITY_TO_NATIVE_PRIORITY(priority) (priority)
 
 #ifdef PTF_NDPRI_BASED
@@ -169,6 +224,10 @@ void ptf_show_registered_jobs();
 
 /* #define PTF_Exxxx 1 */
 
-#define PTF_ERROR_NONE                  0
-#define PTF_ERROR_JOB_NOT_FOUND         1
-#define PTF_ERROR_INVALID_ARGUMENT      2
+/** @name What a PTF call went wrong with
+ * @{
+ */
+#define PTF_ERROR_NONE                  0   ///< Success
+#define PTF_ERROR_JOB_NOT_FOUND         1   ///< No such job is registered
+#define PTF_ERROR_INVALID_ARGUMENT      2   ///< A parameter did not make sense
+/** @} */

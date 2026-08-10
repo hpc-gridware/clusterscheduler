@@ -31,6 +31,13 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief languagetest - a diagnostic for the localisation and character handling
+ *
+ * Prints a fixed string byte by byte so that a locale or encoding problem
+ * shows up as the actual bytes rather than as mangled output.
+ */
 #include <cstdio>
 #include <cstdlib>
 
@@ -39,7 +46,9 @@
 
 #include <cinttypes>
 
+/** @brief The string printed byte by byte, to show how the locale encodes it */
 #define TESTSTRING "Hello!"
+/** @brief A format string with one substitution, to check the translated catalogue */
 #define TESTSTRING2 "I'm %s, and you?\n"
 
 int main(int argc, char *argv[]);
@@ -47,6 +56,11 @@ int main(int argc, char *argv[]);
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
+/** @brief Entry point of languagetest
+ * @param argc argument count
+ * @param argv argument vector
+ * @return the program's exit status
+ */
 int main(
 int argc,
 char **argv 

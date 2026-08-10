@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief The scheduler's use of job categories
+ */
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -27,6 +31,14 @@
 
 #include "ocs_CategorySchedd.h"
 
+/**
+ * @brief Was the category of this job already rejected?
+ *
+ * @param[in] job the job to look at
+ *
+ * @return non-zero if no job of this category can be dispatched in this
+ *         scheduling run
+ */
 int
 ocs::CategorySchedd::job_is_category_rejected(const lListElem *job) {
    DENTER(TOP_LAYER);
@@ -36,6 +48,14 @@ ocs::CategorySchedd::job_is_category_rejected(const lListElem *job) {
    DRETURN(ret);
 }
 
+/**
+ * @brief Was the category of this job already rejected for reservation?
+ *
+ * @param[in] job the job to look at
+ *
+ * @return non-zero if no job of this category can get a reservation in
+ *         this scheduling run
+ */
 int
 ocs::CategorySchedd::job_is_category_reservation_rejected(const lListElem *job) {
    DENTER(TOP_LAYER);
@@ -45,6 +65,13 @@ ocs::CategorySchedd::job_is_category_reservation_rejected(const lListElem *job) 
    DRETURN(ret);
 }
 
+/**
+ * @brief Marks the category of a job as rejected
+ *
+ * @param[in] job              the job whose category is rejected
+ * @param[in] with_reservation true to also reject the category for
+ *                             reservation, not only for dispatching now
+ */
 void
 ocs::CategorySchedd::job_reject_category(const lListElem *job, bool with_reservation) {
    DENTER(TOP_LAYER);

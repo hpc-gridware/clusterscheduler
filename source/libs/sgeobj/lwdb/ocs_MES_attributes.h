@@ -24,16 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Scheduling Message
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of MES
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   MES_job_number_list = 6450,
-   MES_message_number,
-   MES_message
+   MES_job_number_list = 6450,   ///< Job Number List
+   MES_message_number,   ///< Message Number
+   MES_message   ///< Message
 };
 
+/** @brief The attribute ids of MES, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int MES_Type[] = {
    MES_job_number_list,
    MES_message_number,
@@ -41,6 +55,10 @@ constexpr const int MES_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of MES
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define MES_ATTRIBUTES \
    {MES_job_number_list, "MES_job_number_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {MES_message_number, "MES_message_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

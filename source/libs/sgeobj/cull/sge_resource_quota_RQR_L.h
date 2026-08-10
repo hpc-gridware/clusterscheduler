@@ -24,49 +24,54 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Resource Quota Rule
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Resource Quota Rule
 *
-* @todo add description
+* One rule of a resource quota set: what it matches, and what it then limits.
+* The five filters are ANDed. An empty filter matches everything, so a rule with no filters is the catch-all.
 *
-*    SGE_STRING(RQR_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(RQR_name) - Name
+*    Optional rule name, so `qquota` and the error messages can say which rule bit.
 *
-*    SGE_OBJECT(RQR_filter_users) - @todo add summary
-*    @todo add description
+*    SGE_OBJECT(RQR_filter_users) - User Filter
+*    Which submitting users the rule applies to (`RQRF_Type`).
 *
-*    SGE_OBJECT(RQR_filter_projects) - @todo add summary
-*    @todo add description
+*    SGE_OBJECT(RQR_filter_projects) - Project Filter
+*    Which projects the rule applies to.
 *
-*    SGE_OBJECT(RQR_filter_pes) - @todo add summary
-*    @todo add description
+*    SGE_OBJECT(RQR_filter_pes) - Parallel Environment Filter
+*    Which parallel environments the rule applies to.
 *
-*    SGE_OBJECT(RQR_filter_queues) - @todo add summary
-*    @todo add description
+*    SGE_OBJECT(RQR_filter_queues) - Queue Filter
+*    Which cluster queues the rule applies to.
 *
-*    SGE_OBJECT(RQR_filter_hosts) - @todo add summary
-*    @todo add description
+*    SGE_OBJECT(RQR_filter_hosts) - Host Filter
+*    Which execution hosts the rule applies to.
 *
-*    SGE_LIST(RQR_limit) - @todo add summary
-*    @todo add description
+*    SGE_LIST(RQR_limit) - Limits
+*    What the rule limits and by how much (`RQRL_Type`), one entry per resource.
 *
-*    SGE_ULONG(RQR_level) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(RQR_level) - Limit Level
+*    How far the limit is spread: shared by everything matched, or one limit each per host, cluster queue or queue instance. See the `RQR_*` values in `sge_resource_quota.h`.
 *
 */
 
 enum {
-   RQR_name = RQR_LOWERBOUND,
-   RQR_filter_users,
-   RQR_filter_projects,
-   RQR_filter_pes,
-   RQR_filter_queues,
-   RQR_filter_hosts,
-   RQR_limit,
-   RQR_level
+   RQR_name = RQR_LOWERBOUND,   ///< Name
+   RQR_filter_users,   ///< User Filter
+   RQR_filter_projects,   ///< Project Filter
+   RQR_filter_pes,   ///< Parallel Environment Filter
+   RQR_filter_queues,   ///< Queue Filter
+   RQR_filter_hosts,   ///< Host Filter
+   RQR_limit,   ///< Limits
+   RQR_level   ///< Limit Level
 };
 
 LISTDEF(RQR_Type)
@@ -91,6 +96,7 @@ NAMEDEF(RQRN)
    NAME("RQR_level")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RQR_SIZE sizeof(RQRN)/sizeof(char *)
 
 

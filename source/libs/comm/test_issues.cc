@@ -32,6 +32,14 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: reproducers that need two processes
+ *
+ * Usage: `test_issues <debug_level> <TCP|SSL> <server|client> ...`
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -47,8 +55,11 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_stdlib.h"
 
-#define CL_DO_SLOW 0
+#define CL_DO_SLOW 0   ///< Insert sleeps between the steps, so the exchange can be followed by eye
 
+/** @brief Note the signal so the reproducer can leave
+ * @param sig the signal that arrived
+ */
 void sighandler_issue_tests(int sig);
 
 static int do_shutdown = 0;
@@ -65,6 +76,18 @@ void sighandler_issue_tests(int sig) {
    do_shutdown = 1;
 }
 
+/** @def TEST_ISSUES_READ_WRITE_TIMEOUT
+ * @brief Read and write timeout the reproducers set, in seconds
+ *
+ * @note Defined inside `main()`, so the block sits at file scope - doxygen
+ *       lists it as a file macro and takes no comment beside it.
+ */
+
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 extern int main(int argc, char **argv) {
    struct sigaction sa;
 

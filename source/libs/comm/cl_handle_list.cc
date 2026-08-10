@@ -32,19 +32,38 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Every handle in the process
+ */
+
 #include "comm/cl_handle_list.h"
 
 #include "uti/sge_stdlib.h"
 
+/** @brief Create the handle list
+ * @param list_p receives the new list
+ * @param list_name name for log messages
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_handle_list_setup(cl_raw_list_t **list_p, const char *list_name) {  /* CR check */
    return cl_raw_list_setup(list_p, list_name, 1); /* enable list locking */
 }
 
+/** @brief Free the handle list and everything in it
+ * @param list_p the list, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_handle_list_cleanup(cl_raw_list_t **list_p) {   /* CR check */
    return cl_raw_list_cleanup(list_p);
 }
 
 
+/** @brief Add a handle
+ * @param list_p the list
+ * @param handle the handle
+ * @param do_lock take the list lock; pass 0 when the caller already holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_handle_list_append_handle(cl_raw_list_t *list_p, cl_com_handle_t *handle, int do_lock) {  /* CR check */
 
    int ret_val;
@@ -90,6 +109,12 @@ int cl_handle_list_append_handle(cl_raw_list_t *list_p, cl_com_handle_t *handle,
 }
 
 
+/** @brief Take a handle out
+ * @param list_p the list
+ * @param handle the handle
+ * @param do_lock take the list lock; pass 0 when the caller already holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_handle_list_remove_handle(cl_raw_list_t *list_p, cl_com_handle_t *handle, int do_lock) {  /* CR check */
    int ret_val = CL_RETVAL_OK;
    int ret_val2 = CL_RETVAL_HANDLE_NOT_FOUND;
@@ -134,6 +159,10 @@ int cl_handle_list_remove_handle(cl_raw_list_t *list_p, cl_com_handle_t *handle,
 }
 
 
+/** @brief The first handle
+ * @param list_p the list
+ * @return the element, or nullptr when the list is empty
+ */
 cl_handle_list_elem_t *cl_handle_list_get_first_elem(cl_raw_list_t *list_p) {  /* CR check */
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
    if (raw_elem) {
@@ -142,6 +171,10 @@ cl_handle_list_elem_t *cl_handle_list_get_first_elem(cl_raw_list_t *list_p) {  /
    return nullptr;
 }
 
+/** @brief The element after this one
+ * @param elem the current element
+ * @return the next element, or nullptr at the end
+ */
 cl_handle_list_elem_t *cl_handle_list_get_next_elem(cl_handle_list_elem_t *elem) {   /* CR check */
    cl_raw_list_elem_t *next_raw_elem = nullptr;
 
@@ -156,6 +189,10 @@ cl_handle_list_elem_t *cl_handle_list_get_next_elem(cl_handle_list_elem_t *elem)
 }
 
 
+/** @brief The element before this one
+ * @param elem the current element
+ * @return the previous element, or nullptr at the start
+ */
 cl_handle_list_elem_t *cl_handle_list_get_last_elem(cl_handle_list_elem_t *elem) {   /* CR check */
    cl_raw_list_elem_t *last_raw_elem = nullptr;
 

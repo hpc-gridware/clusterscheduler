@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief spoolinit - create, check or upgrade a spool directory or database
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

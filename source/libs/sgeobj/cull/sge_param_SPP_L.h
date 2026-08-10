@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Stored Procedure Parameter
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -41,8 +45,8 @@
 */
 
 enum {
-   SPP_name = SPP_LOWERBOUND,
-   SPP_value_list
+   SPP_name = SPP_LOWERBOUND,   ///< Parameter name
+   SPP_value_list   ///< List of value for this parameter.
 };
 
 LISTDEF(SPP_Type)
@@ -55,6 +59,7 @@ NAMEDEF(SPPN)
    NAME("SPP_value_list")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define SPP_SIZE sizeof(SPPN)/sizeof(char *)
 
 

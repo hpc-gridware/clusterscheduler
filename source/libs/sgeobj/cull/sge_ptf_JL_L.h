@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief PTF Job
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -102,28 +106,28 @@
 */
 
 enum {
-   JL_job_ID = JL_LOWERBOUND,
-   JL_OS_job_list,
-   JL_state,
-   JL_tickets,
-   JL_share,
-   JL_ticket_share,
-   JL_timeslice,
-   JL_usage,
-   JL_old_usage_value,
-   JL_adjusted_usage,
-   JL_last_usage,
-   JL_old_usage,
-   JL_proportion,
-   JL_adjusted_proportion,
-   JL_adjusted_current_proportion,
-   JL_actual_proportion,
-   JL_diff_proportion,
-   JL_last_proportion,
-   JL_curr_pri,
-   JL_pri,
-   JL_procfd,
-   JL_interactive
+   JL_job_ID = JL_LOWERBOUND,   ///< Job Id
+   JL_OS_job_list,   ///< OS Job List
+   JL_state,   ///< State
+   JL_tickets,   ///< Tickets
+   JL_share,   ///< Share
+   JL_ticket_share,   ///< Ticket Share
+   JL_timeslice,   ///< Timeslice
+   JL_usage,   ///< Usage
+   JL_old_usage_value,   ///< Old Usage
+   JL_adjusted_usage,   ///< Adjusted Usage
+   JL_last_usage,   ///< Last Usage
+   JL_old_usage,   ///< Old Usage
+   JL_proportion,   ///< Proportion
+   JL_adjusted_proportion,   ///< Adjusted Proportion
+   JL_adjusted_current_proportion,   ///< Adjusted Current Proportion
+   JL_actual_proportion,   ///< Actual Proportion
+   JL_diff_proportion,   ///< Diff Proportion
+   JL_last_proportion,   ///< Last Proportion
+   JL_curr_pri,   ///< Current Priority
+   JL_pri,   ///< Priority
+   JL_procfd,   ///< Proc FD
+   JL_interactive   ///< Interactive
 };
 
 LISTDEF(JL_Type)
@@ -176,6 +180,7 @@ NAMEDEF(JLN)
    NAME("JL_interactive")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define JL_SIZE sizeof(JLN)/sizeof(char *)
 
 

@@ -24,18 +24,32 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Id for Action
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of ID
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   ID_str = 5350,
-   ID_ja_structure,
-   ID_action,
-   ID_force,
-   ID_user_list
+   ID_str = 5350,   ///< Id String
+   ID_ja_structure,   ///< Array Task Structure
+   ID_action,   ///< Action
+   ID_force,   ///< Force
+   ID_user_list   ///< User List
 };
 
+/** @brief The attribute ids of ID, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int ID_Type[] = {
    ID_str,
    ID_ja_structure,
@@ -45,6 +59,10 @@ constexpr const int ID_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of ID
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define ID_ATTRIBUTES \
    {ID_str, "ID_str", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {ID_ja_structure, "ID_ja_structure", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

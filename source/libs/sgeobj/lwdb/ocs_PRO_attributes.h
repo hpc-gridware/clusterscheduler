@@ -24,24 +24,38 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Process Element
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of PRO
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   PRO_pid = 12500,
-   PRO_utime,
-   PRO_stime,
-   PRO_vsize,
-   PRO_rss,
-   PRO_groups,
-   PRO_rel,
-   PRO_run,
-   PRO_io,
-   PRO_ioops,
-   PRO_iow
+   PRO_pid = 12500,   ///< Pid
+   PRO_utime,   ///< User Time
+   PRO_stime,   ///< System Time
+   PRO_vsize,   ///< Virtual Memory
+   PRO_rss,   ///< Resident Set Size
+   PRO_groups,   ///< Groups
+   PRO_rel,   ///< Related to Cluster Scheduler Job
+   PRO_run,   ///< Running
+   PRO_io,   ///< IO
+   PRO_ioops,   ///< IOOPS
+   PRO_iow   ///< IOW
 };
 
+/** @brief The attribute ids of PRO, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int PRO_Type[] = {
    PRO_pid,
    PRO_utime,
@@ -57,6 +71,10 @@ constexpr const int PRO_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of PRO
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define PRO_ATTRIBUTES \
    {PRO_pid, "PRO_pid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {PRO_utime, "PRO_utime", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

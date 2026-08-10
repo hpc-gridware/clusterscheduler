@@ -33,6 +33,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Load correction and capacity correction for the scheduler
+ *
+ * A job that has just started is not yet visible in the load values the
+ * execution host reports - the load report is minutes behind. Without a
+ * correction the scheduler would keep dispatching to a host it has just
+ * filled. correct_load() therefore adds an artificial load for every recently
+ * started job, decaying to zero over `load_adjustment_decay_time`.
+ */
+
 int correct_load(lList *lp_job, lList *lp_queue, lList *lpp_host, uint64_t decay_time, bool monitor_next_run);
 
 int correct_capacities(lList *host_list, const lList *complex_list);

@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Manual test: server side of the CS-2747 reproducer
+ *
+ * @note Not registered with ctest; run it by hand.
+ */
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -45,6 +51,9 @@
 #include "comm/cl_endpoint_list.h"
 #include "uti/sge_profiling.h"
 
+/** @brief Note the signal so the service loop can leave
+ * @param sig the signal that arrived
+ */
 void sighandler_server(int sig);
 
 static int pipe_signal = 0;
@@ -63,6 +72,11 @@ void sighandler_server(int sig) {
    do_shutdown = 1;
 }
 
+/** @brief Run the test
+ * @param argc argument count
+ * @param argv arguments
+ * @return 0 on success, 1 on a usage error or failure
+ */
 extern int main(int argc, char **argv) {
    struct sigaction sa;
    static int runs = 100;

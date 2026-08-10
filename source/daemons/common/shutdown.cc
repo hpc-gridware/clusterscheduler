@@ -31,6 +31,10 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief The startup and shutdown banners every daemon logs
+ */
 #include <cstdio>
 #include <string>
 #include <filesystem>
@@ -52,6 +56,11 @@
 #include "msg_daemons_common.h"
 #include "uti/ocs_Bootstrap.h"
 
+/** @brief Log the startup banner at INFO level whatever the configured level is
+ *
+ * The version and build id of a daemon that has just started are worth having
+ * in the log even when the site logs errors only.
+ */
 void starting_up()
 {
    DENTER(TOP_LAYER);
@@ -96,6 +105,9 @@ void starting_up()
 }
 
 /******************************************************************************/
+/** @brief Log the shutdown banner and end the process
+ * @param i the exit status
+ */
 void sge_shutdown(int i)
 {
    DENTER(TOP_LAYER);

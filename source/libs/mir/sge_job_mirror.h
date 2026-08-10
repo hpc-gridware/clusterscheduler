@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for mirroring the job list
+ *
+ * @see sge_job_mirror.cc
+ */
+
 #include "sgeobj/sge_object.h"
 
 sge_callback_result

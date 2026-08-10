@@ -31,6 +31,13 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief gethostbyaddr - resolve an address through the commlib, as the daemons do
+ *
+ * A diagnostic: it uses the same resolution path and host aliasing as the
+ * cluster itself, so its answer is the one the daemons will get.
+ */
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

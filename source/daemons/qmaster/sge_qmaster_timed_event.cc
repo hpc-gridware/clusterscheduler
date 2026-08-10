@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The timer qmaster hangs all its periodic and deferred work on
+ */
+
 #include <cstring>
 #include <cerrno>
 #include <pthread.h>
@@ -53,6 +57,7 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
+/** @brief Debug layer the timed event code logs under */
 #define EVENT_LAYER CULL_LAYER
 
 event_control_t Event_Control = {
@@ -76,45 +81,33 @@ handler_tbl_t Handler_Tbl = {
         nullptr
 };
 
-/****** qmaster/sge_qmaster_timed_event/te_delete_all_or_one_time_event() *************
-*  NAME
-*     te_delete_all_or_one_time_event() -- Delete one time events
-*
-*  SYNOPSIS
-*     int
-*     te_delete_all_or_one_time_event(te_type_t aType, uint32_t aKey1,
-*                                     uint32_t aKey2, const char* aStrKey,
-*                                     bool ignore_keys)
-*
-*  FUNCTION
-*     Delete one or more one-time events. All one-time events which do EXACTLY
-*     match the given arguments will be deleted from the event list if
-*     ignore_keys is false. Otherwise all one-time events of the given type
-*     will be removed.
-*
-*     If a timed event is scheduled for delivery, it will NOT be deleted,
-*     even if it does match the arguments. Such an event will be deleted after
-*     event delivery has been finished.
-*
-*  INPUTS
-*     te_type_t aType     - event type
-*     uint32_t aKey1      - first numeric key
-*     uint32_t aKey2      - second numeric key
-*     const char* aStrKey - alphanumeric key
-*     bool ignore_keys    - boolean flag
-*
-*  RESULT
-*     int - number of events deleted
-*
-*  NOTES
-*     MT-NOTE: te_delete_all_or_one_time_event() is MT safe.
-*     MT-NOTE:
-*     MT-NOTE: If a timed event has been deleted we need to signal the event
-*     MT-NOTE: delivery thread. This is because the event delivery thread
-*     MT-NOTE: maybe waiting until the just deleted event becomes due. Event
-*     MT-NOTE: deletion is communicated by setting 'Event_Control.deleted'
-*     MT-NOTE: to 'true'.
-*******************************************************************************/
+/**
+ * @brief Delete one time events
+ *
+ * Delete one or more one-time events. All one-time events which do EXACTLY
+ * match the given arguments will be deleted from the event list if
+ * ignore_keys is false. Otherwise all one-time events of the given type
+ * will be removed.
+ * If a timed event is scheduled for delivery, it will NOT be deleted,
+ * even if it does match the arguments. Such an event will be deleted after
+ * event delivery has been finished.
+ *
+ * @param aType event type
+ * @param aKey1 first numeric key
+ * @param aKey2 second numeric key
+ * @param strKey alphanumeric key
+ * @param ignore_keys boolean flag
+ *
+ * @return number of events deleted
+ *
+ * @note MT-NOTE: te_delete_all_or_one_time_event() is MT safe.
+ *       MT-NOTE:
+ *       MT-NOTE: If a timed event has been deleted we need to signal the event
+ *       MT-NOTE: delivery thread. This is because the event delivery thread
+ *       MT-NOTE: maybe waiting until the just deleted event becomes due. Event
+ *       MT-NOTE: deletion is communicated by setting 'Event_Control.deleted'
+ *       MT-NOTE: to 'true'.
+ */
 static int
 te_delete_all_or_one_time_event(te_type_t aType, uint32_t aKey1, uint32_t aKey2, const char *strKey, bool ignore_keys) {
    int res, n = 0;
@@ -178,20 +171,13 @@ te_delete_all_or_one_time_event(te_type_t aType, uint32_t aKey1, uint32_t aKey2,
    DRETURN(res);
 }
 
-/****** sge_qmaster_timed_event/te_wait_empty() ***********************
-*  NAME
-*     te_wait_empty() -- waits, if the event list is empty
-*
-*  SYNOPSIS
-*     static void te_wait_empty()
-*
-*  FUNCTION
-*     waits, if the event list is empty
-*
-*  NOTES
-*     MT-NOTE: te_wait_empty() is not MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Waits, if the event list is empty
+ *
+ * waits, if the event list is empty
+ *
+ * @note MT-NOTE: te_wait_empty() is not MT safe
+ */
 void te_wait_empty() {
 
    DENTER(EVENT_LAYER);
@@ -205,24 +191,16 @@ void te_wait_empty() {
    DRETURN_VOID;
 }
 
-/****** sge_qmaster_timed_event/te_wait_next() ************************
-*  NAME
-*     te_wait_next() -- waits for the next event
-*
-*  SYNOPSIS
-*     static void te_wait_next(te_event_t te, time_t now)
-*
-*  FUNCTION
-*    waits for the next event
-*
-*  INPUTS
-*     te_event_t te - next event
-*     time_t now    - current time
-*
-*  NOTES
-*     MT-NOTE: te_wait_next() is not MT safe
-*
-*******************************************************************************/
+/**
+ * @brief Waits for the next event
+ *
+ * waits for the next event
+ *
+ * @param te next event
+ * @param now current time
+ *
+ * @note MT-NOTE: te_wait_next() is not MT safe
+ */
 void te_wait_next(te_event_t te, uint64_t now) {
    DENTER(EVENT_LAYER);
 
@@ -264,32 +242,20 @@ void te_wait_next(te_event_t te, uint64_t now) {
    DRETURN_VOID;
 }
 
-/****** qmaster/sge_qmaster_timed_event/te_register_event_handler() ************
-*  NAME
-*     te_register_event_handler() -- Register event handler
-*
-*  SYNOPSIS
-*     void te_register_event_handler(te_handler_t aHandler, te_type_t aType)
-*
-*  FUNCTION
-*     Register an event handler. The registered handler will be invoked whenever
-*     an event of type 'aType' is due.
-*
-*     If more than one event handler for a given event type will be registered,
-*     only the FIRST event handler registered will be invoked. It is possible,
-*     however, to register the same event handler for multiple event types.
-*
-*  INPUTS
-*     te_handler_t aHandler - event handler
-*     te_type_t aType       - event type
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: te_register_event_handler() is MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Register event handler
+ *
+ * Register an event handler. The registered handler will be invoked whenever
+ * an event of type 'aType' is due.
+ * If more than one event handler for a given event type will be registered,
+ * only the FIRST event handler registered will be invoked. It is possible,
+ * however, to register the same event handler for multiple event types.
+ *
+ * @param aHandler event handler
+ * @param aType event type
+ *
+ * @note MT-NOTE: te_register_event_handler() is MT safe.
+ */
 void te_register_event_handler(te_handler_t aHandler, te_type_t aType) {
    DENTER(EVENT_LAYER);
 
@@ -318,43 +284,30 @@ void te_register_event_handler(te_handler_t aHandler, te_type_t aType) {
    DRETURN_VOID;
 } /* te_register_event_handler() */
 
-/****** qmaster/sge_qmaster_timed_event/te_new_event() *************************
-*  NAME
-*     te_new_event() -- Allocate new timed event.
-*
-*  SYNOPSIS
-*     te_event_t te_new_event(uint64_t aTime, te_type_t aType, te_mode_t aMode,
-*     uint32_t aKey1, uint32_t aKey2, const char* aStrKey)
-*
-*  FUNCTION
-*     Allocate and initialize a new timed event. The new event will be
-*     initialized using the arguments given.
-*
-*     The caller of this function is responsible to free the timed event
-*     returned, using 'te_free_event()'.
-*
-*     If event type is 'ONE_TIME_EVENT', 'aTime' does determine the ABSOLUTE
-*     timed event due time in seconds since the Epoch. If event type is
-*     'RECURRING_EVENT', 'aTime' does determine the timed event INTERVAL in
-*     seconds.
-*
-*     If 'aStrKey' is not 'nullptr', the new timed event will contain a copy.
-*
-*  INPUTS
-*     uint64_t aTime      - event due time or interval
-*     te_type_t aType     - event type
-*     te_mode_t aMode     - event mode
-*     uint32_t aKey1      - first numeric key, '0' if not used
-*     uint32_t aKey2      - second numeric key, '0' if not used
-*     const char* aStrKey - alphanumeric key, 'nullptr' if not used
-*
-*  RESULT
-*     te_event_t - new timed event
-*
-*  NOTES
-*     MT-NOTE: te_new_event() is MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Allocate new timed event
+ *
+ * Allocate and initialize a new timed event. The new event will be
+ * initialized using the arguments given.
+ * The caller of this function is responsible to free the timed event
+ * returned, using 'te_free_event()'.
+ * If event type is 'ONE_TIME_EVENT', 'aTime' does determine the ABSOLUTE
+ * timed event due time in seconds since the Epoch. If event type is
+ * 'RECURRING_EVENT', 'aTime' does determine the timed event INTERVAL in
+ * seconds.
+ * If 'aStrKey' is not 'nullptr', the new timed event will contain a copy.
+ *
+ * @param aTime event due time or interval
+ * @param aType event type
+ * @param aMode event mode
+ * @param aKey1 first numeric key, '0' if not used
+ * @param aKey2 second numeric key, '0' if not used
+ * @param aStrKey alphanumeric key, 'nullptr' if not used
+ *
+ * @return new timed event
+ *
+ * @note MT-NOTE: te_new_event() is MT safe.
+ */
 te_event_t
 te_new_event(uint64_t aTime, te_type_t aType, te_mode_t aMode, uint32_t aKey1, uint32_t aKey2, const char *aStrKey) {
    DENTER(EVENT_LAYER);
@@ -379,26 +332,17 @@ te_new_event(uint64_t aTime, te_type_t aType, te_mode_t aMode, uint32_t aKey1, u
    DRETURN(ev);
 } /* te_new_event() */
 
-/****** qmaster/sge_qmaster_timed_event/te_free_event() ************************
-*  NAME
-*     te_free_event() -- Free timed event
-*
-*  SYNOPSIS
-*     void te_free_event(te_event_t anEvent)
-*
-*  FUNCTION
-*     Free timed event 'anEvent'. Upon return, 'anEvent' will be 'nullptr'.
-*
-*  INPUTS
-*     te_event_t anEvent - timed event, must NOT be 'nullptr'.
-*
-*  RESULT
-*     void - none, 'anEvent' will be 'nullptr'.
-*
-*  NOTES
-*     MT-NOTE: te_free_event() is MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Free timed event
+ *
+ * Free timed event 'anEvent'. Upon return, 'anEvent' will be 'nullptr'.
+ *
+ * @param anEvent timed event, must NOT be 'nullptr'.
+ *
+ * @note none, 'anEvent' will be 'nullptr'
+ *
+ * @note MT-NOTE: te_free_event() is MT safe.
+ */
 void
 te_free_event(te_event_t *anEvent) {
 
@@ -412,46 +356,33 @@ te_free_event(te_event_t *anEvent) {
    DRETURN_VOID;
 } /* te_free_event() */
 
-/****** qmaster/sge_qmaster_timed_event/te_add_event() *************************
-*  NAME
-*     te_add_event() -- Add timed event
-*
-*  SYNOPSIS
-*     void te_add_event(te_event_t anEvent)
-*
-*  FUNCTION
-*     Add timed event. An event handler which does match the event type of
-*     'anEvent' must have been registered previously. Otherwise the timed
-*     event 'anEvent' will not be delivered.
-*
-*     After event delivery an event with event mode 'ONE_TIME_EVENT' will be
-*     removed. An event with event mode 'RECURRING_EVENT' will be delivered
-*     repeatedly until being removed explicitly, using 'te_delete_event()'.
-*
-*     The event 'anEvent' could be freed safely, using 'te_free_event()' after
-*     this function did return.
-*
-*  INPUTS
-*     te_event_t anEvent - timed event
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: te_add_event() is MT safe.
-*     MT-NOTE:
-*     MT-NOTE: If the event list is empty, the event delivery thread will wait
-*     MT-NOTE: for work. Hence, the event delivery thread is signaled if the
-*     MT-NOTE: very first event is added.
-*     MT-NOTE:
-*     MT-NOTE: If no event is due, i.e. the due date of the next event does lie
-*     MT-NOTE: ahead, the event delivery thread does wait until the next event
-*     MT-NOTE: does become due. Hence, the event delivery thread is signaled if
-*     MT-NOTE: an event is added which is due earlier. In addition the due
-*     MT-NOTE: date of the next event is set to the due date of the event just
-*     MT-NOTE: added
-*
-*******************************************************************************/
+/**
+ * @brief Add timed event
+ *
+ * Add timed event. An event handler which does match the event type of
+ * 'anEvent' must have been registered previously. Otherwise the timed
+ * event 'anEvent' will not be delivered.
+ * After event delivery an event with event mode 'ONE_TIME_EVENT' will be
+ * removed. An event with event mode 'RECURRING_EVENT' will be delivered
+ * repeatedly until being removed explicitly, using 'te_delete_event()'.
+ * The event 'anEvent' could be freed safely, using 'te_free_event()' after
+ * this function did return.
+ *
+ * @param anEvent timed event
+ *
+ * @note MT-NOTE: te_add_event() is MT safe.
+ *       MT-NOTE:
+ *       MT-NOTE: If the event list is empty, the event delivery thread will wait
+ *       MT-NOTE: for work. Hence, the event delivery thread is signaled if the
+ *       MT-NOTE: very first event is added.
+ *       MT-NOTE:
+ *       MT-NOTE: If no event is due, i.e. the due date of the next event does lie
+ *       MT-NOTE: ahead, the event delivery thread does wait until the next event
+ *       MT-NOTE: does become due. Hence, the event delivery thread is signaled if
+ *       MT-NOTE: an event is added which is due earlier. In addition the due
+ *       MT-NOTE: date of the next event is set to the due date of the event just
+ *       MT-NOTE: added
+ */
 void
 te_add_event(te_event_t anEvent) {
    lListElem *le;
@@ -495,40 +426,30 @@ te_add_event(te_event_t anEvent) {
    DRETURN_VOID;
 } /* te_add_event() */
 
-/****** qmaster/sge_qmaster_timed_event/te_delete_one_time_event() *************
-*  NAME
-*     te_delete_one_time_event() -- Delete one time events
-*
-*  SYNOPSIS
-*     int te_delete_one_time_event(te_type_t aType, uint32_t aKey1, uint32_t
-*     aKey2, const char* aStrKey)
-*
-*  FUNCTION
-*     Delete one or more one-time events. All one-time events which do EXACTLY
-*     match the given arguments will be deleted from the event list.
-*
-*     If a timed event is scheduled for delivery, it will will NOT be deleted,
-*     even if it does match the arguments. Such an event will be deleted after
-*     event delivery has been finished.
-*
-*  INPUTS
-*     te_type_t aType     - event type
-*     uint32_t aKey1      - first numeric key
-*     uint32_t aKey2      - second numeric key
-*     const char* aStrKey - alphanumeric key
-*
-*  RESULT
-*     int - number of events deleted
-*
-*  NOTES
-*     MT-NOTE: te_delete_one_time_event() is MT safe.
-*     MT-NOTE:
-*     MT-NOTE: If a timed event has been deleted we need to signal the event
-*     MT-NOTE: delivery thread. This is because the event delivery thread
-*     MT-NOTE: maybe waiting until the just deleted event becomes due. Event
-*     MT-NOTE: deletion is communicated by setting 'Event_Control.deleted'
-*     MT-NOTE: to 'true'.
-*******************************************************************************/
+/**
+ * @brief Delete one time events
+ *
+ * Delete one or more one-time events. All one-time events which do EXACTLY
+ * match the given arguments will be deleted from the event list.
+ * If a timed event is scheduled for delivery, it will will NOT be deleted,
+ * even if it does match the arguments. Such an event will be deleted after
+ * event delivery has been finished.
+ *
+ * @param aType event type
+ * @param aKey1 first numeric key
+ * @param aKey2 second numeric key
+ * @param strKey alphanumeric key
+ *
+ * @return number of events deleted
+ *
+ * @note MT-NOTE: te_delete_one_time_event() is MT safe.
+ *       MT-NOTE:
+ *       MT-NOTE: If a timed event has been deleted we need to signal the event
+ *       MT-NOTE: delivery thread. This is because the event delivery thread
+ *       MT-NOTE: maybe waiting until the just deleted event becomes due. Event
+ *       MT-NOTE: deletion is communicated by setting 'Event_Control.deleted'
+ *       MT-NOTE: to 'true'.
+ */
 int te_delete_one_time_event(te_type_t aType, uint32_t aKey1, uint32_t aKey2, const char *strKey) {
    int ret;
 
@@ -537,35 +458,26 @@ int te_delete_one_time_event(te_type_t aType, uint32_t aKey1, uint32_t aKey2, co
    DRETURN(ret);
 }
 
-/****** qmaster/sge_qmaster_timed_event/te_delete_all_one_time_event() *************
-*  NAME
-*     te_delete_all_one_time_event() -- Delete one time events
-*
-*  SYNOPSIS
-*     int te_delete_all_one_time_event(te_type_t aType);
-*
-*  FUNCTION
-*     Delete all one-time events of the given type.
-*
-*     If a timed event is scheduled for delivery, it will will NOT be deleted,
-*     even if it does match the arguments. Such an event will be deleted after
-*     event delivery has been finished.
-*
-*  INPUTS
-*     te_type_t aType     - event type
-*
-*  RESULT
-*     int - number of events deleted
-*
-*  NOTES
-*     MT-NOTE: te_delete_all_one_time_event() is MT safe.
-*     MT-NOTE:
-*     MT-NOTE: If a timed event has been deleted we need to signal the event
-*     MT-NOTE: delivery thread. This is because the event delivery thread
-*     MT-NOTE: maybe waiting until the just deleted event becomes due. Event
-*     MT-NOTE: deletion is communicated by setting 'Event_Control.deleted'
-*     MT-NOTE: to 'true'.
-*******************************************************************************/
+/**
+ * @brief Delete one time events
+ *
+ * Delete all one-time events of the given type.
+ * If a timed event is scheduled for delivery, it will will NOT be deleted,
+ * even if it does match the arguments. Such an event will be deleted after
+ * event delivery has been finished.
+ *
+ * @param aType event type
+ *
+ * @return number of events deleted
+ *
+ * @note MT-NOTE: te_delete_all_one_time_event() is MT safe.
+ *       MT-NOTE:
+ *       MT-NOTE: If a timed event has been deleted we need to signal the event
+ *       MT-NOTE: delivery thread. This is because the event delivery thread
+ *       MT-NOTE: maybe waiting until the just deleted event becomes due. Event
+ *       MT-NOTE: deletion is communicated by setting 'Event_Control.deleted'
+ *       MT-NOTE: to 'true'.
+ */
 int te_delete_all_one_time_events(te_type_t aType) {
    int ret;
 
@@ -575,26 +487,15 @@ int te_delete_all_one_time_events(te_type_t aType) {
 }
 
 
-/****** qmaster/sge_qmaster_timed_event/te_get_when() **************************
-*  NAME
-*     te_get_when() -- Return timed event due date
-*
-*  SYNOPSIS
-*     time_t te_get_when(te_event_t anEvent)
-*
-*  FUNCTION
-*     Return timed event due date
-*
-*  INPUTS
-*     te_event_t anEvent - timed event
-*
-*  RESULT
-*     time_t - due date
-*
-*  NOTES
-*     MT-NOTE: 'te_get_when()' is MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Return timed event due date
+ *
+ * @param anEvent timed event
+ *
+ * @return due date
+ *
+ * @note MT-NOTE: 'te_get_when()' is MT safe.
+ */
 uint64_t te_get_when(te_event_t anEvent) {
    DENTER(EVENT_LAYER);
 
@@ -605,26 +506,17 @@ uint64_t te_get_when(te_event_t anEvent) {
    DRETURN(res);
 } /* te_get_when() */
 
-/****** qmaster/sge_qmaster_timed_event/te_get_type() **************************
-*  NAME
-*     te_get_type() -- Return timed event type.
-*
-*  SYNOPSIS
-*     te_type_t te_get_type(te_event_t anEvent)
-*
-*  FUNCTION
-*     Return timed event type.
-*
-*  INPUTS
-*     te_event_t anEvent - timed event
-*
-*  RESULT
-*     te_type_t - timed event type
-*
-*  NOTES
-*     MT-NOTE: 'te_get_type()' is MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Return timed event type
+ *
+ * Return timed event type.
+ *
+ * @param anEvent timed event
+ *
+ * @return timed event type
+ *
+ * @note MT-NOTE: 'te_get_type()' is MT safe.
+ */
 te_type_t te_get_type(te_event_t anEvent) {
    te_type_t res;
 
@@ -637,26 +529,17 @@ te_type_t te_get_type(te_event_t anEvent) {
    DRETURN(res);
 } /* te_get_type() */
 
-/****** qmaster/sge_qmaster_timed_event/te_get_first_numeric_key() *************
-*  NAME
-*     te_get_first_numeric_key() -- Return timed event first numeric key.
-*
-*  SYNOPSIS
-*     uint32_t te_get_first_numeric_key(te_event_t anEvent)
-*
-*  FUNCTION
-*     Return timed event first numeric key.
-*
-*  INPUTS
-*     te_event_t - timed event
-*
-*  RESULT
-*     uint32_t - first numeric key
-*
-*  NOTES
-*     MT-NOTE: 'te_get_first_numeric_key()' is MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Return timed event first numeric key
+ *
+ * Return timed event first numeric key.
+ *
+ * @param anEvent timed event
+ *
+ * @return first numeric key
+ *
+ * @note MT-NOTE: 'te_get_first_numeric_key()' is MT safe.
+ */
 uint32_t te_get_first_numeric_key(te_event_t anEvent) {
    uint32_t res = 0;
 
@@ -669,26 +552,17 @@ uint32_t te_get_first_numeric_key(te_event_t anEvent) {
    DRETURN(res);
 } /* te_get_first_numeric_key() */
 
-/****** qmaster/sge_qmaster_timed_event/te_get_second_numeric_key() ************
-*  NAME
-*     te_get_second_numeric_key() -- Return timed event second numeric key.
-*
-*  SYNOPSIS
-*     uint32_t te_get_second_numeric_key(te_event_t anEvent)
-*
-*  FUNCTION
-*     Return timed event second numeric key.
-*
-*  INPUTS
-*     te_event_t anEvent - timed event
-*
-*  RESULT
-*     uint32_t - second numeric key
-*
-*  NOTES
-*     MT-NOTE: 'te_get_second_numeric_key()' is MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Return timed event second numeric key
+ *
+ * Return timed event second numeric key.
+ *
+ * @param anEvent timed event
+ *
+ * @return second numeric key
+ *
+ * @note MT-NOTE: 'te_get_second_numeric_key()' is MT safe.
+ */
 uint32_t te_get_second_numeric_key(te_event_t anEvent) {
    uint32_t res = 0;
 
@@ -701,28 +575,18 @@ uint32_t te_get_second_numeric_key(te_event_t anEvent) {
    DRETURN(res);
 } /* te_get_second_numeric_key() */
 
-/****** qmaster/sge_qmaster_timed_event/te_get_alphanumeric_key() **************
-*  NAME
-*     te_get_alphanumeric_key() -- Return timed event alphanumeric key.
-*
-*  SYNOPSIS
-*     char* te_get_alphanumeric_key(te_event_t anEvent)
-*
-*  FUNCTION
-*     Return timed event alphanumeric key.
-*
-*     The caller of this function MUST free the string returned.
-*
-*  INPUTS
-*     te_event_t anEvent - timed event
-*
-*  RESULT
-*     char* - alphanumeric key or MSG_SMALLNULL if no key is set.
-*
-*  NOTES
-*     MT-NOTE: 'te_get_alphanumeric_key()' is MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Return timed event alphanumeric key
+ *
+ * Return timed event alphanumeric key.
+ * The caller of this function MUST free the string returned.
+ *
+ * @param anEvent timed event
+ *
+ * @return alphanumeric key or MSG_SMALLNULL if no key is set.
+ *
+ * @note MT-NOTE: 'te_get_alphanumeric_key()' is MT safe.
+ */
 char *te_get_alphanumeric_key(te_event_t anEvent) {
    char *res = nullptr;
 
@@ -735,30 +599,17 @@ char *te_get_alphanumeric_key(te_event_t anEvent) {
    DRETURN(res);
 }
 
-/****** qmaster/sge_qmaster_timed_event/te_init() ****************
-*  NAME
-*     te_init() -- one-time initialization
-*
-*  SYNOPSIS
-*     static void te_init()
-*
-*  FUNCTION
-*     Create timed event list. Set list sort order to be ascending event due
-*     time. Create event handler table of initial size.
-*
-*  INPUTS
-*     void - none
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: te_init() is not MT safe
-*     MT-NOTE:
-*     MT-NOTE: This function must only be used as a one-time initialization
-*     MT-NOTE: function.
-*
-*******************************************************************************/
+/**
+ * @brief One-time initialization
+ *
+ * Create timed event list. Set list sort order to be ascending event due
+ * time. Create event handler table of initial size.
+ *
+ * @note MT-NOTE: te_init() is not MT safe
+ *       MT-NOTE:
+ *       MT-NOTE: This function must only be used as a one-time initialization
+ *       MT-NOTE: function.
+ */
 void te_init() {
    DENTER(EVENT_LAYER);
 
@@ -772,31 +623,18 @@ void te_init() {
    DRETURN_VOID;
 } /* te_init() */
 
-/****** qmaster/sge_qmaster_timed_event/te_shutdown() **************************
-*  NAME
-*     te_shutdown() -- Shutdown event delivery thread.
-*
-*  SYNOPSIS
-*     void te_shutdown()
-*
-*  FUNCTION
-*     Shutdown event delivery thread. Set event control structure 'exit' flag.
-*     Wait until event delivery thread did terminate.
-*
-*  INPUTS
-*     void - none
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: 'te_shutdown()' is MT safe.
-*     MT-NOTE:
-*     MT-NOTE: 'pthread_once()' is called for symmetry reasons. This module
-*     MT-NOTE: will be initialized on demand, i.e. each function may be
-*     MT-NOTE: invoked without any prerequisite.
-*
-*******************************************************************************/
+/**
+ * @brief Shutdown event delivery thread
+ *
+ * Shutdown event delivery thread. Set event control structure 'exit' flag.
+ * Wait until event delivery thread did terminate.
+ *
+ * @note MT-NOTE: 'te_shutdown()' is MT safe.
+ *       MT-NOTE:
+ *       MT-NOTE: 'pthread_once()' is called for symmetry reasons. This module
+ *       MT-NOTE: will be initialized on demand, i.e. each function may be
+ *       MT-NOTE: invoked without any prerequisite.
+ */
 void te_shutdown() {
    DENTER(EVENT_LAYER);
 
@@ -805,31 +643,20 @@ void te_shutdown() {
    DRETURN_VOID;
 } /* te_shutdown() */
 
-/****** qmaster/sge_qmaster_timed_event/te_check_time() ***************************
-*  NAME
-*     te_check_time() -- check time
-*
-*  SYNOPSIS
-*     void te_check_time(time_t aTime)
-*
-*  FUNCTION
-*     Check if 'aTime' is a point in time BEFORE the last timed event has been
-*     delivered. If so, adjust all pending timed events and set the time of
-*     last event delivery to 'aTime'. In addition adjust due date of the next
-*     event.
-*
-*  INPUTS
-*     time_t aTime - time value to check
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: te_check_time() is NOT MT safe!
-*     MT-NOTE:
-*     MT-NOTE: It may only be called with 'Event_Control.mutex' locked!
-*
-*******************************************************************************/
+/**
+ * @brief Check time
+ *
+ * Check if 'aTime' is a point in time BEFORE the last timed event has been
+ * delivered. If so, adjust all pending timed events and set the time of
+ * last event delivery to 'aTime'. In addition adjust due date of the next
+ * event.
+ *
+ * @param aTime time value to check
+ *
+ * @note MT-NOTE: te_check_time() is NOT MT safe!
+ *       MT-NOTE:
+ *       MT-NOTE: It may only be called with 'Event_Control.mutex' locked!
+ */
 void te_check_time(uint64_t aTime) {
    lListElem *le;
 
@@ -851,30 +678,20 @@ void te_check_time(uint64_t aTime) {
    DRETURN_VOID;
 } /* te_check_time() */
 
-/****** qmaster/sge_qmaster_timed_event/te_event_from_list_elem() *****************
-*  NAME
-*     te_event_from_list_elem() -- Allocate new timed event.
-*
-*  SYNOPSIS
-*     te_event_t te_event_from_list_elem(lListElem* aListElem)
-*
-*  FUNCTION
-*     Allocate and initialize a new timed event. The new event will be
-*     initialized using the given list element.
-*
-*     The caller of this function is responsible to free the timed event
-*     returned, using 'te_free_event()'.
-*
-*  INPUTS
-*     lListElem* aListElem - list element
-*
-*  RESULT
-*     te_event_t - new timed event
-*
-*  NOTES
-*     MT-NOTE: te_event_from_list_elem() is MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Allocate new timed event
+ *
+ * Allocate and initialize a new timed event. The new event will be
+ * initialized using the given list element.
+ * The caller of this function is responsible to free the timed event
+ * returned, using 'te_free_event()'.
+ *
+ * @param aListElem list element
+ *
+ * @return new timed event
+ *
+ * @note MT-NOTE: te_event_from_list_elem() is MT safe.
+ */
 te_event_t te_event_from_list_elem(const lListElem *aListElem) {
    te_event_t ev = nullptr;
    const char *str = nullptr;
@@ -897,31 +714,21 @@ te_event_t te_event_from_list_elem(const lListElem *aListElem) {
    DRETURN(ev);
 } /* te_event_from_list_elem() */
 
-/****** qmaster/sge_qmaster_timed_event/te_scan_table_and_deliver() ***************
-*  NAME
-*     te_scan_table_and_deliver() -- Scan event handler table and deliver event.
-*
-*  SYNOPSIS
-*     static void te_scan_table_and_deliver(te_event_t anEvent)
-*
-*  FUNCTION
-*     Scan event handler table for an event handler which does match the event
-*     type of 'anEvent'. If 'anEvent' is of mode 'RECURRING_EVENT' it will be
-*     added to the event list again after delivery, with its due date adjusted.
-*
-*  INPUTS
-*     te_event_t anEvent - event to deliver
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: te_scan_table_and_deliver() is MT safe.
-*     MT-NOTE:
-*     MT-NOTE: Do NOT invoke this function with 'Event_Control.mutex' locked!
-*     MT-NOTE: Otherwise a deadlock may occur due to recursive mutex locking.
-*
-*******************************************************************************/
+/**
+ * @brief Scan event handler table and deliver event
+ *
+ * Scan event handler table for an event handler which does match the event
+ * type of 'anEvent'. If 'anEvent' is of mode 'RECURRING_EVENT' it will be
+ * added to the event list again after delivery, with its due date adjusted.
+ *
+ * @param anEvent event to deliver
+ * @param monitor for monitoring qmaster threads
+ *
+ * @note MT-NOTE: te_scan_table_and_deliver() is MT safe.
+ *       MT-NOTE:
+ *       MT-NOTE: Do NOT invoke this function with 'Event_Control.mutex' locked!
+ *       MT-NOTE: Otherwise a deadlock may occur due to recursive mutex locking.
+ */
 void te_scan_table_and_deliver(te_event_t anEvent, monitoring_t *monitor) {
    int i = 0;
    te_handler_t handler = nullptr;

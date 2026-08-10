@@ -32,6 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief A commlib list of name/value parameters
+ */
+
 #include <cstring>
 #include <cstdlib>
 #include "comm/lists/cl_parameter_list.h"
@@ -39,12 +43,21 @@
 #include "uti/sge_string.h"
 #include "uti/sge_stdlib.h"
 
+/** @brief Create a parameter list
+ * @param list_p receives the new list
+ * @param list_name name for log messages
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_parameter_list_setup(cl_raw_list_t **list_p, const char *list_name) {
    int ret_val = CL_RETVAL_OK;
    ret_val = cl_raw_list_setup(list_p, list_name, 1);
    return ret_val;
 }
 
+/** @brief Free a parameter list and everything in it
+ * @param list_p the list, set to nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_parameter_list_cleanup(cl_raw_list_t **list_p) {
    cl_parameter_list_elem_t *elem = nullptr;
 
@@ -69,6 +82,14 @@ int cl_parameter_list_cleanup(cl_raw_list_t **list_p) {
    return cl_raw_list_cleanup(list_p);
 }
 
+/** @brief Append a name/value pair, replacing an existing one of that name
+ * @param list_p the list
+ * @param parameter the name
+ * @param value the value
+ * @param lock_list take the list lock; pass 0 when the caller already
+ *                  holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_parameter_list_append_parameter(cl_raw_list_t *list_p, const char *parameter, const char *value, int lock_list) {
 
    int ret_val;
@@ -136,6 +157,13 @@ int cl_parameter_list_append_parameter(cl_raw_list_t *list_p, const char *parame
    return CL_RETVAL_OK;
 }
 
+/** @brief Remove the pair with this name
+ * @param list_p the list
+ * @param parameter the name to remove
+ * @param lock_list take the list lock; pass 0 when the caller already
+ *                  holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_parameter_list_remove_parameter(cl_raw_list_t *list_p, const char *parameter, int lock_list) {
    int ret_val = CL_RETVAL_OK;
    int function_return = CL_RETVAL_UNKNOWN_PARAMETER;
@@ -176,6 +204,10 @@ int cl_parameter_list_remove_parameter(cl_raw_list_t *list_p, const char *parame
    return function_return;
 }
 
+/** @brief The first element
+ * @param list_p the list
+ * @return the element, or nullptr
+ */
 cl_parameter_list_elem_t *cl_parameter_list_get_first_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_first_elem(list_p);
 
@@ -185,6 +217,10 @@ cl_parameter_list_elem_t *cl_parameter_list_get_first_elem(cl_raw_list_t *list_p
    return nullptr;
 }
 
+/** @brief The last element
+ * @param list_p the list
+ * @return the element, or nullptr
+ */
 cl_parameter_list_elem_t *cl_parameter_list_get_least_elem(cl_raw_list_t *list_p) {
    cl_raw_list_elem_t *raw_elem = cl_raw_list_get_least_elem(list_p);
 
@@ -194,6 +230,10 @@ cl_parameter_list_elem_t *cl_parameter_list_get_least_elem(cl_raw_list_t *list_p
    return nullptr;
 }
 
+/** @brief The element after this one
+ * @param elem the current element
+ * @return the next element, or nullptr at the end
+ */
 cl_parameter_list_elem_t *cl_parameter_list_get_next_elem(cl_parameter_list_elem_t *elem) {
    cl_raw_list_elem_t *next_raw_elem = nullptr;
 
@@ -207,6 +247,10 @@ cl_parameter_list_elem_t *cl_parameter_list_get_next_elem(cl_parameter_list_elem
    return nullptr;
 }
 
+/** @brief The element before this one
+ * @param elem the current element
+ * @return the previous element, or nullptr at the start
+ */
 cl_parameter_list_elem_t *cl_parameter_list_get_last_elem(cl_parameter_list_elem_t *elem) {
    cl_raw_list_elem_t *last_raw_elem = nullptr;
 
@@ -220,6 +264,13 @@ cl_parameter_list_elem_t *cl_parameter_list_get_last_elem(cl_parameter_list_elem
    return nullptr;
 }
 
+/** @brief Render the whole list as one `name=value,...` string
+ * @param list_p the list
+ * @param param_string receives the string, which the caller frees
+ * @param lock_list take the list lock; pass 0 when the caller already
+ *                  holds it
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ */
 int cl_parameter_list_get_param_string(cl_raw_list_t *list_p, char **param_string, int lock_list) {
    cl_parameter_list_elem_t *elem = nullptr;
    cl_parameter_list_elem_t *next_elem = nullptr;

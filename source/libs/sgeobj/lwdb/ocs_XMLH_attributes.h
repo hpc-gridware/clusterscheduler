@@ -24,18 +24,32 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief XML Document Header
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of XMLH
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   XMLH_Version = 10200,
-   XMLH_Name,
-   XMLH_Stylesheet,
-   XMLH_Attribute,
-   XMLH_Element
+   XMLH_Version = 10200,   ///< XML Version
+   XMLH_Name,   ///< Root Element Name
+   XMLH_Stylesheet,   ///< Stylesheets
+   XMLH_Attribute,   ///< Root Attributes
+   XMLH_Element   ///< Content
 };
 
+/** @brief The attribute ids of XMLH, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int XMLH_Type[] = {
    XMLH_Version,
    XMLH_Name,
@@ -45,6 +59,10 @@ constexpr const int XMLH_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of XMLH
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define XMLH_ATTRIBUTES \
    {XMLH_Version, "XMLH_Version", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {XMLH_Name, "XMLH_Name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

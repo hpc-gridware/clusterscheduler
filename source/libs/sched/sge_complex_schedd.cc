@@ -31,6 +31,21 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+/** @file
+ * @brief Assembling the complex attributes the scheduler matches against
+ *
+ * An attribute can be defined at three levels - global, execution host, queue
+ * instance - and a job's `-l` request has to be matched against the value
+ * that actually applies. Which level wins is what the **dominance** of an
+ * attribute records, and monitor_dominance() renders it as the `g`/`h`/`q`
+ * prefix seen in `qstat -F` output.
+ *
+ * get_attribute() answers for one level, get_attribute_by_name() resolves
+ * across all three, and host_complexes2scheduler() and
+ * queue_complexes2scheduler() build the complete attribute list of one object
+ * for the scheduler to match a request against.
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -72,7 +87,35 @@ static bool is_attr_prior2(lListElem *upper_el, double lower_value, int t_value,
 
 static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *queue, const lList *centry_list);
 
+/**
+ * @def LOAD_ADJUSTMENTS_LATE_FETCH
+ * @brief Fetch the load adjustments in get_attribute() when the caller passed none
+ *
+ * The old behaviour, kept for safety: a caller that passes nullptr for
+ * `load_adjustments` gets them fetched from the scheduler configuration
+ * instead of having them ignored. Defined inside the body of
+ * get_attribute(), which is why it is documented here.
+ */
 
+/**
+ * @def STR_LEN_AVAIL_TEXT
+ * @brief Size of the buffers holding the diagnosis of a failed match
+ *
+ * Defined inside the body of compare_complexes(), which is why it is
+ * documented here.
+ */
+
+
+/**
+ * @brief Renders the dominance of an attribute as the string `qstat -F` shows
+ *
+ * The first character is the layer the value comes from - `g` global, `h`
+ * host, `q` queue - and the second where it comes from, e.g. a fixed
+ * configuration value or a load value.
+ *
+ * @param[out] str  buffer receiving the rendering, at least 5 bytes
+ * @param[in]  mask the `CE_dominant` value to render
+ */
 void monitor_dominance(char *str, uint32_t mask) {
    switch (mask & DOMINANT_LAYER_MASK) {
    case DOMINANT_LAYER_GLOBAL:   
@@ -113,42 +156,33 @@ void monitor_dominance(char *str, uint32_t mask) {
    *str++ = '\0';
 }
 
-/****** sge_select_queue/get_attribute() ***************************************
-*  NAME
-*     get_attribute() -- looks for an attribute, but only for one level (for host, global, or queue)
-*
-*  SYNOPSIS
-*     static lListElem* get_attribute(const char *attrname, lList *config_attr, 
-*     lList *actual_attr, lList *load_attr, lList *centry_list, lListElem 
-*     *queue, lListElem *rep, uint32_t layer, double lc_factor, dstring *reason)
-*
-*  FUNCTION
-*     Extracts the attribute specified with 'attrname' and finds the
-*     more important one, if it is defined multiple times on the same 
-*     level. It only cares about one level.
-*     If the attribute is a consumable, one can specify a point in time and a duration.
-*     This will get the caller the min amount of that resource during the time frame.
-*
-*  INPUTS
-*     const char *attrname - attribute name one is looking for 
-*     lList *config_attr   - user defined attributes (CE_Type), this is
-*                            a host's / queue's complex_values list:
-*                            EH_consumable_config_list, QU_consumable_config_list
-*     lList *actual_attr   - current usage of consumables (RUE_Type)
-*     lList *load_attr     - load attributes 
-*     lList *centry_list   - the system wide attribute configuration 
-*     lListElem *queue     - the current queue, or nullptr, if one works on hosts
-*     uint32_t layer       - the current layer
-*     double lc_factor     - the load correction value 
-*     dstring *reason      - space for error messages or nullptr
-*     bool zero_utilization - ???
-*     uint32_t start_time  - begin of the time interval, one asks for the resource
-*     uint32_t duration    - the duration the interval
-*
-*  RESULT
-*     static lListElem* - the element one was looking for or nullptr
-*
-*******************************************************************************/
+/**
+ * @brief Looks for an attribute, but only for one level (for host, global, or queue)
+ *
+ * Extracts the attribute specified with 'attrname' and finds the
+ * more important one, if it is defined multiple times on the same
+ * level. It only cares about one level.
+ * If the attribute is a consumable, one can specify a point in time and a duration.
+ * This will get the caller the min amount of that resource during the time frame.
+ *
+ * @param attrname attribute name one is looking for
+ * @param config_attr user defined attributes (CE_Type), this is a host's / queue's complex_values list: EH_consumable_config_list, QU_consumable_config_list
+ * @param actual_attr current usage of consumables (RUE_Type)
+ * @param load_attr load attributes
+ * @param centry_list the system wide attribute configuration
+ * @param queue the current queue, or nullptr, if one works on hosts
+ * @param layer the current layer
+ * @param lc_factor the load correction value
+ * @param reason space for error messages or nullptr
+ * @param load_adjustments the load adjustments to apply, or nullptr to have
+ *                         them fetched from the scheduler configuration
+ * @param zero_utilization ignore the current utilization and report the value
+ *                         as if nothing were booked
+ * @param start_time begin of the time interval, one asks for the resource
+ * @param duration the duration the interval
+ *
+ * @return the element one was looking for or nullptr
+ */
 lListElem *
 get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr, const lList *load_attr,
               const lList *centry_list, const lList *load_adjustments, const lListElem *queue, uint32_t layer,
@@ -343,27 +377,19 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
 }
 
 
-/****** sge_select_queue/get_queue_resource() ***************************************
-*  NAME
-*     get_queue_resource() -- extracts attribut information from the queue 
-*
-*  SYNOPSIS
-*    static lListElem* get_queue_resource(lListElem *queue, lList *centry_list, const char *attrname)
-* 
-*  FUNCTION
-*     All fixed queue attributes are directly coded into the queue structure. These have to extraced
-*     and formed into a CE structure. That is, what this function does. It takes a name for an attribut
-*     and returns a full CE structure, if the attribut is set in the queue. Otherwise it returns nullptr.
-*
-*  INPUTS
-*     lListElem *queue_elem - 
-*     lListElm  *queue      -
-*     const char *attrname  - name of the attribute.
-*  RESULT
-*     bool -  
-*
-*
-*******************************************************************************/
+/**
+ * @brief Extracts attribut information from the queue
+ *
+ * All fixed queue attributes are directly coded into the queue structure. These have to extraced
+ * and formed into a CE structure. That is, what this function does. It takes a name for an attribut
+ * and returns a full CE structure, if the attribut is set in the queue. Otherwise it returns nullptr.
+ *
+ * @param[out] queue_elem the complex entry to fill in
+ * @param[in]  queue      the queue instance to read the attribute from
+ * @param[in]  attrname   name of the attribute
+ *
+ * @return true if the attribute is set in the queue, false otherwise
+ */
 bool get_queue_resource(lListElem *queue_elem, const lListElem *queue, const char *attrname){
    DENTER(BASIS_LAYER);
    double dval=0.0;
@@ -434,30 +460,22 @@ bool get_queue_resource(lListElem *queue_elem, const lListElem *queue, const cha
 }
 
 
-/****** sge_select_queue/is_attr_prior() ***************************************
-*  NAME
-*     is_attr_prior() -- compares two attribut instances with each other 
-*
-*  SYNOPSIS
-*     static bool is_attr_prior(lListElem *upper_el, lListElem *lower_el) 
-*
-*  FUNCTION
-*     checks if the first given attribut instance has a higher priority than
-*     second instance.
-*     if the first is nullptr, it returns false
-*     if the second or the second and first is nullptr, it returns true
-*     if the "==" or "!=" operators are used, it is true
-*     if both are the same, it may returns false. 
-*     otherwise it computes the minimum or maximum between the values. 
-*
-*  INPUTS
-*     lListElem *upper_el - attribut, which should be overridden by the second one. 
-*     lListElem *lower_el - attribut, which want to override the first one. 
-*
-*  RESULT
-*     static bool - true, when the first attribut has a higher priority.
-*
-*******************************************************************************/
+/**
+ * @brief Compares two attribut instances with each other
+ *
+ * checks if the first given attribut instance has a higher priority than
+ * second instance.
+ * if the first is nullptr, it returns false
+ * if the second or the second and first is nullptr, it returns true
+ * if the "==" or "!=" operators are used, it is true
+ * if both are the same, it may returns false.
+ * otherwise it computes the minimum or maximum between the values.
+ *
+ * @param upper_el attribut, which should be overridden by the second one.
+ * @param lower_el attribut, which want to override the first one.
+ *
+ * @return true, when the first attribut has a higher priority.
+ */
 bool is_attr_prior(lListElem *upper_el, lListElem *lower_el){
    uint32_t relop;
    bool ret;
@@ -530,35 +548,25 @@ bool is_attr_prior(lListElem *upper_el, lListElem *lower_el){
    DRETURN(ret);
 }
 
-/****** sge_complex_schedd/is_attr_prior2() ************************************
-*  NAME
-*     is_attr_prior2() -- checks, if the set value in the structure has a higher priority
-*     than the new one 
-*
-*  SYNOPSIS
-*     static bool is_attr_prior2(lListElem *upper_el, double lower_value, int 
-*     t_value, int t_dominant) 
-*
-*  FUNCTION
-*     Computes the priority between a given structure and its values and a new value. This
-*     is done on some basic rules. If the value is not set (dominant ==  DOMINANT_TYPE_VALUE)
-*     or which relational opperator is used. If this is not enough, the two values are compared
-*     and based on the opperator, it returns a true or false:
-*     if no value is set in the structure: false
-*     if the relops are == or != : true
-*     if the relops are >= or > : true, when the new value is smaller than the old one
-*     if the relops are <= or < : true, when the new value is bigger than the old one
-*
-*  INPUTS
-*     lListElem *upper_el - target structure 
-*     double lower_value  - new value 
-*     int t_value         - which field to use (CE_doubleval or CE_pj_doubleval) 
-*     int t_dominant      - which dominant field to use (CE_dominant, CE_pj_dominant) 
-*
-*  RESULT
-*     static bool - true, if the value in the structure has the higher priority 
-*
-*******************************************************************************/
+/**
+ * @brief Checks, if the set value in the structure has a higher priority
+ *
+ * Computes the priority between a given structure and its values and a new value. This
+ * is done on some basic rules. If the value is not set (dominant ==  DOMINANT_TYPE_VALUE)
+ * or which relational opperator is used. If this is not enough, the two values are compared
+ * and based on the opperator, it returns a true or false:
+ * if no value is set in the structure: false
+ * if the relops are == or != : true
+ * if the relops are >= or > : true, when the new value is smaller than the old one
+ * if the relops are <= or < : true, when the new value is bigger than the old one
+ *
+ * @param upper_el target structure
+ * @param lower_value new value
+ * @param t_value which field to use (CE_doubleval or CE_pj_doubleval)
+ * @param t_dominant which dominant field to use (CE_dominant, CE_pj_dominant)
+ *
+ * @return true, if the value in the structure has the higher priority
+ */
 static bool is_attr_prior2(lListElem *upper_el, double lower_value, int t_value, int t_dominant ){
    uint32_t relop;
    uint32_t dom;
@@ -586,7 +594,20 @@ static bool is_attr_prior2(lListElem *upper_el, double lower_value, int t_value,
    DRETURN(ret);
 }
 
-/* provide a list of attributes containing all attributes for the given host */
+/**
+ * @brief Builds the complete attribute list of one execution host
+ *
+ * The global attributes are merged in, so the result is what a request has to
+ * be matched against for this host.
+ *
+ * @param[out] new_centry_list receives the attribute list (`CE_Type`); a
+ *                             previous list is freed
+ * @param[in]  host            the execution host
+ * @param[in]  exechost_list   all execution hosts, to find the global host
+ * @param[in]  centry_list     the system wide attribute configuration
+ *
+ * @return always 0
+ */
 int host_complexes2scheduler(
 lList **new_centry_list,
 lListElem *host,
@@ -605,14 +626,22 @@ lList *centry_list
    DRETURN(0);
 }
 
-/**********************************************************************
- This is the function used by the scheduler to get a complete list of 
- complexes for a given queue.
- All templates are filled by actual values.
- With this list the scheduler can decide whether a request matches this
- queue.
-
- **********************************************************************/
+/**
+ * @brief Builds the complete attribute list of one queue instance
+ *
+ * All templates are filled with the actual values of the queue, its host and
+ * the global host, so the scheduler can decide from this list alone whether a
+ * request matches the queue.
+ *
+ * @param[out] new_centry_list receives the attribute list (`CE_Type`); a
+ *                             previous list is freed
+ * @param[in]  queue           the queue instance
+ * @param[in]  exechost_list   all execution hosts, to find the queue's host
+ *                             and the global host
+ * @param[in]  centry_list     the system wide attribute configuration
+ *
+ * @return always 0
+ */
 int queue_complexes2scheduler(lList **new_centry_list, lListElem *queue, const lList *exechost_list,
                               const lList *centry_list)
 {
@@ -625,31 +654,22 @@ int queue_complexes2scheduler(lList **new_centry_list, lListElem *queue, const l
    DRETURN(0);
 }
 
-/****** sge_complex_schedd/get_attribute_list_by_names() ***********************
-*  NAME
-*     get_attribute_list_by_names() -- generates a list of attributes from the given names 
-*
-*  SYNOPSIS
-*     static lList* get_attribute_list_by_names(lListElem *global, lListElem 
-*     *host, lListElem *queue, lList *centry_list, lList *attrnames)
-*
-*  FUNCTION
-*     Assembles a list of attributes for a given queue, host, global, which contains all 
-*     the specified elements. The general sort order is, global, host, queue. If an 
-*     element could not be found, it will not exist. If no elements exist, the function
-*     will return nullptr
-*
-*  INPUTS
-*     lListElem *global      - global host 
-*     lListElem *host        - host (or nullptr, if only global resources are asked for )
-*     lListElem *queue       - queue (or nullptr, if only global / host resources are asked for)
-*     lList *centry_list     - the system wide attribut config list 
-*     lList *attrnames       - ST_Type list of attribute names 
-*
-*  RESULT
-*     static lList* - a CULL list of elements or nullptr
-*
-*******************************************************************************/
+/**
+ * @brief Generates a list of attributes from the given names
+ *
+ * Assembles a list of attributes for a given queue, host, global, which contains all
+ * the specified elements. The general sort order is, global, host, queue. If an
+ * element could not be found, it will not exist. If no elements exist, the function
+ * will return nullptr
+ *
+ * @param global global host
+ * @param host host (or nullptr, if only global resources are asked for )
+ * @param queue queue (or nullptr, if only global / host resources are asked for)
+ * @param centry_list the system wide attribut config list
+ * @param attrnames ST_Type list of attribute names
+ *
+ * @return a CULL list of elements or nullptr
+ */
 static lList *get_attribute_list_by_names(lListElem *global, lListElem *host, 
                                           lListElem *queue, const lList *centry_list,
                                           lList *attrnames)
@@ -673,27 +693,18 @@ static lList *get_attribute_list_by_names(lListElem *global, lListElem *host,
 
 
 
-/****** sge_complex_schedd/get_attribute_list() ********************************
-*  NAME
-*     get_attribute_list() -- generates a list for all defined elements in a queue, host, global 
-*
-*  SYNOPSIS
-*     static lList* get_attribute_list(lListElem *global, lListElem *host, 
-*     lListElem *queue, lList *centry_list) 
-*
-*  FUNCTION
-*     Generates a list for all attributes defined at the given queue, host, global. 
-*
-*  INPUTS
-*     lListElem *global  - global host 
-*     lListElem *host    - host (or nullptr, if only global attributes are important)
-*     lListElem *queue   - queue (or nullptr if only host/global attributes are important)
-*     lList *centry_list - system wide attribute config list 
-*
-*  RESULT
-*     static lList* - list of attributes or nullptr, if no attributes exist.
-*
-*******************************************************************************/
+/**
+ * @brief Generates a list for all defined elements in a queue, host, global
+ *
+ * Generates a list for all attributes defined at the given queue, host, global.
+ *
+ * @param global global host
+ * @param host host (or nullptr, if only global attributes are important)
+ * @param queue queue (or nullptr if only host/global attributes are important)
+ * @param centry_list system wide attribute config list
+ *
+ * @return list of attributes or nullptr, if no attributes exist.
+ */
 static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *queue, const lList *centry_list)
 {
    lList *filter = nullptr;
@@ -730,27 +741,17 @@ static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *
    DRETURN(list);
 }
 
-/****** sge_complex_schedd/build_name_filter() *********************************
-*  NAME
-*     build_name_filter() -- fills in an array with complex nams, which can be used
-*                            as a filter. 
-*
-*  SYNOPSIS
-*     void build_name_filter(const char **filter, lList *list, int t_name, int 
-*     *pos) 
-*
-*  FUNCTION
-*     Takes an array of a given size and fills in complex names. 
-*
-*  INPUTS
-*     const char **filter     - target for the filter strings. It has to be of sufficant size. 
-*     lList *list             - a list of complexes, from which the names are extracted 
-*     int t_name              - specifies the field which is used as a name 
-*
-*  NOTES
-*     ??? 
-*
-*******************************************************************************/
+/**
+ * @brief Fills in an array with complex nams, which can be used
+ *
+ * Takes an array of a given size and fills in complex names.
+ *
+ * @param filter target for the filter strings. It has to be of sufficant size.
+ * @param list a list of complexes, from which the names are extracted
+ * @param t_name specifies the field which is used as a name
+ *
+ * @note ???
+ */
 static void build_name_filter(lList *filter, const lList *list, int t_name){
    if (!list) {
       return;
@@ -765,18 +766,32 @@ static void build_name_filter(lList *filter, const lList *list, int t_name){
    }
 }
 
-/* wrapper for strcmp() of all string types */ 
-/* s1 is the pattern */
-/* s2 the string that should be matched against the pattern */
+/**
+ * @brief Matches a string value against a pattern, for all string types
+ *
+ * @param[in] type the attribute type, which decides how the match is done
+ * @param[in] s1   the pattern
+ * @param[in] s2   the string to match against the pattern
+ *
+ * @return non-zero if the string matches the pattern
+ */
 int string_base_cmp(ocs::CEntry::Type type, const char *s1, const char *s2)
 {
    return sge_eval_expression(type, s1, s2, nullptr);
 }
 
-/* wrapper for strcmp() of all string types, old version */ 
-/* s1 is the pattern */
-/* s2 the string that should be matched against the pattern */
-/* Old implementation shloud be kept for performance tests */                              
+/**
+ * @brief The previous implementation of string_base_cmp()
+ *
+ * Kept so the expression based implementation can be compared against it in
+ * performance tests. Not used by the scheduler.
+ *
+ * @param[in] type the attribute type, which decides how the match is done
+ * @param[in] s1   the pattern
+ * @param[in] s2   the string to match against the pattern
+ *
+ * @return non-zero if the string matches the pattern
+ */
 int string_base_cmp_old(ocs::CEntry::Type type, const char *s1, const char *s2)
 {
 
@@ -875,11 +890,24 @@ static int resource_cmp(uint32_t relop, double req, double src_dl) {
    DRETURN(match);
 }
 
-/*********************************************************************
- compare two complex entries (attributes)
- the type is given by the first complex
- return 1 if matched anything else 0 if not
- *********************************************************************/
+/**
+ * @brief Matches a request against what an object offers
+ *
+ * The type of the comparison comes from the **request**, `req_cplx`, and the
+ * relational operator of the attribute decides what "matches" means.
+ *
+ * @param[in]  slots             number of slots the request is made for
+ * @param[in]  req_cplx          the requested attribute (`CE_Type`)
+ * @param[in]  src_cplx          what the object offers (`CE_Type`)
+ * @param[out] availability_text receives the diagnosis when the match fails,
+ *                               at least #STR_LEN_AVAIL_TEXT bytes
+ * @param[in]  is_threshold      true when matching a threshold, where either
+ *                               half matching is enough
+ * @param[in]  force_existence   true if an attribute that does not exist at
+ *                               the object makes the match fail
+ *
+ * @return 1 if the request is satisfied, 0 otherwise
+ */
 int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char *availability_text,
                       int is_threshold, int force_existence)
 {
@@ -1114,33 +1142,25 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
    DRETURN(0);
 }
 
-/****** sge_select_queue/get_attribute_by_name() *******************************
-*  NAME
-*     get_attribute_by_name() -- returns an attribut by name
-*
-*  SYNOPSIS
-*     void lListElem* get_attribute_by_name(lListElem* global, lListElem *host,
-*     lListElem *queue, const char* attrname, lList *centry_list, char * 
-*     reason, int reason_size) 
-*
-*  FUNCTION
-*     It looks into the different configurations on host, global and queue and returns
-*     the attribute, which was asked for. It the attribute is defined multiple times, only
-*     the valid one is returned. 
-*
-*  INPUTS
-*     lListElem* global    - the global host 
-*     lListElem *host      - a given host can be nullptr, then only the global host is important
-*     lListElem *queue     - a queue on the given host, can be null, then only the host and global is important
-*     const char* attrname - the attribute name one is looking for
-*     lList *centry_list   - the system wide attribute config list
-*     char *reason         - memory for the error message 
-*     int reason_size      - the max length of an error message 
-*
-*  RESULT
-*     void lListElem* - the element one is looking for (a copy) or nullptr.
-*
-*******************************************************************************/
+/**
+ * @brief Returns an attribut by name
+ *
+ * It looks into the different configurations on host, global and queue and returns
+ * the attribute, which was asked for. It the attribute is defined multiple times, only
+ * the valid one is returned.
+ *
+ * @param global the global host
+ * @param host a given host can be nullptr, then only the global host is important
+ * @param queue a queue on the given host, can be null, then only the host and global is important
+ * @param attrname the attribute name one is looking for
+ * @param centry_list the system wide attribute config list
+ * @param load_adjustments the load adjustments to apply, or nullptr to have
+ *                         them fetched from the scheduler configuration
+ * @param start_time begin of the time interval one asks for the resource
+ * @param duration the duration of the interval
+ *
+ * @return the element one is looking for (a copy) or nullptr.
+ */
 lListElem *
 get_attribute_by_name(const lListElem *global, const lListElem *host, const lListElem *queue, const char *attrname,
                       const lList *centry_list, const lList *load_adjustments, uint64_t start_time, uint64_t duration)
@@ -1267,32 +1287,25 @@ int main(int argc, char *argv[], char *envp[])
 }
 #endif
 
-/****** sge_complex_schedd/request_cq_rejected() *******************************
-*  NAME
-*     request_cq_rejected() -- Check, if -l request forecloses cluster queue
-*
-*  SYNOPSIS
-*     bool request_cq_rejected(const lList* hard_resource_list, const lListElem
-*     *cq, const lList *centry_list, dstring *unsatisfied)
-*
-*  FUNCTION
-*     Do -l matching with the aim to foreclose the entire cluster queue.
-*     Each cluster queue configuration profile must specify a fixed value 
-*     otherwise we can't rule out a cluster queue. Both complex_values and 
-*     queue resource limits are checked.
-*
-*  INPUTS
-*     const lList* hard_resource_list - resource list -l (CE_Type)
-*     const lListElem *cq             - cluster queue (CQ_Type)
-*     const lList *centry_list        - complex entry list (CE_Type)
-*     dstring *unsatisfied            - diagnosis information, if rejected
-*
-*  RESULT
-*     bool - true, if the cluster queue is ruled out
-*
-*  NOTES
-*     MT-NOTE: request_cq_rejected() is MT safe
-*******************************************************************************/
+/**
+ * @brief Check, if -l request forecloses cluster queue
+ *
+ * Do -l matching with the aim to foreclose the entire cluster queue.
+ * Each cluster queue configuration profile must specify a fixed value
+ * otherwise we can't rule out a cluster queue. Both complex_values and
+ * queue resource limits are checked.
+ *
+ * @param hard_resource_list resource list -l (CE_Type)
+ * @param cq cluster queue (CQ_Type)
+ * @param centry_list complex entry list (CE_Type)
+ * @param single_slot true to match for a single slot only, false to take the
+ *                    whole slot range of the job into account
+ * @param unsatisfied diagnosis information, if rejected
+ *
+ * @return true, if the cluster queue is ruled out
+ *
+ * @note MT-NOTE: request_cq_rejected() is MT safe
+ */
 bool request_cq_rejected(const lList* hard_resource_list, const lListElem *cq,
       const lList *centry_list, bool single_slot, dstring *unsatisfied)
 {

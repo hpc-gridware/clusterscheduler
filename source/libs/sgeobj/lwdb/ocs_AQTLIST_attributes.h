@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Queue Type List
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of AQTLIST
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   AQTLIST_href = 9450,
-   AQTLIST_value
+   AQTLIST_href = 9450,   ///< Host Reference
+   AQTLIST_value   ///< Value
 };
 
+/** @brief The attribute ids of AQTLIST, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int AQTLIST_Type[] = {
    AQTLIST_href,
    AQTLIST_value,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of AQTLIST
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define AQTLIST_ATTRIBUTES \
    {AQTLIST_href, "AQTLIST_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {AQTLIST_value, "AQTLIST_value", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

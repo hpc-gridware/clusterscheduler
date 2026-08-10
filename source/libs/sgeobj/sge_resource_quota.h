@@ -33,27 +33,39 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations for resource quota sets: limits that cut across the object model
+ *
+ * @see sge_resource_quota.cc
+ */
+
 #include "sgeobj/cull/sge_resource_quota_RQS_L.h"
 #include "sgeobj/cull/sge_resource_quota_RQR_L.h"
 #include "sgeobj/cull/sge_resource_quota_RQRF_L.h"
 #include "sgeobj/cull/sge_resource_quota_RQRL_L.h"
 #include "sgeobj/cull/sge_resource_quota_RQL_L.h"
 
+/// The five things a resource quota rule can filter on
 enum {
-   FILTER_USERS = 0,
-   FILTER_PROJECTS,
-   FILTER_PES,
-   FILTER_QUEUES,
-   FILTER_HOSTS
+   FILTER_USERS = 0, ///< the submitting user
+   FILTER_PROJECTS,  ///< the job's project
+   FILTER_PES,       ///< the job's parallel environment
+   FILTER_QUEUES,    ///< the queue the job would run in
+   FILTER_HOSTS      ///< the host the job would run on
 };
 
-/* values found in RQR_level */
+/**
+ * @brief Values found in `RQR_level`
+ *
+ * How far a rule's limit is spread: one shared limit, or one limit per host,
+ * per cluster queue or per queue instance.
+ */
 enum {
-   RQR_ALL = 0,
-   RQR_GLOBAL,
-   RQR_CQUEUE,
-   RQR_HOST,
-   RQR_QUEUEI
+   RQR_ALL = 0,  ///< one limit shared by everything the rule matches
+   RQR_GLOBAL,   ///< one limit for the whole cluster
+   RQR_CQUEUE,   ///< one limit per cluster queue
+   RQR_HOST,     ///< one limit per host
+   RQR_QUEUEI    ///< one limit per queue instance
 };
 
 bool rqs_parse_filter_from_string(lListElem **filter, const char* buffer, lList **alp);

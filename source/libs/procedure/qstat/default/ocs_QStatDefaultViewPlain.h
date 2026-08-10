@@ -19,34 +19,52 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief Plain text rendering of plain `qstat`
+ */
+
 #include "ocs_QStatDefaultViewBase.h"
 
 namespace ocs {
+   /** @brief Renders plain `qstat` as the columnar text a terminal expects
+    *
+    * A section header is written lazily, the first time the section turns out
+    * to have an entry, so an empty section prints nothing at all - hence the
+    * `*_header_printed` flags. The `*_count` members serve the same purpose one
+    * level down: a list gets its own header only once, before its first entry.
+    *
+    * @ingroup libprocedure
+    */
    class QStatDefaultViewPlain : public QStatDefaultViewBase {
-      bool pending_header_printed = false;
-      bool finished_header_printed = false;
-      bool error_header_printed = false;
-      bool header_printed = false;
-      bool job_header_printed = false;
+      bool pending_header_printed = false;    ///< Whether the pending section already has its header
+      bool finished_header_printed = false;   ///< Whether the finished section already has its header
+      bool error_header_printed = false;      ///< Whether the error section already has its header
+      bool header_printed = false;            ///< Whether the queue table already has its header
+      bool job_header_printed = false;        ///< Whether the job table already has its header
 
       /* id of the last reported job */
-      uint32_t last_job_id = 0;
-      dstring  last_queue_name = DSTRING_INIT;
+      uint32_t last_job_id = 0;                     ///< The job of the previous line, so a job spanning lines prints its id once
+      dstring  last_queue_name = DSTRING_INIT;      ///< The queue of the previous line, for the same reason
 
-      int  sub_task_count = 0;
-      int  hard_resource_count = 0;
-      int  soft_resource_count = 0;
-      int  hard_requested_queue_count = 0;
-      int  soft_requested_queue_count = 0;
-      int  predecessor_requested_count = 0;
-      int  predecessor_count = 0;
-      int  ad_predecessor_requested_count = 0;
-      int  ad_predecessor_count = 0;
+      int  sub_task_count = 0;                      ///< Tasks written for the current job
+      int  hard_resource_count = 0;                 ///< Hard resource requests written for the current job
+      int  soft_resource_count = 0;                 ///< Soft resource requests written for the current job
+      int  hard_requested_queue_count = 0;          ///< Hard queue requests written for the current job
+      int  soft_requested_queue_count = 0;          ///< Soft queue requests written for the current job
+      int  predecessor_requested_count = 0;         ///< Requested predecessors written for the current job
+      int  predecessor_count = 0;                   ///< Predecessors written for the current job
+      int  ad_predecessor_requested_count = 0;      ///< Requested array predecessors written for the current job
+      int  ad_predecessor_count = 0;                ///< Array predecessors written for the current job
 
       void show_header_with_title(std::ostream &os, const QStatParameter &parameter, const char *title);
+
       static void show_header_with_subtitle(std::ostream &os, job_additional_info_t subtitle, const char *name, const char *value);
+
       static void show_queues_or_resource_started(std::ostream &os, int scope, bool queue, bool hard);
    public:
+      /** @brief Build the plain text view
+       * @param parameter the call's parameters
+       */
       explicit QStatDefaultViewPlain(const ProcedureParameter &parameter) : QStatDefaultViewBase(parameter) {};
       ~QStatDefaultViewPlain() override = default;
 

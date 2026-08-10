@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+/** @file
+ * @brief What the two accounting file writers share
+ */
+
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 

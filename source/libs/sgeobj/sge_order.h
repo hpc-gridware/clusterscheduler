@@ -33,66 +33,86 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Declarations of the order object the scheduler sends to qmaster
+ *
+ * @see sge_order.cc
+ */
+
 #include "sgeobj/cull/sge_order_OR_L.h"
 #include "sgeobj/cull/sge_order_OQ_L.h"
 #include "sgeobj/cull/sge_order_RTIC_L.h"
 
-/* 
- * valid values for OR_type 
+/**
+ * @brief Valid values for `OR_type`, i.e. what the scheduler asks qmaster to do
+ *
+ * The scheduler does not change the object model itself. It produces a list of
+ * orders, and qmaster executes them; this says what one order is.
+ *
+ * @note CS-1239 removed `ORT_remove_job`, `ORT_update_project_usage`,
+ *       `ORT_update_user_usage` and `ORT_share_tree`. Finished job booking and
+ *       burial moved to the worker thread (`sge_book_finished_job_usage`), and
+ *       the master share tree recomputation plus the `sgeE_NEW_SHARETREE`
+ *       emission moved to the qmaster timed event handler. The scheduler emits
+ *       none of them any more and `sge_follow.cc` has no handlers for them.
  */
 enum {
-   /* CS-1239: ORT_remove_job, ORT_update_project_usage, ORT_update_user_usage
-    * and ORT_share_tree are gone - finished-job booking + bury moved to the
-    * worker thread (sge_book_finished_job_usage), and master share-tree
-    * recomputation + sgeE_NEW_SHARETREE emission moved to the qmaster TET
-    * sharetree publish handler. The scheduler no longer emits any of these
-    * and no handlers exist in sge_follow.cc. */
-   ORT_start_job = 1,
-   ORT_tickets,
-   ORT_ptickets,
-   ORT_remove_immediate_job,
-   ORT_sched_conf,
-   ORT_suspend_on_threshold,
-   ORT_unsuspend_on_threshold,
-   ORT_job_schedd_info,
-   ORT_clear_pri_info                       /*the ja_task_number field has a special meaning with the order: */
-                                            /* == 0 : only pending jobs are set to 0*/
-                                            /* != 0 : pending and running jobs are set to 0 */
+   ORT_start_job = 1,            ///< start the job on the queues named in the order
+   ORT_tickets,                  ///< update a running job's ticket values
+   ORT_ptickets,                 ///< update a pending job's ticket values
+   ORT_remove_immediate_job,     ///< an immediate job could not be scheduled and has to go
+   ORT_sched_conf,               ///< the scheduler configuration changed
+   ORT_suspend_on_threshold,     ///< suspend the job because a threshold was exceeded
+   ORT_unsuspend_on_threshold,   ///< resume a job suspended by a threshold
+   ORT_job_schedd_info,          ///< deliver the reason messages for pending jobs
+   /**
+    * @brief Reset priority information
+    *
+    * The `ja_task_number` field has a special meaning with this order: 0
+    * resets only pending jobs, anything else resets pending and running ones.
+    */
+   ORT_clear_pri_info
 };
 
-/* struct containing the cull pos for fields in the ticket order */
+/// Cached attribute positions of the array task fields a ticket order touches
 typedef struct {
-   int JAT_status_pos;
-   int JAT_tix_pos;
+   int JAT_status_pos;    ///< position of `JAT_status`
+   int JAT_tix_pos;       ///< position of `JAT_tix`
 
-   int JAT_oticket_pos;
-   int JAT_fticket_pos;
-   int JAT_sticket_pos;
-   int JAT_share_pos;
-   int JAT_prio_pos;
-   int JAT_ntix_pos;
+   int JAT_oticket_pos;   ///< position of `JAT_oticket`
+   int JAT_fticket_pos;   ///< position of `JAT_fticket`
+   int JAT_sticket_pos;   ///< position of `JAT_sticket`
+   int JAT_share_pos;     ///< position of `JAT_share`
+   int JAT_prio_pos;      ///< position of `JAT_prio`
+   int JAT_ntix_pos;      ///< position of `JAT_ntix`
    //int JAT_granted_resources_list_pos;
 } ja_task_pos_t;
 
 
-/* struct containing the cull pos for fields in the ticket order */
+/// Cached attribute positions of the job fields a ticket order touches
 typedef struct {
-   int JB_version_pos;
-   int JB_nurg_pos;
-   int JB_urg_pos;
-   int JB_rrcontr_pos;
-   int JB_dlcontr_pos;
-   int JB_wtcontr_pos;
+   int JB_version_pos;  ///< position of `JB_version`
+   int JB_nurg_pos;     ///< position of `JB_nurg`
+   int JB_urg_pos;      ///< position of `JB_urg`
+   int JB_rrcontr_pos;  ///< position of `JB_rrcontr`
+   int JB_dlcontr_pos;  ///< position of `JB_dlcontr`
+   int JB_wtcontr_pos;  ///< position of `JB_wtcontr`
 } job_pos_t;
 
 
-/* struct containing the cull field position of the job target structures
-   and the reduced order elements */
+/**
+ * @brief Cached attribute positions for both ends of a ticket order
+ *
+ * A ticket order carries a *reduced* job and array task - only the few
+ * attributes that changed. Applying it means copying from the reduced element
+ * into the real one, so both descriptors have to be looked up, and both are
+ * cached here rather than resolved per order.
+ */
 typedef struct {
-   ja_task_pos_t ja_task;
-   ja_task_pos_t order_ja_task;   
-   job_pos_t   job;
-   job_pos_t   order_job;
+   ja_task_pos_t ja_task;         ///< positions within the array task in the master list
+   ja_task_pos_t order_ja_task;   ///< positions within the reduced array task the order carries
+   job_pos_t   job;               ///< positions within the job in the master list
+   job_pos_t   order_job;         ///< positions within the reduced job the order carries
 } order_pos_t;
 
 void 

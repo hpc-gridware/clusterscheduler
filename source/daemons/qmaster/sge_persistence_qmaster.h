@@ -33,6 +33,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Spooling an object and announcing the change as one operation
+ */
+
 #include "sgeobj/sge_event.h"
 #include "sge_qmaster_timed_event.h"
 #include "uti/sge_monitor.h"

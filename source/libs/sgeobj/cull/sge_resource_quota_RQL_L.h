@@ -24,37 +24,42 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Resource Quota Scheduling Cache
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Resource Quota Scheduling Cache
 *
-* @todo add description
+* Per-scheduling-run cache of what a resource quota limit answered, so an expensive limit is evaluated once rather than once per queue instance.
+* Not configuration and not spooled: it lives in the scheduler's assignment structure for the duration of one run.
 *
-*    SGE_STRING(RQL_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(RQL_name) - Limit Key
+*    Identifies the limit this entry caches, built from the rule and resource being evaluated.
 *
-*    SGE_INT(RQL_result) - @todo add summary
-*    @todo add description
+*    SGE_INT(RQL_result) - Cached Result
+*    The `dispatch_t` the limit returned last time it was asked in this run.
 *
-*    SGE_ULONG64(RQL_time) - @todo add summary
-*    @todo add description
+*    SGE_ULONG64(RQL_time) - Earliest Time
+*    Earliest time the limit would allow the job to start, for reservation scheduling.
 *
-*    SGE_INT(RQL_slots) - @todo add summary
-*    @todo add description
+*    SGE_INT(RQL_slots) - Slots
+*    How many slots the limit allows, cached alongside the result.
 *
-*    SGE_ULONG(RQL_tagged4schedule) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(RQL_tagged4schedule) - Tagged For Schedule
+*    Marks the entry as belonging to the run in progress, so stale entries are not believed.
 *
 */
 
 enum {
-   RQL_name = RQL_LOWERBOUND,
-   RQL_result,
-   RQL_time,
-   RQL_slots,
-   RQL_tagged4schedule
+   RQL_name = RQL_LOWERBOUND,   ///< Limit Key
+   RQL_result,   ///< Cached Result
+   RQL_time,   ///< Earliest Time
+   RQL_slots,   ///< Slots
+   RQL_tagged4schedule   ///< Tagged For Schedule
 };
 
 LISTDEF(RQL_Type)
@@ -73,6 +78,7 @@ NAMEDEF(RQLN)
    NAME("RQL_tagged4schedule")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RQL_SIZE sizeof(RQLN)/sizeof(char *)
 
 

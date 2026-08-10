@@ -32,6 +32,18 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief Reading a flat `key value` configuration file into a CULL object
+ *
+ * The file is first parsed into a list of name/value pairs, then consumed key
+ * by key: each `set_conf_*` call takes one key, converts its value to the
+ * attribute's type and **removes the entry**. Whatever is left over afterwards
+ * is exactly the set of keys nobody understood, which is how an unknown
+ * setting is reported rather than silently ignored.
+ *
+ * @see config.h
+ */
+
 #include <cstdio>
 #include <cstring>
 #include <cctype>
@@ -70,6 +82,26 @@
 ** RETURN
 **    A nullptr pointer as answer list signals success.
 */
+/**
+ * @brief Read a configuration file into a name/value list
+ *
+ * Each line becomes one element: the text before `delimitor` goes into `nm1`,
+ * the text after it into `nm2`. Without #RCL_NO_VALUE a line carrying only a
+ * name is an error.
+ *
+ * @param fp the file to read
+ * @param[out] lpp receives the parsed list
+ * @param[out] alpp receives the error message; a nullptr answer list signals success
+ * @param dp the descriptor of the list elements to create
+ * @param nm1 the attribute the name is stored in
+ * @param nm2 the attribute the value is stored in
+ * @param nm3 the attribute a third field is stored in, or `NoName`
+ * @param delimitor separates name and value; may be nullptr, it is passed on to `sge_strtok`
+ * @param flag `RCL_NO_VALUE` to accept a line with a name but no value
+ * @param[out] buffer scratch buffer the parser reads lines into
+ * @param buffer_size the size of `buffer`
+ * @return 0 on success
+ */
 int read_config_list(FILE *fp, lList **lpp, lList **alpp, lDescr *dp, int nm1,
                      int nm2, int nm3, const char *delimitor, int flag, char *buffer,
                      int buffer_size) 
@@ -196,6 +228,16 @@ Error:
 **    Returns sub-list value or nullptr if such a list
 **    does not exist.
 */
+/**
+ * @brief The sublist value of one configuration entry
+ *
+ * @param[out] alpp receives the message naming the missing key; may be nullptr
+ * @param lp the parsed configuration
+ * @param name_nm the attribute holding an entry's name
+ * @param value_nm the attribute holding its value
+ * @param key the entry to look for
+ * @return the sublist, or nullptr when the key is absent
+ */
 lList *get_conf_sublist(lList **alpp, lList *lp, int name_nm, int value_nm,
                         const char *key) 
 {
@@ -233,6 +275,16 @@ lList *get_conf_sublist(lList **alpp, lList *lp, int name_nm, int value_nm,
 **    Returns string value or nullptr if such a value
 **    does not exist.
 */
+/**
+ * @brief The string value of one configuration entry
+ *
+ * @param[out] alpp receives the message naming the missing key; may be nullptr
+ * @param lp the parsed configuration
+ * @param name_nm the attribute holding an entry's name
+ * @param value_nm the attribute holding its value
+ * @param key the entry to look for
+ * @return the value, or nullptr when the key is absent
+ */
 char *get_conf_value(lList **alpp, lList *lp, int name_nm, int value_nm,
                            const char *key) {
    char *value;
@@ -269,6 +321,22 @@ char *get_conf_value(lList **alpp, lList *lp, int name_nm, int value_nm,
  ****
  **** The function returns false on error, otherwise true.
  ****/
+/**
+ * @brief Consume a configuration key and store its value as a string
+ *
+ * The entry is removed from the parsed configuration, so what is left over
+ * afterwards is exactly the set of keys nobody understood.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @return false on error, otherwise true
+ */
 bool set_conf_string(
 lList **alpp,
 lList **clpp,
@@ -323,6 +391,22 @@ int name_nm
  ****
  **** The function returns false on error, otherwise true.
  ****/
+/**
+ * @brief Consume a configuration key and store its value as a boolean
+ *
+ * The entry is removed from the parsed configuration, so what is left over
+ * afterwards is exactly the set of keys nobody understood.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @return false on error, otherwise true
+ */
 bool set_conf_bool(
 lList **alpp,
 lList **clpp,
@@ -348,6 +432,22 @@ int name_nm
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key and store its value as a complex entry type name
+ *
+ * The entry is removed from the parsed configuration, so what is left over
+ * afterwards is exactly the set of keys nobody understood.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @return false on error, otherwise true
+ */
 bool set_conf_centry_type(
 lList **alpp,
 lList **clpp,
@@ -376,6 +476,22 @@ int name_nm
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key and store its value as a complex entry relational operator
+ *
+ * The entry is removed from the parsed configuration, so what is left over
+ * afterwards is exactly the set of keys nobody understood.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @return false on error, otherwise true
+ */
 bool set_conf_centry_relop(
 lList **alpp,
 lList **clpp,
@@ -404,6 +520,22 @@ int name_nm
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key and store its value as a complex entry requestable setting
+ *
+ * The entry is removed from the parsed configuration, so what is left over
+ * afterwards is exactly the set of keys nobody understood.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @return false on error, otherwise true
+ */
 bool set_conf_centry_requestable(
 lList **alpp,
 lList **clpp,
@@ -452,6 +584,22 @@ int name_nm
  ****
  **** The function returns false on error, otherwise true.
  ****/
+/**
+ * @brief Consume a configuration key and store its value as an unsigned integer
+ *
+ * The entry is removed from the parsed configuration, so what is left over
+ * afterwards is exactly the set of keys nobody understood.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @return false on error, otherwise true
+ */
 bool set_conf_ulong(
 lList **alpp,
 lList **clpp,
@@ -491,6 +639,23 @@ int name_nm
  ****
  **** The function returns false on error, otherwise true.
  ****/
+/**
+ * @brief Consume a configuration key and store its value as a double, with a modification operator
+ *
+ * The entry is removed from the parsed configuration, so what is left over
+ * afterwards is exactly the set of keys nobody understood.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param operation_nm the attribute recording whether the value replaces, adds to or subtracts from the current one
+ * @return false on error, otherwise true
+ */
 bool set_conf_double(
 lList **alpp,
 lList **clpp,
@@ -560,6 +725,24 @@ int operation_nm
  ****
  **** The function returns false on error, otherwise true.
  ****/
+/**
+ * @brief Consume a configuration key and store its value as a definition list
+ *
+ * The entry is removed from the parsed configuration, so what is left over
+ * afterwards is exactly the set of keys nobody understood.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param descr the descriptor of the list elements
+ * @param interpretation_rule the attribute order the entries are parsed into
+ * @return false on error, otherwise true
+ */
 bool set_conf_deflist(
 lList **alpp,
 lList **clpp,
@@ -606,6 +789,22 @@ int *interpretation_rule
  ****
  **** The function returns false on error, otherwise true.
  ****/
+/**
+ * @brief Consume a configuration key and store its value as a time specification, stored as written
+ *
+ * The entry is removed from the parsed configuration, so what is left over
+ * afterwards is exactly the set of keys nobody understood.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @return false on error, otherwise true
+ */
 bool set_conf_timestr(
 lList **alpp,
 lList **clpp,
@@ -651,6 +850,22 @@ int name_nm
  ****
  **** The function returns false on error, otherwise true.
  ****/
+/**
+ * @brief Consume a configuration key and store its value as a memory specification, stored as written
+ *
+ * The entry is removed from the parsed configuration, so what is left over
+ * afterwards is exactly the set of keys nobody understood.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @return false on error, otherwise true
+ */
 bool set_conf_memstr(
 lList **alpp,
 lList **clpp,
@@ -692,6 +907,23 @@ int name_nm
  ****
  **** The function returns false on error, otherwise true.
  ****/
+/**
+ * @brief Consume a configuration key and store its value as one of a fixed set of names
+ *
+ * The entry is removed from the parsed configuration, so what is left over
+ * afterwards is exactly the set of keys nobody understood.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param enum_strings the accepted names, terminated by nullptr
+ * @return false on error, otherwise true
+ */
 bool set_conf_enum(lList **alpp, lList **clpp, int fields[], const char *key,
                   lListElem *ep, int name_nm, const char **enum_strings) 
 {
@@ -721,6 +953,23 @@ bool set_conf_enum(lList **alpp, lList **clpp, int fields[], const char *key,
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key and store its value as one of a fixed set of names, or `NONE`
+ *
+ * The entry is removed from the parsed configuration, so what is left over
+ * afterwards is exactly the set of keys nobody understood.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param enum_strings the accepted names, terminated by nullptr
+ * @return false on error, otherwise true
+ */
 bool set_conf_enum_none(lList **alpp, lList **clpp, int fields[], const char *key,
                   lListElem *ep, int name_nm, const char **enum_strings) 
 {
@@ -759,6 +1008,24 @@ bool set_conf_enum_none(lList **alpp, lList **clpp, int fields[], const char *ke
  ****
  **** The function returns false on error, otherwise true.
  ****/
+/**
+ * @brief Consume a configuration key and store its value as a list
+ *
+ * The entry is removed from the parsed configuration, so what is left over
+ * afterwards is exactly the set of keys nobody understood.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param descr the descriptor of the list elements
+ * @param sub_name_nm the attribute within an element the words are stored in
+ * @return false on error, otherwise true
+ */
 bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key, 
                   lListElem *ep, int name_nm, lDescr *descr, int sub_name_nm) 
 {
@@ -809,6 +1076,25 @@ bool set_conf_list(lList **alpp, lList **clpp, int fields[], const char *key,
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key holding a per host list of strings
+ *
+ * A cluster queue attribute is written as a list of host or host group
+ * specific values; this parses that form and stores the resulting list.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param descr the descriptor of the list elements
+ * @param sub_name_nm the attribute within an element the value is stored in
+ * @param master_hgroup_list the host groups, needed to resolve a host group name
+ * @return false on error, otherwise true
+ */
 bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[], 
                             const char *key, lListElem *ep, int name_nm, 
                             lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
@@ -843,6 +1129,25 @@ bool set_conf_str_attr_list(lList **alpp, lList **clpp, int fields[],
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key holding a per host list of string lists
+ *
+ * A cluster queue attribute is written as a list of host or host group
+ * specific values; this parses that form and stores the resulting list.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param descr the descriptor of the list elements
+ * @param sub_name_nm the attribute within an element the value is stored in
+ * @param master_hgroup_list the host groups, needed to resolve a host group name
+ * @return false on error, otherwise true
+ */
 bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[], 
                                 const char *key, lListElem *ep, int name_nm, 
                                 lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
@@ -878,6 +1183,25 @@ bool set_conf_strlist_attr_list(lList **alpp, lList **clpp, int fields[],
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key holding a per host list of user lists
+ *
+ * A cluster queue attribute is written as a list of host or host group
+ * specific values; this parses that form and stores the resulting list.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param descr the descriptor of the list elements
+ * @param sub_name_nm the attribute within an element the value is stored in
+ * @param master_hgroup_list the host groups, needed to resolve a host group name
+ * @return false on error, otherwise true
+ */
 bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[], 
                                 const char *key, lListElem *ep, int name_nm, 
                                 lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
@@ -913,6 +1237,25 @@ bool set_conf_usrlist_attr_list(lList **alpp, lList **clpp, int fields[],
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key holding a per host list of project lists
+ *
+ * A cluster queue attribute is written as a list of host or host group
+ * specific values; this parses that form and stores the resulting list.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param descr the descriptor of the list elements
+ * @param sub_name_nm the attribute within an element the value is stored in
+ * @param master_hgroup_list the host groups, needed to resolve a host group name
+ * @return false on error, otherwise true
+ */
 bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[], 
                                 const char *key, lListElem *ep, int name_nm, 
                                 lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
@@ -948,6 +1291,25 @@ bool set_conf_prjlist_attr_list(lList **alpp, lList **clpp, int fields[],
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key holding a per host list of complex entry lists
+ *
+ * A cluster queue attribute is written as a list of host or host group
+ * specific values; this parses that form and stores the resulting list.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param descr the descriptor of the list elements
+ * @param sub_name_nm the attribute within an element the value is stored in
+ * @param master_hgroup_list the host groups, needed to resolve a host group name
+ * @return false on error, otherwise true
+ */
 bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[], 
                                const char *key, lListElem *ep, int name_nm, 
                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
@@ -983,6 +1345,25 @@ bool set_conf_celist_attr_list(lList **alpp, lList **clpp, int fields[],
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key holding a per host list of subordinate lists
+ *
+ * A cluster queue attribute is written as a list of host or host group
+ * specific values; this parses that form and stores the resulting list.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param descr the descriptor of the list elements
+ * @param sub_name_nm the attribute within an element the value is stored in
+ * @param master_hgroup_list the host groups, needed to resolve a host group name
+ * @return false on error, otherwise true
+ */
 bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[], 
                                const char *key, lListElem *ep, int name_nm, 
                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
@@ -1018,6 +1399,25 @@ bool set_conf_solist_attr_list(lList **alpp, lList **clpp, int fields[],
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key holding a per host list of queue type lists
+ *
+ * A cluster queue attribute is written as a list of host or host group
+ * specific values; this parses that form and stores the resulting list.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param descr the descriptor of the list elements
+ * @param sub_name_nm the attribute within an element the value is stored in
+ * @param master_hgroup_list the host groups, needed to resolve a host group name
+ * @return false on error, otherwise true
+ */
 bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[], 
                                const char *key, lListElem *ep, int name_nm, 
                                lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
@@ -1053,6 +1453,25 @@ bool set_conf_qtlist_attr_list(lList **alpp, lList **clpp, int fields[],
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key holding a per host list of unsigned integers
+ *
+ * A cluster queue attribute is written as a list of host or host group
+ * specific values; this parses that form and stores the resulting list.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param descr the descriptor of the list elements
+ * @param sub_name_nm the attribute within an element the value is stored in
+ * @param master_hgroup_list the host groups, needed to resolve a host group name
+ * @return false on error, otherwise true
+ */
 bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[], 
                              const char *key, lListElem *ep, int name_nm, 
                              lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
@@ -1087,6 +1506,25 @@ bool set_conf_ulng_attr_list(lList **alpp, lList **clpp, int fields[],
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key holding a per host list of booleans
+ *
+ * A cluster queue attribute is written as a list of host or host group
+ * specific values; this parses that form and stores the resulting list.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param descr the descriptor of the list elements
+ * @param sub_name_nm the attribute within an element the value is stored in
+ * @param master_hgroup_list the host groups, needed to resolve a host group name
+ * @return false on error, otherwise true
+ */
 bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[], 
                              const char *key, lListElem *ep, int name_nm, 
                              lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
@@ -1121,6 +1559,25 @@ bool set_conf_bool_attr_list(lList **alpp, lList **clpp, int fields[],
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key holding a per host list of time specifications
+ *
+ * A cluster queue attribute is written as a list of host or host group
+ * specific values; this parses that form and stores the resulting list.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param descr the descriptor of the list elements
+ * @param sub_name_nm the attribute within an element the value is stored in
+ * @param master_hgroup_list the host groups, needed to resolve a host group name
+ * @return false on error, otherwise true
+ */
 bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[], 
                              const char *key, lListElem *ep, int name_nm, 
                              lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
@@ -1155,6 +1612,25 @@ bool set_conf_time_attr_list(lList **alpp, lList **clpp, int fields[],
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key holding a per host list of memory specifications
+ *
+ * A cluster queue attribute is written as a list of host or host group
+ * specific values; this parses that form and stores the resulting list.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param descr the descriptor of the list elements
+ * @param sub_name_nm the attribute within an element the value is stored in
+ * @param master_hgroup_list the host groups, needed to resolve a host group name
+ * @return false on error, otherwise true
+ */
 bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[], 
                              const char *key, lListElem *ep, int name_nm, 
                              lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
@@ -1189,6 +1665,25 @@ bool set_conf_mem_attr_list(lList **alpp, lList **clpp, int fields[],
    DRETURN(true);
 }
 
+/**
+ * @brief Consume a configuration key holding a per host list of intervals
+ *
+ * A cluster queue attribute is written as a list of host or host group
+ * specific values; this parses that form and stores the resulting list.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param descr the descriptor of the list elements
+ * @param sub_name_nm the attribute within an element the value is stored in
+ * @param master_hgroup_list the host groups, needed to resolve a host group name
+ * @return false on error, otherwise true
+ */
 bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[], 
                               const char *key, lListElem *ep, int name_nm, 
                               lDescr *descr, int sub_name_nm, const lList *master_hgroup_list) 
@@ -1244,6 +1739,25 @@ bool set_conf_inter_attr_list(lList **alpp, lList **clpp, int fields[],
  ****
  **** The function returns false on error, otherwise true.
  ****/
+/**
+ * @brief Consume a configuration key and store its value as a subordinate list
+ *
+ * The entry is removed from the parsed configuration, so what is left over
+ * afterwards is exactly the set of keys nobody understood.
+ *
+ * @param[out] alpp receives the error message; pass nullptr when `fields` is set,
+ *                  since a missing key is then not an error
+ * @param[in,out] clpp the parsed configuration; the consumed entry is removed from it
+ * @param fields when non-nullptr, the attribute is recorded here as "was set"
+ *               and a missing key is accepted rather than reported
+ * @param key the configuration key to consume
+ * @param[in,out] ep the object the value is stored in
+ * @param name_nm the attribute of `ep` to store it in
+ * @param descr the descriptor of the list elements
+ * @param subname_nm the attribute holding a subordinate queue name
+ * @param subval_nm the attribute holding its slot count
+ * @return false on error, otherwise true
+ */
 bool set_conf_subordlist(
 lList **alpp,
 lList **clpp,
@@ -1296,6 +1810,17 @@ int subval_nm
    in 'fields' -1 is returned. 
 */
 
+/**
+ * @brief Record that an attribute was set, refusing a duplicate
+ *
+ * The `fields` array is how a caller learns which attributes a configuration
+ * actually mentioned, so that the rest can be left at their previous values.
+ *
+ * @param[in,out] fields the `NoName` terminated array to append to; nullptr is
+ *                       accepted and does nothing
+ * @param name_nm the attribute to record
+ * @return 0 on success, -1 when the attribute was already recorded
+ */
 int add_nm_to_set(
 int fields[],
 int name_nm 

@@ -14,8 +14,13 @@ which is where the house style wants it. The license header itself is never
 touched.
 
 Without -b, a placeholder brief is written that names the file. That is
-deliberate: the placeholder is easy to grep for and the gate does not accept a
-file whose brief was never written properly, so it cannot be forgotten silently.
+deliberate: the placeholder is easy to grep for.
+
+It is NOT gate-enforced, though - a placeholder brief is still a brief, so
+doxygen is satisfied and dxm-check.sh reports nothing. One reached a commit
+that way (sge_object.cc). Before finishing a pass:
+
+    grep -rl 'TODO describe this file' $MOD        # must print nothing
 
 Files that already contain an @file block are left alone.
 """
@@ -34,7 +39,11 @@ def insert(path, brief):
 
     block = '\n/** @file\n * @brief %s\n */\n' % (brief or PLACEHOLDER)
 
-    m = re.search(r'/\*___INFO__MARK_END(?:_NEW)?__\*/\n', text)
+    # The trailing [ \t]* matters: 25 files in the tree have whitespace after
+    # the marker, and without it the fallback below fires and puts the block
+    # ABOVE the license header - which is both wrong per 03 and easy to miss,
+    # because doxygen accepts it and the gate stays green.
+    m = re.search(r'/\*___INFO__MARK_END(?:_NEW)?__\*/[ \t]*\n', text)
     if m:
         pos = m.end()
     else:

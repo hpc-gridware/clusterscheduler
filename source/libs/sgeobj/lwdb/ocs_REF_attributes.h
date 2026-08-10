@@ -24,19 +24,37 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Generic Reference (unused)
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of REF
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   REF_ref = 11300
+   REF_ref = 11300   ///< Referenced Element
 };
 
+/** @brief The attribute ids of REF, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int REF_Type[] = {
    REF_ref,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of REF
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define REF_ATTRIBUTES \
    {REF_ref, "REF_ref", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 

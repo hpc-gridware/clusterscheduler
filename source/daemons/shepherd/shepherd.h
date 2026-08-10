@@ -33,18 +33,34 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+/** @file
+ * @brief The shepherd: one process per job, from fork to exit status
+ *
+ * The execution daemon does not run jobs itself. For each one it forks a
+ * shepherd, which sets the limits, drops to the job owner, starts the job and
+ * stays alive until it ends - so that a daemon restart cannot orphan a running
+ * job, and so that anything the job does badly happens in a process that is
+ * not the daemon.
+ */
+
+/** @brief What the shepherd needs to know to checkpoint the job it supervises */
 typedef struct {
-   int type;
-   int pid;
-   int interval;
+   int type;       ///< The checkpointing mechanism, as a `CKPT_*` bitmask
+   int pid;        ///< The process to checkpoint
+   int interval;   ///< Seconds between two automatic checkpoints; 0 for none
 } ckpt_info_t;
 
+/** @brief The descriptors connecting an interactive job to its client
+ *
+ * Either a pty or three pipes, depending on whether the job asked for a
+ * terminal.
+ */
 typedef struct {
-   int pty_master;
-   int pipe_in;
-   int pipe_out;
-   int pipe_err;
-   int pipe_to_child;
+   int pty_master;     ///< Master side of the pty, -1 when pipes are used
+   int pipe_in;        ///< The job's standard input
+   int pipe_out;       ///< The job's standard output
+   int pipe_err;       ///< The job's standard error
+   int pipe_to_child;  ///< Control channel to the child, for window size changes and the like
 } ijs_fds_t;
 
 int

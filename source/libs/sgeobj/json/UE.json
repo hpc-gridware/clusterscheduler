@@ -13,7 +13,7 @@
          "summary": "User or Group name",
          "description": [
             {
-               "line": "Name of an user or a UNIX user group. Groups have the prefix @, e.g. @tape"
+               "line": "Name of an user or a UNIX user group. Groups have the prefix @, e.g. `@tape`"
             }
          ],
          "type": "lStringT",

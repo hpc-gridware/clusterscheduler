@@ -60,11 +60,6 @@ namespace ocs {
       static std::string
       get_stacktrace(bool demangle_names);
 
-      /**
-       * @brief Log the calling thread's stacktrace
-       *
-       * @param level the log level to write at
-       */
       static void
       show_stacktrace(uint32_t level);
 
