@@ -622,6 +622,8 @@ static const char* qevent_get_event_name(int event) {
 
 
 static void qevent_testsuite_mode(sge_evc_class_t *evc) {
+   DENTER(TOP_LAYER);
+
 #ifndef QEVENT_SHOW_ALL
    uint64_t timestamp;
    lCondition *where =nullptr;
@@ -648,8 +650,6 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc) {
       NoName
    };
 #endif
-
-   DENTER(TOP_LAYER);
 
    sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 
