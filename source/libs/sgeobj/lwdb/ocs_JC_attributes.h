@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief User Job Count
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of JC
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   JC_name = 2350,
-   JC_jobs
+   JC_name = 2350,   ///< User Name
+   JC_jobs   ///< Number of Jobs
 };
 
+/** @brief The attribute ids of JC, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int JC_Type[] = {
    JC_name,
    JC_jobs,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of JC
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define JC_ATTRIBUTES \
    {JC_name, "JC_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
    {JC_jobs, "JC_jobs", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

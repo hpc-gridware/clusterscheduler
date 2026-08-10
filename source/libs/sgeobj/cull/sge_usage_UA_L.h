@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Usage Value
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -44,9 +48,9 @@
 */
 
 enum {
-   UA_name = UA_LOWERBOUND,
-   UA_value,
-   UA_svalue
+   UA_name = UA_LOWERBOUND,   ///< Name
+   UA_value,   ///< Value
+   UA_svalue   ///< String Value
 };
 
 LISTDEF(UA_Type)
@@ -61,6 +65,7 @@ NAMEDEF(UAN)
    NAME("UA_svalue")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define UA_SIZE sizeof(UAN)/sizeof(char *)
 
 

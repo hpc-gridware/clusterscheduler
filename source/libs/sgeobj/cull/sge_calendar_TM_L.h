@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Date Time
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -62,15 +66,15 @@
 */
 
 enum {
-   TM_mday = TM_LOWERBOUND,
-   TM_mon,
-   TM_year,
-   TM_sec,
-   TM_min,
-   TM_hour,
-   TM_wday,
-   TM_yday,
-   TM_isdst
+   TM_mday = TM_LOWERBOUND,   ///< Month Day
+   TM_mon,   ///< Month
+   TM_year,   ///< Year
+   TM_sec,   ///< Seconds
+   TM_min,   ///< Minute
+   TM_hour,   ///< Hor
+   TM_wday,   ///< Week Day
+   TM_yday,   ///< Year Day
+   TM_isdst   ///< Is Daylight Saving Time
 };
 
 LISTDEF(TM_Type)
@@ -97,6 +101,7 @@ NAMEDEF(TMN)
    NAME("TM_isdst")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define TM_SIZE sizeof(TMN)/sizeof(char *)
 
 

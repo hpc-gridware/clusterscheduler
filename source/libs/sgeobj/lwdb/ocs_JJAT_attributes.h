@@ -24,17 +24,31 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief JAPI Array Task
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of JJAT
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   JJAT_task_id = 8050,
-   JJAT_stat,
-   JJAT_rusage,
-   JJAT_failed_text
+   JJAT_task_id = 8050,   ///< Task Id
+   JJAT_stat,   ///< Stat
+   JJAT_rusage,   ///< RUsage
+   JJAT_failed_text   ///< Failed Text
 };
 
+/** @brief The attribute ids of JJAT, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int JJAT_Type[] = {
    JJAT_task_id,
    JJAT_stat,
@@ -43,6 +57,10 @@ constexpr const int JJAT_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of JJAT
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define JJAT_ATTRIBUTES \
    {JJAT_task_id, "JJAT_task_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JJAT_stat, "JJAT_stat", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

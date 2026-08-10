@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Granted Destination Identifier
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -87,21 +91,21 @@
 */
 
 enum {
-   JG_qname = JG_LOWERBOUND,
-   JG_qversion,
-   JG_qhostname,
-   JG_slots,
-   JG_queue,
-   JG_tag_slave_job,
-   JG_ticket,
-   JG_oticket,
-   JG_fticket,
-   JG_sticket,
-   JG_jcoticket,
-   JG_jcfticket,
-   JG_processors,
-   JG_binding_to_use,
-   JG_granted_rsmaps
+   JG_qname = JG_LOWERBOUND,   ///< Queue Instance Name
+   JG_qversion,   ///< Queue Version
+   JG_qhostname,   ///< Qualified Hostname
+   JG_slots,   ///< Number of Slots
+   JG_queue,   ///< Queue Object
+   JG_tag_slave_job,   ///< Tag for Slave Job Delivery
+   JG_ticket,   ///< Total Tickets
+   JG_oticket,   ///< Override Tickets
+   JG_fticket,   ///< Functional Tickets
+   JG_sticket,   ///< Sharetree Tickets
+   JG_jcoticket,   ///< Job Class Override Tickets
+   JG_jcfticket,   ///< Job Class Functional Tickets
+   JG_processors,   ///< Processor Set
+   JG_binding_to_use,   ///< Binding that should be used
+   JG_granted_rsmaps   ///< Granted RSMAP IDs
 };
 
 LISTDEF(JG_Type)
@@ -140,6 +144,7 @@ NAMEDEF(JGN)
    NAME("JG_granted_rsmaps")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define JG_SIZE sizeof(JGN)/sizeof(char *)
 
 

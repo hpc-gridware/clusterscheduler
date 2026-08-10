@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -41,8 +45,8 @@
 */
 
 enum {
-   ARA_name = ARA_LOWERBOUND,
-   ARA_group
+   ARA_name = ARA_LOWERBOUND,   ///< @todo add summary
+   ARA_group   ///< @todo add summary
 };
 
 LISTDEF(ARA_Type)
@@ -55,6 +59,7 @@ NAMEDEF(ARAN)
    NAME("ARA_group")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define ARA_SIZE sizeof(ARAN)/sizeof(char *)
 
 

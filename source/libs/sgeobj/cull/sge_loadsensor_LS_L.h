@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Load Sensor
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -75,17 +79,17 @@
 */
 
 enum {
-   LS_name = LS_LOWERBOUND,
-   LS_command,
-   LS_pid,
-   LS_in,
-   LS_out,
-   LS_err,
-   LS_has_to_restart,
-   LS_tag,
-   LS_incomplete,
-   LS_complete,
-   LS_last_mod
+   LS_name = LS_LOWERBOUND,   ///< Name
+   LS_command,   ///< Command
+   LS_pid,   ///< Pid
+   LS_in,   ///< Stdin File Handle
+   LS_out,   ///< Stdout File Handle
+   LS_err,   ///< Stderr File Handle
+   LS_has_to_restart,   ///< Has to restart
+   LS_tag,   ///< Tag
+   LS_incomplete,   ///< Incomplete Values
+   LS_complete,   ///< Complete Values
+   LS_last_mod   ///< Last Modification Time
 };
 
 LISTDEF(LS_Type)
@@ -116,6 +120,7 @@ NAMEDEF(LSN)
    NAME("LS_last_mod")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define LS_SIZE sizeof(LSN)/sizeof(char *)
 
 

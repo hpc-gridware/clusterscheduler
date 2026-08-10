@@ -24,18 +24,32 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of RQS
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   RQS_name = 11400,
-   RQS_description,
-   RQS_enabled,
-   RQS_rule,
-   RQS_joker
+   RQS_name = 11400,   ///< @todo add summary
+   RQS_description,   ///< @todo add summary
+   RQS_enabled,   ///< @todo add summary
+   RQS_rule,   ///< @todo add summary
+   RQS_joker   ///< Joker
 };
 
+/** @brief The attribute ids of RQS, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int RQS_Type[] = {
    RQS_name,
    RQS_description,
@@ -45,6 +59,10 @@ constexpr const int RQS_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of RQS
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define RQS_ATTRIBUTES \
    {RQS_name, "RQS_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {RQS_description, "RQS_description", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

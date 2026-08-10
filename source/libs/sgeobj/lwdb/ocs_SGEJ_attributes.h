@@ -24,21 +24,35 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Sort Object
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of SGEJ
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   SGEJ_priority = 6750,
-   SGEJ_job_number,
-   SGEJ_job_name,
-   SGEJ_owner,
-   SGEJ_state,
-   SGEJ_master_queue,
-   SGEJ_job_reference,
-   SGEJ_submission_time
+   SGEJ_priority = 6750,   ///< Priority
+   SGEJ_job_number,   ///< Job Number
+   SGEJ_job_name,   ///< Job Name
+   SGEJ_owner,   ///< Owner
+   SGEJ_state,   ///< State
+   SGEJ_master_queue,   ///< Master Queue
+   SGEJ_job_reference,   ///< Job Reference
+   SGEJ_submission_time   ///< Submission Time
 };
 
+/** @brief The attribute ids of SGEJ, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int SGEJ_Type[] = {
    SGEJ_priority,
    SGEJ_job_number,
@@ -51,6 +65,10 @@ constexpr const int SGEJ_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of SGEJ
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define SGEJ_ATTRIBUTES \
    {SGEJ_priority, "SGEJ_priority", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {SGEJ_job_number, "SGEJ_job_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

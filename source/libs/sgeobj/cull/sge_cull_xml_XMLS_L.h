@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -44,9 +48,9 @@
 */
 
 enum {
-   XMLS_Name = XMLS_LOWERBOUND,
-   XMLS_Value,
-   XMLS_Version
+   XMLS_Name = XMLS_LOWERBOUND,   ///< @todo add summary
+   XMLS_Value,   ///< @todo add summary
+   XMLS_Version   ///< @todo add summary
 };
 
 LISTDEF(XMLS_Type)
@@ -61,6 +65,7 @@ NAMEDEF(XMLSN)
    NAME("XMLS_Version")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define XMLS_SIZE sizeof(XMLSN)/sizeof(char *)
 
 

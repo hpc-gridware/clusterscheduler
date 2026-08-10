@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Usage
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of UPU
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   UPU_job_number = 4850,
-   UPU_old_usage_list
+   UPU_job_number = 4850,   ///< Job Number
+   UPU_old_usage_list   ///< Old Usage List
 };
 
+/** @brief The attribute ids of UPU, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int UPU_Type[] = {
    UPU_job_number,
    UPU_old_usage_list,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of UPU
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define UPU_ATTRIBUTES \
    {UPU_job_number, "UPU_job_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {UPU_old_usage_list, "UPU_old_usage_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

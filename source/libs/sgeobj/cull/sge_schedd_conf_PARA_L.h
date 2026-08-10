@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -41,8 +45,8 @@
 */
 
 enum {
-   PARA_name = PARA_LOWERBOUND,
-   PARA_value
+   PARA_name = PARA_LOWERBOUND,   ///< @todo add summary
+   PARA_value   ///< @todo add summary
 };
 
 LISTDEF(PARA_Type)
@@ -55,6 +59,7 @@ NAMEDEF(PARAN)
    NAME("PARA_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define PARA_SIZE sizeof(PARAN)/sizeof(char *)
 
 

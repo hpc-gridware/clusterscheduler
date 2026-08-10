@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Time Event
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -61,14 +65,14 @@
 */
 
 enum {
-   TE_when = TE_LOWERBOUND,
-   TE_type,
-   TE_mode,
-   TE_interval,
-   TE_uval0,
-   TE_uval1,
-   TE_sval,
-   TE_seqno
+   TE_when = TE_LOWERBOUND,   ///< When
+   TE_type,   ///< Type
+   TE_mode,   ///< Mode
+   TE_interval,   ///< Interval
+   TE_uval0,   ///< UVal0
+   TE_uval1,   ///< UVal1
+   TE_sval,   ///< String Key
+   TE_seqno   ///< Sequence Number
 };
 
 LISTDEF(TE_Type)
@@ -93,6 +97,7 @@ NAMEDEF(TEN)
    NAME("TE_seqno")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define TE_SIZE sizeof(TEN)/sizeof(char *)
 
 

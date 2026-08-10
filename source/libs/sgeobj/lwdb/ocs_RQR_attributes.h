@@ -24,21 +24,35 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of RQR
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   RQR_name = 11500,
-   RQR_filter_users,
-   RQR_filter_projects,
-   RQR_filter_pes,
-   RQR_filter_queues,
-   RQR_filter_hosts,
-   RQR_limit,
-   RQR_level
+   RQR_name = 11500,   ///< @todo add summary
+   RQR_filter_users,   ///< @todo add summary
+   RQR_filter_projects,   ///< @todo add summary
+   RQR_filter_pes,   ///< @todo add summary
+   RQR_filter_queues,   ///< @todo add summary
+   RQR_filter_hosts,   ///< @todo add summary
+   RQR_limit,   ///< @todo add summary
+   RQR_level   ///< @todo add summary
 };
 
+/** @brief The attribute ids of RQR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int RQR_Type[] = {
    RQR_name,
    RQR_filter_users,
@@ -51,6 +65,10 @@ constexpr const int RQR_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of RQR
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define RQR_ATTRIBUTES \
    {RQR_name, "RQR_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {RQR_filter_users, "RQR_filter_users", AttributeStatic::OBJECT, nullptr, 0, AttributeStatic::NO_HASH, false, true}, \

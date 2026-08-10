@@ -24,17 +24,31 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Resource Diagram Entry
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of RDE
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   RDE_time = 10500,
-   RDE_amount,
-   RDE_resource_map_list,
-   RDE_binding_inuse
+   RDE_time = 10500,   ///< Time
+   RDE_amount,   ///< Amount
+   RDE_resource_map_list,   ///< Resource Map List
+   RDE_binding_inuse   ///< Binding
 };
 
+/** @brief The attribute ids of RDE, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int RDE_Type[] = {
    RDE_time,
    RDE_amount,
@@ -43,6 +57,10 @@ constexpr const int RDE_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of RDE
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define RDE_ATTRIBUTES \
    {RDE_time, "RDE_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {RDE_amount, "RDE_amount", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

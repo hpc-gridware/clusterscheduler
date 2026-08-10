@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Report
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -56,11 +60,11 @@
 */
 
 enum {
-   REP_type = REP_LOWERBOUND,
-   REP_host,
-   REP_list,
-   REP_version,
-   REP_seqno
+   REP_type = REP_LOWERBOUND,   ///< Report Type
+   REP_host,   ///< Host Name
+   REP_list,   ///< Report List
+   REP_version,   ///< Software Version
+   REP_seqno   ///< Report Sequence Number
 };
 
 LISTDEF(REP_Type)
@@ -79,6 +83,7 @@ NAMEDEF(REPN)
    NAME("REP_seqno")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define REP_SIZE sizeof(REPN)/sizeof(char *)
 
 

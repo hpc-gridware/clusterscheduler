@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Multi Gdi Id
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -46,9 +50,9 @@
 */
 
 enum {
-   MA_id = MA_LOWERBOUND,
-   MA_objects,
-   MA_answers
+   MA_id = MA_LOWERBOUND,   ///< Id
+   MA_objects,   ///< Objects
+   MA_answers   ///< Answers
 };
 
 LISTDEF(MA_Type)
@@ -63,6 +67,7 @@ NAMEDEF(MAN)
    NAME("MA_answers")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define MA_SIZE sizeof(MAN)/sizeof(char *)
 
 

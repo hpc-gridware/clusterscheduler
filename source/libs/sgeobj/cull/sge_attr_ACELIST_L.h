@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Centry List
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   ACELIST_href = ACELIST_LOWERBOUND,
-   ACELIST_value
+   ACELIST_href = ACELIST_LOWERBOUND,   ///< Host Reference
+   ACELIST_value   ///< Value
 };
 
 LISTDEF(ACELIST_Type)
@@ -56,6 +60,7 @@ NAMEDEF(ACELISTN)
    NAME("ACELIST_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define ACELIST_SIZE sizeof(ACELISTN)/sizeof(char *)
 
 

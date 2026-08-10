@@ -24,18 +24,32 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief SubordinateQueue
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of SO
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   SO_name = 2950,
-   SO_threshold,
-   SO_slots_sum,
-   SO_seq_no,
-   SO_action
+   SO_name = 2950,   ///< Subordinate Queue Name
+   SO_threshold,   ///< Threshold
+   SO_slots_sum,   ///< Slots Sum
+   SO_seq_no,   ///< Sequence Number
+   SO_action   ///< Action
 };
 
+/** @brief The attribute ids of SO, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int SO_Type[] = {
    SO_name,
    SO_threshold,
@@ -45,6 +59,10 @@ constexpr const int SO_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of SO
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define SO_ATTRIBUTES \
    {SO_name, "SO_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
    {SO_threshold, "SO_threshold", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Calendar
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -56,12 +60,12 @@
 */
 
 enum {
-   CAL_name = CAL_LOWERBOUND,
-   CAL_year_calendar,
-   CAL_week_calendar,
-   CAL_parsed_year_calendar,
-   CAL_parsed_week_calendar,
-   CAL_joker
+   CAL_name = CAL_LOWERBOUND,   ///< Name
+   CAL_year_calendar,   ///< Year Calendar
+   CAL_week_calendar,   ///< Week Calendar
+   CAL_parsed_year_calendar,   ///< Parsed Year Calendar
+   CAL_parsed_week_calendar,   ///< Parsed Week Calendar
+   CAL_joker   ///< Joker
 };
 
 LISTDEF(CAL_Type)
@@ -82,6 +86,7 @@ NAMEDEF(CALN)
    NAME("CAL_joker")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define CAL_SIZE sizeof(CALN)/sizeof(char *)
 
 

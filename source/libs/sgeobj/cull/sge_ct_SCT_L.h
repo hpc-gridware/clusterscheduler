@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -44,9 +48,9 @@
 */
 
 enum {
-   SCT_str = SCT_LOWERBOUND,
-   SCT_job_pending_ref,
-   SCT_job_ref
+   SCT_str = SCT_LOWERBOUND,   ///< @todo add summary
+   SCT_job_pending_ref,   ///< @todo add summary
+   SCT_job_ref   ///< @todo add summary
 };
 
 LISTDEF(SCT_Type)
@@ -61,6 +65,7 @@ NAMEDEF(SCTN)
    NAME("SCT_job_ref")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define SCT_SIZE sizeof(SCTN)/sizeof(char *)
 
 

@@ -24,16 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of QETI
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   QETI_total = 10700,
-   QETI_resource_instance,
-   QETI_queue_end_next
+   QETI_total = 10700,   ///< @todo add summary
+   QETI_resource_instance,   ///< @todo add summary
+   QETI_queue_end_next   ///< @todo add summary
 };
 
+/** @brief The attribute ids of QETI, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int QETI_Type[] = {
    QETI_total,
    QETI_resource_instance,
@@ -41,6 +55,10 @@ constexpr const int QETI_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of QETI
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define QETI_ATTRIBUTES \
    {QETI_total, "QETI_total", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {QETI_resource_instance, "QETI_resource_instance", AttributeStatic::REF, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

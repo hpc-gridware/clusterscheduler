@@ -24,29 +24,43 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief User
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of UU
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   UU_name = 3550,
-   UU_oticket,
-   UU_fshare,
-   UU_delete_time,
-   UU_job_cnt,
-   UU_pending_job_cnt,
-   UU_usage,
-   UU_usage_time_stamp,
-   UU_usage_seqno,
-   UU_long_term_usage,
-   UU_project,
-   UU_debited_job_usage,
-   UU_default_project,
-   UU_version,
-   UU_consider_with_categories,
-   UU_joker
+   UU_name = 3550,   ///< User Name
+   UU_oticket,   ///< Override Tickets
+   UU_fshare,   ///< Functional Shares
+   UU_delete_time,   ///< Delete Time
+   UU_job_cnt,   ///< Job Count
+   UU_pending_job_cnt,   ///< Pending Job Count
+   UU_usage,   ///< Usage
+   UU_usage_time_stamp,   ///< Usage Time Stamp
+   UU_usage_seqno,   ///< Usage Sequence Number
+   UU_long_term_usage,   ///< Long Term Usage
+   UU_project,   ///< Project
+   UU_debited_job_usage,   ///< Debited Job Usage
+   UU_default_project,   ///< Default Project
+   UU_version,   ///< User Version
+   UU_consider_with_categories,   ///< Consider With Categories
+   UU_joker   ///< Joker
 };
 
+/** @brief The attribute ids of UU, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int UU_Type[] = {
    UU_name,
    UU_oticket,
@@ -67,6 +81,10 @@ constexpr const int UU_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of UU
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define UU_ATTRIBUTES \
    {UU_name, "UU_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {UU_oticket, "UU_oticket", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

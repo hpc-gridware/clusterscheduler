@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -41,8 +45,8 @@
 */
 
 enum {
-   CQU_state = CQU_LOWERBOUND,
-   CQU_till
+   CQU_state = CQU_LOWERBOUND,   ///< @todo add summary
+   CQU_till   ///< @todo add summary
 };
 
 LISTDEF(CQU_Type)
@@ -55,6 +59,7 @@ NAMEDEF(CQUN)
    NAME("CQU_till")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define CQU_SIZE sizeof(CQUN)/sizeof(char *)
 
 

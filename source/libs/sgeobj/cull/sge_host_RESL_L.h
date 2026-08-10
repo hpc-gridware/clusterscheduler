@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Resource List
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -70,12 +74,12 @@
 */
 
 enum {
-   RESL_value = RESL_LOWERBOUND,
-   RESL_id_instance,
-   RESL_pe_task_id,
-   RESL_amount,
-   RESL_properties,
-   RESL_utilization
+   RESL_value = RESL_LOWERBOUND,   ///< Value
+   RESL_id_instance,   ///< ID Instance
+   RESL_pe_task_id,   ///< PE Task ID
+   RESL_amount,   ///< Resource Amount
+   RESL_properties,   ///< Resource Properties
+   RESL_utilization   ///< Resource Utilization
 };
 
 LISTDEF(RESL_Type)
@@ -96,6 +100,7 @@ NAMEDEF(RESLN)
    NAME("RESL_utilization")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RESL_SIZE sizeof(RESLN)/sizeof(char *)
 
 

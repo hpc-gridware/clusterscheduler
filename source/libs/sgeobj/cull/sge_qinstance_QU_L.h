@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Queue Instance
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -251,76 +255,76 @@
 */
 
 enum {
-   QU_qhostname = QU_LOWERBOUND,
-   QU_qname,
-   QU_full_name,
-   QU_tag,
-   QU_available_at,
-   QU_seq_no,
-   QU_nsuspend,
-   QU_qtype,
-   QU_job_slots,
-   QU_tmpdir,
-   QU_shell,
-   QU_calendar,
-   QU_priority,
-   QU_processors,
-   QU_prolog,
-   QU_epilog,
-   QU_shell_start_mode,
-   QU_starter_method,
-   QU_suspend_method,
-   QU_resume_method,
-   QU_terminate_method,
-   QU_initial_state,
-   QU_rerun,
-   QU_s_rt,
-   QU_h_rt,
-   QU_s_cpu,
-   QU_h_cpu,
-   QU_s_fsize,
-   QU_h_fsize,
-   QU_s_data,
-   QU_h_data,
-   QU_s_stack,
-   QU_h_stack,
-   QU_s_core,
-   QU_h_core,
-   QU_s_rss,
-   QU_h_rss,
-   QU_s_vmem,
-   QU_h_vmem,
-   QU_suspend_interval,
-   QU_min_cpu_interval,
-   QU_notify,
-   QU_ckpt_list,
-   QU_pe_list,
-   QU_owner_list,
-   QU_acl,
-   QU_xacl,
-   QU_projects,
-   QU_xprojects,
-   QU_consumable_config_list,
-   QU_load_thresholds,
-   QU_suspend_thresholds,
-   QU_subordinate_list,
-   QU_state,
-   QU_tagged4schedule,
-   QU_cache_version,
-   QU_pending_signal,
-   QU_pending_signal_delivery_time,
-   QU_version,
-   QU_suspended_on_subordinate,
-   QU_last_suspend_threshold_ckeck,
-   QU_job_cnt,
-   QU_pending_job_cnt,
-   QU_soft_violation,
-   QU_host_seq_no,
-   QU_resource_utilization,
-   QU_message_list,
-   QU_gdi_do_later,
-   QU_state_changes,
-   QU_joker
+   QU_qhostname = QU_LOWERBOUND,   ///< @todo add summary
+   QU_qname,   ///< cluster queue name
+   QU_full_name,   ///< @todo add summary
+   QU_tag,   ///< @todo add summary
+   QU_available_at,   ///< @todo add summary
+   QU_seq_no,   ///< @todo add summary
+   QU_nsuspend,   ///< @todo add summary
+   QU_qtype,   ///< @todo add summary
+   QU_job_slots,   ///< @todo add summary
+   QU_tmpdir,   ///< @todo add summary
+   QU_shell,   ///< @todo add summary
+   QU_calendar,   ///< @todo add summary
+   QU_priority,   ///< @todo add summary
+   QU_processors,   ///< @todo add summary
+   QU_prolog,   ///< @todo add summary
+   QU_epilog,   ///< @todo add summary
+   QU_shell_start_mode,   ///< @todo add summary
+   QU_starter_method,   ///< @todo add summary
+   QU_suspend_method,   ///< @todo add summary
+   QU_resume_method,   ///< @todo add summary
+   QU_terminate_method,   ///< @todo add summary
+   QU_initial_state,   ///< @todo add summary
+   QU_rerun,   ///< @todo add summary
+   QU_s_rt,   ///< @todo add summary
+   QU_h_rt,   ///< @todo add summary
+   QU_s_cpu,   ///< @todo add summary
+   QU_h_cpu,   ///< @todo add summary
+   QU_s_fsize,   ///< @todo add summary
+   QU_h_fsize,   ///< @todo add summary
+   QU_s_data,   ///< @todo add summary
+   QU_h_data,   ///< @todo add summary
+   QU_s_stack,   ///< @todo add summary
+   QU_h_stack,   ///< @todo add summary
+   QU_s_core,   ///< @todo add summary
+   QU_h_core,   ///< @todo add summary
+   QU_s_rss,   ///< @todo add summary
+   QU_h_rss,   ///< @todo add summary
+   QU_s_vmem,   ///< @todo add summary
+   QU_h_vmem,   ///< @todo add summary
+   QU_suspend_interval,   ///< @todo add summary
+   QU_min_cpu_interval,   ///< @todo add summary
+   QU_notify,   ///< @todo add summary
+   QU_ckpt_list,   ///< @todo add summary
+   QU_pe_list,   ///< @todo add summary
+   QU_owner_list,   ///< @todo add summary
+   QU_acl,   ///< @todo add summary
+   QU_xacl,   ///< @todo add summary
+   QU_projects,   ///< @todo add summary
+   QU_xprojects,   ///< @todo add summary
+   QU_consumable_config_list,   ///< @todo add summary
+   QU_load_thresholds,   ///< @todo add summary
+   QU_suspend_thresholds,   ///< @todo add summary
+   QU_subordinate_list,   ///< @todo add summary
+   QU_state,   ///< @todo add summary
+   QU_tagged4schedule,   ///< Queue Instance Tagged for Schedule
+   QU_cache_version,   ///< @todo add summary
+   QU_pending_signal,   ///< @todo add summary
+   QU_pending_signal_delivery_time,   ///< @todo add summary
+   QU_version,   ///< @todo add summary
+   QU_suspended_on_subordinate,   ///< @todo add summary
+   QU_last_suspend_threshold_ckeck,   ///< @todo add summary
+   QU_job_cnt,   ///< @todo add summary
+   QU_pending_job_cnt,   ///< @todo add summary
+   QU_soft_violation,   ///< @todo add summary
+   QU_host_seq_no,   ///< @todo add summary
+   QU_resource_utilization,   ///< @todo add summary
+   QU_message_list,   ///< @todo add summary
+   QU_gdi_do_later,   ///< @todo add summary
+   QU_state_changes,   ///< New State Variables
+   QU_joker   ///< Joker
 };
 
 LISTDEF(QU_Type)
@@ -469,6 +473,7 @@ NAMEDEF(QUN)
    NAME("QU_joker")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define QU_SIZE sizeof(QUN)/sizeof(char *)
 
 

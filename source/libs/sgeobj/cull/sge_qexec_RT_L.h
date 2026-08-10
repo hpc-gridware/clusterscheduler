@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Remote Task
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -48,10 +52,10 @@
 */
 
 enum {
-   RT_tid = RT_LOWERBOUND,
-   RT_hostname,
-   RT_status,
-   RT_state
+   RT_tid = RT_LOWERBOUND,   ///< Task Id
+   RT_hostname,   ///< Hostname
+   RT_status,   ///< Status
+   RT_state   ///< State
 };
 
 LISTDEF(RT_Type)
@@ -68,6 +72,7 @@ NAMEDEF(RTN)
    NAME("RT_state")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RT_SIZE sizeof(RTN)/sizeof(char *)
 
 

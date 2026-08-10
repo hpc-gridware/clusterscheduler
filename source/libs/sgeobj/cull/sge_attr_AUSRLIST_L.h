@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute User Set List
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   AUSRLIST_href = AUSRLIST_LOWERBOUND,
-   AUSRLIST_value
+   AUSRLIST_href = AUSRLIST_LOWERBOUND,   ///< Host Reference
+   AUSRLIST_value   ///< Value
 };
 
 LISTDEF(AUSRLIST_Type)
@@ -56,6 +60,7 @@ NAMEDEF(AUSRLISTN)
    NAME("AUSRLIST_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define AUSRLIST_SIZE sizeof(AUSRLISTN)/sizeof(char *)
 
 

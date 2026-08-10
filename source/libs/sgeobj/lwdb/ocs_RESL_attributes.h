@@ -24,19 +24,33 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Resource List
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of RESL
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   RESL_value = 3750,
-   RESL_id_instance,
-   RESL_pe_task_id,
-   RESL_amount,
-   RESL_properties,
-   RESL_utilization
+   RESL_value = 3750,   ///< Value
+   RESL_id_instance,   ///< ID Instance
+   RESL_pe_task_id,   ///< PE Task ID
+   RESL_amount,   ///< Resource Amount
+   RESL_properties,   ///< Resource Properties
+   RESL_utilization   ///< Resource Utilization
 };
 
+/** @brief The attribute ids of RESL, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int RESL_Type[] = {
    RESL_value,
    RESL_id_instance,
@@ -47,6 +61,10 @@ constexpr const int RESL_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of RESL
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define RESL_ATTRIBUTES \
    {RESL_value, "RESL_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {RESL_id_instance, "RESL_id_instance", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

@@ -24,29 +24,43 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Project
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of PR
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   PR_name = 3450,
-   PR_oticket,
-   PR_fshare,
-   PR_job_cnt,
-   PR_pending_job_cnt,
-   PR_usage,
-   PR_usage_time_stamp,
-   PR_usage_seqno,
-   PR_long_term_usage,
-   PR_project,
-   PR_acl,
-   PR_xacl,
-   PR_debited_job_usage,
-   PR_version,
-   PR_consider_with_categories,
-   PR_joker
+   PR_name = 3450,   ///< Project Name
+   PR_oticket,   ///< Override Tickets
+   PR_fshare,   ///< Functional Shares
+   PR_job_cnt,   ///< Job Count
+   PR_pending_job_cnt,   ///< Pending Job Count
+   PR_usage,   ///< Usage
+   PR_usage_time_stamp,   ///< Usage Time Stamp
+   PR_usage_seqno,   ///< Usage Sequence Number
+   PR_long_term_usage,   ///< Long Term Usage
+   PR_project,   ///< Project Usage
+   PR_acl,   ///< Access List
+   PR_xacl,   ///< No Access List
+   PR_debited_job_usage,   ///< Debited Job Usage
+   PR_version,   ///< Project Version
+   PR_consider_with_categories,   ///< Consider With Categories
+   PR_joker   ///< Joker
 };
 
+/** @brief The attribute ids of PR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int PR_Type[] = {
    PR_name,
    PR_oticket,
@@ -67,6 +81,10 @@ constexpr const int PR_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of PR
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define PR_ATTRIBUTES \
    {PR_name, "PR_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {PR_oticket, "PR_oticket", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

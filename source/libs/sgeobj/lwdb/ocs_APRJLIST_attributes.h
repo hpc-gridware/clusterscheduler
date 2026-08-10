@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Project List
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of APRJLIST
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   APRJLIST_href = 9150,
-   APRJLIST_value
+   APRJLIST_href = 9150,   ///< Host Reference
+   APRJLIST_value   ///< Value
 };
 
+/** @brief The attribute ids of APRJLIST, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int APRJLIST_Type[] = {
    APRJLIST_href,
    APRJLIST_value,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of APRJLIST
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define APRJLIST_ATTRIBUTES \
    {APRJLIST_href, "APRJLIST_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {APRJLIST_value, "APRJLIST_value", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

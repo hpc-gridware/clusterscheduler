@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Path Alias
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -49,10 +53,10 @@
 */
 
 enum {
-   PA_origin = PA_LOWERBOUND,
-   PA_submit_host,
-   PA_exec_host,
-   PA_translation
+   PA_origin = PA_LOWERBOUND,   ///< Original Path
+   PA_submit_host,   ///< Submit Host
+   PA_exec_host,   ///< Exec Host
+   PA_translation   ///< Translation
 };
 
 LISTDEF(PA_Type)
@@ -69,6 +73,7 @@ NAMEDEF(PAN)
    NAME("PA_translation")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define PA_SIZE sizeof(PAN)/sizeof(char *)
 
 

@@ -24,17 +24,31 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Path Name
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of PN
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   PN_path = 1850,
-   PN_host,
-   PN_file_host,
-   PN_file_staging
+   PN_path = 1850,   ///< Path
+   PN_host,   ///< Host Name
+   PN_file_host,   ///< File Host
+   PN_file_staging   ///< Do File Staging
 };
 
+/** @brief The attribute ids of PN, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int PN_Type[] = {
    PN_path,
    PN_host,
@@ -43,6 +57,10 @@ constexpr const int PN_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of PN
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define PN_ATTRIBUTES \
    {PN_path, "PN_path", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
    {PN_host, "PN_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

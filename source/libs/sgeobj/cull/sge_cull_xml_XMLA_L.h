@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -41,8 +45,8 @@
 */
 
 enum {
-   XMLA_Name = XMLA_LOWERBOUND,
-   XMLA_Value
+   XMLA_Name = XMLA_LOWERBOUND,   ///< @todo add summary
+   XMLA_Value   ///< @todo add summary
 };
 
 LISTDEF(XMLA_Type)
@@ -55,6 +59,7 @@ NAMEDEF(XMLAN)
    NAME("XMLA_Value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define XMLA_SIZE sizeof(XMLAN)/sizeof(char *)
 
 

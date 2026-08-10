@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Report
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -88,23 +92,23 @@
 */
 
 enum {
-   JR_job_number = JR_LOWERBOUND,
-   JR_ja_task_number,
-   JR_queue_name,
-   JR_state,
-   JR_failed,
-   JR_general_failure,
-   JR_err_str,
-   JR_usage,
-   JR_job_pid,
-   JR_ckpt_arena,
-   JR_pe_task_id_str,
-   JR_osjobid,
-   JR_wait_status,
-   JR_flush,
-   JR_no_send,
-   JR_delay_report,
-   JR_deleted_by
+   JR_job_number = JR_LOWERBOUND,   ///< Job Number
+   JR_ja_task_number,   ///< Array Task Number
+   JR_queue_name,   ///< Queue Name
+   JR_state,   ///< State
+   JR_failed,   ///< Failed
+   JR_general_failure,   ///< General Failure
+   JR_err_str,   ///< Error String
+   JR_usage,   ///< Usage
+   JR_job_pid,   ///< Job Pid
+   JR_ckpt_arena,   ///< Checkpoint Arena
+   JR_pe_task_id_str,   ///< Pe Task Id
+   JR_osjobid,   ///< OS Job Id
+   JR_wait_status,   ///< Wait Status
+   JR_flush,   ///< Flush
+   JR_no_send,   ///< No Send
+   JR_delay_report,   ///< Delay Report
+   JR_deleted_by   ///< Deleted By
 };
 
 LISTDEF(JR_Type)
@@ -147,6 +151,7 @@ NAMEDEF(JRN)
    NAME("JR_deleted_by")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define JR_SIZE sizeof(JRN)/sizeof(char *)
 
 

@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief PE Task
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -111,27 +115,27 @@
 */
 
 enum {
-   PET_id = PET_LOWERBOUND,
-   PET_name,
-   PET_status,
-   PET_granted_destin_identifier_list,
-   PET_pid,
-   PET_osjobid,
-   PET_systemd_scope,
-   PET_usage_collection,
-   PET_usage,
-   PET_scaled_usage,
-   PET_reported_usage,
-   PET_previous_usage,
-   PET_submission_time,
-   PET_start_time,
-   PET_end_time,
-   PET_cwd,
-   PET_path_aliases,
-   PET_environment,
-   PET_do_contact,
-   PET_cred,
-   PET_joker
+   PET_id = PET_LOWERBOUND,   ///< PE Task Id
+   PET_name,   ///< @todo add summary
+   PET_status,   ///< Status
+   PET_granted_destin_identifier_list,   ///< Granted Destination Identifier List
+   PET_pid,   ///< Process Id
+   PET_osjobid,   ///< OS JobId
+   PET_systemd_scope,   ///< Systemd Scope
+   PET_usage_collection,   ///< Usage Collection Mode
+   PET_usage,   ///< Usage
+   PET_scaled_usage,   ///< Scaled Usage
+   PET_reported_usage,   ///< Reported Usage
+   PET_previous_usage,   ///< Previous Usage
+   PET_submission_time,   ///< Submission Time
+   PET_start_time,   ///< Start Time
+   PET_end_time,   ///< End Time
+   PET_cwd,   ///< Current Working Directory
+   PET_path_aliases,   ///< Path Aliases
+   PET_environment,   ///< Environment
+   PET_do_contact,   ///< Do Contact
+   PET_cred,   ///< TLS Credentials
+   PET_joker   ///< Joker
 };
 
 LISTDEF(PET_Type)
@@ -182,6 +186,7 @@ NAMEDEF(PETN)
    NAME("PET_joker")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define PET_SIZE sizeof(PETN)/sizeof(char *)
 
 

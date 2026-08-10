@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Execution Host
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -138,35 +142,35 @@
 */
 
 enum {
-   EH_name = EH_LOWERBOUND,
-   EH_scaling_list,
-   EH_consumable_config_list,
-   EH_usage_scaling_list,
-   EH_load_list,
-   EH_lt_heard_from,
-   EH_processors,
-   EH_acl,
-   EH_xacl,
-   EH_prj,
-   EH_xprj,
-   EH_sort_value,
-   EH_tagged,
-   EH_load_correction_factor,
-   EH_seq_no,
-   EH_sge_load,
-   EH_sge_ticket_pct,
-   EH_sge_load_pct,
-   EH_load_report_interval,
-   EH_resource_utilization,
-   EH_cached_complexes,
-   EH_cache_version,
-   EH_reschedule_unknown,
-   EH_reschedule_unknown_list,
-   EH_report_seqno,
-   EH_report_variables,
-   EH_merged_report_variables,
-   EH_joker,
-   EH_internal_topology
+   EH_name = EH_LOWERBOUND,   ///< unique name
+   EH_scaling_list,   ///< instructions for scaling of host load values
+   EH_consumable_config_list,   ///< consumable resources
+   EH_usage_scaling_list,   ///< scaling of usage values
+   EH_load_list,   ///< list of load values
+   EH_lt_heard_from,   ///< last heard from
+   EH_processors,   ///< number of processors
+   EH_acl,   ///< user access list
+   EH_xacl,   ///< user no access list
+   EH_prj,   ///< project access list
+   EH_xprj,   ///< project no access list
+   EH_sort_value,   ///< sort value based on load
+   EH_tagged,   ///< tagging of hosts
+   EH_load_correction_factor,   ///< @todo add summary
+   EH_seq_no,   ///< host sequence number
+   EH_sge_load,   ///< SGEEE load
+   EH_sge_ticket_pct,   ///< percentage of tickets
+   EH_sge_load_pct,   ///< percentage of load
+   EH_load_report_interval,   ///< load report interval
+   EH_resource_utilization,   ///< resource utilization
+   EH_cached_complexes,   ///< cached complexes
+   EH_cache_version,   ///< cache version
+   EH_reschedule_unknown,   ///< timeout for rescheduling jobs
+   EH_reschedule_unknown_list,   ///< jobs which will be rescheduled
+   EH_report_seqno,   ///< sequence number of the last report
+   EH_report_variables,   ///< variables for reporting
+   EH_merged_report_variables,   ///< merged variables for reporting
+   EH_joker,   ///< Joker
+   EH_internal_topology   ///< topology string stored internally
 };
 
 LISTDEF(EH_Type)
@@ -233,6 +237,7 @@ NAMEDEF(EHN)
    NAME("EH_internal_topology")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define EH_SIZE sizeof(EHN)/sizeof(char *)
 
 

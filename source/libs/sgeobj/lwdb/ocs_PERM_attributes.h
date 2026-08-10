@@ -24,19 +24,33 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Object used to request given permissions of user and host.
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of PERM
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   PERM_is_manager = 7150,
-   PERM_is_operator,
-   PERM_is_admin_host,
-   PERM_is_submit_host,
-   PERM_host,
-   PERM_username
+   PERM_is_manager = 7150,   ///< true if manager
+   PERM_is_operator,   ///< true if operator
+   PERM_is_admin_host,   ///< true if admin host
+   PERM_is_submit_host,   ///< true if submit host
+   PERM_host,   ///< hostname
+   PERM_username   ///< username
 };
 
+/** @brief The attribute ids of PERM, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int PERM_Type[] = {
    PERM_is_manager,
    PERM_is_operator,
@@ -47,6 +61,10 @@ constexpr const int PERM_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of PERM
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define PERM_ATTRIBUTES \
    {PERM_is_manager, "PERM_is_manager", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PERM_is_operator, "PERM_is_operator", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

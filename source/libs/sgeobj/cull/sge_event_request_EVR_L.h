@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -56,13 +60,13 @@
 */
 
 enum {
-   EVR_operation = EVR_LOWERBOUND,
-   EVR_timestamp,
-   EVR_event_client_id,
-   EVR_event_number,
-   EVR_session,
-   EVR_event_client,
-   EVR_event_list
+   EVR_operation = EVR_LOWERBOUND,   ///< @todo add summary
+   EVR_timestamp,   ///< @todo add summary
+   EVR_event_client_id,   ///< @todo add summary
+   EVR_event_number,   ///< @todo add summary
+   EVR_session,   ///< @todo add summary
+   EVR_event_client,   ///< @todo add summary
+   EVR_event_list   ///< @todo add summary
 };
 
 LISTDEF(EVR_Type)
@@ -85,6 +89,7 @@ NAMEDEF(EVRN)
    NAME("EVR_event_list")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define EVR_SIZE sizeof(EVRN)/sizeof(char *)
 
 

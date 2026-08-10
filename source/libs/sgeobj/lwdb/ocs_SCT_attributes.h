@@ -24,16 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of SCT
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   SCT_str = 11200,
-   SCT_job_pending_ref,
-   SCT_job_ref
+   SCT_str = 11200,   ///< @todo add summary
+   SCT_job_pending_ref,   ///< @todo add summary
+   SCT_job_ref   ///< @todo add summary
 };
 
+/** @brief The attribute ids of SCT, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int SCT_Type[] = {
    SCT_str,
    SCT_job_pending_ref,
@@ -41,6 +55,10 @@ constexpr const int SCT_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of SCT
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define SCT_ATTRIBUTES \
    {SCT_str, "SCT_str", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
    {SCT_job_pending_ref, "SCT_job_pending_ref", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

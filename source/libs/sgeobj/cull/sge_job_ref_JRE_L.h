@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Reference
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   JRE_job_number = JRE_LOWERBOUND,
-   JRE_job_name
+   JRE_job_number = JRE_LOWERBOUND,   ///< Job Number
+   JRE_job_name   ///< Job Name
 };
 
 LISTDEF(JRE_Type)
@@ -56,6 +60,7 @@ NAMEDEF(JREN)
    NAME("JRE_job_name")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define JRE_SIZE sizeof(JREN)/sizeof(char *)
 
 

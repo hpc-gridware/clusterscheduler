@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -38,7 +42,7 @@
 */
 
 enum {
-   GR_group = GR_LOWERBOUND
+   GR_group = GR_LOWERBOUND   ///< @todo add summary
 };
 
 LISTDEF(GR_Type)
@@ -49,6 +53,7 @@ NAMEDEF(GRN)
    NAME("GR_group")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define GR_SIZE sizeof(GRN)/sizeof(char *)
 
 

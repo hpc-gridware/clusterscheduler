@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief RBAC Role
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -73,7 +77,7 @@
 *    SGE_STRING(RL_perm_list) - Permission List
 *    Comma-separated list of RBAC permission rules that define the access rights granted by
 *    this Role. Each rule consists of exactly six colon-separated characteristics:
-*      <source_of_request>:<origin_of_request>:<operation_type>:<object_type>:<object_key>:<object_value_constraint>
+*      `<source_of_request>:<origin_of_request>:<operation_type>:<object_type>:<object_key>:<object_value_constraint>`
 *    A request is authorized if at least one rule in the list matches all six characteristics.
 *    The first matching rule determines the outcome; no further rules are evaluated.
 *    The keyword NONE defines an empty rule set that does not match any request.
@@ -88,12 +92,12 @@
 */
 
 enum {
-   RL_name = RL_LOWERBOUND,
-   RL_enabled,
-   RL_user_list,
-   RL_parent_role_list,
-   RL_perm_list,
-   RL_joker
+   RL_name = RL_LOWERBOUND,   ///< Role Name
+   RL_enabled,   ///< Enabled
+   RL_user_list,   ///< User List
+   RL_parent_role_list,   ///< Parent Role List
+   RL_perm_list,   ///< Permission List
+   RL_joker   ///< Joker
 };
 
 LISTDEF(RL_Type)
@@ -114,6 +118,7 @@ NAMEDEF(RLN)
    NAME("RL_joker")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RL_SIZE sizeof(RLN)/sizeof(char *)
 
 

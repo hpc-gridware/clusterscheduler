@@ -13,7 +13,7 @@
          "summary": "Queue Instance Name",
          "description": [
             {
-               "line": "Name of the Queue Instance in the form cluster_queue_name@host_name."
+               "line": "Name of the Queue Instance in the form `cluster_queue_name@host_name`."
             }
          ],
          "type": "lStringT",

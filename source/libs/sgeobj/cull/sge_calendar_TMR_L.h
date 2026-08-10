@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Time Range
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -41,8 +45,8 @@
 */
 
 enum {
-   TMR_begin = TMR_LOWERBOUND,
-   TMR_end
+   TMR_begin = TMR_LOWERBOUND,   ///< Begin
+   TMR_end   ///< End
 };
 
 LISTDEF(TMR_Type)
@@ -55,6 +59,7 @@ NAMEDEF(TMRN)
    NAME("TMR_end")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define TMR_SIZE sizeof(TMRN)/sizeof(char *)
 
 

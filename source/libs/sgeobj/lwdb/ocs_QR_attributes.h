@@ -24,19 +24,37 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Queue Reference
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of QR
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   QR_name = 2250
+   QR_name = 2250   ///< Queue Instance Name
 };
 
+/** @brief The attribute ids of QR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int QR_Type[] = {
    QR_name,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of QR
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define QR_ATTRIBUTES \
    {QR_name, "QR_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false} \
 

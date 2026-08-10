@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Parsed Calendar
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -47,10 +51,10 @@
 */
 
 enum {
-   CA_yday_range_list = CA_LOWERBOUND,
-   CA_wday_range_list,
-   CA_daytime_range_list,
-   CA_state
+   CA_yday_range_list = CA_LOWERBOUND,   ///< YearDay Range List
+   CA_wday_range_list,   ///< WeekDay Range List
+   CA_daytime_range_list,   ///< DayTime Range List
+   CA_state   ///< State
 };
 
 LISTDEF(CA_Type)
@@ -67,6 +71,7 @@ NAMEDEF(CAN)
    NAME("CA_state")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define CA_SIZE sizeof(CAN)/sizeof(char *)
 
 

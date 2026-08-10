@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Mail Receiver
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of MR
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   MR_user = 2050,
-   MR_host
+   MR_user = 2050,   ///< User Name
+   MR_host   ///< Host Name
 };
 
+/** @brief The attribute ids of MR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int MR_Type[] = {
    MR_user,
    MR_host,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of MR
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define MR_ATTRIBUTES \
    {MR_user, "MR_user", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
    {MR_host, "MR_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

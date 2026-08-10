@@ -24,22 +24,36 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Category
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of CT
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   CT_id = 6650,
-   CT_str,
-   CT_refcount,
-   CT_rejected,
-   CT_cache,
-   CT_messages_added,
-   CT_resource_contribution,
-   CT_rc_valid,
-   CT_reservation_rejected
+   CT_id = 6650,   ///< Category ID
+   CT_str,   ///< Category String
+   CT_refcount,   ///< Reference Count
+   CT_rejected,   ///< Rejected
+   CT_cache,   ///< Cache
+   CT_messages_added,   ///< Messages Added
+   CT_resource_contribution,   ///< Resource Contribution
+   CT_rc_valid,   ///< Resource Contribution valid
+   CT_reservation_rejected   ///< Reservation Rejected
 };
 
+/** @brief The attribute ids of CT, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int CT_Type[] = {
    CT_id,
    CT_str,
@@ -53,6 +67,10 @@ constexpr const int CT_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of CT
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define CT_ATTRIBUTES \
    {CT_id, "CT_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
    {CT_str, "CT_str", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \

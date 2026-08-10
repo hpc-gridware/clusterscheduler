@@ -24,16 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Reschedule Unknown
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of RU
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   RU_job_number = 7350,
-   RU_task_number,
-   RU_state
+   RU_job_number = 7350,   ///< Job Number
+   RU_task_number,   ///< Task Number
+   RU_state   ///< State
 };
 
+/** @brief The attribute ids of RU, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int RU_Type[] = {
    RU_job_number,
    RU_task_number,
@@ -41,6 +55,10 @@ constexpr const int RU_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of RU
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define RU_ATTRIBUTES \
    {RU_job_number, "RU_job_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {RU_task_number, "RU_task_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

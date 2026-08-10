@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief JAPI Job
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -50,11 +54,11 @@
 */
 
 enum {
-   JJ_jobid = JJ_LOWERBOUND,
-   JJ_type,
-   JJ_finished_tasks,
-   JJ_not_yet_finished_ids,
-   JJ_started_task_ids
+   JJ_jobid = JJ_LOWERBOUND,   ///< Job Id
+   JJ_type,   ///< Type
+   JJ_finished_tasks,   ///< Finished Tasks
+   JJ_not_yet_finished_ids,   ///< Not Yet Finished Ids
+   JJ_started_task_ids   ///< Started Task Ids
 };
 
 LISTDEF(JJ_Type)
@@ -73,6 +77,7 @@ NAMEDEF(JJN)
    NAME("JJ_started_task_ids")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define JJ_SIZE sizeof(JJN)/sizeof(char *)
 
 

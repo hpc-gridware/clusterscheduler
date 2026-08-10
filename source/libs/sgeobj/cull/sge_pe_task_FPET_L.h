@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Finished PE Task
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -41,7 +45,7 @@
 */
 
 enum {
-   FPET_id = FPET_LOWERBOUND
+   FPET_id = FPET_LOWERBOUND   ///< Finished PE Task Id
 };
 
 LISTDEF(FPET_Type)
@@ -52,6 +56,7 @@ NAMEDEF(FPETN)
    NAME("FPET_id")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define FPET_SIZE sizeof(FPETN)/sizeof(char *)
 
 

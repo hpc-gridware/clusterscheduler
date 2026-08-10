@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief SubordinateQueue
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -60,11 +64,11 @@
 */
 
 enum {
-   SO_name = SO_LOWERBOUND,
-   SO_threshold,
-   SO_slots_sum,
-   SO_seq_no,
-   SO_action
+   SO_name = SO_LOWERBOUND,   ///< Subordinate Queue Name
+   SO_threshold,   ///< Threshold
+   SO_slots_sum,   ///< Slots Sum
+   SO_seq_no,   ///< Sequence Number
+   SO_action   ///< Action
 };
 
 LISTDEF(SO_Type)
@@ -83,6 +87,7 @@ NAMEDEF(SON)
    NAME("SO_action")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define SO_SIZE sizeof(SON)/sizeof(char *)
 
 

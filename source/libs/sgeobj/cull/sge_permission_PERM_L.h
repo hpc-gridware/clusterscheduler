@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Object used to request given permissions of user and host.
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -53,12 +57,12 @@
 */
 
 enum {
-   PERM_is_manager = PERM_LOWERBOUND,
-   PERM_is_operator,
-   PERM_is_admin_host,
-   PERM_is_submit_host,
-   PERM_host,
-   PERM_username
+   PERM_is_manager = PERM_LOWERBOUND,   ///< true if manager
+   PERM_is_operator,   ///< true if operator
+   PERM_is_admin_host,   ///< true if admin host
+   PERM_is_submit_host,   ///< true if submit host
+   PERM_host,   ///< hostname
+   PERM_username   ///< username
 };
 
 LISTDEF(PERM_Type)
@@ -79,6 +83,7 @@ NAMEDEF(PERMN)
    NAME("PERM_username")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define PERM_SIZE sizeof(PERMN)/sizeof(char *)
 
 

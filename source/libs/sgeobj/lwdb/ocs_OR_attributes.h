@@ -24,24 +24,38 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Scheduler Order
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of OR
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   OR_type = 1350,
-   OR_job_number,
-   OR_ja_task_number,
-   OR_job_version,
-   OR_queuelist,
-   OR_granted_resources_list,
-   OR_ticket,
-   OR_joker,
-   OR_pe,
-   OR_ntix,
-   OR_prio
+   OR_type = 1350,   ///< Order Type
+   OR_job_number,   ///< Job Number
+   OR_ja_task_number,   ///< Array Task Number
+   OR_job_version,   ///< Job Version
+   OR_queuelist,   ///< Queue Instances
+   OR_granted_resources_list,   ///< Granted Resources List
+   OR_ticket,   ///< Number of Tickets
+   OR_joker,   ///< Order Specific Data
+   OR_pe,   ///< PE Name
+   OR_ntix,   ///< Normalized Tickets
+   OR_prio   ///< Job Priority
 };
 
+/** @brief The attribute ids of OR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int OR_Type[] = {
    OR_type,
    OR_job_number,
@@ -57,6 +71,10 @@ constexpr const int OR_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of OR
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define OR_ATTRIBUTES \
    {OR_type, "OR_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {OR_job_number, "OR_job_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

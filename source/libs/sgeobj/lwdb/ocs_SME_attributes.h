@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job SchedulingInfo
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of SME
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   SME_message_list = 6350,
-   SME_global_message_list
+   SME_message_list = 6350,   ///< Message List
+   SME_global_message_list   ///< Global Message List
 };
 
+/** @brief The attribute ids of SME, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int SME_Type[] = {
    SME_message_list,
    SME_global_message_list,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of SME
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define SME_ATTRIBUTES \
    {SME_message_list, "SME_message_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {SME_global_message_list, "SME_global_message_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

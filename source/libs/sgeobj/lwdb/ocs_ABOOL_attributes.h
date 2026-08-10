@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Boolean
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of ABOOL
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   ABOOL_href = 8450,
-   ABOOL_value
+   ABOOL_href = 8450,   ///< Host Reference
+   ABOOL_value   ///< Value
 };
 
+/** @brief The attribute ids of ABOOL, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int ABOOL_Type[] = {
    ABOOL_href,
    ABOOL_value,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of ABOOL
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define ABOOL_ATTRIBUTES \
    {ABOOL_href, "ABOOL_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {ABOOL_value, "ABOOL_value", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

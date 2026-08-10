@@ -24,22 +24,36 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of US
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   US_name = 1550,
-   US_type,
-   US_fshare,
-   US_oticket,
-   US_job_cnt,
-   US_pending_job_cnt,
-   US_entries,
-   US_consider_with_categories,
-   US_joker
+   US_name = 1550,   ///< @todo add summary
+   US_type,   ///< @todo add summary
+   US_fshare,   ///< @todo add summary
+   US_oticket,   ///< @todo add summary
+   US_job_cnt,   ///< @todo add summary
+   US_pending_job_cnt,   ///< @todo add summary
+   US_entries,   ///< @todo add summary
+   US_consider_with_categories,   ///< @todo add summary
+   US_joker   ///< Joker
 };
 
+/** @brief The attribute ids of US, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int US_Type[] = {
    US_name,
    US_type,
@@ -53,6 +67,10 @@ constexpr const int US_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of US
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define US_ATTRIBUTES \
    {US_name, "US_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {US_type, "US_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

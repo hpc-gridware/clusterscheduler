@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -64,15 +68,15 @@
 */
 
 enum {
-   US_name = US_LOWERBOUND,
-   US_type,
-   US_fshare,
-   US_oticket,
-   US_job_cnt,
-   US_pending_job_cnt,
-   US_entries,
-   US_consider_with_categories,
-   US_joker
+   US_name = US_LOWERBOUND,   ///< @todo add summary
+   US_type,   ///< @todo add summary
+   US_fshare,   ///< @todo add summary
+   US_oticket,   ///< @todo add summary
+   US_job_cnt,   ///< @todo add summary
+   US_pending_job_cnt,   ///< @todo add summary
+   US_entries,   ///< @todo add summary
+   US_consider_with_categories,   ///< @todo add summary
+   US_joker   ///< Joker
 };
 
 LISTDEF(US_Type)
@@ -99,6 +103,7 @@ NAMEDEF(USN)
    NAME("US_joker")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define US_SIZE sizeof(USN)/sizeof(char *)
 
 

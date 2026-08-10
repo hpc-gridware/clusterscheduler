@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Id for Action
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -52,11 +56,11 @@
 */
 
 enum {
-   ID_str = ID_LOWERBOUND,
-   ID_ja_structure,
-   ID_action,
-   ID_force,
-   ID_user_list
+   ID_str = ID_LOWERBOUND,   ///< Id String
+   ID_ja_structure,   ///< Array Task Structure
+   ID_action,   ///< Action
+   ID_force,   ///< Force
+   ID_user_list   ///< User List
 };
 
 LISTDEF(ID_Type)
@@ -75,6 +79,7 @@ NAMEDEF(IDN)
    NAME("ID_user_list")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define ID_SIZE sizeof(IDN)/sizeof(char *)
 
 

@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Subordinate List
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of ASOLIST
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   ASOLIST_href = 9350,
-   ASOLIST_value
+   ASOLIST_href = 9350,   ///< Host Reference
+   ASOLIST_value   ///< Value
 };
 
+/** @brief The attribute ids of ASOLIST, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int ASOLIST_Type[] = {
    ASOLIST_href,
    ASOLIST_value,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of ASOLIST
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define ASOLIST_ATTRIBUTES \
    {ASOLIST_href, "ASOLIST_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {ASOLIST_value, "ASOLIST_value", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

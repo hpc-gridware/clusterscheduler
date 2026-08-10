@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Time
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   ATIME_href = ATIME_LOWERBOUND,
-   ATIME_value
+   ATIME_href = ATIME_LOWERBOUND,   ///< Host Reference
+   ATIME_value   ///< Value
 };
 
 LISTDEF(ATIME_Type)
@@ -56,6 +60,7 @@ NAMEDEF(ATIMEN)
    NAME("ATIME_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define ATIME_SIZE sizeof(ATIMEN)/sizeof(char *)
 
 

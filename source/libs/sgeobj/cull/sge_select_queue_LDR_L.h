@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -50,11 +54,11 @@
 */
 
 enum {
-   LDR_queue_ref_list = LDR_LOWERBOUND,
-   LDR_limit,
-   LDR_global,
-   LDR_host,
-   LDR_queue
+   LDR_queue_ref_list = LDR_LOWERBOUND,   ///< @todo add summary
+   LDR_limit,   ///< @todo add summary
+   LDR_global,   ///< @todo add summary
+   LDR_host,   ///< @todo add summary
+   LDR_queue   ///< @todo add summary
 };
 
 LISTDEF(LDR_Type)
@@ -73,6 +77,7 @@ NAMEDEF(LDRN)
    NAME("LDR_queue")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define LDR_SIZE sizeof(LDRN)/sizeof(char *)
 
 

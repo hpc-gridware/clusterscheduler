@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Subordinate List
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   ASOLIST_href = ASOLIST_LOWERBOUND,
-   ASOLIST_value
+   ASOLIST_href = ASOLIST_LOWERBOUND,   ///< Host Reference
+   ASOLIST_value   ///< Value
 };
 
 LISTDEF(ASOLIST_Type)
@@ -56,6 +60,7 @@ NAMEDEF(ASOLISTN)
    NAME("ASOLIST_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define ASOLIST_SIZE sizeof(ASOLISTN)/sizeof(char *)
 
 

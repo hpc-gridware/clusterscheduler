@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Reschedule Unknown
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -50,9 +54,9 @@
 */
 
 enum {
-   RU_job_number = RU_LOWERBOUND,
-   RU_task_number,
-   RU_state
+   RU_job_number = RU_LOWERBOUND,   ///< Job Number
+   RU_task_number,   ///< Task Number
+   RU_state   ///< State
 };
 
 LISTDEF(RU_Type)
@@ -67,6 +71,7 @@ NAMEDEF(RUN)
    NAME("RU_state")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RU_SIZE sizeof(RUN)/sizeof(char *)
 
 

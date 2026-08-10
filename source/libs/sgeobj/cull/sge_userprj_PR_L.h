@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Project
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -85,22 +89,22 @@
 */
 
 enum {
-   PR_name = PR_LOWERBOUND,
-   PR_oticket,
-   PR_fshare,
-   PR_job_cnt,
-   PR_pending_job_cnt,
-   PR_usage,
-   PR_usage_time_stamp,
-   PR_usage_seqno,
-   PR_long_term_usage,
-   PR_project,
-   PR_acl,
-   PR_xacl,
-   PR_debited_job_usage,
-   PR_version,
-   PR_consider_with_categories,
-   PR_joker
+   PR_name = PR_LOWERBOUND,   ///< Project Name
+   PR_oticket,   ///< Override Tickets
+   PR_fshare,   ///< Functional Shares
+   PR_job_cnt,   ///< Job Count
+   PR_pending_job_cnt,   ///< Pending Job Count
+   PR_usage,   ///< Usage
+   PR_usage_time_stamp,   ///< Usage Time Stamp
+   PR_usage_seqno,   ///< Usage Sequence Number
+   PR_long_term_usage,   ///< Long Term Usage
+   PR_project,   ///< Project Usage
+   PR_acl,   ///< Access List
+   PR_xacl,   ///< No Access List
+   PR_debited_job_usage,   ///< Debited Job Usage
+   PR_version,   ///< Project Version
+   PR_consider_with_categories,   ///< Consider With Categories
+   PR_joker   ///< Joker
 };
 
 LISTDEF(PR_Type)
@@ -141,6 +145,7 @@ NAMEDEF(PRN)
    NAME("PR_joker")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define PR_SIZE sizeof(PRN)/sizeof(char *)
 
 

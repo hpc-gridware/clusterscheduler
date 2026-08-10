@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -53,12 +57,12 @@
 */
 
 enum {
-   RQRL_name = RQRL_LOWERBOUND,
-   RQRL_value,
-   RQRL_type,
-   RQRL_dvalue,
-   RQRL_usage,
-   RQRL_dynamic
+   RQRL_name = RQRL_LOWERBOUND,   ///< @todo add summary
+   RQRL_value,   ///< @todo add summary
+   RQRL_type,   ///< @todo add summary
+   RQRL_dvalue,   ///< @todo add summary
+   RQRL_usage,   ///< @todo add summary
+   RQRL_dynamic   ///< @todo add summary
 };
 
 LISTDEF(RQRL_Type)
@@ -79,6 +83,7 @@ NAMEDEF(RQRLN)
    NAME("RQRL_dynamic")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RQRL_SIZE sizeof(RQRLN)/sizeof(char *)
 
 

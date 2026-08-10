@@ -24,35 +24,49 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of JSV
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   JSV_name = 12300,
-   JSV_context,
-   JSV_url,
-   JSV_type,
-   JSV_user,
-   JSV_command,
-   JSV_pid,
-   JSV_in,
-   JSV_out,
-   JSV_err,
-   JSV_has_to_restart,
-   JSV_last_mod,
-   JSV_send_env,
-   JSV_old_job,
-   JSV_new_job,
-   JSV_restart,
-   JSV_accept,
-   JSV_done,
-   JSV_soft_shutdown,
-   JSV_test,
-   JSV_test_pos,
-   JSV_result
+   JSV_name = 12300,   ///< @todo add summary
+   JSV_context,   ///< @todo add summary
+   JSV_url,   ///< @todo add summary
+   JSV_type,   ///< @todo add summary
+   JSV_user,   ///< @todo add summary
+   JSV_command,   ///< @todo add summary
+   JSV_pid,   ///< @todo add summary
+   JSV_in,   ///< @todo add summary
+   JSV_out,   ///< @todo add summary
+   JSV_err,   ///< @todo add summary
+   JSV_has_to_restart,   ///< @todo add summary
+   JSV_last_mod,   ///< @todo add summary
+   JSV_send_env,   ///< @todo add summary
+   JSV_old_job,   ///< @todo add summary
+   JSV_new_job,   ///< @todo add summary
+   JSV_restart,   ///< @todo add summary
+   JSV_accept,   ///< @todo add summary
+   JSV_done,   ///< @todo add summary
+   JSV_soft_shutdown,   ///< @todo add summary
+   JSV_test,   ///< @todo add summary
+   JSV_test_pos,   ///< @todo add summary
+   JSV_result   ///< @todo add summary
 };
 
+/** @brief The attribute ids of JSV, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int JSV_Type[] = {
    JSV_name,
    JSV_context,
@@ -79,6 +93,10 @@ constexpr const int JSV_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of JSV
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define JSV_ATTRIBUTES \
    {JSV_name, "JSV_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JSV_context, "JSV_context", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

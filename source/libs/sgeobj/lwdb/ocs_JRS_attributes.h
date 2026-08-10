@@ -24,20 +24,34 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Request Set
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of JRS
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   JRS_scope = 200,
-   JRS_hard_resource_list,
-   JRS_soft_resource_list,
-   JRS_hard_queue_list,
-   JRS_soft_queue_list,
-   JRS_allocation_rule,
-   JRS_ignore_slave_requests_on_master_host
+   JRS_scope = 200,   ///< Scope
+   JRS_hard_resource_list,   ///< Hard Resource List
+   JRS_soft_resource_list,   ///< Soft Resource List
+   JRS_hard_queue_list,   ///< Hard Queue List
+   JRS_soft_queue_list,   ///< Soft Queue List
+   JRS_allocation_rule,   ///< Allocation Rule
+   JRS_ignore_slave_requests_on_master_host   ///< Ignore Slave Requests on Master Host
 };
 
+/** @brief The attribute ids of JRS, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int JRS_Type[] = {
    JRS_scope,
    JRS_hard_resource_list,
@@ -49,6 +63,10 @@ constexpr const int JRS_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of JRS
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define JRS_ATTRIBUTES \
    {JRS_scope, "JRS_scope", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_NON_UNIQUE, true, true}, \
    {JRS_hard_resource_list, "JRS_hard_resource_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

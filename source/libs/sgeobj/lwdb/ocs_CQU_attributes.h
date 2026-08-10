@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of CQU
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   CQU_state = 11100,
-   CQU_till
+   CQU_state = 11100,   ///< @todo add summary
+   CQU_till   ///< @todo add summary
 };
 
+/** @brief The attribute ids of CQU, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int CQU_Type[] = {
    CQU_state,
    CQU_till,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of CQU
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define CQU_ATTRIBUTES \
    {CQU_state, "CQU_state", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {CQU_till, "CQU_till", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

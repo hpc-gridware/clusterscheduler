@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Time Range
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of TMR
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   TMR_begin = 5850,
-   TMR_end
+   TMR_begin = 5850,   ///< Begin
+   TMR_end   ///< End
 };
 
+/** @brief The attribute ids of TMR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int TMR_Type[] = {
    TMR_begin,
    TMR_end,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of TMR
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define TMR_ATTRIBUTES \
    {TMR_begin, "TMR_begin", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {TMR_end, "TMR_end", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

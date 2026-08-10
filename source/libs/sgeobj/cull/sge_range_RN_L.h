@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Range Element
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -87,9 +91,9 @@
 */
 
 enum {
-   RN_min = RN_LOWERBOUND,
-   RN_max,
-   RN_step
+   RN_min = RN_LOWERBOUND,   ///< Lower Bound
+   RN_max,   ///< Upper Bound
+   RN_step   ///< Step Size
 };
 
 LISTDEF(RN_Type)
@@ -104,6 +108,7 @@ NAMEDEF(RNN)
    NAME("RN_step")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RN_SIZE sizeof(RNN)/sizeof(char *)
 
 

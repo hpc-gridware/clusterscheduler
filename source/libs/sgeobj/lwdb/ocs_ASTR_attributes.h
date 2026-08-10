@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute String
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of ASTR
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   ASTR_href = 8250,
-   ASTR_value
+   ASTR_href = 8250,   ///< Host Reference
+   ASTR_value   ///< Value
 };
 
+/** @brief The attribute ids of ASTR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int ASTR_Type[] = {
    ASTR_href,
    ASTR_value,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of ASTR
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define ASTR_ATTRIBUTES \
    {ASTR_href, "ASTR_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {ASTR_value, "ASTR_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

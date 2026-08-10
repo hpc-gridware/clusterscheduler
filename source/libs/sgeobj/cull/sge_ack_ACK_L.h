@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -47,10 +51,10 @@
 */
 
 enum {
-   ACK_type = ACK_LOWERBOUND,
-   ACK_id,
-   ACK_id2,
-   ACK_str
+   ACK_type = ACK_LOWERBOUND,   ///< @todo add summary
+   ACK_id,   ///< @todo add summary
+   ACK_id2,   ///< @todo add summary
+   ACK_str   ///< @todo add summary
 };
 
 LISTDEF(ACK_Type)
@@ -67,6 +71,7 @@ NAMEDEF(ACKN)
    NAME("ACK_str")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define ACK_SIZE sizeof(ACKN)/sizeof(char *)
 
 

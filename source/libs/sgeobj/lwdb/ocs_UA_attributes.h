@@ -24,16 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Usage Value
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of UA
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   UA_name = 3350,
-   UA_value,
-   UA_svalue
+   UA_name = 3350,   ///< Name
+   UA_value,   ///< Value
+   UA_svalue   ///< String Value
 };
 
+/** @brief The attribute ids of UA, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int UA_Type[] = {
    UA_name,
    UA_value,
@@ -41,6 +55,10 @@ constexpr const int UA_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of UA
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define UA_ATTRIBUTES \
    {UA_name, "UA_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {UA_value, "UA_value", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

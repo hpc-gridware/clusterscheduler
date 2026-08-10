@@ -265,7 +265,7 @@
                "line": "the number of slots finally assigned is not yet known. The following"
             },
             {
-               "line": "settings are supported: min/max/avg/<fixed integer>"
+               "line": "settings are supported: `min`, `max`, `avg` or a fixed integer"
             }
          ],
          "type": "lStringT",

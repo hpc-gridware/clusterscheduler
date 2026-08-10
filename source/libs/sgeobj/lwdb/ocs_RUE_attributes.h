@@ -24,20 +24,34 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Resource Utilization
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of RUE
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   RUE_name = 10600,
-   RUE_utilized_now,
-   RUE_utilized_now_resource_map_list,
-   RUE_utilized_now_binding_inuse,
-   RUE_utilized,
-   RUE_utilized_now_nonexclusive,
-   RUE_utilized_nonexclusive
+   RUE_name = 10600,   ///< Resource Name
+   RUE_utilized_now,   ///< Utilized Now
+   RUE_utilized_now_resource_map_list,   ///< Utilized Now Resource Map List
+   RUE_utilized_now_binding_inuse,   ///< Utilized Now Binding In Use
+   RUE_utilized,   ///< Utilized
+   RUE_utilized_now_nonexclusive,   ///< Utilized Now Non-Exclusive
+   RUE_utilized_nonexclusive   ///< Utilized Non-Exclusive
 };
 
+/** @brief The attribute ids of RUE, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int RUE_Type[] = {
    RUE_name,
    RUE_utilized_now,
@@ -49,6 +63,10 @@ constexpr const int RUE_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of RUE
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define RUE_ATTRIBUTES \
    {RUE_name, "RUE_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {RUE_utilized_now, "RUE_utilized_now", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

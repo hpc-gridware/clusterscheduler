@@ -24,17 +24,31 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of XMLE
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   XMLE_Attribute = 10400,
-   XMLE_Print,
-   XMLE_Element,
-   XMLE_List
+   XMLE_Attribute = 10400,   ///< @todo add summary
+   XMLE_Print,   ///< @todo add summary
+   XMLE_Element,   ///< @todo add summary
+   XMLE_List   ///< @todo add summary
 };
 
+/** @brief The attribute ids of XMLE, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int XMLE_Type[] = {
    XMLE_Attribute,
    XMLE_Print,
@@ -43,6 +57,10 @@ constexpr const int XMLE_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of XMLE
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define XMLE_ATTRIBUTES \
    {XMLE_Attribute, "XMLE_Attribute", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {XMLE_Print, "XMLE_Print", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

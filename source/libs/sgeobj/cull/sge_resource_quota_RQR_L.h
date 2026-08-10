@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -59,14 +63,14 @@
 */
 
 enum {
-   RQR_name = RQR_LOWERBOUND,
-   RQR_filter_users,
-   RQR_filter_projects,
-   RQR_filter_pes,
-   RQR_filter_queues,
-   RQR_filter_hosts,
-   RQR_limit,
-   RQR_level
+   RQR_name = RQR_LOWERBOUND,   ///< @todo add summary
+   RQR_filter_users,   ///< @todo add summary
+   RQR_filter_projects,   ///< @todo add summary
+   RQR_filter_pes,   ///< @todo add summary
+   RQR_filter_queues,   ///< @todo add summary
+   RQR_filter_hosts,   ///< @todo add summary
+   RQR_limit,   ///< @todo add summary
+   RQR_level   ///< @todo add summary
 };
 
 LISTDEF(RQR_Type)
@@ -91,6 +95,7 @@ NAMEDEF(RQRN)
    NAME("RQR_level")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RQR_SIZE sizeof(RQRN)/sizeof(char *)
 
 

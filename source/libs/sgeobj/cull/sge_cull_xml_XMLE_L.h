@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -47,10 +51,10 @@
 */
 
 enum {
-   XMLE_Attribute = XMLE_LOWERBOUND,
-   XMLE_Print,
-   XMLE_Element,
-   XMLE_List
+   XMLE_Attribute = XMLE_LOWERBOUND,   ///< @todo add summary
+   XMLE_Print,   ///< @todo add summary
+   XMLE_Element,   ///< @todo add summary
+   XMLE_List   ///< @todo add summary
 };
 
 LISTDEF(XMLE_Type)
@@ -67,6 +71,7 @@ NAMEDEF(XMLEN)
    NAME("XMLE_List")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define XMLE_SIZE sizeof(XMLEN)/sizeof(char *)
 
 

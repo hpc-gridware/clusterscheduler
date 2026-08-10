@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Pid
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of JP
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   JP_pid = 4650,
-   JP_background
+   JP_pid = 4650,   ///< Pid
+   JP_background   ///< Background
 };
 
+/** @brief The attribute ids of JP, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int JP_Type[] = {
    JP_pid,
    JP_background,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of JP
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define JP_ATTRIBUTES \
    {JP_pid, "JP_pid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
    {JP_background, "JP_background", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

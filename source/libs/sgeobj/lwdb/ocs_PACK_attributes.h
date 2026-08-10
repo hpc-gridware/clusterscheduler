@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of PACK
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   PACK_id = 12900,
-   PACK_string
+   PACK_id = 12900,   ///< @todo add summary
+   PACK_string   ///< @todo add summary
 };
 
+/** @brief The attribute ids of PACK, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int PACK_Type[] = {
    PACK_id,
    PACK_string,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of PACK
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define PACK_ATTRIBUTES \
    {PACK_id, "PACK_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PACK_string, "PACK_string", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

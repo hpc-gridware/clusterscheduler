@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -38,7 +42,7 @@
 */
 
 enum {
-   REF_ref = REF_LOWERBOUND
+   REF_ref = REF_LOWERBOUND   ///< @todo add summary
 };
 
 LISTDEF(REF_Type)
@@ -49,6 +53,7 @@ NAMEDEF(REFN)
    NAME("REF_ref")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define REF_SIZE sizeof(REFN)/sizeof(char *)
 
 

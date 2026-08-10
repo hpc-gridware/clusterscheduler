@@ -24,19 +24,37 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief UserSet Entry
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of UE
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   UE_name = 1650
+   UE_name = 1650   ///< User or Group name
 };
 
+/** @brief The attribute ids of UE, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int UE_Type[] = {
    UE_name,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of UE
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define UE_ATTRIBUTES \
    {UE_name, "UE_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false} \
 

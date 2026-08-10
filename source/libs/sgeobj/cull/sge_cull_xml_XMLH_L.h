@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -50,11 +54,11 @@
 */
 
 enum {
-   XMLH_Version = XMLH_LOWERBOUND,
-   XMLH_Name,
-   XMLH_Stylesheet,
-   XMLH_Attribute,
-   XMLH_Element
+   XMLH_Version = XMLH_LOWERBOUND,   ///< @todo add summary
+   XMLH_Name,   ///< @todo add summary
+   XMLH_Stylesheet,   ///< @todo add summary
+   XMLH_Attribute,   ///< @todo add summary
+   XMLH_Element   ///< @todo add summary
 };
 
 LISTDEF(XMLH_Type)
@@ -73,6 +77,7 @@ NAMEDEF(XMLHN)
    NAME("XMLH_Element")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define XMLH_SIZE sizeof(XMLHN)/sizeof(char *)
 
 

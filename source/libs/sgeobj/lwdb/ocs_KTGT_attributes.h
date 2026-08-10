@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief kerberos Client TGT
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of KTGT
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   KTGT_id = 6250,
-   KTGT_tgt
+   KTGT_id = 6250,   ///< Id
+   KTGT_tgt   ///< TGT
 };
 
+/** @brief The attribute ids of KTGT, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int KTGT_Type[] = {
    KTGT_id,
    KTGT_tgt,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of KTGT
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define KTGT_ATTRIBUTES \
    {KTGT_id, "KTGT_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {KTGT_tgt, "KTGT_tgt", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

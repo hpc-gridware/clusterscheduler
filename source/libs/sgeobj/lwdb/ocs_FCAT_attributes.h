@@ -24,22 +24,36 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Functional Category
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of FCAT
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   FCAT_job_share = 9800,
-   FCAT_user_share,
-   FCAT_user,
-   FCAT_project_share,
-   FCAT_project,
-   FCAT_dept_share,
-   FCAT_dept,
-   FCAT_jobrelated_ticket_first,
-   FCAT_jobrelated_ticket_last
+   FCAT_job_share = 9800,   ///< Job Share
+   FCAT_user_share,   ///< User Share
+   FCAT_user,   ///< User
+   FCAT_project_share,   ///< Project Share
+   FCAT_project,   ///< Project
+   FCAT_dept_share,   ///< Department Share
+   FCAT_dept,   ///< Department
+   FCAT_jobrelated_ticket_first,   ///< First Job Related Ticket
+   FCAT_jobrelated_ticket_last   ///< Last Job Related Ticket
 };
 
+/** @brief The attribute ids of FCAT, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int FCAT_Type[] = {
    FCAT_job_share,
    FCAT_user_share,
@@ -53,6 +67,10 @@ constexpr const int FCAT_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of FCAT
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define FCAT_ATTRIBUTES \
    {FCAT_job_share, "FCAT_job_share", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {FCAT_user_share, "FCAT_user_share", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

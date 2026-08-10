@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -38,7 +42,7 @@
 */
 
 enum {
-   CTI_name = CTI_LOWERBOUND
+   CTI_name = CTI_LOWERBOUND   ///< @todo add summary
 };
 
 LISTDEF(CTI_Type)
@@ -49,6 +53,7 @@ NAMEDEF(CTIN)
    NAME("CTI_name")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define CTI_SIZE sizeof(CTIN)/sizeof(char *)
 
 

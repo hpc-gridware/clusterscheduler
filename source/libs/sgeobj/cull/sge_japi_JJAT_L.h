@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief JAPI Array Task
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -47,10 +51,10 @@
 */
 
 enum {
-   JJAT_task_id = JJAT_LOWERBOUND,
-   JJAT_stat,
-   JJAT_rusage,
-   JJAT_failed_text
+   JJAT_task_id = JJAT_LOWERBOUND,   ///< Task Id
+   JJAT_stat,   ///< Stat
+   JJAT_rusage,   ///< RUsage
+   JJAT_failed_text   ///< Failed Text
 };
 
 LISTDEF(JJAT_Type)
@@ -67,6 +71,7 @@ NAMEDEF(JJATN)
    NAME("JJAT_failed_text")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define JJAT_SIZE sizeof(JJATN)/sizeof(char *)
 
 

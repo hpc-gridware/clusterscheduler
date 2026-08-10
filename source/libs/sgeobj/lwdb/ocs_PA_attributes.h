@@ -24,17 +24,31 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Path Alias
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of PA
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   PA_origin = 5150,
-   PA_submit_host,
-   PA_exec_host,
-   PA_translation
+   PA_origin = 5150,   ///< Original Path
+   PA_submit_host,   ///< Submit Host
+   PA_exec_host,   ///< Exec Host
+   PA_translation   ///< Translation
 };
 
+/** @brief The attribute ids of PA, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int PA_Type[] = {
    PA_origin,
    PA_submit_host,
@@ -43,6 +57,10 @@ constexpr const int PA_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of PA
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define PA_ATTRIBUTES \
    {PA_origin, "PA_origin", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, true}, \
    {PA_submit_host, "PA_submit_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

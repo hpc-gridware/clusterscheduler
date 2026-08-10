@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of RTIC
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   RTIC_host = 12400,
-   RTIC_tickets
+   RTIC_host = 12400,   ///< @todo add summary
+   RTIC_tickets   ///< @todo add summary
 };
 
+/** @brief The attribute ids of RTIC, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int RTIC_Type[] = {
    RTIC_host,
    RTIC_tickets,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of RTIC
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define RTIC_ATTRIBUTES \
    {RTIC_host, "RTIC_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {RTIC_tickets, "RTIC_tickets", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Configuration Element
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -52,10 +56,10 @@
 */
 
 enum {
-   CF_name = CF_LOWERBOUND,
-   CF_value,
-   CF_sublist,
-   CF_local
+   CF_name = CF_LOWERBOUND,   ///< Configuration Name
+   CF_value,   ///< Configuration Value
+   CF_sublist,   ///< Configuration Sublist
+   CF_local   ///< Local Configuration
 };
 
 LISTDEF(CF_Type)
@@ -72,6 +76,7 @@ NAMEDEF(CFN)
    NAME("CF_local")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define CF_SIZE sizeof(CFN)/sizeof(char *)
 
 

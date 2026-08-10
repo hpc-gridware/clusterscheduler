@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief scaling of host load values
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   HS_name = HS_LOWERBOUND,
-   HS_value
+   HS_name = HS_LOWERBOUND,   ///< load variable name
+   HS_value   ///< scaling factor
 };
 
 LISTDEF(HS_Type)
@@ -56,6 +60,7 @@ NAMEDEF(HSN)
    NAME("HS_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define HS_SIZE sizeof(HSN)/sizeof(char *)
 
 

@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -52,11 +56,11 @@
 */
 
 enum {
-   RQS_name = RQS_LOWERBOUND,
-   RQS_description,
-   RQS_enabled,
-   RQS_rule,
-   RQS_joker
+   RQS_name = RQS_LOWERBOUND,   ///< @todo add summary
+   RQS_description,   ///< @todo add summary
+   RQS_enabled,   ///< @todo add summary
+   RQS_rule,   ///< @todo add summary
+   RQS_joker   ///< Joker
 };
 
 LISTDEF(RQS_Type)
@@ -75,6 +79,7 @@ NAMEDEF(RQSN)
    NAME("RQS_joker")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RQS_SIZE sizeof(RQSN)/sizeof(char *)
 
 

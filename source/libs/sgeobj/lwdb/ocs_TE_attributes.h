@@ -24,21 +24,35 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Time Event
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of TE
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   TE_when = 5550,
-   TE_type,
-   TE_mode,
-   TE_interval,
-   TE_uval0,
-   TE_uval1,
-   TE_sval,
-   TE_seqno
+   TE_when = 5550,   ///< When
+   TE_type,   ///< Type
+   TE_mode,   ///< Mode
+   TE_interval,   ///< Interval
+   TE_uval0,   ///< UVal0
+   TE_uval1,   ///< UVal1
+   TE_sval,   ///< String Key
+   TE_seqno   ///< Sequence Number
 };
 
+/** @brief The attribute ids of TE, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int TE_Type[] = {
    TE_when,
    TE_type,
@@ -51,6 +65,10 @@ constexpr const int TE_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of TE
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define TE_ATTRIBUTES \
    {TE_when, "TE_when", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {TE_type, "TE_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

@@ -24,16 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Multi Gdi Id
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of MA
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   MA_id = 5450,
-   MA_objects,
-   MA_answers
+   MA_id = 5450,   ///< Id
+   MA_objects,   ///< Objects
+   MA_answers   ///< Answers
 };
 
+/** @brief The attribute ids of MA, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int MA_Type[] = {
    MA_id,
    MA_objects,
@@ -41,6 +55,10 @@ constexpr const int MA_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of MA
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define MA_ATTRIBUTES \
    {MA_id, "MA_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {MA_objects, "MA_objects", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

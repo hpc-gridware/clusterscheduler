@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Resource Utilization
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -59,13 +63,13 @@
 */
 
 enum {
-   RUE_name = RUE_LOWERBOUND,
-   RUE_utilized_now,
-   RUE_utilized_now_resource_map_list,
-   RUE_utilized_now_binding_inuse,
-   RUE_utilized,
-   RUE_utilized_now_nonexclusive,
-   RUE_utilized_nonexclusive
+   RUE_name = RUE_LOWERBOUND,   ///< Resource Name
+   RUE_utilized_now,   ///< Utilized Now
+   RUE_utilized_now_resource_map_list,   ///< Utilized Now Resource Map List
+   RUE_utilized_now_binding_inuse,   ///< Utilized Now Binding In Use
+   RUE_utilized,   ///< Utilized
+   RUE_utilized_now_nonexclusive,   ///< Utilized Now Non-Exclusive
+   RUE_utilized_nonexclusive   ///< Utilized Non-Exclusive
 };
 
 LISTDEF(RUE_Type)
@@ -88,6 +92,7 @@ NAMEDEF(RUEN)
    NAME("RUE_utilized_nonexclusive")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RUE_SIZE sizeof(RUEN)/sizeof(char *)
 
 

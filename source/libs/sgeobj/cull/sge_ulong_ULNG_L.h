@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Unsigned Long
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -38,7 +42,7 @@
 */
 
 enum {
-   ULNG_value = ULNG_LOWERBOUND
+   ULNG_value = ULNG_LOWERBOUND   ///< Value
 };
 
 LISTDEF(ULNG_Type)
@@ -49,6 +53,7 @@ NAMEDEF(ULNGN)
    NAME("ULNG_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define ULNG_SIZE sizeof(ULNGN)/sizeof(char *)
 
 

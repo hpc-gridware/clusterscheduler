@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -41,8 +45,8 @@
 */
 
 enum {
-   PACK_id = PACK_LOWERBOUND,
-   PACK_string
+   PACK_id = PACK_LOWERBOUND,   ///< @todo add summary
+   PACK_string   ///< @todo add summary
 };
 
 LISTDEF(PACK_Type)
@@ -55,6 +59,7 @@ NAMEDEF(PACKN)
    NAME("PACK_string")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define PACK_SIZE sizeof(PACKN)/sizeof(char *)
 
 

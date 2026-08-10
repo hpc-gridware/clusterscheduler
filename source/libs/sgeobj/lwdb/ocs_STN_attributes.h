@@ -24,44 +24,58 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Share Tree Node
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of STN
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   STN_name = 3850,
-   STN_type,
-   STN_id,
-   STN_shares,
-   STN_children,
-   STN_job_ref_count,
-   STN_active_job_ref_count,
-   STN_project,
-   STN_proportion,
-   STN_adjusted_proportion,
-   STN_combined_usage,
-   STN_pass2_seqno,
-   STN_sum_priority,
-   STN_actual_proportion,
-   STN_m_share,
-   STN_last_actual_proportion,
-   STN_adjusted_current_proportion,
-   STN_temp,
-   STN_stt,
-   STN_ostt,
-   STN_ltt,
-   STN_oltt,
-   STN_shr,
-   STN_sort,
-   STN_ref,
-   STN_tickets,
-   STN_jobid,
-   STN_taskid,
-   STN_usage_list,
-   STN_version,
-   STN_joker
+   STN_name = 3850,   ///< Node Name
+   STN_type,   ///< Node Type
+   STN_id,   ///< Node Id
+   STN_shares,   ///< Shares
+   STN_children,   ///< Children
+   STN_job_ref_count,   ///< Job Reference Count
+   STN_active_job_ref_count,   ///< Active Job Reference Count
+   STN_project,   ///< Is Project
+   STN_proportion,   ///< Proportion
+   STN_adjusted_proportion,   ///< Adjusted Proportion
+   STN_combined_usage,   ///< Combined Usage
+   STN_pass2_seqno,   ///< Pass Two Sequence Number
+   STN_sum_priority,   ///< Sum of Priorities
+   STN_actual_proportion,   ///< Actual Proportion
+   STN_m_share,   ///< M Share
+   STN_last_actual_proportion,   ///< Last Actual Proportion
+   STN_adjusted_current_proportion,   ///< Adjusted Current Proportion
+   STN_temp,   ///< Temporary Node
+   STN_stt,   ///< Short Term Targeted Proportion
+   STN_ostt,   ///< Overall Short Term Targeted Proportion
+   STN_ltt,   ///< Long Term Targeted Proportion
+   STN_oltt,   ///< Overall Long Term Targeted Proportion
+   STN_shr,   ///< Share
+   STN_sort,   ///< Sort Value
+   STN_ref,   ///< Reference
+   STN_tickets,   ///< Tickets
+   STN_jobid,   ///< Job Id
+   STN_taskid,   ///< Task Id
+   STN_usage_list,   ///< Usage List
+   STN_version,   ///< @todo add summary
+   STN_joker   ///< Joker
 };
 
+/** @brief The attribute ids of STN, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int STN_Type[] = {
    STN_name,
    STN_type,
@@ -97,6 +111,10 @@ constexpr const int STN_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of STN
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define STN_ATTRIBUTES \
    {STN_name, "STN_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {STN_type, "STN_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

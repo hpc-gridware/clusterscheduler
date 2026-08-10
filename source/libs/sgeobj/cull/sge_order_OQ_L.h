@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Queue Info in an Order
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -67,15 +71,15 @@
 */
 
 enum {
-   OQ_slots = OQ_LOWERBOUND,
-   OQ_dest_queue,
-   OQ_dest_version,
-   OQ_ticket,
-   OQ_oticket,
-   OQ_fticket,
-   OQ_sticket,
-   OQ_binding_to_use,
-   OQ_granted_rsmaps
+   OQ_slots = OQ_LOWERBOUND,   ///< Slots
+   OQ_dest_queue,   ///< Qinstance Name
+   OQ_dest_version,   ///< Qinstance Version
+   OQ_ticket,   ///< Total Tickets
+   OQ_oticket,   ///< Override Tickets
+   OQ_fticket,   ///< Functional Tickets
+   OQ_sticket,   ///< Sharetree Tickets
+   OQ_binding_to_use,   ///< Binding that should be used
+   OQ_granted_rsmaps   ///< Granted RSMAP IDs
 };
 
 LISTDEF(OQ_Type)
@@ -102,6 +106,7 @@ NAMEDEF(OQN)
    NAME("OQ_granted_rsmaps")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define OQ_SIZE sizeof(OQN)/sizeof(char *)
 
 

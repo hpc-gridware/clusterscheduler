@@ -24,19 +24,33 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of RQRL
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   RQRL_name = 11700,
-   RQRL_value,
-   RQRL_type,
-   RQRL_dvalue,
-   RQRL_usage,
-   RQRL_dynamic
+   RQRL_name = 11700,   ///< @todo add summary
+   RQRL_value,   ///< @todo add summary
+   RQRL_type,   ///< @todo add summary
+   RQRL_dvalue,   ///< @todo add summary
+   RQRL_usage,   ///< @todo add summary
+   RQRL_dynamic   ///< @todo add summary
 };
 
+/** @brief The attribute ids of RQRL, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int RQRL_Type[] = {
    RQRL_name,
    RQRL_value,
@@ -47,6 +61,10 @@ constexpr const int RQRL_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of RQRL
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define RQRL_ATTRIBUTES \
    {RQRL_name, "RQRL_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {RQRL_value, "RQRL_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

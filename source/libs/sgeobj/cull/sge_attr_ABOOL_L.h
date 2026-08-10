@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Boolean
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   ABOOL_href = ABOOL_LOWERBOUND,
-   ABOOL_value
+   ABOOL_href = ABOOL_LOWERBOUND,   ///< Host Reference
+   ABOOL_value   ///< Value
 };
 
 LISTDEF(ABOOL_Type)
@@ -56,6 +60,7 @@ NAMEDEF(ABOOLN)
    NAME("ABOOL_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define ABOOL_SIZE sizeof(ABOOLN)/sizeof(char *)
 
 

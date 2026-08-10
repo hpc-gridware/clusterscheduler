@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Memory
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   AMEM_href = AMEM_LOWERBOUND,
-   AMEM_value
+   AMEM_href = AMEM_LOWERBOUND,   ///< Host Reference
+   AMEM_value   ///< Value
 };
 
 LISTDEF(AMEM_Type)
@@ -56,6 +60,7 @@ NAMEDEF(AMEMN)
    NAME("AMEM_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define AMEM_SIZE sizeof(AMEMN)/sizeof(char *)
 
 

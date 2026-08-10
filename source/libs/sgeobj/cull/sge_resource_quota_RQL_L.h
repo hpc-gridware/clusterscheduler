@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -50,11 +54,11 @@
 */
 
 enum {
-   RQL_name = RQL_LOWERBOUND,
-   RQL_result,
-   RQL_time,
-   RQL_slots,
-   RQL_tagged4schedule
+   RQL_name = RQL_LOWERBOUND,   ///< @todo add summary
+   RQL_result,   ///< @todo add summary
+   RQL_time,   ///< @todo add summary
+   RQL_slots,   ///< @todo add summary
+   RQL_tagged4schedule   ///< @todo add summary
 };
 
 LISTDEF(RQL_Type)
@@ -73,6 +77,7 @@ NAMEDEF(RQLN)
    NAME("RQL_tagged4schedule")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RQL_SIZE sizeof(RQLN)/sizeof(char *)
 
 

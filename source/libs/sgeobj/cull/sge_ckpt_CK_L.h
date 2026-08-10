@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Checkpoint
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -82,17 +86,17 @@
 */
 
 enum {
-   CK_name = CK_LOWERBOUND,
-   CK_interface,
-   CK_ckpt_command,
-   CK_migr_command,
-   CK_rest_command,
-   CK_ckpt_dir,
-   CK_when,
-   CK_signal,
-   CK_job_pid,
-   CK_clean_command,
-   CK_joker
+   CK_name = CK_LOWERBOUND,   ///< Name
+   CK_interface,   ///< Interface
+   CK_ckpt_command,   ///< Checkpoint Command
+   CK_migr_command,   ///< Migration Command
+   CK_rest_command,   ///< Restart Command
+   CK_ckpt_dir,   ///< Checkpoint Directory
+   CK_when,   ///< When
+   CK_signal,   ///< Signal
+   CK_job_pid,   ///< Job Pid
+   CK_clean_command,   ///< Clean Command
+   CK_joker   ///< Joker
 };
 
 LISTDEF(CK_Type)
@@ -123,6 +127,7 @@ NAMEDEF(CKN)
    NAME("CK_joker")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define CK_SIZE sizeof(CKN)/sizeof(char *)
 
 

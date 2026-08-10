@@ -24,19 +24,33 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Calendar
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of CAL
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   CAL_name = 5650,
-   CAL_year_calendar,
-   CAL_week_calendar,
-   CAL_parsed_year_calendar,
-   CAL_parsed_week_calendar,
-   CAL_joker
+   CAL_name = 5650,   ///< Name
+   CAL_year_calendar,   ///< Year Calendar
+   CAL_week_calendar,   ///< Week Calendar
+   CAL_parsed_year_calendar,   ///< Parsed Year Calendar
+   CAL_parsed_week_calendar,   ///< Parsed Week Calendar
+   CAL_joker   ///< Joker
 };
 
+/** @brief The attribute ids of CAL, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int CAL_Type[] = {
    CAL_name,
    CAL_year_calendar,
@@ -47,6 +61,10 @@ constexpr const int CAL_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of CAL
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define CAL_ATTRIBUTES \
    {CAL_name, "CAL_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {CAL_year_calendar, "CAL_year_calendar", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

@@ -24,16 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of XMLS
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   XMLS_Name = 10300,
-   XMLS_Value,
-   XMLS_Version
+   XMLS_Name = 10300,   ///< @todo add summary
+   XMLS_Value,   ///< @todo add summary
+   XMLS_Version   ///< @todo add summary
 };
 
+/** @brief The attribute ids of XMLS, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int XMLS_Type[] = {
    XMLS_Name,
    XMLS_Value,
@@ -41,6 +55,10 @@ constexpr const int XMLS_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of XMLS
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define XMLS_ATTRIBUTES \
    {XMLS_Name, "XMLS_Name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {XMLS_Value, "XMLS_Value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

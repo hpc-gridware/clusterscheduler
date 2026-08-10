@@ -24,16 +24,30 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief answer element
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of AN
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   AN_status = 550,
-   AN_text,
-   AN_quality
+   AN_status = 550,   ///< answer status
+   AN_text,   ///< answer text
+   AN_quality   ///< answer quality
 };
 
+/** @brief The attribute ids of AN, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int AN_Type[] = {
    AN_status,
    AN_text,
@@ -41,6 +55,10 @@ constexpr const int AN_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of AN
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define AN_ATTRIBUTES \
    {AN_status, "AN_status", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {AN_text, "AN_text", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

@@ -24,19 +24,37 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Unique String
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of STU
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   STU_name = 2750
+   STU_name = 2750   ///< String Name
 };
 
+/** @brief The attribute ids of STU, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int STU_Type[] = {
    STU_name,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of STU
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define STU_ATTRIBUTES \
    {STU_name, "STU_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false} \
 

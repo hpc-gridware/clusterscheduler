@@ -24,34 +24,48 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Event Client
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of EV
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   EV_id = 950,
-   EV_name,
-   EV_host,
-   EV_commproc,
-   EV_commid,
-   EV_uid,
-   EV_d_time,
-   EV_subscribed,
-   EV_changed,
-   EV_busy_handling,
-   EV_session,
-   EV_last_heard_from,
-   EV_last_send_time,
-   EV_next_send_time,
-   EV_next_number,
-   EV_busy,
-   EV_events,
-   EV_sub_array,
-   EV_state,
-   EV_update_function,
-   EV_update_function_arg
+   EV_id = 950,   ///< event client id
+   EV_name,   ///< event client name
+   EV_host,   ///< event client address: host name
+   EV_commproc,   ///< event client address: commproc
+   EV_commid,   ///< event client address: commid
+   EV_uid,   ///< user id
+   EV_d_time,   ///< event delivery interval
+   EV_subscribed,   ///< subscribed events
+   EV_changed,   ///< event client changed?
+   EV_busy_handling,   ///< busy handling
+   EV_session,   ///< session key
+   EV_last_heard_from,   ///< last heard from
+   EV_last_send_time,   ///< last send time
+   EV_next_send_time,   ///< next send time
+   EV_next_number,   ///< next event serial number
+   EV_busy,   ///< busy
+   EV_events,   ///< events to be sent
+   EV_sub_array,   ///< subscription array
+   EV_state,   ///< event client state
+   EV_update_function,   ///< update function
+   EV_update_function_arg   ///< update function argument
 };
 
+/** @brief The attribute ids of EV, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int EV_Type[] = {
    EV_id,
    EV_name,
@@ -77,6 +91,10 @@ constexpr const int EV_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of EV
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define EV_ATTRIBUTES \
    {EV_id, "EV_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {EV_name, "EV_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

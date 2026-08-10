@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -77,19 +81,19 @@
 */
 
 enum {
-   BN_new_type = BN_LOWERBOUND,
-   BN_instance,
-   BN_amount,
-   BN_unit,
-   BN_filter,
-   BN_sort,
-   BN_start,
-   BN_stop,
-   BN_strategy,
-   BN_specific_hostname,
-   BN_specific_binding,
-   BN_specific_binding_list,
-   BN_joker
+   BN_new_type = BN_LOWERBOUND,   ///< type of binding
+   BN_instance,   ///< Instance that applies the binding
+   BN_amount,   ///< Amount of units
+   BN_unit,   ///< Unit type that should be bound
+   BN_filter,   ///< Mask that defines which parts of a topology should not be bound
+   BN_sort,   ///< Sort order of binding
+   BN_start,   ///< Start position
+   BN_stop,   ///< Stop position
+   BN_strategy,   ///< Binding strategy ...
+   BN_specific_hostname,   ///< hostname of where the attributes specific_binding is valid for
+   BN_specific_binding,   ///< A specific binding decision for a job on a host
+   BN_specific_binding_list,   ///< Sublist of individual task specific bindings.
+   BN_joker   ///< Joker
 };
 
 LISTDEF(BN_Type)
@@ -124,6 +128,7 @@ NAMEDEF(BNN)
    NAME("BN_joker")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define BN_SIZE sizeof(BNN)/sizeof(char *)
 
 

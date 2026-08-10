@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Queue Type List
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   AQTLIST_href = AQTLIST_LOWERBOUND,
-   AQTLIST_value
+   AQTLIST_href = AQTLIST_LOWERBOUND,   ///< Host Reference
+   AQTLIST_value   ///< Value
 };
 
 LISTDEF(AQTLIST_Type)
@@ -56,6 +60,7 @@ NAMEDEF(AQTLISTN)
    NAME("AQTLIST_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define AQTLIST_SIZE sizeof(AQTLISTN)/sizeof(char *)
 
 

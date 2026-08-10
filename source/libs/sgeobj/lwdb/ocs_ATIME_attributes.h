@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Time
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of ATIME
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   ATIME_href = 8550,
-   ATIME_value
+   ATIME_href = 8550,   ///< Host Reference
+   ATIME_value   ///< Value
 };
 
+/** @brief The attribute ids of ATIME, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int ATIME_Type[] = {
    ATIME_href,
    ATIME_value,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of ATIME
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define ATIME_ATTRIBUTES \
    {ATIME_href, "ATIME_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {ATIME_value, "ATIME_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

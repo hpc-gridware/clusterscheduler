@@ -1057,15 +1057,17 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-# Generated code. These headers are produced by "gen_types" from the JSON
-# descriptions in sgeobj/json (cmake target "generate_headers") and are checked
-# in only because generating them at build time would break the testsuite
-# build. Documenting them would document generator output: the next generator
-# run overwrites it. Where such code needs documentation, it belongs in the
-# generator or in its JSON input - see "06 Exclusions and generated code".
+# The generated headers under sgeobj/cull and sgeobj/lwdb were excluded here
+# while "gen_types" emitted no @file block and listed the attribute summaries as
+# prose instead of documenting the enumerators. Both are fixed (task 29a), so
+# the generated code is documented like anything else and the EXCLUDE is gone.
+#
+# The rule it enforced still stands and is now enforced by the gate instead:
+# never edit generated output. A missing description belongs in
+# sgeobj/json/*.json, which feeds the CULL header, the LWDB header and
+# dump_cull_schema alike - see "06 Exclusions and generated code".
 
-EXCLUDE                = clusterscheduler/source/libs/sgeobj/cull \
-                         clusterscheduler/source/libs/sgeobj/lwdb
+EXCLUDE                =
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded

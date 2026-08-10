@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Complex Entry
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -107,22 +111,22 @@
 */
 
 enum {
-   CE_name = CE_LOWERBOUND,
-   CE_shortcut,
-   CE_valtype,
-   CE_stringval,
-   CE_doubleval,
-   CE_relop,
-   CE_consumable,
-   CE_defaultval,
-   CE_dominant,
-   CE_pj_stringval,
-   CE_pj_doubleval,
-   CE_pj_dominant,
-   CE_requestable,
-   CE_tagged,
-   CE_urgency_weight,
-   CE_resource_map_list
+   CE_name = CE_LOWERBOUND,   ///< Full Name
+   CE_shortcut,   ///< Shortcut Name
+   CE_valtype,   ///< Variable Type
+   CE_stringval,   ///< String Value
+   CE_doubleval,   ///< Double Value
+   CE_relop,   ///< Relational Operator
+   CE_consumable,   ///< Consumable Flag
+   CE_defaultval,   ///< Default Value
+   CE_dominant,   ///< Monitoring Facility
+   CE_pj_stringval,   ///< Per Job String Value
+   CE_pj_doubleval,   ///< Per Job Double Value
+   CE_pj_dominant,   ///< Per Job Monitoring Facility
+   CE_requestable,   ///< @todo add summary
+   CE_tagged,   ///< Variable Is Tagged
+   CE_urgency_weight,   ///< Urgency Weighting Factor
+   CE_resource_map_list   ///< Resource Map List
 };
 
 LISTDEF(CE_Type)
@@ -163,6 +167,7 @@ NAMEDEF(CEN)
    NAME("CE_resource_map_list")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define CE_SIZE sizeof(CEN)/sizeof(char *)
 
 

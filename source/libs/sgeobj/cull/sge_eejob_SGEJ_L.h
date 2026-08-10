@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Sort Object
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -67,14 +71,14 @@
 */
 
 enum {
-   SGEJ_priority = SGEJ_LOWERBOUND,
-   SGEJ_job_number,
-   SGEJ_job_name,
-   SGEJ_owner,
-   SGEJ_state,
-   SGEJ_master_queue,
-   SGEJ_job_reference,
-   SGEJ_submission_time
+   SGEJ_priority = SGEJ_LOWERBOUND,   ///< Priority
+   SGEJ_job_number,   ///< Job Number
+   SGEJ_job_name,   ///< Job Name
+   SGEJ_owner,   ///< Owner
+   SGEJ_state,   ///< State
+   SGEJ_master_queue,   ///< Master Queue
+   SGEJ_job_reference,   ///< Job Reference
+   SGEJ_submission_time   ///< Submission Time
 };
 
 LISTDEF(SGEJ_Type)
@@ -99,6 +103,7 @@ NAMEDEF(SGEJN)
    NAME("SGEJ_submission_time")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define SGEJ_SIZE sizeof(SGEJN)/sizeof(char *)
 
 

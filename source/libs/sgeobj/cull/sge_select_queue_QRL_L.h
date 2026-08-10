@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -38,7 +42,7 @@
 */
 
 enum {
-   QRL_queue = QRL_LOWERBOUND
+   QRL_queue = QRL_LOWERBOUND   ///< @todo add summary
 };
 
 LISTDEF(QRL_Type)
@@ -49,6 +53,7 @@ NAMEDEF(QRLN)
    NAME("QRL_queue")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define QRL_SIZE sizeof(QRLN)/sizeof(char *)
 
 

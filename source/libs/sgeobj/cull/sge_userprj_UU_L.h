@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief User
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -89,22 +93,22 @@
 */
 
 enum {
-   UU_name = UU_LOWERBOUND,
-   UU_oticket,
-   UU_fshare,
-   UU_delete_time,
-   UU_job_cnt,
-   UU_pending_job_cnt,
-   UU_usage,
-   UU_usage_time_stamp,
-   UU_usage_seqno,
-   UU_long_term_usage,
-   UU_project,
-   UU_debited_job_usage,
-   UU_default_project,
-   UU_version,
-   UU_consider_with_categories,
-   UU_joker
+   UU_name = UU_LOWERBOUND,   ///< User Name
+   UU_oticket,   ///< Override Tickets
+   UU_fshare,   ///< Functional Shares
+   UU_delete_time,   ///< Delete Time
+   UU_job_cnt,   ///< Job Count
+   UU_pending_job_cnt,   ///< Pending Job Count
+   UU_usage,   ///< Usage
+   UU_usage_time_stamp,   ///< Usage Time Stamp
+   UU_usage_seqno,   ///< Usage Sequence Number
+   UU_long_term_usage,   ///< Long Term Usage
+   UU_project,   ///< Project
+   UU_debited_job_usage,   ///< Debited Job Usage
+   UU_default_project,   ///< Default Project
+   UU_version,   ///< User Version
+   UU_consider_with_categories,   ///< Consider With Categories
+   UU_joker   ///< Joker
 };
 
 LISTDEF(UU_Type)
@@ -145,6 +149,7 @@ NAMEDEF(UUN)
    NAME("UU_joker")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define UU_SIZE sizeof(UUN)/sizeof(char *)
 
 

@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Queue Instance Message
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -43,8 +47,8 @@
 */
 
 enum {
-   QIM_type = QIM_LOWERBOUND,
-   QIM_message
+   QIM_type = QIM_LOWERBOUND,   ///< Message Type
+   QIM_message   ///< Message
 };
 
 LISTDEF(QIM_Type)
@@ -57,6 +61,7 @@ NAMEDEF(QIMN)
    NAME("QIM_message")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define QIM_SIZE sizeof(QIMN)/sizeof(char *)
 
 

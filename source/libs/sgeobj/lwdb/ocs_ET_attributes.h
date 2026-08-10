@@ -24,22 +24,36 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Event Type
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of ET
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   ET_unique_id = 850,
-   ET_number,
-   ET_timestamp,
-   ET_type,
-   ET_intkey,
-   ET_intkey2,
-   ET_strkey,
-   ET_strkey2,
-   ET_new_version
+   ET_unique_id = 850,   ///< unique ID for an event within qmaster.
+   ET_number,   ///< serial number
+   ET_timestamp,   ///< event generation time
+   ET_type,   ///< event type
+   ET_intkey,   ///< first integer key
+   ET_intkey2,   ///< second integer key
+   ET_strkey,   ///< first string key
+   ET_strkey2,   ///< second string key
+   ET_new_version   ///< new version of the data
 };
 
+/** @brief The attribute ids of ET, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int ET_Type[] = {
    ET_unique_id,
    ET_number,
@@ -53,6 +67,10 @@ constexpr const int ET_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of ET
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define ET_ATTRIBUTES \
    {ET_unique_id, "ET_unique_id", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
    {ET_number, "ET_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

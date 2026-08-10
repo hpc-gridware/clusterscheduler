@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Usage
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -44,8 +48,8 @@
 */
 
 enum {
-   UPU_job_number = UPU_LOWERBOUND,
-   UPU_old_usage_list
+   UPU_job_number = UPU_LOWERBOUND,   ///< Job Number
+   UPU_old_usage_list   ///< Old Usage List
 };
 
 LISTDEF(UPU_Type)
@@ -58,6 +62,7 @@ NAMEDEF(UPUN)
    NAME("UPU_old_usage_list")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define UPU_SIZE sizeof(UPUN)/sizeof(char *)
 
 

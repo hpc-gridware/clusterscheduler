@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief kerberos Client TGT
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   KTGT_id = KTGT_LOWERBOUND,
-   KTGT_tgt
+   KTGT_id = KTGT_LOWERBOUND,   ///< Id
+   KTGT_tgt   ///< TGT
 };
 
 LISTDEF(KTGT_Type)
@@ -56,6 +60,7 @@ NAMEDEF(KTGTN)
    NAME("KTGT_tgt")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define KTGT_SIZE sizeof(KTGTN)/sizeof(char *)
 
 

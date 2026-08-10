@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Host Reference
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -38,7 +42,7 @@
 */
 
 enum {
-   HR_name = HR_LOWERBOUND
+   HR_name = HR_LOWERBOUND   ///< Name
 };
 
 LISTDEF(HR_Type)
@@ -49,6 +53,7 @@ NAMEDEF(HRN)
    NAME("HR_name")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define HR_SIZE sizeof(HRN)/sizeof(char *)
 
 

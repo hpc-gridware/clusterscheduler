@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Spooling Type Rule Mapping
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -49,9 +53,9 @@
 */
 
 enum {
-   SPTR_is_default = SPTR_LOWERBOUND,
-   SPTR_rule_name,
-   SPTR_rule
+   SPTR_is_default = SPTR_LOWERBOUND,   ///< Is Default
+   SPTR_rule_name,   ///< Rule Name
+   SPTR_rule   ///< Rule
 };
 
 LISTDEF(SPTR_Type)
@@ -66,6 +70,7 @@ NAMEDEF(SPTRN)
    NAME("SPTR_rule")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define SPTR_SIZE sizeof(SPTRN)/sizeof(char *)
 
 

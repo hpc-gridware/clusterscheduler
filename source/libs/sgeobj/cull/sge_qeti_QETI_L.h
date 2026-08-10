@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -44,9 +48,9 @@
 */
 
 enum {
-   QETI_total = QETI_LOWERBOUND,
-   QETI_resource_instance,
-   QETI_queue_end_next
+   QETI_total = QETI_LOWERBOUND,   ///< @todo add summary
+   QETI_resource_instance,   ///< @todo add summary
+   QETI_queue_end_next   ///< @todo add summary
 };
 
 LISTDEF(QETI_Type)
@@ -61,6 +65,7 @@ NAMEDEF(QETIN)
    NAME("QETI_queue_end_next")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define QETI_SIZE sizeof(QETIN)/sizeof(char *)
 
 

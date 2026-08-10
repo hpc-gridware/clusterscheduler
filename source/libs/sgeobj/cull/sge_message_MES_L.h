@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Scheduling Message
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -46,9 +50,9 @@
 */
 
 enum {
-   MES_job_number_list = MES_LOWERBOUND,
-   MES_message_number,
-   MES_message
+   MES_job_number_list = MES_LOWERBOUND,   ///< Job Number List
+   MES_message_number,   ///< Message Number
+   MES_message   ///< Message
 };
 
 LISTDEF(MES_Type)
@@ -63,6 +67,7 @@ NAMEDEF(MESN)
    NAME("MES_message")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define MES_SIZE sizeof(MESN)/sizeof(char *)
 
 

@@ -24,17 +24,31 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Remote Task
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of RT
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   RT_tid = 6050,
-   RT_hostname,
-   RT_status,
-   RT_state
+   RT_tid = 6050,   ///< Task Id
+   RT_hostname,   ///< Hostname
+   RT_status,   ///< Status
+   RT_state   ///< State
 };
 
+/** @brief The attribute ids of RT, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int RT_Type[] = {
    RT_tid,
    RT_hostname,
@@ -43,6 +57,10 @@ constexpr const int RT_Type[] = {
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of RT
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define RT_ATTRIBUTES \
    {RT_tid, "RT_tid", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {RT_hostname, "RT_hostname", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

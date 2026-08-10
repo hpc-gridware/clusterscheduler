@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Event Subscription
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -64,11 +68,11 @@
 */
 
 enum {
-   EVS_id = EVS_LOWERBOUND,
-   EVS_flush,
-   EVS_interval,
-   EVS_what,
-   EVS_where
+   EVS_id = EVS_LOWERBOUND,   ///< Event Id
+   EVS_flush,   ///< Flush this Event
+   EVS_interval,   ///< Flushing Interval
+   EVS_what,   ///< Attribute Filter
+   EVS_where   ///< Object Filter
 };
 
 LISTDEF(EVS_Type)
@@ -87,6 +91,7 @@ NAMEDEF(EVSN)
    NAME("EVS_where")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define EVS_SIZE sizeof(EVSN)/sizeof(char *)
 
 

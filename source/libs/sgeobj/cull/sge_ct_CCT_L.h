@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -53,12 +57,12 @@
 */
 
 enum {
-   CCT_pe_name = CCT_LOWERBOUND,
-   CCT_ignore_queues,
-   CCT_ignore_hosts,
-   CCT_job_messages,
-   CCT_pe_job_slots,
-   CCT_pe_job_slot_count
+   CCT_pe_name = CCT_LOWERBOUND,   ///< @todo add summary
+   CCT_ignore_queues,   ///< @todo add summary
+   CCT_ignore_hosts,   ///< @todo add summary
+   CCT_job_messages,   ///< @todo add summary
+   CCT_pe_job_slots,   ///< @todo add summary
+   CCT_pe_job_slot_count   ///< @todo add summary
 };
 
 LISTDEF(CCT_Type)
@@ -79,6 +83,7 @@ NAMEDEF(CCTN)
    NAME("CCT_pe_job_slot_count")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define CCT_SIZE sizeof(CCTN)/sizeof(char *)
 
 

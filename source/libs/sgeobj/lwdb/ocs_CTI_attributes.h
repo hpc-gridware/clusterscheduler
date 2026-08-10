@@ -24,19 +24,37 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of CTI
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   CTI_name = 9900
+   CTI_name = 9900   ///< @todo add summary
 };
 
+/** @brief The attribute ids of CTI, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int CTI_Type[] = {
    CTI_name,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of CTI
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define CTI_ATTRIBUTES \
    {CTI_name, "CTI_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false} \
 

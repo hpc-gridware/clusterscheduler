@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute Interval
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -42,8 +46,8 @@
 */
 
 enum {
-   AINTER_href = AINTER_LOWERBOUND,
-   AINTER_value
+   AINTER_href = AINTER_LOWERBOUND,   ///< Host Reference
+   AINTER_value   ///< Value
 };
 
 LISTDEF(AINTER_Type)
@@ -56,6 +60,7 @@ NAMEDEF(AINTERN)
    NAME("AINTER_value")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define AINTER_SIZE sizeof(AINTERN)/sizeof(char *)
 
 

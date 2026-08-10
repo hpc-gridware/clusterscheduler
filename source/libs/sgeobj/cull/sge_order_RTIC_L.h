@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -41,8 +45,8 @@
 */
 
 enum {
-   RTIC_host = RTIC_LOWERBOUND,
-   RTIC_tickets
+   RTIC_host = RTIC_LOWERBOUND,   ///< @todo add summary
+   RTIC_tickets   ///< @todo add summary
 };
 
 LISTDEF(RTIC_Type)
@@ -55,6 +59,7 @@ NAMEDEF(RTICN)
    NAME("RTIC_tickets")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RTIC_SIZE sizeof(RTICN)/sizeof(char *)
 
 

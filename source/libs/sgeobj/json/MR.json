@@ -6,10 +6,10 @@
          "line": "One object of this type specifies a mail receiver, meaning an email address"
       },
       {
-         "line": "in the form user@host."
+         "line": "in the form `user@host`."
       },
       {
-         "line": "It is used e.g. when submitting jobs via qsub -M user[@host][,user[@host],...]"
+         "line": "It is used e.g. when submitting jobs via `qsub -M user[@host][,user[@host],...]`"
       },
       {
          "line": "@todo why do we split it into user and host? We could just have a single string holding an email address."

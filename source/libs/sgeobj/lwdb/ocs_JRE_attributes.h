@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Reference
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of JRE
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   JRE_job_number = 5250,
-   JRE_job_name
+   JRE_job_number = 5250,   ///< Job Number
+   JRE_job_name   ///< Job Name
 };
 
+/** @brief The attribute ids of JRE, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int JRE_Type[] = {
    JRE_job_number,
    JRE_job_name,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of JRE
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define JRE_ATTRIBUTES \
    {JRE_job_number, "JRE_job_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
    {JRE_job_name, "JRE_job_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

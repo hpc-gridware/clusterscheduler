@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief User Job Count
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -43,8 +47,8 @@
 */
 
 enum {
-   JC_name = JC_LOWERBOUND,
-   JC_jobs
+   JC_name = JC_LOWERBOUND,   ///< User Name
+   JC_jobs   ///< Number of Jobs
 };
 
 LISTDEF(JC_Type)
@@ -57,6 +61,7 @@ NAMEDEF(JCN)
    NAME("JC_jobs")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define JC_SIZE sizeof(JCN)/sizeof(char *)
 
 

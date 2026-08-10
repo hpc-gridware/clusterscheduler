@@ -24,21 +24,39 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Attribute String
+ */
+
 #include "lwdb/AttributeStatic.h"
 
 namespace ocs {
 
+
+/** @brief The attributes of ASTRING
+ *
+ * Generated from the same JSON as the CULL type, so the two agree by
+ * construction rather than by review.
+ */
 enum {
-   ASTRING_href = 8850,
-   ASTRING_value
+   ASTRING_href = 8850,   ///< Host Reference
+   ASTRING_value   ///< Value
 };
 
+/** @brief The attribute ids of ASTRING, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
+ *
+ * This is the array an ocs::Element is instantiated with.
+ */
 constexpr const int ASTRING_Type[] = {
    ASTRING_href,
    ASTRING_value,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
+/** @brief The compile-time description of every attribute of ASTRING
+ *
+ * One ocs::AttributeStatic per attribute, in id order.
+ */
 #define ASTRING_ATTRIBUTES \
    {ASTRING_href, "ASTRING_href", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, false}, \
    {ASTRING_value, "ASTRING_value", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief @todo add summary
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -44,9 +48,9 @@
 */
 
 enum {
-   RQRF_expand = RQRF_LOWERBOUND,
-   RQRF_scope,
-   RQRF_xscope
+   RQRF_expand = RQRF_LOWERBOUND,   ///< @todo add summary
+   RQRF_scope,   ///< @todo add summary
+   RQRF_xscope   ///< @todo add summary
 };
 
 LISTDEF(RQRF_Type)
@@ -61,6 +65,7 @@ NAMEDEF(RQRFN)
    NAME("RQRF_xscope")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define RQRF_SIZE sizeof(RQRFN)/sizeof(char *)
 
 

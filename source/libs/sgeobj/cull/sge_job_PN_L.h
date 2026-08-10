@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Path Name
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -51,10 +55,10 @@
 */
 
 enum {
-   PN_path = PN_LOWERBOUND,
-   PN_host,
-   PN_file_host,
-   PN_file_staging
+   PN_path = PN_LOWERBOUND,   ///< Path
+   PN_host,   ///< Host Name
+   PN_file_host,   ///< File Host
+   PN_file_staging   ///< Do File Staging
 };
 
 LISTDEF(PN_Type)
@@ -71,6 +75,7 @@ NAMEDEF(PNN)
    NAME("PN_file_staging")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define PN_SIZE sizeof(PNN)/sizeof(char *)
 
 

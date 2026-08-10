@@ -24,6 +24,10 @@
  * DO NOT CHANGE
  */
 
+/** @file
+ * @brief Job Array Task
+ */
+
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
@@ -217,47 +221,47 @@
 */
 
 enum {
-   JAT_task_number = JAT_LOWERBOUND,
-   JAT_status,
-   JAT_start_time,
-   JAT_end_time,
-   JAT_hold,
-   JAT_granted_pe,
-   JAT_job_restarted,
-   JAT_granted_destin_identifier_list,
-   JAT_granted_resources_list,
-   JAT_master_queue,
-   JAT_state,
-   JAT_pvm_ckpt_pid,
-   JAT_pending_signal,
-   JAT_pending_signal_delivery_time,
-   JAT_pid,
-   JAT_osjobid,
-   JAT_systemd_scope,
-   JAT_systemd_slice,
-   JAT_usage_collection,
-   JAT_usage_list,
-   JAT_scaled_usage_list,
-   JAT_reported_usage_list,
-   JAT_fshare,
-   JAT_tix,
-   JAT_oticket,
-   JAT_fticket,
-   JAT_sticket,
-   JAT_share,
-   JAT_suitable,
-   JAT_task_list,
-   JAT_finished_task_list,
-   JAT_previous_usage_list,
-   JAT_pe_object,
-   JAT_next_pe_task_id,
-   JAT_stop_initiate_time,
-   JAT_prio,
-   JAT_ntix,
-   JAT_wallclock_limit,
-   JAT_message_list,
-   JAT_deleted_by,
-   JAT_joker
+   JAT_task_number = JAT_LOWERBOUND,   ///< Task Number
+   JAT_status,   ///< Status
+   JAT_start_time,   ///< Start Time
+   JAT_end_time,   ///< End Time
+   JAT_hold,   ///< Hold
+   JAT_granted_pe,   ///< Granted PE
+   JAT_job_restarted,   ///< Job Restarted
+   JAT_granted_destin_identifier_list,   ///< Granted Destination Identifier List
+   JAT_granted_resources_list,   ///< Granted Resources
+   JAT_master_queue,   ///< Master Queue
+   JAT_state,   ///< State
+   JAT_pvm_ckpt_pid,   ///< PVM Checkpoint Pid
+   JAT_pending_signal,   ///< Pending Signal
+   JAT_pending_signal_delivery_time,   ///< Pending Signal Delivery Time
+   JAT_pid,   ///< Pid
+   JAT_osjobid,   ///< OS Job Id
+   JAT_systemd_scope,   ///< Systemd Scope
+   JAT_systemd_slice,   ///< Systemd Slice
+   JAT_usage_collection,   ///< Usage Collection Mode
+   JAT_usage_list,   ///< Usage List
+   JAT_scaled_usage_list,   ///< Scaled Usage List
+   JAT_reported_usage_list,   ///< Reported Usage List
+   JAT_fshare,   ///< Functional Share
+   JAT_tix,   ///< Tickets
+   JAT_oticket,   ///< Override Tickets
+   JAT_fticket,   ///< Functional Tickets
+   JAT_sticket,   ///< Sharetree Tickets
+   JAT_share,   ///< Share
+   JAT_suitable,   ///< Suitable
+   JAT_task_list,   ///< Task List
+   JAT_finished_task_list,   ///< Finished Task List
+   JAT_previous_usage_list,   ///< Previous Usage List
+   JAT_pe_object,   ///< PE Object
+   JAT_next_pe_task_id,   ///< Next PE Task Id
+   JAT_stop_initiate_time,   ///< Stop Initiate Time
+   JAT_prio,   ///< Priority
+   JAT_ntix,   ///< Normalized Tickets
+   JAT_wallclock_limit,   ///< Wallclock Limit
+   JAT_message_list,   ///< Message List
+   JAT_deleted_by,   ///< Deleted By
+   JAT_joker   ///< Joker
 };
 
 LISTDEF(JAT_Type)
@@ -348,6 +352,7 @@ NAMEDEF(JATN)
    NAME("JAT_joker")
 NAMEEND
 
+/** @brief Number of attributes of the type, i.e. the size of its name table */
 #define JAT_SIZE sizeof(JATN)/sizeof(char *)
 
 
