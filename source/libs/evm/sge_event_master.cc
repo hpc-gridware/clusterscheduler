@@ -2526,13 +2526,13 @@ static void add_list_event_direct(lListElem *event_client, lListElem *event,
  * @param type event describing the list to update
  */
 static void total_update_event(lListElem *event_client, ev_event type, bool new_subscription, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    const lList *lp = nullptr; /* lp should be set, if we have to make a copy */
    lList *copy_lp = nullptr; /* copy_lp should be used for a copy of the org. list */
    char buffer[1024];
    dstring buffer_wrapper;
    uint32_t id;
-
-   DENTER(TOP_LAYER);
 
    SGE_ASSERT(event_client != nullptr);
 
