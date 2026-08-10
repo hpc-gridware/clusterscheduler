@@ -626,14 +626,14 @@ static void sge_get_topology(const char* qualified_hostname, lList **lpp) {
 }
 
 static int sge_get_loadavg(const char *qualified_hostname, lList **lpp) {
+   DENTER(TOP_LAYER);
+
    double avg[3];
    int loads;
    int nprocs; 
 #ifdef SGE_LOADMEM
    sge_mem_info_t mem_info;
 #endif
-
-   DENTER(TOP_LAYER);
 
    loads = sge_getloadavg(avg, 3);
    nprocs = sge_nprocs();
