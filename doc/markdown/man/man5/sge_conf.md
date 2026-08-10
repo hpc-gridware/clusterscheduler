@@ -874,10 +874,13 @@ exec hosts, the number of dynamic event clients should be kept well below it - n
 descriptors available to `sge_qmaster` is a reasonable guideline.
 
 To allow more dynamic event clients, raise the file descriptor limit of the `sge_qmaster` process before
-increasing *MAX_DYN_EC*, for example with `LimitNOFILE=` in its systemd unit or with `ulimit -n` in its startup
-environment. A soft `RLIMIT_NOFILE` limit below 32 is rejected by the communication library with "operating
-system provides too few file descriptors (at least 32 are required)" and `sge_qmaster` cannot set up
-communication at all.
+increasing *MAX_DYN_EC*. When `sge_qmaster` is started by systemd its limits come from the unit file, not from
+`/etc/security/limits.conf`; the unit file shipped with xxQS_NAMExx sets `LimitNOFILE=65536`. A site-wide
+default can be set with `DefaultLimitNOFILE=` in `/etc/systemd/system.conf`. Outside systemd, use `ulimit -n`
+in the startup environment. No setting may exceed the kernel's `fs.nr_open` sysctl, commonly 1048576.
+
+A soft `RLIMIT_NOFILE` limit below 32 is rejected by the communication library with "operating system provides
+too few file descriptors (at least 32 are required)" and `sge_qmaster` cannot set up communication at all.
 
 ***MONITOR_TIME*** 
 
@@ -1223,6 +1226,10 @@ of the queue configuration as described in xxqs_name_sxx_queue_conf(5). Unlike t
 these resource limits are set for every job on this execution host. If a value is not specified, the resource limit 
 is inherited from the execution daemon process. Because this would lead to unpredicted results, if only one limit 
 of a resource is set (soft or hard), the corresponding other limit is set to the same value.  
+When the execution daemon is started by systemd, the limits it inherits come from its unit file and not from
+`/etc/security/limits.conf`. A unit file without a `LimitNOFILE=` setting gets systemd's default soft limit of
+1024 file descriptors, which then applies to every job on the host unless *S_DESCRIPTORS* / *H_DESCRIPTORS* are
+set here. The unit file shipped with xxQS_NAMExx carries a commented-out `LimitNOFILE=` line for that reason.  
 *S_DESCRIPTORS* and *H_DESCRIPTORS* specify a value one greater than the maximum file descriptor number that can 
 be opened by any process of a job. *S_MAXPROC* and *H_MAXPROC* specify the maximum number of processes that
 can be created by the job user on this execution host *S_MEMORYLOCKED* and *H_MEMORYLOCKED* specify the maximum 

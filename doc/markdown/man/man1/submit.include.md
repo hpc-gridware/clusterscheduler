@@ -1384,7 +1384,7 @@ for the full precedence order). Within one source, comma-separated queue referen
 unioned into a single queue list. Across sources, the highest-precedence source that specifies `-q` at all replaces
 the `-q` list from every lower source — the lists are *not* unioned. This mirrors the behaviour of the
 xxqs_name_sxx_request(5) default request files and applies uniformly to qsub(1)-family submissions and to DRMAA
-submissions since release 9.1.4 (CS-2404 fix).
+submissions since release 9.1.4.
 
 With parallel jobs (see `-pe` option above) the `-q` option can be applied to the whole job, to the master queue 
 or to the slave queues by using the `-scope` option.
