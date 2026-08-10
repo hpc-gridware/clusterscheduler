@@ -468,8 +468,7 @@ static bool ec2_evco_exit(sge_evc_class_t *thiz);
  * @see #sge_evc_class_destroy(), @ref evc_client
  */
 sge_evc_class_t *
-sge_evc_class_create(ev_registration_id reg_id, lList **alpp, const char *name)
-{
+sge_evc_class_create(ev_registration_id reg_id, lList **alpp, const char *name) {
    DENTER(EVC_LAYER);
 
    auto *ret = (sge_evc_class_t *)sge_malloc(sizeof(sge_evc_class_t));
@@ -567,8 +566,7 @@ sge_evc_class_create(ev_registration_id reg_id, lList **alpp, const char *name)
  *
  * @see #sge_evc_class_create()
  */
-void sge_evc_class_destroy(sge_evc_class_t **pst)
-{
+void sge_evc_class_destroy(sge_evc_class_t **pst) {
    DENTER(EVC_LAYER);
 
    if (pst == nullptr || *pst == nullptr) {
@@ -580,8 +578,7 @@ void sge_evc_class_destroy(sge_evc_class_t **pst)
    DRETURN_VOID;
 }
 
-static void sge_evc_destroy(sge_evc_t **sge_evc)
-{
+static void sge_evc_destroy(sge_evc_t **sge_evc) {
    DENTER(EVC_LAYER);
 
    if (sge_evc == nullptr || *sge_evc == nullptr) {
@@ -703,8 +700,7 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
  *
  * @see #sge_evc_class_create()
  */
-static bool ec2_is_initialized(sge_evc_class_t *thiz)
-{
+static bool ec2_is_initialized(sge_evc_class_t *thiz) {
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    if (sge_evc == nullptr || sge_evc->ec == nullptr) {
@@ -724,8 +720,7 @@ static bool ec2_is_initialized(sge_evc_class_t *thiz)
  *
  * @see #sge_evc_class_create()
  */
-static lListElem* ec2_get_event_client(sge_evc_class_t *thiz)
-{
+static lListElem *ec2_get_event_client(sge_evc_class_t *thiz) {
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    return sge_evc->ec;
@@ -994,10 +989,10 @@ ec2_deregister_local(sge_evc_class_t *thiz) {
  */
 static bool
 ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_down, lList** alpp) {
+   DENTER(EVC_LAYER);
+
    bool ret = true;
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
-   DENTER(EVC_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_EVENTCLIENT);
 
@@ -1240,8 +1235,7 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
  *
  * @see #sge_evc_class_str::ec_register
  */
-static bool ec2_deregister(sge_evc_class_t *thiz)
-{
+static bool ec2_deregister(sge_evc_class_t *thiz) {
    DENTER(EVC_LAYER);
    bool ret = false;
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
@@ -1349,9 +1343,9 @@ ec2_subscribe(sge_evc_class_t *thiz, ev_event event) {
  */
 static void
 ec2_add_subscriptionElement(sge_evc_class_t *thiz, ev_event event, bool flush, int interval) {
-   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
-
    DENTER(EVC_LAYER);
+
+   auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
@@ -1517,8 +1511,7 @@ ec2_remove_subscriptionElement(sge_evc_class_t *thiz, ev_event event) {
  *
  * @see #sge_evc_class_str::ec_subscribe, #sge_evc_class_str::ec_unsubscribe, #sge_evc_class_str::ec_unsubscribe_all, #sge_evc_class_str::ec_commit, #sge_evc_class_str::ec_get
  */
-static bool ec2_subscribe_all(sge_evc_class_t *thiz)
-{
+static bool ec2_subscribe_all(sge_evc_class_t *thiz) {
    return ec2_subscribe(thiz, sgeE_ALL_EVENTS);
 }
 
@@ -1595,8 +1588,7 @@ ec2_unsubscribe(sge_evc_class_t *thiz, ev_event event) {
  *
  * @see #sge_evc_class_str::ec_subscribe, #sge_evc_class_str::ec_subscribe_all, #sge_evc_class_str::ec_unsubscribe, #sge_evc_class_str::ec_commit, #sge_evc_class_str::ec_get
  */
-static bool ec2_unsubscribe_all(sge_evc_class_t *thiz)
-{
+static bool ec2_unsubscribe_all(sge_evc_class_t *thiz) {
    return ec2_unsubscribe(thiz, sgeE_ALL_EVENTS);
 }
 
@@ -1767,8 +1759,7 @@ ec2_unset_flush(sge_evc_class_t *thiz, ev_event event) {
  *
  * @see @ref evc_subscription, @ref evc_flushing, #sge_evc_class_str::ec_subscribe, #sge_evc_class_str::ec_set_flush
  */
-static bool ec2_subscribe_flush(sge_evc_class_t *thiz, ev_event event, int flush)
-{
+static bool ec2_subscribe_flush(sge_evc_class_t *thiz, ev_event event, int flush) {
    bool ret;
 
    ret = ec2_subscribe(thiz, event);
@@ -1912,9 +1903,10 @@ static const char *ec2_get_session(sge_evc_class_t *thiz) {
  */
 static ev_registration_id
 ec2_get_id(sge_evc_class_t *thiz) {
+   DENTER(EVC_LAYER);
+
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
-   DENTER(EVC_LAYER);
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
       DRETURN(EV_ID_INVALID);
@@ -2682,8 +2674,8 @@ printf("EVENT_CLIENT %d ends to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime6
  */
 static void
 ec2_wait_local(sge_evc_class_t *thiz) {
-
    DENTER(EVC_LAYER);
+
    /*
    ** reset busy, important otherwise no new events
    */
