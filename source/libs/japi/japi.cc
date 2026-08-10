@@ -728,14 +728,14 @@ int japi_enable_job_wait(const char *username, const char *unqualified_hostname,
  * @note MT-NOTE: japi_open_session() is MT safe
  */
 static int japi_open_session(const char *username, const char *unqualified_hostname, const char *key_in, dstring *key_out, dstring *diag) {
+   DENTER(TOP_LAYER);
+
 #ifdef ENABLE_PERSISTENT_JAPI_SESSIONS
    struct passwd pw_struct, *pwd;
    char buffer[2048];
    char tmp_session_path_buffer[SGE_PATH_MAX];
    dstring tmp_session_path;
 #endif
-
-   DENTER(TOP_LAYER);
 
    if (key_in == nullptr) {
       char tmp_session_key_buffer[SGE_PATH_MAX];
@@ -1418,6 +1418,8 @@ int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, lListElem **sge_job_templa
 static int japi_user_hold_add_jobid(uint32_t gdi_action, lList **request_list,
                                     uint32_t jobid, uint32_t taskid, bool array,
                                     dstring *diag) {
+   DENTER(TOP_LAYER);
+
    const lDescr job_descr[] = {
          {JB_job_number, lUlongT | CULL_IS_REDUCED, nullptr},
          {JB_verify_suitable_queues, lUlongT | CULL_IS_REDUCED, nullptr},
@@ -1432,8 +1434,6 @@ static int japi_user_hold_add_jobid(uint32_t gdi_action, lList **request_list,
    };
    lListElem *jep = nullptr;
    lListElem *tep = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (!array) {
       taskid = 0;
