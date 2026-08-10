@@ -67,17 +67,16 @@
  * @note The function should only be called from the event mirror interface.
  */
 sge_callback_result
-schedd_conf_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
-                               sge_event_action action, lListElem *event, void *clientdata)
-{
+schedd_conf_update_master_list(sge_evc_class_t *evc, sge_object_type type,
+                               sge_event_action action, lListElem *event, void *clientdata) {
+   DENTER(TOP_LAYER);
+
    lList *list = nullptr;
    lList *answer_list = nullptr;
    lDescr *list_descr;
 
    lList *data_list;
    lListElem *ep = nullptr;
-
-   DENTER(TOP_LAYER);
 
    list_descr = SC_Type;
 

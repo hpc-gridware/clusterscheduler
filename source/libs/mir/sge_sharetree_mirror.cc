@@ -67,12 +67,11 @@
  */
 sge_callback_result
 sharetree_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
-                             lListElem *event, void *clientdata)
-{
+                             lListElem *event, void *clientdata) {
+   DENTER(TOP_LAYER);
+
    lList **list = nullptr;
    lList *src = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* remove old share tree */
    list = ocs::DataStore::get_master_list_rw(type);
@@ -88,4 +87,3 @@ sharetree_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_eve
 
    DRETURN(SGE_EMA_OK);
 }
-

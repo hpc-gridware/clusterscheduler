@@ -66,14 +66,13 @@
  * @see `job_update_master_list_usage()`, `ja_task_update_master_list_usage()`
  */
 sge_callback_result
-pe_task_update_master_list_usage(lList *job_list, lListElem *event)
-{
+pe_task_update_master_list_usage(lList *job_list, lListElem *event) {
+   DENTER(TOP_LAYER);
+
    lList *tmp = nullptr;
    uint32_t job_id, ja_task_id;
    const char *pe_task_id;
    lListElem *job, *ja_task, *pe_task;
-
-   DENTER(TOP_LAYER);
 
    job_id = lGetUlong(event, ET_intkey);
    ja_task_id = lGetUlong(event, ET_intkey2);
@@ -133,9 +132,10 @@ pe_task_update_master_list_usage(lList *job_list, lListElem *event)
  * @see `sge_mirror_update_master_list()`
  */
 sge_callback_result
-pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
-                           sge_event_action action, lListElem *event, void *clientdata)
-{
+pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
+                           sge_event_action action, lListElem *event, void *clientdata) {
+   DENTER(TOP_LAYER);
+
    uint32_t job_id;
    lListElem *job = nullptr;
 
@@ -151,8 +151,6 @@ pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    char id_buffer[MAX_STRING_SIZE];
    dstring id_dstring;
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
@@ -217,4 +215,3 @@ pe_task_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    DRETURN(SGE_EMA_OK);
 }
-

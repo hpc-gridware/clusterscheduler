@@ -71,9 +71,8 @@
  * @note The function should only be called from the event mirror interface.
  */
 sge_callback_result
-cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
-                          sge_event_action action, lListElem *event, void *clientdata)
-{
+cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
+                          sge_event_action action, lListElem *event, void *clientdata) {
    DENTER(TOP_LAYER);
    sge_callback_result ret = SGE_EMA_OK;
    const char *name = nullptr;
@@ -133,15 +132,15 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
  * @note The function should only be called from the event mirror interface.
  */
 sge_callback_result
-qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type, 
-                             sge_event_action action, lListElem *event, void *clientdata)
-{
+qinstance_update_cqueue_list(sge_evc_class_t *evc, sge_object_type type,
+                             sge_event_action action, lListElem *event, void *clientdata) {
+   DENTER(TOP_LAYER);
+
    sge_callback_result ret = SGE_EMA_OK;
    const char *name = nullptr;
    const char *hostname = nullptr;
    lListElem *cqueue = nullptr;
 
-   DENTER(TOP_LAYER);
    name = lGetString(event, ET_strkey);
    hostname = lGetString(event, ET_strkey2);
 
