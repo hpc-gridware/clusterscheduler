@@ -259,10 +259,10 @@ static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls) {
  * @return new CULL element of type LS_Type will be returned and a new loadsensor process will be created by this function
  */
 static lListElem *sge_ls_create_ls(const char *qualified_hostname, const char *name, const char *scriptfile) {
+   DENTER(TOP_LAYER);
+
    lListElem *new_ls = nullptr;    /* LS_Type */
    SGE_STRUCT_STAT st;
-
-   DENTER(TOP_LAYER);
 
    if (scriptfile != nullptr) {
       if (SGE_STAT(scriptfile, &st) != 0) {
@@ -531,11 +531,11 @@ void sge_ls_gnu_ls(int gnu_ls) {
  * @return LS_OK
  */
 static int sge_ls_start(const char *qualified_hostname, const char *binary_path, char *scriptfiles) {
+   DENTER(TOP_LAYER);
+
    lListElem *nxt_ls_elem = nullptr;    /* LS_Type */
    char scriptfiles_buffer[MAX_STRING_SIZE];
    SGE_STRUCT_STAT stat_buffer;
-
-   DENTER(TOP_LAYER);
 
    /* tag all elements */
    for_each_rw_lv(ls_elem, ls_list) {

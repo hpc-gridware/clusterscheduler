@@ -216,6 +216,8 @@ int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 }
 
 static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
+   DENTER(TOP_LAYER);
+
    lListElem *jep;
    dstring err_str = DSTRING_INIT;
    uint32_t jobid, jataskid;
@@ -224,8 +226,6 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
    const char *qnm;
    const void *iterator = nullptr;
    bool report_job_error = true;   /* send job report on error? */
-
-   DENTER(TOP_LAYER);
 
    DPRINTF("got %s job " sge_u32 "\n", slave ?"slave ":"", lGetUlong(jelem, JB_job_number));
 

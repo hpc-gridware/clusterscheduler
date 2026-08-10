@@ -1579,6 +1579,8 @@ static void
 examine_job_task_from_file(int startup, char *dir, lListElem *jep,
                            lListElem *jatep, lListElem *petep,
                            const std::vector<pid_t> &pids) {
+   DENTER(TOP_LAYER);
+
    lListElem *jr = nullptr;
    bool shepherd_alive;  /* true -> this shepherd is in the process table */
    FILE *fp = nullptr;
@@ -1590,8 +1592,6 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
    const char *pe_task_id_str = nullptr;
    static uint64_t startup_time = sge_get_gmt64();
 
-   DENTER(TOP_LAYER);
-   
    jobid = lGetUlong(jep, JB_job_number);
    jataskid = lGetUlong(jatep, JAT_task_number);
    if (petep != nullptr) {

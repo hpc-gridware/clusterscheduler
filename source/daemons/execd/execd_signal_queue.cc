@@ -472,12 +472,12 @@ void sge_send_suspend_mail(uint32_t signal, lListElem *master_q, lListElem *jep,
  * @return  0 on success; -2 if the shepherd is gone; -1 on other errors.
  */
 int sge_kill(int pid, uint32_t sge_signal, uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id) {
+   DENTER(TOP_LAYER);
+
    int sig;
    int direct_signal;   /* deliver per signal or per file */
    char id_buffer[MAX_STRING_SIZE];
    dstring id_dstring;
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
