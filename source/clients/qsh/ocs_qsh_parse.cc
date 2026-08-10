@@ -84,15 +84,14 @@
  *         - `STATUS_ENOIMP` - an unknown switch, or `-help`
  */
 lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *username, const char *cell_root,
-                                const char *unqualified_hostname, const char *qualified_hostname, lList *cmdline, lListElem **pjob) 
-{
+                                const char *unqualified_hostname, const char *qualified_hostname, lList *cmdline, lListElem **pjob) {
+   DENTER(TOP_LAYER); 
+
    const char *cp;
    lListElem *ep;
    lList *answer = nullptr;
    lList *path_alias = nullptr;
    uint32_t job_now;
-
-   DENTER(TOP_LAYER); 
 
    if (!pjob) {
       answer_list_add(&answer, MSG_PARSE_NULLPOINTERRECEIVED, 
@@ -707,6 +706,3 @@ lList *cull_parse_qsh_parameter(uint32_t prog_number, uint32_t uid, const char *
 
    DRETURN(answer);
 }
-
-
-

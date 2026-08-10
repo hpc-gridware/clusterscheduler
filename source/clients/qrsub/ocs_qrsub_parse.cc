@@ -72,12 +72,11 @@
  * @param ar receives the advance reservation (`AR_Type`)
  * @return true on success; false with `alpp` filled otherwise
  */
-bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
-{
-   lListElem *ep = nullptr, *next_ep = nullptr;
-   lList *lp = nullptr;
+bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar) {
    DENTER(TOP_LAYER);
 
+   lListElem *ep = nullptr, *next_ep = nullptr;
+   lList *lp = nullptr;
    /* -help print this help */
    if ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-help"))) {
       lRemoveElem(pcmdline, &ep);

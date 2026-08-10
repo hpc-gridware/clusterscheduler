@@ -293,10 +293,10 @@ char **envp,
 lList **ppcmdline,
 lList **alpp
 ) {
+   DENTER(TOP_LAYER);
+
    char **sp;
    char **rp;
-
-   DENTER(TOP_LAYER);
 
    rp = argv;
    while (*(sp=rp)) {
@@ -405,11 +405,11 @@ uint32_t *pforce,
 lList **ppuserlist,
 lList **alpp
 ) {
+   DENTER(TOP_LAYER);
+
    uint32_t helpflag;
    lListElem *ep;
    bool ret = true;
-
-   DENTER(TOP_LAYER);
 
    /* Loop over all options. Only valid options can be in the
       ppcmdline list. 

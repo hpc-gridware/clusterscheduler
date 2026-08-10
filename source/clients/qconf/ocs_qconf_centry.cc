@@ -76,9 +76,10 @@ static bool centry_list_provide_modify_context(lList **this_list, lList **answer
  * @return true on success; false with `answer_list` filled otherwise
  */
 bool centry_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::Command gdi_command) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
 
-   DENTER(TOP_LAYER);
    if (this_elem != nullptr) {
       lList *centry_list = nullptr;
       lList *gdi_answer_list = nullptr;
@@ -132,6 +133,8 @@ lListElem *centry_get_via_gdi(lList **answer_list, const char *name) {
 }
 
 static bool centry_provide_modify_context(lListElem **this_elem, lList **answer_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    int status = 0;
    lList *alp = nullptr;
@@ -139,8 +142,6 @@ static bool centry_provide_modify_context(lListElem **this_elem, lList **answer_
    int missing_field = NoName;
    uid_t uid = component_get_uid();
    gid_t gid = component_get_gid();
-
-   DENTER(TOP_LAYER);
 
    if (this_elem != nullptr && *this_elem != nullptr) {
       const char *filename = nullptr;
@@ -205,7 +206,6 @@ static bool centry_provide_modify_context(lListElem **this_elem, lList **answer_
  * @return true on success; false with `answer_list` filled otherwise
  */
 bool centry_add(lList **answer_list, const char *name) {
-
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -237,11 +237,12 @@ bool centry_add(lList **answer_list, const char *name) {
  * @return true on success; false with `answer_list` filled otherwise
  */
 bool centry_add_from_file(lList **answer_list, const char *filename) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
-   DENTER(TOP_LAYER);
    if (filename != nullptr) {
       lListElem *centry;
 
@@ -318,11 +319,12 @@ bool centry_modify(lList **answer_list, const char *name) {
  * @return true on success; false with `answer_list` filled otherwise
  */
 bool centry_modify_from_file(lList **answer_list, const char *filename) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
-   DENTER(TOP_LAYER);
    if (filename != nullptr) {
       lListElem *centry;
 
@@ -366,9 +368,10 @@ bool centry_modify_from_file(lList **answer_list, const char *filename) {
  * @return true on success; false with `answer_list` filled otherwise
  */
 bool centry_delete(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr) {
       lListElem *centry = centry_create(answer_list, name);
 
@@ -420,10 +423,11 @@ bool centry_show(lList **answer_list, const char *name) {
  * @return true on success; false with `answer_list` filled otherwise
  */
 bool centry_list_show(lList **answer_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    lList *centry_list = nullptr;
 
-   DENTER(TOP_LAYER);
    centry_list = centry_list_get_via_gdi(answer_list);
    if (centry_list != nullptr) {
       const char *filename;
@@ -449,11 +453,12 @@ bool centry_list_show(lList **answer_list) {
  * @return the list (`CE_Type`), or `nullptr` with `answer_list` filled
  */
 lList *centry_list_get_via_gdi(lList **answer_list) {
+   DENTER(TOP_LAYER);
+
    lList *ret = nullptr;
    lList *gdi_answer_list = nullptr;
    lEnumeration *what = nullptr;
 
-   DENTER(TOP_LAYER);
    what = lWhat("%T(ALL)", CE_Type);
    gdi_answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CE_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &ret, nullptr, what);
    lFreeWhat(&what);
@@ -480,9 +485,10 @@ lList *centry_list_get_via_gdi(lList **answer_list) {
  */
 bool
 centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **old_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (!this_list || !old_list) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -777,9 +783,10 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
  * @return true on success; false with `answer_list` filled otherwise
  */
 bool centry_list_modify(lList **answer_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (ret) {
       lList *centry_list = centry_list_get_via_gdi(answer_list);
       lList *old_centry_list = lCopyList("", centry_list);
@@ -804,9 +811,10 @@ bool centry_list_modify(lList **answer_list) {
  * @return true on success; false with `answer_list` filled otherwise
  */
 bool centry_list_modify_from_file(lList **answer_list, const char *filename) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (ret) {
       lList *old_centry_list = nullptr;
       lList *centry_list = nullptr;
@@ -836,12 +844,13 @@ bool centry_list_modify_from_file(lList **answer_list, const char *filename) {
 }
 
 static bool centry_list_provide_modify_context(lList **this_list, lList **answer_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    int status = 0;
    uid_t uid = component_get_uid();
    gid_t gid = component_get_gid();
 
-   DENTER(TOP_LAYER);
    if (this_list != nullptr) {
       const char *filename;
 

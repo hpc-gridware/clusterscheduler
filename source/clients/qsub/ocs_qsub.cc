@@ -88,9 +88,7 @@ static int report_exit_status(int stat, const char *jobid);
 static void error_handler(const char *message);
 
 /************************************************************************/
-int
-main(int argc, const char **argv)
-{
+int main(int argc, const char **argv) {
    DENTER_MAIN(TOP_LAYER, "qsub");
    lList *opts_cmdline = nullptr;
    lList *opts_defaults = nullptr;
@@ -519,8 +517,7 @@ Error:
  *
  * @note MT-NOTES: get_bulk_jobid_string() is MT safe
  */
-static char *get_bulk_jobid_string(long job_id, int start, int end, int step)
-{
+static char *get_bulk_jobid_string(long job_id, int start, int end, int step) {
    size_t jobid_str_size = sizeof(char) * 1024;
    char *jobid_str = sge_malloc(jobid_str_size);
    char *ret_str = nullptr;
@@ -539,8 +536,7 @@ static char *get_bulk_jobid_string(long job_id, int start, int end, int step)
  *
  * @note MT-NOTES: get_bulk_jobid_string() is MT safe
  */
-static void qsub_setup_sig_handlers()
-{
+static void qsub_setup_sig_handlers() {
    sigset_t sig_set;
 
    sigfillset(&sig_set);
@@ -554,8 +550,7 @@ static void qsub_setup_sig_handlers()
  *
  * @note MT-NOTES: qsub_terminate() is MT safe
  */
-static void qsub_terminate()
-{
+static void qsub_terminate() {
    dstring diag = DSTRING_INIT;
    int tmp_ret;
 
@@ -593,8 +588,7 @@ static void qsub_terminate()
  *
  * @note MT-NOTES: sig_thread() is MT safe
  */
-static void *sig_thread(void *dummy)
-{
+static void *sig_thread(void *dummy) {
    int sig;
    sigset_t signal_set;
    dstring diag = DSTRING_INIT;
@@ -628,8 +622,7 @@ static void *sig_thread(void *dummy)
  *
  * @note MT-NOTES: report_exit_status() is MT safe
  */
-static int report_exit_status(int stat, const char *jobid)
-{
+static int report_exit_status(int stat, const char *jobid) {
    int aborted, exited, signaled;
    int exit_status = 0;
 
@@ -672,7 +665,6 @@ static int report_exit_status(int stat, const char *jobid)
  *
  * @note MT-NOTES: error_handler() is MT safe
  */
-static void error_handler(const char *message)
-{
+static void error_handler(const char *message) {
    fprintf(stderr, "%s", message != nullptr ? message : "nullptr japi message");
 }

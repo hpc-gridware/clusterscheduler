@@ -64,14 +64,13 @@ static bool
 hgroup_provide_modify_context(lListElem **this_elem, lList **answer_list, bool ignore_unchanged_message);
 
 
-static void 
-hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent)
-{
+static void
+hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent) {
+   DENTER(TOP_LAYER);
+
    const char *const indent_string = "   ";
    const lListElem *hgroup = nullptr;
    int i;
-
-   DENTER(TOP_LAYER);
 
    for (i = 0; i < indent; i++) {
       printf("%s", indent_string);
@@ -100,12 +99,11 @@ hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent)
  * @param gdi_command `ADD`, `MOD` or `DEL`
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool 
-hgroup_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::Command gdi_command)
-{
+bool hgroup_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::Command gdi_command) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (this_elem != nullptr) {
       lListElem *element = nullptr;
       lList *hgroup_list = nullptr;
@@ -128,11 +126,11 @@ hgroup_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::
  * @return the host group (`HGRP_Type`), or `nullptr` with `answer_list` filled
  */
 lListElem *
-hgroup_get_via_gdi(lList **answer_list, const char *name)
-{
+hgroup_get_via_gdi(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
    lListElem *ret = nullptr;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr) {
       lList *gdi_answer_list = nullptr;
       lEnumeration *what = nullptr;
@@ -157,8 +155,9 @@ hgroup_get_via_gdi(lList **answer_list, const char *name)
 }
 
 static bool
-hgroup_provide_modify_context(lListElem **this_elem, lList **answer_list, bool ignore_unchanged_message)
-{
+hgroup_provide_modify_context(lListElem **this_elem, lList **answer_list, bool ignore_unchanged_message) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    int status = 0;
    int fields_out[MAX_NUM_FIELDS];
@@ -166,7 +165,6 @@ hgroup_provide_modify_context(lListElem **this_elem, lList **answer_list, bool i
    uid_t uid = component_get_uid();
    gid_t gid = component_get_gid();
    
-   DENTER(TOP_LAYER);
    if (this_elem != nullptr && *this_elem != nullptr) {
       const char *filename = nullptr;
       filename = spool_flatfile_write_object(answer_list, *this_elem, false, HGRP_fields, &qconf_sfi, SP_DEST_TMP, qconf_opt_format, filename, false);
@@ -239,9 +237,10 @@ hgroup_provide_modify_context(lListElem **this_elem, lList **answer_list, bool i
  */
 bool
 hgroup_add(lList **answer_list, const char *name, bool is_name_validate ) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr) {
       lListElem *hgroup = hgroup_create(answer_list, name, nullptr, is_name_validate);
 
@@ -278,11 +277,11 @@ hgroup_add(lList **answer_list, const char *name, bool is_name_validate ) {
  */
 bool
 hgroup_add_from_file(lList **answer_list, const char *filename) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
-
-   DENTER(TOP_LAYER);
 
    if (filename != nullptr) {
       lListElem *hgroup;
@@ -326,9 +325,10 @@ hgroup_add_from_file(lList **answer_list, const char *filename) {
  * @return true on success; false with `answer_list` filled otherwise
  */
 bool hgroup_modify(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr) {
       lListElem *hgroup = hgroup_get_via_gdi(answer_list, name);
 
@@ -357,14 +357,13 @@ bool hgroup_modify(lList **answer_list, const char *name) {
  * @param filename the file holding the new definition
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool
-hgroup_modify_from_file(lList **answer_list, const char *filename)
-{
+bool hgroup_modify_from_file(lList **answer_list, const char *filename) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
-   DENTER(TOP_LAYER);
    if (filename != nullptr) {
       lListElem *hgroup;
 
@@ -408,12 +407,11 @@ hgroup_modify_from_file(lList **answer_list, const char *filename)
  * @param name the host group to delete
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool
-hgroup_delete(lList **answer_list, const char *name)
-{
+bool hgroup_delete(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr) {
       lListElem *hgroup = hgroup_create(answer_list, name, nullptr, true);
    
@@ -431,12 +429,11 @@ hgroup_delete(lList **answer_list, const char *name)
  * @param name the host group to print
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool
-hgroup_show(lList **answer_list, const char *name)
-{
+bool hgroup_show(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr) {
       lListElem *hgroup = hgroup_get_via_gdi(answer_list, name);
    
@@ -470,11 +467,11 @@ hgroup_show(lList **answer_list, const char *name)
  * @param show_tree true for the tree, false for the resolved list
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool hgroup_show_structure(lList **answer_list, const char *name, bool show_tree)
-{
+bool hgroup_show_structure(lList **answer_list, const char *name, bool show_tree) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr) {
       lList *hgroup_list = nullptr;
       const lListElem *hgroup = nullptr;

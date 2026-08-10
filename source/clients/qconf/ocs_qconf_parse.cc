@@ -141,8 +141,7 @@ static const char *write_attr_tmp_file(const char *name, const char *value,
                                        const char *delimiter, dstring *error_message);
 
 /***************************************************************************/
-static char **sge_parser_get_next(char **arg)
-{
+static char **sge_parser_get_next(char **arg) {
    DENTER(TOP_LAYER);
    if (!*(arg+1)) {
       ERROR(MSG_QCONF_NOOPTIONARGPROVIDEDTOX_S , *arg);
@@ -182,8 +181,7 @@ spool_flatfile_format qconf_opt_format = SP_FORM_ASCII;  ///< see the declaratio
  * @return none
  */
 static void
-qconf_info_printf(const char *fmt, ...)
-{
+qconf_info_printf(const char *fmt, ...) {
    va_list ap;
    va_start(ap, fmt);
    vprintf(fmt, ap);
@@ -198,8 +196,7 @@ qconf_info_printf(const char *fmt, ...)
  * @return true on an explicit yes; false on no, EOF or a non-tty stdin
  */
 static bool
-qconf_confirm(const char *prompt)
-{
+qconf_confirm(const char *prompt) {
    printf("%s", prompt);
    fflush(stdout);
    char buf[16];
@@ -213,16 +210,14 @@ qconf_confirm(const char *prompt)
 /** @brief True if the name attribute @a name_nm of @a descr is a host field
  *  (lHostT) rather than a plain string (CS-2304: e.g. EH_name). */
 static bool
-qconf_name_is_host(const lDescr *descr, int name_nm)
-{
+qconf_name_is_host(const lDescr *descr, int name_nm) {
    return lGetType(descr, name_nm) == lHostT;
 }
 
 /** @brief Read an object's name attribute as a string, whether it is a plain
  *  string field or a host field (CS-2304). */
 static const char *
-qconf_get_name(const lListElem *ep, int name_nm)
-{
+qconf_get_name(const lListElem *ep, int name_nm) {
    if (lGetType(lGetElemDescr(ep), name_nm) == lHostT) {
       return lGetHost(ep, name_nm);
    }
@@ -240,8 +235,7 @@ qconf_get_name(const lListElem *ep, int name_nm)
  */
 static bool
 qconf_object_exists(ocs::gdi::Target target, const lDescr *descr, int name_nm,
-                    const char *name)
-{
+                    const char *name) {
    lList *lp = nullptr;
    /* CS-2304: host fields need a host comparison (%Ih), not a string one. */
    lCondition *where = qconf_name_is_host(descr, name_nm)
@@ -271,8 +265,7 @@ qconf_object_exists(ocs::gdi::Target target, const lDescr *descr, int name_nm,
  * @return a (possibly empty) list of name-only elements, or nullptr on error
  */
 static lList *
-qconf_get_name_list(ocs::gdi::Target target, const lDescr *descr, int name_nm)
-{
+qconf_get_name_list(ocs::gdi::Target target, const lDescr *descr, int name_nm) {
    lList *lp = nullptr;
    lEnumeration *what = lWhat("%T(%I)", descr, name_nm);
    lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET,
@@ -295,8 +288,7 @@ qconf_get_name_list(ocs::gdi::Target target, const lDescr *descr, int name_nm)
  * @return true if the list contains an element with that name
  */
 static bool
-qconf_name_in_list(const lList *names, const lDescr *descr, int name_nm, const char *name)
-{
+qconf_name_in_list(const lList *names, const lDescr *descr, int name_nm, const char *name) {
    if (names == nullptr || name == nullptr) {
       return false;
    }
@@ -315,8 +307,7 @@ qconf_name_in_list(const lList *names, const lDescr *descr, int name_nm, const c
  * @return the number of answers whose status is not STATUS_OK
  */
 static int
-qconf_count_failures(const lList *alp)
-{
+qconf_count_failures(const lList *alp) {
    int n = 0;
    const lListElem *aep;
    for_each_ep(aep, alp) {
@@ -346,8 +337,7 @@ qconf_count_failures(const lList *alp)
  */
 static int
 qconf_send_upsert(ocs::gdi::Target target, const lDescr *descr, int name_nm,
-                  lListElem *ep, ocs::gdi::SubCommand sub_cmd = ocs::gdi::SubCommand::NONE)
-{
+                  lListElem *ep, ocs::gdi::SubCommand sub_cmd = ocs::gdi::SubCommand::NONE) {
    const char *name = qconf_get_name(ep, name_nm);
    bool exists = (name != nullptr && qconf_object_exists(target, descr, name_nm, name));
 
@@ -394,8 +384,7 @@ qconf_read_object_file(const lDescr *descr, spooling_field *fields,
                        int (*validate)(const lListElem *, lList **),
                        const spool_flatfile_instr *sfi = &qconf_sfi,
                        int (*prepare)(lListElem *, lList **) = nullptr,
-                       bool parse_values = true)
-{
+                       bool parse_values = true) {
    lList *alp = nullptr;
    int fields_out[MAX_NUM_FIELDS];
    fields_out[0] = NoName;
@@ -446,8 +435,7 @@ qconf_read_object_file(const lDescr *descr, spooling_field *fields,
  * @return the total number of failures (an opendir error counts as one)
  */
 static int
-qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), void *ctx)
-{
+qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), void *ctx) {
    if (!sge_is_directory(path)) {
       return per_file(path, ctx);
    }
@@ -506,8 +494,7 @@ struct qconf_file_ctx {
  * @return 0 on success, 1 on failure
  */
 [[maybe_unused]] static int
-qconf_apply_one(const char *filepath, void *vctx)
-{
+qconf_apply_one(const char *filepath, void *vctx) {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
    lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate, ctx->sfi, ctx->prepare, ctx->parse_values);
    if (ep == nullptr) {
@@ -533,8 +520,7 @@ qconf_apply_one(const char *filepath, void *vctx)
  * @return 0 on success (including a skipped non-existent name), 1 on read failure
  */
 static int
-qconf_collect_name(const char *filepath, void *vctx)
-{
+qconf_collect_name(const char *filepath, void *vctx) {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
    /* deletion only needs the name, so no object validator is applied here */
    lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, nullptr, ctx->sfi, ctx->prepare, ctx->parse_values);
@@ -573,8 +559,7 @@ qconf_collect_name(const char *filepath, void *vctx)
  * @return 0 on success, 1 on read failure
  */
 static int
-qconf_collect_elem(const char *filepath, void *vctx)
-{
+qconf_collect_elem(const char *filepath, void *vctx) {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
    lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate, ctx->sfi, ctx->prepare, ctx->parse_values);
    if (ep == nullptr) {
@@ -622,8 +607,7 @@ qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *f
                  const spool_flatfile_instr *sfi = &qconf_sfi,
                  int (*prepare)(lListElem *, lList **) = nullptr,
                  ocs::gdi::SubCommand sub_cmd = ocs::gdi::SubCommand::NONE,
-                 bool parse_values = true)
-{
+                 bool parse_values = true) {
    bool is_dir = sge_is_directory(path);
 
    /* 1. Read every file (running prepare/validate per object) into one list. */
@@ -755,8 +739,7 @@ qconf_delete_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *
                   int name_nm, const char *path,
                   const spool_flatfile_instr *sfi = &qconf_sfi,
                   int (*prepare)(lListElem *, lList **) = nullptr,
-                  bool parse_values = true)
-{
+                  bool parse_values = true) {
    qconf_file_ctx ctx = {target, descr, fields, name_nm,
                          lCreateList("qconf del", descr), nullptr, 0, 0, nullptr, sfi, prepare,
                          parse_values, ocs::gdi::SubCommand::NONE};
@@ -819,8 +802,7 @@ qconf_delete_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *
  * name is reported as an error for that object.
  */
 static bool
-qconf_name_is_fs_safe(const char *name)
-{
+qconf_name_is_fs_safe(const char *name) {
    if (name == nullptr || name[0] == '\0') {
       return false;
    }
@@ -862,8 +844,7 @@ typedef spooling_field *(*qconf_build_fields_fn)(spool_flatfile_format format, b
 static int
 qconf_export_write_one(const lListElem *ep, const spooling_field *fields,
                        const spool_flatfile_instr *sfi, const char *json_type_name,
-                       bool as_list, bool is_root, const char *dest)
-{
+                       bool as_list, bool is_root, const char *dest) {
    if (sge_is_file(dest)) {
       if (!qconf_opt_force) {
          WARNING(MSG_QCONF_EXPORTSKIPPEDEXISTS_S, dest);
@@ -922,8 +903,7 @@ qconf_export_write_one(const lListElem *ep, const spooling_field *fields,
  * @param suffix ".json" under -fmt json, "" otherwise.
  */
 static void
-qconf_export_dest(dstring *dest, const char *dir, const char *name, const char *suffix)
-{
+qconf_export_dest(dstring *dest, const char *dir, const char *name, const char *suffix) {
    sge_dstring_clear(dest);
    if (dir != nullptr) {
       sge_dstring_sprintf(dest, "%s/%s%s", dir, name, suffix);
@@ -957,8 +937,7 @@ qconf_export_path(ocs::gdi::Target target, const lDescr *descr, int name_nm,
                   qconf_build_fields_fn build_fields,
                   const spool_flatfile_instr *sfi, const char *json_type_name,
                   bool as_list, const char *path,
-                  const char *exclude1 = nullptr, const char *exclude2 = nullptr)
-{
+                  const char *exclude1 = nullptr, const char *exclude2 = nullptr) {
    const char *suffix = (qconf_opt_format == SP_FORM_JSON) ? ".json" : "";
    size_t plen = strlen(path);
    bool is_bulk = sge_is_directory(path) || (plen > 0 && path[plen - 1] == '/');
@@ -1092,8 +1071,7 @@ static int
 qconf_export_singleton(ocs::gdi::Target target, const lDescr *descr,
                        qconf_build_fields_fn build_fields,
                        const spool_flatfile_instr *sfi, const char *json_type_name,
-                       bool is_root, const char *path)
-{
+                       bool is_root, const char *path) {
    size_t plen = strlen(path);
    if (sge_is_directory(path) || (plen > 0 && path[plen - 1] == '/')) {
       ERROR(MSG_QCONF_EXPORTNODIRALLOWED_S, path);
@@ -1163,8 +1141,7 @@ static spooling_field *qconf_fields_STN (spool_flatfile_format fmt, bool *o) {
  * @return the number of configs that failed to export
  */
 static int
-qconf_conf_export(const char *path)
-{
+qconf_conf_export(const char *path) {
    const char *suffix = (qconf_opt_format == SP_FORM_JSON) ? ".json" : "";
    size_t plen = strlen(path);
    bool is_bulk = sge_is_directory(path) || (plen > 0 && path[plen - 1] == '/');
@@ -1276,8 +1253,7 @@ qconf_conf_export(const char *path)
  * @return STATUS_OK on success, another status on failure
  */
 static int
-qconf_pe_validate(const lListElem *ep, lList **alpp)
-{
+qconf_pe_validate(const lListElem *ep, lList **alpp) {
    return pe_validate(const_cast<lListElem *>(ep), alpp, 0, nullptr);
 }
 
@@ -1293,8 +1269,7 @@ qconf_pe_validate(const lListElem *ep, lList **alpp)
  * @return STATUS_OK on success, STATUS_ESEMANTIC on failure
  */
 static int
-qconf_role_validate(const lListElem *ep, lList **alpp)
-{
+qconf_role_validate(const lListElem *ep, lList **alpp) {
    return ocs::Role::validate(ep, alpp, false) ? STATUS_OK : STATUS_ESEMANTIC;
 }
 
@@ -1310,8 +1285,7 @@ qconf_role_validate(const lListElem *ep, lList **alpp)
  * @return STATUS_OK on success, STATUS_ESEMANTIC if the host cannot be resolved
  */
 static int
-qconf_eh_resolve(lListElem *ep, lList **alpp)
-{
+qconf_eh_resolve(lListElem *ep, lList **alpp) {
    if (sge_resolve_host(ep, EH_name) != CL_RETVAL_OK) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(ep, EH_name));
@@ -1331,8 +1305,7 @@ qconf_eh_resolve(lListElem *ep, lList **alpp)
  * @return STATUS_OK on success, STATUS_ESEMANTIC on failure
  */
 static int
-qconf_cq_verify(const lListElem *ep, lList **alpp)
-{
+qconf_cq_verify(const lListElem *ep, lList **alpp) {
    lListElem *e = const_cast<lListElem *>(ep);
    return cqueue_verify_attributes(e, alpp, e, false, nullptr, nullptr, nullptr, nullptr,
                                    nullptr, nullptr, nullptr, nullptr)
@@ -1351,8 +1324,7 @@ qconf_cq_verify(const lListElem *ep, lList **alpp)
  * @return STATUS_OK on success, another status on failure
  */
 static int
-qconf_us_validate(const lListElem *ep, lList **alpp)
-{
+qconf_us_validate(const lListElem *ep, lList **alpp) {
    return userset_validate_entries(const_cast<lListElem *>(ep), alpp);
 }
 
@@ -1371,8 +1343,7 @@ struct qconf_rqs_ctx {
 /** @brief qconf_for_each_file callback: read one file's resource quota sets and
  *  move them into the merged list (CS-2307). */
 static int
-qconf_rqs_collect(const char *filepath, void *vctx)
-{
+qconf_rqs_collect(const char *filepath, void *vctx) {
    auto *ctx = static_cast<qconf_rqs_ctx *>(vctx);
    lList *alp = nullptr;
    lList *l = spool_flatfile_read_list(&alp, RQS_Type, RQS_fields, nullptr, true,
@@ -1405,8 +1376,7 @@ qconf_rqs_collect(const char *filepath, void *vctx)
  * @return 0 on success, non-zero on failure
  */
 static int
-qconf_rqs_apply(const char *path, ocs::gdi::Command cmd, const char *name)
-{
+qconf_rqs_apply(const char *path, ocs::gdi::Command cmd, const char *name) {
    bool is_dir = sge_is_directory(path);
 
    /* preserve the existing single-file behaviour verbatim (only when actually
@@ -1467,8 +1437,7 @@ qconf_rqs_apply(const char *path, ocs::gdi::Command cmd, const char *name)
  * @return 0 on success, non-zero on failure
  */
 static int
-qconf_rqs_delete(const char *path)
-{
+qconf_rqs_delete(const char *path) {
    qconf_rqs_ctx ctx = {lCreateList("rqs", RQS_Type), 0};
    bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_rqs_collect, &ctx);
@@ -1529,8 +1498,7 @@ qconf_rqs_delete(const char *path)
 /** @brief Resolve the host key of a config file: its basename, host-resolved
  *         in place into @p host_ep (EH_name). Returns the resolved host name. */
 static const char *
-qconf_conf_host_of(const char *filepath, lListElem *host_ep)
-{
+qconf_conf_host_of(const char *filepath, lListElem *host_ep) {
    const char *slash = strrchr(filepath, '/');
    const char *base = slash != nullptr ? slash + 1 : filepath;
    lSetHost(host_ep, EH_name, base);
@@ -1556,8 +1524,7 @@ struct qconf_conf_ctx {
  * @return 0 on success, 1 on failure
  */
 static int
-qconf_conf_apply_one(const char *filepath, void *vctx)
-{
+qconf_conf_apply_one(const char *filepath, void *vctx) {
    auto *ctx = static_cast<qconf_conf_ctx *>(vctx);
    lListElem *host_ep = lCreateElem(EH_Type);
    const char *hostname = qconf_conf_host_of(filepath, host_ep);
@@ -1594,8 +1561,7 @@ qconf_conf_apply_one(const char *filepath, void *vctx)
  * @return the number of files that failed
  */
 static int
-qconf_conf_apply_path(const char *path)
-{
+qconf_conf_apply_path(const char *path) {
    qconf_conf_ctx ctx = {3 /* modify if exists, add if not */, nullptr, 0, 0};
    bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_conf_apply_one, &ctx);
@@ -1616,8 +1582,7 @@ qconf_conf_apply_path(const char *path)
  * @return 0 always (a skipped non-existent host is not a failure)
  */
 static int
-qconf_conf_collect_host(const char *filepath, void *vctx)
-{
+qconf_conf_collect_host(const char *filepath, void *vctx) {
    auto *ctx = static_cast<qconf_conf_ctx *>(vctx);
    lListElem *host_ep = lCreateElem(EH_Type);
    const char *hostname = qconf_conf_host_of(filepath, host_ep);
@@ -1641,8 +1606,7 @@ qconf_conf_collect_host(const char *filepath, void *vctx)
  * @return the number of configs that failed to be deleted
  */
 static int
-qconf_conf_delete_path(const char *path)
-{
+qconf_conf_delete_path(const char *path) {
    qconf_conf_ctx ctx = {0, lCreateList("conf del", CONF_Type), 0, 0};
    bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_conf_collect_host, &ctx);
@@ -1689,8 +1653,7 @@ qconf_conf_delete_path(const char *path)
  * @return true if a share tree is configured, false otherwise
  */
 static bool
-qconf_sharetree_exists()
-{
+qconf_sharetree_exists() {
    lList *lp = nullptr;
    lEnumeration *what = lWhat("%T(%I)", STN_Type, STN_id);
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::GET,
@@ -1719,9 +1682,7 @@ qconf_sharetree_exists()
  * @param ce_fields the CE_Type sublist field ids to fill (e.g. EH_consumable_config_list)
  * @param n_fields  number of entries in @p ce_fields
  */
-void
-qconf_json_fill_complex(lListElem *obj, const int *ce_fields, int n_fields)
-{
+void qconf_json_fill_complex(lListElem *obj, const int *ce_fields, int n_fields) {
    if (qconf_opt_format != SP_FORM_JSON || obj == nullptr) {
       return;
    }
@@ -1758,8 +1719,7 @@ qconf_json_fill_complex(lListElem *obj, const int *ce_fields, int n_fields)
  * @param load_list_nm  CULL field id of the load-value list (e.g. EH_load_list)
  */
 static void
-qconf_json_type_load_values(lListElem *host, int load_list_nm)
-{
+qconf_json_type_load_values(lListElem *host, int load_list_nm) {
    if (qconf_opt_format != SP_FORM_JSON || host == nullptr) {
       return;
    }
@@ -1821,8 +1781,9 @@ qconf_json_type_load_values(lListElem *host, int load_list_nm)
  * @param argv the arguments, not including `argv[0]`
  * @return 0 when every switch succeeded
  */
-int sge_parse_qconf(char *argv[])
-{
+int sge_parse_qconf(char *argv[]) {
+   DENTER(TOP_LAYER);
+
    int status;
    char *cp = nullptr;
    char **spp = nullptr;
@@ -1845,8 +1806,6 @@ int sge_parse_qconf(char *argv[])
    uid_t uid = component_get_uid();
    gid_t gid = component_get_gid();
    bool has_binding_param = false;
-
-   DENTER(TOP_LAYER);
 
    /* If no arguments were given, output the help message on stderr. */
    if (*argv == nullptr) {
@@ -7203,14 +7162,13 @@ int sge_parse_qconf(char *argv[])
 
 /***********************************************************************/
 
-static void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, char *s)
-{
+static void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, char *s) {
+   DENTER(TOP_LAYER);
+
    char *cp2 = nullptr;
    lListElem *ep = nullptr;
    int pos;
    int dataType;
-
-   DENTER(TOP_LAYER);
 
 
    *lpp = lCreateList(name, dp);
@@ -7257,8 +7215,7 @@ static void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, i
 }
 
 /****************************************************************************/
-static int sge_next_is_an_opt(char **pptr)
-{
+static int sge_next_is_an_opt(char **pptr) {
    DENTER(TOP_LAYER);
 
    if (!*(pptr+1)) {
@@ -7315,11 +7272,10 @@ static int sge_error_and_exit(const char *ptr) {
  * @return true if every request succeeded
  */
 static bool mod_reserved_hgroup(lList *arglp, const char *group,
-                                ocs::gdi::SubCommand sub_command, const char *what)
-{
-   bool ret = true;
-
+                                ocs::gdi::SubCommand sub_command, const char *what) {
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    for_each_rw_lv(argep, arglp) {
       const char *name = lGetHost(argep, HR_name);
@@ -7390,14 +7346,13 @@ static bool mod_reserved_hgroup(lList *arglp, const char *group,
  * still the implementation of -de for EH_LIST. */
 /* ------------------------------------------------------------ */
 
-static bool del_host_of_type(lList *arglp, ocs::gdi::Target target )
-{
+static bool del_host_of_type(lList *arglp, ocs::gdi::Target target) {
+   DENTER(TOP_LAYER);
+
    lListElem *ep=nullptr;
    lList *lp=nullptr, *alp=nullptr;
    lDescr *type = nullptr;
    bool ret = true;
-
-   DENTER(TOP_LAYER);
 
    switch (target) {
    case ocs::gdi::Target::EH_LIST:
@@ -7431,8 +7386,9 @@ static bool del_host_of_type(lList *arglp, ocs::gdi::Target target )
 
 /* ------------------------------------------------------------ */
 
-static lListElem *edit_exechost(lListElem *ep, uid_t uid, gid_t gid)
-{
+static lListElem *edit_exechost(lListElem *ep, uid_t uid, gid_t gid) {
+   DENTER(TOP_LAYER);
+
    int status;
    lListElem *hep = nullptr;
    spooling_field *fields = sge_build_EH_field_list(false, false, false);
@@ -7442,8 +7398,6 @@ static lListElem *edit_exechost(lListElem *ep, uid_t uid, gid_t gid)
 
    /* used for generating filenames */
    char *filename = nullptr;
-
-   DENTER(TOP_LAYER);
 
    filename = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
                                                   &qconf_sfi, SP_DEST_TMP,
@@ -7505,16 +7459,15 @@ static lListElem *edit_exechost(lListElem *ep, uid_t uid, gid_t gid)
 
 /* ------------------------------------------------------------ */
 
-static lList* edit_sched_conf(lList *confl, uid_t uid, gid_t gid)
-{
+static lList *edit_sched_conf(lList *confl, uid_t uid, gid_t gid) {
+   DENTER(TOP_LAYER);
+
    int status;
    char *fname = nullptr;
    lList *alp=nullptr, *newconfl=nullptr;
    lListElem *ep = nullptr;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
-
-   DENTER(TOP_LAYER);
 
    fname = (char *)spool_flatfile_write_object(&alp, lFirst(confl), false,
                                        SC_fields, &qconf_comma_sfi,
@@ -7591,8 +7544,9 @@ static lList* edit_sched_conf(lList *confl, uid_t uid, gid_t gid)
 
 /* ------------------------------------------------------------ */
 
-static lListElem *edit_user(lListElem *ep, uid_t uid, gid_t gid)
-{
+static lListElem *edit_user(lListElem *ep, uid_t uid, gid_t gid) {
+   DENTER(TOP_LAYER);
+
    int status;
    lListElem *newep = nullptr;
    lList *alp = nullptr;
@@ -7600,8 +7554,6 @@ static lListElem *edit_user(lListElem *ep, uid_t uid, gid_t gid)
    spooling_field *fields = sge_build_UU_field_list(false);
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
-
-   DENTER(TOP_LAYER);
 
    filename = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
                                                   &qconf_sfi, SP_DEST_TMP,
@@ -7668,8 +7620,9 @@ static lListElem *edit_user(lListElem *ep, uid_t uid, gid_t gid)
 }
 
 /* ------------------------------------------------------------ */
-static lListElem *edit_project(lListElem *ep, uid_t uid, gid_t gid)
-{
+static lListElem *edit_project(lListElem *ep, uid_t uid, gid_t gid) {
+   DENTER(TOP_LAYER);
+
    int status;
    lListElem *newep = nullptr;
    lList *alp = nullptr;
@@ -7677,8 +7630,6 @@ static lListElem *edit_project(lListElem *ep, uid_t uid, gid_t gid)
    spooling_field *fields = sge_build_PR_field_list(false);
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
-
-   DENTER(TOP_LAYER);
 
    filename = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
                                                   &qconf_sfi, SP_DEST_TMP,
@@ -7745,8 +7696,9 @@ static lListElem *edit_project(lListElem *ep, uid_t uid, gid_t gid)
 }
 
 /****************************************************************/
-static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid)
-{
+static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid) {
+   DENTER(TOP_LAYER);
+
    int status;
    lListElem *newep = nullptr;
    const char *filename = nullptr;
@@ -7755,8 +7707,6 @@ static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid)
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
    bool is_missing = false;
-
-   DENTER(TOP_LAYER);
 
    if (ep == nullptr) {
       is_missing = true;
@@ -7856,8 +7806,7 @@ static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid)
 
 /* ------------------------------------------------------------ */
 
-static bool show_object_list(ocs::gdi::Target target, lDescr *type, int keynm, const char *name)
-{
+static bool show_object_list(ocs::gdi::Target target, lDescr *type, int keynm, const char *name) {
    DENTER(TOP_LAYER);
    lEnumeration *what = nullptr;
    lCondition *where = nullptr;
@@ -7965,8 +7914,7 @@ static bool show_object_list(ocs::gdi::Target target, lDescr *type, int keynm, c
  *       list is non-empty, because the empty list produced the generic "names" key
  *       before and has to keep producing it.
  */
-static bool show_reserved_hgroup_hosts(const char *group, const char *json_type, const char *name)
-{
+static bool show_reserved_hgroup_hosts(const char *group, const char *json_type, const char *name) {
    DENTER(TOP_LAYER);
    lList *alp = nullptr, *lp = nullptr;
    bool ret = true;
@@ -8041,8 +7989,7 @@ static bool show_reserved_hgroup_hosts(const char *group, const char *json_type,
  *
  * @return true on success, false on error or when the list is empty
  */
-static bool show_manop_list(const char *userset_name, const char *display_name)
-{
+static bool show_manop_list(const char *userset_name, const char *display_name) {
    DENTER(TOP_LAYER);
    lList *alp = nullptr, *lp = nullptr;
    bool ret = true;
@@ -8140,8 +8087,7 @@ show_thread_list() {
    DRETURN(0);
 }
 
-static int show_eventclients()
-{
+static int show_eventclients() {
    DENTER(TOP_LAYER);
    lEnumeration *what = nullptr;
    lList *alp = nullptr, *lp = nullptr;
@@ -8195,9 +8141,9 @@ static int show_eventclients()
 }
 
 
+static int show_processors(bool has_binding_param) {
+   DENTER(TOP_LAYER);
 
-static int show_processors(bool has_binding_param)
-{
    lEnumeration *what = nullptr;
    lCondition *where = nullptr;
    lList *alp = nullptr, *lp = nullptr;
@@ -8206,8 +8152,6 @@ static int show_processors(bool has_binding_param)
    uint32_t sum = 0;
    uint32_t socket_sum = 0;
    uint32_t core_sum = 0;
-
-   DENTER(TOP_LAYER);
 
    what = lWhat("%T(%I %I %I)", EH_Type, EH_name, EH_processors, EH_load_list);
    where = lWhere("%T(!(%Ic=%s || %Ic=%s))", EH_Type, EH_name,
@@ -8469,6 +8413,8 @@ static int edit_usersets(lList *arglp) {
   -sconf option
  ***************************************************************************/
 static int print_config(const char *config_name) {
+   DENTER(TOP_LAYER);
+
    lCondition *where = nullptr;
    lEnumeration *what = nullptr;
    lList *alp = nullptr, *lp = nullptr;
@@ -8476,8 +8422,6 @@ static int print_config(const char *config_name) {
    int fail=0;
    const char *cfn = nullptr;
    spooling_field *fields = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* get config */
    if (!strcasecmp(config_name, "global")) {
@@ -8533,11 +8477,11 @@ static int print_config(const char *config_name) {
  * delete_config
  *------------------------------------------------------------------------*/
 static int delete_config(const char *config_name) {
+   DENTER(TOP_LAYER);
+
    lList *alp = nullptr, *lp = nullptr;
    const lListElem *ep = nullptr;
    int fail = 0;
-
-   DENTER(TOP_LAYER);
 
    lAddElemHost(&lp, CONF_name, config_name, CONF_Type);
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CONF_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
@@ -8559,6 +8503,8 @@ static int delete_config(const char *config_name) {
  ** flags = 1 = add, 2 = modify, 3 = modify if exists, add if not
  *------------------------------------------------------------------------*/
 static int add_modify_config(const char *cfn, const char *filename, uint32_t flags) {
+   DENTER(TOP_LAYER);
+
    lCondition *where = nullptr;
    lEnumeration *what = nullptr;
    lList *alp = nullptr, *lp = nullptr;
@@ -8571,8 +8517,6 @@ static int add_modify_config(const char *cfn, const char *filename, uint32_t fla
    int missing_field = NoName;
    uid_t uid = component_get_uid();
    gid_t gid = component_get_gid();
-
-   DENTER(TOP_LAYER);
 
    where = lWhere("%T(%Ih=%s)", CONF_Type, CONF_name, cfn);
    what = lWhat("%T(ALL)", CONF_Type);
@@ -8852,15 +8796,14 @@ qconf_is_manager_on_admin_host(const char *user, const char *host) {
  */
 static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp,
                                   lListElem **epp, ocs::gdi::SubCommand sub_command,
-                                  struct object_info_entry *info_entry) 
-{
+                                  struct object_info_entry *info_entry) {
+   DENTER(TOP_LAYER);    
+
    int fields[150];
    lListElem *add_qp = nullptr;
    lList *qlp = nullptr;
    lEnumeration *what = nullptr;
    
-   DENTER(TOP_LAYER);    
-
    DTRACE;
 
    fields[0] = NoName;
@@ -9053,15 +8996,14 @@ static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp,
    DRETURN(0);
 }
 
-static const char *write_attr_tmp_file(const char *name, const char *value, 
-                                       const char *delimiter, dstring *error_message)
-{
+static const char *write_attr_tmp_file(const char *name, const char *value,
+                                       const char *delimiter, dstring *error_message) {
+   DENTER(TOP_LAYER);
+
    char *filename = sge_malloc(sizeof(char) * SGE_PATH_MAX);
    int fd = -1;
    FILE *fp = nullptr;
    int my_errno;
-   DENTER(TOP_LAYER);
-
    if (sge_tmpnam(filename, &fd, error_message) == nullptr) {
       DRETURN(nullptr);
    }

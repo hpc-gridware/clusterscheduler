@@ -278,8 +278,7 @@ pid_t child_pid = 0;
 /** @brief How long to wait for the job to connect back before giving up, in seconds */
 #define QSH_SOCKET_FINAL_TIMEOUT 60
 
-static void forward_signal(int sig)
-{
+static void forward_signal(int sig) {
    DENTER(TOP_LAYER);
    if (child_pid > 0) {
       DPRINTF("forwarding signal %d to child %d\n", sig, child_pid);
@@ -303,12 +302,12 @@ static void forward_signal(int sig)
  * @return socket file descriptor, or 0 if listen() failed ***************************************************************************
  */
 static int open_qrsh_socket(int *port, const lList *port_range) {
+   DENTER(TOP_LAYER);
+
    struct sockaddr_in server;
    socklen_t length;
    int sock = -1;
    bool use_range = (port_range != nullptr && lGetNumberOfElem(port_range) > 0);
-
-   DENTER(TOP_LAYER);
 
    if (!use_range) {
       // OS-assigned ephemeral port
@@ -390,13 +389,12 @@ static int open_qrsh_socket(int *port, const lList *port_range) {
  *
  * @see #open_qrsh_socket
  */
-static int wait_for_qrsh_socket(int sock, int timeout)
-{
+static int wait_for_qrsh_socket(int sock, int timeout) {
+   DENTER(TOP_LAYER);
+
    int msgsock = -1;
    fd_set ready;
    struct timeval to;
-
-   DENTER(TOP_LAYER);
 
    /* wait for anyone connecting to socket, with timeout */
    FD_ZERO(&ready);
@@ -440,13 +438,12 @@ static int wait_for_qrsh_socket(int sock, int timeout)
  *
  *       ***************************************************************************
  */
-static char *read_from_qrsh_socket(int msgsock)
-{
+static char *read_from_qrsh_socket(int msgsock) {
+   DENTER(TOP_LAYER);
+
    int rval = 0;
    static char buffer[1024];
    char *c  = buffer;
-
-   DENTER(TOP_LAYER);
 
    memset(buffer, 0, 1024);
    do {
@@ -484,11 +481,10 @@ static char *read_from_qrsh_socket(int msgsock)
  *
  * @see #wait_for_qrsh_socket, #read_from_qrsh_socket
  */
-static int get_remote_exit_code(int sock)
-{
-   int msgsock;
-
+static int get_remote_exit_code(int sock) {
    DENTER(TOP_LAYER);
+
+   int msgsock;
 
    VERBOSE_LOG((stderr, SFNMAX, MSG_QSH_READINGEXITCODEFROMSHEPHERD));
 
@@ -534,9 +530,9 @@ static int get_remote_exit_code(int sock)
  */
 
 static const char *quote_argument(const char *arg) {
-   char *new_arg = nullptr;
-
    DENTER(TOP_LAYER);
+
+   char *new_arg = nullptr;
 
    if (arg == nullptr) {
       return arg;
@@ -566,8 +562,7 @@ static const char *quote_argument(const char *arg) {
  *
  * @return 0, if no error was contained in list 1, if an error was contained in list alp_error - 1, if alp contains an error condition, else 0 ***************************************************************************
  */
-static int parse_result_list(lList *alp, int *alp_error)
-{
+static int parse_result_list(lList *alp, int *alp_error) {
    DENTER(TOP_LAYER);
    int do_exit = 0;
 
@@ -632,8 +627,7 @@ static int start_client_program(const char *client_name,
                                 int is_rlogin,
                                 int nostdin,
                                 int noshell,
-                                int sock)
-{
+                                int sock) {
    DENTER(TOP_LAYER);
 
    child_pid = fork();
@@ -787,12 +781,11 @@ static int start_client_program(const char *client_name,
  *
  * @see #read_from_qrsh_socket
  */
-static int get_client_server_context(int msgsock, char **port, char **job_dir, char **utilbin_dir, const char **host)
-{
+static int get_client_server_context(int msgsock, char **port, char **job_dir, char **utilbin_dir, const char **host) {
+   DENTER(TOP_LAYER);
+
    char *s_code = nullptr;
    char *data   = nullptr;
-
-   DENTER(TOP_LAYER);
 
    data = read_from_qrsh_socket(msgsock);
 
@@ -856,8 +849,7 @@ static int get_client_server_context(int msgsock, char **port, char **job_dir, c
  *       ***************************************************************************
  */
 static const char *
-get_client_name(int is_rsh, int is_rlogin, int inherit_job)
-{
+get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
    DENTER(TOP_LAYER);
 
    /* this is what we return */
@@ -984,8 +976,7 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job)
  * @param is_rlogin are we treating a qrsh call without commands (-> rlogin)
  */
 static void set_job_info(lListElem *job, const char *name, int is_qlogin,
-                         int is_rsh, int is_rlogin)
-{
+                         int is_rsh, int is_rlogin) {
    lList *stdout_stderr_path = nullptr;
    uint32_t jb_now = lGetUlong(job, JB_type);
    const char *job_name  = lGetString(job, JB_job_name);
@@ -1046,8 +1037,7 @@ static void set_job_info(lListElem *job, const char *name, int is_qlogin,
  *
  *      ***************************************************************************
  */
-static void set_command_to_env(lList *envlp, lList *opts_qrsh)
-{
+static void set_command_to_env(lList *envlp, lList *opts_qrsh) {
    dstring buffer = DSTRING_INIT;
 
    if (opts_qrsh) {
@@ -1094,8 +1084,7 @@ static void set_command_to_env(lList *envlp, lList *opts_qrsh)
  *
  * @note MT-NOTE: set_builtin_ijs_signals_and_handlers() is not MT safe
  */
-static void set_builtin_ijs_signals_and_handlers()
-{
+static void set_builtin_ijs_signals_and_handlers() {
    sge_set_def_sig_mask(nullptr, nullptr);
    sge_unblock_all_signals();
    set_signal_handlers();
@@ -1118,11 +1107,10 @@ static void set_builtin_ijs_signals_and_handlers()
  * @note MT-NOTE: write_builtin_ijs_connection_data_to_job_object() is not MT safe
  */
 static void write_builtin_ijs_connection_data_to_job_object(
-   const char* qualified_hostname,
-   cl_com_handle *com_handle,
-   lListElem *job,
-   lList *opts_qrsh)
-{
+        const char *qualified_hostname,
+        cl_com_handle *com_handle,
+        lListElem *job,
+        lList *opts_qrsh) {
    dstring connection_params = DSTRING_INIT;
    lList *envlp = nullptr;
 
@@ -1185,15 +1173,14 @@ static void write_builtin_ijs_connection_data_to_job_object(
  *
  * @note MT-NOTE: block_notification_signals() is MT safe
  */
-void block_notification_signals()
-{
+void block_notification_signals() {
+   DENTER(TOP_LAYER);
+
    /* default notification signals */
    int sig1 = SIGUSR1;
    int sig2 = SIGUSR2;
 
    const char *signal_name;
-
-   DENTER(TOP_LAYER);
 
    /* check if they have been redefined */
    signal_name = getenv("SGE_NOTIFY_SUSP_SIGNAL");
@@ -1346,8 +1333,7 @@ static int do_qrsh_reconnect(const char *job_id_str,
    DRETURN(rc != 0 ? rc : exit_status);
 }
 
-int main(int argc, const char **argv)
-{
+int main(int argc, const char **argv) {
    DENTER_MAIN(TOP_LAYER, "qsh");
 
    ProgName my_who = QSH;
@@ -2344,8 +2330,7 @@ int main(int argc, const char **argv)
    DRETURN(exit_status);
 }
 
-static void delete_job(uint32_t job_id, lList *jlp)
-{
+static void delete_job(uint32_t job_id, lList *jlp) {
    const lListElem *jep;
    lList *idlp = nullptr;
    lList *alp;
@@ -2370,11 +2355,10 @@ static void delete_job(uint32_t job_id, lList *jlp)
 }
 
 static void remove_unknown_opts(lList *lp, uint32_t jb_now, int tightly_integrated, bool error,
-                                int is_qlogin, int is_rsh, int is_qsh)
-{
-   lListElem *ep, *next;
-
+                                int is_qlogin, int is_rsh, int is_qsh) {
    DENTER(TOP_LAYER);
+
+   lListElem *ep, *next;
 
    /* no options given - nothing to remove */
    if (lp == nullptr) {
@@ -2499,4 +2483,3 @@ static void remove_unknown_opts(lList *lp, uint32_t jb_now, int tightly_integrat
 
    DRETURN_VOID;
 }
-

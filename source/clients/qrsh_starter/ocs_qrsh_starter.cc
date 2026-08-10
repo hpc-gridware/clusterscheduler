@@ -94,8 +94,7 @@ static pid_t child_pid = 0;
  *
  * @param fmt format string ...             - arguments to be formatted using the format string
  */
-static void qrsh_error(const char *fmt, ...)
-{
+static void qrsh_error(const char *fmt, ...) {
    char *tmpdir = nullptr;
    char *taskid = nullptr;
    int file;
@@ -211,8 +210,7 @@ qrsh_trace (const char *format, ...) {
  *
  * @return command, if all actions could be performed nullptr,    if an error occurred; possible errors are: - the environment file cannot be opened - a PWD entry is found, but changing to the named directory fails - necessary memory cannot be allocated - the variable QRSH_COMMAND is not found ***************************************************************************
  */
-static char *setEnvironment(const char *jobdir, char **wrapper)
-{
+static char *setEnvironment(const char *jobdir, char **wrapper) {
    char envFileName[SGE_PATH_MAX];
    FILE *envFile = nullptr;
    char *line = nullptr;
@@ -337,8 +335,7 @@ FCLOSE_ERROR:
  *
  * @return 0, if an error occurred 1, if function completed without errors
  */
-static int readConfig(const char *jobdir)
-{
+static int readConfig(const char *jobdir) {
    char configFileName[SGE_PATH_MAX];
 
    snprintf(configFileName, SGE_PATH_MAX, "%s/config", jobdir);
@@ -363,8 +360,7 @@ static int readConfig(const char *jobdir)
  *
  * @see #readConfig
  */
-static int changeDirectory()
-{
+static int changeDirectory() {
    char *cwd = nullptr;
 
    /* get jobs target directory */
@@ -396,8 +392,7 @@ static int changeDirectory()
  *
  * @return 1, if all actions could be performed 0, if an error occurred. Possible error situations are: - the environement variable TMPDIR cannot be read - the file cannot be opened ***************************************************************************
  */
-static int write_pid_file(pid_t pid)
-{
+static int write_pid_file(pid_t pid) {
    char *pid_file_name = nullptr;
    int pid_file;
    char pid_str[20];
@@ -434,8 +429,7 @@ static int write_pid_file(pid_t pid)
  *
  * @param sig the signal to forward ***************************************************************************
  */
-static void forward_signal(int sig)
-{
+static void forward_signal(int sig) {
    if(child_pid > 0) {
       kill(-child_pid, sig);
    }
@@ -661,8 +655,7 @@ static char *join_command(int argc, char **argv) {
  *
  * @see #write_pid_file, #split_command, #join_command
  */
-static int startJob(char *command, char *wrapper, int noshell)
-{
+static int startJob(char *command, char *wrapper, int noshell) {
 
    child_pid = fork();
    if (child_pid == -1) {
@@ -818,8 +811,7 @@ static int startJob(char *command, char *wrapper, int noshell)
  *
  * @return EXIT_SUCCESS, if all actions could be performed, EXIT_FAILURE, if one of the following errors occurred: - the environment variable TMPDIR cannot be read - the file $TMPDIR/qrsh_exit_code cannot be written ***************************************************************************
  */
-static int writeExitCode(int myExitCode, int programExitCode)
-{
+static int writeExitCode(int myExitCode, int programExitCode) {
    int exitCode;
    char exitCode_str[20];
    char *tmpdir = nullptr;
@@ -907,8 +899,7 @@ static int writeExitCode(int myExitCode, int programExitCode)
 *
 ****************************************************************************
 */
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    ocs::TerminationManager::install_signal_handler();
    ocs::TerminationManager::install_terminate_handler();
 

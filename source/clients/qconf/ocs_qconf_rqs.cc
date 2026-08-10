@@ -75,13 +75,11 @@ rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_un
  *
  * @note MT-NOTE: rqs_show() is MT safe
  */
-bool
-rqs_show(lList **answer_list, const char *name)
-{
+bool rqs_show(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
    lList *rqs_list = nullptr;
    bool ret = false;
-
-   DENTER(TOP_LAYER);
 
    if (name != nullptr) {
       lList *rqsref_list = nullptr;
@@ -125,12 +123,11 @@ rqs_show(lList **answer_list, const char *name)
  *
  * @note MT-NOTE: rqs_get_via_gdi() is MT safe
  */
-bool
-rqs_get_via_gdi(lList **answer_list, const lList *rqsref_list, lList **rqs_list)
-{
+bool rqs_get_via_gdi(lList **answer_list, const lList *rqsref_list, lList **rqs_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
 
-   DENTER(TOP_LAYER);
    if (rqsref_list != nullptr) {
       lCondition *where = nullptr;
       lEnumeration *what = nullptr;
@@ -170,13 +167,11 @@ rqs_get_via_gdi(lList **answer_list, const lList *rqsref_list, lList **rqs_list)
  *
  * @note MT-NOTE: rqs_get_all_via_gdi() is MT safe
  */
-bool
-rqs_get_all_via_gdi(lList **answer_list, lList **rqs_list)
-{
+bool rqs_get_all_via_gdi(lList **answer_list, lList **rqs_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    lEnumeration *what = lWhat("%T(ALL)", RQS_Type);
-
-   DENTER(TOP_LAYER);
 
    *answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RQS_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, rqs_list, nullptr, what);
    if (!answer_list_has_error(answer_list)) {
@@ -201,12 +196,11 @@ rqs_get_all_via_gdi(lList **answer_list, lList **rqs_list)
  *
  * @note MT-NOTE: rqs_add() is MT safe
  */
-bool
-rqs_add(lList **answer_list, const char *name)
-{
+bool rqs_add(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr) {
       lList *rqs_list = nullptr;
 
@@ -294,8 +288,7 @@ rqs_modify(lList **answer_list, const char *name) {
  * @note MT-NOTE: rqs_upsert_via_gdi() is MT safe
  */
 static bool
-rqs_upsert_via_gdi(lList **answer_list, lList *file_rqs_list)
-{
+rqs_upsert_via_gdi(lList **answer_list, lList *file_rqs_list) {
    DENTER(TOP_LAYER);
 
    /* a file that lists the same rqs name more than once is ambiguous; reject it.
@@ -361,9 +354,10 @@ rqs_upsert_via_gdi(lList **answer_list, lList *file_rqs_list)
  */
 bool
 rqs_add_from_file(lList **answer_list, const char *filename) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
 
-   DENTER(TOP_LAYER);
    if (filename != nullptr) {
       lList *rqs_list = nullptr;
 
@@ -395,16 +389,15 @@ rqs_add_from_file(lList **answer_list, const char *filename) {
  * @note MT-NOTE: rqs_provide_modify_context() is MT safe
  */
 static bool
-rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_unchanged_message)
-{
+rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_unchanged_message) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    int status = 0;
    const char *filename = nullptr;
    uid_t uid = component_get_uid();
    gid_t gid = component_get_gid();
    
-   DENTER(TOP_LAYER);
-
    if (rqs_list == nullptr) {
       answer_list_add(answer_list, MSG_PARSE_NULLPOINTERRECEIVED, 
                       STATUS_ERROR1, ANSWER_QUALITY_ERROR);
@@ -479,14 +472,12 @@ rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_un
  *
  * @note MT-NOTE: rqs_add_del_mod_via_gdi() is MT safe
  */
-bool
-rqs_add_del_mod_via_gdi(lList *rqs_list, lList **answer_list, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_cmd)
-{
+bool rqs_add_del_mod_via_gdi(lList *rqs_list, lList **answer_list, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_cmd) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    
-   DENTER(TOP_LAYER);
-
    if (rqs_list != nullptr) {
       bool do_verify = (cmd == ocs::gdi::Command::MOD) ||
                        (cmd == ocs::gdi::Command::ADD ||
@@ -518,14 +509,13 @@ rqs_add_del_mod_via_gdi(lList *rqs_list, lList **answer_list, ocs::gdi::Command 
  *
  * @note MT-NOTE: rqs_modify_from_file() is MT safe
  */
-bool
-rqs_modify_from_file(lList **answer_list, const char *filename, const char* name)
-{
+bool rqs_modify_from_file(lList **answer_list, const char *filename, const char *name) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    ocs::gdi::Command cmd = ocs::gdi::Command::NONE;
    ocs::gdi::SubCommand sub_cmd = ocs::gdi::SubCommand::NONE;
 
-   DENTER(TOP_LAYER);
    if (filename != nullptr) {
       lList *rqs_list = nullptr;
 
