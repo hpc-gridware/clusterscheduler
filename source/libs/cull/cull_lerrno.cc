@@ -185,9 +185,9 @@ const char *get_lerror_string(int nr) {
  * @return always 0
  */
 int lerror() {
-   const char *errorText = nullptr;
-
    DENTER(TOP_LAYER);
+
+   const char *errorText = nullptr;
 
    errorText = get_lerror_string(lerrno);
 

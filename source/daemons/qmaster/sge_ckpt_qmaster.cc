@@ -90,9 +90,9 @@ ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
          const char *rhost, gdi_object_t *object,
          ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
          monitoring_t *monitor) {
-   const char *ckpt_name;
-
    DENTER(TOP_LAYER);
+
+   const char *ckpt_name;
 
    /* ---- CK_name */
    if (lGetPosViaElem(ckpt, CK_name, SGE_NO_ABORT) >= 0) {
@@ -188,9 +188,9 @@ DRETURN(STATUS_EUNKNOWN);
  * @return [alpp] - error messages will be added to this list 0 - success STATUS_EEXIST - an error occurred
  */
 int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
-   lList *answer_list = nullptr;
-
    DENTER(TOP_LAYER);
+
+   lList *answer_list = nullptr;
 
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
                                    lGetString(ep, CK_name), SGE_TYPE_CKPT, true);
@@ -226,9 +226,9 @@ int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLi
  */
 int
 ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
-   const char *ckpt_name;
-
    DENTER(TOP_LAYER);
+
+   const char *ckpt_name;
 
    ckpt_name = lGetString(ep, CK_name);
 
@@ -256,12 +256,12 @@ ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
  */
 int
 sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
+   DENTER(TOP_LAYER);
+
    lListElem *found;
    int pos;
    const char *ckpt_name;
    lList **lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_CKPT);
-
-   DENTER(TOP_LAYER);
 
    if (!ep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -331,10 +331,10 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
  */
 const char *
 get_checkpoint_when(int bitmask) {
-   int i = 0;
-   static char when[32];
    DENTER(TOP_LAYER);
 
+   int i = 0;
+   static char when[32];
    if (is_checkpoint_when_valid(bitmask) && !(bitmask & NO_CHECKPOINT)) {
       if (bitmask & CHECKPOINT_SUSPEND) {
          when[i++] = CHECKPOINT_SUSPEND_SYM;
@@ -367,10 +367,11 @@ get_checkpoint_when(int bitmask) {
  */
 int
 is_checkpoint_when_valid(int bitmask) {
+   DENTER(TOP_LAYER);
+
    int ret = 0;
    int mask = 0;
 
-   DENTER(TOP_LAYER);
    mask = CHECKPOINT_SUSPEND | CHECKPOINT_AT_SHUTDOWN
           | CHECKPOINT_AT_MINIMUM_INTERVAL | CHECKPOINT_AT_AUTO_RES;
 

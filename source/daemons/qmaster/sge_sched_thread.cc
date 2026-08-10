@@ -129,9 +129,10 @@ st_set_flag_new_global_conf(bool new_value) {
  */
 bool
 st_get_flag_new_global_conf() {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
 
-   DENTER(TOP_LAYER);
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
    ret = Scheduler_Control.new_global_conf;
    sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Scheduler_Control.mutex);
@@ -195,6 +196,8 @@ scheduler_global_queue_messages(scheduler_all_data_t *lists, bool monitor_next_r
  * @param lists the scheduler's snapshot of the cluster
  */
 void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_data_t *lists) {
+   DENTER(TOP_LAYER);
+
    order_t orders = ORDER_INIT;
    lList **splitted_job_lists[SPLIT_LAST];            /* JB_Type */
    lList *waiting_due_to_pedecessor_list = nullptr;   /* JB_Type */
@@ -212,8 +215,6 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
    int prof_job_count, global_mes_count, job_mes_count;
 
    int i;
-
-   DENTER(TOP_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM0);
 

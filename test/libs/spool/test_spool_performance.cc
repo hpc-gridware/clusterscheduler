@@ -61,8 +61,7 @@
 
 static const int num_jobs = 10000;
 
-static const char *random_string(int length)
-{
+static const char *random_string(int length) {
    static char buf[1000];
    int i;
 
@@ -81,8 +80,7 @@ static const char *random_string(int length)
  * every 10th job has array tasks
  * the number of array tasks varies between 1 to 100
  */
-static bool generate_jobs(int num)
-{
+static bool generate_jobs(int num) {
    int i;
    int num_array = 0;
    int num_total = 0;
@@ -118,8 +116,7 @@ static bool generate_jobs(int num)
    return true;
 }
 
-static bool update_jobs()
-{
+static bool update_jobs() {
    lListElem *job;
    int num_total = 0;
 
@@ -133,8 +130,7 @@ static bool update_jobs()
    return true;
 }
 
-static bool spool_data()
-{
+static bool spool_data() {
    lList *answer_list = nullptr;
    const lListElem *context;
    lListElem *job;
@@ -170,8 +166,7 @@ static bool spool_data()
    return true;
 }
 #endif
-static bool read_spooled_data()
-{
+static bool read_spooled_data() {
    lList *answer_list = nullptr;
    const lListElem *context;
 
@@ -184,8 +179,7 @@ static bool read_spooled_data()
    return true;
 }
 
-static bool delete_spooled_data()
-{
+static bool delete_spooled_data() {
    lList *answer_list = nullptr;
    lListElem *job;
    const lListElem *context;
@@ -207,8 +201,7 @@ static bool delete_spooled_data()
    return true;
 }
 
-static void write_csv_header()
-{
+static void write_csv_header() {
    static const char *header = "scenario,wallclock,utime,stime,utilization,jobs_per_second";
    FILE* csv;
 
@@ -217,8 +210,7 @@ static void write_csv_header()
    fclose(csv);
 }
 
-static void write_csv(const char *scenario, prof_level level)
-{
+static void write_csv(const char *scenario, prof_level level) {
    static const char *fmt = "%s,%.2f,%.2f,%.2f,%.0f,%.0f\n";
 
    FILE* csv;
@@ -241,8 +233,7 @@ static void write_csv(const char *scenario, prof_level level)
 
 /** @brief Clear caches
  */
-void clear_caches()
-{
+void clear_caches() {
    printf("\n===> clear the filesystem caches\n");
    printf("on linux as user root: echo 3 >/proc/sys/vm/drop_caches\n");
    printf("press RETURN to continue ...\n");
@@ -278,12 +269,11 @@ void clear_caches()
  */
 /** @} */
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
+   DENTER_MAIN(TOP_LAYER, "test_performance");
+
    lListElem *spooling_context;
    lList *answer_list = nullptr;
-
-   DENTER_MAIN(TOP_LAYER, "test_performance");
 
 #define NM10 "%I%I%I%I%I%I%I%I%I%I"
 #define NM5  "%I%I%I%I%I"

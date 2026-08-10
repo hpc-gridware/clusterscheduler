@@ -50,10 +50,10 @@
 #include "msg_common.h"
 
 lListElem *lWhereToElem(const lCondition *where){
-   lListElem *whereElem = nullptr;
-   sge_pack_buffer pb;
    DENTER(CULL_LAYER);
 
+   lListElem *whereElem = nullptr;
+   sge_pack_buffer pb;
    if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
       if (cull_pack_cond(&pb, where) == PACK_SUCCESS) {
          whereElem = lCreateElem(PACK_Type);
@@ -92,12 +92,11 @@ lCondition *lWhereFromElem(const lListElem *where){
    DRETURN(cond);
 }
 
-lListElem *lWhatToElem(const lEnumeration *what)
-{
+lListElem *lWhatToElem(const lEnumeration *what) {
+   DENTER(CULL_LAYER);
+
    lListElem *whatElem = nullptr;
    sge_pack_buffer pb;
-
-   DENTER(CULL_LAYER);
 
    if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
       if (cull_pack_enum(&pb, what) == PACK_SUCCESS) {

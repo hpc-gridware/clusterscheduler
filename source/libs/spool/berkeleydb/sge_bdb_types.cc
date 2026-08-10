@@ -115,8 +115,7 @@ bdb_destroy_connection(void *connection);
  * @note MT-NOTE: bdb_create() is MT safe
  */
 bdb_info
-bdb_create(const char *path)
-{
+bdb_create(const char *path) {
    int ret, i;
    bdb_info info = (bdb_info) sge_malloc(sizeof(struct _bdb_info));
 
@@ -151,9 +150,7 @@ bdb_create(const char *path)
  *
  * @param info the handle, set to nullptr on return
  */
-void
-bdb_destroy(bdb_info *info)
-{
+void bdb_destroy(bdb_info *info) {
    if (info == nullptr || *info == nullptr) {
       return;
    }
@@ -182,8 +179,7 @@ bdb_destroy(bdb_info *info)
 *     MT-NOTE: bdb_init_connection() is MT safe 
 */
 static void
-bdb_init_connection(bdb_connection *con)
-{
+bdb_init_connection(bdb_connection *con) {
    int i;
 
    con->env = nullptr;
@@ -202,16 +198,15 @@ bdb_init_connection(bdb_connection *con)
 *     MT-NOTE: bdb_destroy_connection() is MT safe 
 */
 static void
-bdb_destroy_connection(void *connection)
-{
+bdb_destroy_connection(void *connection) {
+   DENTER(TOP_LAYER);
+
    /* Nothing to do here in principle.
     * Transactions and database connections shall be closed by calling the 
     * shutdown function.
     * But we can generate an error, if there is still something open.
     */
    bdb_connection *con = (bdb_connection *)connection;
-
-   DENTER(TOP_LAYER);
 
    if (con->txn != nullptr) {
       /* error */
@@ -242,8 +237,7 @@ bdb_destroy_connection(void *connection)
  * @note MT-NOTE: bdb_get_path() is MT safe
  */
 const char *
-bdb_get_path(bdb_info info)
-{
+bdb_get_path(bdb_info info) {
    return info->path;
 }
 
@@ -263,8 +257,7 @@ bdb_get_path(bdb_info info)
  * @see #bdb_set_env
  */
 DB_ENV *
-bdb_get_env(bdb_info info)
-{
+bdb_get_env(bdb_info info) {
    DB_ENV *env = nullptr;
 
    env = info->env;
@@ -286,9 +279,7 @@ bdb_get_env(bdb_info info)
  *
  * @see #bdb_set_db
  */
-DB *
-bdb_get_db(bdb_info info, const bdb_database database)
-{
+DB *bdb_get_db(bdb_info info, const bdb_database database) {
    DB *db = nullptr;
 
    db = info->db[database];
@@ -311,8 +302,7 @@ bdb_get_db(bdb_info info, const bdb_database database)
  * @see #bdb_set_txn
  */
 DB_TXN *
-bdb_get_txn(bdb_info info)
-{
+bdb_get_txn(bdb_info info) {
    GET_SPECIFIC(bdb_connection, con, bdb_init_connection, info->key);
    return con->txn;
 }
@@ -322,8 +312,7 @@ bdb_get_txn(bdb_info info)
  * @return the time, as an absolute timestamp
  */
 uint64_t
-bdb_get_next_clear(bdb_info info)
-{
+bdb_get_next_clear(bdb_info info) {
    return info->next_clear;
 }
 
@@ -332,8 +321,7 @@ bdb_get_next_clear(bdb_info info)
  * @return the time, as an absolute timestamp
  */
 uint64_t
-bdb_get_next_checkpoint(bdb_info info)
-{
+bdb_get_next_checkpoint(bdb_info info) {
    return info->next_checkpoint;
 }
 
@@ -341,9 +329,7 @@ bdb_get_next_checkpoint(bdb_info info)
  * @param info the handle
  * @return true if recovery is requested
  */
-bool
-bdb_get_recover(bdb_info info) 
-{
+bool bdb_get_recover(bdb_info info) {
    return info->recover;
 }
 
@@ -359,9 +345,7 @@ bdb_get_recover(bdb_info info)
  *
  * @see #bdb_get_env
  */
-void
-bdb_set_env(bdb_info info, DB_ENV *env)
-{
+void bdb_set_env(bdb_info info, DB_ENV *env) {
    info->env  = env;
 }
 
@@ -378,9 +362,7 @@ bdb_set_env(bdb_info info, DB_ENV *env)
  *
  * @see #bdb_get_db
  */
-void
-bdb_set_db(bdb_info info, DB *db, const bdb_database database)
-{
+void bdb_set_db(bdb_info info, DB *db, const bdb_database database) {
    info->db[database]  = db;
 }
 
@@ -397,9 +379,7 @@ bdb_set_db(bdb_info info, DB *db, const bdb_database database)
  *
  * @see #bdb_get_txn
  */
-void
-bdb_set_txn(bdb_info info, DB_TXN *txn)
-{
+void bdb_set_txn(bdb_info info, DB_TXN *txn) {
    GET_SPECIFIC(bdb_connection, con, bdb_init_connection, info->key);
    con->txn = txn;
 }
@@ -408,9 +388,7 @@ bdb_set_txn(bdb_info info, DB_TXN *txn)
  * @param info the handle
  * @param next the time, as an absolute timestamp
  */
-void
-bdb_set_next_clear(bdb_info info, const uint64_t next)
-{
+void bdb_set_next_clear(bdb_info info, const uint64_t next) {
    info->next_clear = next;
 }
 
@@ -418,9 +396,7 @@ bdb_set_next_clear(bdb_info info, const uint64_t next)
  * @param info the handle
  * @param next the time, as an absolute timestamp
  */
-void
-bdb_set_next_checkpoint(bdb_info info, const uint64_t next)
-{
+void bdb_set_next_checkpoint(bdb_info info, const uint64_t next) {
    info->next_checkpoint = next;
 }
 
@@ -428,9 +404,7 @@ bdb_set_next_checkpoint(bdb_info info, const uint64_t next)
  * @param info the handle
  * @param recover true to run recovery
  */
-void
-bdb_set_recover(bdb_info info, bool recover)
-{
+void bdb_set_recover(bdb_info info, bool recover) {
    info->recover = recover;
 }
 
@@ -449,8 +423,7 @@ bdb_set_recover(bdb_info info, bool recover)
  * @note MT-NOTE: bdb_get_dbname() is MT safe
  */
 const char *
-bdb_get_dbname(bdb_info info, dstring *buffer)
-{
+bdb_get_dbname(bdb_info info, dstring *buffer) {
    const char *ret;
    const char *path   = bdb_get_path(info);
 
@@ -466,18 +439,14 @@ bdb_get_dbname(bdb_info info, dstring *buffer)
 /** @brief Take the lock guarding a handle
  * @param info the handle
  */
-void
-bdb_lock_info(bdb_info info)
-{
+void bdb_lock_info(bdb_info info) {
    sge_mutex_lock("bdb mutex", "bdb_lock_info", __LINE__, &(info->mtx));
 }
 
 /** @brief Release the lock guarding a handle
  * @param info the handle
  */
-void
-bdb_unlock_info(bdb_info info)
-{
+void bdb_unlock_info(bdb_info info) {
    sge_mutex_unlock("bdb mutex", "bdb_unlock_info", __LINE__, &(info->mtx));
 }
 
@@ -486,8 +455,7 @@ bdb_unlock_info(bdb_info info)
  * @return the name
  */
 const char *
-bdb_get_database_name(const bdb_database database)
-{
+bdb_get_database_name(const bdb_database database) {
    const char *ret;
 
    switch (database) {
@@ -504,4 +472,3 @@ bdb_get_database_name(const bdb_database database)
 
    return ret;
 }
-

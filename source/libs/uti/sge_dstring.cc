@@ -196,9 +196,9 @@ dstring *sge_dstring_init_dynamic(dstring *sb, size_t size) {
  * @note MT-NOTE: sge_dstring_append() is MT safe
  */
 const char *sge_dstring_append(dstring *sb, const char *a) {
-   size_t len;  /* length of string a */
-
    DENTER(DSTRING_LAYER);
+
+   size_t len;  /* length of string a */
 
    if (sb == nullptr || a == nullptr) {
       DRETURN(nullptr);
@@ -469,9 +469,9 @@ const char *sge_dstring_sprintf_append(dstring *sb, const char *format, ...) {
  * @note MT-NOTE: sge_dstring_copy_string() is MT safe
  */
 const char *sge_dstring_copy_string(dstring *sb, const char *str) {
-   const char *ret = nullptr;
-
    DENTER(DSTRING_LAYER);
+
+   const char *ret = nullptr;
 
    if (sb != nullptr) {
       sge_dstring_clear(sb);
@@ -494,9 +494,9 @@ const char *sge_dstring_copy_string(dstring *sb, const char *str) {
  * @note MT-NOTE: sge_dstring_copy_dstring() is MT safe
  */
 const char *sge_dstring_copy_dstring(dstring *sb1, const dstring *sb2) {
-   const char *ret = nullptr;
-
    DENTER(DSTRING_LAYER);
+
+   const char *ret = nullptr;
 
    if (sb1 != nullptr) {
       sge_dstring_clear(sb1);
@@ -704,9 +704,10 @@ const char *sge_dstring_ulong_to_binstring(dstring *sb, uint32_t number) {
  */
 bool
 sge_dstring_split(dstring *string, char character, dstring *before, dstring *after) {
+   DENTER(DSTRING_LAYER);
+
    bool ret = true;
 
-   DENTER(DSTRING_LAYER);
    if (string != nullptr && before != nullptr && after != nullptr) {
       const char *s = sge_dstring_get_string(string);
       const char *end = strchr(s, character);

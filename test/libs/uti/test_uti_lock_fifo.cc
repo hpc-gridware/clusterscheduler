@@ -78,13 +78,13 @@ void *get_thread_func_arg() {
 }
 
 static void *thread_function(void *anArg) {
+   DENTER(TOP_LAYER);
+
    uint64_t start = sge_get_gmt64();
    uint32_t count = 0;
    int thread_id = thread_count++;
    bool read_thread = true;
    bool do_loop = true;
-
-   DENTER(TOP_LAYER);
 
    while (do_loop) {
       /*

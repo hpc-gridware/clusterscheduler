@@ -221,6 +221,7 @@ ocs::gdi::ClientServerBase::gdi_send_message_pb(int synchron, const char *tocomp
 int
 ocs::gdi::ClientServerBase::gdi_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
                                             ClientServerBaseTag *tag, char **buffer, uint32_t *buflen, int synchron) {
+   DENTER(GDI_LAYER);
 
    int ret;
    cl_com_handle_t *handle = nullptr;
@@ -230,8 +231,6 @@ ocs::gdi::ClientServerBase::gdi_receive_message(char *fromcommproc, u_short *fro
 
    uint32_t progid = component_get_component_id();
    uint32_t sge_execd_port = bootstrap_get_sge_execd_port();
-
-   DENTER(GDI_LAYER);
 
    /* CR- TODO: This is for tight integration of qrsh -inherit
  *

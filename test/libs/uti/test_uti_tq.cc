@@ -107,10 +107,11 @@ static int match_all(const void * /*key*/, const void * /*elem*/) { return 0; }
  */
 void *
 test_thread_consumer_template(void *arg, sge_tq_type_t type, const char *type_string) {
+   DENTER(TOP_LAYER);
+
    void *ret = nullptr;
    test_sl_thread_cp_t *global = (test_sl_thread_cp_t *) arg;
 
-   DENTER(TOP_LAYER);
    while (global->do_terminate != true) {
       const char *string;
 
@@ -151,10 +152,11 @@ test_thread_consumer_template(void *arg, sge_tq_type_t type, const char *type_st
  */
 void *
 test_thread_producer_template(void *arg, sge_tq_type_t type, const char *type_string) {
+   DENTER(TOP_LAYER);
+
    void *ret = nullptr;
    test_sl_thread_cp_t *global = (test_sl_thread_cp_t *) arg;
 
-   DENTER(TOP_LAYER);
    while (global->do_terminate != true) {
       /* produce: new element */
       sge_tq_store_notify(global->queue, type, (void *) type_string);
@@ -234,10 +236,10 @@ test_thread_producer_type2(void *arg) {
  */
 static bool
 test_mt_consumer_producer() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    test_sl_thread_cp_t global;
-
-   DENTER(TOP_LAYER);
 
    // create a list
    memset(&global, 0, sizeof(test_sl_thread_cp_t));
@@ -290,9 +292,9 @@ test_mt_consumer_producer() {
 // single-threaded tests for the basic queue API
 static bool
 test_basic_api(int &id) {
-   bool ok = true;
-
    DENTER(TOP_LAYER);
+
+   bool ok = true;
 
    printf("\n--- queue lifecycle ---\n");
    sge_tq_queue_t *q = nullptr;

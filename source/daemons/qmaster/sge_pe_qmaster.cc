@@ -93,12 +93,12 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
        int add, const char *ruser, const char *rhost, gdi_object_t *object,
        ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
        monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    int ret;
    const char *s, *pe_name;
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
-
-   DENTER(TOP_LAYER);
 
    /* ---- PE_name */
    if (add) {
@@ -234,10 +234,10 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
  */
 int
 pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *pep, gdi_object_t *object) {
+   DENTER(TOP_LAYER);
+
    lList *answer_list = nullptr;
    bool dbret;
-
-   DENTER(TOP_LAYER);
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), pep,
                               lGetString(pep, PE_name), SGE_TYPE_PE, true);
@@ -266,9 +266,9 @@ pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
  */
 int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                monitoring_t *monitor) {
-   const char *pe_name;
-
    DENTER(TOP_LAYER);
+
+   const char *pe_name;
 
    pe_name = lGetString(ep, PE_name);
 
@@ -291,14 +291,14 @@ int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
  */
 int
 sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *pep, lList **alpp, char *ruser, char *rhost) {
+   DENTER(TOP_LAYER);
+
    int pos;
    lListElem *ep = nullptr;
    const char *pe = nullptr;
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    lList *master_pe_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_PE);
-
-   DENTER(TOP_LAYER);
 
    if (!pep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -411,14 +411,12 @@ pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_a
    const char *u;
 
    if (old_pe && old_acl) {
-      for_each_ep_lv(ep, lGetList(old_pe, PE_user_list))
-      {
+      for_each_ep_lv(ep, lGetList(old_pe, PE_user_list)) {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*old_acl, US_name, u))
             lAddElemStr(old_acl, US_name, u, US_Type);
       }
-      for_each_ep_lv(ep, lGetList(old_pe, PE_xuser_list))
-      {
+      for_each_ep_lv(ep, lGetList(old_pe, PE_xuser_list)) {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*old_acl, US_name, u))
             lAddElemStr(old_acl, US_name, u, US_Type);
@@ -426,14 +424,12 @@ pe_diff_usersets(const lListElem *new_pe, const lListElem *old_pe, lList **new_a
    }
 
    if (new_pe && new_acl) {
-      for_each_ep_lv(ep, lGetList(new_pe, PE_user_list))
-      {
+      for_each_ep_lv(ep, lGetList(new_pe, PE_user_list)) {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*new_acl, US_name, u))
             lAddElemStr(new_acl, US_name, u, US_Type);
       }
-      for_each_ep_lv(ep, lGetList(new_pe, PE_xuser_list))
-      {
+      for_each_ep_lv(ep, lGetList(new_pe, PE_xuser_list)) {
          u = lGetString(ep, US_name);
          if (!lGetElemStr(*new_acl, US_name, u))
             lAddElemStr(new_acl, US_name, u, US_Type);

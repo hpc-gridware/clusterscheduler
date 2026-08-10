@@ -238,9 +238,10 @@ userset_set_type_string(lListElem *userset, lList **answer_list, const char *val
  */
 const char *
 userset_list_append_to_dstring(const lList *this_list, dstring *string) {
+   DENTER(BASIS_LAYER);
+
    const char *ret = nullptr;
 
-   DENTER(BASIS_LAYER);
    if (string != nullptr) {
       bool printed = false;
 

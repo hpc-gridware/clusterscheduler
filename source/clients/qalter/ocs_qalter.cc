@@ -256,8 +256,9 @@ int main(int argc, const char **argv) {
 **      dummy job and put them into the prequestlist
 */
 static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList **prequestlist,
-                                         int *all_jobs, int *all_users)
-{
+                                         int *all_jobs, int *all_users) {
+   DENTER(TOP_LAYER); 
+
    lListElem *ep  = nullptr;
    lListElem *job = nullptr;
    lListElem *rep = nullptr;
@@ -271,8 +272,6 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
 
    int job_field[100];
    bool is_hold_option = false;
-
-   DENTER(TOP_LAYER); 
 
    if (!prequestlist) {
       answer_list_add(&answer, MSG_PARSE_NULLPOINTERRECEIVED, STATUS_EUNKNOWN, 

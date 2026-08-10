@@ -52,11 +52,11 @@ static bool
 qim_list_trash_all_of_type_X(lList **this_list, uint32_t type);
 
 static bool
-qim_list_add(lList **this_list, uint32_t type, const char *message)
-{
+qim_list_add(lList **this_list, uint32_t type, const char *message) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (this_list != nullptr && message != nullptr) {
       lListElem *new_elem = lAddElemUlong(this_list, QIM_type, type, QIM_Type);
 
@@ -66,11 +66,11 @@ qim_list_add(lList **this_list, uint32_t type, const char *message)
 }
 
 static bool
-qim_list_trash_all_of_type_X(lList **this_list, uint32_t type)
-{
+qim_list_trash_all_of_type_X(lList **this_list, uint32_t type) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    
-   DENTER(TOP_LAYER);
    if (this_list != nullptr) {
       lListElem *elem = nullptr;
       lListElem *next_elem = nullptr;
@@ -103,13 +103,12 @@ qim_list_trash_all_of_type_X(lList **this_list, uint32_t type)
  * @param message the text
  * @return true when the message was added
  */
-bool
-object_message_add(lListElem *this_elem, int name, 
-                   uint32_t type, const char *message)
-{
+bool object_message_add(lListElem *this_elem, int name,
+                        uint32_t type, const char *message) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (this_elem != nullptr) {
       lList *qim_list = nullptr;
 
@@ -128,13 +127,12 @@ object_message_add(lListElem *this_elem, int name,
  * @param type a mask of the message types to remove
  * @return true when the list was changed
  */
-bool
-object_message_trash_all_of_type_X(lListElem *this_elem, int name,
-                                   uint32_t type)
-{
+bool object_message_trash_all_of_type_X(lListElem *this_elem, int name,
+                                        uint32_t type) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (this_elem != nullptr) {
       lList *qim_list = nullptr;
 
@@ -144,4 +142,3 @@ object_message_trash_all_of_type_X(lListElem *this_elem, int name,
    }
    DRETURN(ret);
 }
-

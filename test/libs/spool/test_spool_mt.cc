@@ -76,8 +76,7 @@ static int delay = 0;
 pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;   ///< serialises the threads where the test wants them serialised
 #endif
 
-static bool add_job(int job_id)
-{
+static bool add_job(int job_id) {
    bool write_ok;
    lListElem *job;
    lList *answer_list = nullptr;
@@ -113,8 +112,7 @@ static bool add_job(int job_id)
    return write_ok;
 }
 
-static bool del_job(int job_id)
-{
+static bool del_job(int job_id) {
    bool del_ok;
    lList *answer_list = nullptr;
    lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
@@ -150,13 +148,12 @@ static bool del_job(int job_id)
    return del_ok;
 }
 
-static void *work(void *args)
-{
+static void *work(void *args) {
+   DENTER(TOP_LAYER);
+
    int i;
    int work_num;
    int failed = 0;
-
-   DENTER(TOP_LAYER);
 
    work_num = *((int *)args);
   
@@ -199,8 +196,9 @@ static void *work(void *args)
    DRETURN((void *)nullptr);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
+   DENTER_MAIN(TOP_LAYER, "test_berkeleydb_mt");
+
    const char *url;
    int i, threads;
    pthread_t *t;
@@ -208,8 +206,6 @@ int main(int argc, char *argv[])
 
    lList *answer_list = nullptr;
    lListElem *spooling_context;
-
-   DENTER_MAIN(TOP_LAYER, "test_berkeleydb_mt");
 
    /* parse commandline parameters */
    if (argc < 3) {

@@ -67,8 +67,9 @@
  *
  * @see #mailrec_unparse
  */
-int mailrec_parse(lList **lpp, const char *mail_str) 
-{
+int mailrec_parse(lList **lpp, const char *mail_str) {
+   DENTER(TOP_LAYER);
+
    const char *user;
    const char *host;
    char **str_str;
@@ -77,8 +78,6 @@ int mailrec_parse(lList **lpp, const char *mail_str)
    const lListElem *tmp;
    char *mail;
    struct saved_vars_s *context;
-
-   DENTER(TOP_LAYER);
 
    if (!lpp) {
       DRETURN(1);
@@ -145,8 +144,7 @@ int mailrec_parse(lList **lpp, const char *mail_str)
  *
  * @see #mailrec_parse
  */
-int mailrec_unparse(const lList *head, char *mail_str, unsigned int mail_str_len)
-{
+int mailrec_unparse(const lList *head, char *mail_str, unsigned int mail_str_len) {
    int len=0;
    int comma_needed = 0; /* whether we need to insert a comma */
    char tmpstr[1000];    /* need 1000 for brain damaged mail addresse(e)s */
@@ -189,12 +187,11 @@ int mailrec_unparse(const lList *head, char *mail_str, unsigned int mail_str_len
  * @param[out] string receives the letters, appended
  * @return true when something was written
  */
-bool
-sge_mailopt_to_dstring(uint32_t opt, dstring *string)
-{
+bool sge_mailopt_to_dstring(uint32_t opt, dstring *string) {
+   DENTER(TOP_LAYER);
+
    bool success = true;
 
-   DENTER(TOP_LAYER);
    if (VALID(MAIL_AT_ABORT, opt)) {
       sge_dstring_append_char(string, 'a');
    } 
@@ -223,13 +220,11 @@ sge_mailopt_to_dstring(uint32_t opt, dstring *string)
  * @param prog_number the calling program, since not every client accepts every letter
  * @return the mail option bit field
  */
-int 
-sge_parse_mail_options(lList **alpp, const char *mail_str, uint32_t prog_number)
-{
+int sge_parse_mail_options(lList **alpp, const char *mail_str, uint32_t prog_number) {
+   DENTER(TOP_LAYER);
+
    int i, j;
    int mail_opt = 0;
-
-   DENTER(TOP_LAYER);
 
    i = strlen(mail_str);
 
@@ -255,6 +250,4 @@ sge_parse_mail_options(lList **alpp, const char *mail_str, uint32_t prog_number)
    }
 
    DRETURN(mail_opt);
-
 }
-

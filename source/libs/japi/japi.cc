@@ -312,22 +312,19 @@ static int do_gdi_delete (lList **id_list, int action, bool delete_all,
 static int japi_stop_event_client(const char *default_cell);
 
 
-static void japi_use_library_signals()
-{
+static void japi_use_library_signals() {
    /* simply ignore SIGPIPE */
    signal (SIGPIPE, SIG_IGN);
 }
 
 
-static void japi_once_init()
-{
+static void japi_once_init() {
    /* enable rmon monitoring */
    rmon_mopen();
 }
 
 
-static void japi_inc_threads(const char *func)
-{
+static void japi_inc_threads(const char *func) {
    DENTER(TOP_LAYER);
    JAPI_LOCK_REFCOUNTER();
    japi_threads_in_session++;
@@ -336,8 +333,7 @@ static void japi_inc_threads(const char *func)
    DRETURN_VOID;
 }
 
-static void japi_dec_threads(const char *func)
-{
+static void japi_dec_threads(const char *func) {
    DENTER(TOP_LAYER);
    JAPI_LOCK_REFCOUNTER();
    if (--japi_threads_in_session == 0)
@@ -346,7 +342,6 @@ static void japi_dec_threads(const char *func)
    JAPI_UNLOCK_REFCOUNTER();
    DRETURN_VOID;
 }
-
 
 
 /**
@@ -361,12 +356,11 @@ static void japi_dec_threads(const char *func)
  *
  * @note MT-NOTES: japi_init_mt() is MT safe
  */
-int japi_init_mt(dstring *diag)
-{
+int japi_init_mt(dstring *diag) {
+   DENTER(TOP_LAYER);
+
    lList *alp = nullptr;
    ocs::gdi::ErrorValue gdi_errno;
-
-   DENTER(TOP_LAYER);
 
    /* current major assumptions are
       - code is not compiled with -DCRYPTO
@@ -421,8 +415,7 @@ int japi_init_mt(dstring *diag)
  */
 int japi_init(const char *contact, const char *session_key_in,
               dstring *session_key_out, ProgName my_prog_num, bool enable_wait,
-              error_handler_t handler, dstring *diag)
-{
+              error_handler_t handler, dstring *diag) {
    DENTER(TOP_LAYER);
 
    int ret;
@@ -558,13 +551,12 @@ int japi_init(const char *contact, const char *session_key_in,
  *       MT-NOTE: japi_enable_job_wait() is MT safe
  */
 int japi_enable_job_wait(const char *username, const char *unqualified_hostname, const char *session_key_in, dstring *session_key_out,
-                         error_handler_t handler, dstring *diag)
-{
+                         error_handler_t handler, dstring *diag) {
+   DENTER(TOP_LAYER);
+
    int i = 0;
    int ret = DRMAA_ERRNO_SUCCESS;
    pthread_attr_t attr;
-
-   DENTER(TOP_LAYER);
 
    JAPI_LOCK_SESSION();
    /* JAPI_SESSION_INITIALIZING if we're called from japi_init() or
@@ -735,16 +727,15 @@ int japi_enable_job_wait(const char *username, const char *unqualified_hostname,
  *
  * @note MT-NOTE: japi_open_session() is MT safe
  */
-static int japi_open_session(const char *username, const char* unqualified_hostname, const char *key_in, dstring *key_out, dstring *diag)
-{
+static int japi_open_session(const char *username, const char *unqualified_hostname, const char *key_in, dstring *key_out, dstring *diag) {
+   DENTER(TOP_LAYER);
+
 #ifdef ENABLE_PERSISTENT_JAPI_SESSIONS
    struct passwd pw_struct, *pwd;
    char buffer[2048];
    char tmp_session_path_buffer[SGE_PATH_MAX];
    dstring tmp_session_path;
 #endif
-
-   DENTER(TOP_LAYER);
 
    if (key_in == nullptr) {
       char tmp_session_key_buffer[SGE_PATH_MAX];
@@ -793,13 +784,12 @@ static int japi_open_session(const char *username, const char* unqualified_hostn
  *
  *       MT-NOTE: japi_exit() is MT safe
  */
-int japi_exit(int flag, dstring *diag)
-{
+int japi_exit(int flag, dstring *diag) {
+   DENTER(TOP_LAYER);
+
    int cl_errno;
    cl_com_handle_t* handle = nullptr;
    const char *default_cell = nullptr;
-
-   DENTER(TOP_LAYER);
 
    DPRINTF("entering japi_exit() at " sge_u64"\n", sge_get_gmt64());
 
@@ -957,8 +947,7 @@ int japi_exit(int flag, dstring *diag)
  * @note MT-NOTE: japi_allocate_string_vector() is MT safe
  *       should be moved to drmaa.c
  */
-drmaa_attr_values_t *japi_allocate_string_vector(int type)
-{
+drmaa_attr_values_t *japi_allocate_string_vector(int type) {
    drmaa_attr_values_t *iter;
 
    if (!(iter = (drmaa_attr_values_t *)sge_malloc(sizeof(drmaa_attr_values_t)))) {
@@ -998,9 +987,7 @@ drmaa_attr_values_t *japi_allocate_string_vector(int type)
  *
  * @note MT-NOTE: japi_string_vector_get_next() is MT safe
  */
-int japi_string_vector_get_next(drmaa_attr_values_t* iter, dstring *val)
-{
-
+int japi_string_vector_get_next(drmaa_attr_values_t *iter, dstring *val) {
    DENTER(TOP_LAYER);
 
    if (!iter) {
@@ -1046,9 +1033,7 @@ int japi_string_vector_get_next(drmaa_attr_values_t* iter, dstring *val)
  *
  * @note MT-NOTE: japi_string_vector_get_num() is MT safe
  */
-int japi_string_vector_get_num(drmaa_attr_values_t* values, int *size)
-{
-
+int japi_string_vector_get_num(drmaa_attr_values_t *values, int *size) {
    DENTER(TOP_LAYER);
 
    if ((values == nullptr) || (size == nullptr)) {
@@ -1078,8 +1063,7 @@ int japi_string_vector_get_num(drmaa_attr_values_t* values, int *size)
  * @note MT-NOTE: japi_delete_string_vector() is MT safe
  *       should be moved to drmaa.c
  */
-void japi_delete_string_vector(drmaa_attr_values_t* iter )
-{
+void japi_delete_string_vector(drmaa_attr_values_t *iter) {
    if (!iter)
       return;
 
@@ -1110,8 +1094,7 @@ void japi_delete_string_vector(drmaa_attr_values_t* iter )
  *
  * @note MT-NOTE: japi_send_job() is MT safe
  */
-static int japi_send_job(lListElem **sge_job_template, uint32_t *jobid, dstring *diag)
-{
+static int japi_send_job(lListElem **sge_job_template, uint32_t *jobid, dstring *diag) {
    DENTER(TOP_LAYER);
    lList *job_lp, *alp;
    lListElem *job;
@@ -1202,11 +1185,10 @@ static int japi_send_job(lListElem **sge_job_template, uint32_t *jobid, dstring 
  *       Master_japi_job_list
  */
 static int japi_add_job(uint32_t jobid, uint32_t start, uint32_t end, uint32_t incr,
-      bool is_array, dstring *diag)
-{
-   lListElem *japi_job;
-
+                        bool is_array, dstring *diag) {
    DENTER(TOP_LAYER);
+
+   lListElem *japi_job;
 
    japi_job = lGetElemUlongRW(Master_japi_job_list, JJ_jobid, jobid);
    if (japi_job != nullptr) {
@@ -1252,13 +1234,12 @@ static int japi_add_job(uint32_t jobid, uint32_t start, uint32_t end, uint32_t i
  *       MT-NOTE: japi_run_job() is MT safe
  *       Would be better to return job_id as uint32_t.
  */
-int japi_run_job(dstring *job_id, lListElem **sge_job_template, dstring *diag)
-{
+int japi_run_job(dstring *job_id, lListElem **sge_job_template, dstring *diag) {
+   DENTER(TOP_LAYER);
+
    uint32_t jobid = 0;
    int drmaa_errno;
    const char *s;
-
-   DENTER(TOP_LAYER);
 
    /* ensure japi_init() was called */
    JAPI_LOCK_SESSION();
@@ -1340,13 +1321,12 @@ int japi_run_job(dstring *job_id, lListElem **sge_job_template, dstring *diag)
  *       Would be better to return job_id instead of drmaa_attr_values_t.
  */
 int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, lListElem **sge_job_template,
-      int start, int end, int incr, dstring *diag)
-{
+                       int start, int end, int incr, dstring *diag) {
+   DENTER(TOP_LAYER);
+
    drmaa_attr_values_t *jobids;
    uint32_t jobid = 0;
    int drmaa_errno;
-
-   DENTER(TOP_LAYER);
 
    /* check arguments */
    if (start > end || !incr) {
@@ -1437,8 +1417,9 @@ int japi_run_bulk_jobs(drmaa_attr_values_t **jobidsp, lListElem **sge_job_templa
  */
 static int japi_user_hold_add_jobid(uint32_t gdi_action, lList **request_list,
                                     uint32_t jobid, uint32_t taskid, bool array,
-                                    dstring *diag)
-{
+                                    dstring *diag) {
+   DENTER(TOP_LAYER);
+
    const lDescr job_descr[] = {
          {JB_job_number, lUlongT | CULL_IS_REDUCED, nullptr},
          {JB_verify_suitable_queues, lUlongT | CULL_IS_REDUCED, nullptr},
@@ -1453,8 +1434,6 @@ static int japi_user_hold_add_jobid(uint32_t gdi_action, lList **request_list,
    };
    lListElem *jep = nullptr;
    lListElem *tep = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (!array) {
       taskid = 0;
@@ -1517,14 +1496,13 @@ static int japi_user_hold_add_jobid(uint32_t gdi_action, lList **request_list,
  *       Would be good to have japi_control() operate on a vector of jobids.
  *       Would be good to interface also operations qmod -r and qmod -c.
  */
-int japi_control(const char *jobid_str, int drmaa_action, dstring *diag)
-{
+int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
+   DENTER(TOP_LAYER);
+
    int drmaa_errno;
    uint32_t jobid, taskid;
    bool array;
    lList *alp = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* ensure japi_init() was called */
    JAPI_LOCK_SESSION();
@@ -1878,11 +1856,10 @@ enum {
    JAPI_WAIT_TIMEOUT      ///< The timeout expired before the condition was met
 };
 
-static int japi_gdi_control_error2japi_error(lListElem *aep, dstring *diag, int drmaa_control_action)
-{
-   int ret, gdi_error;
-
+static int japi_gdi_control_error2japi_error(lListElem *aep, dstring *diag, int drmaa_control_action) {
    DENTER(TOP_LAYER);
+
+   int ret, gdi_error;
 
    answer_to_dstring(aep, diag);
    switch ((gdi_error=lGetUlong(aep, AN_status))) {
@@ -1962,15 +1939,14 @@ static int japi_gdi_control_error2japi_error(lListElem *aep, dstring *diag, int 
  *       The caller must check system time before and after this call
  *       in order to check how much time has passed. This should be improved.
  */
-int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, dstring *diag)
-{
+int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, dstring *diag) {
+   DENTER(TOP_LAYER);
+
    bool sync_all = false;
    int drmaa_errno, i;
    int wait_result;
    const char **sync_job_ids = nullptr;
    lList *sync_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (timeout < DRMAA_TIMEOUT_WAIT_FOREVER) {
       sge_dstring_sprintf (diag, MSG_JAPI_NEGATIVE_TIMEOUT);
@@ -2166,13 +2142,12 @@ int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, d
  *       MT-NOTE: due to acess to Master_japi_job_list japi_synchronize_jobids_retry()
  *       MT-NOTE: is not MT safe; only one instance may be called at a time!
  */
-static int japi_synchronize_jobids_retry(const char *job_ids[], bool dispose)
-{
+static int japi_synchronize_jobids_retry(const char *job_ids[], bool dispose) {
+   DENTER(TOP_LAYER);
+
    int i;
    lListElem *japi_job;
    const lList *not_yet_finished;
-
-   DENTER(TOP_LAYER);
 
    /*
     * We simply iterate over all jobids and do the wait operation
@@ -2272,8 +2247,9 @@ static int japi_synchronize_jobids_retry(const char *job_ids[], bool dispose)
  */
 int japi_wait(const char *job_id, dstring *waited_job, int *stat,
               signed long timeout, int event_mask, int *event,
-              drmaa_attr_values_t **rusage, dstring *diag)
-{
+              drmaa_attr_values_t **rusage, dstring *diag) {
+   DENTER(TOP_LAYER);
+
    uint32_t jobid = 0;
    uint32_t taskid = 0;
    int wait4any = 0;
@@ -2283,8 +2259,6 @@ int japi_wait(const char *job_id, dstring *waited_job, int *stat,
    uint32_t waited_jobid = 0, waited_taskid = 0;
    bool got_usage_info = false;
    bool evc_killed = false;
-
-   DENTER(TOP_LAYER);
 
    if (timeout < DRMAA_TIMEOUT_WAIT_FOREVER) {
       sge_dstring_sprintf (diag, MSG_JAPI_NEGATIVE_TIMEOUT);
@@ -2476,14 +2450,13 @@ static int japi_wait_retry(lList *japi_job_list, int wait4any, uint32_t jobid,
                            uint32_t taskid, bool is_array_task, int event_mask,
                            uint32_t *wjobidp, uint32_t *wtaskidp,
                            bool *wis_task_arrayp, int *wait_status, int *wevent,
-                           lList **rusagep)
-{
+                           lList **rusagep) {
+   DENTER(TOP_LAYER);
+
    lListElem *job = nullptr;
    lListElem *task = nullptr;
    int actual_event = 0;
    int return_value = JAPI_WAIT_UNFINISHED;
-
-   DENTER(TOP_LAYER);
 
    /* seek for job_id in JJ_finished_jobs of all jobs */
    if (event_mask & JAPI_JOB_FINISH) {
@@ -2748,12 +2721,11 @@ enum {
  */
 static int
 japi_sge_state_to_drmaa_state(const lListElem *job, bool is_array_task, uint32_t jobid,
-                              uint32_t taskid, int *remote_ps, dstring *diag)
-{
+                              uint32_t taskid, int *remote_ps, dstring *diag) {
+   DENTER(TOP_LAYER);
+
    bool task_finished = false;
    lListElem *ja_task = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (job == nullptr) {
       task_finished = true;
@@ -2944,8 +2916,6 @@ japi_sge_state_to_drmaa_state(const lListElem *job, bool is_array_task, uint32_t
 }
 
 
-
-
 /**
  * @brief Get job and the queue via GDI for job status
  *
@@ -2961,8 +2931,9 @@ japi_sge_state_to_drmaa_state(const lListElem *job, bool is_array_task, uint32_t
  *
  * @note MT-NOTES: japi_get_job() is MT safe
  */
-static int japi_get_job(uint32_t jobid, lList **retrieved_job_list, dstring *diag)
-{
+static int japi_get_job(uint32_t jobid, lList **retrieved_job_list, dstring *diag) {
+   DENTER(TOP_LAYER);
+
    lList *alp = nullptr;
    const lListElem *aep = nullptr;
    int jb_id = 0;
@@ -2970,8 +2941,6 @@ static int japi_get_job(uint32_t jobid, lList **retrieved_job_list, dstring *dia
    lCondition *job_selection = nullptr;
    lEnumeration *job_fields = nullptr;
    uint32_t quality = 0;
-
-   DENTER(TOP_LAYER);
 
    /* prepare GDI GET JOB selection */
    job_selection = lWhere("%T(%I==%u)", JB_Type, JB_job_number, jobid);
@@ -3037,12 +3006,11 @@ static int japi_get_job(uint32_t jobid, lList **retrieved_job_list, dstring *dia
  * @note MT-NOTE: japi_parse_jobid() is MT safe
  */
 static int japi_parse_jobid(const char *job_id_str, uint32_t *jp, uint32_t *tp,
-   bool *ap, dstring *diag)
-{
+                            bool *ap, dstring *diag) {
+   DENTER(TOP_LAYER);
+
    uint32_t jobid, taskid;
    bool is_array_task;
-
-   DENTER(TOP_LAYER);
 
    /* parse jobid/taskid */
    if (strchr(job_id_str, '.')) {
@@ -3117,15 +3085,14 @@ static int japi_parse_jobid(const char *job_id_str, uint32_t *jp, uint32_t *tp,
  *       in these cases GDI request could be saved. This would help
  *       improving qmaster availability.
  */
-int japi_job_ps(const char *job_id_str, int *remote_ps, dstring *diag)
-{
+int japi_job_ps(const char *job_id_str, int *remote_ps, dstring *diag) {
+   DENTER(TOP_LAYER);
+
    uint32_t jobid, taskid;
    lList *retrieved_job_list = nullptr;
    lList *retrieved_cqueue_list = nullptr;
    int drmaa_errno;
    bool is_array_task;
-
-   DENTER(TOP_LAYER);
 
    /* check arguments */
    if (!job_id_str || !remote_ps) {
@@ -3222,8 +3189,7 @@ int japi_job_ps(const char *job_id_str, int *remote_ps, dstring *diag)
  *
  * @see #japi_wait
  */
-int japi_wifaborted(int *aborted, int stat, dstring *diag)
-{
+int japi_wifaborted(int *aborted, int stat, dstring *diag) {
    *aborted = SGE_GET_NEVERRAN(stat)?1:0;
    return DRMAA_ERRNO_SUCCESS;
 }
@@ -3246,8 +3212,7 @@ int japi_wifaborted(int *aborted, int stat, dstring *diag)
  *
  * @see #japi_wexitstatus
  */
-int japi_wifexited(int *exited, int stat, dstring *diag)
-{
+int japi_wifexited(int *exited, int stat, dstring *diag) {
    *exited = SGE_GET_WEXITED(stat)?1:0;
    return DRMAA_ERRNO_SUCCESS;
 }
@@ -3268,8 +3233,7 @@ int japi_wifexited(int *exited, int stat, dstring *diag)
  *
  * @see #japi_wifexited
  */
-int japi_wexitstatus(int *exit_status, int stat, dstring *diag)
-{
+int japi_wexitstatus(int *exit_status, int stat, dstring *diag) {
    *exit_status = SGE_GET_WEXITSTATUS(stat);
    return DRMAA_ERRNO_SUCCESS;
 }
@@ -3292,8 +3256,7 @@ int japi_wexitstatus(int *exit_status, int stat, dstring *diag)
  *
  * @see #japi_wtermsig
  */
-int japi_wifsignaled(int *signaled, int stat, dstring *diag)
-{
+int japi_wifsignaled(int *signaled, int stat, dstring *diag) {
    *signaled = SGE_GET_WSIGNALED(stat)?1:0;
    return DRMAA_ERRNO_SUCCESS;
 }
@@ -3316,8 +3279,7 @@ int japi_wifsignaled(int *signaled, int stat, dstring *diag)
  *
  * @see #japi_wifsignaled
  */
-int japi_wtermsig(dstring *sig, int stat, dstring *diag)
-{
+int japi_wtermsig(dstring *sig, int stat, dstring *diag) {
    uint32_t sge_sig = SGE_GET_WSIGNAL(stat);
    sge_dstring_sprintf(sig, "SIG%s", sge_sig2str(sge_sig));
    return DRMAA_ERRNO_SUCCESS;
@@ -3339,8 +3301,7 @@ int japi_wtermsig(dstring *sig, int stat, dstring *diag)
  *
  * @note MT-NOTE: japi_wifcoredump() is MT safe
  */
-int japi_wifcoredump(int *core_dumped, int stat, dstring *diag)
-{
+int japi_wifcoredump(int *core_dumped, int stat, dstring *diag) {
    *core_dumped = SGE_GET_WCOREDUMP(stat)?1:0;
    return DRMAA_ERRNO_SUCCESS;
 }
@@ -3353,8 +3314,7 @@ int japi_wifcoredump(int *core_dumped, int stat, dstring *diag)
  *
  * @note MT-NOTE: japi_standard_error() is MT safe
  */
-void japi_standard_error(int drmaa_errno, dstring *diag)
-{
+void japi_standard_error(int drmaa_errno, dstring *diag) {
    if (diag != nullptr) {
       sge_dstring_copy_string(diag, japi_strerror(drmaa_errno));
    }
@@ -3372,8 +3332,7 @@ void japi_standard_error(int drmaa_errno, dstring *diag)
  *
  * @note MT-NOTE: japi_strerror() is MT safe
  */
-const char *japi_strerror(int drmaa_errno)
-{
+const char *japi_strerror(int drmaa_errno) {
    const struct error_text_s {
       int drmaa_errno;
       const char *str;
@@ -3441,11 +3400,10 @@ const char *japi_strerror(int drmaa_errno)
  *
  * @see #japi_init
  */
-int japi_get_contact(dstring *contact, dstring *diag)
-{
-   int japi_errno = DRMAA_ERRNO_SUCCESS;
-
+int japi_get_contact(dstring *contact, dstring *diag) {
    DENTER(TOP_LAYER);
+
+   int japi_errno = DRMAA_ERRNO_SUCCESS;
 
    if ((contact != nullptr) && (diag != nullptr)) {
       JAPI_LOCK_SESSION();
@@ -3479,8 +3437,7 @@ int japi_get_contact(dstring *contact, dstring *diag)
  *          so both stay at whatever the caller passed in. drmaa_version() is
  *          the only caller and sets the numbers itself before calling.
  */
-void japi_version(unsigned int *major, unsigned int *minor)
-{
+void japi_version(unsigned int *major, unsigned int *minor) {
 }
 
 
@@ -3495,8 +3452,7 @@ void japi_version(unsigned int *major, unsigned int *minor)
  *
  * @note MT-NOTE: japi_get_drm_system() is MT safe
  */
-int japi_get_drm_system(dstring *drm, dstring *diag, ProgName me)
-{
+int japi_get_drm_system(dstring *drm, dstring *diag, ProgName me) {
    dstring buffer = DSTRING_INIT;
    pthread_once(&japi_once_control, japi_once_init);
 
@@ -3531,8 +3487,7 @@ int japi_get_drm_system(dstring *drm, dstring *diag, ProgName me)
  *
  * @note MT-NOTE: japi_subscribe_job_list() is MT safe
  */
-static void japi_subscribe_job_list(const char *japi_session_key, sge_evc_class_t *evc)
-{
+static void japi_subscribe_job_list(const char *japi_session_key, sge_evc_class_t *evc) {
    const int job_nm[] = {
       JB_job_number,
       JB_project,
@@ -3580,8 +3535,9 @@ static void japi_subscribe_job_list(const char *japi_session_key, sge_evc_class_
  *
  * @note MT-NOTE: japi_implementation_thread() is MT safe
  */
-static void *japi_implementation_thread(void * a_user_data_pointer)
-{
+static void *japi_implementation_thread(void *a_user_data_pointer) {
+   DENTER(TOP_LAYER);
+
    lList *alp = nullptr, *event_list = nullptr;
    char buffer[1024];
    dstring buffer_wrapper;
@@ -3597,8 +3553,6 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
                                  qmaster. */
    static sge_evc_class_t *evc = nullptr;
    ocs::gdi::ErrorValue gdi_errno = ocs::gdi::ErrorValue::AE_OK;
-
-   DENTER(TOP_LAYER);
 
    /* Check EC state before we bother starting.  This also prevents the event
     * client thread from having a race condition with japi_enable_job_wait(). */
@@ -4051,8 +4005,7 @@ SetupFailed:
  *
  * @note MT-NOTES: japi_sync_job_tasks() is MT safe.
  */
-static int japi_sync_job_tasks(lListElem *japi_job, lListElem *sge_job)
-{
+static int japi_sync_job_tasks(lListElem *japi_job, lListElem *sge_job) {
    DENTER(TOP_LAYER);
    lList *range_list_copy = nullptr;
    lListElem *task = nullptr;
@@ -4128,8 +4081,9 @@ static int japi_sync_job_tasks(lListElem *japi_job, lListElem *sge_job)
  *
  * @note MT-NOTES: japi_clean_up_jobs() is MT safe (assumptions)
  */
-static int japi_clean_up_jobs(int flag, dstring *diag)
-{
+static int japi_clean_up_jobs(int flag, dstring *diag) {
+   DENTER(TOP_LAYER);
+
    const lListElem *japi_job = nullptr;
    lListElem *id_entry = nullptr;
    lList *id_list = nullptr, *alp = nullptr;
@@ -4139,8 +4093,6 @@ static int japi_clean_up_jobs(int flag, dstring *diag)
    int count = 0;
    char buffer[1024];
    dstring job_task_specifier;
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&job_task_specifier, buffer, sizeof(buffer));
 
@@ -4235,11 +4187,10 @@ static int japi_clean_up_jobs(int flag, dstring *diag)
  *
  * @note MT-NOTES: japi_was_init_called() is MT safe
  */
-int japi_was_init_called(dstring* diag)
-{
-   int ret = DRMAA_ERRNO_SUCCESS;
-
+int japi_was_init_called(dstring *diag) {
    DENTER(TOP_LAYER);
+
+   int ret = DRMAA_ERRNO_SUCCESS;
 
    /* per thread initialization */
    /* diag written by japi_init_mt() */
@@ -4274,11 +4225,10 @@ int japi_was_init_called(dstring* diag)
  *
  * @note MT-NOTES: japi_is_delegated_file_staging_enabled() is MT safe
  */
-bool japi_is_delegated_file_staging_enabled(dstring *diag)
-{
-   bool ret = false;
-
+bool japi_is_delegated_file_staging_enabled(dstring *diag) {
    DENTER(TOP_LAYER);
+
+   bool ret = false;
 
    JAPI_LOCK_SESSION();
    if (japi_delegated_file_staging_is_enabled == -1) {
@@ -4309,16 +4259,15 @@ bool japi_is_delegated_file_staging_enabled(dstring *diag)
  * @note MT-NOTES: japi_read_dynamic_attributes() is not MT safe.  It assumes that
  *       the calling thread holds the session mutex.
  */
-static int japi_read_dynamic_attributes(dstring *diag)
-{
+static int japi_read_dynamic_attributes(dstring *diag) {
+   DENTER(TOP_LAYER);
+
    int        ret=0;
    int        drmaa_errno=DRMAA_ERRNO_SUCCESS;
    const lList      *pSubList;
    lListElem  *config = nullptr;
    const lListElem  *ep = nullptr;
    const char *pStr = nullptr;
-
-   DENTER(TOP_LAYER);
 
    ret = ocs::gdi::Client::gdi_get_configuration(SGE_GLOBAL_NAME, &config, nullptr);
 
@@ -4382,8 +4331,7 @@ static int japi_read_dynamic_attributes(dstring *diag)
  *
  * @note MT-NOTES: do_gdi_delete() is MT safe
  */
-static int do_gdi_delete(lList **id_list, int action, bool delete_all, dstring *diag)
-{
+static int do_gdi_delete(lList **id_list, int action, bool delete_all, dstring *diag) {
    DENTER(TOP_LAYER);
 
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE,
@@ -4422,13 +4370,12 @@ static int do_gdi_delete(lList **id_list, int action, bool delete_all, dstring *
  *
  * @note MT-NOTES: japi_stop_event_client() is MT safe (assumptions)
  */
-static int japi_stop_event_client (const char *default_cell)
-{
+static int japi_stop_event_client(const char *default_cell) {
+   DENTER(TOP_LAYER);
+
    lList *alp = nullptr;
    lList *id_list = nullptr;
    char id_string[25];
-
-   DENTER(TOP_LAYER);
 
    DPRINTF (("Requesting that GDI kill our event client.\n"));
    snprintf(id_string, sizeof(id_string)-1, sge_u32, japi_ec_id);

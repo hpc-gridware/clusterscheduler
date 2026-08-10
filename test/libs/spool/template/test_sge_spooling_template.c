@@ -47,8 +47,7 @@
 #include "spool/sge_spooling_utilities.h"
 #include "spool/template/sge_spooling_template.h"
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    lListElem *queue, *copy;
    lList *queue_list;
    lList *answer_list = nullptr;

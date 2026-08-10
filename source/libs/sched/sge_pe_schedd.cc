@@ -141,11 +141,10 @@ pe_allocation_rule_slots(const char *allocation_rule, int slots, bool strict_fix
  *
  * @note MT-NOTE: pe_restricted() is not MT safe
  */
-dispatch_t pe_match_static(const sge_assignment_t *a) 
-{
-   int total_slots;
-
+dispatch_t pe_match_static(const sge_assignment_t *a) {
    DENTER(TOP_LAYER);
+
+   int total_slots;
 
    total_slots = (int)lGetUlong(a->pe, PE_slots);
    if (total_slots == 0) {

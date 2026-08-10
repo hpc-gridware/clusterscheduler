@@ -65,14 +65,14 @@ int main(
 int argc,
 char **argv 
 ) {
+   DENTER_MAIN(TOP_LAYER, "languagetest");
+
 #ifdef _SGE_WCHAR_TEST_
    int i;
    int running = 1;
    wchar_t wbuffer[500];
    char* charpointer = nullptr;
 #endif
-
-   DENTER_MAIN(TOP_LAYER, "languagetest");
 
 #ifdef __SGE_COMPILE_WITH_GETTEXT__  
    sge_init_language_func((gettext_func_type)        gettext,

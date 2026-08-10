@@ -560,11 +560,11 @@ const char *
 object_append_field_to_dstring(const lListElem *object, lList **answer_list,
                                dstring *buffer, int nm,
                                char string_quotes) {
+   DENTER(OBJECT_LAYER);
+
    const char *ret;
    dstring string = DSTRING_INIT;
    bool quote_special_case = false;
-
-   DENTER(OBJECT_LAYER);
 
    SGE_CHECK_POINTER_NULL(object, answer_list);
 
@@ -666,9 +666,9 @@ object_append_field_to_dstring(const lListElem *object, lList **answer_list,
 bool
 object_parse_field_from_string(lListElem *object, lList **answer_list,
                                int nm, const char *value) {
-   bool ret = true;
-
    DENTER(OBJECT_LAYER);
+
+   bool ret = true;
 
    SGE_CHECK_POINTER_FALSE(object, answer_list);
 
@@ -882,9 +882,9 @@ object_set_range_id(lListElem *object, int rnm, uint32_t start, uint32_t end,
  * @see #object_type_get_descr, #object_type_get_key_nm
  */
 const char *object_type_get_name(sge_object_type type) {
-   const char *ret = "unknown";
-
    DENTER(OBJECT_LAYER);
+
+   const char *ret = "unknown";
 
    if (/* type >= SGE_TYPE_FIRST && */ type < SGE_TYPE_ALL) {
       ret = object_base[type].type_name;
@@ -911,12 +911,12 @@ const char *object_type_get_name(sge_object_type type) {
  * @note MT-NOTE: object_name_get_type() is MT safe
  */
 sge_object_type object_name_get_type(const char *name) {
+   DENTER(OBJECT_LAYER);
+
    sge_object_type ret = SGE_TYPE_ALL;
    int i;
    char *type_name;
    char *colon;
-
-   DENTER(OBJECT_LAYER);
 
    type_name = strdup(name);
    colon = strchr(type_name, ':');
@@ -954,9 +954,9 @@ sge_object_type object_name_get_type(const char *name) {
  * @see #object_type_get_name, #object_type_get_key_nm
  */
 const lDescr *object_type_get_descr(sge_object_type type) {
-   const lDescr *ret = nullptr;
-
    DENTER(OBJECT_LAYER);
+
+   const lDescr *ret = nullptr;
 
    if (/* type >= 0 && */ type < SGE_TYPE_ALL) {
       ret = object_base[type].descr;
@@ -985,9 +985,9 @@ const lDescr *object_type_get_descr(sge_object_type type) {
  * @see #object_type_get_name, #object_type_get_descr
  */
 int object_type_get_key_nm(sge_object_type type) {
-   int ret = NoName;
-
    DENTER(OBJECT_LAYER);
+
+   int ret = NoName;
 
    if (/* type >= 0 && */ type < SGE_TYPE_ALL) {
       ret = object_base[type].key_nm;
@@ -1011,9 +1011,10 @@ int object_type_get_key_nm(sge_object_type type) {
 bool
 object_parse_bool_from_string(lListElem *this_elem, lList **answer_list,
                               int name, const char *string) {
+   DENTER(OBJECT_LAYER);
+
    bool ret = true;
 
-   DENTER(OBJECT_LAYER);
    if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
@@ -1049,9 +1050,10 @@ object_parse_bool_from_string(lListElem *this_elem, lList **answer_list,
 bool
 object_parse_time_from_string(lListElem *this_elem, lList **answer_list,
                               int name, const char *string) {
+   DENTER(OBJECT_LAYER);
+
    bool ret = true;
 
-   DENTER(OBJECT_LAYER);
    if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
@@ -1083,9 +1085,10 @@ object_parse_time_from_string(lListElem *this_elem, lList **answer_list,
 bool
 object_parse_inter_from_string(lListElem *this_elem, lList **answer_list,
                                int name, const char *string) {
+   DENTER(OBJECT_LAYER);
+
    bool ret = true;
 
-   DENTER(OBJECT_LAYER);
    if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
@@ -1410,9 +1413,10 @@ object_parse_qtlist_from_string(lListElem *this_elem, lList **answer_list, int n
  */
 bool
 object_parse_mem_from_string(lListElem *this_elem, lList **answer_list, int name, const char *string) {
+   DENTER(OBJECT_LAYER);
+
    bool ret = true;
 
-   DENTER(OBJECT_LAYER);
    if (this_elem != nullptr && string != nullptr) {
       int pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
 
@@ -1697,12 +1701,13 @@ object_set_any_type(lListElem *this_elem, int name, void *value) {
  */
 bool
 object_replace_any_type(lListElem *this_elem, int name, lListElem *org_elem) {
+   DENTER(OBJECT_LAYER);
+
    int cull_ret;
    int out_pos = lGetPosViaElem(this_elem, name, SGE_NO_ABORT);
    int in_pos = lGetPosViaElem(org_elem, name, SGE_NO_ABORT);
    int type = lGetPosType(lGetElemDescr(this_elem), out_pos);
 
-   DENTER(OBJECT_LAYER);
    if (type == lStringT) {
       const char *value = lGetPosString(org_elem, in_pos);
 

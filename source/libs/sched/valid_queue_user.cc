@@ -71,12 +71,11 @@
  * @note MT-NOTE: sge_ar_queue_have_users_access() is MT safe
  */
 bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, const lList *acl_list,
-                                    const lList *xacl_list, const lList *master_userset_list)
-{
+                              const lList *xacl_list, const lList *master_userset_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const char *user= nullptr;
-
-   DENTER(TOP_LAYER);
 
    for_each_ep_lv(acl_entry, lGetList(ar, AR_acl_list)) {
       user = lGetString(acl_entry, ARA_name);

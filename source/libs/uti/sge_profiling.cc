@@ -1100,9 +1100,9 @@ prof_get_info_string(prof_level level, bool with_sub, dstring *error) {
  * @return true when something was written, false when profiling is not active
  */
 bool prof_output_info(prof_level level, bool with_sub, const char *info) {
-   bool ret = false;
-
    DENTER(TOP_LAYER);
+
+   bool ret = false;
 
    if (profiling_enabled && (level <= SGE_PROF_ALL)) {
       int thread_num;
@@ -1258,10 +1258,9 @@ static void prof_info_level_init(prof_level i, int thread_num) {
  * @note MT-NOTE: init_array() is MT safe
  */
 static void init_array(pthread_t num) {
+   DENTER(CULL_LAYER);
 
    int i, c;
-
-   DENTER(CULL_LAYER);
 
    if (sge_prof_array_initialized == 0) {
       CRITICAL("Profiling array is not initialized!\n");

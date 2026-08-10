@@ -167,6 +167,8 @@ debit_scheduled_job(const sge_assignment_t *a, int *sort_hostlist,
 static int
 debit_job_from_queues(lListElem *job, const lListElem *pe, lList *granted, lList *global_queue_list,
                       const lList *centry_list, order_t *orders) {
+   DENTER(TOP_LAYER);
+
    bool master_task = true;
    int qslots, total;
    unsigned int tagged;
@@ -174,8 +176,6 @@ debit_job_from_queues(lListElem *job, const lListElem *pe, lList *granted, lList
    lListElem *qep;
    int ret = 0;
    dstring queue_name = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
 
    /* use each entry in sel_q_list as reference into the global_queue_list */
    const char *last_hostname = nullptr;
@@ -241,6 +241,8 @@ debit_job_from_queues(lListElem *job, const lListElem *pe, lList *granted, lList
 static int
 debit_job_from_hosts(lListElem *job, lListElem *ja_task, const lListElem *pe, lList *granted, lList *host_list, const lList *centry_list,
                      const lList *load_adjustments, int *sort_hostlist) {
+   DENTER(TOP_LAYER);
+
    lSortOrder *so = nullptr;
    lListElem *hep;
    lListElem *global;
@@ -250,8 +252,6 @@ debit_job_from_hosts(lListElem *job, lListElem *ja_task, const lListElem *pe, lL
    bool is_master_task = true;
 
    double old_sort_value, new_sort_value;
-
-   DENTER(TOP_LAYER);
 
    so = lParseSortOrderVarArg(lGetListDescr(host_list), "%I+", EH_sort_value);
 
@@ -392,7 +392,6 @@ debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem *p
 
 static int
 debit_job_from_ar(lListElem *ar, lListElem *job, lListElem *ja_task, const lListElem *pe, lList *granted, lList *ar_list, const lList *centry_list) {
-
    DENTER(TOP_LAYER);
 
    if (ar != nullptr) {

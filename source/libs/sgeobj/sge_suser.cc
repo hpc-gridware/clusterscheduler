@@ -63,8 +63,7 @@
  * @return SU_Type element or nullptr
  */
 lListElem *suser_list_add(lList **suser_list, lList **answer_list,
-                          const char *suser_name)
-{
+                          const char *suser_name) {
    lListElem *ret = nullptr;
 
    if (suser_list != nullptr) {
@@ -87,8 +86,7 @@ lListElem *suser_list_add(lList **suser_list, lList **answer_list,
  *
  * @return SU_Type element pointer or nullptr
  */
-lListElem *suser_list_find(const lList *suser_list, const char *suser_name)
-{
+lListElem *suser_list_find(const lList *suser_list, const char *suser_name) {
    lListElem *ret = nullptr;
 
    if (suser_list != nullptr && suser_name != nullptr) {
@@ -104,8 +102,7 @@ lListElem *suser_list_find(const lList *suser_list, const char *suser_name)
  *
  * @param suser SU_Type list
  */
-void suser_increase_job_counter(lListElem *suser)
-{
+void suser_increase_job_counter(lListElem *suser) {
    if (suser != nullptr) {
       lAddUlong(suser, SU_jobs, 1);
    }
@@ -118,8 +115,7 @@ void suser_increase_job_counter(lListElem *suser)
  *
  * @param suser SU_Type list
  */
-void suser_decrease_job_counter(lListElem *suser)
-{
+void suser_decrease_job_counter(lListElem *suser) {
    DENTER(TOP_LAYER);
 
    if (suser != nullptr) {
@@ -143,8 +139,7 @@ void suser_decrease_job_counter(lListElem *suser)
  *
  * @return number of jobs
  */
-uint32_t suser_get_job_counter(lListElem *suser)
-{
+uint32_t suser_get_job_counter(lListElem *suser) {
    uint32_t ret = 0;
 
    if (suser != nullptr) {
@@ -168,13 +163,13 @@ uint32_t suser_get_job_counter(lListElem *suser)
  *
  * @return 1 => limit would be exceeded 0 => otherwise
  */
-int suser_check_new_job(const lListElem *job, uint32_t max_u_jobs, lList *master_suser_list)
-{
+int suser_check_new_job(const lListElem *job, uint32_t max_u_jobs, lList *master_suser_list) {
+   DENTER(TOP_LAYER);
+
    const char *submit_user = nullptr;
    lListElem *suser = nullptr;
    int ret = 1;
 
-   DENTER(TOP_LAYER);
    submit_user = lGetString(job, JB_owner);
    suser = suser_list_add(&master_suser_list, nullptr, submit_user);
    if (suser != nullptr) {
@@ -209,13 +204,12 @@ int suser_check_new_job(const lListElem *job, uint32_t max_u_jobs, lList *master
  * @see `job_list_register_new_job()`
  */
 int suser_register_new_job(const lListElem *job, uint32_t max_u_jobs,
-                           int force_registration, lList *master_suser_list)
-{
+                           int force_registration, lList *master_suser_list) {
+   DENTER(TOP_LAYER);
+
    const char *submit_user = nullptr;
    lListElem *suser = nullptr;
    int ret = 0;
-
-   DENTER(TOP_LAYER);
 
    if (!force_registration) {
       ret = suser_check_new_job(job, max_u_jobs, master_suser_list);
@@ -239,13 +233,13 @@ int suser_register_new_job(const lListElem *job, uint32_t max_u_jobs,
  *
  * @return number of jobs in the system
  */
-uint32_t suser_job_count(const lListElem *job, const lList *master_suser_list)
-{
+uint32_t suser_job_count(const lListElem *job, const lList *master_suser_list) {
+   DENTER(TOP_LAYER);
+
    const char *submit_user = nullptr;
    lListElem *suser = nullptr;
    uint32_t ret = 0;
 
-   DENTER(TOP_LAYER);
    submit_user = lGetString(job, JB_owner);  
    suser = suser_list_find(master_suser_list, submit_user);
    if (suser != nullptr) {
@@ -262,12 +256,12 @@ uint32_t suser_job_count(const lListElem *job, const lList *master_suser_list)
  * @param job JB_Type element
  * @param master_suser_list the submit users to unregister from
  */
-void suser_unregister_job(const lListElem *job, const lList *master_suser_list)
-{
+void suser_unregister_job(const lListElem *job, const lList *master_suser_list) {
+   DENTER(TOP_LAYER);
+
    const char *submit_user = nullptr;
    lListElem *suser = nullptr;
 
-   DENTER(TOP_LAYER);
    submit_user = lGetString(job, JB_owner);  
    suser = suser_list_find(master_suser_list, submit_user);
    if (suser != nullptr) {

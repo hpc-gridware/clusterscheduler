@@ -169,11 +169,10 @@ int main(int argc, char **argv) {
  *
  * @note MT-NOTE: answer_list_has_exit_code_error() is not MT safe
  */
-static bool answer_list_has_exit_code_error(lList **answer_list)
-{
-   bool ret = false;
-
+static bool answer_list_has_exit_code_error(lList **answer_list) {
    DENTER(TOP_LAYER);
+
+   bool ret = false;
 
    if (answer_list_has_quality(answer_list, ANSWER_QUALITY_CRITICAL)) {
       ret = true;
@@ -191,7 +190,7 @@ static bool answer_list_has_exit_code_error(lList **answer_list)
   } 
 
    DRETURN(ret);
-}            
+}
 
 
 /****
@@ -205,11 +204,11 @@ char **argv,
 char **envp,
 lList **ppcmdline
 ) {
+   DENTER(TOP_LAYER);
+
 char **sp;
 char **rp;
 lList *alp = nullptr;
-
-   DENTER(TOP_LAYER);
 
    rp = argv;
 
@@ -351,13 +350,12 @@ error:
  **** ppcmdline, sets the force and action flags and puts the
  **** queue/job-names/numbers in ppreflist.
  ****/
-static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, uint32_t *pforce)
-{
+static lList *sge_parse_qmod(lList **ppcmdline, lList **ppreflist, uint32_t *pforce) {
+   DENTER(TOP_LAYER);
+
    lList *alp = nullptr;
    uint32_t helpflag;
    int usageshowed = 0;
-
-   DENTER(TOP_LAYER);
 
    /* Loop over all options. Only valid options can be in the
       ppcmdline list. Except f_OPT all options are exclusive.

@@ -166,8 +166,9 @@ list_attribute_struct cqueue_attribute_array[] = {
  * @return the enumeration to pass to the GDI request
  */
 lEnumeration *
-enumeration_create_reduced_cq(bool fetch_all_qi, bool fetch_all_nqi)
-{
+enumeration_create_reduced_cq(bool fetch_all_qi, bool fetch_all_nqi) {
+   DENTER(CQUEUE_LAYER);
+
    lEnumeration *ret;
    dstring format_string = DSTRING_INIT;
    lDescr *descr = CQ_Type;
@@ -175,7 +176,6 @@ enumeration_create_reduced_cq(bool fetch_all_qi, bool fetch_all_nqi)
    int names = -1;
    int attr;
 
-   DENTER(CQUEUE_LAYER);
    for_each_attr(attr, descr) {
       if (names == -1) {
          sge_dstring_clear(&format_string);
@@ -216,14 +216,12 @@ enumeration_create_reduced_cq(bool fetch_all_qi, bool fetch_all_nqi)
  *
  * @return error state always true  - success
  */
-bool
-cqueue_name_split(const char *name, 
-                  dstring *cqueue_name, dstring *host_domain, 
-                  bool *has_hostname, bool *has_domain)
-{
-   bool ret = true;
-
+bool cqueue_name_split(const char *name,
+                       dstring *cqueue_name, dstring *host_domain,
+                       bool *has_hostname, bool *has_domain) {
    DENTER(CQUEUE_LAYER);
+
+   bool ret = true;
 
    if (has_hostname)
       *has_hostname = false;
@@ -285,8 +283,7 @@ cqueue_name_split(const char *name,
  *
  * @note MT-NOTE: cqueue_get_name_from_qinstance() is MT safe
  */
-char* cqueue_get_name_from_qinstance(const char *queue_instance)
-{
+char *cqueue_get_name_from_qinstance(const char *queue_instance) {
    char *at_sign = nullptr;
    char *cqueue = nullptr;
 
@@ -313,11 +310,11 @@ char* cqueue_get_name_from_qinstance(const char *queue_instance)
  * @return CQ_Type object or nullptr
  */
 lListElem *
-cqueue_create(lList **answer_list, const char *name)
-{
+cqueue_create(lList **answer_list, const char *name) {
+   DENTER(CQUEUE_LAYER);
+
    lListElem *ret = nullptr;
 
-   DENTER(CQUEUE_LAYER);
    if (name != nullptr) {
       ret = lCreateElem(CQ_Type);
 
@@ -345,10 +342,8 @@ cqueue_create(lList **answer_list, const char *name)
  *
  * @return true if it is referenced
  */
-bool 
-cqueue_is_href_referenced(const lListElem *this_elem, 
-                          const lListElem *href, bool only_hostlist)
-{
+bool cqueue_is_href_referenced(const lListElem *this_elem,
+                               const lListElem *href, bool only_hostlist) {
    bool ret = false;
 
    if (this_elem != nullptr && href != nullptr) {
@@ -384,7 +379,7 @@ cqueue_is_href_referenced(const lListElem *this_elem,
       }
    }
    return ret;
-} 
+}
 
 /**
  * @brief Is a hgroup referenced in cqueue
@@ -397,9 +392,7 @@ cqueue_is_href_referenced(const lListElem *this_elem,
  *
  * @return true if "hgroup" is referenced
  */
-bool 
-cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hgroup)
-{
+bool cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hgroup) {
    bool ret = false;
 
    if (this_elem != nullptr && hgroup != nullptr) {
@@ -449,10 +442,8 @@ cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hgroup)
  *
  * @return at least one object is referenced
  */
-bool 
-cqueue_is_a_href_referenced(const lListElem *this_elem, 
-                            const lList *href_list, bool only_hostlist)
-{
+bool cqueue_is_a_href_referenced(const lListElem *this_elem,
+                                 const lList *href_list, bool only_hostlist) {
    bool ret = false;
   
    if (this_elem != nullptr && href_list != nullptr) {
@@ -464,7 +455,7 @@ cqueue_is_a_href_referenced(const lListElem *this_elem,
       }
    }
    return ret;
-} 
+}
 
 /**
  * @brief Set default attributes
@@ -478,12 +469,11 @@ cqueue_is_a_href_referenced(const lListElem *this_elem,
  *
  * @return error state true  - success false - error
  */
-bool
-cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
-{
+bool cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list) {
+   DENTER(CQUEUE_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_LAYER);
    if (this_elem != nullptr) {
       /*
        * initialize uint32_t values
@@ -807,13 +797,11 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
  *
  * @return error state true  - success false - error
  */
-bool
-cqueue_list_add_cqueue(lList *this_list, lListElem *queue)
-{
+bool cqueue_list_add_cqueue(lList *this_list, lListElem *queue) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    static lSortOrder *so = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (queue != nullptr) {
       if (so == nullptr) {
@@ -837,8 +825,7 @@ cqueue_list_add_cqueue(lList *this_list, lListElem *queue)
  * @return cluster queue object or nullptr
  */
 lListElem *
-cqueue_list_locate(const lList *this_list, const char *name)
-{
+cqueue_list_locate(const lList *this_list, const char *name) {
    return lGetElemStrRW(this_list, CQ_name, name);
 }
 
@@ -854,8 +841,7 @@ cqueue_list_locate(const lList *this_list, const char *name)
  * @return qinstance object or nullptr
  */
 lListElem *
-cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname)
-{
+cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname) {
    const lList *qinstance_list = lGetList(this_elem, CQ_qinstances);
 
    return qinstance_list_locate(qinstance_list, hostname, nullptr);
@@ -885,16 +871,15 @@ cqueue_locate_qinstance(const lListElem *this_elem, const char *hostname)
  *
  * @return error state true  - success false - error
  */
-bool 
-cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
-                         lListElem *reduced_elem, bool in_master, const lList *master_calendar_list, 
-                         const lList *master_ckpt_list, const lList *master_pe_list, const lList *master_userset_list, 
-                         const lList *master_project_list, const lList *master_centry_list, const lList *master_cqueue_list,
-                         const lList *master_hgroup_list)
-{
+bool cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
+                              lListElem *reduced_elem, bool in_master, const lList *master_calendar_list,
+                              const lList *master_ckpt_list, const lList *master_pe_list, const lList *master_userset_list,
+                              const lList *master_project_list, const lList *master_centry_list, const lList *master_cqueue_list,
+                              const lList *master_hgroup_list) {
+   DENTER(CQUEUE_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_LAYER);
    if (cqueue != nullptr && reduced_elem != nullptr) {
       int index = 0;
 
@@ -1029,15 +1014,14 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
  *
  * @note MT-NOTE: cqueue_list_find_all_matching_references() is MT safe
  */
-bool
-cqueue_list_find_all_matching_references(const lList *this_list,
-                                         lList **answer_list,
-                                         const char *cqueue_pattern,
-                                         lList **qref_list)
-{
+bool cqueue_list_find_all_matching_references(const lList *this_list,
+                                              lList **answer_list,
+                                              const char *cqueue_pattern,
+                                              lList **qref_list) {
+   DENTER(CQUEUE_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_LAYER);
    if (this_list != nullptr && cqueue_pattern != nullptr && qref_list != nullptr) {
       const lListElem *cqueue;
       const bool cqueue_pattern_is_expression = ocs::is_expression(cqueue_pattern);
@@ -1068,14 +1052,13 @@ cqueue_list_find_all_matching_references(const lList *this_list,
  *
  * @note MT-NOTE: cqueue_xattr_pre_gdi() is MT safe
  */
-bool
-cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list) 
-{
+bool cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list) {
+   DENTER(CQUEUE_LAYER);
+
    bool ret = true;
    dstring cqueue_name = DSTRING_INIT;
    dstring host_domain = DSTRING_INIT;
 
-   DENTER(CQUEUE_LAYER);
    if (this_list != nullptr) {
       for_each_rw_lv(cqueue, this_list) {
          const char *name = lGetString(cqueue, CQ_name);
@@ -1148,12 +1131,10 @@ cqueue_xattr_pre_gdi(lList *this_list, lList **answer_list)
  *
  * @note MT-NOTE: cqueue_is_used_in_subordinate() is MT safe
  */
-bool
-cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue)
-{
-   bool ret = false;
-
+bool cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue) {
    DENTER(CQUEUE_LAYER);
+
+   bool ret = false;
 
    if (cqueue != nullptr && cqueue_name != nullptr) {
       const lList *sub_list = lGetList(cqueue, CQ_subordinate_list);
@@ -1189,14 +1170,13 @@ cqueue_is_used_in_subordinate(const char *cqueue_name, const lListElem *cqueue)
  *
  * @note MT-NOTE: cqueue_list_find_hgroup_references() is MT safe
  */
-bool
-cqueue_list_find_hgroup_references(const lList *this_list, lList **answer_list,
-                                   const lListElem *hgroup, lList **string_list)
-{
+bool cqueue_list_find_hgroup_references(const lList *this_list, lList **answer_list,
+                                        const lListElem *hgroup, lList **string_list) {
+   DENTER(CQUEUE_LAYER);
+
    bool ret = true;
    const lListElem *cqueue;
 
-   DENTER(CQUEUE_LAYER);
    if (this_list != nullptr && hgroup != nullptr && string_list != nullptr) {
       for_each_ep(cqueue, this_list) {
          if (cqueue_is_hgroup_referenced(cqueue, hgroup)) {
@@ -1223,9 +1203,7 @@ cqueue_list_find_hgroup_references(const lList *this_list, lList **answer_list,
  *
  * @note MT-NOTE: cqueue_list_set_tag() is MT safe
  */
-void
-cqueue_list_set_tag(lList *this_list, uint32_t tag_value, bool tag_qinstances)
-{
+void cqueue_list_set_tag(lList *this_list, uint32_t tag_value, bool tag_qinstances) {
    DENTER(TOP_LAYER);
    if (this_list != nullptr) {
       for_each_rw_lv(cqueue, this_list) {
@@ -1254,8 +1232,7 @@ cqueue_list_set_tag(lList *this_list, uint32_t tag_value, bool tag_qinstances)
  * @note MT-NOTE: cqueue_list_locate_qinstance() is MT safe
  */
 lListElem *
-cqueue_list_locate_qinstance(const lList *cqueue_list, const char *full_name)
-{
+cqueue_list_locate_qinstance(const lList *cqueue_list, const char *full_name) {
    return cqueue_list_locate_qinstance_msg(cqueue_list, full_name, true);
 }
 
@@ -1274,11 +1251,11 @@ cqueue_list_locate_qinstance(const lList *cqueue_list, const char *full_name)
  * @note MT-NOTE: cqueue_list_locate_qinstance_msg() is MT safe
  */
 lListElem *
-cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name, bool raise_error) 
-{
+cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name, bool raise_error) {
+   DENTER(TOP_LAYER);
+
    lListElem *ret = nullptr;
 
-   DENTER(TOP_LAYER);
    if (full_name != nullptr) {
       dstring cqueue_name_buffer = DSTRING_INIT;
       dstring host_domain_buffer = DSTRING_INIT;
@@ -1323,13 +1300,12 @@ cqueue_list_locate_qinstance_msg(const lList *cqueue_list, const char *full_name
  *
  * @note MT-NOTE: cqueue_find_used_href() is MT safe
  */
-bool
-cqueue_find_used_href(lListElem *this_elem, lList **answer_list, 
-                      lList **href_list) 
-{
+bool cqueue_find_used_href(lListElem *this_elem, lList **answer_list,
+                           lList **href_list) {
+   DENTER(CQUEUE_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_LAYER);
    if (this_elem != nullptr) {
       int index=0;
 
@@ -1369,13 +1345,12 @@ cqueue_find_used_href(lListElem *this_elem, lList **answer_list,
  *
  * @note MT-NOTE: cqueue_trash_used_href_setting() is MT safe
  */
-bool
-cqueue_trash_used_href_setting(lListElem *this_elem, lList **answer_list, 
-                               const char *hgroup_or_hostname) 
-{
+bool cqueue_trash_used_href_setting(lListElem *this_elem, lList **answer_list,
+                                    const char *hgroup_or_hostname) {
+   DENTER(CQUEUE_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_LAYER);
    if (this_elem != nullptr) {
       int index=0;
 
@@ -1417,18 +1392,16 @@ cqueue_trash_used_href_setting(lListElem *this_elem, lList **answer_list,
  *
  * @note MT-NOTE: cqueue_purge_host() is not MT safe
  */
-bool 
-cqueue_purge_host(lListElem *this_elem, lList **answer_list, 
-                  lList *attr_list, const char *hgroup_or_hostname)
-{
+bool cqueue_purge_host(lListElem *this_elem, lList **answer_list,
+                       lList *attr_list, const char *hgroup_or_hostname) {
+   DENTER(CQUEUE_LAYER);
+
    bool ret = false;
    int index;
 
    lList *sublist = nullptr;
    const lListElem *ep = nullptr;
    const char *attr_name = nullptr;
-
-   DENTER(CQUEUE_LAYER);
 
    if (this_elem != nullptr) {
       for_each_ep(ep, attr_list) {
@@ -1480,13 +1453,11 @@ cqueue_purge_host(lListElem *this_elem, lList **answer_list,
  * @param[out] ds receives the human readable report
  * @return true when the queue could be inspected
  */
-bool
-cqueue_sick(lListElem *cqueue, lList **answer_list, 
-            lList *master_hgroup_list, dstring *ds)
-{
-   bool ret = true;
-
+bool cqueue_sick(lListElem *cqueue, lList **answer_list,
+                 lList *master_hgroup_list, dstring *ds) {
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    /*
     * Warn about:
@@ -1589,4 +1560,3 @@ cqueue_sick(lListElem *cqueue, lList **answer_list,
    
    DRETURN(ret);
 }
-

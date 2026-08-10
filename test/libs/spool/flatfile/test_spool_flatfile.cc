@@ -128,8 +128,7 @@ static int SPOOL_classic_params_test();
 /** @brief One test case: takes nothing, returns non-zero on failure */
 typedef int (*func)();
 
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "test_ff_cl");
 
    if (argc > 1) {
@@ -189,8 +188,7 @@ int main(int argc, char** argv)
    DRETURN(s_fail == 0 ? 0 : 1);
 }
 
-static int PE_test()
-{
+static int PE_test() {
    int ret = 0;
    lList *lp = nullptr;
    lList *lp2 = nullptr;
@@ -357,8 +355,7 @@ static int PE_test()
    return ret;
 }
 
-static int CAL_test()
-{
+static int CAL_test() {
    int ret = 0;
    lListElem *ep = nullptr;
    lList *alp = nullptr;
@@ -406,8 +403,7 @@ static int CAL_test()
    return ret;
 }
 
-static int CK_test()
-{
+static int CK_test() {
    int ret = 0;
    lListElem *ep = nullptr;
    lList *alp = nullptr;
@@ -569,8 +565,7 @@ static int STN_test() {
    return ret;
 }
 
-static int CE_test()
-{
+static int CE_test() {
    int ret = 0;
    lListElem *ep = nullptr;
    lList *alp = nullptr;
@@ -622,8 +617,7 @@ static int CE_test()
    return ret;
 }
 
-static int CEL_test()
-{
+static int CEL_test() {
    int ret = 0;
    lListElem *ep = nullptr;
    lList *lp = nullptr;
@@ -693,8 +687,7 @@ static int CEL_test()
    return ret;
 }
 
-static int diff(const char *file1, const char *file2)
-{
+static int diff(const char *file1, const char *file2) {
    int ret = 1;
    char **argv =(char **)sge_malloc(sizeof(char *) * 4);
    SGE_ASSERT(argv != nullptr);
@@ -1098,8 +1091,7 @@ static int PR_test() {
    return ret;
 }
 
-static int US_test()
-{
+static int US_test() {
    int ret = 0;
    lListElem *ep = nullptr;
    lListElem *ep2 = nullptr;
@@ -1167,8 +1159,7 @@ static int US_test()
    return ret;
 }
 
-static int EH_test()
-{
+static int EH_test() {
    int ret = 0;
    lListElem *ep = nullptr;
    lListElem *ep2 = nullptr;
@@ -2213,8 +2204,7 @@ static int CQ_test() {
    return ret;
 }
 
-static int SC_test()
-{
+static int SC_test() {
    int ret = 0;
    lListElem *ep = nullptr;
    lListElem *ep2 = nullptr;
@@ -2336,8 +2326,7 @@ static int SC_test()
    return ret;
 }
 
-static int QU_test()
-{
+static int QU_test() {
    int ret = 0;
    lListElem *ep = nullptr;
    lList * alp = nullptr;
@@ -2392,8 +2381,7 @@ static int QU_test()
    return ret;
 }
 
-static int HGRP_test()
-{
+static int HGRP_test() {
    int ret = 0;
    lListElem *ep = nullptr;
    lList * alp = nullptr;
@@ -2776,8 +2764,7 @@ static int AR_test() {
    return ret;
 }
 
-static int PE_minimal_test()
-{
+static int PE_minimal_test() {
    lList *alp = nullptr;
    lListElem *ep = lCreateElem(PE_Type);
    const char *file1 = nullptr;
@@ -2813,8 +2800,7 @@ static int PE_minimal_test()
 // Write a minimal object via SP_DEST_SPOOL under umask(0) so the on-disk mode
 // reflects exactly the requested create mode, then assert it is 0600 with no
 // group/other bits. Pre-fix the file is 0666, so this returns non-zero.
-static int SPOOL_perm_test()
-{
+static int SPOOL_perm_test() {
    lList *alp = nullptr;
    lListElem *ep = lCreateElem(PE_Type);
    lSetString(ep, PE_name, "perm_pe");
@@ -2863,8 +2849,7 @@ static int SPOOL_perm_test()
 // global and per-host configurations (which now live in the spool dir, not the
 // common dir), and asserts the resulting mode is exactly 0700. Red->green:
 // pre-fix the directory is 0755.
-static int SPOOL_dir_perm_test()
-{
+static int SPOOL_dir_perm_test() {
    lList *alp = nullptr;
 
    char base[1024];
@@ -2934,8 +2919,7 @@ static int SPOOL_dir_perm_test()
 // qmaster startup and the testsuite, so it is intentionally not re-created here;
 // this test focuses on the rejection contract, which returns nullptr without
 // allocating.
-static int SPOOL_classic_params_test()
-{
+static int SPOOL_classic_params_test() {
    struct { const char *args; const char *desc; } rejected[] = {
       {nullptr,          "null args"},
       {"relative/path",  "non-absolute path"},
@@ -2966,8 +2950,7 @@ static int SPOOL_classic_params_test()
 // the key must be relative (no leading '/') and no component may be empty, "."
 // or ".." or start with '.' (".hidden"). Ordinary keys (including FQDNs with '-'
 // and '.') and well-formed multi-component keys are accepted; traversal is not.
-static int SPOOL_key_safe_test()
-{
+static int SPOOL_key_safe_test() {
    struct { const char *key; bool expect_safe; } cases[] = {
       {"validkey",                    true},
       {"host-01.example.com",         true},   // '-' and '.' are fine when not leading
@@ -2999,8 +2982,7 @@ static int SPOOL_key_safe_test()
    return ret;
 }
 
-static int CE_minimal_test()
-{
+static int CE_minimal_test() {
    lList *alp = nullptr;
    lListElem *ep = lCreateElem(CE_Type);
    const char *file1 = nullptr;
@@ -3033,8 +3015,7 @@ static int CE_minimal_test()
    return ret;
 }
 
-static int PE_zero_slots_test()
-{
+static int PE_zero_slots_test() {
    lList *alp = nullptr;
    lListElem *ep = lCreateElem(PE_Type);
    const char *file1 = nullptr;
@@ -3063,8 +3044,7 @@ static int PE_zero_slots_test()
    return ret;
 }
 
-static int PE_max_slots_test()
-{
+static int PE_max_slots_test() {
    lList *alp = nullptr;
    lListElem *ep = lCreateElem(PE_Type);
    const char *file1 = nullptr;
@@ -3093,8 +3073,7 @@ static int PE_max_slots_test()
    return ret;
 }
 
-static int CE_zero_values_test()
-{
+static int CE_zero_values_test() {
    lList *alp = nullptr;
    lListElem *ep = lCreateElem(CE_Type);
    const char *file1 = nullptr;
@@ -3131,8 +3110,7 @@ static int CE_zero_values_test()
    return ret;
 }
 
-static int CE_max_values_test()
-{
+static int CE_max_values_test() {
    lList *alp = nullptr;
    lListElem *ep = lCreateElem(CE_Type);
    const char *file1 = nullptr;
@@ -3168,8 +3146,7 @@ static int CE_max_values_test()
    return ret;
 }
 
-static int PE_spaces_test()
-{
+static int PE_spaces_test() {
    lList *alp = nullptr;
    lListElem *ep = lCreateElem(PE_Type);
    const char *file1 = nullptr;
@@ -3205,8 +3182,7 @@ static int PE_spaces_test()
    return ret;
 }
 
-static int CE_special_test()
-{
+static int CE_special_test() {
    lList *alp = nullptr;
    lListElem *ep = lCreateElem(CE_Type);
    const char *file1 = nullptr;
@@ -3242,8 +3218,7 @@ static int CE_special_test()
    return ret;
 }
 
-static int PE_empty_lists_test()
-{
+static int PE_empty_lists_test() {
    lList *alp = nullptr;
    lListElem *ep = lCreateElem(PE_Type);
    const char *file1 = nullptr;
@@ -3275,8 +3250,7 @@ static int PE_empty_lists_test()
    return ret;
 }
 
-static int PE_large_list_test()
-{
+static int PE_large_list_test() {
    lList *alp = nullptr;
    lListElem *ep = lCreateElem(PE_Type);
    const char *file1 = nullptr;

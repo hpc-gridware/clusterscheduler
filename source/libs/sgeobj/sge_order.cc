@@ -59,9 +59,7 @@
  *
  * @note MT-NOTE: sge_free_cull_order_pos() is MT safe
  */
-void
-sge_free_cull_order_pos(order_pos_t **cull_order_pos)
-{
+void sge_free_cull_order_pos(order_pos_t **cull_order_pos) {
    sge_free(cull_order_pos);
 }
 
@@ -78,10 +76,8 @@ sge_free_cull_order_pos(order_pos_t **cull_order_pos)
  *
  * @note MT-NOTE: sge_create_cull_order_pos() is MT safe
  */
-void 
-sge_create_cull_order_pos(order_pos_t **cull_order_pos, const lListElem *jep, const lListElem *jatp,
-                          const lListElem *joker, const lListElem *joker_task) 
-{
+void sge_create_cull_order_pos(order_pos_t **cull_order_pos, const lListElem *jep, const lListElem *jatp,
+                               const lListElem *joker, const lListElem *joker_task) {
    ja_task_pos_t *ja_pos;
    ja_task_pos_t *order_ja_pos;   
    job_pos_t   *job_pos;
@@ -161,4 +157,3 @@ DPRINTF(("ja task prio pos: %d %d %d %d %d %d %d %d\n", ja_pos->JAT_status_pos, 
 */                                        
    }
 }
-

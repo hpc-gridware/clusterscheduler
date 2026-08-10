@@ -59,11 +59,10 @@
 #include <cinttypes>
 #include "msg_utilbin.h"
 
-void usage()
-{
-  fprintf(stderr, "Version: %s\n", ocs::Version::get_version_string().c_str());
-  fprintf(stderr, "%s gethostbyname [-help|-name|-aname|-all] <name>\n",MSG_UTILBIN_USAGE);
-  exit(1);
+void usage() {
+   fprintf(stderr, "Version: %s\n", ocs::Version::get_version_string().c_str());
+   fprintf(stderr, "%s gethostbyname [-help|-name|-aname|-all] <name>\n", MSG_UTILBIN_USAGE);
+   exit(1);
 }
 
 int main(int argc, char *argv[]) {

@@ -114,12 +114,11 @@ static void qevent_dump_pid_file() {
 
 static sge_callback_result
 print_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
-            [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *clientdata)
-{
+            [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *clientdata) {
+   DENTER(TOP_LAYER);
+
    char buffer[1024];
    dstring buffer_wrapper;
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
@@ -147,12 +146,11 @@ get_current_jatask_status(u_long job_id, u_long ja_task_id) {
 
 static sge_callback_result
 print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
-                   [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data)
-{
+                   [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data) {
+   DENTER(TOP_LAYER);
+
    char buffer[1024];
    dstring buffer_wrapper;
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
@@ -214,8 +212,7 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
 
 static sge_callback_result
 analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
-                     [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data)
-{
+                     [[maybe_unused]] sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data) {
    char buffer[1024];
    dstring buffer_wrapper;
 
@@ -255,10 +252,9 @@ analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type
 }
 
 
-
 static void qevent_trigger_scripts( int qevent_event, qevent_options *option_struct, lListElem *event) {
-
    DENTER(TOP_LAYER);
+
    if (option_struct->trigger_option_count > 0) {
       INFO("trigger for event " SFN "\n", qevent_get_event_name(qevent_event) );
       for (int i = 0; i < option_struct->trigger_option_count; i++) {
@@ -271,13 +267,13 @@ static void qevent_trigger_scripts( int qevent_event, qevent_options *option_str
 }
 
 static void qevent_start_trigger_script(int qevent_event, const char* script_file, lListElem *event ) {
+   DENTER(TOP_LAYER);
+
    uint32_t jobid, taskid;
    const char* event_name;
    int pid;
    char buffer[MAX_STRING_SIZE];
    char buffer2[MAX_STRING_SIZE];
-
-   DENTER(TOP_LAYER);
 
    jobid  = lGetUlong(event, ET_intkey);
    taskid = lGetUlong(event, ET_intkey2);
@@ -357,9 +353,8 @@ static void qevent_show_usage() {
 
 
 static void qevent_parse_command_line([[maybe_unused]] int argc, char **argv, qevent_options *option_struct) {
-
-
    DENTER(TOP_LAYER);
+
 
    option_struct->help_option = 0;
    option_struct->testsuite_option = 0;
@@ -458,8 +453,7 @@ static void qevent_parse_command_line([[maybe_unused]] int argc, char **argv, qe
    DRETURN_VOID;
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "qevent");
    qevent_options enabled_options;
    dstring errors = DSTRING_INIT;
@@ -627,9 +621,9 @@ static const char* qevent_get_event_name(int event) {
 }
 
 
+static void qevent_testsuite_mode(sge_evc_class_t *evc) {
+   DENTER(TOP_LAYER);
 
-static void qevent_testsuite_mode(sge_evc_class_t *evc)
-{
 #ifndef QEVENT_SHOW_ALL
    uint64_t timestamp;
    lCondition *where =nullptr;
@@ -656,8 +650,6 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
       NoName
    };
 #endif
-
-   DENTER(TOP_LAYER);
 
    sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 
@@ -725,11 +717,10 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
  *
  * @bug ???
  */
-static void qevent_subscribe_mode(sge_evc_class_t *evc)
-{
-   int event_type = SGE_TYPE_FIRST;
-
+static void qevent_subscribe_mode(sge_evc_class_t *evc) {
    DENTER(TOP_LAYER);
+
+   int event_type = SGE_TYPE_FIRST;
 
    sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_SHUTDOWN, print_event, nullptr, nullptr, nullptr, nullptr);
@@ -772,8 +763,7 @@ static void qevent_subscribe_mode(sge_evc_class_t *evc)
  *
  * @param evc the enrolled event client to subscribe with and run
  */
-static void qevent_monitor_all_mode(sge_evc_class_t *evc)
-{
+static void qevent_monitor_all_mode(sge_evc_class_t *evc) {
    DENTER(TOP_LAYER);
 
    sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
@@ -796,4 +786,3 @@ static void qevent_monitor_all_mode(sge_evc_class_t *evc)
    sge_mirror_shutdown(evc);
    DRETURN_VOID;
 }
-

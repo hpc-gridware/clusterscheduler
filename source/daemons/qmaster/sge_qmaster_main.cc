@@ -139,13 +139,13 @@ sge_qmaster_application_status(char **info_message) {
  *       called reserved port (requires root privileges) if configured to do so.
  */
 int main(int argc, char *argv[]) {
+   DENTER_MAIN(TOP_LAYER, "qmaster");
+
    int max_enroll_tries;
    int ret_val;
    uint64_t start_time = sge_get_gmt64();
    monitoring_t monitor;
    lList *alp = nullptr;
-
-   DENTER_MAIN(TOP_LAYER, "qmaster");
 
 #ifdef WITH_PYTHON_IN_QMASTER
    // @todo: initialize_interpreter() is called within scoped_interpreter(). This function allows to disable signal handling. We need to find out what this means for the qmaster.

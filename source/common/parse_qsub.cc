@@ -146,6 +146,8 @@ lList *cull_parse_cmdline(
         lList **pcmdline,
         uint32_t flags
 ) {
+   DENTER(TOP_LAYER);
+
    const char **sp;
    lList *answer = nullptr;
    char str[MAX_STRING_SIZE];
@@ -153,8 +155,6 @@ lList *cull_parse_cmdline(
    int i_ret;
    uint32_t is_qalter = flags & FLG_QALTER;
    bool is_hold_option = false;
-
-   DENTER(TOP_LAYER);
 
    if (!arg_list || !pcmdline) {
       answer_list_add(&answer, MSG_PARSE_NULLPOINTERRECEIVED, 
@@ -2432,9 +2432,9 @@ DTRACE;
 static int sge_parse_checkpoint_interval(
         const char *time_str
 ) {
-   uint32_t seconds;
-
    DENTER(TOP_LAYER);
+
+   uint32_t seconds;
 
    DPRINTF("--------time_string: %s\n", time_str);
    if (!parse_ulong_val(nullptr, &seconds, ocs::CEntry::Type::TIME, time_str, nullptr, 0))
@@ -2458,8 +2458,7 @@ static int sge_parse_checkpoint_interval(
  * @param[in]     envp NULL-terminated environment array ("NAME=value" entries)
  * @return 0 on success, >0 on error (1 bad args, 3 list create)
  */
-static int var_list_parse_from_environment(lList **lpp, char **envp)
-{
+static int var_list_parse_from_environment(lList **lpp, char **envp) {
    DENTER(TOP_LAYER);
 
    if (lpp == nullptr || envp == nullptr) {
@@ -2518,9 +2517,8 @@ static int var_list_parse_from_environment(lList **lpp, char **envp)
  *
  * @note MT-NOTES: set_yn_option() is MT safe
  */
-static int set_yn_option (lList **opts, uint32_t opt, const char *arg, const char *value,
-                          lList **alpp)
-{
+static int set_yn_option(lList **opts, uint32_t opt, const char *arg, const char *value,
+                         lList **alpp) {
    lListElem *ep_opt = nullptr;
    
    if ((strcasecmp("y", value) == 0) || (strcasecmp("yes", value) == 0)) {
@@ -2626,12 +2624,12 @@ ocs_parse_sync_switch(lList **opts, uint32_t opt, const char *arg, const char *v
  *       is only reached through `-cwd`, which DRMAA can forbid.
  */
 char *reroot_path(lListElem* pjob, const char *path, lList **alpp) {
+   DENTER(TOP_LAYER);
+
    const char *home = nullptr;
    char tmp_str[SGE_PATH_MAX + 1];
    char tmp_str2[SGE_PATH_MAX + 1];
    char tmp_str3[SGE_PATH_MAX + 1];
-
-   DENTER(TOP_LAYER);
 
    home = job_get_env_string(pjob, VAR_PREFIX "O_HOME");
    strcpy(tmp_str, path);

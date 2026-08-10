@@ -105,6 +105,8 @@ userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListE
             const char *rhost, gdi_object_t *object,
             ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
             monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    bool user_flag = (object->target == ocs::gdi::Target::UU_LIST);
    int pos;
    const char *userprj;
@@ -119,8 +121,6 @@ userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListE
    int obj_project;
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *obj_master_list;
-
-   DENTER(TOP_LAYER);
 
    if (user_flag) {
       // user
@@ -271,11 +271,11 @@ userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListE
  */
 int
 userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    int user_flag = (object->target == ocs::gdi::Target::UU_LIST) ? 1 : 0;
    int obj_key, obj_filter, obj_consider;
    ev_event obj_add_event, obj_mod_event;
-
-   DENTER(TOP_LAYER);
 
    if (user_flag == 0) {
       obj_key = PR_name;
@@ -326,10 +326,10 @@ userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, l
  */
 int
 userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *upe, gdi_object_t *object) {
+   DENTER(TOP_LAYER);
+
    lList *answer_list = nullptr;
    int user_flag = (object->target == ocs::gdi::Target::UU_LIST) ? 1 : 0;
-
-   DENTER(TOP_LAYER);
 
    /* write user or project to file */
    bool dbret = spool_write_object(alpp, spool_get_default_context(), upe,
@@ -364,11 +364,11 @@ userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLis
 int
 sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *up_ep, lList **alpp, lList **upl,
                 const char *ruser, const char *rhost, int user /* =1 user, =0 project */ ) {
+   DENTER(TOP_LAYER);
+
    const char *name;
    lListElem *ep;
    lList *projects;
-
-   DENTER(TOP_LAYER);
 
    if (!up_ep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -488,9 +488,9 @@ sge_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *up_ep
 int
 verify_project_list(lList **alpp, const lList *name_list, const lList *prj_list, const char *attr_name,
                     const char *obj_descr, const char *obj_name) {
-   const lListElem *up;
-
    DENTER(TOP_LAYER);
+
+   const lListElem *up;
 
    for_each_ep(up, name_list) {
       if (!lGetElemStr(prj_list, PR_name, lGetString(up, PR_name))) {
@@ -514,11 +514,11 @@ verify_project_list(lList **alpp, const lList *name_list, const lList *prj_list,
  */
 void
 sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    uint64_t auto_user_delete_time = sge_gmt32_to_gmt64(mconf_get_auto_user_delete_time());
    const char *admin = ocs::Bootstrap::get_admin_user();
    const char *qmaster_host = component_get_qualified_hostname();
-
-   DENTER(TOP_LAYER);
 
    /* shall auto users be deleted again? */
    if (auto_user_delete_time > 0) {
@@ -590,11 +590,11 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
  */
 int
 sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *user, lList **alpp, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    lListElem *uep;
    int status = STATUS_OK;
    uint64_t auto_user_delete_time = sge_gmt32_to_gmt64(mconf_get_auto_user_delete_time());
-
-   DENTER(TOP_LAYER);
 
    uep = user_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_USER), user);
 
@@ -652,14 +652,14 @@ sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *us
  * @note MT-NOTE: do_add_auto_user() is not MT safe
  */
 static int do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *anUser, lList **anAnswer, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    int res = STATUS_EUNKNOWN;
    gdi_object_t *userList = nullptr;
    lList *tmpAnswer = nullptr;
    lList *ppList = nullptr;
    const char *admin_user = ocs::Bootstrap::get_admin_user();
    const char *qualified_hostname = component_get_qualified_hostname();
-
-   DENTER(TOP_LAYER);
 
    userList = get_gdi_object(ocs::gdi::Target::UU_LIST);
 

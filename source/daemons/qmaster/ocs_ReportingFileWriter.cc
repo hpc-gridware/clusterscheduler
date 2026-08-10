@@ -759,9 +759,9 @@ namespace ocs {
  * @return true on success
  */
    bool ReportingFileWriter::flush() {
-      bool ret = true;
-
       DENTER(TOP_LAYER);
+
+      bool ret = true;
 
       sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
 

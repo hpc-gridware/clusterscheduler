@@ -105,12 +105,11 @@ static int job_remove_script_file(uint32_t job_id);
 static char old_task_spool_dir[SGE_PATH_MAX] = "";
 
 static lListElem *job_create_from_file(uint32_t job_id, uint32_t ja_task_id,
-                                       sge_spool_flags_t flags)
-{
+                                       sge_spool_flags_t flags) {
+   DENTER(TOP_LAYER);
+
    lListElem *job = nullptr;
    char spool_path[SGE_PATH_MAX] = "";
-
-   DENTER(TOP_LAYER);
 
    sge_get_file_path(spool_path, sizeof(spool_path), JOB_SPOOL_DIR, FORMAT_DEFAULT, flags, job_id, ja_task_id, nullptr);
 
@@ -147,8 +146,7 @@ static lListElem *job_create_from_file(uint32_t job_id, uint32_t ja_task_id,
 
 static lList *ja_task_list_create_from_file(uint32_t job_id,
                                             uint32_t ja_task_id,
-                                            sge_spool_flags_t flags)
-{
+                                            sge_spool_flags_t flags) {
    DENTER(TOP_LAYER);
    lList *ja_task_entries = nullptr;
    lList *pe_task_entries = nullptr;
@@ -249,8 +247,7 @@ error:
 static lListElem *ja_task_create_from_file(uint32_t job_id,
                                            uint32_t ja_task_id,
                                            const char *pe_task_id,
-                                           sge_spool_flags_t flags) 
-{
+                                           sge_spool_flags_t flags) {
    lListElem *ja_task;
    char spool_path_ja_task[SGE_PATH_MAX];
 
@@ -263,8 +260,7 @@ static lListElem *ja_task_create_from_file(uint32_t job_id,
 static lListElem *pe_task_create_from_file(uint32_t job_id,
                                            uint32_t ja_task_id,
                                            const char *pe_task_id,
-                                           sge_spool_flags_t flags)
-{
+                                           sge_spool_flags_t flags) {
    lListElem *pe_task;
    char spool_path_pe_task[SGE_PATH_MAX];
 
@@ -272,7 +268,6 @@ static lListElem *pe_task_create_from_file(uint32_t job_id,
                      FORMAT_DEFAULT, flags, job_id, ja_task_id, pe_task_id);
    pe_task = lReadElemFromDisk(nullptr, spool_path_pe_task, PET_Type, "pe_task");
    return pe_task;
-   
 }
 
 /**
@@ -312,14 +307,13 @@ static lListElem *pe_task_create_from_file(uint32_t job_id,
  */
 int job_write_spool_file(lListElem *job, uint32_t ja_taskid,
                          const char *pe_task_id,
-                         sge_spool_flags_t flags) 
-{
+                         sge_spool_flags_t flags) {
+   DENTER(TOP_LAYER);
+
    int ret = 0;
    int report_long_delays = flags & SPOOL_WITHIN_EXECD;
    uint64_t start = 0;
    
-   DENTER(TOP_LAYER);
-
    if (report_long_delays) {
       start = sge_get_gmt64();
    }
@@ -347,10 +341,9 @@ int job_write_spool_file(lListElem *job, uint32_t ja_taskid,
    DRETURN(ret);
 }
 
-static int job_has_to_spool_one_file(const lListElem *job, 
+static int job_has_to_spool_one_file(const lListElem *job,
                                      const lList *pe_list,
-                                     sge_spool_flags_t flags) 
-{
+                                     sge_spool_flags_t flags) {
    DENTER(TOP_LAYER);
 
    if ((flags & SPOOL_WITHIN_EXECD)) {
@@ -365,15 +358,15 @@ static int job_has_to_spool_one_file(const lListElem *job,
 }
 
 static int job_write_as_single_file(const lListElem *job, uint32_t ja_task_id,
-                                   sge_spool_flags_t flags) 
-{
+                                    sge_spool_flags_t flags) {
+   DENTER(TOP_LAYER);
+
    int ret = 0;
    uint32_t job_id;
    char job_dir_third[SGE_PATH_MAX] = "";
    char spool_file[SGE_PATH_MAX] = "";
    char tmp_spool_file[SGE_PATH_MAX] = "";
 
-   DENTER(TOP_LAYER);
    job_id = lGetUlong(job, JB_job_number);
 
    sge_get_file_path(job_dir_third, sizeof(job_dir_third), JOB_SPOOL_DIR, FORMAT_THIRD_PART, flags, job_id, ja_task_id, nullptr);
@@ -389,13 +382,12 @@ static int job_write_as_single_file(const lListElem *job, uint32_t ja_task_id,
 
 static int job_write_ja_task_part(lListElem *job, uint32_t ja_task_id,
                                   const char *pe_task_id,
-                                  sge_spool_flags_t flags)
-{
+                                  sge_spool_flags_t flags) {
+   DENTER(TOP_LAYER); 
+
    lListElem *ja_task, *next_ja_task;
    uint32_t job_id;
    int ret = 0;
-   DENTER(TOP_LAYER); 
-
    job_id = lGetUlong(job, JB_job_number);
    if (ja_task_id != 0) {
       next_ja_task = lGetElemUlongRW(lGetList(job, JB_ja_tasks), JAT_task_number, ja_task_id);
@@ -435,15 +427,14 @@ static int job_write_ja_task_part(lListElem *job, uint32_t ja_task_id,
  * @return 0 on success, else 1
  */
 int job_write_common_part(lListElem *job, uint32_t ja_task_id,
-                                 sge_spool_flags_t flags) 
-{
+                          sge_spool_flags_t flags) {
+   DENTER(TOP_LAYER);
+
    int ret = 0;
    uint32_t job_id;
    char spool_dir[SGE_PATH_MAX];
    char spoolpath_common[SGE_PATH_MAX], tmp_spoolpath_common[SGE_PATH_MAX];
    lList *ja_tasks;
-
-   DENTER(TOP_LAYER);
 
    job_id = lGetUlong(job, JB_job_number);
    sge_get_file_path(spool_dir, sizeof(spool_dir), JOB_SPOOL_DIR, FORMAT_DEFAULT, flags, job_id, ja_task_id, nullptr);
@@ -465,15 +456,13 @@ int job_write_common_part(lListElem *job, uint32_t ja_task_id,
 }
 
 
-
 static int ja_task_write_to_disk(lListElem *ja_task, uint32_t job_id,
                                  const char *pe_task_id,
-                                 sge_spool_flags_t flags)
-{
-   int handle_pe_tasks = flags & SPOOL_HANDLE_PARALLEL_TASKS;
-   int ret = 0;
+                                 sge_spool_flags_t flags) {
    DENTER(TOP_LAYER);
 
+   int handle_pe_tasks = flags & SPOOL_HANDLE_PARALLEL_TASKS;
+   int ret = 0;
    /* this is a tightly integrated parallel job */
    if (handle_pe_tasks) {
       char task_spool_dir[SGE_PATH_MAX];
@@ -593,8 +582,9 @@ error:
  */
 int job_remove_spool_file(uint32_t jobid, uint32_t ja_taskid,
                           const char *pe_task_id,
-                          sge_spool_flags_t flags)
-{
+                          sge_spool_flags_t flags) {
+   DENTER(TOP_LAYER);
+
    char spool_dir[SGE_PATH_MAX] = "";
    char spool_dir_second[SGE_PATH_MAX] = "";
    char spool_dir_third[SGE_PATH_MAX] = "";
@@ -606,8 +596,6 @@ int job_remove_spool_file(uint32_t jobid, uint32_t ja_taskid,
    int try_to_remove_sub_dirs = 0;
    dstring error_msg;
    char error_msg_buffer[SGE_PATH_MAX];
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&error_msg, error_msg_buffer, sizeof(error_msg_buffer));
 
@@ -714,12 +702,11 @@ int job_remove_spool_file(uint32_t jobid, uint32_t ja_taskid,
    DRETURN(0);
 }
 
-static int job_remove_script_file(uint32_t job_id)
-{
-   char script_file[SGE_PATH_MAX] = "";
-   int ret = 0;
+static int job_remove_script_file(uint32_t job_id) {
    DENTER(TOP_LAYER);
 
+   char script_file[SGE_PATH_MAX] = "";
+   int ret = 0;
    PROF_START_MEASUREMENT(SGE_PROF_JOBSCRIPT);
    sge_get_file_path(script_file, sizeof(script_file), JOB_SCRIPT_FILE, FORMAT_DEFAULT, SPOOL_DEFAULT, job_id, 0, nullptr);
    if (sge_unlink(nullptr, script_file)) {
@@ -750,15 +737,15 @@ static int job_remove_script_file(uint32_t job_id)
  * @return 0 on success, else 1
  */
 int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
-                            sge_spool_flags_t flags, int (*init_function)(lListElem*)) 
-{
+                            sge_spool_flags_t flags, int (*init_function)(lListElem *)) {
+   DENTER(TOP_LAYER); 
+
    char first_dir[SGE_PATH_MAX] = ""; 
    lList *first_direnties; 
    lListElem *first_direntry;
    DSTRING_STATIC(dstr_path, SGE_PATH_MAX);
    const char *str_path;
 
-   DENTER(TOP_LAYER); 
    sge_get_file_path(first_dir, sizeof(first_dir), JOBS_SPOOL_DIR, FORMAT_FIRST_PART, flags, 0, 0, nullptr);
    first_direnties = sge_get_dirents(first_dir);
 

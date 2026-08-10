@@ -72,10 +72,11 @@
  * @see #sge_writenbytes
  */
 int sge_readnbytes(int sfd, char *ptr, int n) {
+   DENTER(BASIS_LAYER);
+
    int i;                       /* number of bytes read */
    int nleft = n;               /* number of bytes still to read */
 
-   DENTER(BASIS_LAYER);
    DPRINTF("TOTAL BYTES TO BE READ %d\n", n);
 
    /* Read n bytes */
@@ -162,9 +163,9 @@ int sge_writenbytes(int sfd, const char *ptr, int n) {
  * @note MT-NOTE: sge_filecmp() is MT safe
  */
 int sge_filecmp(const char *name0, const char *name1) {
-   SGE_STRUCT_STAT buf0{}, buf1{};
-
    DENTER(TOP_LAYER);
+
+   SGE_STRUCT_STAT buf0{}, buf1{};
 
    if (!strcmp(name0, name1)) {
       DRETURN(0);
@@ -199,6 +200,8 @@ int sge_filecmp(const char *name0, const char *name1) {
  * @note MT-NOTE: sge_copy_append() is MT safe
  */
 int sge_copy_append(const char *src, const char *dst, sge_mode_t mode) {
+   DENTER(TOP_LAYER);
+
 /// @cond   function local copy buffer size
 #define CPBUF 1024
 /// @endcond
@@ -206,8 +209,6 @@ int sge_copy_append(const char *src, const char *dst, sge_mode_t mode) {
    char buf[CPBUF];
    int fdsrc, fddst, modus, rs, ws;
    bool error;
-
-   DENTER(TOP_LAYER);
 
    if (src == nullptr || dst == nullptr || strlen(src) == 0 || strlen(dst) == 0 ||
        !(mode == SGE_MODE_APPEND || mode == SGE_MODE_COPY)) {
@@ -426,12 +427,12 @@ int sge_string2bin(FILE *fp, const char *buf) {
  * @see #sge_string2file, #sge_stream2string
  */
 char *sge_file2string(const char *fname, int *len) {
+   DENTER(CULL_LAYER);
+
    FILE *fp;
    SGE_STRUCT_STAT statbuf;
    int size, i;
    char *str;
-
-   DENTER(CULL_LAYER);
 
    /* initialize len - in case of errors we want to return 0 
     * JG: TODO: it would be better to return -1. Check if calling
@@ -506,11 +507,11 @@ DRETURN(nullptr);
  * @see #sge_file2string, #sge_string2file
  */
 char *sge_stream2string(FILE *fp, int *len) {
+   DENTER(TOP_LAYER);
+
    char *str;
    int filled = 0;
    int malloced_len, i;
-
-   DENTER(TOP_LAYER);
 
    if (!(str = sge_malloc(FILE_CHUNK))) {
       DRETURN(nullptr);
@@ -558,13 +559,13 @@ char *sge_stream2string(FILE *fp, int *len) {
 /* #define USE_FOPEN */
 
 int sge_string2file(const char *str, int len, const char *fname) {
+   DENTER(TOP_LAYER);
+
 #ifdef USE_FOPEN
    FILE *fp;
 #else
    int fp = -1;
 #endif
-
-   DENTER(TOP_LAYER);
 
 #ifdef USE_FOPEN
    if (!(fp = fopen(fname, "w")))

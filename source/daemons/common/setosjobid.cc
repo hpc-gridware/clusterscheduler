@@ -63,8 +63,7 @@
  *        one that was actually taken
  * @param pw the job owner
  */
-void setosjobid(pid_t sid, gid_t *add_grp_id_ptr, struct passwd *pw)
-{
+void setosjobid(pid_t sid, gid_t *add_grp_id_ptr, struct passwd *pw) {
    shepherd_trace("setosjobid: uid = " pid_t_fmt ", euid = " pid_t_fmt, getuid(), geteuid());
 
    FILE *fp = nullptr;
@@ -108,5 +107,5 @@ void setosjobid(pid_t sid, gid_t *add_grp_id_ptr, struct passwd *pw)
 #  endif
    return;
 FCLOSE_ERROR:
-   shepherd_error(1, "can't close file"); 
+   shepherd_error(1, "can't close file");
 }

@@ -111,11 +111,10 @@ spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
  * @return on success, the new spooling context, else nullptr
  */
 lListElem *
-spool_berkeleydb_create_context(lList **answer_list, const char *args)
-{
-   lListElem *context = nullptr;
-
+spool_berkeleydb_create_context(lList **answer_list, const char *args) {
    DENTER(BDB_LAYER);
+
+   lListElem *context = nullptr;
 
    /* check input parameter */
    if (args != nullptr) {
@@ -174,14 +173,12 @@ spool_berkeleydb_create_context(lList **answer_list, const char *args)
  *
  * @see `spool_startup_context()`
  */
-bool
-spool_berkeleydb_default_startup_func(lList **answer_list,
-                                      const lListElem *rule, bool check)
-{
+bool spool_berkeleydb_default_startup_func(lList **answer_list,
+                                           const lListElem *rule, bool check) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    bdb_info info;
-
-   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
@@ -216,15 +213,13 @@ spool_berkeleydb_default_startup_func(lList **answer_list,
  *
  * @see `spool_shutdown_context()`
  */
-bool
-spool_berkeleydb_default_shutdown_func(lList **answer_list,
-                                    const lListElem *rule)
-{
+bool spool_berkeleydb_default_shutdown_func(lList **answer_list,
+                                            const lListElem *rule) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
 
    bdb_info info;
-
-   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
@@ -263,17 +258,15 @@ spool_berkeleydb_default_shutdown_func(lList **answer_list,
  *
  * @see `spool_maintain_context()`
  */
-bool
-spool_berkeleydb_default_maintenance_func(lList **answer_list,
-                                    const lListElem *rule,
-                                    const spooling_maintenance_command cmd,
-                                    const char *args)
-{
+bool spool_berkeleydb_default_maintenance_func(lList **answer_list,
+                                               const lListElem *rule,
+                                               const spooling_maintenance_command cmd,
+                                               const char *args) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
 
    bdb_info info;
-
-   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
@@ -310,14 +303,12 @@ spool_berkeleydb_default_maintenance_func(lList **answer_list,
  *
  * @note MT-NOTE: spool_berkeleydb_trigger_func() is MT safe
  */
-bool
-spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
-                              uint64_t trigger, uint64_t *next_trigger)
-{
+bool spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
+                                   uint64_t trigger, uint64_t *next_trigger) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    bdb_info info;
-
-   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
    if (info == nullptr) {
@@ -356,15 +347,13 @@ spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
  *
  * @note MT-NOTE: spool_berkeleydb_transaction_func() is MT safe
  */
-bool
-spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
-                                  spooling_transaction_command cmd)
-{
+bool spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
+                                       spooling_transaction_command cmd) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
 
    bdb_info info;
-
-   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
    if (info == nullptr) {
@@ -423,12 +412,12 @@ spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
  *
  * @see `spool_read_list()`
  */
-bool
-spool_berkeleydb_default_list_func(lList **answer_list,
-                                 const lListElem *type,
-                                 const lListElem *rule, lList **list,
-                                 const sge_object_type object_type)
-{
+bool spool_berkeleydb_default_list_func(lList **answer_list,
+                                        const lListElem *type,
+                                        const lListElem *rule, lList **list,
+                                        const sge_object_type object_type) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
 #if 0
    bool local_transaction = false; /* did we start a transaction? */
@@ -438,8 +427,6 @@ spool_berkeleydb_default_list_func(lList **answer_list,
    const char *table_name;
    bdb_info info;
    lList *master_suser_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
-
-   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
    descr = object_type_get_descr(object_type);
@@ -629,16 +616,15 @@ spool_berkeleydb_default_list_func(lList **answer_list,
  */
 lListElem *
 spool_berkeleydb_default_read_func(lList **answer_list,
-                                 const lListElem *type,
-                                 const lListElem *rule, const char *key,
-                                 const sge_object_type object_type)
-{
+                                   const lListElem *type,
+                                   const lListElem *rule, const char *key,
+                                   const sge_object_type object_type) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    lListElem *ep = nullptr;
 
    bdb_info info;
-
-   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
    if (info == nullptr) {
@@ -724,17 +710,15 @@ spool_berkeleydb_default_read_func(lList **answer_list,
  * @note This function should not be called directly, it is called by the
  *       spooling framework.
  */
-bool
-spool_berkeleydb_default_read_keys_func(lList **answer_list,
-                                        const lListElem *rule,
-                                        lList **list,
-                                        const char *key)
-{
+bool spool_berkeleydb_default_read_keys_func(lList **answer_list,
+                                             const lListElem *rule,
+                                             lList **list,
+                                             const char *key) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
 
    bdb_info info;
-
-   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
@@ -803,19 +787,17 @@ spool_berkeleydb_default_read_keys_func(lList **answer_list,
  *
  * @see `spool_delete_object()`
  */
-bool
-spool_berkeleydb_default_write_func(lList **answer_list,
-                                  const lListElem *type,
-                                  const lListElem *rule,
-                                  const lListElem *object,
-                                  const char *key,
-                                  const sge_object_type object_type)
-{
+bool spool_berkeleydb_default_write_func(lList **answer_list,
+                                         const lListElem *type,
+                                         const lListElem *rule,
+                                         const lListElem *object,
+                                         const char *key,
+                                         const sge_object_type object_type) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    bool local_transaction = false; /* did we start a transaction? */
    bdb_info info;
-
-   DENTER(BDB_LAYER);
 
    DPRINTF("spool_berkeleydb_default_write_func called for %s with key %s\n",
            object_type_get_name(object_type), key != nullptr ? key : "<null>");
@@ -960,13 +942,13 @@ spool_berkeleydb_default_write_func(lList **answer_list,
  *
  * @see `spool_delete_object()`
  */
-bool
-spool_berkeleydb_default_delete_func(lList **answer_list,
-                                   const lListElem *type,
-                                   const lListElem *rule,
-                                   const char *key,
-                                   const sge_object_type object_type)
-{
+bool spool_berkeleydb_default_delete_func(lList **answer_list,
+                                          const lListElem *type,
+                                          const lListElem *rule,
+                                          const char *key,
+                                          const sge_object_type object_type) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    bool local_transaction = false; /* did we start a transaction? */
    const char *table_name;
@@ -975,8 +957,6 @@ spool_berkeleydb_default_delete_func(lList **answer_list,
    dstring dbkey_dstring;
    char dbkey_buffer[MAX_STRING_SIZE];
    const char *dbkey;
-
-   DENTER(BDB_LAYER);
 
    sge_dstring_init(&dbkey_dstring, dbkey_buffer, sizeof(dbkey_buffer));
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
@@ -1073,13 +1053,12 @@ spool_berkeleydb_default_delete_func(lList **answer_list,
 
 static bool
 spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
-                             const char *option)
-{
+                             const char *option) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    const char *delimiter = ",; ";
    bdb_info info;
-
-   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 

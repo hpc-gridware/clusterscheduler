@@ -72,10 +72,9 @@ static int spool_object_list(const char *directory,
                              const spooling_field *fields, 
                              const spool_flatfile_instr *instr,
                              const lDescr *descr,
-                             sge_object_type obj_type); 
+                             sge_object_type obj_type);
 
-static void usage(const char *argv0)
-{
+static void usage(const char *argv0) {
    fprintf(stderr, "%s\n %s command\n\n", MSG_UTILBIN_USAGE, argv0);
    fprintf(stderr, "%s\n", MSG_SPOOLDEFAULTS_COMMANDINTRO1);
    fprintf(stderr, "%s\n", MSG_SPOOLDEFAULTS_COMMANDINTRO2);
@@ -98,8 +97,7 @@ static void usage(const char *argv0)
    fprintf(stderr, "%s\n", MSG_SPOOLDEFAULTS_USERSETS);
 }
 
-static int init_framework()
-{
+static int init_framework() {
    DENTER(TOP_LAYER);
    int ret = EXIT_FAILURE;
 
@@ -133,14 +131,13 @@ static int init_framework()
    DRETURN(ret);
 }
 
-static int spool_configuration(int argc, char *argv[])
-{
+static int spool_configuration(int argc, char *argv[]) {
+   DENTER(TOP_LAYER);
+
    int ret = EXIT_SUCCESS;
    lListElem *conf = nullptr;
    lList *answer_list = nullptr;
    spooling_field *fields = sge_build_CONF_field_list(true);
-
-   DENTER(TOP_LAYER);
 
    conf = spool_flatfile_read_object(&answer_list, CONF_Type, nullptr,
                                    fields, nullptr, false, &qconf_sfi,
@@ -163,11 +160,10 @@ static int spool_configuration(int argc, char *argv[])
    DRETURN(ret);
 }
 
-static int spool_local_conf(int argc, char *argv[])
-{
-   int ret = EXIT_SUCCESS;
-
+static int spool_local_conf(int argc, char *argv[]) {
    DENTER(TOP_LAYER);
+
+   int ret = EXIT_SUCCESS;
 
    /* we get an additional argument: the config name */
    if (argc < 4) {
@@ -209,8 +205,7 @@ static int spool_local_conf(int argc, char *argv[])
    DRETURN(ret);
 }
 
-static int spool_sharetree(int argc, char *argv[])
-{
+static int spool_sharetree(int argc, char *argv[]) {
    const spooling_field *fields = sge_build_STN_field_list(true, false);
    int ret; 
 
@@ -219,24 +214,20 @@ static int spool_sharetree(int argc, char *argv[])
    return ret;
 }
 
-static int spool_complexes(int argc, char *argv[])
-{
+static int spool_complexes(int argc, char *argv[]) {
    return spool_object_list(argv[2], CE_fields, &qconf_sfi, CE_Type, SGE_TYPE_CENTRY);
 }
 
 
-static int spool_calendars(int argc, char *argv[])
-{
+static int spool_calendars(int argc, char *argv[]) {
    return spool_object_list(argv[2], CAL_fields, &qconf_sfi, CAL_Type, SGE_TYPE_CALENDAR);
 }
 
-static int spool_ckpts(int argc, char *argv[])
-{
+static int spool_ckpts(int argc, char *argv[]) {
    return spool_object_list(argv[2], CK_fields, &qconf_sfi, CK_Type, SGE_TYPE_CKPT);
 }
 
-static int spool_cqueues(int argc, char *argv[])
-{
+static int spool_cqueues(int argc, char *argv[]) {
    lList *answer_list = nullptr;
    spool_read_list(&answer_list, spool_get_default_context(), 
                    ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY), SGE_TYPE_CENTRY);
@@ -247,8 +238,7 @@ static int spool_cqueues(int argc, char *argv[])
    return spool_object_list(argv[2], CQ_fields, &qconf_sfi, CQ_Type, SGE_TYPE_CQUEUE);
 }
 
-static int spool_exechosts(int argc, char *argv[])
-{
+static int spool_exechosts(int argc, char *argv[]) {
    lList *answer_list = nullptr;
    const spooling_field *fields = sge_build_EH_field_list(true, false, false);
    int ret; 
@@ -263,8 +253,7 @@ static int spool_exechosts(int argc, char *argv[])
    return ret;
 }
 
-static int spool_projects(int argc, char *argv[])
-{
+static int spool_projects(int argc, char *argv[]) {
    const spooling_field *fields = sge_build_PR_field_list(true);
    int ret; 
 
@@ -274,8 +263,7 @@ static int spool_projects(int argc, char *argv[])
 }
 
 
-static int spool_users(int argc, char *argv[])
-{
+static int spool_users(int argc, char *argv[]) {
    const spooling_field *fields = sge_build_UU_field_list(true);
    int ret; 
 
@@ -284,22 +272,21 @@ static int spool_users(int argc, char *argv[])
    return ret;
 }
 
-static int spool_pes(int argc, char *argv[])
-{
+static int spool_pes(int argc, char *argv[]) {
    return spool_object_list(argv[2], PE_fields, &qconf_sfi, PE_Type, SGE_TYPE_PE);
 }
 
-static int spool_usersets(int argc, char *argv[])
-{
+static int spool_usersets(int argc, char *argv[]) {
    return spool_object_list(argv[2], US_fields, &qconf_sfi, US_Type, SGE_TYPE_USERSET);
 }
 
 static int spool_object_list(const char *directory,
-                             const spooling_field *fields, 
+                             const spooling_field *fields,
                              const spool_flatfile_instr *instr,
                              const lDescr *descr,
-                             sge_object_type obj_type)
-{
+                             sge_object_type obj_type) {
+   DENTER(TOP_LAYER);
+
    int ret = EXIT_SUCCESS;
    lList *answer_list = nullptr;
    lListElem *ep;
@@ -307,8 +294,6 @@ static int spool_object_list(const char *directory,
    const lListElem *direntry;
    const char *name;
    dstring file = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
 
    direntries = sge_get_dirents(directory);
    for_each_ep(direntry, direntries) {
@@ -337,8 +322,7 @@ static int spool_object_list(const char *directory,
    DRETURN(ret);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "spooldefaults");
    int ret = EXIT_SUCCESS;
    lList *answer_list = nullptr;

@@ -54,8 +54,7 @@ ocs::QQuotaController::~QQuotaController() {
 }
 
 char *
-ocs::QQuotaController::qquota_get_next_filter(stringT filter, const char *cp)
-{
+ocs::QQuotaController::qquota_get_next_filter(stringT filter, const char *cp) {
    // cp is part of a server-supplied RUE_name key; it may be NULL or lack the '/'
    // separators. Never form an invalid pointer from a failed strchr() (the old
    // `strchr(cp,'/')++` produced (char*)1 on a missing separator, which the next

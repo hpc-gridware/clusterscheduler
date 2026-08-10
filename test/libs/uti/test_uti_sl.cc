@@ -164,9 +164,10 @@ test_compare_first_char(const void *data1, const void *data2) {
 bool
 test_sequence(sge_sl_list_t *list, bool forward, const char *expected,
               uint32_t elems, const char *function) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (ret) {
       sge_sl_elem_t *next;
       sge_sl_elem_t *current;
@@ -213,9 +214,10 @@ test_sequence(sge_sl_list_t *list, bool forward, const char *expected,
 bool
 test_search_sequence(sge_sl_list_t *list, bool forward, const char *key,
                      const char *expected, uint32_t elems, const char *function) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (ret) {
       sge_sl_elem_t *next;
       sge_sl_elem_t *current;
@@ -257,10 +259,10 @@ test_search_sequence(sge_sl_list_t *list, bool forward, const char *key,
  */
 bool
 test_create_insert_destroy() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    sge_sl_list_t *list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -309,10 +311,10 @@ test_create_insert_destroy() {
  */
 bool
 test_create_append() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    sge_sl_list_t *list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -349,10 +351,10 @@ test_create_append() {
  */
 bool
 test_create_insort() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    sge_sl_list_t *list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -390,10 +392,10 @@ test_create_insort() {
  */
 bool
 test_create_insert_sort() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    sge_sl_list_t *list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -433,12 +435,12 @@ test_create_insert_sort() {
  */
 bool
 test_dechain_before_after() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    sge_sl_list_t *list = nullptr;
    sge_sl_elem_t *new_elem = nullptr;
    sge_sl_elem_t *elem = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -531,10 +533,10 @@ test_dechain_before_after() {
  */
 bool
 test_search_forward_backward() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    sge_sl_list_t *list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -583,10 +585,10 @@ test_search_forward_backward() {
  */
 bool
 test_delete_forward_backward() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    sge_sl_list_t *list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -641,10 +643,10 @@ test_delete_forward_backward() {
  */
 bool
 test_delete_search() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    sge_sl_list_t *list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -692,11 +694,11 @@ test_delete_search() {
  */
 bool
 test_for_each_ep() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    sge_sl_list_t *list = nullptr;
    int sum = 0;
-
-   DENTER(TOP_LAYER);
 
    /* create a list */
    ret = sge_sl_create(&list);
@@ -733,10 +735,11 @@ test_for_each_ep() {
  */
 void *
 test_thread1_main(void *arg) {
+   DENTER(TOP_LAYER);
+
    void *ret = nullptr;
    test_sl_thread_t *global = (test_sl_thread_t *) arg;
 
-   DENTER(TOP_LAYER);
    while (global->do_terminate != true) {
       int max_actions = 10;
       int action = random() % max_actions;
@@ -847,10 +850,10 @@ test_thread1_main(void *arg) {
  */
 bool
 test_mt_support() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    test_sl_thread_t global;
-
-   DENTER(TOP_LAYER);
 
    /* create a list */
    memset(&global, 0, sizeof(test_sl_thread_t));
@@ -879,11 +882,11 @@ test_mt_support() {
 
 static bool
 test_sge_sl_data() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    sge_sl_list_t *list = nullptr;
    void *data = nullptr;
-
-   DENTER(TOP_LAYER);
 
    // sge_sl_data on populated list: forward → first, backward → last
    ret = sge_sl_create(&list);
@@ -910,11 +913,11 @@ test_sge_sl_data() {
 
 static bool
 test_sge_sl_data_empty() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    sge_sl_list_t *list = nullptr;
    void *data = (void *)"sentinel";
-
-   DENTER(TOP_LAYER);
 
    // sge_sl_data on empty list sets *data to nullptr
    ret = sge_sl_create(&list);
@@ -937,11 +940,11 @@ test_sge_sl_data_empty() {
 
 static bool
 test_for_each_sl_unlocked() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    sge_sl_list_t *list = nullptr;
    int sum = 0;
-
-   DENTER(TOP_LAYER);
 
    // for_each_sl (unlocked) iterates all elements exactly once
    ret = sge_sl_create(&list);
@@ -967,10 +970,10 @@ test_for_each_sl_unlocked() {
 
 static bool
 test_empty_list_edge_cases() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    sge_sl_list_t *list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    ret = sge_sl_create(&list);
 
@@ -1005,10 +1008,10 @@ test_empty_list_edge_cases() {
 
 static bool
 test_sge_sl_get_mutex() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    sge_sl_list_t *list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    ret = sge_sl_create(&list);
    if (ret && sge_sl_get_mutex(list) == nullptr) {
@@ -1021,12 +1024,12 @@ test_sge_sl_get_mutex() {
 
 static bool
 test_dechain_sole_element() {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    sge_sl_list_t *list = nullptr;
    sge_sl_elem_t *elem = nullptr;
    void *data = (void *)"sentinel";
-
-   DENTER(TOP_LAYER);
 
    // insert one element, dechain it → list becomes empty
    ret = sge_sl_create(&list);

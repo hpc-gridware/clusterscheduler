@@ -192,11 +192,11 @@ debit_all_jobs_from_qs();
  */
 int
 sge_setup_qmaster(char *anArgv[]) {
+   DENTER(TOP_LAYER);
+
    char err_str[1024];
    const char *qualified_hostname = component_get_qualified_hostname();
    const char *act_qmaster_file = bootstrap_get_act_qmaster_file();
-
-   DENTER(TOP_LAYER);
 
    umask(022); /* this needs a better solution */
 
@@ -237,10 +237,10 @@ sge_setup_qmaster(char *anArgv[]) {
  */
 int
 sge_qmaster_thread_init(ProgName prog_id, ThreadName thread_id, bool switch_to_admin_user) {
+   DENTER(TOP_LAYER);
+
    const char *admin_user;
    lList *alp = nullptr;
-
-   DENTER(TOP_LAYER);
 
    // install signal handler for synchronous signals that will only be delivered to the thread that caused it.
    ocs::TerminationManager::install_signal_handler();
@@ -411,12 +411,12 @@ process_cmdline(char **anArgv) {
  */
 static lList *
 parse_cmdline_qmaster(char **argv, lList **ppcmdline) {
+   DENTER(TOP_LAYER);
+
    char **sp;
    char **rp;
    stringT str;
    lList *alp = nullptr;
-
-   DENTER(TOP_LAYER);
 
    rp = argv;
    while (*(sp = rp)) {
@@ -447,10 +447,10 @@ parse_cmdline_qmaster(char **argv, lList **ppcmdline) {
  */
 static lList *
 parse_qmaster(lList **ppcmdline, uint32_t *help) {
+   DENTER(TOP_LAYER);
+
    lList *alp = nullptr;
    int usageshowed = 0;
-
-   DENTER(TOP_LAYER);
 
    /* Loop over all options. Only valid options can be in the
       ppcmdline list.
@@ -514,14 +514,14 @@ qmaster_init() {
  */
 static void
 communication_setup() {
+   DENTER(TOP_LAYER);
+
    char *qmaster_params = nullptr;
    struct rlimit qmaster_rlimits{};
 
    const char *qualified_hostname = component_get_qualified_hostname();
    uint32_t qmaster_port = bootstrap_get_sge_qmaster_port();
    const char *qmaster_spool_dir = ocs::Bootstrap::get_qmaster_spool_dir();
-
-   DENTER(TOP_LAYER);
 
    DEBUG("my resolved hostname name is: \"%s\"\n", qualified_hostname);
 
@@ -1276,12 +1276,12 @@ remove_invalid_job_references(int user) {
  */
 static void
 remove_irrelevant_userprj_usage(bool user, const lList *usage_weight_list) {
+   DENTER(TOP_LAYER);
+
    const lListElem *up;
    int object_key;
    const lList *object_list;
    sge_object_type object_type;
-
-   DENTER(TOP_LAYER);
 
    if (user) {
       object_key = UU_name;

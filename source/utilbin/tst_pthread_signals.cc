@@ -94,8 +94,7 @@ static int   should_quit();
 *     int - 0
 *
 *******************************************************************************/
-int main(int argc, char* argv[])
-{
+int main(int argc, char *argv[]) {
    sigset_t sig_set;
    pthread_t id[NUM_THRDS];
    int i;
@@ -151,8 +150,7 @@ int main(int argc, char* argv[])
 *     utilbin/tst_pthread_signals/reap_thrds()
 *
 *******************************************************************************/
-static void incr_thrd_cnt()
-{
+static void incr_thrd_cnt() {
    pthread_mutex_lock(&cb.mtx);
    cb.cntr++;
    pthread_mutex_unlock(&cb.mtx);
@@ -182,8 +180,7 @@ static void incr_thrd_cnt()
 *     MT-NOTE: signal_emitter() is a thread function.
 *
 *******************************************************************************/
-static void* signal_emitter(void* anArg)
-{
+static void *signal_emitter(void *anArg) {
    int sig[3] = {SIGPIPE, SIGUSR1, SIGUSR2};
    unsigned int i = (unsigned int)pthread_self(); /* seed */
    bool done = false;
@@ -228,8 +225,7 @@ static void* signal_emitter(void* anArg)
 *     MT-NOTE: should_quit() is MT safe. 
 *
 *******************************************************************************/
-static int should_quit()
-{
+static int should_quit() {
    int res = FALSE;
 
    printf("should_quit: check termination\n");
@@ -268,8 +264,7 @@ static int should_quit()
 *     MT-NOTE: signal_waiter() is a thread function.
 *
 *******************************************************************************/
-static void* signal_waiter(void* anArg)
-{
+static void *signal_waiter(void *anArg) {
    sigset_t set;
    int num;
    bool exit = false;
@@ -339,8 +334,7 @@ static void* signal_waiter(void* anArg)
 *     MT-NOTE: ignore_signals() is NOT MT safe. 
 *
 *******************************************************************************/
-static void ignore_signals()
-{
+static void ignore_signals() {
    struct sigaction act;
 
 
@@ -386,8 +380,7 @@ static void ignore_signals()
 *     MT-NOTE: reap_thrds() must be called from within a single thread only.
 *
 *******************************************************************************/
-static void reap_thrds()
-{
+static void reap_thrds() {
    printf("reap_thrds: start to reap threads\n");
 
    pthread_mutex_lock(&cb.mtx);
@@ -401,4 +394,3 @@ static void reap_thrds()
    pthread_mutex_unlock(&cb.mtx);
    return;
 } /* reap_thrds() */
-

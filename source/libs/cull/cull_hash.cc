@@ -596,11 +596,11 @@ int cull_hash_new_check(lList *lp, int nm, bool unique) {
  * @return 1 on success, else 0
  */
 int cull_hash_new(lList *lp, int nm, bool unique) {
+   DENTER(CULL_LAYER);
+
    lDescr *descr;
    int pos, size;
    char host_key[CL_MAXHOSTNAMELEN];
-
-   DENTER(CULL_LAYER);
 
    if (lp == nullptr) {
       DRETURN(0);

@@ -149,9 +149,9 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 spooling_field *
 spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
                           const spool_instr_t *instr) {
-   spooling_field *fields;
-
    DENTER(TOP_LAYER);
+
+   spooling_field *fields;
 
    SGE_CHECK_POINTER_NULL(descr, answer_list);
 
@@ -163,11 +163,11 @@ spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 static spooling_field *
 _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
                            const spool_instr_t *instr) {
+   DENTER(TOP_LAYER);
+
    spooling_field *fields;
    int i, j, size;
    size_t strip = 0;
-
-   DENTER(TOP_LAYER);
 
    /* we don't check descr and instr, as we know they are ok
     * (it's a static function)
@@ -331,9 +331,10 @@ bool spool_default_validate_func(lList **answer_list,
                                  const lListElem *rule,
                                  lListElem *object,
                                  const sge_object_type object_type) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
@@ -519,9 +520,9 @@ bool
 spool_default_validate_list_func(lList **answer_list,
                                  const lListElem *type, const lListElem *rule,
                                  const sge_object_type object_type) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    switch (object_type) {
       case SGE_TYPE_EXECHOST:

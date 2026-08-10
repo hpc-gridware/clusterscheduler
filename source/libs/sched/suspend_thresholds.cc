@@ -69,9 +69,7 @@ static int select4unsuspension(lList *job_list, lListElem *queues, lListElem **j
  * @param[in]     job_list    the jobs, to pick the ones to suspend
  * @param[in,out] orders      the suspend orders are appended here
  */
-void 
-suspend_job_in_queues( lList *susp_queues, lList *job_list, order_t *orders) 
-{
+void suspend_job_in_queues(lList *susp_queues, lList *job_list, order_t *orders) {
    DENTER(TOP_LAYER);
    int i, found;
    lListElem *jep = nullptr, *ja_task = nullptr;
@@ -136,9 +134,7 @@ suspend_job_in_queues( lList *susp_queues, lList *job_list, order_t *orders)
  * @param[in]     job_list    the jobs, to pick the ones to unsuspend
  * @param[in,out] orders      the unsuspend orders are appended here
  */
-void 
-unsuspend_job_in_queues( lList *queue_list, lList *job_list, order_t *orders) 
-{
+void unsuspend_job_in_queues(lList *queue_list, lList *job_list, order_t *orders) {
    DENTER(TOP_LAYER);
    int i, found;
    lListElem *jep = nullptr, *ja_task = nullptr;
@@ -198,17 +194,16 @@ unsuspend_job_in_queues( lList *queue_list, lList *job_list, order_t *orders)
 
    DRETURN_VOID;
 }
-   
 
-static int 
-select4suspension(lList *job_list, lListElem *qep, lListElem **jepp, 
-                  lListElem **ja_taskp) 
-{
+
+static int
+select4suspension(lList *job_list, lListElem *qep, lListElem **jepp,
+                  lListElem **ja_taskp) {
+   DENTER(TOP_LAYER);
+
    uint32_t jstate;
    lListElem *jshortest = nullptr, *shortest = nullptr;
    const char *qnm;
-
-   DENTER(TOP_LAYER);
 
    qnm = lGetString(qep, QU_full_name);
    if (qinstance_state_is_manual_suspended(qep) ||

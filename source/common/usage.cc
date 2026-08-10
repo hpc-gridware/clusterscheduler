@@ -72,8 +72,7 @@ void mark_argument_syntax(int argument_number) {
 }
 
 
-static const char* get_argument_syntax(uint32_t prog_number, int nr)
-{ 
+static const char *get_argument_syntax(uint32_t prog_number, int nr) {
    switch (nr)
    {
      case OA_ACCOUNT_STRING:

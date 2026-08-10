@@ -71,16 +71,16 @@
  * @see `sge_mirror_update_master_list()`, `sge_mirror_update_master_list_host_key()`
  */
 sge_callback_result
-host_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
-                        sge_event_action action, lListElem *event, void *clientdata)
-{
+host_update_master_list(sge_evc_class_t *evc, sge_object_type type,
+                        sge_event_action action, lListElem *event, void *clientdata) {
+   DENTER(TOP_LAYER);
+
    lList **list;
    const lDescr *list_descr;
    int     key_nm;
 
    const char *key;
 
-   DENTER(TOP_LAYER);
    list = ocs::DataStore::get_master_list_rw(type);
    list_descr = lGetListDescr(lGetList(event, ET_new_version));
    key_nm = object_type_get_key_nm(type); 
@@ -95,4 +95,3 @@ host_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    DRETURN(SGE_EMA_OK);
 }
-

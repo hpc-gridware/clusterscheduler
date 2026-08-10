@@ -150,9 +150,9 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
  */
 int
 role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object) {
-   lList *answer_list = nullptr;
-
    DENTER(TOP_LAYER);
+
+   lList *answer_list = nullptr;
 
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
                                    lGetString(ep, RL_name), SGE_TYPE_RL, true);
@@ -203,9 +203,9 @@ role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
  */
 int
 sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost) {
-   lList **master_role_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_RL);
-
    DENTER(TOP_LAYER);
+
+   lList **master_role_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_RL);
 
    if (!ep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);

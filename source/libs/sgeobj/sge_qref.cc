@@ -99,13 +99,12 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
                                 bool resolve_qdomain);
 
 static bool
-qref_list_resolve_cqueue_names(const lList *cq_qref_list, 
+qref_list_resolve_cqueue_names(const lList *cq_qref_list,
                                lList **answer_list,
-                               lList **qref_list, 
+                               lList **qref_list,
                                bool *found_something,
                                const lList *cqueue_list,
-                               bool resolve_cqueue)
-{
+                               bool resolve_cqueue) {
    DENTER(QREF_LAYER);
    bool ret = true;
 
@@ -130,13 +129,12 @@ qref_list_resolve_cqueue_names(const lList *cq_qref_list,
 }
 
 static bool
-qref_list_resolve_qinstance_names(const lList *cq_qref_list, 
+qref_list_resolve_qinstance_names(const lList *cq_qref_list,
                                   lList **answer_list,
                                   dstring *host_or_hgroup,
-                                  lList **qref_list, 
+                                  lList **qref_list,
                                   bool *found_something,
-                                  const lList *cqueue_list)
-{
+                                  const lList *cqueue_list) {
    DENTER(QREF_LAYER);
    bool ret = true;
 
@@ -166,21 +164,21 @@ qref_list_resolve_qinstance_names(const lList *cq_qref_list,
 }
 
 static bool
-qref_list_resolve_qdomain_names(const lList *cq_qref_list, 
+qref_list_resolve_qdomain_names(const lList *cq_qref_list,
                                 lList **answer_list,
                                 dstring *host_or_hgroup,
                                 lList **qref_list,
                                 bool *found_something,
                                 const lList *cqueue_list,
                                 const lList *hgroup_list,
-                                bool resolve_qdomain)
-{
+                                bool resolve_qdomain) {
+   DENTER(QREF_LAYER);
+
    bool ret = true;
    const char *hgroup_pattern = nullptr;
    lList *href_list = nullptr;
    dstring buffer = DSTRING_INIT;
 
-   DENTER(QREF_LAYER);
    hgroup_pattern = sge_dstring_get_string(host_or_hgroup);
    /*
     * Find all hostgroups which match 'hgroup_pattern'
@@ -245,12 +243,11 @@ qref_list_resolve_qdomain_names(const lList *cq_qref_list,
  *
  * @return error state true  - success false - error
  */
-bool
-qref_list_add(lList **this_list, lList **answer_list, const char *qref_string)
-{
+bool qref_list_add(lList **this_list, lList **answer_list, const char *qref_string) {
+   DENTER(QREF_LAYER);
+
    bool ret = true;
 
-   DENTER(QREF_LAYER);
    if (this_list != nullptr && qref_string != nullptr) {
       lListElem *new_elem; 
 
@@ -307,17 +304,15 @@ qref_list_add(lList **this_list, lList **answer_list, const char *qref_string)
  *
  * @return error state true  - success false - error
  */
-bool
-qref_list_resolve(const lList *src_qref_list, lList **answer_list, 
-                  lList **qref_list, bool *found_something,
-                  const lList *cqueue_list, const lList *hgroup_list, 
-                  bool resolve_cqueue, bool resolve_qdomain)
-{
+bool qref_list_resolve(const lList *src_qref_list, lList **answer_list,
+                       lList **qref_list, bool *found_something,
+                       const lList *cqueue_list, const lList *hgroup_list,
+                       bool resolve_cqueue, bool resolve_qdomain) {
+   DENTER(QREF_LAYER);
+
    bool ret = true;
    dstring cqueue_name = DSTRING_INIT;
    dstring host_or_hgroup = DSTRING_INIT;
-
-   DENTER(QREF_LAYER);
 
    if (src_qref_list != nullptr) {
       *found_something = false;
@@ -395,13 +390,11 @@ qref_list_resolve(const lList *src_qref_list, lList **answer_list,
  *
  * @note MT-NOTE: qref_cq_rejected() is MT safe
  */
-bool
-qref_cq_rejected(const char *qref_pattern, const char *cqname,
-      const char *hostname, const lList *hgroup_list)
-{
-   const char *s;
-
+bool qref_cq_rejected(const char *qref_pattern, const char *cqname,
+                      const char *hostname, const lList *hgroup_list) {
    DENTER(TOP_LAYER);
+
+   const char *s;
 
    if ((s=strchr(qref_pattern, '@'))) {
       /* use qref part before '@' as wc_cqueue pattern */
@@ -445,11 +438,10 @@ qref_cq_rejected(const char *qref_pattern, const char *cqname,
  * @note MT-NOTE: qref_list_cq_rejected() is MT safe
  */
 static bool
-qref_eh_rejected(const char *qref_pattern, const char *hostname, const lList *hgroup_list)
-{
-   const char *s;
-
+qref_eh_rejected(const char *qref_pattern, const char *hostname, const lList *hgroup_list) {
    DENTER(TOP_LAYER);
+
+   const char *s;
 
    if (!(s=strchr(qref_pattern, '@'))) {
       DRETURN(false);
@@ -473,9 +465,7 @@ qref_eh_rejected(const char *qref_pattern, const char *hostname, const lList *hg
  * @param hgroup_list the host groups, needed to resolve a group reference
  * @return true when the host is rejected by all of them
  */
-bool
-qref_list_eh_rejected(const lList *qref_list, const char *hostname, const lList *hgroup_list)
-{
+bool qref_list_eh_rejected(const lList *qref_list, const char *hostname, const lList *hgroup_list) {
    DENTER(TOP_LAYER);
 
    if (hostname == nullptr) {
@@ -506,10 +496,8 @@ qref_list_eh_rejected(const lList *qref_list, const char *hostname, const lList 
  * @param hgroup_list the host groups, needed to resolve a group reference
  * @return true when the queue is rejected by all of them
  */
-bool
-qref_list_cq_rejected(const lList *qref_list, const char *cqname,
-      const char *hostname, const lList *hgroup_list)
-{
+bool qref_list_cq_rejected(const lList *qref_list, const char *cqname,
+                           const char *hostname, const lList *hgroup_list) {
    DENTER(TOP_LAYER);
 
    if (cqname == nullptr) {
@@ -561,8 +549,7 @@ qref_list_cq_rejected(const lList *qref_list, const char *cqname,
  * @see #href_list_find_references
  */
 static bool
-qref_hgroup_rejected(const lListElem *hgroup, const char *hostname, const lList *hgroup_list)
-{
+qref_hgroup_rejected(const lListElem *hgroup, const char *hostname, const lList *hgroup_list) {
    DENTER(BASIS_LAYER);
 
    /*
@@ -627,9 +614,7 @@ qref_hgroup_rejected(const lListElem *hgroup, const char *hostname, const lList 
  *
  * @note MT-NOTE: qref_list_host_rejected() is MT safe
  */
-bool
-qref_list_host_rejected(const char *href, const char *hostname, const lList *hgroup_list)
-{
+bool qref_list_host_rejected(const char *href, const char *hostname, const lList *hgroup_list) {
    DENTER(BASIS_LAYER);
 
    if (ocs::is_hgroup_name(href)) { /* wc_hostgroup */
@@ -681,12 +666,11 @@ qref_list_host_rejected(const char *href, const char *hostname, const lList *hgr
  *
  * @return error state true  - success false - error
  */
-bool
-qref_list_trash_some_elemts(lList **this_list, const char *full_name)
-{
+bool qref_list_trash_some_elemts(lList **this_list, const char *full_name) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (this_list != nullptr) {
       lListElem *qref = nullptr;
       lListElem *next_qref = nullptr;
@@ -766,13 +750,12 @@ qref_list_trash_some_elemts(lList **this_list, const char *full_name)
  *
  * @return error state true  - success false - error
  */
-bool
-qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *master_cqueue_list, 
-                   const lList *master_hgroup_list, const lList *master_centry_list)
-{
+bool qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *master_cqueue_list,
+                        const lList *master_hgroup_list, const lList *master_centry_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (this_list != nullptr) {
 
       /*
@@ -826,9 +809,7 @@ qref_list_is_valid(const lList *this_list, lList **answer_list, const lList *mas
  *
  * @param[in,out] this_list the references to rewrite
  */
-void
-qref_list_resolve_hostname(lList *this_list) 
-{
+void qref_list_resolve_hostname(lList *this_list) {
    DENTER(TOP_LAYER);
    for_each_rw_lv(qref, this_list) {
       qref_resolve_hostname(qref);
@@ -892,15 +873,13 @@ qref_resolve_hostname(lListElem *this_elem) {
  *
  * @note MT-NOTE: cull_parse_destination_identifier_list() is MT safe
  */
-int 
-cull_parse_destination_identifier_list(lList **lpp, const char *dest_str) 
-{
+int cull_parse_destination_identifier_list(lList **lpp, const char *dest_str) {
+   DENTER(TOP_LAYER);
+
    int rule[] = {QR_name, 0};
    char **str_str = nullptr;
    int i_ret;
    char *s;
-
-   DENTER(TOP_LAYER);
 
    if (lpp == nullptr) {
       DRETURN(1);
@@ -930,4 +909,3 @@ cull_parse_destination_identifier_list(lList **lpp, const char *dest_str)
    sge_free(&str_str);
    DRETURN(0);
 }
-

@@ -115,8 +115,7 @@ static sge_gdi_com_error_t ijs_communication_error = {CL_RETVAL_OK,
  * ijs_general_communication_error_mutex. */
 static bool ijs_suppress_bind_errors = false;
 
-static bool do_timeout_handling(time_t *time, int *counter)
-{
+static bool do_timeout_handling(time_t *time, int *counter) {
    struct timeval  now;
    unsigned long   time_diff = 0;
    bool            ret = false;
@@ -156,8 +155,7 @@ static bool do_timeout_handling(time_t *time, int *counter)
  * @param[in] commlib_error the commlib error descriptor (may be nullptr)
  */
 static void ijs_general_communication_error(
-               const cl_application_error_list_elem_t *commlib_error)
-{
+        const cl_application_error_list_elem_t *commlib_error) {
    DENTER(TOP_LAYER);
 
    if (commlib_error == nullptr) {
@@ -321,11 +319,11 @@ void comm_reset_application_error() {
  * @retval COMM_ENDPOINT_NOT_UNIQUE another client is already using this endpoint
  * @retval COMM_ACCESS_DENIED the other side refused the connection
  */
-int comm_get_application_error(dstring *err_msg)
-{
+int comm_get_application_error(dstring *err_msg) {
+   DENTER(TOP_LAYER);
+
    int ret = COMM_RETVAL_OK;
 
-   DENTER(TOP_LAYER);
    sge_mutex_lock("ijs_general_communication_error_mutex",
                     __func__, __LINE__, &ijs_general_communication_error_mutex);
 
@@ -418,9 +416,9 @@ int my_log_list_flush_list(cl_raw_list_t* list_p) {
  * @see #comm_cleanup_lib
  */
 int comm_init_lib(dstring *err_msg, cl_log_func_t commlib_log_func) {
-   int ret, ret_val = COMM_RETVAL_OK;
-
    DENTER(TOP_LAYER);
+
+   int ret, ret_val = COMM_RETVAL_OK;
 
    // comm_init_lib() is only called from sge_shepherd and uses multithreaded commlib.
    // The other communication end is qrsh that uses the singlethreaded commlib.
@@ -489,11 +487,10 @@ int comm_init_lib(dstring *err_msg, cl_log_func_t commlib_log_func) {
  *
  * @see #comm_init_lib
  */
-int comm_cleanup_lib(dstring *err_msg)
-{
-   int ret, ret_val = COMM_RETVAL_OK;
-
+int comm_cleanup_lib(dstring *err_msg) {
    DENTER(TOP_LAYER);
+
+   int ret, ret_val = COMM_RETVAL_OK;
 
    ret = cl_com_cleanup_commlib();
    if (ret != CL_RETVAL_OK) {
@@ -530,23 +527,22 @@ int comm_cleanup_lib(dstring *err_msg)
  *
  * @see #comm_shutdown_connection
  */
-int comm_open_connection(bool        b_server,
+int comm_open_connection(bool b_server,
                          cl_framework_t communication_framework,
-                         const char  *this_component,
-                         int         port,
-                         const char  *other_component,
+                         const char *this_component,
+                         int port,
+                         const char *other_component,
                          const char *hostname,
-                         const char  *user_name,
+                         const char *user_name,
                          COMM_HANDLE **handle,
-                         dstring     *err_msg)
-{
+                         dstring *err_msg) {
+   DENTER(TOP_LAYER);
+
    int              ret;
    int              ret_val                 = COMM_RETVAL_OK;
    int              commlib_error           = CL_RETVAL_OK;
    cl_tcp_connect_t connect_type            = CL_TCP_DEFAULT;
    cl_xml_connection_type_t connection_type = CL_CM_CT_MESSAGE;
-
-   DENTER(TOP_LAYER);
 
    /* Check validity of parameters */
    if (*handle != nullptr) {
@@ -748,12 +744,11 @@ int comm_open_connection(bool        b_server,
  * @see #comm_open_connection
  */
 int comm_shutdown_connection(COMM_HANDLE *handle, const char *component_name,
-                             char *remote_host, dstring *err_msg)
-{
+                             char *remote_host, dstring *err_msg) {
+   DENTER(TOP_LAYER);
+
    int ret;
    int ret_val = COMM_RETVAL_OK;
-
-   DENTER(TOP_LAYER);
 
    /*
     * From here on the user shouldn't get informed of any errors occuring
@@ -797,12 +792,12 @@ int comm_shutdown_connection(COMM_HANDLE *handle, const char *component_name,
  * @note MT-NOTE: comm_set_connection_param() is not MT safe
  */
 int comm_set_connection_param(COMM_HANDLE *handle, int param, int value,
-                              dstring *err_msg)
-{
+                              dstring *err_msg) {
+   DENTER(TOP_LAYER);
+
    int ret;
    int ret_val = COMM_RETVAL_OK;
 
-   DENTER(TOP_LAYER);
    ret = cl_commlib_set_connection_param(handle, param, value);
    if (ret != CL_RETVAL_OK) {
          sge_dstring_sprintf(err_msg, "comm_set_connection_param(): can't set connection param %d=%d: %s", cl_get_error_text(ret));
@@ -825,12 +820,11 @@ int comm_set_connection_param(COMM_HANDLE *handle, int param, int value,
  *
  * @note MT-NOTE: comm_ignore_timeouts() is not MT safe
  */
-int comm_ignore_timeouts(bool b_ignore, dstring *err_msg)
-{
+int comm_ignore_timeouts(bool b_ignore, dstring *err_msg) {
+   DENTER(TOP_LAYER);
+
    int ret     = CL_RETVAL_OK;
    int ret_val = COMM_RETVAL_OK;
-
-   DENTER(TOP_LAYER);
 
    cl_com_ignore_timeouts(b_ignore);
    if (ret != CL_RETVAL_OK) {
@@ -862,8 +856,7 @@ int comm_wait_for_connection(COMM_HANDLE *handle,
                              const char *component,
                              int wait_secs,
                              const char **host,
-                             dstring *err_msg)
-{
+                             dstring *err_msg) {
    DENTER(TOP_LAYER);
 
    if (handle == nullptr) {
@@ -968,13 +961,12 @@ int comm_wait_for_connection(COMM_HANDLE *handle,
  *
  * @note MT-NOTE: comm_get_connection_count() is not MT safe
  */
-int comm_get_connection_count(const COMM_HANDLE *handle, dstring *err_msg)
-{
+int comm_get_connection_count(const COMM_HANDLE *handle, dstring *err_msg) {
+   DENTER(TOP_LAYER);
+
    int                        ret;
    int                        ret_val = 1;
    cl_connection_list_elem_t* elem    = nullptr;
-
-   DENTER(TOP_LAYER);
 
    ret = cl_raw_list_lock(handle->connection_list);
    if (ret != CL_RETVAL_OK) {
@@ -1016,19 +1008,18 @@ int comm_get_connection_count(const COMM_HANDLE *handle, dstring *err_msg)
  * @note MT-NOTE: comm_write_message() is not MT safe
  */
 unsigned long comm_write_message(COMM_HANDLE *handle,
-                            const char *unresolved_hostname,
-                            const char *component_name,
-                            unsigned long component_id,
-                            unsigned char *buffer,
-                            unsigned long size,
-                            unsigned char type,
-                            dstring *err_msg)
-{
+                                 const char *unresolved_hostname,
+                                 const char *component_name,
+                                 unsigned long component_id,
+                                 unsigned char *buffer,
+                                 unsigned long size,
+                                 unsigned char type,
+                                 dstring *err_msg) {
+   DENTER(TOP_LAYER);
+
    int           ret;
    cl_byte_t     *sendbuf;
    unsigned long nwritten = 0;
-
-   DENTER(TOP_LAYER);
 
    /*
     * Copy only 'size' bytes from 'buffer' to a new sendbuf and add
@@ -1088,8 +1079,7 @@ unsigned long comm_write_message(COMM_HANDLE *handle,
  *
  * @note MT-NOTE: comm_flush_write_messages() is not MT safe
  */
-int comm_wait_for_all_messages_sent(COMM_HANDLE *handle, dstring *err_msg)
-{
+int comm_wait_for_all_messages_sent(COMM_HANDLE *handle, dstring *err_msg) {
    DENTER(TOP_LAYER);
    int retries = 0;
 
@@ -1142,13 +1132,13 @@ int comm_wait_for_all_messages_sent(COMM_HANDLE *handle, dstring *err_msg)
  * @note MT-NOTE: not MT-safe.
  */
 int comm_recv_message(COMM_HANDLE *handle, recv_message_t *recv_mess, dstring *err_msg) {
+   DENTER(TOP_LAYER);
+
    int  ret_val = COMM_RETVAL_OK;
    int  ret = 0;
    char sub_type[10];
    cl_com_message_t  *message = nullptr;
    cl_com_endpoint_t *sender  = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* check validity of parameters */
    if (handle == nullptr || recv_mess == nullptr) {
@@ -1279,12 +1269,11 @@ int comm_recv_message(COMM_HANDLE *handle, recv_message_t *recv_mess, dstring *e
  *
  * @see #comm_recv_message
  */
-int comm_free_message(recv_message_t *recv_mess, dstring *err_msg)
-{
+int comm_free_message(recv_message_t *recv_mess, dstring *err_msg) {
+   DENTER(TOP_LAYER);
+
    int ret;
    int ret_val = COMM_RETVAL_OK;
-
-   DENTER(TOP_LAYER);
 
    if (recv_mess != nullptr && recv_mess->cl_message != nullptr) {
       ret = cl_com_free_message(&(recv_mess->cl_message));
@@ -1315,13 +1304,12 @@ int comm_free_message(recv_message_t *recv_mess, dstring *err_msg)
 int check_client_alive(COMM_HANDLE *handle,
                        const char *component_name,
                        char *hostname,
-                       dstring *err_msg)
-{
+                       dstring *err_msg) {
+   DENTER(TOP_LAYER);
+
    int           ret;
    int           ret_val = COMM_RETVAL_OK;
    cl_com_SIRM_t *status = nullptr;
-
-   DENTER(TOP_LAYER);
 
    DPRINTF("handle->connect_port = %d\n", handle->connect_port);
    DPRINTF("handle->service_port = %d\n", handle->service_port);
@@ -1339,5 +1327,3 @@ int check_client_alive(COMM_HANDLE *handle,
    cl_com_free_sirm_message(&status);
    DRETURN(ret_val);
 }
-
-

@@ -292,11 +292,12 @@ ocs::Bootstrap::log_all_parameter() {
 
 void
 ocs::Bootstrap::init_from_file() {
+   DENTER(TOP_LAYER);
+
 /// @cond   function local: entries read from the bootstrap file, and how many of them are mandatory
 #define NUM_BOOTSTRAP 15
 #define NUM_REQ_BOOTSTRAP 9
 /// @endcond
-   DENTER(TOP_LAYER);
    bootstrap_entry_t name[NUM_BOOTSTRAP] = {
            {"admin_user",        true},
            {"default_domain",    true},

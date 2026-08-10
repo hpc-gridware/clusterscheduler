@@ -181,15 +181,14 @@ int get_execd_amount_of_threads() {
  *
  * @note MT-NOTE: get_execd_amount_of_cores() is MT safe
  */
-int get_execd_amount_of_cores() 
-{
+int get_execd_amount_of_cores() {
 #if defined(OCS_HWLOC)
       return ocs::Topo::get_total_amount_of_cores();
 #elif defined(BINDING_SOLARIS) 
       return get_total_amount_of_cores_solaris();
 #else   
       return 0;
-#endif  
+#endif
 }
 
 /**
@@ -201,8 +200,7 @@ int get_execd_amount_of_cores()
  *
  * @note MT-NOTE: get_execd_amount_of_sockets() is MT safe
  */
-int get_execd_amount_of_sockets()
-{
+int get_execd_amount_of_sockets() {
 #if defined(OCS_HWLOC)
    return ocs::Topo::get_total_amount_of_sockets();
 #elif defined(BINDING_SOLARIS) 
@@ -220,8 +218,7 @@ int get_execd_amount_of_sockets()
  * @param[out] length receives the length of that string
  * @return true when the topology could be read
  */
-bool get_execd_topology(char** topology, int* length)
-{
+bool get_execd_topology(char **topology, int *length) {
    bool success = false;
 
    /* topology must be a nullptr pointer */
@@ -244,7 +241,7 @@ bool get_execd_topology(char** topology, int* length)
 #endif
    }
 
-  return success; 
+  return success;
 }
 
 
@@ -265,8 +262,7 @@ bool get_execd_topology(char** topology, int* length)
  *
  * @note MT-NOTE: getExecdTopologyInUse() is not MT safe
  */
-bool get_execd_topology_in_use(char** topology)
-{
+bool get_execd_topology_in_use(char **topology) {
    bool retval = false;
 
    /* topology must be a nullptr pointer */
@@ -290,7 +286,7 @@ bool get_execd_topology_in_use(char** topology)
       retval = true;
    } 
       
-   return retval;   
+   return retval;
 }
 
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
@@ -338,10 +334,9 @@ static bool go_to_next_core(const char* topology, const int pos, int* new_pos);
  *
  * @note MT-NOTE: binding_set_linear_solaris() is not MT safe
  */
-static bool binding_set_linear_solaris(const int first_socket, const int first_core, 
-   const int amount_of_cores, const int step_size, psetid_t* psetid, 
-   const binding_type_t type, char** env)
-{
+static bool binding_set_linear_solaris(const int first_socket, const int first_core,
+                                       const int amount_of_cores, const int step_size, psetid_t *psetid,
+                                       const binding_type_t type, char **env) {
    /* the topology matrix */
    int** matrix = nullptr;
    /* size of the topology matrix */
@@ -533,10 +528,9 @@ static bool binding_set_linear_solaris(const int first_socket, const int first_c
  *
  * @note MT-NOTE: create_processor_set_explicit_solaris() is not MT safe
  */
-int create_processor_set_explicit_solaris(const int* list_of_sockets,
-   const int samount, const int* list_of_cores, const int camount, 
-   const binding_type_t type, char** env)
-{
+int create_processor_set_explicit_solaris(const int *list_of_sockets,
+                                          const int samount, const int *list_of_cores, const int camount,
+                                          const binding_type_t type, char **env) {
    /* tmp variables */
    int i, j, chip_id, pr_id;
    /* internal processor IDs to bind to */
@@ -636,9 +630,8 @@ int create_processor_set_explicit_solaris(const int* list_of_sockets,
  *
  * @note MT-NOTE: create_environment_string_solaris() is MT safe
  */
-static void create_environment_string_solaris(const processorid_t* pid_list, 
-               const int pid_list_size, char** environment) 
-{
+static void create_environment_string_solaris(const processorid_t *pid_list,
+                                              const int pid_list_size, char **environment) {
    int plc;
    dstring proc = DSTRING_INIT;
    dstring env  = DSTRING_INIT;
@@ -680,10 +673,9 @@ static void create_environment_string_solaris(const processorid_t* pid_list,
  *
  * @note MT-NOTE: create_processor_set_striding_solaris() is not MT safe
  */
-int create_processor_set_striding_solaris(const int first_socket, 
-   const int first_core, const int amount, const int step_size, 
-   const binding_type_t type, char** env) 
-{
+int create_processor_set_striding_solaris(const int first_socket,
+                                          const int first_core, const int amount, const int step_size,
+                                          const binding_type_t type, char **env) {
    /* the topology matrix */
    int** matrix = nullptr;
    /* size of the topology matrix */
@@ -856,7 +848,6 @@ int create_processor_set_striding_solaris(const int first_socket,
 }
 
 
-
 /**
  * @brief Frees a previously allocated topology matrix
  *
@@ -873,9 +864,8 @@ int create_processor_set_striding_solaris(const int first_socket,
  *
  * @note MT-NOTE: free_matrix() is not MT safe
  */
-void free_matrix(int** matrix, const int length) 
-{
-   
+void free_matrix(int **matrix, const int length) {
+
    int i;
    if (matrix == nullptr) {
       return;
@@ -910,9 +900,8 @@ void free_matrix(int** matrix, const int length)
  *
  * @note MT-NOTE: create_pset() is MT safe
  */
-static bool create_pset(const processorid_t* plist, const int length, 
-   psetid_t* pset_id)
-{
+static bool create_pset(const processorid_t *plist, const int length,
+                        psetid_t *pset_id) {
    /* counter for the processor id list */
    int i;
    /* return value which indicates if pset creation was successful */
@@ -952,7 +941,7 @@ static bool create_pset(const processorid_t* plist, const int length,
    /* we could create the pset and assign all processors from the list to it */
    return successful;
 }
-   
+
 
 /**
  * @brief Deletes the processor set
@@ -965,8 +954,7 @@ static bool create_pset(const processorid_t* plist, const int length,
  *
  * @note MT-NOTE: delete_pset() is MT safe
  */
-static bool delete_pset(psetid_t pset_id)
-{
+static bool delete_pset(psetid_t pset_id) {
    /* try to destroy the processor set */
    if (pset_destroy(pset_id) != 0) {
       /* couldn't delete pset */
@@ -990,8 +978,7 @@ static bool delete_pset(psetid_t pset_id)
  *
  * @note MT-NOTE: bind_current_process_to_pset() MT safe
  */
-static bool bind_current_process_to_pset(psetid_t pset_id)
-{
+static bool bind_current_process_to_pset(psetid_t pset_id) {
    /* try to bind current process to processor set */
    if (pset_bind(pset_id, P_PID, P_MYID, nullptr) != 0) {
       /* binding was not successful */
@@ -1018,9 +1005,8 @@ static bool bind_current_process_to_pset(psetid_t pset_id)
  *
  * @note MT-NOTE: account_job() is not MT safe
  */
-bool account_job(const char* job_topology)
-{
-   
+bool account_job(const char *job_topology) {
+
    if (logical_used_topology_length == 0 || logical_used_topology == nullptr) {
 
 #if defined(OCS_HWLOC)
@@ -1035,7 +1021,7 @@ bool account_job(const char* job_topology)
    }
 
    return account_job_on_topology(&logical_used_topology, strlen(logical_used_topology), 
-                           job_topology, strlen(job_topology)); 
+                           job_topology, strlen(job_topology));
 }
 
 /**
@@ -1054,9 +1040,8 @@ bool account_job(const char* job_topology)
  *
  * @note MT-NOTE: account_job_on_topology() is MT safe
  */
-static bool account_job_on_topology(char** topology, const int topology_length, 
-   const char* job, const int job_length)
-{
+static bool account_job_on_topology(char **topology, const int topology_length,
+                                    const char *job, const int job_length) {
    int i;
    
    /* parameter validation */
@@ -1080,7 +1065,6 @@ static bool account_job_on_topology(char** topology, const int topology_length,
 }
 
 
-
 /**
  * @brief Checks if a job can be bound
  *
@@ -1100,11 +1084,9 @@ static bool account_job_on_topology(char** topology, const int topology_length,
  *
  * @note MT-NOTE: binding_explicit_check_and_account() is MT safe
  */
-bool
-binding_explicit_check_and_account(const int* list_of_sockets, const int samount,
-                                   const int* list_of_cores, const int score,
-                                   char** topo_used_by_job, int* topo_used_by_job_length)
-{
+bool binding_explicit_check_and_account(const int *list_of_sockets, const int samount,
+                                        const int *list_of_cores, const int score,
+                                        char **topo_used_by_job, int *topo_used_by_job_length) {
    DENTER(TOP_LAYER);
    int i;
 
@@ -1199,8 +1181,7 @@ binding_explicit_check_and_account(const int* list_of_sockets, const int samount
  *
  * @note MT-NOTE: free_topology() is MT safe
  */
-bool free_topology(const char* topology, const int topology_length) 
-{
+bool free_topology(const char *topology, const int topology_length) {
    /* free cores, sockets and threads in global accounting */
    int i;
    int size = topology_length;
@@ -1284,8 +1265,7 @@ bool free_topology(const char* topology, const int topology_length)
  *
  * @note MT-NOTE: get_topology_solaris() is not MT safe
  */
-static bool get_topology_solaris(char** topology, int* length)
-{
+static bool get_topology_solaris(char **topology, int *length) {
    /* TODO implement the topology stuff */
 
    /* Algorithm: 
@@ -1433,8 +1413,7 @@ static bool get_topology_solaris(char** topology, int* length)
  *
  * @note MT-NOTE: generate_chipID_coreID_matrix() is not MT safe
  */
-bool generate_chipID_coreID_matrix(int*** matrix, int* length) 
-{
+bool generate_chipID_coreID_matrix(int ***matrix, int *length) {
    /* return value */
    bool success = true;
    
@@ -1540,7 +1519,7 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length)
    }
 
    return success;
-} 
+}
 
 
 /**
@@ -1555,8 +1534,7 @@ bool generate_chipID_coreID_matrix(int*** matrix, int* length)
  *
  * @note MT-NOTE: get_amount_of_sockets_from_matrix() is not MT safe
  */
-static int get_amount_of_sockets_from_matrix(const int** matrix, const int length)
-{
+static int get_amount_of_sockets_from_matrix(const int **matrix, const int length) {
    int amount     = 0;
    int* chip_ids  = nullptr;
 
@@ -1587,12 +1565,10 @@ static int get_amount_of_sockets_from_matrix(const int** matrix, const int lengt
  *
  * @note MT-NOTE: get_chip_ids_from_matrix() is MT safe
  */
-static bool get_chip_ids_from_matrix(const int** matrix, const int length, 
-                                     int** chip_ids, int* amount)
-{
+static bool get_chip_ids_from_matrix(const int **matrix, const int length,
+                                     int **chip_ids, int *amount) {
    return get_ids_from_matrix(matrix, length, 0, chip_ids, amount);
 }
-
 
 
 /**
@@ -1609,9 +1585,8 @@ static bool get_chip_ids_from_matrix(const int** matrix, const int length,
  *
  * @note MT-NOTE: get_core_ids_from_matrix() is not MT safe
  */
-static bool get_core_ids_from_matrix(const int** matrix, const int length, 
-                                     int** core_ids, int* amount)
-{
+static bool get_core_ids_from_matrix(const int **matrix, const int length,
+                                     int **core_ids, int *amount) {
    return get_ids_from_matrix(matrix, length, 1, core_ids, amount);
 }
 
@@ -1632,9 +1607,8 @@ static bool get_core_ids_from_matrix(const int** matrix, const int length,
  *
  * @note MT-NOTE: get_ids_from_matrix() is MT safe
  */
-static bool get_ids_from_matrix(const int** matrix, const int length, 
-                               const int which_ID,  int** ids, int* amount) 
-{
+static bool get_ids_from_matrix(const int **matrix, const int length,
+                                const int which_ID, int **ids, int *amount) {
 
    /* go through the matrix and count the amount of different core_ids
          or chip_ids */
@@ -1695,9 +1669,8 @@ static bool get_ids_from_matrix(const int** matrix, const int length,
  *
  * @bug ???
  */
-static int get_amount_of_threads_from_matrix(const int** matrix, const int length, 
-   int** threads, int* size) 
-{
+static int get_amount_of_threads_from_matrix(const int **matrix, const int length,
+                                             int **threads, int *size) {
    return get_amount_of_core_or_threads_from_matrix(matrix, length, 0, 
                threads, size);
 }
@@ -1722,9 +1695,8 @@ static int get_amount_of_threads_from_matrix(const int** matrix, const int lengt
  *
  * @note MT-NOTE: get_amount_of_core_or_threads_from_matrix() is not MT safe
  */
-static int get_amount_of_core_or_threads_from_matrix(const int** matrix, const int length, 
-   int core, int** core_or_threads, int* size)
-{
+static int get_amount_of_core_or_threads_from_matrix(const int **matrix, const int length,
+                                                     int core, int **core_or_threads, int *size) {
    /* if core=1 then get the cores otherwise get the threads */
    int i = 0, j = 0;
    
@@ -1831,9 +1803,8 @@ static int get_amount_of_core_or_threads_from_matrix(const int** matrix, const i
  * @note MT-NOTE: get_amount_of_cores_from_matrix() is not MT safe (because of
  *       counting)
  */
-static int get_amount_of_cores_from_matrix(const int** matrix, const int length, 
-   int** cores, int* size) 
-{
+static int get_amount_of_cores_from_matrix(const int **matrix, const int length,
+                                           int **cores, int *size) {
    return get_amount_of_core_or_threads_from_matrix(matrix, length, 1, 
              cores, size);
 }
@@ -1858,8 +1829,7 @@ static int get_amount_of_cores_from_matrix(const int** matrix, const int length,
  *
  * @note MT-NOTE: is_new_id() is not MT safe
  */
-static int is_new_id(const int id) 
-{
+static int is_new_id(const int id) {
 
    /* if ID is not available, add it otherwise return 1 */
    /* different_ids, different_id_vector are static */
@@ -1904,8 +1874,7 @@ static int is_new_id(const int id)
    }
 }
 
-static int is_new_id_pair(const int id, const int id2)
-{
+static int is_new_id_pair(const int id, const int id2) {
    /* if ID is not available, add it otherwise return 1 */
    /* different_ids, different_id_vector are static */
    /* if id < 0 : delete all ids collected so far */
@@ -1957,7 +1926,7 @@ static int is_new_id_pair(const int id, const int id2)
       return 1;
    } else {
       return 0;
-  } 
+  }
 }
 
 
@@ -1973,8 +1942,7 @@ static int is_new_id_pair(const int id, const int id2)
  *
  * @note MT-NOTE: get_total_amount_of_cores_solaris() is MT safe
  */
-static int get_total_amount_of_cores_solaris()
-{
+static int get_total_amount_of_cores_solaris() {
    /* pointer to the topology matrix */
    int** matrix = nullptr;
    /* length of the matrix */
@@ -2018,8 +1986,7 @@ static int get_total_amount_of_cores_solaris()
  *
  * @note MT-NOTE: get_total_amount_of_sockets_solaris() is MT safe
  */
-static int get_total_amount_of_sockets_solaris()
-{
+static int get_total_amount_of_sockets_solaris() {
    /* pointer to the topology matrix */
    int** matrix = nullptr;
    /* length of the matrix */
@@ -2074,9 +2041,8 @@ static int get_total_amount_of_sockets_solaris()
  *
  * @note MT-NOTE: get_processor_ids_solaris() is not MT safe
  */
-static bool get_processor_ids_solaris(const int** matrix, const int length, const int logical_socket_number,
-      const int logical_core_number, int** pr_ids, int* pr_length)
-{
+static bool get_processor_ids_solaris(const int **matrix, const int length, const int logical_socket_number,
+                                      const int logical_core_number, int **pr_ids, int *pr_length) {
    /* the collected core ids */ 
    int core_ids[length];
    /* the actual amount of found core ids */
@@ -2117,7 +2083,7 @@ static bool get_processor_ids_solaris(const int** matrix, const int length, cons
       *pr_length = amount_of_core_ids;
       
       return true;
-   }   
+   }
 }
 
 
@@ -2138,9 +2104,8 @@ static bool get_processor_ids_solaris(const int** matrix, const int length, cons
  * @note MT-NOTE: get_chip_id_from_logical_socket_number_solaris() is not MT safe
  *       (because of is_new_id)
  */
-static int get_chip_id_from_logical_socket_number_solaris(const int** matrix, 
-   const int length, const int logical_socket_number) 
-{
+static int get_chip_id_from_logical_socket_number_solaris(const int **matrix,
+                                                          const int length, const int logical_socket_number) {
    /* maps the logical socket number to the Solaris internal chip_id number: */
    /* take the n'th chip_id from the matrix (where n is the logical_socket_number) */ 
    int i = 0;
@@ -2190,10 +2155,9 @@ static int get_chip_id_from_logical_socket_number_solaris(const int** matrix,
  * @note MT-NOTE: get_core_id_from_logical_core_number_solaris() is not MT safe
  *       (because of is_new_id())
  */
-static int get_core_id_from_logical_core_number_solaris(const int** matrix, 
-   const int length, const int chip_id, const int logical_core_number)
-{
-   
+static int get_core_id_from_logical_core_number_solaris(const int **matrix,
+                                                        const int length, const int chip_id, const int logical_core_number) {
+
    /* maps the internal chip_id and the logical core number to the Solaris 
       internal core_id */
    int i = 0;
@@ -2267,9 +2231,8 @@ static int get_core_id_from_logical_core_number_solaris(const int** matrix,
  * @return true when enough free cores were found and accounted
  */
 bool get_linear_automatic_socket_core_list_and_account(const int amount,
-      int** list_of_sockets, int* samount, int** list_of_cores, int* camount,
-      char** topo_by_job, int* topo_by_job_length)
-{
+                                                       int **list_of_sockets, int *samount, int **list_of_cores, int *camount,
+                                                       char **topo_by_job, int *topo_by_job_length) {
    /* return value: if it is possible to fit the request on the host  */
    bool possible       = true;   
    
@@ -2355,9 +2318,8 @@ bool get_linear_automatic_socket_core_list_and_account(const int amount,
    return possible;
 }
 
-static bool get_socket_with_most_free_cores(const char* topology, const int topology_length,
-               int* socket_number)
-{
+static bool get_socket_with_most_free_cores(const char *topology, const int topology_length,
+                                            int *socket_number) {
    /* get the socket which offers most free cores */
    int highest_amount_of_cores = 0;
    *socket_number              = 0;
@@ -2397,8 +2359,7 @@ static bool get_socket_with_most_free_cores(const char* topology, const int topo
    }
 }
 
-static bool account_all_threads_after_core(char** topology, const int core_pos)
-{
+static bool account_all_threads_after_core(char **topology, const int core_pos) {
    /* we need the position after the C in the topology string (example: "SCTTSCTT"
       or "SCCSCC") */
    size_t next_pos = core_pos + 1;
@@ -2425,10 +2386,9 @@ static bool account_all_threads_after_core(char** topology, const int core_pos)
 }
 
 
-static int account_cores_on_socket(char** topology, const int topology_length,
-               const int socket_number, const int cores_needed, int** list_of_sockets,
-               int* list_of_sockets_size, int** list_of_cores, int* list_of_cores_size)
-{
+static int account_cores_on_socket(char **topology, const int topology_length,
+                                   const int socket_number, const int cores_needed, int **list_of_sockets,
+                                   int *list_of_sockets_size, int **list_of_cores, int *list_of_cores_size) {
    int i;
    /* socket number we are at the moment */
    int current_socket_number = -1;
@@ -2507,9 +2467,8 @@ static int account_cores_on_socket(char** topology, const int topology_length,
 }
 
 
-static bool get_free_sockets(const char* topology, const int topology_length, 
-               int** sockets, int* sockets_size)
-{
+static bool get_free_sockets(const char *topology, const int topology_length,
+                             int **sockets, int *sockets_size) {
    /* temporary counter */
    int i, j;
    /* this amount of sockets we discovered already */ 
@@ -2563,7 +2522,6 @@ static bool get_free_sockets(const char* topology, const int topology_length,
       return false;
    }
 }
-
 
 
 /**
@@ -2732,9 +2690,8 @@ bool get_striding_first_socket_first_core_and_account(const int amount, const in
 }
 
 
-static bool create_topology_used_per_job(char** accounted_topology, int* accounted_topology_length, 
-            char* logical_used_topology, char* used_topo_with_job, int logical_used_topology_length)
-{        
+static bool create_topology_used_per_job(char **accounted_topology, int *accounted_topology_length,
+                                         char *logical_used_topology, char *used_topo_with_job, int logical_used_topology_length) {
    /* tmp counter */
    int i;
 
@@ -2890,12 +2847,11 @@ static bool is_starting_point(const char* topo, const int length, const int pos,
    
    /* using this core as first core is possible */
    return is_possible;
-}   
+}
 
-static int get_position_in_topology(const int socket, const int core, 
-   const char* topology, const int topology_length)
-{
-   
+static int get_position_in_topology(const int socket, const int core,
+                                    const char *topology, const int topology_length) {
+
    int i;
    /* position of <socket>,<core> in the topology string */
    int retval = -1;

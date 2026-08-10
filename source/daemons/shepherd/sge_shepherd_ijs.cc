@@ -195,8 +195,7 @@ shepherd_log_list_flush_list(cl_raw_list_t* list_p) {
    return cl_raw_list_unlock(list_p);
 }
 
-static int trace_buf(const char *buffer, int length, const char *format, ...)
-{
+static int trace_buf(const char *buffer, int length, const char *format, ...) {
    int         ret;
    va_list     ap;
    dstring     message = DSTRING_INIT;
@@ -251,8 +250,7 @@ static int trace_buf(const char *buffer, int length, const char *format, ...)
 *
 *  SEE ALSO
 *******************************************************************************/
-static int append_to_buf(int fd, char *pbuf, int *buf_bytes)
-{
+static int append_to_buf(int fd, char *pbuf, int *buf_bytes) {
    int nread = 0;
 
    if (fd >= 0) {
@@ -297,8 +295,7 @@ static int append_to_buf(int fd, char *pbuf, int *buf_bytes)
 *
 *  SEE ALSO
 *******************************************************************************/
-static int send_buf(char *pbuf, unsigned long buf_bytes, int message_type)
-{
+static int send_buf(char *pbuf, unsigned long buf_bytes, int message_type) {
    int ret = 0;
    DSTRING_STATIC(err_msg, MAX_STRING_SIZE);
 
@@ -821,8 +818,7 @@ static void cleanup_x11_xauth_entry() {
 *
 *  SEE ALSO
 *******************************************************************************/
-static void* pty_to_commlib(void *t_conf)
-{
+static void *pty_to_commlib(void *t_conf) {
    int                  do_exit = 0;
    int                  fd_max = 0;
    int                  ret;
@@ -1350,8 +1346,7 @@ static bool attempt_reconnect_grace_period() {
  * @return Always nullptr.
  * @note MT-NOTE: not MT-safe (modifies shared shepherd state).
  */
-static void* commlib_to_pty(void *t_conf)
-{
+static void *commlib_to_pty(void *t_conf) {
    recv_message_t       recv_mess;
    int                  b_was_connected = 0;
    bool                 b_sent_to_child = false;
@@ -1757,12 +1752,10 @@ static void* commlib_to_pty(void *t_conf)
  * @param[out] err_msg receives the reason on failure
  * @return 0 on success
  */
-int
-parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt_info,
-            ijs_fds_t *p_ijs_fds, const char *job_owner, const char *remote_host,
-            int remote_port, cl_framework_t communication_framework, int *exit_status, struct rusage *rusage,
-            dstring *err_msg)
-{
+int parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt_info,
+                ijs_fds_t *p_ijs_fds, const char *job_owner, const char *remote_host,
+                int remote_port, cl_framework_t communication_framework, int *exit_status, struct rusage *rusage,
+                dstring *err_msg) {
    int               ret;
    THREAD_LIB_HANDLE *thread_lib_handle     = nullptr;
    THREAD_HANDLE     *thread_pty_to_commlib = nullptr;
@@ -2014,8 +2007,7 @@ shepherd_trace("+++++ timestamp: %d.%03d ++++", (int)ts.time, (int)ts.millitm);
  * @param exit_status the job's exit status
  * @return 0 on success
  */
-int close_parent_loop(int exit_status)
-{
+int close_parent_loop(int exit_status) {
    int     ret = 0;
    char    sz_exit_status[21];
    DSTRING_STATIC(err_msg, MAX_STRING_SIZE);
@@ -2097,4 +2089,3 @@ int close_parent_loop(int exit_status)
    shepherd_trace("parent: leaving close_parent_loop()");
    return 0;
 }
-

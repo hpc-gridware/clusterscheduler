@@ -1141,19 +1141,20 @@ QACCT_EXIT_BUT_NO_ERROR:
 }
 
 static void print_full_ulong(int full_length, uint32_t value) {
+   DENTER(TOP_LAYER);
+
    char tmp_buf[100];
 
-   DENTER(TOP_LAYER);
    snprintf(tmp_buf, sizeof(tmp_buf), "%5" sge_fu32, value);
    print_full(full_length, tmp_buf);
    DRETURN_VOID;
 }
 
 static void print_full(int full_length, const char* string) {
+   DENTER(TOP_LAYER);
 
    int string_length=0;
 
-   DENTER(TOP_LAYER);
    if ( string != nullptr) {
       printf("%s",string);
       string_length = strlen(string);
@@ -1166,9 +1167,9 @@ static void print_full(int full_length, const char* string) {
 }
 
 static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_size_data) {
-   const lListElem* lep = nullptr;
    DENTER(TOP_LAYER);
 
+   const lListElem* lep = nullptr;
    if (column_size_data == nullptr) {
       DPRINTF("no column size data!\n");
       DRETURN_VOID;
@@ -1313,12 +1314,11 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
 **   note that the other clients use a common function
 **   for this. output was adapted to a similar look.
 */
-static void qacct_usage(FILE *err_fp)
-{
+static void qacct_usage(FILE *err_fp) {
+   DENTER(TOP_LAYER);
+
    dstring ds;
    char buffer[256];
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
@@ -1526,12 +1526,12 @@ lList **ppqueues,
 lList **ppexechosts,
 lList **hgrp_l
 ) {
+   DENTER(TOP_LAYER);
+
    lCondition *where = nullptr;
    lEnumeration *what = nullptr;
    int ce_id = 0, eh_id = 0, q_id = 0, hgrp_id = 0;
    ocs::gdi::Request gdi_multi{};
-
-   DENTER(TOP_LAYER);
 
    /*
    ** GET SGE_CE_LIST
@@ -1622,8 +1622,7 @@ lList **hgrp_l
    DRETURN(true);
 }
 
-static void free_qacct_lists(lList **ppcentries, lList **ppqueues, lList **ppexechosts, lList **hgrp_l)
-{
+static void free_qacct_lists(lList **ppcentries, lList **ppqueues, lList **ppexechosts, lList **hgrp_l) {
    lFreeList(ppcentries);
    lFreeList(ppqueues);
    lFreeList(ppexechosts);

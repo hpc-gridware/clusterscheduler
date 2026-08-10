@@ -128,12 +128,11 @@ struct sge_qeti_s {
  *
  * @note MT-NOTE: sge_qeti_list_add() is not MT safe
  */
-static int sge_qeti_list_add(lList **lpp, const char *name, const lList* rue_lp, double total, bool must_exist)
-{
+static int sge_qeti_list_add(lList **lpp, const char *name, const lList *rue_lp, double total, bool must_exist) {
+   DENTER(TOP_LAYER);
+
    lListElem *tmp_cr_ref;
    lListElem *ep;
-
-   DENTER(TOP_LAYER);
 
    if (!(tmp_cr_ref = lGetElemStrRW(rue_lp, RUE_name, name))) {
       DRETURN(must_exist?-1:0);
@@ -156,10 +155,8 @@ static int sge_qeti_list_add(lList **lpp, const char *name, const lList* rue_lp,
 }
 
 static int
-sge_add_qeti_resource_container(lList **qeti_to_add, const lList* rue_list,
-                                const lList* total_list, const lList* centry_list, const lListElem *job)
-{
-
+sge_add_qeti_resource_container(lList **qeti_to_add, const lList *rue_list,
+                                const lList *total_list, const lList *centry_list, const lListElem *job) {
    DENTER(TOP_LAYER);
 
    // implicit slots request
@@ -197,8 +194,7 @@ sge_add_qeti_resource_container(lList **qeti_to_add, const lList* rue_list,
  *
  * @note Only used by the module test.
  */
-sge_qeti_t *sge_qeti_allocate2(lList *cr_list)
-{
+sge_qeti_t *sge_qeti_allocate2(lList *cr_list) {
    sge_qeti_t *iter;
 
    if (!(iter = (sge_qeti_t *)calloc(1, sizeof(sge_qeti_t)))) {
@@ -220,8 +216,7 @@ sge_qeti_t *sge_qeti_allocate2(lList *cr_list)
  *
  * @return the iterator, or nullptr if it could not be allocated
  */
-sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
-{
+sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a) {
    DENTER(TOP_LAYER);
 
    sge_qeti_t *iter = (sge_qeti_t *)calloc(1, sizeof(sge_qeti_t));
@@ -306,8 +301,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
 }
 
 
-static void sge_qeti_init_refs(lList *cref_lp)
-{
+static void sge_qeti_init_refs(lList *cref_lp) {
    DENTER(TOP_LAYER);
    const lList *utilization_diagram;
    const lListElem *rue_ep;
@@ -326,8 +320,7 @@ static void sge_qeti_init_refs(lList *cref_lp)
 
 /* an empty resource utilization diagrams actually means the resource
    is available now - thus we can skip it when determining the maximum */
-static void sge_qeti_max_end_time(const char *layer, uint64_t *max_time, const lList *cref_lp)
-{
+static void sge_qeti_max_end_time(const char *layer, uint64_t *max_time, const lList *cref_lp) {
    DENTER(TOP_LAYER);
    lListElem *ref;
    uint64_t tmp_time = *max_time;
@@ -354,8 +347,7 @@ static void sge_qeti_max_end_time(const char *layer, uint64_t *max_time, const l
 
 /* switch queue end next references to the next entry
    whose time is larger or equal the specified time */
-static void sge_qeti_switch_to_next(const char *layer, uint64_t time, lList *cref_lp)
-{
+static void sge_qeti_switch_to_next(const char *layer, uint64_t time, lList *cref_lp) {
    DENTER(TOP_LAYER);
    lListElem *ref;
    lListElem *rue_ep;
@@ -389,8 +381,7 @@ static void sge_qeti_switch_to_next(const char *layer, uint64_t time, lList *cre
  *
  * @note MT-NOTE: sge_qeti_next_before() is MT safe
  */
-void sge_qeti_next_before(sge_qeti_t *qeti, uint64_t start)
-{
+void sge_qeti_next_before(sge_qeti_t *qeti, uint64_t start) {
    sge_qeti_switch_to_next("P", start, qeti->cr_refs_pe);
    sge_qeti_switch_to_next("G", start, qeti->cr_refs_global);
    sge_qeti_switch_to_next("H", start, qeti->cr_refs_host);
@@ -411,8 +402,7 @@ void sge_qeti_next_before(sge_qeti_t *qeti, uint64_t start)
  *
  * @note MT-NOTE: sge_qeti_first() is MT safe
  */
-uint64_t sge_qeti_first(sge_qeti_t *qeti)
-{
+uint64_t sge_qeti_first(sge_qeti_t *qeti) {
    DENTER(TOP_LAYER);
    uint64_t all_resources_queue_end_time = 0;
    DSTRING_STATIC(time_str, 64);
@@ -451,8 +441,7 @@ uint64_t sge_qeti_first(sge_qeti_t *qeti)
  *
  * @note MT-NOTE: sge_qeti_next() is MT safe
  */
-uint64_t sge_qeti_next(sge_qeti_t *qeti)
-{
+uint64_t sge_qeti_next(sge_qeti_t *qeti) {
    DENTER(TOP_LAYER);
    uint64_t all_resources_queue_end_time = DISPATCH_TIME_NOW;
    DSTRING_STATIC(time_str, 64);
@@ -485,8 +474,7 @@ uint64_t sge_qeti_next(sge_qeti_t *qeti)
  *
  * @note MT-NOTE: sge_qeti_release() is MT safe
  */
-void sge_qeti_release(sge_qeti_t **qeti)
-{
+void sge_qeti_release(sge_qeti_t **qeti) {
    if (qeti == nullptr || *qeti == nullptr) {
       return;
    }

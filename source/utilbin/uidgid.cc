@@ -46,28 +46,26 @@
 #include "basis_types.h"
 
 /*-------------------------------------------*/
-void usage()
-{
+void usage() {
    fprintf(stderr, "usage: uidgid -uid|-gid|-euid|-egid\n");
    exit(1);
-} 
- 
+}
+
 /*-------------------------------------------*/
-int main(int argc, char *argv[])
-{
- if (argc != 2)
-    usage();
- 
- if (!strcmp(argv[1], "-uid"))
-    printf(uid_t_fmt "\n", getuid());
- else if (!strcmp(argv[1], "-euid"))
-    printf(uid_t_fmt "\n", geteuid());
- else if (!strcmp(argv[1], "-gid"))
-    printf(gid_t_fmt"\n", getgid());
- else if (!strcmp(argv[1], "-egid"))
-    printf(gid_t_fmt"\n", getegid());
- else
-    usage();
- exit(0);
- return 0;   
+int main(int argc, char *argv[]) {
+   if (argc != 2)
+      usage();
+
+   if (!strcmp(argv[1], "-uid"))
+      printf(uid_t_fmt "\n", getuid());
+   else if (!strcmp(argv[1], "-euid"))
+      printf(uid_t_fmt "\n", geteuid());
+   else if (!strcmp(argv[1], "-gid"))
+      printf(gid_t_fmt "\n", getgid());
+   else if (!strcmp(argv[1], "-egid"))
+      printf(gid_t_fmt "\n", getegid());
+   else
+      usage();
+   exit(0);
+   return 0;
 }

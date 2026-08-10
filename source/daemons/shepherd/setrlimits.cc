@@ -91,8 +91,7 @@ static int sge_parse_limit(sge_rlim_t *rlvalp, char *s, char *error_str,
  * r1 == r2      == 0
  * r1 >  r2      > 0
  */
-static int rlimcmp(sge_rlim_t r1, sge_rlim_t r2) 
-{
+static int rlimcmp(sge_rlim_t r1, sge_rlim_t r2) {
    if (r1 == r2)
       return 0;
    if (r1==RLIM_INFINITY)
@@ -122,8 +121,7 @@ RETURN
 
 */
 static int sge_parse_limit(sge_rlim_t *rlvalp, char *s, char *error_str,
-                    int error_len)
-{
+                           int error_len) {
    sge_parse_num_val(rlvalp, nullptr, s, s, error_str, error_len);
 
    return 1;
@@ -547,8 +545,7 @@ const char *unknown_string = "unknown";
 /* *INDENT-ON* */
 
 static int get_resource_info(uint32_t resource, const char **name,
-                             int *resource_type) 
-{
+                             int *resource_type) {
    int is_job_resource_column;
    int row;
 
@@ -565,7 +562,7 @@ static int get_resource_info(uint32_t resource, const char **name,
       row++;
    }
    *name = unknown_string;
-   return 1;       
+   return 1;
 }
 
 /** @def limit_fmt
@@ -577,8 +574,7 @@ static int get_resource_info(uint32_t resource, const char **name,
  */
 
 static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp,
-                      bool trace_rlimit)
-{
+                      bool trace_rlimit) {
    const char *limit_str;
    char trace_str[1024];
    struct RLIMIT_STRUCT_TAG dlp;

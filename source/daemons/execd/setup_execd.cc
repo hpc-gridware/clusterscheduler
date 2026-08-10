@@ -74,8 +74,7 @@ static char execd_messages_file[SGE_PATH_MAX];
 /** @brief Bring the daemon up: spool directory, configuration, and what is already running
  * @param tmp_err_file_name where to log until the real log file is known
  */
-void sge_setup_sge_execd(const char* tmp_err_file_name)
-{
+void sge_setup_sge_execd(const char *tmp_err_file_name) {
    DENTER(TOP_LAYER);
 
    int allowed_get_conf_errors = 5;
@@ -164,8 +163,7 @@ void sge_setup_sge_execd(const char* tmp_err_file_name)
  * @param job the job (`JB_Type`)
  * @return 0 on success
  */
-int job_initialize_job(lListElem *job)
-{
+int job_initialize_job(lListElem *job) {
    DENTER(TOP_LAYER);
    uint32_t job_id;
    lListElem *ja_task;
@@ -222,5 +220,5 @@ int job_initialize_job(lListElem *job)
       }
 #endif
    }     
-   DRETURN(0);           
+   DRETURN(0);
 }

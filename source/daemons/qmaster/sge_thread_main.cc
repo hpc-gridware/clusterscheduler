@@ -70,9 +70,9 @@ main_control_t Main_Control = {
  */
 int
 sge_qmaster_shutdown_via_signal_thread(int i) {
-   int ret = 0;
-
    DENTER(TOP_LAYER);
+
+   int ret = 0;
 
    sge_signaler_initiate_termination();
    sge_qmaster_set_exit_state(i);

@@ -65,9 +65,9 @@
 /*-------------------------------------------------------------------------*/
 /* use cstring_list_parse_from_string() if you need a parsing function */
 static void sge_parse_string_list(lList **lp, const char *str, int field, lDescr *descr) {
-   const char *cp;
-
    DENTER(TOP_LAYER);
+
+   const char *cp;
 
    cp = sge_strtok(str, ",");
    lAddElemStr(lp, field, cp, descr);
@@ -143,9 +143,9 @@ uint32_t opt_type,
 const char *opt_switch,
 const char *opt_switch_arg
 ) {
-   lListElem *ep;
-   
    DENTER(TOP_LAYER);
+
+   lListElem *ep;
    
    if (popt_list == nullptr) {
        DRETURN(nullptr);
@@ -192,7 +192,6 @@ const char *longopt,
 lList **ppcmdline,
 lList **alpp 
 ) {
-
    DENTER(TOP_LAYER);
 
    if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) ) {
@@ -237,11 +236,11 @@ const char *longopt,
 lList **ppcmdline,
 lList **alpp 
 ) {
+   DENTER(TOP_LAYER);
+
 char **rp;
 stringT str;
 lListElem *ep; /* SPA_Type */
-   DENTER(TOP_LAYER);
-
    rp = sp;
    if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) 
         || ((shortopt[strlen(shortopt)-1] == '*')
@@ -295,10 +294,10 @@ const char *longopt,
 lList **ppcmdline,
 lList **alpp 
 ) {
+   DENTER(TOP_LAYER);
+
    char **rp;
    lListElem *ep; /* SPA_Type */
-
-   DENTER(TOP_LAYER);
 
    rp = sp;
    if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) ) {
@@ -338,10 +337,10 @@ const char *opt,
 lList **ppcmdline,
 lList **alpp 
 ) {
+   DENTER(TOP_LAYER);
+
 char **rp;
 lListElem *ep = nullptr; /* SPA_Type */
-
-   DENTER(TOP_LAYER);
 
    rp = sp;
    while( (*rp) && (**rp != '-') ) {
@@ -385,10 +384,10 @@ const char *opt,
 lList **ppal,
 uint32_t *pflag
 ) {
+   DENTER(BASIS_LAYER);
+
 lListElem *ep;
 char* actual_opt;
-
-   DENTER(BASIS_LAYER);
 
    if((ep = lGetElemStrLikeRW(*ppcmdline, SPA_switch_val, opt))) {
       actual_opt = sge_strdup(nullptr, lGetString(ep, SPA_switch_val));
@@ -546,9 +545,9 @@ const char *opt,
 lList **ppal,
 char **str 
 ) {
-   lListElem *ep, *ep2;
-
    DENTER(TOP_LAYER);
+
+   lListElem *ep, *ep2;
 
    if((ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt))) {
       ep2 = lFirstRW(lGetList(ep, SPA_argval_lListT));
@@ -578,9 +577,7 @@ char **str
  * @param[out] value receives the argument; it belongs to the option list
  * @return 1 when the switch was present
  */
-int
-parse_string_arg(lList **ppcmdline, const char *opt, lList **ppal, char **value)
-{
+int parse_string_arg(lList **ppcmdline, const char *opt, lList **ppal, char **value) {
    DENTER(TOP_LAYER);
    bool ret = false;
    lListElem *ep = nullptr;
@@ -604,13 +601,12 @@ parse_string_arg(lList **ppcmdline, const char *opt, lList **ppal, char **value)
  * @param[out] value receives the number
  * @return 1 when the switch was present
  */
-int
-parse_uint32_t(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *value)
-{
+int parse_uint32_t(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *value) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    lListElem *ep = nullptr;
 
-   DENTER(TOP_LAYER);
    ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt);
    if(ep != nullptr) {
       *value = lGetUlong(ep, SPA_argval_lUlongT); 
@@ -630,13 +626,12 @@ parse_uint32_t(lList **ppcmdline, const char *opt, lList **ppal, uint32_t *value
  * @param[out] value receives the numbers
  * @return 1 when the switch was present
  */
-int 
-parse_u_longlist(lList **ppcmdline, const char *opt, lList **ppal, lList **value) 
-{
+int parse_u_longlist(lList **ppcmdline, const char *opt, lList **ppal, lList **value) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    lListElem *ep = nullptr;
 
-   DENTER(TOP_LAYER);
    ep = lGetElemStrRW(*ppcmdline, SPA_switch_val, opt);
    if(ep != nullptr) {
       *value = nullptr;
@@ -657,8 +652,7 @@ parse_u_longlist(lList **ppcmdline, const char *opt, lList **ppal, lList **value
  * @return the combined `GROUP_*` bit mask
  */
 uint32_t
-parse_group_options(lList *string_list, lList **answer_list) 
-{
+parse_group_options(lList *string_list, lList **answer_list) {
    DENTER(TOP_LAYER);
    uint32_t group_opt = GROUP_DEFAULT;
 
@@ -711,18 +705,16 @@ parse_group_options(lList *string_list, lList **answer_list)
  * @param none_allowed true to accept `NONE` as the empty mask
  * @return true when every name was understood
  */
-bool 
-sge_parse_bitfield_str(const char *str, const char *set_specifier[], 
-                       uint32_t *value, const char *name, lList **alpp,
-                       bool none_allowed) 
-{
+bool sge_parse_bitfield_str(const char *str, const char *set_specifier[],
+                            uint32_t *value, const char *name, lList **alpp,
+                            bool none_allowed) {
+   DENTER(TOP_LAYER);
+
    const char *s;
    const char **cpp;
    uint32_t bitmask;
    /* isspace() character plus "," */
    static const char delim[] = ", \t\v\n\f\r";
-   DENTER(TOP_LAYER);
-   
    *value = 0;
 
    if (none_allowed && !strcasecmp(str, "none")) {

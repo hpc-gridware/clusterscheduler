@@ -102,8 +102,7 @@ void ocs::QStatDefaultViewPlain::report_queue_section_finished(std::ostream &os,
 }
 
 
-void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const char* qname, queue_summary_t *summary, QStatParameter &parameter)
-{
+void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const char *qname, queue_summary_t *summary, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
    const bool sge_ext = parameter.show_ & QSTAT_DISPLAY_EXTENDED;
    const int queue_length = parameter.get_longest_queue_length();

@@ -123,8 +123,9 @@ uint64_t admail_times[MAX_SSTATE + 1];
  * @note This reports on errors that have nothing to do with a particular job
  *       as well; it might not be apt for those.
  */
-void job_related_adminmail(uint32_t progid, lListElem *jr, int is_array, const char *job_owner)
-{
+void job_related_adminmail(uint32_t progid, lListElem *jr, int is_array, const char *job_owner) {
+   DENTER(TOP_LAYER);
+
    static int first = 1;
    char sge_mail_subj[1024];
    char sge_mail_body[20480];
@@ -149,8 +150,6 @@ void job_related_adminmail(uint32_t progid, lListElem *jr, int is_array, const c
    dstring ds;
    char buffer[256];
    char *shepherd_file_buf = nullptr;
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
@@ -345,11 +344,10 @@ FCLOSE_ERROR:
  * @param state the failure state, or 0 to reset every state
  * @return 0
  */
-int adm_mail_reset(int state)
-{
-   int i;
-
+int adm_mail_reset(int state) {
    DENTER(TOP_LAYER);
+
+   int i;
 
    /*
    ** let 0 be a reset all

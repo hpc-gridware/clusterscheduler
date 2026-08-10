@@ -63,13 +63,12 @@
  *         error: the list may be a subset, and a queue that is not in it is
  *         already suspended
  */
-int sos_schedd(const char *qname, lList *qlist) 
-{
+int sos_schedd(const char *qname, lList *qlist) {
+   DENTER(TOP_LAYER);
+
    lListElem *q;
    uint32_t sos;
    int ret = 0;
-
-   DENTER(TOP_LAYER);
 
    q = qinstance_list_locate2(qlist, qname);
    if (!q) {
@@ -95,4 +94,3 @@ int sos_schedd(const char *qname, lList *qlist)
 
    DRETURN(ret);
 }
-

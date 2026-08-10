@@ -119,16 +119,15 @@ const char *default_prefix = "#$";
  *         - `STATUS_ENOIMP` - an unknown switch, or `-help`
  */
 lList *cull_parse_job_parameter(uint32_t uid, const char *username, const char *cell_root,
-                                const char *unqualified_hostname, const char *qualified_hostname, 
-                                lList *cmdline, lListElem **pjob, uint32_t *sync_options)
-{
+                                const char *unqualified_hostname, const char *qualified_hostname,
+                                lList *cmdline, lListElem **pjob, uint32_t *sync_options) {
+   DENTER(TOP_LAYER); 
+
    const char *cp;
    lListElem *ep;
    lList *answer = nullptr;
    lList *path_alias = nullptr;
    char error_string[MAX_STRING_SIZE];
-
-   DENTER(TOP_LAYER); 
 
    if (pjob == nullptr || sync_options == nullptr) {
       answer_list_add(&answer,  MSG_PARSE_NULLPOINTERRECEIVED, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -868,6 +867,8 @@ lList **lpp_options,
 char **envp,
 uint32_t flags
 ) {
+   DENTER(TOP_LAYER);
+
    unsigned int dpl; /* directive_prefix length */
    FILE *fp;
    char *filestrptr = nullptr;
@@ -880,8 +881,6 @@ uint32_t flags
    lList *lp_new_opts = nullptr;
    /* snprintf takes the nullptr terminator into account. */
    char error_string[MAX_STRING_SIZE];
-
-   DENTER(TOP_LAYER);
 
    if (!lpp_options) {
       /* no place where to put result */

@@ -105,9 +105,9 @@ sge_initialize_persistence(lList **answer_list) {
  */
 void
 sge_initialize_persistance_timer() {
-   te_event_t ev = nullptr;
-
    DENTER(TOP_LAYER);
+
+   te_event_t ev = nullptr;
 
    te_register_event_handler(spooling_trigger_handler, TYPE_SPOOLING_TRIGGER);
 
@@ -125,12 +125,12 @@ sge_initialize_persistance_timer() {
  */
 bool
 sge_shutdown_persistence(lList **answer_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    uint64_t time = 0;
    lList *alp = nullptr;
    lListElem *context;
-
-   DENTER(TOP_LAYER);
 
    /* trigger spooling actions (flush data) */
    if (!spool_trigger_context(&alp, spool_get_default_context(), 0, &time)) {
@@ -165,11 +165,11 @@ sge_shutdown_persistence(lList **answer_list) {
  */
 void
 spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    uint64_t next_trigger = 0;
    lList *answer_list = nullptr;
    te_event_t ev = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* trigger spooling regular actions */
    if (!spool_trigger_context(&answer_list, spool_get_default_context(),
@@ -225,14 +225,14 @@ bool
 sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_t intkey1,
                 uint32_t intkey2, const char *strkey, const char *strkey2, const char *session, lListElem *object,
                 lListElem *sub_object1, lListElem *sub_object2, bool send_event, bool spool, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const char *key = nullptr;
    sge_object_type object_type;
    lListElem *element = nullptr;
    bool do_delete = false;
    dstring buffer = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
 
    /*for testing a fixed gid_error, this has been introduced. We need it to slowdown*/
    /*the spooling mechanism, to simulate the situation where this error appears*/

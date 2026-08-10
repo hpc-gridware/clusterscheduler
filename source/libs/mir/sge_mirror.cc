@@ -205,8 +205,7 @@ typedef struct {
 static pthread_key_t   mir_state_key;
 static pthread_once_t  mir_once_control = PTHREAD_ONCE_INIT;
 
-static void mir_state_init(mir_state_t* state)
-{
+static void mir_state_init(mir_state_t *state) {
    int i;
    /*
     * if environment varialbe SGE_PRODUCE_ALIVE_TIMEOUT_ERROR
@@ -229,24 +228,20 @@ static void mir_state_init(mir_state_t* state)
    }
 }
 
-static void mir_state_destroy(void* state)
-{
+static void mir_state_destroy(void *state) {
    sge_free(&state);
 }
 
-static void mir_mt_init()
-{
+static void mir_mt_init() {
    pthread_key_create(&mir_state_key, &mir_state_destroy);
 }
 
-static bool mir_get_produce_qmaster_alive_timeout()
-{
+static bool mir_get_produce_qmaster_alive_timeout() {
    GET_SPECIFIC(mir_state_t, mir_state, mir_state_init, mir_state_key);
    return mir_state->produce_qmaster_alive_timeout;
 }
 
-static mirror_description *mir_get_mirror_base()
-{
+static mirror_description *mir_get_mirror_base() {
    GET_SPECIFIC(mir_state_t, mir_state, mir_state_init, mir_state_key);
    return mir_state->mirror_base;
 }
@@ -260,8 +255,7 @@ static mirror_description *mir_get_mirror_base()
  * @param type the object type to ask about
  * @return true when the type was subscribed with a filter
  */
-bool sge_mirror_type_is_partial(sge_object_type type)
-{
+bool sge_mirror_type_is_partial(sge_object_type type) {
    if (type < 0 || type >= SGE_TYPE_ALL) {
       return false;
    }
@@ -296,8 +290,7 @@ bool sge_mirror_type_is_partial(sge_object_type type)
 sge_mirror_error
 sge_mirror_initialize(sge_evc_class_t *evc, event_client_update_func_t update_func,
                       evm_mod_func_t mod_func, evm_add_func_t add_func, evm_remove_func_t remove_func,
-                      evm_ack_func_t ack_func, void *update_func_arg)
-{
+                      evm_ack_func_t ack_func, void *update_func_arg) {
    DENTER(TOP_LAYER);
 
    evc->ec_local.update_func = update_func;
@@ -333,8 +326,7 @@ sge_mirror_initialize(sge_evc_class_t *evc, event_client_update_func_t update_fu
  *
  * @see #sge_mirror_initialize
  */
-sge_mirror_error sge_mirror_shutdown(sge_evc_class_t *evc)
-{
+sge_mirror_error sge_mirror_shutdown(sge_evc_class_t *evc) {
    DENTER(TOP_LAYER);
 
    if (evc && evc->ec_is_initialized(evc)) {
@@ -387,11 +379,10 @@ sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc,
                                       sge_mirror_callback callback_after,
                                       void *client_data,
                                       const lCondition *where,
-                                      const lEnumeration *what)
-{
-   sge_mirror_error ret = SGE_EM_OK;
-
+                                      const lEnumeration *what) {
    DENTER(TOP_LAYER);
+
+   sge_mirror_error ret = SGE_EM_OK;
 
    if (type > SGE_TYPE_ALL) {
       ERROR(MSG_MIRROR_INVALID_OBJECT_TYPE_SI, __func__, type);
@@ -415,8 +406,7 @@ sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc,
 static sge_mirror_error
 sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
                               sge_mirror_callback callback_before, sge_mirror_callback callback_after,
-                              void *client_data, const lCondition *where, const lEnumeration *what)
-{
+                              void *client_data, const lCondition *where, const lEnumeration *what) {
    sge_mirror_error ret = SGE_EM_OK;
    lListElem *what_el = lWhatToElem(what);
    lListElem *where_el = lWhereToElem(where);
@@ -738,11 +728,10 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
  *
  * @see #sge_mirror_subscribe
  */
-sge_mirror_error sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object_type type)
-{
-   sge_mirror_error ret = SGE_EM_OK;
+sge_mirror_error sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object_type type) {
    DENTER(TOP_LAYER);
 
+   sge_mirror_error ret = SGE_EM_OK;
    if (type > SGE_TYPE_ALL) {
       ERROR(MSG_MIRROR_INVALID_OBJECT_TYPE_SI, __func__, type);
       DRETURN(SGE_EM_BAD_ARG);
@@ -765,9 +754,9 @@ sge_mirror_error sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object_type ty
 
 static sge_mirror_error
 sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
-   mirror_description *mirror_base = mir_get_mirror_base();
- 
    DENTER(TOP_LAYER);
+
+   mirror_description *mirror_base = mir_get_mirror_base();
  
    /* type has been checked in calling function - clear callback information */
    mirror_base[type].callback_before  = nullptr;
@@ -950,13 +939,12 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
  *
  * @see `ec_get_edtime()`, `ec_set_edtime()`
  */
-sge_mirror_error sge_mirror_process_events(sge_evc_class_t *evc)
-{
+sge_mirror_error sge_mirror_process_events(sge_evc_class_t *evc) {
+   DENTER(TOP_LAYER);
+
    lList *event_list = nullptr;
    sge_mirror_error ret = SGE_EM_OK;
    static int test_debug = 0;
-
-   DENTER(TOP_LAYER);
 
    /// ec2_get()
    if (evc && evc->ec_get(evc, &event_list, false)) {
@@ -994,8 +982,7 @@ sge_mirror_error sge_mirror_process_events(sge_evc_class_t *evc)
  *
  * @return corresponding error message
  */
-const char *sge_mirror_strerror(sge_mirror_error num)
-{
+const char *sge_mirror_strerror(sge_mirror_error num) {
    switch (num) {
       case SGE_EM_OK:
          return MSG_MIRROR_OK;
@@ -1018,14 +1005,12 @@ const char *sge_mirror_strerror(sge_mirror_error num)
    }
 }
 
-static void sge_mirror_free_list(sge_object_type type)
-{
+static void sge_mirror_free_list(sge_object_type type) {
    ocs::DataStore::free_master_list(type);
 }
 
 static sge_mirror_error
-sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
-{
+sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list) {
    DENTER(TOP_LAYER);
    sge_mirror_error function_ret;
    bool no_more_events=false;
@@ -1361,8 +1346,7 @@ sge_mirror_error
  * @param event_list the events to apply
  * @return SGE_EM_OK or an error code
  */
-sge_mirror_process_event_list(sge_evc_class_t *evc, lList *event_list)
-{
+sge_mirror_process_event_list(sge_evc_class_t *evc, lList *event_list) {
    return sge_mirror_process_event_list_(evc, event_list);
 }
 
@@ -1382,8 +1366,7 @@ sge_mirror_process_event_list(sge_evc_class_t *evc, lList *event_list)
  * root whose presence it requires; add a line here to cover a new relationship.
  */
 static bool
-mir_event_root_unmirrored(sge_object_type type, sge_event_action action, lListElem *event)
-{
+mir_event_root_unmirrored(sge_object_type type, sge_event_action action, lListElem *event) {
    sge_object_type root_type;
    int root_key_nm;
    bool key_is_string;
@@ -1430,13 +1413,12 @@ mir_event_root_unmirrored(sge_object_type type, sge_event_action action, lListEl
 
 static sge_mirror_error
 sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
-                        sge_object_type type, sge_event_action action, lListElem *event)
-{
+                         sge_object_type type, sge_event_action action, lListElem *event) {
+   DENTER(TOP_LAYER);
+
    sge_callback_result ret;
    char buffer[1024];
    dstring buffer_wrapper;
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
@@ -1498,9 +1480,8 @@ sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
 
 static sge_callback_result
 sge_mirror_process_shutdown(sge_evc_class_t *evc, [[maybe_unused]] sge_object_type type,
-                            [[maybe_unused]] sge_event_action action,  [[maybe_unused]] lListElem *event,
-                            [[maybe_unused]] void *client_data)
-{
+                            [[maybe_unused]] sge_event_action action, [[maybe_unused]] lListElem *event,
+                            [[maybe_unused]] void *client_data) {
    DENTER(TOP_LAYER);
 
    DPRINTF("shutting down sge mirror\n");
@@ -1511,10 +1492,9 @@ sge_mirror_process_shutdown(sge_evc_class_t *evc, [[maybe_unused]] sge_object_ty
 }
 
 static sge_callback_result
-sge_mirror_process_mark4registration(sge_evc_class_t *evc,  [[maybe_unused]] sge_object_type type,
+sge_mirror_process_mark4registration(sge_evc_class_t *evc, [[maybe_unused]] sge_object_type type,
                                      [[maybe_unused]] sge_event_action action, [[maybe_unused]] lListElem *event,
-                                     [[maybe_unused]] void *client_data)
-{
+                                     [[maybe_unused]] void *client_data) {
    DENTER(TOP_LAYER);
 
    DPRINTF("mark4registration - this happens for ACK TIMEOUT or QMASTER GOES DOWN event\n");
@@ -1525,9 +1505,8 @@ sge_mirror_process_mark4registration(sge_evc_class_t *evc,  [[maybe_unused]] sge
 }
 
 static sge_callback_result
-generic_update_master_list( [[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
-                           sge_event_action action, lListElem *event,  [[maybe_unused]] void *client_data)
-{
+generic_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
+                           sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data) {
    DENTER(TOP_LAYER);
    lList **list = ocs::DataStore::get_master_list_rw(type);
    const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
@@ -1566,12 +1545,12 @@ generic_update_master_list( [[maybe_unused]] sge_evc_class_t *evc, sge_object_ty
 sge_mirror_error
 sge_mirror_update_master_list_str_key(lList **list, const lDescr *list_descr,
                                       int key_nm, const char *key,
-                                      sge_event_action action, lListElem *event)
-{
+                                      sge_event_action action, lListElem *event) {
+   DENTER(TOP_LAYER);
+
    lListElem *ep;
    sge_mirror_error ret;
 
-   DENTER(TOP_LAYER);
    if (list != nullptr) {
       ep = lGetElemStrRW(*list, key_nm, key);
       ret = sge_mirror_update_master_list(list, list_descr, ep, key, action, event);
@@ -1600,12 +1579,11 @@ sge_mirror_update_master_list_str_key(lList **list, const lDescr *list_descr,
  */
 sge_mirror_error sge_mirror_update_master_list_host_key(lList **list, const lDescr *list_descr,
                                                         int key_nm, const char *key,
-                                                        sge_event_action action, lListElem *event)
-{
+                                                        sge_event_action action, lListElem *event) {
+   DENTER(TOP_LAYER);
+
    lListElem *ep;
    sge_mirror_error ret;
-
-   DENTER(TOP_LAYER);
 
    ep = lGetElemHostRW(*list, key_nm, key);
    ret = sge_mirror_update_master_list(list, list_descr, ep, key, action, event);
@@ -1710,8 +1688,7 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr, lListElem 
  */
 static sge_callback_result
 ar_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
-                      sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data)
-{
+                      sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data) {
    DENTER(TOP_LAYER);
    lList **list = ocs::DataStore::get_master_list_rw(type);
    const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
@@ -1743,8 +1720,7 @@ ar_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type typ
  */
 static sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const lDescr *list_descr,
                                                              int key_nm, uint32_t key,
-                                                             sge_event_action action, lListElem *event)
-{
+                                                             sge_event_action action, lListElem *event) {
    DENTER(TOP_LAYER);
 
    sge_mirror_error ret;
@@ -1766,8 +1742,7 @@ static sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const
 
 static sge_callback_result
 cat_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
-                      sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data)
-{
+                       sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data) {
    DENTER(TOP_LAYER);
    lList **list = ocs::DataStore::get_master_list_rw(type);
    const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
@@ -1782,8 +1757,7 @@ cat_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type ty
 
 static sge_mirror_error
 sge_mirror_update_master_list_cat_key(lList **list, const lDescr *list_descr,
-                                     int key_nm, uint32_t key, sge_event_action action, lListElem *event)
-{
+                                      int key_nm, uint32_t key, sge_event_action action, lListElem *event) {
    DENTER(TOP_LAYER);
 
    sge_mirror_error ret;

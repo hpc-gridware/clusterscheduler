@@ -168,10 +168,10 @@ attr_mod_zerostr(lListElem *qep, lListElem *new_ep, int nm, const char *attr_nam
  */
 int
 attr_mod_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, const char *attr_name) {
+   DENTER(TOP_LAYER);
+
    int dataType;
    int pos;
-
-   DENTER(TOP_LAYER);
 
    /* ---- attribute nm */
    if ((pos = lGetPosViaElem(qep, nm, SGE_NO_ABORT)) >= 0) {
@@ -428,10 +428,11 @@ bool
 attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int this_elem_primary_key,
                   const lListElem *delta_elem, ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_cmd,
                   const char *sub_list_name, const char *object_name, int no_info, bool *changed) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    bool did_changes = false;
 
-   DENTER(TOP_LAYER);
    if (lGetPosViaElem(delta_elem, this_elem_name, SGE_NO_ABORT) >= 0) {
       if ((sub_cmd & ocs::gdi::SubCommand::CHANGE) == ocs::gdi::SubCommand::CHANGE ||
           (sub_cmd & ocs::gdi::SubCommand::APPEND) == ocs::gdi::SubCommand::APPEND ||
@@ -765,10 +766,10 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
                    ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_cmd,
                    int attribute_name, int sublist_host_name, int sublist_value_name, int subsub_key,
                    const char *attribute_name_str, const char *object_name_str) {
+   DENTER(CQUEUE_LAYER);
+
    bool ret = true;
    int pos;
-
-   DENTER(CQUEUE_LAYER);
 
    pos = lGetPosViaElem(reduced_elem, attribute_name, SGE_NO_ABORT);
    if (pos >= 0) {
@@ -877,10 +878,10 @@ cqueue_mod_sublist(lListElem *this_elem, lList **answer_list, lListElem *reduced
  */
 int
 multiple_occurances(lList **alpp, const lList *lp1, const lList *lp2, int nm, const char *name, const char *obj_name) {
+   DENTER(TOP_LAYER);
+
    const lListElem *ep1;
    const char *s;
-
-   DENTER(TOP_LAYER);
 
    if (!lp1 || !lp2) {
       DRETURN(0);

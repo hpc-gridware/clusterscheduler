@@ -54,8 +54,7 @@
 #include "sge_resource_quota_service.h"
 #include "sge_object.h"
 
-static bool is_global(const lListElem *rule, int nm)
-{
+static bool is_global(const lListElem *rule, int nm) {
    lListElem *filter = lGetObject(rule, nm);
    if (!filter)
       return true;
@@ -73,8 +72,7 @@ static bool is_global(const lListElem *rule, int nm)
  *
  * @note MT-NOTE: is_cqueue_global() is MT safe
  */
-bool is_cqueue_global(const lListElem *rule)
-{
+bool is_cqueue_global(const lListElem *rule) {
    return is_global(rule, RQR_filter_queues);
 }
 
@@ -90,13 +88,11 @@ bool is_cqueue_global(const lListElem *rule)
  *
  * @note MT-NOTE: is_host_global() is MT safe
  */
-bool is_host_global(const lListElem *rule)
-{
+bool is_host_global(const lListElem *rule) {
    return is_global(rule, RQR_filter_hosts);
 }
 
-static bool is_expand(const lListElem *rule, int nm)
-{
+static bool is_expand(const lListElem *rule, int nm) {
    lListElem *filter = lGetObject(rule, nm);
    if (filter && lGetBool(filter, RQRF_expand))
       return true;
@@ -121,8 +117,7 @@ static bool is_expand(const lListElem *rule, int nm)
  *
  * @note MT-NOTE: is_host_expand() is MT safe
  */
-bool is_host_expand(const lListElem *rule)
-{
+bool is_host_expand(const lListElem *rule) {
    return is_expand(rule, RQR_filter_hosts);
 }
 
@@ -142,8 +137,7 @@ bool is_host_expand(const lListElem *rule)
  *
  * @note MT-NOTE: is_cqueue_expand() is MT safe
  */
-bool is_cqueue_expand(const lListElem *rule)
-{
+bool is_cqueue_expand(const lListElem *rule) {
    return is_expand(rule, RQR_filter_queues);
 }
 
@@ -163,8 +157,7 @@ bool is_cqueue_expand(const lListElem *rule)
  *
  * @note MT-NOTE: sge_user_is_referenced_in_rqs() is MT safe
  */
-bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, const lList *grp_list, const lList *acl_list)
-{
+bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, const lList *grp_list, const lList *acl_list) {
    bool ret = false;
 
    for_each_ep_lv(ep, rqs) {

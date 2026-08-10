@@ -177,15 +177,14 @@ static int (*shared_contract_func__ct_pr_tmpl_set_param)(int ctfd, uint_t flag);
  * @see #init_scf_lib, #init_contract_lib
  */
 static int sge_init_lib(void *lib_ptr, const char *lib_name,
-                     const char *func_name[], const void *func_ptr[])
-{
- int ret;
+                        const char *func_name[], const void *func_ptr[]) {
+   DENTER(TOP_LAYER);
 
- DENTER(TOP_LAYER);
+   int ret;
 
- if (lib_ptr == nullptr) {
-     lib_ptr = dlopen(lib_name, RTLD_LAZY | RTLD_NODELETE);
-     if (lib_ptr != nullptr) {
+   if (lib_ptr == nullptr) {
+      lib_ptr = dlopen(lib_name, RTLD_LAZY | RTLD_NODELETE);
+      if (lib_ptr != nullptr) {
          int i = 0;
          while (func_name[i] != nullptr) {
              *((int**)(func_ptr[i])) = (int*)dlsym(lib_ptr, func_name[i]);
@@ -223,37 +222,35 @@ static int sge_init_lib(void *lib_ptr, const char *lib_name,
  *
  * @see #once_libscf_init
  */
-static void init_scf_lib()
-{
- const char *func_name[] = {
-     "scf_error",
-     "scf_strerror",
-     "scf_simple_prop_get",
-     "scf_simple_prop_next_astring",
-     "scf_simple_prop_free",
-     "smf_get_state",
-     "smf_disable_instance",
-     nullptr
- };
+static void init_scf_lib() {
+   DENTER(TOP_LAYER);
 
- const void *func_ptr[] = {
-     &shared_scf_func__scf_error,
-     &shared_scf_func__scf_strerror,
-     &shared_scf_func__scf_simple_prop_get,
-     &shared_scf_func__scf_simple_prop_next_astring,
-     &shared_scf_func__scf_simple_prop_free,
-     &shared_scf_func__smf_get_state,
-     &shared_scf_func__smf_disable_instance,
-     nullptr
- };
+   const char *func_name[] = {
+           "scf_error",
+           "scf_strerror",
+           "scf_simple_prop_get",
+           "scf_simple_prop_next_astring",
+           "scf_simple_prop_free",
+           "smf_get_state",
+           "smf_disable_instance",
+           nullptr};
 
- DENTER(TOP_LAYER);
- if (sge_init_lib(scf_lib, "libscf.so", func_name, func_ptr) == 0) {
-     libscfLoaded = 1;
- } else {
-     libscfLoaded = 0;
- }
- DRETURN_VOID;
+   const void *func_ptr[] = {
+           &shared_scf_func__scf_error,
+           &shared_scf_func__scf_strerror,
+           &shared_scf_func__scf_simple_prop_get,
+           &shared_scf_func__scf_simple_prop_next_astring,
+           &shared_scf_func__scf_simple_prop_free,
+           &shared_scf_func__smf_get_state,
+           &shared_scf_func__smf_disable_instance,
+           nullptr};
+
+   if (sge_init_lib(scf_lib, "libscf.so", func_name, func_ptr) == 0) {
+      libscfLoaded = 1;
+   } else {
+      libscfLoaded = 0;
+   }
+   DRETURN_VOID;
 }
 
 
@@ -269,17 +266,16 @@ static void init_scf_lib()
  *
  * @see #sge_smf_init_libs, #sge_smf_temporary_disable_instance
  */
-static int once_libscf_init()
-{
- DENTER(TOP_LAYER);
- /* Init scf lib ONCE */
- if (pthread_once(&libscfcontrol, init_scf_lib) != 0) {
-     DPRINTF("once_libscf_init() -> pthread_once call failed: useSMF=%d, libscf=%d, libcontract=%d\n",
+static int once_libscf_init() {
+   DENTER(TOP_LAYER);
+   /* Init scf lib ONCE */
+   if (pthread_once(&libscfcontrol, init_scf_lib) != 0) {
+      DPRINTF("once_libscf_init() -> pthread_once call failed: useSMF=%d, libscf=%d, libcontract=%d\n",
               useSMF, libscfLoaded, libcontractLoaded);
-     DRETURN(1);
- }
- DPRINTF("once_libscf_init() -> useSMF=%d, libscf=%d, libcontract=%d\n", useSMF, libscfLoaded, libcontractLoaded);
- DRETURN((libscfLoaded == 1) ? 0 : 1);
+      DRETURN(1);
+   }
+   DPRINTF("once_libscf_init() -> useSMF=%d, libscf=%d, libcontract=%d\n", useSMF, libscfLoaded, libcontractLoaded);
+   DRETURN((libscfLoaded == 1) ? 0 : 1);
 }
 
 
@@ -295,43 +291,41 @@ static int once_libscf_init()
  *
  * @see #sge_smf_init_libs
  */
-static void init_contract_lib()
-{
- const char *func_name[] = {
-     "ct_tmpl_activate",
-     "ct_tmpl_clear",
-     "ct_tmpl_set_critical",
-     "ct_tmpl_set_informative",
-     "ct_ctl_abandon",
-     "ct_status_read",
-     "ct_status_free",
-     "ct_status_get_id",
-     "ct_pr_tmpl_set_fatal",
-     "ct_pr_tmpl_set_param",
-     nullptr
- };
+static void init_contract_lib() {
+   DENTER(TOP_LAYER);
 
- const void *func_ptr[] = {
-     &shared_contract_func__ct_tmpl_activate,
-     &shared_contract_func__ct_tmpl_clear,
-     &shared_contract_func__ct_tmpl_set_critical,
-     &shared_contract_func__ct_tmpl_set_informative,
-     &shared_contract_func__ct_ctl_abandon,
-     &shared_contract_func__ct_status_read,
-     &shared_contract_func__ct_status_free,
-     &shared_contract_func__ct_status_get_id,
-     &shared_contract_func__ct_pr_tmpl_set_fatal,
-     &shared_contract_func__ct_pr_tmpl_set_param,
-     nullptr
- };
+   const char *func_name[] = {
+           "ct_tmpl_activate",
+           "ct_tmpl_clear",
+           "ct_tmpl_set_critical",
+           "ct_tmpl_set_informative",
+           "ct_ctl_abandon",
+           "ct_status_read",
+           "ct_status_free",
+           "ct_status_get_id",
+           "ct_pr_tmpl_set_fatal",
+           "ct_pr_tmpl_set_param",
+           nullptr};
 
- DENTER(TOP_LAYER);
- if (sge_init_lib(contract_lib, "libcontract.so", func_name, func_ptr) == 0) {
-     libcontractLoaded = 1;
- } else {
-     libcontractLoaded = 0;
- }
- DRETURN_VOID;
+   const void *func_ptr[] = {
+           &shared_contract_func__ct_tmpl_activate,
+           &shared_contract_func__ct_tmpl_clear,
+           &shared_contract_func__ct_tmpl_set_critical,
+           &shared_contract_func__ct_tmpl_set_informative,
+           &shared_contract_func__ct_ctl_abandon,
+           &shared_contract_func__ct_status_read,
+           &shared_contract_func__ct_status_free,
+           &shared_contract_func__ct_status_get_id,
+           &shared_contract_func__ct_pr_tmpl_set_fatal,
+           &shared_contract_func__ct_pr_tmpl_set_param,
+           nullptr};
+
+   if (sge_init_lib(contract_lib, "libcontract.so", func_name, func_ptr) == 0) {
+      libcontractLoaded = 1;
+   } else {
+      libcontractLoaded = 0;
+   }
+   DRETURN_VOID;
 }
 
 
@@ -347,18 +341,17 @@ static void init_contract_lib()
  *
  * @see #sge_smf_init_libs
  */
-static void init_smf_libs()
-{
- DENTER(TOP_LAYER);
- /* Init shared libs ONCE */
- once_libscf_init();
- pthread_once(&libcontractcontrol, init_contract_lib);
- if (libscfLoaded && libcontractLoaded) {
-     libsLoaded = 1;
- } else {
-     libsLoaded = 0;
- }
- DRETURN_VOID;
+static void init_smf_libs() {
+   DENTER(TOP_LAYER);
+   /* Init shared libs ONCE */
+   once_libscf_init();
+   pthread_once(&libcontractcontrol, init_contract_lib);
+   if (libscfLoaded && libcontractLoaded) {
+      libsLoaded = 1;
+   } else {
+      libsLoaded = 0;
+   }
+   DRETURN_VOID;
 }
 
 
@@ -374,12 +367,11 @@ static void init_smf_libs()
  *
  * @see #sge_smf_init_libs, #sge_smf_temporary_disable_instance
  */
-int sge_smf_init_libs()
-{
- DENTER(TOP_LAYER);
- /* Init shared libs ONCE */
- pthread_once(&libscontrol, init_smf_libs);
- DRETURN((libsLoaded == 1) ? 0 : 1);
+int sge_smf_init_libs() {
+   DENTER(TOP_LAYER);
+   /* Init shared libs ONCE */
+   pthread_once(&libscontrol, init_smf_libs);
+   DRETURN((libsLoaded == 1) ? 0 : 1);
 }
 
 
@@ -396,23 +388,22 @@ int sge_smf_init_libs()
  *
  * @see #init_fmri, #get_fmri
  */
-static int is_valid_sge_fmri(char *fmri)
-{
- DENTER(TOP_LAYER);
+static int is_valid_sge_fmri(char *fmri) {
+   DENTER(TOP_LAYER);
 
- /* Test for execd */
- if (strncmp(EXECD_FMRI, fmri, strlen(EXECD_FMRI)) == 0) {
-     DRETURN(1);
- }
- /* Test for qmaster */
- if (strncmp(QMASTER_FMRI, fmri, strlen(QMASTER_FMRI)) == 0) {
-     DRETURN(1);
- }
- /* Test for shadowd */
- if (strncmp(SHADOWD_FMRI, fmri, strlen(SHADOWD_FMRI)) == 0) {
-     DRETURN(1);
- }
- DRETURN(0);
+   /* Test for execd */
+   if (strncmp(EXECD_FMRI, fmri, strlen(EXECD_FMRI)) == 0) {
+      DRETURN(1);
+   }
+   /* Test for qmaster */
+   if (strncmp(QMASTER_FMRI, fmri, strlen(QMASTER_FMRI)) == 0) {
+      DRETURN(1);
+   }
+   /* Test for shadowd */
+   if (strncmp(SHADOWD_FMRI, fmri, strlen(SHADOWD_FMRI)) == 0) {
+      DRETURN(1);
+   }
+   DRETURN(0);
 }
 
 /**
@@ -427,17 +418,16 @@ static int is_valid_sge_fmri(char *fmri)
  *
  * @see #get_fmri
  */
-static void init_fmri()
-{
- DENTER(TOP_LAYER);
- /* Will be set is started over SMF */
- char *temp = getenv("SMF_FMRI");
- /* We explicitly check the fmri for valid service names */
- if (temp && is_valid_sge_fmri(temp)) {
-     FMRI = sge_strdup(nullptr, temp);
-     DPRINTF("init_fmri() - FMRI set to %s\n", (FMRI==nullptr) ? "nullptr" : FMRI);
- }
- DRETURN_VOID;
+static void init_fmri() {
+   DENTER(TOP_LAYER);
+   /* Will be set is started over SMF */
+   char *temp = getenv("SMF_FMRI");
+   /* We explicitly check the fmri for valid service names */
+   if (temp && is_valid_sge_fmri(temp)) {
+      FMRI = sge_strdup(nullptr, temp);
+      DPRINTF("init_fmri() - FMRI set to %s\n", (FMRI == nullptr) ? "nullptr" : FMRI);
+   }
+   DRETURN_VOID;
 }
 
 
@@ -452,14 +442,13 @@ static void init_fmri()
  *
  * @see #init_use_smf
  */
-static char *get_fmri()
-{
- DENTER(TOP_LAYER);
- if (pthread_once(&FMRIcontrol, init_fmri) != 0) {
-     ERROR(MSG_SMF_PTHREAD_ONCE_FAILED_S, "get_fmri()");
- }
- DPRINTF("get_fmri() -> useSMF=%d, FMRI=%s\n", useSMF, (FMRI==nullptr) ? "nullptr" : FMRI);
- DRETURN(FMRI);
+static char *get_fmri() {
+   DENTER(TOP_LAYER);
+   if (pthread_once(&FMRIcontrol, init_fmri) != 0) {
+      ERROR(MSG_SMF_PTHREAD_ONCE_FAILED_S, "get_fmri()");
+   }
+   DPRINTF("get_fmri() -> useSMF=%d, FMRI=%s\n", useSMF, (FMRI == nullptr) ? "nullptr" : FMRI);
+   DRETURN(FMRI);
 }
 
 
@@ -475,25 +464,24 @@ static char *get_fmri()
  *
  * @see #sge_smf_used
  */
-static void init_use_smf()
-{
- struct stat buff;
- int fd, status;
+static void init_use_smf() {
+   DENTER(TOP_LAYER);
 
- DENTER(TOP_LAYER);
+   struct stat buff;
+   int fd, status;
 
- if (get_fmri() == nullptr) {
-     useSMF = 0;
-     DRETURN_VOID;
- }
- /* We check if we use SMF */
- fd = open("/etc/svc/volatile/repository_door", O_RDONLY);
- if (fd == -1) {
-     /* File does not exist - no SMF */
-     useSMF = 0;
- } else {
-     status = fstat(fd, &buff);
-     if (status == -1) {
+   if (get_fmri() == nullptr) {
+      useSMF = 0;
+      DRETURN_VOID;
+   }
+   /* We check if we use SMF */
+   fd = open("/etc/svc/volatile/repository_door", O_RDONLY);
+   if (fd == -1) {
+      /* File does not exist - no SMF */
+      useSMF = 0;
+   } else {
+      status = fstat(fd, &buff);
+      if (status == -1) {
          if (errno == ENOENT) {
              /* File does not exist - no SMF */
              useSMF = 0;
@@ -524,14 +512,13 @@ static void init_use_smf()
  *
  * @see #sge_smf_contract_fork
  */
-int sge_smf_used()
-{
- DENTER(TOP_LAYER);
- if (pthread_once(&useSMFcontrol, init_use_smf) != 0) {
-     ERROR(MSG_SMF_PTHREAD_ONCE_FAILED_S, "sge_smf_used()");
- }
- DPRINTF("sge_smf_used() -> useSMF=%d\n", useSMF);
- DRETURN(useSMF);
+int sge_smf_used() {
+   DENTER(TOP_LAYER);
+   if (pthread_once(&useSMFcontrol, init_use_smf) != 0) {
+      ERROR(MSG_SMF_PTHREAD_ONCE_FAILED_S, "sge_smf_used()");
+   }
+   DPRINTF("sge_smf_used() -> useSMF=%d\n", useSMF);
+   DRETURN(useSMF);
 }
 
 
@@ -546,12 +533,11 @@ int sge_smf_used()
  *
  * @see #sge_smf_contract_fork
  */
-static int contracts_pre_fork()
-{
-int fd;
-int err = 0;
+static int contracts_pre_fork() {
+   int fd;
+   int err = 0;
 
-/*
+   /*
  * EB: IMPORTANT: Logging in this function is not allowed
  *
  * Reason: This function is used in sge_peopen().
@@ -566,23 +552,23 @@ int err = 0;
  *         File based operations (like done in logging) are therefore not alled here.
  */
 
-fd = open64(CTFS_ROOT "/process/template", O_RDWR);
-if (fd == -1) {
-   return -1;
-}
-/*
+   fd = open64(CTFS_ROOT "/process/template", O_RDWR);
+   if (fd == -1) {
+      return -1;
+   }
+   /*
  * Execd doesn't do anything with the new contract.
  * Deliver no events, don't inherit, and allow it to be orphaned.
  */
-err |= shared_contract_func__ct_tmpl_set_critical(fd, 0);
-err |= shared_contract_func__ct_tmpl_set_informative(fd, 0);
-err |= shared_contract_func__ct_pr_tmpl_set_fatal(fd, CT_PR_EV_HWERR);
-err |= shared_contract_func__ct_pr_tmpl_set_param(fd, CT_PR_PGRPONLY);
-if (err || shared_contract_func__ct_tmpl_activate(fd)) {
-   close(fd);
-   return -1;
-}
-return fd;
+   err |= shared_contract_func__ct_tmpl_set_critical(fd, 0);
+   err |= shared_contract_func__ct_tmpl_set_informative(fd, 0);
+   err |= shared_contract_func__ct_pr_tmpl_set_fatal(fd, CT_PR_EV_HWERR);
+   err |= shared_contract_func__ct_pr_tmpl_set_param(fd, CT_PR_PGRPONLY);
+   if (err || shared_contract_func__ct_tmpl_activate(fd)) {
+      close(fd);
+      return -1;
+   }
+   return fd;
 }
 
 
@@ -603,14 +589,13 @@ return fd;
  *
  * @see #sge_smf_contract_fork
  */
-static int contracts_post_fork(int ctfd, int pid, char *err_str, int err_length)
-{
-char path[PATH_MAX]; /* PATH_MAX defined in limits.h */
-int cfd, n;
-ct_stathdl_t st;
-ctid_t latest;
+static int contracts_post_fork(int ctfd, int pid, char *err_str, int err_length) {
+   char path[PATH_MAX]; /* PATH_MAX defined in limits.h */
+   int cfd, n;
+   ct_stathdl_t st;
+   ctid_t latest;
 
-/*
+   /*
  * EB: IMPORTANT: Logging in this function is not allowed
  *
  * Reason: This function is used in sge_peopen().
@@ -625,14 +610,14 @@ ctid_t latest;
  *         File based operations (like done in logging) are therefore not alled here.
  */
 
-/* Clear active template, abandon latest contract. */
-if (ctfd == -1) {
-   return -1;
-}
-shared_contract_func__ct_tmpl_clear(ctfd);
-close(ctfd);
-if (pid == 0) {
-   /* We modify the child env not to contain SMF vars (not part of the service) */
+   /* Clear active template, abandon latest contract. */
+   if (ctfd == -1) {
+      return -1;
+   }
+   shared_contract_func__ct_tmpl_clear(ctfd);
+   close(ctfd);
+   if (pid == 0) {
+      /* We modify the child env not to contain SMF vars (not part of the service) */
 #if 0
    /*
     * are the unset functions necessary for smf? touching the environment is a real
@@ -697,12 +682,11 @@ return pid;
  *
  * @note MT-NOTES: sge_smf_contract_fork is not MT-safe
  */
-int sge_smf_contract_fork(char *err_str, int err_length)
-{
-int pid;
-int ctfd;
+int sge_smf_contract_fork(char *err_str, int err_length) {
+   int pid;
+   int ctfd;
 
-/*
+   /*
  * EB: IMPORTANT: Logging in this function is not allowed
  *
  * Reason: This function is used in sge_peopen().
@@ -717,32 +701,32 @@ int ctfd;
  *         File based operations (like done in logging) are therefore not alled here.
  */
 
-if (sge_smf_used() == 0) {
-   pid=fork();
-   return pid;
-} else {
-   /* Check if shared libs were loaded */
-   if (libsLoaded == 0) {
-      snprintf(err_str, err_length, MSG_SMF_LOAD_LIB_FAILED);
-      return -4;
-   }
-   /* Create new contract template */
-   ctfd = contracts_pre_fork();
-   if (ctfd == -1) {
-      /* Could not create new contract template */
-      snprintf(err_str, err_length, MSG_SMF_CONTRACT_CREATE_FAILED);
-      return -2;
-   } else {
+   if (sge_smf_used() == 0) {
       pid = fork();
-      /* Dispose of the template and immediatelly abandon the contract */
-      pid = contracts_post_fork(ctfd, pid, err_str, err_length);
-      if (pid == -2) {
-         /* post_fork failed */
-         return -3;
+      return pid;
+   } else {
+      /* Check if shared libs were loaded */
+      if (libsLoaded == 0) {
+         snprintf(err_str, err_length, MSG_SMF_LOAD_LIB_FAILED);
+         return -4;
+      }
+      /* Create new contract template */
+      ctfd = contracts_pre_fork();
+      if (ctfd == -1) {
+         /* Could not create new contract template */
+         snprintf(err_str, err_length, MSG_SMF_CONTRACT_CREATE_FAILED);
+         return -2;
+      } else {
+         pid = fork();
+         /* Dispose of the template and immediatelly abandon the contract */
+         pid = contracts_post_fork(ctfd, pid, err_str, err_length);
+         if (pid == -2) {
+            /* post_fork failed */
+            return -3;
+         }
       }
    }
-}
-return pid;
+   return pid;
 }
 
 
@@ -762,32 +746,32 @@ return pid;
  *
  * @see `execd_exit_func()`
  */
-void sge_smf_temporary_disable_instance()
-{
- uid_t old_euid = 0;
- int change_user = 1;
- DENTER(TOP_LAYER);
- if (once_libscf_init() != 0) {
-     ERROR(MSG_SMF_LOAD_LIBSCF_FAILED_S, "sge_smf_temporary_disable_instance()");
-     DRETURN_VOID;
- }
- /* We need to be root */
- if (!sge_is_start_user_superuser()) {
-    change_user = 0;
- } else {
-    old_euid = geteuid();
-    seteuid(SGE_SUPERUSER_UID);
- }
- int ret = shared_scf_func__smf_disable_instance(FMRI, SMF_TEMPORARY);
- if (change_user == 1) {
-    seteuid(old_euid);
- }
- if (ret != 0 ) {
-     ERROR(MSG_SMF_DISABLE_FAILED_SSUU, FMRI,shared_scf_func__scf_strerror(shared_scf_func__scf_error()), geteuid(), getuid());
-     DRETURN_VOID;
- }
- DPRINTF("Service %s temporary disabled.\n", FMRI);
- DRETURN_VOID;
+void sge_smf_temporary_disable_instance() {
+   DENTER(TOP_LAYER);
+
+   uid_t old_euid = 0;
+   int change_user = 1;
+   if (once_libscf_init() != 0) {
+      ERROR(MSG_SMF_LOAD_LIBSCF_FAILED_S, "sge_smf_temporary_disable_instance()");
+      DRETURN_VOID;
+   }
+   /* We need to be root */
+   if (!sge_is_start_user_superuser()) {
+      change_user = 0;
+   } else {
+      old_euid = geteuid();
+      seteuid(SGE_SUPERUSER_UID);
+   }
+   int ret = shared_scf_func__smf_disable_instance(FMRI, SMF_TEMPORARY);
+   if (change_user == 1) {
+      seteuid(old_euid);
+   }
+   if (ret != 0) {
+      ERROR(MSG_SMF_DISABLE_FAILED_SSUU, FMRI, shared_scf_func__scf_strerror(shared_scf_func__scf_error()), geteuid(), getuid());
+      DRETURN_VOID;
+   }
+   DPRINTF("Service %s temporary disabled.\n", FMRI);
+   DRETURN_VOID;
 }
 
 
@@ -818,30 +802,29 @@ char *sge_smf_get_instance_state() {
  *
  * @see #sge_smf_get_instance_next_state
  */
-char *sge_smf_get_instance_next_state()
-{
- scf_simple_prop_t *prop;
- const char *state_str;
- char *ret;
+char *sge_smf_get_instance_next_state() {
+   DENTER(TOP_LAYER);
 
- DENTER(TOP_LAYER);
+   scf_simple_prop_t *prop;
+   const char *state_str;
+   char *ret;
 
- if ((prop = shared_scf_func__scf_simple_prop_get(nullptr, FMRI, SCF_PG_RESTARTER, SCF_PROPERTY_NEXT_STATE)) == nullptr) {
-    DRETURN(nullptr);
- }
+   if ((prop = shared_scf_func__scf_simple_prop_get(nullptr, FMRI, SCF_PG_RESTARTER, SCF_PROPERTY_NEXT_STATE)) == nullptr) {
+      DRETURN(nullptr);
+   }
 
- if ((state_str = shared_scf_func__scf_simple_prop_next_astring(prop)) == nullptr) {
-    shared_scf_func__scf_simple_prop_free(prop);
-    DRETURN(nullptr);
- }
+   if ((state_str = shared_scf_func__scf_simple_prop_next_astring(prop)) == nullptr) {
+      shared_scf_func__scf_simple_prop_free(prop);
+      DRETURN(nullptr);
+   }
 
- if ((ret = strdup(state_str)) == nullptr) {
-     ERROR("Out of memory");
-     DRETURN(nullptr);
- }
+   if ((ret = strdup(state_str)) == nullptr) {
+      ERROR("Out of memory");
+      DRETURN(nullptr);
+   }
 
- shared_scf_func__scf_simple_prop_free(prop);
- DRETURN(ret);
+   shared_scf_func__scf_simple_prop_free(prop);
+   DRETURN(ret);
 }
 
 #else

@@ -138,16 +138,16 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
 #if 0 /* EB: DEBUG: enable debugging for qinstance_modify_attribute() */
 #define QINSTANCE_MODIFY_DEBUG
 #endif
-   bool ret = true;
-   const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
-   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
-   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
-
 #ifdef QINSTANCE_MODIFY_DEBUG
    DENTER(TOP_LAYER);
 #else
    DENTER(BASIS_LAYER);
 #endif
+
+   bool ret = true;
+   const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
+   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
 
    if (this_elem != nullptr && cqueue != nullptr &&
        attribute_name != NoName && cqueue_attibute_name != NoName) {
@@ -701,6 +701,8 @@ bool
 qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
                                   uint32_t transition, bool force_transition, const char *user, const char *host,
                                   bool is_operator, bool is_owner, monitoring_t *monitor, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    dstring buffer = DSTRING_INIT;
    const char *qinstance_name = qinstance_get_name(this_elem, &buffer);
@@ -726,7 +728,6 @@ qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
            {QI_DO_NOTHING, 0, nullptr, true, nullptr, true}
    };
 
-   DENTER(TOP_LAYER);
    if (is_owner || is_operator) {
       int i = 0;
 
@@ -842,9 +843,9 @@ qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
  */
 bool
 qinstance_change_state_on_calendar(lListElem *this_elem, const lListElem *calendar, monitoring_t *monitor, uint64_t gdi_session) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (this_elem != nullptr && calendar != nullptr) {
       lList *state_changes_list = nullptr;
@@ -908,13 +909,13 @@ qinstance_change_state_on_calendar_all(const char *cal_name, uint32_t cal_order,
  */
 static bool qinstance_change_state_on_calender_(lListElem *this_elem, uint32_t cal_order,
                                                 lList **state_change_list, monitoring_t *monitor, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    bool old_cal_disabled = qinstance_state_is_cal_disabled(this_elem);
    bool old_cal_suspended = qinstance_state_is_cal_suspended(this_elem);
    bool new_cal_disabled = (cal_order == QI_DO_CAL_DISABLE) ? true : false;
    bool new_cal_suspended = (cal_order == QI_DO_CAL_SUSPEND) ? true : false;
-
-   DENTER(TOP_LAYER);
 
    lSetList(this_elem, QU_state_changes, *state_change_list);
    *state_change_list = nullptr;
@@ -1159,14 +1160,14 @@ sge_qmaster_qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state, 
  */
 bool
 sge_qmaster_qinstance_set_initial_state(lListElem *this_elem, uint64_t gdi_session) {
-   bool ret = false;
-   const char *state_string = lGetString(this_elem, QU_initial_state);
-
 #ifdef QINSTANCE_MODIFY_DEBUG
    DENTER(TOP_LAYER);
 #else
    DENTER(BASIS_LAYER);
 #endif
+
+   bool ret = false;
+   const char *state_string = lGetString(this_elem, QU_initial_state);
 
    if (state_string != nullptr && strcmp(state_string, "default")) {
       bool do_disable = strcmp(state_string, "disabled") == 0 ? true : false;
@@ -1194,9 +1195,9 @@ sge_qmaster_qinstance_set_initial_state(lListElem *this_elem, uint64_t gdi_sessi
 bool
 qinstance_reinit_consumable_actual_list(lListElem *this_elem,
                                         lList **answer_list) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (this_elem != nullptr) {
       const char *name = lGetString(this_elem, QU_full_name);

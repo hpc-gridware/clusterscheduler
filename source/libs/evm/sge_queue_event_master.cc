@@ -57,9 +57,7 @@
  * @param type the event type, one of the `sgeE_QINSTANCE_*` values
  * @param gdi_session the session the change belongs to, for read-after-write
  */
-void
-qinstance_add_event(lListElem *this_elem, ev_event type, uint64_t gdi_session)
-{
+void qinstance_add_event(lListElem *this_elem, ev_event type, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    sge_add_event(0, type, 0, 0, lGetString(this_elem, QU_qname), lGetHost(this_elem, QU_qhostname), nullptr, this_elem, gdi_session);
    DRETURN_VOID;
@@ -72,9 +70,7 @@ qinstance_add_event(lListElem *this_elem, ev_event type, uint64_t gdi_session)
  * @param type the event type, one of the `sgeE_CQUEUE_*` values
  * @param gdi_session the session the change belongs to, for read-after-write
  */
-void
-cqueue_add_event(lListElem *this_elem, ev_event type, uint64_t gdi_session)
-{
+void cqueue_add_event(lListElem *this_elem, ev_event type, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    sge_add_event(0, type, 0, 0, lGetString(this_elem, CQ_name), nullptr, nullptr, this_elem, gdi_session);
    DRETURN_VOID;

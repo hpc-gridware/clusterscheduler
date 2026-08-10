@@ -537,8 +537,7 @@ static tConfEntry conf_entries[] = {
  * @return CONF_PARAM_VALUE_LIST, CONF_PARAM_NAMEVALUE_LIST, or CONF_PARAM_SCALAR
  */
 conf_param_list_type_t
-config_param_list_type(const char *name)
-{
+config_param_list_type(const char *name) {
    if (name == nullptr) {
       return CONF_PARAM_SCALAR;
    }
@@ -574,8 +573,7 @@ config_param_list_type(const char *name)
  * @return the complex entry type (INT/TIME), or NONE for a plain string parameter
  */
 ocs::CEntry::Type
-config_param_value_type(const char *name)
-{
+config_param_value_type(const char *name) {
    if (name == nullptr) {
       return ocs::CEntry::Type::NONE;
    }
@@ -611,13 +609,12 @@ config_param_value_type(const char *name)
  * @param cell_root The root directory of the cell.
  * @param lpCfg Pointer to the configuration list.
  */
-static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg)
-{
+static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg) {
+   DENTER(BASIS_LAYER);
+
    int i = 0;
    lListElem *ep = nullptr;
    tConfEntry *pConf = nullptr;
-
-   DENTER(BASIS_LAYER);
 
    pConf = getConfEntry("execd_spool_dir", conf_entries);
    if ( pConf->value == nullptr ) {
@@ -693,9 +690,9 @@ chg_conf_val(lList *lp_cfg, const char *name, char **cpp, uint32_t *val, ocs::CE
  */
 static void
 setConfFromCull(lList *lpCfg) {
-   const lListElem *ep;
-
    DENTER(BASIS_LAYER);
+
+   const lListElem *ep;
 
    /* get following logging entries logged if log_info is selected */
    chg_conf_val(lpCfg, "loglevel", nullptr, &Master_Config.loglevel, ocs::CEntry::Type::TYPE_LOG);
@@ -830,12 +827,13 @@ getConfEntry(const char *name, tConfEntry conf[]) {
  * MT-NOTE: merge_configuration() is MT safe.
  */
 int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_root, const lListElem *global, const lListElem *local, lList **lpp) {
+   DENTER(BASIS_LAYER);
+
    const lList *cl;
    const lListElem *elem;
    lListElem *ep2;
    lList *mlist = nullptr;
 
-   DENTER(BASIS_LAYER);
    if (lpp == nullptr) {
       lpp = &mlist;
    }
@@ -1582,8 +1580,7 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
  * @note
  * MT-NOTE: sge_show_conf() is MT safe.
  */
-void sge_show_conf()
-{
+void sge_show_conf() {
    DENTER(BASIS_LAYER);
    dstring dstr = DSTRING_INIT;
 
@@ -1680,7 +1677,6 @@ void sge_show_conf()
  * MT-NOTE: clean_conf() is not MT safe, caller needs LOCK_MASTER_CONF as write lock.
  */
 static void clean_conf() {
-
    DENTER(BASIS_LAYER);
 
    sge_free(&Master_Config.execd_spool_dir);
@@ -1741,8 +1737,7 @@ static void clean_conf() {
  *
  * @param thread_name Thread name, nullptr for all threads.
  */
-void conf_update_thread_profiling(const char *thread_name)
-{
+void conf_update_thread_profiling(const char *thread_name) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    if (thread_name == nullptr) {
@@ -1782,9 +1777,10 @@ void conf_update_thread_profiling(const char *thread_name)
  * @return the configured value
  */
 char* mconf_get_execd_spool_dir() {
+   DENTER(BASIS_LAYER);
+
    char* execd_spool_dir = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    execd_spool_dir = sge_strdup(execd_spool_dir, Master_Config.execd_spool_dir);
@@ -1804,9 +1800,10 @@ char* mconf_get_execd_spool_dir() {
  * @return the configured value
  */
 char* mconf_get_mailer() {
+   DENTER(BASIS_LAYER);
+
    char* mailer = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    mailer = sge_strdup(mailer, Master_Config.mailer);
@@ -1826,9 +1823,10 @@ char* mconf_get_mailer() {
  * @return the configured value
  */
 char* mconf_get_xterm() {
+   DENTER(BASIS_LAYER);
+
    char* xterm = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    xterm = sge_strdup(xterm, Master_Config.xterm);
@@ -1849,9 +1847,10 @@ char* mconf_get_xterm() {
  * @return the configured value
  */
 char* mconf_get_load_sensor() {
+   DENTER(BASIS_LAYER);
+
    char* load_sensor = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    load_sensor = sge_strdup(load_sensor, Master_Config.load_sensor);
@@ -1871,9 +1870,10 @@ char* mconf_get_load_sensor() {
  * @return the configured value
  */
 char* mconf_get_prolog() {
+   DENTER(BASIS_LAYER);
+
    char* prolog = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    prolog = sge_strdup(prolog, Master_Config.prolog);
@@ -1893,9 +1893,10 @@ char* mconf_get_prolog() {
  * @return the configured value
  */
 char* mconf_get_epilog() {
+   DENTER(BASIS_LAYER);
+
    char* epilog = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    epilog = sge_strdup(epilog, Master_Config.epilog);
@@ -1915,9 +1916,10 @@ char* mconf_get_epilog() {
  * @return the configured value
  */
 char* mconf_get_shell_start_mode() {
+   DENTER(BASIS_LAYER);
+
    char* shell_start_mode = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    shell_start_mode = sge_strdup(shell_start_mode, Master_Config.shell_start_mode);
@@ -1937,9 +1939,10 @@ char* mconf_get_shell_start_mode() {
  * @return the configured value
  */
 char* mconf_get_login_shells() {
+   DENTER(BASIS_LAYER);
+
    char* login_shells = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    login_shells = sge_strdup(login_shells, Master_Config.login_shells);
@@ -1957,9 +1960,10 @@ char* mconf_get_login_shells() {
  * @return the configured value
  */
 uint32_t mconf_get_min_uid() {
+   DENTER(BASIS_LAYER);
+
    uint32_t min_uid;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    min_uid = Master_Config.min_uid;
@@ -1977,9 +1981,10 @@ uint32_t mconf_get_min_uid() {
  * @return the configured value
  */
 uint32_t mconf_get_min_gid() {
+   DENTER(BASIS_LAYER);
+
    uint32_t min_gid;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    min_gid = Master_Config.min_gid;
@@ -1997,9 +2002,10 @@ uint32_t mconf_get_min_gid() {
  * @return the configured value
  */
 uint32_t mconf_get_load_report_time() {
+   DENTER(BASIS_LAYER);
+
    uint32_t load_report_time;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    load_report_time = Master_Config.load_report_time;
@@ -2017,9 +2023,10 @@ uint32_t mconf_get_load_report_time() {
  * @return the configured value
  */
 uint32_t mconf_get_max_unheard() {
+   DENTER(BASIS_LAYER);
+
    uint32_t max_unheard;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    max_unheard = Master_Config.max_unheard;
@@ -2037,9 +2044,10 @@ uint32_t mconf_get_max_unheard() {
  * @return the configured value
  */
 uint32_t mconf_get_loglevel() {
+   DENTER(BASIS_LAYER);
+
    uint32_t loglevel;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    loglevel = Master_Config.loglevel;
@@ -2059,9 +2067,10 @@ uint32_t mconf_get_loglevel() {
  * @return the configured value
  */
 char* mconf_get_enforce_project() {
+   DENTER(BASIS_LAYER);
+
    char* enforce_project = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    enforce_project = sge_strdup(enforce_project, Master_Config.enforce_project);
@@ -2081,9 +2090,10 @@ char* mconf_get_enforce_project() {
  * @return the configured value
  */
 char* mconf_get_enforce_user() {
+   DENTER(BASIS_LAYER);
+
    char* enforce_user = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    enforce_user = sge_strdup(enforce_user, Master_Config.enforce_user);
@@ -2104,9 +2114,10 @@ char* mconf_get_enforce_user() {
  * @return the configured value
  */
 char* mconf_get_administrator_mail() {
+   DENTER(BASIS_LAYER);
+
    char* administrator_mail = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    administrator_mail = sge_strdup(administrator_mail, Master_Config.administrator_mail);
@@ -2126,9 +2137,10 @@ char* mconf_get_administrator_mail() {
  * @return the configured value
  */
 char* mconf_get_mail_tag() {
+   DENTER(BASIS_LAYER);
+
    char* mail_tag = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    mail_tag = sge_strdup(mail_tag, Master_Config.mail_tag);
@@ -2146,9 +2158,10 @@ char* mconf_get_mail_tag() {
  * @return the configured value
  */
 lList* mconf_get_user_lists() {
+   DENTER(BASIS_LAYER);
+
    lList* user_lists = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    user_lists = lCopyList("user_lists", Master_Config.user_lists);
@@ -2166,9 +2179,10 @@ lList* mconf_get_user_lists() {
  * @return the configured value
  */
 lList* mconf_get_xuser_lists() {
+   DENTER(BASIS_LAYER);
+
    lList* xuser_lists = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    xuser_lists = lCopyList("xuser_lists", Master_Config.xuser_lists);
@@ -2186,9 +2200,10 @@ lList* mconf_get_xuser_lists() {
  * @return the configured value
  */
 lList* mconf_get_projects() {
+   DENTER(BASIS_LAYER);
+
    lList* projects = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    projects = lCopyList("projects", Master_Config.projects);
@@ -2206,9 +2221,10 @@ lList* mconf_get_projects() {
  * @return the configured value
  */
 lList* mconf_get_xprojects() {
+   DENTER(BASIS_LAYER);
+
    lList* xprojects = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    xprojects = lCopyList("xprojects", Master_Config.xprojects);
@@ -2228,9 +2244,10 @@ lList* mconf_get_xprojects() {
  * @return the configured value
  */
 char* mconf_get_set_token_cmd() {
+   DENTER(BASIS_LAYER);
+
    char* set_token_cmd = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    set_token_cmd = sge_strdup(set_token_cmd, Master_Config.set_token_cmd);
@@ -2250,9 +2267,10 @@ char* mconf_get_set_token_cmd() {
  * @return the configured value
  */
 char* mconf_get_pag_cmd() {
+   DENTER(BASIS_LAYER);
+
    char* pag_cmd = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    pag_cmd = sge_strdup(pag_cmd, Master_Config.pag_cmd);
@@ -2270,9 +2288,10 @@ char* mconf_get_pag_cmd() {
  * @return the configured value
  */
 uint32_t mconf_get_token_extend_time() {
+   DENTER(BASIS_LAYER);
+
    uint32_t token_extend_time;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    token_extend_time = Master_Config.token_extend_time;
@@ -2292,9 +2311,10 @@ uint32_t mconf_get_token_extend_time() {
  * @return the configured value
  */
 char* mconf_get_shepherd_cmd() {
+   DENTER(BASIS_LAYER);
+
    char* shepherd_cmd = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    shepherd_cmd = sge_strdup(shepherd_cmd, Master_Config.shepherd_cmd);
@@ -2314,9 +2334,10 @@ char* mconf_get_shepherd_cmd() {
  * @return the configured value
  */
 char* mconf_get_qmaster_params() {
+   DENTER(BASIS_LAYER);
+
    char* qmaster_params = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    qmaster_params = sge_strdup(qmaster_params, Master_Config.qmaster_params);
@@ -2336,9 +2357,10 @@ char* mconf_get_qmaster_params() {
  * @return the configured value
  */
 char* mconf_get_execd_params() {
+   DENTER(BASIS_LAYER);
+
    char* execd_params = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    execd_params = sge_strdup(execd_params, Master_Config.execd_params);
@@ -2358,9 +2380,10 @@ char* mconf_get_execd_params() {
  * @return the configured value
  */
 char* mconf_get_reporting_params() {
+   DENTER(BASIS_LAYER);
+
    char* reporting_params = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    reporting_params = sge_strdup(reporting_params, Master_Config.reporting_params);
@@ -2420,9 +2443,10 @@ char* mconf_get_jsv_params() {
  * @return the configured value
  */
 char* mconf_get_gid_range() {
+   DENTER(BASIS_LAYER);
+
    char* gid_range = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    gid_range = sge_strdup(gid_range, Master_Config.gid_range);
@@ -2442,9 +2466,10 @@ char* mconf_get_gid_range() {
  * @return the configured value
  */
 char* mconf_get_port_range() {
+   DENTER(BASIS_LAYER);
+
    char* port_range = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    port_range = sge_strdup(port_range, Master_Config.port_range);
@@ -2464,9 +2489,10 @@ char* mconf_get_port_range() {
  * @return the configured value
  */
 char* mconf_get_qlogin_daemon() {
+   DENTER(BASIS_LAYER);
+
    char* qlogin_daemon = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    qlogin_daemon = sge_strdup(qlogin_daemon, Master_Config.qlogin_daemon);
@@ -2486,9 +2512,10 @@ char* mconf_get_qlogin_daemon() {
  * @return the configured value
  */
 char* mconf_get_qlogin_command() {
+   DENTER(BASIS_LAYER);
+
    char* qlogin_command = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    qlogin_command = sge_strdup(qlogin_command, Master_Config.qlogin_command);
@@ -2508,9 +2535,10 @@ char* mconf_get_qlogin_command() {
  * @return the configured value
  */
 char* mconf_get_rsh_daemon() {
+   DENTER(BASIS_LAYER);
+
    char* rsh_daemon = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    rsh_daemon = sge_strdup(rsh_daemon, Master_Config.rsh_daemon);
@@ -2526,8 +2554,7 @@ char* mconf_get_rsh_daemon() {
  *
  * @param new_config the new value
  */
-void mconf_set_new_config(bool new_config)
-{
+void mconf_set_new_config(bool new_config) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
@@ -2547,9 +2574,10 @@ void mconf_set_new_config(bool new_config)
  * @return the configured value
  */
 bool mconf_is_new_config() {
+   DENTER(BASIS_LAYER);
+
    bool is;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    is = is_new_config;
@@ -2569,9 +2597,10 @@ bool mconf_is_new_config() {
  * @return the configured value
  */
 char* mconf_get_rsh_command() {
+   DENTER(BASIS_LAYER);
+
    char* rsh_command = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    rsh_command = sge_strdup(rsh_command, Master_Config.rsh_command);
@@ -2591,9 +2620,10 @@ char* mconf_get_rsh_command() {
  * @return the configured value
  */
 char* mconf_get_jsv_url() {
+   DENTER(BASIS_LAYER);
+
    char* jsv_url = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    jsv_url = sge_strdup(jsv_url, Master_Config.jsv_url);
@@ -2614,9 +2644,10 @@ char* mconf_get_jsv_url() {
  * @return the configured value
  */
 char* mconf_get_jsv_allowed_mod() {
+   DENTER(BASIS_LAYER);
+
    char* jsv_allowed_mod = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    jsv_allowed_mod = sge_strdup(jsv_allowed_mod, Master_Config.jsv_allowed_mod);
@@ -2656,9 +2687,10 @@ char* mconf_get_gdi_request_limits() {
  * @return the configured value
  */
 char* mconf_get_rlogin_daemon() {
+   DENTER(BASIS_LAYER);
+
    char* rlogin_daemon = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    rlogin_daemon = sge_strdup(rlogin_daemon, Master_Config.rlogin_daemon);
@@ -2678,9 +2710,10 @@ char* mconf_get_rlogin_daemon() {
  * @return the configured value
  */
 char* mconf_get_rlogin_command() {
+   DENTER(BASIS_LAYER);
+
    char* rlogin_command = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    rlogin_command = sge_strdup(rlogin_command, Master_Config.rlogin_command);
@@ -2698,9 +2731,10 @@ char* mconf_get_rlogin_command() {
  * @return the configured value
  */
 uint32_t mconf_get_reschedule_unknown() {
+   DENTER(BASIS_LAYER);
+
    uint32_t reschedule_unknown;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    reschedule_unknown = Master_Config.reschedule_unknown;
@@ -2718,9 +2752,10 @@ uint32_t mconf_get_reschedule_unknown() {
  * @return the configured value
  */
 uint32_t mconf_get_max_aj_instances() {
+   DENTER(BASIS_LAYER);
+
    uint32_t max_aj_instances;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    max_aj_instances = Master_Config.max_aj_instances;
@@ -2738,9 +2773,10 @@ uint32_t mconf_get_max_aj_instances() {
  * @return the configured value
  */
 uint32_t mconf_get_max_aj_tasks() {
+   DENTER(BASIS_LAYER);
+
    uint32_t max_aj_tasks;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    max_aj_tasks = Master_Config.max_aj_tasks;
@@ -2758,9 +2794,10 @@ uint32_t mconf_get_max_aj_tasks() {
  * @return the configured value
  */
 uint32_t mconf_get_max_u_jobs() {
+   DENTER(BASIS_LAYER);
+
    uint32_t max_u_jobs;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    max_u_jobs = Master_Config.max_u_jobs;
@@ -2778,9 +2815,10 @@ uint32_t mconf_get_max_u_jobs() {
  * @return the configured value
  */
 uint32_t mconf_get_max_jobs() {
+   DENTER(BASIS_LAYER);
+
    uint32_t max_jobs;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    max_jobs = Master_Config.max_jobs;
@@ -2798,9 +2836,10 @@ uint32_t mconf_get_max_jobs() {
  * @return the configured value
  */
 uint32_t mconf_get_max_advance_reservations() {
+   DENTER(BASIS_LAYER);
+
    uint32_t max_advance_reservations;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    max_advance_reservations = Master_Config.max_advance_reservations;
@@ -2860,9 +2899,10 @@ uint32_t mconf_get_finished_jobs_max() {
  * @return the configured value
  */
 uint32_t mconf_get_auto_user_fshare() {
+   DENTER(BASIS_LAYER);
+
    uint32_t auto_user_fshare;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    auto_user_fshare = Master_Config.auto_user_fshare;
@@ -2880,9 +2920,10 @@ uint32_t mconf_get_auto_user_fshare() {
  * @return the configured value
  */
 uint32_t mconf_get_auto_user_oticket() {
+   DENTER(BASIS_LAYER);
+
    uint32_t auto_user_oticket;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    auto_user_oticket = Master_Config.auto_user_oticket;
@@ -2902,9 +2943,10 @@ uint32_t mconf_get_auto_user_oticket() {
  * @return the configured value
  */
 char* mconf_get_auto_user_default_project() {
+   DENTER(BASIS_LAYER);
+
    char* auto_user_default_project = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    auto_user_default_project = sge_strdup(auto_user_default_project, Master_Config.auto_user_default_project);
@@ -2922,9 +2964,10 @@ char* mconf_get_auto_user_default_project() {
  * @return the configured value
  */
 uint32_t mconf_get_auto_user_delete_time() {
+   DENTER(BASIS_LAYER);
+
    uint32_t auto_user_delete_time;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    auto_user_delete_time = Master_Config.auto_user_delete_time;
@@ -2944,9 +2987,10 @@ uint32_t mconf_get_auto_user_delete_time() {
  * @return the configured value
  */
 char* mconf_get_delegated_file_staging() {
+   DENTER(BASIS_LAYER);
+
    char* delegated_file_staging = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    delegated_file_staging = sge_strdup(delegated_file_staging, Master_Config.delegated_file_staging);
@@ -2966,9 +3010,10 @@ char* mconf_get_delegated_file_staging() {
  * @return the configured value
  */
 bool mconf_is_monitor_message() {
+   DENTER(BASIS_LAYER);
+
   bool is;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    is = is_monitor_message;
@@ -2986,9 +3031,10 @@ bool mconf_is_monitor_message() {
  * @return the configured value
  */
 bool mconf_get_use_qidle() {
+   DENTER(BASIS_LAYER);
+
    bool idle;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    idle = use_qidle;
@@ -3006,9 +3052,10 @@ bool mconf_get_use_qidle() {
  * @return the configured value
  */
 bool mconf_get_forbid_reschedule() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = forbid_reschedule;
@@ -3026,9 +3073,10 @@ bool mconf_get_forbid_reschedule() {
  * @return the configured value
  */
 bool mconf_get_forbid_apperror() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = forbid_apperror;
@@ -3046,9 +3094,10 @@ bool mconf_get_forbid_apperror() {
  * @return the configured value
  */
 bool mconf_get_do_credentials() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = do_credentials;
@@ -3066,9 +3115,10 @@ bool mconf_get_do_credentials() {
  * @return the configured value
  */
 bool mconf_get_do_authentication() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = do_authentication;
@@ -3086,9 +3136,10 @@ bool mconf_get_do_authentication() {
  * @return the configured value
  */
 bool mconf_get_acct_reserved_usage() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = acct_reserved_usage;
@@ -3106,9 +3157,10 @@ bool mconf_get_acct_reserved_usage() {
  * @return the configured value
  */
 bool mconf_get_sharetree_reserved_usage() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = sharetree_reserved_usage;
@@ -3126,9 +3178,10 @@ bool mconf_get_sharetree_reserved_usage() {
  * @return the configured value
  */
 keep_active_t mconf_get_keep_active() {
+   DENTER(BASIS_LAYER);
+
    keep_active_t ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = keep_active;
@@ -3166,9 +3219,10 @@ usage_collection_t mconf_get_usage_collection() {
  * @return the configured value
  */
 bool mconf_get_enable_mem_details() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = enable_mem_details;
@@ -3185,9 +3239,10 @@ bool mconf_get_enable_mem_details() {
  * @return the configured value
  */
 bool mconf_get_enable_addgrp_kill() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = enable_addgrp_kill;
@@ -3228,9 +3283,10 @@ uint64_t mconf_get_pdc_interval() {
  * @return the configured value
  */
 bool mconf_get_enable_reschedule_kill() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = enable_reschedule_kill;
@@ -3247,9 +3303,10 @@ bool mconf_get_enable_reschedule_kill() {
  * @return the configured value
  */
 bool mconf_get_enable_reschedule_slave() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = enable_reschedule_slave;
@@ -3266,9 +3323,10 @@ bool mconf_get_enable_reschedule_slave() {
  * @return the configured value
  */
 bool mconf_get_old_reschedule_behavior() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = old_reschedule_behavior;
@@ -3317,9 +3375,10 @@ std::string mconf_get_gperf_threads() {
  * @return the configured value
  */
 bool mconf_get_old_reschedule_behavior_array_job() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = old_reschedule_behavior_array_job;
@@ -3336,9 +3395,10 @@ bool mconf_get_old_reschedule_behavior_array_job() {
  * @return the configured value
  */
 bool mconf_get_simulate_execds() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = simulate_execds;
@@ -3356,9 +3416,10 @@ bool mconf_get_simulate_execds() {
  * @return the configured value
  */
 bool mconf_get_simulate_jobs() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = simulate_jobs;
@@ -3376,9 +3437,10 @@ bool mconf_get_simulate_jobs() {
  * @return the configured value
  */
 long mconf_get_ptf_max_priority() {
+   DENTER(BASIS_LAYER);
+
    long ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = ptf_max_priority;
@@ -3396,9 +3458,10 @@ long mconf_get_ptf_max_priority() {
  * @return the configured value
  */
 long mconf_get_ptf_min_priority() {
+   DENTER(BASIS_LAYER);
+
    long ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = ptf_min_priority;
@@ -3416,9 +3479,10 @@ long mconf_get_ptf_min_priority() {
  * @return the configured value
  */
 bool mconf_get_use_qsub_gid() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = use_qsub_gid;
@@ -3436,9 +3500,10 @@ bool mconf_get_use_qsub_gid() {
  * @return the configured value
  */
 int mconf_get_notify_susp_type() {
+   DENTER(BASIS_LAYER);
+
    int ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = notify_susp_type;
@@ -3458,9 +3523,10 @@ int mconf_get_notify_susp_type() {
  * @return the configured value
  */
 char* mconf_get_notify_susp() {
+   DENTER(BASIS_LAYER);
+
    char* ret = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = sge_strdup(ret, notify_susp);
@@ -3478,9 +3544,10 @@ char* mconf_get_notify_susp() {
  * @return the configured value
  */
 int mconf_get_notify_kill_type() {
+   DENTER(BASIS_LAYER);
+
    int ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = notify_kill_type;
@@ -3500,9 +3567,10 @@ int mconf_get_notify_kill_type() {
  * @return the configured value
  */
 char* mconf_get_notify_kill() {
+   DENTER(BASIS_LAYER);
+
    char* ret = nullptr;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = sge_strdup(ret, notify_kill);
@@ -3520,9 +3588,10 @@ char* mconf_get_notify_kill() {
  * @return the configured value
  */
 bool mconf_get_disable_reschedule() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = disable_reschedule;
@@ -3540,9 +3609,10 @@ bool mconf_get_disable_reschedule() {
  * @return the configured value
  */
 bool mconf_get_disable_secondary_ds() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = disable_secondary_ds;
@@ -3560,9 +3630,10 @@ bool mconf_get_disable_secondary_ds() {
  * @return the configured value
  */
 bool mconf_get_disable_secondary_ds_reader() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = disable_secondary_ds_reader;
@@ -3580,9 +3651,10 @@ bool mconf_get_disable_secondary_ds_reader() {
  * @return the configured value
  */
 bool mconf_get_disable_secondary_ds_execd() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = disable_secondary_ds_execd;
@@ -3600,9 +3672,10 @@ bool mconf_get_disable_secondary_ds_execd() {
  * @return the configured value
  */
 bool mconf_get_disable_automatic_session() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = disable_automatic_sessions;
@@ -3620,9 +3693,10 @@ bool mconf_get_disable_automatic_session() {
  * @return the configured value
  */
 int mconf_get_scheduler_timeout() {
+   DENTER(BASIS_LAYER);
+
    int timeout;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    timeout = scheduler_timeout;
@@ -3639,8 +3713,8 @@ int mconf_get_scheduler_timeout() {
  * @param value the new value
  */
 void mconf_set_max_dynamic_event_clients(int value) {
-
    DENTER(BASIS_LAYER);
+
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
    max_dynamic_event_clients = value;
@@ -3658,9 +3732,10 @@ void mconf_set_max_dynamic_event_clients(int value) {
  * @return the configured value
  */
 int mconf_get_max_dynamic_event_clients() {
+   DENTER(BASIS_LAYER);
+
    int ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = max_dynamic_event_clients;
@@ -3678,9 +3753,10 @@ int mconf_get_max_dynamic_event_clients() {
  * @return the configured value
  */
 bool mconf_get_set_lib_path() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = set_lib_path;
@@ -3698,9 +3774,10 @@ bool mconf_get_set_lib_path() {
  * @return the configured value
  */
 bool mconf_get_inherit_env() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = inherit_env;
@@ -3737,9 +3814,10 @@ bool mconf_get_enable_hwloc() {
  * @return the configured value
  */
 int mconf_get_spool_time() {
+   DENTER(BASIS_LAYER);
+
    int ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = spool_time;
@@ -3839,9 +3917,10 @@ int mconf_get_finished_jobs_sweep_batch() {
  * @return the configured value
  */
 int mconf_get_max_ds_deviation() {
+   DENTER(BASIS_LAYER);
+
    int ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = max_ds_deviation;
@@ -3859,9 +3938,10 @@ int mconf_get_max_ds_deviation() {
  * @return the configured value
  */
 uint32_t mconf_get_monitor_time() {
+   DENTER(BASIS_LAYER);
+
    uint32_t monitor;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    monitor = monitor_time;
@@ -3880,9 +3960,10 @@ uint32_t mconf_get_monitor_time() {
  * @return the configured value
  */
 bool mconf_get_do_accounting() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = do_accounting;
@@ -3901,9 +3982,10 @@ bool mconf_get_do_accounting() {
  * @return the configured value
  */
 bool mconf_get_do_reporting() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = do_reporting;
@@ -3922,9 +4004,10 @@ bool mconf_get_do_reporting() {
  * @return the configured value
  */
 bool mconf_get_do_monitoring() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = do_monitoring;
@@ -3943,9 +4026,10 @@ bool mconf_get_do_monitoring() {
  * @return the configured value
  */
 bool mconf_get_do_joblog() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = do_joblog;
@@ -3964,9 +4048,10 @@ bool mconf_get_do_joblog() {
  * @return the configured value
  */
 int mconf_get_reporting_flush_time() {
+   DENTER(BASIS_LAYER);
+
    int ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = reporting_flush_time;
@@ -3985,9 +4070,10 @@ int mconf_get_reporting_flush_time() {
  * @return the configured value
  */
 int mconf_get_accounting_flush_time() {
+   DENTER(BASIS_LAYER);
+
    int ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = accounting_flush_time;
@@ -4029,9 +4115,10 @@ bool mconf_get_reporting_sync_write() {
  * @return the configured value
  */
 bool mconf_get_old_accounting() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = old_accounting;
@@ -4049,9 +4136,10 @@ bool mconf_get_old_accounting() {
  * @return the configured value
  */
 bool mconf_get_old_reporting() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = old_reporting;
@@ -4069,9 +4157,10 @@ bool mconf_get_old_reporting() {
  * @return the configured value
  */
 int mconf_get_sharelog_time() {
+   DENTER(BASIS_LAYER);
+
    int ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = sharelog_time;
@@ -4089,9 +4178,10 @@ int mconf_get_sharelog_time() {
  * @return the configured value
  */
 int mconf_get_log_consumables() {
+   DENTER(BASIS_LAYER);
+
    int ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = log_consumables;
@@ -4109,9 +4199,10 @@ int mconf_get_log_consumables() {
  * @return the configured value
  */
 std::string mconf_get_usage_patterns() {
+   DENTER(BASIS_LAYER);
+
    std::string ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = usage_patterns;
@@ -4190,9 +4281,10 @@ parse_online_usage_value(lList **answer_list, const char *value,
  * @return the configured value
  */
 std::vector<std::string> mconf_get_online_usage_vars() {
+   DENTER(BASIS_LAYER);
+
    std::vector<std::string> ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = online_usage_vars;
@@ -4210,9 +4302,10 @@ std::vector<std::string> mconf_get_online_usage_vars() {
  * @return the configured value
  */
 bool mconf_get_enable_forced_qdel() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = enable_forced_qdel;
@@ -4271,9 +4364,10 @@ void mconf_set_enable_sup_grp_eval(bool value) {
  * @return the configured value
  */
 bool mconf_get_enable_enforce_master_limit() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = enable_enforce_master_limit;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -4290,9 +4384,10 @@ bool mconf_get_enable_enforce_master_limit() {
  * @return the configured value
  */
 bool mconf_get_enable_test_sleep_after_request() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = enable_test_sleep_after_request;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -4309,9 +4404,10 @@ bool mconf_get_enable_test_sleep_after_request() {
  * @return the configured value
  */
 bool mconf_get_enable_forced_qdel_if_unknown() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = enable_forced_qdel_if_unknown;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -4327,9 +4423,10 @@ bool mconf_get_enable_forced_qdel_if_unknown() {
  * @return the configured value
  */
 bool mconf_get_ignore_ngroups_max_limit() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = ignore_ngroups_max_limit;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -4345,9 +4442,10 @@ bool mconf_get_ignore_ngroups_max_limit() {
  * @return the configured value
  */
 bool mconf_get_enable_systemd() {
+   DENTER(BASIS_LAYER);
+
    bool ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = enable_systemd;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -4363,9 +4461,10 @@ bool mconf_get_enable_systemd() {
  * @return the configured value
  */
 bool mconf_get_enable_submit_lib_path() {
+   DENTER(BASIS_LAYER);
+
    int ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = enable_submit_lib_path;
@@ -4383,9 +4482,10 @@ bool mconf_get_enable_submit_lib_path() {
  * @return the configured value
  */
 bool mconf_get_enable_submit_ld_preload() {
+   DENTER(BASIS_LAYER);
+
    int ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = enable_submit_ld_preload;
@@ -4403,9 +4503,10 @@ bool mconf_get_enable_submit_ld_preload() {
  * @return the configured value
  */
 int mconf_get_max_job_deletion_time() {
+   DENTER(BASIS_LAYER);
+
    int deletion_time;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    deletion_time = max_job_deletion_time;
@@ -4583,9 +4684,10 @@ void mconf_get_s_locks(char **pret) {
  * @return the configured value
  */
 int mconf_get_jsv_threshold() {
+   DENTER(BASIS_LAYER);
+
    int threshold;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    threshold = jsv_threshold;
@@ -4603,9 +4705,10 @@ int mconf_get_jsv_threshold() {
  * @return the configured value
  */
 int mconf_get_jsv_timeout() {
+   DENTER(BASIS_LAYER);
+
    int timeout;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    timeout = jsv_timeout;
@@ -4623,9 +4726,10 @@ int mconf_get_jsv_timeout() {
  * @return the configured value
  */
 uint32_t mconf_get_script_timeout() {
+   DENTER(BASIS_LAYER);
+
    uint32_t ret;
 
-   DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = script_timeout;
@@ -4777,8 +4881,9 @@ std::string mconf_get_topology_file() {
  * @return the configured value
  */
 char mconf_get_ijs_escape_char() {
-   char ret;
    DENTER(BASIS_LAYER);
+
+   char ret;
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = s_ijs_escape_char;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -4794,8 +4899,9 @@ char mconf_get_ijs_escape_char() {
  * @return the configured value
  */
 int mconf_get_ijs_keepalive_interval() {
-   int ret;
    DENTER(BASIS_LAYER);
+
+   int ret;
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = s_ijs_keepalive_interval;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -4811,8 +4917,9 @@ int mconf_get_ijs_keepalive_interval() {
  * @return the configured value
  */
 int mconf_get_ijs_keepalive_count() {
-   int ret;
    DENTER(BASIS_LAYER);
+
+   int ret;
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = s_ijs_keepalive_count;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -4828,8 +4935,9 @@ int mconf_get_ijs_keepalive_count() {
  * @return the configured value
  */
 int mconf_get_ijs_reconnect_timeout() {
-   int ret;
    DENTER(BASIS_LAYER);
+
+   int ret;
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = s_ijs_reconnect_timeout;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);

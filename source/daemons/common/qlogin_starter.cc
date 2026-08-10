@@ -70,8 +70,7 @@
  *         environment variable `TMPDIR` cannot be read, or the file cannot be
  *         deleted
  */
-int delete_qrsh_pid_file()
-{
+int delete_qrsh_pid_file() {
    char *pid_file_name = nullptr;
    int ret = 1;
 
@@ -86,9 +85,7 @@ int delete_qrsh_pid_file()
    }   
    
    return ret;
-
 }
-
 
 
 /** @brief Send a string back to the waiting `qrsh` client
@@ -104,8 +101,7 @@ int delete_qrsh_pid_file()
  *         resolved, 5 if connecting to the socket fails, 6 if writing the data
  *         fails
  */
-int write_to_qrsh(const char *data)
-{
+int write_to_qrsh(const char *data) {
    char *address = nullptr;
    char *host;
    char *c;
@@ -195,8 +191,7 @@ int write_to_qrsh(const char *data)
  * @param exit_code status of the calling process
  * @see write_to_qrsh()
  */
-void write_exit_code_to_qrsh(int exit_code)
-{
+void write_exit_code_to_qrsh(int exit_code) {
    char buffer[1024];
    *buffer = 0;
 
@@ -218,8 +213,7 @@ void write_exit_code_to_qrsh(int exit_code)
  * @param[out] exit_code receives the exit code of qrsh_starter
  * @return 0 on success, 1 if an error occurred while trying to get the exit code
  */
-int get_exit_code_of_qrsh_starter(int* exit_code)
-{
+int get_exit_code_of_qrsh_starter(int *exit_code) {
    char buffer[1024];
    int ret = 1;
 
@@ -278,8 +272,7 @@ FCLOSE_ERROR:
  *         generated - the job started up without problems. The string is
  *         dynamically allocated and the caller has to free it.
  */
-const char *get_error_of_qrsh_starter()
-{
+const char *get_error_of_qrsh_starter() {
    char buffer[SGE_PATH_MAX];
    char *ret = nullptr;
    
@@ -324,7 +317,6 @@ const char *get_error_of_qrsh_starter()
 FCLOSE_ERROR:
    shepherd_trace(MSG_FILE_NOCLOSE_SS, buffer, strerror(errno));
    return ret;
-
 }
 
 /** @brief Start a protocol daemon for an interactive job, the way `inetd` would
@@ -352,8 +344,7 @@ FCLOSE_ERROR:
  *         connects to the socket within one minute, 11 if accepting a
  *         connecting client fails, 12 if the execution of the daemon fails
  */
-int qlogin_starter(const char *cwd, char *daemon, char** env)
-{
+int qlogin_starter(const char *cwd, char *daemon, char **env) {
    int ret;
    int port;
    int fd;

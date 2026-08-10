@@ -142,8 +142,7 @@ static void atexit_leave_raw_mode() {
  * @param sig Signal number (SIGWINCH).
  * @note MT-NOTE: not MT-safe; uses received_window_change_signal.
  */
-static void window_change_handler(int sig)
-{
+static void window_change_handler(int sig) {
    /* Do not use DPRINTF in a signal handler! */
    received_window_change_signal = 1;
    signal(SIGWINCH, window_change_handler);
@@ -156,8 +155,7 @@ static void window_change_handler(int sig)
  *
  * @param sig Signal number (SIGPIPE).
  */
-static void broken_pipe_handler(int sig)
-{
+static void broken_pipe_handler(int sig) {
    received_broken_pipe_signal = 1;
    signal(SIGPIPE, broken_pipe_handler);
 }
@@ -172,8 +170,7 @@ static void broken_pipe_handler(int sig)
  *
  * @param sig Signal number.
  */
-void signal_handler(int sig)
-{
+void signal_handler(int sig) {
    received_signal = sig;
    quit_pending = 1;
 }
@@ -186,8 +183,7 @@ void signal_handler(int sig)
  * for SIGPIPE.  Existing SIG_IGN dispositions are never overwritten, matching
  * the behaviour of rsh.
  */
-void set_signal_handlers()
-{
+void set_signal_handlers() {
    struct sigaction old_handler, new_handler;
    memset(&old_handler, 0, sizeof(old_handler));
    memset(&new_handler, 0, sizeof(new_handler));
@@ -275,13 +271,12 @@ void set_signal_handlers()
  *       window size is sent twice.
  * @see window_change_handler()
  */
-static void client_check_window_change(COMM_HANDLE *handle)
-{
+static void client_check_window_change(COMM_HANDLE *handle) {
+   DENTER(TOP_LAYER);
+
    struct winsize ws;
    char           buf[200];
    dstring        err_msg = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
 
    if (received_window_change_signal) {
       /*
@@ -482,9 +477,8 @@ static constexpr int ESC_HELP          = 3; ///< E?  — print escape help to lo
  * @return                 Number of bytes to forward from buf.
  */
 static int tty_escape_process(unsigned char *buf, int len, unsigned char escape_char,
-                               bool *p_at_line_start, bool *p_pending_escape,
-                               int *p_action)
-{
+                              bool *p_at_line_start, bool *p_pending_escape,
+                              int *p_action) {
    *p_action = ESC_NONE;
    if (escape_char == '\0') {
       return len;
@@ -539,8 +533,7 @@ static int tty_escape_process(unsigned char *buf, int len, unsigned char escape_
  * @return           true if raw mode was re-entered successfully on resume;
  *                   false if the I/O loop should exit.
  */
-static bool tty_suspend_client(dstring *p_err_msg)
-{
+static bool tty_suspend_client(dstring *p_err_msg) {
    DENTER(TOP_LAYER);
    // optionally request explicit SIGSTOP on the remote job via shepherd
    if (g_suspend_remote) {
@@ -581,8 +574,7 @@ static bool tty_suspend_client(dstring *p_err_msg)
  *
  * @return true if raw mode was re-entered successfully; false if the loop should exit.
  */
-static bool tty_local_suspend_client()
-{
+static bool tty_local_suspend_client() {
    DENTER(TOP_LAYER);
    terminal_leave_raw_mode();
    struct sigaction old_tstp{}, def_tstp{};
@@ -938,13 +930,13 @@ void *tty_to_commlib(void *t_conf) {
  * @return Always nullptr.
  * @note MT-NOTE: MT-safe.
  */
-void* commlib_to_tty(void *t_conf)
-{
+void *commlib_to_tty(void *t_conf) {
+   DENTER(TOP_LAYER);
+
    recv_message_t       recv_mess;
    dstring              err_msg = DSTRING_INIT;
    int                  ret = 0, do_exit = 0;
 
-   DENTER(TOP_LAYER);
    thread_func_startup(t_conf);
 
    while (do_exit == 0) {
@@ -1289,15 +1281,14 @@ void* commlib_to_tty(void *t_conf)
 int run_ijs_server(COMM_HANDLE *handle, const char *remote_host, int nostdin, int noshell,
                    int is_rsh, int is_qlogin, const ocs::Ternary force_pty,
                    const ocs::Ternary suspend_remote, int *p_exit_status, dstring *p_err_msg,
-                   bool forward_x11, char escape_char)
-{
+                   bool forward_x11, char escape_char) {
+   DENTER(TOP_LAYER);
+
    int               ret = 0, ret_val = 0;
    THREAD_HANDLE     *pthread_tty_to_commlib = nullptr;
    THREAD_HANDLE     *pthread_commlib_to_tty = nullptr;
    THREAD_LIB_HANDLE *thread_lib_handle = nullptr;
    cl_raw_list_t     *cl_com_log_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (handle == nullptr || p_err_msg == nullptr || p_exit_status == nullptr || remote_host == nullptr) {
       return 1;
@@ -1532,14 +1523,14 @@ bool ijs_was_escape_disconnect() {
  * @note MT-NOTE: not MT-safe.
  */
 int start_ijs_server(cl_framework_t communication_framework, const char *hostname,
-                     const char* username, const lList *port_range,
-                     COMM_HANDLE **phandle, dstring *p_err_msg)
-{
+                     const char *username, const lList *port_range,
+                     COMM_HANDLE **phandle, dstring *p_err_msg) {
+   DENTER(TOP_LAYER);
+
    int  ret;
    int  ret_val   = 0;
    bool use_range = (port_range != nullptr && lGetNumberOfElem(port_range) > 0);
 
-   DENTER(TOP_LAYER);
    DPRINTF("starting commlib server\n");
 
    if (!use_range) {
@@ -1609,11 +1600,10 @@ int start_ijs_server(cl_framework_t communication_framework, const char *hostnam
  *
  * @see #start_ijs_server, #run_ijs_server, #force_ijs_server_shutdown
  */
-int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg)
-{
-   int ret = 0;
-
+int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg) {
    DENTER(TOP_LAYER);
+
+   int ret = 0;
 
    if (phandle == nullptr) {
       ret = 1;
@@ -1653,11 +1643,10 @@ int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg)
  */
 int force_ijs_server_shutdown(COMM_HANDLE **phandle,
                               const char *this_component,
-                              dstring *p_err_msg)
-{
-   int     ret;
-
+                              dstring *p_err_msg) {
    DENTER(TOP_LAYER);
+
+   int     ret;
 
    if (phandle == nullptr || *phandle == nullptr) {
       sge_dstring_sprintf(p_err_msg, "invalid connection handle");
@@ -1680,4 +1669,3 @@ int force_ijs_server_shutdown(COMM_HANDLE **phandle,
 
    DRETURN(ret);
 }
-

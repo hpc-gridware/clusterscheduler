@@ -78,11 +78,10 @@ const char *get_template_spooling_method(void)
  *          #spool_context_create_type calls the real backends make.
  */
 lListElem *
-spool_template_create_context(lList **answer_list, const char *args)
-{
-   lListElem *context = nullptr;
-
+spool_template_create_context(lList **answer_list, const char *args) {
    DENTER(TOP_LAYER);
+
+   lListElem *context = nullptr;
 
 
    DRETURN(context);
@@ -102,14 +101,12 @@ spool_template_create_context(lList **answer_list, const char *args)
  *
  * @see `spool_startup_context()`
  */
-bool
-spool_template_default_startup_func(lList **answer_list, 
-                                    const lListElem *rule, bool check)
-{
+bool spool_template_default_startup_func(lList **answer_list,
+                                         const lListElem *rule, bool check) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const char *url;
-
-   DENTER(TOP_LAYER);
 
    url = lGetString(rule, SPR_url);
 
@@ -131,14 +128,12 @@ spool_template_default_startup_func(lList **answer_list,
  *
  * @see `spool_shutdown_context()`
  */
-bool
-spool_template_default_shutdown_func(lList **answer_list, 
-                                    const lListElem *rule)
-{
+bool spool_template_default_shutdown_func(lList **answer_list,
+                                          const lListElem *rule) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const char *url;
-
-   DENTER(TOP_LAYER);
 
    url = lGetString(rule, SPR_url);
 
@@ -165,15 +160,13 @@ spool_template_default_shutdown_func(lList **answer_list,
  *
  * @see `spool_maintain_context()`
  */
-bool
-spool_template_default_maintenance_func(lList **answer_list, 
-                                    const lListElem *rule, 
-                                    const spooling_maintenance_command cmd,
-                                    const char *args)
-{
-   bool ret = true;
-
+bool spool_template_default_maintenance_func(lList **answer_list,
+                                             const lListElem *rule,
+                                             const spooling_maintenance_command cmd,
+                                             const char *args) {
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    switch (cmd) {
       case SPM_init:
@@ -206,15 +199,13 @@ spool_template_default_maintenance_func(lList **answer_list,
  *
  * @see `spool_read_list()`
  */
-bool
-spool_template_default_list_func(lList **answer_list, 
-                                 const lListElem *type, 
-                                 const lListElem *rule, lList **list, 
-                                 const sge_object_type object_type)
-{
-   bool ret = true;
-
+bool spool_template_default_list_func(lList **answer_list,
+                                      const lListElem *type,
+                                      const lListElem *rule, lList **list,
+                                      const sge_object_type object_type) {
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    switch (object_type) {
       default:
@@ -248,14 +239,13 @@ spool_template_default_list_func(lList **answer_list,
  * @see `spool_read_object()`
  */
 lListElem *
-spool_template_default_read_func(lList **answer_list, 
-                                 const lListElem *type, 
-                                 const lListElem *rule, const char *key, 
-                                 const sge_object_type object_type)
-{
-   lListElem *ep = nullptr;
-
+spool_template_default_read_func(lList **answer_list,
+                                 const lListElem *type,
+                                 const lListElem *rule, const char *key,
+                                 const sge_object_type object_type) {
    DENTER(TOP_LAYER);
+
+   lListElem *ep = nullptr;
 
    switch (object_type) {
       default:
@@ -288,17 +278,15 @@ spool_template_default_read_func(lList **answer_list,
  *
  * @see `spool_delete_object()`
  */
-bool
-spool_template_default_write_func(lList **answer_list, 
-                                  const lListElem *type, 
-                                  const lListElem *rule, 
-                                  const lListElem *object, 
-                                  const char *key, 
-                                  const sge_object_type object_type)
-{
-   bool ret = true;
-
+bool spool_template_default_write_func(lList **answer_list,
+                                       const lListElem *type,
+                                       const lListElem *rule,
+                                       const lListElem *object,
+                                       const char *key,
+                                       const sge_object_type object_type) {
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    switch (object_type) {
       default:
@@ -331,16 +319,14 @@ spool_template_default_write_func(lList **answer_list,
  *
  * @see `spool_delete_object()`
  */
-bool
-spool_template_default_delete_func(lList **answer_list, 
-                                   const lListElem *type, 
-                                   const lListElem *rule,
-                                   const char *key, 
-                                   const sge_object_type object_type)
-{
-   bool ret = true;
-
+bool spool_template_default_delete_func(lList **answer_list,
+                                        const lListElem *type,
+                                        const lListElem *rule,
+                                        const char *key,
+                                        const sge_object_type object_type) {
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    switch (object_type) {
       default:
@@ -354,4 +340,3 @@ spool_template_default_delete_func(lList **answer_list,
 
    DRETURN(ret);
 }
-

@@ -146,9 +146,7 @@ static const char letters[] = {
  * @param bit one of the `QI_*` state bits
  * @return true when the bit actually changed
  */
-bool
-qinstance_set_state(lListElem *this_elem, bool set_state, uint32_t bit)
-{
+bool qinstance_set_state(lListElem *this_elem, bool set_state, uint32_t bit) {
    bool ret = false;
    uint32_t old_state = lGetUlong(this_elem, QU_state);
    uint32_t new_state = old_state;
@@ -203,9 +201,7 @@ bool qinstance_has_state(const lListElem *this_elem, uint32_t bit) {
  *
  * @note MT-NOTE: transition_is_valid_for_qinstance() is MT safe
  */
-bool
-transition_is_valid_for_qinstance(uint32_t transition, lList **answer_list)
-{
+bool transition_is_valid_for_qinstance(uint32_t transition, lList **answer_list) {
    bool ret = false;
   
    transition = transition & (~JOB_DO_ACTION);
@@ -245,12 +241,11 @@ transition_is_valid_for_qinstance(uint32_t transition, lList **answer_list)
  * @param[out] answer_list receives the rejection message
  * @return true when the option is valid
  */
-bool
-transition_option_is_valid_for_qinstance(uint32_t option, lList **answer_list)
-{
+bool transition_option_is_valid_for_qinstance(uint32_t option, lList **answer_list) {
+   DENTER(QINSTANCE_STATE_LAYER);
+
    bool ret = false;
 
-   DENTER(QINSTANCE_STATE_LAYER);
    if (option == QI_TRANSITION_NOTHING ||
        option == QI_TRANSITION_OPTION) {
       ret = true;
@@ -268,8 +263,9 @@ transition_option_is_valid_for_qinstance(uint32_t option, lList **answer_list)
  * @return the letter, or nullptr when the bit is not a displayed state
  */
 const char *
-qinstance_state_as_string(uint32_t bit)
-{
+qinstance_state_as_string(uint32_t bit) {
+   DENTER(TOP_LAYER);
+
    static const uint32_t states[] = {
       QI_ALARM,
       QI_SUSPEND_ALARM,
@@ -306,7 +302,6 @@ qinstance_state_as_string(uint32_t bit)
    const char *ret = nullptr;
    int i = 0;
 
-   DENTER(TOP_LAYER);
    if (names[0] == nullptr) {
       names[0] = MSG_QINSTANCE_ALARM;
       names[1] = MSG_QINSTANCE_SUSPALARM;
@@ -361,12 +356,12 @@ uint32_t
 qinstance_state_from_string(const char* sstate, 
                             lList **answer_list, 
                             uint32_t filter){
+   DENTER(QINSTANCE_STATE_LAYER);
+
    uint32_t ustate = 0;
    int i;
    int y;
    bool found = false;
-   DENTER(QINSTANCE_STATE_LAYER);
-
    i=-1;
    while(sstate[++i]!='\0'){
       y=-1;
@@ -403,13 +398,12 @@ qinstance_state_from_string(const char* sstate,
  *
  * @see #qinstance_state_as_string
  */
-bool 
-qinstance_state_append_to_dstring(const lListElem *this_elem, dstring *string)
-{
+bool qinstance_state_append_to_dstring(const lListElem *this_elem, dstring *string) {
+   DENTER(QINSTANCE_STATE_LAYER);
+
    bool ret = true;
    int i = 0;
 
-   DENTER(QINSTANCE_STATE_LAYER);
    while (states[i] != 0) {
       if (qinstance_has_state(this_elem, states[i])) {
          sge_dstring_append_char(string, letters[i]);
@@ -430,12 +424,11 @@ qinstance_state_append_to_dstring(const lListElem *this_elem, dstring *string)
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool
-qinstance_state_set_orphaned(lListElem *this_elem, bool set_state)
-{
+bool qinstance_state_set_orphaned(lListElem *this_elem, bool set_state) {
+   DENTER(QINSTANCE_STATE_LAYER);
+
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_ORPHANED);
    DRETURN(changed);
 }
@@ -448,9 +441,7 @@ qinstance_state_set_orphaned(lListElem *this_elem, bool set_state)
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool 
-qinstance_state_is_orphaned(const lListElem *this_elem)
-{
+bool qinstance_state_is_orphaned(const lListElem *this_elem) {
    return qinstance_has_state(this_elem, QI_ORPHANED);
 }
 
@@ -463,12 +454,11 @@ qinstance_state_is_orphaned(const lListElem *this_elem)
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool
-qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state)
-{
+bool qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state) {
+   DENTER(QINSTANCE_STATE_LAYER);
+
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_AMBIGUOUS);
    DRETURN(changed);
 }
@@ -481,9 +471,7 @@ qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state)
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool 
-qinstance_state_is_ambiguous(const lListElem *this_elem)
-{
+bool qinstance_state_is_ambiguous(const lListElem *this_elem) {
    return qinstance_has_state(this_elem, QI_AMBIGUOUS);
 }
 
@@ -496,12 +484,11 @@ qinstance_state_is_ambiguous(const lListElem *this_elem)
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool
-qinstance_state_set_alarm(lListElem *this_elem, bool set_state)
-{
+bool qinstance_state_set_alarm(lListElem *this_elem, bool set_state) {
+   DENTER(QINSTANCE_STATE_LAYER);
+
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_ALARM);
    DRETURN(changed);
 }
@@ -514,9 +501,7 @@ qinstance_state_set_alarm(lListElem *this_elem, bool set_state)
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool 
-qinstance_state_is_alarm(const lListElem *this_elem)
-{
+bool qinstance_state_is_alarm(const lListElem *this_elem) {
    return qinstance_has_state(this_elem, QI_ALARM);
 }
 
@@ -529,12 +514,11 @@ qinstance_state_is_alarm(const lListElem *this_elem)
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool
-qinstance_state_set_suspend_alarm(lListElem *this_elem, bool set_state)
-{
+bool qinstance_state_set_suspend_alarm(lListElem *this_elem, bool set_state) {
+   DENTER(QINSTANCE_STATE_LAYER);
+
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_SUSPEND_ALARM);
    DRETURN(changed);
 }
@@ -547,9 +531,7 @@ qinstance_state_set_suspend_alarm(lListElem *this_elem, bool set_state)
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool 
-qinstance_state_is_suspend_alarm(const lListElem *this_elem)
-{
+bool qinstance_state_is_suspend_alarm(const lListElem *this_elem) {
    return qinstance_has_state(this_elem, QI_SUSPEND_ALARM);
 }
 
@@ -562,12 +544,11 @@ qinstance_state_is_suspend_alarm(const lListElem *this_elem)
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool
-qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_state)
-{
+bool qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_state) {
+   DENTER(QINSTANCE_STATE_LAYER);
+
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_DISABLED);
    DRETURN(changed);
 }
@@ -580,9 +561,7 @@ qinstance_state_set_manual_disabled(lListElem *this_elem, bool set_state)
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool 
-qinstance_state_is_manual_disabled(const lListElem *this_elem)
-{
+bool qinstance_state_is_manual_disabled(const lListElem *this_elem) {
    return qinstance_has_state(this_elem, QI_DISABLED);
 }
 
@@ -595,12 +574,11 @@ qinstance_state_is_manual_disabled(const lListElem *this_elem)
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool
-qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_state)
-{
+bool qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_state) {
+   DENTER(QINSTANCE_STATE_LAYER);
+
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_SUSPENDED);
    DRETURN(changed);
 }
@@ -613,9 +591,7 @@ qinstance_state_set_manual_suspended(lListElem *this_elem, bool set_state)
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool 
-qinstance_state_is_manual_suspended(const lListElem *this_elem)
-{
+bool qinstance_state_is_manual_suspended(const lListElem *this_elem) {
    return qinstance_has_state(this_elem, QI_SUSPENDED);
 }
 
@@ -628,11 +604,10 @@ qinstance_state_is_manual_suspended(const lListElem *this_elem)
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool
-qinstance_state_set_unknown(lListElem *this_elem, bool set_state)
-{
-   bool changed;
+bool qinstance_state_set_unknown(lListElem *this_elem, bool set_state) {
    DENTER(QINSTANCE_STATE_LAYER);
+
+   bool changed;
    if (mconf_get_simulate_execds())
       changed = qinstance_set_state(this_elem, false, QI_UNKNOWN);
    else
@@ -649,9 +624,7 @@ qinstance_state_set_unknown(lListElem *this_elem, bool set_state)
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool 
-qinstance_state_is_unknown(const lListElem *this_elem)
-{
+bool qinstance_state_is_unknown(const lListElem *this_elem) {
    return qinstance_has_state(this_elem, QI_UNKNOWN);
 }
 
@@ -664,12 +637,11 @@ qinstance_state_is_unknown(const lListElem *this_elem)
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool
-qinstance_state_set_error(lListElem *this_elem, bool set_state)
-{
+bool qinstance_state_set_error(lListElem *this_elem, bool set_state) {
+   DENTER(QINSTANCE_STATE_LAYER);
+
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_ERROR);
    DRETURN(changed);
 }
@@ -682,9 +654,7 @@ qinstance_state_set_error(lListElem *this_elem, bool set_state)
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool 
-qinstance_state_is_error(const lListElem *this_elem)
-{
+bool qinstance_state_is_error(const lListElem *this_elem) {
    return qinstance_has_state(this_elem, QI_ERROR);
 }
 
@@ -697,12 +667,11 @@ qinstance_state_is_error(const lListElem *this_elem)
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool
-qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state)
-{
+bool qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state) {
+   DENTER(QINSTANCE_STATE_LAYER);
+
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_SUSPENDED_ON_SUBORDINATE);
    DRETURN(changed);
 }
@@ -715,9 +684,7 @@ qinstance_state_set_susp_on_sub(lListElem *this_elem, bool set_state)
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool 
-qinstance_state_is_susp_on_sub(const lListElem *this_elem)
-{
+bool qinstance_state_is_susp_on_sub(const lListElem *this_elem) {
    return qinstance_has_state(this_elem, QI_SUSPENDED_ON_SUBORDINATE);
 }
 
@@ -730,12 +697,11 @@ qinstance_state_is_susp_on_sub(const lListElem *this_elem)
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool
-qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_state)
-{
+bool qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_state) {
+   DENTER(QINSTANCE_STATE_LAYER);
+
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_CAL_DISABLED);
    DRETURN(changed);
 }
@@ -748,9 +714,7 @@ qinstance_state_set_cal_disabled(lListElem *this_elem, bool set_state)
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool 
-qinstance_state_is_cal_disabled(const lListElem *this_elem)
-{
+bool qinstance_state_is_cal_disabled(const lListElem *this_elem) {
    return qinstance_has_state(this_elem, QI_CAL_DISABLED);
 }
 
@@ -763,12 +727,11 @@ qinstance_state_is_cal_disabled(const lListElem *this_elem)
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool
-qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_state)
-{
+bool qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_state) {
+   DENTER(QINSTANCE_STATE_LAYER);
+
    bool changed;
 
-   DENTER(QINSTANCE_STATE_LAYER);
    changed = qinstance_set_state(this_elem, set_state, QI_CAL_SUSPENDED);
    DRETURN(changed);
 }
@@ -781,9 +744,7 @@ qinstance_state_set_cal_suspended(lListElem *this_elem, bool set_state)
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool 
-qinstance_state_is_cal_suspended(const lListElem *this_elem)
-{
+bool qinstance_state_is_cal_suspended(const lListElem *this_elem) {
    return qinstance_has_state(this_elem, QI_CAL_SUSPENDED);
 }
 
@@ -796,9 +757,7 @@ qinstance_state_is_cal_suspended(const lListElem *this_elem)
  * @param set_state true to set the bit, false to clear it
  * @return true when the bit actually changed
  */
-bool
-qinstance_state_set_full(lListElem *this_elem, bool set_state)
-{
+bool qinstance_state_set_full(lListElem *this_elem, bool set_state) {
    return qinstance_set_state(this_elem, set_state, QI_FULL);
 }
 
@@ -810,8 +769,6 @@ qinstance_state_set_full(lListElem *this_elem, bool set_state)
  * @param this_elem the queue instance to read
  * @return true when the bit is set
  */
-bool 
-qinstance_state_is_full(const lListElem *this_elem)
-{
+bool qinstance_state_is_full(const lListElem *this_elem) {
    return qinstance_has_state(this_elem, QI_FULL);
 }

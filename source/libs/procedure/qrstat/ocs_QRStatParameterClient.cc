@@ -74,9 +74,10 @@ ocs::QRStatParameterClient::sge_parse_from_file_qrstat(const char *file, lList *
 
 bool
 ocs::QRStatParameterClient::sge_parse_qrstat(lList **answer_list, lList **cmdline) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    is_summary_ = true;
    while (lGetNumberOfElem(*cmdline)) {
       uint32_t value;

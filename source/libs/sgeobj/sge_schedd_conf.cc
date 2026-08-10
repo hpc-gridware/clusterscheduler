@@ -189,8 +189,7 @@ typedef struct {
  *
  * @note MT-NOTE: sc_state_init() is MT safe
  */
-static void sc_state_init(sc_state_t* state)
-{
+static void sc_state_init(sc_state_t *state) {
    state->queue_state = QS_STATE_FULL;
    state->global_load_correction = true;
    state->schedd_job_info = SCHEDD_JOB_INFO_FALSE;
@@ -209,20 +208,17 @@ static void sc_state_init(sc_state_t* state)
    state->log_schedd_info = 0;
 }
 
-static void sc_state_destroy(void* state)
-{
+static void sc_state_destroy(void *state) {
    sge_free(&state);
 }
 
 static void
-sc_thread_local_once_init()
-{
+sc_thread_local_once_init() {
    pthread_key_create(&sc_state_key, &sc_state_destroy);
 }
 
 
-static void sc_mt_init()
-{
+static void sc_mt_init() {
    pthread_once(&sc_once, sc_thread_local_once_init);
 }
 
@@ -465,11 +461,10 @@ static void sconf_clear_pos(){
 /**
  * @brief MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
  */
-static bool calc_pos()
-{
-   bool ret = true;
-
+static bool calc_pos() {
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (pos.empty) {
       const lListElem *config = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
@@ -545,13 +540,12 @@ static bool calc_pos()
  *
  * @note MT-NOTE: is MT-safe, uses LOCK_SCHED_CONF(write)
  */
-bool sconf_set_config(lList **config, lList **answer_list)
-{
+bool sconf_set_config(lList **config, lList **answer_list) {
+   DENTER(TOP_LAYER);
+
    lList *store = nullptr;
    bool ret = true;
    lList **master_sconf_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
@@ -608,8 +602,7 @@ bool sconf_set_config(lList **config, lList **answer_list)
  *
  * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
  */
-bool sconf_is_valid_load_formula(lList **answer_list, const lList *centry_list)
-{
+bool sconf_is_valid_load_formula(lList **answer_list, const lList *centry_list) {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -634,11 +627,10 @@ bool sconf_is_valid_load_formula(lList **answer_list, const lList *centry_list)
  *
  * @note MT-NOTE: is MT-safe, does not use global variables
  */
-lListElem *sconf_create_default()
-{
-   lListElem *ep, *added;
-
+lListElem *sconf_create_default() {
    DENTER(TOP_LAYER);
+
+   lListElem *ep, *added;
 
    ep = lCreateElem(SC_Type);
 
@@ -708,8 +700,7 @@ lListElem *sconf_create_default()
  *
  * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
  */
-bool sconf_is_centry_referenced(const lListElem *centry)
-{
+bool sconf_is_centry_referenced(const lListElem *centry) {
    bool ret = false;
    const lListElem *sc_ep = nullptr;
 
@@ -744,8 +735,7 @@ bool sconf_is_centry_referenced(const lListElem *centry)
  *
  * @note MT-NOTE:  is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
-static const char * get_load_adjustment_decay_time_str()
-{
+static const char *get_load_adjustment_decay_time_str() {
    const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
 
    if (pos.load_adjustment_decay_time != -1) {
@@ -765,8 +755,7 @@ static const char * get_load_adjustment_decay_time_str()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-uint32_t sconf_get_load_adjustment_decay_time()
-{
+uint32_t sconf_get_load_adjustment_decay_time() {
    uint32_t uval;
    const char *time = nullptr;
 
@@ -811,8 +800,7 @@ lList *sconf_get_job_load_adjustments() {
  *
  * @note MT-NOTE:  is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
-static const lList *get_job_load_adjustments()
-{
+static const lList *get_job_load_adjustments() {
    const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
 
    if (pos.job_load_adjustments != -1) {
@@ -852,8 +840,7 @@ char* sconf_get_load_formula() {
  *
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
-static const char* get_load_formula()
-{
+static const char *get_load_formula() {
    const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
 
    if (pos.load_formula != -1) {
@@ -873,8 +860,7 @@ static const char* get_load_formula()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-uint32_t sconf_get_queue_sort_method()
-{
+uint32_t sconf_get_queue_sort_method() {
    const lListElem *sc_ep =  nullptr;
    uint32_t sort_method = 0;
 
@@ -898,8 +884,7 @@ uint32_t sconf_get_queue_sort_method()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-uint32_t sconf_get_maxujobs()
-{
+uint32_t sconf_get_maxujobs() {
    uint32_t jobs = MAXUJOBS;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -922,8 +907,7 @@ uint32_t sconf_get_maxujobs()
  *
  * @note MT-NOTE: is not MT-safe, the caller needs to hold the LOCK_SCHED_CONF(read)
  */
-static const char *get_schedule_interval_str()
-{
+static const char *get_schedule_interval_str() {
    if (pos.schedule_interval != -1) {
       const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       if (sc_ep != nullptr) {
@@ -971,8 +955,7 @@ uint32_t sconf_get_schedule_interval() {
  *
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
-static const char *reprioritize_interval_str()
-{
+static const char *reprioritize_interval_str() {
    if (pos.reprioritize_interval!= -1) {
       const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       return lGetPosString(sc_ep, pos.reprioritize_interval);
@@ -1015,8 +998,7 @@ uint32_t sconf_get_reprioritize_interval() {
  *
  * @note MT-NOTE: is thread save, uses thread local storage
  */
-void sconf_enable_schedd_job_info()
-{
+void sconf_enable_schedd_job_info() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->schedd_job_info = SCHEDD_JOB_INFO_TRUE;
 }
@@ -1026,8 +1008,7 @@ void sconf_enable_schedd_job_info()
  *
  * @note MT-NOTE: is thread save, uses thread local storage
  */
-void sconf_disable_schedd_job_info()
-{
+void sconf_disable_schedd_job_info() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->schedd_job_info = SCHEDD_JOB_INFO_FALSE;
 }
@@ -1042,8 +1023,7 @@ void sconf_disable_schedd_job_info()
  *
  * @note MT-NOTE: sconf_best_pe_alg() is MT safe
  */
-schedd_pe_algorithm sconf_best_pe_alg()
-{
+schedd_pe_algorithm sconf_best_pe_alg() {
    schedd_pe_algorithm alg;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1083,8 +1063,7 @@ schedd_pe_algorithm sconf_best_pe_alg()
  *
  * @note MT-NOTE: sconf_update_pe_alg() is MT safe
  */
-void sconf_update_pe_alg(int runs, int current, int max)
-{
+void sconf_update_pe_alg(int runs, int current, int max) {
    const int HISTORY = 66;
    const int PRESENT = 34;
 
@@ -1117,8 +1096,7 @@ void sconf_update_pe_alg(int runs, int current, int max)
  *
  * @return its weight; the scheduler picks the algorithm with the highest one
  */
-int sconf_get_pe_alg_value(schedd_pe_algorithm alg)
-{
+int sconf_get_pe_alg_value(schedd_pe_algorithm alg) {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->search_alg[alg];
 }
@@ -1128,8 +1106,7 @@ int sconf_get_pe_alg_value(schedd_pe_algorithm alg)
  *
  * The counter is thread local, so each scheduling thread sees its own.
  */
-void sconf_inc_fast_jobs()
-{
+void sconf_inc_fast_jobs() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->scheduled_fast_jobs++;
 }
@@ -1141,8 +1118,7 @@ void sconf_inc_fast_jobs()
  *
  * @return the count since the last #sconf_reset_jobs
  */
-int sconf_get_fast_jobs()
-{
+int sconf_get_fast_jobs() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->scheduled_fast_jobs;
 }
@@ -1152,8 +1128,7 @@ int sconf_get_fast_jobs()
  *
  * The counter is thread local, so each scheduling thread sees its own.
  */
-void sconf_inc_pe_jobs()
-{
+void sconf_inc_pe_jobs() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->scheduled_pe_jobs++;
 }
@@ -1165,8 +1140,7 @@ void sconf_inc_pe_jobs()
  *
  * @return the count since the last #sconf_reset_jobs
  */
-int sconf_get_pe_jobs()
-{
+int sconf_get_pe_jobs() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->scheduled_pe_jobs;
 }
@@ -1176,8 +1150,7 @@ int sconf_get_pe_jobs()
  *
  * The counter is thread local, so each scheduling thread sees its own.
  */
-void sconf_reset_jobs()
-{
+void sconf_reset_jobs() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->scheduled_fast_jobs = 0;
    sc_state->scheduled_pe_jobs = 0;
@@ -1241,8 +1214,7 @@ lList *sconf_get_schedd_job_info_range() {
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-bool sconf_is_id_in_schedd_job_info_range(uint32_t job_number)
-{
+bool sconf_is_id_in_schedd_job_info_range(uint32_t job_number) {
    bool is_in_range = false;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1262,8 +1234,7 @@ bool sconf_is_id_in_schedd_job_info_range(uint32_t job_number)
  *
  * @note MT-NOTE: is not MT-safe, the caller needs the LOCK_SCHED_CONF(read)
  */
-static const char * get_algorithm()
-{
+static const char *get_algorithm() {
    if (pos.algorithm!= -1) {
       const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
       return lGetPosString(sc_ep, pos.algorithm);
@@ -1283,8 +1254,7 @@ static const char * get_algorithm()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-lList *sconf_get_usage_weight_list()
-{
+lList *sconf_get_usage_weight_list() {
    lList *weight_list = nullptr;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1305,8 +1275,7 @@ lList *sconf_get_usage_weight_list()
  *
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
-static const lList *get_usage_weight_list()
-{
+static const lList *get_usage_weight_list() {
    const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
 
    if (pos.usage_weight_list != -1) {
@@ -1318,7 +1287,6 @@ static const lList *get_usage_weight_list()
 }
 
 
-
 /**
  * @brief The `weight_user` attribute of the scheduler configuration
  *
@@ -1328,8 +1296,7 @@ static const lList *get_usage_weight_list()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-double sconf_get_weight_user()
-{
+double sconf_get_weight_user() {
    double weight = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1352,8 +1319,7 @@ double sconf_get_weight_user()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-double sconf_get_weight_department()
-{
+double sconf_get_weight_department() {
    double weight = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1376,8 +1342,7 @@ double sconf_get_weight_department()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-double sconf_get_weight_project()
-{
+double sconf_get_weight_project() {
    double weight = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1400,8 +1365,7 @@ double sconf_get_weight_project()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-double sconf_get_weight_job()
-{
+double sconf_get_weight_job() {
    double weight = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1424,8 +1388,7 @@ double sconf_get_weight_job()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-uint32_t sconf_get_weight_tickets_share()
-{
+uint32_t sconf_get_weight_tickets_share() {
    double weight = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1448,8 +1411,7 @@ uint32_t sconf_get_weight_tickets_share()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-uint32_t sconf_get_weight_tickets_functional()
-{
+uint32_t sconf_get_weight_tickets_functional() {
    double weight = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1472,8 +1434,7 @@ uint32_t sconf_get_weight_tickets_functional()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-uint32_t sconf_get_halftime()
-{
+uint32_t sconf_get_halftime() {
    const lListElem *sc_ep = nullptr;
    uint32_t halftime = 0;
 
@@ -1498,8 +1459,7 @@ uint32_t sconf_get_halftime()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(write)
  */
-void sconf_set_weight_tickets_override(uint32_t active)
-{
+void sconf_set_weight_tickets_override(uint32_t active) {
    lListElem *sc_ep = nullptr;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1523,8 +1483,7 @@ void sconf_set_weight_tickets_override(uint32_t active)
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-uint32_t sconf_get_weight_tickets_override()
-{
+uint32_t sconf_get_weight_tickets_override() {
    uint32_t tickets = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1536,7 +1495,6 @@ uint32_t sconf_get_weight_tickets_override()
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    return tickets;
-
 }
 
 /**
@@ -1548,8 +1506,7 @@ uint32_t sconf_get_weight_tickets_override()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-double sconf_get_compensation_factor()
-{
+double sconf_get_compensation_factor() {
    double factor = 1;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1572,8 +1529,7 @@ double sconf_get_compensation_factor()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-double sconf_get_weight_ticket()
-{
+double sconf_get_weight_ticket() {
    double  weight = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1602,8 +1558,7 @@ double sconf_get_weight_ticket()
  *
  * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
  */
-void sconf_get_weight_ticket_urgency_priority(double *ticket, double *urgency, double *priority)
-{
+void sconf_get_weight_ticket_urgency_priority(double *ticket, double *urgency, double *priority) {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (pos.weight_ticket != -1 && pos.weight_urgency != -1 && pos.weight_priority != -1) {
@@ -1625,8 +1580,7 @@ void sconf_get_weight_ticket_urgency_priority(double *ticket, double *urgency, d
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-double sconf_get_weight_waiting_time()
-{
+double sconf_get_weight_waiting_time() {
    double weight = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1649,8 +1603,7 @@ double sconf_get_weight_waiting_time()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-double sconf_get_weight_deadline()
-{
+double sconf_get_weight_deadline() {
    double weight = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1673,8 +1626,7 @@ double sconf_get_weight_deadline()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-double sconf_get_weight_urgency()
-{
+double sconf_get_weight_urgency() {
    double weight = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1723,8 +1675,7 @@ uint32_t sconf_get_max_reservations() {
  *
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
-static const char *get_default_duration_str()
-{
+static const char *get_default_duration_str() {
    const lListElem *sc_ep =  lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
 
    if (pos.schedule_interval != -1) {
@@ -1743,8 +1694,7 @@ static const char *get_default_duration_str()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-double sconf_get_weight_priority()
-{
+double sconf_get_weight_priority() {
    double weight = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1768,8 +1718,7 @@ double sconf_get_weight_priority()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-bool sconf_get_share_override_tickets()
-{
+bool sconf_get_share_override_tickets() {
    bool is_share = false;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1789,8 +1738,7 @@ bool sconf_get_share_override_tickets()
  *
  * @return the configured value
  */
-bool sconf_get_share_functional_shares()
-{
+bool sconf_get_share_functional_shares() {
    bool is_share = true;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1813,8 +1761,7 @@ bool sconf_get_share_functional_shares()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-bool sconf_get_report_pjob_tickets()
-{
+bool sconf_get_report_pjob_tickets() {
    bool is_report = true;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1837,8 +1784,7 @@ bool sconf_get_report_pjob_tickets()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-uint32_t sconf_get_flush_submit_sec()
-{
+uint32_t sconf_get_flush_submit_sec() {
    const lListElem *sc_ep = nullptr;
    uint32_t flush_sec = 0;
 
@@ -1864,8 +1810,7 @@ uint32_t sconf_get_flush_submit_sec()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-uint32_t sconf_get_flush_finish_sec()
-{
+uint32_t sconf_get_flush_finish_sec() {
    const lListElem *sc_ep = nullptr;
    uint32_t flush_sec = 0;
 
@@ -1892,8 +1837,7 @@ uint32_t sconf_get_flush_finish_sec()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-uint32_t sconf_get_max_functional_jobs_to_schedule()
-{
+uint32_t sconf_get_max_functional_jobs_to_schedule() {
    uint32_t amount = 200;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1916,8 +1860,7 @@ uint32_t sconf_get_max_functional_jobs_to_schedule()
  *
  * @note MT-NOTE:   is MT save, uses LOCK_SCHED_CONF(read)
  */
-uint32_t sconf_get_max_pending_tasks_per_job()
-{
+uint32_t sconf_get_max_pending_tasks_per_job() {
    uint32_t max_pending = 50;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -1940,8 +1883,7 @@ uint32_t sconf_get_max_pending_tasks_per_job()
  *
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
-static const char *get_halflife_decay_list_str()
-{
+static const char *get_halflife_decay_list_str() {
    const lListElem *sc_ep = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
 
    if (pos.halflife_decay_list != -1) {
@@ -1979,8 +1921,7 @@ lList* sconf_get_halflife_decay_list(){
  *
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(read)
  */
-static bool is_config_set()
-{
+static bool is_config_set() {
    const lListElem *sc_ep = nullptr;
 
    if (*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF)) {
@@ -1997,8 +1938,7 @@ static bool is_config_set()
  *
  * @note MT-NOTE:   is MT save, uses LOCK_SCHED_CONF(read)
  */
-bool sconf_is()
-{
+bool sconf_is() {
    bool is = false;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -2017,8 +1957,7 @@ bool sconf_is()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-lListElem *sconf_get_config()
-{
+lListElem *sconf_get_config() {
    lListElem *config = nullptr;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -2036,11 +1975,11 @@ lListElem *sconf_get_config()
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-lList *sconf_get_config_list()
-{
+lList *sconf_get_config_list() {
+   DENTER(TOP_LAYER);
+
    lList *copy_list = nullptr;
 
-   DENTER(TOP_LAYER);
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    copy_list = lCopyList("sched_conf_copy", *ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
@@ -2053,14 +1992,13 @@ lList *sconf_get_config_list()
  * @brief Prints the current configuration to the INFO stream
  */
 void sconf_print_config(){
+   DENTER(TOP_LAYER);
 
    char tmp_buffer[1024];
    uint32_t uval;
    const char *s;
    const lList *lval= nullptr;
    double dval;
-
-   DENTER(TOP_LAYER);
 
    if (!sconf_is()){
       ERROR(SFNMAX, MSG_SCONF_NO_CONFIG);
@@ -2232,8 +2170,7 @@ bool sconf_is_new_config() {
 /**
  * @brief MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(write)
  */
-void sconf_reset_new_config()
-{
+void sconf_reset_new_config() {
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    pos.new_config = false;
@@ -2252,16 +2189,15 @@ void sconf_reset_new_config()
  *
  * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read/write)
  */
-bool sconf_validate_config_(lList **answer_list)
-{
+bool sconf_validate_config_(lList **answer_list) {
+   DENTER(TOP_LAYER);
+
    char tmp_buffer[1024], tmp_error[1024];
    uint32_t uval;
    const char *s;
    const lList *lval= nullptr;
    bool ret = true;
    uint32_t max_reservation = 0;
-
-   DENTER(TOP_LAYER);
 
    if (!sconf_is()){
       DPRINTF("sconf_validate: no config to validate\n");
@@ -2557,10 +2493,10 @@ bool sconf_validate_config_(lList **answer_list)
  * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(write)
  */
 bool sconf_validate_config(lList **answer_list, lList *config){
+   DENTER(TOP_LAYER);
+
    const lList *store = nullptr;
    bool ret = true;
-
-   DENTER(TOP_LAYER);
 
    if (config){
       sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -2592,11 +2528,10 @@ bool sconf_validate_config(lList **answer_list, lList *config){
  *
  * @note MT-NOTE:  is MT safe, uses only the given data.
  */
-static int policy_hierarchy_verify_value(const char* value)
-{
-   int ret = 0;
-
+static int policy_hierarchy_verify_value(const char *value) {
    DENTER(TOP_LAYER);
+
+   int ret = 0;
 
    if (value != nullptr) {
       if (strcmp(value, "") && strcasecmp(value, "NONE")) {
@@ -2677,14 +2612,13 @@ static int policy_hierarchy_verify_value(const char* value)
  *
  * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
  */
-void sconf_ph_fill_array(policy_hierarchy_t array[])
-{
+void sconf_ph_fill_array(policy_hierarchy_t array[]) {
+   DENTER(TOP_LAYER);
+
    int is_contained[POLICY_VALUES];
    int index = 0;
    int i;
    const char *policy_hierarchy_string = nullptr;
-
-   DENTER(TOP_LAYER);
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
@@ -2733,8 +2667,7 @@ void sconf_ph_fill_array(policy_hierarchy_t array[])
  *
  * @note MT-NOTE:
  */
-static policy_type_t policy_hierarchy_char2enum(char character)
-{
+static policy_type_t policy_hierarchy_char2enum(char character) {
    const char *pointer;
    policy_type_t ret;
 
@@ -2753,11 +2686,10 @@ static policy_type_t policy_hierarchy_char2enum(char character)
  *
  * @param array the hierarchy to print, as #sconf_ph_fill_array filled it
  */
-void sconf_ph_print_array(policy_hierarchy_t array[])
-{
-   int i;
-
+void sconf_ph_print_array(policy_hierarchy_t array[]) {
    DENTER(TOP_LAYER);
+
+   int i;
 
    for (i = INVALID_POLICY + 1; i < LAST_POLICY_VALUE; i++) {
       char character = policy_hierarchy_enum2char(array[i-1].policy);
@@ -2780,8 +2712,7 @@ void sconf_ph_print_array(policy_hierarchy_t array[])
  *
  * @note MT-NOTE:
  */
-static char policy_hierarchy_enum2char(policy_type_t value)
-{
+static char policy_hierarchy_enum2char(policy_type_t value) {
    return policy_hierarchy_chars[value - 1];
 }
 
@@ -2799,10 +2730,10 @@ static char policy_hierarchy_enum2char(policy_type_t value)
  * @return true when the setting was understood
  */
 static bool sconf_eval_set_profiling(lList *param_list, lList **answer_list, const char* param){
-   bool ret = true;
-   lListElem *elem = nullptr;
    DENTER(TOP_LAYER);
 
+   bool ret = true;
+   lListElem *elem = nullptr;
    schedd_profiling = false;
 
    if (!strncasecmp(param, "PROFILE=1", sizeof("PROFILE=1")-1) ||
@@ -2845,13 +2776,13 @@ static bool sconf_eval_set_profiling(lList *param_list, lList **answer_list, con
  * @note MT-NOTE: is not MT safe, the calling function needs to lock LOCK_SCHED_CONF(write)
  */
 static bool sconf_eval_set_monitoring(lList *param_list, lList **answer_list, const char* param){
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    lListElem *elem = nullptr;
    const char mon_true[] = "MONITOR=TRUE", mon_one[] = "MONITOR=1";
    const char mon_false[] = "MONITOR=FALSE", mon_zero[] = "MONITOR=0";
    bool do_monitoring = false;
-
-   DENTER(TOP_LAYER);
 
    if (!strncasecmp(param, mon_one, sizeof(mon_one)-1) ||
        !strncasecmp(param, mon_true, sizeof(mon_true)-1) ) {
@@ -2880,8 +2811,7 @@ static bool sconf_eval_set_monitoring(lList *param_list, lList **answer_list, co
    DRETURN(ret);
 }
 
-static bool sconf_eval_set_duration_offset(lList *param_list, lList **answer_list, const char* param)
-{
+static bool sconf_eval_set_duration_offset(lList *param_list, lList **answer_list, const char *param) {
    uint32_t uval;
    char *s;
 
@@ -2902,11 +2832,10 @@ static bool sconf_eval_set_duration_offset(lList *param_list, lList **answer_lis
  *
  * @note MT-NOTE: sconf_eval_set_pe_range_alg() is not MT safe, caller needs LOCK_SCHED_CONF(write)
  */
-static bool sconf_eval_set_pe_range_alg(lList *param_list, lList **answer_list, const char* param)
-{
-   char *s;
-
+static bool sconf_eval_set_pe_range_alg(lList *param_list, lList **answer_list, const char *param) {
    DENTER(TOP_LAYER);
+
+   char *s;
 
    if ((s=strchr((char *)param, '=')) != nullptr) {
       s++;
@@ -2946,8 +2875,7 @@ static bool sconf_eval_set_pe_range_alg(lList *param_list, lList **answer_list, 
  * @param qs_state `QS_STATE_FULL` counts every debitation of running jobs;
  *                 `QS_STATE_EMPTY` ignores them and all but static load values
  */
-void sconf_set_qs_state(qs_state_t qs_state)
-{
+void sconf_set_qs_state(qs_state_t qs_state) {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->queue_state = qs_state;
 }
@@ -2959,8 +2887,7 @@ void sconf_set_qs_state(qs_state_t qs_state)
  *
  * @return the current setting
  */
-qs_state_t sconf_get_qs_state()
-{
+qs_state_t sconf_get_qs_state() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->queue_state;
 }
@@ -2971,8 +2898,7 @@ qs_state_t sconf_get_qs_state()
  *
  * @param flag true to apply the correction
  */
-void sconf_set_global_load_correction(bool flag)
-{
+void sconf_set_global_load_correction(bool flag) {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->global_load_correction = flag;
 }
@@ -2983,8 +2909,7 @@ void sconf_set_global_load_correction(bool flag)
  *
  * @return the current setting
  */
-bool sconf_get_global_load_correction()
-{
+bool sconf_get_global_load_correction() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->global_load_correction;
 }
@@ -2997,8 +2922,7 @@ bool sconf_get_global_load_correction()
  *
  * @return the duration in seconds
  */
-uint32_t sconf_get_default_duration()
-{
+uint32_t sconf_get_default_duration() {
    return pos.c_default_duration;
 }
 
@@ -3009,8 +2933,7 @@ uint32_t sconf_get_default_duration()
  *
  * @return true when it is stale
  */
-bool sconf_get_host_order_changed()
-{
+bool sconf_get_host_order_changed() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->host_order_changed;
 }
@@ -3022,8 +2945,7 @@ bool sconf_get_host_order_changed()
  *
  * @param changed true when it has to be recomputed
  */
-void sconf_set_host_order_changed(bool changed)
-{
+void sconf_set_host_order_changed(bool changed) {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->host_order_changed = changed;
 }
@@ -3035,8 +2957,7 @@ void sconf_set_host_order_changed(bool changed)
  *
  * @return the recorded type, which lets the next dispatch reuse work
  */
-int sconf_get_last_dispatch_type()
-{
+int sconf_get_last_dispatch_type() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->last_dispatch_type;
 }
@@ -3048,8 +2969,7 @@ int sconf_get_last_dispatch_type()
  *
  * @param last the type to record
  */
-void sconf_set_last_dispatch_type(int last)
-{
+void sconf_set_last_dispatch_type(int last) {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->last_dispatch_type = last;
 }
@@ -3061,8 +2981,7 @@ void sconf_set_last_dispatch_type(int last)
  *
  * @param decay the constant, derived from `halftime`
  */
-void sconf_set_decay_constant(double decay)
-{
+void sconf_set_decay_constant(double decay) {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    sc_state->decay_constant = decay;
 }
@@ -3073,8 +2992,7 @@ void sconf_set_decay_constant(double decay)
  *
  * @return the constant
  */
-double sconf_get_decay_constant()
-{
+double sconf_get_decay_constant() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->decay_constant;
 }
@@ -3087,8 +3005,7 @@ double sconf_get_decay_constant()
  *
  * @param newval true to collect messages
  */
-void sconf_set_mes_schedd_info(bool newval)
-{
+void sconf_set_mes_schedd_info(bool newval) {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    if (newval) {
       if (sc_state->sme == nullptr || sc_state->tmp_sme == nullptr) {
@@ -3107,8 +3024,7 @@ void sconf_set_mes_schedd_info(bool newval)
  *
  * @return the current setting
  */
-bool sconf_get_mes_schedd_info()
-{
+bool sconf_get_mes_schedd_info() {
    GET_SPECIFIC(sc_state_t, sc_state, sc_state_init, sc_state_key);
    return sc_state->mes_schedd_info;
 }
@@ -3195,8 +3111,7 @@ void sconf_set_tmp_sme(lListElem *sme) {
  *
  * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
  */
-uint32_t sconf_get_duration_offset()
-{
+uint32_t sconf_get_duration_offset() {
    uint32_t offset = 0;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -3219,8 +3134,7 @@ uint32_t sconf_get_duration_offset()
  * @note Actually belongs to sge_serf.c but this would cause a link dependency
  *       libsgeobj -> libschedd !!
  */
-bool serf_get_active()
-{
+bool serf_get_active() {
    bool is = false;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
@@ -3240,8 +3154,7 @@ bool serf_get_active()
  *
  * @note MT-NOTE:  is MT safe, uses LOCK_SCHED_CONF(read)
  */
-bool sconf_get_profiling()
-{
+bool sconf_get_profiling() {
    bool profiling = false;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);

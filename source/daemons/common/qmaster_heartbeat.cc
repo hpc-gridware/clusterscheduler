@@ -61,13 +61,13 @@ static int sge_testmode_timeout_at_heartbeat = 0;
  *         -3 read timeout, -4 fclose error
  */
 int get_qmaster_heartbeat(const char *file, time_t read_timeout) {
+   DENTER(TOP_LAYER);
+
    FILE *fp   = nullptr;
    int hb     = 0; 
    struct timeval start_time;
    struct timeval end_time;
    time_t read_time;
-
-   DENTER(TOP_LAYER);
 
    if (file == nullptr) {
       ERROR(SFNMAX, MSG_HEART_NO_FILENAME);
@@ -137,14 +137,13 @@ FCLOSE_ERROR:
  *         -4 write took longer than write_timeout seconds, -5 fclose error
  */
 int inc_qmaster_heartbeat(const char *file, time_t write_timeout , int* beat_value) {
+   DENTER(TOP_LAYER);
 
    FILE *fp = nullptr;
    int hb   = 1;
    struct timeval start_time;
    struct timeval end_time;
    time_t write_time;
-
-   DENTER(TOP_LAYER);
 
    if (file == nullptr) {
       ERROR(SFNMAX, MSG_HEART_NO_FILENAME);

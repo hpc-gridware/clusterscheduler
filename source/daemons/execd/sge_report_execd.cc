@@ -75,12 +75,11 @@ extern lUlong sge_execd_report_seqno;
  * @param report_sources the table of report kinds
  * @return 0 on success
  */
-int sge_send_all_reports(uint64_t now, int which, report_source *report_sources)
-{
-   int ret = 0;
-   unsigned long connect_time = 0;
+int sge_send_all_reports(uint64_t now, int which, report_source *report_sources) {
    DENTER(TOP_LAYER);
 
+   int ret = 0;
+   unsigned long connect_time = 0;
    /*
     * Send reports only if there is not a communication error.
     * Don't reset stored communication errors. 
@@ -136,16 +135,15 @@ int sge_send_all_reports(uint64_t now, int which, report_source *report_sources)
  * @return 0 on success
  */
 int sge_add_double2load_report(lList **lpp, const char *name, double value,
-                               const char *host, const char *units)
-{
-   char load_string[255];
- 
+                               const char *host, const char *units) {
    DENTER(BASIS_LAYER);
+
+   char load_string[255];
  
    snprintf(load_string, sizeof(load_string), "%f%s", value, units?units:"");
    sge_add_str2load_report(lpp, name, load_string, host);
 
-   DRETURN(0); 
+   DRETURN(0);
 }
 
 /* ----------------------------------------
@@ -161,12 +159,11 @@ int sge_add_double2load_report(lList **lpp, const char *name, double value,
  * @return 0 on success
  */
 int sge_add_int2load_report(lList **lpp, const char *name, int value,
-                            const char *host)
-{
+                            const char *host) {
+   DENTER(BASIS_LAYER);
+
    char load_string[255];
    int ret;
-
-   DENTER(BASIS_LAYER);
 
    snprintf(load_string, sizeof(load_string), "%d", value);
    ret = sge_add_str2load_report(lpp, name, load_string, host);
@@ -186,12 +183,11 @@ int sge_add_int2load_report(lList **lpp, const char *name, int value,
  * @param host the host it belongs to
  * @return 0 on success
  */
-int sge_add_str2load_report(lList **lpp, const char *name, const char *value, const char *host)
-{
+int sge_add_str2load_report(lList **lpp, const char *name, const char *value, const char *host) {
+   DENTER(BASIS_LAYER);
+
    lListElem *ep = nullptr;
    const void *iterator = nullptr;
-
-   DENTER(BASIS_LAYER);
 
    if (lpp == nullptr || name == nullptr || value == nullptr || host == nullptr) {
       DRETURN(-1);
@@ -224,4 +220,3 @@ int sge_add_str2load_report(lList **lpp, const char *name, const char *value, co
 
    DRETURN(0);
 }
-

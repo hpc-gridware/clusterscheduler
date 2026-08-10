@@ -77,9 +77,8 @@
  * @return true or false
  */
 bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list,
-                        const lList *master_job_list, 
-                        const lList *master_cqueue_list)
-{
+                        const lList *master_job_list,
+                        const lList *master_cqueue_list) {
    bool ret = false;
 
    for_each_ep_lv(job, master_job_list) {
@@ -126,8 +125,7 @@ bool ckpt_is_referenced(const lListElem *ckpt, lList **answer_list,
  *
  * @return ckpt object with name "ckpt_name" does not exist !nullptr - pointer to the cull element (CK_Type)
  */
-lListElem *ckpt_list_locate(const lList *ckpt_list, const char *ckpt_name)
-{
+lListElem *ckpt_list_locate(const lList *ckpt_list, const char *ckpt_name) {
    return lGetElemStrRW(ckpt_list, CK_name, ckpt_name);
 }
 
@@ -142,8 +140,7 @@ lListElem *ckpt_list_locate(const lList *ckpt_list, const char *ckpt_name)
  *
  * @note MT-NOTE: sge_parse_checkpoint_attr() is MT safe
  */
-int sge_parse_checkpoint_attr(const char *attr_str)
-{
+int sge_parse_checkpoint_attr(const char *attr_str) {
    int opr;
 
    if (attr_str == nullptr) {
@@ -190,8 +187,9 @@ int sge_parse_checkpoint_attr(const char *attr_str)
  *
  * @note MT-NOTE: ckpt_validate() is not MT safe
  */
-int ckpt_validate(const lListElem *this_elem, lList **alpp)
-{
+int ckpt_validate(const lListElem *this_elem, lList **alpp) {
+   DENTER(TOP_LAYER);
+
    static const char* ckpt_interfaces[] = {
       "USERDEFINED",
       "HIBERNATOR",
@@ -213,8 +211,6 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
    size_t i;
    int found = 0;
    const char *s, *interface;
-
-   DENTER(TOP_LAYER);
 
    if (!this_elem) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -288,10 +284,8 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp)
  *
  * @return true if all ckpt objects exist
  */
-bool
-ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list,
-                       const lList *ckpt_ref_list)
-{
+bool ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list,
+                            const lList *ckpt_ref_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -319,11 +313,10 @@ ckpt_list_do_all_exist(const lList *ckpt_list, lList **answer_list,
  *
  * @return !nullptr - Pointer to a new CULL object of type CK_Type nullptr - Error
  */
-lListElem* sge_generic_ckpt(char *ckpt_name) 
-{
-   lListElem *ep;
-
+lListElem *sge_generic_ckpt(char *ckpt_name) {
    DENTER(TOP_LAYER);
+
+   lListElem *ep;
 
    ep = lCreateElem(CK_Type);
 
@@ -344,4 +337,3 @@ lListElem* sge_generic_ckpt(char *ckpt_name)
 
    DRETURN(ep);
 }
-

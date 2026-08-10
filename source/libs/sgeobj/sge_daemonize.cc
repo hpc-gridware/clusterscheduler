@@ -93,12 +93,12 @@ static int fd_pipe[2];
  * @see #sge_daemonize_finalize
  */
 bool sge_daemonize_prepare() {
+   DENTER(TOP_LAYER);
+
    pid_t pid;
    int fd;
 
    int is_daemonized = component_is_daemonized();
-
-   DENTER(TOP_LAYER);
 
 #ifndef NO_SGE_COMPILE_DEBUG
    if (TRACEON) {
@@ -238,11 +238,11 @@ bool sge_daemonize_prepare() {
  */
 void
 sge_daemonize_finalize() {
+   DENTER(TOP_LAYER);
+
    int failed_fd;
    char tmp_buffer[4];
    int is_daemonized = component_is_daemonized();
-
-   DENTER(TOP_LAYER);
 
    /* don't call this function twice */
    if (is_daemonized) {
@@ -298,12 +298,11 @@ sge_daemonize_finalize() {
  * @note MT-NOTES: sge_daemonize() is not MT safe
  */
 int sge_daemonize(int *keep_open, unsigned long nr_of_fds) {
+   DENTER(TOP_LAYER);
 
    int fd;
    pid_t pid;
    int failed_fd;
-
-   DENTER(TOP_LAYER);
 
 #ifndef NO_SGE_COMPILE_DEBUG
    if (TRACEON) {

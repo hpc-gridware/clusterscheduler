@@ -67,9 +67,9 @@
  */
 void
 sge_signaler_initialize() {
-   cl_thread_settings_t *dummy_thread_p = nullptr;
-
    DENTER(TOP_LAYER);
+
+   cl_thread_settings_t *dummy_thread_p = nullptr;
 
    cl_thread_list_setup(&(Main_Control.signal_thread_pool), "signal thread pool");
    cl_thread_list_create_thread(Main_Control.signal_thread_pool, &dummy_thread_p,
@@ -126,14 +126,14 @@ sge_signaler_terminate() {
  */
 void *
 sge_signaler_main(void *arg) {
+   DENTER(TOP_LAYER);
+
    auto *thread_config = (cl_thread_settings_t *) arg;
    bool is_continue = true;
    sigset_t sig_set;
    int sig_num;
    uint64_t next_prof_output = 0;
    monitoring_t monitor;
-
-   DENTER(TOP_LAYER);
 
    // set thread name and id used by logging an others
    const char *thread_name = thread_config->thread_name;

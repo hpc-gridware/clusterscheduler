@@ -59,9 +59,9 @@
  */
 int
 sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, uint64_t gdi_session) {
-   lList *sched_conf = nullptr;
-
    DENTER(TOP_LAYER);
+
+   lList *sched_conf = nullptr;
 
    spool_read_list(anAnswer, aSpoolContext, &sched_conf, SGE_TYPE_SCHEDD_CONF);
 
@@ -100,9 +100,9 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, u
  */
 int
 sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *confp, lList **alpp, char *ruser, char *rhost) {
-   lList *temp_conf_list = nullptr;
-
    DENTER(TOP_LAYER);
+
+   lList *temp_conf_list = nullptr;
 
    if (!confp || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);

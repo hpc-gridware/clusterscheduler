@@ -74,9 +74,10 @@ bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue
                                                          uint32_t *disabled_manual, uint32_t *disabled_calendar, uint32_t *ambiguous,
                                                          uint32_t *orphaned, uint32_t *error, uint32_t *available, uint32_t *temp_disabled,
                                                          uint32_t *manual_intervention) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (cqueue != nullptr) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       double host_load_avg = 0.0;

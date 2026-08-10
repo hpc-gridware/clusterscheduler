@@ -81,8 +81,9 @@ const char *get_dynamic_spooling_method()
  */
 lListElem *
 spool_dynamic_create_context(lList **answer_list, const char *method,
-                             const char *shlib_name, const char *args)
-{
+                             const char *shlib_name, const char *args) {
+   DENTER(TOP_LAYER);
+
    bool ok = true;
    lListElem *context = nullptr;
 
@@ -94,8 +95,6 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
    /* get_method function pointer and result */
    spooling_get_method_func get_spooling_method = nullptr;
    const char *spooling_name = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* build the full name of the shared lib - append architecture dependent
     * shlib postfix 
@@ -222,4 +221,3 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
 
    DRETURN(context);
 }
-

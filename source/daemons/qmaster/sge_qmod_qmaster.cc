@@ -675,11 +675,11 @@ qmod_queue_weakclean(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList
 static int
 qmod_queue_clean(const ocs::gdi::Packet *packet, lListElem *qep, uint32_t force, lList **answer,
                  int isoperator, int isowner, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    lListElem *nextjep, *jep;
    const char *qname = nullptr;
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
-
-   DENTER(TOP_LAYER);
 
    qname = lGetString(qep, QU_full_name);
 
@@ -735,13 +735,13 @@ qmod_job_reschedule(ocs::gdi::Packet *packet, ocs::gdi::Task *task,  lListElem *
 static void
 qmod_job_suspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lListElem *jatep, lListElem *queueep, uint32_t force,
                  lList **answer, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    int i;
    uint32_t state = 0;
    uint32_t jataskid = 0;
    uint32_t jobid = 0;
    bool migrate_on_suspend = false;
-
-   DENTER(TOP_LAYER);
 
    uint64_t now = sge_get_gmt64();
 
@@ -862,11 +862,11 @@ qmod_job_suspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep,
 static void
 qmod_job_unsuspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lListElem *jatep, lListElem *queueep, uint32_t force,
                    lList **answer, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    int i;
    uint32_t state = 0;
    uint32_t jobid, jataskid;
-
-   DENTER(TOP_LAYER);
 
    uint64_t now = sge_get_gmt64();
 
@@ -1006,11 +1006,11 @@ qmod_job_unsuspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *je
  */
 void
 rebuild_signal_events() {
+   DENTER(TOP_LAYER);
+
    const lListElem *cqueue, *jep, *jatep;
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-
-   DENTER(TOP_LAYER);
 
    /* J O B */
    for_each_ep(jep, master_job_list) {
@@ -1062,14 +1062,14 @@ rebuild_signal_events() {
  */
 void
 resend_signal_event(te_event_t anEvent, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    lListElem *qep, *jep, *jatep;
    uint32_t jobid = te_get_first_numeric_key(anEvent);
    uint32_t jataskid = te_get_second_numeric_key(anEvent);
    const char *queue = te_get_alphanumeric_key(anEvent);
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-
-   DENTER(TOP_LAYER);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
@@ -1142,11 +1142,11 @@ sge_propagate_queue_suspension(const char *qnm, int how) {
  */
 int
 sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    int i;
    sge_pack_buffer pb;
    int sent = 0;
-
-   DENTER(TOP_LAYER);
 
    uint64_t now = sge_get_gmt64();
 
@@ -1275,6 +1275,8 @@ sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, moni
 */
 static void
 signal_slave_jobs_in_queue(int how, lListElem *qep, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    const lList *gdil_lp;
    lListElem *mq;
    lListElem *jep, *jatep;
@@ -1282,8 +1284,6 @@ signal_slave_jobs_in_queue(int how, lListElem *qep, monitoring_t *monitor) {
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
-
-   DENTER(TOP_LAYER);
 
    qname = lGetString(qep, QU_full_name);
    /* test whether there are parallel jobs
@@ -1322,14 +1322,14 @@ signal_slave_jobs_in_queue(int how, lListElem *qep, monitoring_t *monitor) {
 
 static void
 signal_slave_tasks_of_job(int how, lListElem *jep, lListElem *jatep, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    const lList *gdil_lp;
    lListElem *mq, *pe;
    const lListElem *gdil_ep;
    const char *qname, *pe_name;
    const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
-
-   DENTER(TOP_LAYER);
 
    /* do not signal slave tasks in case of checkpointing jobs with
       STOP/CONT when suspending means migration */

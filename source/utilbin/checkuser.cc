@@ -46,15 +46,13 @@
 #include <cinttypes>
 
 /*-------------------------------------------*/
-void usage()
-{
+void usage() {
    fprintf(stderr, "%s checkuser [-check -name]|[-uid name]|[-gid name]\n" , MSG_UTILBIN_USAGE );
    exit(1);
-} 
- 
+}
+
 /*-------------------------------------------*/
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    int i = 10;
    struct passwd *pw;
    pw = nullptr;

@@ -120,8 +120,7 @@ static bool print_resource_utilization = getenv("SGE_PRINT_RESOURCE_UTILIZATION"
  *
  * @note MT-NOTE: utilization_print_to_dstring() is MT safe
  */
-bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string)
-{
+bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string) {
    if (!this_elem || !string) 
       return true;
    return double_print_to_dstring(lGetDouble(this_elem, RUE_utilized_now), string);
@@ -136,11 +135,10 @@ bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string)
  * @param[in] queue_list the queue instances
  * @param[in] ar_list    the advance reservations
  */
-void utilization_print_all(const lList* pe_list, const lList *host_list, const lList *queue_list, const lList *ar_list)
-{
-   const char *name;
-
+void utilization_print_all(const lList *pe_list, const lList *host_list, const lList *queue_list, const lList *ar_list) {
    DENTER(TOP_LAYER);
+
+   const char *name;
 
    /* pe_list */
    for_each_ep_lv(ep, pe_list) {
@@ -223,8 +221,7 @@ void utilization_print_all(const lList* pe_list, const lList *host_list, const l
  * @param[in] show_binding_inuse whether to also print the topology units in
  *                               use
  */
-void utilization_print(const lListElem *cr, const char *object_name, bool show_binding_inuse)
-{
+void utilization_print(const lListElem *cr, const char *object_name, bool show_binding_inuse) {
    DENTER(TOP_LAYER);
 
    DSTRING_STATIC(dstr, 64);
@@ -263,11 +260,10 @@ void utilization_print(const lListElem *cr, const char *object_name, bool show_b
    DRETURN_VOID;
 }
 
-static uint64_t utilization_endtime(uint64_t start, uint64_t duration)
-{
-   uint64_t end_time;
-
+static uint64_t utilization_endtime(uint64_t start, uint64_t duration) {
    DENTER(BASIS_LAYER);
+
+   uint64_t end_time;
 
    if (((double)start + (double)duration) < ((double)std::numeric_limits<uint64_t>::max())) {
       end_time = start + duration;
@@ -504,8 +500,7 @@ utilization_find_time_or_prevstart_or_prev(const lList *diagram, uint64_t time, 
    Note: Diagram doesn't need to vanish (nullptr list)
          as long as utilization is added only
 */
-static void utilization_normalize(lList *diagram)
-{
+static void utilization_normalize(lList *diagram) {
    lListElem *thiz, *next;
    double util_prev;
    const char *bind_prev;
@@ -682,8 +677,7 @@ double utilization_queue_end(const sge_assignment_t *a, const lListElem *host, c
 double
 utilization_max(const sge_assignment_t *a, const lListElem *host, const lListElem *cr,
                 uint64_t start_time, uint64_t duration, double total, double request, double slots,
-                bool for_excl_request, ocs::TopologyString& combined_binding_inuse)
-{
+                bool for_excl_request, ocs::TopologyString &combined_binding_inuse) {
    DENTER(TOP_LAYER);
 
    const lListElem *rde;
@@ -1028,8 +1022,7 @@ utilization_below(const sge_assignment_t *a, const lListElem *host, const lListE
  *
  * @note MT-NOTE: add_job_utilization() is MT safe
  */
-int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_job_scheduling)
-{
+int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_job_scheduling) {
    DENTER(TOP_LAYER);
 
    lListElem *qep;
@@ -1190,12 +1183,11 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
 int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListElem *pe, uint32_t task_id, const char *type, lListElem *ep,
                            const lList *centry_list, int slots, int config_nm, int actual_nm, const char *obj_name,
                            uint64_t start_time, uint64_t duration, uint32_t tag, bool for_job_scheduling,
-                           bool is_master_task, bool do_per_host_booking)
-{
+                           bool is_master_task, bool do_per_host_booking) {
+   DENTER(TOP_LAYER);
+
    lListElem *cr = nullptr, *dcep;
    int mods = 0;
-
-   DENTER(TOP_LAYER);
 
    if (ep == nullptr) {
       ERROR("rc_add_job_utilization nullptr object " "(job " sge_u32 " obj %s type %s) slots %d ep %p\n", lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep);
@@ -1332,11 +1324,10 @@ int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListEle
  *
  * @see #rc_add_job_utilization, #add_job_utilization
  */
-static int 
+static int
 rqs_add_job_utilization(lListElem *jep, const lListElem *pe, uint32_t task_id, const char *type, lListElem *rule,
                         dstring rue_name, const lList *centry_list, int slots, const char *obj_name,
-                        uint64_t start_time, uint64_t duration, bool is_master_task, bool do_per_host_booking)
-{
+                        uint64_t start_time, uint64_t duration, bool is_master_task, bool do_per_host_booking) {
    DENTER(TOP_LAYER);
 
    int mods = 0;
@@ -1448,13 +1439,12 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, uint32_t task_id, c
 static int
 add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list, lList *host_list, lList *queue_list, lList *rqs_list,
                          const lList *centry_list, const lList *acl_list, const lList *hgroup_list, lList *ar_list,
-                         bool for_job_scheduling, uint64_t now)
-{
+                         bool for_job_scheduling, uint64_t now) {
+   DENTER(TOP_LAYER);
+
    lListElem *gep = host_list_locate(host_list, SGE_GLOBAL_NAME);
    const char *type;
    uint32_t interval = sconf_get_schedule_interval();
-
-   DENTER(TOP_LAYER);
 
    if (suspended) {
       type = SCHEDULING_RECORD_ENTRY_TYPE_SUSPENDED;
@@ -1568,10 +1558,9 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list, 
  *
  * @note MT-NOTE: prepare_resource_schedules() is not MT safe
  */
-void prepare_resource_schedules(const lList *running_jobs, const lList *suspended_jobs, 
-   lList *pe_list, lList *host_list, lList *queue_list, lList *rqs_list, const lList *centry_list,
-   const lList *acl_list, const lList *hgroup_list, lList *ar_list, bool for_job_scheduling, uint64_t now)
-{
+void prepare_resource_schedules(const lList *running_jobs, const lList *suspended_jobs,
+                                lList *pe_list, lList *host_list, lList *queue_list, lList *rqs_list, const lList *centry_list,
+                                const lList *acl_list, const lList *hgroup_list, lList *ar_list, bool for_job_scheduling, uint64_t now) {
    DENTER(TOP_LAYER);
 
    add_job_list_to_schedule(running_jobs, false, pe_list, host_list, queue_list,
@@ -1600,9 +1589,8 @@ void prepare_resource_schedules(const lList *running_jobs, const lList *suspende
  *
  * @note MT-NOTE: add_calendar_to_schedule() is MT safe
  */
-static void 
-add_calendar_to_schedule(lList *queue_list, uint64_t now)
-{
+static void
+add_calendar_to_schedule(lList *queue_list, uint64_t now) {
    DENTER(TOP_LAYER);
 
    for_each_ep_lv(queue, queue_list) {
@@ -1659,9 +1647,8 @@ add_calendar_to_schedule(lList *queue_list, uint64_t now)
  *
  * @note MT-NOTE: set_utilization() is MT safe
  */
-static void 
-set_utilization(lList *uti_list, uint64_t from, uint64_t till, double uti)
-{
+static void
+set_utilization(lList *uti_list, uint64_t from, uint64_t till, double uti) {
    DENTER(TOP_LAYER);
 
    if (uti > 0) {
@@ -1739,8 +1726,7 @@ set_utilization(lList *uti_list, uint64_t from, uint64_t till, double uti)
  * @note MT-NOTE: newResourceElem() is MT safe
  */
 
-static lListElem *newResourceElem(uint64_t time, double amount)
-{
+static lListElem *newResourceElem(uint64_t time, double amount) {
    lListElem *elem = nullptr;
 
    elem = lCreateElem(RDE_Type);

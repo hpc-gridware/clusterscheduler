@@ -190,9 +190,10 @@ qinstance_create(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const lListElem
 static bool
 cqueue_add_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lList **answer_list, lList *add_hosts,
                       monitoring_t *monitor, const lList *master_hgroup_list, lList *master_cqueue_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (cqueue != nullptr && add_hosts != nullptr) {
       const lListElem *href;
 
@@ -236,9 +237,10 @@ cqueue_add_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
 
 static bool
 cqueue_mark_qinstances(lListElem *cqueue, lList **answer_list, lList *del_hosts, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (cqueue != nullptr) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
@@ -269,9 +271,10 @@ cqueue_mark_qinstances(lListElem *cqueue, lList **answer_list, lList *del_hosts,
 static bool
 cqueue_mod_attributes(lListElem *cqueue, lList **answer_list,
                       lListElem *reduced_elem, ocs::gdi::Command command, ocs::gdi::SubCommand sub_command) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (cqueue != nullptr && reduced_elem != nullptr) {
       const char *cqueue_name = lGetString(cqueue, CQ_name);
       int index = 0;
@@ -299,10 +302,11 @@ cqueue_mod_attributes(lListElem *cqueue, lList **answer_list,
 static bool
 cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem, ocs::gdi::Command cmd,
                     ocs::gdi::SubCommand sub_command, lList **add_hosts, lList **rem_hosts) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
 
-   DENTER(TOP_LAYER);
    if (cqueue != nullptr && reduced_elem != nullptr) {
       int pos = lGetPosViaElem(reduced_elem, CQ_hostlist, SGE_NO_ABORT);
 
@@ -389,12 +393,12 @@ bool
 cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                       bool refresh_all_values, bool is_startup, monitoring_t *monitor, const lList *master_hgroup_list,
                       lList *master_cqueue_list) {
+   DENTER(TOP_LAYER);
+
    dstring buffer = DSTRING_INIT;
    bool ret = true;
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
-
-   DENTER(TOP_LAYER);
 
    if (cqueue != nullptr && reduced_elem != nullptr) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
@@ -577,9 +581,9 @@ bool
 cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
                          lList *add_hosts, lList *rem_hosts, bool refresh_all_values, monitoring_t *monitor,
                          const lList *master_hgroup_list, lList *master_cqueue_list) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (ret) {
       ret = cqueue_mark_qinstances(cqueue, answer_list, rem_hosts, packet->gdi_session);
@@ -616,6 +620,8 @@ int
 cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, lListElem *cqueue, lListElem *reduced_elem, int add,
            const char *remote_user, const char *remote_host, gdi_object_t *object,
            ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    lList *add_hosts = nullptr;
    lList *rem_hosts = nullptr;
@@ -628,8 +634,6 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
    const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-
-   DENTER(TOP_LAYER);
 
    int pos = lGetPosViaElem(reduced_elem, CQ_name, SGE_NO_ABORT);
    if (pos >= 0) {
@@ -826,10 +830,10 @@ cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue
  */
 void
 cqueue_commit(lListElem *cqueue, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    lList *qinstances = lGetListRW(cqueue, CQ_qinstances);
    lListElem *qinstance = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /*
     * QI modify, add or delete event
@@ -930,10 +934,10 @@ cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
  */
 int
 cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem, lList **answer_list, char *remote_user, char *remote_host) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-
-   DENTER(TOP_LAYER);
 
    if (this_elem != nullptr && remote_user != nullptr && remote_host != nullptr) {
       const char *name = lGetString(this_elem, CQ_name);
@@ -1050,9 +1054,9 @@ cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
  */
 bool
 cqueue_del_all_orphaned(lListElem *this_elem, lList **answer_list, const char *ehname, uint64_t gdi_session) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (this_elem != nullptr) {
       dstring dir = DSTRING_INIT;
@@ -1120,10 +1124,10 @@ cqueue_del_all_orphaned(lListElem *this_elem, lList **answer_list, const char *e
  */
 bool
 cqueue_list_del_all_orphaned(lList *this_list, lList **answer_list, const char *cqname, const char *ehname, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    lListElem *cqueue;
-
-   DENTER(TOP_LAYER);
 
    if (cqname) {
       cqueue = lGetElemStrRW(this_list, CQ_name, cqname);
@@ -1197,10 +1201,10 @@ cqueue_list_set_unknown_state(lList *this_list, const char *hostname, bool send_
 static void
 cqueue_diff_sublist(const lListElem *new_cqueue, const lListElem *old_cqueue, int snm1, int snm2, int sublist_nm,
                     int key_nm, const lDescr *dp, lList **new_sublist, lList **old_sublist) {
+   DENTER(TOP_LAYER);
+
    const lListElem *qc, *ep;
    const char *p;
-
-   DENTER(TOP_LAYER);
 
    /* collect 'old' entries in 'old_sublist' */
    if (old_cqueue && old_sublist) {

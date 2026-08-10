@@ -53,9 +53,9 @@
 int qmaster_lock(
 const char *file
 ) {
-   int fd;
-
    DENTER(TOP_LAYER);
+
+   int fd;
 
    fd = SGE_OPEN3(file, O_RDWR | O_CREAT | O_EXCL, 0600);
    if (fd == -1) {
@@ -74,9 +74,9 @@ const char *file
 int qmaster_unlock(
 const char *file
 ) {
-   int ret;
-
    DENTER(TOP_LAYER);
+
+   int ret;
 
    ret = unlink(file);
 
@@ -90,10 +90,10 @@ const char *file
 int isLocked(
 const char *file
 ) {
+   DENTER(TOP_LAYER);
+
    int ret;
    SGE_STRUCT_STAT sb;
-
-   DENTER(TOP_LAYER);
 
    ret = SGE_STAT(file, &sb);
    ret = ret ? 0 : 1;

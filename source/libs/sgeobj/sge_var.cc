@@ -81,8 +81,7 @@
  *       executed with a faked shared lib path, operations defined in
  *       a non sge library libgdi.so might be executed as user root.
  */
-const char *var_get_sharedlib_path_name()
-{
+const char *var_get_sharedlib_path_name() {
 #if defined(AIX)
    return "LIBPATH";
 #elif defined(LINUX) || defined(SOLARIS) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD)
@@ -108,11 +107,11 @@ const char *var_get_sharedlib_path_name()
  *
  * @see #var_list_set_int, #var_list_set_uint32t, #var_list_set_sharedlib_path
  */
-void var_list_set_string(lList **varl, const char *name, const char *value) 
-{
+void var_list_set_string(lList **varl, const char *name, const char *value) {
+   DENTER(TOP_LAYER);
+
    lListElem *elem;
 
-   DENTER(TOP_LAYER);
    if (varl == nullptr || name == nullptr || value == nullptr) {
       DRETURN_VOID;
    }
@@ -134,11 +133,11 @@ void var_list_set_string(lList **varl, const char *name, const char *value)
  *
  * @see #var_list_set_string
  */
-void var_list_delete_string(lList **varl, const char *name)
-{
+void var_list_delete_string(lList **varl, const char *name) {
+   DENTER(TOP_LAYER);
+
    lListElem *elem;
 
-   DENTER(TOP_LAYER);
    if (varl == nullptr || name == nullptr) {
       DRETURN_VOID;
    }
@@ -162,11 +161,11 @@ void var_list_delete_string(lList **varl, const char *name)
  *
  * @see #var_list_set_string, #var_list_set_uint32t, #var_list_set_sharedlib_path
  */
-void var_list_set_int(lList **varl, const char *name, int value)
-{
+void var_list_set_int(lList **varl, const char *name, int value) {
+   DENTER(TOP_LAYER);
+
    char buffer[2048];
 
-   DENTER(TOP_LAYER);
    snprintf(buffer, sizeof(buffer), "%d", value);
    var_list_set_string(varl, name, buffer);
    DRETURN_VOID;
@@ -185,8 +184,7 @@ void var_list_set_int(lList **varl, const char *name, int value)
  *
  * @see #var_list_set_string, #var_list_set_int, #var_list_set_sharedlib_path
  */
-void var_list_set_uint32t(lList **varl, const char *name, uint32_t value)
-{
+void var_list_set_uint32t(lList **varl, const char *name, uint32_t value) {
    DENTER(TOP_LAYER);
    char buffer[2048];
    snprintf(buffer, sizeof(buffer), sge_u32, value);
@@ -206,16 +204,15 @@ void var_list_set_uint32t(lList **varl, const char *name, uint32_t value)
  *
  * @see #var_get_sharedlib_path_name, #var_list_set_string, #var_list_set_int, #var_list_set_uint32t
  */
-void var_list_set_sharedlib_path(lList **varl)
-{
+void var_list_set_sharedlib_path(lList **varl) {
+   DENTER(TOP_LAYER);
+
    char *sharedlib_path;
    char *sge_sharedlib_path;
    size_t sge_sharedlib_path_size;
    const char *sge_root = sge_get_root_dir(0, nullptr, 0, 1);
    const char *sharedlib_path_name = var_get_sharedlib_path_name();
    lListElem *sharedlib_elem = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* this is the SGE sharedlib path */
    sge_sharedlib_path_size = strlen(sge_root) + strlen("/lib/") + strlen(sge_get_arch()) + 1;
@@ -263,8 +260,7 @@ void var_list_set_sharedlib_path(lList **varl)
  * @param varl list of variables
  * @param file filehandle of a previously opened (for writing) file
  */
-void var_list_dump_to_file(const lList *varl, FILE *file)
-{
+void var_list_dump_to_file(const lList *varl, FILE *file) {
    if (varl == nullptr || file == nullptr) {
       return;
    }
@@ -300,8 +296,7 @@ void var_list_dump_to_file(const lList *varl, FILE *file)
  *
  * @see #var_list_set_string, #var_list_set_int, #var_list_set_uint32t, #var_list_set_sharedlib_path
  */
-const char* var_list_get_string(const lList *varl, const char *variable)
-{
+const char *var_list_get_string(const lList *varl, const char *variable) {
    const char *ret = nullptr;
    const lListElem *var = lGetElemStr(varl, VA_variable, variable);
 
@@ -330,11 +325,10 @@ const char* var_list_get_string(const lList *varl, const char *variable)
  *
  * @see #var_list_remove_prefix_vars
  */
-void var_list_copy_prefix_vars(lList **varl, 
+void var_list_copy_prefix_vars(lList **varl,
                                const lList *src_varl,
-                               const char *prefix, 
-                               const char *new_prefix)
-{
+                               const char *prefix,
+                               const char *new_prefix) {
    DENTER(TOP_LAYER);
    int prefix_len = strlen(prefix);
    lList *var_list2 = nullptr;
@@ -378,11 +372,10 @@ void var_list_copy_prefix_vars(lList **varl,
  *
  * @see #var_list_remove_prefix_vars
  */
-void var_list_copy_prefix_vars_undef(lList **varl, 
+void var_list_copy_prefix_vars_undef(lList **varl,
                                      const lList *src_varl,
-                                     const char *prefix, 
-                                     const char *new_prefix)
-{
+                                     const char *prefix,
+                                     const char *new_prefix) {
    DENTER(TOP_LAYER);
    int prefix_len = strlen(prefix);
    lList *var_list2 = nullptr;
@@ -424,8 +417,7 @@ void var_list_copy_prefix_vars_undef(lList **varl,
  *       nor the filtering exist any more.
  */
 void var_list_copy_env_vars_and_value(lList **varl,
-                                      const lList* src_varl)
-{
+                                      const lList *src_varl) {
    for_each_ep_lv(env, src_varl) {
       const char *s, *name;
 
@@ -446,13 +438,13 @@ void var_list_copy_env_vars_and_value(lList **varl,
  *
  * @see #var_list_remove_prefix_vars
  */
-void var_list_remove_prefix_vars(lList **varl, const char *prefix)
-{
+void var_list_remove_prefix_vars(lList **varl, const char *prefix) {
+   DENTER(TOP_LAYER);
+
    int prefix_len = strlen(prefix);
    lListElem *var_elem = nullptr;
    lListElem *next_var_elem = nullptr;
 
-   DENTER(TOP_LAYER);
    next_var_elem = lFirstRW(*varl);
    while((var_elem = next_var_elem)) {
       const char *prefix_name = lGetString(var_elem, VA_variable);
@@ -478,15 +470,15 @@ void var_list_remove_prefix_vars(lList **varl, const char *prefix)
  *
  * @see #var_list_remove_prefix_vars
  */
-void var_list_split_prefix_vars(lList **varl, 
-                                lList **pefix_vars, 
-                                const char *prefix)
-{
+void var_list_split_prefix_vars(lList **varl,
+                                lList **pefix_vars,
+                                const char *prefix) {
+   DENTER(TOP_LAYER);
+
    int prefix_len = strlen(prefix);
    lListElem *var_elem = nullptr;
    lListElem *next_var_elem = nullptr;
 
-   DENTER(TOP_LAYER);
    next_var_elem = lFirstRW(*varl);
    while((var_elem = next_var_elem)) {
       const char *prefix_name = lGetString(var_elem, VA_variable);
@@ -519,13 +511,12 @@ void var_list_split_prefix_vars(lList **varl,
  *
  * @return error state 0 - OK -1 - Error
  */
-int var_list_add_as_set(lList *lp0, lList *lp1) 
-{
+int var_list_add_as_set(lList *lp0, lList *lp1) {
+   DENTER(CULL_LAYER);
+
    lListElem *ep0, *ep1;
    const lDescr *dp0, *dp1;
    const char *name, *value;
-
-   DENTER(CULL_LAYER);
 
    if (lp1 == nullptr || lp0 == nullptr) {
       DRETURN(-1);
@@ -584,9 +575,7 @@ int var_list_add_as_set(lList *lp0, lList *lp1)
  *
  * @note MT-NOTE: var_list_verify() is MT safe
  */
-bool 
-var_list_verify(const lList *lp, lList **answer_list)
-{
+bool var_list_verify(const lList *lp, lList **answer_list) {
    bool ret = true;
    for_each_ep_lv(ep, lp) {
       const char *variable = lGetString(ep, VA_variable);
@@ -621,8 +610,9 @@ var_list_verify(const lList *lp, lList **answer_list)
  *         4 list create, 5 malformed token)
  */
 int var_list_parse_from_string(lList **lpp, const char *variable_str,
-                               int check_environment)
-{
+                               int check_environment) {
+   DENTER(TOP_LAYER);
+
    char *variable;
    char *val_str;
    int var_len;
@@ -630,8 +620,6 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
    char **pstr;
    lListElem *ep;
    char *va_string;
-
-   DENTER(TOP_LAYER);
 
    if (!lpp) {
       DRETURN(1);
@@ -723,8 +711,7 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
  * @note MT-NOTE: remove_newline_chars() is MT safe
  */
 
-void getenv_and_set(lListElem *ep, char *variable)
-{
+void getenv_and_set(lListElem *ep, char *variable) {
    const char *env_value = nullptr;
    char *new_env_value = nullptr;
    char *a = nullptr;
@@ -777,7 +764,6 @@ void getenv_and_set(lListElem *ep, char *variable)
    lSetString(ep, VA_value, new_env_value);
    sge_free(&new_env_value);
    return;
-
 }
 
 /**
@@ -794,8 +780,7 @@ void getenv_and_set(lListElem *ep, char *variable)
 * @param env_list       the environment list
 * @param answer_list    answer_list to report removal of variables
 */
-void var_list_filter_env_list(lList *env_list, lList **answer_list)
-{
+void var_list_filter_env_list(lList *env_list, lList **answer_list) {
    lListElem *ep;
 
    /* LD_PRELOAD */

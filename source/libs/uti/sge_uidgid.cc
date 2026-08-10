@@ -178,11 +178,12 @@ sge_set_admin_username(const char *user, char *err_str, size_t err_str_size) {
  */
 int
 sge_switch2admin_user() {
+   DENTER(UIDGID_LAYER);
+
    uid_t uid;
    gid_t gid;
    int ret = 0;
 
-   DENTER(UIDGID_LAYER);
    /*
     * On Windows Vista (and probably later versions) we can't set the effective
     * user ID to somebody else during boot time, because the local Administrator
@@ -245,11 +246,12 @@ DPRINTF("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n", (long) getu
  */
 int
 sge_switch2start_user() {
+   DENTER(UIDGID_LAYER);
+
    uid_t uid, start_uid;
    gid_t gid, start_gid;
    int ret = 0;
 
-   DENTER(UIDGID_LAYER);
    /*
     * On Windows Vista (and probably later versions) we can't set the effective
     * user ID to somebody else during boot time, because the local Administrator
@@ -317,12 +319,12 @@ exit:
  */
 int
 sge_user2uid(const char *user, uid_t *puid, gid_t *pgid, int retries) {
+   DENTER(UIDGID_LAYER);
+
    struct passwd *pw;
    struct passwd pwentry{};
    char *buffer;
    int size;
-
-   DENTER(UIDGID_LAYER);
 
    size = get_pw_buffer_size();
    buffer = sge_malloc(size);
@@ -368,12 +370,12 @@ sge_user2uid(const char *user, uid_t *puid, gid_t *pgid, int retries) {
  */
 int
 sge_group2gid(const char *gname, gid_t *gidp, int retries) {
+   DENTER(UIDGID_LAYER);
+
    struct group *gr;
    struct group gr_entry {};
    char *buffer;
    int size;
-
-   DENTER(UIDGID_LAYER);
 
    size = get_group_buffer_size();
    buffer = sge_malloc(size);
@@ -419,12 +421,12 @@ sge_group2gid(const char *gname, gid_t *gidp, int retries) {
  */
 int
 sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
+   DENTER(UIDGID_LAYER);
+
    struct passwd *pw;
    struct passwd pw_entry {};
    int size;
    char *buffer;
-
-   DENTER(UIDGID_LAYER);
 
    size = get_pw_buffer_size();
    buffer = sge_malloc(size);
@@ -495,10 +497,10 @@ sge_gid2group(gid_t gid, char *dst, const size_t sz, const int retries) {
  */
 int
 sge_gid2group(gid_t gid, gid_t *last_gid, char **group_name_p, int retries) {
+   DENTER(TOP_LAYER);
+
    struct group *gr;
    struct group gr_entry {};
-
-   DENTER(TOP_LAYER);
 
    if (!group_name_p || !last_gid) {
       DRETURN(1);
@@ -888,10 +890,10 @@ sge_add_group(gid_t add_grp_id, char *err_str, size_t err_str_size, bool skip_si
  */
 struct passwd *
 sge_getpwnam_r(const char *name, struct passwd *pw, char *buffer, size_t bufsize) {
+   DENTER(UIDGID_LAYER);
+
    struct passwd *res = nullptr;
    int i = MAX_NIS_RETRIES;
-
-   DENTER(UIDGID_LAYER);
 
    while (i-- && !res) {
       if (getpwnam_r(name, pw, buffer, bufsize, &res) != 0) {
@@ -1307,8 +1309,7 @@ ocs_id2dstring(dstring *dstr, uid_t uid, const char *username,
  *
  * @note MT-NOTE: sge_normalize_value() is MT safe
  */
-double sge_normalize_value(double value, double range_min, double range_max)
-{
+double sge_normalize_value(double value, double range_min, double range_max) {
    if (range_max - range_min < std::numeric_limits<double>::epsilon())
       return 0.5;
    return (value - range_min) / (range_max - range_min);

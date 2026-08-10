@@ -71,8 +71,7 @@
  */
 const char *
 str_list_append_to_dstring(const lList *this_list, dstring *string,
-                           const char delimiter)
-{
+                           const char delimiter) {
    DENTER(STR_LAYER);
    const char *ret = nullptr;
 
@@ -111,13 +110,12 @@ str_list_append_to_dstring(const lList *this_list, dstring *string,
  *
  * @see #str_list_append_to_dstring
  */
-bool 
-str_list_parse_from_string(lList **this_list,
-                           const char *string, const char *delimitor)
-{
+bool str_list_parse_from_string(lList **this_list,
+                                const char *string, const char *delimitor) {
+   DENTER(STR_LAYER);
+
    bool ret = true;
 
-   DENTER(STR_LAYER);
    if (this_list != nullptr && string != nullptr && delimitor != nullptr) {
       struct saved_vars_s *context = nullptr;
       const char *token;
@@ -142,9 +140,7 @@ str_list_parse_from_string(lList **this_list,
  *
  * @return result true  - all strings are != nullptr false - at least one entry is nullptr
  */
-bool
-str_list_is_valid(const lList *this_list, lList **answer_list)
-{
+bool str_list_is_valid(const lList *this_list, lList **answer_list) {
    DENTER(STR_LAYER);
    bool ret = true;
 
@@ -171,9 +167,7 @@ str_list_is_valid(const lList *this_list, lList **answer_list)
  * @param username the name to substitute
  * @return true when the list could be rewritten
  */
-bool
-str_list_transform_user_list(lList **this_list, lList **answer_list, const char *username)
-{
+bool str_list_transform_user_list(lList **this_list, lList **answer_list, const char *username) {
    DENTER(STR_LAYER);
    bool ret = true;
 

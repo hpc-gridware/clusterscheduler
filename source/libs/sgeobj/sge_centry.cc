@@ -308,8 +308,7 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
  * @return the symbol, e.g. `>=`
  */
 const char *
-map_op2str(uint32_t op)
-{
+map_op2str(uint32_t op) {
    static const char *opv[] = {
       "??",
       "==",  /* CMPLXEQ_OP */
@@ -334,8 +333,7 @@ map_op2str(uint32_t op)
  * @return the word, e.g. `FORCED`
  */
 const char *
-map_req2str(uint32_t op)
-{
+map_req2str(uint32_t op) {
    static const char *opv[] = {
       "??",
       "NO",       /* REQU_NO */
@@ -381,8 +379,7 @@ const char *map_consumable2str(uint32_t op) {
  * @return the name, e.g. `MEMORY`
  */
 const char *
-map_type2str(ocs::CEntry::Type type)
-{
+map_type2str(ocs::CEntry::Type type) {
    static const char *typev[] = {
       "??????",
       "INT",      /*  1 TYPE_INT */
@@ -418,9 +415,10 @@ map_type2str(ocs::CEntry::Type type)
  */
 lListElem *
 centry_create(lList **answer_list, const char *name) {
+   DENTER(CENTRY_LAYER);
+
    lListElem *ret = nullptr;  /* CE_Type */
 
-   DENTER(CENTRY_LAYER);
    if (name != nullptr) {
       ret = lCreateElem(CE_Type);
       if (ret != nullptr) {
@@ -464,10 +462,10 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
                      const lList *master_cqueue_list,
                      const lList *master_exechost_list,
                      const lList *master_rqs_list) {
+   DENTER(CENTRY_LAYER);
+
    bool ret = false;
    const char *centry_name = lGetString(centry, CE_name);
-
-   DENTER(CENTRY_LAYER);
 
    if (sconf_is_centry_referenced(centry)) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
@@ -578,9 +576,10 @@ centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string) {
  */
 lListElem *
 centry_list_locate(const lList *this_list, const char *name) {
+   DENTER(CENTRY_LAYER);
+
    lListElem *ret = nullptr;   /* CE_Type */
 
-   DENTER(CENTRY_LAYER);
    if (this_list != nullptr && name != nullptr) {
       ret = lGetElemStrRW(this_list, CE_name, name);
       if (ret == nullptr) {
@@ -599,9 +598,10 @@ centry_list_locate(const lList *this_list, const char *name) {
  */
 bool
 centry_list_sort(lList *this_list) {
+   DENTER(CENTRY_LAYER);
+
    bool ret = true;
 
-   DENTER(CENTRY_LAYER);
    if (this_list != nullptr) {
       lSortOrder *order = nullptr;
 
@@ -741,9 +741,10 @@ bool
  * @return true when `qname` exists and is requestable
  */
 centry_list_are_queues_requestable(const lList *this_list) {
+   DENTER(CENTRY_LAYER);
+
    bool ret = false;
 
-   DENTER(CENTRY_LAYER);
    if (this_list != nullptr) {
       lListElem *centry = centry_list_locate(this_list, "qname");
 
@@ -801,11 +802,11 @@ int
  * @return true when the text fitted
  */
 centry_list_append_to_string(lList *this_list, char *buff, uint32_t max_len) {
+   DENTER(TOP_LAYER);
+
    int attr_fields[] = {CE_name, CE_stringval, 0};
    const char *attr_delis[] = {"=", ",", "\n"};
    int ret;
-
-   DENTER(TOP_LAYER);
 
    if (buff)
       buff[0] = '\0';
@@ -839,10 +840,10 @@ centry_list_append_to_string(lList *this_list, char *buff, uint32_t max_len) {
 lList *
 centry_list_parse_from_string(lList *complex_attributes,
                               const char *str, bool check_value) {
+   DENTER(TOP_LAYER);
+
    char *cp;
    struct saved_vars_s *context = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* allocate space for attribute list if no list is passed */
    if (complex_attributes == nullptr) {
@@ -1212,10 +1213,10 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
 double
 centry_urgency_contribution(int slots, const char *name, double value,
                             const lListElem *centry) {
+   DENTER(TOP_LAYER);
+
    double contribution, weight;
    const char *strval;
-
-   DENTER(TOP_LAYER);
 
    if (!centry ||
        !(strval = lGetString(centry, CE_urgency_weight)) ||
@@ -1263,10 +1264,11 @@ bool
  */
 centry_list_do_all_exists(const lList *this_list, lList **answer_list,
                           const lList *centry_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const lListElem *centry = nullptr;
 
-   DENTER(TOP_LAYER);
    for_each_ep(centry, centry_list) {
       const char *name = lGetString(centry, CE_name);
 
@@ -1291,10 +1293,10 @@ bool
  * @return true when the configuration is usable
  */
 centry_list_is_correct(lList *this_list, lList **answer_list) {
+   DENTER(TOP_LAYER);
 
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (this_list != nullptr) {
       const lListElem *centry = lGetElemStr(this_list, CE_name, "qname");
 
@@ -1416,9 +1418,9 @@ int host_ensure_slots_are_defined(lListElem *ehost, uint32_t processors) {
  * @note MT-NOTE: is MT-safe, works only on the passed in data
  */
 bool validate_load_formula(const char *load_formula, lList **answer_list, const lList *centry_list, const char *name) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    /* Check for keyword 'none' */
    if (!strcasecmp(load_formula, "none")) {
@@ -1509,13 +1511,13 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
  * @note MT-NOTE: load_formula_is_centry_referenced() is MT safe
  */
 bool load_formula_is_centry_referenced(const char *load_formula, const lListElem *centry) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    const char *term_delim = "+-";
    const char *term, *next_term;
    struct saved_vars_s *term_context = nullptr;
    const char *centry_name = lGetString(centry, CE_name);
-
-   DENTER(TOP_LAYER);
 
    if (load_formula == nullptr) {
       DRETURN(ret);

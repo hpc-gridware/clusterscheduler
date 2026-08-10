@@ -182,11 +182,12 @@ jsv_split_token(const dstring *input, dstring *token, dstring *args) {
 
 static bool
 jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, const dstring *s, const dstring *a) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const char *param = sge_dstring_get_string(s);
    const char *value = sge_dstring_get_string(a);
 
-   DENTER(TOP_LAYER);
    if (param != nullptr) {
       bool skip_check = false;
       lList *local_answer_list = nullptr;
@@ -1817,16 +1818,15 @@ jsv_handle_log_command(lListElem *jsv, lList **answer_list, const dstring *c, co
 }
 
 static bool
-jsv_handle_env_command(lListElem *jsv, lList **answer_list, const dstring *c, const dstring *s, const dstring *a)
-{
+jsv_handle_env_command(lListElem *jsv, lList **answer_list, const dstring *c, const dstring *s, const dstring *a) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    dstring variable = DSTRING_INIT;
    dstring value = DSTRING_INIT;
    bool skip_check = false;
    lList *local_answer_list = nullptr;
    auto *new_job = static_cast<lListElem *>(lGetRef(jsv, JSV_new_job));
-
-   DENTER(TOP_LAYER);
 
    jsv_split_token(a, &variable, &value);
    const char *mod = sge_dstring_get_string(s);
@@ -1918,9 +1918,7 @@ jsv_handle_env_command(lListElem *jsv, lList **answer_list, const dstring *c, co
  *
  * @note MT-NOTE: jsv_do_communication() is MT safe
  */
-bool 
-jsv_do_communication(lListElem *jsv, lList **answer_list)
-{
+bool jsv_do_communication(lListElem *jsv, lList **answer_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
 

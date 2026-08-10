@@ -56,8 +56,7 @@
 extern char **environ;
 
 /************************************************************************/
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "qconf");
    lList *alp = nullptr;
 

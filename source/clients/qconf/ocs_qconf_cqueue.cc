@@ -89,12 +89,11 @@ cqueue_provide_modify_context(lListElem **this_elem, lList **answer_list,
  *                stored: replaced wholesale, or added to
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool
-cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::Command gdi_command, ocs::gdi::SubCommand sub_cmd)
-{
+bool cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::Command gdi_command, ocs::gdi::SubCommand sub_cmd) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (this_elem != nullptr) {
       bool do_verify = (gdi_command == ocs::gdi::Command::MOD) || (gdi_command == ocs::gdi::Command::ADD) ? true : false;
 
@@ -124,11 +123,11 @@ cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::
  * @return the cluster queue (`CQ_Type`), or `nullptr` with `answer_list` filled
  */
 lListElem *
-cqueue_get_via_gdi(lList **answer_list, const char *name)
-{
+cqueue_get_via_gdi(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
    lListElem *ret = nullptr;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr) {
       lList *gdi_answer_list = nullptr;
       lEnumeration *what = nullptr;
@@ -165,8 +164,7 @@ cqueue_get_via_gdi(lList **answer_list, const char *name)
  * @param cqueue  the (throwaway) cqueue element to be shown
  */
 static void
-cqueue_json_type_complex_overrides(lListElem *cqueue)
-{
+cqueue_json_type_complex_overrides(lListElem *cqueue) {
    if (qconf_opt_format != SP_FORM_JSON || cqueue == nullptr) {
       return;
    }
@@ -195,11 +193,10 @@ cqueue_json_type_complex_overrides(lListElem *cqueue)
 
 static bool cqueue_hgroup_get_via_gdi(lList **answer_list,
                                       const lList *qref_list, lList **hgrp_list,
-                                      lList **cq_list)
-{
-   bool ret = true;
-
+                                      lList **cq_list) {
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (hgrp_list != nullptr && cq_list != nullptr) {
       ocs::gdi::Request gdi_multi{};
@@ -309,11 +306,11 @@ bool
  * @return true on success; false with `answer_list` filled otherwise
  */
 cqueue_hgroup_get_all_via_gdi(lList **answer_list,
-                              lList **hgrp_list, lList **cq_list)
-{
+                              lList **hgrp_list, lList **cq_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (hgrp_list != nullptr && cq_list != nullptr) {
       ocs::gdi::Request gdi_multi{};
       lEnumeration *hgrp_what = nullptr;
@@ -362,10 +359,11 @@ cqueue_hgroup_get_all_via_gdi(lList **answer_list,
    DRETURN(ret);
 }
 
-static bool 
+static bool
 cqueue_provide_modify_context(lListElem **this_elem, lList **answer_list,
-                              bool ignore_unchanged_message)
-{
+                              bool ignore_unchanged_message) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    int status = 0;
    int fields_out[MAX_NUM_FIELDS];
@@ -373,7 +371,6 @@ cqueue_provide_modify_context(lListElem **this_elem, lList **answer_list,
    uid_t uid = component_get_uid();
    gid_t gid = component_get_gid();
    
-   DENTER(TOP_LAYER);
    if (this_elem != nullptr && *this_elem) {
       const char *filename = nullptr;
       filename = spool_flatfile_write_object(answer_list, *this_elem,
@@ -447,12 +444,11 @@ cqueue_provide_modify_context(lListElem **this_elem, lList **answer_list,
  * @param name the name of the cluster queue to create
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool 
-cqueue_add(lList **answer_list, const char *name)
-{
+bool cqueue_add(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr) {
       lListElem *cqueue = cqueue_create(answer_list, name);
 
@@ -479,7 +475,7 @@ cqueue_add(lList **answer_list, const char *name)
       lFreeElem(&cqueue);
    }  
   
-   DRETURN(ret); 
+   DRETURN(ret);
 }
 
 /** @brief Add a cluster queue from a file, without the editor
@@ -490,14 +486,13 @@ cqueue_add(lList **answer_list, const char *name)
  * @param filename the file holding the cluster queue definition
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool 
-cqueue_add_from_file(lList **answer_list, const char *filename)
-{
+bool cqueue_add_from_file(lList **answer_list, const char *filename) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
-   DENTER(TOP_LAYER);
    if (filename != nullptr) {
       lListElem *cqueue;
 
@@ -529,7 +524,7 @@ cqueue_add_from_file(lList **answer_list, const char *filename)
       lFreeElem(&cqueue);
    }  
   
-   DRETURN(ret); 
+   DRETURN(ret);
 }
 
 /** @brief Change a cluster queue, using the editor
@@ -540,12 +535,11 @@ cqueue_add_from_file(lList **answer_list, const char *filename)
  * @param name the cluster queue to change
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool 
-cqueue_modify(lList **answer_list, const char *name)
-{
+bool cqueue_modify(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr) {
       lListElem *cqueue = cqueue_get_via_gdi(answer_list, name);
 
@@ -575,14 +569,13 @@ cqueue_modify(lList **answer_list, const char *name)
  * @param filename the file holding the new definition
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool 
-cqueue_modify_from_file(lList **answer_list, const char *filename)
-{
+bool cqueue_modify_from_file(lList **answer_list, const char *filename) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
 
-   DENTER(TOP_LAYER);
    if (filename != nullptr) {
       lListElem *cqueue;
 
@@ -627,12 +620,11 @@ cqueue_modify_from_file(lList **answer_list, const char *filename)
  * @param name the cluster queue to delete
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool 
-cqueue_delete(lList **answer_list, const char *name)
-{
+bool cqueue_delete(lList **answer_list, const char *name) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (name != nullptr) {
       lListElem *cqueue = cqueue_create(answer_list, name); 
    
@@ -659,8 +651,7 @@ cqueue_delete(lList **answer_list, const char *name)
  * @return true on success, false on error
  */
 static bool
-qinstance_list_write(lList **answer_list, const lList *qi_list)
-{
+qinstance_list_write(lList **answer_list, const lList *qi_list) {
    DENTER(TOP_LAYER);
 
    spooling_field *fields = sge_build_QU_field_list(true, false);
@@ -700,12 +691,11 @@ qinstance_list_write(lList **answer_list, const lList *qi_list)
  *                          be a wildcard pattern, so one call can print several
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool
-cqueue_show(lList **answer_list, const lList *qref_pattern_list)
-{
+bool cqueue_show(lList **answer_list, const lList *qref_pattern_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if (qref_pattern_list != nullptr) {
       lList *hgroup_list = nullptr;
       lList *cqueue_list = nullptr;
@@ -882,15 +872,13 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
  * @param answer_list used to return error messages
  * @return true when the check ran; the findings are printed, not returned
  */
-bool
-cqueue_list_sick(lList **answer_list)
-{
+bool cqueue_list_sick(lList **answer_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    lList *hgroup_list = nullptr;
    lList *cqueue_list = nullptr;
    bool local_ret;
-
-   DENTER(TOP_LAYER);
 
    local_ret = cqueue_hgroup_get_all_via_gdi(answer_list, &hgroup_list, &cqueue_list);
    if (local_ret) {
@@ -925,13 +913,12 @@ cqueue_list_sick(lList **answer_list)
  *
  * @note MT-NOTES: insert_custom_complex_values_writer() is MT safe
  */
-static void insert_custom_complex_values_writer(spooling_field *fields)
-{
+static void insert_custom_complex_values_writer(spooling_field *fields) {
+   DENTER(TOP_LAYER);
+
    /* First, find the complex_values field. */
    int count = 0;
    
-   DENTER(TOP_LAYER);
-
    while ((fields[count].nm != NoName) && (fields[count].nm != QU_consumable_config_list)) {
       count++;
    }
@@ -956,8 +943,7 @@ static void insert_custom_complex_values_writer(spooling_field *fields)
  * @param alp Answer list for errors
  */
 static int write_QU_consumable_config_list(const lListElem *ep, int nm,
-                                           dstring *buffer, lList **alp)
-{
+                                           dstring *buffer, lList **alp) {
    DENTER(TOP_LAYER);
    const lList *lp = lGetList (ep, nm);
    bool first = true, has_elems = false;

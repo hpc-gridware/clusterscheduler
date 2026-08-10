@@ -278,9 +278,9 @@ ocs::gdi::ClientBase::general_communication_error(const cl_application_error_lis
 
 int
 ocs::gdi::ClientBase::log_flush_func(cl_raw_list_t *list_p) {
-   int ret_val;
-
    DENTER(COMMD_LAYER);
+
+   int ret_val;
 
    if (list_p == nullptr) {
       DRETURN(CL_RETVAL_LOG_NO_LOGLIST);

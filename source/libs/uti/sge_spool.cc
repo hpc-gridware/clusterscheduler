@@ -326,11 +326,11 @@ void sge_spoolmsg_append(dstring *ds, char comment_char, const char *version) {
  * @note MT-NOTE: sge_readpid() is MT safe.
  */
 pid_t sge_readpid(const char *fname) {
+   DENTER(TOP_LAYER);
+
    FILE *fp;
    char buf[512], *cp;
    pid_t pid;
-
-   DENTER(TOP_LAYER);
 
    if (!(fp = fopen(fname, "r"))) {
       DRETURN(0);
@@ -374,10 +374,10 @@ DRETURN(0);
  * @note MT-NOTE: sge_write_pid() is MT safe
  */
 void sge_write_pid(const char *pid_log_file) {
+   DENTER(TOP_LAYER);
+
    int pid;
    FILE *fp;
-
-   DENTER(TOP_LAYER);
 
    close(creat(pid_log_file, 0644));
    if ((fp = fopen(pid_log_file, "w")) != nullptr) {
@@ -441,12 +441,12 @@ char *sge_get_confval(const char *conf_val, const char *fname) {
 */
 int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entry_t name[],
                           char value[][4097], dstring *error_dstring) {
+   DENTER(TOP_LAYER);
+
    FILE *fp;
    char buf[4096], *cp;
    int i;
    bool *is_found = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (!(fp = fopen(fname, "r"))) {
       if (error_dstring == nullptr) {
@@ -684,12 +684,12 @@ int sge_silent_get() {
 */
 int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_entry_t name[],
                              char value[][SGE_PATH_MAX], dstring *error_dstring) {
+   DENTER(TOP_LAYER);
+
    FILE *fp;
    char buf[SGE_PATH_MAX], *cp;
    int i;
    bool *is_found = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (!(fp = fopen(fname, "r"))) {
       if (error_dstring == nullptr) {

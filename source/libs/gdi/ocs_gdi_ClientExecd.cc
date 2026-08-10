@@ -145,14 +145,14 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
  * @return 0 on success, otherwise an error code
  */
 int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
+   DENTER(GDI_LAYER);
+
    lListElem *global = nullptr;
    lListElem *local = nullptr;
    const char *qualified_hostname = component_get_qualified_hostname();
    const char *cell_root = bootstrap_get_cell_root();
    uint32_t progid = component_get_component_id();
    int ret;
-
-   DENTER(GDI_LAYER);
 
    DPRINTF("qualified hostname: %s\n", qualified_hostname);
    ret = ocs::gdi::Client::gdi_get_configuration(qualified_hostname, &global, &local);
@@ -206,11 +206,11 @@ int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
  * @note MT-NOTE: report_list_send() is not MT safe (assumptions)
  */
 int ocs::gdi::ClientExecd::report_list_send(const lList *rlp, const char *rhost, const char *commproc, int id, int synchron) {
+   DENTER(TOP_LAYER);
+
    sge_pack_buffer pb;
    int ret;
    lList *alp = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* prepare packing buffer */
    if ((ret = init_packbuffer(&pb, 1024)) == PACK_SUCCESS) {

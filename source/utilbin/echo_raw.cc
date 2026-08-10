@@ -57,8 +57,7 @@
  *
  * new line character will be appended as last character
  */
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    int i = 1;
    int first = 1;
    int mode = 0;
@@ -161,6 +160,5 @@ int main(int argc, char *argv[])
    if (output != nullptr) {
       printf("%s", output);
    }
-   return 0;   
+   return 0;
 }
-

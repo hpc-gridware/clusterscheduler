@@ -113,11 +113,10 @@ const char *get_classic_spooling_method()
  * @return on success the new spooling context, else nullptr
  */
 lListElem *
-spool_classic_create_context(lList **answer_list, const char *args)
-{
-   lListElem *context = nullptr;
-
+spool_classic_create_context(lList **answer_list, const char *args) {
    DENTER(TOP_LAYER);
+
+   lListElem *context = nullptr;
 
    /* check parameter - must be set and be an absolute spool directory path */
    if (args == nullptr) {
@@ -304,14 +303,12 @@ spool_classic_create_context(lList **answer_list, const char *args)
  * @param[in]  check        check the spooling database
  * @return true if the startup succeeded, else false
  */
-bool
-spool_classic_default_startup_func(lList **answer_list,
-                                    const lListElem *rule, bool check)
-{
+bool spool_classic_default_startup_func(lList **answer_list,
+                                        const lListElem *rule, bool check) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const char *url;
-
-   DENTER(TOP_LAYER);
 
    /* check spool directory */
    url = lGetString(rule, SPR_url);
@@ -374,13 +371,11 @@ spool_classic_default_startup_func(lList **answer_list,
  * @note This function should not be called directly, it is called by the
  *       spooling framework.
  */
-bool
-spool_classic_default_shutdown_func(lList **answer_list,
-                                    const lListElem *rule)
-{
-   bool ret = true;
-
+bool spool_classic_default_shutdown_func(lList **answer_list,
+                                         const lListElem *rule) {
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    auto field_info = static_cast<flatfile_info *>(lGetRef(rule, SPR_clientdata));
    for (auto i = static_cast<int>(SGE_TYPE_FIRST); i < static_cast<int>(SGE_TYPE_ALL); i++) {
@@ -418,14 +413,13 @@ spool_classic_default_shutdown_func(lList **answer_list,
 }
 
 static bool read_validate_object(lList **answer_list,
-                   const lListElem *type, const lListElem *rule,
-                   const char *key, int key_nm,
-                   sge_object_type object_type, lList **master_list)
-{
+                                 const lListElem *type, const lListElem *rule,
+                                 const char *key, int key_nm,
+                                 sge_object_type object_type, lList **master_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    lListElem *ep;
-
-   DENTER(TOP_LAYER);
 
    DPRINTF("reading " SFN " " SFQ "\n", object_type_get_name(object_type), key);
 
@@ -482,13 +476,13 @@ static bool read_validate_object(lList **answer_list,
  *
  * @see `spool_read_list()`
  */
-bool
-spool_classic_default_list_func(lList **answer_list,
-                                 const lListElem *type,
-                                 const lListElem *rule,
-                                 lList **list,
-                                 const sge_object_type object_type)
-{
+bool spool_classic_default_list_func(lList **answer_list,
+                                     const lListElem *type,
+                                     const lListElem *rule,
+                                     lList **list,
+                                     const sge_object_type object_type) {
+   DENTER(TOP_LAYER);
+
    const lDescr *descr;
 
    const char *filename  = nullptr;
@@ -497,8 +491,6 @@ spool_classic_default_list_func(lList **answer_list,
    int key_nm = NoName;
 
    bool ret = true;
-
-   DENTER(TOP_LAYER);
 
    if (!list) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
@@ -698,11 +690,12 @@ spool_classic_default_list_func(lList **answer_list,
  */
 lListElem *
 spool_classic_default_read_func(lList **answer_list,
-                                 const lListElem *type,
-                                 const lListElem *rule,
-                                 const char *key,
-                                 const sge_object_type object_type)
-{
+                                const lListElem *type,
+                                const lListElem *rule,
+                                const char *key,
+                                const sge_object_type object_type) {
+   DENTER(TOP_LAYER);
+
    const char *url = nullptr;
    const char *directory = nullptr;
    const char *filename = nullptr;
@@ -711,8 +704,6 @@ spool_classic_default_read_func(lList **answer_list,
    flatfile_info *field_info;
    lListElem *ep = nullptr;
    bool parse_values = true;
-
-   DENTER(TOP_LAYER);
 
    rule_clientdata = (flatfile_info *)lGetRef(rule, SPR_clientdata);
    field_info = &(rule_clientdata[object_type]);
@@ -892,14 +883,14 @@ spool_flatfile_key_is_safe(const char *key) {
  *
  * @see #spool_write_object
  */
-bool
-spool_classic_default_write_func(lList **answer_list,
-                                  const lListElem *type,
-                                  const lListElem *rule,
-                                  const lListElem *object,
-                                  const char *key,
-                                  const sge_object_type object_type)
-{
+bool spool_classic_default_write_func(lList **answer_list,
+                                      const lListElem *type,
+                                      const lListElem *rule,
+                                      const lListElem *object,
+                                      const char *key,
+                                      const sge_object_type object_type) {
+   DENTER(TOP_LAYER);
+
    const char *url = nullptr;
    const char *directory = nullptr;
    const char *filename = nullptr;
@@ -908,8 +899,6 @@ spool_classic_default_write_func(lList **answer_list,
    flatfile_info *field_info;
    dstring tmp = DSTRING_INIT;
    bool ret = true;
-
-   DENTER(TOP_LAYER);
 
    rule_clientdata = (flatfile_info *)lGetRef(rule, SPR_clientdata);
    field_info = &(rule_clientdata[object_type]);
@@ -1141,16 +1130,14 @@ spool_classic_default_write_func(lList **answer_list,
  *
  * @see `spool_delete_object()`
  */
-bool
-spool_classic_default_delete_func(lList **answer_list,
-                                   const lListElem *type,
-                                   const lListElem *rule,
-                                   const char *key,
-                                   const sge_object_type object_type)
-{
-   bool ret = true;
-
+bool spool_classic_default_delete_func(lList **answer_list,
+                                       const lListElem *type,
+                                       const lListElem *rule,
+                                       const char *key,
+                                       const sge_object_type object_type) {
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    /* Defence-in-depth: key is used to build the unlink path; reject an unsafe
     * key (e.g. an unvalidated host name like "../../tmp/x") so a delete cannot
@@ -1271,4 +1258,3 @@ spool_classic_default_delete_func(lList **answer_list,
 
    DRETURN(ret);
 }
-

@@ -93,10 +93,10 @@ const char *sge_get_arch() {
  * @note MT-NOTE: sge_get_arch() is MT safe
  */
 const char *sge_get_root_dir(int do_exit, char *buffer, size_t size, int do_error_log) {
+   DENTER_(TOP_LAYER);
+
    char *sge_root;
    char *s;
-
-   DENTER_(TOP_LAYER);
 
    /*
     * Read some env variables

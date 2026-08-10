@@ -54,9 +54,9 @@
 static void _lWriteWhatTo(const lEnumeration *ep, dstring *buffer, int level);
 
 static void _lWriteWhatTo(const lEnumeration *ep, dstring *buffer, int level) {
-   int i;
-
    DENTER(CULL_LAYER);
+
+   int i;
 
    if (!ep) {
       LERROR(LEENUMNULL);

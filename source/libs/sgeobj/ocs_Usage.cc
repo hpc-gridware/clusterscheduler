@@ -582,8 +582,7 @@ ocs::Usage::strip_irrelevant_usage(lList *usage_list, const lList *usage_weight_
  * @return the new list
  */
 lList *
-ocs::Usage::build_usage_list(const char *name, lList *old_usage_list)
-{
+ocs::Usage::build_usage_list(const char *name, lList *old_usage_list) {
    lList *usage_list = nullptr;
 
    if (old_usage_list) {

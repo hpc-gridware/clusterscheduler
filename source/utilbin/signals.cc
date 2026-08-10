@@ -47,8 +47,7 @@
  * @param argv argument vector
  * @return the program's exit status
  */
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
    int block_sigusr1 = 1;
    int block_sigusr2 = 1;
 

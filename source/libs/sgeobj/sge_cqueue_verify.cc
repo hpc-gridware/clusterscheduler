@@ -85,11 +85,11 @@ bool
  * @param master_calendar_list the defined calendars
  * @return true when the value is acceptable
  */
-cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_calendar_list)
-{
+cqueue_verify_calendar(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_calendar_list) {
+   DENTER(CQUEUE_VERIFY_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != nullptr && attr_elem != nullptr) {
       const char *name = lGetString(attr_elem, ASTR_value);
 
@@ -118,11 +118,11 @@ bool
  * @param master_ckpt_list the defined checkpointing environments
  * @return true when the value is acceptable
  */
-cqueue_verify_ckpt_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_ckpt_list)
-{
+cqueue_verify_ckpt_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_ckpt_list) {
+   DENTER(CQUEUE_VERIFY_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != nullptr && attr_elem != nullptr) {
       const lList *ckpt_list = lGetList(attr_elem, ASTRLIST_value);
 
@@ -187,11 +187,11 @@ bool
  * @param master_list unused
  * @return true when the value is acceptable
  */
-cqueue_verify_initial_state(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
-{
+cqueue_verify_initial_state(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+   DENTER(CQUEUE_VERIFY_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != nullptr && attr_elem != nullptr) {
       const char *names[] = {"default", "enabled", "disabled", nullptr};
       const char *name = lGetString(attr_elem, ASTR_value);
@@ -227,11 +227,11 @@ bool
  * @param master_pe_list the defined parallel environments
  * @return true when the value is acceptable
  */
-cqueue_verify_pe_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_pe_list)
-{
+cqueue_verify_pe_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_pe_list) {
+   DENTER(CQUEUE_VERIFY_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != nullptr && attr_elem != nullptr) {
       const lList *pe_list = lGetList(attr_elem, ASTRLIST_value);
 
@@ -257,11 +257,11 @@ bool
  * @param master_list unused
  * @return true when the value is acceptable
  */
-cqueue_verify_priority(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
-{
+cqueue_verify_priority(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+   DENTER(CQUEUE_VERIFY_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != nullptr && attr_elem != nullptr) {
       const char *priority_string = lGetString(attr_elem, ASTR_value);
 
@@ -293,11 +293,11 @@ bool
  * @param master_list unused
  * @return true when the value is acceptable
  */
-cqueue_verify_processors(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
-{
+cqueue_verify_processors(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+   DENTER(CQUEUE_VERIFY_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != nullptr && attr_elem != nullptr) {
       const char *processors_string = lGetString(attr_elem, ASTR_value);
 
@@ -326,11 +326,11 @@ bool
  * @param master_project_list the defined projects
  * @return true when the value is acceptable
  */
-cqueue_verify_project_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_project_list)
-{
+cqueue_verify_project_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_project_list) {
+   DENTER(CQUEUE_VERIFY_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != nullptr && attr_elem != nullptr) {
       const lList *project_list = lGetList(attr_elem, APRJLIST_value);
 
@@ -356,11 +356,11 @@ bool
  * @param master_list unused
  * @return true when the value is acceptable
  */
-cqueue_verify_shell_start_mode(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
-{
+cqueue_verify_shell_start_mode(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+   DENTER(CQUEUE_VERIFY_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != nullptr && attr_elem != nullptr) {
       const char *names[] = {
          "unix_behavior", "posix_compliant", "script_from_stdin",
@@ -398,27 +398,26 @@ bool
  * @param master_list unused
  * @return true when the value is acceptable
  */
-cqueue_verify_shell(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
-    {
-       bool ret = true;
-       bool path_found = true;
+cqueue_verify_shell(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+   DENTER(CQUEUE_VERIFY_LAYER);
 
-       const char *name = lGetString(attr_elem, ASTR_value);
+   bool ret = true;
+   bool path_found = true;
 
-       DENTER(CQUEUE_VERIFY_LAYER);
+   const char *name = lGetString(attr_elem, ASTR_value);
 
-       /* Check also if it is an absolute valid path */
-       path_found = path_verify(name, answer_list, "shell", true);
+   /* Check also if it is an absolute valid path */
+   path_found = path_verify(name, answer_list, "shell", true);
 
-           if (!path_found) {
-               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_UNKNOWNSHELL_S, name);
-               answer_list_add(answer_list, SGE_EVENT,
-                               STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-               ret = false;
-           }
-        
-        DRETURN(ret);
+   if (!path_found) {
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_UNKNOWNSHELL_S, name);
+      answer_list_add(answer_list, SGE_EVENT,
+                      STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      ret = false;
    }
+
+   DRETURN(ret);
+}
 
 bool
 /**
@@ -433,11 +432,11 @@ bool
  * @param master_cqueue_list the defined cluster queues
  * @return true when the value is acceptable
  */
-cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_cqueue_list)
-{
+cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_cqueue_list) {
+   DENTER(CQUEUE_VERIFY_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != nullptr && attr_elem != nullptr) {
       const char *cqueue_name = lGetString(cqueue, CQ_name);
       const lList *so_list = lGetList(attr_elem, ASOLIST_value);
@@ -488,11 +487,11 @@ bool
  * @param master_userset_list the defined usersets
  * @return true when the value is acceptable
  */
-cqueue_verify_user_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_userset_list)
-{
+cqueue_verify_user_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_userset_list) {
+   DENTER(CQUEUE_VERIFY_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != nullptr && attr_elem != nullptr) {
       const lList *user_list = lGetList(attr_elem, AUSRLIST_value);
 
@@ -504,7 +503,6 @@ cqueue_verify_user_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
    }
    DRETURN(ret);
 }
-
 
 
 /**
@@ -522,12 +520,11 @@ cqueue_verify_user_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
  *
  * @note MT-NOTE: cqueue_verify_job_slots() is MT safe
  */
-bool 
-cqueue_verify_job_slots(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
-{
+bool cqueue_verify_job_slots(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+   DENTER(CQUEUE_VERIFY_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != nullptr && attr_elem != nullptr) {
       uint32_t slots = lGetUlong(attr_elem, AULNG_value);
 
@@ -557,12 +554,11 @@ cqueue_verify_job_slots(lListElem *cqueue, lList **answer_list, lListElem *attr_
  *
  * @note MT-NOTE: cqueue_verify_memory_value() is MT safe
  */
-bool
-cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
-{
+bool cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+   DENTER(CQUEUE_VERIFY_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != nullptr && attr_elem != nullptr) {
       const char *memory_string = lGetString(attr_elem, AMEM_value);
 
@@ -598,12 +594,11 @@ cqueue_verify_memory_value(lListElem *cqueue, lList **answer_list, lListElem *at
  *
  * @note MT-NOTE: cqueue_verify_time_value() is MT safe
  */
-bool
-cqueue_verify_time_value(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list)
-{
+bool cqueue_verify_time_value(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_list) {
+   DENTER(CQUEUE_VERIFY_LAYER);
+
    bool ret = true;
 
-   DENTER(CQUEUE_VERIFY_LAYER);
    if (cqueue != nullptr && attr_elem != nullptr) {
       const char *time_string = lGetString(attr_elem, ATIME_value);
 
@@ -615,4 +610,3 @@ cqueue_verify_time_value(lListElem *cqueue, lList **answer_list, lListElem *attr
    }
    DRETURN(ret);
 }
-

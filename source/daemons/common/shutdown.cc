@@ -61,8 +61,7 @@
  * The version and build id of a daemon that has just started are worth having
  * in the log even when the site logs errors only.
  */
-void starting_up()
-{
+void starting_up() {
    DENTER(TOP_LAYER);
 
    // switch to the INFO logging level, we want to see the startup messages regardless of the configured log level
@@ -108,8 +107,7 @@ void starting_up()
 /** @brief Log the shutdown banner and end the process
  * @param i the exit status
  */
-void sge_shutdown(int i)
-{
+void sge_shutdown(int i) {
    DENTER(TOP_LAYER);
 
    uint32_t old_ll = log_state_get_log_level();

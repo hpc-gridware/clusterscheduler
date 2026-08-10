@@ -845,8 +845,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out, bool
  *
  * @note MT-NOTE: sge_set_environment() is not MT safe
  */
-int sge_set_environment()
-{
+int sge_set_environment() {
    const char *const filename = "environment";
    FILE *fp;
    char buf[10000], *name, *value, err_str[10000];
@@ -908,8 +907,7 @@ FCLOSE_ERROR:
 *  NOTES
 *      MT-NOTE: setup_environment() is not MT safe
 *******************************************************************************/
-static void setup_environment()
-{
+static void setup_environment() {
    /* Bugfix: Issuezilla 1300
     * Because this fix could break pre-existing installations, it was made
     * optional. */
@@ -935,8 +933,7 @@ static void setup_environment()
  *
  * @note MT-NOTE: sge_get_environment() is not MT safe
  */
-char** sge_get_environment()
-{
+char **sge_get_environment() {
    /* Bugfix: Issuezilla 1300
     * Because this fix could break pre-existing installations, it was made
     * optional. */
@@ -954,8 +951,7 @@ char** sge_get_environment()
  *
  * @note MT-NOTE: sge_set_env_value() is not MT safe
  */
-int sge_set_env_value(const char *name, const char* value)
-{
+int sge_set_env_value(const char *name, const char *value) {
    int ret = -1;
 
    /* Bugfix: Issuezilla 1300
@@ -992,8 +988,7 @@ int sge_set_env_value(const char *name, const char* value)
  *
  * @note MT-NOTE: sge_get_env_value() is not MT safe
  */
-const char *sge_get_env_value(const char *name)
-{
+const char *sge_get_env_value(const char *name) {
    const char *ret = nullptr;
    /* Bugfix: Issuezilla 1300
     * Because this fix could break pre-existing installations, it was made
@@ -1026,8 +1021,7 @@ const char *sge_get_env_value(const char *name)
 
 /** @brief What separates the arguments in a configured method string */
 #define PROC_ARG_DELIM " \t"
-static char **disassemble_proc_args(const char *script_file, char **preargs, int extra_args)
-{
+static char **disassemble_proc_args(const char *script_file, char **preargs, int extra_args) {
    char *s;
    unsigned long n_preargs = 0, n_procargs = 0, i;
    char **args, **pstr;
@@ -1062,8 +1056,7 @@ static char **disassemble_proc_args(const char *script_file, char **preargs, int
 }
 
 
-static char **read_job_args(char **preargs, int extra_args)
-{
+static char **read_job_args(char **preargs, int extra_args) {
    int n_preargs = 0;
    int n_job_args = 0;
    int i;
@@ -1601,9 +1594,8 @@ build_path(int type) {
 *     char* - If one is given, the name of the user.
 *             Else nullptr.
 *******************************************************************************/
-static char*
-parse_script_params(char **script_file)
-{
+static char *
+parse_script_params(char **script_file) {
    char* target_user = nullptr;
    char* s;
 
@@ -1635,8 +1627,7 @@ parse_script_params(char **script_file)
 *  NOTES
 *      MT-NOTE: inherit_env() is not MT safe
 *******************************************************************************/
-static bool inherit_env()
-{
+static bool inherit_env() {
    if (inherit_environ == -1) {
       /* We have to use search_conf_val() instead of get_conf_val() because this
        * change is happening in a patch, and we can't break backward
@@ -1707,8 +1698,7 @@ static void set_inherit_env (bool inherit)
 *  SEE ALSO
 *     builtin_starter/start_qrsh_job
 *******************************************************************************/
-static void start_qlogin_job(const char *shell_path)
-{
+static void start_qlogin_job(const char *shell_path) {
    char minusname[50];
 
    // generate e.g. "-bash" from the shell path "/bin/bash"

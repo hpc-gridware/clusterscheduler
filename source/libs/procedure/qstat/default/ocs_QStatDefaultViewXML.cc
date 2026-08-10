@@ -134,7 +134,6 @@ void ocs::QStatDefaultViewXML::report_queue_section_finished(std::ostream &os, Q
 }
 
 void ocs::QStatDefaultViewXML::report_queue_finished(std::ostream &os, const char* qname, QStatParameter &parameter) {
-
    DENTER(TOP_LAYER);
 
    if (parameter.show_ & QSTAT_DISPLAY_FULL) {
@@ -160,10 +159,10 @@ void ocs::QStatDefaultViewXML::report_queue_finished(std::ostream &os, const cha
 }
 
 void ocs::QStatDefaultViewXML::report_queue_started(std::ostream &os, const char* qname, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+
    lList *attribute_list = nullptr;
    lListElem *temp = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (parameter.show_ & QSTAT_DISPLAY_FULL) {
 
@@ -262,7 +261,6 @@ void ocs::QStatDefaultViewXML::report_queue_resource_finished(std::ostream &os, 
 }
 
 void ocs::QStatDefaultViewXML::report_queue_resource(std::ostream &os, const lListElem *resource, const char* dom, const char* name, const char* value, const char *details) {
-
    DENTER(TOP_LAYER);
 
    lListElem *xml_elem = lGetObject(queue_elem, XMLE_Element);
@@ -516,7 +514,6 @@ void ocs::QStatDefaultViewXML::report_sub_task(std::ostream &os, task_summary_t 
 }
 
 void ocs::QStatDefaultViewXML::report_additional_info(std::ostream &os, const job_additional_info_t name, const char* value) {
-
    DENTER(TOP_LAYER);
 
    switch(name) {
@@ -539,10 +536,10 @@ void ocs::QStatDefaultViewXML::report_additional_info(std::ostream &os, const jo
 }
 
 void ocs::QStatDefaultViewXML::report_requested_pe(std::ostream &os, const char* pe_name, const char* pe_range) {
+   DENTER(TOP_LAYER);
+
    lListElem *xml_elem = nullptr;
    lList *attribute_list = lGetListRW(job_elem, XMLE_List);
-
-   DENTER(TOP_LAYER);
 
    xml_elem = xml_append_Attr_S(attribute_list, "requested_pe", pe_range);
    xml_addAttribute(xml_elem, "name", pe_name);
@@ -551,10 +548,10 @@ void ocs::QStatDefaultViewXML::report_requested_pe(std::ostream &os, const char*
 }
 
 void ocs::QStatDefaultViewXML::report_granted_pe(std::ostream &os, const char* pe_name, int pe_slots) {
+   DENTER(TOP_LAYER);
+
    lListElem *xml_elem = nullptr;
    lList *attribute_list = lGetListRW(job_elem, XMLE_List);
-
-   DENTER(TOP_LAYER);
 
    xml_elem = xml_append_Attr_I(attribute_list, "granted_pe", pe_slots);
    xml_addAttribute(xml_elem, "name", pe_name);
@@ -573,10 +570,10 @@ void ocs::QStatDefaultViewXML::report_default_request_finished(std::ostream &os)
 }
 
 void ocs::QStatDefaultViewXML::report_default_request(std::ostream &os, const char* name, const char* value) {
+   DENTER(TOP_LAYER);
+
    lListElem *xml_elem = nullptr;
    lList *attribute_list = lGetListRW(job_elem, XMLE_List);
-
-   DENTER(TOP_LAYER);
 
    xml_elem = xml_append_Attr_S(attribute_list, "def_hard_request", value);
    xml_addAttribute(xml_elem, "name", name);
@@ -684,9 +681,9 @@ void ocs::QStatDefaultViewXML::report_soft_requested_queue(std::ostream &os, int
 }
 
 void ocs::QStatDefaultViewXML::report_predecessor_requested(std::ostream &os, const char* name) {
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
-
    DENTER(TOP_LAYER);
+
+   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
 
    xml_append_Attr_S(attribute_list, "predecessor_jobs_req", name);
 
@@ -694,9 +691,9 @@ void ocs::QStatDefaultViewXML::report_predecessor_requested(std::ostream &os, co
 }
 
 void ocs::QStatDefaultViewXML::report_predecessor(std::ostream &os, uint32_t jid) {
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
-
    DENTER(TOP_LAYER);
+
+   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
 
    xml_append_Attr_U(attribute_list, "predecessor_jobs", jid);
 
@@ -704,9 +701,9 @@ void ocs::QStatDefaultViewXML::report_predecessor(std::ostream &os, uint32_t jid
 }
 
 void ocs::QStatDefaultViewXML::report_ad_predecessor_requested(std::ostream &os, const char* name) {
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
-
    DENTER(TOP_LAYER);
+
+   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
 
    xml_append_Attr_S(attribute_list, "ad_predecessor_jobs_req", name);
 
@@ -714,9 +711,9 @@ void ocs::QStatDefaultViewXML::report_ad_predecessor_requested(std::ostream &os,
 }
 
 void ocs::QStatDefaultViewXML::report_ad_predecessor(std::ostream &os, uint32_t jid) {
-   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
-
    DENTER(TOP_LAYER);
+
+   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
 
    xml_append_Attr_U(attribute_list, "ad_predecessor_jobs", jid);
 

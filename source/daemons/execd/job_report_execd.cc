@@ -97,9 +97,7 @@ bool sge_get_flush_jr_flag() {
  *
  * @param jr the job report
  */
-void
-flush_job_report(lListElem *jr)
-{
+void flush_job_report(lListElem *jr) {
    if (jr != nullptr) {
       lSetBool(jr, JR_flush, true);
       sge_set_flush_jr_flag(true);
@@ -132,11 +130,10 @@ void trace_jr()
  * @param jep the job (`JB_Type`)
  * @return the new report, or the existing one when there already is one
  */
-lListElem *add_job_report(uint32_t jobid, uint32_t jataskid, const char *petaskid, const lListElem *jep)
-{
-   lListElem *jr, *jatep = nullptr;
-
+lListElem *add_job_report(uint32_t jobid, uint32_t jataskid, const char *petaskid, const lListElem *jep) {
    DENTER(TOP_LAYER);
+
+   lListElem *jr, *jatep = nullptr;
 
    if (jr_list == nullptr)
       jr_list = lCreateList("job report list", JR_Type);
@@ -176,12 +173,11 @@ lListElem *
  * @param pe_task_id the PE task, or nullptr
  * @return the report, or nullptr when there is none
  */
-get_job_report(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id)
-{
+get_job_report(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id) {
+   DENTER(TOP_LAYER);
+
    lListElem *jr;
    const void *iterator = nullptr;
-
-   DENTER(TOP_LAYER);
 
    jr = lGetElemUlongFirstRW(jr_list, JR_job_number, job_id, &iterator);
    while (jr != nullptr) {
@@ -204,8 +200,7 @@ get_job_report(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id)
 /** @brief Drop one job report, once qmaster has acknowledged it
  * @param jr the report
  */
-void del_job_report(lListElem *jr)
-{
+void del_job_report(lListElem *jr) {
    lRemoveElem(jr_list, &jr);
 }
 
@@ -213,12 +208,11 @@ void del_job_report(lListElem *jr)
  * @param jobid the job
  * @param jataskid the array task
  */
-void cleanup_job_report(uint32_t jobid, uint32_t jataskid)
-{
+void cleanup_job_report(uint32_t jobid, uint32_t jataskid) {
+   DENTER(TOP_LAYER);
+
    lListElem *jr, *jr_next;
    const void *iterator = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* get rid of job reports for all slave tasks */
    jr_next = lGetElemUlongFirstRW(jr_list, JR_job_number, jobid, &iterator);
@@ -259,11 +253,10 @@ void cleanup_job_report(uint32_t jobid, uint32_t jataskid)
  * @param val its value as a number
  * @return true on success
  */
-int add_usage(lListElem *jr, const char *name, const char *val_as_str, double val)
-{
-   lListElem *usage;
-
+int add_usage(lListElem *jr, const char *name, const char *val_as_str, double val) {
    DENTER(TOP_LAYER);
+
+   lListElem *usage;
 
    if (!jr || !name) {
       DRETURN(-1);
@@ -363,14 +356,13 @@ RETURN
  * @param aMsg the received message
  * @return 0 on success
  */
-int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
-{
+int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
+   DENTER(TOP_LAYER);
+
    uint32_t jobid, jataskid;
    lListElem *jr;
    lListElem *ack;
    const char *pe_task_id_str;
-
-   DENTER(TOP_LAYER);
 
    DPRINTF("------- GOT ACK'S ---------\n");
 
@@ -547,8 +539,7 @@ count_queue_limits(const lListElem *queue, ocs::CEntry::Type type, int limit_nm,
  * @param jep the job (`JB_Type`)
  * @param increase true when the job starts, false when it ends
  */
-void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem *jep, bool increase)
-{
+void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem *jep, bool increase) {
    const lListElem *gdil_ep;
 
    for_each_ep_lv(jatep, lGetList(jep, JB_ja_tasks)) {
@@ -583,8 +574,7 @@ void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem 
 /** @brief Whether any running job is subject to a queue resource limit
  * @return non-zero when the limits have to be enforced this interval
  */
-bool check_for_queue_limits()
-{
+bool check_for_queue_limits() {
    bool ret = false;
 
    if (check_queue_limits != 0) {

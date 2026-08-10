@@ -56,9 +56,7 @@
  **** only usage for that option will be displayed.
  ****   ** not implemented yet! **
  ****/
-int
-ocs::QStatParameterClient::qstat_usage(FILE *fp, char *what)
-{
+int ocs::QStatParameterClient::qstat_usage(FILE *fp, char *what) {
    dstring ds;
    char buffer[256];
 

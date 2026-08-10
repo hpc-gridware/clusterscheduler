@@ -67,8 +67,7 @@ static int free_sig = 0;
  *
  * Debug builds only.
  */
-void report_signal_queue()
-{
+void report_signal_queue() {
    char str[256];
    int n, i;
  
@@ -93,8 +92,7 @@ void report_signal_queue()
  * @param override_signal the name, e.g. `SIGKILL`
  * @return the signal number, or -1 when the name is not known
  */
-int shepherd_sys_str2signal(char *override_signal)
-{
+int shepherd_sys_str2signal(char *override_signal) {
    if (!isdigit(override_signal[0]))
       override_signal = &override_signal[3];
    return sge_sys_str2signal(override_signal);
@@ -107,8 +105,7 @@ int shepherd_sys_str2signal(char *override_signal)
  * @param signal signal number
  * @return 0 on success, -1 when the buffer is full
  */
-int add_signal(int signal)
-{
+int add_signal(int signal) {
    int ret = -1;
 
    if (n_sigs != SGE_MAXSIG) {
@@ -123,13 +120,12 @@ int add_signal(int signal)
       shepherd_trace(err_str);
    } 
    return ret;
-}  
+}
 
 /** @brief Take the next signal out of the queue
  * @return the signal number, or -1 when there are no more signals
  */
-int get_signal()
-{
+int get_signal() {
    int signal = -1;
 
    if (n_sigs != 0) {
@@ -145,8 +141,7 @@ int get_signal()
  * @param sig signal number
  * @return 1 when found, 0 when not
  */
-int pending_sig(int sig) 
-{
+int pending_sig(int sig) {
    int ret = 0;
    int n, i;
 
@@ -162,13 +157,11 @@ int pending_sig(int sig)
 /** @brief How many signals are waiting
  * @return the number of queued signals
  */
-int get_n_sigs()
-{
-   return n_sigs; 
+int get_n_sigs() {
+   return n_sigs;
 }
 
 /** @brief Discard every queued signal */
-void clear_queued_signals()
-{
-   n_sigs = next_sig = free_sig = 0; 
+void clear_queued_signals() {
+   n_sigs = next_sig = free_sig = 0;
 }

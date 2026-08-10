@@ -108,12 +108,11 @@ static int   sge_infotext_all_spaces(char* text) {
 
 
 static char* sge_infotext_make_line_break(dstring* buffer, const char* text) {
+   DENTER(TOP_LAYER);
 
    size_t h;
    int line;
    char hbuf[3];
-
-   DENTER(TOP_LAYER);
 
    strcpy(hbuf,"a");
 
@@ -255,6 +254,8 @@ static char* sge_infotext_get_next_word(dstring* buf, char* text) {
 }
 
 static void  sge_infotext_format_output(dstring* dash_buf,sge_infotext_options* options, char* text) {
+   DENTER(TOP_LAYER);
+
    char* column_var = nullptr;
    size_t max_column = 79;
    char* tp = nullptr;
@@ -268,8 +269,6 @@ static void  sge_infotext_format_output(dstring* dash_buf,sge_infotext_options* 
    int new_line_opt = options->n;
 
    bool done;
-
-   DENTER(TOP_LAYER);
 
 
    DPRINTF("format 1\n");
@@ -678,6 +677,8 @@ static void sge_infotext_usage() {
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
 int main( int argc, char* argv[] ) {
+   DENTER_MAIN(TOP_LAYER, "sge_infotext");
+
    int no_options = 0;
    int ret_val = 0;
    int show_help = 0;
@@ -704,8 +705,6 @@ int main( int argc, char* argv[] ) {
    dstring buffer2 = DSTRING_INIT;
    dstring sge_infotext_dash_buffer = DSTRING_INIT;
    dstring tmp_buf = DSTRING_INIT;
-
-   DENTER_MAIN(TOP_LAYER, "sge_infotext");
 
 #ifdef __SGE_COMPILE_WITH_GETTEXT__  
    sge_init_language_func((gettext_func_type)        gettext,

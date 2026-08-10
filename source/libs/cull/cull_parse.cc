@@ -104,6 +104,8 @@ int scan(
         const char *s,
         cull_parse_state *state
 ) {
+   DENTER(CULL_LAYER);
+
    static const char *opv[] =
            {
                    "%T",                     /* DESCRIPTOR TYPE OF LIST */
@@ -146,8 +148,6 @@ int scan(
    int i, j, len;
    int n = sizeof(opv) / sizeof(char *);
    int found;
-
-   DENTER(CULL_LAYER);
 
    if (s) {                     /* initialize scan() with a new string to parse */
       state->t = s;

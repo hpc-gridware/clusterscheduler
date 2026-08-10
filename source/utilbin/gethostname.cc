@@ -56,12 +56,11 @@
 
 #include "msg_utilbin.h"
 
-int usage()
-{
-  fprintf(stderr, "Version: %s\n", ocs::Version::get_version_string().c_str());
-  fprintf(stderr, "%s\n gethostname [-help|-name|-aname|-all]\n\n%s\n", MSG_UTILBIN_USAGE, MSG_COMMAND_USAGE_GETHOSTNAME );
-  exit(1);
-  return 0;
+int usage() {
+   fprintf(stderr, "Version: %s\n", ocs::Version::get_version_string().c_str());
+   fprintf(stderr, "%s\n gethostname [-help|-name|-aname|-all]\n\n%s\n", MSG_UTILBIN_USAGE, MSG_COMMAND_USAGE_GETHOSTNAME);
+   exit(1);
+   return 0;
 }
 
 int main(int argc,char *argv[]) {

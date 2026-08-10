@@ -68,11 +68,11 @@ static bool range_is_overlapping(const lListElem *range1,
 /* we keep a descending sorted list of non overlapping ranges */
 /* MT-NOTE: expand_range_list() is MT safe */
 static void expand_range_list(lListElem *r, lList **rl) {
+   DENTER(TOP_LAYER);
+
    uint32_t rmin, rmax, rstep;
    lListElem *ep;
    lListElem *rr;
-
-   DENTER(TOP_LAYER);
 
    rmin = lGetUlong(r, RN_min);
    rmax = lGetUlong(r, RN_max);
@@ -241,9 +241,10 @@ void range_correct_end(lListElem *this_range) {
  */
 static bool range_is_overlapping(const lListElem *this_elem,
                                  const lListElem *range) {
+   DENTER(RANGE_LAYER);
+
    bool ret = false;
 
-   DENTER(RANGE_LAYER);
    if (this_elem != nullptr && range != nullptr) {
       uint32_t start1, end1, step1;
       uint32_t start2, end2, step2;
@@ -341,9 +342,10 @@ uint32_t range_list_get_number_of_ids(const lList *this_list) {
  * @see range_list_get_number_of_ids
  */
 uint32_t range_get_number_of_ids(const lListElem *this_elem) {
+   DENTER(RANGE_LAYER);
+
    uint32_t start, end, step, ret;
 
-   DENTER(RANGE_LAYER);
    range_get_all_ids(this_elem, &start, &end, &step);
    ret = 1 + (end - start) / step;
    DRETURN(ret);
@@ -404,10 +406,11 @@ range_list_print_to_string(const lList *this_list,
  * @see #range_list_get_last_id
  */
 uint32_t range_list_get_first_id(const lList *range_list, lList **answer_list) {
+   DENTER(RANGE_LAYER);
+
    uint32_t start = 0;
    const lListElem *range = nullptr;
 
-   DENTER(RANGE_LAYER);
    range = lFirst(range_list);
    if (range) {
       uint32_t end, step;
@@ -436,10 +439,11 @@ uint32_t range_list_get_first_id(const lList *range_list, lList **answer_list) {
  * @see #range_list_get_first_id
  */
 uint32_t range_list_get_last_id(const lList *range_list, lList **answer_list) {
+   DENTER(RANGE_LAYER);
+
    uint32_t end = 0;
    const lListElem *range = nullptr;
 
-   DENTER(RANGE_LAYER);
    range = lLast(range_list);
    if (range) {
       uint32_t start, step;
@@ -671,10 +675,11 @@ bool range_list_is_id_within(const lList *range_list, uint32_t id) {
  * @return true or false
  */
 bool range_list_containes_id_less_than(const lList *range_list, uint32_t id) {
+   DENTER(RANGE_LAYER);
+
    const lListElem *range = nullptr;
    bool ret = false;
 
-   DENTER(RANGE_LAYER);
    for_each_ep(range, range_list) {
       if (range_containes_id_less_than(range, id)) {
          ret = true;
@@ -717,9 +722,10 @@ bool range_list_is_empty(const lList *range_list) {
  * @see range_list_containes_id_less_than
  */
 bool range_containes_id_less_than(const lListElem *range, uint32_t id) {
+   DENTER(RANGE_LAYER);
+
    bool ret = false;
 
-   DENTER(RANGE_LAYER);
    if (range) {
       uint32_t start, end, step;
 
@@ -753,9 +759,10 @@ bool range_containes_id_less_than(const lListElem *range, uint32_t id) {
  * @see range_list_is_id_within
  */
 bool range_is_id_within(const lListElem *range, uint32_t id) {
+   DENTER(RANGE_LAYER);
+
    bool ret = false;
 
-   DENTER(RANGE_LAYER);
    if (range) {
       uint32_t start, end, step;
 
@@ -779,9 +786,10 @@ bool range_is_id_within(const lListElem *range, uint32_t id) {
  * @note range_list and answer_list may be modified
  */
 void range_list_remove_id(lList **range_list, lList **answer_list, uint32_t id) {
+   DENTER(RANGE_LAYER);
+
    lListElem *range = nullptr;
 
-   DENTER(RANGE_LAYER);
    if (range_list != nullptr && *range_list != nullptr) {
       lListElem *next_range = lFirstRW(*range_list);
 
@@ -887,10 +895,10 @@ void range_list_move_first_n_ids(lList **range_list, lList **answer_list,
  * @see #range_list_compress, range_list_sort_uniq_compress()
  */
 void range_list_insert_id(lList **range_list, lList **answer_list, uint32_t id) {
+   DENTER(RANGE_LAYER);
+
    lListElem *range, *prev_range, *next_range;
    int inserted = 0;
-
-   DENTER(RANGE_LAYER);
 
    lPSortList(*range_list, "%I+", RN_min);
 
@@ -1285,13 +1293,13 @@ void range_parse_from_string(lListElem **range,
                              lList **answer_list,
                              const char *rstr,
                              int step_allowed, int inf_allowed) {
+   DENTER(TOP_LAYER);
+
    const char *old_str;
    char *dptr;
    uint32_t rmin, rmax, ldummy, step = 1;
    lListElem *r;
    char msg[MAX_STRING_SIZE];
-
-   DENTER(TOP_LAYER);
 
    old_str = rstr;
 
@@ -1514,13 +1522,13 @@ bool
 range_list_parse_from_string(lList **this_list, lList **answer_list,
                              const char *string, bool just_parse,
                              bool step_allowed, bool inf_allowed) {
+   DENTER(TOP_LAYER);
+
    const char *s;
    lListElem *range = nullptr;
    lList *range_list = nullptr;
    bool undefined = false, first = true;
    struct saved_vars_s *context = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (!this_list) {
       this_list = &range_list;

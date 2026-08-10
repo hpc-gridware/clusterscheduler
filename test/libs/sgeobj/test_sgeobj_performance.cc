@@ -51,8 +51,7 @@ uint32_t *random_array = nullptr;   ///< the ids to look up, in random order, so
 lList *master_job_list = nullptr;   ///< the list under test
 
 static bool
-load_rand_file(const char *filename)
-{
+load_rand_file(const char *filename) {
    bool ret = true;
    char line[100];
    FILE *fp;
@@ -81,8 +80,7 @@ load_rand_file(const char *filename)
 }
 
 static bool
-create_rand_file(const char *filename)
-{
+create_rand_file(const char *filename) {
    bool ret = true;
    FILE *fp;
 
@@ -118,8 +116,7 @@ create_rand_file(const char *filename)
 }
 
 static bool
-load_or_create_rand_file()
-{
+load_or_create_rand_file() {
    DSTRING_STATIC(filename_dstr, 100);
    const char *filename_str;
    SGE_STRUCT_STAT stat_buf{0};
@@ -138,8 +135,7 @@ load_or_create_rand_file()
 }
 
 static bool
-create_jobs()
-{
+create_jobs() {
    bool ret = true;
    typedef struct {
       const char *user;
@@ -187,8 +183,7 @@ create_jobs()
 }
 
 static bool
-update_jobs()
-{
+update_jobs() {
    bool ret = true;
    int i;
 
@@ -216,8 +211,7 @@ update_jobs()
 }
 
 static bool
-delete_jobs()
-{
+delete_jobs() {
    bool ret = true;
    int i;
 
@@ -243,8 +237,7 @@ delete_jobs()
    return ret;
 }
 
-int main(int argc, const char *argv[])
-{
+int main(int argc, const char *argv[]) {
    if (argc > 1) {
       num_jobs = atoi(argv[1]);
    }

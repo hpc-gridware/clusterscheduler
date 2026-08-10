@@ -78,8 +78,7 @@
  *
  * @note MT-NOTE: rqs_limitation_reached() is not MT safe
  */
-static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *rule, const char* host, const char* queue, uint64_t *start)
-{
+static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *rule, const char *host, const char *queue, uint64_t *start) {
    DENTER(TOP_LAYER);
    dispatch_t ret = DISPATCH_MISSING_ATTR;
    const lList *limit_list = nullptr;
@@ -217,12 +216,11 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
  * @note MT-NOTE: rqs_exceeded_sort_out() is MT safe
  */
 static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, const dstring *rule_name,
-   const char* queue_name, const char* host_name)
-{
+                                  const char *queue_name, const char *host_name) {
+   DENTER(TOP_LAYER);
+
    bool cq_global = is_cqueue_global(rule);
    bool eh_global = is_host_global(rule);
-
-   DENTER(TOP_LAYER);
 
    if ((!cq_global && !eh_global) || (cq_global && eh_global &&
          (is_cqueue_expand(rule) || is_host_expand(rule)))) { /* failure at queue instance limit */
@@ -312,8 +310,7 @@ static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, co
  * @note MT-NOTE: rqs_exceeded_sort_out_par() is MT safe
  */
 static void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem *rule, const dstring *rule_name,
-   const char* queue_name, const char* host_name)
-{
+                                      const char *queue_name, const char *host_name) {
    if (rqs_exceeded_sort_out(a, rule, rule_name, queue_name, host_name)) {
       rqs_expand_hosts(rule, a);
    }
@@ -340,14 +337,13 @@ static void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem *rule
  */
 dispatch_t
 parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool need_master,
-                           bool is_master_queue)
-{
+                           bool is_master_queue) {
+   DENTER(TOP_LAYER);
+
    dispatch_t result = DISPATCH_OK;
    int tslots = INT_MAX;
    const char* queue = lGetString(qep, QU_qname);
    const char* host = lGetHost(qep, QU_qhostname);
-
-   DENTER(TOP_LAYER);
 
    if (lGetNumberOfElem(a->rqs_list) != 0) {
       const char* user = a->user;
@@ -500,8 +496,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool
  *
  * @note MT-NOTE: rqs_match_assignment() is MT safe
  */
-static bool rqs_match_assignment(const lListElem *rule, sge_assignment_t *a)
-{
+static bool rqs_match_assignment(const lListElem *rule, sge_assignment_t *a) {
    return (rqs_filter_match(lGetObject(rule, RQR_filter_projects), FILTER_PROJECTS, a->project, nullptr, nullptr, nullptr, nullptr) &&
            rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, a->user, a->acl_list, nullptr, a->group, a->grp_list) &&
            rqs_filter_match(lGetObject(rule, RQR_filter_pes), FILTER_PES, nullptr, nullptr, nullptr, nullptr, nullptr))?true:false;
@@ -523,8 +518,7 @@ static bool rqs_match_assignment(const lListElem *rule, sge_assignment_t *a)
  *
  * @note MT-NOTE: rqs_can_optimize() is MT safe
  */
-void rqs_can_optimize(const lListElem *rule, bool *host, bool *queue, sge_assignment_t *a)
-{
+void rqs_can_optimize(const lListElem *rule, bool *host, bool *queue, sge_assignment_t *a) {
    bool host_shadowed = false, queue_shadowed = false;
 
    const lListElem *prev = rule;
@@ -695,11 +689,10 @@ parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, const
  * @note MT-NOTE: rqs_by_slots() is MT safe
  */
 dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host,
-  uint64_t *tt_rqs_all, bool *is_global, dstring *rue_string, dstring *limit_name, dstring *rule_name, uint64_t tt_best)
-{
-   dispatch_t result = DISPATCH_OK;
-
+                        uint64_t *tt_rqs_all, bool *is_global, dstring *rue_string, dstring *limit_name, dstring *rule_name, uint64_t tt_best) {
    DENTER(TOP_LAYER);
+
+   dispatch_t result = DISPATCH_OK;
 
    *is_global = false;
 
@@ -797,11 +790,10 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
  *
  * @note MT-NOTE: rqs_expand_cqueues() is not MT safe
  */
-void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
-{
-   lListElem *qfilter = lGetObject(rule, RQR_filter_queues);
-
+void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a) {
    DENTER(TOP_LAYER);
+
+   lListElem *qfilter = lGetObject(rule, RQR_filter_queues);
 
    for_each_ep_lv(cq, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
       const char *cqname = lGetString(cq, CQ_name);
@@ -825,8 +817,7 @@ void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
  *
  * @note MT-NOTE: rqs_expand_hosts() is MT safe
  */
-void rqs_expand_hosts(const lListElem *rule, sge_assignment_t *a)
-{
+void rqs_expand_hosts(const lListElem *rule, sge_assignment_t *a) {
    lListElem *hfilter = lGetObject(rule, RQR_filter_hosts);
 
    for_each_ep_lv(eh, a->host_list) {
@@ -859,8 +850,7 @@ void rqs_expand_hosts(const lListElem *rule, sge_assignment_t *a)
  *
  * @note MT-NOTE: cqueue_shadowed() is MT safe
  */
-bool cqueue_shadowed(const lListElem *rule, sge_assignment_t *a)
-{
+bool cqueue_shadowed(const lListElem *rule, sge_assignment_t *a) {
    while ((rule = lPrev(rule))) {
       if (rqs_match_assignment(rule, a) && !is_cqueue_global(rule)) {
          return true;
@@ -888,8 +878,7 @@ bool cqueue_shadowed(const lListElem *rule, sge_assignment_t *a)
  *
  * @note MT-NOTE: host_shadowed() is MT safe
  */
-bool host_shadowed(const lListElem *rule, sge_assignment_t *a)
-{
+bool host_shadowed(const lListElem *rule, sge_assignment_t *a) {
    while ((rule = lPrev(rule))) {
       if (rqs_match_assignment(rule, a) && !is_host_global(rule)) {
          return true;
@@ -913,12 +902,11 @@ bool host_shadowed(const lListElem *rule, sge_assignment_t *a)
  *
  * @note MT-NOTE: rqs_excluded_cqueues() is MT safe
  */
-void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
-{
+void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a) {
+   DENTER(TOP_LAYER);
+
    const lListElem *prev;
    int ignored = 0, excluded = 0;
-
-   DENTER(TOP_LAYER);
 
    for_each_ep_lv(cq, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
       const char *cqname = lGetString(cq, CQ_name);
@@ -967,12 +955,11 @@ void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a)
  *
  * @note MT-NOTE: rqs_excluded_hosts() is MT safe
  */
-void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a)
-{
+void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a) {
+   DENTER(TOP_LAYER);
+
    const lListElem *prev;
    int ignored = 0, excluded = 0;
-
-   DENTER(TOP_LAYER);
 
    for_each_ep_lv(eh, a->host_list) {
       const char *hname = lGetHost(eh, EH_name);
@@ -1024,8 +1011,7 @@ void rqs_excluded_hosts(const lListElem *rule, sge_assignment_t *a)
  *
  * @note MT-NOTE: cqueue_shadowed_by() is MT safe
  */
-bool cqueue_shadowed_by(const char *cqname, const lListElem *rule, sge_assignment_t *a)
-{
+bool cqueue_shadowed_by(const char *cqname, const lListElem *rule, sge_assignment_t *a) {
    while ((rule = lPrev(rule))) {
       if (rqs_match_assignment(rule, a) &&
           rqs_filter_match(lGetObject(rule, RQR_filter_queues), FILTER_QUEUES, cqname, nullptr, nullptr, nullptr, nullptr)) {
@@ -1054,8 +1040,7 @@ bool cqueue_shadowed_by(const char *cqname, const lListElem *rule, sge_assignmen
  *
  * @note MT-NOTE: host_shadowed_by() is MT safe
  */
-bool host_shadowed_by(const char *host, const lListElem *rule, sge_assignment_t *a)
-{
+bool host_shadowed_by(const char *host, const lListElem *rule, sge_assignment_t *a) {
    while ((rule = lPrev(rule))) {
       if (rqs_match_assignment(rule, a) &&
           rqs_filter_match(lGetObject(rule, RQR_filter_hosts), FILTER_HOSTS, host, nullptr, a->hgrp_list, nullptr, nullptr)) {
@@ -1085,7 +1070,6 @@ bool host_shadowed_by(const char *host, const lListElem *rule, sge_assignment_t 
  */
 bool
 rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exec_host, const lList *centry) {
-
    DENTER(TOP_LAYER);
 
    if (lGetBool(limit, RQRL_dynamic)) {

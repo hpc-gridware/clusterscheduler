@@ -53,8 +53,7 @@
 
 #include "msg_utilbin.h"
 
-static void usage(const char *argv0)
-{
+static void usage(const char *argv0) {
    fprintf(stderr, "%s\n %s %s\n\n", MSG_UTILBIN_USAGE, argv0, 
                                      MSG_SPOOLINIT_COMMANDINTRO0);
    fprintf(stderr, "%s\n", MSG_SPOOLINIT_COMMANDINTRO1);
@@ -68,15 +67,14 @@ static void usage(const char *argv0)
    fprintf(stderr, "%s\n", MSG_SPOOLINIT_COMMANDINTRO9);
 }
 
-static int init_framework(const char *method, const char *shlib, 
-                          const char *libargs, bool check_context)
-{
+static int init_framework(const char *method, const char *shlib,
+                          const char *libargs, bool check_context) {
+   DENTER(TOP_LAYER);
+
    int ret = EXIT_FAILURE;
 
    lListElem *spooling_context = nullptr;
    lList *answer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    lInit(nmv);
    /* create spooling context */
@@ -101,8 +99,7 @@ static int init_framework(const char *method, const char *shlib,
    DRETURN(ret);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "spoolinit");
    int ret = EXIT_SUCCESS;
    lList *answer_list = nullptr;

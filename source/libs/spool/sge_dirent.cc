@@ -71,12 +71,12 @@
  *          indentation never comes back down after a failed open.
  */
 lList *sge_get_dirents(const char *path) {
+   DENTER(TOP_LAYER);
+
    lList *entries = nullptr;
    DIR *cwd;
    SGE_STRUCT_DIRENT *dent;
    char dirent[SGE_PATH_MAX*2];
-
-   DENTER(TOP_LAYER);
 
    cwd = opendir(path);
 
@@ -108,8 +108,7 @@ lList *sge_get_dirents(const char *path) {
  * @note The loop skips `.` and `..` again, although #sge_get_dirents has
  *       already dropped both - the condition is always true.
  */
-uint32_t sge_count_dirents(char *directory_name)
-{
+uint32_t sge_count_dirents(char *directory_name) {
    uint32_t entries = 0;
    lList *dir_entries = sge_get_dirents(directory_name);
    for_each_ep_lv(dir_entry, dir_entries) {
@@ -137,8 +136,7 @@ uint32_t sge_count_dirents(char *directory_name)
  *
  * @warning No caller in the source tree.
  */
-int has_more_dirents(char *directory_name, uint32_t number_of_entries)
-{
+int has_more_dirents(char *directory_name, uint32_t number_of_entries) {
    uint32_t entries = 0;
    int ret = 0;
  
@@ -154,5 +152,5 @@ int has_more_dirents(char *directory_name, uint32_t number_of_entries)
       }
    }
    lFreeList(&dir_entries);
-   return ret;  
+   return ret;
 }

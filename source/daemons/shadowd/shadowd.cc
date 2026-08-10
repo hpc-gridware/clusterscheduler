@@ -144,13 +144,13 @@ shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, cha
 
 static int
 shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, char *oldqmaster) {
+   DENTER(TOP_LAYER);
+
    cl_com_handle_t *handle = nullptr;
    cl_com_SIRM_t *status = nullptr;
    int ret;
    int is_up_and_running = 0;
    int commlib_error = CL_RETVAL_OK;
-
-   DENTER(TOP_LAYER);
 
    /*
     * This is for testsuite testing to simulate qmaster outage.
@@ -201,6 +201,8 @@ shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, cha
  */
 int
 main(int argc, char **argv) {
+   DENTER_MAIN(TOP_LAYER, "sge_shadowd");
+
    int heartbeat = 0;
    int last_heartbeat = 0;
    int latest_heartbeat = 0;
@@ -229,8 +231,6 @@ main(int argc, char **argv) {
 #endif
 
    lList *alp = nullptr;
-
-   DENTER_MAIN(TOP_LAYER, "sge_shadowd");
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
    /* initialize recovery control variables */
@@ -508,10 +508,10 @@ shadowd_exit_func(int i) {
  *-----------------------------------------------------------------*/
 static int
 compare_qmaster_names(const char *act_qmaster_file, const char *oldqmaster) {
+   DENTER(TOP_LAYER);
+
    char newqmaster[SGE_PATH_MAX];
    int ret;
-
-   DENTER(TOP_LAYER);
 
    if (ocs::gdi::ClientBase::get_qm_name(newqmaster, act_qmaster_file, nullptr, 0)) {
       WARNING(MSG_SHADOWD_CANTREADACTQMASTERFILEX_S, act_qmaster_file);
@@ -534,9 +534,9 @@ compare_qmaster_names(const char *act_qmaster_file, const char *oldqmaster) {
 static int
 check_if_valid_shadow(char *binpath, char *oldqmaster, const char *act_qmaster_file, const char *shadow_master_file,
                       const char *qualified_hostname, const char *binary_path) {
-   struct hostent *hp;
-
    DENTER(TOP_LAYER);
+
+   struct hostent *hp;
 
    if (isLocked(QMASTER_LOCK_FILE)) {
       DPRINTF("lock file exits\n");
@@ -589,10 +589,10 @@ check_if_valid_shadow(char *binpath, char *oldqmaster, const char *act_qmaster_f
  *----------------------------------------------------------------------*/
 static int
 host_in_file(const char *host, const char *file) {
+   DENTER(TOP_LAYER);
+
    FILE *fp;
    char buf[512], *cp;
-
-   DENTER(TOP_LAYER);
 
    fp = fopen(file, "r");
    if (!fp) {
@@ -626,10 +626,10 @@ DRETURN(0);
  *---------------------------------------------------------------------*/
 static int
 parse_cmdline_shadowd(int argc, char **argv) {
+   DENTER(TOP_LAYER);
+
    dstring ds;
    char buffer[256];
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
    /*

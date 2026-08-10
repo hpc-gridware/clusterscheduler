@@ -87,26 +87,25 @@ static int do_wait(pid_t);
  *         status of the child. Exit status 8 is reserved for an unsuccessful
  *         exec().
  */
-int startprog(int out, int err, 
-              char *argv0, char *path, char *name, ...) 
-{
- SGE_STRUCT_STAT sb;
- char prog_path[SGE_PATH_MAX];
- pid_t pid;
- int ret;
- char *ptr;
- va_list argnp;
- char *argv[256];
- int i;
- char *str;
- dstring ds;
- char buffer[128];
+int startprog(int out, int err,
+              char *argv0, char *path, char *name, ...) {
+ DENTER(TOP_LAYER);
+
+   SGE_STRUCT_STAT sb;
+   char prog_path[SGE_PATH_MAX];
+   pid_t pid;
+   int ret;
+   char *ptr;
+   va_list argnp;
+   char *argv[256];
+   int i;
+   char *str;
+   dstring ds;
+   char buffer[128];
 #if defined(SOLARIS)
  int err_length = 256;
  char err_str[err_length];
 #endif
-
- DENTER(TOP_LAYER);
 
  sge_dstring_init(&ds, buffer, sizeof(buffer));
 
@@ -201,7 +200,7 @@ int startprog(int out, int err,
  }
  /* should never be reached */
  DRETURN(-1);
-} 
+}
 
 /*-----------------------------------------------------------------------
  * do_wait
@@ -213,10 +212,10 @@ int startprog(int out, int err,
 static int do_wait(
 pid_t pid 
 ) {
+   DENTER(TOP_LAYER);
+
    pid_t npid;
    int status, exit_status, ret;
-
-   DENTER(TOP_LAYER);
 
    /* This loop only ends if the process exited normally or
     * died through signal

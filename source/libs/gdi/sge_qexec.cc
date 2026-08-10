@@ -107,6 +107,8 @@ const char *qexec_last_err() {
 sge_tid_t
 sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const lList *environment,
             const lList *path_aliases, const char *cert) {
+   DENTER(TOP_LAYER);
+
    char myname[256];
    const char *s;
    int ret;
@@ -116,8 +118,6 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
    uint32_t jobid, jataskid;
    uint32_t dummymid = 0;
    const char *env_var_name = "SGE_TASK_ID";
-
-   DENTER(TOP_LAYER);
 
    if (hostname == nullptr) {
       snprintf(lasterror, sizeof(lasterror), MSG_GDI_INVALIDPARAMETER_SS, "sge_qexecve", "hostname");
@@ -273,10 +273,10 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
  * @return the id of the task that ended, or nullptr when none had
  */
 int sge_qwaittid(sge_tid_t tid, int *status, int options) {
+   DENTER(TOP_LAYER);
+
    lListElem *rt = nullptr;
    int ret, rcv_opt = 0;
-
-   DENTER(TOP_LAYER);
 
    if (!(options & WNOHANG))
       rcv_opt |= OPT_SYNCHRON;
@@ -315,6 +315,8 @@ int sge_qwaittid(sge_tid_t tid, int *status, int options) {
 
 */
 static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerBaseTag tag) {
+   DENTER(TOP_LAYER);
+
    int ret;
    char *msg = nullptr;
    uint32_t msg_len = 0;
@@ -325,8 +327,6 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
    lListElem *rt_rcv;
    uint32_t exit_status = 0;
    sge_tid_t tid = nullptr;
-
-   DENTER(TOP_LAYER);
 
    host[0] = '\0';
    from_id = 1;

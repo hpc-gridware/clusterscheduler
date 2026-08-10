@@ -588,9 +588,9 @@ int replace_params(
  *         the name is absent or its value is not a valid time
  */
 bool parse_time_param(const char *input, const char *variable, uint32_t *value) {
-   bool ret = false;
-
    DENTER(BASIS_LAYER);
+
+   bool ret = false;
 
    if (input != nullptr && variable != nullptr && value != nullptr) {
       int var_len = strlen(variable);
@@ -643,9 +643,9 @@ bool parse_time_param(const char *input, const char *variable, uint32_t *value) 
  * @return true when @p input sets @p variable
  */
 bool parse_bool_param(const char *input, const char *variable, bool *value) {
-   bool ret = false;
-
    DENTER(BASIS_LAYER);
+
+   bool ret = false;
 
    if (input != nullptr && variable != nullptr && value != nullptr) {
       int var_len = strlen(variable);
@@ -699,9 +699,9 @@ bool parse_bool_param(const char *input, const char *variable, bool *value) {
  * @return true when @p input sets @p variable
  */
 bool parse_int_param(const char *input, const char *variable, int *value, ocs::CEntry::Type type) {
-   bool ret = false;
-
    DENTER(BASIS_LAYER);
+
+   bool ret = false;
 
    if (input != nullptr && variable != nullptr && value != nullptr) {
       int var_len = strlen(variable);
@@ -747,9 +747,9 @@ bool parse_int_param(const char *input, const char *variable, int *value, ocs::C
  * @return true when @p input sets @p variable
  */
 bool parse_string_param(const char *input, const char *variable, std::string &value) {
-   bool ret = false;
-
    DENTER(BASIS_LAYER);
+
+   bool ret = false;
 
    if (input != nullptr && variable != nullptr) {
       int var_len = strlen(variable);

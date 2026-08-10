@@ -141,11 +141,10 @@ static sge_locker_t id_callback_impl();
 static sge_locker_t (*id_callback)() = id_callback_impl;
 
 #ifdef SGE_LOCK_DEBUG
-void sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID)
-{
-   int res = -1;
-
+void sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID) {
    DENTER(BASIS_LAYER);
+
+   int res = -1;
 
    pthread_once(&lock_once, lock_once_init);
 
@@ -204,6 +203,8 @@ void sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, 
  * @return true when the lock was taken, false when it was already held
  */
 bool sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID) {
+   DENTER(BASIS_LAYER);
+
    bool res = false;
 
 #ifdef SGE_DEBUG_LOCK_TIME
@@ -211,8 +212,6 @@ bool sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, 
    struct timeval after;
    double time;
 #endif
-
-   DENTER(BASIS_LAYER);
 
    pthread_once(&lock_once, lock_once_init);
 
@@ -283,11 +282,10 @@ bool sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, 
  * @note MT-NOTE: sge_lock() is MT safe
  */
 #ifdef SGE_LOCK_DEBUG
-void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID)
-{
-   int res = -1;
-
+void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID) {
    DENTER(BASIS_LAYER);
+
+   int res = -1;
 
    pthread_once(&lock_once, lock_once_init);
 
@@ -338,6 +336,8 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
 #else
 
 void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID) {
+   DENTER(BASIS_LAYER);
+
    int res = -1;
 
 #ifdef SGE_DEBUG_LOCK_TIME
@@ -345,8 +345,6 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
    struct timeval after;
    double time;
 #endif
-
-   DENTER(BASIS_LAYER);
 
    pthread_once(&lock_once, lock_once_init);
 
@@ -421,11 +419,10 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
  * @note MT-NOTE: sge_unlock() is MT safe
  */
 #ifdef SGE_LOCK_DEBUG
-void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID)
-{
-   int res = -1;
+void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID) {
    DENTER(BASIS_LAYER);
 
+   int res = -1;
    pthread_once(&lock_once, lock_once_init);
 #ifdef SGE_USE_LOCK_FIFO
    res = sge_fifo_ulock(SGE_RW_Locks[aType], (bool)(aMode == LOCK_READ)) ? 0 : 1;
@@ -451,9 +448,9 @@ void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sg
 #else
 
 void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_locker_t anID) {
-   int res = -1;
-
    DENTER(BASIS_LAYER);
+
+   int res = -1;
 
    pthread_once(&lock_once, lock_once_init);
 
@@ -539,15 +536,14 @@ static sge_locker_t id_callback_impl() {
 } /* id_callback */
 
 #ifdef SGE_DEBUG_LOCK_TIME
-void sge_debug_time(sge_locktype_t aType) 
-{
-      fprintf(stderr, "reader_min   = %f\n", reader_min[aType]);
-      fprintf(stderr, "reader_max   = %f\n", reader_max[aType]);
-      fprintf(stderr, "reader_avg   = %f\n", reader_all[aType]/reader_count[aType]);
-      fprintf(stderr, "reader_count = %f\n", reader_count[aType]);
-      fprintf(stderr, "writer_min   = %f\n", writer_min[aType]);
-      fprintf(stderr, "writer_max   = %f\n", writer_max[aType]);
-      fprintf(stderr, "writer_avg   = %f\n", writer_all[aType]/writer_count[aType]);
-      fprintf(stderr, "writer_count = %f\n", writer_count[aType]);
+void sge_debug_time(sge_locktype_t aType) {
+   fprintf(stderr, "reader_min   = %f\n", reader_min[aType]);
+   fprintf(stderr, "reader_max   = %f\n", reader_max[aType]);
+   fprintf(stderr, "reader_avg   = %f\n", reader_all[aType] / reader_count[aType]);
+   fprintf(stderr, "reader_count = %f\n", reader_count[aType]);
+   fprintf(stderr, "writer_min   = %f\n", writer_min[aType]);
+   fprintf(stderr, "writer_max   = %f\n", writer_max[aType]);
+   fprintf(stderr, "writer_avg   = %f\n", writer_all[aType] / writer_count[aType]);
+   fprintf(stderr, "writer_count = %f\n", writer_count[aType]);
 }
 #endif

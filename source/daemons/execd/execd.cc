@@ -149,14 +149,12 @@ uint64_t get_last_qmaster_register_time() {
  *
  * @note This function is MT save
  */
-unsigned long sge_execd_application_status(char** info_message)
-{
+unsigned long sge_execd_application_status(char **info_message) {
    return sge_monitor_status(info_message, 0);
 }
 
 /*-------------------------------------------------------------------------*/
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "execd");
 
    int ret;
@@ -408,8 +406,7 @@ int main(int argc, char **argv)
  * Function installed to be called just before exit() is called.
  * clean up
  *-------------------------------------------------------------*/
-static void execd_exit_func(int i)
-{
+static void execd_exit_func(int i) {
    DENTER(TOP_LAYER);
 
    /* trigger load sensors shutdown */
@@ -519,8 +516,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
 /*---------------------------------------------------------------------
  * parse_cmdline_execd
  *---------------------------------------------------------------------*/
-static void parse_cmdline_execd(char **argv)
-{
+static void parse_cmdline_execd(char **argv) {
    DENTER(TOP_LAYER);
    lList *ref_list = nullptr, *alp = nullptr, *pcmdline = nullptr;
    uint32_t help = 0;
@@ -571,14 +567,13 @@ static void parse_cmdline_execd(char **argv)
  * sge_parse_cmdline_execd
  *
  *-------------------------------------------------------------*/
-static lList *sge_parse_cmdline_execd(char **argv, lList **ppcmdline)
-{
-char **sp;
-char **rp;
-stringT str;
-lList *alp = nullptr;
-
+static lList *sge_parse_cmdline_execd(char **argv, lList **ppcmdline) {
    DENTER(TOP_LAYER);
+
+   char **sp;
+   char **rp;
+   stringT str;
+   lList *alp = nullptr;
 
    rp = argv;
    while(*(sp=rp)) {
@@ -609,12 +604,11 @@ lList *alp = nullptr;
  *
  *-------------------------------------------------------------*/
 static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist,
-                              uint32_t *help)
-{
+                              uint32_t *help) {
+   DENTER(TOP_LAYER);
+
    lList *alp = nullptr;
    int usageshowed = 0;
-
-   DENTER(TOP_LAYER);
 
    /* Loop over all options. Only valid options can be in the
       ppcmdline list.
@@ -656,11 +650,10 @@ static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist,
  *
  * @note MT-NOTE: execd_get_job_ja_task() is MT safe
  */
-bool execd_get_job_ja_task(uint32_t job_id, uint32_t ja_task_id, lListElem **job, lListElem **ja_task, bool ignore_missing_job_task)
-{
-   const void *iterator = nullptr;
-
+bool execd_get_job_ja_task(uint32_t job_id, uint32_t ja_task_id, lListElem **job, lListElem **ja_task, bool ignore_missing_job_task) {
    DENTER(TOP_LAYER);
+
+   const void *iterator = nullptr;
 
    *job = lGetElemUlongFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), JB_job_number, job_id, &iterator);
    while (*job != nullptr) {

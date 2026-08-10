@@ -46,8 +46,7 @@
 static drmaa_job_template_t *create_job_template(const char *job_path,
                                                  const char *job_cat);
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    char diagnosis[DRMAA_ERROR_STRING_BUFFER + 1];
    char jobid[DRMAA_JOBNAME_BUFFER + 1];
    int drmaa_errno = DRMAA_ERRNO_SUCCESS;
@@ -106,8 +105,7 @@ error:
 
 
 static drmaa_job_template_t *create_job_template(const char *job_path,
-                                                 const char *job_cat)
-{
+                                                 const char *job_cat) {
    drmaa_job_template_t *jt = nullptr;
 
    if (drmaa_allocate_job_template(&jt, nullptr, 0) != DRMAA_ERRNO_SUCCESS)

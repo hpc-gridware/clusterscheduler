@@ -61,8 +61,7 @@ static lList *schedd_mes_get_same_category_jids(lRef category,
 
 static lRef schedd_mes_get_category(uint32_t job_id, lList *job_list);
 
-static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int ignore_category)
-{
+static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int ignore_category) {
    if (tmp_sme && job_list) {
       lRef category = nullptr;            /* Category pointer (void*) */
       lList *jid_cat_list = nullptr;      /* ULNG */
@@ -98,12 +97,12 @@ static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int igno
    }
 }
 
-static lRef schedd_mes_get_category(uint32_t job_id, lList *job_list)
-{
+static lRef schedd_mes_get_category(uint32_t job_id, lList *job_list) {
+   DENTER(TOP_LAYER);
+
    const lListElem *job = nullptr;  /* JB_Type */
    lRef ret = nullptr;        /* Category pointer (void*) */
 
-   DENTER(TOP_LAYER);
    job = lGetElemUlong(job_list, JB_job_number, job_id);
    if (job) {
       ret = lGetRef(job, JB_category);
@@ -113,8 +112,7 @@ static lRef schedd_mes_get_category(uint32_t job_id, lList *job_list)
 
 static lList *schedd_mes_get_same_category_jids(lRef category,
                                                 lList *job_list,
-                                                int ignore_category)
-{
+                                                int ignore_category) {
    DENTER(TOP_LAYER);
    lList *ret = nullptr;      /* ULNG */
 
@@ -131,12 +129,11 @@ static lList *schedd_mes_get_same_category_jids(lRef category,
 /**
  * @brief Initialize module variables
  */
-void schedd_mes_initialize()
-{
+void schedd_mes_initialize() {
+   DENTER(TOP_LAYER);
+
    lListElem *sme = sconf_get_sme();
    lListElem *tmp_sme = sconf_get_tmp_sme();
-
-   DENTER(TOP_LAYER);
 
    if (!sme) {
       lList *tmp_list;
@@ -221,8 +218,7 @@ void schedd_mes_commit(lList *job_list, int ignore_category, lRef jid_category) 
  *
  * Free temporaryly generated messages contained in "tmp_sme".
  */
-void schedd_mes_rollback()
-{
+void schedd_mes_rollback() {
    lListElem *tmp_sme = sconf_get_tmp_sme();
    
    if (tmp_sme) {
@@ -246,14 +242,13 @@ void schedd_mes_rollback()
  * @note The calling function is responsible to free the returned
  *       message structure if it is not needed anymore.
  */
-lListElem *schedd_mes_obtain_package(int *global_mes_count, int *job_mes_count)
-{
+lListElem *schedd_mes_obtain_package(int *global_mes_count, int *job_mes_count) {
+   DENTER(TOP_LAYER);
+
    lListElem *ret;
    uint32_t schedd_job_info = sconf_get_schedd_job_info();
    lListElem *sme = sconf_get_sme();
    lListElem *tmp_sme = sconf_get_tmp_sme();
-
-   DENTER(TOP_LAYER);
 
    if (schedd_job_info == SCHEDD_JOB_INFO_FALSE) {
       /*
@@ -316,8 +311,7 @@ lListElem *schedd_mes_obtain_package(int *global_mes_count, int *job_mes_count)
  *
  * @see #schedd_mes_commit, #schedd_mes_rollback
  */
-void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, uint32_t job_id, uint32_t message_number, ...)
-{
+void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, uint32_t job_id, uint32_t message_number, ...) {
    DENTER(TOP_LAYER);
 
    uint32_t schedd_job_info = sconf_get_schedd_job_info();
@@ -400,12 +394,11 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, uint32_t job_id
  *
  * @note MT-NOTE: schedd_mes_add_join() is MT safe
  */
-void schedd_mes_add_join(bool monitor_next_run, uint32_t job_number, uint32_t message_number, ...)
-{
+void schedd_mes_add_join(bool monitor_next_run, uint32_t job_number, uint32_t message_number, ...) {
+   DENTER(TOP_LAYER);
+
    uint32_t schedd_job_info;
    int do_logging;
-
-   DENTER(TOP_LAYER);
 
    schedd_job_info = sconf_get_schedd_job_info();
    do_logging = schedd_mes_get_logging();
@@ -497,9 +490,7 @@ void schedd_mes_add_join(bool monitor_next_run, uint32_t job_number, uint32_t me
  *
  * @note MT-NOTE: schedd_mes_add_global() is MT safe
  */
-void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, uint32_t message_number, ...)
-{
-
+void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, uint32_t message_number, ...) {
    DENTER(TOP_LAYER);
 
    if (monitor_alpp != nullptr || monitor_next_run ||
@@ -545,11 +536,11 @@ void schedd_mes_add_global(lList **monitor_alpp, bool monitor_next_run, uint32_t
  * @return message list
  */
 lList *schedd_mes_get_tmp_list(){
+   DENTER(TOP_LAYER);
+
    lList *ret = nullptr;
    const lListElem *tmp_sme = sconf_get_tmp_sme();
    
-   DENTER(TOP_LAYER);
-
    if (tmp_sme) {
      ret = lGetListRW(tmp_sme, SME_message_list);  
    }
@@ -566,8 +557,7 @@ lList *schedd_mes_get_tmp_list(){
  * @param name element id for the list
  * @param job_number job number
  */
-void schedd_mes_set_tmp_list(lListElem *category, int name, uint32_t job_number)
-{
+void schedd_mes_set_tmp_list(lListElem *category, int name, uint32_t job_number) {
    DENTER(TOP_LAYER);
    lListElem *tmp_sme = sconf_get_tmp_sme();
    lList *tmp_list = nullptr;

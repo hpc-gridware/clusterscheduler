@@ -328,9 +328,9 @@ int pb_used(
  * @return #PACK_SUCCESS, or #PACK_ENOMEM when the buffer could not grow
  */
 int packint(sge_pack_buffer *pb, uint32_t i) {
-   uint32_t J = 0;
-
    DENTER(PACK_LAYER);
+
+   uint32_t J = 0;
 
    if (!pb->just_count) {
       if (pb->bytes_used + INTSIZE > pb->mem_size) {
@@ -361,9 +361,9 @@ int packint(sge_pack_buffer *pb, uint32_t i) {
  * @return #PACK_SUCCESS, or #PACK_ENOMEM when the buffer could not grow
  */
 int repackint(sge_pack_buffer *pb, uint32_t i) {
-   uint32_t J = 0;
-
    DENTER(PACK_LAYER);
+
+   uint32_t J = 0;
 
    if (!pb->just_count) {
       J = htonl(i);
@@ -528,7 +528,6 @@ int packbuf(
         const char *buf_ptr,
         uint32_t buf_size
 ) {
-
    DENTER(PACK_LAYER);
 
    if (!pb->just_count) {
@@ -739,7 +738,6 @@ int unpackstr(sge_pack_buffer *pb, char **str) {
  * @return #PACK_SUCCESS, #PACK_FORMAT when the buffer is exhausted or malformed, or #PACK_ENOMEM
  */
 int unpackbuf(sge_pack_buffer *pb, char **buf_ptr, int buf_size) {
-
    DENTER(PACK_LAYER);
 
    if (buf_size == 0) {

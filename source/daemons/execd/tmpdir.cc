@@ -66,11 +66,10 @@ char *
  * @param tmpdir_size size of that buffer
  * @return 0 on success
  */
-sge_make_tmpdir(lListElem *qep, uint32_t jobid, uint32_t jataskid, uid_t uid, gid_t gid, char *tmpdir, size_t tmpdir_size)
-{
-   const char *t;
-
+sge_make_tmpdir(lListElem *qep, uint32_t jobid, uint32_t jataskid, uid_t uid, gid_t gid, char *tmpdir, size_t tmpdir_size) {
    DENTER(TOP_LAYER);
+
+   const char *t;
 
    t = lGetString(qep, QU_tmpdir);
    if (t == nullptr) {
@@ -118,13 +117,12 @@ sge_make_tmpdir(lListElem *qep, uint32_t jobid, uint32_t jataskid, uid_t uid, gi
  * @param queue_name the queue instance, for the error message
  * @return 0 on success
  */
-int sge_remove_tmpdir(const char *dir, const char *job_owner, uint32_t jobid, uint32_t jataskid, const char *queue_name)
-{
+int sge_remove_tmpdir(const char *dir, const char *job_owner, uint32_t jobid, uint32_t jataskid, const char *queue_name) {
+   DENTER(TOP_LAYER);
+
    stringT tmpstr;
    char err_str_buffer[1024];
    dstring err_str;
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&err_str, err_str_buffer, sizeof(err_str_buffer));
 
@@ -153,8 +151,7 @@ int sge_remove_tmpdir(const char *dir, const char *job_owner, uint32_t jobid, ui
  * @param tmpdir_size size of that buffer
  * @return the directory, or nullptr when none was configured
  */
-char *sge_get_tmpdir(lListElem *qep, uint32_t jobid, uint32_t jataskid, char *tmpdir, size_t tmpdir_size)
-{
+char *sge_get_tmpdir(lListElem *qep, uint32_t jobid, uint32_t jataskid, char *tmpdir, size_t tmpdir_size) {
    DENTER(TOP_LAYER);
    const char *t;
 

@@ -81,17 +81,17 @@ void test_hwloc();
 void fill_socket_core_topology(dstring* msocket, dstring* mcore, dstring* mthread, dstring* mtopology);
 #endif
 
-void usage()
-{
+void usage() {
    fprintf(stderr, "%s loadcheck [-cb] | [-int] [-loadval name]\n", MSG_UTILBIN_USAGE);
    fprintf(stderr, "\t\t[-cb] \t\t\t\t Shows core binding and processor topology related information.\n");
    fprintf(stderr, "\t\t[-int]\t\t\t\t Print as integer\n");
    fprintf(stderr, "\t\t[-loadval]\t\t\t Select specific load value\n");
    exit(1);
 }
-   
-int main(int argc, char *argv[])
-{
+
+int main(int argc, char *argv[]) {
+   DENTER_MAIN(TOP_LAYER, "loadcheck");
+
    double avg[3];
    int loads;
    char *name;
@@ -116,8 +116,6 @@ int main(int argc, char *argv[])
 
    int pos = 0, print_as_int = 0, precision, core_binding = 0;
    const char *m;
-
-   DENTER_MAIN(TOP_LAYER, "loadcheck");
 
 #ifdef __SGE_COMPILE_WITH_GETTEXT__   
    /* init language output for gettext() , it will use the right language */
@@ -291,8 +289,7 @@ void print_mem_load(const char *name, const char *thisone, int precision, double
  * Reports what the topology detection finds, or says that the platform does
  * not support core binding at all.
  */
-void check_core_binding()
-{
+void check_core_binding() {
    /* try if it is possible to use hwloc in case of Linux */
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
       printf("Your " SFN " version has built-in core binding functionality!\n", ocs::Version::get_short_product_name().c_str());
@@ -304,8 +301,7 @@ void check_core_binding()
 
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 /** @brief Report what hwloc detects on this host, for diagnosing a binding problem */
-void test_hwloc()
-{
+void test_hwloc() {
    int s, c;
    struct utsname name;
 
@@ -360,7 +356,7 @@ void test_hwloc()
             }
          }
       }
-   }   
+   }
 }
 #endif
 

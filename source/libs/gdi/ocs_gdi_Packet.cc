@@ -267,9 +267,7 @@ ocs::gdi::Packet::get_is_handled() {
    DRETURN(ret);
 }
 
-void
-ocs::gdi::Packet::broadcast_that_handled()
-{
+void ocs::gdi::Packet::broadcast_that_handled() {
    DENTER(TOP_LAYER);
 
    sge_mutex_lock(GDI_PACKET_MUTEX, __func__, __LINE__, &mutex);
@@ -289,9 +287,7 @@ ocs::gdi::Packet::broadcast_that_handled()
  * @param[out] answer_list receives packing or communication errors
  * @return true when the packet was sent
  */
-bool
-ocs::gdi::Packet::execute_external(lList **answer_list)
-{
+bool ocs::gdi::Packet::execute_external(lList **answer_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
    sge_pack_buffer pb;

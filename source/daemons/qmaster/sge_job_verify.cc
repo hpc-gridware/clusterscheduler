@@ -374,9 +374,9 @@ int
 sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
                       ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                       monitoring_t *monitor) {
-   int ret = STATUS_OK;
-
    DENTER(TOP_LAYER);
+
+   int ret = STATUS_OK;
 
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);

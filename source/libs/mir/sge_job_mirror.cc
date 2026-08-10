@@ -73,13 +73,12 @@ static bool job_update_master_list_usage(lList *job_list, lListElem *event);
  *
  * @see `pe_task_update_master_list_usage()`
  */
-static bool job_update_master_list_usage(lList *job_list, lListElem *event)
-{
+static bool job_update_master_list_usage(lList *job_list, lListElem *event) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    uint32_t job_id, ja_task_id;
    const char *pe_task_id;
-
-   DENTER(TOP_LAYER);
 
    job_id = lGetUlong(event, ET_intkey);
    ja_task_id = lGetUlong(event, ET_intkey2);
@@ -125,9 +124,8 @@ static bool job_update_master_list_usage(lList *job_list, lListElem *event)
  * @see `sge_mirror_update_master_list()`, `job_update_master_list_usage`
  */
 sge_callback_result
-job_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
-                       sge_event_action action, lListElem *event, void *clientdata)
-{
+job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
+                       sge_event_action action, lListElem *event, void *clientdata) {
    DENTER(TOP_LAYER);
    lList *ja_tasks = nullptr;
    char id_buffer[MAX_STRING_SIZE];
@@ -238,17 +236,16 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
  * @note The function should only be called from the event mirror interface.
  */
 sge_callback_result
-job_schedd_info_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
-                                   sge_event_action action, lListElem *event, void *clientdata)
-{
+job_schedd_info_update_master_list(sge_evc_class_t *evc, sge_object_type type,
+                                   sge_event_action action, lListElem *event, void *clientdata) {
+   DENTER(TOP_LAYER);
+
    lList **list = nullptr;
    const lDescr *list_descr = nullptr;
 
    lList *data_list;
    lListElem *ep = nullptr;
    
-   DENTER(TOP_LAYER);
-
    list = ocs::DataStore::get_master_list_rw(type);
    list_descr = lGetListDescr(lGetList(event, ET_new_version));
 
@@ -269,4 +266,3 @@ job_schedd_info_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
    DRETURN(SGE_EMA_OK);
 }
-

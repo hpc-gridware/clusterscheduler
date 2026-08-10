@@ -57,8 +57,7 @@
  * @param[out] method receives the absolute filename of the method
  * @return true when a method is configured
  */
-int shepconf_has_userdef_method(const char *method_name, dstring *method)
-{
+int shepconf_has_userdef_method(const char *method_name, dstring *method) {
    char *conf_val = search_nonone_conf_val(method_name);
    int ret = 0;
 
@@ -79,8 +78,7 @@ int shepconf_has_userdef_method(const char *method_name, dstring *method)
  * @param[out] signal receives the signal id
  * @return true when a signal is configured
  */
-int shepconf_has_userdef_signal(const char *method_name, int *signal) 
-{
+int shepconf_has_userdef_signal(const char *method_name, int *signal) {
    char *conf_val = search_nonone_conf_val(method_name);
    int ret = 0;
 
@@ -100,8 +98,7 @@ int shepconf_has_userdef_signal(const char *method_name, int *signal)
  * @param[out] signal receives the signal id, default or user defined
  * @return true when notification is enabled
  */
-int shepconf_has_notify_signal(const char *notify_name, int *signal)
-{
+int shepconf_has_notify_signal(const char *notify_name, int *signal) {
    const char *notify_array[] = {
       "notify_susp", "notify_kill", nullptr
    };
@@ -156,10 +153,8 @@ int shepconf_has_notify_signal(const char *notify_name, int *signal)
  * @param[out] seconds receives the delay
  * @return true when a delay is configured
  */
-int shepconf_has_to_notify_before_signal(int *seconds) 
-{
+int shepconf_has_to_notify_before_signal(int *seconds) {
    *seconds = atoi(get_conf_val("notify"));
 
    return (*seconds > 0);
-} 
-
+}

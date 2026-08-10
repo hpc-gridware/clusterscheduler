@@ -115,6 +115,8 @@ static void addenv(const char *key, const char *value) {
 pid_t sge_peopen(const char *shell, int login_shell, const char *command,
                  const char *user, char **env, FILE **fp_in, FILE **fp_out,
                  FILE **fp_err, bool null_stderr) {
+   DENTER(TOP_LAYER);
+
    pid_t pid;
    int pipefds[3][2];
    const char *could_not = MSG_SYSTEM_EXECBINSHFAILED;
@@ -124,8 +126,6 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
    char err_str[256];
    int res;
    uid_t myuid;
-
-   DENTER(TOP_LAYER);
 
    /* open pipes - close on failure */
    for (i = 0; i < 3; i++) {
@@ -362,6 +362,8 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
 pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
                    const char *user, char **env, FILE **fp_in, FILE **fp_out,
                    FILE **fp_err, bool null_stderr) {
+   DENTER(TOP_LAYER);
+
    pid_t pid;
    int pipefds[3][2];
    int i;
@@ -373,8 +375,6 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
    uid_t myuid;
    uid_t tuid;
    gid_t tgid = (gid_t) -1;
-
-   DENTER(TOP_LAYER);
 
    if (sge_has_admin_user()) {
       sge_switch2start_user();
@@ -645,9 +645,9 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
  */
 int sge_peclose(pid_t pid, FILE *fp_in, FILE *fp_out, FILE *fp_err,
                 struct timeval *timeout) {
-   int i, status;
-
    DENTER(TOP_LAYER);
+
+   int i, status;
 
    if (fp_in != nullptr) {
       FCLOSE(fp_in);

@@ -320,12 +320,10 @@ static void                 (*cl_com_ssl_func__X509_STORE_free)                 
 #define  cl_com_ssl_func__PEM_read_bio_PrivateKey(bp,x,cb,u) (EVP_PKEY *)cl_com_ssl_func__PEM_ASN1_read_bio( \
    (void *(*)())cl_com_ssl_func__d2i_AutoPrivateKey,PEM_STRING_EVP_PKEY,bp,(void **)x,cb,u)
 
-static PKCS8_PRIV_KEY_INFO* cl_com_ssl_func__PEM_read_bio_PKCS8_PRIV_KEY_INFO(BIO *bp, PKCS8_PRIV_KEY_INFO **x, pem_password_cb *cb, void *u)
-{ 
+static PKCS8_PRIV_KEY_INFO *cl_com_ssl_func__PEM_read_bio_PKCS8_PRIV_KEY_INFO(BIO *bp, PKCS8_PRIV_KEY_INFO **x, pem_password_cb *cb, void *u) {
    return((PKCS8_PRIV_KEY_INFO *)cl_com_ssl_func__PEM_ASN1_read_bio((void *(*)())cl_com_ssl_func__d2i_PKCS8_PRIV_KEY_INFO, PEM_STRING_PKCS8INF, 
             bp, (void **)x,cb,u));
 }
-
 
 
 /* 
@@ -3848,8 +3846,7 @@ int cl_com_ssl_connection_request_handler_cleanup(cl_com_connection_t* connectio
  * @param select_mode whether to watch for reading, writing or both
  * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
  */
-int cl_com_ssl_open_connection_request_handler(cl_com_poll_t* poll_handle, cl_com_handle_t* handle, cl_raw_list_t* connection_list, cl_com_connection_t* service_connection, int timeout_val_sec, int timeout_val_usec, cl_select_method_t select_mode)
-{
+int cl_com_ssl_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_com_handle_t *handle, cl_raw_list_t *connection_list, cl_com_connection_t *service_connection, int timeout_val_sec, int timeout_val_usec, cl_select_method_t select_mode) {
 
    int select_back;
    cl_connection_list_elem_t* con_elem = nullptr;
@@ -5075,8 +5072,7 @@ int cl_com_ssl_open_connection_request_handler(cl_com_poll_t *poll_handle,
                                                cl_com_connection_t *service_connection,
                                                int timeout_val_sec,
                                                int timeout_val_usec,
-                                               cl_select_method_t select_mode)
-{
+                                               cl_select_method_t select_mode) {
    cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SSL_NOT_SUPPORTED, "");
    return CL_RETVAL_SSL_NOT_SUPPORTED;
 }

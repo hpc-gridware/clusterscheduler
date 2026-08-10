@@ -78,11 +78,11 @@
  *
  * @note MT-NOTE: double_print_infinity_to_dstring() is MT safe
  */
-bool double_print_infinity_to_dstring(double value, dstring *string)
-{
+bool double_print_infinity_to_dstring(double value, dstring *string) {
+   DENTER(ULONG_LAYER);
+
    bool ret = true;
 
-   DENTER(ULONG_LAYER);
    if (string != nullptr) {
       if (value == DBL_MAX) {
          // CS-2318: display unlimited as the canonical uppercase INFINITY_STR,
@@ -124,9 +124,10 @@ bool double_print_time_to_dstring(double value, dstring *string) {
  * @note MT-NOTE: double_print_time_to_dstring() is MT safe
  */
 bool double_print_time_to_dstring(double value, dstring *string, bool with_microseconds) {
+   DENTER(ULONG_LAYER);
+
    bool ret = true;
 
-   DENTER(ULONG_LAYER);
    if (string != nullptr) {
       if (!double_print_infinity_to_dstring(value, string)) {
          const uint32_t minute_in_seconds = 60;
@@ -171,11 +172,11 @@ bool double_print_time_to_dstring(double value, dstring *string, bool with_micro
  *
  * @note MT-NOTE: double_print_memory_to_dstring() is MT safe
  */
-bool double_print_memory_to_dstring(double value, dstring *string)
-{
+bool double_print_memory_to_dstring(double value, dstring *string) {
+   DENTER(ULONG_LAYER);
+
    bool ret = true;
 
-   DENTER(ULONG_LAYER);
    if (string != nullptr) {
       if (!double_print_infinity_to_dstring(value, string)) {
          const double kilo_byte = 1024;
@@ -216,12 +217,11 @@ bool double_print_memory_to_dstring(double value, dstring *string)
  *
  * @note MT-NOTE: double_print_int_to_dstring() is MT safe
  */
-bool double_print_int_to_dstring(double value, dstring *string)
-{
+bool double_print_int_to_dstring(double value, dstring *string) {
+   DENTER(ULONG_LAYER);
+
    bool ret = true;
 
-   DENTER(ULONG_LAYER);
-   
    if (string != nullptr) {
       if (!double_print_infinity_to_dstring(value, string)) {
          const double min_as_dbl = INT_MIN;
@@ -250,11 +250,11 @@ bool double_print_int_to_dstring(double value, dstring *string)
  *
  * @note MT-NOTE: double_print_to_dstring() is MT safe
  */
-bool double_print_to_dstring(double value, dstring *string)
-{
+bool double_print_to_dstring(double value, dstring *string) {
+   DENTER(ULONG_LAYER);
+
    bool ret = true;
 
-   DENTER(ULONG_LAYER);
    if (string != nullptr) {
       if (!double_print_infinity_to_dstring(value, string)) {
          sge_dstring_sprintf_append(string, "%f", value);
@@ -299,10 +299,10 @@ bool double_print_to_dstring(double value, dstring *string, ocs::CEntry::Type ty
  * @param[in]  string      the date/time string to parse
  * @return true on success, false on error (NULL/empty/too long/malformed)
  */
-bool 
-ulong_parse_date_time_from_string(uint32_t *this_ulong,
-                                  lList **answer_list, const char *string) 
-{
+bool ulong_parse_date_time_from_string(uint32_t *this_ulong,
+                                       lList **answer_list, const char *string) {
+   DENTER(TOP_LAYER);
+
    int i;
    int year_fieldlen=2;
    const char *seconds;
@@ -314,8 +314,6 @@ ulong_parse_date_time_from_string(uint32_t *this_ulong,
    struct tm res;
    struct tm *tmp_timeptr,timeptr;
    struct saved_vars_s *context = nullptr;
-
-   DENTER(TOP_LAYER);
 
    memset(tmp_str, 0, sizeof(tmp_str));
 
@@ -536,14 +534,12 @@ ulong_parse_date_time_from_string(uint32_t *this_ulong,
  * @param string the text to parse
  * @return true when the text was understood
  */
-bool
-ulong_parse_centry_type_from_string(uint32_t *this_ulong,
-                                    lList **answer_list, const char *string)
-{
-   bool ret = true;
-   int i;
+bool ulong_parse_centry_type_from_string(uint32_t *this_ulong,
+                                         lList **answer_list, const char *string) {
    DENTER(TOP_LAYER);
 
+   bool ret = true;
+   int i;
    *this_ulong = 0;
    for (i = static_cast<int>(ocs::CEntry::Type::FIRST); i <= static_cast<int>(ocs::CEntry::Type::CE_LAST); i++) {
       if (strcasecmp(string, map_type2str(static_cast<ocs::CEntry::Type>(i))) == 0) {
@@ -570,14 +566,12 @@ ulong_parse_centry_type_from_string(uint32_t *this_ulong,
  * @param string the text to parse
  * @return true when the text was understood
  */
-bool
-ulong_parse_centry_relop_from_string(uint32_t *this_ulong,
-                                     lList **answer_list, const char *string)
-{
-   bool ret = true;
-   int i;
+bool ulong_parse_centry_relop_from_string(uint32_t *this_ulong,
+                                          lList **answer_list, const char *string) {
    DENTER(TOP_LAYER);
 
+   bool ret = true;
+   int i;
    *this_ulong = 0;
    for (i = CMPLXEQ_OP; i <= CMPLXNE_OP; i++) {
       if (!strcasecmp(string, map_op2str(i))) {
@@ -601,13 +595,12 @@ ulong_parse_centry_relop_from_string(uint32_t *this_ulong,
  * @param string the text to parse
  * @return true when the text was understood
  */
-bool
-ulong_parse_from_string(uint32_t *this_ulong,
-                        lList **answer_list, const char *string) 
-{
+bool ulong_parse_from_string(uint32_t *this_ulong,
+                             lList **answer_list, const char *string) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
       
-   DENTER(TOP_LAYER);
    if (this_ulong != nullptr && string != nullptr) {
       if (!parse_ulong_val(nullptr, this_ulong, ocs::CEntry::Type::INT, string, nullptr, 0)) {
          answer_list_add(answer_list, MSG_PARSE_INVALID_ID_MUSTBEUINT,
@@ -628,13 +621,12 @@ ulong_parse_from_string(uint32_t *this_ulong,
  * @param delimitor the characters separating two values
  * @return true when the whole text was understood
  */
-bool
-ulong_list_parse_from_string(lList **this_list, lList **answer_list,
-                             const char *string, const char *delimitor)
-{
+bool ulong_list_parse_from_string(lList **this_list, lList **answer_list,
+                                  const char *string, const char *delimitor) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
                                 
-   DENTER(TOP_LAYER);
    if (this_list != nullptr && string != nullptr && delimitor != nullptr) {
       struct saved_vars_s *context = nullptr;
       const char *token;
@@ -666,13 +658,12 @@ ulong_list_parse_from_string(lList **this_list, lList **answer_list,
  * @param priority_str the text to parse
  * @return true when the text was understood
  */
-bool
-ulong_parse_priority(lList **answer_list, int *valp, const char *priority_str) 
-{
+bool ulong_parse_priority(lList **answer_list, int *valp, const char *priority_str) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    char *s;
 
-   DENTER(TOP_LAYER);
    *valp = strtol(priority_str, &s, 10);
    if ((char*)valp == s || *valp > 1024 || *valp < -1023) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ULNG_INVALIDPRIO_I, (int) *valp);
@@ -692,13 +683,12 @@ ulong_parse_priority(lList **answer_list, int *valp, const char *priority_str)
  * @param bamount_str the text to parse
  * @return true when the text was understood
  */
-bool
-ulong_parse_binding_amount(lList **answer_list, int *valp, const char *bamount_str)
-{
+bool ulong_parse_binding_amount(lList **answer_list, int *valp, const char *bamount_str) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    char *s;
 
-   DENTER(TOP_LAYER);
    *valp = strtol(bamount_str, &s, 10);
    if ((char*)valp == s || *valp < 0) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ULNG_INVALID_BAMOUNT_I, (int) *valp);
@@ -719,14 +709,12 @@ ulong_parse_binding_amount(lList **answer_list, int *valp, const char *bamount_s
  * @param string the text to parse
  * @return true when the text was understood
  */
-bool
-ulong_parse_value_from_string(uint32_t *this_ulong,
-                           lList **answer_list, const char *string)
-{
+bool ulong_parse_value_from_string(uint32_t *this_ulong,
+                                   lList **answer_list, const char *string) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    char *s;
-   
-   DENTER(TOP_LAYER);
    
    *this_ulong = strtol(string, &s, 10);
    if (string == s) {
@@ -748,13 +736,12 @@ ulong_parse_value_from_string(uint32_t *this_ulong,
  * @param task_concurrency_str the text to parse
  * @return true when the text was understood
  */
-bool
-ulong_parse_task_concurrency(lList **answer_list, int *valp, const char *task_concurrency_str)
-{
+bool ulong_parse_task_concurrency(lList **answer_list, int *valp, const char *task_concurrency_str) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    char *s;
 
-   DENTER(TOP_LAYER);
    *valp = strtol(task_concurrency_str, &s, 10);
    if (task_concurrency_str == s || *valp < 0) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ULNG_INVALID_TASK_CONCURRENCY_I, (int) *valp);
@@ -763,4 +750,3 @@ ulong_parse_task_concurrency(lList **answer_list, int *valp, const char *task_co
    }
    DRETURN(ret);
 }
-

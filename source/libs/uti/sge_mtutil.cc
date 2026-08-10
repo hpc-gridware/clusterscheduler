@@ -75,11 +75,10 @@
  * @see #sge_mutex_unlock
  */
 #ifdef SGE_LOCK_DEBUG
-void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_mutex_t *mutex)
-{
-   int res = -1;
-
+void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_mutex_t *mutex) {
    DENTER(BASIS_LAYER);
+
+   int res = -1;
 
    DPRINTF("%s() line %d: about to lock mutex \"%s\" : " sge_u64 "\n", func, line, mutex_name, sge_get_gmt64());
 
@@ -145,11 +144,10 @@ void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_
  * @see #sge_mutex_lock
  */
 #ifdef SGE_LOCK_DEBUG
-void sge_mutex_unlock(const char *mutex_name, const char *func, int line, pthread_mutex_t *mutex)
-{
-   int res = -1;
-
+void sge_mutex_unlock(const char *mutex_name, const char *func, int line, pthread_mutex_t *mutex) {
    DENTER(BASIS_LAYER);
+
+   int res = -1;
 
    if (( res = pthread_mutex_unlock(mutex)) != 0)
    {
@@ -172,9 +170,9 @@ void sge_mutex_unlock(const char *mutex_name, const char *func, int line, pthrea
 #else
 
 void sge_mutex_unlock(const char *mutex_name, const char *func, int line, pthread_mutex_t *mutex) {
-   int res = -1;
-
    DENTER(BASIS_LAYER);
+
+   int res = -1;
 
    if ((res = pthread_mutex_unlock(mutex)) != 0) {
       CRITICAL(MSG_LCK_MUTEXUNLOCKFAILED_SSS, func, mutex_name, strerror(res));

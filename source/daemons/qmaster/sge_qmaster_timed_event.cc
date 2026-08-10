@@ -110,10 +110,10 @@ handler_tbl_t Handler_Tbl = {
  */
 static int
 te_delete_all_or_one_time_event(te_type_t aType, uint32_t aKey1, uint32_t aKey2, const char *strKey, bool ignore_keys) {
+   DENTER(EVENT_LAYER);
+
    int res, n = 0;
    lCondition *cond = nullptr;
-
-   DENTER(EVENT_LAYER);
 
    DPRINTF("%s: (t:" sge_u32" u1:" sge_u32" u2:" sge_u32" s:%s)\n", __func__,
            static_cast<uint32_t>(aType), aKey1, aKey2, strKey ? strKey : MSG_SMALLNULL);
@@ -179,7 +179,6 @@ te_delete_all_or_one_time_event(te_type_t aType, uint32_t aKey1, uint32_t aKey2,
  * @note MT-NOTE: te_wait_empty() is not MT safe
  */
 void te_wait_empty() {
-
    DENTER(EVENT_LAYER);
 
    while (lGetNumberOfElem((const lList *) Event_Control.list) == 0) {
@@ -345,7 +344,6 @@ te_new_event(uint64_t aTime, te_type_t aType, te_mode_t aMode, uint32_t aKey1, u
  */
 void
 te_free_event(te_event_t *anEvent) {
-
    DENTER(EVENT_LAYER);
 
    SGE_ASSERT((anEvent != nullptr));
@@ -385,9 +383,9 @@ te_free_event(te_event_t *anEvent) {
  */
 void
 te_add_event(te_event_t anEvent) {
-   lListElem *le;
-
    DENTER(EVENT_LAYER);
+
+   lListElem *le;
 
    SGE_ASSERT((anEvent != nullptr));
 
@@ -451,9 +449,10 @@ te_add_event(te_event_t anEvent) {
  *       MT-NOTE: to 'true'.
  */
 int te_delete_one_time_event(te_type_t aType, uint32_t aKey1, uint32_t aKey2, const char *strKey) {
+   DENTER(EVENT_LAYER);
+
    int ret;
 
-   DENTER(EVENT_LAYER);
    ret = te_delete_all_or_one_time_event(aType, aKey1, aKey2, strKey, false);
    DRETURN(ret);
 }
@@ -479,9 +478,10 @@ int te_delete_one_time_event(te_type_t aType, uint32_t aKey1, uint32_t aKey2, co
  *       MT-NOTE: to 'true'.
  */
 int te_delete_all_one_time_events(te_type_t aType) {
+   DENTER(EVENT_LAYER);
+
    int ret;
 
-   DENTER(EVENT_LAYER);
    ret = te_delete_all_or_one_time_event(aType, 0, 0, nullptr, true);
    DRETURN(ret);
 }
@@ -518,9 +518,9 @@ uint64_t te_get_when(te_event_t anEvent) {
  * @note MT-NOTE: 'te_get_type()' is MT safe.
  */
 te_type_t te_get_type(te_event_t anEvent) {
-   te_type_t res;
-
    DENTER(EVENT_LAYER);
+
+   te_type_t res;
 
    SGE_ASSERT(nullptr != anEvent);
 
@@ -541,9 +541,9 @@ te_type_t te_get_type(te_event_t anEvent) {
  * @note MT-NOTE: 'te_get_first_numeric_key()' is MT safe.
  */
 uint32_t te_get_first_numeric_key(te_event_t anEvent) {
-   uint32_t res = 0;
-
    DENTER(EVENT_LAYER);
+
+   uint32_t res = 0;
 
    SGE_ASSERT(nullptr != anEvent);
 
@@ -564,9 +564,9 @@ uint32_t te_get_first_numeric_key(te_event_t anEvent) {
  * @note MT-NOTE: 'te_get_second_numeric_key()' is MT safe.
  */
 uint32_t te_get_second_numeric_key(te_event_t anEvent) {
-   uint32_t res = 0;
-
    DENTER(EVENT_LAYER);
+
+   uint32_t res = 0;
 
    SGE_ASSERT(nullptr != anEvent);
 
@@ -588,9 +588,9 @@ uint32_t te_get_second_numeric_key(te_event_t anEvent) {
  * @note MT-NOTE: 'te_get_alphanumeric_key()' is MT safe.
  */
 char *te_get_alphanumeric_key(te_event_t anEvent) {
-   char *res = nullptr;
-
    DENTER(EVENT_LAYER);
+
+   char *res = nullptr;
 
    SGE_ASSERT(nullptr != anEvent);
 
@@ -658,9 +658,9 @@ void te_shutdown() {
  *       MT-NOTE: It may only be called with 'Event_Control.mutex' locked!
  */
 void te_check_time(uint64_t aTime) {
-   lListElem *le;
-
    DENTER(EVENT_LAYER);
+
+   lListElem *le;
 
    if (Event_Control.last > aTime) {
       uint64_t delta = Event_Control.last - aTime;
@@ -693,10 +693,10 @@ void te_check_time(uint64_t aTime) {
  * @note MT-NOTE: te_event_from_list_elem() is MT safe.
  */
 te_event_t te_event_from_list_elem(const lListElem *aListElem) {
+   DENTER(EVENT_LAYER);
+
    te_event_t ev = nullptr;
    const char *str = nullptr;
-
-   DENTER(EVENT_LAYER);
 
    ev = (te_event_t) sge_malloc(sizeof(struct te_event));
 
@@ -730,10 +730,10 @@ te_event_t te_event_from_list_elem(const lListElem *aListElem) {
  *       MT-NOTE: Otherwise a deadlock may occur due to recursive mutex locking.
  */
 void te_scan_table_and_deliver(te_event_t anEvent, monitoring_t *monitor) {
+   DENTER(EVENT_LAYER);
+
    int i = 0;
    te_handler_t handler = nullptr;
-
-   DENTER(EVENT_LAYER);
 
    DPRINTF("%s: event (t:" sge_u32 " w:" sge_u64 " m:" sge_u32" s:%s)\n",
            __func__, static_cast<uint32_t>(anEvent->type), anEvent->when, static_cast<uint32_t>(anEvent->mode),

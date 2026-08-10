@@ -271,9 +271,9 @@ static const int pe_nm[] = {
  */
 void
 ensure_valid_what_and_where(sge_where_what_t *where_what) {
-   lDescr *tmp_what_descr = nullptr;
-
    DENTER(GDI_LAYER);
+
+   lDescr *tmp_what_descr = nullptr;
 
    /* prepare temp data used to create new lists with partial descriptor */
    if (where_what->what_queue2 == nullptr || where_what->where_queue2 == nullptr ||

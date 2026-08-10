@@ -94,9 +94,7 @@ Return value: true if queue C is to be suspended,
  * @param so the subordinate relation, holding the threshold
  * @return true when the subordinate queue should be suspended
  */
-bool
-tst_sos(int used, int total, const lListElem *so)
-{
+bool tst_sos(int used, int total, const lListElem *so) {
    DENTER(TOP_LAYER);
    uint32_t threshold;
    bool     ret = false;
@@ -126,11 +124,11 @@ tst_sos(int used, int total, const lListElem *so)
  * @return the resulting text
  */
 const char *
-so_list_append_to_dstring(const lList *this_list, dstring *string)
-{
+so_list_append_to_dstring(const lList *this_list, dstring *string) {
+   DENTER(BASIS_LAYER);
+
    const char *ret = nullptr;
 
-   DENTER(BASIS_LAYER);
    if (string != nullptr) {
       bool printed = false;
       const lListElem *so = nullptr;
@@ -204,11 +202,9 @@ so_list_append_to_dstring(const lList *this_list, dstring *string)
  * @param action one of the `SO_ACTION_*` values
  * @return true when the relation was added
  */
-bool
-so_list_add(lList **this_list, lList **answer_list, const char *so_name,
-            uint32_t threshold, uint32_t slots_sum, uint32_t seq_no,
-            uint32_t action)
-{
+bool so_list_add(lList **this_list, lList **answer_list, const char *so_name,
+                 uint32_t threshold, uint32_t slots_sum, uint32_t seq_no,
+                 uint32_t action) {
    DENTER(TOP_LAYER);
 
    if (this_list != nullptr && so_name != nullptr) {
@@ -267,14 +263,13 @@ so_list_add(lList **this_list, lList **answer_list, const char *so_name,
  *
  * @return error state true  - success false - error
  */
-bool
-so_list_resolve(const lList *so_list, lList **answer_list,
-                lList **resolved_so_list, const char *cq_name,
-                const char *hostname, const lList *master_cqueue_list)
-{
+bool so_list_resolve(const lList *so_list, lList **answer_list,
+                     lList **resolved_so_list, const char *cq_name,
+                     const char *hostname, const lList *master_cqueue_list) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
 
-   DENTER(TOP_LAYER);
    if ((so_list != nullptr) && (hostname != nullptr)) {
       if (cq_name != nullptr) {
          DPRINTF("Finding subordinates for %s on %s\n", cq_name, hostname);

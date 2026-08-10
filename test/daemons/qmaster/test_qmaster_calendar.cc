@@ -259,8 +259,7 @@ static time_frame_entry_t time_frame_tests[] = {
                      {-1, {0,0,0, 0,0,104, 0,0,0}, 0, false}
 };
 
-static void printDateError(time_t *when, struct tm *expected)
-{
+static void printDateError(time_t *when, struct tm *expected) {
    struct tm res;
    struct tm *result = localtime_r(when, &res);
 
@@ -275,8 +274,7 @@ static void printDateError(time_t *when, struct tm *expected)
       result->tm_wday, result->tm_yday, result->tm_isdst);
 }
 
-static lListElem *createCalObject(cal_entry_t *calendar)
-{
+static lListElem *createCalObject(cal_entry_t *calendar) {
    monitoring_t monitor;
    lListElem *sourceCal = nullptr;
    lListElem *destCal = nullptr;
@@ -304,8 +302,7 @@ static lListElem *createCalObject(cal_entry_t *calendar)
 }
 
 // returns true when stateObject matches expected state and time
-static bool check_state_change(lListElem *stateObject, uint32_t state, struct tm *time, int elem_nr)
-{
+static bool check_state_change(lListElem *stateObject, uint32_t state, struct tm *time, int elem_nr) {
    if (lGetUlong(stateObject, CQU_state) != state) {
       printf("wrong state in state list (elem %d): expected %d, got %d\n",
              elem_nr, (int)state, (int)lGetUlong(stateObject, CQU_state));
@@ -322,8 +319,7 @@ static bool check_state_change(lListElem *stateObject, uint32_t state, struct tm
 }
 
 // returns true when the full state-change list matches the expected entries
-static bool check_state_change_list(date_entry_t *t, lList *state_changes)
-{
+static bool check_state_change_list(date_entry_t *t, lList *state_changes) {
    int nr;
    if (t->state2 != -1) {
       if ((nr = lGetNumberOfElem(state_changes)) != 2) {
@@ -347,8 +343,7 @@ static bool check_state_change_list(date_entry_t *t, lList *state_changes)
 }
 
 // runs one date/state scenario; prints diagnostics on failure; returns true on pass
-static bool run_date_test(date_entry_t *t, cal_entry_t *cal)
-{
+static bool run_date_test(date_entry_t *t, cal_entry_t *cal) {
    lListElem *destCal = createCalObject(cal);
    if (destCal == nullptr) {
       printf("createCalObject failed\n");
@@ -379,8 +374,7 @@ static bool run_date_test(date_entry_t *t, cal_entry_t *cal)
 }
 
 // runs one time-frame scenario; returns true when open/closed matches expectation
-static bool run_time_frame_test(time_frame_entry_t *t, cal_entry_t *cal)
-{
+static bool run_time_frame_test(time_frame_entry_t *t, cal_entry_t *cal) {
    lListElem *destCal = createCalObject(cal);
    if (destCal == nullptr) {
       printf("createCalObject failed\n");
@@ -420,8 +414,7 @@ static int s_fail = 0;
       } \
    } while (0)
 
-int main(int /*argc*/, char * /*argv*/[])
-{
+int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_qmaster_calendar");
    component_set_daemonized(true);
    lInit(nmv);

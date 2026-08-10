@@ -40,16 +40,14 @@
 #include "sgeobj/sge_object.h"
 
 static void
-add_string_to_array(cJSON *json_array, const char *name, const char *str)
-{
+add_string_to_array(cJSON *json_array, const char *name, const char *str) {
    cJSON *json_array_item = cJSON_CreateObject();
    cJSON_AddItemToArray(json_array, json_array_item);
    cJSON_AddStringToObject(json_array_item, name, str);
 }
 
 static char *
-get_type_name_from_descr(const lDescr *descr)
-{
+get_type_name_from_descr(const lDescr *descr) {
    char *type_name = nullptr;
 
    if (descr != nullptr) {
@@ -64,16 +62,14 @@ get_type_name_from_descr(const lDescr *descr)
 }
 
 static void
-print_flags_add(cJSON *json_flags, const char *flag)
-{
+print_flags_add(cJSON *json_flags, const char *flag) {
    cJSON *json_flag = cJSON_CreateObject();
    cJSON_AddItemToArray(json_flags, json_flag);
    cJSON_AddStringToObject(json_flag, "name", flag);
 }
 
 static void
-print_flags(int mt, cJSON *json_attribute)
-{
+print_flags(int mt, cJSON *json_attribute) {
    cJSON *json_flags = cJSON_AddArrayToObject(json_attribute, "flags");
    if (mt & CULL_PRIMARY_KEY) {
       print_flags_add(json_flags, "PRIMARY_KEY");
@@ -111,15 +107,13 @@ print_flags(int mt, cJSON *json_attribute)
 }
 
 static const char *
-strip_prefix(char *string)
-{
+strip_prefix(char *string) {
    const char *name = strchr(string, '_');
    return ++name;
 }
 
 static void
-dump_schema(const lNameSpace *ns, const char *target_dir, cJSON *json_all)
-{
+dump_schema(const lNameSpace *ns, const char *target_dir, cJSON *json_all) {
    const lDescr *descr = ns->descr;
    char *obj_type = get_type_name_from_descr(descr);
    if (obj_type != nullptr) {
@@ -190,8 +184,7 @@ dump_schema(const lNameSpace *ns, const char *target_dir, cJSON *json_all)
 }
 
 static void
-walk_nmv(const char *target_dir)
-{
+walk_nmv(const char *target_dir) {
    int i;
    cJSON *json_all = cJSON_CreateObject();
    cJSON *json_descr;
@@ -248,8 +241,7 @@ walk_nmv(const char *target_dir)
  * @param argv argument vector
  * @return 0 on success
  */
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    bool ret = true;
    const char *target_dir = nullptr;
 

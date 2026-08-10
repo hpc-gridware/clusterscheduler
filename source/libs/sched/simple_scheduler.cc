@@ -95,10 +95,9 @@ static void simple_scheduler(sge_evc_class_t *evc);
 /* static void delete_some_jobs(sge_gdi_ctx_class_t *ctx); */
 
 
-static sge_callback_result remove_finished_job(sge_evc_class_t *evc,  
-                                sge_object_type type, sge_event_action action, 
-                                lListElem *event, void *clientdata)
-{
+static sge_callback_result remove_finished_job(sge_evc_class_t *evc,
+                                               sge_object_type type, sge_event_action action,
+                                               lListElem *event, void *clientdata) {
    DENTER(TOP_LAYER);
 
    /* if we get a final usage event for a ja_task,
@@ -129,8 +128,7 @@ static sge_callback_result remove_finished_job(sge_evc_class_t *evc,
    DRETURN(true);
 }
 
-static void print_load_value(lListElem *host, const char *name, const char *format)
-{
+static void print_load_value(lListElem *host, const char *name, const char *format) {
    const char *value = host_get_load_value(host, name);
    if(value == nullptr) {
       value = "-";
@@ -143,8 +141,7 @@ static void print_load_value(lListElem *host, const char *name, const char *form
  * to get values for oslevel, disk_total and disk_free
  * configure the loadsensor util/resources/loadsensors/maui.sh
  */
-static void get_cluster_info()
-{
+static void get_cluster_info() {
    printf("\n%-20s %-10s %-10s %8s %12s %12s %12s %12s %12s %12s %12s\n",
           "host", "arch", "oslevel", "num_proc", "np_load_avg", 
           "mem_total", "mem_free", "swap_total", "swap_free", "disk_total", "disk_free");
@@ -173,8 +170,7 @@ static void get_cluster_info()
    printf("\n");
 }
 
-static void get_workload_info()
-{
+static void get_workload_info() {
    const char *hformat = "%10s %-10s %-10s %-10s %7s %7s %15s";
    const char *dformat = "%10s %-10s %-10s %-10s %7d %7.0f %15s";
    dstring id_dstring = DSTRING_INIT;
@@ -302,8 +298,7 @@ static void get_workload_info()
    sge_dstring_free(&id_dstring);
 }
 
-static void get_policy_info()
-{
+static void get_policy_info() {
 
    printf("%-15s %7s %-15s %s\n", "pe", "procs", "rule", "hosts");
 
@@ -359,7 +354,6 @@ static void get_policy_info()
       lFreeList(&host_list);
    }
 #endif
-
 }
 
 static bool find_pending_ja_task(lListElem **job, lListElem **ja_task) {
@@ -435,16 +429,15 @@ static void allocate_queue_slots(lList **allocated_queues, lListElem *queue, uin
 }
 #endif
 
-static void simple_scheduler(sge_evc_class_t *evc)
-{
+static void simple_scheduler(sge_evc_class_t *evc) {
+   DENTER(TOP_LAYER);
+
    lListElem *job, *ja_task;
    const char *pe_name;
    lListElem *pe = nullptr;
    uint32_t procs = 1;
    lList *allocated_queues = nullptr; /* JG_Type */
   
-   DENTER(TOP_LAYER);
-
    /* find a pending job */
    if(!find_pending_ja_task(&job, &ja_task)) {
       return;
@@ -557,8 +550,7 @@ static void delete_some_jobs(sge_evc_class_t *evc)
 }
 #endif
 
-static void register_scheduler(sge_evc_class_t *evc)
-{
+static void register_scheduler(sge_evc_class_t *evc) {
    DENTER(TOP_LAYER);
 
    /* initialize mirroring interface */
@@ -581,8 +573,7 @@ static void register_scheduler(sge_evc_class_t *evc)
  *
  * @return the exit code of the process
  */
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "simple_scheduler");
    ocs::gdi::Client::sge_gdi_ctx_class_t *ctx = nullptr;
    sge_evc_class_t *evc = nullptr;

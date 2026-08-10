@@ -104,11 +104,11 @@ static int cull_unpack_switch(
         int type,
         int flags
 ) {
+   DENTER(CULL_LAYER);
+
    int ret;
    uint32_t i = 0;
    uint64_t i64 = 0;
-
-   DENTER(CULL_LAYER);
 
    switch (type) {
 
@@ -178,9 +178,9 @@ static int cull_unpack_switch(
 static int
 cull_pack_switch(sge_pack_buffer *pb, const lMultiType *src, lEnumeration *what,
                  int type, int flags) {
-   int ret;
-
    DENTER(CULL_LAYER);
+
+   int ret;
 
    switch (type) {
 
@@ -248,13 +248,13 @@ static int cull_unpack_descr(
         sge_pack_buffer *pb,
         lDescr **dpp
 ) {
+   DENTER(CULL_LAYER);
+
    lDescr *dp;
    int ret;
    uint32_t n = 0;
    uint32_t i = 0;
    uint32_t temp = 0;
-
-   DENTER(CULL_LAYER);
 
    *dpp = nullptr;
 
@@ -389,9 +389,9 @@ static int cull_unpack_descr(
  * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp) {
-   int i, ret;
-
    DENTER(CULL_LAYER);
+
+   int i, ret;
 
    /* pack the number of lDescr fields (without end mark) */
    if ((ret = packint(pb, lCountDescr(dp)))) {
@@ -426,9 +426,9 @@ int cull_pack_descr(sge_pack_buffer *pb, const lDescr *dp) {
 int
 cull_pack_enum_as_descr(sge_pack_buffer *pb, const lEnumeration *what,
                         const lDescr *descr) {
-   int i, ret;
-
    DENTER(CULL_LAYER);
+
+   int i, ret;
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    /* pack the number of lDescr fields (without end mark) */
@@ -484,10 +484,10 @@ cull_pack_enum_as_descr(sge_pack_buffer *pb, const lEnumeration *what,
 static int
 cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
                const lEnumeration *what, int flags) {
+   DENTER(CULL_LAYER);
+
    int i, ret;
    int n;
-
-   DENTER(CULL_LAYER);
 
    if (what == nullptr) {
       n = lCountDescr(dp);
@@ -529,6 +529,8 @@ static int cull_unpack_cont(
         const lDescr *dp,
         int flags
 ) {
+   DENTER(CULL_LAYER);
+
    int i, n, ret;
    bool only_at_bufferend = true;   /* Everything had PACK_SUCCESS or
                                      * PACK_FORMAT error happend but only at the
@@ -538,8 +540,6 @@ static int cull_unpack_cont(
    int last_error = PACK_SUCCESS;   /* error happend in last iteration 
                                      * or PACK_SUCCESS */
    lMultiType *cp = nullptr;
-
-   DENTER(CULL_LAYER);
 
    *mpp = nullptr;
    n = lCountDescr(dp);
@@ -608,9 +608,10 @@ static int cull_unpack_cont(
  * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_pack_elem(sge_pack_buffer *pb, const lListElem *ep) {
+   DENTER(TOP_LAYER);
+
    int ret;
 
-   DENTER(TOP_LAYER);
    ret = cull_pack_elem_partial(pb, ep, nullptr, 0);
    DRETURN(ret);
 }
@@ -628,9 +629,9 @@ int cull_pack_elem(sge_pack_buffer *pb, const lListElem *ep) {
 int
 cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
                        const lEnumeration *what, int flags) {
-   int ret;
-
    DENTER(TOP_LAYER);
+
+   int ret;
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    if (ep->descr == nullptr) {
@@ -677,9 +678,10 @@ int cull_unpack_elem(
         const lDescr *dp                  /* has to be nullptr in case of free elements
                                    must be the desriptor in case of bound elements */
 ) {
+   DENTER(CULL_LAYER);
+
    int ret;
 
-   DENTER(CULL_LAYER);
    ret = cull_unpack_elem_partial(pb, epp, dp, 0);
    DRETURN(ret);
 }
@@ -694,10 +696,10 @@ int cull_unpack_elem(
  * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_unpack_elem_partial(sge_pack_buffer *pb, lListElem **epp, const lDescr *dp, int flags) {
+   DENTER(CULL_LAYER);
+
    int ret;
    lListElem *ep = nullptr;
-
-   DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    *epp = nullptr;
@@ -803,9 +805,9 @@ static int cull_pack_object(
         const lListElem *ep,
         int flags
 ) {
-   int ret;
-
    DENTER(CULL_LAYER);
+
+   int ret;
 
    if ((ret = packint(pb, ep != nullptr)) != PACK_SUCCESS) {
       DRETURN(ret);
@@ -834,9 +836,10 @@ static int cull_pack_object(
  * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_pack_list(sge_pack_buffer *pb, const lList *lp) {
+   DENTER(CULL_LAYER);
+
    int ret;
 
-   DENTER(CULL_LAYER);
    ret = cull_pack_list_partial(pb, lp, nullptr, 0);
    DRETURN(ret);
 }
@@ -923,9 +926,10 @@ int cull_pack_list_partial(sge_pack_buffer *pb, const lList *lp,
  * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_unpack_list(sge_pack_buffer *pb, lList **lpp) {
+   DENTER(CULL_LAYER);
+
    int ret;
 
-   DENTER(CULL_LAYER);
    ret = cull_unpack_list_partial(pb, lpp, 0);
    DRETURN(ret);
 }
@@ -939,13 +943,13 @@ int cull_unpack_list(sge_pack_buffer *pb, lList **lpp) {
  * @return #PACK_SUCCESS, #PACK_ENOMEM, or #PACK_FORMAT
  */
 int cull_unpack_list_partial(sge_pack_buffer *pb, lList **lpp, int flags) {
+   DENTER(CULL_LAYER);
+
    int ret;
    lList *lp;
    lListElem *ep;
 
    uint32_t i = 0;
-
-   DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    *lpp = nullptr;
@@ -1030,12 +1034,12 @@ static int cull_unpack_object(
         lListElem **epp,
         int flags
 ) {
+   DENTER(CULL_LAYER);
+
    int ret;
    lDescr *descr;
    lListElem *ep;
    uint32_t i = 0;
-
-   DENTER(CULL_LAYER);
 
    *epp = nullptr;
 
@@ -1086,11 +1090,11 @@ int cull_pack_enum(
         sge_pack_buffer *pb,
         const lEnumeration *enp
 ) {
+   DENTER(CULL_LAYER);
+
    int ret;
    uint32_t flag = 0;
    int i = 0, n = 0;
-
-   DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    if ((ret = packint(pb, enp != nullptr)))
@@ -1165,12 +1169,12 @@ int cull_unpack_enum(
         sge_pack_buffer *pb,
         lEnumeration **enpp
 ) {
+   DENTER(CULL_LAYER);
+
    int ret;
    lEnumeration *enp = nullptr;
    uint32_t flag = 0, i = 0, temp = 0;
    uint32_t n = 0;
-
-   DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    *enpp = nullptr;
@@ -1277,9 +1281,9 @@ int cull_pack_cond(
         sge_pack_buffer *pb,
         const lCondition *cp
 ) {
-   int ret;
-
    DENTER(CULL_LAYER);
+
+   int ret;
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    if ((ret = packint(pb, cp != nullptr))) {
@@ -1381,11 +1385,11 @@ int cull_unpack_cond(
         sge_pack_buffer *pb,
         lCondition **cpp
 ) {
+   DENTER(CULL_LAYER);
+
    int ret;
    uint32_t i = 0;
    lCondition *cp = nullptr;
-
-   DENTER(CULL_LAYER);
 
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    *cpp = nullptr;
@@ -1607,8 +1611,7 @@ int getByteArray(char **byte, const lListElem *elem, int name) {
  *
  * @note MT-NOTE: pack_job_delivery() is MT safe
  */
-int pack_job_delivery(sge_pack_buffer *pb, lListElem *jep)
-{
+int pack_job_delivery(sge_pack_buffer *pb, lListElem *jep) {
    int ret;
 
    if ((ret=cull_pack_elem(pb, jep)) != PACK_SUCCESS) {

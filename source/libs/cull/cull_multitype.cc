@@ -96,9 +96,9 @@ const char *multitypes[] =
  * @return never returns; the process is aborted
  */
 int incompatibleType(const char *str) {
-   int i;
-
    DENTER(TOP_LAYER);
+
+   int i;
 
    for (i = 0; i < 5; i++)
            DPRINTF("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
@@ -118,10 +118,11 @@ int incompatibleType(const char *str) {
  * @return never returns; the process is aborted
  */
 int incompatibleType2(const char *fmt, ...) {
+   DENTER(TOP_LAYER);
+
    va_list ap;
    char buf[MAX_STRING_SIZE];
 
-   DENTER(TOP_LAYER);
    va_start(ap, fmt);
    vsnprintf(buf, sizeof(buf), fmt, ap);
    va_end(ap);
@@ -161,9 +162,9 @@ int unknownType(const char *str) {
  * @return position or -1 in case of an error
  */
 int lGetPosViaElem(const lListElem *element, int name, int do_abort) {
-   int pos = -1;
-
    DENTER(CULL_BASIS_LAYER);
+
+   int pos = -1;
 
    if (!element) {
       if (do_abort) {
@@ -209,9 +210,9 @@ const char *lMt2Str(int mt) {
  * @note MT-NOTE: lCountDescr() is MT safe
  */
 int lCountDescr(const lDescr *dp) {
-   const lDescr *p;
-
    DENTER(CULL_BASIS_LAYER);
+
+   const lDescr *p;
 
    if (!dp) {
       LERROR(LEDESCRNULL);
@@ -236,10 +237,10 @@ int lCountDescr(const lDescr *dp) {
  * @return descriptor pointer or nullptr in case of error
  */
 lDescr *lCopyDescr(const lDescr *dp) {
+   DENTER(CULL_BASIS_LAYER);
+
    int i;
    lDescr *new_descr = nullptr;
-
-   DENTER(CULL_BASIS_LAYER);
 
    if (!dp) {
       LERROR(LEDESCRNULL);
@@ -278,9 +279,9 @@ lDescr *lCopyDescr(const lDescr *dp) {
  * @param fp output stream
  */
 void lWriteDescrTo(const lDescr *dp, FILE *fp) {
-   int i;
-
    DENTER(CULL_LAYER);
+
+   int i;
 
    if (!dp) {
       LERROR(LEDESCRNULL);
@@ -411,9 +412,9 @@ int lGetPosType(const lDescr *dp, int pos) {
  * @return the sub-list, or nullptr when the field is unset
  */
 lList **lGetListRef(const lListElem *ep, int name) {
-   int pos;
-
    DENTER(CULL_BASIS_LAYER);
+
+   int pos;
 
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
@@ -495,9 +496,9 @@ lInt lGetPosInt(const lListElem *ep, int pos) {
  * @return int
  */
 lInt lGetInt(const lListElem *ep, int name) {
-   int pos;
    DENTER(CULL_BASIS_LAYER);
 
+   int pos;
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lIntT)
@@ -545,9 +546,9 @@ lUlong lGetPosUlong(const lListElem *ep, int pos) {
  * @return uint32_t value
  */
 lUlong lGetUlong(const lListElem *ep, int name) {
-   int pos;
    DENTER(CULL_BASIS_LAYER);
 
+   int pos;
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lUlongT)
@@ -595,9 +596,9 @@ lUlong64 lGetPosUlong64(const lListElem *ep, int pos) {
  * @return uint64_t value
  */
 lUlong64 lGetUlong64(const lListElem *ep, int name) {
-   int pos;
    DENTER(CULL_BASIS_LAYER);
 
+   int pos;
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lUlong64T)
@@ -663,9 +664,9 @@ const char *lGetPosHost(const lListElem *ep, int pos) {
  * @return Type id or lEndT
  */
 int lGetType(const lDescr *dp, int nm) {
-   int pos;
-
    DENTER(CULL_BASIS_LAYER);
+
+   int pos;
 
    pos = lGetPosInDescr(dp, nm);
    if (pos < 0) {
@@ -688,9 +689,9 @@ int lGetType(const lDescr *dp, int nm) {
  * @return string pointer (no copy)
  */
 const char *lGetString(const lListElem *ep, int name) {
-   int pos;
    DENTER(CULL_BASIS_LAYER);
 
+   int pos;
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lStringT) {
@@ -733,9 +734,9 @@ const char *lGetStringNotNull(const lListElem *ep, int name) {
  * @return value of list entry
  */
 const char *lGetHost(const lListElem *ep, int name) {
-   int pos;
    DENTER(CULL_BASIS_LAYER);
 
+   int pos;
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lHostT)
@@ -799,9 +800,9 @@ lList *lGetPosList(const lListElem *ep, int pos) {
  * @return the matching element, or nullptr when there is none
  */
 lListElem *lGetObject(const lListElem *ep, int name) {
-   int pos;
    DENTER(CULL_BASIS_LAYER);
 
+   int pos;
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lObjectT)
@@ -818,9 +819,9 @@ lListElem *lGetObject(const lListElem *ep, int name) {
  * @return the sub-list, or nullptr when the field is unset
  */
 lList *lGetListRW(const lListElem *ep, int name) {
-   int pos;
    DENTER(CULL_BASIS_LAYER);
 
+   int pos;
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lListT) {
@@ -894,9 +895,9 @@ lDouble lGetPosDouble(const lListElem *ep, int pos) {
  * @return double value
  */
 lDouble lGetDouble(const lListElem *ep, int name) {
-   int pos;
    DENTER(CULL_BASIS_LAYER);
 
+   int pos;
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lDoubleT)
@@ -933,8 +934,9 @@ lLong lGetPosLong(const lListElem *ep, int pos) {
  * @return long
  */
 lLong lGetLong(const lListElem *ep, int name) {
-   int pos;
    DENTER(CULL_BASIS_LAYER);
+
+   int pos;
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lLongT)
@@ -972,8 +974,9 @@ lBool lGetPosBool(const lListElem *ep, int pos) {
  * @return boolean
  */
 lBool lGetBool(const lListElem *ep, int name) {
-   int pos;
    DENTER(CULL_BASIS_LAYER);
+
+   int pos;
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lBoolT)
@@ -1011,9 +1014,9 @@ lRef lGetPosRef(const lListElem *ep, int pos) {
  * @return reference
  */
 lRef lGetRef(const lListElem *ep, int name) {
-   int pos;
    DENTER(CULL_BASIS_LAYER);
 
+   int pos;
    pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
 
    if (mt_get_type(ep->descr[pos].mt) != lRefT)
@@ -1074,9 +1077,9 @@ int lSetPosInt(lListElem *ep, int pos, int value) {
  * @return error state 0 - OK -1 - Error
  */
 int lSetInt(lListElem *ep, int name, int value) {
-   int pos;
    DENTER(CULL_BASIS_LAYER);
 
+   int pos;
    if (!ep) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
@@ -1167,9 +1170,9 @@ int lSetPosUlong(lListElem *ep, int pos, lUlong value) {
  * @return error state 0 - OK -1 - Error
  */
 int lSetUlong(lListElem *ep, int name, lUlong value) {
-   int pos;
-
    DENTER(CULL_BASIS_LAYER);
+
+   int pos;
 
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -1230,9 +1233,9 @@ int lSetUlong(lListElem *ep, int name, lUlong value) {
  * @return int -
  */
 int lAddUlong(lListElem *ep, int name, lUlong offset) {
-   int pos;
-
    DENTER(CULL_BASIS_LAYER);
+
+   int pos;
 
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -1286,9 +1289,9 @@ int lAddUlong(lListElem *ep, int name, lUlong offset) {
  * @return error state 0 - OK -1 - Error
  */
 int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
-   int pos;
-
    DENTER(CULL_BASIS_LAYER);
+
+   int pos;
 
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -1349,9 +1352,9 @@ int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
  * @return int -
  */
 int lAddUlong64(lListElem *ep, int name, lUlong64 offset) {
-   int pos;
-
    DENTER(CULL_BASIS_LAYER);
+
+   int pos;
 
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -1455,10 +1458,10 @@ int lSetPosUlong64(lListElem *ep, int pos, lUlong64 value) {
  * @return error state 0 - OK -1 - Error
  */
 int lSetPosString(lListElem *ep, int pos, const char *value) {
+   DENTER(CULL_BASIS_LAYER);
+
    char *str = nullptr;
    int changed;
-
-   DENTER(CULL_BASIS_LAYER);
 
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -1537,10 +1540,10 @@ int lSetPosString(lListElem *ep, int pos, const char *value) {
  * @return error state 0 - OK -1 - Error
  */
 int lSetPosHost(lListElem *ep, int pos, const char *value) {
+   DENTER(CULL_BASIS_LAYER);
+
    char *str = nullptr;
    int changed;
-
-   DENTER(CULL_BASIS_LAYER);
 
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -1621,11 +1624,11 @@ int lSetPosHost(lListElem *ep, int pos, const char *value) {
  * @return error state 0 - OK -1 - Error
  */
 int lSetString(lListElem *ep, int name, const char *value) {
+   DENTER(CULL_BASIS_LAYER);
+
    char *str;
    int pos;
    int changed;
-
-   DENTER(CULL_BASIS_LAYER);
 
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -1710,11 +1713,12 @@ int lSetString(lListElem *ep, int name, const char *value) {
  * @return error state -1 - Error 0 - OK
  */
 int lSetHost(lListElem *ep, int name, const char *value) {
+   DENTER(CULL_BASIS_LAYER);
+
    char *str;
    int pos;
    int changed;
 
-   DENTER(CULL_BASIS_LAYER);
    if (!ep) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
@@ -1897,10 +1901,10 @@ int lSetPosList(lListElem *ep, int pos, lList *value) {
  * @return error state 0 - OK -1 - Error
  */
 int lXchgString(lListElem *ep, int name, char **str) {
+   DENTER(CULL_BASIS_LAYER);
+
    int pos;
    char *tmp;
-
-   DENTER(CULL_BASIS_LAYER);
 
    if (ep == nullptr || str == nullptr) {
       LERROR(LEELEMNULL);
@@ -1944,10 +1948,10 @@ int lXchgString(lListElem *ep, int name, char **str) {
  * @return error state 0 - OK -1 - Error
  */
 int lXchgList(lListElem *ep, int name, lList **lpp) {
+   DENTER(CULL_BASIS_LAYER);
+
    int pos;
    lList *tmp;
-
-   DENTER(CULL_BASIS_LAYER);
 
    if (ep == nullptr || lpp == nullptr) {
       LERROR(LEELEMNULL);
@@ -1992,9 +1996,9 @@ int lXchgList(lListElem *ep, int name, lList **lpp) {
  * @return error state 0 - OK -1 - Error
  */
 int lSwapList(lListElem *to, int nm_to, lListElem *from, int nm_from) {
-   lList *tmp = nullptr;
-
    DENTER(CULL_BASIS_LAYER);
+
+   lList *tmp = nullptr;
 
    if (lXchgList(from, nm_from, &tmp) == -1) {
       DRETURN(-1);
@@ -2022,9 +2026,9 @@ int lSwapList(lListElem *to, int nm_to, lListElem *from, int nm_from) {
  * @return error state 0 - OK -1 - Error
  */
 int lSetObject(lListElem *ep, int name, lListElem *value) {
-   int pos;
-
    DENTER(CULL_BASIS_LAYER);
+
+   int pos;
 
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -2086,9 +2090,9 @@ int lSetObject(lListElem *ep, int name, lListElem *value) {
  * @note MT-NOTE: lAddSubList() is MT safe
  */
 int lSetList(lListElem *ep, int name, lList *value) {
-   int pos;
-
    DENTER(CULL_BASIS_LAYER);
+
+   int pos;
 
    if (!ep) {
       LERROR(LEELEMNULL);
@@ -2175,9 +2179,10 @@ int lSetPosDouble(lListElem *ep, int pos, lDouble value) {
  * @return error state 0 - OK -1 - Error
  */
 int lSetDouble(lListElem *ep, int name, lDouble value) {
+   DENTER(CULL_BASIS_LAYER);
+
    int pos;
 
-   DENTER(CULL_BASIS_LAYER);
    if (!ep) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
@@ -2218,9 +2223,10 @@ int lSetDouble(lListElem *ep, int name, lDouble value) {
  * @return 0 on success, -1 on error
  */
 int lAddDouble(lListElem *ep, int name, lDouble value) {
+   DENTER(CULL_BASIS_LAYER);
+
    int pos;
 
-   DENTER(CULL_BASIS_LAYER);
    if (!ep) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
@@ -2301,9 +2307,10 @@ int lSetPosLong(lListElem *ep, int pos, lLong value) {
  * @return error state 0 - OK -1 - Error
  */
 int lSetLong(lListElem *ep, int name, lLong value) {
+   DENTER(CULL_BASIS_LAYER);
+
    int pos;
 
-   DENTER(CULL_BASIS_LAYER);
    if (!ep) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
@@ -2383,9 +2390,10 @@ int lSetPosBool(lListElem *ep, int pos, lBool value) {
  * @return error state 0 - OK -1 - Error
  */
 int lSetBool(lListElem *ep, int name, lBool value) {
+   DENTER(CULL_BASIS_LAYER);
+
    int pos;
 
-   DENTER(CULL_BASIS_LAYER);
    if (!ep) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
@@ -2465,9 +2473,10 @@ int lSetPosRef(lListElem *ep, int pos, lRef value) {
  * @return error state 0 - OK -1 - Error
  */
 int lSetRef(lListElem *ep, int name, lRef value) {
+   DENTER(CULL_BASIS_LAYER);
+
    int pos;
 
-   DENTER(CULL_BASIS_LAYER);
    if (!ep) {
       LERROR(LEELEMNULL);
       DRETURN(-1);
@@ -2626,10 +2635,10 @@ int refcmp(lRef c0, lRef c1) {
  */
 lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm,
                       const lDescr *dp) {
+   DENTER(CULL_LAYER);
+
    lListElem *ret;
    int sublist_pos;
-
-   DENTER(CULL_LAYER);
 
    if (!ep) {
       DPRINTF("error: nullptr ptr passed to lAddSubStr\n");
@@ -2669,10 +2678,10 @@ lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm,
  */
 lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm,
                        const lDescr *dp) {
+   DENTER(CULL_LAYER);
+
    lListElem *ret;
    int sublist_pos;
-
-   DENTER(CULL_LAYER);
 
    if (!ep) {
       DPRINTF("error: nullptr ptr passed to lAddSubHost\n");
@@ -2710,11 +2719,11 @@ lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm,
  * @return lListElem* -
  */
 lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp) {
+   DENTER(CULL_LAYER);
+
    lListElem *sep;
    int pos;
    int data_type;
-
-   DENTER(CULL_LAYER);
 
    if (!lpp || !str || !dp) {
       DPRINTF("error: nullptr ptr passed to lAddElemStr\n");
@@ -2762,11 +2771,11 @@ lListElem *lAddElemStr(lList **lpp, int nm, const char *str, const lDescr *dp) {
  * @return new element or nullptr
  */
 lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp) {
+   DENTER(CULL_LAYER);
+
    lListElem *sep;
    int pos;
    int data_type;
-
-   DENTER(CULL_LAYER);
 
    if (!lpp || !str || !dp) {
       DPRINTF("error: nullptr ptr passed to lAddElemHost\n");
@@ -2815,9 +2824,9 @@ lListElem *lAddElemHost(lList **lpp, int nm, const char *str, const lDescr *dp) 
  * @return 1 element was found and removed 0 in case of an error
  */
 int lDelSubStr(lListElem *ep, int nm, const char *str, int snm) {
-   int ret, sublist_pos;
-
    DENTER(CULL_LAYER);
+
+   int ret, sublist_pos;
 
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
@@ -2840,9 +2849,9 @@ int lDelSubStr(lListElem *ep, int nm, const char *str, int snm) {
  * @return 1 if the element was found and removed 0 in case of an error
  */
 int lDelElemStr(lList **lpp, int nm, const char *str) {
-   lListElem *ep;
-
    DENTER(CULL_LAYER);
+
+   lListElem *ep;
 
    if (!lpp || !str) {
       DPRINTF("error: nullptr ptr passed to lDelElemStr\n");
@@ -2878,10 +2887,10 @@ int lDelElemStr(lList **lpp, int nm, const char *str) {
  * @return the matching element, or nullptr when there is none
  */
 lListElem *lGetSubStrRW(const lListElem *ep, int nm, const char *str, int snm) {
+   DENTER(CULL_LAYER);
+
    int sublist_pos;
    lListElem *ret = nullptr;
-
-   DENTER(CULL_LAYER);
 
    if (ep != nullptr) {
       /* get position of sublist in ep */
@@ -2916,10 +2925,10 @@ lGetSubStr(const lListElem *ep, int nm, const char *str, int snm) {
  * @return the matching element, or nullptr when there is none
  */
 lListElem *lGetElemStrRW(const lList *lp, int nm, const char *str) {
-   const void *iterator = nullptr;
-   lListElem *ret = nullptr;
    DENTER(CULL_LAYER);
 
+   const void *iterator = nullptr;
+   lListElem *ret = nullptr;
    ret = lGetElemStrFirstRW(lp, nm, str, &iterator);
    DRETURN(ret);
 }
@@ -2954,12 +2963,13 @@ const lListElem *lGetElemStr(const lList *lp, int nm, const char *str) {
  * @return first element or nullptr
  */
 lListElem *lGetElemStrFirstRW(const lList *lp, int nm, const char *str, const void **iterator) {
+   DENTER(CULL_LAYER);
+
    int pos;
    int data_type;
    const lDescr *listDescriptor;
 
 
-   DENTER(CULL_LAYER);
    if (!str) {
       DPRINTF("error: nullptr ptr passed to lGetElemStrFirst\n");
       DRETURN(nullptr);
@@ -3037,12 +3047,12 @@ const lListElem *lGetElemStrFirst(const lList *lp, int nm, const char *str, cons
  * @return next element or nullptr
  */
 lListElem *lGetElemStrNextRW(const lList *lp, int nm, const char *str, const void **iterator) {
+   DENTER(CULL_LAYER);
+
    lListElem *ep;
    int pos, data_type;
    const lDescr *listDescriptor;
 
-
-   DENTER(CULL_LAYER);
 
    if (*iterator == nullptr) {
       return nullptr;
@@ -3114,6 +3124,8 @@ const lListElem *lGetElemStrNext(const lList *lp, int nm, const char *str, const
  * @return the matching element, or nullptr when there is none
  */
 lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
+   DENTER(CULL_LAYER);
+
    int pos;
    const char *s;
    int data_type;
@@ -3121,7 +3133,6 @@ lListElem *lGetElemStrLikeRW(const lList *lp, int nm, const char *str) {
    const lDescr *listDescriptor;
 
 
-   DENTER(CULL_LAYER);
    if (!str) {
       DPRINTF("error: nullptr ptr passed to lGetElemStr\n");
       DRETURN(nullptr);
@@ -3187,10 +3198,10 @@ const lListElem *lGetElemStrLike(const lList *lp, int nm, const char *str) {
  */
 lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm,
                         const lDescr *dp) {
+   DENTER(CULL_LAYER);
+
    lListElem *ret;
    int sublist_pos;
-
-   DENTER(CULL_LAYER);
 
    if (!ep) {
       DPRINTF("error: nullptr ptr passed to lAddSubUlong\n");
@@ -3227,10 +3238,10 @@ lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm,
  * @return nullptr on error or pointer to the added element
  */
 lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp) {
+   DENTER(CULL_LAYER);
+
    lListElem *sep;
    int pos;
-
-   DENTER(CULL_LAYER);
 
    if (!lpp || !dp) {
       DPRINTF("error: nullptr ptr passed to lAddElemUlong\n");
@@ -3274,9 +3285,9 @@ lListElem *lAddElemUlong(lList **lpp, int nm, lUlong val, const lDescr *dp) {
  * @return 1 element was found and removed 0 in case of an error
  */
 int lDelSubUlong(lListElem *ep, int nm, lUlong val, int snm) {
-   int ret, sublist_pos;
-
    DENTER(CULL_LAYER);
+
+   int ret, sublist_pos;
 
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
@@ -3299,9 +3310,9 @@ int lDelSubUlong(lListElem *ep, int nm, lUlong val, int snm) {
  * @return 1 element was found and removed 0 an error occurred
  */
 int lDelElemUlong(lList **lpp, int nm, lUlong val) {
-   lListElem *ep;
-
    DENTER(CULL_LAYER);
+
+   lListElem *ep;
 
    if (!lpp || !val) {
       DPRINTF("error: nullptr ptr passed to lDelElemUlong\n");
@@ -3339,10 +3350,10 @@ int lDelElemUlong(lList **lpp, int nm, lUlong val) {
  * @return nullptr if element was not found or in case of an error otherwise pointer to the element
  */
 lListElem *lGetSubUlongRW(const lListElem *ep, int nm, lUlong val, int snm) {
+   DENTER(CULL_LAYER);
+
    int sublist_pos;
    lListElem *ret;
-
-   DENTER(CULL_LAYER);
 
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
@@ -3474,10 +3485,10 @@ const lListElem *lGetElemUlongFirst(const lList *lp, int nm, lUlong val, const v
  * @return next element or nullptr
  */
 lListElem *lGetElemUlongNextRW(const lList *lp, int nm, lUlong val, const void **iterator) {
+   DENTER(CULL_LAYER);
+
    lListElem *ep;
    int pos;
-
-   DENTER(CULL_LAYER);
 
    if (*iterator == nullptr) {
       return nullptr;
@@ -3541,10 +3552,10 @@ const lListElem *lGetElemUlongNext(const lList *lp, int nm, lUlong val, const vo
  */
 lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm,
                           const lDescr *dp) {
+   DENTER(CULL_LAYER);
+
    lListElem *ret;
    int sublist_pos;
-
-   DENTER(CULL_LAYER);
 
    if (!ep) {
       DPRINTF("error: nullptr ptr passed to lAddSubUlong64\n");
@@ -3581,10 +3592,10 @@ lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm,
  * @return nullptr on error or pointer to the added element
  */
 lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp) {
+   DENTER(CULL_LAYER);
+
    lListElem *sep;
    int pos;
-
-   DENTER(CULL_LAYER);
 
    if (!lpp || !dp) {
       DPRINTF("error: nullptr ptr passed to lAddElemUlong64\n");
@@ -3628,9 +3639,9 @@ lListElem *lAddElemUlong64(lList **lpp, int nm, lUlong64 val, const lDescr *dp) 
  * @return 1 element was found and removed 0 in case of an error
  */
 int lDelSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm) {
-   int ret, sublist_pos;
-
    DENTER(CULL_LAYER);
+
+   int ret, sublist_pos;
 
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
@@ -3653,9 +3664,9 @@ int lDelSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm) {
  * @return 1 element was found and removed 0 an error occurred
  */
 int lDelElemUlong64(lList **lpp, int nm, lUlong64 val) {
-   lListElem *ep;
-
    DENTER(CULL_LAYER);
+
+   lListElem *ep;
 
    if (!lpp || !val) {
       DPRINTF("error: nullptr ptr passed to lDelElemUlong64\n");
@@ -3693,10 +3704,10 @@ int lDelElemUlong64(lList **lpp, int nm, lUlong64 val) {
  * @return nullptr if element was not found or in case of an error otherwise pointer to the element
  */
 lListElem *lGetSubUlong64RW(const lListElem *ep, int nm, lUlong64 val, int snm) {
+   DENTER(CULL_LAYER);
+
    int sublist_pos;
    lListElem *ret;
-
-   DENTER(CULL_LAYER);
 
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
@@ -3828,10 +3839,10 @@ const lListElem *lGetElemUlong64First(const lList *lp, int nm, lUlong64 val, con
  * @return next element or nullptr
  */
 lListElem *lGetElemUlong64NextRW(const lList *lp, int nm, lUlong64 val, const void **iterator) {
+   DENTER(CULL_LAYER);
+
    lListElem *ep;
    int pos;
-
-   DENTER(CULL_LAYER);
 
    if (*iterator == nullptr) {
       return nullptr;
@@ -3889,10 +3900,10 @@ const lListElem *lGetElemUlong64Next(const lList *lp, int nm, lUlong64 val, cons
  */
 lListElem *lGetSubCaseStr(const lListElem *ep, int nm, const char *str,
                           int snm) {
+   DENTER(CULL_LAYER);
+
    int sublist_pos;
    lListElem *ret;
-
-   DENTER(CULL_LAYER);
 
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
@@ -4006,14 +4017,14 @@ const lListElem *lGetElemHost(const lList *lp, int nm, const char *str) {
  * @return element or nullptr
  */
 lListElem *lGetElemHostFirstRW(const lList *lp, int nm, const char *str, const void **iterator) {
+   DENTER(TOP_LAYER);
+
    int pos;
    int data_type;
    const lDescr *listDescriptor = nullptr;
    char uhost[CL_MAXHOSTNAMELEN + 1];
    char cmphost[CL_MAXHOSTNAMELEN + 1];
    const char *s = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* check for null pointers */
    if ((str == nullptr) || (lp == nullptr)) {
@@ -4089,14 +4100,14 @@ const lListElem *lGetElemHostFirst(const lList *lp, int nm, const char *str, con
  * @return element or nullptr
  */
 lListElem *lGetElemHostNextRW(const lList *lp, int nm, const char *str, const void **iterator) {
+   DENTER(TOP_LAYER);
+
    int pos;
    lListElem *ep = nullptr;
    const lDescr *listDescriptor = nullptr;
    char uhost[CL_MAXHOSTNAMELEN + 1];
    char cmphost[CL_MAXHOSTNAMELEN + 1];
    const char *s = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* check for null *iterator and */
    /* check for null pointers */
@@ -4163,10 +4174,10 @@ const lListElem *lGetElemHostNext(const lList *lp, int nm, const char *str, cons
  * @return the matching element, or nullptr when there is none
  */
 lListElem *lGetSubHostRW(const lListElem *ep, int nm, const char *str, int snm) {
+   DENTER(CULL_LAYER);
+
    int sublist_pos;
    lListElem *ret;
-
-   DENTER(CULL_LAYER);
 
    /* get position of sublist in ep */
    sublist_pos = lGetPosViaElem(ep, snm, SGE_DO_ABORT);
@@ -4204,9 +4215,9 @@ const lListElem *lGetSubHost(const lListElem *ep, int nm, const char *str, int s
  * @return 1 if the host element was found and removed 0 in case of an error
  */
 int lDelElemHost(lList **lpp, int nm, const char *str) {
-   lListElem *ep;
-
    DENTER(CULL_LAYER);
+
+   lListElem *ep;
 
    if (!lpp || !str) {
       DPRINTF("error: nullptr ptr passed to lDelElemHost\n");

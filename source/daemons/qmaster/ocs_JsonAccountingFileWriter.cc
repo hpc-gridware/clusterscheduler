@@ -36,9 +36,9 @@
 namespace ocs {
    bool JsonAccountingFileWriter::create_acct_record(lList **answer_list, lListElem *job_report,
                                                      lListElem *job, lListElem *ja_task, bool intermediate) {
-      bool ret = true;
-
       DENTER(TOP_LAYER);
+
+      bool ret = true;
 
       if (!intermediate) {
          // get the job category string
