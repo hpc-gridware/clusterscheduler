@@ -531,13 +531,13 @@ const char *sge_gettext_(int msg_id, const char *msg_str) {
 #ifndef __SGE_COMPILE_WITH_GETTEXT__
    return msg_str;
 #else
+   DENTER_(CULL_LAYER);
+
    union {
       sge_error_message_t *l;
       void *p;
    } message_p;
    long key;
-
-   DENTER_(CULL_LAYER);
 
    message_p.l = nullptr;
 
