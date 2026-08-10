@@ -138,16 +138,16 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
 #if 0 /* EB: DEBUG: enable debugging for qinstance_modify_attribute() */
 #define QINSTANCE_MODIFY_DEBUG
 #endif
-   bool ret = true;
-   const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
-   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
-   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
-
 #ifdef QINSTANCE_MODIFY_DEBUG
    DENTER(TOP_LAYER);
 #else
    DENTER(BASIS_LAYER);
 #endif
+
+   bool ret = true;
+   const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
+   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
 
    if (this_elem != nullptr && cqueue != nullptr &&
        attribute_name != NoName && cqueue_attibute_name != NoName) {
@@ -1160,14 +1160,14 @@ sge_qmaster_qinstance_state_set_ambiguous(lListElem *this_elem, bool set_state, 
  */
 bool
 sge_qmaster_qinstance_set_initial_state(lListElem *this_elem, uint64_t gdi_session) {
-   bool ret = false;
-   const char *state_string = lGetString(this_elem, QU_initial_state);
-
 #ifdef QINSTANCE_MODIFY_DEBUG
    DENTER(TOP_LAYER);
 #else
    DENTER(BASIS_LAYER);
 #endif
+
+   bool ret = false;
+   const char *state_string = lGetString(this_elem, QU_initial_state);
 
    if (state_string != nullptr && strcmp(state_string, "default")) {
       bool do_disable = strcmp(state_string, "disabled") == 0 ? true : false;
