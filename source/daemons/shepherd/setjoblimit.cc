@@ -43,9 +43,8 @@ static osjobid_t os_job_id = 0;
 /** @brief The operating system job id this shepherd registered
  * @return the id, or 0 when none was taken
  */
-osjobid_t get_rlimits_os_job_id() 
-{
-	return os_job_id;
+osjobid_t get_rlimits_os_job_id() {
+   return os_job_id;
 }
 
 /** @brief Record the operating system job id, so the limits can be set against it

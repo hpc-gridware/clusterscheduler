@@ -78,8 +78,7 @@ static int set_processor_range(char *crange, int proc_set_num, char *err_str);
  *
  * Solaris only. Elsewhere core binding does the same job through hwloc.
  */
-void sge_pset_create_processor_set()  
-{
+void sge_pset_create_processor_set() {
 #if defined(SOLARIS64) || defined(SOLARISAMD64)
    char err_str[2*SGE_PATH_MAX+128];
 
@@ -104,12 +103,10 @@ void sge_pset_create_processor_set()
       }
    }
 #endif
-
 }
 
 /** @brief Give the job's processors back when it ends */
-void sge_pset_free_processor_set()
-{
+void sge_pset_free_processor_set() {
 #if defined(SOLARIS64) || defined(SOLARISAMD64)
    /* processor set stuff */
    if (strcasecmp("UNDEFINED",get_conf_val("processors"))) {
@@ -190,8 +187,7 @@ void sge_pset_free_processor_set()
 *        PROC_SET_WARNING - A non-critical error occurred (e.g. the 
 *                           procedure is executed as unpriveliged user)
 ******************************************************************************/
-static int set_processor_range(char *crange, int proc_set_num, char *err_str) 
-{
+static int set_processor_range(char *crange, int proc_set_num, char *err_str) {
    FILE *fp;
 
 #if defined(SOLARIS64) || defined(SOLARISAMD64)
@@ -290,8 +286,7 @@ FCLOSE_ERROR:
 *        PROC_SET_WARNING - A non-critical error occurred (e.g. the
 *                           procedure is executed as unpriviliged user)
 ******************************************************************************/
-static int free_processor_set(char *err_str) 
-{
+static int free_processor_set(char *err_str) {
    FILE *fp;
    int proc_set_num;
 

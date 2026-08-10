@@ -63,8 +63,7 @@
  * @param[out] errmsg receives the reason on failure
  * @return true on success
  */
-bool shepherd_write_pid_file(pid_t pid, dstring *errmsg)
-{
+bool shepherd_write_pid_file(pid_t pid, dstring *errmsg) {
    bool ret = true;
    FILE *fp = nullptr;
 
@@ -98,10 +97,8 @@ FCLOSE_ERROR:
  *        pid instead of the one it started
  * @return true on success
  */
-bool
-shepherd_read_qrsh_pid_file(const char *filename, pid_t *qrsh_pid,
-                            int *replace_qrsh_pid)
-{
+bool shepherd_read_qrsh_pid_file(const char *filename, pid_t *qrsh_pid,
+                                 int *replace_qrsh_pid) {
    bool ret = true;
    FILE *fp = nullptr;
 
@@ -153,11 +150,9 @@ FCLOSE_ERROR:
  * @param rusage what the kernel accounted for it
  * @return true on success
  */
-bool
-shepherd_write_usage_file(uint32_t wait_status, int exit_status,
-                          int child_signal, uint64_t start_time,
-                          uint64_t end_time, struct rusage *rusage)
-{
+bool shepherd_write_usage_file(uint32_t wait_status, int exit_status,
+                               int child_signal, uint64_t start_time,
+                               uint64_t end_time, struct rusage *rusage) {
    bool ret = true;
    const char *const filename = "usage";
    FILE *fp = nullptr;
@@ -214,9 +209,7 @@ FCLOSE_ERROR:
  * @param job_pid the pid, already rendered
  * @return true on success
  */
-bool
-shepherd_write_job_pid_file(const char *job_pid)
-{
+bool shepherd_write_job_pid_file(const char *job_pid) {
    bool ret = true;
    const char *const filename = "job_pid";
    FILE *fp = nullptr;
@@ -242,9 +235,7 @@ FCLOSE_ERROR:
  * @param exit_status the status to record
  * @return true on success
  */
-bool
-shepherd_write_sig_info_file(const char *filename, const char *task_id, uint32_t exit_status)
-{
+bool shepherd_write_sig_info_file(const char *filename, const char *task_id, uint32_t exit_status) {
    bool ret = true;
    FILE *fp = nullptr;
 
@@ -267,9 +258,7 @@ FCLOSE_ERROR:
  * @param proc_set the processor set
  * @return true on success
  */
-bool
-shepherd_write_processor_set_number_file(int proc_set)
-{
+bool shepherd_write_processor_set_number_file(int proc_set) {
    bool ret = true;
    const char *const filename = "processor_set_number";
    FILE *fp = nullptr;
@@ -297,9 +286,7 @@ FCLOSE_ERROR:
  *
  * @return true on success
  */
-bool 
-shepherd_write_shepherd_about_to_exit_file()
-{
+bool shepherd_write_shepherd_about_to_exit_file() {
    bool ret = true;
    const char *const filename = "shepherd_about_to_exit";
    FILE *fd = nullptr;
@@ -321,9 +308,7 @@ FCLOSE_ERROR:
  * @param[out] return_code receives the status
  * @return true on success
  */
-bool 
-shepherd_read_exit_status_file(int *return_code)
-{
+bool shepherd_read_exit_status_file(int *return_code) {
    bool ret = true;
    FILE *fp = nullptr;
    const char *const filename = "exit_status";
@@ -354,9 +339,7 @@ FCLOSE_ERROR:
  * @param[out] qrsh_pid receives the pid
  * @return true on success
  */
-bool 
-shepherd_read_qrsh_file(const char* pid_file_name, pid_t *qrsh_pid)
-{
+bool shepherd_read_qrsh_file(const char *pid_file_name, pid_t *qrsh_pid) {
    bool ret = true;
    FILE *fp = nullptr;
 
@@ -393,9 +376,7 @@ FCLOSE_ERROR:
  * @param[out] proc_set receives the processor set
  * @return true on success
  */
-bool 
-shepherd_read_processor_set_number_file(int *proc_set)
-{
+bool shepherd_read_processor_set_number_file(int *proc_set) {
    bool ret = true;
    FILE *fp = nullptr;
    const char *const filename = "processor_set_number";
@@ -423,9 +404,7 @@ FCLOSE_ERROR:
 /** @brief Leave the marker that says the job has been checkpointed
  * @param ckpt_is_in_arena whether the checkpoint lives in the checkpointing arena
  */
-void 
-create_checkpointed_file(int ckpt_is_in_arena)
-{
+void create_checkpointed_file(int ckpt_is_in_arena) {
    const char *const filename = "checkpointed";
    FILE *fp = nullptr;
 
@@ -448,9 +427,7 @@ FCLOSE_ERROR:
 /** @brief Has the job been checkpointed?
  * @return non-zero when the marker is there
  */
-int 
-checkpointed_file_exists()
-{
+int checkpointed_file_exists() {
    SGE_STRUCT_STAT buf;
    return !SGE_STAT("checkpointed", &buf);
 }

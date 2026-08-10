@@ -91,8 +91,7 @@ int g_newpgrp = -1;
 *******************************************************************************/
 #if defined(DARWIN)
 static int
-ptym_open(char *pts_name, uid_t uid)
-{
+ptym_open(char *pts_name, uid_t uid) {
    char ptr1[] = "pqrstuvwxyzPQRST";
    char ptr2[] = "0123456789abcdef";
    int  fdm, i, j;
@@ -205,8 +204,7 @@ ptym_open(char *pts_name, uid_t uid) {
 *******************************************************************************/
 #if defined(DARWIN)
 static int
-ptys_open(int fdm, char *pts_name)
-{
+ptys_open(int fdm, char *pts_name) {
    struct group gr_struct{};
    struct group *grptr;
    gid_t gid;
@@ -433,10 +431,10 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
  */
 pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out,
                   int *fd_pipe_err, dstring *err_msg) {
+   DENTER(TOP_LAYER);
+
    int ret;
    pid_t pid;
-
-   DENTER(TOP_LAYER);
 
    ret = pipe(fd_pipe_in);
    if (ret == -1) {

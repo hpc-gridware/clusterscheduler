@@ -336,8 +336,7 @@ static int handle_io_file(const char* file, const char* owner, bool rw) {
    return fd;
 }
 
-static int wait_until_parent_has_registered_to_server(int fd_pipe_to_child[])
-{
+static int wait_until_parent_has_registered_to_server(int fd_pipe_to_child[]) {
    int  ret;
    char tmpbuf[100];
 
@@ -372,8 +371,7 @@ static int wait_until_parent_has_registered_to_server(int fd_pipe_to_child[])
    return ret;
 }
 
-static int map_signal(int sig)
-{
+static int map_signal(int sig) {
    int ret = sig;
 
    if (sig == SIGTTIN) {
@@ -419,8 +417,7 @@ FCLOSE_ERROR:
    return ret;
 }
 
-static int do_prolog(int timeout, int ckpt_type, bool is_interactive)
-{
+static int do_prolog(int timeout, int ckpt_type, bool is_interactive) {
    char *prolog;
    char command[10000];
    int exit_status;
@@ -470,8 +467,7 @@ static int do_prolog(int timeout, int ckpt_type, bool is_interactive)
    return 0;
 }
 
-static int do_epilog(int timeout, int ckpt_type, bool is_interactive_job)
-{
+static int do_epilog(int timeout, int ckpt_type, bool is_interactive_job) {
    char *epilog;
    char command[10000];
    int exit_status;
@@ -517,8 +513,7 @@ static int do_epilog(int timeout, int ckpt_type, bool is_interactive_job)
    return 0;
 }
 
-static int do_pe_start(int timeout, int ckpt_type, pid_t *pe_pid, bool is_interactive_job)
-{
+static int do_pe_start(int timeout, int ckpt_type, pid_t *pe_pid, bool is_interactive_job) {
    char *pe_start;
    char command[10000];
    int exit_status;
@@ -578,8 +573,7 @@ static int do_pe_start(int timeout, int ckpt_type, pid_t *pe_pid, bool is_intera
    return 0;
 }
 
-static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid, bool is_interactive_job)
-{
+static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid, bool is_interactive_job) {
    char *pe_stop;
    char command[10000];
    int exit_status;
@@ -691,8 +685,7 @@ static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid, bool is_interac
 
  ************************************************************************/
 
-static void signal_handler(int signal)
-{
+static void signal_handler(int signal) {
    /* may not log in signal handler
       as long as Async-Signal-Safe functions such as fopen() are used in
       shepherd logging code */
@@ -711,8 +704,7 @@ static void show_shepherd_version() {
 
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
    char err_str[2*SGE_PATH_MAX+128];
    char *admin_user;
    char *script_file;
@@ -1509,10 +1501,9 @@ static int start_child(
 *     MT-NOTE: get_remote_host_and_port_from_config() is not MT safe
 *******************************************************************************/
 static int get_remote_host_and_port_from_config(
-char **hostname,
-int *port,
-dstring *dstr_error)
-{
+        char **hostname,
+        int *port,
+        dstring *dstr_error) {
    char *address;
    char *separator;
 
@@ -1633,8 +1624,7 @@ dstring       *dstr_error       /* OUT: error message - if any */
    return exit_status;
 }
 
-static void verify_method(const char *method_name)
-{
+static void verify_method(const char *method_name) {
    char *override_signal;
 
    if ((override_signal = search_nonone_conf_val(method_name))) {
@@ -1684,8 +1674,7 @@ static void verify_method(const char *method_name)
 static void forward_signal_to_job(int pid, int timeout,
                                   int *postponed_signal,
                                   int remaining_alarm,
-                                  pid_t ctrl_pid[3])
-{
+                                  pid_t ctrl_pid[3]) {
    int sig;
    static int replace_qrsh_pid = 1; /* cache */
 
@@ -1902,8 +1891,7 @@ static const char* shepherd_find_notify(int sig) {
 *     void - none
 *******************************************************************************/
 void shepherd_deliver_signal(int sig, int pid, int *postponed_signal,
-                             int remaining_alarm, pid_t *ctrl_pid)
-{
+                             int remaining_alarm, pid_t *ctrl_pid) {
    const char* notify_name = shepherd_find_notify(sig);
 
    /*
@@ -2083,8 +2071,7 @@ static bool shepconf_deliver_signal_or_method(int sig, int pid, pid_t *ctrl_pid)
 *            (or the retry budget is exhausted)
 *******************************************************************************/
 static bool deliver_signal_or_method_with_retry(int sig, int pid, int remaining_alarm,
-                                                pid_t *ctrl_pid)
-{
+                                                pid_t *ctrl_pid) {
    bool delivered = shepconf_deliver_signal_or_method(sig, pid, ctrl_pid);
 
    if (sig != SIGSTOP && sig != SIGCONT) {
@@ -2135,8 +2122,7 @@ static bool deliver_signal_or_method_with_retry(int sig, int pid, int remaining_
  * set_shepherd_signal_mask
  * set signal mask that shpher can handle signals from execd
  *--------------------------------------------------------------------*/
-static void set_shepherd_signal_mask()
-{
+static void set_shepherd_signal_mask() {
    struct sigaction sigact, sigact_old;
    sigset_t mask;
 
@@ -2199,8 +2185,7 @@ static void set_shepherd_signal_mask()
    sigprocmask(SIG_SETMASK, &mask, nullptr);
 }
 
-static void change_shepherd_signal_mask()
-{
+static void change_shepherd_signal_mask() {
    sigset_t mask;
 
    sigprocmask(SIG_SETMASK, nullptr, &mask);
@@ -2215,8 +2200,7 @@ static void change_shepherd_signal_mask()
  *           0 no checkpointing
  *           Bitmask of checkpointing type
  *------------------------------------------------------------------------*/
-static int check_ckpttype()
-{
+static int check_ckpttype() {
    char *ckpt_job, *ckpt_interface, *ckpt_restarted, *ckpt_migr_command,
         *ckpt_rest_command, *ckpt_command, *ckpt_pid, *ckpt_osjobid,
         *ckpt_clean_command, *ckpt_dir, *ckpt_signal_str;
@@ -2310,23 +2294,22 @@ static int check_ckpttype()
 
 /*------------------------------------------------------------------------*/
 static void handle_signals_and_methods(
-   int npid,
-   int pid,
-   int *postponed_signal,
-   pid_t ctrl_pid[3],
-   ckpt_info_t *p_ckpt_info,
-   int *ckpt_cmd_pid,
-   int *rest_ckpt_interval,
-   int timeout,
-   int *migr_cmd_pid,
-   int *kill_job_after_checkpoint,
-   int status,
-   int *inArena,
-   int *inCkpt,
-   const char *childname,
-   int *job_status,
-   int *job_pid)
-{
+        int npid,
+        int pid,
+        int *postponed_signal,
+        pid_t ctrl_pid[3],
+        ckpt_info_t *p_ckpt_info,
+        int *ckpt_cmd_pid,
+        int *rest_ckpt_interval,
+        int timeout,
+        int *migr_cmd_pid,
+        int *kill_job_after_checkpoint,
+        int status,
+        int *inArena,
+        int *inCkpt,
+        const char *childname,
+        int *job_status,
+        int *job_pid) {
    int remaining_alarm  = 0;
    int i;
 
@@ -3027,8 +3010,7 @@ int fd_std_err             /* fd of stderr. -1 if not set */
 static void set_ckpt_params(int ckpt_type, char *ckpt_command, int ckpt_len,
                             char *migr_command, int migr_len,
                             char *clean_command, int clean_len,
-                            int *ckpt_interval)
-{
+                            int *ckpt_interval) {
    char *cmd;
 
    strcpy(ckpt_command, "none");
@@ -3081,8 +3063,7 @@ static void set_ckpt_params(int ckpt_type, char *ckpt_command, int ckpt_len,
  *   of the restart command.
  *-------------------------------------------------------------------------*/
 static void set_ckpt_restart_command(const char *childname, int ckpt_type,
-                                     char *rest_command, int rest_len)
-{
+                                     char *rest_command, int rest_len) {
    char *cmd;
 
    strcpy(rest_command, "none");
@@ -3110,8 +3091,7 @@ static void set_ckpt_restart_command(const char *childname, int ckpt_type,
  * checkpointing
  * set ckpt_pid to 0 for non kernel level checkpointing jobs
  *-------------------------------------------------------------------------*/
-static void handle_job_pid(int ckpt_type, int pid, int *ckpt_pid)
-{
+static void handle_job_pid(int ckpt_type, int pid, int *ckpt_pid) {
    char pidbuf[64];
    const char *job_pid = nullptr;
 
@@ -3140,8 +3120,7 @@ static void handle_job_pid(int ckpt_type, int pid, int *ckpt_pid)
 }
 
 /*-------------------------------------------------------------------------*/
-static int start_async_command(const char *descr, char *cmd)
-{
+static int start_async_command(const char *descr, char *cmd) {
    int pid;
    char err_str[512];
    char *cwd;
@@ -3228,8 +3207,7 @@ static int start_async_command(const char *descr, char *cmd)
 }
 
 /*-------------------------------------------------------------------------*/
-static void start_clean_command(char *cmd)
-{
+static void start_clean_command(char *cmd) {
    int pid, npid, status;
 
    shepherd_trace("starting ckpt clean command");
@@ -3391,8 +3369,7 @@ shepherd_signal_job(pid_t pid, int sig) {
    return delivered;
 }
 
-static int notify_tasker(uint32_t exit_status)
-{
+static int notify_tasker(uint32_t exit_status) {
    const char *const filename = "environment";
    FILE *fp;
    char buf[10000], *name;
@@ -3491,8 +3468,7 @@ FCLOSE_ERROR:
 
 /*------------------------------------------------------------------*/
 static pid_t start_token_cmd(int wait_for_finish, const char *cmd,
-   const char *arg1, const char *arg2, const char *arg3)
-{
+                             const char *arg1, const char *arg2, const char *arg3) {
    pid_t pid;
    pid_t ret;
 
