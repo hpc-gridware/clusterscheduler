@@ -55,17 +55,28 @@
 
 #include "sge_complex_schedd.h"
 
-#define T 0
-#define F 1
-#define ERROR -1
+#define T 0        ///< the expression evaluated true; 0 rather than 1, matching the evaluator's convention
+#define F 1        ///< the expression evaluated false
+#define ERROR -1   ///< the expression could not be evaluated
+
+/** @brief The name of a #T / #F / #ERROR value, for the failure message
+ * @param match the value to name
+ */
 #define RESULT(match) (match == -1) ? "ERROR" : (match == 0) ? "TRUE" : "FALSE"
 
 #ifndef __INSURE__
-#define BALANCE_LOOP_COUNT 20
-#define LOOP_COUNT 300000
+/** @name How many iterations the benchmark runs
+ *
+ * Cut down drastically under Insure++, whose instrumentation makes the full
+ * count take hours without making the comparison any more informative.
+ * @{
+ */
+#define BALANCE_LOOP_COUNT 20   ///< outer runs, to average out scheduling noise
+#define LOOP_COUNT 300000       ///< evaluations per run
 #else
-#define BALANCE_LOOP_COUNT 2
-#define LOOP_COUNT 300
+#define BALANCE_LOOP_COUNT 2   ///< outer runs under Insure++
+#define LOOP_COUNT 300         ///< evaluations per run under Insure++
+/** @} */
 #endif
 
 /* Local functions and variables */

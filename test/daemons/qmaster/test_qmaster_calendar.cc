@@ -38,6 +38,7 @@
 #include "sge_calendar_qmaster.h"
 #include "msg_common.h"
 
+/** @brief One calendar definition to parse and check */
 typedef struct {
    const char *year_cal;    ///< year calendar definition
    const char *week_cal;    ///< week calendar definition

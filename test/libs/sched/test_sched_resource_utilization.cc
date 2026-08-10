@@ -48,11 +48,17 @@
 #include "sge_resource_utilization.h"
 #include "sge_qeti.h"
 
+/** @brief One booking in a resource utilization test
+ *
+ * Resource utilization is stored as a series of changes over time rather than
+ * as a single number, so a test case is a list of bookings and the amounts they
+ * add or remove.
+ */
 typedef struct {
-   uint64_t    start_time;
-   uint64_t    duration;
-   double      uti;
-   const char *desc;
+   uint64_t    start_time;   ///< when the booking begins
+   uint64_t    duration;     ///< how long it lasts
+   double      uti;          ///< how much of the resource it takes
+   const char *desc;         ///< what this booking is checking, printed on failure
 } test_array_t;
 
 static int s_fail = 0;

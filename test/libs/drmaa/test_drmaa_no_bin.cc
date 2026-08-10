@@ -40,7 +40,7 @@
 #include <cstdlib>
 #include "drmaa.h"
 
-#define WD "/tmp"
+#define WD "/tmp"   ///< the working directory the job runs in
 
 /** @brief Handle code
  *

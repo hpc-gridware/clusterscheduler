@@ -47,7 +47,9 @@ static void *sync_thread(void *arg);
 static int count = -1;
 static pthread_mutex_t japi_session_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/** @brief Take the lock guarding the shared job counters */
 #define LOCK_COUNT()   pthread_mutex_lock(&japi_session_mutex)                                 
+/** @brief Release it again */
 #define UNLOCK_COUNT() pthread_mutex_unlock(&japi_session_mutex)
 
 int main(int argc, char *argv[])

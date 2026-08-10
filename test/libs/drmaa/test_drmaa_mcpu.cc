@@ -45,10 +45,10 @@
 #include <uti/sge_log.h>
 #include <uti/sge_stdlib.h>
 
-#define CELL "default"
-#define WD "/tmp"
-#define CMD "/tmp/sleeper.sh"
-#define CATEGORY "test"
+#define CELL "default"           ///< the cell the test submits into
+#define WD "/tmp"                 ///< the working directory the jobs run in
+#define CMD "/tmp/sleeper.sh"     ///< the job the test submits; must exist on the execution hosts
+#define CATEGORY "test"           ///< the job category, so the submitted jobs are recognisable
 
 /** @brief Handle code
  *
