@@ -867,6 +867,8 @@ lList **lpp_options,
 char **envp,
 uint32_t flags
 ) {
+   DENTER(TOP_LAYER);
+
    unsigned int dpl; /* directive_prefix length */
    FILE *fp;
    char *filestrptr = nullptr;
@@ -879,8 +881,6 @@ uint32_t flags
    lList *lp_new_opts = nullptr;
    /* snprintf takes the nullptr terminator into account. */
    char error_string[MAX_STRING_SIZE];
-
-   DENTER(TOP_LAYER);
 
    if (!lpp_options) {
       /* no place where to put result */
