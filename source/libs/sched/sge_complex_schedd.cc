@@ -1297,14 +1297,14 @@ int main(int argc, char *argv[], char *envp[]) {
  */
 bool request_cq_rejected(const lList *hard_resource_list, const lListElem *cq,
                          const lList *centry_list, bool single_slot, dstring *unsatisfied) {
+   DENTER(TOP_LAYER);
+
    const lListElem *val_ce = nullptr, *ce; /* CE_Type */
    const char *name, *request, *offer;
    uint32_t relop;
    ocs::CEntry::Type type;
    bool rejected;
    int match;
-
-   DENTER(TOP_LAYER);
 
    for_each_ep_lv(req, hard_resource_list) {
       int cqfld, valfld;

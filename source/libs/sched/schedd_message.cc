@@ -98,10 +98,11 @@ static void schedd_mes_find_others(lListElem *tmp_sme, lList *job_list, int igno
 }
 
 static lRef schedd_mes_get_category(uint32_t job_id, lList *job_list) {
+   DENTER(TOP_LAYER);
+
    const lListElem *job = nullptr;  /* JB_Type */
    lRef ret = nullptr;        /* Category pointer (void*) */
 
-   DENTER(TOP_LAYER);
    job = lGetElemUlong(job_list, JB_job_number, job_id);
    if (job) {
       ret = lGetRef(job, JB_category);

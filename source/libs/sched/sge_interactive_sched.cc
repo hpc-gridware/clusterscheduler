@@ -179,6 +179,8 @@ void remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int 
  */
 static void
 order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders) {
+   DENTER(TOP_LAYER);
+
    /* The possibility exists that this task is part of an array task, that it
     * already has earned an order to be scheduled, and that one or more other
     * tasks in this same job were not scheduled, resulting in this delete
@@ -196,8 +198,6 @@ order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task,
                       OR_job_number, lGetUlong(job, JB_job_number),
                       OR_ja_task_number, lGetUlong(ja_task, JAT_task_number));
    lListElem *ep = lFindFirstRW(orderList, where);
-   
-   DENTER(TOP_LAYER);
    
    if (ep != nullptr) {
       DPRINTF("Removing job start order for job task %u.%u\n", lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));

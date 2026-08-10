@@ -188,6 +188,8 @@ const char *get_name_of_split_value(int value) {
  * @see #split_jobs
  */
 bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted_jobs[]) {
+   DENTER(TOP_LAYER);
+
    bool ret = false;
    lList *ja_task_list = nullptr;      /* JAT_Type */
    lList *r_ja_task_list = nullptr;    /* JAT_Type */
@@ -195,8 +197,6 @@ bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted
    lListElem *running_job = nullptr;   /* JB_Type */
    uint32_t job_id;
    uint32_t ja_task_id;
-
-   DENTER(TOP_LAYER);
 
    job_id = lGetUlong(*pending_job, JB_job_number);
    ja_task_list = lGetListRW(*pending_job, JB_ja_tasks);

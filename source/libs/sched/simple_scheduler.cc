@@ -430,14 +430,14 @@ static void allocate_queue_slots(lList **allocated_queues, lListElem *queue, uin
 #endif
 
 static void simple_scheduler(sge_evc_class_t *evc) {
+   DENTER(TOP_LAYER);
+
    lListElem *job, *ja_task;
    const char *pe_name;
    lListElem *pe = nullptr;
    uint32_t procs = 1;
    lList *allocated_queues = nullptr; /* JG_Type */
   
-   DENTER(TOP_LAYER);
-
    /* find a pending job */
    if(!find_pending_ja_task(&job, &ja_task)) {
       return;

@@ -5403,6 +5403,8 @@ sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations, lLi
  */
 static dispatch_t
 sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, const lListElem *hep) {
+   DENTER(TOP_LAYER);
+
    lList *hard_requests = job_get_hard_resource_listRW(a->job);
    const lList *load_attr = lGetList(hep, EH_load_list);
    const lList *config_attr = lGetList(hep, EH_consumable_config_list);
@@ -5413,8 +5415,6 @@ sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, cons
    uint64_t tmp_time = *start;
    const char *eh_name = lGetHost(hep, EH_name);
    dstring reason; char reason_buf[1024];
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&reason, reason_buf, sizeof(reason_buf));
 
@@ -5470,6 +5470,8 @@ sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, cons
  */
 static dispatch_t
 sequential_global_time(uint64_t *start, sge_assignment_t *a, int *violations) {
+   DENTER(TOP_LAYER);
+
    dstring reason; char reason_buf[1024];
    dispatch_t result = DISPATCH_NEVER_CAT;
    uint64_t tmp_time = *start;
@@ -5479,8 +5481,6 @@ sequential_global_time(uint64_t *start, sge_assignment_t *a, int *violations) {
    const lList *actual_attr = lGetList(a->gep, EH_resource_utilization);
    double lc_factor=0.0;
    uint32_t ulc_factor;
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&reason, reason_buf, sizeof(reason_buf));
 
