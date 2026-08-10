@@ -1084,13 +1084,13 @@ spool_flatfile_open_file(lList **answer_list,
                          const spool_flatfile_destination destination,
                          const char *filepath_in,
                          const char **filepath_out) {
+   DENTER(FLATFILE_LAYER);
+
 #ifdef USE_FOPEN
    FILE *fd = nullptr;
 #else
    int fd = -1;
 #endif
-
-   DENTER(FLATFILE_LAYER);
 
    *filepath_out = nullptr;
 
@@ -1247,14 +1247,14 @@ static const char *
 spool_flatfile_write_data(lList **answer_list, const void *data, int data_len,
                           const spool_flatfile_destination destination,
                           const char *filepath) {
+   DENTER(FLATFILE_LAYER);
+
 #ifdef USE_FOPEN
    FILE *fd = nullptr;
 #else
    int fd = -1;
 #endif
    const char *result = nullptr;
-
-   DENTER(FLATFILE_LAYER);
 
    SGE_CHECK_POINTER_NULL(data, answer_list);
 

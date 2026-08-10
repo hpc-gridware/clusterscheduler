@@ -416,6 +416,8 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
                                         const lListElem *type,
                                         const lListElem *rule, lList **list,
                                         const sge_object_type object_type) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
 #if 0
    bool local_transaction = false; /* did we start a transaction? */
@@ -425,8 +427,6 @@ bool spool_berkeleydb_default_list_func(lList **answer_list,
    const char *table_name;
    bdb_info info;
    lList *master_suser_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
-
-   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
    descr = object_type_get_descr(object_type);
