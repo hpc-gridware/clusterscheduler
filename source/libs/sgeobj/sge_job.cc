@@ -118,9 +118,9 @@
  */
 lListElem *job_get_ja_task_template_pending(const lListElem *job,
                                             uint32_t ja_task_id) {
-   lListElem *template_task = nullptr;    /* JAT_Type */
-
    DENTER(BASIS_LAYER);
+
+   lListElem *template_task = nullptr;    /* JAT_Type */
 
    template_task = lFirstRW(lGetList(job, JB_ja_template));
 
@@ -157,9 +157,10 @@ lListElem *job_get_ja_task_template_pending(const lListElem *job,
 lListElem *job_get_ja_task_template_hold(const lListElem *job,
                                          uint32_t ja_task_id,
                                          uint32_t hold_state) {
+   DENTER(BASIS_LAYER);
+
    lListElem *template_task = nullptr;    /* JAT_Type */
 
-   DENTER(BASIS_LAYER);
    template_task = job_get_ja_task_template_pending(job, ja_task_id);
    if (template_task) {
       uint32_t state;
@@ -683,12 +684,13 @@ uint32_t job_count_pending_tasks(const lListElem *job, bool count_all) {
  */
 void job_delete_not_enrolled_ja_task(lListElem *job, lList **answer_list,
                                      uint32_t ja_task_number) {
+   DENTER(TOP_LAYER);
+
    const int attributes = 5;
    const int attribute[] = {JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_o_h_ids,
                             JB_ja_s_h_ids, JB_ja_a_h_ids};
    int i;
 
-   DENTER(TOP_LAYER);
    for (i = 0; i < attributes; i++) {
       object_delete_range_id(job, answer_list, attribute[i], ja_task_number);
    }
@@ -1275,9 +1277,10 @@ int job_list_register_new_job(const lList *job_list, uint32_t max_jobs, int forc
  * @note MT-NOTE: job_initialize_id_lists() is MT safe
  */
 int job_initialize_id_lists(lListElem *job, lList **answer_list) {
+   DENTER(TOP_LAYER);
+
    lList *n_h_list = nullptr;    /* RN_Type */
 
-   DENTER(TOP_LAYER);
    n_h_list = lCopyList("task_id_range", lGetList(job, JB_ja_structure));
    if (n_h_list == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,

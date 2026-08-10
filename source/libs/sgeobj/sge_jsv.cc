@@ -172,9 +172,10 @@ jsv_get_pid(lListElem *jsv) {
 
 static void
 jsv_set_pid(lListElem *jsv, pid_t pid) {
+   DENTER(TOP_LAYER);
+
    char pid_buffer[256]; /* it is sure that pid is smaller than 256 characters */
 
-   DENTER(TOP_LAYER);
    snprintf(pid_buffer, sizeof(pid_buffer), pid_t_fmt, pid);
    lSetString(jsv, JSV_pid, pid_buffer);
    DRETURN_VOID;

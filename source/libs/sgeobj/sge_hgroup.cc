@@ -356,9 +356,10 @@ hgroup_list_locate(const lList *this_list, const char *group) {
  */
 lListElem *
 hgroup_create(lList **answer_list, const char *name, lList *href_or_groupref, bool is_name_validate) {
+   DENTER(HGROUP_LAYER);
+
    lListElem *ret = nullptr;  /* HGRP_Type */
 
-   DENTER(HGROUP_LAYER);
    if (name != nullptr) {
       if(!is_name_validate || hgroup_check_name(answer_list, name) ) {
          ret = lCreateElem(HGRP_Type);

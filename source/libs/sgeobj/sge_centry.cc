@@ -415,9 +415,10 @@ map_type2str(ocs::CEntry::Type type) {
  */
 lListElem *
 centry_create(lList **answer_list, const char *name) {
+   DENTER(CENTRY_LAYER);
+
    lListElem *ret = nullptr;  /* CE_Type */
 
-   DENTER(CENTRY_LAYER);
    if (name != nullptr) {
       ret = lCreateElem(CE_Type);
       if (ret != nullptr) {
@@ -575,9 +576,10 @@ centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string) {
  */
 lListElem *
 centry_list_locate(const lList *this_list, const char *name) {
+   DENTER(CENTRY_LAYER);
+
    lListElem *ret = nullptr;   /* CE_Type */
 
-   DENTER(CENTRY_LAYER);
    if (this_list != nullptr && name != nullptr) {
       ret = lGetElemStrRW(this_list, CE_name, name);
       if (ret == nullptr) {

@@ -707,6 +707,7 @@ uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list
  */
 static time_t compute_limit(bool today, bool active, const lList *year_time, const lList *week_time, 
                             const lList *day_time, const lListElem *now, bool *is_end_of_day_reached) {
+   DENTER(TOP_LAYER);
 
    lListElem *lep = nullptr;
    bool end_of_day = false;
@@ -719,8 +720,6 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
                                               but might be overriden with a temp object, which needs to be freed within 
                                               the function. But a const lListElem cannot be freed. */
    bool is_new_now_copy = false;
-
-   DENTER(TOP_LAYER);
 
    if (day_time == nullptr) {
       DPRINTF("no day time calendar is set ");
@@ -1196,12 +1195,12 @@ ERROR:
 
 /* disabled_year_entry := year_day_range_list[=daytime_range_list][=state] */
 static int disabled_year_entry(lListElem **cal) {
+   DENTER(TOP_LAYER);
+
    lList *ydrl = nullptr,
          *dtrl = nullptr;
    int state = QI_DO_DISABLE;
   
-   DENTER(TOP_LAYER);
-
    if (scan(nullptr, nullptr)==NUMBER) {
       if (year_day_range_list(&ydrl))
          goto ERROR;
@@ -1749,12 +1748,12 @@ ERROR:
 
 /* disabled_week_entry := week_day_range_list[=daytime_range_list][=state] */
 static int disabled_week_entry(lListElem **cal) {
+   DENTER(TOP_LAYER);
+
    /* default values */
    lList *wdrl = nullptr,
          *dtrl = nullptr;
        int state = QI_DO_DISABLE;
-
-   DENTER(TOP_LAYER);
 
    if (scan(nullptr, nullptr)==STRING &&
        cheap_scan(get_string(), statev, 3, "state specifier")<0) {
@@ -2007,10 +2006,10 @@ static void extend_wday_range(lList *week_day) {
 
 
 static void split_wday_range(lList *wdrl, lListElem *tmr) {
+   DENTER(TOP_LAYER);
+
    const lListElem *t2, *t1; /* *t3, *t4, */ 
    lListElem *tmr2;
-
-   DENTER(TOP_LAYER);
 
    if ((t2=lFirst(lGetList(tmr, TMR_end)))) {
       t1=lFirst(lGetList(tmr, TMR_begin));

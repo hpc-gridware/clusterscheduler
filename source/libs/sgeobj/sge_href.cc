@@ -295,9 +295,10 @@ bool href_list_find_effective_diff(lList **answer_list, const lList *add_groups,
  */
 lListElem *
 href_list_locate(const lList *this_list, const char *name) {
+   DENTER(HOSTREF_LAYER);
+
    lListElem *ret = nullptr;  /* HR_Type */
 
-   DENTER(HOSTREF_LAYER);
    if (this_list != nullptr && name != nullptr) {
       ret = lGetElemHostRW(this_list, HR_name, name);
    }

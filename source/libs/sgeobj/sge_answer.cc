@@ -744,11 +744,10 @@ void answer_list_append_list(lList **answer_list, lList **new_list) {
  * @note MT-NOTE: answer_list_print_err_warn() is MT safe
  */
 bool answer_list_log(lList **answer_list, bool is_free_list, bool show_info) {
+   DENTER(ANSWER_LAYER);
 
    bool ret = false;
    const lListElem *answer;   /* AN_Type */
-
-   DENTER(ANSWER_LAYER);
 
    if (answer_list != nullptr && *answer_list != nullptr) {
       for_each_ep(answer, *answer_list) {

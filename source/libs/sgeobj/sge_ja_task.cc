@@ -105,9 +105,10 @@ lListElem *ja_task_search_pe_task(const lListElem *ja_task,
  */
 void ja_task_list_print_to_string(const lList *ja_task_list,
                                   dstring *range_string) {
+   DENTER(TOP_LAYER);
+
    lList *range_list = nullptr;     /* RN_Type */
 
-   DENTER(TOP_LAYER);
    for_each_ep_lv(ja_task, ja_task_list) {
       uint32_t tid = lGetUlong(ja_task, JAT_task_number);
 

@@ -236,11 +236,11 @@ const char *longopt,
 lList **ppcmdline,
 lList **alpp 
 ) {
+   DENTER(TOP_LAYER);
+
 char **rp;
 stringT str;
 lListElem *ep; /* SPA_Type */
-   DENTER(TOP_LAYER);
-
    rp = sp;
    if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) 
         || ((shortopt[strlen(shortopt)-1] == '*')
@@ -294,10 +294,10 @@ const char *longopt,
 lList **ppcmdline,
 lList **alpp 
 ) {
+   DENTER(TOP_LAYER);
+
    char **rp;
    lListElem *ep; /* SPA_Type */
-
-   DENTER(TOP_LAYER);
 
    rp = sp;
    if ( (!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp)) ) {
@@ -337,10 +337,10 @@ const char *opt,
 lList **ppcmdline,
 lList **alpp 
 ) {
+   DENTER(TOP_LAYER);
+
 char **rp;
 lListElem *ep = nullptr; /* SPA_Type */
-
-   DENTER(TOP_LAYER);
 
    rp = sp;
    while( (*rp) && (**rp != '-') ) {
