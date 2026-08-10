@@ -47,17 +47,29 @@ if (DOXYGEN_FOUND)
    # ------------------------------------------------------------------------
    # Documentation gate for modules that have been converted to doxygen.
    #
-   # Doxyfile.strict parses only the modules listed below and turns every
-   # documentation defect in them into a build error, so a converted module
-   # cannot silently regress. Modules that have not been converted yet are not
-   # listed and are therefore not checked.
+   # Doxyfile.strict parses only the modules listed below and reports every
+   # documentation defect in them. Modules that have not been converted yet are
+   # not listed and are therefore not checked.
+   #
+   # OPT-IN, DELIBERATELY. The check is not part of any build unless someone
+   # asks for it: DOXYGEN_STRICT defaults to OFF, so doc_doxygen_strict is a
+   # plain target, never an ALL target. A checkout, an ordinary build and the
+   # CI workflows that pass -doc (daily_build, build_to_s3) therefore cannot be
+   # broken by a missing comment. Documentation defects are not build defects.
+   #
+   # Run it when you want it, either way round:
+   #    cmake --build <build-dir> --target doc_doxygen_strict
+   #    doc/doxygen/dxm-check.sh source/libs/<module>   # no build tree needed
+   #
+   # Turning it on (-DDOXYGEN_STRICT=ON) puts it back into ALL for that build
+   # tree only - useful while converting a module, not a default for others.
    #
    # To register a module: convert it with the runbook, then add one line here.
    # Paths are relative to the clusterscheduler directory.
    #
    # See doc/doxygen/Readme-dxm.md
    # ------------------------------------------------------------------------
-   option(DOXYGEN_STRICT "Fail the build on documentation defects in converted modules" ON)
+   option(DOXYGEN_STRICT "Add the documentation gate to ALL, failing the build on documentation defects in converted modules" OFF)
 
    set(DXM_FINISHED_MODULES
          source/libs/evc

@@ -207,6 +207,42 @@ build.
 Setting up the test clusters, running the tests and the tools around it are described in
 *`<testsuite>/tools/doc/`*.
 
+## Check the Source Code Documentation (Optional)
+
+The modules whose sources have been converted to Doxygen comments are listed as *DXM_FINISHED_MODULES* in
+*`doc/doxygen/CMakeLists.txt`*. A separate Doxygen configuration, *`doc/doxygen/Doxyfile.strict`*, parses the
+whole source tree so that cross module references resolve, but reports documentation defects for the listed
+modules only. Modules that have not been converted are not listed and are therefore not checked.
+
+This check is optional and is **not part of any build**. *DOXYGEN_STRICT* is *OFF* by default, which makes
+`doc_doxygen_strict` an ordinary target rather than an `ALL` target. A fresh checkout, a regular build and the
+CI workflows that build the documentation all remain unaffected by a missing or malformed comment: a
+documentation defect is not a build defect.
+
+* *DOXYGEN_STRICT*
+
+  Adds the check to the `ALL` target of this build directory, so that every build fails on a documentation
+  defect in one of the registered modules. *OFF* by default. This is meant for the build directory of whoever
+  is converting a module, not as a default for everyone else.
+
+Run the check explicitly, either from a build directory or without one:
+
+```
+# from a build directory; the target only exists with -DINSTALL_SGE_DOC=ON
+cmake --build <build-dir> --target doc_doxygen_strict
+
+# without a build directory; one or more paths relative to the clusterscheduler directory
+doc/doxygen/dxm-check.sh source/libs/uti source/daemons/qmaster
+```
+
+The target is defined below *`doc/`* and therefore exists only when *INSTALL_SGE_DOC* is *ON*.
+`dxm-check.sh` has no such dependency, runs in a few seconds and is the form to use while writing comments.
+Both require `doxygen` in the *PATH*; if it is not installed, no Doxygen target is created at all.
+
+This is unrelated to *INSTALL_SGE_SRCDOC*, which decides whether the generated HTML documentation becomes part
+of the installation. The comment format, the conversion procedure and the rules for registering a module are
+described in *`doc/doxygen/Readme-dxm.md`*.
+
 ## Trigger the Buildsystem Generator Via Command Line
 
 When you have selected the required build configuration then you can run `cmake` in the build directory.
