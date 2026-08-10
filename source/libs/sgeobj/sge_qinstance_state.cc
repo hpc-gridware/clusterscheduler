@@ -264,6 +264,8 @@ bool transition_option_is_valid_for_qinstance(uint32_t option, lList **answer_li
  */
 const char *
 qinstance_state_as_string(uint32_t bit) {
+   DENTER(TOP_LAYER);
+
    static const uint32_t states[] = {
       QI_ALARM,
       QI_SUSPEND_ALARM,
@@ -300,7 +302,6 @@ qinstance_state_as_string(uint32_t bit) {
    const char *ret = nullptr;
    int i = 0;
 
-   DENTER(TOP_LAYER);
    if (names[0] == nullptr) {
       names[0] = MSG_QINSTANCE_ALARM;
       names[1] = MSG_QINSTANCE_SUSPALARM;

@@ -1130,6 +1130,8 @@ static int in_range(const lListElem *tm, const lListElem *r, cmp_func_t cmp_func
 
 /* disabled_year_list := disabled_year_entry[<space>disabled_year_entry] */
 static int disabled_year_list(lList **alpp, const char *s, lList **cal, const char *cal_name) { 
+   DENTER(TOP_LAYER);
+
    lListElem *calep;
 
    static token_set_t token_set[] = {
@@ -1143,8 +1145,6 @@ static int disabled_year_list(lList **alpp, const char *s, lList **cal, const ch
       { NUMBER,          nullptr },
       { 0,               nullptr }
    };
-
-   DENTER(TOP_LAYER);
 
    if (cal != nullptr) {
       *cal = nullptr;
@@ -1425,6 +1425,8 @@ static int range_number(int min, int max, int *ip, const char *name) {
 
 
 static int month(int *mp) {
+   DENTER(TOP_LAYER);
+
    int m;
 
    static token_set_t monthv[] = {
@@ -1442,8 +1444,6 @@ static int month(int *mp) {
       { 12, "december" },
       { -1, nullptr }
    };
-
-   DENTER(TOP_LAYER);
 
    if (scan(nullptr, nullptr)==STRING) {
       char *s = get_string();
@@ -1681,6 +1681,8 @@ static int action(int *sp) {
 }
 
 static int disabled_week_list(lList **alpp, const char *s, lList **cal, const char *cal_name) {
+   DENTER(TOP_LAYER);
+
    lListElem *calep;
    static token_set_t token_set[] = {
       { COLON,        ":" }, 
@@ -1693,8 +1695,6 @@ static int disabled_week_list(lList **alpp, const char *s, lList **cal, const ch
       { 0,            nullptr }
    };
    
-   DENTER(TOP_LAYER);
-
    if (cal) {
       *cal = nullptr;
    }   
@@ -2095,6 +2095,8 @@ ERROR:
 }
 
 static int week_day(lListElem **tm) {
+   DENTER(TOP_LAYER);
+
    int wday;
    char *s;
 
@@ -2108,8 +2110,6 @@ static int week_day(lListElem **tm) {
       { 6, "saturday" },
       { -1, nullptr }
    };
-
-   DENTER(TOP_LAYER);
 
    if (scan(nullptr, nullptr)!=STRING) {
       snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_PARSE_EXPECTEDSTRINGFORWEEKDAY);

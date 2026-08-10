@@ -188,6 +188,8 @@ int sge_parse_checkpoint_attr(const char *attr_str) {
  * @note MT-NOTE: ckpt_validate() is not MT safe
  */
 int ckpt_validate(const lListElem *this_elem, lList **alpp) {
+   DENTER(TOP_LAYER);
+
    static const char* ckpt_interfaces[] = {
       "USERDEFINED",
       "HIBERNATOR",
@@ -209,8 +211,6 @@ int ckpt_validate(const lListElem *this_elem, lList **alpp) {
    size_t i;
    int found = 0;
    const char *s, *interface;
-
-   DENTER(TOP_LAYER);
 
    if (!this_elem) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);

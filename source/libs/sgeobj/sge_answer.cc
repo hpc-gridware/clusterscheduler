@@ -184,6 +184,8 @@ void answer_exit_if_not_recoverable(const lListElem *answer) {
  * @note MT-NOTE: answer_get_quality_text() is MT safe
  */
 const char *answer_get_quality_text(const lListElem *answer) {
+   DENTER(ANSWER_LAYER);
+
    const char *quality_text[] = {
       "CRITICAL",
       "ERROR",
@@ -192,7 +194,6 @@ const char *answer_get_quality_text(const lListElem *answer) {
    };
    uint32_t quality;
 
-   DENTER(ANSWER_LAYER);
    quality = lGetUlong(answer, AN_quality);
    if (quality >= ANSWER_QUALITY_END) {
       quality = ANSWER_QUALITY_CRITICAL;
