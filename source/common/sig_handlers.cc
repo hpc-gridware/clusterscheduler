@@ -200,8 +200,7 @@ int me_who
  *
  * @param dummy the signal number, unused
  */
-static void sge_alarmclock(int dummy)
-{
+static void sge_alarmclock(int dummy) {
    return;
 }
 
@@ -215,8 +214,7 @@ static void sge_alarmclock(int dummy)
  * @todo Remove the `exit()`; every application should be checking
  *       #shut_me_down instead.
  */
-static void sge_terminate(int dummy)
-{
+static void sge_terminate(int dummy) {
    /* set shut-me-down variable */
    shut_me_down = 1;
     
@@ -246,8 +244,7 @@ static void sge_terminate(int dummy)
  *
  * @param dummy the signal number, unused
  */
-void sge_reap(int dummy)
-{
+void sge_reap(int dummy) {
    sge_sig_handler_dead_children = 1;
 }
 
@@ -258,7 +255,6 @@ void sge_reap(int dummy)
  *
  * @param dummy the signal number, unused
  */
-static void sge_sigpipe_handler(int dummy)
-{
+static void sge_sigpipe_handler(int dummy) {
    sge_sig_handler_sigpipe_received = 1;
 }

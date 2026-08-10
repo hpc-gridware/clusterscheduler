@@ -43,8 +43,7 @@
  * @param thread_lib_handle receives the new thread list
  * @return `CL_RETVAL_OK` on success, a `CL_RETVAL_*` error otherwise
  */
-int thread_init_lib(THREAD_LIB_HANDLE **thread_lib_handle)
-{
+int thread_init_lib(THREAD_LIB_HANDLE **thread_lib_handle) {
    return cl_thread_list_setup(thread_lib_handle, "thread list");
 }
 
@@ -53,8 +52,7 @@ int thread_init_lib(THREAD_LIB_HANDLE **thread_lib_handle)
  * @param thread_lib_handle the list to destroy; set to `nullptr` afterwards
  * @return `CL_RETVAL_OK` on success, a `CL_RETVAL_*` error otherwise
  */
-int thread_cleanup_lib(THREAD_LIB_HANDLE **thread_lib_handle)
-{
+int thread_cleanup_lib(THREAD_LIB_HANDLE **thread_lib_handle) {
    return cl_thread_list_cleanup(thread_lib_handle);
 }
 
@@ -73,8 +71,7 @@ int create_thread(THREAD_LIB_HANDLE *thread_lib_handle,
                   cl_raw_list_t *log_list,
                   const char *thread_name,
                   int thread_id,
-                  void* thread_func(void*))
-{
+                  void *thread_func(void *)) {
    return cl_thread_list_create_thread(thread_lib_handle, thread, log_list, 
                                        thread_name, thread_id,
                                        thread_func, nullptr, nullptr, CL_TT_IJS);
@@ -87,10 +84,9 @@ int create_thread(THREAD_LIB_HANDLE *thread_lib_handle,
  * @param thread_name the name to register under
  * @return `CL_RETVAL_OK` on success, a `CL_RETVAL_*` error otherwise
  */
-int register_thread(cl_raw_list_t     *log_list,
-                    THREAD_HANDLE     *thread,
-                    const char *thread_name)
-{
+int register_thread(cl_raw_list_t *log_list,
+                    THREAD_HANDLE *thread,
+                    const char *thread_name) {
    int ret;
    ret = cl_thread_setup(thread,
                          log_list, 
@@ -106,8 +102,7 @@ int register_thread(cl_raw_list_t     *log_list,
  * @param t_conf the thread settings of the calling thread
  * @return `CL_RETVAL_OK` on success, a `CL_RETVAL_*` error otherwise
  */
-int thread_func_startup(void *t_conf)
-{
+int thread_func_startup(void *t_conf) {
    cl_thread_settings_t *thread_config;
 
    /* get pointer to cl_thread_settings_t struct */
@@ -120,8 +115,7 @@ int thread_func_startup(void *t_conf)
  * @param t_conf the thread settings of the calling thread
  * @return `CL_RETVAL_OK` on success, a `CL_RETVAL_*` error otherwise
  */
-int thread_func_cleanup(void *t_conf)
-{
+int thread_func_cleanup(void *t_conf) {
    cl_thread_settings_t *thread_config;
 
    /* get pointer to cl_thread_settings_t struct */
@@ -135,8 +129,7 @@ int thread_func_cleanup(void *t_conf)
  * @param thread the thread to stop
  * @return `CL_RETVAL_OK` on success, a `CL_RETVAL_*` error otherwise
  */
-int thread_shutdown(THREAD_HANDLE *thread)
-{
+int thread_shutdown(THREAD_HANDLE *thread) {
    return cl_thread_shutdown(thread);
 }
 
@@ -145,8 +138,7 @@ int thread_shutdown(THREAD_HANDLE *thread)
  * @param thread the thread to wake
  * @return `CL_RETVAL_OK` on success, a `CL_RETVAL_*` error otherwise
  */
-int thread_trigger_event(THREAD_HANDLE *thread)
-{
+int thread_trigger_event(THREAD_HANDLE *thread) {
    return cl_thread_trigger_event(thread);
 }
 
@@ -157,8 +149,7 @@ int thread_trigger_event(THREAD_HANDLE *thread)
  * @param msec additional milliseconds to wait
  * @return `CL_RETVAL_OK` on success, a `CL_RETVAL_*` error otherwise
  */
-int thread_wait_for_event(THREAD_HANDLE *thread, int sec, int msec)
-{
+int thread_wait_for_event(THREAD_HANDLE *thread, int sec, int msec) {
    return cl_thread_wait_for_event(thread, sec, msec);
 }
 
@@ -167,8 +158,7 @@ int thread_wait_for_event(THREAD_HANDLE *thread, int sec, int msec)
  * @param thread the thread to wait for
  * @return `CL_RETVAL_OK` on success, a `CL_RETVAL_*` error otherwise
  */
-int thread_join(THREAD_HANDLE *thread)
-{
+int thread_join(THREAD_HANDLE *thread) {
    return cl_thread_join(thread);
 }
 
@@ -178,11 +168,9 @@ int thread_join(THREAD_HANDLE *thread)
  * @param t_conf the thread settings of the calling thread
  * @return `CL_RETVAL_OK` on success, a `CL_RETVAL_*` error otherwise
  */
-int thread_testcancel(void *t_conf)
-{
+int thread_testcancel(void *t_conf) {
    cl_thread_settings_t *thread_config;
    /* get pointer to cl_thread_settings_t struct */
    thread_config = (cl_thread_settings_t*)t_conf;
    return cl_thread_func_testcancel(thread_config);
 }
-
