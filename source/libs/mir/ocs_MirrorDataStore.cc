@@ -170,12 +170,12 @@ ocs::MirrorDataStore::block_till_initial_events_handled() {
  */
 void
 ocs::MirrorDataStore::wait_for_event(lList **event_list) {
+   DENTER(TOP_LAYER);
+
 #if 0
    int pthread_ret = 0;
 #endif
    bool do_ack = false;
-
-   DENTER(TOP_LAYER);
 
    // fetch events
    {
