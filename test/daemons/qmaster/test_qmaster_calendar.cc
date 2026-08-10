@@ -54,6 +54,11 @@ typedef struct {
    int       state2;   ///< expected second state (-1 = no second entry)
 } date_entry_t;
 
+/** @brief One time frame to check a calendar against
+ *
+ * A calendar says what state the queue should be in at a given moment, so a
+ * test case is a calendar, a moment, and the state expected then.
+ */
 typedef struct {
    int       cal_nr;     ///< index into calendars[]
    struct tm start_time; ///< start of the time frame under test

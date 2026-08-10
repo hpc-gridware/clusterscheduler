@@ -135,7 +135,22 @@ static void teardown_bootstrap() {
    } while (0)
 
 /* "rejected == false" reads badly in the scenarios below */
+/** @brief The queue reference applies to this host
+ *
+ * A readable spelling of the negated `qref_list_host_rejected()`, so the test
+ * cases read as the statements they check rather than as double negatives.
+ *
+ * @param href the queue reference
+ * @param host the host to test
+ * @param list the host group list to resolve against
+ */
 #define COVERS(href, host, list)     (!qref_list_host_rejected((href), (host), (list)))
+
+/** @brief The queue reference does not apply to this host
+ * @param href the queue reference
+ * @param host the host to test
+ * @param list the host group list to resolve against
+ */
 #define EXCLUDES(href, host, list)   (qref_list_host_rejected((href), (host), (list)))
 
 /*

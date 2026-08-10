@@ -81,6 +81,7 @@ int NM_ULONG  = JB_job_number;   ///< the numeric attribute the benchmark hashes
 int NM_STRING = JB_owner;        ///< the string attribute it hashes on
 lDescr *DESCR = JB_Type;         ///< the object type the benchmark builds lists of
 
+/** @brief The name space registering the synthetic type with CULL */
 lNameSpace my_nmv[] = {
    {1, JBS, JBN },
    {0, 0, nullptr}
@@ -102,12 +103,13 @@ NAMEDEF(TEST_Name)
                 NAME("TEST_string")
 NAMEEND
 
-#define TEST_Size sizeof(TEST_Name) / sizeof(char *)
+#define TEST_Size sizeof(TEST_Name) / sizeof(char *)   ///< number of attributes of the synthetic type
 
 int NM_ULONG = TEST_ulong;     ///< the numeric attribute the benchmark hashes on
 int NM_STRING = TEST_string;   ///< the string attribute it hashes on
 lDescr *DESCR = TEST_Type;     ///< the object type the benchmark builds lists of
 
+/** @brief The name space registering the synthetic type with CULL */
 lNameSpace my_nmv[] = {
         {1, TEST_Size, TEST_Name, TEST_Type},
         {0, 0, nullptr, nullptr}

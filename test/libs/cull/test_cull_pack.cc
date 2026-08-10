@@ -105,8 +105,9 @@ NAMEDEF(TEST_Name)
                 NAME("TEST_ref")
 NAMEEND
 
-#define TEST_Size sizeof(TEST_Name) / sizeof(char *)
+#define TEST_Size sizeof(TEST_Name) / sizeof(char *)   ///< number of attributes of the synthetic type
 
+/** @brief The name space registering the synthetic type with CULL */
 lNameSpace nmv[] = {
         {1, TEST_Size, TEST_Name, TEST_Type},
         {0, 0, nullptr, nullptr}
