@@ -3486,8 +3486,7 @@ int cl_com_connection_request_handler_cleanup(cl_com_connection_t *connection) {
  * @see `cl_com_tcp_open_connection_request_handler()`
  */
 int cl_com_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_com_handle_t *handle, int timeout_val_sec,
-                                           int timeout_val_usec, cl_select_method_t select_mode)
-{
+                                           int timeout_val_usec, cl_select_method_t select_mode) {
    cl_com_connection_t *service_connection = nullptr;
    int usec_rest = timeout_val_usec;
    int sec_param = timeout_val_sec;

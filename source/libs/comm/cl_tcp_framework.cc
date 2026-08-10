@@ -1419,8 +1419,7 @@ static cl_com_tcp_private_t *cl_com_tcp_get_private(cl_com_connection_t *connect
 int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_com_handle_t *handle,
                                                cl_raw_list_t *connection_list, cl_com_connection_t *service_connection,
                                                int timeout_val_sec, int timeout_val_usec,
-                                               cl_select_method_t select_mode)
-{
+                                               cl_select_method_t select_mode) {
    int select_back;
    cl_connection_list_elem_t *con_elem = nullptr;
    cl_com_connection_t *connection = nullptr;
@@ -2029,4 +2028,3 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
 
    return retval;
 }
-
