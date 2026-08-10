@@ -2249,13 +2249,13 @@ static int
 load_check_alarm(char *reason, size_t reason_size, const char *name, const char *load_value, const char *limit_value,
                  uint32_t relop, ocs::CEntry::Type type, lListElem *hep, const lListElem *hlep, double lc_host, double lc_global,
                  const lList *load_adjustments, int load_is_value) {
+   DENTER(TOP_LAYER);
+
    const lListElem *job_load;
    double limit, load;
    int match;
 #define STR_LC_DIAGNOSIS 1024
    char lc_diagnosis1[STR_LC_DIAGNOSIS], lc_diagnosis2[STR_LC_DIAGNOSIS];
-
-   DENTER(TOP_LAYER);
 
    switch (type) {
       case ocs::CEntry::Type::RSMAP:

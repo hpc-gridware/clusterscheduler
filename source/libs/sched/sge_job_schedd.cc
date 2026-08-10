@@ -488,14 +488,14 @@ void job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList 
  */
 void split_jobs(lList **job_list, uint32_t max_aj_instances,
                 lList **result_list[], bool do_copy) {
+   DENTER(TOP_LAYER);
+
 #if 0 /* EB: DEBUG: enable debug messages for split_jobs() */
 #define JOB_SPLIT_DEBUG
 #endif
    lListElem *job = nullptr;
    lListElem *next_job = nullptr;
    lListElem *previous_job = nullptr;
-   DENTER(TOP_LAYER);
-
    next_job = lFirstRW(*job_list);
    while ((job = next_job)) {
       lList *ja_task_list = nullptr;

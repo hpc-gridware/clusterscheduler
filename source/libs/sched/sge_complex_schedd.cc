@@ -903,6 +903,8 @@ static int resource_cmp(uint32_t relop, double req, double src_dl) {
  */
 int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char *availability_text,
                       int is_threshold, int force_existence) {
+   DENTER(TOP_LAYER);
+
    uint32_t used_relop = 0;
    double req_dl, src_dl;
    int match, m1, m2;
@@ -913,8 +915,6 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
    char availability_text1[STR_LEN_AVAIL_TEXT];
    char availability_text2[STR_LEN_AVAIL_TEXT]; 
    dstring resource_string = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
 
    const char *name = lGetString(src_cplx, CE_name);
    auto type = static_cast<ocs::CEntry::Type>(lGetUlong(src_cplx, CE_valtype));
