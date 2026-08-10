@@ -361,7 +361,8 @@ fi
 
 if [ "$START_CLUSTER" = "true" ]; then
    if [ -z "$SGE_ROOT" -o -z "$SGE_CELL" ]; then
-      $INFOTEXT "\Can't start cluster: $SGE_ROOT and \$SGE_CELL must be set!"
+      $INFOTEXT "\nCan't start cluster: \$SGE_ROOT and \$SGE_CELL must be set!"
+      $INFOTEXT "Source the settings file of the cluster first, e.g.\n\n   . <sge_root>/<cell>/common/settings.sh"
       exit 2
    fi
    ALL_RC=true
