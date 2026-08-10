@@ -34,31 +34,95 @@ import re
 import sys
 
 DENTER = re.compile(r'^(\s*)DENTER(_MAIN|_)?\s*\(.*\)\s*;\s*$')
-# a line that only declares/initialises - no control flow, no nesting
-DECL = re.compile(r'^\s*[A-Za-z_][^;{}]*;\s*$')
-CONTROL = re.compile(r'^\s*(if|for|while|switch|do|else|case|default|return|goto|try|catch)\b')
-COMMENT = re.compile(r'^\s*(//|/\*|\*)')
+CONTROL = re.compile(r'^(if|for|while|switch|do|else|case|default|return|goto|try|catch)\b')
+CALL = re.compile(r'^[A-Za-z_]\w*(::\w*)*\s*\(')
+IDENT = re.compile(r'[A-Za-z_]\w*')
 
 
-def is_declaration(line: str) -> bool:
-    s = line.strip()
-    if not s or COMMENT.match(line):
-        return True                      # blanks and comments may be jumped over
+def strip_noise(block):
+    """Drop comments and string bodies from a block of lines.
+
+    Classification has to run on code, not on prose: a declaration carrying a
+    trailing comment ("size_t len;  /* length of a */") reads as unterminated,
+    and a literal such as ",; " puts a semicolon where no statement ends. Both
+    used to make the analysis give up on perfectly ordinary declarations.
+    """
+    out = []
+    in_comment = False
+    for line in block:
+        buf = []
+        i = 0
+        while i < len(line):
+            if in_comment:
+                end = line.find('*/', i)
+                if end < 0:
+                    break
+                in_comment = False
+                i = end + 2
+                continue
+            ch = line[i]
+            if ch in '"\'':
+                j = i + 1
+                while j < len(line) and line[j] != ch:
+                    j += 2 if line[j] == '\\' else 1
+                buf.append('@')                      # placeholder for a literal
+                i = j + 1
+                continue
+            if line.startswith('//', i):
+                break
+            if line.startswith('/*', i):
+                in_comment = True
+                i += 2
+                continue
+            buf.append(ch)
+            i += 1
+        out.append(''.join(buf))
+    return out
+
+
+def statements(block):
+    """Split a block into logical statements; the last one may be unterminated."""
+    current = []
+    for line in strip_noise(block):
+        text = line.strip()
+        if not text:
+            continue
+        current.append(text)
+        joined = ' '.join(current)
+        # a statement ends at a semicolon, but only once every bracket it opened
+        # is closed again - otherwise a multi-line aggregate initialiser
+        # ("static struct x tab[] = {\n {A, B},\n {C, D}\n};") would be torn into
+        # fragments that look like anything but the declaration it is
+        if (joined.endswith(';')
+                and joined.count('(') == joined.count(')')
+                and joined.count('{') == joined.count('}')
+                and joined.count('[') == joined.count(']')):
+            yield joined
+            current = []
+    if current:
+        yield ' '.join(current)
+
+
+def is_declaration(statement: str) -> bool:
+    """True for a plain declaration - the only thing DENTER may be moved over."""
+    s = statement.strip()
+    if not s:
+        return True
     if s.startswith('#'):
         return False                     # preprocessor: never reorder across it
-    if CONTROL.match(line):
+    if CONTROL.match(s):
         return False
-    # A brace initialiser is still a declaration: "SGE_STRUCT_STAT buf{};" or
-    # "std::vector<int> v{1, 2};". Only balanced braces on the line qualify -
-    # an unbalanced one opens a block and must stop us.
-    if '{' in s or '}' in s:
-        if s.count('{') != s.count('}') or not s.endswith(';'):
-            return False
-        s = re.sub(r'\{[^{}]*\}', '', s)
-        if '{' in s or '}' in s:
-            return False
-        return True
-    return bool(DECL.match(line))
+    if not s.endswith(';'):
+        return False                     # unterminated: not a whole statement
+    if s.startswith(('}', '{', '(')):
+        return False                     # end of a type, a block, a cast expression
+    if s.count('{') != s.count('}'):
+        return False
+    if CALL.match(s):
+        return False                     # "foo(...);" is a call, not a declaration
+    # a declaration names a type and then a variable, so there are at least two
+    # identifiers left of any '='
+    return len(IDENT.findall(s.split('=', 1)[0])) >= 2
 
 
 def process(lines):
@@ -75,11 +139,7 @@ def process(lines):
 
         # walk back to the opening brace of the body
         j = i - 1
-        blockers = []
         while j >= 0 and not out[j].rstrip().endswith('{'):
-            if out[j].strip() and not COMMENT.match(out[j]):
-                if not is_declaration(out[j]):
-                    blockers.append(out[j].strip()[:60])
             j -= 1
             if i - j > 40:               # not a function head within reach
                 break
@@ -91,8 +151,12 @@ def process(lines):
         if j == i - 1:
             i += 1                       # already first
             continue
+
+        # everything between the brace and DENTER has to be a plain declaration,
+        # judged per logical statement rather than per line
+        blockers = [s for s in statements(out[j + 1:i]) if not is_declaration(s)]
         if blockers:
-            skipped.append((i + 1, 'not only declarations above: ' + blockers[-1]))
+            skipped.append((i + 1, 'not only declarations above: ' + blockers[0][:60]))
             i += 1
             continue
 
