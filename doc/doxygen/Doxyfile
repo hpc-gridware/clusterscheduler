@@ -1083,10 +1083,27 @@ EXCLUDE_SYMLINKS       = NO
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories for example use the pattern */test/*
 
+# Kept in step with Doxyfile.strict, which is what "06 Exclusions and generated
+# code" requires: the two EXCLUDE lists must agree, or the published docs and
+# the gate disagree about what is in scope.
+#
+# */msg_*.h was missing here until 2026-08-10 and accounted for 3287 of the
+# 3908 warnings this configuration produced - the message text is its own
+# documentation, so 3232 macros were being reported undocumented and published
+# as empty entries.
+#
+# The vendored and generated files below are excluded for the reasons given in
+# Doxyfile.strict; source/security/gss and krb are the unbuilt Kerberos trees
+# (task 41).
 EXCLUDE_PATTERNS       = */._* \
+                         */msg_*.h \
                          */sge_spooling_flatfile_scanner.cc \
                          */com_sun_grid_drmaa_SessionImpl.h \
-                         */jdrmaa/*.java
+                         */jdrmaa/*.java \
+                         */source/scripts/* \
+                         */source/security/gss/* \
+                         */source/security/krb/* \
+                         */dump_cull_schema/cJSON.*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
@@ -1094,7 +1111,12 @@ EXCLUDE_PATTERNS       = */._* \
 # wildcard * is used, a substring. Examples: ANamespace, AClass,
 # ANamespace::AClass, ANamespace::*Test
 
-EXCLUDE_SYMBOLS        =
+# main() and usage() exist once per program with the same signature, and doxygen
+# treats same-named file-scope functions as one symbol for @param bookkeeping but
+# as separate symbols for the "is documented" check. Excluded for the gate
+# (decision 2026-08-09, see "06"); matched here so the published documentation
+# has the same scope.
+EXCLUDE_SYMBOLS        = main usage
 
 # The EXAMPLE_PATH tag can be used to specify one or more files or directories
 # that contain example code fragments that are included (see the \include
@@ -2447,6 +2469,11 @@ INCLUDE_FILE_PATTERNS  =
 # SOLARIS branch of sge_stdio.h) stays undocumented and unchecked - see
 # "06 Exclusions and generated code" in the project notes.
 
+# COMPILE_DC added 2026-08-10 to match Doxyfile.strict. It is defined for every
+# target at cmake/ArchitectureSpecificSettings.cmake:70, and without it doxygen
+# reads the `#if !defined(COMPILE_DC)` branch of daemons/common/pdc.cc - a dummy
+# int - instead of the 1200-line process data collector. The gate was fixed in
+# P42; the published configuration had the same bug.
 PREDEFINED             = LINUX \
                          TARGET_64BIT \
                          SGE_MT \
@@ -2454,7 +2481,8 @@ PREDEFINED             = LINUX \
                          OCS_WITH_OPENSSL \
                          OCS_WITH_MUNGE \
                          OCS_WITH_SYSTEMD \
-                         OCS_HWLOC
+                         OCS_HWLOC \
+                         COMPILE_DC
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The
@@ -2537,8 +2565,14 @@ HIDE_UNDOC_RELATIONS   = YES
 # Bell Labs. The other options in this section have no effect if this option is
 # set to NO
 # The default value is: NO.
+#
+# Turned on 2026-08-10 (task 33). Graphviz is in the CI image and on the
+# developer machines, and the class and collaboration graphs are most of the
+# value of the published HTML for a codebase this size. Doxyfile.strict sets
+# this back to NO: the gate needs warnings, not pictures, and rendering them
+# would make every gate run minutes slower.
 
-HAVE_DOT               = NO
+HAVE_DOT               = YES
 
 # The DOT_NUM_THREADS specifies the number of dot invocations doxygen is allowed
 # to run in parallel. When set to 0 doxygen will base this on the number of

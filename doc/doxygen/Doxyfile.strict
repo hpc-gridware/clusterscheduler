@@ -107,6 +107,11 @@ RECURSIVE              = YES
 #
 # EXCLUDE_PATTERNS is repeated rather than appended because @INCLUDE brings the
 # main Doxyfile's value along, and doxygen has no += for it.
+# source/scripts holds shell and DTrace scripts, not C/C++. monitor.d is matched
+# only because doxygen's FILE_PATTERNS lists *.d for the D language; it then
+# misparses the DTrace probe syntax. Same ruling as source/dist: scripts are not
+# C/C++ API. Decision 2026-08-10.
+#
 # source/security/gss and source/security/krb are the Sun-era Kerberos and GSSAPI
 # support: 16 files, ~4900 lines. Neither directory has a CMakeLists.txt, neither
 # is named by any add_subdirectory or any other build file, and the one place the
@@ -123,6 +128,7 @@ EXCLUDE_PATTERNS       = */._* \
                          */sge_spooling_flatfile_scanner.cc \
                          */com_sun_grid_drmaa_SessionImpl.h \
                          */jdrmaa/*.java \
+                         */source/scripts/* \
                          */source/security/gss/* \
                          */source/security/krb/* \
                          */dump_cull_schema/cJSON.*

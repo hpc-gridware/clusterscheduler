@@ -59,6 +59,14 @@ endif()
 # Generate C/C++ header files from JSON files
 # This is a custom target that is not triggered automatically and only available with the gcs-extensions
 # Automatic generation of header files is not supported because it would break the build via testsuite.
+#
+# DOCUMENTATION CONTRACT: cull/ and lwdb/ are registered in DXM_FINISHED_MODULES
+# (doc/doxygen/CMakeLists.txt), so the generated headers are checked by the
+# documentation gate like hand-written code. Never edit the output - the next
+# generator run overwrites it. A missing or wrong description belongs in
+# json/*.json, which feeds the CULL header, the LWDB header and
+# dump_cull_schema alike; anything structural belongs in gen_types itself.
+# After changing either, run this target and commit the regenerated headers.
 if (PROJECT_FEATURES MATCHES "gcs-extensions")
     add_custom_target(generate_headers
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
