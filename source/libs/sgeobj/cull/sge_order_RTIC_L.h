@@ -25,28 +25,28 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Resource Ticket Host Entry
  */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Resource Ticket Host Entry
 *
-* @todo add description
+* The tickets granted on one host, as the scheduler reports them back with its orders.
 *
-*    SGE_HOST(RTIC_host) - @todo add summary
-*    @todo add description
+*    SGE_HOST(RTIC_host) - Host
+*    The execution host the tickets belong to.
 *
-*    SGE_LIST(RTIC_tickets) - @todo add summary
-*    @todo add description
+*    SGE_LIST(RTIC_tickets) - Tickets
+*    The per-job ticket values for that host.
 *
 */
 
 enum {
-   RTIC_host = RTIC_LOWERBOUND,   ///< @todo add summary
-   RTIC_tickets   ///< @todo add summary
+   RTIC_host = RTIC_LOWERBOUND,   ///< Host
+   RTIC_tickets   ///< Tickets
 };
 
 LISTDEF(RTIC_Type)

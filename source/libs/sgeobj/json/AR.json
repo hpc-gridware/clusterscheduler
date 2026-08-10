@@ -319,13 +319,10 @@
       },
       {
          "name": "granted_slots",
-         "summary": "@todo add summary",
+         "summary": "Granted Slots",
          "description": [
             {
-               "line": "The list of queues and the number of slots which are reserved for the advance reservation."
-            },
-            {
-               "line": "Equivalent to the JAT_granted_destin_identifier_list in running jobs/array tasks."
+               "line": "The queue instances and slot counts the reservation holds (`JG_Type`), the same shape as a job's granted destination identifier list. Set once when the reservation is confirmed."
             }
          ],
          "type": "lListT",
@@ -597,7 +594,9 @@
          "subClassName": "JobRequestSet",
          "subCullPrefix": "JRS",
          "flags": [
-            {"name": "SPOOL"}
+            {
+               "name": "SPOOL"
+            }
          ]
       },
       {
@@ -618,7 +617,9 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {"name": "SPOOL"}
+            {
+               "name": "SPOOL"
+            }
          ]
       },
       {

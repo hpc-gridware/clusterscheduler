@@ -25,48 +25,49 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Event Master Request
  */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Event Master Request
 *
-* @todo add description
+* One request queued for the event master thread.
+* Every change to the event master - a client registering, changing its subscription, leaving, or an event being added - is posted as one of these rather than applied directly, so the callers never block on the event master's lock.
 *
-*    SGE_ULONG(EVR_operation) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EVR_operation) - Operation
+*    Which request this is: `EVR_ADD_EVC`, `EVR_MOD_EVC`, `EVR_DEL_EVC` or `EVR_ADD_EVENT`. See `sge_event.h`.
 *
-*    SGE_ULONG64(EVR_timestamp) - @todo add summary
-*    @todo add description
+*    SGE_ULONG64(EVR_timestamp) - Timestamp
+*    When the request was posted, so the event master can order and age requests.
 *
-*    SGE_ULONG(EVR_event_client_id) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EVR_event_client_id) - Event Client Id
+*    Which event client the request is about.
 *
-*    SGE_ULONG(EVR_event_number) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(EVR_event_number) - Event Number
+*    The client's event serial the request refers to.
 *
-*    SGE_STRING(EVR_session) - @todo add summary
-*    @todo add description
+*    SGE_STRING(EVR_session) - Session
+*    The session the request belongs to, so a client sees its own changes.
 *
-*    SGE_OBJECT(EVR_event_client) - @todo add summary
-*    @todo add description
+*    SGE_OBJECT(EVR_event_client) - Event Client
+*    The event client object (`EV_Type`), for the register and modify operations.
 *
-*    SGE_LIST(EVR_event_list) - @todo add summary
-*    @todo add description
+*    SGE_LIST(EVR_event_list) - Events
+*    The events to deliver (`ET_Type`), for `EVR_ADD_EVENT`.
 *
 */
 
 enum {
-   EVR_operation = EVR_LOWERBOUND,   ///< @todo add summary
-   EVR_timestamp,   ///< @todo add summary
-   EVR_event_client_id,   ///< @todo add summary
-   EVR_event_number,   ///< @todo add summary
-   EVR_session,   ///< @todo add summary
-   EVR_event_client,   ///< @todo add summary
-   EVR_event_list   ///< @todo add summary
+   EVR_operation = EVR_LOWERBOUND,   ///< Operation
+   EVR_timestamp,   ///< Timestamp
+   EVR_event_client_id,   ///< Event Client Id
+   EVR_event_number,   ///< Event Number
+   EVR_session,   ///< Session
+   EVR_event_client,   ///< Event Client
+   EVR_event_list   ///< Events
 };
 
 LISTDEF(EVR_Type)

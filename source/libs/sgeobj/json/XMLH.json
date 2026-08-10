@@ -1,19 +1,22 @@
 {
    "className": "XMLDocumentHead",
-   "summary": "@todo add summary",
+   "summary": "XML Document Header",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "The head of a generated XML document: its version, root element name, stylesheets and attributes."
+      },
+      {
+         "line": "Used by the clients' `-xml` output. See `sge_cull_xml.cc`."
       }
    ],
    "cullPrefix": "XMLH",
    "attributes": [
       {
          "name": "Version",
-         "summary": "@todo add summary",
+         "summary": "XML Version",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The version string written into the XML declaration."
             }
          ],
          "type": "lStringT",
@@ -21,10 +24,10 @@
       },
       {
          "name": "Name",
-         "summary": "@todo add summary",
+         "summary": "Root Element Name",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Name of the document's root element."
             }
          ],
          "type": "lStringT",
@@ -32,10 +35,10 @@
       },
       {
          "name": "Stylesheet",
-         "summary": "@todo add summary",
+         "summary": "Stylesheets",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Stylesheet processing instructions (`XMLS_Type`) emitted before the root element."
             }
          ],
          "type": "lListT",
@@ -45,10 +48,10 @@
       },
       {
          "name": "Attribute",
-         "summary": "@todo add summary",
+         "summary": "Root Attributes",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Attributes (`XMLA_Type`) placed on the root element, such as the schema location."
             }
          ],
          "type": "lListT",
@@ -58,10 +61,10 @@
       },
       {
          "name": "Element",
-         "summary": "@todo add summary",
+         "summary": "Content",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The document body (`XMLE_Type`)."
             }
          ],
          "type": "lListT",

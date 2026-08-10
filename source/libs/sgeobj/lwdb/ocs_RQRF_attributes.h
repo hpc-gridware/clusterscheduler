@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Resource Quota Rule Filter
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,9 +39,9 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RQRF_expand = 11600,   ///< @todo add summary
-   RQRF_scope,   ///< @todo add summary
-   RQRF_xscope   ///< @todo add summary
+   RQRF_expand = 11600,   ///< Expand
+   RQRF_scope,   ///< Scope
+   RQRF_xscope   ///< Excluded Scope
 };
 
 /** @brief The attribute ids of RQRF, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

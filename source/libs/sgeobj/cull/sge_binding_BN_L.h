@@ -25,16 +25,17 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Binding
  */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Binding
 *
-* @todo add description
+* How a job is to be bound to the cores of its execution host.
+* Holds what the user asked for with `qsub -binding`: the strategy, how much to bind, and the starting point. What was actually granted is recorded on the granted destination identifier.
 *
 *    SGE_ULONG(BN_new_type) - type of binding
 *    host or slot binding

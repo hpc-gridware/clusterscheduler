@@ -12,8 +12,12 @@
          "name": "name",
          "summary": "unique name",
          "description": [
-            {"line": "Unique name of the execution host."},
-            {"line": "This name must be resolvable on all hosts dealing with it"},
+            {
+               "line": "Unique name of the execution host."
+            },
+            {
+               "line": "This name must be resolvable on all hosts dealing with it"
+            },
             {
                "line": "(master host, the execution host itself, interactive and tightly integrated parallel jobs contacting it)"
             }
@@ -268,25 +272,10 @@
       },
       {
          "name": "load_correction_factor",
-         "summary": "@todo add summary",
+         "summary": "Load Correction Factor",
          "description": [
             {
-               "line": "a value of 100 (stands for 1)"
-            },
-            {
-               "line": "means the load values of this host"
-            },
-            {
-               "line": "has to be increased fully by all"
-            },
-            {
-               "line": "values from"
-            },
-            {
-               "line": "conf.load_decay_adjustments only"
-            },
-            {
-               "line": "scheduler local not spooled"
+               "line": "Artificial load added for jobs that have just started, decaying over `load_adjustment_decay_time`. Stops the scheduler overloading a host by dispatching to it faster than the reported load can rise."
             }
          ],
          "type": "lUlongT",
@@ -528,7 +517,9 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {"name": "SPOOL"}
+            {
+               "name": "SPOOL"
+            }
          ]
       },
       {

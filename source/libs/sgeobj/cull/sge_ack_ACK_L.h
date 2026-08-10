@@ -25,36 +25,36 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Acknowledgement
  */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Acknowledgement
 *
-* @todo add description
+* A short acknowledgement message, identifying what is being acknowledged rather than carrying data.
 *
-*    SGE_ULONG(ACK_type) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(ACK_type) - Acknowledgement Type
+*    What is being acknowledged, e.g. a job report or a signal. Dispatched on by the receiver.
 *
-*    SGE_ULONG(ACK_id) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(ACK_id) - First Id
+*    Primary key of the acknowledged thing, usually a job id.
 *
-*    SGE_ULONG(ACK_id2) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(ACK_id2) - Second Id
+*    Secondary key, usually an array task id.
 *
-*    SGE_STRING(ACK_str) - @todo add summary
-*    @todo add description
+*    SGE_STRING(ACK_str) - Name
+*    String key, used where the acknowledged thing is named rather than numbered.
 *
 */
 
 enum {
-   ACK_type = ACK_LOWERBOUND,   ///< @todo add summary
-   ACK_id,   ///< @todo add summary
-   ACK_id2,   ///< @todo add summary
-   ACK_str   ///< @todo add summary
+   ACK_type = ACK_LOWERBOUND,   ///< Acknowledgement Type
+   ACK_id,   ///< First Id
+   ACK_id2,   ///< Second Id
+   ACK_str   ///< Name
 };
 
 LISTDEF(ACK_Type)

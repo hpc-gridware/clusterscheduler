@@ -25,32 +25,32 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief XML Stylesheet
  */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief XML Stylesheet
 *
-* @todo add description
+* One stylesheet processing instruction for the document header.
 *
-*    SGE_STRING(XMLS_Name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(XMLS_Name) - Name
+*    The instruction's attribute name, e.g. `href`.
 *
-*    SGE_STRING(XMLS_Value) - @todo add summary
-*    @todo add description
+*    SGE_STRING(XMLS_Value) - Value
+*    Its value, e.g. the stylesheet URL.
 *
-*    SGE_STRING(XMLS_Version) - @todo add summary
-*    @todo add description
+*    SGE_STRING(XMLS_Version) - Version
+*    The stylesheet version.
 *
 */
 
 enum {
-   XMLS_Name = XMLS_LOWERBOUND,   ///< @todo add summary
-   XMLS_Value,   ///< @todo add summary
-   XMLS_Version   ///< @todo add summary
+   XMLS_Name = XMLS_LOWERBOUND,   ///< Name
+   XMLS_Value,   ///< Value
+   XMLS_Version   ///< Version
 };
 
 LISTDEF(XMLS_Type)

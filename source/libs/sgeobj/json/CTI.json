@@ -1,19 +1,19 @@
 {
    "className": "SkipListEntry",
-   "summary": "@todo add summary",
+   "summary": "Category Ignore Entry",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "One name a category has already been rejected by, held in the ignore lists of `CCT_Type`."
       }
    ],
    "cullPrefix": "CTI",
    "attributes": [
       {
          "name": "name",
-         "summary": "@todo add summary",
+         "summary": "Name",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The cluster queue or host to skip for this category."
             }
          ],
          "type": "lStringT",

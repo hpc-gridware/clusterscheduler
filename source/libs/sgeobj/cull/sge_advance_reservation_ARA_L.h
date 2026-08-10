@@ -25,28 +25,28 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Advance Reservation Access List Entry
  */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Advance Reservation Access List Entry
 *
-* @todo add description
+* One user or group entry in an advance reservation's access or no-access list.
 *
-*    SGE_STRING(ARA_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(ARA_name) - Name
+*    The user or userset allowed, or denied, access to the reservation.
 *
-*    SGE_STRING(ARA_group) - @todo add summary
-*    @todo add description
+*    SGE_STRING(ARA_group) - Group
+*    The UNIX group the entry stands for, where the entry names a group.
 *
 */
 
 enum {
-   ARA_name = ARA_LOWERBOUND,   ///< @todo add summary
-   ARA_group   ///< @todo add summary
+   ARA_name = ARA_LOWERBOUND,   ///< Name
+   ARA_group   ///< Group
 };
 
 LISTDEF(ARA_Type)

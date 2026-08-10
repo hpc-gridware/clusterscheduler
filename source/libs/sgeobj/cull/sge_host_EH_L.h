@@ -79,13 +79,8 @@
 *    SGE_ULONG(EH_tagged) - tagging of hosts
 *    used in scheduler to tag hosts
 *
-*    SGE_ULONG(EH_load_correction_factor) - @todo add summary
-*    a value of 100 (stands for 1)
-*    means the load values of this host
-*    has to be increased fully by all
-*    values from
-*    conf.load_decay_adjustments only
-*    scheduler local not spooled
+*    SGE_ULONG(EH_load_correction_factor) - Load Correction Factor
+*    Artificial load added for jobs that have just started, decaying over `load_adjustment_decay_time`. Stops the scheduler overloading a host by dispatching to it faster than the reported load can rise.
 *
 *    SGE_ULONG(EH_seq_no) - host sequence number
 *    suitability of this host for a job, scheduler only
@@ -155,7 +150,7 @@ enum {
    EH_xprj,   ///< project no access list
    EH_sort_value,   ///< sort value based on load
    EH_tagged,   ///< tagging of hosts
-   EH_load_correction_factor,   ///< @todo add summary
+   EH_load_correction_factor,   ///< Load Correction Factor
    EH_seq_no,   ///< host sequence number
    EH_sge_load,   ///< SGEEE load
    EH_sge_ticket_pct,   ///< percentage of tickets

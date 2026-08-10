@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Resource Quota Scheduling Cache
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,11 +39,11 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RQL_name = 11800,   ///< @todo add summary
-   RQL_result,   ///< @todo add summary
-   RQL_time,   ///< @todo add summary
-   RQL_slots,   ///< @todo add summary
-   RQL_tagged4schedule   ///< @todo add summary
+   RQL_name = 11800,   ///< Limit Key
+   RQL_result,   ///< Cached Result
+   RQL_time,   ///< Earliest Time
+   RQL_slots,   ///< Slots
+   RQL_tagged4schedule   ///< Tagged For Schedule
 };
 
 /** @brief The attribute ids of RQL, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

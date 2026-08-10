@@ -25,28 +25,29 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Packed Condition
  */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Packed Condition
 *
-* @todo add description
+* A `where` or `what` condition in its packed form, so it can be sent over GDI.
+* The scheduler and the clients build `lCondition` and `lEnumeration` structures locally; those cannot be sent as they are, so they are packed into this and unpacked on the other side.
 *
-*    SGE_ULONG(PACK_id) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(PACK_id) - Kind
+*    `SGE_WHERE` or `SGE_WHAT`, saying which of the two the packed data is.
 *
-*    SGE_STRING(PACK_string) - @todo add summary
-*    @todo add description
+*    SGE_STRING(PACK_string) - Packed Data
+*    The condition in packed form.
 *
 */
 
 enum {
-   PACK_id = PACK_LOWERBOUND,   ///< @todo add summary
-   PACK_string   ///< @todo add summary
+   PACK_id = PACK_LOWERBOUND,   ///< Kind
+   PACK_string   ///< Packed Data
 };
 
 LISTDEF(PACK_Type)

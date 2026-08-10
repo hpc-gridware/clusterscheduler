@@ -68,7 +68,7 @@ enum {
    STN_jobid,   ///< Job Id
    STN_taskid,   ///< Task Id
    STN_usage_list,   ///< Usage List
-   STN_version,   ///< @todo add summary
+   STN_version,   ///< Share Tree Version
    STN_joker   ///< Joker
 };
 

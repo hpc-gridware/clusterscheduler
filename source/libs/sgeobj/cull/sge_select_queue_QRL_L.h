@@ -25,24 +25,24 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Queue Reference
  */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Queue Reference
 *
-* @todo add description
+* A bare reference to a queue instance, for building the scheduler's temporary candidate lists.
 *
-*    SGE_REF(QRL_queue) - @todo add summary
-*    @todo add description
+*    SGE_REF(QRL_queue) - Queue Instance
+*    Reference to the queue instance (`QU_Type`). Not owned by this element.
 *
 */
 
 enum {
-   QRL_queue = QRL_LOWERBOUND   ///< @todo add summary
+   QRL_queue = QRL_LOWERBOUND   ///< Queue Instance
 };
 
 LISTDEF(QRL_Type)

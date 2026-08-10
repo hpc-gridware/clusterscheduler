@@ -55,7 +55,7 @@ enum {
    AR_resource_list,   ///< Resource List
    AR_resource_utilization,   ///< Resource Utilization
    AR_queue_list,   ///< Queue List
-   AR_granted_slots,   ///< @todo add summary
+   AR_granted_slots,   ///< Granted Slots
    AR_reserved_hosts,   ///< Reserved Hosts
    AR_reserved_queues,   ///< Reserved Queues
    AR_mail_options,   ///< Mail Options

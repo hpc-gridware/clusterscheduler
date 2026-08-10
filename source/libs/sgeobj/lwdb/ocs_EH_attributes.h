@@ -52,7 +52,7 @@ enum {
    EH_xprj,   ///< project no access list
    EH_sort_value,   ///< sort value based on load
    EH_tagged,   ///< tagging of hosts
-   EH_load_correction_factor,   ///< @todo add summary
+   EH_load_correction_factor,   ///< Load Correction Factor
    EH_seq_no,   ///< host sequence number
    EH_sge_load,   ///< SGEEE load
    EH_sge_ticket_pct,   ///< percentage of tickets

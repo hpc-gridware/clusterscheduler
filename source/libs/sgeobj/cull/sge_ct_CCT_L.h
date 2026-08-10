@@ -25,44 +25,45 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Category Cache Entry
  */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Category Cache Entry
 *
-* @todo add description
+* What the scheduler learned about one category while scheduling for one parallel environment.
+* Jobs in a category make identical requests, so a queue or host that rejected the first job rejects them all. Remembering those rejections turns a per-job search into a per-category one, which is where most of the scheduler's speed on a large pending list comes from.
 *
-*    SGE_STRING(CCT_pe_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CCT_pe_name) - Parallel Environment
+*    The parallel environment this cache is for; a category is cached once per PE it was tried with.
 *
-*    SGE_LIST(CCT_ignore_queues) - @todo add summary
-*    @todo add description
+*    SGE_LIST(CCT_ignore_queues) - Rejected Queues
+*    Cluster queues already known not to suit this category (`CTI_Type`), so later jobs skip them.
 *
-*    SGE_LIST(CCT_ignore_hosts) - @todo add summary
-*    @todo add description
+*    SGE_LIST(CCT_ignore_hosts) - Rejected Hosts
+*    Hosts already known not to suit this category.
 *
-*    SGE_LIST(CCT_job_messages) - @todo add summary
-*    @todo add description
+*    SGE_LIST(CCT_job_messages) - Scheduler Messages
+*    The "why not" messages (`MES_Type`) produced for this category, reused rather than regenerated per job.
 *
-*    SGE_REF(CCT_pe_job_slots) - @todo add summary
-*    @todo add description
+*    SGE_REF(CCT_pe_job_slots) - Possible Slot Counts
+*    Reference to the set of slot counts the parallel environment could grant, cached across the category's jobs.
 *
-*    SGE_ULONG(CCT_pe_job_slot_count) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(CCT_pe_job_slot_count) - Slot Count Size
+*    How many entries CCT_pe_job_slots holds.
 *
 */
 
 enum {
-   CCT_pe_name = CCT_LOWERBOUND,   ///< @todo add summary
-   CCT_ignore_queues,   ///< @todo add summary
-   CCT_ignore_hosts,   ///< @todo add summary
-   CCT_job_messages,   ///< @todo add summary
-   CCT_pe_job_slots,   ///< @todo add summary
-   CCT_pe_job_slot_count   ///< @todo add summary
+   CCT_pe_name = CCT_LOWERBOUND,   ///< Parallel Environment
+   CCT_ignore_queues,   ///< Rejected Queues
+   CCT_ignore_hosts,   ///< Rejected Hosts
+   CCT_job_messages,   ///< Scheduler Messages
+   CCT_pe_job_slots,   ///< Possible Slot Counts
+   CCT_pe_job_slot_count   ///< Slot Count Size
 };
 
 LISTDEF(CCT_Type)

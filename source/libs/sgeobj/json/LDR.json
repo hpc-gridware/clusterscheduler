@@ -1,19 +1,22 @@
 {
    "className": "LoadReference",
-   "summary": "@todo add summary",
+   "summary": "Load Threshold Reference (unused)",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "A limit with references to the global, host and queue objects it was resolved against."
+      },
+      {
+         "line": "@warning No attribute of this type is read or written anywhere in either repository, and `LDR_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
       }
    ],
    "cullPrefix": "LDR",
    "attributes": [
       {
          "name": "queue_ref_list",
-         "summary": "@todo add summary",
+         "summary": "Queue References",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused LDR object; see the object description."
             }
          ],
          "type": "lListT",
@@ -23,10 +26,10 @@
       },
       {
          "name": "limit",
-         "summary": "@todo add summary",
+         "summary": "Limit",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused LDR object; see the object description."
             }
          ],
          "type": "lStringT",
@@ -34,10 +37,10 @@
       },
       {
          "name": "global",
-         "summary": "@todo add summary",
+         "summary": "Global Object",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused LDR object; see the object description."
             }
          ],
          "type": "lRefT",
@@ -47,10 +50,10 @@
       },
       {
          "name": "host",
-         "summary": "@todo add summary",
+         "summary": "Host Object",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused LDR object; see the object description."
             }
          ],
          "type": "lRefT",
@@ -60,10 +63,10 @@
       },
       {
          "name": "queue",
-         "summary": "@todo add summary",
+         "summary": "Queue Object",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused LDR object; see the object description."
             }
          ],
          "type": "lRefT",

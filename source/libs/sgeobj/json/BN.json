@@ -1,9 +1,12 @@
 {
    "className": "Binding",
-   "summary": "@todo add summary",
+   "summary": "Binding",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "How a job is to be bound to the cores of its execution host."
+      },
+      {
+         "line": "Holds what the user asked for with `qsub -binding`: the strategy, how much to bind, and the starting point. What was actually granted is recorded on the granted destination identifier."
       }
    ],
    "cullPrefix": "BN",
@@ -188,7 +191,9 @@
          "subClassName": "SpecificBindingList",
          "subCullPrefix": "ST",
          "flags": [
-            {"name": "SPOOL"}
+            {
+               "name": "SPOOL"
+            }
          ]
       },
       {
@@ -209,7 +214,9 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {"name": "SPOOL"}
+            {
+               "name": "SPOOL"
+            }
          ]
       }
    ]

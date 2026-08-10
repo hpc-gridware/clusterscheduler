@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Resource Quota Set
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,10 +39,10 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RQS_name = 11400,   ///< @todo add summary
-   RQS_description,   ///< @todo add summary
-   RQS_enabled,   ///< @todo add summary
-   RQS_rule,   ///< @todo add summary
+   RQS_name = 11400,   ///< Name
+   RQS_description,   ///< Description
+   RQS_enabled,   ///< Enabled
+   RQS_rule,   ///< Rules
    RQS_joker   ///< Joker
 };
 

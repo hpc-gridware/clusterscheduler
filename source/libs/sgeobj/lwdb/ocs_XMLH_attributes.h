@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief XML Document Header
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,11 +39,11 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   XMLH_Version = 10200,   ///< @todo add summary
-   XMLH_Name,   ///< @todo add summary
-   XMLH_Stylesheet,   ///< @todo add summary
-   XMLH_Attribute,   ///< @todo add summary
-   XMLH_Element   ///< @todo add summary
+   XMLH_Version = 10200,   ///< XML Version
+   XMLH_Name,   ///< Root Element Name
+   XMLH_Stylesheet,   ///< Stylesheets
+   XMLH_Attribute,   ///< Root Attributes
+   XMLH_Element   ///< Content
 };
 
 /** @brief The attribute ids of XMLH, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

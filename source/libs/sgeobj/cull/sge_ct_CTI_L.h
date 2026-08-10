@@ -25,24 +25,24 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Category Ignore Entry
  */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Category Ignore Entry
 *
-* @todo add description
+* One name a category has already been rejected by, held in the ignore lists of `CCT_Type`.
 *
-*    SGE_STRING(CTI_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(CTI_name) - Name
+*    The cluster queue or host to skip for this category.
 *
 */
 
 enum {
-   CTI_name = CTI_LOWERBOUND   ///< @todo add summary
+   CTI_name = CTI_LOWERBOUND   ///< Name
 };
 
 LISTDEF(CTI_Type)

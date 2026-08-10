@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Scheduler Category Reference (unused)
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,9 +39,9 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   SCT_str = 11200,   ///< @todo add summary
-   SCT_job_pending_ref,   ///< @todo add summary
-   SCT_job_ref   ///< @todo add summary
+   SCT_str = 11200,   ///< Category String
+   SCT_job_pending_ref,   ///< Pending Jobs
+   SCT_job_ref   ///< Running Jobs
 };
 
 /** @brief The attribute ids of SCT, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief XML Attribute
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,8 +39,8 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   XMLA_Name = 10100,   ///< @todo add summary
-   XMLA_Value   ///< @todo add summary
+   XMLA_Name = 10100,   ///< Name
+   XMLA_Value   ///< Value
 };
 
 /** @brief The attribute ids of XMLA, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

@@ -1,19 +1,19 @@
 {
    "className": "XMLDocumentEntry",
-   "summary": "@todo add summary",
+   "summary": "XML Element",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "One node of the XML document being built: its attributes, its children, and whether it is printed at all."
       }
    ],
    "cullPrefix": "XMLE",
    "attributes": [
       {
          "name": "Attribute",
-         "summary": "@todo add summary",
+         "summary": "Attributes",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The element's XML attributes (`XMLA_Type`)."
             }
          ],
          "type": "lListT",
@@ -23,10 +23,10 @@
       },
       {
          "name": "Print",
-         "summary": "@todo add summary",
+         "summary": "Print",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Whether to emit this element. A node can be built and then suppressed, so the tree does not have to be pruned."
             }
          ],
          "type": "lBoolT",
@@ -34,10 +34,10 @@
       },
       {
          "name": "Element",
-         "summary": "@todo add summary",
+         "summary": "Value",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The element's own value, when it is a leaf."
             }
          ],
          "type": "lObjectT",
@@ -47,10 +47,10 @@
       },
       {
          "name": "List",
-         "summary": "@todo add summary",
+         "summary": "Children",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The child elements (`XMLE_Type`), when it is not."
             }
          ],
          "type": "lListT",

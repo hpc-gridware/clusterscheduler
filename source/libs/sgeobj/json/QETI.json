@@ -1,19 +1,22 @@
 {
    "className": "QueueEndTimeIterator",
-   "summary": "@todo add summary",
+   "summary": "Queue End Time Iterator",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "Walks the points in time at which a resource frees up, newest first."
+      },
+      {
+         "line": "Reservation scheduling has to answer \"when could this job start\". Rather than sampling time, the iterator visits only the instants at which some booking ends, because the answer can only change there."
       }
    ],
    "cullPrefix": "QETI",
    "attributes": [
       {
          "name": "total",
-         "summary": "@todo add summary",
+         "summary": "Total Capacity",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The resource's full capacity, the value utilization is compared against."
             }
          ],
          "type": "lDoubleT",
@@ -21,10 +24,10 @@
       },
       {
          "name": "resource_instance",
-         "summary": "@todo add summary",
+         "summary": "Resource Instance",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Reference to the resource being walked (`RUE_Type`), whose utilization diagram holds the bookings."
             }
          ],
          "type": "lRefT",
@@ -34,10 +37,10 @@
       },
       {
          "name": "queue_end_next",
-         "summary": "@todo add summary",
+         "summary": "Next Position",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Cursor into that utilization diagram: the next booking end this iterator will report."
             }
          ],
          "type": "lRefT",

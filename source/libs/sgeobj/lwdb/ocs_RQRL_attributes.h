@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Resource Quota Rule Limit
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,12 +39,12 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RQRL_name = 11700,   ///< @todo add summary
-   RQRL_value,   ///< @todo add summary
-   RQRL_type,   ///< @todo add summary
-   RQRL_dvalue,   ///< @todo add summary
-   RQRL_usage,   ///< @todo add summary
-   RQRL_dynamic   ///< @todo add summary
+   RQRL_name = 11700,   ///< Resource Name
+   RQRL_value,   ///< Configured Value
+   RQRL_type,   ///< Value Type
+   RQRL_dvalue,   ///< Evaluated Value
+   RQRL_usage,   ///< Usage
+   RQRL_dynamic   ///< Dynamic
 };
 
 /** @brief The attribute ids of RQRL, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

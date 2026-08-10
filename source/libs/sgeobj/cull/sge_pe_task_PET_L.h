@@ -39,9 +39,8 @@
 *    SGE_STRING(PET_id) - PE Task Id
 *    The pe task id. It is unique per job.
 *
-*    SGE_STRING(PET_name) - @todo add summary
-*    Optional name of a pe task. Not yet completely implemented, but
-*    it could be used to pass information to be shown by qstat.
+*    SGE_STRING(PET_name) - Task Name
+*    The name of this parallel environment task, used in the job's output file names and in accounting. Defaults to `petask`.
 *
 *    SGE_ULONG(PET_status) - Status
 *    Status of the pe job, see defines in libs/gdi/sge_jobL.h.
@@ -116,7 +115,7 @@
 
 enum {
    PET_id = PET_LOWERBOUND,   ///< PE Task Id
-   PET_name,   ///< @todo add summary
+   PET_name,   ///< Task Name
    PET_status,   ///< Status
    PET_granted_destin_identifier_list,   ///< Granted Destination Identifier List
    PET_pid,   ///< Process Id

@@ -1,19 +1,19 @@
 {
    "className": "XMLAttribute",
-   "summary": "@todo add summary",
+   "summary": "XML Attribute",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "One name/value attribute on an XML element."
       }
    ],
    "cullPrefix": "XMLA",
    "attributes": [
       {
          "name": "Name",
-         "summary": "@todo add summary",
+         "summary": "Name",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The attribute name."
             }
          ],
          "type": "lStringT",
@@ -21,10 +21,10 @@
       },
       {
          "name": "Value",
-         "summary": "@todo add summary",
+         "summary": "Value",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Its value. Escaped when the document is written, so plain text is passed in."
             }
          ],
          "type": "lStringT",

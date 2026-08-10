@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Parameter
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,8 +39,8 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   PARA_name = 10000,   ///< @todo add summary
-   PARA_value   ///< @todo add summary
+   PARA_name = 10000,   ///< Name
+   PARA_value   ///< Value
 };
 
 /** @brief The attribute ids of PARA, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

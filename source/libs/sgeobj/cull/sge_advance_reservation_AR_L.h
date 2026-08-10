@@ -89,9 +89,8 @@
 *    The list of queues requested by the advance reservation (qrsub -q).
 *    Just one hard queue list. @todo The -scope feature is still missing.
 *
-*    SGE_LIST(AR_granted_slots) - @todo add summary
-*    The list of queues and the number of slots which are reserved for the advance reservation.
-*    Equivalent to the JAT_granted_destin_identifier_list in running jobs/array tasks.
+*    SGE_LIST(AR_granted_slots) - Granted Slots
+*    The queue instances and slot counts the reservation holds (`JG_Type`), the same shape as a job's granted destination identifier list. Set once when the reservation is confirmed.
 *
 *    SGE_LIST(AR_reserved_hosts) - Reserved Hosts
 *    Will hold the list of hosts which are reserved for the advance reservation
@@ -175,7 +174,7 @@ enum {
    AR_resource_list,   ///< Resource List
    AR_resource_utilization,   ///< Resource Utilization
    AR_queue_list,   ///< Queue List
-   AR_granted_slots,   ///< @todo add summary
+   AR_granted_slots,   ///< Granted Slots
    AR_reserved_hosts,   ///< Reserved Hosts
    AR_reserved_queues,   ///< Reserved Queues
    AR_mail_options,   ///< Mail Options

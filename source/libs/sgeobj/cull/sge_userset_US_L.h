@@ -25,40 +25,41 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief User Set
  */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief User Set
 *
-* @todo add description
+* A named set of users and groups, used either as an access list or as a department.
+* One type serves both: `US_type` says which. As an access list it decides who may use a queue, project or parallel environment; as a department it carries the share-tree and override tickets its members get. A userset may be both at once.
 *
-*    SGE_STRING(US_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(US_name) - Name
+*    The set's name. `defaultdepartment` is the fallback department.
 *
-*    SGE_ULONG(US_type) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(US_type) - Type
+*    `US_ACL`, `US_DEPT`, or both. See `sge_userset.h`.
 *
-*    SGE_ULONG(US_fshare) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(US_fshare) - Functional Share
+*    The department's share of functional tickets.
 *
-*    SGE_ULONG(US_oticket) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(US_oticket) - Override Tickets
+*    Override tickets granted to the department's jobs.
 *
-*    SGE_ULONG(US_job_cnt) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(US_job_cnt) - Running Job Count
+*    Jobs of this userset currently running, maintained by the scheduler for ticket calculation.
 *
-*    SGE_ULONG(US_pending_job_cnt) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(US_pending_job_cnt) - Pending Job Count
+*    Jobs of this userset waiting to run.
 *
-*    SGE_LIST(US_entries) - @todo add summary
-*    @todo add description
+*    SGE_LIST(US_entries) - Members
+*    The users and UNIX groups in the set (`UE_Type`). A name starting with `@` is a group.
 *
-*    SGE_BOOL(US_consider_with_categories) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(US_consider_with_categories) - Category Relevant
+*    The set affects which jobs can run where, so two jobs differing only in it must not share a scheduling category.
 *
 *    SGE_LIST(US_joker) - Joker
 *    Placeholder which can be used for arbitrary data.
@@ -68,14 +69,14 @@
 */
 
 enum {
-   US_name = US_LOWERBOUND,   ///< @todo add summary
-   US_type,   ///< @todo add summary
-   US_fshare,   ///< @todo add summary
-   US_oticket,   ///< @todo add summary
-   US_job_cnt,   ///< @todo add summary
-   US_pending_job_cnt,   ///< @todo add summary
-   US_entries,   ///< @todo add summary
-   US_consider_with_categories,   ///< @todo add summary
+   US_name = US_LOWERBOUND,   ///< Name
+   US_type,   ///< Type
+   US_fshare,   ///< Functional Share
+   US_oticket,   ///< Override Tickets
+   US_job_cnt,   ///< Running Job Count
+   US_pending_job_cnt,   ///< Pending Job Count
+   US_entries,   ///< Members
+   US_consider_with_categories,   ///< Category Relevant
    US_joker   ///< Joker
 };
 

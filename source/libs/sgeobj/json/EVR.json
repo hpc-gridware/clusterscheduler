@@ -1,19 +1,22 @@
 {
    "className": "EventRequest",
-   "summary": "@todo add summary",
+   "summary": "Event Master Request",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "One request queued for the event master thread."
+      },
+      {
+         "line": "Every change to the event master - a client registering, changing its subscription, leaving, or an event being added - is posted as one of these rather than applied directly, so the callers never block on the event master's lock."
       }
    ],
    "cullPrefix": "EVR",
    "attributes": [
       {
          "name": "operation",
-         "summary": "@todo add summary",
+         "summary": "Operation",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Which request this is: `EVR_ADD_EVC`, `EVR_MOD_EVC`, `EVR_DEL_EVC` or `EVR_ADD_EVENT`. See `sge_event.h`."
             }
          ],
          "type": "lUlongT",
@@ -21,10 +24,10 @@
       },
       {
          "name": "timestamp",
-         "summary": "@todo add summary",
+         "summary": "Timestamp",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "When the request was posted, so the event master can order and age requests."
             }
          ],
          "type": "lTimestampT",
@@ -32,10 +35,10 @@
       },
       {
          "name": "event_client_id",
-         "summary": "@todo add summary",
+         "summary": "Event Client Id",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Which event client the request is about."
             }
          ],
          "type": "lUlongT",
@@ -43,10 +46,10 @@
       },
       {
          "name": "event_number",
-         "summary": "@todo add summary",
+         "summary": "Event Number",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The client's event serial the request refers to."
             }
          ],
          "type": "lUlongT",
@@ -54,10 +57,10 @@
       },
       {
          "name": "session",
-         "summary": "@todo add summary",
+         "summary": "Session",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The session the request belongs to, so a client sees its own changes."
             }
          ],
          "type": "lStringT",
@@ -65,10 +68,10 @@
       },
       {
          "name": "event_client",
-         "summary": "@todo add summary",
+         "summary": "Event Client",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The event client object (`EV_Type`), for the register and modify operations."
             }
          ],
          "type": "lObjectT",
@@ -78,10 +81,10 @@
       },
       {
          "name": "event_list",
-         "summary": "@todo add summary",
+         "summary": "Events",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The events to deliver (`ET_Type`), for `EVR_ADD_EVENT`."
             }
          ],
          "type": "lListT",

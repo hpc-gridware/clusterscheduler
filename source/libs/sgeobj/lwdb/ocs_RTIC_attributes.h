@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Resource Ticket Host Entry
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,8 +39,8 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RTIC_host = 12400,   ///< @todo add summary
-   RTIC_tickets   ///< @todo add summary
+   RTIC_host = 12400,   ///< Host
+   RTIC_tickets   ///< Tickets
 };
 
 /** @brief The attribute ids of RTIC, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

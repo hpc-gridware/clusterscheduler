@@ -25,32 +25,32 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Resource Quota Rule Filter
  */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Resource Quota Rule Filter
 *
-* @todo add description
+* One of a rule's five filters: the set of names it matches, and whether the limit is shared or per name.
 *
-*    SGE_BOOL(RQRF_expand) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(RQRF_expand) - Expand
+*    False means one limit shared by everything the filter matches; true means a separate limit for each matched name. This is what distinguishes "100 slots between all users" from "100 slots each".
 *
-*    SGE_LIST(RQRF_scope) - @todo add summary
-*    @todo add description
+*    SGE_LIST(RQRF_scope) - Scope
+*    The names the filter matches (`ST_Type`). A single `*` entry means everything.
 *
-*    SGE_LIST(RQRF_xscope) - @todo add summary
-*    @todo add description
+*    SGE_LIST(RQRF_xscope) - Excluded Scope
+*    Names explicitly excluded, applied after RQRF_scope.
 *
 */
 
 enum {
-   RQRF_expand = RQRF_LOWERBOUND,   ///< @todo add summary
-   RQRF_scope,   ///< @todo add summary
-   RQRF_xscope   ///< @todo add summary
+   RQRF_expand = RQRF_LOWERBOUND,   ///< Expand
+   RQRF_scope,   ///< Scope
+   RQRF_xscope   ///< Excluded Scope
 };
 
 LISTDEF(RQRF_Type)

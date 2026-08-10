@@ -40,7 +40,7 @@ namespace ocs {
  */
 enum {
    PET_id = 4050,   ///< PE Task Id
-   PET_name,   ///< @todo add summary
+   PET_name,   ///< Task Name
    PET_status,   ///< Status
    PET_granted_destin_identifier_list,   ///< Granted Destination Identifier List
    PET_pid,   ///< Process Id

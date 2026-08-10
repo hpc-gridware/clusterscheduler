@@ -135,10 +135,8 @@
 *    Node usage list.
 *    Used during scheduling of pending of pending jobs.
 *
-*    SGE_ULONG(STN_version) - @todo add summary
-*    Version of share tree.
-*    Set/increased in qmaster when sharetree changes.
-*    Skip scheduling decisions based on an older version of the sharetree.
+*    SGE_ULONG(STN_version) - Share Tree Version
+*    Incremented on every change to the tree, and again by the timer thread when usage is recomputed. Lets a reader tell whether the tree it holds is still current.
 *
 *    SGE_LIST(STN_joker) - Joker
 *    Placeholder which can be used for arbitrary data.
@@ -177,7 +175,7 @@ enum {
    STN_jobid,   ///< Job Id
    STN_taskid,   ///< Task Id
    STN_usage_list,   ///< Usage List
-   STN_version,   ///< @todo add summary
+   STN_version,   ///< Share Tree Version
    STN_joker   ///< Joker
 };
 

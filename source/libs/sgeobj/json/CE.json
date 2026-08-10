@@ -292,22 +292,10 @@
       },
       {
          "name": "requestable",
-         "summary": "@todo add summary",
+         "summary": "Requestable",
          "description": [
             {
-               "line": "Defines if a complex variable can be requested and if it is a forced variable (must be requested)"
-            },
-            {
-               "line": "Defined in libs/sgeobj/sge_centry.h, possible values are"
-            },
-            {
-               "line": "REQU_NO"
-            },
-            {
-               "line": "REQU_YES"
-            },
-            {
-               "line": "REQU_FORCED"
+               "line": "Whether a job may ask for this complex, and whether asking is mandatory: `NO`, `YES` or `FORCED`."
             }
          ],
          "type": "lUlongT",

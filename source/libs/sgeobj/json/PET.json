@@ -34,13 +34,10 @@
       },
       {
          "name": "name",
-         "summary": "@todo add summary",
+         "summary": "Task Name",
          "description": [
             {
-               "line": "Optional name of a pe task. Not yet completely implemented, but"
-            },
-            {
-               "line": "it could be used to pass information to be shown by qstat."
+               "line": "The name of this parallel environment task, used in the job's output file names and in accounting. Defaults to `petask`."
             }
          ],
          "type": "lStringT",
@@ -322,8 +319,12 @@
          "name": "cred",
          "summary": "TLS Credentials",
          "description": [
-            {"line": "Used with the TLS encryption to transport the credentials"},
-            {"line": "from qrsh to the sge_execd, which will store it in the pe_task's active_jobs directory."}
+            {
+               "line": "Used with the TLS encryption to transport the credentials"
+            },
+            {
+               "line": "from qrsh to the sge_execd, which will store it in the pe_task's active_jobs directory."
+            }
          ],
          "type": "lStringT",
          "flags": []
@@ -346,7 +347,9 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {"name": "SPOOL"}
+            {
+               "name": "SPOOL"
+            }
          ]
       }
    ]

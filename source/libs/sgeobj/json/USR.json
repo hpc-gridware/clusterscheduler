@@ -1,19 +1,22 @@
 {
    "className": "USR",
-   "summary": "@todo add summary",
+   "summary": "User Run State (unused)",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "Per-user counts of running jobs, split by deadline and non-deadline, with scheduler sort state."
+      },
+      {
+         "line": "@warning No attribute of this type is read or written anywhere in either repository, and `USR_Type` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
       }
    ],
    "cullPrefix": "USR",
    "attributes": [
       {
          "name": "name",
-         "summary": "@todo add summary",
+         "summary": "User Name",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused USR object; see the object description."
             }
          ],
          "type": "lStringT",
@@ -21,10 +24,10 @@
       },
       {
          "name": "nrunning_el",
-         "summary": "@todo add summary",
+         "summary": "Running Jobs",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused USR object; see the object description."
             }
          ],
          "type": "lUlongT",
@@ -32,10 +35,10 @@
       },
       {
          "name": "nrunning_dl",
-         "summary": "@todo add summary",
+         "summary": "Running Deadline Jobs",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused USR object; see the object description."
             }
          ],
          "type": "lUlongT",
@@ -43,10 +46,10 @@
       },
       {
          "name": "job_references",
-         "summary": "@todo add summary",
+         "summary": "Job References",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused USR object; see the object description."
             }
          ],
          "type": "lListT",
@@ -56,10 +59,10 @@
       },
       {
          "name": "sort_me",
-         "summary": "@todo add summary",
+         "summary": "Needs Sorting",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused USR object; see the object description."
             }
          ],
          "type": "lUlongT",
@@ -67,10 +70,10 @@
       },
       {
          "name": "current",
-         "summary": "@todo add summary",
+         "summary": "Current Element",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused USR object; see the object description."
             }
          ],
          "type": "lRefT",

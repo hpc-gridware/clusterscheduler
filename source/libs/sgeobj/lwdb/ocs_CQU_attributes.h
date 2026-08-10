@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Calendar Queue State Change
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,8 +39,8 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   CQU_state = 11100,   ///< @todo add summary
-   CQU_till   ///< @todo add summary
+   CQU_state = 11100,   ///< State
+   CQU_till   ///< Until
 };
 
 /** @brief The attribute ids of CQU, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

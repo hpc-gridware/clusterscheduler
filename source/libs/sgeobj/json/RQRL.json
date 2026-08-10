@@ -1,19 +1,19 @@
 {
    "className": "ResourceQuotaRuleLimit",
-   "summary": "@todo add summary",
+   "summary": "Resource Quota Rule Limit",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "One resource a rule limits, the configured ceiling, and what is currently booked against it."
       }
    ],
    "cullPrefix": "RQRL",
    "attributes": [
       {
          "name": "name",
-         "summary": "@todo add summary",
+         "summary": "Resource Name",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The complex attribute being limited, e.g. `slots`."
             }
          ],
          "type": "lStringT",
@@ -37,10 +37,10 @@
       },
       {
          "name": "value",
-         "summary": "@todo add summary",
+         "summary": "Configured Value",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The limit as configured, still as text. For a dynamic limit this is the formula rather than a number."
             }
          ],
          "type": "lStringT",
@@ -55,10 +55,10 @@
       },
       {
          "name": "type",
-         "summary": "@todo add summary",
+         "summary": "Value Type",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The complex attribute's type, copied from `CE_valtype`, which decides how RQRL_value is parsed."
             }
          ],
          "type": "lUlongT",
@@ -73,10 +73,10 @@
       },
       {
          "name": "dvalue",
-         "summary": "@todo add summary",
+         "summary": "Evaluated Value",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The limit as a number. For a static limit this is RQRL_value parsed; for a dynamic one it is the formula evaluated against the host currently being considered."
             }
          ],
          "type": "lDoubleT",
@@ -91,10 +91,10 @@
       },
       {
          "name": "usage",
-         "summary": "@todo add summary",
+         "summary": "Usage",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "What is booked against this limit right now (`RUE_Type`), one entry per name when the filter expands."
             }
          ],
          "type": "lListT",
@@ -108,10 +108,10 @@
       },
       {
          "name": "dynamic",
-         "summary": "@todo add summary",
+         "summary": "Dynamic",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The limit is a formula over host complexes rather than a constant, so RQRL_dvalue has to be recomputed per host instead of read once."
             }
          ],
          "type": "lBoolT",

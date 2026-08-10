@@ -1,19 +1,19 @@
 {
    "className": "CalendarQueueState",
-   "summary": "@todo add summary",
+   "summary": "Calendar Queue State Change",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "One state change a calendar schedules: the state to take, and until when."
       }
    ],
    "cullPrefix": "CQU",
    "attributes": [
       {
          "name": "state",
-         "summary": "@todo add summary",
+         "summary": "State",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The `QI_*` state to put the queue into - enabled, disabled or suspended."
             }
          ],
          "type": "lUlongT",
@@ -21,10 +21,10 @@
       },
       {
          "name": "till",
-         "summary": "@todo add summary",
+         "summary": "Until",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "When this state ends and the next entry takes over."
             }
          ],
          "type": "lTimestampT",

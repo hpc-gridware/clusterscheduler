@@ -1,19 +1,19 @@
 {
    "className": "XMLSchema",
-   "summary": "@todo add summary",
+   "summary": "XML Stylesheet",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "One stylesheet processing instruction for the document header."
       }
    ],
    "cullPrefix": "XMLS",
    "attributes": [
       {
          "name": "Name",
-         "summary": "@todo add summary",
+         "summary": "Name",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The instruction's attribute name, e.g. `href`."
             }
          ],
          "type": "lStringT",
@@ -21,10 +21,10 @@
       },
       {
          "name": "Value",
-         "summary": "@todo add summary",
+         "summary": "Value",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Its value, e.g. the stylesheet URL."
             }
          ],
          "type": "lStringT",
@@ -32,10 +32,10 @@
       },
       {
          "name": "Version",
-         "summary": "@todo add summary",
+         "summary": "Version",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The stylesheet version."
             }
          ],
          "type": "lStringT",

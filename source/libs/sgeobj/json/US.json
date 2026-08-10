@@ -1,19 +1,22 @@
 {
    "className": "UserSet",
-   "summary": "@todo add summary",
+   "summary": "User Set",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "A named set of users and groups, used either as an access list or as a department."
+      },
+      {
+         "line": "One type serves both: `US_type` says which. As an access list it decides who may use a queue, project or parallel environment; as a department it carries the share-tree and override tickets its members get. A userset may be both at once."
       }
    ],
    "cullPrefix": "US",
    "attributes": [
       {
          "name": "name",
-         "summary": "@todo add summary",
+         "summary": "Name",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The set's name. `defaultdepartment` is the fallback department."
             }
          ],
          "type": "lStringT",
@@ -40,10 +43,10 @@
       },
       {
          "name": "type",
-         "summary": "@todo add summary",
+         "summary": "Type",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "`US_ACL`, `US_DEPT`, or both. See `sge_userset.h`."
             }
          ],
          "type": "lUlongT",
@@ -58,10 +61,10 @@
       },
       {
          "name": "fshare",
-         "summary": "@todo add summary",
+         "summary": "Functional Share",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The department's share of functional tickets."
             }
          ],
          "type": "lUlongT",
@@ -76,10 +79,10 @@
       },
       {
          "name": "oticket",
-         "summary": "@todo add summary",
+         "summary": "Override Tickets",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Override tickets granted to the department's jobs."
             }
          ],
          "type": "lUlongT",
@@ -94,10 +97,10 @@
       },
       {
          "name": "job_cnt",
-         "summary": "@todo add summary",
+         "summary": "Running Job Count",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Jobs of this userset currently running, maintained by the scheduler for ticket calculation."
             }
          ],
          "type": "lUlongT",
@@ -109,10 +112,10 @@
       },
       {
          "name": "pending_job_cnt",
-         "summary": "@todo add summary",
+         "summary": "Pending Job Count",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Jobs of this userset waiting to run."
             }
          ],
          "type": "lUlongT",
@@ -124,10 +127,10 @@
       },
       {
          "name": "entries",
-         "summary": "@todo add summary",
+         "summary": "Members",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The users and UNIX groups in the set (`UE_Type`). A name starting with `@` is a group."
             }
          ],
          "type": "lListT",
@@ -144,10 +147,10 @@
       },
       {
          "name": "consider_with_categories",
-         "summary": "@todo add summary",
+         "summary": "Category Relevant",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The set affects which jobs can run where, so two jobs differing only in it must not share a scheduling category."
             }
          ],
          "type": "lBoolT",
@@ -175,7 +178,9 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {"name": "SPOOL"}
+            {
+               "name": "SPOOL"
+            }
          ]
       }
    ]

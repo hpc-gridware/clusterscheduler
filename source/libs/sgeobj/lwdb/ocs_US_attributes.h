@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief User Set
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,14 +39,14 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   US_name = 1550,   ///< @todo add summary
-   US_type,   ///< @todo add summary
-   US_fshare,   ///< @todo add summary
-   US_oticket,   ///< @todo add summary
-   US_job_cnt,   ///< @todo add summary
-   US_pending_job_cnt,   ///< @todo add summary
-   US_entries,   ///< @todo add summary
-   US_consider_with_categories,   ///< @todo add summary
+   US_name = 1550,   ///< Name
+   US_type,   ///< Type
+   US_fshare,   ///< Functional Share
+   US_oticket,   ///< Override Tickets
+   US_job_cnt,   ///< Running Job Count
+   US_pending_job_cnt,   ///< Pending Job Count
+   US_entries,   ///< Members
+   US_consider_with_categories,   ///< Category Relevant
    US_joker   ///< Joker
 };
 

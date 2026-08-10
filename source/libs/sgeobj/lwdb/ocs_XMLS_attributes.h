@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief XML Stylesheet
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,9 +39,9 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   XMLS_Name = 10300,   ///< @todo add summary
-   XMLS_Value,   ///< @todo add summary
-   XMLS_Version   ///< @todo add summary
+   XMLS_Name = 10300,   ///< Name
+   XMLS_Value,   ///< Value
+   XMLS_Version   ///< Version
 };
 
 /** @brief The attribute ids of XMLS, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

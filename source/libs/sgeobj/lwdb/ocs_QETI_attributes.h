@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Queue End Time Iterator
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,9 +39,9 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   QETI_total = 10700,   ///< @todo add summary
-   QETI_resource_instance,   ///< @todo add summary
-   QETI_queue_end_next   ///< @todo add summary
+   QETI_total = 10700,   ///< Total Capacity
+   QETI_resource_instance,   ///< Resource Instance
+   QETI_queue_end_next   ///< Next Position
 };
 
 /** @brief The attribute ids of QETI, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

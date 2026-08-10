@@ -1,19 +1,22 @@
 {
    "className": "SEC",
-   "summary": "@todo add summary",
+   "summary": "Secured Connection State (unused)",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "State of one secured connection in the Sun-era security layer: the peer, the session key in eight parts, the sequence numbers and the expiry."
+      },
+      {
+         "line": "@warning Nothing in either repository reads or writes this type or any of its attributes - not even the `source/security` trees, which are themselves unbuilt. It is the object model's counterpart to that dead code. Left in place because removing a type changes the spooled object model; see task 41."
       }
    ],
    "cullPrefix": "SEC",
    "attributes": [
       {
          "name": "ConnectionID",
-         "summary": "@todo add summary",
+         "summary": "ConnectionID",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lUlongT",
@@ -21,10 +24,10 @@
       },
       {
          "name": "Host",
-         "summary": "@todo add summary",
+         "summary": "Host",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lHostT",
@@ -32,10 +35,10 @@
       },
       {
          "name": "Commproc",
-         "summary": "@todo add summary",
+         "summary": "Commproc",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lStringT",
@@ -43,10 +46,10 @@
       },
       {
          "name": "Id",
-         "summary": "@todo add summary",
+         "summary": "Id",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lIntT",
@@ -54,10 +57,10 @@
       },
       {
          "name": "UniqueIdentifier",
-         "summary": "@todo add summary",
+         "summary": "UniqueIdentifier",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lStringT",
@@ -65,10 +68,10 @@
       },
       {
          "name": "ExpiryDate",
-         "summary": "@todo add summary",
+         "summary": "ExpiryDate",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lStringT",
@@ -76,10 +79,10 @@
       },
       {
          "name": "SeqNoSend",
-         "summary": "@todo add summary",
+         "summary": "SeqNoSend",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lUlongT",
@@ -87,10 +90,10 @@
       },
       {
          "name": "SeqNoReceive",
-         "summary": "@todo add summary",
+         "summary": "SeqNoReceive",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lUlongT",
@@ -98,10 +101,10 @@
       },
       {
          "name": "KeyPart0",
-         "summary": "@todo add summary",
+         "summary": "KeyPart0",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lUlongT",
@@ -109,10 +112,10 @@
       },
       {
          "name": "KeyPart1",
-         "summary": "@todo add summary",
+         "summary": "KeyPart1",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lUlongT",
@@ -120,10 +123,10 @@
       },
       {
          "name": "KeyPart2",
-         "summary": "@todo add summary",
+         "summary": "KeyPart2",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lUlongT",
@@ -131,10 +134,10 @@
       },
       {
          "name": "KeyPart3",
-         "summary": "@todo add summary",
+         "summary": "KeyPart3",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lUlongT",
@@ -142,10 +145,10 @@
       },
       {
          "name": "KeyPart4",
-         "summary": "@todo add summary",
+         "summary": "KeyPart4",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lUlongT",
@@ -153,10 +156,10 @@
       },
       {
          "name": "KeyPart5",
-         "summary": "@todo add summary",
+         "summary": "KeyPart5",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lUlongT",
@@ -164,10 +167,10 @@
       },
       {
          "name": "KeyPart6",
-         "summary": "@todo add summary",
+         "summary": "KeyPart6",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lUlongT",
@@ -175,10 +178,10 @@
       },
       {
          "name": "KeyPart7",
-         "summary": "@todo add summary",
+         "summary": "KeyPart7",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Part of the unused SEC object; see the object description."
             }
          ],
          "type": "lUlongT",

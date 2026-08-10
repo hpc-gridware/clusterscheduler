@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Queue Reference
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   QRL_queue = 10900   ///< @todo add summary
+   QRL_queue = 10900   ///< Queue Instance
 };
 
 /** @brief The attribute ids of QRL, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

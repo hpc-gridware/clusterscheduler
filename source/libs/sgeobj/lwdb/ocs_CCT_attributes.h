@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Category Cache Entry
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,12 +39,12 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   CCT_pe_name = 11000,   ///< @todo add summary
-   CCT_ignore_queues,   ///< @todo add summary
-   CCT_ignore_hosts,   ///< @todo add summary
-   CCT_job_messages,   ///< @todo add summary
-   CCT_pe_job_slots,   ///< @todo add summary
-   CCT_pe_job_slot_count   ///< @todo add summary
+   CCT_pe_name = 11000,   ///< Parallel Environment
+   CCT_ignore_queues,   ///< Rejected Queues
+   CCT_ignore_hosts,   ///< Rejected Hosts
+   CCT_job_messages,   ///< Scheduler Messages
+   CCT_pe_job_slots,   ///< Possible Slot Counts
+   CCT_pe_job_slot_count   ///< Slot Count Size
 };
 
 /** @brief The attribute ids of CCT, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Event Master Request
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,13 +39,13 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   EVR_operation = 12200,   ///< @todo add summary
-   EVR_timestamp,   ///< @todo add summary
-   EVR_event_client_id,   ///< @todo add summary
-   EVR_event_number,   ///< @todo add summary
-   EVR_session,   ///< @todo add summary
-   EVR_event_client,   ///< @todo add summary
-   EVR_event_list   ///< @todo add summary
+   EVR_operation = 12200,   ///< Operation
+   EVR_timestamp,   ///< Timestamp
+   EVR_event_client_id,   ///< Event Client Id
+   EVR_event_number,   ///< Event Number
+   EVR_session,   ///< Session
+   EVR_event_client,   ///< Event Client
+   EVR_event_list   ///< Events
 };
 
 /** @brief The attribute ids of EVR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

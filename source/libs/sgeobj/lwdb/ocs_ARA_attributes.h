@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Advance Reservation Access List Entry
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,8 +39,8 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   ARA_name = 12000,   ///< @todo add summary
-   ARA_group   ///< @todo add summary
+   ARA_name = 12000,   ///< Name
+   ARA_group   ///< Group
 };
 
 /** @brief The attribute ids of ARA, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

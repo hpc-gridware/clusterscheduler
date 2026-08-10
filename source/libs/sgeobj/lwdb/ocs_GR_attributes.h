@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Group Id
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   GR_group = 12600   ///< @todo add summary
+   GR_group = 12600   ///< Group Id
 };
 
 /** @brief The attribute ids of GR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

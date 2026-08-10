@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Packed Condition
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,8 +39,8 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   PACK_id = 12900,   ///< @todo add summary
-   PACK_string   ///< @todo add summary
+   PACK_id = 12900,   ///< Kind
+   PACK_string   ///< Packed Data
 };
 
 /** @brief The attribute ids of PACK, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

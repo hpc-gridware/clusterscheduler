@@ -25,44 +25,44 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Resource Quota Rule Limit
  */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Resource Quota Rule Limit
 *
-* @todo add description
+* One resource a rule limits, the configured ceiling, and what is currently booked against it.
 *
-*    SGE_STRING(RQRL_name) - @todo add summary
-*    @todo add description
+*    SGE_STRING(RQRL_name) - Resource Name
+*    The complex attribute being limited, e.g. `slots`.
 *
-*    SGE_STRING(RQRL_value) - @todo add summary
-*    @todo add description
+*    SGE_STRING(RQRL_value) - Configured Value
+*    The limit as configured, still as text. For a dynamic limit this is the formula rather than a number.
 *
-*    SGE_ULONG(RQRL_type) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(RQRL_type) - Value Type
+*    The complex attribute's type, copied from `CE_valtype`, which decides how RQRL_value is parsed.
 *
-*    SGE_DOUBLE(RQRL_dvalue) - @todo add summary
-*    @todo add description
+*    SGE_DOUBLE(RQRL_dvalue) - Evaluated Value
+*    The limit as a number. For a static limit this is RQRL_value parsed; for a dynamic one it is the formula evaluated against the host currently being considered.
 *
-*    SGE_LIST(RQRL_usage) - @todo add summary
-*    @todo add description
+*    SGE_LIST(RQRL_usage) - Usage
+*    What is booked against this limit right now (`RUE_Type`), one entry per name when the filter expands.
 *
-*    SGE_BOOL(RQRL_dynamic) - @todo add summary
-*    @todo add description
+*    SGE_BOOL(RQRL_dynamic) - Dynamic
+*    The limit is a formula over host complexes rather than a constant, so RQRL_dvalue has to be recomputed per host instead of read once.
 *
 */
 
 enum {
-   RQRL_name = RQRL_LOWERBOUND,   ///< @todo add summary
-   RQRL_value,   ///< @todo add summary
-   RQRL_type,   ///< @todo add summary
-   RQRL_dvalue,   ///< @todo add summary
-   RQRL_usage,   ///< @todo add summary
-   RQRL_dynamic   ///< @todo add summary
+   RQRL_name = RQRL_LOWERBOUND,   ///< Resource Name
+   RQRL_value,   ///< Configured Value
+   RQRL_type,   ///< Value Type
+   RQRL_dvalue,   ///< Evaluated Value
+   RQRL_usage,   ///< Usage
+   RQRL_dynamic   ///< Dynamic
 };
 
 LISTDEF(RQRL_Type)

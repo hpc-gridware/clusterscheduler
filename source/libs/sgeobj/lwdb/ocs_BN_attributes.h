@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Binding
  */
 
 #include "lwdb/AttributeStatic.h"

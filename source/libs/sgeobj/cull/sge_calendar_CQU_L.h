@@ -25,28 +25,28 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Calendar Queue State Change
  */
 
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
 /**
-* @brief @todo add summary
+* @brief Calendar Queue State Change
 *
-* @todo add description
+* One state change a calendar schedules: the state to take, and until when.
 *
-*    SGE_ULONG(CQU_state) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(CQU_state) - State
+*    The `QI_*` state to put the queue into - enabled, disabled or suspended.
 *
-*    SGE_ULONG64(CQU_till) - @todo add summary
-*    @todo add description
+*    SGE_ULONG64(CQU_till) - Until
+*    When this state ends and the next entry takes over.
 *
 */
 
 enum {
-   CQU_state = CQU_LOWERBOUND,   ///< @todo add summary
-   CQU_till   ///< @todo add summary
+   CQU_state = CQU_LOWERBOUND,   ///< State
+   CQU_till   ///< Until
 };
 
 LISTDEF(CQU_Type)

@@ -92,12 +92,8 @@
 *    SGE_ULONG(CE_pj_dominant) - Per Job Monitoring Facility
 *    @todo add description
 *
-*    SGE_ULONG(CE_requestable) - @todo add summary
-*    Defines if a complex variable can be requested and if it is a forced variable (must be requested)
-*    Defined in libs/sgeobj/sge_centry.h, possible values are
-*    REQU_NO
-*    REQU_YES
-*    REQU_FORCED
+*    SGE_ULONG(CE_requestable) - Requestable
+*    Whether a job may ask for this complex, and whether asking is mandatory: `NO`, `YES` or `FORCED`.
 *
 *    SGE_ULONG(CE_tagged) - Variable Is Tagged
 *    Used for tagging variables, e.g. during the scheduling process.
@@ -123,7 +119,7 @@ enum {
    CE_pj_stringval,   ///< Per Job String Value
    CE_pj_doubleval,   ///< Per Job Double Value
    CE_pj_dominant,   ///< Per Job Monitoring Facility
-   CE_requestable,   ///< @todo add summary
+   CE_requestable,   ///< Requestable
    CE_tagged,   ///< Variable Is Tagged
    CE_urgency_weight,   ///< Urgency Weighting Factor
    CE_resource_map_list   ///< Resource Map List

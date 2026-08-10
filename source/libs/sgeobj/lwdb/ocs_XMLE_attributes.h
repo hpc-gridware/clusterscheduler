@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief XML Element
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,10 +39,10 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   XMLE_Attribute = 10400,   ///< @todo add summary
-   XMLE_Print,   ///< @todo add summary
-   XMLE_Element,   ///< @todo add summary
-   XMLE_List   ///< @todo add summary
+   XMLE_Attribute = 10400,   ///< Attributes
+   XMLE_Print,   ///< Print
+   XMLE_Element,   ///< Value
+   XMLE_List   ///< Children
 };
 
 /** @brief The attribute ids of XMLE, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Resource Quota Rule
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,14 +39,14 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RQR_name = 11500,   ///< @todo add summary
-   RQR_filter_users,   ///< @todo add summary
-   RQR_filter_projects,   ///< @todo add summary
-   RQR_filter_pes,   ///< @todo add summary
-   RQR_filter_queues,   ///< @todo add summary
-   RQR_filter_hosts,   ///< @todo add summary
-   RQR_limit,   ///< @todo add summary
-   RQR_level   ///< @todo add summary
+   RQR_name = 11500,   ///< Name
+   RQR_filter_users,   ///< User Filter
+   RQR_filter_projects,   ///< Project Filter
+   RQR_filter_pes,   ///< Parallel Environment Filter
+   RQR_filter_queues,   ///< Queue Filter
+   RQR_filter_hosts,   ///< Host Filter
+   RQR_limit,   ///< Limits
+   RQR_level   ///< Limit Level
 };
 
 /** @brief The attribute ids of RQR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Job Submission Verifier
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,28 +39,28 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   JSV_name = 12300,   ///< @todo add summary
-   JSV_context,   ///< @todo add summary
-   JSV_url,   ///< @todo add summary
-   JSV_type,   ///< @todo add summary
-   JSV_user,   ///< @todo add summary
-   JSV_command,   ///< @todo add summary
-   JSV_pid,   ///< @todo add summary
-   JSV_in,   ///< @todo add summary
-   JSV_out,   ///< @todo add summary
-   JSV_err,   ///< @todo add summary
-   JSV_has_to_restart,   ///< @todo add summary
-   JSV_last_mod,   ///< @todo add summary
-   JSV_send_env,   ///< @todo add summary
-   JSV_old_job,   ///< @todo add summary
-   JSV_new_job,   ///< @todo add summary
-   JSV_restart,   ///< @todo add summary
-   JSV_accept,   ///< @todo add summary
-   JSV_done,   ///< @todo add summary
-   JSV_soft_shutdown,   ///< @todo add summary
-   JSV_test,   ///< @todo add summary
-   JSV_test_pos,   ///< @todo add summary
-   JSV_result   ///< @todo add summary
+   JSV_name = 12300,   ///< Name
+   JSV_context,   ///< Context
+   JSV_url,   ///< Script URL
+   JSV_type,   ///< Script Type
+   JSV_user,   ///< Run As User
+   JSV_command,   ///< Script Path
+   JSV_pid,   ///< Process Id
+   JSV_in,   ///< Input Stream
+   JSV_out,   ///< Output Stream
+   JSV_err,   ///< Error Stream
+   JSV_has_to_restart,   ///< Restart Pending
+   JSV_last_mod,   ///< Script Timestamp
+   JSV_send_env,   ///< Send Environment
+   JSV_old_job,   ///< Job Before
+   JSV_new_job,   ///< Job After
+   JSV_restart,   ///< Restart Requested
+   JSV_accept,   ///< Verdict
+   JSV_done,   ///< Conversation Finished
+   JSV_soft_shutdown,   ///< Soft Shutdown
+   JSV_test,   ///< Test Mode
+   JSV_test_pos,   ///< Test Position
+   JSV_result   ///< Last Result
 };
 
 /** @brief The attribute ids of JSV, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

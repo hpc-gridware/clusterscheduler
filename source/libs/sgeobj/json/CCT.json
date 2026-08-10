@@ -1,19 +1,22 @@
 {
    "className": "CategoryCache",
-   "summary": "@todo add summary",
+   "summary": "Category Cache Entry",
    "description": [
       {
-         "line": "@todo add description"
+         "line": "What the scheduler learned about one category while scheduling for one parallel environment."
+      },
+      {
+         "line": "Jobs in a category make identical requests, so a queue or host that rejected the first job rejects them all. Remembering those rejections turns a per-job search into a per-category one, which is where most of the scheduler's speed on a large pending list comes from."
       }
    ],
    "cullPrefix": "CCT",
    "attributes": [
       {
          "name": "pe_name",
-         "summary": "@todo add summary",
+         "summary": "Parallel Environment",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The parallel environment this cache is for; a category is cached once per PE it was tried with."
             }
          ],
          "type": "lStringT",
@@ -21,10 +24,10 @@
       },
       {
          "name": "ignore_queues",
-         "summary": "@todo add summary",
+         "summary": "Rejected Queues",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Cluster queues already known not to suit this category (`CTI_Type`), so later jobs skip them."
             }
          ],
          "type": "lListT",
@@ -34,10 +37,10 @@
       },
       {
          "name": "ignore_hosts",
-         "summary": "@todo add summary",
+         "summary": "Rejected Hosts",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Hosts already known not to suit this category."
             }
          ],
          "type": "lListT",
@@ -47,10 +50,10 @@
       },
       {
          "name": "job_messages",
-         "summary": "@todo add summary",
+         "summary": "Scheduler Messages",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "The \"why not\" messages (`MES_Type`) produced for this category, reused rather than regenerated per job."
             }
          ],
          "type": "lListT",
@@ -60,10 +63,10 @@
       },
       {
          "name": "pe_job_slots",
-         "summary": "@todo add summary",
+         "summary": "Possible Slot Counts",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "Reference to the set of slot counts the parallel environment could grant, cached across the category's jobs."
             }
          ],
          "type": "lRefT",
@@ -73,10 +76,10 @@
       },
       {
          "name": "pe_job_slot_count",
-         "summary": "@todo add summary",
+         "summary": "Slot Count Size",
          "description": [
             {
-               "line": "@todo add description"
+               "line": "How many entries CCT_pe_job_slots holds."
             }
          ],
          "type": "lUlongT",

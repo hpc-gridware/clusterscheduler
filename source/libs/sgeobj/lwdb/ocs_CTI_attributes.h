@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Category Ignore Entry
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   CTI_name = 9900   ///< @todo add summary
+   CTI_name = 9900   ///< Name
 };
 
 /** @brief The attribute ids of CTI, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

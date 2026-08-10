@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Load Threshold Reference (unused)
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,11 +39,11 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   LDR_queue_ref_list = 10800,   ///< @todo add summary
-   LDR_limit,   ///< @todo add summary
-   LDR_global,   ///< @todo add summary
-   LDR_host,   ///< @todo add summary
-   LDR_queue   ///< @todo add summary
+   LDR_queue_ref_list = 10800,   ///< Queue References
+   LDR_limit,   ///< Limit
+   LDR_global,   ///< Global Object
+   LDR_host,   ///< Host Object
+   LDR_queue   ///< Queue Object
 };
 
 /** @brief The attribute ids of LDR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

@@ -25,7 +25,7 @@
  */
 
 /** @file
- * @brief @todo add summary
+ * @brief Acknowledgement
  */
 
 #include "lwdb/AttributeStatic.h"
@@ -39,10 +39,10 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   ACK_type = 12100,   ///< @todo add summary
-   ACK_id,   ///< @todo add summary
-   ACK_id2,   ///< @todo add summary
-   ACK_str   ///< @todo add summary
+   ACK_type = 12100,   ///< Acknowledgement Type
+   ACK_id,   ///< First Id
+   ACK_id2,   ///< Second Id
+   ACK_str   ///< Name
 };
 
 /** @brief The attribute ids of ACK, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

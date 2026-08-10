@@ -51,7 +51,7 @@ enum {
    CE_pj_stringval,   ///< Per Job String Value
    CE_pj_doubleval,   ///< Per Job Double Value
    CE_pj_dominant,   ///< Per Job Monitoring Facility
-   CE_requestable,   ///< @todo add summary
+   CE_requestable,   ///< Requestable
    CE_tagged,   ///< Variable Is Tagged
    CE_urgency_weight,   ///< Urgency Weighting Factor
    CE_resource_map_list   ///< Resource Map List
