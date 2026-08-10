@@ -40,8 +40,7 @@
 
 static drmaa_job_template_t *create_job_template(const char *job_path, int seconds, int as_bulk_job);
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    char diagnosis[DRMAA_ERROR_STRING_BUFFER];
    const char *all_jobids[NBULKS*JOB_CHUNK + JOB_CHUNK+1];
    char jobid[100];
@@ -177,8 +176,7 @@ int main(int argc, char *argv[])
 }
 
 
-static drmaa_job_template_t *create_job_template(const char *job_path, int seconds, int as_bulk_job)
-{
+static drmaa_job_template_t *create_job_template(const char *job_path, int seconds, int as_bulk_job) {
    const char *job_argv[2];
    drmaa_job_template_t *jt = nullptr;
    char buffer[100];
