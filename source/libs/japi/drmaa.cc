@@ -3071,6 +3071,8 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
  * @note MT-NOTE: prune_arg_list() is MT safe
  */
 static void prune_arg_list(lList *args) {
+   DENTER(TOP_LAYER);
+
    /*  o=override, +=keep, -=remove
 o   -a date_time                           request a job start time
 +   -ac context_list                       add context variable(s)
@@ -3118,8 +3120,6 @@ o   -V                                     export all environment variables
    */
    lListElem *element = nullptr;
    const void *i = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* skip arguments that aren't supported */
    while ((element = lGetElemStrRW(args, SPA_switch_val, "-help"))) {
