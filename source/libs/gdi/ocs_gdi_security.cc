@@ -683,13 +683,14 @@ struct dispatch_entry *de
 void tgt2cc(lListElem *jep, const char *rhost) {
 
 #ifdef KERBEROS
+   DENTER(TOP_LAYER);
+
    krb5_error_code rc;
    krb5_creds ** tgt_creds = nullptr;
    krb5_data inbuf;
    char *tgtstr = nullptr;
    uint32_t jid = 0;
-   
-   DENTER(TOP_LAYER);
+
    inbuf.length = 0;
    jid = lGetUlong(jep, JB_job_number);
    
