@@ -81,12 +81,12 @@ static void sge_send_mail(uint32_t progid,
  * @param mail_type what the mail is about, used in the log
  */
 void cull_mail(uint32_t progid, const lList *user_list, const char *subj, const char *buf, const char *mail_type) {
+   DENTER(TOP_LAYER);
+
    char *mailer;
    int mailer_has_subj_line;
    const lListElem *ep;
    const char *user, *host;
-
-   DENTER(TOP_LAYER);
 
    mailer = mconf_get_mailer();
    mailer_has_subj_line = 1;
@@ -127,6 +127,8 @@ const char *host,
 const char *subj,
 const char *buf 
 ) {
+   DENTER(TOP_LAYER);
+
    int pid;
    int pid2;
    int i;
@@ -137,8 +139,6 @@ const char *buf
    bool done;
    struct rusage rusage;
    int status;
-
-   DENTER(TOP_LAYER);
 
    if (!user) {
       DRETURN_VOID;

@@ -54,8 +54,7 @@ int verydummypdc;
 #include "uti/sge_os.h"
 #include "uti/sge_log.h"
 
-int main(int argc,char *argv[])
-{
+int main(int argc, char *argv[]) {
 #ifdef __SGE_COMPILE_WITH_GETTEXT__  
    /* init language output for gettext() , it will use the right language */
    sge_init_language_func((gettext_func_type)        gettext,
@@ -222,94 +221,93 @@ int sup_grp_in_proc;     ///< Whether /proc lists supplementary groups; see sup_
  * @param sig the signal to send
  * @param shepherd_trace called to record what was signalled; may be nullptr
  */
-void pdc_kill_addgrpid(gid_t add_grp_id, int sig,
-   tShepherd_trace shepherd_trace)
-{
+   void pdc_kill_addgrpid(gid_t add_grp_id, int sig,
+                          tShepherd_trace shepherd_trace) {
 #if defined(LINUX) || defined(SOLARIS)
-   procfs_kill_addgrpid(add_grp_id, sig, shepherd_trace);      
+      procfs_kill_addgrpid(add_grp_id, sig, shepherd_trace);
 #elif defined(FREEBSD)
-   kvm_t *kd;
-   int i, nprocs;
-   struct kinfo_proc *procs;
-   char kerrbuf[_POSIX2_LINE_MAX];
+      kvm_t *kd;
+      int i, nprocs;
+      struct kinfo_proc *procs;
+      char kerrbuf[_POSIX2_LINE_MAX];
 
-   kd = kvm_openfiles(nullptr, nullptr, nullptr, O_RDONLY, kerrbuf);
-   if (kd == nullptr) {
+      kd = kvm_openfiles(nullptr, nullptr, nullptr, O_RDONLY, kerrbuf);
+      if (kd == nullptr) {
 #if DEBUG
-      fprintf(stderr, "kvm_openfiles: error %s\n", kerrbuf);
+         fprintf(stderr, "kvm_openfiles: error %s\n", kerrbuf);
 #endif
-      return;
-   }
-
-   procs = kvm_getprocs(kd, KERN_PROC_ALL, 0, &nprocs);
-   if (procs == nullptr) {
-#if DEBUG
-      fprintf(stderr, "kvm_getprocs: error %s\n", kvm_geterr(kd));
-#endif
-      kvm_close(kd);
-      return;
-   }
-   for (; nprocs >= 0; nprocs--, procs++) {
-      for (i = 0; i < procs->ki_ngroups; i++) {
-         if (procs->ki_groups[i] == add_grp_id) {
-	         char err_str[256];
-
-	         if (procs->ki_uid != 0 && procs->ki_ruid != 0 &&
-                procs->ki_svuid != 0 &&
-                procs->ki_rgid != 0 && procs->ki_svgid != 0) {
-                kill(procs->ki_pid, sig);
-	             sprintf(err_str, MSG_SGE_KILLINGPIDXY_PI, procs->ki_pid, add_grp_id);
-	    } else {
-	       sprintf(err_str, MSG_SGE_DONOTKILLROOTPROCESSXY_PI , procs->ki_pid, add_grp_id);
-	    }
-	    if (shepherd_trace)
-	       shepherd_trace(err_str);
-	 }
+         return;
       }
-   }
-   kvm_close(kd);
-#elif defined(DARWIN)
-   int i, nprocs;
-   struct kinfo_proc *procs;
-   struct kinfo_proc *procs_begin;
-   int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0 };
-   size_t bufSize = 0;
 
-   if (sysctl(mib, 4, nullptr, &bufSize, nullptr, 0) < 0) {
-      return;
-   }
-   if ((procs = (struct kinfo_proc *)sge_malloc(bufSize)) == nullptr) {
-      return;
-   }
-   if (sysctl(mib, 4, procs, &bufSize, nullptr, 0) < 0) {
-      sge_free(&procs);
-      return;
-   }
-   procs_begin = procs;
-   nprocs = bufSize/sizeof(struct kinfo_proc);
+      procs = kvm_getprocs(kd, KERN_PROC_ALL, 0, &nprocs);
+      if (procs == nullptr) {
+#if DEBUG
+         fprintf(stderr, "kvm_getprocs: error %s\n", kvm_geterr(kd));
+#endif
+         kvm_close(kd);
+         return;
+      }
+      for (; nprocs >= 0; nprocs--, procs++) {
+         for (i = 0; i < procs->ki_ngroups; i++) {
+            if (procs->ki_groups[i] == add_grp_id) {
+               char err_str[256];
 
-   for (; nprocs >= 0; nprocs--, procs++) {
-      for (i = 0; i < procs->kp_eproc.e_ucred.cr_ngroups; i++) {
-         if (procs->kp_eproc.e_ucred.cr_groups[i] == add_grp_id) {
-            char err_str[256];
-
-            if (procs->kp_eproc.e_ucred.cr_uid != 0 && procs->kp_eproc.e_pcred.p_ruid != 0 &&
-                procs->kp_eproc.e_pcred.p_svuid != 0 &&
-                procs->kp_eproc.e_pcred.p_rgid != 0 && procs->kp_eproc.e_pcred.p_svgid != 0) {
-               kill(procs->kp_proc.p_pid, sig);
-               snprintf(err_str, sizeof(err_str), MSG_SGE_KILLINGPIDXY_PI, procs->kp_proc.p_pid, add_grp_id);
-            } else {
-               snprintf(err_str, sizeof(err_str), MSG_SGE_DONOTKILLROOTPROCESSXY_PI, procs->kp_proc.p_pid, add_grp_id);
-            }
-            if (shepherd_trace) {
-               shepherd_trace(err_str);
+               if (procs->ki_uid != 0 && procs->ki_ruid != 0 &&
+                   procs->ki_svuid != 0 &&
+                   procs->ki_rgid != 0 && procs->ki_svgid != 0) {
+                  kill(procs->ki_pid, sig);
+                  sprintf(err_str, MSG_SGE_KILLINGPIDXY_PI, procs->ki_pid, add_grp_id);
+               } else {
+                  sprintf(err_str, MSG_SGE_DONOTKILLROOTPROCESSXY_PI, procs->ki_pid, add_grp_id);
+               }
+               if (shepherd_trace)
+                  shepherd_trace(err_str);
             }
          }
       }
-   }
-   sge_free(&procs_begin);
+      kvm_close(kd);
+#elif defined(DARWIN)
+      int i, nprocs;
+      struct kinfo_proc *procs;
+      struct kinfo_proc *procs_begin;
+      int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
+      size_t bufSize = 0;
+
+      if (sysctl(mib, 4, nullptr, &bufSize, nullptr, 0) < 0) {
+         return;
+      }
+      if ((procs = (struct kinfo_proc *) sge_malloc(bufSize)) == nullptr) {
+         return;
+      }
+      if (sysctl(mib, 4, procs, &bufSize, nullptr, 0) < 0) {
+         sge_free(&procs);
+         return;
+      }
+      procs_begin = procs;
+      nprocs = bufSize / sizeof(struct kinfo_proc);
+
+      for (; nprocs >= 0; nprocs--, procs++) {
+         for (i = 0; i < procs->kp_eproc.e_ucred.cr_ngroups; i++) {
+            if (procs->kp_eproc.e_ucred.cr_groups[i] == add_grp_id) {
+               char err_str[256];
+
+               if (procs->kp_eproc.e_ucred.cr_uid != 0 && procs->kp_eproc.e_pcred.p_ruid != 0 &&
+                   procs->kp_eproc.e_pcred.p_svuid != 0 &&
+                   procs->kp_eproc.e_pcred.p_rgid != 0 && procs->kp_eproc.e_pcred.p_svgid != 0) {
+                  kill(procs->kp_proc.p_pid, sig);
+                  snprintf(err_str, sizeof(err_str), MSG_SGE_KILLINGPIDXY_PI, procs->kp_proc.p_pid, add_grp_id);
+               } else {
+                  snprintf(err_str, sizeof(err_str), MSG_SGE_DONOTKILLROOTPROCESSXY_PI, procs->kp_proc.p_pid, add_grp_id);
+               }
+               if (shepherd_trace) {
+                  shepherd_trace(err_str);
+               }
+            }
+         }
+      }
+      sge_free(&procs_begin);
 #endif
-}
+   }
 #endif
 
 /** @brief The list entry of a watched job
@@ -327,8 +325,7 @@ lnk_link_t * find_job(JobID_t jid) {
 }
 
 static int
-get_gmt()
-{
+get_gmt() {
    struct timeval now;
 
 #ifdef SOLARIS
@@ -351,9 +348,7 @@ static psSys_t sysdata;
  * @param prci process data interval in seconds; -1 leaves it unchanged
  * @param sysi system data interval in seconds; -1 leaves it unchanged
  */
-void
-psSetCollectionIntervals(int jobi, int prci, int sysi)
-{
+void psSetCollectionIntervals(int jobi, int prci, int sysi) {
    if (jobi != -1)
       ps_config.job_collection_interval = jobi;
 
@@ -365,8 +360,7 @@ psSetCollectionIntervals(int jobi, int prci, int sysi)
 }
 
 static void
-free_process_list(job_elem_t *job_elem)
-{
+free_process_list(job_elem_t *job_elem) {
    lnk_link_t *currp;
 
    /* free process list */
@@ -380,8 +374,7 @@ free_process_list(job_elem_t *job_elem)
 }
 
 static void
-free_job(job_elem_t *job_elem)
-{
+free_job(job_elem_t *job_elem) {
    free_process_list(job_elem);
 
    /* free job element */
@@ -736,8 +729,7 @@ static time_t start_time;
  *
  * @return 0; the signature returns int for symmetry with the rest of the API
  */
-int psStartCollector()
-{
+int psStartCollector() {
    static int initialized = 0;
 #ifdef PDC_STANDALONE
    int ncpus = 0;
@@ -787,8 +779,7 @@ int psStartCollector()
  *
  * @return 0
  */
-int psStopCollector()
-{
+int psStopCollector() {
    return 0;
 }
 
@@ -804,8 +795,7 @@ int psStopCollector()
  * @param usage_collection how much detail to collect for it
  * @return 0
  */
-int psWatchJob(JobID_t JobID, usage_collection_t usage_collection)
-{
+int psWatchJob(JobID_t JobID, usage_collection_t usage_collection) {
    if (JobID != 0) {
       lnk_link_t *curr;
 
@@ -869,8 +859,7 @@ int psIgnoreJob(JobID_t JobID) {
  * @return a freshly allocated block holding the job followed by its processes,
  *         which the caller owns; nullptr when the job is not being watched
  */
-struct psJob_s *psGetOneJob(JobID_t JobID)
-{
+struct psJob_s *psGetOneJob(JobID_t JobID) {
    psJob_t *job;
    lnk_link_t *curr;
    job_elem_t *job_elem = nullptr;
@@ -925,8 +914,7 @@ struct psJob_s *psGetOneJob(JobID_t JobID)
  * @return a freshly allocated block holding the job count followed by the
  *         jobs, which the caller owns
  */
-struct psJob_s *psGetAllJobs()
-{
+struct psJob_s *psGetAllJobs() {
    psJob_t *rjob, *jobs;
    lnk_link_t *curr;
    long rsize;
@@ -992,8 +980,7 @@ struct psJob_s *psGetAllJobs()
  *
  * @return 0
  */
-int psVerify()
-{
+int psVerify() {
    return 0;
 }
 
@@ -1002,10 +989,7 @@ int psVerify()
 #define INTOMEGS(x) (((double)x)/(1024*1024))
 
 
-
-void
-usage()
-{
+void usage() {
    fprintf(stderr, "\n%s\n\n", MSG_SGE_USAGE);
    fprintf(stderr, "\t-s\t%s\n",  MSG_SGE_s_OPT_USAGE);
    fprintf(stderr, "\t-n\t%s\n",  MSG_SGE_n_OPT_USAGE);
@@ -1022,8 +1006,7 @@ usage()
 
 
 static void
-print_job_data(psJob_t *job)
-{
+print_job_data(psJob_t *job) {
    printf("%s\n", MSG_SGE_JOBDATA );
    printf("jd_jid="OSJOBID_FMT"\n", job->jd_jid);
    printf("jd_length=%d\n", job->jd_length);
@@ -1046,8 +1029,7 @@ print_job_data(psJob_t *job)
    printf("jd_smem=%8.3fM\n", INTOMEGS(job->jd_smem));
 }
 static void
-print_process_data(psProc_t *proc)
-{
+print_process_data(psProc_t *proc) {
    printf("\t******* Process Data *******\n");
    printf("\tpd_pid=" pid_t_fmt "\n", proc->pd_pid);
    printf("\tpd_length=%d\n", (int)proc->pd_length);
@@ -1060,9 +1042,7 @@ print_process_data(psProc_t *proc)
    printf("\tpd_stime=%8.3f\n", proc->pd_stime);
 }
 
-int
-main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
    char sgeview_bar_title[256] = "";  
    char sgeview_window_title[256] = ""; 
    int arg;

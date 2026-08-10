@@ -85,8 +85,9 @@ static int sge_unparse_string_option(lListElem *job, int nm, const char *option,
  * @param flags #FLG_FULL_CMDLINE to render defaults as well
  * @return an answer list on error, nullptr on success
  */
-lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
-{
+lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags) {
+   DENTER(TOP_LAYER);
+
    const char *cp;
    uint32_t ul;
    lList *answer = nullptr;
@@ -96,8 +97,6 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
    lListElem *ep_opt;
    const char *username = component_get_username();
    const char *qualified_hostname = component_get_qualified_hostname();
-
-   DENTER(TOP_LAYER);
 
    /*
    ** -a
@@ -532,8 +531,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
 }
 
 
-static char *sge_unparse_checkpoint_attr(int opr, char *str)
-{
+static char *sge_unparse_checkpoint_attr(int opr, char *str) {
    int i = 0;
 
    if (opr & CHECKPOINT_AT_MINIMUM_INTERVAL)
@@ -554,10 +552,10 @@ static char *sge_unparse_checkpoint_attr(int opr, char *str)
 static char *sge_unparse_mail_options(
 uint32_t mail_opt
 ) {
+   DENTER(TOP_LAYER);
+
    static char mail_str[5 + 1];
    char *pc;
-
-   DENTER(TOP_LAYER);
 
    memset(mail_str, 0, sizeof(mail_str));
    pc = mail_str;
@@ -590,11 +588,11 @@ lListElem *job,
 lList **pcmdline,
 lList **alpp 
 ) {
+   DENTER(TOP_LAYER);
+
    const char *cp;
    lListElem *ep_opt;
 
-   DENTER(TOP_LAYER);
-   
    if ((cp = lGetString(job, JB_account))) {
       if (strcmp(cp, DEFAULT_ACCOUNT)) {
          ep_opt = sge_add_arg(pcmdline, A_OPT, lStringT, "-A", cp);
@@ -606,15 +604,14 @@ lList **alpp
 
 
 /*-------------------------------------------------------------------------*/
-static int sge_unparse_checkpoint_option(lListElem *job, lList **pcmdline, lList **alpp)
-{
+static int sge_unparse_checkpoint_option(lListElem *job, lList **pcmdline, lList **alpp) {
+   DENTER(TOP_LAYER);
+
    lListElem *ep_opt = nullptr;
    char *cp;
    int i;
    uint32_t ul;
    char str[256];
-
-   DENTER(TOP_LAYER);
 
    if ((i = lGetUlong(job, JB_checkpoint_attr))) {
       if ((cp = sge_unparse_checkpoint_attr(i, str))) {
@@ -646,11 +643,11 @@ const char *option,
 lList **pcmdline,
 lList **alpp 
 ) {
+   DENTER(TOP_LAYER);
+
    lListElem *ep_opt = nullptr;
    const char *cp;
 
-   DENTER(TOP_LAYER);
-   
    if ((cp = lGetString(job, nm))) {
       ep_opt = sge_add_arg(pcmdline, 0, lStringT, option, cp);
       lSetString(ep_opt, SPA_argval_lStringT, cp);
@@ -660,12 +657,11 @@ lList **alpp
 
 
 /*-------------------------------------------------------------------------*/
-static int sge_unparse_resource_list(lList *resource_list, bool hard, lList **pcmdline, lList **alpp)
-{
+static int sge_unparse_resource_list(lList *resource_list, bool hard, lList **pcmdline, lList **alpp) {
+   DENTER(TOP_LAYER);
+
    int ret = 0;
    char str[MAX_STRING_SIZE];
-
-   DENTER(TOP_LAYER);
 
    if (resource_list != nullptr) {
       if (hard) {
@@ -705,13 +701,13 @@ lListElem *job,
 lList **pcmdline,
 lList **alpp 
 ) {
+   DENTER(TOP_LAYER);
+
    const char *cp;
    const lList *lp = nullptr;
    lListElem *ep_opt;
    dstring string_buffer = DSTRING_INIT;
    int ret = 0;
-
-   DENTER(TOP_LAYER);
 
    if ((cp = lGetString(job, JB_pe))) {
       sge_dstring_append(&string_buffer, cp);
@@ -747,14 +743,13 @@ lList **alpp
 }
 
 /*-------------------------------------------------------------------------*/
-static int sge_unparse_path_list(lListElem *job, int nm, const char *option, lList **pcmdline, lList **alpp)
-{
+static int sge_unparse_path_list(lListElem *job, int nm, const char *option, lList **pcmdline, lList **alpp) {
+   DENTER(TOP_LAYER);
+
    const lList *lp = nullptr;
    int ret = 0;
    char str[MAX_STRING_SIZE];
    lListElem *ep_opt;
-
-   DENTER(TOP_LAYER);
 
    if ((lp = lGetList(job, nm))) {
       int fields[] = { PN_host, PN_path, 0 };
@@ -772,4 +767,3 @@ static int sge_unparse_path_list(lListElem *job, int nm, const char *option, lLi
    }
    DRETURN(ret);
 }
-

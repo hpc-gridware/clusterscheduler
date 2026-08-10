@@ -127,9 +127,8 @@ static bool  shepherd_seteuid(uid_t uid, const char *op);
  *
  * @see shepherd_trace_exit(), which must be the shepherd's last call.
  */
-void shepherd_trace_init()
-{
-	if (!shepherd_trace_fp) {
+void shepherd_trace_init() {
+   if (!shepherd_trace_fp) {
 		shepherd_trace_fp = shepherd_trace_init_intern(st_trace);
 	}
 }
@@ -138,9 +137,8 @@ void shepherd_trace_init()
  *
  * Must be the shepherd's last call.
  */
-void shepherd_trace_exit()
-{
-    int  old_euid = SGE_SUPERUSER_UID;
+void shepherd_trace_exit() {
+   int old_euid = SGE_SUPERUSER_UID;
 
    /*
     * Work around for CR 6293411:
@@ -181,9 +179,8 @@ FCLOSE_ERROR:
  *
  * @param job_owner Name of the new owner of the file.
  */
-void shepherd_trace_chown(const char* job_owner)
-{
-	shepherd_trace_chown_intern(job_owner, shepherd_trace_fp, st_trace);
+void shepherd_trace_chown(const char *job_owner) {
+   shepherd_trace_chown_intern(job_owner, shepherd_trace_fp, st_trace);
 }
 
 /** @brief Create or open the error and exit_status files
@@ -194,9 +191,8 @@ void shepherd_trace_chown(const char* job_owner)
  *       which is a different function further up. The description was wrong,
  *       not the placement.
  */
-void shepherd_error_init()
-{
-	if (shepherd_error_fp == nullptr) {
+void shepherd_error_init() {
+   if (shepherd_error_fp == nullptr) {
 		shepherd_error_fp = shepherd_trace_init_intern(st_error);
 	}
 	if (shepherd_exit_status_fp == nullptr) {
@@ -205,9 +201,8 @@ void shepherd_error_init()
 }
 
 /** @brief Close the error and exit_status files */
-void shepherd_error_exit()
-{
-    int  old_euid = SGE_SUPERUSER_UID;
+void shepherd_error_exit() {
+   int old_euid = SGE_SUPERUSER_UID;
 
    /*
     * Work around for CR 6293411:
@@ -241,9 +236,8 @@ void shepherd_error_exit()
 /** @brief Change owner of error and exit_status files
  * @param job_owner Name of the new owner of the file.
  */
-void shepherd_error_chown(const char* job_owner)
-{
-	shepherd_trace_chown_intern(job_owner, shepherd_error_fp, st_error);
+void shepherd_error_chown(const char *job_owner) {
+   shepherd_trace_chown_intern(job_owner, shepherd_error_fp, st_error);
 	shepherd_trace_chown_intern(job_owner, shepherd_exit_status_fp, st_exit_status);
 }
 
@@ -256,8 +250,7 @@ void shepherd_error_chown(const char* job_owner)
  * @param ... The parameters to the format string. See printf(3c).
  * @return 0 if successful, 1 if an error occurred.
  */
-int shepherd_trace(const char *format, ...) 
-{
+int shepherd_trace(const char *format, ...) {
    dstring     ds;
    dstring     message = DSTRING_INIT;
    char        buffer[128];
@@ -324,8 +317,7 @@ int shepherd_trace(const char *format, ...)
  * @param format The format string of the line to be written to the error file.
  * @param ... The parameters to the format string. See printf(3c).
  */
-void shepherd_error(int do_exit, const char *format, ...)
-{
+void shepherd_error(int do_exit, const char *format, ...) {
    dstring     ds;
    dstring     message = DSTRING_INIT;
    char        buffer[128];
@@ -410,9 +402,8 @@ void shepherd_error(int do_exit, const char *format, ...)
  *
  * @param text the message
  */
-void shepherd_error_ptr(const char *text)
-{
-   shepherd_error(1, text); 
+void shepherd_error_ptr(const char *text) {
+   shepherd_error(1, text);
 }
 
 /** @brief Append one exit status to the exit_status file
@@ -421,9 +412,8 @@ void shepherd_error_ptr(const char *text)
  *
  * @param exit_status The exit status of the shepherd.
  */
-void shepherd_write_exit_status(const char *exit_status)
-{
-	struct stat statbuf;
+void shepherd_write_exit_status(const char *exit_status) {
+   struct stat statbuf;
 #if 1
 	int old_euid = SGE_SUPERUSER_UID;
 #endif
@@ -476,8 +466,7 @@ void shepherd_write_exit_status(const char *exit_status)
  * @return 1 if fd is a file descriptor to trace, error or exit_status file,
  *         0 if it is not.
  */
-int is_shepherd_trace_fd(int fd)
-{
+int is_shepherd_trace_fd(int fd) {
    if ((shepherd_trace_fp && fd==fileno(shepherd_trace_fp))
       || (shepherd_error_fp && fd==fileno(shepherd_error_fp))
       || (shepherd_exit_status_fp && fd==fileno(shepherd_exit_status_fp))) {
@@ -501,8 +490,7 @@ int get_shepherd_trace_fp() {
  *
  * @return Number of lines in the exit_status file.
  */
-int count_exit_status()
-{
+int count_exit_status() {
    int n = 0;
    SGE_STRUCT_STAT sbuf;
    char buf[1024];
@@ -528,9 +516,8 @@ FCLOSE_ERROR:
 /**********************************/
 /* Static functions */
 
-static void dup_fd(int *src_fd)
-{
-	int dup_fd[3];
+static void dup_fd(int *src_fd) {
+   int dup_fd[3];
 
 	dup_fd[0] = dup(*src_fd);
 	dup_fd[1] = dup(*src_fd);
@@ -542,10 +529,9 @@ static void dup_fd(int *src_fd)
 
 	*src_fd = dup_fd[2];
 }
-	
-static int set_cloexec(int fd)
-{
-	int oldflags;
+
+static int set_cloexec(int fd) {
+   int oldflags;
 
 	oldflags = fcntl(fd, F_GETFD, 0);
 	if(oldflags < 0) {
@@ -559,9 +545,8 @@ static int set_cloexec(int fd)
 }
 
 /*-----------------------------------------------------------------*/
-static int sh_str2file(const char *header_str, const char *str, FILE* fp) 
-{
-	int     ret = 1;
+static int sh_str2file(const char *header_str, const char *str, FILE *fp) {
+   int     ret = 1;
    int     ret_fp = -1;
    int     ret_fl = EOF;
    dstring ds;
@@ -648,8 +633,7 @@ static int sh_str2file(const char *header_str, const char *str, FILE* fp)
 *     FILE* - If successfully opened, the file pointer of shepherd's trace file.
 *           - Otherwise nullptr.
 *******************************************************************************/
-static FILE* shepherd_trace_init_intern(st_shepherd_file_t shepherd_file)
-{
+static FILE *shepherd_trace_init_intern(st_shepherd_file_t shepherd_file) {
    static char     path[SGE_PATH_MAX];
    static bool     called = false;
    SGE_STRUCT_STAT statbuf;
@@ -781,8 +765,7 @@ static FILE* shepherd_trace_init_intern(st_shepherd_file_t shepherd_file)
 	return fp;
 }
 
-static void shepherd_panic(const char *s)
-{
+static void shepherd_panic(const char *s) {
    FILE *panic_fp;
    char panic_file[255];
 
@@ -803,8 +786,7 @@ FCLOSE_ERROR:
 
 /* Wraps seteuid(), logging to the shepherd panic file on failure instead of
  * silently leaving the process at the wrong privilege level. */
-static bool shepherd_seteuid(uid_t uid, const char *op)
-{
+static bool shepherd_seteuid(uid_t uid, const char *op) {
    if (seteuid(uid) != 0) {
       char buffer[256];
 
@@ -817,10 +799,9 @@ static bool shepherd_seteuid(uid_t uid, const char *op)
 }
 
 /* In an admin user system, this function must be called as admin user! */
-static void shepherd_trace_chown_intern(const char* job_owner, FILE* fp,
-                                        st_shepherd_file_t shepherd_file)
-{
-	int   fd;
+static void shepherd_trace_chown_intern(const char *job_owner, FILE *fp,
+                                        st_shepherd_file_t shepherd_file) {
+   int   fd;
 	uid_t jobuser_id;
    gid_t jobuser_gid;
    char  buffer[1024];
@@ -888,11 +869,10 @@ static void shepherd_trace_chown_intern(const char* job_owner, FILE* fp,
             }
          }
 		}
-	} 
+	}
 }
 
-static bool nfs_mounted(const char *path)
-{
+static bool nfs_mounted(const char *path) {
    bool ret=true;
 
 #if defined(LINUX) || defined(DARWIN) || defined(FREEBSD) || (defined(NETBSD) && !defined(ST_RDONLY))
@@ -912,4 +892,3 @@ static bool nfs_mounted(const char *path)
 #endif
    return ret;
 }
-

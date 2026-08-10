@@ -124,8 +124,7 @@ static struct dirent *dent;
  *
  * @return true when the field is present
  */
-int groups_in_proc () 
-{
+int groups_in_proc() {
    char buf[1024];
    FILE* fd = (FILE*) nullptr;
    
@@ -149,8 +148,7 @@ FCLOSE_ERROR:
 
 /* search in job list for the pid
    return the proc element */
-static lnk_link_t *find_pid_in_jobs(pid_t pid, lnk_link_t *job_list)
-{
+static lnk_link_t *find_pid_in_jobs(pid_t pid, lnk_link_t *job_list) {
    lnk_link_t *job, *proc = nullptr;
    proc_elem_t *proc_elem = nullptr;
    job_elem_t *job_elem = nullptr;
@@ -186,13 +184,12 @@ static lnk_link_t *find_pid_in_jobs(pid_t pid, lnk_link_t *job_list)
 }
 
 
-static void touch_time_stamp(const char *d_name, int time_stamp, lnk_link_t *job_list)
-{
+static void touch_time_stamp(const char *d_name, int time_stamp, lnk_link_t *job_list) {
+   DENTER(TOP_LAYER);
+
    pid_t pid;
    proc_elem_t *proc_elem;
    lnk_link_t *proc;
-
-   DENTER(TOP_LAYER);
 
    sscanf(d_name, pid_t_fmt, &pid);
    if ((proc = find_pid_in_jobs(pid, job_list))) {
@@ -220,8 +217,7 @@ static void touch_time_stamp(const char *d_name, int time_stamp, lnk_link_t *job
  * @param sig the signal to send
  * @param shepherd_trace called to record what was signalled; may be nullptr
  */
-void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_trace)
-{
+void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_trace) {
    char procnam[1024];
    int i;
    int groups=0;
