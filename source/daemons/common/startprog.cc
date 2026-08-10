@@ -89,6 +89,8 @@ static int do_wait(pid_t);
  */
 int startprog(int out, int err,
               char *argv0, char *path, char *name, ...) {
+ DENTER(TOP_LAYER);
+
    SGE_STRUCT_STAT sb;
    char prog_path[SGE_PATH_MAX];
    pid_t pid;
@@ -104,8 +106,6 @@ int startprog(int out, int err,
  int err_length = 256;
  char err_str[err_length];
 #endif
-
- DENTER(TOP_LAYER);
 
  sge_dstring_init(&ds, buffer, sizeof(buffer));
 

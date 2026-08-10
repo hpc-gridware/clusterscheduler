@@ -218,6 +218,8 @@ static void touch_time_stamp(const char *d_name, int time_stamp, lnk_link_t *job
  * @param shepherd_trace called to record what was signalled; may be nullptr
  */
 void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_trace) {
+   DENTER(TOP_LAYER);
+
    char procnam[1024];
    int i;
    int groups=0;
@@ -232,8 +234,6 @@ void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_tr
    uid_t uids[4] = {0,0,0,0};
    gid_t gids[4] = {0,0,0,0};
 #endif
-
-   DENTER(TOP_LAYER);
 
    /* quick return in case of invalid add. group id */
    if (add_grp_id == 0) {
