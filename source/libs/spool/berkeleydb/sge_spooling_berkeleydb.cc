@@ -793,11 +793,11 @@ bool spool_berkeleydb_default_write_func(lList **answer_list,
                                          const lListElem *object,
                                          const char *key,
                                          const sge_object_type object_type) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    bool local_transaction = false; /* did we start a transaction? */
    bdb_info info;
-
-   DENTER(BDB_LAYER);
 
    DPRINTF("spool_berkeleydb_default_write_func called for %s with key %s\n",
            object_type_get_name(object_type), key != nullptr ? key : "<null>");
@@ -947,6 +947,8 @@ bool spool_berkeleydb_default_delete_func(lList **answer_list,
                                           const lListElem *rule,
                                           const char *key,
                                           const sge_object_type object_type) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    bool local_transaction = false; /* did we start a transaction? */
    const char *table_name;
@@ -955,8 +957,6 @@ bool spool_berkeleydb_default_delete_func(lList **answer_list,
    dstring dbkey_dstring;
    char dbkey_buffer[MAX_STRING_SIZE];
    const char *dbkey;
-
-   DENTER(BDB_LAYER);
 
    sge_dstring_init(&dbkey_dstring, dbkey_buffer, sizeof(dbkey_buffer));
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
@@ -1054,11 +1054,11 @@ bool spool_berkeleydb_default_delete_func(lList **answer_list,
 static bool
 spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
                              const char *option) {
+   DENTER(BDB_LAYER);
+
    bool ret = true;
    const char *delimiter = ",; ";
    bdb_info info;
-
-   DENTER(BDB_LAYER);
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
