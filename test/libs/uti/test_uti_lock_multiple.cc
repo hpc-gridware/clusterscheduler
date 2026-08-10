@@ -49,7 +49,7 @@
 
 #include "test_uti_lock_main.h"
 
-#define MAX_THREADS 6
+#define MAX_THREADS 6   ///< how many threads contend for the lock
 
 /*-------------------------*/
 /* part for the mutex test */
@@ -63,9 +63,14 @@ static pthread_once_t log_once = PTHREAD_ONCE_INIT;
 /*--------------------------------*/
 static pthread_key_t state_key;
 
+/** @brief The per-thread state the thread-local storage test stores
+ *
+ * Two fields rather than one so that a thread writing its own copy cannot be
+ * confused with a thread writing past it.
+ */
 typedef struct {
-   int value;
-   int value2;
+   int value;    ///< set to a known value at thread start
+   int value2;   ///< counted up by the thread, to show the copy is its own
 } state_t;
 
 static void *thread_function(void *anArg);
@@ -83,11 +88,17 @@ static void state_init(state_t *state) {
 /* sync part between threads */
 /*---------------------------*/
 
+/** @brief How the threads tell the main thread they have finished
+ *
+ * The main thread waits on `cond_var` until `working` reaches zero, rather
+ * than joining, so that the elapsed time it reports is the time all threads
+ * took together and not the time the slowest one took to be joined.
+ */
 typedef struct {
-   pthread_mutex_t mutex;
-   int working;
-   double time;
-   pthread_cond_t cond_var;
+   pthread_mutex_t mutex;   ///< guards the other three
+   int working;             ///< threads not yet finished
+   double time;             ///< the total time they spent
+   pthread_cond_t cond_var; ///< signalled as each thread finishes
 } sge_control_t;
 
 static int threads = MAX_THREADS;

@@ -36,18 +36,31 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/ocs_DataStore.h"
 
-#define THREADS 32L
-#define REQUESTS (1024L*1024L*16L)
+/** @name The size of the fine-grained-locking benchmark
+ *
+ * The point is contention, so the numbers are large on purpose: 32 threads
+ * against 16 million requests is what makes a lock that is held a moment too
+ * long show up as a measurable difference.
+ * @{
+ */
+#define THREADS 32L                    ///< threads competing for the lists
+#define REQUESTS (1024L*1024L*16L)     ///< requests shared out between them
 
-#define JOBS 256
-#define CQUEUES 32 
-#define HOSTS 1024 
-#define PROJECTS 256
+#define JOBS 256        ///< jobs in the synthetic cluster
+#define CQUEUES 32      ///< cluster queues in it
+#define HOSTS 1024      ///< execution hosts in it
+#define PROJECTS 256    ///< projects in it
 
-#define SCENARIOS 10
+#define SCENARIOS 10    ///< how many access patterns are measured
+/** @} */
 
+/** @brief What each benchmark thread is told
+ *
+ * Only its own number: which requests it takes is derived from that, so the
+ * threads need nothing else in common and the struct stays one word.
+ */
 typedef struct {
-   long id;
+   long id;   ///< the thread's number, 0 to #THREADS - 1
 } thread_arg_t;
 
 static pthread_t threads[THREADS];
@@ -57,6 +70,15 @@ static pthread_mutex_t request_mtx = PTHREAD_MUTEX_INITIALIZER;
 static int requests[REQUESTS];
 static long request = 0;
 
+/** @def _DENTER
+ * @brief #DENTER without the function-name lookup
+ *
+ * The real macro resolves the function name through the thread config on every
+ * call, which is exactly the cost this benchmark is trying to measure around.
+ *
+ * @param layer the trace layer
+ * @param function the function name, passed in rather than looked up
+ */
 #define _DENTER(layer, function) \
    const char *__func__ = function;                                  \
    const int xaybzc = layer;                                          \

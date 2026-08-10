@@ -37,6 +37,12 @@
  */
 
 /* #define HASH_STATISTICS */
+
+/** @brief Report the process's memory use alongside the timings
+ *
+ * A hash index trades memory for speed, so a run that only reported time would
+ * hide half of what the change costs.
+ */
 #define XMALLINFO
 
 #include <cstdio>
@@ -71,9 +77,9 @@
 
 #ifdef TEST_USE_JOBL
 #include "sge_jobL.h"
-int NM_ULONG  = JB_job_number;
-int NM_STRING = JB_owner;
-lDescr *DESCR = JB_Type;
+int NM_ULONG  = JB_job_number;   ///< the numeric attribute the benchmark hashes on
+int NM_STRING = JB_owner;        ///< the string attribute it hashes on
+lDescr *DESCR = JB_Type;         ///< the object type the benchmark builds lists of
 
 lNameSpace my_nmv[] = {
    {1, JBS, JBN },
@@ -98,9 +104,9 @@ NAMEEND
 
 #define TEST_Size sizeof(TEST_Name) / sizeof(char *)
 
-int NM_ULONG = TEST_ulong;
-int NM_STRING = TEST_string;
-lDescr *DESCR = TEST_Type;
+int NM_ULONG = TEST_ulong;     ///< the numeric attribute the benchmark hashes on
+int NM_STRING = TEST_string;   ///< the string attribute it hashes on
+lDescr *DESCR = TEST_Type;     ///< the object type the benchmark builds lists of
 
 lNameSpace my_nmv[] = {
         {1, TEST_Size, TEST_Name, TEST_Type},
@@ -162,10 +168,10 @@ static const char *random_string(int length) {
    return strdup(buf);
 }
 
-const char **names = nullptr;
+const char **names = nullptr;   ///< the attribute names of #DESCR, for the output
 
-const char *HEADER_FORMAT = "%s %s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s\n";
-const char *DATA_FORMAT   = "%s %s %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf (%6d) %8.3lf (%6d) %8ld\n";
+const char *HEADER_FORMAT = "%s %s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s\n";   ///< column headings of the timing table
+const char *DATA_FORMAT   = "%s %s %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf (%6d) %8.3lf (%6d) %8ld\n";   ///< one row of it, matching #HEADER_FORMAT
 
 static double elapsed(const struct timespec &a, const struct timespec &b) {
    return (b.tv_sec - a.tv_sec) + (b.tv_nsec - a.tv_nsec) * 1e-9;

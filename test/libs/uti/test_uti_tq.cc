@@ -72,17 +72,23 @@ static int s_fail = 0;
 /*
  * Producer and consumer maximum should be a multiple of 2 and 3
  */
-#define TEST_SL_MAX_CONSUMER 24
-#define TEST_SL_MAX_PRODUCER 24
+#define TEST_SL_MAX_CONSUMER 24   ///< how many consumer threads the test starts
+#define TEST_SL_MAX_PRODUCER 24   ///< how many producer threads the test starts
 
-#define TEST_SL_MAX_ELEMENTS 10000
+#define TEST_SL_MAX_ELEMENTS 10000   ///< how many tasks the producers put in altogether
 
+/** @brief What the producer and consumer threads share
+ *
+ * `sequence` is the point of the test: every thread appends what it did, so the
+ * order the tasks came out in can be checked afterwards rather than guessed at
+ * from timing.
+ */
 struct _test_sl_thread_cp_t {
-   pthread_mutex_t mutex;
-   sge_tq_queue_t *queue;
-   uint32_t counter;
-   dstring sequence;
-   volatile bool do_terminate;
+   pthread_mutex_t mutex;        ///< guards `counter` and `sequence`
+   sge_tq_queue_t *queue;        ///< the task queue under test
+   uint32_t counter;             ///< how many tasks have been handled
+   dstring sequence;             ///< what each thread did, in order
+   volatile bool do_terminate;   ///< set to tell the threads to stop
    bool thread_error; ///< set by any thread that detects an unexpected outcome
 };
 
