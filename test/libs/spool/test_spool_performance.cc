@@ -250,6 +250,14 @@ void clear_caches()
    printf("... continuing\n");
 }
 
+/** @def defstring
+ * @brief The macro argument as a string literal
+ *
+ * Defined inside the function that uses it.
+ *
+ * @param str the text to stringify
+ */
+
 int main(int argc, char *argv[])
 {
    lListElem *spooling_context;
@@ -257,10 +265,10 @@ int main(int argc, char *argv[])
 
    DENTER_MAIN(TOP_LAYER, "test_performance");
 
-#define NM10 "%I%I%I%I%I%I%I%I%I%I"
-#define NM5  "%I%I%I%I%I"
-#define NM2  "%I%I"
-#define NM1  "%I"
+#define NM10 "%I%I%I%I%I%I%I%I%I%I"   ///< a `what` selecting 10 attributes
+#define NM5  "%I%I%I%I%I"   ///< a `what` selecting 5 attributes
+#define NM2  "%I%I"   ///< a `what` selecting 2 attributes
+#define NM1  "%I"   ///< a `what` selecting 1 attributes
 
    prof_start(SGE_PROF_CUSTOM1, nullptr);
    prof_set_level_name(SGE_PROF_CUSTOM1, "performance", nullptr);

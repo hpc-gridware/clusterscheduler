@@ -68,6 +68,17 @@ static int s_fail = 0;
       } \
    } while (0)
 
+/** @brief #CHECK for a floating point value, within a tolerance
+ *
+ * Usage figures come out of arithmetic on doubles, so an exact comparison would
+ * fail on a rounding difference that means nothing.
+ *
+ * @param id the test number
+ * @param label what the check is about
+ * @param actual the value produced
+ * @param expected the value wanted
+ * @param tol how far apart the two may be
+ */
 #define CHECK_NEAR(id, label, actual, expected, tol) \
    do { \
       const double a = (actual); \

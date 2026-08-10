@@ -35,8 +35,8 @@
 
 //#define THREAD_COUNT 64
 //#define THREAD_RUN_TIME 120
-#define THREAD_COUNT 8
-#define THREAD_RUN_TIME 60
+#define THREAD_COUNT 8      ///< how many threads contend for the lock
+#define THREAD_RUN_TIME 60   ///< how long they keep at it, in seconds
 
 static int thread_count;
 #if 0
@@ -54,6 +54,9 @@ int get_thread_demand() {
    return THREAD_COUNT;
 }
 
+/** @brief The function this test's threads run
+ * @return a pointer to the thread function
+ */
 void *(*get_thread_func())(void *anArg) {
    return thread_function;
 }
@@ -62,7 +65,7 @@ void *get_thread_func_arg() {
    return nullptr;
 }
 
-pthread_mutex_t mutex_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_lock = PTHREAD_MUTEX_INITIALIZER;   ///< the lock the threads fight over
 long lock_counter = 0;
 
 /** @brief Incr counter
@@ -83,9 +86,9 @@ void decr_counter() {
 
 /** @brief Getrandomnumber
  *
- * @param min=20 see the description above
- * @param max=1000 see the description above
- * @return non-zero or true when the case passed
+ * @param min smallest value to return
+ * @param max largest value to return
+ * @return a value between @p min and @p max
  */
 int getRandomNumber(const int min = 20, const int max = 1000) {
     std::random_device rd; // Seed for the random number engine

@@ -59,6 +59,9 @@ int get_thread_demand() {
    return (int) p;
 }
 
+/** @brief The function this test's threads run
+ * @return a pointer to the thread function
+ */
 void *(*get_thread_func())(void *anArg) {
    static int i = 0;
 

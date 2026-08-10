@@ -578,6 +578,14 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
    DRETURN(ret);
 }
 
+/** @def defstring
+ * @brief The macro argument as a string literal
+ *
+ * Defined inside the function that uses it.
+ *
+ * @param str the text to stringify
+ */
+
 int main(int argc, char *argv[])
 {
    DENTER_MAIN(TOP_LAYER, "test_sge_spooling");

@@ -63,6 +63,11 @@
 
 #include <sge_log.h>
 
+/** @brief Let the test rewrite an object's delete time
+ *
+ * Not something the product allows; the test needs it to reach the code that
+ * runs when a spooled object has already expired.
+ */
 #define allow_delete_time_modification
 
 static int s_fail = 0;

@@ -72,7 +72,7 @@ static int s_fail = 0;
       } \
    } while (0)
 
-#define STATIC_SIZE 20
+#define STATIC_SIZE 20   ///< size of the stack buffer, small on purpose so the tests cross into heap allocation
 
 static void test_null_safety(int *id) {
    printf("\n--- null-pointer safety ---\n");

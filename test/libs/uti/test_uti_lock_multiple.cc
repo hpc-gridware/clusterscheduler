@@ -152,6 +152,9 @@ static void log_once_init() {
    return;
 }
 
+/** @brief The function this test's threads run
+ * @return a pointer to the thread function
+ */
 void *(*get_thread_func())(void *anArg) {
    return thread_function;
 }

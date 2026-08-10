@@ -61,8 +61,8 @@ static const int loops = 2000;
 
 static int delay = 0;
 
-#define LOCAL_TRANSACTION 0
-#define SGE_LOCKING 1
+#define LOCAL_TRANSACTION 0   ///< wrap each write in its own transaction rather than sharing one
+#define SGE_LOCKING 1         ///< take the cluster's own locks as well as the backend's
 
 /* JG: TODO: test:
  * - do we have the locking problems, if the keys are more different?

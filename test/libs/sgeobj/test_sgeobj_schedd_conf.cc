@@ -69,12 +69,14 @@ static int s_fail = 0;
       } \
    } while (0)
 
+/** @brief One value to try on the attribute under test, and what should happen */
 typedef struct {
    const char *test_value;   ///< value to set on the attribute under test
    bool        result;       ///< true if the value should pass validation
    const char *desc;         ///< human-readable check label
 } conf_settings_t;
 
+/** @brief Which scheduler configuration attribute a block of settings applies to */
 typedef struct {
    u_long      test_attribute;   ///< CULL attribute to set (e.g. SC_halflife_decay_list)
    u_long      type;             ///< CULL attribute type (lStringT, lDoubleT, lUlongT)

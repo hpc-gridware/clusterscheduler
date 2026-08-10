@@ -50,7 +50,13 @@ namespace {
 static int g_failures = 0;
 static const char *g_current = "?";
 
+/** @brief Begin a named section, so a later #T_ASSERT names what it was checking
+ * @param name what this section is about
+ */
 #define T_START(name) do { g_current = (name); printf("== %s ==\n", g_current); } while (0)
+/** @brief Assert one condition within the current #T_START section
+ * @param cond the condition that must hold
+ */
 #define T_ASSERT(cond) do {                                                    \
    if (!(cond)) {                                                              \
       fprintf(stderr, "[%s] assertion failed: %s (line %d)\n",                 \
