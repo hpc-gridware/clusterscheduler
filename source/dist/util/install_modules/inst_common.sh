@@ -4736,6 +4736,49 @@ DoRemoteActionForHosts()
 # $1 - list of hosts
 # $2 - type (qmaster, execd, bdb)
 # $3 - version (supported "61" otherwise 62 is used)
+#-------------------------------------------------------------------------
+# StartDaemonHost: start the daemons of one host
+#
+# $1 - daemon type: qmaster, execd or bdb
+# $2 - path of the startup script for that daemon type
+#
+# When the cluster is managed by systemd the daemons have to be started through
+# systemctl. Running the startup script directly does start them, but outside
+# the cgroup of the unit, so systemd keeps reporting the service as inactive -
+# "systemctl status" then contradicts a cluster that is up, and a later
+# "systemctl stop" does not stop the daemons it does not know about.
+#
+# Falls back to the startup script when there is no unit file for this daemon
+# type (bdb has none), on hosts that do not use systemd, and for a caller who
+# is not root and therefore cannot talk to systemd.
+#
+# USES: variables $RC_FILE and $RC_PREFIX (set by BasicSettings) and $euid
+#-------------------------------------------------------------------------
+StartDaemonHost()
+{
+   sdh_type=$1
+   sdh_script=$2
+
+   if [ "$RC_FILE" = "systemd" -a "$sdh_type" != "bdb" ]; then
+      sdh_service=`GetServiceName $sdh_type "false"`
+      if [ $? -eq 0 -a -f "$RC_PREFIX/$sdh_service" ]; then
+         if [ "$euid" = 0 ]; then
+            $INFOTEXT "Starting service %s" "$sdh_service"
+            $INFOTEXT -log "Starting service %s" "$sdh_service"
+            systemctl start "$sdh_service"
+            return $?
+         fi
+         $INFOTEXT "Not running as root - starting %s directly instead of through systemd." "$sdh_type"
+         $INFOTEXT "systemctl will keep reporting %s as inactive." "$sdh_service"
+         $INFOTEXT -log "Not running as root - started %s directly, %s stays inactive for systemd." "$sdh_type" "$sdh_service"
+      fi
+   fi
+
+   # no argument: the startup scripts start the daemons by default
+   $sdh_script
+}
+
+
 ManipulateOneDaemonType()
 {
    list="$1"
@@ -4823,7 +4866,8 @@ cd $SGE_ROOT ; BasicSettings ; SetUpInfoText ; CheckForSMF ; "
 
    if [ "$START_CLUSTER" = true ]; then
       $INFOTEXT -u "Starting all $type hosts:"
-      DoRemoteActionForHosts "$list" default "$start_cmd"
+      cmd="$rc_cmd StartDaemonHost $type $start_cmd"
+      DoRemoteActionForHosts "$list" default "$cmd"
       return
    fi
 
