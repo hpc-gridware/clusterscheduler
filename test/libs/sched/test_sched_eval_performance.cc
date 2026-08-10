@@ -89,6 +89,8 @@ static int test_match_old(ocs::CEntry::Type, const char *, const char *, int );
  * print out some statistic about the efectivity of the algorithm
  *-----------------------------------------------------------*/
 int main(int argc, char *argv[]) {
+   DENTER_MAIN(TOP_LAYER, "test_evel_performance");
+
    int ret;
    int i, j;
    uint64_t start_tm=0;
@@ -96,8 +98,6 @@ int main(int argc, char *argv[]) {
    uint64_t new_total_tm=0;
    uint64_t old_total_tm=0;
    
-   DENTER_MAIN(TOP_LAYER, "test_evel_performance");
-
    ret = 0;
    if(argc!=4){
       fprintf(stdout, "\nEval performance tests\n");

@@ -185,6 +185,8 @@ void *get_thread_func_arg() {
 *     test_sge_lock_multiple/get_thrd_func()
 *******************************************************************************/
 static void *thread_function(void *anArg) {
+   DENTER(TOP_LAYER);
+
    struct timeval before;
    struct timeval after;
    double time_new;
@@ -192,8 +194,6 @@ static void *thread_function(void *anArg) {
    int max = 1000000;
    int test = 257;
    int result;
-
-   DENTER(TOP_LAYER);
 
    has_finished("start", 0.0);
 

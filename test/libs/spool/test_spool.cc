@@ -66,12 +66,11 @@
 
 #include "sig_handlers.h"
 
-static lListElem* sge_get_configuration_for_host(const char* aName)
-{
+static lListElem *sge_get_configuration_for_host(const char *aName) {
+   DENTER(TOP_LAYER);
+
    char unique_name[CL_MAXHOSTNAMELEN];
    const lList *cluster_config = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
-
-   DENTER(TOP_LAYER);
 
    SGE_ASSERT((nullptr != aName));
 
@@ -92,8 +91,9 @@ static lListElem* sge_get_configuration_for_host(const char* aName)
    DRETURN(conf);
 }
 
-static int sge_read_configuration(const lListElem *aSpoolContext, lList *anAnswer)
-{
+static int sge_read_configuration(const lListElem *aSpoolContext, lList *anAnswer) {
+   DENTER(TOP_LAYER);
+
    lListElem *local = nullptr;
    lListElem *global = nullptr;
    int ret = -1;
@@ -102,8 +102,6 @@ static int sge_read_configuration(const lListElem *aSpoolContext, lList *anAnswe
    uint32_t progid = component_get_component_id();
    lList *cluster_config = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
 
-   DENTER(TOP_LAYER);
-   
    spool_read_list(&anAnswer, aSpoolContext, &cluster_config, SGE_TYPE_CONFIG);
 
    answer_list_output(&anAnswer);
@@ -150,14 +148,13 @@ static int sge_read_configuration(const lListElem *aSpoolContext, lList *anAnswe
  *           a function sge_mirror_is_subscribed function to check if we have
  *           to unspool a certain list or not.
  */
-static bool read_spooled_data()
-{  
+static bool read_spooled_data() {
+   DENTER(TOP_LAYER);
+
    lList *answer_list = nullptr;
    const lListElem *context;
    lList *master_list = nullptr;
    lList **cluster_configuration = ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG);
-
-   DENTER(TOP_LAYER);
 
    context = spool_get_default_context();
 
@@ -264,16 +261,15 @@ static bool read_spooled_data()
   * @return `SGE_EMA_OK` to let the mirror carry on
  */
 sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
-                                       sge_event_action action, lListElem *event, [[maybe_unused]] void *clientdata)
-{
+                                       sge_event_action action, lListElem *event, [[maybe_unused]] void *clientdata) {
+   DENTER(TOP_LAYER);
+
    lList *answer_list = nullptr;
    const lListElem *context, *ep;
    const lList **master_list;
    const lList *new_list;
    int key_nm;
    dstring buffer = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
 
    context = spool_get_default_context();
    
@@ -440,8 +436,9 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
  */
 sge_callback_result
 spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
-                  lListElem *event, [[maybe_unused]] void *clientdata)
-{
+                  lListElem *event, [[maybe_unused]] void *clientdata) {
+   DENTER(TOP_LAYER);
+
    sge_callback_result ret = SGE_EMA_OK;
    lList *answer_list = nullptr;
    const lListElem *context, *ep;
@@ -450,8 +447,6 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
    int key_nm;
    const char *key;
    dstring buffer = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
 
    context = spool_get_default_context();
    
@@ -586,8 +581,7 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
  * @param str the text to stringify
  */
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sge_spooling");
 
    lListElem *spooling_context;

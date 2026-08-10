@@ -58,13 +58,12 @@ int events;             ///< how many events the mirror has seen
 uint32_t events_size;   ///< how many bytes they took on the wire, to show what a subscription costs
 
 static sge_callback_result
-print_event(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata)
-{
+print_event(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata) {
+   DENTER(TOP_LAYER);
+
    char buffer[1024];
    sge_pack_buffer pb;
    dstring buffer_wrapper;
-
-   DENTER(TOP_LAYER);
 
    events++;
    init_packbuffer(&pb, 0, true, false);
@@ -78,8 +77,7 @@ print_event(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
    DRETURN(SGE_EMA_OK);
 }
 
-int main()
-{
+int main() {
    DENTER_MAIN(TOP_LAYER, "test_sge_mirror");
    lList *alp = nullptr;
    sge_evc_class_t *evc = nullptr;

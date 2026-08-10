@@ -59,8 +59,7 @@ static char errorbuf[DRMAA_ERROR_STRING_BUFFER];
 static
 drmaa_job_template_t *create_job_template(const char *job_path, const char *job_name, const char *pred_name, int seconds, int hold);
 
-static void ids_count_status(char **ids, int size, int chunks, int *hold, int *pending, int *running, int *done)
-{
+static void ids_count_status(char **ids, int size, int chunks, int *hold, int *pending, int *running, int *done) {
    int j, drmaa_errno, status;
 
    for (j = 0; j < size; j++) {
@@ -105,8 +104,7 @@ static void ids_count_status(char **ids, int size, int chunks, int *hold, int *p
    return;
 }
 
-static int ids_remove_id(char **ids, int size, const char *id)
-{
+static int ids_remove_id(char **ids, int size, const char *id) {
    int j, found = 0;
 
    for (j = 0; j < size; j++) {
@@ -119,8 +117,7 @@ static int ids_remove_id(char **ids, int size, const char *id)
    return found;
 }
 
-static void state_monitor(char **ids_a, int chunks_a, char **ids_b, int chunks_b)
-{
+static void state_monitor(char **ids_a, int chunks_a, char **ids_b, int chunks_b) {
    int j, status, drmaa_errno;
    int hold = 0, pending = 0, running = 0, done = 0;
 
@@ -185,8 +182,7 @@ static void state_monitor(char **ids_a, int chunks_a, char **ids_b, int chunks_b
 }
 
 static void
-validate_jobs(drmaa_job_ids_t *jobids_a, int chunks_a, drmaa_job_ids_t *jobids_b, int chunks_b)
-{
+validate_jobs(drmaa_job_ids_t *jobids_a, int chunks_a, drmaa_job_ids_t *jobids_b, int chunks_b) {
    int j, status, drmaa_errno;
    char jobid[512];
    const char *all_jobs[] = { "DRMAA_JOB_IDS_SESSION_ALL" };
@@ -277,9 +273,7 @@ validate_jobs(drmaa_job_ids_t *jobids_a, int chunks_a, drmaa_job_ids_t *jobids_b
    sge_free(&ids_b);
 }
 
-static 
-drmaa_job_template_t *create_job_template(const char *job_path, const char *job_name, const char *pred_name, int seconds, int hold) 
-{
+static drmaa_job_template_t *create_job_template(const char *job_path, const char *job_name, const char *pred_name, int seconds, int hold) {
    drmaa_job_template_t *jt = nullptr;
    int drmaa_errno;
    char buf[512];
@@ -336,8 +330,7 @@ drmaa_job_template_t *create_job_template(const char *job_path, const char *job_
    return jt;
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
    drmaa_job_template_t *jt_a = nullptr;
    drmaa_job_template_t *jt_b = nullptr;
    drmaa_job_ids_t *jobids_a = nullptr;

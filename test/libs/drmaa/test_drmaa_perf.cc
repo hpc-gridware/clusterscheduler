@@ -76,8 +76,7 @@ static void *submit_jobs(void *arg);
 static void get_gmt(struct timeval *);
 static int submit_by_project(const char *project);
 
-static void usage() 
-{
+static void usage() {
    fprintf(stderr, "usage: test_drmaa_perf [ options ] <path-to-job> [<job_args>]\n");
    fprintf(stderr, "   -jobs       <njobs>                                       number of jobs per thread (default 100)\n");
    fprintf(stderr, "   -native     <nativespec>                                  native specification passed (default \"-w n\")\n");
@@ -101,8 +100,7 @@ static void usage()
  */
 #define DELTA_SECONDS(t1, t2) (((double)t2.tv_sec - (double)t1.tv_sec) + ((double)t2.tv_usec - (double)t1.tv_usec)/1000000)
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    char diagnosis[DRMAA_ERROR_STRING_BUFFER];
    char *s, jobid[100];
    int drmaa_errno, i;
@@ -341,8 +339,7 @@ int main(int argc, char *argv[])
   return ret;
 }
 
-static int submit_by_project(const char *project)
-{
+static int submit_by_project(const char *project) {
    drmaa_job_template_t *jt = nullptr;
    char diagnosis[DRMAA_ERROR_STRING_BUFFER];
    char jobid[100];
@@ -370,8 +367,7 @@ static int submit_by_project(const char *project)
 
    return 0;
 }
-static void *submit_jobs(void *arg)
-{
+static void *submit_jobs(void *arg) {
    char diagnosis[DRMAA_ERROR_STRING_BUFFER];
    char jobid[100];
    int drmaa_errno, i;
@@ -393,9 +389,8 @@ static void *submit_jobs(void *arg)
    return nullptr;
 }
 
-static drmaa_job_template_t *create_job_template(const char *job_path, 
-      const char *project, int i)
-{
+static drmaa_job_template_t *create_job_template(const char *job_path,
+                                                 const char *project, int i) {
    drmaa_job_template_t *jt = nullptr;
    char buffer[10240];
 
@@ -485,8 +480,7 @@ static drmaa_job_template_t *create_job_template(const char *job_path,
    return jt;
 }
 
-static void get_gmt(struct timeval *now)
-{
+static void get_gmt(struct timeval *now) {
 #  ifdef SOLARIS
    gettimeofday(now, nullptr);
 #  else

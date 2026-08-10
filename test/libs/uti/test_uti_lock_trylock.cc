@@ -99,13 +99,13 @@ int getRandomNumber(const int min = 20, const int max = 1000) {
 }
 
 static void *thread_function(void *anArg) {
+   DENTER(TOP_LAYER);
+
    const uint64_t start = sge_get_gmt64();
    uint32_t count = 0;
    const int thread_id = thread_count++;
    bool read_thread = true;
    constexpr bool do_loop = true;
-
-   DENTER(TOP_LAYER);
 
    while (do_loop) {
       // first thread is the write thread

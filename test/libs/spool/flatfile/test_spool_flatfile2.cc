@@ -80,8 +80,7 @@ static int s_fail = 0;
       } \
    } while (0)
 
-static int diff(const char *file1, const char *file2)
-{
+static int diff(const char *file1, const char *file2) {
    int ret = 1;
    char **argv = (char **)sge_malloc(sizeof(char *) * 4);
    const char *path = "/usr/bin/diff";

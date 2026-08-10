@@ -124,8 +124,7 @@ static const char *result_category[] = {
    nullptr
 };
 
-static lList *test_create_access()
-{
+static lList *test_create_access() {
    lList *access_list = lCreateList("access", US_Type);
 
    if (access_list != nullptr) {
@@ -156,16 +155,14 @@ static lList *test_create_access()
    return access_list;
 }
 
-static lList *test_create_project(const char *project)
-{
+static lList *test_create_project(const char *project) {
    lList *project_list = nullptr;
    lListElem *prj = lAddElemStr(&project_list, PR_name, project, PR_Type);
    lSetBool(prj, PR_consider_with_categories, true);
    return project_list;
 }
 
-static lList *test_create_rqs()
-{
+static lList *test_create_rqs() {
    lList *rqs_list = lCreateList("my_rqs", RQS_Type);
    lListElem *rqs = lCreateElem(RQS_Type);
    lSetString(rqs, RQS_name, "Test_Name1");
@@ -188,8 +185,7 @@ static lList *test_create_rqs()
    return rqs_list;
 }
 
-static lList *test_create_request(const char *requestStr, const int count)
-{
+static lList *test_create_request(const char *requestStr, const int count) {
    char *request_cp = nullptr;
    lList *requests = lCreateList("requests", CE_Type);
    if (requests != nullptr) {
@@ -216,8 +212,7 @@ end:
    return requests;
 }
 
-static lList *test_create_queue(const char *queueStr, const int count)
-{
+static lList *test_create_queue(const char *queueStr, const int count) {
    char *queue_cp = nullptr;
    lList *queues = lCreateList("queues", QR_Type);
    if (queues != nullptr) {
@@ -243,8 +238,7 @@ end:
    return queues;
 }
 
-static void test_create_pe(const char *peStr, lListElem *job_elem)
-{
+static void test_create_pe(const char *peStr, lListElem *job_elem) {
    char *pe_cp = strdup(peStr);
    char *iter_dash = nullptr;
 
@@ -263,8 +257,7 @@ static void test_create_pe(const char *peStr, lListElem *job_elem)
    sge_free(&pe_cp);
 }
 
-static void test_create_groups(const char *groupStr, lListElem *job_elem)
-{
+static void test_create_groups(const char *groupStr, lListElem *job_elem) {
    char *cp = strdup(groupStr);
    char *iter_dash = nullptr;
    for (const char *s = strtok_r(cp, " ", &iter_dash); s; s = strtok_r(nullptr, " ", &iter_dash)) {
@@ -273,8 +266,7 @@ static void test_create_groups(const char *groupStr, lListElem *job_elem)
    sge_free(&cp);
 }
 
-static lListElem *test_create_job(const data_entry_t *test, const int count)
-{
+static lListElem *test_create_job(const data_entry_t *test, const int count) {
    lListElem *job = lCreateElem(JB_Type);
 
    if (job != nullptr) {
@@ -360,8 +352,7 @@ end:
 }
 
 // builds the category string for t and compares it against expected; returns true on match
-static bool run_test(const data_entry_t *t, const char *expected)
-{
+static bool run_test(const data_entry_t *t, const char *expected) {
    lListElem *job_elem = test_create_job(t, 1);
    if (job_elem == nullptr) {
       printf("failed to create job for test %d\n", t->test_nr);
@@ -434,8 +425,7 @@ static int s_fail = 0;
       } \
    } while (0)
 
-int main(int /*argc*/, char * /*argv*/[])
-{
+int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_common_category");
    component_set_daemonized(true);
    lInit(nmv);

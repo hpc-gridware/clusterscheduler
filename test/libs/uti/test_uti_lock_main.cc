@@ -73,14 +73,14 @@
 *     lck/test_sge_lock_main.h
 *******************************************************************************/
 int main(int argc, char *argv[]) {
+   DENTER_MAIN(TOP_LAYER, "main");
+
    pthread_t *t;
    int i;
    int j;
    int thrd_count;
    uint64_t before, after, time_new;
    int ret = 0;
-
-   DENTER_MAIN(TOP_LAYER, "main");
 
    thrd_count = get_thread_demand();
    t = (pthread_t *) sge_malloc(thrd_count * sizeof(pthread_t));

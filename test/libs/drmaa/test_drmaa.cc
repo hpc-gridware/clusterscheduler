@@ -628,16 +628,14 @@ const char *sleeper_job = nullptr,   ///< a job that sleeps for a given time
 int ctrl_op = -1;                    ///< the `DRMAA_CONTROL_*` operation to apply
 /** @} */
 
-static void init_jobids(const char *jobids[], int size)
-{
+static void init_jobids(const char *jobids[], int size) {
    int i = 0;
    for (i = 0; i < size; i++) {
       jobids[i] = nullptr;
    }
 }
 
-static void free_jobids(const char *jobids[], int size)
-{
+static void free_jobids(const char *jobids[], int size) {
    int i = 0;
    for (i = 0; i < size; i++) {
       if (jobids[i] != nullptr) {
@@ -646,8 +644,7 @@ static void free_jobids(const char *jobids[], int size)
    }
 }
 
-static void usage()
-{
+static void usage() {
    int i;
    fprintf(stderr, "usage: test_drmaa <test_case>\n");
 
@@ -674,13 +671,12 @@ static void usage()
    exit(1);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
+   DENTER_MAIN(TOP_LAYER, "qsub");
+
    int failed = 0;
    int i; 
    char diag[DRMAA_ERROR_STRING_BUFFER];
-
-   DENTER_MAIN(TOP_LAYER, "qsub");
 
    if (argc == 1) 
       usage();
@@ -793,8 +789,7 @@ int main(int argc, char *argv[])
 }
 
 
-static int test(int *argc, char **argv[], int parse_args)
-{
+static int test(int *argc, char **argv[], int parse_args) {
    bool bBulkJob = false;
    int  i;
    int  job_chunk = JOB_CHUNK;
@@ -4837,8 +4832,7 @@ static void *submit_and_wait_thread (void *vp) {
    return (void *)nullptr;
 }
 
-static int submit_and_wait(int n)
-{
+static int submit_and_wait(int n) {
    int ret = DRMAA_ERRNO_SUCCESS;
    
    ret = submit_sleeper(n);
@@ -4865,8 +4859,7 @@ static void *submit_sleeper_thread (void *vp) {
    return (void *)nullptr;
 }
 
-static drmaa_job_template_t *create_exit_job_template(const char *exit_job, int as_bulk_job)
-{
+static drmaa_job_template_t *create_exit_job_template(const char *exit_job, int as_bulk_job) {
    const char *job_argv[2];
    drmaa_job_template_t *jt = nullptr;
    int ret = DRMAA_ERRNO_SUCCESS;
@@ -4913,8 +4906,7 @@ static drmaa_job_template_t *create_exit_job_template(const char *exit_job, int 
    }
 }
 
-static drmaa_job_template_t *create_sleeper_job_template(int seconds, int as_bulk_job, int in_hold)
-{
+static drmaa_job_template_t *create_sleeper_job_template(int seconds, int as_bulk_job, int in_hold) {
    const char *job_argv[2];
    drmaa_job_template_t *jt = nullptr;
    char buffer[100];
@@ -4969,8 +4961,7 @@ static drmaa_job_template_t *create_sleeper_job_template(int seconds, int as_bul
    }
 }
 
-static int submit_sleeper(int n)
-{
+static int submit_sleeper(int n) {
    drmaa_job_template_t *jt;
    int ret = DRMAA_ERRNO_SUCCESS;
 
@@ -4988,10 +4979,9 @@ static int submit_sleeper(int n)
    return ret;
 }
 
-static int submit_input_mirror(int n, const char *mirror_job, 
+static int submit_input_mirror(int n, const char *mirror_job,
                                const char *input_path, const char *output_path,
-                               const char *error_path, int join, char* hostname)
-{
+                               const char *error_path, int join, char *hostname) {
    drmaa_job_template_t *jt = nullptr;
    char buffer[10000];
    int ret = DRMAA_ERRNO_SUCCESS;
@@ -5059,8 +5049,7 @@ static int submit_input_mirror(int n, const char *mirror_job,
    return ret;
 }
 
-static int do_submit(drmaa_job_template_t *jt, int n)
-{
+static int do_submit(drmaa_job_template_t *jt, int n) {
    int i;
    char diagnosis[1024];
    char jobid[100];
@@ -5110,8 +5099,7 @@ static int do_submit(drmaa_job_template_t *jt, int n)
    return error;
 }
 
-static int wait_all_jobs(int n)
-{
+static int wait_all_jobs(int n) {
    char jobid[100];
    int drmaa_errno = DRMAA_ERRNO_SUCCESS;
    int stat;
@@ -5152,8 +5140,7 @@ static int wait_all_jobs(int n)
    return drmaa_errno;
 }
 
-static int wait_n_jobs(int n)
-{
+static int wait_n_jobs(int n) {
    char jobid[100];
    int i, stat;
    int drmaa_errno = DRMAA_ERRNO_SUCCESS;
@@ -5192,8 +5179,7 @@ static int wait_n_jobs(int n)
    return error;
 }
 
-static void report_session_key() 
-{
+static void report_session_key() {
    if (is_sun_grid_engine) {
       const char *session_key = getenv("SGE_SESSION_KEY");
       if (session_key) 
@@ -5269,10 +5255,9 @@ const struct drmaa_errno_descr_s {
 *  RESULT
 *     static int - DRMAA_ERRNO_* constant or -1 on failre
 *******************************************************************************/
-static int str2drmaa_errno(const char *str)
-{
-  int i;
-  for (i=0; errno_vector[i].descr != nullptr; i++)
+static int str2drmaa_errno(const char *str) {
+   int i;
+   for (i = 0; errno_vector[i].descr != nullptr; i++)
       if (!strcmp(errno_vector[i].descr, str))
          return errno_vector[i].drmaa_errno;
   return -1;
@@ -5294,10 +5279,9 @@ static int str2drmaa_errno(const char *str)
 *  RESULT
 *     static const char* - String representation
 *******************************************************************************/
-static const char *drmaa_errno2str(int drmaa_errno)
-{
-  int i;
-  for (i=0; errno_vector[i].descr != nullptr; i++)
+static const char *drmaa_errno2str(int drmaa_errno) {
+   int i;
+   for (i = 0; errno_vector[i].descr != nullptr; i++)
       if (errno_vector[i].drmaa_errno == drmaa_errno)
          return errno_vector[i].descr;
   return "DRMAA_ERRNO_???UNKNOWN???";
@@ -5337,10 +5321,9 @@ const struct ctrl_descr_s {
 *     static const char* - DRMAA constant name or "unknown" string
 *
 *******************************************************************************/
-static const char *drmaa_ctrl2str(int ctrl)
-{
-  int i;
-  for (i=0; ctrl_vector[i].descr != nullptr; i++)
+static const char *drmaa_ctrl2str(int ctrl) {
+   int i;
+   for (i = 0; ctrl_vector[i].descr != nullptr; i++)
       if (ctrl_vector[i].ctrl == ctrl)
          return ctrl_vector[i].descr;
   return "DRMAA_CONTROL_???UNKNOWN???";
@@ -5362,10 +5345,9 @@ static const char *drmaa_ctrl2str(int ctrl)
 *  RESULT
 *     static int - DRMAA_CONTROL_* constant or -1 on failure
 *******************************************************************************/
-static int str2drmaa_ctrl(const char *str)
-{
-  int i;
-  for (i=0; ctrl_vector[i].descr != nullptr; i++) {
+static int str2drmaa_ctrl(const char *str) {
+   int i;
+   for (i = 0; ctrl_vector[i].descr != nullptr; i++) {
       if (!strcmp(ctrl_vector[i].descr, str))
          return ctrl_vector[i].ctrl;
   }
@@ -5411,10 +5393,9 @@ const struct state_descr_s {
 *  RESULT
 *     static const char* - 
 *******************************************************************************/
-static const char *drmaa_state2str(int state)
-{
-  int i;
-  for (i=0; state_vector[i].descr != nullptr; i++)
+static const char *drmaa_state2str(int state) {
+   int i;
+   for (i = 0; state_vector[i].descr != nullptr; i++)
       if (state_vector[i].state == state)
          return state_vector[i].descr;
   return "DRMAA_PS_???UNKNOWN???";
@@ -5436,10 +5417,9 @@ static const char *drmaa_state2str(int state)
 *  RESULT
 *     static int - 
 *******************************************************************************/
-int str2drmaa_state(const char *str)
-{
-  int i;
-  for (i=0; state_vector[i].descr != nullptr; i++)
+int str2drmaa_state(const char *str) {
+   int i;
+   for (i = 0; state_vector[i].descr != nullptr; i++)
       if (!strcmp(state_vector[i].descr, str))
          return state_vector[i].state;
   return -1;
@@ -5463,8 +5443,7 @@ int str2drmaa_state(const char *str)
 *     const char *jobid   - provided by the caller
 *     int stat            - stat value as returned by drmaa_wait()
 *******************************************************************************/
-static void report_wrong_job_finish(const char *comment, const char *jobid, int stat)
-{
+static void report_wrong_job_finish(const char *comment, const char *jobid, int stat) {
    int aborted, exited, exit_status, signaled;
 
    drmaa_wifaborted(&aborted, stat, nullptr, 0);
@@ -5490,8 +5469,7 @@ static void report_wrong_job_finish(const char *comment, const char *jobid, int 
    }
 }
 
-static bool extract_array_command(char *command_line, int *start, int *end, int *incr)
-{
+static bool extract_array_command(char *command_line, int *start, int *end, int *incr) {
    bool ret = false;
    char *t_option = nullptr;
    char *start_value = nullptr;
@@ -5563,8 +5541,7 @@ error:
    return ret;
 }
 
-static void free_order(int **order)
-{
+static void free_order(int **order) {
    int i = 0;
    while (order[i] != nullptr) {
       sge_free(&(order[i]));
@@ -5573,8 +5550,7 @@ static void free_order(int **order)
    sge_free(&order);
 }
 
-static int test_dispatch_order_njobs(int njobs, test_job_t job[], const char *jsr_str)
-{
+static int test_dispatch_order_njobs(int njobs, test_job_t job[], const char *jsr_str) {
    char diagnosis[DRMAA_ERROR_STRING_BUFFER];
    const char *all_jobids[10];
    char jobid[100];
@@ -5693,8 +5669,7 @@ static int test_dispatch_order_njobs(int njobs, test_job_t job[], const char *js
    return 0;
 }
 
-static int job_run_sequence_verify(int pos, const char *all_jobids[], int *order[])
-{
+static int job_run_sequence_verify(int pos, const char *all_jobids[], int *order[]) {
    int test_index, i, j;
    int found_group = 0;
    int *group;
@@ -5769,8 +5744,7 @@ static int job_run_sequence_verify(int pos, const char *all_jobids[], int *order
 *******************************************************************************/
 #define GROUP_CHUNK 5     ///< how many job groups the dispatch-order case builds
 #define NUMBER_CHUNK 10   ///< how many jobs go into each of those groups
-static int **job_run_sequence_parse(const char *jrs_str)
-{
+static int **job_run_sequence_parse(const char *jrs_str) {
    char *s = nullptr, *group_str = nullptr;
 
    /* control outer loop */
@@ -5827,8 +5801,7 @@ static int **job_run_sequence_parse(const char *jrs_str)
    return sequence;
 }
 
-static void array_job_run_sequence_adapt(int **sequence, int job_id, int count) 
-{
+static void array_job_run_sequence_adapt(int **sequence, int job_id, int count) {
    int x = 0;
    int y = 0;
 
@@ -5878,17 +5851,15 @@ static void array_job_run_sequence_adapt(int **sequence, int job_id, int count)
 static int set_path_attribute_plus_colon(drmaa_job_template_t *jt,
                                          const char *name, const char *value,
                                          char *error_diagnosis,
-                                         size_t error_diag_len)
-{
+                                         size_t error_diag_len) {
    char path_buffer[10000];
    strcpy(path_buffer, ":"); 
    strcat(path_buffer, value);
    return drmaa_set_attribute(jt, name, path_buffer, error_diagnosis,
-                              error_diag_len);         
+                              error_diag_len);
 }
 
-static bool test_error_code(const char *name, int code, int expected)
-{
+static bool test_error_code(const char *name, int code, int expected) {
    if (code != expected) {
       fprintf(stderr, "%s = %d; should be %d\n", name, code, expected);
       return false;

@@ -179,11 +179,12 @@ void simulate_project_update(const char *host) {
   * @return the thread's result; the tests ignore it
  */
 void *thread1(void *data) {
+   DENTER(TOP_LAYER);
+
    thread_arg_t *thread = (thread_arg_t *)data;
    dstring thread_name = DSTRING_INIT;
 
    sge_dstring_sprintf(&thread_name, "thread%d", thread->id);
-   DENTER(TOP_LAYER);
    //sge_dstring_free(&thread_name);
 
    lInit(nmv); 
