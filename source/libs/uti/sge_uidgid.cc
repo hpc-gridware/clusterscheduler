@@ -623,12 +623,45 @@ get_pw_buffer_size() {
    return sz;
 }
 
+/**
+ * @brief Directory to read the user's `.sge_*` files from, if it was overridden
+ *
+ * The submit clients read their per user defaults - `.sge_request`, `.sge_aliases`,
+ * `.sge_qstat` and the rest - from the home directory of the passwd entry. That
+ * directory belongs to the operating system user, not to a cluster, so several
+ * clusters run by the same user share one set of those files. A test that writes
+ * them therefore changes the behaviour of every other cluster of that user for as
+ * long as it runs, which is why the testsuite could not run such tests in parallel
+ * (CS-707).
+ *
+ * `SGE_TEST_USER_HOME_DIR` names a directory to read them from instead, so each
+ * cluster of a parallel test run can be given one of its own. It changes where the
+ * files are looked up, nothing else: `$HOME` itself, the home directory a job runs
+ * in and everything else derived from the passwd entry are untouched.
+ *
+ * This is test instrumentation in the sense of `SGE_TEST_DELAY_SCHEDULING` and
+ * `SGE_TEST_SOCKET_BIND`, not a supported way to relocate the files.
+ *
+ * @return the override, or nullptr when it is unset or empty
+ *
+ * @note MT-NOTE: sge_get_user_home_override() is MT safe
+ */
+const char *
+sge_get_user_home_override() {
+   const char *dir = getenv("SGE_TEST_USER_HOME_DIR");
+
+   if (dir != nullptr && dir[0] != '\0') {
+      return dir;
+   }
+   return nullptr;
+}
+
 /****** uti/uidgid/get_group_buffer_size() ****************************************
 *  NAME
 *     get_group_buffer_size() -- get the buffer size required for getgr*_r
 *
 *  SYNOPSIS
-*     int get_group_buffer_size() 
+*     int get_group_buffer_size()
 *
 *  FUNCTION
 *     Returns the buffer size required for functions like getgrnam_r.
@@ -639,7 +672,7 @@ get_pw_buffer_size() {
 *     int - buffer size in bytes
 *
 *  NOTES
-*     MT-NOTE: get_group_buffer_size() is MT safe 
+*     MT-NOTE: get_group_buffer_size() is MT safe
 *
 *  SEE ALSO
 *     uti/uidgid/get_pw_buffer_size()

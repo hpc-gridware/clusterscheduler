@@ -734,6 +734,14 @@ bool get_user_home(dstring *home_dir, const char *user, lList **answer_list) {
       char *buffer;
       int size;
 
+      // A test run may point the per user defaults at a directory of its own, so that
+      // clusters sharing one operating system user do not share one set of files.
+      const char *override_dir = sge_get_user_home_override();
+      if (override_dir != nullptr) {
+         sge_dstring_copy_string(home_dir, override_dir);
+         DRETURN(true);
+      }
+
       size = get_pw_buffer_size();
       buffer = sge_malloc(size);
       pwd = sge_getpwnam_r(user, &pw_struct, buffer, size);
