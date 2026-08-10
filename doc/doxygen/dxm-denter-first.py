@@ -38,6 +38,18 @@ CONTROL = re.compile(r'^(if|for|while|switch|do|else|case|default|return|goto|tr
 CALL = re.compile(r'^[A-Za-z_]\w*(::\w*)*\s*\(')
 IDENT = re.compile(r'[A-Za-z_]\w*')
 
+# How far above a DENTER the function head may sit. Generous on purpose: the
+# search counts brackets, so it stops at the body brace and not at the first
+# '{' it meets, and real bodies do put a long comment or a local table between
+# the head and the first statement. drmaa.cc carries 60 lines of usage text
+# there, cull_parse.cc a 40 entry operator table.
+SEARCH_LIMIT = 200
+
+# Macros that look like a call but expand to declarations. DSTRING_STATIC(n, s)
+# becomes "char _buffer_for_n[s] = ...; dstring n = {...}" - no code runs, so
+# DENTER may be hoisted over it like over any other declaration.
+DECL_MACROS = ('DSTRING_STATIC',)
+
 
 def strip_noise(block):
     """Drop comments and string bodies from a block of lines.
@@ -118,7 +130,7 @@ def is_declaration(statement: str) -> bool:
         return False                     # end of a type, a block, a cast expression
     if s.count('{') != s.count('}'):
         return False
-    if CALL.match(s):
+    if CALL.match(s) and not s.startswith(DECL_MACROS):
         return False                     # "foo(...);" is a call, not a declaration
     # a declaration names a type and then a variable, so there are at least two
     # identifiers left of any '='
@@ -145,7 +157,7 @@ def process(lines):
         j = i - 1
         depth = 0
         found = False
-        while j >= 0 and i - j <= 40:
+        while j >= 0 and i - j <= SEARCH_LIMIT:
             code = strip_noise([out[j]])[0]
             depth += code.count('}') - code.count('{')
             if depth < 0:
@@ -154,7 +166,7 @@ def process(lines):
             j -= 1
 
         if not found or j < 0:
-            skipped.append((i + 1, 'no function body brace found within 40 lines'))
+            skipped.append((i + 1, f'no function body brace within {SEARCH_LIMIT} lines'))
             i += 1
             continue
         if j == i - 1:
