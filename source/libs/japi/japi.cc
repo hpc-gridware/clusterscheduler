@@ -3536,6 +3536,8 @@ static void japi_subscribe_job_list(const char *japi_session_key, sge_evc_class_
  * @note MT-NOTE: japi_implementation_thread() is MT safe
  */
 static void *japi_implementation_thread(void *a_user_data_pointer) {
+   DENTER(TOP_LAYER);
+
    lList *alp = nullptr, *event_list = nullptr;
    char buffer[1024];
    dstring buffer_wrapper;
@@ -3551,8 +3553,6 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
                                  qmaster. */
    static sge_evc_class_t *evc = nullptr;
    ocs::gdi::ErrorValue gdi_errno = ocs::gdi::ErrorValue::AE_OK;
-
-   DENTER(TOP_LAYER);
 
    /* Check EC state before we bother starting.  This also prevents the event
     * client thread from having a race condition with japi_enable_job_wait(). */

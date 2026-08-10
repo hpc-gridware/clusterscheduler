@@ -3173,6 +3173,8 @@ o   -V                                     export all environment variables
  * @note MT-NOTE: drmaa_time2sge_time() is MT safe
  */
 static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag) {
+   DENTER(TOP_LAYER);
+
    /* SGE time format is [[CC]]YY]MMDDhhmm.[ss] */
    /* DRMAA time format is [[[[CC]YY/]MM/]DD] hh:mm[:ss] [{-|+}UU:uu] */
    int year, month, day, hour, minute, second, tz_hours, tz_minutes;
@@ -3183,8 +3185,6 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag) {
    time_t now;
    struct tm gmnow;
    struct tm herenow;
-
-   DENTER(TOP_LAYER);
 
    /* Get default times */
    time(&now);
