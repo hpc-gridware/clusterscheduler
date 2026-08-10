@@ -72,8 +72,7 @@ int i
    
 /*----------------------------------------------------------------------*/
 /** @brief Print the usage of `checkprog` and exit */
-void usage_checkprog()
-{
+void usage_checkprog() {
    fprintf(stderr, "\n%s\n", MSG_COMMAND_USAGECHECKPROG);
    /*fprintf(stderr, "check the first 8 letters of process basename\n\n");
    fprintf(stderr, "exit status: 0 if process was found\n");
@@ -84,8 +83,7 @@ void usage_checkprog()
 
 /*----------------------------------------------------------------------*/
 /** @brief Print the usage of `getprogs` and exit */
-void usage_getprogs()
-{
+void usage_getprogs() {
    fprintf(stderr, "\n%s\n", MSG_COMMAND_USAGEGETPROGS );
    /*
    fprintf(stderr, "check and list pids of \"processname\"\n\n");
@@ -96,10 +94,9 @@ void usage_getprogs()
    exit(2);
 }
 
-   
+
 /*----------------------------------------------------------------------*/
-int main(int argc, char *argv[]) 
-{
+int main(int argc, char *argv[]) {
    int res;
    pid_t pid = 0;
    std::vector<pid_t> pids;

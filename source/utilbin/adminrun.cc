@@ -52,8 +52,7 @@
 #include "uti/sge_uidgid.h"
 
 
-void usage()
-{
+void usage() {
    fprintf(stderr,"%s\n adminrun username command ...\n\n", MSG_UTILBIN_USAGE );
    fprintf(stderr,MSG_COMMAND_RUNCOMMANDASUSERNAME_S, "<username>" );
    fprintf(stderr, "\n");
@@ -65,8 +64,7 @@ void usage()
  * @param argv argument vector
  * @return the program's exit status
  */
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
    struct passwd *pw = nullptr;
    int i;
 

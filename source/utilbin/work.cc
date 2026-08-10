@@ -96,8 +96,7 @@ static void reserve_stack_mem_kb(int n);
 static void usage(int exit_code);
 void stop_work(int signo);
 
-static void usage(int exit_code)
-{
+static void usage(int exit_code) {
    FILE *fp;
 
    if (exit_code)
@@ -130,8 +129,7 @@ static void usage(int exit_code)
    exit(exit_code);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    int i;
    char *kmp = nullptr, *mmp = nullptr; /* pointers for mallocing */
 
@@ -408,13 +406,11 @@ void work(char *mmp) {
 /** @brief Signal handler for SIGALRM: ends the run
  * @param signo the signal that arrived
  */
-void stop_work(int signo)
-{
+void stop_work(int signo) {
    should_stop = 1;
 }
 
-static void reserve_stack_mem_kb(int n)
-{
+static void reserve_stack_mem_kb(int n) {
    char stack_mem[1024];   
    stack_mem[0] = '\0';
    if (n==1) {
@@ -427,8 +423,7 @@ static void reserve_stack_mem_kb(int n)
 }
 
 
-static void reserve_stack_mem_mb(int n)
-{
+static void reserve_stack_mem_mb(int n) {
    char stack_mem[1024*1024];   
    stack_mem[0] = '\0';
    if (n==1) {
@@ -439,4 +434,3 @@ static void reserve_stack_mem_mb(int n)
    reserve_stack_mem_mb(n-1);
    return;
 }
-

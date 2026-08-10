@@ -58,17 +58,15 @@
 
 #include "msg_utilbin.h"
 
-void usage()
-{
-  fprintf(stderr, "Version: %s\n", ocs::Version::get_version_string().c_str());
-  fprintf(stderr, "%s gethostbyaddr [-help|-name|-aname|-all]x.x.x.x\n", MSG_UTILBIN_USAGE );
-  exit(1);
+void usage() {
+   fprintf(stderr, "Version: %s\n", ocs::Version::get_version_string().c_str());
+   fprintf(stderr, "%s gethostbyaddr [-help|-name|-aname|-all]x.x.x.x\n", MSG_UTILBIN_USAGE);
+   exit(1);
 }
 
 static int error_reported = 0;
 
-static void gethostbyaddr_communication_error(const cl_application_error_list_elem_t* commlib_error)
-{
+static void gethostbyaddr_communication_error(const cl_application_error_list_elem_t *commlib_error) {
    if (commlib_error != nullptr) {
       switch (commlib_error->cl_err_type) {
          case CL_LOG_ERROR: {
@@ -88,147 +86,146 @@ static void gethostbyaddr_communication_error(const cl_application_error_list_el
 }
 
 
-int main(int argc, char *argv[])
-{
-  struct hostent *he = nullptr;
-  char* resolved_name = nullptr;
-  int retval = CL_RETVAL_OK;
-  char* ip_string = nullptr;
-  char** tp = nullptr;
-  char** tp2 = nullptr;
-  int name_only = 0;
-  int sge_aliasing = 0;
-  int all_option = 0;
-  int system_error = 0;
+int main(int argc, char *argv[]) {
+   struct hostent *he = nullptr;
+   char *resolved_name = nullptr;
+   int retval = CL_RETVAL_OK;
+   char *ip_string = nullptr;
+   char **tp = nullptr;
+   char **tp2 = nullptr;
+   int name_only = 0;
+   int sge_aliasing = 0;
+   int all_option = 0;
+   int system_error = 0;
 
-  struct in_addr addr;
+   struct in_addr addr;
 
-  if (argc < 2) {
-    usage();
-  }
+   if (argc < 2) {
+      usage();
+   }
 
-  ip_string = argv[1];
-  if (!strcmp(argv[1], "-help")) {
-     usage();
-  }
-  if (!strcmp(argv[1], "-name")) {
-     if (argc != 3) {
-        usage(); 
-     }
-     name_only = 1;
-     ip_string = argv[2];
-  }   
-  if (!strcmp(argv[1], "-aname")) {
-     if (argc != 3) {
-        usage(); 
-     }
-     name_only = 1;
-     sge_aliasing = 1;
-     ip_string = argv[2];
-  }   
-  if (!strcmp(argv[1], "-all")) {
-     if (argc != 3) {
-        usage(); 
-     }
-     name_only = 0;
-     sge_aliasing = 1;
-     all_option = 1;
-     ip_string = argv[2];
-  }
+   ip_string = argv[1];
+   if (!strcmp(argv[1], "-help")) {
+      usage();
+   }
+   if (!strcmp(argv[1], "-name")) {
+      if (argc != 3) {
+         usage();
+      }
+      name_only = 1;
+      ip_string = argv[2];
+   }
+   if (!strcmp(argv[1], "-aname")) {
+      if (argc != 3) {
+         usage();
+      }
+      name_only = 1;
+      sge_aliasing = 1;
+      ip_string = argv[2];
+   }
+   if (!strcmp(argv[1], "-all")) {
+      if (argc != 3) {
+         usage();
+      }
+      name_only = 0;
+      sge_aliasing = 1;
+      all_option = 1;
+      ip_string = argv[2];
+   }
 
-  
-  retval = cl_com_setup_commlib(CL_NO_THREAD ,CL_LOG_OFF, nullptr);
-  if (retval != CL_RETVAL_OK) {
-     fprintf(stderr,"%s\n",cl_get_error_text(retval));
-     exit(1);
-  }
 
-  if (sge_aliasing ) {
-     cl_com_set_alias_file(sge_get_alias_path());
-  }
+   retval = cl_com_setup_commlib(CL_NO_THREAD, CL_LOG_OFF, nullptr);
+   if (retval != CL_RETVAL_OK) {
+      fprintf(stderr, "%s\n", cl_get_error_text(retval));
+      exit(1);
+   }
 
-  retval = cl_com_set_error_func(gethostbyaddr_communication_error);
-  if (retval != CL_RETVAL_OK) {
-     fprintf(stderr,"%s\n",cl_get_error_text(retval));
-     exit(1);
-  }
-  
-  addr.s_addr = inet_addr(ip_string);
+   if (sge_aliasing) {
+      cl_com_set_alias_file(sge_get_alias_path());
+   }
 
-  retval = cl_com_cached_gethostbyaddr(&addr, &resolved_name, &he, &system_error);
-  if (retval != CL_RETVAL_OK) {
-     cl_com_cleanup_commlib();
-     if (error_reported == 0) {
-        char* err_text = cl_com_get_h_error_string(system_error);
+   retval = cl_com_set_error_func(gethostbyaddr_communication_error);
+   if (retval != CL_RETVAL_OK) {
+      fprintf(stderr, "%s\n", cl_get_error_text(retval));
+      exit(1);
+   }
 
-        if (err_text == nullptr) {
-           err_text = strdup(strerror(system_error));
-           if (err_text == nullptr) {
-              err_text = strdup("unexpected error");
-           }
-        }
-        fprintf(stderr, "error resolving ip " SFQ ": %s (%s)\n",
-                ip_string != nullptr ? ip_string : "nullptr",
-                cl_get_error_text(retval), err_text);
+   addr.s_addr = inet_addr(ip_string);
 
-        sge_free(&err_text); 
-     }
-     exit(1);
-  }
+   retval = cl_com_cached_gethostbyaddr(&addr, &resolved_name, &he, &system_error);
+   if (retval != CL_RETVAL_OK) {
+      cl_com_cleanup_commlib();
+      if (error_reported == 0) {
+         char *err_text = cl_com_get_h_error_string(system_error);
 
-  if (he == nullptr) {
-     fprintf(stderr,"%s\n","could not get hostent struct");
-  }
+         if (err_text == nullptr) {
+            err_text = strdup(strerror(system_error));
+            if (err_text == nullptr) {
+               err_text = strdup("unexpected error");
+            }
+         }
+         fprintf(stderr, "error resolving ip " SFQ ": %s (%s)\n",
+                 ip_string != nullptr ? ip_string : "nullptr",
+                 cl_get_error_text(retval), err_text);
 
-  if (name_only) {
-     if (sge_aliasing) {
-        if (resolved_name != nullptr) {
-           printf("%s\n",resolved_name);
-        } else {
-           fprintf(stderr,"%s\n","unexpected error");
-           exit(1);
-        }
-     } else {
-        if (he != nullptr) {
-           printf("%s\n",he->h_name);
-        } else {
-           fprintf(stderr,"%s\n","could not get hostent struct");
-           exit(1);
-        }
-     }
-  } else {
-     if (he != nullptr) {
-        printf(MSG_SYSTEM_HOSTNAMEIS_S,he->h_name);
-        printf("\n");
-     }
-   
-     if (resolved_name != nullptr && all_option) {
-        printf("SGE name: %s\n",resolved_name);
-        sge_free(&resolved_name);
-     } 
-   
-     if (he != nullptr) {
-        printf("%s", MSG_SYSTEM_ALIASES);
-   
-        for (tp = he->h_aliases; *tp; tp++)
-          printf("%s ", *tp);
-        printf("\n");
-     
-        printf("%s", MSG_SYSTEM_ADDRESSES);
-   
-        for (tp2 = he->h_addr_list; *tp2; tp2++)
-           printf("%s ", inet_ntoa(* (struct in_addr *) *tp2));  /* inet_ntoa() is not MT save */
-        printf("\n");    
-     }
-  }
-  sge_free_hostent(&he);
-  if (resolved_name != nullptr) {
-     sge_free(&resolved_name);
-  }
-  retval = cl_com_cleanup_commlib();
-  if (retval != CL_RETVAL_OK) {
-     fprintf(stderr,"%s\n",cl_get_error_text(retval));
-     exit(1);
-  }
-  return 0;
+         sge_free(&err_text);
+      }
+      exit(1);
+   }
+
+   if (he == nullptr) {
+      fprintf(stderr, "%s\n", "could not get hostent struct");
+   }
+
+   if (name_only) {
+      if (sge_aliasing) {
+         if (resolved_name != nullptr) {
+            printf("%s\n", resolved_name);
+         } else {
+            fprintf(stderr, "%s\n", "unexpected error");
+            exit(1);
+         }
+      } else {
+         if (he != nullptr) {
+            printf("%s\n", he->h_name);
+         } else {
+            fprintf(stderr, "%s\n", "could not get hostent struct");
+            exit(1);
+         }
+      }
+   } else {
+      if (he != nullptr) {
+         printf(MSG_SYSTEM_HOSTNAMEIS_S, he->h_name);
+         printf("\n");
+      }
+
+      if (resolved_name != nullptr && all_option) {
+         printf("SGE name: %s\n", resolved_name);
+         sge_free(&resolved_name);
+      }
+
+      if (he != nullptr) {
+         printf("%s", MSG_SYSTEM_ALIASES);
+
+         for (tp = he->h_aliases; *tp; tp++)
+            printf("%s ", *tp);
+         printf("\n");
+
+         printf("%s", MSG_SYSTEM_ADDRESSES);
+
+         for (tp2 = he->h_addr_list; *tp2; tp2++)
+            printf("%s ", inet_ntoa(*(struct in_addr *) *tp2)); /* inet_ntoa() is not MT save */
+         printf("\n");
+      }
+   }
+   sge_free_hostent(&he);
+   if (resolved_name != nullptr) {
+      sge_free(&resolved_name);
+   }
+   retval = cl_com_cleanup_commlib();
+   if (retval != CL_RETVAL_OK) {
+      fprintf(stderr, "%s\n", cl_get_error_text(retval));
+      exit(1);
+   }
+   return 0;
 }

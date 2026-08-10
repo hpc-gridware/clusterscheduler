@@ -40,13 +40,11 @@
 #include "msg_utilbin.h"
 #include "uti/sge_language.h"
 
-void usage()
-{
+void usage() {
    fprintf(stderr, "%s range lower upper\n",MSG_UTILBIN_USAGE);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    int i, min, max;
 
 

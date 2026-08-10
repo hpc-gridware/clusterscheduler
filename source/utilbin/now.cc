@@ -44,9 +44,8 @@
 #include <sys/time.h>
 
 /*-------------------------------------------*/
-int main(int argc, char *argv[])
-{
- struct timeval now;
+int main(int argc, char *argv[]) {
+   struct timeval now;
 
 #ifdef SOLARIS
    gettimeofday(&now, nullptr);
@@ -59,5 +58,5 @@ int main(int argc, char *argv[])
  printf("%d\n", (int) now.tv_sec);
 
  exit(0);
- return 0;   
+ return 0;
 }

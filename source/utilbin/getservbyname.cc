@@ -47,65 +47,58 @@
 
 #include "sgeobj/ocs_Version.h"
 
-void usage()
-{
+void usage() {
    fprintf(stderr, "Version: %s\n", ocs::Version::get_version_string().c_str());
    fprintf(stderr, "%s\n getservbyname [-help|-number] service | -check port_number\n\n%s\n",MSG_UTILBIN_USAGE, MSG_COMMAND_USAGE_GETSERVBYNAME );
    /*fprintf(stderr, "       get number of a tcp service\n"); */
    exit(1);
-}   
+}
 
 /*-------------------------------------------------------*/
-int main(int argc, char *argv[])
-{
- int retry = 5;
- int number_only = 0;
- int check_port = 0;
- struct servent *se = nullptr;
+int main(int argc, char *argv[]) {
+   int retry = 5;
+   int number_only = 0;
+   int check_port = 0;
+   struct servent *se = nullptr;
 
 
- if (argc < 2 || argc > 3)
-    usage();
-    
- if (!strcmp(argv[1], "-number"))
-    number_only = 1;
+   if (argc < 2 || argc > 3)
+      usage();
 
- if (!strcmp(argv[1], "-check"))
-    check_port = 1;
-    
- if (!strcmp(argv[1], "-help"))
-    usage();
- 
- if (check_port) {
-    while (retry-- && !((se = getservbyport(htons(atoi(argv[1+check_port])), "tcp"))))
-       ;
-    if (!se) {
-       fprintf(stderr, MSG_SYSTEM_PORTNOTINUSE_S, argv[1+check_port]);
-       fprintf(stderr, "\n");
-       exit(1);
-    } 
-    else {
-       printf("%s\n", se->s_name);
-       exit(0);
-    }
- }
- else {
-    while (retry-- && !((se = getservbyname(argv[1+number_only], "tcp"))))
-       ;
-    if (!se) {
-       fprintf(stderr, MSG_SYSTEM_SERVICENOTFOUND_S , argv[1+number_only]);
-       fprintf(stderr, "\n");
-       exit(1);
-    }
+   if (!strcmp(argv[1], "-number"))
+      number_only = 1;
 
-    if (number_only) { 
-       printf("%d\n", ntohs(se->s_port));
-       exit (0);
-    }
+   if (!strcmp(argv[1], "-check"))
+      check_port = 1;
 
-    printf("%s %d\n", argv[1], ntohs(se->s_port));
-    exit(0);
+   if (!strcmp(argv[1], "-help"))
+      usage();
 
- }
- return 0;
+   if (check_port) {
+      while (retry-- && !((se = getservbyport(htons(atoi(argv[1 + check_port])), "tcp"))));
+      if (!se) {
+         fprintf(stderr, MSG_SYSTEM_PORTNOTINUSE_S, argv[1 + check_port]);
+         fprintf(stderr, "\n");
+         exit(1);
+      } else {
+         printf("%s\n", se->s_name);
+         exit(0);
+      }
+   } else {
+      while (retry-- && !((se = getservbyname(argv[1 + number_only], "tcp"))));
+      if (!se) {
+         fprintf(stderr, MSG_SYSTEM_SERVICENOTFOUND_S, argv[1 + number_only]);
+         fprintf(stderr, "\n");
+         exit(1);
+      }
+
+      if (number_only) {
+         printf("%d\n", ntohs(se->s_port));
+         exit(0);
+      }
+
+      printf("%s %d\n", argv[1], ntohs(se->s_port));
+      exit(0);
+   }
+   return 0;
 }

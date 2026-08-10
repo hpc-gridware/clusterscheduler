@@ -58,8 +58,7 @@
 /** @brief Size of the copy buffer */
 #define BUF_SIZE 8 * 1024
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
    char buffer[BUF_SIZE];
    char *ret;
 

@@ -63,9 +63,8 @@
 #include "ocs_Bootstrap.h"
 
 
-static void 
-usage(const char *argv0)
-{
+static void
+usage(const char *argv0) {
    fprintf(stderr, "%s\n %s command\n\n", MSG_UTILBIN_USAGE, argv0);
    fprintf(stderr, "%s\n", MSG_DBSTAT_COMMANDINTRO1);
    fprintf(stderr, "%s\n", MSG_DBSTAT_COMMANDINTRO2);
@@ -75,9 +74,10 @@ usage(const char *argv0)
    fprintf(stderr, "%s\n", MSG_DBSTAT_DELETE);
 }
 
-static int 
-init_framework()
-{
+static int
+init_framework() {
+   DENTER(TOP_LAYER);
+
    int ret = EXIT_FAILURE;
 
    lList *answer_list = nullptr;
@@ -85,8 +85,6 @@ init_framework()
    const char *spooling_method = ocs::Bootstrap::get_spooling_method();
    const char *spooling_lib = ocs::Bootstrap::get_spooling_lib();
    const char *spooling_params = ocs::Bootstrap::get_spooling_params();
-
-   DENTER(TOP_LAYER);
 
    /* create spooling context */
    spooling_context = spool_create_dynamic_context(&answer_list, 
@@ -133,11 +131,10 @@ get_database_from_key(const char *key)
 #endif
 
 static const lDescr *
-get_descr_from_key(const char *key) 
-{
-   const lDescr *descr = nullptr;
-
+get_descr_from_key(const char *key) {
    DENTER(TOP_LAYER);
+
+   const lDescr *descr = nullptr;
 
    if (key != nullptr) {
       struct saved_vars_s *context = nullptr;
@@ -161,15 +158,14 @@ get_descr_from_key(const char *key)
    DRETURN(descr);
 }
 
-static int 
-list_objects(const char *key) 
-{
+static int
+list_objects(const char *key) {
+   DENTER(TOP_LAYER);
+
    int   ret = EXIT_SUCCESS;
    bool  dbret = false;
    lList *answer_list = nullptr;
    lList *stu_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* 
     * Start transaction to sync with other transaction-protected
@@ -215,14 +211,13 @@ list_objects(const char *key)
    DRETURN(ret);
 }
 
-static int 
-dump_object(const char *key) 
-{
+static int
+dump_object(const char *key) {
+   DENTER(TOP_LAYER);
+
    int ret = EXIT_SUCCESS;
    bool dbret;
    lList *answer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* start a transaction */
    dbret = spool_transaction(&answer_list, spool_get_default_context(), STC_begin);
@@ -276,16 +271,15 @@ dump_object(const char *key)
    DRETURN(ret);
 }
 
-static int 
-load_object(const char *key, const char *fname) 
-{
+static int
+load_object(const char *key, const char *fname) {
+   DENTER(TOP_LAYER);
+
    int ret = EXIT_SUCCESS;
    bool dbret;
    lList *answer_list = nullptr;
    const lDescr *descr;
    lListElem *object = nullptr;
-
-   DENTER(TOP_LAYER);
 
    descr    = get_descr_from_key(key);
 
@@ -345,14 +339,13 @@ FCLOSE_ERROR:
    DRETURN(EXIT_FAILURE);
 }
 
-static int 
-delete_object(const char *key) 
-{
+static int
+delete_object(const char *key) {
+   DENTER(TOP_LAYER);
+
    int ret = EXIT_SUCCESS;
    bool dbret;
    lList *answer_list = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* start a transaction */
    dbret = spool_transaction(&answer_list, spool_get_default_context(), STC_begin);
@@ -383,13 +376,11 @@ delete_object(const char *key)
 }
 
 
-int 
-main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
+   DENTER_MAIN(TOP_LAYER, "spooledit");
+
    int ret = EXIT_SUCCESS;
    lList *answer_list = nullptr;
-
-   DENTER_MAIN(TOP_LAYER, "spooledit");
 
    if (ocs::gdi::ClientBase::setup(SPOOLDEFAULTS, MAIN_THREAD, &answer_list, false) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&answer_list);

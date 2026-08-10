@@ -59,8 +59,7 @@
 #include "msg_smon.h"
 
 static int
-free_lists(lList **sharetree, lList **users, lList **projects, lList **usersets, lList **config)
-{
+free_lists(lList **sharetree, lList **users, lList **projects, lList **usersets, lList **config) {
    lFreeList(sharetree);
    lFreeList(users);
    lFreeList(projects);
@@ -71,8 +70,7 @@ free_lists(lList **sharetree, lList **users, lList **projects, lList **usersets,
 }
 
 static int
-setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets, lList **config)
-{
+setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets, lList **config) {
    lList *alp = nullptr;               /* answer list for individual gdi_multi */
    lEnumeration *what;
    ocs::gdi::Request gdi_multi{};
@@ -171,34 +169,29 @@ setup_lists(lList **sharetree, lList **users, lList **projects, lList **usersets
 }
 
 
-
-
-
 static void
-usage()
-{
-      fprintf(stderr, "%s sge_share_mon [-cdfhilmnorsux] [node_names ...]\n", MSG_USAGE); 
-      fprintf(stderr, "\n" );
-      fprintf(stderr, "   -c count          %s\n", MSG_SGESHAREMON_c_OPT_USAGE );
-      fprintf(stderr, "   -d delimiter      %s\n", MSG_SGESHAREMON_d_OPT_USAGE );
-      fprintf(stderr, "   -f field[,field]  %s\n", MSG_SGESHAREMON_f_OPT_USAGE );
-      fprintf(stderr, "   -h                %s\n", MSG_SGESHAREMON_h_OPT_USAGE );
-      fprintf(stderr, "   -i interval       %s\n", MSG_SGESHAREMON_i_OPT_USAGE );
-      fprintf(stderr, "   -l delimiter      %s\n", MSG_SGESHAREMON_l_OPT_USAGE );
-      fprintf(stderr, "   -m output_mode    %s\n", MSG_SGESHAREMON_m_OPT_USAGE );
-      fprintf(stderr, "   -n                %s\n", MSG_SGESHAREMON_n_OPT_USAGE );
-      fprintf(stderr, "   -o output_file    %s\n", MSG_SGESHAREMON_o_OPT_USAGE );
-      fprintf(stderr, "   -r delimiter      %s\n", MSG_SGESHAREMON_r_OPT_USAGE );
-      fprintf(stderr, "   -s string_format  %s\n", MSG_SGESHAREMON_s_OPT_USAGE );
-      fprintf(stderr, "   -t                %s\n", MSG_SGESHAREMON_t_OPT_USAGE );
-      fprintf(stderr, "   -u                %s\n", MSG_SGESHAREMON_u_OPT_USAGE );
-      fprintf(stderr, "   -x                %s\n", MSG_SGESHAREMON_x_OPT_USAGE );
-      fprintf(stderr,"\n");
+usage() {
+   fprintf(stderr, "%s sge_share_mon [-cdfhilmnorsux] [node_names ...]\n", MSG_USAGE);
+   fprintf(stderr, "\n");
+   fprintf(stderr, "   -c count          %s\n", MSG_SGESHAREMON_c_OPT_USAGE);
+   fprintf(stderr, "   -d delimiter      %s\n", MSG_SGESHAREMON_d_OPT_USAGE);
+   fprintf(stderr, "   -f field[,field]  %s\n", MSG_SGESHAREMON_f_OPT_USAGE);
+   fprintf(stderr, "   -h                %s\n", MSG_SGESHAREMON_h_OPT_USAGE);
+   fprintf(stderr, "   -i interval       %s\n", MSG_SGESHAREMON_i_OPT_USAGE);
+   fprintf(stderr, "   -l delimiter      %s\n", MSG_SGESHAREMON_l_OPT_USAGE);
+   fprintf(stderr, "   -m output_mode    %s\n", MSG_SGESHAREMON_m_OPT_USAGE);
+   fprintf(stderr, "   -n                %s\n", MSG_SGESHAREMON_n_OPT_USAGE);
+   fprintf(stderr, "   -o output_file    %s\n", MSG_SGESHAREMON_o_OPT_USAGE);
+   fprintf(stderr, "   -r delimiter      %s\n", MSG_SGESHAREMON_r_OPT_USAGE);
+   fprintf(stderr, "   -s string_format  %s\n", MSG_SGESHAREMON_s_OPT_USAGE);
+   fprintf(stderr, "   -t                %s\n", MSG_SGESHAREMON_t_OPT_USAGE);
+   fprintf(stderr, "   -u                %s\n", MSG_SGESHAREMON_u_OPT_USAGE);
+   fprintf(stderr, "   -x                %s\n", MSG_SGESHAREMON_x_OPT_USAGE);
+   fprintf(stderr, "\n");
 }
 
 static FILE *
-open_output(const char *file_name, const char *mode) 
-{
+open_output(const char *file_name, const char *mode) {
    FILE *file = stdout;
    
    if (file_name != nullptr) {
@@ -214,8 +207,7 @@ open_output(const char *file_name, const char *mode)
 }
 
 static FILE *
-close_output(FILE *file)
-{
+close_output(FILE *file) {
    if (file != stdout) {
       FCLOSE(file);
       file = nullptr;
@@ -230,9 +222,9 @@ FCLOSE_ERROR:
  * @param argv argument vector
  * @return the program's exit status
  */
-int
-main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
+   DENTER_MAIN(TOP_LAYER, "share_mon");
+
    lList *sharetree = nullptr;
    lList *users = nullptr;
    lList *projects = nullptr;
@@ -258,8 +250,6 @@ main(int argc, char **argv)
 
    lList *alp = nullptr;
    
-   DENTER_MAIN(TOP_LAYER, "share_mon");
-
    format.name_format  = false;
    format.delim        = "\t";
    format.line_delim   = "\n";

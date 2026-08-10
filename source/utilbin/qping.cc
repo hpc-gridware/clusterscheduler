@@ -847,53 +847,52 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
 }
 
 
-static void usage(int ret)
-{
-  size_t max_name_length = 0;
-  size_t i=0;
-  FILE* out = stdout;
+static void usage(int ret) {
+   size_t max_name_length = 0;
+   size_t i = 0;
+   FILE *out = stdout;
 
-  if (ret != 0) {
-     out = stderr;
-  }   
+   if (ret != 0) {
+      out = stderr;
+   }
 
-  fprintf(out, "%s %s\n", ocs::Version::get_short_product_name().c_str(), ocs::Version::get_version_string().c_str());
-  fprintf(out, "%s qping [-help] [-noalias] [-ssl|-tcp] [ [ [-i <interval>] [-info] [-f] ] | [ [-dump_tag tag [param] ] [-dump] [-nonewline] ] ] <host> <port> <name> <id>\n",MSG_UTILBIN_USAGE);
-  fprintf(out, "   -i         : set ping interval time\n");
-  fprintf(out, "   -info      : show full status information and exit\n");
-  fprintf(out, "   -f         : show full status information on each ping interval\n");
-  fprintf(out, "   -noalias   : ignore $SGE_ROOT/SGE_CELL/common/host_aliases file\n");
-  fprintf(out, "   -ssl       : use SSL framework\n");
-  fprintf(out, "   -tcp       : use TCP framework\n");
-  fprintf(out, "   -dump      : dump communication traffic (see \"communication traffic output options\" for additional information)\n");
-  fprintf(out, "                   (provides the same output like -dump_tag MSG)\n");
-  fprintf(out, "   -dump_tag  : dump communication traffic (see \"communication traffic output options\" for additional information)\n");
-  fprintf(out, "                   tag=ALL <debug level> - show all\n");
-  fprintf(out, "                   tag=APP <debug level> - show application messages\n");
-  fprintf(out, "                   tag=MSG               - show commlib protocol messages\n");
-  fprintf(out, "                   <debug level>         - ERROR, WARNING, INFO, DEBUG or DPRINTF\n");
-  fprintf(out, "   -nonewline : dump output will not have a linebreak within a message\n");
-  fprintf(out, "   -help      : show this info\n");
-  fprintf(out, "   host       : host name of running component\n");
-  fprintf(out, "   port       : port number of running component\n");
-  fprintf(out, "   name       : name of running component (e.g.: \"qmaster\" or \"execd\")\n");
-  fprintf(out, "   id         : id of running component (e.g.: 1 for daemons)\n\n");
-  fprintf(out, "example:\n");
-  fprintf(out, "   qping -info clustermaster 5000 qmaster 1\n\n");
-  fprintf(out, "communication traffic output options:\n");
-  fprintf(out, "   The environment variable SGE_QPING_OUTPUT_FORMAT can be used to hide columns and\n");
-  fprintf(out, "   to set default column width. For hostname output the parameter hn is used.\n");
-  fprintf(out, "   SGE_QPING_OUTPUT_FORMAT=\"h:1 h:4 w:1:20\"\n");
-  fprintf(out, "   will hide the columns 1 and 4 and set the width of column 1 to 20 characters.\n");
-  fprintf(out, "       h:X   -> hide column X\n");
-  fprintf(out, "       s:X   -> show column X\n");
-  fprintf(out, "       w:X:Y -> set width of column X to Y\n");
-  fprintf(out, "       hn:X  -> set hostname output parameter X. X values are \"long\" or \"short\"\n\n");
-  fprintf(out, "   available columns are:\n\n");
-  
-  qping_parse_environment();
+   fprintf(out, "%s %s\n", ocs::Version::get_short_product_name().c_str(), ocs::Version::get_version_string().c_str());
+   fprintf(out, "%s qping [-help] [-noalias] [-ssl|-tcp] [ [ [-i <interval>] [-info] [-f] ] | [ [-dump_tag tag [param] ] [-dump] [-nonewline] ] ] <host> <port> <name> <id>\n", MSG_UTILBIN_USAGE);
+   fprintf(out, "   -i         : set ping interval time\n");
+   fprintf(out, "   -info      : show full status information and exit\n");
+   fprintf(out, "   -f         : show full status information on each ping interval\n");
+   fprintf(out, "   -noalias   : ignore $SGE_ROOT/SGE_CELL/common/host_aliases file\n");
+   fprintf(out, "   -ssl       : use SSL framework\n");
+   fprintf(out, "   -tcp       : use TCP framework\n");
+   fprintf(out, "   -dump      : dump communication traffic (see \"communication traffic output options\" for additional information)\n");
+   fprintf(out, "                   (provides the same output like -dump_tag MSG)\n");
+   fprintf(out, "   -dump_tag  : dump communication traffic (see \"communication traffic output options\" for additional information)\n");
+   fprintf(out, "                   tag=ALL <debug level> - show all\n");
+   fprintf(out, "                   tag=APP <debug level> - show application messages\n");
+   fprintf(out, "                   tag=MSG               - show commlib protocol messages\n");
+   fprintf(out, "                   <debug level>         - ERROR, WARNING, INFO, DEBUG or DPRINTF\n");
+   fprintf(out, "   -nonewline : dump output will not have a linebreak within a message\n");
+   fprintf(out, "   -help      : show this info\n");
+   fprintf(out, "   host       : host name of running component\n");
+   fprintf(out, "   port       : port number of running component\n");
+   fprintf(out, "   name       : name of running component (e.g.: \"qmaster\" or \"execd\")\n");
+   fprintf(out, "   id         : id of running component (e.g.: 1 for daemons)\n\n");
+   fprintf(out, "example:\n");
+   fprintf(out, "   qping -info clustermaster 5000 qmaster 1\n\n");
+   fprintf(out, "communication traffic output options:\n");
+   fprintf(out, "   The environment variable SGE_QPING_OUTPUT_FORMAT can be used to hide columns and\n");
+   fprintf(out, "   to set default column width. For hostname output the parameter hn is used.\n");
+   fprintf(out, "   SGE_QPING_OUTPUT_FORMAT=\"h:1 h:4 w:1:20\"\n");
+   fprintf(out, "   will hide the columns 1 and 4 and set the width of column 1 to 20 characters.\n");
+   fprintf(out, "       h:X   -> hide column X\n");
+   fprintf(out, "       s:X   -> show column X\n");
+   fprintf(out, "       w:X:Y -> set width of column X to Y\n");
+   fprintf(out, "       hn:X  -> set hostname output parameter X. X values are \"long\" or \"short\"\n\n");
+   fprintf(out, "   available columns are:\n\n");
 
-  for (i=0;i<ARGUMENT_COUNT;i++) {
+   qping_parse_environment();
+
+   for (i = 0; i < ARGUMENT_COUNT; i++) {
       if (max_name_length < strlen(cl_names[i])) {
          max_name_length = strlen(cl_names[i]);
       }
