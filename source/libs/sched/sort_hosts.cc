@@ -107,8 +107,7 @@ static int get_load_value(double *dvalp, lListElem *global, lListElem *host, con
  *
  * @return 0 on success, -1 otherwise
  */
-int sort_host_list(lList *hl, const lList *centry_list)
-{
+int sort_host_list(lList *hl, const lList *centry_list) {
    DENTER(TOP_LAYER);
    lListElem *global = host_list_locate(hl, SGE_GLOBAL_NAME);
    const char *load_formula = sconf_get_load_formula();
@@ -150,9 +149,10 @@ int sort_host_list(lList *hl, const lList *centry_list)
  *         error - which sorts a host with incorrect load reporting to the end
  *         instead of to the front
  */
-double scaled_mixed_load(const char* load_formula, lListElem *global,
-                         lListElem *host, const lList *centry_list)
-{
+double scaled_mixed_load(const char *load_formula, lListElem *global,
+                         lListElem *host, const lList *centry_list) {
+   DENTER(TOP_LAYER);
+
    char *cp = nullptr;
    char *tf = nullptr;
    char *ptr = nullptr;
@@ -164,8 +164,6 @@ double scaled_mixed_load(const char* load_formula, lListElem *global,
    double load=0;
    int op_pos, next_op=LOAD_OP_NONE;
    char *lasts = nullptr;
-
-   DENTER(TOP_LAYER);
 
    /* we'll use strtok ==> we need a safety copy */
    if ((tf = strdup(load_formula)) == nullptr) {
@@ -291,18 +289,16 @@ double scaled_mixed_load(const char* load_formula, lListElem *global,
 }
 
 
-
 /***********************************************************************
 
    get_load_value
 
  ***********************************************************************/
-static int get_load_value(double *dvalp, lListElem *global, lListElem *host, const lList *centry_list, const char *attrname) 
-{
+static int get_load_value(double *dvalp, lListElem *global, lListElem *host, const lList *centry_list, const char *attrname) {
+   DENTER(TOP_LAYER);
+
    lListElem *cep;
 
-   DENTER(TOP_LAYER);
-   
    /* search complex */
    if (strchr(attrname, '$')) {
       attrname++;

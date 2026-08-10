@@ -68,8 +68,7 @@ static sge_serf_t current_serf = { nullptr, nullptr }; /* thread local */
  *
  * @note MT-NOTE: serf_init() is not MT safe
  */
-void serf_init(record_schedule_entry_func_t write, new_schedule_func_t newline)
-{
+void serf_init(record_schedule_entry_func_t write, new_schedule_func_t newline) {
    current_serf.record_schedule_entry = write;
    current_serf.new_schedule          = newline;
 }
@@ -105,8 +104,7 @@ void serf_init(record_schedule_entry_func_t write, new_schedule_func_t newline)
  */
 void serf_record_entry(uint32_t job_id, uint32_t ja_taskid,
                        const char *type, uint64_t start_time, uint64_t end_time, uint32_t level,
-                       const char *object_name, const char *name, double utilization)
-{
+                       const char *object_name, const char *name, double utilization) {
    DENTER(TOP_LAYER);
 
    char level_char = CENTRY_LEVEL_TO_CHAR(level);
@@ -140,8 +138,7 @@ void serf_record_entry(uint32_t job_id, uint32_t ja_taskid,
  *       MT-NOTE: (2) Otherwise MT safety of serf_new_interval() depends on
  *       MT-NOTE:     MT safety of registered recording function
  */
-void serf_new_interval()
-{
+void serf_new_interval() {
    DENTER(TOP_LAYER);
 
    DPRINTF("================[SCHEDULING-DONE]==================\n");
@@ -161,8 +158,6 @@ void serf_new_interval()
  *
  * @note MT-NOTE: serf_exit() is MT safe
  */
-void serf_exit()
-{
-   memset(&current_serf, 0, sizeof(sge_serf_t)); 
+void serf_exit() {
+   memset(&current_serf, 0, sizeof(sge_serf_t));
 }
-

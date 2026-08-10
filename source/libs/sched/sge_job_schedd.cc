@@ -82,8 +82,7 @@
  *
  * @note MT-NOTE: job_get_duration() is MT safe
  */
-bool job_get_duration(uint64_t *duration, const lListElem *jep)
-{
+bool job_get_duration(uint64_t *duration, const lListElem *jep) {
    DENTER(TOP_LAYER);
 
    if (!job_get_wallclock_limit(duration, jep)) {
@@ -107,7 +106,6 @@ bool job_get_duration(uint64_t *duration, const lListElem *jep)
  * @note MT-NOTE: task_get_duration() is MT safe
  */
 bool task_get_duration(uint64_t *duration, const lListElem *ja_task) {
-
    DENTER(TOP_LAYER);
 
    if (ja_task != nullptr) {
@@ -132,8 +130,7 @@ bool task_get_duration(uint64_t *duration, const lListElem *ja_task) {
  *
  * @return string representation of 'value'
  */
-const char *get_name_of_split_value(int value) 
-{
+const char *get_name_of_split_value(int value) {
    const char *name;
    switch (value) {
    case SPLIT_FINISHED:
@@ -190,9 +187,7 @@ const char *get_name_of_split_value(int value)
  *
  * @see #split_jobs
  */
-bool
-job_move_first_pending_to_running(lListElem **pending_job, lList **splitted_jobs[]) 
-{
+bool job_move_first_pending_to_running(lListElem **pending_job, lList **splitted_jobs[]) {
    bool ret = false;
    lList *ja_task_list = nullptr;      /* JAT_Type */
    lList *r_ja_task_list = nullptr;    /* JAT_Type */
@@ -304,12 +299,11 @@ job_move_first_pending_to_running(lListElem **pending_job, lList **splitted_jobs
  *
  * @return 0 on success, -1 if the job has no task left
  */
-int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret)
-{
+int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret) {
+   DENTER(TOP_LAYER);
+
    lListElem *ja_task;
    uint32_t ja_task_id;
-
-   DENTER(TOP_LAYER);
 
    ja_task = lFirstRW(lGetList(job, JB_ja_tasks));
    if (ja_task == nullptr) {
@@ -343,8 +337,7 @@ int job_get_next_task(lListElem *job, lListElem **task_ret, uint32_t *id_ret)
  *                                     SPLIT_* values; the running and the
  *                                     suspended list are counted
  */
-void user_list_init_jc(lList **user_list, lList **splitted_job_lists[])
-{
+void user_list_init_jc(lList **user_list, lList **splitted_job_lists[]) {
    if (splitted_job_lists[SPLIT_RUNNING] != nullptr) {
       for_each_ep_lv(job, *(splitted_job_lists[SPLIT_RUNNING])) {
          // @todo (CS-451) the 3rd argument to sge_inc_jc is "slots", but we pass the number of array tasks. Correct?
@@ -381,9 +374,8 @@ void user_list_init_jc(lList **user_list, lList **splitted_job_lists[])
  */
 void job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList **job_lists[],
                                                    lList **user_list,
-                                                   const char* user_name,
-                                                   uint32_t max_jobs_per_user)
-{
+                                                   const char *user_name,
+                                                   uint32_t max_jobs_per_user) {
    DENTER(TOP_LAYER);
    if (max_jobs_per_user != 0 && 
        job_lists[SPLIT_PENDING] != nullptr &&
@@ -450,7 +442,7 @@ void job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList 
       } 
    }
    DRETURN_VOID;
-}      
+}
 
 /**
  * @brief Split list of jobs according to their state
@@ -495,8 +487,7 @@ void job_lists_split_with_reference_to_max_running(bool monitor_next_run, lList 
  * @see #trash_splitted_jobs, #job_lists_split_with_reference_to_max_running
  */
 void split_jobs(lList **job_list, uint32_t max_aj_instances,
-                lList **result_list[], bool do_copy)
-{
+                lList **result_list[], bool do_copy) {
 #if 0 /* EB: DEBUG: enable debug messages for split_jobs() */
 #define JOB_SPLIT_DEBUG
 #endif
@@ -838,7 +829,7 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
    }
 
    DRETURN_VOID;
-} 
+}
 
 /**
  * @brief Trash all not needed job lists
@@ -862,8 +853,7 @@ void split_jobs(lList **job_list, uint32_t max_aj_instances,
  *
  * @see #split_jobs, #job_lists_split_with_reference_to_max_running
  */
-void trash_splitted_jobs(bool monitor_next_run, lList **splitted_job_lists[]) 
-{
+void trash_splitted_jobs(bool monitor_next_run, lList **splitted_job_lists[]) {
    int split_id_a[] = {
       SPLIT_ERROR, 
       SPLIT_HOLD, 
@@ -943,15 +933,14 @@ void trash_splitted_jobs(bool monitor_next_run, lList **splitted_job_lists[])
       }
       lFreeList(job_list);
    }
-} 
+}
 
 /**
  * @brief Writes the sizes of all split result lists to the debug output
  *
  * @param[in] job_list the array of result lists, indexed by the SPLIT_* values
  */
-void job_lists_print(lList **job_list[]) 
-{
+void job_lists_print(lList **job_list[]) {
    DENTER(TOP_LAYER);
 
    for (int i = SPLIT_FIRST; i < SPLIT_LAST; i++) {
@@ -968,7 +957,7 @@ void job_lists_print(lList **job_list[])
    } 
 
    DRETURN_VOID;
-} 
+}
 
 /**
  * @brief Lowers the job counter of one user
@@ -980,12 +969,11 @@ void job_lists_print(lList **job_list[])
  * @param[in]     name  the user the counter belongs to
  * @param[in]     slots how much to subtract
  */
-void sge_dec_jc(lList **jcpp, const char *name, int slots) 
-{
+void sge_dec_jc(lList **jcpp, const char *name, int slots) {
+   DENTER(TOP_LAYER);
+
    int n = 0;
    lListElem *ep;
-
-   DENTER(TOP_LAYER);
 
    ep = lGetElemStrRW(*jcpp, JC_name, name);
    if (ep) {
@@ -1006,12 +994,11 @@ void sge_dec_jc(lList **jcpp, const char *name, int slots)
  * @param[in]     name  the user the counter belongs to
  * @param[in]     slots how much to add
  */
-void sge_inc_jc(lList **jcpp, const char *name, int slots) 
-{
+void sge_inc_jc(lList **jcpp, const char *name, int slots) {
+   DENTER(TOP_LAYER);
+
    int n = 0;
    lListElem *ep;
-
-   DENTER(TOP_LAYER);
 
    ep = lGetElemStrRW(*jcpp, JC_name, name);
    if (ep) 
@@ -1035,8 +1022,7 @@ void sge_inc_jc(lList **jcpp, const char *name, int slots)
  *
  * @return the number of granted slots
  */
-int nslots_granted(const lList *granted, const char *qhostname)
-{
+int nslots_granted(const lList *granted, const char *qhostname) {
    int nslots = 0;
 
    if (qhostname == nullptr) {

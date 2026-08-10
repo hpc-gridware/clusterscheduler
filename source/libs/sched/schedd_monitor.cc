@@ -84,8 +84,7 @@ void schedd_set_schedd_log_file() {
  *
  * @return 0 on success, -1 if the run log file could not be written
  */
-int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run)
-{
+int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run) {
    DENTER(TOP_LAYER);
 
    if (monitor_alpp != nullptr) {

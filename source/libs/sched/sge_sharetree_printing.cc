@@ -112,8 +112,7 @@ static const int items = sizeof(item) / sizeof(item_t);
 /* ------------- static functions ---------------- */
 
 static void
-calculate_share_percents(lListElem *node, double parent_percent, double sibling_shares)
-{
+calculate_share_percents(lListElem *node, double parent_percent, double sibling_shares) {
    double sum_shares=0;
 
    for_each_rw_lv(child, lGetList(node, STN_children)) {
@@ -141,8 +140,7 @@ calculate_share_percents(lListElem *node, double parent_percent, double sibling_
 }
 
 static double
-get_usage_value(const lList *usage, const char *name)
-{
+get_usage_value(const lList *usage, const char *name) {
    const lListElem *ue;
    double value = 0;
 
@@ -155,8 +153,7 @@ get_usage_value(const lList *usage, const char *name)
 
 static void
 print_field(dstring *out, rapidjson::Writer<rapidjson::StringBuffer> *writer, const item_t *field,
-            const format_t *format)
-{
+            const format_t *format) {
    // print item name (key in case of json)
    if (out != nullptr && format->name_format) {
       sge_dstring_sprintf_append(out, "%s=", field->name);
@@ -219,8 +216,7 @@ print_field(dstring *out, rapidjson::Writer<rapidjson::StringBuffer> *writer, co
 static void
 print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *node,
            const lListElem *user, const lListElem *project, const char **names, const format_t *format,
-           const lListElem *parent, const char *parent_node_names)
-{
+           const lListElem *parent, const char *parent_node_names) {
    if (node != nullptr) {
       const lList *usage=nullptr, *ltusage=nullptr;
       int i, fields_printed=0;
@@ -377,8 +373,7 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *n
 static void
 print_nodes(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *node, const lListElem *parent,
             const lListElem *project, const lList *users, const lList *projects, bool group_nodes, const char **names,
-            const format_t *format, const char *parent_node_names)
-{
+            const format_t *format, const char *parent_node_names) {
    const lListElem *user;
    const lList *children = lGetList(node, STN_children);
    dstring node_name_dstring = DSTRING_INIT;
@@ -425,12 +420,11 @@ print_nodes(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *
  *
  * @see #sge_sharetree_print
  */
-void
-print_hdr(dstring *out, const format_t *format)
-{
+void print_hdr(dstring *out, const format_t *format) {
+   DENTER(TOP_LAYER);
+
    int i;
 
-   DENTER(TOP_LAYER);
    sge_mutex_lock("sharetree_printing", __func__, __LINE__, &mtx);
    
    if (format->field_names) {
@@ -492,17 +486,14 @@ print_hdr(dstring *out, const format_t *format)
  *
  * @see #print_hdr
  */
-void
-sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lList *sharetree_in,
-                    const lList *users, const lList *projects, const lList *usersets, bool group_nodes,
-                    bool decay_usage, const char **names, const format_t *format)
-{
+void sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lList *sharetree_in,
+                         const lList *users, const lList *projects, const lList *usersets, bool group_nodes,
+                         bool decay_usage, const char **names, const format_t *format) {
+   DENTER(TOP_LAYER);
 
    lListElem *root;
    uint64_t curr_time = 0;
    lList *sharetree;
-
-   DENTER(TOP_LAYER);
 
    /* 
     * The sharetree might contain "default" nodes which
@@ -539,4 +530,3 @@ sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lLi
    lFreeList(&sharetree);
    DRETURN_VOID;
 }
-

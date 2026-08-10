@@ -73,13 +73,12 @@ order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task,
  *
  * @note MT-NOTE: remove_immediate_jobs() is MT safe
  */
-int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, order_t *orders) 
-{
+int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, order_t *orders) {
+   DENTER(TOP_LAYER);
+
    lListElem *next_job, *job;
    const lListElem *ep; 
    const lList* lp;
-
-   DENTER(TOP_LAYER);
 
    next_job = lFirstRW(pending_job_list);
    while ((job = next_job)) {
@@ -129,13 +128,11 @@ int remove_immediate_jobs(lList *pending_job_list, lList *running_job_list, orde
  *
  * @note MT-NOTE: remove_immediate_job() is MT safe
  */
-void 
-remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remove_orders) 
-{
+void remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remove_orders) {
+   DENTER(TOP_LAYER);
+
    const lList *range_list = nullptr;
    uint32_t ja_task_id;
-
-   DENTER(TOP_LAYER);
 
    for_each_ep_lv(ja_task, lGetList(job, JB_ja_tasks)) {
       if (remove_orders) {
@@ -180,9 +177,8 @@ remove_immediate_job(lList *job_list, lListElem *job, order_t *orders, int remov
  *
  * @note MT-NOTE: order_remove_order_and_immediate() is MT safe
  */
-static void 
-order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders)
-{
+static void
+order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders) {
    /* The possibility exists that this task is part of an array task, that it
     * already has earned an order to be scheduled, and that one or more other
     * tasks in this same job were not scheduled, resulting in this delete
@@ -228,9 +224,7 @@ order_remove_order_and_immediate(const lListElem *job, const lListElem *ja_task,
  *
  * @note MT-NOTE: order_remove_immediate() is MT safe
  */
-int 
-order_remove_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders)
-{
+int order_remove_immediate(const lListElem *job, const lListElem *ja_task, order_t *orders) {
    DENTER(TOP_LAYER);
 
    DPRINTF("JOB " sge_u32 "." sge_u32 " can't get dispatched - removing\n",

@@ -58,8 +58,7 @@
 #include "msg_schedd.h"
 
 /* MT-NOTE: parse_job_identifier() is not MT safe */
-static bool parse_job_identifier(const char *id, uint32_t *job_id, uint32_t *ja_task_id)
-{
+static bool parse_job_identifier(const char *id, uint32_t *job_id, uint32_t *ja_task_id) {
    DENTER(TOP_LAYER);
 
    char *copy = strdup(id);
@@ -95,8 +94,7 @@ static bool parse_job_identifier(const char *id, uint32_t *job_id, uint32_t *ja_
  *
  * @see `job_start()`
  */
-bool sge_ssi_job_cancel(sge_evc_class_t *evc, const char *job_identifier, bool reschedule) 
-{
+bool sge_ssi_job_cancel(sge_evc_class_t *evc, const char *job_identifier, bool reschedule) {
    DENTER(TOP_LAYER);
    uint32_t job_id, ja_task_id;
    lList *ref_list = nullptr, *alp;
@@ -151,8 +149,7 @@ bool sge_ssi_job_cancel(sge_evc_class_t *evc, const char *job_identifier, bool r
  *
  * @return true on success, else false
  */
-bool sge_ssi_job_start(sge_evc_class_t *evc, const char *job_identifier, const char *pe, task_map tasks[])
-{
+bool sge_ssi_job_start(sge_evc_class_t *evc, const char *job_identifier, const char *pe, task_map tasks[]) {
    DENTER(TOP_LAYER);
    uint32_t job_id, ja_task_id;
    lListElem *job, *ja_task;
@@ -212,4 +209,3 @@ bool sge_ssi_job_start(sge_evc_class_t *evc, const char *job_identifier, const c
 
    DRETURN(true);
 }
-

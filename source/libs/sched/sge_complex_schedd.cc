@@ -186,8 +186,7 @@ void monitor_dominance(char *str, uint32_t mask) {
 lListElem *
 get_attribute(const char *attrname, const lList *config_attr, const lList *actual_attr, const lList *load_attr,
               const lList *centry_list, const lList *load_adjustments, const lListElem *queue, uint32_t layer,
-              double lc_factor, dstring *reason, bool zero_utilization, uint64_t start_time, uint64_t duration)
-{
+              double lc_factor, dstring *reason, bool zero_utilization, uint64_t start_time, uint64_t duration) {
    DENTER(BASIS_LAYER);
 
    lListElem *cplx_el = nullptr; // this is what we return
@@ -477,6 +476,8 @@ bool get_queue_resource(lListElem *queue_elem, const lListElem *queue, const cha
  * @return true, when the first attribut has a higher priority.
  */
 bool is_attr_prior(lListElem *upper_el, lListElem *lower_el){
+   DENTER(BASIS_LAYER);
+
    uint32_t relop;
    bool ret;
    double upper_value;
@@ -489,8 +490,6 @@ bool is_attr_prior(lListElem *upper_el, lListElem *lower_el){
    uint32_t unused_dom_val;
    uint32_t unused_dom_str;
    uint32_t unused_dom;
-
-   DENTER(BASIS_LAYER);
 
    /* the order is important must not be changed */   
    if(!upper_el){
@@ -568,12 +567,12 @@ bool is_attr_prior(lListElem *upper_el, lListElem *lower_el){
  * @return true, if the value in the structure has the higher priority
  */
 static bool is_attr_prior2(lListElem *upper_el, double lower_value, int t_value, int t_dominant ){
+   DENTER(BASIS_LAYER);
+
    uint32_t relop;
    uint32_t dom;
    bool ret;
    double upper_value;
-
-   DENTER(BASIS_LAYER);
 
    if ((dom = lGetUlong(upper_el, t_dominant)) == 0 || (dom & DOMINANT_TYPE_VALUE) ){
       DRETURN(false);
@@ -643,8 +642,7 @@ lList *centry_list
  * @return always 0
  */
 int queue_complexes2scheduler(lList **new_centry_list, lListElem *queue, const lList *exechost_list,
-                              const lList *centry_list)
-{
+                              const lList *centry_list) {
    DENTER(BASIS_LAYER);
 
    lFreeList(new_centry_list);
@@ -670,10 +668,9 @@ int queue_complexes2scheduler(lList **new_centry_list, lListElem *queue, const l
  *
  * @return a CULL list of elements or nullptr
  */
-static lList *get_attribute_list_by_names(lListElem *global, lListElem *host, 
+static lList *get_attribute_list_by_names(lListElem *global, lListElem *host,
                                           lListElem *queue, const lList *centry_list,
-                                          lList *attrnames)
-{
+                                          lList *attrnames) {
    lListElem *attr;
    lList *list = nullptr;
 
@@ -692,7 +689,6 @@ static lList *get_attribute_list_by_names(lListElem *global, lListElem *host,
 }
 
 
-
 /**
  * @brief Generates a list for all defined elements in a queue, host, global
  *
@@ -705,13 +701,12 @@ static lList *get_attribute_list_by_names(lListElem *global, lListElem *host,
  *
  * @return list of attributes or nullptr, if no attributes exist.
  */
-static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *queue, const lList *centry_list)
-{
+static lList *get_attribute_list(lListElem *global, lListElem *host, lListElem *queue, const lList *centry_list) {
+   DENTER(BASIS_LAYER);
+
    lList *filter = nullptr;
    lList *list = nullptr;
 
-   DENTER(BASIS_LAYER);
-   
    filter = lCreateList("", ST_Type);
 
    if (global != nullptr) {
@@ -775,8 +770,7 @@ static void build_name_filter(lList *filter, const lList *list, int t_name){
  *
  * @return non-zero if the string matches the pattern
  */
-int string_base_cmp(ocs::CEntry::Type type, const char *s1, const char *s2)
-{
+int string_base_cmp(ocs::CEntry::Type type, const char *s1, const char *s2) {
    return sge_eval_expression(type, s1, s2, nullptr);
 }
 
@@ -792,8 +786,7 @@ int string_base_cmp(ocs::CEntry::Type type, const char *s1, const char *s2)
  *
  * @return non-zero if the string matches the pattern
  */
-int string_base_cmp_old(ocs::CEntry::Type type, const char *s1, const char *s2)
-{
+int string_base_cmp_old(ocs::CEntry::Type type, const char *s1, const char *s2) {
 
    int match=0;
 
@@ -855,9 +848,9 @@ const char *offer) {
 }
 
 static int resource_cmp(uint32_t relop, double req, double src_dl) {
-   int match;
-
    DENTER(CULL_LAYER);
+
+   int match;
 
    switch(relop) {
    case CMPLXEQ_OP :
@@ -909,8 +902,7 @@ static int resource_cmp(uint32_t relop, double req, double src_dl) {
  * @return 1 if the request is satisfied, 0 otherwise
  */
 int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char *availability_text,
-                      int is_threshold, int force_existence)
-{
+                      int is_threshold, int force_existence) {
    uint32_t used_relop = 0;
    double req_dl, src_dl;
    int match, m1, m2;
@@ -1163,8 +1155,9 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
  */
 lListElem *
 get_attribute_by_name(const lListElem *global, const lListElem *host, const lListElem *queue, const char *attrname,
-                      const lList *centry_list, const lList *load_adjustments, uint64_t start_time, uint64_t duration)
-{
+                      const lList *centry_list, const lList *load_adjustments, uint64_t start_time, uint64_t duration) {
+   DENTER(BASIS_LAYER);
+
    lListElem *global_el=nullptr;
    lListElem *host_el=nullptr;
    lListElem *queue_el=nullptr;
@@ -1172,8 +1165,6 @@ get_attribute_by_name(const lListElem *global, const lListElem *host, const lLis
    const lList *load_attr = nullptr;
    const lList *config_attr = nullptr;
    const lList *actual_attr = nullptr;
-
-   DENTER(BASIS_LAYER);
 
    if (global != nullptr) {
       double lc_factor = 0;
@@ -1240,15 +1231,13 @@ get_attribute_by_name(const lListElem *global, const lListElem *host, const lLis
 }
 
 
-
 #ifdef TEST
 /* 
 for testing purposes compile (on linux) with:
 gcc -Wall -DLINUX -DTEST -o complex complex.c ../LINUX/sge_parse_num_par.o ../LINUX/log.o ../LINUX/utility.o  ../LINUX/pack.o ../LINUX/free.o ../LINUX/io.o ../LINUX/libcull.a 
 */
 
-int main(int argc, char *argv[], char *envp[])
-{
+int main(int argc, char *argv[], char *envp[]) {
    lListElem *l;
    lList *alp = nullptr;
   
@@ -1306,9 +1295,8 @@ int main(int argc, char *argv[], char *envp[])
  *
  * @note MT-NOTE: request_cq_rejected() is MT safe
  */
-bool request_cq_rejected(const lList* hard_resource_list, const lListElem *cq,
-      const lList *centry_list, bool single_slot, dstring *unsatisfied)
-{
+bool request_cq_rejected(const lList *hard_resource_list, const lListElem *cq,
+                         const lList *centry_list, bool single_slot, dstring *unsatisfied) {
    const lListElem *val_ce = nullptr, *ce; /* CE_Type */
    const char *name, *request, *offer;
    uint32_t relop;

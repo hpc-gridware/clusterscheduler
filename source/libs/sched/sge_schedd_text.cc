@@ -63,9 +63,8 @@ const char* sge_get_schedd_text(int number);
  *
  * @see `sge_schedd_text.h` for how to add a message
  */
-const char* sge_get_schedd_text( int nr ) 
-{
- 
+const char *sge_get_schedd_text(int nr) {
+
    switch(nr)
    {  
       case SCHEDD_INFO_CANNOTRUNATHOST_SSS      :
@@ -425,9 +424,9 @@ const char* sge_get_schedd_text( int nr )
  * @note MT-NOTE: sge_schedd_text() is MT safe
  */
 const char *sge_schedd_text(int number) {
-   const char *error_text = nullptr;
-
    DENTER(TOP_LAYER);
+
+   const char *error_text = nullptr;
 
    error_text = sge_get_schedd_text(number);
 

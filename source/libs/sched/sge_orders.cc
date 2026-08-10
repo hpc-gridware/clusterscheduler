@@ -66,12 +66,11 @@
  *
  * @note MT-NOTE: sge_add_schedd_info() is not MT safe
  */
-lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_count)
-{
+lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_count) {
+   DENTER(TOP_LAYER);
+
    lList *jlist;
    lListElem *sme, *ep;
-
-   DENTER(TOP_LAYER);
 
    sme = schedd_mes_obtain_package(global_mes_count, job_mes_count);
 
@@ -131,15 +130,13 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
  *
  * @note MT-NOTE: sge_create_orders() is MT safe
  */
-lList
-*sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, const lListElem *ja_task,
-                   const lList *granted , bool update_execd)
-{
+lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, const lListElem *ja_task,
+                         const lList *granted, bool update_execd) {
+   DENTER(TOP_LAYER);
+
    lList *ql = nullptr;
    lListElem *ep, *ep2;
    uint32_t qslots;
-
-   DENTER(TOP_LAYER);
 
    if (!job) {
       lFreeList(&or_list);
@@ -318,16 +315,14 @@ lList
  *
  * @return `STATUS_OK`, or the error status of the GDI request
  */
-int
-sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
-{
+int sge_send_orders2master(sge_evc_class_t *evc, lList **orders) {
+   DENTER(TOP_LAYER);
+
    int ret = STATUS_OK;
    lList *alp = nullptr;
 
    int order_id = 0;
    ocs::gdi::Request gdi_multi{};
-
-   DENTER(TOP_LAYER);
 
    if (*orders != nullptr) {
       DPRINTF("SENDING %d ORDERS TO QMASTER\n", lGetNumberOfElem(*orders));
@@ -353,7 +348,6 @@ sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
 
    DRETURN(ret);
 }
-
 
 
 /* CS-1239: create_delete_job_orders removed - the worker thread now buries

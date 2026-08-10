@@ -85,8 +85,7 @@
  * @return 0 on success, 1 if no queue list or host list was passed
  */
 int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
-                  uint64_t decay_time, bool monitor_next_run)
-{
+                 uint64_t decay_time, bool monitor_next_run) {
    DENTER(TOP_LAYER);
 
    if (queue_list == nullptr || host_list == nullptr) {
@@ -198,9 +197,7 @@ int correct_load(lList *running_jobs, lList *queue_list, lList *host_list,
  *
  * @return always 0
  */
-int 
-correct_capacities(lList *host_list, const lList *centry_list) 
-{
+int correct_capacities(lList *host_list, const lList *centry_list) {
    DENTER(TOP_LAYER);
    lListElem *cep;
    const lListElem *job_load;

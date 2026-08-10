@@ -81,8 +81,7 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
  * @param lists Additional config information
  */
 void sge_do_urgency(uint64_t now, lList *running_jobs, lList *pending_jobs,
-                    scheduler_all_data_t *lists)
-{
+                    scheduler_all_data_t *lists) {
    double min_urgency = DBL_MAX;
    double max_urgency = DBL_MIN;
 
@@ -98,7 +97,7 @@ void sge_do_urgency(uint64_t now, lList *running_jobs, lList *pending_jobs,
    }   
    if (running_jobs) {
       sge_normalize_urgency(running_jobs, min_urgency, max_urgency);
-   }   
+   }
 }
 
 /**
@@ -122,8 +121,7 @@ void sge_do_urgency(uint64_t now, lList *running_jobs, lList *pending_jobs,
  * @param pe_list Needed to determine urgency slot setting.
  */
 static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
-               lList *job_list, const lList *centry_list, lList *pe_list)
-{
+                        lList *job_list, const lList *centry_list, lList *pe_list) {
    DENTER(TOP_LAYER);
    double rrc, wtc, dtc, absolute_urgency;
    int slots;
@@ -221,8 +219,7 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
  *
  * @note MT-NOTES: sge_normalize_urgency() is MT safe
  */
-static void sge_normalize_urgency(lList *job_list, double min_urgency, double max_urgency)
-{
+static void sge_normalize_urgency(lList *job_list, double min_urgency, double max_urgency) {
    DENTER(TOP_LAYER);
 
    DPRINTF("ASU min = %13.11f, ASU max = %13.11f\n", min_urgency, max_urgency);
@@ -252,16 +249,15 @@ static void sge_normalize_urgency(lList *job_list, double min_urgency, double ma
  *       first matching is used. Behaviour is undefined if multiple parallel
  *       environments specify different settings!
  */
-int sge_job_slot_request(const lListElem *job, const lList *pe_list)
-{
+int sge_job_slot_request(const lListElem *job, const lList *pe_list) {
+   DENTER(TOP_LAYER);
+
    const char *pe_name;
    const char *urgency_slot_setting; 
    const lList* range_list;
    const lListElem *pep;
    int n;
   
-   DENTER(TOP_LAYER);
-
    /* sequential job */
    if (!(pe_name=lGetString(job, JB_pe))) {
       DRETURN(1);
@@ -303,5 +299,3 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list)
 
    DRETURN(n);
 }
-
-

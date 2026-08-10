@@ -326,8 +326,7 @@ print_tagged4schedule(const lListElem *qinstance) {
  * @param[in]  ja_task          the array task (`JAT_Type`), may be nullptr
  * @param[in]  load_adjustments the load adjustments to apply
  */
-void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments)
-{
+void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments) {
    if (job != nullptr) {
       a->job = job;
       a->user = lGetString(job, JB_owner);
@@ -502,8 +501,7 @@ assignment_init_pe(sge_assignment_t *a, lListElem *pe) {
  * @param[in,out] src        the assignment to copy from
  * @param[in]     move_gdil  move the granted list and the caches to `dst`
  */
-void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdil)
-{
+void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdil) {
    if (dst == nullptr || src == nullptr) {
       return;
    }
@@ -534,8 +532,7 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
  *
  * @param[in,out] a the assignment
  */
-void assignment_release(sge_assignment_t *a)
-{
+void assignment_release(sge_assignment_t *a) {
    lFreeList(&(a->gdil));
    lFreeList(&(a->binding_to_use));
    lFreeList(&(a->limit_list));
@@ -551,16 +548,14 @@ void assignment_release(sge_assignment_t *a)
  *
  * @param[in,out] a the assignment
  */
-void assignment_clear_cache(sge_assignment_t *a)
-{
+void assignment_clear_cache(sge_assignment_t *a) {
    lFreeList(&(a->limit_list));
    lFreeList(&(a->skip_cqueue_list));
    lFreeList(&(a->skip_host_list));
 }
 
 static dispatch_t
-find_best_result(dispatch_t r1, dispatch_t r2)
-{
+find_best_result(dispatch_t r1, dispatch_t r2) {
    DENTER(BASIS_LAYER);
 
    if (r1 == DISPATCH_NEVER ||
@@ -597,8 +592,7 @@ find_best_result(dispatch_t r1, dispatch_t r2)
 
 
 static bool
-is_not_better(sge_assignment_t *a, uint32_t viola_best, uint64_t tt_best, uint32_t viola_this, uint64_t tt_this)
-{
+is_not_better(sge_assignment_t *a, uint32_t viola_best, uint64_t tt_best, uint32_t viola_this, uint64_t tt_this) {
    /* earlier start time has higher preference than lower soft violations */
    if (a->is_reservation && tt_this >= tt_best)
       return true;
@@ -658,8 +652,7 @@ is_acceptable_result(sge_assignment_t *a) {
  * @note MT-NOTE: sge_select_parallel_environment() is not MT safe
  */
 dispatch_t
-sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
-{
+sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list) {
    DENTER(TOP_LAYER);
    int matched_pe_count = 0;
    const char *pe_request, *pe_name;
@@ -889,9 +882,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
  *
  * @note MT-NOTE: clean_up_parallel_job() is not MT safe
  */
-static
-void clean_up_parallel_job(sge_assignment_t *a)
-{
+static void clean_up_parallel_job(sge_assignment_t *a) {
    qinstance_list_set_tag(a->queue_list, 0);
 }
 
@@ -912,8 +903,9 @@ void clean_up_parallel_job(sge_assignment_t *a)
  * @note MT-NOTE: parallel_reservation_max_time_slots() is not MT safe
  */
 static dispatch_t
-parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots)
-{
+parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots) {
+   DENTER(TOP_LAYER);
+
    uint64_t pe_time, first_time;
    sge_assignment_t tmp_assignment = SGE_ASSIGNMENT_INIT;
    dispatch_t result = DISPATCH_NEVER_CAT;
@@ -922,8 +914,6 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
    int old_logging = 0;
    category_use_t use_category;
    DSTRING_STATIC(time_str, 64);
-
-   DENTER(TOP_LAYER);
 
    /* assemble job category information */
    fill_category_use_t(best, &use_category, best->pe_name);
@@ -1049,8 +1039,7 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
  *       add_pe_slots_to_category
  */
 static dispatch_t
-parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
-{
+parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots) {
    DENTER(TOP_LAYER);
 
    int min_slots, max_slots;
@@ -1295,11 +1284,9 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
  *       -l request. Because of in serial jobs requests can be simply added.
  *       In Parallel jobs each -l requests a different set of queues.
  */
-bool
-sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
-                 lList *exechost_list, lList *centry_list, bool allow_non_requestable,
-                 int slots, lList *queue_user_list, lList *acl_list, lListElem *job)
-{
+bool sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
+                      lList *exechost_list, lList *centry_list, bool allow_non_requestable,
+                      int slots, lList *queue_user_list, lList *acl_list, lListElem *job) {
    DENTER(TOP_LAYER);
    dispatch_t ret;
    const lList *load_attr = nullptr;
@@ -1490,8 +1477,7 @@ static dispatch_t
 rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, const lList *config_attr,
                  const lList *actual_attr, const lListElem *host, lListElem *queue, bool allow_non_requestable,
                  dstring *reason, int slots, uint32_t layer, double lc_factor, uint32_t tag,
-                 uint64_t *start_time, const char *object_name)
-{
+                 uint64_t *start_time, const char *object_name) {
    DENTER(TOP_LAYER);
    static lListElem *implicit_slots_request = nullptr;
    uint64_t latest_time = DISPATCH_TIME_NOW;
@@ -1654,13 +1640,12 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
 
 static dispatch_t
 match_static_resource(int slots, lListElem *req_cplx, lListElem *src_cplx, dstring *reason,
-                      bool allow_non_requestable)
-{
+                      bool allow_non_requestable) {
+   DENTER(TOP_LAYER);
+
    int match;
    dispatch_t ret = DISPATCH_OK;
    char availability_text[2048];
-
-   DENTER(TOP_LAYER);
 
    /* check whether attrib is requestable */
    if (!allow_non_requestable && lGetUlong(src_cplx, CE_requestable) == REQU_NO) {
@@ -1752,8 +1737,7 @@ get_soft_queue_list(const lListElem *job, const lList *&soft_queue_list) {
  * @return DISPATCH_OK, ok DISPATCH_NEVER_CAT, assignment will never be possible for all jobs of that category
  */
 
-dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue, bool need_master)
-{
+dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue, bool need_master) {
    DENTER(TOP_LAYER);
 
    const char *qinstance_name = lGetString(queue, QU_full_name);
@@ -1964,8 +1948,7 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue, b
 }
 
 static bool
-job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_or_host, bool is_qinstance)
-{
+job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_or_host, bool is_qinstance) {
    DENTER(TOP_LAYER);
    bool ret = false;
 
@@ -2036,14 +2019,13 @@ job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_o
 static int
 compute_soft_violations(const sge_assignment_t *a, const lListElem *host, lListElem *queue, int violation,
                         const lList *load_attr, const lList *config_attr,
-                        const lList *actual_attr, uint32_t layer, double lc_factor, uint32_t tag)
-{
+                        const lList *actual_attr, uint32_t layer, double lc_factor, uint32_t tag) {
+   DENTER(TOP_LAYER);
+
    const char *queue_name = nullptr;
    DSTRING_STATIC(reason, 1024 + 1);
    unsigned int soft_violation = violation;
    uint64_t start_time = DISPATCH_TIME_NOW;
-
-   DENTER(TOP_LAYER);
 
    lList *soft_requests = job_get_soft_resource_listRW(a->job);
    clear_resource_tags(soft_requests, tag);
@@ -2118,12 +2100,11 @@ compute_soft_violations(const sge_assignment_t *a, const lListElem *host, lListE
  *         it is on the host's reschedule unknown list
  */
 dispatch_t
-sge_host_match_static(const sge_assignment_t *a, const lListElem *host)
-{
+sge_host_match_static(const sge_assignment_t *a, const lListElem *host) {
+   DENTER(TOP_LAYER);
+
    const lList *projects;
    const char *eh_name;
-
-   DENTER(TOP_LAYER);
 
    if (!host) {
       DRETURN(DISPATCH_OK);
@@ -2221,8 +2202,7 @@ sge_host_match_static(const sge_assignment_t *a, const lListElem *host)
  *
  * @note MT-NOTE: is_requested() is MT safe
  */
-bool is_requested(const lList *req, const char *attr)
-{
+bool is_requested(const lList *req, const char *attr) {
    if (req != nullptr) {
       if (lGetElemStr(req, CE_name, attr) ||
           lGetElemStr(req, CE_shortcut, attr)) {
@@ -2247,8 +2227,7 @@ bool is_requested(const lList *req, const char *attr)
  *
  * @note MT-NOTE: is_requested() is MT safe
  */
-bool is_requested(const lListElem *job, const char *attr)
-{
+bool is_requested(const lListElem *job, const char *attr) {
    bool ret = false;
 
    const lList *global_request_list = job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL);
@@ -2269,8 +2248,7 @@ bool is_requested(const lListElem *job, const char *attr)
 static int
 load_check_alarm(char *reason, size_t reason_size, const char *name, const char *load_value, const char *limit_value,
                  uint32_t relop, ocs::CEntry::Type type, lListElem *hep, const lListElem *hlep, double lc_host, double lc_global,
-                 const lList *load_adjustments, int load_is_value)
-{
+                 const lList *load_adjustments, int load_is_value) {
    const lListElem *job_load;
    double limit, load;
    int match;
@@ -2423,8 +2401,7 @@ static int load_np_value_adjustment(const char* name, lListElem *hep, double *lo
    return nproc;
 }
 
-static int resource_cmp(uint32_t relop, double req, double src_dl)
-{
+static int resource_cmp(uint32_t relop, double req, double src_dl) {
    int match;
 
    switch(relop) {
@@ -2471,19 +2448,17 @@ static int resource_cmp(uint32_t relop, double req, double src_dl)
  * @return 1 if a threshold is exceeded, 0 otherwise
  */
 
-int
-sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const lList *threshold,
-               const lList *exechost_list, const lList *centry_list,
-               const lList *load_adjustments, bool is_check_consumable)
-{
+int sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const lList *threshold,
+                   const lList *exechost_list, const lList *centry_list,
+                   const lList *load_adjustments, bool is_check_consumable) {
+   DENTER(TOP_LAYER);
+
    lListElem *hep, *global_hep;
    uint32_t ulc_factor;
    const char *load_value = nullptr;
    const char *limit_value = nullptr;
    double lc_host = 0, lc_global = 0;
    int load_is_value = 0;
-
-   DENTER(TOP_LAYER);
 
    if (!threshold) {
       /* no threshold -> no alarm */
@@ -2608,8 +2583,7 @@ sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const lLi
 char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
                             const lList *exechost_list, const lList *centry_list,
                             char *reason, int reason_size,
-                            const char *threshold_type)
-{
+                            const char *threshold_type) {
    DENTER(TOP_LAYER);
 
    *reason = 0;
@@ -2723,11 +2697,11 @@ bool  is_consumable_load_alarm, /* is true, when the consumable evaluation
 bool is_comprehensive,          /* do the load evaluation comprehensive (include consumables) */
 uint32_t ttype
 ) {
+   DENTER(TOP_LAYER);
+
    const lList *thresholds;
    int nverified = 0;
    char reason[2048];
-
-   DENTER(TOP_LAYER);
 
    /* a job has been dispatched recently,
       but load correction is not in use at all */
@@ -2793,13 +2767,12 @@ uint32_t ttype
  *
  * @return 0 success -1 error
  */
-int sge_split_queue_slots_free(bool monitor_next_run, lList **free, lList **full)
-{
+int sge_split_queue_slots_free(bool monitor_next_run, lList **free, lList **full) {
+   DENTER(TOP_LAYER);
+
    lList *full_queues = nullptr;
    lListElem *thiz = nullptr;
    lListElem *next = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (free == nullptr) {
       DRETURN(-1);
@@ -2868,11 +2841,11 @@ bool monitor_next_run,
 lList **queue_list,        /* QU_Type */
 lList **suspended         /* QU_Type */
 ) {
+   DENTER(TOP_LAYER);
+
    lCondition *where;
    int ret;
    lList *lp = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (!queue_list) {
       DRETURN(-1);
@@ -2928,14 +2901,12 @@ lList **suspended         /* QU_Type */
  *
  * @return 0 on success, -1 on an error in a called function
  */
-int
-sge_split_cal_disabled(bool monitor_next_run, lList **queue_list, lList **disabled)
-{
+int sge_split_cal_disabled(bool monitor_next_run, lList **queue_list, lList **disabled) {
+   DENTER(TOP_LAYER);
+
    lCondition *where;
    int ret;
    lList *lp = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (!queue_list) {
       DRETURN(-1);
@@ -2980,14 +2951,12 @@ sge_split_cal_disabled(bool monitor_next_run, lList **queue_list, lList **disabl
  *
  * @return 0 on success, -1 on an error in a called function
  */
-int
-sge_split_disabled(bool monitor_next_run, lList **queue_list, lList **disabled)
-{
+int sge_split_disabled(bool monitor_next_run, lList **queue_list, lList **disabled) {
+   DENTER(TOP_LAYER);
+
    lCondition *where;
    int ret;
    lList *lp = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (!queue_list) {
       DRETURN(-1);
@@ -3033,8 +3002,7 @@ sge_split_disabled(bool monitor_next_run, lList **queue_list, lList **disabled)
  *
  * @note MT-NOTE: pe_cq_rejected() is MT safe
  */
-static bool pe_cq_rejected(const char *pe_name, const lListElem *cq)
-{
+static bool pe_cq_rejected(const char *pe_name, const lListElem *cq) {
    DENTER(TOP_LAYER);
 
    if (!pe_name) {
@@ -3065,8 +3033,7 @@ static bool pe_cq_rejected(const char *pe_name, const lListElem *cq)
  *
  * @note MT-NOTE: project_cq_rejected() is MT safe
  */
-static bool project_cq_rejected(const char *project, const lListElem *cq)
-{
+static bool project_cq_rejected(const char *project, const lListElem *cq) {
    DENTER(TOP_LAYER);
    const lList *projects;
 
@@ -3122,8 +3089,7 @@ static bool project_cq_rejected(const char *project, const lListElem *cq)
  *
  * @note MT-NOTE: interactive_cq_rejected() is MT safe
  */
-static bool interactive_cq_rejected(const lListElem *cq)
-{
+static bool interactive_cq_rejected(const lListElem *cq) {
    DENTER(TOP_LAYER);
 
    bool rejected = true;
@@ -3169,8 +3135,7 @@ bool sge_contained_in_access_list_(const char * user, const char * group, const 
  */
 static bool
 access_cq_rejected(const char *user, const char *group, const lList *grp_list,
-                   const lList *acl_list, const lListElem *cq)
-{
+                   const lList *acl_list, const lListElem *cq) {
    DENTER(TOP_LAYER);
 
    /* rejected, if user/group is excluded by each "xacl" profile */
@@ -3356,8 +3321,9 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a) {
  * @note MT-NOTE: sequential_tag_queues_suitable4job() is not MT safe
  */
 static dispatch_t
-sequential_tag_queues_suitable4job(sge_assignment_t *a)
-{
+sequential_tag_queues_suitable4job(sge_assignment_t *a) {
+   DENTER(TOP_LAYER);
+
    lList *skip_host_list = nullptr;
    lList *skip_queue_list = nullptr;
 
@@ -3380,8 +3346,6 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
    lListElem *best_qep = nullptr;
    uint32_t best_qep_violations = std::numeric_limits<uint32_t>::max();
    uint64_t best_qep_tt = std::numeric_limits<uint64_t>::max();
-
-   DENTER(TOP_LAYER);
 
    /* assemble job category information */
    fill_category_use_t(a, &use_category, "NONE");
@@ -3645,7 +3609,6 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
 }
 
 
-
 /**
  * @brief Defines an array of valid slot values
  *
@@ -3727,11 +3690,10 @@ add_pe_slots_to_category(sge_assignment_t *a, category_use_t *use_category, uint
  *
  * @note MT-NOTE: fill_category_use_t() is MT safe
  */
-static void fill_category_use_t(const sge_assignment_t *a, category_use_t *use_category, const char *pe_name)
-{
-   lListElem *job = a->job;
-
+static void fill_category_use_t(const sge_assignment_t *a, category_use_t *use_category, const char *pe_name) {
    DENTER(TOP_LAYER);
+
+   lListElem *job = a->job;
 
    use_category->category = (lListElem *)lGetRef(job, JB_category);
    if (use_category->category != nullptr) {
@@ -3769,8 +3731,7 @@ static void fill_category_use_t(const sge_assignment_t *a, category_use_t *use_c
    DRETURN_VOID;
 }
 
-static int get_soft_violations(sge_assignment_t *a, lListElem *hep, lListElem *qep)
-{
+static int get_soft_violations(sge_assignment_t *a, lListElem *hep, lListElem *qep) {
    int violations;
 
    // @todo CS-483 only compute soft violations for a host if EH_soft_violations == -1
@@ -4192,8 +4153,7 @@ parallel_allocate_queue_slots(sge_assignment_t *a, const char *eh_name, bool hav
  * @note MT-NOTE: parallel_tag_queues_suitable4job() is not MT safe
  */
 static dispatch_t
-parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_category, int *available_slots)
-{
+parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_category, int *available_slots) {
    DENTER(TOP_LAYER);
 
    lListElem *job = a->job;
@@ -4758,8 +4718,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, lListElem *hep, bool need_m
 static dispatch_t
 parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool need_master,
                           bool is_master_host, bool *master_host, category_use_t *use_category,
-                          lList **unclear_cqueue_list, int min_host_slots, int max_host_slots)
-{
+                          lList **unclear_cqueue_list, int min_host_slots, int max_host_slots) {
    DENTER(TOP_LAYER);
 
    bool suited_as_master_host = false;
@@ -5024,12 +4983,11 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host) {
  *
  * @note MT-NOTE: sge_sequential_assignment() is not MT safe
  */
-dispatch_t sge_sequential_assignment(sge_assignment_t *a)
-{
+dispatch_t sge_sequential_assignment(sge_assignment_t *a) {
+   DENTER(TOP_LAYER);
+
    dispatch_t result;
    int old_logging = 0;
-
-   DENTER(TOP_LAYER);
 
    if (a == nullptr) {
       DRETURN(DISPATCH_NEVER_CAT);
@@ -5188,8 +5146,9 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a)
  *  It is much faster not to review slots in a comprehensive fashion
  *  for jobs of this type.
  * ------------------------------------------------------------------*/
-static int sequential_update_host_order(lList *host_list, lList *queues)
-{
+static int sequential_update_host_order(lList *host_list, lList *queues) {
+   DENTER(TOP_LAYER);
+
    lListElem *qep;
    double previous_load = 0;
    int previous_load_inited = 0;
@@ -5197,8 +5156,6 @@ static int sequential_update_host_order(lList *host_list, lList *queues)
    const char *eh_name;
    const void *iterator = nullptr;
    bool host_order_changed = false;
-
-   DENTER(TOP_LAYER);
 
    if (!sconf_get_host_order_changed()) {
       DRETURN(0);
@@ -5255,8 +5212,7 @@ static int sequential_update_host_order(lList *host_list, lList *queues)
  * @note MT-NOTE: parallel_assignment() is not MT safe
  */
 static dispatch_t
-parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *available_slots)
-{
+parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *available_slots) {
    DENTER(TOP_LAYER);
 
    dispatch_t ret;
@@ -5298,7 +5254,6 @@ parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *avai
 }
 
 
-
 /**
  * @brief Return queue slots available at time period
  *
@@ -5312,8 +5267,7 @@ parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *avai
  */
 static dispatch_t
 parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, bool need_master,
-                     bool is_master_queue, bool &found_master_host, bool allow_non_requestable)
-{
+                     bool is_master_queue, bool &found_master_host, bool allow_non_requestable) {
    DENTER(TOP_LAYER);
 
    const lList *config_attr = lGetList(qep, QU_consumable_config_list);
@@ -5369,8 +5323,9 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, bool need_
  * @return 0 ok got an assignment + set time for DISPATCH_TIME_NOW and DISPATCH_TIME_QUEUE_END (only with fixed_slot equals true) 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category
  */
 static dispatch_t
-sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations, lListElem *qep)
-{
+sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations, lListElem *qep) {
+   DENTER(TOP_LAYER);
+
    dstring reason;
    char reason_buf[1024];
    dispatch_t result;
@@ -5379,8 +5334,6 @@ sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations, lLi
    const lList *config_attr = lGetList(qep, QU_consumable_config_list);
    const lList *actual_attr = lGetList(qep, QU_resource_utilization);
    const char *qname = lGetString(qep, QU_full_name);
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&reason, reason_buf, sizeof(reason_buf));
 
@@ -5418,8 +5371,6 @@ sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations, lLi
 }
 
 
-
-
 /**
  * @brief Return time when host slots are available
  *
@@ -5451,8 +5402,7 @@ sequential_queue_time(uint64_t *start, sge_assignment_t *a, int *violations, lLi
  * @param acl_list
  */
 static dispatch_t
-sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, const lListElem *hep)
-{
+sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, const lListElem *hep) {
    lList *hard_requests = job_get_hard_resource_listRW(a->job);
    const lList *load_attr = lGetList(hep, EH_load_list);
    const lList *config_attr = lGetList(hep, EH_consumable_config_list);
@@ -5519,8 +5469,7 @@ sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, cons
  * @return 0 ok got an assignment + set time for DISPATCH_TIME_QUEUE_END 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category
  */
 static dispatch_t
-sequential_global_time(uint64_t *start, sge_assignment_t *a, int *violations)
-{
+sequential_global_time(uint64_t *start, sge_assignment_t *a, int *violations) {
    dstring reason; char reason_buf[1024];
    dispatch_t result = DISPATCH_NEVER_CAT;
    uint64_t tmp_time = *start;
@@ -5592,8 +5541,7 @@ sequential_global_time(uint64_t *start, sge_assignment_t *a, int *violations)
  * @return 0 ok got an assignment + set time for DISPATCH_TIME_QUEUE_END 1 no assignment at the specified time -1 assignment will never be possible for all jobs of that category
  */
 static dispatch_t
-parallel_global_slots(sge_assignment_t *a, int *slots)
-{
+parallel_global_slots(sge_assignment_t *a, int *slots) {
    DENTER(TOP_LAYER);
 
    dispatch_t result = DISPATCH_NEVER_CAT;
@@ -5642,8 +5590,9 @@ parallel_global_slots(sge_assignment_t *a, int *slots)
  * @note MT-NOTE: parallel_available_slots() is not MT safe
  */
 static dispatch_t
-parallel_available_slots(const sge_assignment_t *a, int *slots)
-{
+parallel_available_slots(const sge_assignment_t *a, int *slots) {
+   DENTER(TOP_LAYER);
+
    dstring reason;
    char reason_buf[1024];
    dispatch_t result;
@@ -5653,8 +5602,6 @@ parallel_available_slots(const sge_assignment_t *a, int *slots)
    lListElem *tep = nullptr;
    char strbuf[100];
    dstring slots_as_str;
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&reason, reason_buf, sizeof(reason_buf));
 
@@ -5713,11 +5660,11 @@ parallel_available_slots(const sge_assignment_t *a, int *slots)
  * @return 0 on success, -1 if the queue has no such attribute, -2 if the
  *         value cannot be converted to a number
  */
-int
-sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q,
-                     const lList *exechost_list, const lList *centry_list,
-                     bool *has_value_from_object)
-{
+int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q,
+                         const lList *exechost_list, const lList *centry_list,
+                         bool *has_value_from_object) {
+   DENTER(TOP_LAYER);
+
    int ret = -1;
    lListElem *ep;
    ocs::CEntry::Type type;
@@ -5725,8 +5672,6 @@ sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q,
    char dom_str[4];
    lListElem *global = nullptr;
    lListElem *host = nullptr;
-
-   DENTER(TOP_LAYER);
 
    global = host_list_locate(exechost_list, SGE_GLOBAL_NAME);
    host = host_list_locate(exechost_list, lGetHost(q, QU_qhostname));
@@ -5780,12 +5725,12 @@ lListElem *q,
 const lList *exechost_list,
 const lList *centry_list
 ) {
+   DENTER(TOP_LAYER);
+
    lListElem *ep;
    lListElem *global = nullptr;
    lListElem *host = nullptr;
    int ret = -1;
-
-   DENTER(TOP_LAYER);
 
    global = host_list_locate(exechost_list, SGE_GLOBAL_NAME);
    host = host_list_locate(exechost_list, lGetHost(q, QU_qhostname));
@@ -5839,8 +5784,7 @@ const lList *centry_list
 dispatch_t
 ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_attr, const lList *config_attr,
                  const lList *actual_attr, const lListElem *host, const lListElem *queue, dstring *reason, bool allow_non_requestable,
-                 int slots, uint32_t layer, double lc_factor, uint64_t *start_time, const char *object_name, ocs::TopologyString& binding_inuse)
-{
+                 int slots, uint32_t layer, double lc_factor, uint64_t *start_time, const char *object_name, ocs::TopologyString &binding_inuse) {
    DENTER(TOP_LAYER);
 
    lListElem *cplx_el=nullptr;
@@ -6048,8 +5992,7 @@ static dispatch_t
 ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, lListElem *request,
                  const lList *load_attr, const lList *total_list, const lList *additional_usage, lListElem *host, lListElem *queue,
                  uint32_t layer, double lc_factor, dstring *reason, bool allow_non_requestable, bool no_centry,
-                 const char *object_name, ocs::TopologyString& binding_inuse)
-{
+                 const char *object_name, ocs::TopologyString &binding_inuse) {
    DENTER(TOP_LAYER);
 
    const lListElem *tep = nullptr;
@@ -6262,8 +6205,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                           lListElem *host, lListElem *queue,
                           uint32_t layer, double lc_factor, uint32_t tag, bool need_master,
                           bool is_master_host, bool &found_master_host, bool allow_non_requestable,
-                          const char *object_name, bool isRQ)
-{
+                          const char *object_name, bool isRQ) {
    DENTER(TOP_LAYER);
 
    DSTRING_STATIC(reason, 1024);
@@ -6781,14 +6723,14 @@ static lListElem *load_locate_elem(lList *load_list, lListElem *global_consumabl
  */
 bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *host_list,
                          const lList *centry_list) {
+   DENTER(TOP_LAYER);
+
    lListElem *load;
    lListElem *queue;
    lListElem *queue_ref;
    lList *queue_ref_list;
    char reason[2048];
    bool is_alarm = false;
-
-   DENTER(TOP_LAYER);
 
    if (load_list == nullptr) {
       DRETURN(is_alarm);
@@ -6831,10 +6773,10 @@ bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *h
  * @note MT-NOTE: sge_remove_queue_from_load_list() is MT safe
  */
 void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list){
+   DENTER(TOP_LAYER);
+
    const lListElem* queue = nullptr;
    lListElem *load = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (load_list == nullptr){
       CRITICAL("no load_list specified\n");
@@ -6885,8 +6827,7 @@ void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list)
  *
  * @note MT-NOTE: sge_free_load_list() is MT safe
  */
-void sge_free_load_list(lList **load_list)
-{
+void sge_free_load_list(lList **load_list) {
    DENTER(TOP_LAYER);
 
    lFreeList(load_list);
@@ -6906,8 +6847,7 @@ void sge_free_load_list(lList **load_list)
  *
  * @note MT-NOTE: match_static_advance_reservation() is MT safe
  */
-static dispatch_t match_static_advance_reservation(const sge_assignment_t *a)
-{
+static dispatch_t match_static_advance_reservation(const sge_assignment_t *a) {
    DENTER(TOP_LAYER);
 
    dispatch_t result = DISPATCH_OK;
@@ -7066,8 +7006,7 @@ sge_ar_swap_resource_lists(sge_assignment_t &a) {
 dispatch_t
 parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
                              lListElem *limit, dstring *rue_name, lListElem *qep, bool need_master,
-                             bool is_master_queue)
-{
+                             bool is_master_queue) {
    DENTER(TOP_LAYER);
    lList *tmp_centry_list = lCreateList("", CE_Type);
    lList *tmp_rue_list = lCreateList("", RUE_Type);
@@ -7120,4 +7059,3 @@ parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
 
    DRETURN(result);
 }
-
