@@ -404,6 +404,8 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
  */
 int
 update_sharetree(lList *dst, const lList *src) {
+   DENTER(TOP_LAYER);
+
    static int depth = 0;
    lListElem *dnode;
    const lListElem *snode;
@@ -411,8 +413,6 @@ update_sharetree(lList *dst, const lList *src) {
    const char *d_name;
 #endif
    const char *s_name;
-
-   DENTER(TOP_LAYER);
 
    dnode = lFirstRW(dst);
    snode = lFirst(src);

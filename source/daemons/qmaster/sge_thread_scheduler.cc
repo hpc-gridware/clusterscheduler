@@ -449,6 +449,8 @@ sge_scheduler_terminate(lList **answer_list) {
  */
 [[noreturn]] void *
 sge_scheduler_main(void *arg) {
+   DENTER(TOP_LAYER);
+
    auto *thread_config = (cl_thread_settings_t *) arg;
    uint64_t next_prof_output = 0;
    monitoring_t monitor;
@@ -459,7 +461,6 @@ sge_scheduler_main(void *arg) {
    sge_gperf_per_thread_t gperf_data;
 #endif
 
-   DENTER(TOP_LAYER);
    memset(&where_what, 0, sizeof(where_what));
 
    // set thread name and id used by logging an others

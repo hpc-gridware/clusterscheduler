@@ -701,6 +701,8 @@ bool
 qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
                                   uint32_t transition, bool force_transition, const char *user, const char *host,
                                   bool is_operator, bool is_owner, monitoring_t *monitor, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    dstring buffer = DSTRING_INIT;
    const char *qinstance_name = qinstance_get_name(this_elem, &buffer);
@@ -726,7 +728,6 @@ qinstance_change_state_on_command(lListElem *this_elem, lList **answer_list,
            {QI_DO_NOTHING, 0, nullptr, true, nullptr, true}
    };
 
-   DENTER(TOP_LAYER);
    if (is_owner || is_operator) {
       int i = 0;
 
