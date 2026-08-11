@@ -109,9 +109,12 @@ ShutdownMaster()
       $INFOTEXT "sge_qmaster is down!"
    fi
 
-   master_spool=`cat $SGE_ROOT/$SGE_CELL/common/bootstrap | grep qmaster_spool_dir | awk '{ print $2 }'`
+   master_spool=`BootstrapGetValue $SGE_ROOT/$SGE_CELL/common "qmaster_spool_dir"`
    reporting=$SGE_ROOT/$SGE_CELL/reporting
-   
+
+   # configuration, local_conf and sched_configuration are no longer stored in
+   # the common directory (classic spooling now keeps them in the spool dir,
+   # which is removed wholesale above); they are therefore not listed here.
    toDelete="accounting act_qmaster bootstrap cluster_name configuration jmx local_conf qtask sched_configuration sgeCA sge_request sgemaster"
 
    # The qmaster systemd unit / init script is shared with sge_shadowd —
@@ -124,21 +127,40 @@ ShutdownMaster()
       $INFOTEXT -log "Host %s is still a shadow master — keeping the shared qmaster RC script." "$HOST"
    fi
 
-   if [ -f $SGE_ROOT/$SGE_CELL/common/sgebdb ]; then
-      $INFOTEXT "Berkeley db server is being used with this installation"
-      $INFOTEXT "Skipping removal of berkeley spool directory"
-      $INFOTEXT "Uninstall the berkeley db server before removing the spool directory"
-   else
-      berkeley_spool=`cat $SGE_ROOT/$SGE_CELL/common/bootstrap | grep spooling_params | awk '{ print $2 }'`
-
-      $INFOTEXT "Removing berkeley spool directory!"
-      $INFOTEXT -log "Removing berkeley spool directory!"
-      ExecuteAsAdmin $RM -rf $berkeley_spool
+   # spooling_params is only a directory for the berkeleydb method. For classic
+   # it repeats qmaster_spool_dir, which is removed below anyway, and for
+   # postgres it is a libpq conninfo string whose first token would end up as
+   # the operand of an rm -rf relative to the current directory.
+   spooling_method=`BootstrapGetValue $SGE_ROOT/$SGE_CELL/common "spooling_method"`
+   if [ "$spooling_method" = "berkeleydb" ]; then
+      berkeley_spool=`BootstrapGetValue $SGE_ROOT/$SGE_CELL/common "spooling_params"`
+      case "$berkeley_spool" in
+         /*)
+            $INFOTEXT "Removing berkeley spool directory!"
+            $INFOTEXT -log "Removing berkeley spool directory!"
+            ExecuteAsAdmin $RM -rf $berkeley_spool
+            ;;
+         *)
+            $INFOTEXT "Berkeley DB spool directory >%s< is not an absolute path - not removing it!" "$berkeley_spool"
+            $INFOTEXT -log "Berkeley DB spool directory >%s< is not an absolute path - not removing it!" "$berkeley_spool"
+            ;;
+      esac
+   elif [ "$spooling_method" = "postgres" ]; then
+      $INFOTEXT "Spooling method is postgres - the spool tables stay in the database and have to be dropped there!"
+      $INFOTEXT -log "Spooling method is postgres - the spool tables stay in the database and have to be dropped there!"
    fi
 
-   $INFOTEXT "Removing qmaster spool directory!"
-   $INFOTEXT -log "Removing qmaster spool directory!"
-   ExecuteAsAdmin $RM -fR $master_spool
+   case "$master_spool" in
+      /*)
+         $INFOTEXT "Removing qmaster spool directory!"
+         $INFOTEXT -log "Removing qmaster spool directory!"
+         ExecuteAsAdmin $RM -fR $master_spool
+         ;;
+      *)
+         $INFOTEXT "Qmaster spool directory >%s< is not an absolute path - not removing it!" "$master_spool"
+         $INFOTEXT -log "Qmaster spool directory >%s< is not an absolute path - not removing it!" "$master_spool"
+         ;;
+   esac
 
    $INFOTEXT "Removing reporting file"
    $INFOTEXT -log "Removing reporting file"
