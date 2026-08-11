@@ -33,6 +33,8 @@
 #
 #  All Rights Reserved.
 #
+#  Portions of this software are Copyright (c) 2024,2026 HPC-Gridware GmbH
+#
 ##########################################################################
 #___INFO__MARK_END__
 
@@ -77,10 +79,10 @@ SpoolingCheckParams()
    ret=$?
    if [ $ret -eq 0 ]; then
    $INFOTEXT -e "\nThe database directory >%s<\n" \
-                "is not on a local filesystem.\nPlease choose a local filesystem or configure the RPC Client/Server mechanism" $SPOOLING_DIR
+                "is not on a local filesystem.\nPlease choose a local filesystem or an NFSv4 filesystem" $SPOOLING_DIR
    if [ "$AUTO" = "true" ]; then
       $INFOTEXT -log "\nThe database directory >%s<\n" \
-                "is not on a local filesystem.\nPlease choose a local filesystem or configure the RPC Client/Server mechanism" $SPOOLING_DIR
+                "is not on a local filesystem.\nPlease choose a local filesystem or an NFSv4 filesystem" $SPOOLING_DIR
       MoveLog
       exit 1
    fi
@@ -119,20 +121,6 @@ DeleteSpoolingDir()
    SpoolingQueryChange
 
    ExecuteAsAdmin rm -fr $SPOOLING_DIR
-
-}
-
-EditStartupScript()
-{
- TMP_BDBHOME=`cat $TMP_STARTUP_SCRIPT | grep "^[ \t]*BDBHOMES" | cut -d"=" -f2 | sed s/\"//g | cut -d" " -f2`
- BDBHOME=$SPOOLING_DIR
- BDBHOMES=" -h "$TMP_BDBHOME" -h "$BDBHOME
-
-
- cat $TMP_STARTUP_SCRIPT | sed -e s?\"$TMP_BDBHOME\"?\"$BDBHOMES\"?g > $TMP_STARTUP_SCRIPT.0
- `cp $TMP_STARTUP_SCRIPT.0 $TMP_STARTUP_SCRIPT`
- rm $TMP_STARTUP_SCRIPT.0
-
 
 }
 

@@ -77,9 +77,8 @@ Defines parameters to the chosen spooling method.
 Parameters that are needed to initialize the spooling framework, e.g. to open database files or to connect to a 
 certain database server.
 
-The spooling parameters value for spooling method *berkeleydb* is \[rpc_server:\]database directory, e.g.
-/sge_local/default/spool/qmaster/spooldb for spooling to a local filesystem, or myhost:sge for spooling over a 
-Berkeley DB RPC server.
+The spooling parameters value for spooling method *berkeleydb* is the database directory, e.g.
+/sge_local/default/spool/qmaster/spooldb. The directory has to be on a local filesystem or on NFSv4.
 
 For spooling method *classic* the spooling parameter is the absolute path of the qmaster spool directory, e.g.
 /sge/default/spool/qmaster

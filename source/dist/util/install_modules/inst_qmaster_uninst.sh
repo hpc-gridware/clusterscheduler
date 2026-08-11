@@ -127,17 +127,11 @@ ShutdownMaster()
       $INFOTEXT -log "Host %s is still a shadow master — keeping the shared qmaster RC script." "$HOST"
    fi
 
-   if [ -f $SGE_ROOT/$SGE_CELL/common/sgebdb ]; then
-      $INFOTEXT "Berkeley db server is being used with this installation"
-      $INFOTEXT "Skipping removal of berkeley spool directory"
-      $INFOTEXT "Uninstall the berkeley db server before removing the spool directory"
-   else
-      berkeley_spool=`cat $SGE_ROOT/$SGE_CELL/common/bootstrap | grep spooling_params | awk '{ print $2 }'`
+   berkeley_spool=`cat $SGE_ROOT/$SGE_CELL/common/bootstrap | grep spooling_params | awk '{ print $2 }'`
 
-      $INFOTEXT "Removing berkeley spool directory!"
-      $INFOTEXT -log "Removing berkeley spool directory!"
-      ExecuteAsAdmin $RM -rf $berkeley_spool
-   fi
+   $INFOTEXT "Removing berkeley spool directory!"
+   $INFOTEXT -log "Removing berkeley spool directory!"
+   ExecuteAsAdmin $RM -rf $berkeley_spool
 
    $INFOTEXT "Removing qmaster spool directory!"
    $INFOTEXT -log "Removing qmaster spool directory!"

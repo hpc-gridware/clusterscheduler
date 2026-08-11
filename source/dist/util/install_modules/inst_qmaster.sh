@@ -112,22 +112,13 @@ GetCell()
             if [ $? = 0 ]; then
                is_done="false"
             else
-               with_bdb=0
-               if [ ! -f $SGE_ROOT/$SGE_CELL/common/bootstrap -a -f $SGE_ROOT/$SGE_CELL/common/sgebdb ]; then
-                  $INFOTEXT -n "Do you want to keep this directory? Choose\n" \
-                               "(YES option) - if you have installed BDB server.\n" \
-                               "(NO option)  - to delete the whole directory!\n"
-                  $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "Do you want to keep [y] or delete [n] the directory? (y/n) [y] >> "
-                  with_bdb=1
-               else
-                  $INFOTEXT -n "You can overwrite or delete this directory. If you choose overwrite\n" \
-                               "(YES option) only the \"bootstrap\" and \"cluster_name\" files will be deleted).\n" \
-                               "Delete (NO option) - will delete the whole directory!\n"
-                  $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "Do you want to overwrite [y] or delete [n] the directory? (y/n) [y] >> "
-               fi
+               $INFOTEXT -n "You can overwrite or delete this directory. If you choose overwrite\n" \
+                            "(YES option) only the \"bootstrap\" and \"cluster_name\" files will be deleted).\n" \
+                            "Delete (NO option) - will delete the whole directory!\n"
+               $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "Do you want to overwrite [y] or delete [n] the directory? (y/n) [y] >> "
                sel_ret=$?
                SearchForExistingInstallations "qmaster shadowd execd dbwriter"
-               if [ $sel_ret = 0 -a $with_bdb = 0 ]; then
+               if [ $sel_ret = 0 ]; then
                   $INFOTEXT "Deleting bootstrap and cluster_name files!"
                   ExecuteAsAdmin rm -f $SGE_ROOT/$SGE_CELL_VAL/common/bootstrap
                   ExecuteAsAdmin rm -f $SGE_ROOT/$SGE_CELL_VAL/common/cluster_name
@@ -358,8 +349,6 @@ SetSpoolingOptionsBerkeleyDB()
    fi
    if [ "$QMASTER" = "install" ]; then
 
-      is_server="false"
-
       done="false"
       is_spool="false"
 
@@ -395,7 +384,7 @@ SetSpoolingOptionsBerkeleyDB()
              $INFOTEXT "\nThe database directory\n\n" \
                        "   %s\n\n" \
                        "is not on a local filesystem. Please choose a local filesystem or\n" \
-                       "configure the RPC Client/Server mechanism." $SPOOLING_DIR
+                       "an NFSv4 filesystem." $SPOOLING_DIR
              $INFOTEXT -wait -auto $AUTO -n "\nHit <RETURN> to continue >> "
           else
              done="true" 

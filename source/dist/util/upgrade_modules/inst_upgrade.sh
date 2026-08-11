@@ -313,27 +313,10 @@ SelectNewSpooling()
       SPOOLING_LIB=`BootstrapGetValue $SGE_ROOT/$SGE_CELL/common "spooling_lib"`
       SPOOLING_ARGS=`BootstrapGetValue $SGE_ROOT/$SGE_CELL/common "spooling_params"`
       if [ "$SPOOLING_METHOD" = "berkeleydb" ]; then
-         db_server_host=`echo "$SPOOLING_ARGS" | awk -F: '{print $1}'`
-         db_server_spool_dir=`echo "$SPOOLING_ARGS" | awk -F: '{print $2}'`
-         if [ -z "$db_server_spool_dir" ]; then #local bdb spooling
-            if [ -d "$SPOOLING_ARGS" ]; then
-               ExecuteAsAdmin rm -rf "$SPOOLING_ARGS"/*
-            else #Create spooling dir if not present
-               Makedir "$SPOOLING_ARGS"
-            fi
-         else # BDB server
-            #DoRemoteAction "$db_server_host" "$ADMINUSER" "if [ -d $db_server_spool_dir ]; then rm -rf $db_server_spool_dir/*; fi"
-            #Do the following: 
-            # - Shutdown BDB server if running
-            # - Delete database directory
-            # - Restart BDB server
-            #DoRemoteAction "$db_server_host" "$ADMINUSER" "if [ -d $db_server_spool_dir ]; then rm -rf $db_server_spool_dir/*; fi"
-            $INFOTEXT -n "Please login on your BDB server and perform the following steps:\n"
-            $INFOTEXT -n "\t- Shutdown your BDB server (host: $db_server_host) if running (>>sgebdb stop<<).\n"
-            $INFOTEXT -n "\t- Make a backup of your old spool directory (directory name: $db_server_spool_dir).\n"
-            $INFOTEXT -n "\t- Delete the content, not the directory itself, of your old database spool directory (directory name: $db_server_spool_dir/*).\n"
-            $INFOTEXT -n "\t- Restart your BDB server (>>sgebdb start<<).\n"
-            $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
+         if [ -d "$SPOOLING_ARGS" ]; then
+            ExecuteAsAdmin rm -rf "$SPOOLING_ARGS"/*
+         else #Create spooling dir if not present
+            Makedir "$SPOOLING_ARGS"
          fi
       elif [ "$SPOOLING_METHOD" = "postgres" ]; then
          # PostgreSQL spooling: the spool data lives in the remote PG

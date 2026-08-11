@@ -685,10 +685,8 @@ bool spool_berkeleydb_trigger(lList **answer_list, bdb_info info,
    bool ret = true;
 
    if (bdb_get_next_clear(info) <= trigger) {
-      /* 
-       * in the clear interval, we 
-       * - clear unused transaction logs for local spooling
-       * - do a dummy request in case of RPC spooling to avoid timeouts
+      /*
+       * in the clear interval, we clear unused transaction logs
        */
       ret = spool_berkeleydb_clear_log(answer_list, info);
       bdb_set_next_clear(info, trigger + sge_gmt32_to_gmt64(BERKELEYDB_CLEAR_INTERVAL));

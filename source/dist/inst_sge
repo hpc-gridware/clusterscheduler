@@ -78,7 +78,6 @@ CSP=false
 TLS=false
 MUNGE=false
 NOREMOTE=false
-START_RPC_SERVICE=false
 SET_FILE_PERMS=false
 MAKE_RC=false
 ADD_RC=false
@@ -1100,8 +1099,7 @@ if [ $SHADOW = "install" ]; then
       $INFOTEXT -u "\nShadow Master Host Setup"
       $INFOTEXT -wait -auto $AUTO -n "\nMake sure, that the host, you wish to configure as a " \
                       "shadow host,\n has read/write permissions to the qmaster spool " \
-                      "and SGE_ROOT/<cell>/common \ndirectory! For using a shadow master it " \
-                      "is recommended to set up a \nBerkeley DB Spooling Server\n\n Hit <RETURN> to continue >> "
+                      "and SGE_ROOT/<cell>/common \ndirectory!\n\n Hit <RETURN> to continue >> "
       CheckWhoInstallsSGE
       CheckForLocalHostResolving
       ProcessSGERoot
@@ -1130,42 +1128,37 @@ if [ $SHADOW = "install" ]; then
 
       #check if spooling is supported!
       spooling_method=`cat $SGE_ROOT/$SGE_CELL/common/bootstrap 2>/dev/null | grep "spooling_method" | awk '{ print $2 }'`
-      #if spooling_params contains no "/" then we have rpc server spooling
-      temp=`cat $SGE_ROOT/$SGE_CELL/common/bootstrap | grep spooling_params | awk '{ print $2 }' | grep "/"`
-      if [ $? = 0 ]; then
-         db_home=`cat $SGE_ROOT/$SGE_CELL/common/bootstrap 2>/dev/null | grep "spooling_params" | awk '{ print $2 }' | cut -d";" -f1`
+      if [ "$spooling_method" = "berkeleydb" ]; then
+         db_home=`cat $SGE_ROOT/$SGE_CELL/common/bootstrap 2>/dev/null | grep "spooling_params" | awk '{ print $2 }'`
          fstype=`$SGE_UTILBIN/fstype $db_home`
          if [ $? != 0 ]; then
             $INFOTEXT "\n Shadow master can not access spool directory at %s! \n" $db_home
             $INFOTEXT "Check if the spool directory is mounted and has read/write permissions.\n"
             MoveLog
             exit 1
-         elif [ `echo $db_home | cut -d":" -f2` = "$db_home" ]; then
-            if [ "$spooling_method" = "berkeleydb" ]; then
-               if [ `echo $fstype | grep "nfs" | wc -l` -gt 0 ]; then
-                  if [ "$fstype" != "nfs4" ]; then
-                     $INFOTEXT "Spooling directory exported as %s is not supported!\n" $fstype
-                     $INFOTEXT -log "Spooling directory exported as %s is not supported!\n" $fstype
-                     $INFOTEXT "\nPlease install the database directory on a NFSv4 fileserver or use the RPC Client/Server mechanism"
-                     $INFOTEXT -log "\nPlease install the database directory on a NFSv4 fileserver or use the RPC Client/Server mechanism"
-                     MoveLog
-                     exit 1;
-                  else
-                     $INFOTEXT "We detected local Berkeley DB Spooling without a RPC Server. Local spooling\n is not working under " \
-                               "mixed architectures.\n\n "
-                     $INFOTEXT -log "We detected local Berkeley DB Spooling without a RPC Server. Local spooling\n is not working under " \
-                               "mixed architectures.\n\n "
-                     $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "Do you want to continue (y/n) ('n' will abort) [y] >> "
-                     if [ $? != 0 ]; then
-                        $INFOTEXT "Installation aborted"
-                        MoveLog
-                        exit 1;
-                     fi
-                  fi
+         fi
+         if [ `echo $fstype | grep "nfs" | wc -l` -gt 0 ]; then
+            if [ "$fstype" != "nfs4" ]; then
+               $INFOTEXT "Spooling directory exported as %s is not supported!\n" $fstype
+               $INFOTEXT -log "Spooling directory exported as %s is not supported!\n" $fstype
+               $INFOTEXT "\nPlease install the database directory on a NFSv4 fileserver"
+               $INFOTEXT -log "\nPlease install the database directory on a NFSv4 fileserver"
+               MoveLog
+               exit 1;
+            else
+               $INFOTEXT "We detected local Berkeley DB Spooling. Local spooling\n is not working under " \
+                         "mixed architectures.\n\n "
+               $INFOTEXT -log "We detected local Berkeley DB Spooling. Local spooling\n is not working under " \
+                         "mixed architectures.\n\n "
+               $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "Do you want to continue (y/n) ('n' will abort) [y] >> "
+               if [ $? != 0 ]; then
+                  $INFOTEXT "Installation aborted"
+                  MoveLog
+                  exit 1;
                fi
             fi
          fi
-       fi
+      fi
 
       AddLocalConfiguration_With_Qconf "shadowd"
 

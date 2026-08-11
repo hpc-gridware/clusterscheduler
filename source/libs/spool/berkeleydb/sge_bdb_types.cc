@@ -30,7 +30,7 @@
  *  Portions of this software are Copyright (c) 2023-2024,2026 HPC-Gridware GmbH
  *
  ************************************************************************/
-/*___INFO__MARK_END__*/                                   
+/*___INFO__MARK_END__*/
 
 /** @file
  * @brief The Berkeley DB handles of one spooling rule
@@ -78,25 +78,17 @@ struct _bdb_info {
  * by `bdb_init_connection()`, so that a thread never has to be told to
  * initialise itself.
  *
- * @warning Only `txn` is live. `env` and `db` are set to nullptr on creation
- *          and freed on destruction and are never read or assigned a real
- *          handle in between - #bdb_get_env and #bdb_get_db both return the
- *          shared ones from #_bdb_info. They are what is left of Berkeley
- *          DB's RPC mode, which needed a per thread environment; the doc
- *          comments on those accessors still described it. The array
- *          `bdb_init_connection()` allocates for `db` is therefore one
- *          allocation per thread that nothing ever uses.
+ * The transaction is the only handle that is per thread; the environment and
+ * the database handles are shared and live in #_bdb_info.
  */
 typedef struct bdb_connection {
-   DB_ENV *    env;                 ///< Dead - see the warning above
-   DB **        db;                 ///< Dead - see the warning above
    DB_TXN *    txn;                 ///< The running transaction of this thread
 } bdb_connection;
 
 static void
 bdb_init_connection(bdb_connection *con);
 
-static void 
+static void
 bdb_destroy_connection(void *connection);
 
 /**
@@ -176,33 +168,24 @@ void bdb_destroy(bdb_info *info) {
 /*
 * initialize thread local storage for a connection.
 *  NOTES
-*     MT-NOTE: bdb_init_connection() is MT safe 
+*     MT-NOTE: bdb_init_connection() is MT safe
 */
 static void
 bdb_init_connection(bdb_connection *con) {
-   int i;
-
-   con->env = nullptr;
-
-   con->db     = (DB **)sge_malloc(BDB_ALL_DBS * sizeof(DB *));
-   for (i = 0; i < BDB_ALL_DBS; i++) {
-      con->db[i] = nullptr;
-   }
-
    con->txn = nullptr;
 }
 
 /*
 * destroy the thread local storage for a connection
 *  NOTES
-*     MT-NOTE: bdb_destroy_connection() is MT safe 
+*     MT-NOTE: bdb_destroy_connection() is MT safe
 */
 static void
 bdb_destroy_connection(void *connection) {
    DENTER(TOP_LAYER);
 
    /* Nothing to do here in principle.
-    * Transactions and database connections shall be closed by calling the 
+    * Transactions and database connections shall be closed by calling the
     * shutdown function.
     * But we can generate an error, if there is still something open.
     */
@@ -212,15 +195,6 @@ bdb_destroy_connection(void *connection) {
       /* error */
    }
 
-   if (con->db != nullptr) {
-      sge_free(&(con->db));
-      /* error */
-   }
-
-   if (con->env != nullptr) {
-      /* error */
-   }
-   
    DRETURN_VOID;
 }
 
@@ -228,7 +202,6 @@ bdb_destroy_connection(void *connection) {
  * @brief Get the database path
  *
  * Returns the path to a Berkeley DB database.
- * If the RPC mechanism is used, this is the last component of the path.
  *
  * @param info the database object
  *
