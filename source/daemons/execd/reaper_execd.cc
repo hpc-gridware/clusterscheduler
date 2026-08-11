@@ -1782,14 +1782,24 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
       if (have_mem_details && maxpss != DBL_MAX) {
          add_usage(jr, USAGE_ATTR_MAXPSS_ACCT, nullptr, maxpss);
       }
+   }
 
-      /* We might have switched off sending of pe task job reports
-       * when starting the task with accounting_summary & sharetree_reserved_usage.
-       * But if we want to see *real* acct usage, enable sending this final report.
-       */
-      if (pe_task_id != nullptr && lGetBool(jr, JR_no_send)) {
-         lSetBool(jr, JR_no_send, false);
-      }
+   /* We might have switched off sending of pe task job reports when starting the task
+    * with accounting_summary & sharetree_reserved_usage - see execd_job_exec.cc. The
+    * final report has to go out in any case: it is not only carrying usage, it is the
+    * JEXITING notification. Without it sge_qmaster never learns that the pe task ended,
+    * never acknowledges it, and the task is never removed from JAT_task_list. The
+    * acknowledgement of the master task is deferred while pe tasks are left (see
+    * remove_acked_job_exit() above), so the whole teardown of the job stalls - the
+    * execd retries the acknowledgement once a second forever, the job stays in the
+    * execd's job list, and with systemd the job slice is never stopped.
+    *
+    * This used to be done only when acct_reserved_usage was off, i.e. only when *real*
+    * usage was wanted, which left the report suppressed for exactly the combination
+    * sharetree_reserved_usage + acct_reserved_usage + accounting_summary.
+    */
+   if (pe_task_id != nullptr && lGetBool(jr, JR_no_send)) {
+      lSetBool(jr, JR_no_send, false);
    }
 
    /* Report reserved usage or real usage.
