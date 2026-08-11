@@ -1890,6 +1890,14 @@ static int test(int *argc, char **argv[], int parse_args) {
          case ST_ERROR_FILE_FAILURE:
             drmaa_set_attribute(jt, DRMAA_JOIN_FILES, "n", nullptr, 0);
             drmaa_set_attribute(jt, DRMAA_ERROR_PATH, ":/etc/passwd", nullptr, 0);
+            /* This case is about the error path being unwritable, so the streams
+             * are not joined and the output path has to be named as well. Without
+             * it stdout falls back to its default, which is a file in the home
+             * directory of the submitting user - a directory that every cluster
+             * of that user shares. The testsuite then deleted those files by
+             * globbing the home directory, taking other test runs' files with
+             * them. See CS-693. */
+            drmaa_set_attribute(jt, DRMAA_OUTPUT_PATH, ":/dev/null", nullptr, 0);
             break;
 
          case ST_INPUT_FILE_FAILURE:
