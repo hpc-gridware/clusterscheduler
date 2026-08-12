@@ -49,6 +49,9 @@ namespace ocs::execd {
    execd_delete_tight_pe_slice(uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id);
 
    void
+   execd_cleanup_stale_job_slices();
+
+   void
    ptf_get_usage_from_systemd();
 
 #endif

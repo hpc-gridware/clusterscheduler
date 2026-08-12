@@ -22,7 +22,11 @@
  * @brief Talking to systemd: running as a service, and scoping the shepherds
  */
 
+#include <filesystem>
 #include <limits>
+#include <string>
+#include <system_error>
+#include <vector>
 
 #include "cull/cull.h"
 
@@ -227,6 +231,133 @@ namespace ocs::execd {
             }
          }
       }
+   }
+
+   /*!
+    * @brief The cgroup directory that holds the per job slices of this cluster.
+    *
+    * Both cgroup hierarchies place the slices of a cluster below its toplevel slice,
+    * v1 below a "systemd" subtree, v2 directly below the cgroup mount point.
+    * The directory exists as long as the jobs slice does, which is from the start of
+    * the first tightly integrated job until systemd releases the empty slice.
+    *
+    * @return the path, or an empty string when it cannot be built
+    */
+   static std::string
+   execd_get_jobs_slice_path() {
+      std::string slice_name = ocs::uti::Systemd::get_slice_name();
+      if (slice_name.empty()) {
+         return {};
+      }
+
+      std::string path{"/sys/fs/cgroup/"};
+      if (ocs::uti::Systemd::get_cgroup_version() == 1) {
+         path += "systemd/";
+      }
+      path += slice_name + ".slice/" + slice_name + "-jobs.slice";
+
+      return path;
+   }
+
+   /*!
+    * @brief Remove Systemd slices of tightly integrated jobs this execd no longer has.
+    *
+    * The slice of a tightly integrated parallel job is normally removed by
+    * execd_delete_tight_pe_slice() when qmaster acknowledges the job exit. That
+    * acknowledgement never arrives when the job ends while this execd is down -
+    * qmaster then finishes the job on its own, and the slice is left behind on
+    * every host that was not running at that moment. The same happens whenever the
+    * acknowledgement is lost for any other reason.
+    *
+    * This is the safety net for those cases: it looks at the job slices that exist
+    * in the cgroup hierarchy and stops the ones whose job is not in this execd's job
+    * list. A slice can only be created after its job has been added to that list, so
+    * a slice without a job is finished as far as this execd is concerned, and there
+    * is no race with a job that is just starting.
+    *
+    * Called at startup and once per OLD_JOB_INTERVAL, next to clean_up_old_jobs().
+    */
+   void
+   execd_cleanup_stale_job_slices() {
+      DENTER(TOP_LAYER);
+
+      if (!execd_use_systemd()) {
+         DRETURN_VOID;
+      }
+
+      std::string jobs_slice_path = execd_get_jobs_slice_path();
+      if (jobs_slice_path.empty()) {
+         DRETURN_VOID;
+      }
+
+      std::error_code ec;
+      if (!std::filesystem::is_directory(jobs_slice_path, ec)) {
+         // no tightly integrated job ran here yet, or the slice is already gone
+         DRETURN_VOID;
+      }
+
+      // "<toplevel>-jobs-" + <job_id>[.<ja_task_id>] + ".slice"
+      const std::string prefix = ocs::uti::Systemd::get_slice_name() + "-jobs-";
+      const std::string suffix{".slice"};
+
+      std::vector<std::string> stale_slices;
+      for (const auto &entry : std::filesystem::directory_iterator(jobs_slice_path, ec)) {
+         if (!entry.is_directory(ec)) {
+            continue;
+         }
+
+         const std::string name = entry.path().filename().string();
+         if (!name.starts_with(prefix) || !name.ends_with(suffix)) {
+            continue;
+         }
+
+         // the ids between prefix and suffix, a sequential job has no ja_task id
+         std::string ids = name.substr(prefix.size(), name.size() - prefix.size() - suffix.size());
+         uint32_t job_id = 0;
+         uint32_t ja_task_id = 1;
+         try {
+            size_t pos = 0;
+            job_id = static_cast<uint32_t>(std::stoul(ids, &pos));
+            if (pos < ids.size()) {
+               if (ids[pos] != '.') {
+                  continue;      // not a name we built
+               }
+               ja_task_id = static_cast<uint32_t>(std::stoul(ids.substr(pos + 1)));
+            }
+         } catch (const std::exception &) {
+            continue;            // not a name we built
+         }
+
+         lListElem *job = nullptr;
+         lListElem *ja_task = nullptr;
+         if (!execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, true)) {
+            stale_slices.push_back(name);
+         }
+      }
+
+      if (stale_slices.empty()) {
+         DRETURN_VOID;
+      }
+
+      DSTRING_STATIC(err_dstr, MAX_STRING_SIZE);
+      ocs::uti::Systemd systemd;
+      // connect as root, we want to have write access
+      sge_switch2start_user();
+      bool connected = systemd.connect(&err_dstr);
+      sge_switch2admin_user();
+      if (!connected) {
+         WARNING(SFNMAX, sge_dstring_get_string(&err_dstr));
+         DRETURN_VOID;
+      }
+
+      for (const auto &slice : stale_slices) {
+         INFO(MSG_EXECD_SYSTEMD_REMOVING_STALE_JOB_SLICE_S, slice.c_str());
+         if (!systemd.stop_unit(slice, &err_dstr)) {
+            WARNING(SFNMAX, sge_dstring_get_string(&err_dstr));
+         }
+      }
+
+      DRETURN_VOID;
    }
 
    /*!

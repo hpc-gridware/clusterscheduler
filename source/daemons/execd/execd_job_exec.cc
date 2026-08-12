@@ -374,6 +374,23 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
    kerb_job(jelem, de);
 #endif
 
+#if defined (OCS_WITH_SYSTEMD)
+   // Store the slice name before the ja_task is spooled below. The slice of a
+   // tightly integrated job is removed by execd_delete_tight_pe_slice(), which
+   // reads the name back from JAT_systemd_slice. If the execd goes down while
+   // the job is still known and the job ends in the meantime, the restarted
+   // execd only has what was spooled - a name set after the write would be lost
+   // and the slice would stay behind forever. The master task path does the same
+   // (exec_job.cc), where the store is followed by the spool in
+   // execd_ck_to_do.cc.
+   if (slave) {
+      bool enable_systemd = ocs::execd::execd_use_systemd();
+      if (enable_systemd) {
+         ocs::execd::execd_store_tight_pe_slice(jelem, jatep);
+      }
+   }
+#endif
+
    if (!mconf_get_simulate_jobs()) {
       lSetUlong(jelem, JB_script_size, 0);
       if (job_write_spool_file(jelem, jataskid, nullptr, SPOOL_WITHIN_EXECD)) {
@@ -391,15 +408,6 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
 
    /* check if job has queue limits and increase global flag if necessary */
    modify_queue_limits_flag_for_job(component_get_qualified_hostname(), jelem, true);
-
-#if defined (OCS_WITH_SYSTEMD)
-   if (slave) {
-      bool enable_systemd = ocs::execd::execd_use_systemd();
-      if (enable_systemd) {
-         ocs::execd::execd_store_tight_pe_slice(jelem, jatep);
-      }
-   }
-#endif
 
    /* put into job list */
    lAppendElem(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), jelem);

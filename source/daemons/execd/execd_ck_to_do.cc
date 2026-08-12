@@ -445,7 +445,16 @@ update_wallclock_usage(uint64_t now, const lListElem *job, const lListElem *ja_t
 /* TODO: what are the intended intervals? */
 /** @brief Seconds before a signal a job has not reacted to is sent again */
 #define SIGNAL_RESEND_INTERVAL 1
-/** @brief How often to look for jobs left behind by a previous daemon */
+/** @brief How often to look for jobs left behind by a previous daemon
+ *
+ * This is a poll interval, not the interval of the expensive scan: clean_up_old_jobs()
+ * returns immediately unless the reconciliation is due (see CS-2532). What it does bound
+ * is how long a shepherd adopted at startup can stay unnoticed after it ended - it is
+ * not a child of this execd, so its exit produces no SIGCHLD and only
+ * check_adopted_shepherds(), called from there, sees it. A job whose adopted shepherd
+ * was killed therefore stays "running" here for up to this interval, and everything
+ * that hangs off the job going away waits with it.
+ */
 #define OLD_JOB_INTERVAL 60
 
 /** @brief Everything the daemon does between messages

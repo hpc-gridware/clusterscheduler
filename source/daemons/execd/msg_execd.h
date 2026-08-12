@@ -112,7 +112,7 @@
 #define MSG_SHEPHERD_CANTOPENUSAGEFILEXFORJOBYZX_SUUS       _MESSAGE(29061, _("can't open usage file " PFQMAX " for job " sge_u32 "." sge_u32 ": " SFN))
 #define MSG_SHEPHERD_EXECDWENTDOWNDURINGJOBSTART            _MESSAGE(29062, _("execd went down during job start"))
 #define MSG_EXECD_ERRORREADINGPIDOFJOB_UU                   _MESSAGE(29063, _("error reading pid for job " sge_u32 "." sge_u32))
-#define MSG_SHEPHERD_CKECKINGFOROLDJOBSAFTER                _MESSAGE(29064, _("checking for old jobs after configuration change"))
+#define MSG_SHEPHERD_CKECKINGFOROLDJOBSAFTER                _MESSAGE(29064, _("checking for old jobs, a cleanup has become due"))
 #define MSG_EXECD_FOUND_N_SHEPHERD_PROCS_I                  _MESSAGE(29065, _("Found %d shepherd processes. Starting cleanup of active jobs directory and (re)sync of job states."))
 #define MSG_JR_ERRSTR_EXECDDONTKNOWJOB                      _MESSAGE(29068, _("execd doesn't know this job or pe task"))
 #define MSG_EXECD_GOTACKFORPETASKBUTISNOTINSTATEEXITING_S   _MESSAGE(29069, _("get exit ack for pe task " SFN " but task is not in state exiting"))
@@ -258,6 +258,7 @@
 #define MSG_EXECD_SYSTEMD_MOVE_SHEPHERD_TO_SCOPE_S       _MESSAGE(29232, _("systemd: moving shepherd to scope failed: " SFN4))
 #define MSG_EXECD_CANNOT_CONNECT_TO_SYSTEMD_S            _MESSAGE(29233, _("cannot connect to systemd: " SFN4))
 #define MSG_CANNOT_TO_GET_PROPERTY_SSS                   _MESSAGE(29234, _("cannot to get property " SFN " from systemd scope " SFN ": " SFN4))
+#define MSG_EXECD_SYSTEMD_REMOVING_STALE_JOB_SLICE_S     _MESSAGE(29235, _("removing systemd slice " SFN " of a job which is no longer known here"))
 
 // clang-format on
 

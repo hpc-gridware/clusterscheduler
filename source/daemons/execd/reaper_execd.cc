@@ -89,6 +89,7 @@
 #include "execution_states.h"
 #include "sge_load_sensor.h"
 #include "execd.h"
+#include "ocs_execd_systemd.h"
 #include "reaper_execd.h"
 #include "execd_signal_queue.h"
 #include "job_report_execd.h"
@@ -1517,7 +1518,7 @@ check_adopted_shepherds() {
  * - a shepherd adopted at startup has ended (check_adopted_shepherds()). Nothing else can
  *   notice that: it is not our child, so there is no SIGCHLD.
  *
- * The function is nevertheless *called* once per OLD_JOB_INTERVAL (execd_ck_to_do.cc:601)
+ * The function is nevertheless *called* once per OLD_JOB_INTERVAL (execd_ck_to_do.cc)
  * and returns immediately unless a cleanup is due. That periodic call is the poll that picks up
  * such a later set_enforce_cleanup_old_jobs() and that checks the adopted shepherds, so it has to
  * stay -- but it must not be mistaken for the cleanup itself running periodically. See CS-2532.
@@ -1569,6 +1570,23 @@ clean_up_old_jobs(bool startup) {
    // are exactly what has to be cleaned up.
    if (!startup) {
       check_adopted_shepherds();
+
+#if defined(OCS_WITH_SYSTEMD)
+      // Safety net for the systemd slice of a tightly integrated job: it is normally
+      // removed when qmaster acknowledges the job exit, and this catches the ones
+      // where that never happened - the job ended while this execd was down, so
+      // qmaster finished it on its own and there is no acknowledgement to come.
+      //
+      // Not at startup: the jobs found on disk are reported to qmaster first, and the
+      // answer - an acknowledgement, or the request to delete the job - takes the
+      // slice with it. Removing a slice here before that exchange has had a chance to
+      // happen would take the regular path's work away from it for no gain.
+      //
+      // Reading one directory, so it rides along here rather than on a timer of its
+      // own, and it sits outside the enforce_cleanup_old_jobs gate below because a
+      // slice can be orphaned without anything marking the reconciliation as due.
+      ocs::execd::execd_cleanup_stale_job_slices();
+#endif
    }
 
    if (!enforce_cleanup_old_jobs) {
