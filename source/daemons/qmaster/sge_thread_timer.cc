@@ -740,13 +740,12 @@ sge_timer_terminate() {
 sge_timer_main(void *arg) {
    DENTER(TOP_LAYER);
 
-   auto *thread_config = (cl_thread_settings_t *) arg;
+   auto *thread_config = static_cast<cl_thread_settings_t*>(arg);
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
 
    lListElem *le = nullptr;
    te_event_t te = nullptr;
-   uint64_t now;
    uint64_t next_prof_output = 0;
 
    DPRINTF("started\n");
@@ -769,7 +768,12 @@ sge_timer_main(void *arg) {
    conf_update_thread_profiling("TEvent Thread");
 
    while (true) {
-      int execute = 0;
+      // Set when the wait below was interrupted because the event list changed.
+      // From that moment on `le` points into the list as it was BEFORE the wait,
+      // and the mutex has already been given up, so the element must not be
+      // unchained any more - see the fall-through below.
+      bool list_changed = false;
+
       thread_start_stop_profiling();
 
       sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
@@ -786,9 +790,8 @@ sge_timer_main(void *arg) {
 
       le = lFirstRW(Event_Control.list);
       te = te_event_from_list_elem(le);
-      now = Event_Control.next = sge_get_gmt64();
 
-      if (te->when > now) {
+      if (const uint64_t now = Event_Control.next = sge_get_gmt64(); te->when > now) {
          Event_Control.next = te->when;
          Event_Control.deleted = false;
          MONITOR_IDLE_TIME(te_wait_next(te, now), p_monitor, mconf_get_monitoring_options());
@@ -803,15 +806,31 @@ sge_timer_main(void *arg) {
                sge_monitor_output(p_monitor);
                continue;
             }
+
+            // During shutdown we deliberately do NOT continue: the thread ends at
+            // the cancellation point at the bottom of this loop, and continue would
+            // skip it. Fall through to reach it - but remember that the list is not
+            // the one `le` came from any more.
+            //
+            // CS-2558: without this the fall-through unchained `le` from a list that
+            // te_delete_*() had meanwhile rebuilt with lSplit(), which recreates
+            // Event_Control.list outright when it empties. lDechainElem() then saw
+            // element and list carrying different descriptors, reported "Dechaining
+            // element from other list" and aborted the whole qmaster. It did so
+            // without the mutex, which had been given up just above, and the unlock
+            // further down released it a second time.
+            list_changed = true;
          }
       }
 
       MONITOR_TET_EXEC(p_monitor);
 
-      lDechainElem(Event_Control.list, le);
-      lFreeElem(&le);
+      if (!list_changed) {
+         lDechainElem(Event_Control.list, le);
+         lFreeElem(&le);
 
-      sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
+         sge_mutex_unlock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
+      }
 
       if (!sge_thread_has_shutdown_started()) {
          te_scan_table_and_deliver(te, p_monitor);
@@ -823,7 +842,9 @@ sge_timer_main(void *arg) {
 
       /* pthread cancellation point */
       do {
-         pthread_cleanup_push((void (*)(void *)) sge_timer_cleanup_monitor, (void *) p_monitor);
+         int execute = 0;
+
+         pthread_cleanup_push(reinterpret_cast<void (*)(void*)>(sge_timer_cleanup_monitor), (void *) p_monitor);
          cl_thread_func_testcancel(thread_config);
          pthread_cleanup_pop(execute);
 
