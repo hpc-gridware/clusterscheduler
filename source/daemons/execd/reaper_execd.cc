@@ -353,15 +353,37 @@ static void unregister_from_ptf(uint32_t job_id, uint32_t ja_task_id,
 
       /* if the job was a 'short-runner' omit the warning */
       if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
-         // @todo what about short PE tasks?
          // @todo and I doubt that the code is required at all,
          //       might just have been a workaround for bug CS-1019
-         /* check if the job was a short-runner */  
-         uint64_t time_since_started = sge_get_gmt64() - lGetUlong64(ja_task, JAT_start_time);
-         if (time_since_started <= sge_gmt32_to_gmt64(2)) {
-            /* the job was started <= 2 seconds before and ended already 
-               hence no warning has to be printed because of bug CR 6326191 */ 
-            DRETURN_VOID;
+         //
+         // Take the start time of whatever is being reaped. execd_ck_to_do()
+         // sets PET_start_time for a PE task and JAT_start_time for the master
+         // task, one or the other, never both - so for a PE task the JAT time
+         // belongs to the master task, which in a tightly integrated job
+         // outlives its tasks by the whole job runtime. Measured against that,
+         // no PE task is ever "short" and the check below never fired for the
+         // one case that produces short runners in bulk.
+         uint64_t start_time = 0;
+         if (pe_task_id != nullptr) {
+            const lListElem *pe_task = ja_task_search_pe_task(ja_task, pe_task_id);
+            if (pe_task != nullptr) {
+               start_time = lGetUlong64(pe_task, PET_start_time);
+            }
+         } else {
+            start_time = lGetUlong64(ja_task, JAT_start_time);
+         }
+
+         /* check if the job was a short-runner */
+         // A start time of 0 means we do not know when it started - an unknown
+         // PE task, or one reaped before execd stamped it. Warn in that case,
+         // which is what this code did before it could tell the two apart.
+         if (start_time > 0) {
+            uint64_t time_since_started = sge_get_gmt64() - start_time;
+            if (time_since_started <= sge_gmt32_to_gmt64(2)) {
+               /* the job was started <= 2 seconds before and ended already
+                  hence no warning has to be printed because of bug CR 6326191 */
+               DRETURN_VOID;
+            }
          }
       }
 
