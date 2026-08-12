@@ -299,7 +299,6 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
    int nm = 0;
    const char *name = nullptr;
    int ret;
-   const char *qualified_hostname = component_get_qualified_hostname();
    lList **master_ehost_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
