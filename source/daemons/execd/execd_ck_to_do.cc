@@ -511,11 +511,19 @@ int do_ck_to_do(bool is_qmaster_down) {
    }
    pdc_interval_old = pdc_interval;
 
-   // PDC trigger can be ignored if there are no jobs to observe
-   if (lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)) > 0 && do_pdc) {
-      // register newly submitted jobs at PTF
-      notify_ptf();
+   const bool have_jobs = lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)) > 0;
 
+   // Registering a job at the PTF is what moves it from JWAITING4OSJID to
+   // JRUNNING, so it must not depend on the usage collector's schedule. A task
+   // left in JWAITING4OSJID gets no wallclock update and no h_rt/s_rt
+   // enforcement, and the PTF does not know it at reaping time (CS-2495).
+   // notify_ptf() returns immediately unless a task is actually waiting.
+   if (have_jobs) {
+      notify_ptf();
+   }
+
+   // PDC trigger can be ignored if there are no jobs to observe
+   if (have_jobs && do_pdc) {
       // get online usage of running jobs
       ptf_update_job_usage();
 
