@@ -61,7 +61,7 @@
 #define PDC_DISABLED std::numeric_limits<uint64_t>::max()
 
 /// `binding_params` as it reads before an administrator changes it
-#define BINDING_PARAMS_DEFAULT    "enabled=true,implicit=false,mode=default,default_unit=C,on_any_host=false,filter=NONE"
+#define BINDING_PARAMS_DEFAULT    "enabled=true,implicit=false,mode=default,default_unit=C,on_any_host=true,filter=NONE"
 /// `jsv_params` as it reads before an administrator changes it
 #define JSV_PARAMS_DEFAULT        NONE_STR
 /// Job attributes a JSV may modify unless `jsv_allowed_mod` says otherwise

@@ -200,107 +200,85 @@ static sge_conf_type Master_Config = {
    0, 0   /* CS-1908: finished_jobs_keep_time, finished_jobs_max */
 };
 static bool is_new_config = false;
-static bool forbid_reschedule = false;
-static bool forbid_apperror = false;
-static bool enable_forced_qdel = false;
-static bool enable_sup_grp_eval = false;
-static bool enable_enforce_master_limit = false;
-static bool enable_test_sleep_after_request = false;
-static bool enable_forced_qdel_if_unknown = false;
-static bool ignore_ngroups_max_limit = false;
-static bool enable_systemd = true;
-static bool do_credentials = true;
-static bool do_authentication = true;
-static bool is_monitor_message = true;
-static bool use_qidle = false;
-static bool disable_reschedule = false;
-static bool disable_secondary_ds = false;
-static char s_ijs_escape_char       = '~'; ///< IJS disconnect escape char; '\0' = disabled (qmaster_params ijs_escape_char)
-static int  s_ijs_keepalive_interval = 60;  ///< seconds between IJS keepalive probes; 0 = disabled (qmaster_params ijs_keepalive_interval)
-static int  s_ijs_keepalive_count    = 3;   ///< max consecutive unanswered keepalives before disconnect (qmaster_params ijs_keepalive_count)
-static int  s_ijs_reconnect_timeout  = 0;   ///< seconds shepherd waits for a reconnect before killing the job; 0 = disabled (qmaster_params ijs_reconnect_timeout)
 
 /// Default for `DISABLE_SECONDARY_DS_READER`: reader threads use the snapshot store
 #define DEFAULT_DISABLE_SECONDARY_DS_READER (false)
-static bool disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
 
 /// Default for `DISABLE_SECONDARY_DS_EXECD`: execd requests use the snapshot store
 #define DEFAULT_DISABLE_SECONDARY_DS_EXECD (false)
-static bool disable_secondary_ds_execd = DEFAULT_DISABLE_SECONDARY_DS_EXECD;
 
 /// Default for `DISABLE_AUTOMATIC_SESSIONS`: sessions are created automatically
 #define DEFAULT_DISABLE_AUTOMATIC_SESSIONS (false)
-static bool disable_automatic_sessions = DEFAULT_DISABLE_AUTOMATIC_SESSIONS;
 
-static bool prof_listener_thrd = false;
-static bool prof_worker_thrd = false;
-static bool prof_signal_thrd = false;
-static bool prof_scheduler_thrd = false;
-static bool prof_deliver_thrd = false;
-static bool prof_tevent_thrd = false;
-static bool prof_execd_thrd = false;
-static uint32_t monitor_time = 0;
-static bool enable_reschedule_kill = false;
-static bool enable_reschedule_slave = false;
-static bool old_reschedule_behavior = false;
-static bool old_reschedule_behavior_array_job = false;
 
 #ifdef LINUX
-static bool enable_mtrace = false;
 #endif
 
-static long ptf_max_priority = -999;
-static long ptf_min_priority = -999;
-static int max_dynamic_event_clients = 1000;
 
-static keep_active_t keep_active = KEEP_ACTIVE_FALSE;
-static usage_collection_t usage_collection = USAGE_COLLECTION_DEFAULT;
-static bool enable_mem_details = false;
 
-static uint32_t script_timeout = 120;
-static bool enable_addgrp_kill = false;
-static uint64_t pdc_interval = sge_gmt32_to_gmt64(1);
-static char s_descriptors[100];
-static char h_descriptors[100];
-static char s_maxproc[100];
-static char h_maxproc[100];
-static char s_memorylocked[100];
-static char h_memorylocked[100];
-static char s_locks[100];
-static char h_locks[100];
 
-/*
- * reporting params
- * when you add new params, make sure to set them to default values in
- * parsing code (merge_configuration)
- */
-static bool do_accounting         = true;
-static bool do_reporting          = false;
-static bool do_monitoring         = false;
-static bool do_joblog             = false;
-static int reporting_flush_time   = 15;
-static int accounting_flush_time  = -1;
-static bool reporting_sync_write  = false;
-static bool old_accounting = false;
-static bool old_reporting = false;
-static int sharelog_time          = 0;
-static bool log_consumables       = false;
-static std::string usage_patterns;
-static std::vector<std::string> online_usage_vars;
+/// Everything #merge_configuration parses out of `reporting_params`
+///
+/// The default of each setting is written here and nowhere else -- adding a
+/// member is all it takes, there is no second list to keep in step. See
+/// #binding_params_t for why that matters.
+struct reporting_params_t {
+   /// `accounting` -- write the accounting file that qacct(1) reads
+   bool do_accounting = true;
+   /// `reporting` -- write the reporting file
+   bool do_reporting = false;
+   /// `monitoring` -- write monitoring records to the reporting file
+   bool do_monitoring = false;
+   /// `joblog` -- write job log records to the reporting file
+   bool do_joblog = false;
+   /// `flush_time` -- how long reporting records may be buffered, in seconds
+   int reporting_flush_time = 15;
+   /// `accounting_flush_time` -- same for accounting, negative means "with the reporting flush"
+   int accounting_flush_time = -1;
+   /// `sync` -- flush every record to disk as it is written
+   bool reporting_sync_write = false;
+   /// `old_accounting` -- write the accounting file in the pre-9.0 format
+   bool old_accounting = false;
+   /// `old_reporting` -- write the reporting file in the pre-9.0 format
+   bool old_reporting = false;
+   /// `sharelog` -- interval of share tree log records, 0 switches them off
+   int sharelog_time = 0;
+   /// `log_consumables` -- include consumable values in the reporting records
+   bool log_consumables = false;
+   /// `usage_patterns` -- patterns that map job usage to accounting fields
+   std::string usage_patterns;
+   /// `online_usage` -- usage values reported while a job is still running
+   std::vector<std::string> online_usage_vars;
+};
+static reporting_params_t reporting_conf;
 
-// Binding specific parameters
-static bool is_binding_enabled = true;
-static bool do_implicit_binding = true;
-static bool schedule_on_any_host = true;
-static binding_mode_t binding_mode = BINDING_MODE_DEFAULT;
-static ocs::BindingUnit::Unit default_binding_unit = ocs::BindingUnit::CCORE;
-static std::string binding_filter = NONE_STR;
+/// Everything #merge_configuration parses out of `binding_params`
+///
+/// The default of each setting is written here and nowhere else. Before parsing
+/// the string, #merge_configuration restores all of them at once with
+/// `binding_conf = {}`, so that removing a token from the configuration reverts
+/// that setting instead of leaving the previously parsed value in place. A
+/// hand-written list of assignments would have to be kept in step with the
+/// members, and drifting apart is what CS-2495 and CS-2564 were.
+struct binding_params_t {
+   /// `enabled` -- whether binding requests are honoured at all
+   bool is_binding_enabled = true;
+   /// `implicit` -- bind jobs that did not ask for binding themselves
+   bool do_implicit_binding = false;
+   /// `on_any_host` -- schedule binding jobs on hosts that report no topology
+   bool schedule_on_any_host = true;
+   /// `mode` -- how the topology of an execution host is reported
+   binding_mode_t binding_mode = BINDING_MODE_DEFAULT;
+   /// `default_unit` -- unit an implicit binding request is counted in
+   ocs::BindingUnit::Unit default_binding_unit = ocs::BindingUnit::CCORE;
+   /// `filter` -- cores that are kept free of job binding
+   std::string binding_filter = NONE_STR;
+};
+static binding_params_t binding_conf;
 
 /* generally simulate all execd's */
-static bool simulate_execds = false;
 
 /* allow the simulation of jobs (job spooling and execution on execd side is disabled) */
-static bool simulate_jobs = false;
 
 /*
  * This value overrides the default scheduler timeout (10 minutes)
@@ -308,30 +286,24 @@ static bool simulate_jobs = false;
  * tens of thousands or hundreds of thousands of pending jobs.
  */
 
-static int scheduler_timeout = 0;
 
 /**
  * This value specifies the minimum time for spooling the sharetree usage.
  * It is used and evaluated in the sge_follow module. The users and
  * projects are spooled, when the qmaster goes down.
  */
-static int spool_time = STREESPOOLTIMEDEF;
 
 /* CS-1239: STREE_TICK_INTERVAL qmaster_param - seconds between periodic
  * decay ticks driven from the Timed Event Thread. See
  * mconf_get_sharetree_tick_interval(). */
-static int sharetree_tick_interval = STREE_TICK_INTERVAL_DEF;
 
 /* CS-1908: finished-job retention sweep-behaviour qmaster_params.
  * (Retention semantics -- finished_jobs_keep_time, finished_jobs_max -- are
  * top-level Master_Config attributes, not qmaster_params.)
  * See mconf_get_finished_jobs_sweep_{interval,batch} accessors. */
-static int finished_jobs_sweep_interval = FINISHED_JOBS_SWEEP_INTERVAL_DEF;
-static int finished_jobs_sweep_batch    = FINISHED_JOBS_SWEEP_BATCH_DEF;
 
 /// Default `MAX_DS_DEVIATION`: milliseconds before an update of the secondary data store is enforced
 #define DEFAULT_DS_DEVIATION (1000)
-static int max_ds_deviation = DEFAULT_DS_DEVIATION;
 
 /*
  * Reserved usage flags
@@ -344,33 +316,135 @@ static int max_ds_deviation = DEFAULT_DS_DEVIATION;
  * does not support the sharetree flag so it doesn't matter.
  */
 
-static bool acct_reserved_usage = false;
-static bool sharetree_reserved_usage = false;
 
 /*
  * Use primary group of qsub-host also for the job execution
  */
-static bool use_qsub_gid = false;
 
 /*
  * Job environment inheritance
  */
-static bool set_lib_path = false;
 /* This should match the default set in
  * shepherd/builtin_starter.c:inherit_env(). */
-static bool inherit_env = true;
-static bool enable_hwloc = true;
-static bool enable_submit_lib_path = false;
-static bool enable_submit_ld_preload = false;
 
 /// Default `GPERF_NAME`: base name of the gperftools profile files
 #define GPERF_NAME_DEFAULT "gperf"
 /// Default `GPERF_THREADS`: which threads are profiled
 #define GPERF_THREADS_DEFAULT "none"
-/// Current `GPERF_NAME` value; guarded by the master configuration lock
-std::string gperf_name = GPERF_NAME_DEFAULT;
-/// Current `GPERF_THREADS` value; guarded by the master configuration lock
-std::string gperf_threads = GPERF_THREADS_DEFAULT;
+
+/// Everything #merge_configuration parses out of `qmaster_params`
+///
+/// The default of each setting is written here and nowhere else. Before parsing
+/// the string, #merge_configuration restores all of them at once with
+/// `qmaster_conf = {}`, so that removing a token reverts that setting instead of
+/// leaving the previously parsed value in place (CS-2564).
+struct qmaster_params_t {
+   /// `FORBID_RESCHEDULE` -- refuse to reschedule a job that asks for it
+   bool forbid_reschedule = false;
+   /// `FORBID_APPERROR` -- treat an application error as a job error
+   bool forbid_apperror = false;
+   /// `ENABLE_FORCED_QDEL` -- let a plain user force the deletion of a job
+   bool enable_forced_qdel = false;
+   /// `ENABLE_SUP_GRP_EVAL` -- evaluate supplementary groups in access lists
+   bool enable_sup_grp_eval = false;
+   /// `ENABLE_ENFORCE_MASTER_LIMIT` -- apply the limit to the master task alone
+   bool enable_enforce_master_limit = false;
+   /// `__TEST_SLEEP_AFTER_REQUEST` -- test hook that delays every request
+   bool enable_test_sleep_after_request = false;
+   /// `ENABLE_FORCED_QDEL_IF_UNKNOWN` -- force deletion while the host is unknown
+   bool enable_forced_qdel_if_unknown = false;
+   /// `LOG_MONITOR_MESSAGE` -- write monitoring output to the messages file
+   bool is_monitor_message = true;
+   /// `DISABLE_AUTO_RESCHEDULING` -- never reschedule a job automatically
+   bool disable_reschedule = false;
+   /// `DISABLE_SECONDARY_DS` -- do not serve requests from the secondary data store
+   bool disable_secondary_ds = false;
+   /// `DISABLE_SECONDARY_DS_READER` -- same, for the reader threads only
+   bool disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
+   /// `DISABLE_SECONDARY_DS_EXECD` -- same, for execution daemon requests only
+   bool disable_secondary_ds_execd = DEFAULT_DISABLE_SECONDARY_DS_EXECD;
+   /// `DISABLE_AUTOMATIC_SESSIONS` -- do not open a session per client automatically
+   bool disable_automatic_sessions = DEFAULT_DISABLE_AUTOMATIC_SESSIONS;
+   /// `ijs_escape_char` -- IJS disconnect escape char, `\0` disables it
+   char s_ijs_escape_char = '~';
+   /// `ijs_keepalive_interval` -- seconds between IJS keepalive probes, 0 disables them
+   int s_ijs_keepalive_interval = 60;
+   /// `ijs_keepalive_count` -- unanswered keepalives tolerated before disconnect
+   int s_ijs_keepalive_count = 3;
+   /// `ijs_reconnect_timeout` -- seconds the shepherd waits for a reconnect, 0 disables it
+   int s_ijs_reconnect_timeout = 0;
+   /// `PROF_LISTENER` -- profile the listener threads
+   bool prof_listener_thrd = false;
+   /// `PROF_WORKER` -- profile the worker threads
+   bool prof_worker_thrd = false;
+   /// `PROF_SIGNAL` -- profile the signal thread
+   bool prof_signal_thrd = false;
+   /// `PROF_SCHEDULER` -- profile the scheduler thread
+   bool prof_scheduler_thrd = false;
+   /// `PROF_DELIVER` -- profile the delivery thread
+   bool prof_deliver_thrd = false;
+   /// `PROF_TEVENT` -- profile the timed event thread
+   bool prof_tevent_thrd = false;
+   /// `MONITOR_TIME` -- interval of the monitoring output, 0 switches it off
+   uint32_t monitor_time = 0;
+   /// `ENABLE_RESCHEDULE_KILL` -- kill a job that is being rescheduled
+   bool enable_reschedule_kill = false;
+   /// `ENABLE_RESCHEDULE_SLAVE` -- reschedule slave tasks along with the master
+   bool enable_reschedule_slave = false;
+   /// `OLD_RESCHEDULE_BEHAVIOR` -- reschedule as releases before 9.0 did
+   bool old_reschedule_behavior = false;
+   /// `OLD_RESCHEDULE_BEHAVIOR_ARRAY_JOB` -- same, for array jobs
+   bool old_reschedule_behavior_array_job = false;
+   /// `ENABLE_MTRACE` -- switch on the glibc allocation trace
+   bool enable_mtrace = false;
+   /// `MAX_DYN_EC` -- how many dynamic event clients may register
+   int max_dynamic_event_clients = 1000;
+   /// `SIMULATE_EXECDS` -- pretend that execution daemons are there
+   bool simulate_execds = false;
+   /// `SCHEDULER_TIMEOUT` -- seconds the qmaster waits for the scheduler
+   int scheduler_timeout = 0;
+   /// `STREE_SPOOL_INTERVAL` -- how often the share tree usage is spooled
+   int spool_time = STREESPOOLTIMEDEF;
+   /// `STREE_TICK_INTERVAL` -- how often share tree usage is decayed
+   int sharetree_tick_interval = STREE_TICK_INTERVAL_DEF;
+   /// `FINISHED_JOBS_SWEEP_INTERVAL` -- how often finished jobs are swept
+   int finished_jobs_sweep_interval = FINISHED_JOBS_SWEEP_INTERVAL_DEF;
+   /// `FINISHED_JOBS_SWEEP_BATCH` -- how many finished jobs one sweep removes
+   int finished_jobs_sweep_batch = FINISHED_JOBS_SWEEP_BATCH_DEF;
+   /// `MAX_DS_DEVIATION` -- how far the secondary data store may lag behind
+   int max_ds_deviation = DEFAULT_DS_DEVIATION;
+   /// `ENABLE_SUBMIT_LIB_PATH` -- a client may pass its library path along
+   bool enable_submit_lib_path = false;
+   /// `ENABLE_SUBMIT_LD_PRELOAD` -- a client may pass LD_PRELOAD along
+   bool enable_submit_ld_preload = false;
+   /// `max_job_deletion_time` -- seconds one job deletion request may take
+   int max_job_deletion_time = 3;
+   /// `jsv_timeout` -- seconds a JSV script may take to answer
+   int jsv_timeout = 10;
+   /// `jsv_threshold` -- runtime above which a JSV script is logged, in ms
+   int jsv_threshold = 5000;
+   /// `GPERF_NAME` -- name of the gperftools profile
+   std::string gperf_name = GPERF_NAME_DEFAULT;
+   /// `GPERF_THREADS` -- which threads gperftools profiles
+   std::string gperf_threads = GPERF_THREADS_DEFAULT;
+};
+static qmaster_params_t qmaster_conf;
+
+/// Settings #merge_configuration accepts in `qmaster_params` and in
+/// `execd_params` alike
+///
+/// They are restored once, before the first of the two loops. Giving them to
+/// either #qmaster_params_t or #execd_params_t would break them: a reset per
+/// string would let the second loop discard what the first one had parsed.
+/// Otherwise the same rule as everywhere else -- the default lives at the
+/// member and nowhere else.
+struct security_params_t {
+   /// `NO_SECURITY` (stored inverted) -- exchange credentials with the clients
+   bool do_credentials = true;
+   /// `NO_AUTHENTICATION` (stored inverted) -- authenticate the client of every request
+   bool do_authentication = true;
+};
+static security_params_t security_conf;
 
 /*
  * notify_kill_default and notify_susp_default
@@ -380,11 +454,89 @@ std::string gperf_threads = GPERF_THREADS_DEFAULT;
  *
  * notify_kill and notify_susp:
  *       !nullptr -> Name of the signale (later used in sys_string2signal)
+ *
+ * These two own their memory and are deliberately not members of
+ * execd_params_t: a value-initialised struct would overwrite the pointer
+ * instead of freeing it. They stay meaningful only while the matching
+ * notify_*_type is 0, and that type does revert with the struct.
  */
-static int   notify_susp_type = 1;
 static char* notify_susp = nullptr;
-static int   notify_kill_type = 1;
 static char* notify_kill = nullptr;
+
+/// Everything #merge_configuration parses out of `execd_params`
+///
+/// The default of each setting is written here and nowhere else. Before parsing
+/// the string, #merge_configuration restores all of them at once with
+/// `execd_conf = {}`. `PDC_INTERVAL` surviving a configuration that no longer
+/// mentioned it is what CS-2495 was: the execution daemon then stopped
+/// registering jobs and silently enforced no wallclock limits.
+struct execd_params_t {
+   /// `ACCT_RESERVED_USAGE` -- account the reserved rather than the measured usage
+   bool acct_reserved_usage = false;
+#ifdef COMPILE_DC
+   /// `SHARETREE_RESERVED_USAGE` -- same for the share tree
+   bool sharetree_reserved_usage = false;
+#else
+   /// `SHARETREE_RESERVED_USAGE` -- same for the share tree
+   bool sharetree_reserved_usage = true;
+#endif
+   /// `ENABLE_ADDGRP_KILL` -- kill a job by its supplementary group id
+   bool enable_addgrp_kill = false;
+   /// `ENABLE_HWLOC` -- read the execution host topology through hwloc
+   bool enable_hwloc = true;
+   /// `ENABLE_MEM_DETAILS` -- report the detailed memory usage of a job
+   bool enable_mem_details = false;
+   /// `ENABLE_SYSTEMD` -- start jobs inside a systemd scope where available
+   bool enable_systemd = true;
+   /// `IGNORE_NGROUPS_MAX_LIMIT` -- keep going when NGROUPS_MAX looks too small
+   bool ignore_ngroups_max_limit = false;
+   /// `INHERIT_ENV` -- a job inherits the environment of the execution daemon
+   bool inherit_env = true;
+   /// `KEEP_ACTIVE` -- keep the active_jobs directory of a finished job
+   keep_active_t keep_active = KEEP_ACTIVE_FALSE;
+   /// `NOTIFY_KILL` -- 0 uses the signal name kept outside this struct,
+   /// 1 the default signal, 2 sends none
+   int notify_kill_type = 1;
+   /// `NOTIFY_SUSP` -- as #execd_params_t::notify_kill_type, for suspension
+   int notify_susp_type = 1;
+   /// `PDC_INTERVAL` -- how often the usage collector runs, #PDC_DISABLED switches it off
+   uint64_t pdc_interval = sge_gmt32_to_gmt64(1);
+   /// `PROF_EXECD_THRD` -- profile the execution daemon main thread
+   bool prof_execd_thrd = false;
+   /// `PTF_MAX_PRIORITY` -- upper bound the PTF may give a job
+   long ptf_max_priority = -999;
+   /// `PTF_MIN_PRIORITY` -- lower bound the PTF may give a job
+   long ptf_min_priority = -999;
+   /// `SCRIPT_TIMEOUT` -- runtime allowed to prolog, epilog and PE scripts, in seconds
+   uint32_t script_timeout = 120;
+   /// `SET_LIB_PATH` -- put the product library path into the job environment
+   bool set_lib_path = false;
+   /// `SIMULATE_JOBS` -- do not start jobs, only pretend that they ran
+   bool simulate_jobs = false;
+   /// `USAGE_COLLECTION` -- where job usage is read from
+   usage_collection_t usage_collection = USAGE_COLLECTION_DEFAULT;
+   /// `USE_QIDLE` -- take idle time into account
+   bool use_qidle = false;
+   /// `USE_QSUB_GID` -- run the job under the group id of the submitting client
+   bool use_qsub_gid = false;
+   /// `S_DESCRIPTORS` -- soft limit on open file descriptors
+   char s_descriptors[100] = "UNDEFINED";
+   /// `H_DESCRIPTORS` -- hard limit on open file descriptors
+   char h_descriptors[100] = "UNDEFINED";
+   /// `S_MAXPROC` -- soft limit on processes
+   char s_maxproc[100] = "UNDEFINED";
+   /// `H_MAXPROC` -- hard limit on processes
+   char h_maxproc[100] = "UNDEFINED";
+   /// `S_MEMORYLOCKED` -- soft limit on locked memory
+   char s_memorylocked[100] = "UNDEFINED";
+   /// `H_MEMORYLOCKED` -- hard limit on locked memory
+   char h_memorylocked[100] = "UNDEFINED";
+   /// `S_LOCKS` -- soft limit on file locks
+   char s_locks[100] = "UNDEFINED";
+   /// `H_LOCKS` -- hard limit on file locks
+   char h_locks[100] = "UNDEFINED";
+};
+static execd_params_t execd_conf;
 
 /// One entry of the built in default configuration
 typedef struct {
@@ -406,9 +558,6 @@ static void clean_conf();
  * stops deleting and deletes remaining jobs at a later time.
  */
 
-static int max_job_deletion_time = 3;
-static int jsv_timeout = 10;
-static int jsv_threshold = 5000;
 
 /**
  * @name Compiled in defaults of the global configuration
@@ -883,90 +1032,47 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
       char* jsv_params = mconf_get_jsv_params();
       uint32_t load_report_time = mconf_get_load_report_time();
 #ifdef LINUX
-      bool mtrace_before = enable_mtrace;
+      bool mtrace_before = qmaster_conf.enable_mtrace;
 #endif
 
       SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
-      forbid_reschedule = false;
-      forbid_apperror = false;
-      enable_forced_qdel = false;
-      enable_sup_grp_eval = false;
-      enable_enforce_master_limit = false;
-      enable_test_sleep_after_request = false;
-      enable_forced_qdel_if_unknown = false;
-      ignore_ngroups_max_limit = false;
-      enable_systemd = true;
-      do_credentials = true;
-      do_authentication = true;
-      is_monitor_message = true;
-      spool_time = STREESPOOLTIMEDEF;
-      sharetree_tick_interval = STREE_TICK_INTERVAL_DEF;
-      finished_jobs_sweep_interval = FINISHED_JOBS_SWEEP_INTERVAL_DEF;
-      finished_jobs_sweep_batch = FINISHED_JOBS_SWEEP_BATCH_DEF;
-      max_ds_deviation = DEFAULT_DS_DEVIATION;
-      use_qidle = false;
-      disable_reschedule = false;
-      disable_secondary_ds = false;
-      disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
-      disable_secondary_ds_execd = DEFAULT_DISABLE_SECONDARY_DS_EXECD;
-      disable_automatic_sessions = DEFAULT_DISABLE_AUTOMATIC_SESSIONS;
-      simulate_execds = false;
-      simulate_jobs = false;
-      prof_listener_thrd = false;
-      prof_worker_thrd = false;
-      prof_signal_thrd = false;
-      prof_scheduler_thrd = false;
-      prof_deliver_thrd = false;
-      prof_tevent_thrd = false;
-      monitor_time = 0;
-      scheduler_timeout = 0;
-      max_dynamic_event_clients = 1000;
-      max_job_deletion_time = 3;
-      enable_reschedule_kill = false;
-      enable_reschedule_slave = false;
-      old_reschedule_behavior = false;
-      old_reschedule_behavior_array_job = false;
-      jsv_threshold = 5000;
-      jsv_timeout= 10;
-      enable_submit_lib_path = false;
-      enable_submit_ld_preload = false;
-      gperf_name = GPERF_NAME_DEFAULT;
-      gperf_threads = GPERF_THREADS_DEFAULT;
+      // every default comes from qmaster_params_t, so a removed token reverts.
+      // It has to happen after mtrace_before was taken above, otherwise both are
+      // always equal and removing ENABLE_MTRACE would never reach muntrace().
+      qmaster_conf = {};
 
-      // reset IJS-related statics to defaults so that removing a token from qmaster_params reverts the setting
-      s_ijs_escape_char = '~';
-      s_ijs_keepalive_interval = 60;
-      s_ijs_keepalive_count = 3;
-      s_ijs_reconnect_timeout = 0;
+      // accepted in qmaster_params and execd_params alike, so it is reset here,
+      // before the first of the two loops -- see security_params_t
+      security_conf = {};
 
       for (s=sge_strtok_r(qmaster_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
-         if (parse_bool_param(s, "FORBID_RESCHEDULE", &forbid_reschedule)) {
+         if (parse_bool_param(s, "FORBID_RESCHEDULE", &qmaster_conf.forbid_reschedule)) {
             continue;
          }
-         if (parse_bool_param(s, "PROF_SIGNAL", &prof_signal_thrd)) {
+         if (parse_bool_param(s, "PROF_SIGNAL", &qmaster_conf.prof_signal_thrd)) {
             continue;
          }
-         if (parse_bool_param(s, "PROF_SCHEDULER", &prof_scheduler_thrd)) {
+         if (parse_bool_param(s, "PROF_SCHEDULER", &qmaster_conf.prof_scheduler_thrd)) {
             continue;
          }
-         if (parse_bool_param(s, "PROF_LISTENER", &prof_listener_thrd)) {
+         if (parse_bool_param(s, "PROF_LISTENER", &qmaster_conf.prof_listener_thrd)) {
             continue;
          }
-         if (parse_bool_param(s, "PROF_WORKER", &prof_worker_thrd)) {
+         if (parse_bool_param(s, "PROF_WORKER", &qmaster_conf.prof_worker_thrd)) {
             continue;
          }
-         if (parse_bool_param(s, "PROF_DELIVER", &prof_deliver_thrd)) {
+         if (parse_bool_param(s, "PROF_DELIVER", &qmaster_conf.prof_deliver_thrd)) {
             continue;
          }
-         if (parse_bool_param(s, "PROF_TEVENT", &prof_tevent_thrd)) {
+         if (parse_bool_param(s, "PROF_TEVENT", &qmaster_conf.prof_tevent_thrd)) {
             continue;
          }
-         if (parse_int_param(s, "STREE_SPOOL_INTERVAL", &spool_time, ocs::CEntry::Type::TIME)) {
-            if (spool_time <= 0) {
+         if (parse_int_param(s, "STREE_SPOOL_INTERVAL", &qmaster_conf.spool_time, ocs::CEntry::Type::TIME)) {
+            if (qmaster_conf.spool_time <= 0) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "STREE_SPOOL_INTERVAL",
                                        STREESPOOLTIMEDEF);
-               spool_time = STREESPOOLTIMEDEF;
+               qmaster_conf.spool_time = STREESPOOLTIMEDEF;
             }
             continue;
          }
@@ -974,12 +1080,12 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
           * ticks. Out-of-range values (<= 0) reject + warn + fall back to
           * the default. Values above the upper bound are clamped silently
           * at read time in mconf_get_sharetree_tick_interval(). */
-         if (parse_int_param(s, "STREE_TICK_INTERVAL", &sharetree_tick_interval, ocs::CEntry::Type::TIME)) {
-            if (sharetree_tick_interval <= 0) {
+         if (parse_int_param(s, "STREE_TICK_INTERVAL", &qmaster_conf.sharetree_tick_interval, ocs::CEntry::Type::TIME)) {
+            if (qmaster_conf.sharetree_tick_interval <= 0) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "STREE_TICK_INTERVAL",
                                        STREE_TICK_INTERVAL_DEF);
-               sharetree_tick_interval = STREE_TICK_INTERVAL_DEF;
+               qmaster_conf.sharetree_tick_interval = STREE_TICK_INTERVAL_DEF;
             }
             continue;
          }
@@ -988,161 +1094,161 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
           * attributes; see chg_conf_val above.) SWEEP_INTERVAL and SWEEP_BATCH
           * reject <= 0 and fall back to DEF. Values above the upper bound are
           * clamped silently at read time in their mconf_get accessors. */
-         if (parse_int_param(s, "FINISHED_JOBS_SWEEP_INTERVAL", &finished_jobs_sweep_interval, ocs::CEntry::Type::TIME)) {
-            if (finished_jobs_sweep_interval <= 0) {
+         if (parse_int_param(s, "FINISHED_JOBS_SWEEP_INTERVAL", &qmaster_conf.finished_jobs_sweep_interval, ocs::CEntry::Type::TIME)) {
+            if (qmaster_conf.finished_jobs_sweep_interval <= 0) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "FINISHED_JOBS_SWEEP_INTERVAL",
                                        FINISHED_JOBS_SWEEP_INTERVAL_DEF);
-               finished_jobs_sweep_interval = FINISHED_JOBS_SWEEP_INTERVAL_DEF;
+               qmaster_conf.finished_jobs_sweep_interval = FINISHED_JOBS_SWEEP_INTERVAL_DEF;
             }
             continue;
          }
-         if (parse_int_param(s, "FINISHED_JOBS_SWEEP_BATCH", &finished_jobs_sweep_batch, ocs::CEntry::Type::INT)) {
-            if (finished_jobs_sweep_batch <= 0) {
+         if (parse_int_param(s, "FINISHED_JOBS_SWEEP_BATCH", &qmaster_conf.finished_jobs_sweep_batch, ocs::CEntry::Type::INT)) {
+            if (qmaster_conf.finished_jobs_sweep_batch <= 0) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "FINISHED_JOBS_SWEEP_BATCH",
                                        FINISHED_JOBS_SWEEP_BATCH_DEF);
-               finished_jobs_sweep_batch = FINISHED_JOBS_SWEEP_BATCH_DEF;
+               qmaster_conf.finished_jobs_sweep_batch = FINISHED_JOBS_SWEEP_BATCH_DEF;
             }
             continue;
          }
-         if (parse_bool_param(s, "FORBID_APPERROR", &forbid_apperror)) {
+         if (parse_bool_param(s, "FORBID_APPERROR", &qmaster_conf.forbid_apperror)) {
             continue;
          }
-         if (parse_bool_param(s, "ENABLE_FORCED_QDEL", &enable_forced_qdel)) {
+         if (parse_bool_param(s, "ENABLE_FORCED_QDEL", &qmaster_conf.enable_forced_qdel)) {
             continue;
          }
-         if (parse_bool_param(s, "ENABLE_SUP_GRP_EVAL", &enable_sup_grp_eval)) {
+         if (parse_bool_param(s, "ENABLE_SUP_GRP_EVAL", &qmaster_conf.enable_sup_grp_eval)) {
             continue;
          }
-         if (parse_bool_param(s, "ENABLE_ENFORCE_MASTER_LIMIT", &enable_enforce_master_limit)) {
+         if (parse_bool_param(s, "ENABLE_ENFORCE_MASTER_LIMIT", &qmaster_conf.enable_enforce_master_limit)) {
             continue;
          }
-         if (parse_bool_param(s, "__TEST_SLEEP_AFTER_REQUEST", &enable_test_sleep_after_request)) {
+         if (parse_bool_param(s, "__TEST_SLEEP_AFTER_REQUEST", &qmaster_conf.enable_test_sleep_after_request)) {
             continue;
          }
-         if (parse_bool_param(s, "ENABLE_FORCED_QDEL_IF_UNKNOWN", &enable_forced_qdel_if_unknown)) {
+         if (parse_bool_param(s, "ENABLE_FORCED_QDEL_IF_UNKNOWN", &qmaster_conf.enable_forced_qdel_if_unknown)) {
             continue;
          }
 #ifdef LINUX
-         if (parse_bool_param(s, "ENABLE_MTRACE", &enable_mtrace)) {
+         if (parse_bool_param(s, "ENABLE_MTRACE", &qmaster_conf.enable_mtrace)) {
             continue;
          }
 #endif
-         if (parse_time_param(s, "MONITOR_TIME", &monitor_time)) {
+         if (parse_time_param(s, "MONITOR_TIME", &qmaster_conf.monitor_time)) {
             continue;
          }
          if (!strncasecmp(s, "MAX_DYN_EC", sizeof("MAX_DYN_EC")-1)) {
-            max_dynamic_event_clients = atoi(&s[sizeof("MAX_DYN_EC=")-1]);
+            qmaster_conf.max_dynamic_event_clients = atoi(&s[sizeof("MAX_DYN_EC=")-1]);
             continue;
          }
-         if (parse_bool_param(s, "NO_SECURITY", &do_credentials)) {
+         if (parse_bool_param(s, "NO_SECURITY", &security_conf.do_credentials)) {
             /* reversed logic */
-            do_credentials = do_credentials ? false : true;
+            security_conf.do_credentials = security_conf.do_credentials ? false : true;
             continue;
          }
-         if (parse_bool_param(s, "NO_AUTHENTICATION", &do_authentication)) {
+         if (parse_bool_param(s, "NO_AUTHENTICATION", &security_conf.do_authentication)) {
             /* reversed logic */
-            do_authentication = do_authentication ? false : true;
+            security_conf.do_authentication = security_conf.do_authentication ? false : true;
             continue;
          }
-         if (parse_bool_param(s, "DISABLE_AUTO_RESCHEDULING", &disable_reschedule)) {
+         if (parse_bool_param(s, "DISABLE_AUTO_RESCHEDULING", &qmaster_conf.disable_reschedule)) {
             continue;
          }
-         if (parse_bool_param(s, "DISABLE_SECONDARY_DS", &disable_secondary_ds)) {
+         if (parse_bool_param(s, "DISABLE_SECONDARY_DS", &qmaster_conf.disable_secondary_ds)) {
             continue;
          }
-         if (parse_bool_param(s, "DISABLE_SECONDARY_DS_READER", &disable_secondary_ds_reader)) {
+         if (parse_bool_param(s, "DISABLE_SECONDARY_DS_READER", &qmaster_conf.disable_secondary_ds_reader)) {
             continue;
          }
-         if (parse_bool_param(s, "DISABLE_SECONDARY_DS_EXECD", &disable_secondary_ds_execd)) {
+         if (parse_bool_param(s, "DISABLE_SECONDARY_DS_EXECD", &qmaster_conf.disable_secondary_ds_execd)) {
             continue;
          }
-         if (parse_bool_param(s, "DISABLE_AUTOMATIC_SESSIONS", &disable_automatic_sessions)) {
+         if (parse_bool_param(s, "DISABLE_AUTOMATIC_SESSIONS", &qmaster_conf.disable_automatic_sessions)) {
             continue;
          }
-         if (parse_int_param(s, "MAX_DS_DEVIATION", &max_ds_deviation, ocs::CEntry::Type::TIME)) {
-            if (max_ds_deviation < 0 || max_ds_deviation > 5000) {
-               max_ds_deviation = DEFAULT_DS_DEVIATION;
+         if (parse_int_param(s, "MAX_DS_DEVIATION", &qmaster_conf.max_ds_deviation, ocs::CEntry::Type::TIME)) {
+            if (qmaster_conf.max_ds_deviation < 0 || qmaster_conf.max_ds_deviation > 5000) {
+               qmaster_conf.max_ds_deviation = DEFAULT_DS_DEVIATION;
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "MAX_DS_DEVIATION", DEFAULT_DS_DEVIATION);
             }
             continue;
          }
-         if (parse_bool_param(s, "LOG_MONITOR_MESSAGE", &is_monitor_message)) {
+         if (parse_bool_param(s, "LOG_MONITOR_MESSAGE", &qmaster_conf.is_monitor_message)) {
             continue;
          }
-         if (parse_bool_param(s, "SIMULATE_EXECDS", &simulate_execds)) {
+         if (parse_bool_param(s, "SIMULATE_EXECDS", &qmaster_conf.simulate_execds)) {
             continue;
          }
          if (!strncasecmp(s, "SCHEDULER_TIMEOUT",
                     sizeof("SCHEDULER_TIMEOUT")-1)) {
-            scheduler_timeout=atoi(&s[sizeof("SCHEDULER_TIMEOUT=")-1]);
+            qmaster_conf.scheduler_timeout=atoi(&s[sizeof("SCHEDULER_TIMEOUT=")-1]);
             continue;
          }
-         if (parse_int_param(s, "max_job_deletion_time", &max_job_deletion_time, ocs::CEntry::Type::TIME)) {
-            if (max_job_deletion_time <= 0 || max_job_deletion_time > 5) {
+         if (parse_int_param(s, "max_job_deletion_time", &qmaster_conf.max_job_deletion_time, ocs::CEntry::Type::TIME)) {
+            if (qmaster_conf.max_job_deletion_time <= 0 || qmaster_conf.max_job_deletion_time > 5) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "max_job_deletion_time",
                                        3);
-               max_job_deletion_time = 3;
+               qmaster_conf.max_job_deletion_time = 3;
             }
             continue;
          }
-         if (parse_bool_param(s, "ENABLE_RESCHEDULE_KILL", &enable_reschedule_kill)) {
+         if (parse_bool_param(s, "ENABLE_RESCHEDULE_KILL", &qmaster_conf.enable_reschedule_kill)) {
             continue;
          }
-         if (parse_bool_param(s, "ENABLE_RESCHEDULE_SLAVE", &enable_reschedule_slave)) {
+         if (parse_bool_param(s, "ENABLE_RESCHEDULE_SLAVE", &qmaster_conf.enable_reschedule_slave)) {
             continue;
          }
 
          // if enabled does not change submit time when a job is rescheduled
-         if (parse_bool_param(s, "OLD_RESCHEDULE_BEHAVIOR", &old_reschedule_behavior)) {
+         if (parse_bool_param(s, "OLD_RESCHEDULE_BEHAVIOR", &qmaster_conf.old_reschedule_behavior)) {
             continue;
          }
 
          // if enabled does not change submit time when a job array task is rescheduled
-         if (parse_bool_param(s, "OLD_RESCHEDULE_BEHAVIOR_ARRAY_JOB", &old_reschedule_behavior_array_job)) {
+         if (parse_bool_param(s, "OLD_RESCHEDULE_BEHAVIOR_ARRAY_JOB", &qmaster_conf.old_reschedule_behavior_array_job)) {
             continue;
          }
 
-         if (parse_int_param(s, "jsv_threshold", &jsv_threshold, ocs::CEntry::Type::TIME)) {
-            if (jsv_threshold < 0) {
+         if (parse_int_param(s, "jsv_threshold", &qmaster_conf.jsv_threshold, ocs::CEntry::Type::TIME)) {
+            if (qmaster_conf.jsv_threshold < 0) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "jsv_threshold",
                                        5000);
-               jsv_threshold = 5000;
+               qmaster_conf.jsv_threshold = 5000;
             }
             continue;
          }
-         if (parse_int_param(s, "jsv_timeout", &jsv_timeout, ocs::CEntry::Type::TIME)) {
-            if (jsv_timeout <= 0) {
+         if (parse_int_param(s, "jsv_timeout", &qmaster_conf.jsv_timeout, ocs::CEntry::Type::TIME)) {
+            if (qmaster_conf.jsv_timeout <= 0) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "jsv_timeout",
                                        10);
-               jsv_timeout = 10;
+               qmaster_conf.jsv_timeout = 10;
             }
             continue;
          }
-         if (parse_bool_param(s, "ENABLE_SUBMIT_LIB_PATH", &enable_submit_lib_path)) {
+         if (parse_bool_param(s, "ENABLE_SUBMIT_LIB_PATH", &qmaster_conf.enable_submit_lib_path)) {
             continue;
          }
-         if (parse_bool_param(s, "ENABLE_SUBMIT_LD_PRELOAD", &enable_submit_ld_preload)) {
+         if (parse_bool_param(s, "ENABLE_SUBMIT_LD_PRELOAD", &qmaster_conf.enable_submit_ld_preload)) {
             continue;
          }
-         if (parse_string_param(s, "GPERF_NAME", gperf_name)) {
+         if (parse_string_param(s, "GPERF_NAME", qmaster_conf.gperf_name)) {
             continue;
          }
-         if (parse_string_param(s, "GPERF_THREADS", gperf_threads)) {
+         if (parse_string_param(s, "GPERF_THREADS", qmaster_conf.gperf_threads)) {
             continue;
          }
          {
             std::string ijs_escape_char_val;
             if (parse_string_param(s, "ijs_escape_char", ijs_escape_char_val)) {
                if (ijs_escape_char_val == "none" || ijs_escape_char_val.empty()) {
-                  s_ijs_escape_char = '\0';
+                  qmaster_conf.s_ijs_escape_char = '\0';
                } else {
-                  s_ijs_escape_char = ijs_escape_char_val[0];
+                  qmaster_conf.s_ijs_escape_char = ijs_escape_char_val[0];
                }
                continue;
             }
@@ -1151,17 +1257,17 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
             std::string kv;
             if (parse_string_param(s, "ijs_keepalive_interval", kv)) {
                int v = atoi(kv.c_str());
-               s_ijs_keepalive_interval = (v >= 0) ? v : 60;
+               qmaster_conf.s_ijs_keepalive_interval = (v >= 0) ? v : 60;
                continue;
             }
             if (parse_string_param(s, "ijs_keepalive_count", kv)) {
                int v = atoi(kv.c_str());
-               s_ijs_keepalive_count = (v > 0) ? v : 3;
+               qmaster_conf.s_ijs_keepalive_count = (v > 0) ? v : 3;
                continue;
             }
             if (parse_string_param(s, "ijs_reconnect_timeout", kv)) {
                int v = atoi(kv.c_str());
-               s_ijs_reconnect_timeout = (v >= 0) ? v : 0;
+               qmaster_conf.s_ijs_reconnect_timeout = (v >= 0) ? v : 0;
                continue;
             }
          }
@@ -1174,8 +1280,8 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
       /* enable/disable GNU malloc library facility for recording of all
          memory allocation/deallocation
          requires MALLOC_TRACE in environment (see mtrace(3) under Linux) */
-      if (enable_mtrace != mtrace_before) {
-         if (enable_mtrace) {
+      if (qmaster_conf.enable_mtrace != mtrace_before) {
+         if (qmaster_conf.enable_mtrace) {
             DPRINTF("ENABLE_MTRACE=true ---> mtrace()\n");
             mtrace();
          } else {
@@ -1187,68 +1293,26 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
 
       conf_update_thread_profiling(nullptr);
 
-      /* always initialize to defaults before we check execd_params */
       SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
-#ifdef COMPILE_DC
-      acct_reserved_usage = false;
-      sharetree_reserved_usage = false;
-#else
-      acct_reserved_usage = false;
-      sharetree_reserved_usage = true;
-#endif
-      notify_kill_type = 1;
-      notify_susp_type = 1;
-      ptf_max_priority = -999;
-      ptf_min_priority = -999;
-      keep_active = KEEP_ACTIVE_FALSE;
-      usage_collection = USAGE_COLLECTION_DEFAULT;
-      enable_mem_details = false;
-      script_timeout = 120;
-      enable_addgrp_kill = false;
-      use_qsub_gid = false;
-      prof_execd_thrd = false;
-      inherit_env = true;
-      enable_hwloc = true;
-      set_lib_path = false;
-      do_accounting = true;
-      do_reporting = false;
-      do_monitoring = false;
-      do_joblog = false;
-      reporting_flush_time = 15;
-      accounting_flush_time = -1;
-      reporting_sync_write = false;
-      old_accounting = false;
-      old_reporting = false;
-      sharelog_time = 0;
-      log_consumables = false;
-      usage_patterns.clear();
-      online_usage_vars.clear();
-      enable_addgrp_kill = false;
-      strcpy(s_descriptors, "UNDEFINED");
-      strcpy(h_descriptors, "UNDEFINED");
-      strcpy(s_maxproc, "UNDEFINED");
-      strcpy(h_maxproc, "UNDEFINED");
-      strcpy(s_memorylocked, "UNDEFINED");
-      strcpy(h_memorylocked, "UNDEFINED");
-      strcpy(s_locks, "UNDEFINED");
-      strcpy(h_locks, "UNDEFINED");
+      // every default comes from execd_params_t, so a removed token reverts
+      execd_conf = {};
 
       for (s=sge_strtok_r(execd_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
-         if (parse_bool_param(s, "USE_QIDLE", &use_qidle)) {
+         if (parse_bool_param(s, "USE_QIDLE", &execd_conf.use_qidle)) {
             continue;
          }
          if (progid == EXECD) {
-            if (parse_bool_param(s, "NO_SECURITY", &do_credentials)) {
+            if (parse_bool_param(s, "NO_SECURITY", &security_conf.do_credentials)) {
                /* reversed logic */
-               do_credentials = do_credentials ? false : true;
+               security_conf.do_credentials = security_conf.do_credentials ? false : true;
                continue;
             }
-            if (parse_bool_param(s, "NO_AUTHENTICATION", &do_authentication)) {
+            if (parse_bool_param(s, "NO_AUTHENTICATION", &security_conf.do_authentication)) {
                /* reversed logic */
-               do_authentication = do_authentication ? false : true;
+               security_conf.do_authentication = security_conf.do_authentication ? false : true;
                continue;
             }
-            if (parse_bool_param(s, "DO_AUTHENTICATION", &do_authentication)) {
+            if (parse_bool_param(s, "DO_AUTHENTICATION", &security_conf.do_authentication)) {
                continue;
             }
          }
@@ -1257,11 +1321,11 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
                const char *keep_active_value = &s[sizeof("KEEP_ACTIVE=")-1];
 
                if (strncasecmp(keep_active_value, "ERROR", sizeof("ERROR")-1) == 0) {
-                  keep_active = KEEP_ACTIVE_ERROR;
+                  execd_conf.keep_active = KEEP_ACTIVE_ERROR;
                } else if (strncasecmp(keep_active_value, TRUE_STR, sizeof(TRUE_STR)-1) == 0) {
-                  keep_active = KEEP_ACTIVE_TRUE;
+                  execd_conf.keep_active = KEEP_ACTIVE_TRUE;
                } else {
-                  keep_active = KEEP_ACTIVE_FALSE;
+                  execd_conf.keep_active = KEEP_ACTIVE_FALSE;
                }
                continue;
             }
@@ -1271,47 +1335,47 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
                const char *usage_collection_str = &s[sizeof("USAGE_COLLECTION=")-1];
 
                if (strncasecmp(usage_collection_str, TRUE_STR, sizeof(TRUE_STR)-1) == 0) {
-                  usage_collection = USAGE_COLLECTION_DEFAULT;
+                  execd_conf.usage_collection = USAGE_COLLECTION_DEFAULT;
                } else if (strncasecmp(usage_collection_str, "PDC", sizeof("PDC")-1) == 0) {
-                  usage_collection = USAGE_COLLECTION_PDC;
+                  execd_conf.usage_collection = USAGE_COLLECTION_PDC;
                } else if (strncasecmp(usage_collection_str, "HYBRID", sizeof("HYBRID")-1) == 0) {
-                  usage_collection = USAGE_COLLECTION_HYBRID;
+                  execd_conf.usage_collection = USAGE_COLLECTION_HYBRID;
                } else {
-                  usage_collection = USAGE_COLLECTION_NONE;
+                  execd_conf.usage_collection = USAGE_COLLECTION_NONE;
                }
                continue;
             }
          }
 #if defined(WITH_EXTENSIONS)
-         if (parse_bool_param(s, "ENABLE_MEM_DETAILS", &enable_mem_details)) {
+         if (parse_bool_param(s, "ENABLE_MEM_DETAILS", &execd_conf.enable_mem_details)) {
             continue;
          }
 #endif
-         if (parse_time_param(s, "SCRIPT_TIMEOUT", &script_timeout)) {
+         if (parse_time_param(s, "SCRIPT_TIMEOUT", &execd_conf.script_timeout)) {
             continue;
          }
-         if (parse_bool_param(s, "SIMULATE_JOBS", &simulate_jobs)) {
+         if (parse_bool_param(s, "SIMULATE_JOBS", &execd_conf.simulate_jobs)) {
             continue;
          }
-         if (parse_bool_param(s, "ENABLE_ADDGRP_KILL", &enable_addgrp_kill)) {
+         if (parse_bool_param(s, "ENABLE_ADDGRP_KILL", &execd_conf.enable_addgrp_kill)) {
             continue;
          }
-         if (parse_bool_param(s, "ACCT_RESERVED_USAGE", &acct_reserved_usage)) {
+         if (parse_bool_param(s, "ACCT_RESERVED_USAGE", &execd_conf.acct_reserved_usage)) {
             continue;
          }
-         if (parse_bool_param(s, "SHARETREE_RESERVED_USAGE", &sharetree_reserved_usage)) {
+         if (parse_bool_param(s, "SHARETREE_RESERVED_USAGE", &execd_conf.sharetree_reserved_usage)) {
             continue;
          }
-         if (parse_bool_param(s, "PROF_EXECD", &prof_execd_thrd)) {
+         if (parse_bool_param(s, "PROF_EXECD", &execd_conf.prof_execd_thrd)) {
             continue;
          }
          if (!strncasecmp(s, "NOTIFY_KILL", sizeof("NOTIFY_KILL")-1)) {
             if (!strcasecmp(s, "NOTIFY_KILL=default")) {
-               notify_kill_type = 1;
+               execd_conf.notify_kill_type = 1;
             } else if (!strcasecmp(s, "NOTIFY_KILL=none")) {
-               notify_kill_type = 2;
+               execd_conf.notify_kill_type = 2;
             } else if (!strncasecmp(s, "NOTIFY_KILL=", sizeof("NOTIFY_KILL=")-1)){
-               notify_kill_type = 0;
+               execd_conf.notify_kill_type = 0;
                if (notify_kill) {
                   sge_free(&notify_kill);
                }
@@ -1321,11 +1385,11 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
          }
          if (!strncasecmp(s, "NOTIFY_SUSP", sizeof("NOTIFY_SUSP")-1)) {
             if (!strcasecmp(s, "NOTIFY_SUSP=default")) {
-               notify_susp_type = 1;
+               execd_conf.notify_susp_type = 1;
             } else if (!strcasecmp(s, "NOTIFY_SUSP=none")) {
-               notify_susp_type = 2;
+               execd_conf.notify_susp_type = 2;
             } else if (!strncasecmp(s, "NOTIFY_SUSP=", sizeof("NOTIFY_SUSP=")-1)){
-               notify_susp_type = 0;
+               execd_conf.notify_susp_type = 0;
                if (notify_susp) {
                   sge_free(&notify_susp);
                }
@@ -1333,78 +1397,78 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
             }
             continue;
          }
-         if (parse_bool_param(s, "USE_QSUB_GID", &use_qsub_gid)) {
+         if (parse_bool_param(s, "USE_QSUB_GID", &execd_conf.use_qsub_gid)) {
             continue;
          }
          if (!strncasecmp(s, "PTF_MAX_PRIORITY", sizeof("PTF_MAX_PRIORITY")-1)) {
-            ptf_max_priority=atoi(&s[sizeof("PTF_MAX_PRIORITY=")-1]);
+            execd_conf.ptf_max_priority=atoi(&s[sizeof("PTF_MAX_PRIORITY=")-1]);
             continue;
          }
          if (!strncasecmp(s, "PTF_MIN_PRIORITY", sizeof("PTF_MIN_PRIORITY")-1)) {
-            ptf_min_priority=atoi(&s[sizeof("PTF_MIN_PRIORITY=")-1]);
+            execd_conf.ptf_min_priority=atoi(&s[sizeof("PTF_MIN_PRIORITY=")-1]);
             continue;
          }
-         if (parse_bool_param(s, "SET_LIB_PATH", &set_lib_path)) {
+         if (parse_bool_param(s, "SET_LIB_PATH", &execd_conf.set_lib_path)) {
             continue;
          }
-         if (parse_bool_param(s, "INHERIT_ENV", &inherit_env)) {
+         if (parse_bool_param(s, "INHERIT_ENV", &execd_conf.inherit_env)) {
             continue;
          }
-         if (parse_bool_param(s, "ENABLE_HWLOC", &enable_hwloc)) {
+         if (parse_bool_param(s, "ENABLE_HWLOC", &execd_conf.enable_hwloc)) {
             continue;
          }
          if (!strncasecmp(s, "PDC_INTERVAL", sizeof("PDC_INTERVAL")-1)) {
             uint32_t tmp_pdc_interval;
 
             if (!strcasecmp(s, "PDC_INTERVAL=NEVER")) {
-               pdc_interval = PDC_DISABLED;
+               execd_conf.pdc_interval = PDC_DISABLED;
             } else if (!strcasecmp(s, "PDC_INTERVAL=PER_LOAD_REPORT")) {
-               pdc_interval = sge_gmt32_to_gmt64(load_report_time);
+               execd_conf.pdc_interval = sge_gmt32_to_gmt64(load_report_time);
             } else if (parse_time_param(s, "PDC_INTERVAL", &tmp_pdc_interval)) {
-               pdc_interval = sge_gmt32_to_gmt64(tmp_pdc_interval);
+               execd_conf.pdc_interval = sge_gmt32_to_gmt64(tmp_pdc_interval);
             } else {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "execd_params", "PDC_INTERVAL", 1);
-               pdc_interval = sge_gmt32_to_gmt64(1);
+               execd_conf.pdc_interval = sge_gmt32_to_gmt64(1);
             }
             continue;
          }
          if (!strncasecmp(s, "S_DESCRIPTORS", sizeof("S_DESCRIPTORS")-1)) {
-            sge_strlcpy(s_descriptors, s+sizeof("S_DESCRIPTORS"), 100);
+            sge_strlcpy(execd_conf.s_descriptors, s+sizeof("S_DESCRIPTORS"), 100);
             continue;
          }
          if (!strncasecmp(s, "H_DESCRIPTORS", sizeof("H_DESCRIPTORS")-1)) {
-            sge_strlcpy(h_descriptors, s+sizeof("H_DESCRIPTORS"), 100);
+            sge_strlcpy(execd_conf.h_descriptors, s+sizeof("H_DESCRIPTORS"), 100);
             continue;
          }
          if (!strncasecmp(s, "S_MAXPROC", sizeof("S_MAXPROC")-1)) {
-            sge_strlcpy(s_maxproc, s+sizeof("S_MAXPROC"), 100);
+            sge_strlcpy(execd_conf.s_maxproc, s+sizeof("S_MAXPROC"), 100);
             continue;
          }
          if (!strncasecmp(s, "H_MAXPROC", sizeof("H_MAXPROC")-1)) {
-            sge_strlcpy(h_maxproc, s+sizeof("H_MAXPROC"), 100);
+            sge_strlcpy(execd_conf.h_maxproc, s+sizeof("H_MAXPROC"), 100);
             continue;
          }
          if (!strncasecmp(s, "S_MEMORYLOCKED", sizeof("S_MEMORYLOCKED")-1)) {
-            sge_strlcpy(s_memorylocked, s+sizeof("S_MEMORYLOCKED"), 100);
+            sge_strlcpy(execd_conf.s_memorylocked, s+sizeof("S_MEMORYLOCKED"), 100);
             continue;
          }
          if (!strncasecmp(s, "H_MEMORYLOCKED", sizeof("H_MEMORYLOCKED")-1)) {
-            sge_strlcpy(h_memorylocked, s+sizeof("H_MEMORYLOCKED"), 100);
+            sge_strlcpy(execd_conf.h_memorylocked, s+sizeof("H_MEMORYLOCKED"), 100);
             continue;
          }
          if (!strncasecmp(s, "S_LOCKS", sizeof("S_LOCKS")-1)) {
-            sge_strlcpy(s_locks, s+sizeof("S_LOCKS"), 100);
+            sge_strlcpy(execd_conf.s_locks, s+sizeof("S_LOCKS"), 100);
             continue;
          }
          if (!strncasecmp(s, "H_LOCKS", sizeof("H_LOCKS")-1)) {
-            sge_strlcpy(h_locks, s+sizeof("H_LOCKS"), 100);
+            sge_strlcpy(execd_conf.h_locks, s+sizeof("H_LOCKS"), 100);
             continue;
          }
-         if (parse_bool_param(s, "IGNORE_NGROUPS_MAX_LIMIT", &ignore_ngroups_max_limit)) {
+         if (parse_bool_param(s, "IGNORE_NGROUPS_MAX_LIMIT", &execd_conf.ignore_ngroups_max_limit)) {
             continue;
          }
-         if (parse_bool_param(s, "ENABLE_SYSTEMD", &enable_systemd)) {
+         if (parse_bool_param(s, "ENABLE_SYSTEMD", &execd_conf.enable_systemd)) {
             continue;
          }
       }
@@ -1415,58 +1479,61 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
       /* If profiling configuration has changed,
          set_thread_prof_status_by_name has to be called for each thread
       */
-      set_thread_prof_status_by_name("Execd Thread", prof_execd_thrd);
+      set_thread_prof_status_by_name("Execd Thread", execd_conf.prof_execd_thrd);
 
       SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
       /* parse reporting parameters */
+      // every default comes from reporting_params_t, so a removed token reverts
+      reporting_conf = {};
+
       for (s=sge_strtok_r(reporting_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
-         if (parse_bool_param(s, "accounting", &do_accounting)) {
+         if (parse_bool_param(s, "accounting", &reporting_conf.do_accounting)) {
             continue;
          }
-         if (parse_bool_param(s, "reporting", &do_reporting)) {
+         if (parse_bool_param(s, "reporting", &reporting_conf.do_reporting)) {
             continue;
          }
-         if (parse_bool_param(s, "monitoring", &do_monitoring)) {
+         if (parse_bool_param(s, "monitoring", &reporting_conf.do_monitoring)) {
             continue;
          }
-         if (parse_bool_param(s, "joblog", &do_joblog)) {
+         if (parse_bool_param(s, "joblog", &reporting_conf.do_joblog)) {
             continue;
          }
-         if (parse_int_param(s, "flush_time", &reporting_flush_time, ocs::CEntry::Type::TIME)) {
-            if (reporting_flush_time <= 0) {
+         if (parse_int_param(s, "flush_time", &reporting_conf.reporting_flush_time, ocs::CEntry::Type::TIME)) {
+            if (reporting_conf.reporting_flush_time <= 0) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "reporting_params", "flush_time",
                                        15);
-               reporting_flush_time = 15;
+               reporting_conf.reporting_flush_time = 15;
             }
             continue;
          }
-         if (parse_int_param(s, "accounting_flush_time", &accounting_flush_time, ocs::CEntry::Type::TIME)) {
-            if (accounting_flush_time < 0) {
+         if (parse_int_param(s, "accounting_flush_time", &reporting_conf.accounting_flush_time, ocs::CEntry::Type::TIME)) {
+            if (reporting_conf.accounting_flush_time < 0) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "reporting_params", "accounting_flush_time",
                                        -1);
-               accounting_flush_time = -1;
+               reporting_conf.accounting_flush_time = -1;
             }
 
             continue;
          }
-         if (parse_bool_param(s, "sync_write", &reporting_sync_write)) {
+         if (parse_bool_param(s, "sync_write", &reporting_conf.reporting_sync_write)) {
             continue;
          }
-         if (parse_bool_param(s, "old_accounting", &old_accounting)) {
+         if (parse_bool_param(s, "old_accounting", &reporting_conf.old_accounting)) {
             continue;
          }
-         if (parse_bool_param(s, "old_reporting", &old_reporting)) {
+         if (parse_bool_param(s, "old_reporting", &reporting_conf.old_reporting)) {
             continue;
          }
-         if (parse_int_param(s, "sharelog", &sharelog_time, ocs::CEntry::Type::TIME)) {
+         if (parse_int_param(s, "sharelog", &reporting_conf.sharelog_time, ocs::CEntry::Type::TIME)) {
             continue;
          }
-         if (parse_bool_param(s, "log_consumables", &log_consumables)) {
+         if (parse_bool_param(s, "log_consumables", &reporting_conf.log_consumables)) {
             continue;
          }
-         if (parse_string_param(s, "usage_patterns", usage_patterns)) {
+         if (parse_string_param(s, "usage_patterns", reporting_conf.usage_patterns)) {
             continue;
          }
          std::string online_usage_str;
@@ -1478,7 +1545,7 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
             std::vector<std::string> new_online_usage_vars;
             if (parse_online_usage_value(answer_list, online_usage_str.c_str(),
                                          new_online_usage_vars)) {
-               online_usage_vars = std::move(new_online_usage_vars);
+               reporting_conf.online_usage_vars = std::move(new_online_usage_vars);
             }
             continue;
          }
@@ -1489,50 +1556,54 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
 
       /* parse binding parameters */
       SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
+
+      // every default comes from binding_params_t, so a removed token reverts
+      binding_conf = {};
+
       for (s=sge_strtok_r(binding_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
-         if (parse_bool_param(s, "enabled", &is_binding_enabled)) {
+         if (parse_bool_param(s, "enabled", &binding_conf.is_binding_enabled)) {
             continue;
          }
-         if (parse_bool_param(s, "implicit", &do_implicit_binding)) {
+         if (parse_bool_param(s, "implicit", &binding_conf.do_implicit_binding)) {
             continue;
          }
-         if (parse_bool_param(s, "on_any_host", &schedule_on_any_host)) {
+         if (parse_bool_param(s, "on_any_host", &binding_conf.schedule_on_any_host)) {
             continue;
          }
          std::string binding_mode_str;
          if (parse_string_param(s, "mode", binding_mode_str)) {
             if (binding_mode_str == "default" || binding_mode_str == "DEFAULT") {
-               binding_mode = BINDING_MODE_DEFAULT;
+               binding_conf.binding_mode = BINDING_MODE_DEFAULT;
             } else if (binding_mode_str == "ocs" || binding_mode_str == "OCS") {
-               binding_mode = BINDING_MODE_OCS;
+               binding_conf.binding_mode = BINDING_MODE_OCS;
             } else if (binding_mode_str == "gcs" || binding_mode_str == "GCS") {
-               binding_mode = BINDING_MODE_GCS;
+               binding_conf.binding_mode = BINDING_MODE_GCS;
             } else {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "binding_params", "mode", -1);
-               binding_mode = BINDING_MODE_DEFAULT;
+               binding_conf.binding_mode = BINDING_MODE_DEFAULT;
             }
             continue;
          }
          std::string default_binding_unit_str;
          if (parse_string_param(s, "default_unit", default_binding_unit_str)) {
-            default_binding_unit = ocs::BindingUnit::from_string(default_binding_unit_str);
+            binding_conf.default_binding_unit = ocs::BindingUnit::from_string(default_binding_unit_str);
 
-            if (default_binding_unit == ocs::BindingUnit::UNINITIALIZED) {
+            if (binding_conf.default_binding_unit == ocs::BindingUnit::UNINITIALIZED) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "binding_params", "default_unit", -1);
-               default_binding_unit = ocs::BindingUnit::CCORE;
+               binding_conf.default_binding_unit = ocs::BindingUnit::CCORE;
                continue;
             }
 
             continue;
          }
-         if (parse_string_param(s, "filter", binding_filter)) {
-            if (const char *binding_filter_cstr = binding_filter.c_str();
+         if (parse_string_param(s, "filter", binding_conf.binding_filter)) {
+            if (const char *binding_filter_cstr = binding_conf.binding_filter.c_str();
                 strcasecmp(binding_filter_cstr, NONE_STR) != 0 && strcasecmp(binding_filter_cstr, FIRST_CORE) != 0) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "binding_params", "filter", -1);
-               binding_filter = NONE_STR;
+               binding_conf.binding_filter = NONE_STR;
                continue;
             }
 
@@ -1741,25 +1812,25 @@ void conf_update_thread_profiling(const char *thread_name) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    if (thread_name == nullptr) {
-      set_thread_prof_status_by_name("Signal Thread", prof_signal_thrd);
-      set_thread_prof_status_by_name("Scheduler Thread", prof_scheduler_thrd);
-      set_thread_prof_status_by_name("Listener Thread", prof_listener_thrd);
-      set_thread_prof_status_by_name("Worker Thread", prof_worker_thrd);
-      set_thread_prof_status_by_name("Event Master Thread", prof_deliver_thrd);
-      set_thread_prof_status_by_name("TEvent Thread", prof_tevent_thrd);
+      set_thread_prof_status_by_name("Signal Thread", qmaster_conf.prof_signal_thrd);
+      set_thread_prof_status_by_name("Scheduler Thread", qmaster_conf.prof_scheduler_thrd);
+      set_thread_prof_status_by_name("Listener Thread", qmaster_conf.prof_listener_thrd);
+      set_thread_prof_status_by_name("Worker Thread", qmaster_conf.prof_worker_thrd);
+      set_thread_prof_status_by_name("Event Master Thread", qmaster_conf.prof_deliver_thrd);
+      set_thread_prof_status_by_name("TEvent Thread", qmaster_conf.prof_tevent_thrd);
    } else {
       if (strcmp(thread_name, "Signal Thread") == 0) {
-         set_thread_prof_status_by_name("Signal Thread", prof_signal_thrd);
+         set_thread_prof_status_by_name("Signal Thread", qmaster_conf.prof_signal_thrd);
       } else if (strcmp(thread_name, "Scheduler Thread") == 0) {
-         set_thread_prof_status_by_name("Scheduler Thread", prof_scheduler_thrd);
+         set_thread_prof_status_by_name("Scheduler Thread", qmaster_conf.prof_scheduler_thrd);
       } else if (strcmp(thread_name, "Listener Thread") == 0) {
-         set_thread_prof_status_by_name("Listener Thread", prof_listener_thrd);
+         set_thread_prof_status_by_name("Listener Thread", qmaster_conf.prof_listener_thrd);
       } else if (strcmp(thread_name, "Worker Thread") == 0) {
-         set_thread_prof_status_by_name("Worker Thread", prof_worker_thrd);
+         set_thread_prof_status_by_name("Worker Thread", qmaster_conf.prof_worker_thrd);
       } else if (strcmp(thread_name, "Event Master Thread") == 0) {
-         set_thread_prof_status_by_name("Event Master Thread", prof_deliver_thrd);
+         set_thread_prof_status_by_name("Event Master Thread", qmaster_conf.prof_deliver_thrd);
       } else if (strcmp(thread_name, "TEvent Thread") == 0) {
-         set_thread_prof_status_by_name("TEvent Thread", prof_tevent_thrd);
+         set_thread_prof_status_by_name("TEvent Thread", qmaster_conf.prof_tevent_thrd);
       }
    }
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3016,7 +3087,7 @@ bool mconf_is_monitor_message() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   is = is_monitor_message;
+   is = qmaster_conf.is_monitor_message;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(is);
@@ -3037,7 +3108,7 @@ bool mconf_get_use_qidle() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   idle = use_qidle;
+   idle = execd_conf.use_qidle;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(idle);
@@ -3058,7 +3129,7 @@ bool mconf_get_forbid_reschedule() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = forbid_reschedule;
+   ret = qmaster_conf.forbid_reschedule;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3079,7 +3150,7 @@ bool mconf_get_forbid_apperror() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = forbid_apperror;
+   ret = qmaster_conf.forbid_apperror;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3100,7 +3171,7 @@ bool mconf_get_do_credentials() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = do_credentials;
+   ret = security_conf.do_credentials;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3121,7 +3192,7 @@ bool mconf_get_do_authentication() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = do_authentication;
+   ret = security_conf.do_authentication;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3142,7 +3213,7 @@ bool mconf_get_acct_reserved_usage() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = acct_reserved_usage;
+   ret = execd_conf.acct_reserved_usage;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3163,7 +3234,7 @@ bool mconf_get_sharetree_reserved_usage() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = sharetree_reserved_usage;
+   ret = execd_conf.sharetree_reserved_usage;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3184,7 +3255,7 @@ keep_active_t mconf_get_keep_active() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = keep_active;
+   ret = execd_conf.keep_active;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3204,7 +3275,7 @@ usage_collection_t mconf_get_usage_collection() {
    usage_collection_t ret;
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   ret = usage_collection;
+   ret = execd_conf.usage_collection;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    DRETURN(ret);
@@ -3225,7 +3296,7 @@ bool mconf_get_enable_mem_details() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = enable_mem_details;
+   ret = execd_conf.enable_mem_details;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -3245,7 +3316,7 @@ bool mconf_get_enable_addgrp_kill() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = enable_addgrp_kill;
+   ret = execd_conf.enable_addgrp_kill;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -3269,7 +3340,7 @@ bool mconf_get_enable_addgrp_kill() {
 uint64_t mconf_get_pdc_interval() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   uint64_t ret = pdc_interval;
+   uint64_t ret = execd_conf.pdc_interval;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -3289,7 +3360,7 @@ bool mconf_get_enable_reschedule_kill() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = enable_reschedule_kill;
+   ret = qmaster_conf.enable_reschedule_kill;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -3309,7 +3380,7 @@ bool mconf_get_enable_reschedule_slave() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = enable_reschedule_slave;
+   ret = qmaster_conf.enable_reschedule_slave;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -3329,7 +3400,7 @@ bool mconf_get_old_reschedule_behavior() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = old_reschedule_behavior;
+   ret = qmaster_conf.old_reschedule_behavior;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -3345,7 +3416,7 @@ bool mconf_get_old_reschedule_behavior() {
 std::string mconf_get_gperf_name() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   std::string ret = gperf_name;
+   std::string ret = qmaster_conf.gperf_name;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -3361,7 +3432,7 @@ std::string mconf_get_gperf_name() {
 std::string mconf_get_gperf_threads() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   std::string ret = gperf_threads;
+   std::string ret = qmaster_conf.gperf_threads;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -3381,7 +3452,7 @@ bool mconf_get_old_reschedule_behavior_array_job() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = old_reschedule_behavior_array_job;
+   ret = qmaster_conf.old_reschedule_behavior_array_job;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -3401,7 +3472,7 @@ bool mconf_get_simulate_execds() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = simulate_execds;
+   ret = qmaster_conf.simulate_execds;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3422,7 +3493,7 @@ bool mconf_get_simulate_jobs() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = simulate_jobs;
+   ret = execd_conf.simulate_jobs;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3443,7 +3514,7 @@ long mconf_get_ptf_max_priority() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = ptf_max_priority;
+   ret = execd_conf.ptf_max_priority;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3464,7 +3535,7 @@ long mconf_get_ptf_min_priority() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = ptf_min_priority;
+   ret = execd_conf.ptf_min_priority;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3485,7 +3556,7 @@ bool mconf_get_use_qsub_gid() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = use_qsub_gid;
+   ret = execd_conf.use_qsub_gid;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3506,7 +3577,7 @@ int mconf_get_notify_susp_type() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = notify_susp_type;
+   ret = execd_conf.notify_susp_type;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3550,7 +3621,7 @@ int mconf_get_notify_kill_type() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = notify_kill_type;
+   ret = execd_conf.notify_kill_type;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3594,7 +3665,7 @@ bool mconf_get_disable_reschedule() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = disable_reschedule;
+   ret = qmaster_conf.disable_reschedule;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3615,7 +3686,7 @@ bool mconf_get_disable_secondary_ds() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = disable_secondary_ds;
+   ret = qmaster_conf.disable_secondary_ds;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3636,7 +3707,7 @@ bool mconf_get_disable_secondary_ds_reader() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = disable_secondary_ds_reader;
+   ret = qmaster_conf.disable_secondary_ds_reader;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3657,7 +3728,7 @@ bool mconf_get_disable_secondary_ds_execd() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = disable_secondary_ds_execd;
+   ret = qmaster_conf.disable_secondary_ds_execd;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3678,7 +3749,7 @@ bool mconf_get_disable_automatic_session() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = disable_automatic_sessions;
+   ret = qmaster_conf.disable_automatic_sessions;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3699,7 +3770,7 @@ int mconf_get_scheduler_timeout() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   timeout = scheduler_timeout;
+   timeout = qmaster_conf.scheduler_timeout;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(timeout);
@@ -3717,7 +3788,7 @@ void mconf_set_max_dynamic_event_clients(int value) {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
-   max_dynamic_event_clients = value;
+   qmaster_conf.max_dynamic_event_clients = value;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
    DRETURN_VOID;
@@ -3738,7 +3809,7 @@ int mconf_get_max_dynamic_event_clients() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = max_dynamic_event_clients;
+   ret = qmaster_conf.max_dynamic_event_clients;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3759,7 +3830,7 @@ bool mconf_get_set_lib_path() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = set_lib_path;
+   ret = execd_conf.set_lib_path;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3780,7 +3851,7 @@ bool mconf_get_inherit_env() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = inherit_env;
+   ret = execd_conf.inherit_env;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3798,7 +3869,7 @@ bool mconf_get_enable_hwloc() {
    DENTER(BASIS_LAYER);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   const bool ret = enable_hwloc;
+   const bool ret = execd_conf.enable_hwloc;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    DRETURN(ret);
@@ -3820,7 +3891,7 @@ int mconf_get_spool_time() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = spool_time;
+   ret = qmaster_conf.spool_time;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3843,7 +3914,7 @@ int mconf_get_sharetree_tick_interval() {
    DENTER(BASIS_LAYER);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   int value = sharetree_tick_interval;
+   int value = qmaster_conf.sharetree_tick_interval;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    if (value < STREE_TICK_INTERVAL_MIN) {
@@ -3869,7 +3940,7 @@ int mconf_get_finished_jobs_sweep_interval() {
    DENTER(BASIS_LAYER);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   int value = finished_jobs_sweep_interval;
+   int value = qmaster_conf.finished_jobs_sweep_interval;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    if (value < FINISHED_JOBS_SWEEP_INTERVAL_MIN) {
@@ -3896,7 +3967,7 @@ int mconf_get_finished_jobs_sweep_batch() {
    DENTER(BASIS_LAYER);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   int value = finished_jobs_sweep_batch;
+   int value = qmaster_conf.finished_jobs_sweep_batch;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    if (value < FINISHED_JOBS_SWEEP_BATCH_MIN) {
@@ -3923,7 +3994,7 @@ int mconf_get_max_ds_deviation() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = max_ds_deviation;
+   ret = qmaster_conf.max_ds_deviation;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3944,7 +4015,7 @@ uint32_t mconf_get_monitor_time() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   monitor = monitor_time;
+   monitor = qmaster_conf.monitor_time;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(monitor);
@@ -3966,7 +4037,7 @@ bool mconf_get_do_accounting() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = do_accounting;
+   ret = reporting_conf.do_accounting;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3988,7 +4059,7 @@ bool mconf_get_do_reporting() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = do_reporting;
+   ret = reporting_conf.do_reporting;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4010,7 +4081,7 @@ bool mconf_get_do_monitoring() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = do_monitoring;
+   ret = reporting_conf.do_monitoring;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4032,7 +4103,7 @@ bool mconf_get_do_joblog() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = do_joblog;
+   ret = reporting_conf.do_joblog;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4054,7 +4125,7 @@ int mconf_get_reporting_flush_time() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = reporting_flush_time;
+   ret = reporting_conf.reporting_flush_time;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4076,7 +4147,7 @@ int mconf_get_accounting_flush_time() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = accounting_flush_time;
+   ret = reporting_conf.accounting_flush_time;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4100,7 +4171,7 @@ bool mconf_get_reporting_sync_write() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   bool ret = reporting_sync_write;
+   bool ret = reporting_conf.reporting_sync_write;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4121,7 +4192,7 @@ bool mconf_get_old_accounting() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = old_accounting;
+   ret = reporting_conf.old_accounting;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4142,7 +4213,7 @@ bool mconf_get_old_reporting() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = old_reporting;
+   ret = reporting_conf.old_reporting;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4163,7 +4234,7 @@ int mconf_get_sharelog_time() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = sharelog_time;
+   ret = reporting_conf.sharelog_time;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4184,7 +4255,7 @@ int mconf_get_log_consumables() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = log_consumables;
+   ret = reporting_conf.log_consumables;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4205,7 +4276,7 @@ std::string mconf_get_usage_patterns() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = usage_patterns;
+   ret = reporting_conf.usage_patterns;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4287,7 +4358,7 @@ std::vector<std::string> mconf_get_online_usage_vars() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = online_usage_vars;
+   ret = reporting_conf.online_usage_vars;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4308,7 +4379,7 @@ bool mconf_get_enable_forced_qdel() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = enable_forced_qdel;
+   ret = qmaster_conf.enable_forced_qdel;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4328,7 +4399,7 @@ bool mconf_get_enable_sup_grp_eval() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    bool ret = false;
 #if defined(WITH_EXTENSIONS)
-   ret = enable_sup_grp_eval;
+   ret = qmaster_conf.enable_sup_grp_eval;
 #endif
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4349,7 +4420,7 @@ void mconf_set_enable_sup_grp_eval(bool value) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 #if defined(WITH_EXTENSIONS)
-   enable_sup_grp_eval = value;
+   qmaster_conf.enable_sup_grp_eval = value;
 #endif
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
    DRETURN_VOID;
@@ -4369,7 +4440,7 @@ bool mconf_get_enable_enforce_master_limit() {
    bool ret;
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   ret = enable_enforce_master_limit;
+   ret = qmaster_conf.enable_enforce_master_limit;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 
@@ -4389,7 +4460,7 @@ bool mconf_get_enable_test_sleep_after_request() {
    bool ret;
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   ret = enable_test_sleep_after_request;
+   ret = qmaster_conf.enable_test_sleep_after_request;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 
@@ -4409,7 +4480,7 @@ bool mconf_get_enable_forced_qdel_if_unknown() {
    bool ret;
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   ret = enable_forced_qdel_if_unknown;
+   ret = qmaster_conf.enable_forced_qdel_if_unknown;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -4428,7 +4499,7 @@ bool mconf_get_ignore_ngroups_max_limit() {
    bool ret;
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   ret = ignore_ngroups_max_limit;
+   ret = execd_conf.ignore_ngroups_max_limit;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -4447,7 +4518,7 @@ bool mconf_get_enable_systemd() {
    bool ret;
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   ret = enable_systemd;
+   ret = execd_conf.enable_systemd;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -4467,7 +4538,7 @@ bool mconf_get_enable_submit_lib_path() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = enable_submit_lib_path;
+   ret = qmaster_conf.enable_submit_lib_path;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4488,7 +4559,7 @@ bool mconf_get_enable_submit_ld_preload() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = enable_submit_ld_preload;
+   ret = qmaster_conf.enable_submit_ld_preload;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4509,7 +4580,7 @@ int mconf_get_max_job_deletion_time() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   deletion_time = max_job_deletion_time;
+   deletion_time = qmaster_conf.max_job_deletion_time;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(deletion_time);
@@ -4529,7 +4600,7 @@ void mconf_get_h_descriptors(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(h_descriptors);
+   *pret = strdup(execd_conf.h_descriptors);
    
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
@@ -4549,7 +4620,7 @@ void mconf_get_s_descriptors(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(s_descriptors);
+   *pret = strdup(execd_conf.s_descriptors);
    
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
@@ -4569,7 +4640,7 @@ void mconf_get_h_maxproc(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(h_maxproc);
+   *pret = strdup(execd_conf.h_maxproc);
    
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
@@ -4589,7 +4660,7 @@ void mconf_get_s_maxproc(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(s_maxproc);
+   *pret = strdup(execd_conf.s_maxproc);
    
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
@@ -4609,7 +4680,7 @@ void mconf_get_h_memorylocked(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(h_memorylocked);
+   *pret = strdup(execd_conf.h_memorylocked);
    
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
@@ -4629,7 +4700,7 @@ void mconf_get_s_memorylocked(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(s_memorylocked);
+   *pret = strdup(execd_conf.s_memorylocked);
    
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
@@ -4649,7 +4720,7 @@ void mconf_get_h_locks(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(h_locks);
+   *pret = strdup(execd_conf.h_locks);
    
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
@@ -4669,7 +4740,7 @@ void mconf_get_s_locks(char **pret) {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(s_locks);
+   *pret = strdup(execd_conf.s_locks);
    
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
@@ -4690,7 +4761,7 @@ int mconf_get_jsv_threshold() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   threshold = jsv_threshold;
+   threshold = qmaster_conf.jsv_threshold;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(threshold);
@@ -4711,7 +4782,7 @@ int mconf_get_jsv_timeout() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   timeout = jsv_timeout;
+   timeout = qmaster_conf.jsv_timeout;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(timeout);
@@ -4732,7 +4803,7 @@ uint32_t mconf_get_script_timeout() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = script_timeout;
+   ret = execd_conf.script_timeout;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4750,7 +4821,7 @@ std::tuple<uint32_t, bool, bool> mconf_get_monitoring_options() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   auto ret =  std::make_tuple(monitor_time, is_monitor_message, do_monitoring);
+   auto ret =  std::make_tuple(qmaster_conf.monitor_time, qmaster_conf.is_monitor_message, reporting_conf.do_monitoring);
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4771,7 +4842,7 @@ std::tuple<uint32_t, bool, bool> mconf_get_monitoring_options() {
 bool mconf_is_binding_enabled() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   bool ret = is_binding_enabled;
+   bool ret = binding_conf.is_binding_enabled;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -4787,7 +4858,7 @@ bool mconf_is_binding_enabled() {
 bool mconf_do_implicit_binding() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   bool ret = do_implicit_binding;
+   bool ret = binding_conf.do_implicit_binding;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -4803,7 +4874,7 @@ bool mconf_do_implicit_binding() {
 bool mconf_schedule_on_any_host() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   bool ret = schedule_on_any_host;
+   bool ret = binding_conf.schedule_on_any_host;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -4819,7 +4890,7 @@ bool mconf_schedule_on_any_host() {
 binding_mode_t mconf_get_binding_mode() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   binding_mode_t ret = binding_mode;
+   binding_mode_t ret = binding_conf.binding_mode;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -4835,7 +4906,7 @@ binding_mode_t mconf_get_binding_mode() {
 ocs::BindingUnit::Unit mconf_get_default_binding_unit() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   ocs::BindingUnit::Unit ret = default_binding_unit;
+   ocs::BindingUnit::Unit ret = binding_conf.default_binding_unit;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -4851,7 +4922,7 @@ ocs::BindingUnit::Unit mconf_get_default_binding_unit() {
 std::string mconf_get_binding_filter() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   std::string ret = binding_filter;
+   std::string ret = binding_conf.binding_filter;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -4885,7 +4956,7 @@ char mconf_get_ijs_escape_char() {
 
    char ret;
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   ret = s_ijs_escape_char;
+   ret = qmaster_conf.s_ijs_escape_char;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -4903,7 +4974,7 @@ int mconf_get_ijs_keepalive_interval() {
 
    int ret;
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   ret = s_ijs_keepalive_interval;
+   ret = qmaster_conf.s_ijs_keepalive_interval;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -4921,7 +4992,7 @@ int mconf_get_ijs_keepalive_count() {
 
    int ret;
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   ret = s_ijs_keepalive_count;
+   ret = qmaster_conf.s_ijs_keepalive_count;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
@@ -4939,7 +5010,7 @@ int mconf_get_ijs_reconnect_timeout() {
 
    int ret;
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   ret = s_ijs_reconnect_timeout;
+   ret = qmaster_conf.s_ijs_reconnect_timeout;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }

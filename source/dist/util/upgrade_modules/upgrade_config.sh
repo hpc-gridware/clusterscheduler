@@ -508,7 +508,7 @@ UpOrDowngradeTo901000() {
             ReplaceOrAddLine "${file}" 'mail_tag.*' "mail_tag NONE"
 
             # Modify binding_params to enable C-binding but disable implicit binding by default
-            ReplaceOrAddLine "${file}" 'binding_params.*' "binding_params enabled=true,implicit=false,mode=default,default_unit=C,on_any_host=false,filter=NONE"
+            ReplaceOrAddLine "${file}" 'binding_params.*' "binding_params enabled=true,implicit=false,mode=default,default_unit=C,on_any_host=true,filter=NONE"
 
             # Remove reprioritize attribute (deprecated and not used anymore)
             RemoveLineWithMatch "${file}" 'reprioritize.*' ""
