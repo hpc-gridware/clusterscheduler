@@ -806,6 +806,8 @@ static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg) {
  * Entries which are not known in the conf_entries array are kept and appended at the end,
  * in the order in which they came in. They have no effect (merge_configuration() ignores
  * them), but dropping them here would hide a typo from the administrator.
+ *
+ * @param conf the global or local configuration whose entries are sorted in place
  */
 void
 conf_sort_entries(lListElem *conf) {
