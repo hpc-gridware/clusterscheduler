@@ -100,6 +100,7 @@ typedef int (*tDaemonizeFunc)(void *ctx);
 extern lList *Execd_Config_List;
 
 int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_root, const lListElem *global, const lListElem *local, lList **lpp);
+void conf_sort_entries(lListElem *conf);
 void sge_show_conf();
 void conf_update_thread_profiling(const char *thread_name);
 

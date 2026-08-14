@@ -613,6 +613,15 @@ static void clean_conf();
 #define REPORTING_PARAMS          "accounting=true reporting=false flush_time=00:00:15 joblog=false sharelog=00:00:00"
 /** @} */
 
+/*
+ * The order of this array defines the order in which the entries of a global or local
+ * configuration are shown by qconf -sconf / qconf -mconf and written to the spool file.
+ * Configurations entering the qmaster via qconf -aconf/-Aconf/-mconf/-Mconf are sorted
+ * into this order by conf_sort_entries(), and the installer (PrintConf/PrintLocalConf
+ * in the install modules) writes the initial configurations in the same order.
+ * When a new configuration parameter is added, insert it into the group it belongs to
+ * and add it to the installer at the same position.
+ */
 static tConfEntry conf_entries[] = {
  { "execd_spool_dir",            1, nullptr,                   1, nullptr},
  { "mailer",                     1, MAILER,                    1, nullptr},
@@ -628,11 +637,12 @@ static tConfEntry conf_entries[] = {
  { "xuser_lists",                0, NONE_STR,                  1, nullptr},
  { "projects",                   0, NONE_STR,                  1, nullptr},
  { "xprojects",                  0, NONE_STR,                  1, nullptr},
- { "load_report_time",           1, LOAD_LOG_TIME,             1, nullptr},
- { "max_unheard",                0, MAX_UNHEARD,               1, nullptr},
- { "loglevel",                   0, LOGLEVEL,                  1, nullptr},
  { "enforce_project",            0, "false",                   1, nullptr},
  { "enforce_user",               0, "false",                   1, nullptr},
+ { "load_report_time",           1, LOAD_LOG_TIME,             1, nullptr},
+ { "max_unheard",                0, MAX_UNHEARD,               1, nullptr},
+ { "reschedule_unknown",         1, RESCHEDULE_UNKNOWN,        1, nullptr},
+ { "loglevel",                   0, LOGLEVEL,                  1, nullptr},
  { "administrator_mail",         0, NONE_STR,                  1, nullptr},
  { "mail_tag",                   0, NONE_STR,                  1, nullptr},
  { "set_token_cmd",              1, NONE_STR,                  1, nullptr},
@@ -643,19 +653,18 @@ static tConfEntry conf_entries[] = {
  { "execd_params",               1, NONE_STR,                  1, nullptr},
  { "reporting_params",           1, REPORTING_PARAMS,          1, nullptr},
  { "binding_params",             0, BINDING_PARAMS_DEFAULT,    1, nullptr},
- { "jsv_params",                 0, NONE_STR,                  1, nullptr},
- { "gid_range",                  1, NONE_STR,                  1, nullptr},
- { "port_range",                 0, NONE_STR,                  1, nullptr},
- { "qlogin_daemon",              1, NONE_STR,                  1, nullptr},
- { "qlogin_command",             1, NONE_STR,                  1, nullptr},
- { "rsh_daemon",                 1, NONE_STR,                  1, nullptr},
- { "rsh_command",                1, NONE_STR,                  1, nullptr},
+ { "gdi_request_limits",         0, NONE_STR,                  1, nullptr},
  { "jsv_url",                    0, NONE_STR,                  1, nullptr},
  { "jsv_allowed_mod",            0, NONE_STR,                  1, nullptr},
- { "gdi_request_limits",         0, NONE_STR,                  1, nullptr},
+ { "jsv_params",                 0, NONE_STR,                  1, nullptr},
+ { "gid_range",                  1, NONE_STR,                  1, nullptr},
+ { "qlogin_daemon",              1, NONE_STR,                  1, nullptr},
+ { "qlogin_command",             1, NONE_STR,                  1, nullptr},
  { "rlogin_daemon",              1, NONE_STR,                  1, nullptr},
  { "rlogin_command",             1, NONE_STR,                  1, nullptr},
- { "reschedule_unknown",         1, RESCHEDULE_UNKNOWN,        1, nullptr},
+ { "rsh_daemon",                 1, NONE_STR,                  1, nullptr},
+ { "rsh_command",                1, NONE_STR,                  1, nullptr},
+ { "port_range",                 0, NONE_STR,                  1, nullptr},
  { "max_aj_instances",           0, MAX_AJ_INSTANCES,          1, nullptr},
  { "max_aj_tasks",               0, MAX_AJ_TASKS,              1, nullptr},
  { "max_u_jobs",                 0, MAX_U_JOBS,                1, nullptr},
@@ -783,6 +792,47 @@ static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg) {
 
       i++;
    }
+
+   DRETURN_VOID;
+}
+
+/**
+ * Sorts the entries of a global or local configuration into the order of the conf_entries
+ * array. This is the order in which a configuration is shown by qconf -sconf and written
+ * to the spool file. Configurations entering the qmaster via qconf -aconf/-Aconf/-mconf/
+ * -Mconf carry their entries in whatever order the client sent them, so they are sorted
+ * here before they are stored.
+ *
+ * Entries which are not known in the conf_entries array are kept and appended at the end,
+ * in the order in which they came in. They have no effect (merge_configuration() ignores
+ * them), but dropping them here would hide a typo from the administrator.
+ */
+void
+conf_sort_entries(lListElem *conf) {
+   DENTER(BASIS_LAYER);
+
+   lList *entries = lGetListRW(conf, CONF_entries);
+   if (entries == nullptr) {
+      DRETURN_VOID;
+   }
+
+   lList *sorted = lCreateList(lGetListName(entries), CF_Type);
+   for (int i = 0; conf_entries[i].name != nullptr; i++) {
+      lListElem *ep;
+
+      // a well formed configuration holds every name at most once, but a hand written
+      // one might repeat a name - keep all occurrences, next to each other
+      while ((ep = lGetElemCaseStrRW(entries, CF_name, conf_entries[i].name)) != nullptr) {
+         lAppendElem(sorted, lDechainElem(entries, ep));
+      }
+   }
+
+   lListElem *ep;
+   while ((ep = lFirstRW(entries)) != nullptr) {
+      lAppendElem(sorted, lDechainElem(entries, ep));
+   }
+
+   lSetList(conf, CONF_entries, sorted);
 
    DRETURN_VOID;
 }
