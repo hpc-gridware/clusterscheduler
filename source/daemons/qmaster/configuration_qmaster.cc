@@ -164,6 +164,14 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
          lSetString(topology_file, CF_value, NONE_STR);
       }
    }
+
+   // configurations spooled by an older version, or by an installer which wrote them in a
+   // different order, are brought into the defined order here - the spool file itself is
+   // rewritten with the next modification of the configuration
+   lListElem *conf;
+   for_each_rw(conf, *config_list) {
+      conf_sort_entries(conf);
+   }
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
    answer_list_output(answer_list);
@@ -333,6 +341,11 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
    if ((ret = check_config(anAnswer, aConf))) {
       DRETURN(ret);
    }
+
+   // the client sends the entries in the order they were written in the configuration file
+   // (qconf -Aconf/-Mconf) or in the order the editor left them in (qconf -aconf/-mconf) -
+   // bring them into the defined order before they are stored
+   conf_sort_entries(aConf);
 
    lListElem *old_conf = sge_get_configuration_for_host(unique_name);
    if (old_conf != nullptr) {

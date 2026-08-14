@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2024 HPC-Gridware GmbH
+#  Copyright 2024-2026 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -55,6 +55,11 @@ target_include_directories(test_sgeobj_resource_quota PRIVATE "./")
 target_link_libraries(test_sgeobj_resource_quota PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_resource_quota COMMAND test_sgeobj_resource_quota)
 
+add_executable(test_sgeobj_conf test_sgeobj_conf.cc)
+target_include_directories(test_sgeobj_conf PRIVATE "./")
+target_link_libraries(test_sgeobj_conf PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_sgeobj_conf COMMAND test_sgeobj_conf)
+
 add_executable(test_sgeobj_schedd_conf test_sgeobj_schedd_conf.cc)
 target_include_directories(test_sgeobj_schedd_conf PRIVATE "./")
 target_link_libraries(test_sgeobj_schedd_conf PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
@@ -83,6 +88,7 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_sgeobj_object DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_range DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_resource_quota DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sgeobj_conf DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_schedd_conf DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_utility DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_ulong DESTINATION testbin/${SGE_ARCH})

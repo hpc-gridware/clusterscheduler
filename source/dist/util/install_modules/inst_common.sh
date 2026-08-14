@@ -2076,11 +2076,17 @@ PrintLocalConf()
       $ECHO "#"
       $ECHO "conf_version           0"
    fi
+   if [ "$LOCAL_EXECD_SPOOL" != "undef" ]; then
+      $ECHO "execd_spool_dir        $LOCAL_EXECD_SPOOL"
+   fi
    $ECHO "mailer                 $MAILER"
    if [ "$XTERM" = "" ]; then
       $ECHO "xterm                  none"
    else
       $ECHO "xterm                  $XTERM"
+   fi
+   if [ "$LOADSENSOR_COMMAND" != "undef" ]; then
+      $ECHO "load_sensor            $SGE_ROOT/$LOADSENSOR_COMMAND"
    fi
    if [ "$QLOGIN_DAEMON" != "undef" -a "$QLOGIN_DAEMON" != "builtin" ]; then
       $ECHO "qlogin_daemon          $QLOGIN_DAEMON"
@@ -2088,14 +2094,8 @@ PrintLocalConf()
    if [ "$RLOGIN_DAEMON" != "undef" -a "$RLOGIN_DAEMON" != "builtin" ]; then
       $ECHO "rlogin_daemon          $RLOGIN_DAEMON"
    fi
-   if [ "$LOCAL_EXECD_SPOOL" != "undef" ]; then
-      $ECHO "execd_spool_dir        $LOCAL_EXECD_SPOOL"
-   fi
    if [ "$RSH_DAEMON" != "undef" -a "$RSH_DAEMON" != "builtin" ]; then
       $ECHO "rsh_daemon             $RSH_DAEMON"
-   fi
-   if [ "$LOADSENSOR_COMMAND" != "undef" ]; then
-      $ECHO "load_sensor            $SGE_ROOT/$LOADSENSOR_COMMAND"
    fi
 }
 

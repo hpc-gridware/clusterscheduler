@@ -925,21 +925,26 @@ PrintConf()
    $ECHO "qmaster_params         NONE"
    $ECHO "execd_params           NONE"
    $ECHO "reporting_params       accounting=true reporting=false flush_time=00:00:1 joblog=false sharelog=00:00:00"
-   $ECHO "finished_jobs          100"
+   $ECHO "binding_params         enabled=true,implicit=false,mode=default,default_unit=C,on_any_host=false,filter=NONE"
+   $ECHO "gdi_request_limits     NONE"
+   $ECHO "jsv_url                NONE"
+   $ECHO "jsv_allowed_mod        ac,h,i,e,o,j,M,N,p,w"
+   $ECHO "jsv_params             NONE"
    $ECHO "gid_range              $CFG_GID_RANGE"
-   $ECHO "qlogin_command         $QLOGIN_COMMAND"
+   $ECHO "finished_jobs          100"
    $ECHO "qlogin_daemon          $QLOGIN_DAEMON"
+   $ECHO "qlogin_command         $QLOGIN_COMMAND"
+   $ECHO "rlogin_daemon          $RLOGIN_DAEMON"
    if [ "$RLOGIN_COMMAND" != "undef" ]; then
       $ECHO "rlogin_command         $RLOGIN_COMMAND"
-   fi
-   $ECHO "rlogin_daemon          $RLOGIN_DAEMON"
-   if [ "$RSH_COMMAND" != "undef" ]; then
-      $ECHO "rsh_command            $RSH_COMMAND"
    fi
    if [ "$RSH_DAEMON" != "undef" ]; then
       $ECHO "rsh_daemon             $RSH_DAEMON"
    fi
-
+   if [ "$RSH_COMMAND" != "undef" ]; then
+      $ECHO "rsh_command            $RSH_COMMAND"
+   fi
+   $ECHO "port_range             NONE"
    $ECHO "max_aj_instances       2000"
    $ECHO "max_aj_tasks           75000"
    $ECHO "max_u_jobs             0"
@@ -950,9 +955,6 @@ PrintConf()
    $ECHO "auto_user_default_project NONE"
    $ECHO "auto_user_delete_time  86400"
    $ECHO "delegated_file_staging false"
-   $ECHO "jsv_url                NONE"
-   $ECHO "gdi_request_limits     NONE"
-   $ECHO "binding_params         enabled=true,implicit=false,mode=default,default_unit=C,on_any_host=false,filter=NONE"
    $ECHO "topology_file          NONE"
 }
 
