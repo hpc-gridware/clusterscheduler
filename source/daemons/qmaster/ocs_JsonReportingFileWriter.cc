@@ -44,6 +44,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
+#include "sge_reporting_qmaster.h"
 #include "sge_rusage.h"
 
 #include "ocs_JsonReportingFileWriter.h"
@@ -64,10 +65,17 @@ namespace ocs {
       rapidjson::StringBuffer json_buffer;
       rapidjson::Writer<rapidjson::StringBuffer> writer(json_buffer);
 
+      // Once an intermediate record has been written for this job, every further
+      // record - including the final one - has to report the usage consumed since
+      // the previous record, else the records of the job no longer partition its
+      // usage and a consumer summing them up counts everything before the last
+      // intermediate record twice.
+      bool do_intermediate = intermediate_usage_written(job_report, ja_task) || intermediate;
+
       // we need to protect the usage_pattern_list via the config_mutex
       sge_mutex_lock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
       bool ret = sge_write_rusage(nullptr, &writer, job_report, job, ja_task, category_string, &usage_pattern_list, 0,
-                             intermediate, true);
+                             do_intermediate, true);
       sge_mutex_unlock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
 
       if (ret) {
