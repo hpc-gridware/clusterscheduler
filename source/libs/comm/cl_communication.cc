@@ -32,6 +32,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cerrno>
@@ -2175,6 +2176,120 @@ static bool cl_com_is_ip_address_string(const char *resolve_hostname, struct in_
    return true;
 }
 
+/* Derives an IPv4 address from a host name that encodes it.
+ *
+ * The format is walked alongside the name: an ordinary character has to match, "%d"
+ * takes one octet, "%%" matches a percent sign. Both have to run out together, so a
+ * name that merely begins like the format is not accepted.
+ *
+ * The format is deliberately not handed to sscanf. It comes out of a configuration
+ * file, and a function that reads its arguments from a format string would let that
+ * file reach the stack. Walking it here costs a few lines and leaves nothing to
+ * reason about.
+ *
+ * Returns true when the name fits the format and yields four octets.
+ */
+static bool cl_com_address_from_hostname(const char *hostname, const char *format,
+                                         struct in_addr *addr) {
+   const char *name_pos = hostname;
+   const char *format_pos = format;
+   unsigned long octet[4];
+   int count = 0;
+
+   while (*format_pos != '\0') {
+      if (*format_pos == '%' && *(format_pos + 1) == 'd') {
+         if (count >= 4 || isdigit((unsigned char) *name_pos) == 0) {
+            return false;
+         }
+
+         unsigned long value = 0;
+         int digits = 0;
+         while (isdigit((unsigned char) *name_pos) != 0 && digits < 3) {
+            value = value * 10 + (*name_pos - '0');
+            name_pos++;
+            digits++;
+         }
+         if (value > 255) {
+            return false;
+         }
+
+         octet[count++] = value;
+         format_pos += 2;
+      } else if (*format_pos == '%' && *(format_pos + 1) == '%') {
+         if (*name_pos != '%') {
+            return false;
+         }
+         name_pos++;
+         format_pos += 2;
+      } else {
+         if (*name_pos != *format_pos) {
+            return false;
+         }
+         name_pos++;
+         format_pos++;
+      }
+   }
+
+   if (*name_pos != '\0' || count != 4) {
+      return false;
+   }
+
+   addr->s_addr = htonl((octet[0] << 24) | (octet[1] << 16) | (octet[2] << 8) | octet[3]);
+   return true;
+}
+
+/* Builds a hostent for a name and address that were never looked up.
+ *
+ * A caller asking for a hostent gets one whether the answer came from a name service
+ * or from the format, so taking the shortcut stays invisible to it.
+ *
+ * The struct is assembled on the stack and handed to sge_copy_hostent(), which makes
+ * the allocation match what sge_free_hostent() expects without repeating it here.
+ *
+ * Returns a hostent the caller owns, or nullptr.
+ */
+static struct hostent *cl_com_make_hostent(const char *name, const struct in_addr *addr) {
+   struct in_addr addr_copy = *addr;
+   char *addr_list[2] = {(char *) &addr_copy, nullptr};
+   char *aliases[1] = {nullptr};
+   struct hostent he{};
+
+   he.h_name = (char *) name;
+   he.h_aliases = aliases;
+   he.h_addrtype = AF_INET;
+   he.h_length = sizeof(struct in_addr);
+   he.h_addr_list = addr_list;
+
+   return sge_copy_hostent(&he);
+}
+
+/* Builds a host name from an address, the way back from cl_com_address_from_hostname().
+ *
+ * The octets are put into the format in the order they appear, so a name built here is
+ * a name that function accepts again.
+ *
+ * Returns a string the caller owns, or nullptr when the format cannot be filled.
+ */
+static char *cl_com_hostname_from_address(const struct in_addr *addr, const char *format) {
+   const unsigned long host_order = ntohl(addr->s_addr);
+
+   // every "%d" grows to at most three characters, a doubled percent shrinks to one
+   const size_t size = strlen(format) + 4 + 1;
+   char *name = (char *) sge_malloc(size);
+   if (name == nullptr) {
+      return nullptr;
+   }
+
+   /* The format is a printf format holding exactly four "%d" and no other conversion.
+      That is checked by sge_hostname_format_valid() wherever a format is taken in,
+      from the bootstrap file and from the environment alike - an unchecked format
+      here would decide what snprintf() reads. */
+   snprintf(name, size, format, (int) ((host_order >> 24) & 0xff), (int) ((host_order >> 16) & 0xff),
+            (int) ((host_order >> 8) & 0xff), (int) (host_order & 0xff));
+
+   return name;
+}
+
 int cl_com_cached_gethostbyname(const char *unresolved_host, char **unique_hostname, struct in_addr *copy_addr,
                                 struct hostent **he_copy, int *system_error_value) {
    cl_host_list_elem_t *elem = nullptr;
@@ -2221,6 +2336,37 @@ int cl_com_cached_gethostbyname(const char *unresolved_host, char **unique_hostn
           *
           * Reason: Can't assume any IP addr or alias names
           */
+         return CL_RETVAL_OK;
+      }
+   }
+
+   /* A client whose name carries its address does not need to be looked up, which is
+    * the point of the format: the names in question are not in any name service. The
+    * name is kept as it was announced, so everything downstream sees the client by
+    * the identity it gave. */
+   if ((help = (char *) cl_commlib_get_address_from_hostname()) != nullptr) {
+      struct in_addr derived_addr{};
+
+      if (cl_com_address_from_hostname(unresolved_host, help, &derived_addr)) {
+         CL_LOG_STR(CL_LOG_INFO, "address taken from host name:", unresolved_host);
+
+         *unique_hostname = strdup(unresolved_host);
+         if (*unique_hostname == nullptr) {
+            return CL_RETVAL_MALLOC;
+         }
+
+         if (copy_addr != nullptr) {
+            copy_addr->s_addr = derived_addr.s_addr;
+         }
+
+         if (he_copy != nullptr) {
+            *he_copy = cl_com_make_hostent(unresolved_host, &derived_addr);
+            if (*he_copy == nullptr) {
+               sge_free(unique_hostname);
+               return CL_RETVAL_MALLOC;
+            }
+         }
+
          return CL_RETVAL_OK;
       }
    }
@@ -2800,6 +2946,29 @@ int cl_com_cached_gethostbyaddr(struct in_addr *addr, char **unique_hostname, st
 
    if (he_copy != nullptr && *he_copy != nullptr) {
       return CL_RETVAL_PARAMS;
+   }
+
+   /* The way back from the forward direction: with a format configured, a name is
+    * built out of the address rather than looked up. Both directions have to agree,
+    * otherwise a client resolved one way would not match itself resolved the other. */
+   const char *format = cl_commlib_get_address_from_hostname();
+   if (format != nullptr) {
+      char *built_name = cl_com_hostname_from_address(addr, format);
+
+      if (built_name != nullptr) {
+         CL_LOG_STR(CL_LOG_INFO, "host name built from address:", built_name);
+         *unique_hostname = built_name;
+
+         if (he_copy != nullptr) {
+            *he_copy = cl_com_make_hostent(built_name, addr);
+            if (*he_copy == nullptr) {
+               sge_free(unique_hostname);
+               return CL_RETVAL_MALLOC;
+            }
+         }
+
+         return CL_RETVAL_OK;
+      }
    }
 
    hostlist = cl_com_get_host_list();

@@ -31,6 +31,7 @@
 #include "uti/ocs_Bootstrap.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_dstring.h"
+#include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
@@ -295,7 +296,11 @@ ocs::Bootstrap::set_communication_params(const char *new_communication_params) {
       const char *str_value;
 
       if (param_matches(param, "address_from_hostname=", &str_value)) {
-         address_from_hostname = sge_strdup(address_from_hostname, str_value);
+         if (sge_hostname_format_valid(str_value)) {
+            address_from_hostname = sge_strdup(address_from_hostname, str_value);
+         } else {
+            WARNING(MSG_UTI_INVALIDADDRESSFORMAT_S, str_value);
+         }
       } else if (param_matches(param, "trust_client_hostname=", &str_value)) {
          u_long32 value;
          parse_ulong_val(nullptr, &value, TYPE_BOO, str_value, nullptr, 0);
