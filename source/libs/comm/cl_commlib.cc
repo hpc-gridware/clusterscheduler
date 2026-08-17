@@ -233,6 +233,11 @@ static pthread_mutex_t cl_com_external_fd_list_setup_mutex = PTHREAD_MUTEX_INITI
    TODO: merge all global settings into this structure */
 typedef struct cl_com_global_settings_def {
    bool delayed_listen;
+   bool trust_client_hostname;
+
+   /* format the address of a client is derived from, instead of resolving its host
+      name; nullptr while names are resolved as usual */
+   char *address_from_hostname;
 } cl_com_global_settings_t;
 
 /*
@@ -247,7 +252,7 @@ typedef struct cl_com_thread_data_def {
 } cl_com_thread_data_t;
 
 static pthread_mutex_t cl_com_global_settings_mutex = PTHREAD_MUTEX_INITIALIZER;
-static cl_com_global_settings_t cl_com_global_settings = {false};
+static cl_com_global_settings_t cl_com_global_settings = {false, false, nullptr};
 
 static int cl_message_list_append_send(cl_com_connection_t *c, cl_com_message_t *m, int l);
 
@@ -928,6 +933,10 @@ int cl_commlib_set_global_param(cl_global_settings_params_t parameter, bool valu
          cl_com_global_settings.delayed_listen = value;
          break;
       }
+      case CL_COMMLIB_TRUST_CLIENT_HOSTNAME: {
+         cl_com_global_settings.trust_client_hostname = value;
+         break;
+      }
    }
    pthread_mutex_unlock(&cl_com_global_settings_mutex);
    return CL_RETVAL_OK;
@@ -941,7 +950,35 @@ bool cl_commlib_get_global_param(cl_global_settings_params_t parameter) {
          retval = cl_com_global_settings.delayed_listen;
          break;
       }
+      case CL_COMMLIB_TRUST_CLIENT_HOSTNAME: {
+         retval = cl_com_global_settings.trust_client_hostname;
+         break;
+      }
    }
+   pthread_mutex_unlock(&cl_com_global_settings_mutex);
+   return retval;
+}
+
+/* Sets the format from which a client address is derived instead of resolving the
+   client's host name. A nullptr or empty format restores plain resolving.
+
+   The format belongs to the setup of a component and is meant to be set once, before
+   any connection is handled. The getter hands out the stored string itself, which
+   stays valid as long as no later call replaces it. */
+int cl_commlib_set_address_from_hostname(const char *format) {
+   pthread_mutex_lock(&cl_com_global_settings_mutex);
+   sge_free(&(cl_com_global_settings.address_from_hostname));
+   if (format != nullptr && *format != '\0') {
+      cl_com_global_settings.address_from_hostname = strdup(format);
+   }
+   pthread_mutex_unlock(&cl_com_global_settings_mutex);
+   return CL_RETVAL_OK;
+}
+
+/* Returns the configured format, or nullptr when host names are resolved as usual. */
+const char *cl_commlib_get_address_from_hostname() {
+   pthread_mutex_lock(&cl_com_global_settings_mutex);
+   const char *retval = cl_com_global_settings.address_from_hostname;
    pthread_mutex_unlock(&cl_com_global_settings_mutex);
    return retval;
 }
