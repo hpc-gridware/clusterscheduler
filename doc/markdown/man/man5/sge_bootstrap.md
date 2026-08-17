@@ -119,6 +119,7 @@ The default location for the master spool directory is \<xxqs_name_sxx_root>/\<c
 The security mode defines the set of security features the installed cluster is using.
 
 Possible security mode settings are
+
 * `none` (default, no additional security)
 * `munge` (Munge authentication of all communication requests)
 * `tls` (TLS encryption of all daemon and client communication)
