@@ -94,9 +94,26 @@ The host alias file must be readable from each host (use e.g. NFS shared file lo
 
 For a complete list of common environment variables used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
 
+## SGE\_ADDRESS\_FROM\_HOSTNAME
+
+Takes the IPv4 address of a host out of its name instead of resolving the name, and builds a name back from an
+address in the same way. It is meant for examining a cluster whose clients carry their address in their name, and
+for reproducing what such a client sees.
+
+The value is a format holding exactly four `%d`, one for each octet of the address, for example `ip-%d-%d-%d-%d`.
+A doubled percent stands for a literal one. A format holding any other number of placeholders, or any conversion
+other than `%d`, is refused and reported, and host names are then resolved as usual.
+
+A name which does not fit the format is resolved as usual as well, so setting the variable does not cut off a host
+which the name service knows.
+
+The same conversion can be configured for a whole cluster with the *address_from_hostname* parameter of
+*communication_params* in the bootstrap file, see xxqs_name_sxx_bootstrap(5). This variable takes precedence over
+that parameter.
+
 # SEE ALSO
 
-xxqs_name_sxx_intro(1),xxqs_name_sxx_host_aliases(5),
+xxqs_name_sxx_intro(1),xxqs_name_sxx_host_aliases(5),xxqs_name_sxx_bootstrap(5),
 
 # COPYRIGHT
 

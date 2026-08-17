@@ -141,6 +141,16 @@ For TLS security mode the following parameter can be set:
 
 * `certificate_start_offset=<n>`: Defines the offset in seconds for the certificate's notBefore validity timestamp. A negative value (e.g., -10) causes certificates to become valid before the current time, which can prevent certificate validation failures due to clock skew between systems. The default is -10 seconds. Values are valid in a range from -300 (5 minutes) to 0 (exact current time).
 
+## *communication_params*
+
+This optional setting allows to pass additional parameters to the communication library. Multiple parameters are separated by commas. Changing it requires a re-start of all xxQS_NAMExx components.
+
+* `address_from_hostname=<format>`: Takes the IPv4 address of a host out of its name instead of resolving the name, and builds a name back from an address in the same way. It is meant for clients whose host name carries their address and which no name service knows, for example containers on a private network. The format holds exactly four `%d`, one for each octet of the address, for example `ip-%d-%d-%d-%d`. A doubled percent stands for a literal one. A format holding any other number of placeholders, or any conversion other than `%d`, is refused and reported when the file is read, and host names are then resolved as usual.
+
+A host name which does not fit the format is resolved as usual, so the setting reaches only the names it was written for. For a name it does reach, the address comes from the name itself and no name service is consulted, which means such a name is accepted without being confirmed anywhere else.
+
+The same conversion can be applied to a single client with the SGE_ADDRESS_FROM_HOSTNAME environment variable, which takes precedence over this parameter. See gethostbyname(1).
+
 ## *listener_threads*
 
 The number of listener threads (allowed: 1-32, default of 4 set by installation).
