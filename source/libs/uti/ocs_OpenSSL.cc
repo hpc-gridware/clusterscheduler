@@ -2211,8 +2211,22 @@ namespace ocs::uti {
       DENTER(TOP_LAYER);
       bool ret = ssl != nullptr;
 
-      // we do this only on the client side
-      if (ret && !is_server) { // @todo: ERROR when is_server is true
+      // SNI and the hostname check belong to the client side. Returning true here without
+      // doing anything would be worse than it looks: SSL_set1_host() below is the only
+      // thing that enables certificate hostname verification for this connection. The
+      // context sets SSL_VERIFY_PEER, but that validates the certificate *chain* only, and
+      // SSL_get_verify_result() is never consulted - so a silent no-op would leave the
+      // handshake accepting any certificate signed by the cluster CA, one issued for a
+      // different host included. accept() and connect() already reject a call from the
+      // wrong side the same way.
+      if (ret) {
+         if (is_server) {
+            sge_dstring_copy_string(error_dstr, MSG_SSL_SNI_CALLED_ON_SERVER);
+            ret = false;
+         }
+      }
+
+      if (ret) {
          // clear previously occurred but not yet fetched errors
          ERR_clear_error_func();
 

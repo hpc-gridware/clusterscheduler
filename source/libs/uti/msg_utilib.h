@@ -254,6 +254,7 @@
 #define MSG_SSL_SELECT_FAILED_DS                   _MESSAGE(59293, _("SSL select failed: %d: " SFN4))
 #define MSG_SSL_ACCEPT_CALLED_ON_CLIENT            _MESSAGE(59294, _("SSL accept called on client connection"))
 #define MSG_SSL_CONNECT_CALLED_ON_SERVER           _MESSAGE(59295, _("SSL connect called on server connection"))
+#define MSG_SSL_SNI_CALLED_ON_SERVER               _MESSAGE(59313, _("SSL server name for SNI set on server connection"))
 #define MSG_SSL_NOT_BUILT_IN                       _MESSAGE(59296, _("SSL support is not built in"))
 #define MSG_OPENSSL_CANNOT_CREATE_CERT_DIR_SS      _MESSAGE(59297, _("cannot create certificate directory " PFQMAX ": " SFN4))
 #define MSG_OPENSSL_CANNOT_CREATE_KEY_DIR_SS       _MESSAGE(59298, _("cannot create key directory " PFQMAX ": " SFN4))
