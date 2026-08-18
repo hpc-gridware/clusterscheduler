@@ -143,9 +143,11 @@ For TLS security mode the following parameter can be set:
 
 ## *communication_params*
 
-This optional setting allows to pass additional parameters to the communication library. Multiple parameters are separated by commas. Changing it requires a re-start of all xxQS_NAMExx components.
+This optional setting allows to pass additional parameters to the communication library. Multiple parameters are separated by commas. Changing it requires a re-start of all xxQS_NAMExx components. The installation writes *none*, which is also what an absent setting means; both parameters below are then off.
 
-* `address_from_hostname=<format>`: Takes the IPv4 address of a host out of its name instead of resolving the name, and builds a name back from an address in the same way. It is meant for clients whose host name carries their address and which no name service knows, for example containers on a private network. The format holds exactly four `%d`, one for each octet of the address, for example `ip-%d-%d-%d-%d`. A doubled percent stands for a literal one. A format holding any other number of placeholders, or any conversion other than `%d`, is refused and reported when the file is read, and host names are then resolved as usual.
+Each of them relaxes a check the communication library performs on incoming connections. They exist for clients a name service cannot describe, and enabling one is a statement that the network the daemons can be reached from is trusted to that extent.
+
+* `address_from_hostname=<format>`: Takes the IPv4 address of a host out of its name instead of resolving the name, and builds a name back from an address in the same way. It is unset by default. It is meant for clients whose host name carries their address and which no name service knows, for example containers on a private network. The format holds exactly four `%d`, one for each octet of the address, for example `ip-%d-%d-%d-%d`. They are filled from the address left to right and are not numbered. A doubled percent stands for a literal one. A format holding any other number of placeholders, or any conversion other than `%d`, is refused and reported when the file is read, and host names are then resolved as usual.
 
     A host name which does not fit the format is resolved as usual, so the setting reaches only the names it was written for. For a name it does reach, the address comes from the name itself and no name service is consulted, which means such a name is accepted without being confirmed anywhere else.
 
