@@ -285,7 +285,16 @@ ocs::Bootstrap::set_reader_thread_count(int new_thread_count) {
 
 void
 ocs::Bootstrap::set_scheduler_thread_count(int new_thread_count) {
-   set_thread_count(scheduler_thread_count, new_thread_count, 1, 1);
+   // Deliberately not set_thread_count(): that helper reads 0 as "no value given,
+   // take the default", which is right for the pools but wrong here. 0 is a value
+   // in the documented range of scheduler_threads and means "run no scheduler", so
+   // it has to survive.
+   if (new_thread_count < 0) {
+      new_thread_count = 0;
+   } else if (new_thread_count > 1) {
+      new_thread_count = 1;
+   }
+   scheduler_thread_count = new_thread_count;
 }
 
 void
@@ -411,6 +420,10 @@ ocs::Bootstrap::init_from_file() {
       set_worker_thread_count((int) val);
       parse_ulong_val(nullptr, &val, TYPE_INT, value[13], nullptr, 0);
       set_reader_thread_count((int) val);
+      // Note that an absent entry parses to 0 and therefore means "run no
+      // scheduler", the same as an explicit 0. That is how it has always been,
+      // and it does not surface in practice because the installation writes the
+      // entry and the upgrade adds it.
       parse_ulong_val(nullptr, &val, TYPE_INT, value[14], nullptr, 0);
       set_scheduler_thread_count((int) val);
    }
@@ -520,6 +533,13 @@ ocs::Bootstrap::get_reader_thread_count() {
    return reader_thread_count;
 }
 
+/**
+ * @brief Size of the scheduler thread pool
+ *
+ * @return 1 when a scheduler is to run, 0 when `scheduler_threads` switches it
+ *         off. Clamped to a maximum of one, since a second scheduler thread is
+ *         not supported. An absent entry gives 0, like an explicit 0.
+ */
 int
 ocs::Bootstrap::get_scheduler_thread_count() {
    ensure_initialized();
