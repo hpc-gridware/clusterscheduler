@@ -4360,10 +4360,16 @@ int cl_com_ssl_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                   get_sock_opt_error = getsockopt(con_private->sockfd,SOL_SOCKET, SO_ERROR, &socket_error, &socklen);
 #endif
                   if (socket_error != 0 || get_sock_opt_error != 0) {
+                     /* getsockopt() itself can fail. socket_error is then left untouched at 0 and
+                      * strerror(0) reads "Success", so the message claims success while a connection
+                      * is being closed because of an error, and the real reason is lost. In that case
+                      * errno belongs to getsockopt(); nothing has overwritten it yet, because only
+                      * assignments stand between the call and this point. */
+                     const int reported_error = (get_sock_opt_error != 0) ? errno : socket_error;
                      connection->connection_state = CL_CLOSING;
                      connection->connection_sub_state = CL_COM_DO_SHUTDOWN;
-                     CL_LOG_STR(CL_LOG_ERROR, "select() or poll() - socket error is: ", strerror(socket_error));
-                     cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SELECT_ERROR, strerror(socket_error));
+                     CL_LOG_STR(CL_LOG_ERROR, "select() or poll() - socket error is: ", strerror(reported_error));
+                     cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SELECT_ERROR, strerror(reported_error));
 
                      if (connection->remote            != nullptr &&
                          connection->remote->comp_host != nullptr &&
@@ -4454,10 +4460,16 @@ int cl_com_ssl_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                      get_sock_opt_error = getsockopt(con_private->sockfd,SOL_SOCKET, SO_ERROR, &socket_error, &socklen);
 #endif
                      if (socket_error != 0 || get_sock_opt_error != 0) {
+                        /* getsockopt() itself can fail. socket_error is then left untouched at 0 and
+                         * strerror(0) reads "Success", so the message claims success while a connection
+                         * is being closed because of an error, and the real reason is lost. In that case
+                         * errno belongs to getsockopt(); nothing has overwritten it yet, because only
+                         * assignments stand between the call and this point. */
+                        const int reported_error = (get_sock_opt_error != 0) ? errno : socket_error;
                         connection->connection_state = CL_CLOSING;
                         connection->connection_sub_state = CL_COM_DO_SHUTDOWN;
-                        CL_LOG_STR(CL_LOG_ERROR, "socket error: ", strerror(socket_error));
-                        cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SELECT_ERROR, strerror(socket_error));
+                        CL_LOG_STR(CL_LOG_ERROR, "socket error: ", strerror(reported_error));
+                        cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SELECT_ERROR, strerror(reported_error));
                         if (connection->remote            != nullptr &&
                             connection->remote->comp_host != nullptr &&
                             connection->remote->comp_name != nullptr) {

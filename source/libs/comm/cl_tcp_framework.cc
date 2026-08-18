@@ -1356,9 +1356,20 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
          }
 
          // in case of errors: cleanup and return
+         //
+         // A connection whose TLS handshake never completed must not be handed to the caller.
+         // Falling through here used to store it in *new_connection and return CL_RETVAL_OK, so the
+         // caller added a half-open connection to its list, the socket stayed open and the peer was
+         // never told. The connect path does the opposite and is the behaviour mirrored here.
+         //
+         // cl_com_close_connection() is the complete teardown: it frees the SSL object *before*
+         // closing the socket (see CS-1858), releases client_host_name - which already owns
+         // resolved_host_name at this point - and frees the connection itself. So neither an extra
+         // close(new_sfd) nor a separate sge_free() belongs here; either would be a double free of
+         // a descriptor or of memory.
          if (!ssl_ok) {
-            // @todo not sure what to do
-            // if the TCP accept above would fail, nothing special is done, it just does return CL_RETVAL_OK
+            cl_com_close_connection(&tmp_connection);
+            return CL_RETVAL_SSL_ACCEPT_ERROR;
          }
       }
 #endif
@@ -1866,10 +1877,16 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                   get_sock_opt_error = getsockopt(con_private->sockfd, SOL_SOCKET, SO_ERROR, &socket_error, &socklen);
 #endif
                   if (socket_error != 0 || get_sock_opt_error != 0) {
+                     /* getsockopt() itself can fail. socket_error is then left untouched at 0 and
+                      * strerror(0) reads "Success", so the message claims success while a connection
+                      * is being closed because of an error, and the real reason is lost. In that case
+                      * errno belongs to getsockopt(); nothing has overwritten it yet, because only
+                      * assignments stand between the call and this point. */
+                     const int reported_error = (get_sock_opt_error != 0) ? errno : socket_error;
                      connection->connection_state = CL_CLOSING;
                      connection->connection_sub_state = CL_COM_DO_SHUTDOWN;
-                     CL_LOG_STR(CL_LOG_ERROR, "select() or poll() - socket error is: ", strerror(socket_error));
-                     cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SELECT_ERROR, strerror(socket_error));
+                     CL_LOG_STR(CL_LOG_ERROR, "select() or poll() - socket error is: ", strerror(reported_error));
+                     cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SELECT_ERROR, strerror(reported_error));
 
                      if (connection->remote != nullptr &&
                          connection->remote->comp_host != nullptr &&
@@ -1965,10 +1982,16 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                                                      &socklen);
 #endif
                      if (socket_error != 0 || get_sock_opt_error != 0) {
+                        /* getsockopt() itself can fail. socket_error is then left untouched at 0 and
+                         * strerror(0) reads "Success", so the message claims success while a connection
+                         * is being closed because of an error, and the real reason is lost. In that case
+                         * errno belongs to getsockopt(); nothing has overwritten it yet, because only
+                         * assignments stand between the call and this point. */
+                        const int reported_error = (get_sock_opt_error != 0) ? errno : socket_error;
                         connection->connection_state = CL_CLOSING;
                         connection->connection_sub_state = CL_COM_DO_SHUTDOWN;
-                        CL_LOG_STR(CL_LOG_ERROR, "socket error: ", strerror(socket_error));
-                        cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SELECT_ERROR, strerror(socket_error));
+                        CL_LOG_STR(CL_LOG_ERROR, "socket error: ", strerror(reported_error));
+                        cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SELECT_ERROR, strerror(reported_error));
                         if (connection->remote != nullptr &&
                             connection->remote->comp_host != nullptr &&
                             connection->remote->comp_name != nullptr) {
