@@ -2175,7 +2175,7 @@ namespace ocs::uti {
     * @note Can only be called on server-side connections (is_server must be true).
     * @note May block for up to 1 second waiting for handshake completion.
     * @note On non-blocking sockets, this function handles retries internally.
-    * @todo CS-1679 Make timeout configurable.
+    * @todo CS-1579 Make timeout configurable.
     */
    bool OpenSSL::OpenSSLConnection::accept(dstring *error_dstr) const {
       DENTER(TOP_LAYER);
@@ -2309,7 +2309,7 @@ namespace ocs::uti {
     * @note May block for up to 10 seconds waiting for handshake completion.
     * @note On non-blocking sockets, this function handles retries internally.
     * @note Client timeout (10s) is longer than server timeout (1s) to accommodate network delays.
-    * @todo CS-1679 Make timeout configurable.
+    * @todo CS-1579 Make timeout configurable.
     */
    bool OpenSSL::OpenSSLConnection::connect(dstring *error_dstr) const {
       DENTER(TOP_LAYER);
