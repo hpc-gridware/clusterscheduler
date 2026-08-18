@@ -1911,9 +1911,9 @@ namespace ocs::uti {
     * @note Timeout is currently hardcoded to 1 second.
     * @note Timeout is not treated as an error (returns true).
     * @note EWOULDBLOCK, EAGAIN, and EINTR from select() are not treated as errors.
-    * @todo CS-1559: Consider moving this functionality into commlib for better integration.
-    *                Which is tricky, e.g., when waiting for accept or connect to continue, we may not
-    *               repeat the TCP accept() or connect() operation, just take up the interrupted connection again.
+    * @note Moving this into commlib was considered and dropped (CS-1559): when waiting for an
+    *       accept or connect to continue, the TCP accept()/connect() must NOT be repeated - the
+    *       interrupted connection has to be taken up again, which does not fit the commlib layer.
     */
    bool OpenSSL::OpenSSLConnection::wait_for_socket_ready(int reason, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
