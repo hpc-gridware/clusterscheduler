@@ -2929,8 +2929,8 @@ static int cl_com_get_ip_string(struct in_addr *addr, char **ipstr) {
    return CL_RETVAL_OK;
 }
 
-int cl_com_cached_gethostbyaddr(struct in_addr *addr, char **unique_hostname, struct hostent **he_copy,
-                                int *system_error_val) {
+static int cl_com_cached_gethostbyaddr_resolve(struct in_addr *addr, char **unique_hostname,
+                                              struct hostent **he_copy, int *system_error_val) {
    cl_host_list_elem_t *elem = nullptr;
    cl_com_host_spec_t *elem_host = nullptr;
    cl_host_list_data_t *ldata = nullptr;
@@ -2946,29 +2946,6 @@ int cl_com_cached_gethostbyaddr(struct in_addr *addr, char **unique_hostname, st
 
    if (he_copy != nullptr && *he_copy != nullptr) {
       return CL_RETVAL_PARAMS;
-   }
-
-   /* The way back from the forward direction: with a format configured, a name is
-    * built out of the address rather than looked up. Both directions have to agree,
-    * otherwise a client resolved one way would not match itself resolved the other. */
-   const char *format = cl_commlib_get_address_from_hostname();
-   if (format != nullptr) {
-      char *built_name = cl_com_hostname_from_address(addr, format);
-
-      if (built_name != nullptr) {
-         CL_LOG_STR(CL_LOG_INFO, "host name built from address:", built_name);
-         *unique_hostname = built_name;
-
-         if (he_copy != nullptr) {
-            *he_copy = cl_com_make_hostent(built_name, addr);
-            if (*he_copy == nullptr) {
-               sge_free(unique_hostname);
-               return CL_RETVAL_MALLOC;
-            }
-         }
-
-         return CL_RETVAL_OK;
-      }
    }
 
    hostlist = cl_com_get_host_list();
@@ -3162,6 +3139,58 @@ int cl_com_cached_gethostbyaddr(struct in_addr *addr, char **unique_hostname, st
    }
    return CL_RETVAL_OK;
 }
+
+/* Resolves an address, and only if that does not work builds a name from the format.
+ *
+ * The format cannot be tried first here. In the other direction a name can be held
+ * against the format and either fits it or does not, but every address fits: nothing
+ * about 192.168.125.22 says whether it belongs to a host the name service knows or to
+ * a client named after its address. Building a name for every address would rename
+ * every host in the cluster and none of them would match what they announce.
+ *
+ * As a fallback it is unambiguous. An address the name service can resolve keeps the
+ * name it has; only an address nothing knows about is given the name the format makes
+ * of it, which is exactly the case the format exists for.
+ */
+int cl_com_cached_gethostbyaddr(struct in_addr *addr, char **unique_hostname, struct hostent **he_copy,
+                                int *system_error_val) {
+   int ret = cl_com_cached_gethostbyaddr_resolve(addr, unique_hostname, he_copy, system_error_val);
+   if (ret == CL_RETVAL_OK) {
+      return ret;
+   }
+
+   const char *format = cl_commlib_get_address_from_hostname();
+   if (format == nullptr) {
+      return ret;
+   }
+
+   /* the step above reports a failure, whatever it may have allocated goes first */
+   if (unique_hostname != nullptr && *unique_hostname != nullptr) {
+      sge_free(unique_hostname);
+   }
+   if (he_copy != nullptr && *he_copy != nullptr) {
+      sge_free_hostent(he_copy);
+   }
+
+   char *built_name = cl_com_hostname_from_address(addr, format);
+   if (built_name == nullptr) {
+      return ret;
+   }
+
+   CL_LOG_STR(CL_LOG_INFO, "address does not resolve, name built from it:", built_name);
+   *unique_hostname = built_name;
+
+   if (he_copy != nullptr) {
+      *he_copy = cl_com_make_hostent(built_name, addr);
+      if (*he_copy == nullptr) {
+         sge_free(unique_hostname);
+         return CL_RETVAL_MALLOC;
+      }
+   }
+
+   return CL_RETVAL_OK;
+}
+
 
 #if CL_DO_COMMUNICATION_DEBUG
 /* cl_com_print_host_info - log a hostent struct
