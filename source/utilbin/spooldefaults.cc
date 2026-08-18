@@ -149,7 +149,7 @@ static int spool_configuration(int argc, char *argv[]) {
    } else {
       /* put config into a list - we can't spool free objects */
       lSetHost(conf, CONF_name, SGE_GLOBAL_NAME);
-      if (!spool_write_object(&answer_list, spool_get_default_context(), conf, SGE_GLOBAL_NAME, SGE_TYPE_CONFIG, true)) {
+      if (!spool_write_object(&answer_list, spool_get_default_context(), conf, SGE_GLOBAL_NAME, SGE_TYPE_CONFIG)) {
          /* error output has been done in spooling function */
          ret = EXIT_FAILURE;
       }
@@ -189,7 +189,7 @@ static int spool_local_conf(int argc, char *argv[]) {
             /* put config into a list - we can't spool free objects */
             lSetHost(conf, CONF_name, argv[3]);
             if (!spool_write_object(&answer_list, spool_get_default_context(), 
-                                 conf, argv[3], SGE_TYPE_CONFIG, true)) {
+                                 conf, argv[3], SGE_TYPE_CONFIG)) {
                /* error output has been done in spooling function */
                ret = EXIT_FAILURE;
             } 
@@ -305,7 +305,7 @@ static int spool_object_list(const char *directory,
                                          SP_FORM_ASCII, nullptr, sge_dstring_get_string(&file));
          
          if (ep != nullptr && !spool_write_object(&answer_list, spool_get_default_context(), ep,
-                                 name, obj_type, true)) {
+                                 name, obj_type)) {
             /* error output has been done in spooling function */
             ret = EXIT_FAILURE;
             answer_list_output(&answer_list);

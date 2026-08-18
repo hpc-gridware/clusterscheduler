@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024-2026 HPC-Gridware GmbH
+ *  Copyright 2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -155,7 +155,7 @@ role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    lList *answer_list = nullptr;
 
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
-                                   lGetString(ep, RL_name), SGE_TYPE_RL, true);
+                                   lGetString(ep, RL_name), SGE_TYPE_RL);
    answer_list_output(&answer_list);
 
    if (!dbret) {

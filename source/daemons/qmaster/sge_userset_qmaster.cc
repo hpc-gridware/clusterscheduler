@@ -817,7 +817,7 @@ int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, 
    bool dbret;
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), userset,
-                              lGetString(userset, US_name), SGE_TYPE_USERSET, true);
+                              lGetString(userset, US_name), SGE_TYPE_USERSET);
    answer_list_output(&answer_list);
 
    if (!dbret) {

@@ -274,7 +274,7 @@ centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
    bool dbret;
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), cep,
-                              lGetString(cep, CE_name), SGE_TYPE_CENTRY, true);
+                              lGetString(cep, CE_name), SGE_TYPE_CENTRY);
    answer_list_output(&answer_list);
 
    if (!dbret) {

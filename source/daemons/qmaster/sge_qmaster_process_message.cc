@@ -696,7 +696,7 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
          dstring buffer = DSTRING_INIT;
          spool_write_object(&answer_list, spool_get_default_context(), jep,
                             job_get_key(lGetUlong(jep, JB_job_number), ack_ulong2, nullptr, &buffer),
-                            SGE_TYPE_JOB, true);
+                            SGE_TYPE_JOB);
          sge_dstring_free(&buffer);
          answer_list_output(&answer_list);
 
@@ -733,7 +733,7 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
          const char *key = sge_dstring_sprintf(&dstr, "%s/%s", lGetString(qinstance, QU_qname),
                                                lGetHost(qinstance, QU_qhostname));
          spool_write_object(&answer_list, spool_get_default_context(), qinstance,
-                            key, SGE_TYPE_QINSTANCE, true);
+                            key, SGE_TYPE_QINSTANCE);
          answer_list_output(&answer_list);
          break;
       }

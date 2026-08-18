@@ -204,7 +204,7 @@ rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEle
    bool dbret;
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
-                              lGetString(ep, RQS_name), SGE_TYPE_RQS, true);
+                              lGetString(ep, RQS_name), SGE_TYPE_RQS);
    answer_list_output(&answer_list);
 
    if (!dbret) {

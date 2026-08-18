@@ -52,9 +52,9 @@ namespace ocs {
     * mandatory entry, logs a `CRITICAL` message and calls #sge_exit. Getters
     * therefore never report an error.
     *
-    * Of the 15 entries, the first 9 are mandatory; `security_params`,
-    * `job_spooling` and the four thread counts may be absent and fall back to
-    * the defaults documented on the corresponding getters.
+    * Of the 14 entries, the first 9 are mandatory; `security_params` and the
+    * four thread counts may be absent and fall back to the defaults documented
+    * on the corresponding getters.
     *
     * @see #bootstrap_get_bootstrap_file for where the file itself is located
     */
@@ -104,7 +104,6 @@ namespace ocs {
       static int worker_thread_count;
       static int reader_thread_count;
       static int scheduler_thread_count;
-      static bool job_spooling;
       static bool ignore_fqdn;
 
       static const char*
@@ -154,10 +153,6 @@ namespace ocs {
 
       static void
       set_scheduler_thread_count(int new_thread_count);
-
-      static void
-      set_job_spooling(bool new_job_spooling);
-
 
       static void
       log_all_parameter();

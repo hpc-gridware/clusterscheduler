@@ -185,7 +185,7 @@ calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLi
    lList *answer_list = nullptr;
 
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), cep,
-                                   lGetString(cep, CAL_name), SGE_TYPE_CALENDAR, true);
+                                   lGetString(cep, CAL_name), SGE_TYPE_CALENDAR);
    answer_list_output(&answer_list);
 
    if (!dbret) {

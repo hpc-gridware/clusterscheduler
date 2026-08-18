@@ -2031,7 +2031,7 @@ sge_bury_ja_task(const char *sge_root, lListElem *job, uint32_t job_id, lListEle
          }
 
          spool_delete_object(&answer_list, spool_get_default_context(), SGE_TYPE_JOB,
-                             job_get_key(job_id, 0, nullptr, &buffer), true);
+                             job_get_key(job_id, 0, nullptr, &buffer));
          answer_list_output(&answer_list);
          sge_dstring_free(&buffer);
 
@@ -2073,7 +2073,7 @@ sge_bury_ja_task(const char *sge_root, lListElem *job, uint32_t job_id, lListEle
          lList *answer_list = nullptr;
          dstring buffer = DSTRING_INIT;
          spool_delete_object(&answer_list, spool_get_default_context(),
-                             SGE_TYPE_JOB, job_get_key(job_id, ja_task_id, nullptr, &buffer), true);
+                             SGE_TYPE_JOB, job_get_key(job_id, ja_task_id, nullptr, &buffer));
          answer_list_output(&answer_list);
          sge_dstring_free(&buffer);
          lRemoveElem(lGetListRW(job, JB_ja_tasks), &ja_task);
@@ -2083,7 +2083,7 @@ sge_bury_ja_task(const char *sge_root, lListElem *job, uint32_t job_id, lListEle
             lList *answer_list = nullptr;
             dstring buffer = DSTRING_INIT;
             spool_write_object(&answer_list, spool_get_default_context(), job,
-                               job_get_key(job_id, ja_task_id, nullptr, &buffer), SGE_TYPE_JOB, true);
+                               job_get_key(job_id, ja_task_id, nullptr, &buffer), SGE_TYPE_JOB);
             answer_list_output(&answer_list);
             sge_dstring_free(&buffer);
          }

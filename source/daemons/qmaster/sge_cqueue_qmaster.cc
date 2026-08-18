@@ -892,7 +892,7 @@ cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
    bool dbret;
    lList *spool_answer_list = nullptr;
 
-   dbret = spool_write_object(&spool_answer_list, spool_get_default_context(), cqueue, name, SGE_TYPE_CQUEUE, true);
+   dbret = spool_write_object(&spool_answer_list, spool_get_default_context(), cqueue, name, SGE_TYPE_CQUEUE);
    answer_list_output(&spool_answer_list);
 
    if (!dbret) {
@@ -907,7 +907,7 @@ cqueue_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
          const char *key =
                  sge_dstring_sprintf(&key_dstring, "%s/%s", name, lGetHost(qinstance, QU_qhostname));
          dbret = spool_write_object(&spool_answer_list, spool_get_default_context(), qinstance,
-                                    key, SGE_TYPE_QINSTANCE, true);
+                                    key, SGE_TYPE_QINSTANCE);
          answer_list_output(&spool_answer_list);
 
          if (!dbret) {

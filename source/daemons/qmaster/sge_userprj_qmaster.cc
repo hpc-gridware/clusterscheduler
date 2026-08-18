@@ -333,7 +333,7 @@ userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLis
 
    /* write user or project to file */
    bool dbret = spool_write_object(alpp, spool_get_default_context(), upe,
-                                   lGetString(upe, object->key_nm), user_flag ? SGE_TYPE_USER : SGE_TYPE_PROJECT, true);
+                                   lGetString(upe, object->key_nm), user_flag ? SGE_TYPE_USER : SGE_TYPE_PROJECT);
    answer_list_output(&answer_list);
 
    if (!dbret) {

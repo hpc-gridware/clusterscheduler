@@ -73,7 +73,7 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, u
       }
 
       lAppendElem(sched_conf, ep);
-      spool_write_object(anAnswer, spool_get_default_context(), ep, "schedd_conf", SGE_TYPE_SCHEDD_CONF, true);
+      spool_write_object(anAnswer, spool_get_default_context(), ep, "schedd_conf", SGE_TYPE_SCHEDD_CONF);
    }
 
    if (!sconf_set_config(&sched_conf, anAnswer)) {

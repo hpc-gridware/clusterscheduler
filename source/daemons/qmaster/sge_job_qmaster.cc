@@ -1374,7 +1374,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
          /* all job modifications to be saved on disk must be made in new_job */
          dstring buffer = DSTRING_INIT;
          dbret = spool_write_object(&answer_list, spool_get_default_context(), new_job,
-                                    job_get_key(jobid, 0, nullptr, &buffer), SGE_TYPE_JOB, true);
+                                    job_get_key(jobid, 0, nullptr, &buffer), SGE_TYPE_JOB);
          answer_list_output(&answer_list);
          if (!dbret) {
             ERROR(MSG_JOB_NOALTERNOWRITE_U, jobid);
@@ -3740,7 +3740,7 @@ bool spool_write_script(lList **answer_list, uint32_t jobid, const lListElem *je
    /* The whole job object is needed for spooling classic */
    ret = spool_write_object(answer_list, spool_get_default_context(),
                             jep, jobscript_get_key(jep, &buffer),
-                            SGE_TYPE_JOBSCRIPT, true);
+                            SGE_TYPE_JOBSCRIPT);
    PROF_STOP_MEASUREMENT(SGE_PROF_JOBSCRIPT);
    sge_dstring_free(&buffer);
 
@@ -3810,7 +3810,7 @@ bool spool_delete_script(lList **answer_list, uint32_t jobid, lListElem *jep) {
    dstring buffer = DSTRING_INIT;
    PROF_START_MEASUREMENT(SGE_PROF_JOBSCRIPT);
    ret = spool_delete_object(answer_list, spool_get_default_context(),
-                             SGE_TYPE_JOBSCRIPT, jobscript_get_key(jep, &buffer), true);
+                             SGE_TYPE_JOBSCRIPT, jobscript_get_key(jep, &buffer));
    PROF_STOP_MEASUREMENT(SGE_PROF_JOBSCRIPT);
    sge_dstring_free(&buffer);
    lSetString(jep, JB_exec_file, nullptr);
@@ -3999,7 +3999,7 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
             lList *answer_list = nullptr;
             spool_write_object(&answer_list, spool_get_default_context(),
                                job, job_get_job_key(job_number, &buffer),
-                               SGE_TYPE_JOB, true);
+                               SGE_TYPE_JOB);
             answer_list_output(&answer_list);
             sge_dstring_free(&buffer);
          }

@@ -29,7 +29,7 @@
  *
  *  Portions of this software are Copyright (c) 2011 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -146,13 +146,13 @@ static bool spool_data() {
       const lList *ja_tasks = lGetList(job, JB_ja_tasks);
       if (ja_tasks == nullptr || lGetNumberOfElem(ja_tasks) == 0) {
          key = job_get_key(lGetUlong(job, JB_job_number), 0, nullptr, &key_ds);
-         spool_write_object(&answer_list, context, job, key, SGE_TYPE_JOB, true);
+         spool_write_object(&answer_list, context, job, key, SGE_TYPE_JOB);
          num_total++;
       } else {
          const lListElem *ja_task;
          for_each_rw(ja_task, ja_tasks) {
             key = job_get_key(lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number), nullptr, &key_ds);
-            spool_write_object(&answer_list, context, ja_task, key, SGE_TYPE_JATASK, true);
+            spool_write_object(&answer_list, context, ja_task, key, SGE_TYPE_JATASK);
             num_total++;
          }
       }
@@ -191,7 +191,7 @@ static bool delete_spooled_data() {
    /* jobs */
    for_each_rw(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
       snprintf(key, sizeof(key),  sge_u32 ".0", lGetUlong(job, JB_job_number));
-      spool_delete_object(&answer_list, context, SGE_TYPE_JOB, key, true);
+      spool_delete_object(&answer_list, context, SGE_TYPE_JOB, key);
       answer_list_output(&answer_list);
       num_total++;
    }

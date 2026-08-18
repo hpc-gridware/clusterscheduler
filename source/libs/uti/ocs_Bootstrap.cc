@@ -66,7 +66,6 @@ int ocs::Bootstrap::listener_thread_count = 0;
 int ocs::Bootstrap::worker_thread_count = 0;
 int ocs::Bootstrap::reader_thread_count = 0;
 int ocs::Bootstrap::scheduler_thread_count = 0;
-bool ocs::Bootstrap::job_spooling = false;
 bool ocs::Bootstrap::ignore_fqdn = false;
 
 const char*
@@ -235,11 +234,6 @@ ocs::Bootstrap::set_scheduler_thread_count(int new_thread_count) {
    set_thread_count(scheduler_thread_count, new_thread_count, 1, 1);
 }
 
-void
-ocs::Bootstrap::set_job_spooling(const bool new_job_spooling) {
-   job_spooling = new_job_spooling;
-}
-
 /**
  * @brief The enabled security modes, rendered for logging
  *
@@ -281,7 +275,6 @@ ocs::Bootstrap::log_all_parameter() {
    DPRINTF("   security_modes            >%s<\n", get_security_modes().c_str());
    DPRINTF("   certificate_lifetime      >%d<\n", certificate_lifetime);
    DPRINTF("   certificate_start_offset  >%d<\n", certificate_start_offset);
-   DPRINTF("   job_spooling              >%s<\n", job_spooling ? "true" : "false");
    DPRINTF("   listener_threads          >%d<\n", listener_thread_count);
    DPRINTF("   worker_threads            >%d<\n", worker_thread_count);
    DPRINTF("   reader_threads            >%d<\n", reader_thread_count);
@@ -295,7 +288,7 @@ ocs::Bootstrap::init_from_file() {
    DENTER(TOP_LAYER);
 
 /// @cond   function local: entries read from the bootstrap file, and how many of them are mandatory
-#define NUM_BOOTSTRAP 15
+#define NUM_BOOTSTRAP 14
 #define NUM_REQ_BOOTSTRAP 9
 /// @endcond
    bootstrap_entry_t name[NUM_BOOTSTRAP] = {
@@ -310,7 +303,6 @@ ocs::Bootstrap::init_from_file() {
            {"qmaster_spool_dir", true},
            {"security_mode",     true},
            {"security_params",   false},
-           {"job_spooling",      false},
 
            {"listener_threads",  false},
            {"worker_threads",    false},
@@ -354,20 +346,14 @@ ocs::Bootstrap::init_from_file() {
       set_qmaster_spool_dir(value[7]);
       set_security_mode(value[8]);
       set_security_params(value[9]);
-      if (strcmp(value[10], "") != 0) {
-         parse_ulong_val(nullptr, &val, CEntry::Type::BOOL, value[10], nullptr, 0);
-         set_job_spooling(val != 0);
-      } else {
-         set_job_spooling(true);
-      }
 
-      parse_ulong_val(nullptr, &val, CEntry::Type::INT, value[11], nullptr, 0);
+      parse_ulong_val(nullptr, &val, CEntry::Type::INT, value[10], nullptr, 0);
       set_listener_thread_count((int) val);
-      parse_ulong_val(nullptr, &val, CEntry::Type::INT, value[12], nullptr, 0);
+      parse_ulong_val(nullptr, &val, CEntry::Type::INT, value[11], nullptr, 0);
       set_worker_thread_count((int) val);
-      parse_ulong_val(nullptr, &val, CEntry::Type::INT, value[13], nullptr, 0);
+      parse_ulong_val(nullptr, &val, CEntry::Type::INT, value[12], nullptr, 0);
       set_reader_thread_count((int) val);
-      parse_ulong_val(nullptr, &val, CEntry::Type::INT, value[14], nullptr, 0);
+      parse_ulong_val(nullptr, &val, CEntry::Type::INT, value[13], nullptr, 0);
       set_scheduler_thread_count((int) val);
    }
 

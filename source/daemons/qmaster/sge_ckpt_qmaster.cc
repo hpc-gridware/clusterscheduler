@@ -193,7 +193,7 @@ int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lLi
    lList *answer_list = nullptr;
 
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
-                                   lGetString(ep, CK_name), SGE_TYPE_CKPT, true);
+                                   lGetString(ep, CK_name), SGE_TYPE_CKPT);
    answer_list_output(&answer_list);
 
    if (!dbret) {

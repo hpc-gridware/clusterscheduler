@@ -96,7 +96,7 @@ static bool add_job(int job_id) {
    answer_list_output(&answer_list);
 #endif
    write_ok = spool_write_object(&answer_list, spool_get_default_context(),
-                                job, key, SGE_TYPE_JOB, false);
+                                job, key, SGE_TYPE_JOB);
    answer_list_output(&answer_list);
 
    if (delay > 0) {
@@ -130,7 +130,7 @@ static bool del_job(int job_id) {
    answer_list_output(&answer_list);
 #endif
    del_ok = spool_delete_object(&answer_list, spool_get_default_context(),
-                               SGE_TYPE_JOB, key, false);
+                               SGE_TYPE_JOB, key);
    answer_list_output(&answer_list);
 
    lDelElemUlong(&master_job_list, JB_job_number, job_id);

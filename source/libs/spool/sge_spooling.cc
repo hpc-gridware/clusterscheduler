@@ -1014,30 +1014,15 @@ spool_read_keys(lList **answer_list, const lListElem *context,
  * @param object object to spool
  * @param key unique key
  * @param object_type type of the object
- * @param do_job_spooling flag whether job_spooling shall be done
  *
  * @return true, if writing was successful, else false
  */
 bool spool_write_object(lList **answer_list, const lListElem *context,
                         const lListElem *object, const char *key,
-                        const sge_object_type object_type,
-                        bool do_job_spooling) {
+                        const sge_object_type object_type) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
- 
-   switch (object_type) {
-
-      case SGE_TYPE_JOB:
-      case SGE_TYPE_JATASK:
-      case SGE_TYPE_PETASK:
-         if (!do_job_spooling) {
-            DRETURN(true);
-         }
-         break;
-      default : 
-         break;
-   }
 
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
@@ -1114,30 +1099,15 @@ bool spool_write_object(lList **answer_list, const lListElem *context,
  * @param context the context to use
  * @param object_type object type
  * @param key unique key
- * @param do_job_spooling flag if job_spooling shall be done
  *
  * @return true, if all rules reported success, else false
  */
 bool spool_delete_object(lList **answer_list, const lListElem *context,
-                         const sge_object_type object_type, const char *key,
-                         bool do_job_spooling) {
+                         const sge_object_type object_type, const char *key) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
-   
-   switch (object_type) {
 
-      case SGE_TYPE_JOB:
-      case SGE_TYPE_JATASK:
-      case SGE_TYPE_PETASK:
-            if (!do_job_spooling) {
-               DRETURN(true);
-            }
-         break;
-      default : 
-         break;
-   }
-   
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLING);
 
    if (context == nullptr) {

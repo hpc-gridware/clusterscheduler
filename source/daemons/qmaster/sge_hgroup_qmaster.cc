@@ -994,7 +994,7 @@ hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
             if (tag == SGE_QI_TAG_ADD || tag == SGE_QI_TAG_MOD) {
                const char *key = sge_dstring_sprintf(&key_dstring, "%s/%s", cqname, lGetHost(qinstance, QU_qhostname));
                dbret = spool_write_object(&spool_answer_list, spool_get_default_context(),
-                                          qinstance, key, SGE_TYPE_QINSTANCE, true);
+                                          qinstance, key, SGE_TYPE_QINSTANCE);
                answer_list_output(&spool_answer_list);
 
                if (!dbret) {
@@ -1012,7 +1012,7 @@ hgroup_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list
 
    if (tmp_ret) {
       dbret = spool_write_object(&spool_answer_list, spool_get_default_context(),
-                                 this_elem, name, SGE_TYPE_HGROUP, true);
+                                 this_elem, name, SGE_TYPE_HGROUP);
       answer_list_output(&spool_answer_list);
       if (!dbret) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,

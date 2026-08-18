@@ -490,7 +490,7 @@ sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_
          lList *spool_answer_list = nullptr;
          if (do_delete) {
             ret = spool_delete_object(&spool_answer_list, spool_get_default_context(),
-                                      object_type, key, true);
+                                      object_type, key);
          } else {
             /*
              * CS-1597: for exec hosts only static load values shall be spooled.
@@ -499,7 +499,7 @@ sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_
              * not only to the ones going through sge_event_spool().
              */
             ret = spool_write_object(&spool_answer_list, spool_get_default_context(),
-                                     element, key, object_type, true);
+                                     element, key, object_type);
          }
          /* output low level error messages */
          answer_list_output(&spool_answer_list);

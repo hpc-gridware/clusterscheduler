@@ -193,7 +193,7 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor, uint64_t gdi_ses
          lRemoveElem(ar_master_list, &ar);
 
          spool_delete_object(answer_list, spool_get_default_context(),
-                             SGE_TYPE_AR, sge_dstring_get_string(&buffer), true);
+                             SGE_TYPE_AR, sge_dstring_get_string(&buffer));
 
          sge_dstring_free(&buffer);
       }
@@ -355,7 +355,7 @@ int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
 
    sge_dstring_sprintf(&buffer, sge_u32, lGetUlong(ep, AR_id));
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
-                                   sge_dstring_get_string(&buffer), SGE_TYPE_AR, true);
+                                   sge_dstring_get_string(&buffer), SGE_TYPE_AR);
    answer_list_output(&answer_list);
 
    if (!dbret) {

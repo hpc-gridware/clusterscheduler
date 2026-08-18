@@ -314,7 +314,7 @@ load_object(const char *key, const char *fname) {
          // @todo: what is key? Something like JATASK:123123.342342?
          //        wouldn't we need to strip the JATASK: then?
          dbret = spool_write_object(&answer_list, spool_get_default_context(), object, key,
-                                    object_name_get_type(key), true);
+                                    object_name_get_type(key));
          if (!dbret) {
             answer_list_output(&answer_list);
             ret = EXIT_FAILURE;
@@ -355,7 +355,7 @@ delete_object(const char *key) {
    } else {
       /* delete object with given key */
       dbret = spool_delete_object(&answer_list, spool_get_default_context(),
-                                     object_name_get_type(key), key, true);
+                                     object_name_get_type(key), key);
       if (!dbret) {
          answer_list_output(&answer_list);
          ret = EXIT_FAILURE;

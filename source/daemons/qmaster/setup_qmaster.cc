@@ -790,7 +790,7 @@ setup_qmaster() {
             /* append and spool the object */
             lAppendElem(centry_list, new_centry);
             spool_write_object(nullptr, spool_get_default_context(), new_centry,
-                               lGetString(new_centry, CE_name), SGE_TYPE_CENTRY, false);
+                               lGetString(new_centry, CE_name), SGE_TYPE_CENTRY);
 
          }
       }
@@ -876,7 +876,7 @@ setup_qmaster() {
          }
 
          if (changed &&
-             !spool_write_object(&answer_list, spooling_context, hgrp, hgrp_name, SGE_TYPE_HGROUP, true)) {
+             !spool_write_object(&answer_list, spooling_context, hgrp, hgrp_name, SGE_TYPE_HGROUP)) {
             answer_list_output(&answer_list);
             CRITICAL(MSG_HGRP_RESERVED_NOSEED_S, hgrp_name);
             DRETURN(-1);
@@ -942,7 +942,7 @@ setup_qmaster() {
             lAddSubStr(us, UE_name, admin_user_name, US_entries, UE_Type);
          }
 
-         if (!spool_write_object(&answer_list, spooling_context, us, us_name, SGE_TYPE_USERSET, true)) {
+         if (!spool_write_object(&answer_list, spooling_context, us, us_name, SGE_TYPE_USERSET)) {
             answer_list_output(&answer_list);
             CRITICAL(SFNMAX, strcmp(us_name, MANAGER_USERSET) == 0 ?
                              MSG_CONFIG_CANTWRITEMANAGERLIST : MSG_CONFIG_CANTWRITEOPERATORLIST);
@@ -1254,8 +1254,7 @@ remove_invalid_job_references(int user) {
 
       if (spool_me) {
          lList *answer_list = nullptr;
-         spool_write_object(&answer_list, spool_get_default_context(), up, lGetString(up, object_key), object_type,
-                            true);
+         spool_write_object(&answer_list, spool_get_default_context(), up, lGetString(up, object_key), object_type);
          answer_list_output(&answer_list);
       }
    }
@@ -1313,8 +1312,7 @@ remove_irrelevant_userprj_usage(bool user, const lList *usage_weight_list) {
 
       if (changed) {
          lList *answer_list = nullptr;
-         spool_write_object(&answer_list, spool_get_default_context(), up, lGetString(up, object_key), object_type,
-                            true);
+         spool_write_object(&answer_list, spool_get_default_context(), up, lGetString(up, object_key), object_type);
          answer_list_output(&answer_list);
       }
    }

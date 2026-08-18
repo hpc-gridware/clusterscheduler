@@ -626,6 +626,20 @@ UpOrDowngradeTo902000() {
             fi
          fi
       done
+
+      # Upgrade Step 2: Bootstrap File
+      # CS-2620: job_spooling was parsed from the bootstrap file but never had an
+      # effect - there was no getter for it, and every spooling call passed the
+      # flag as true. It is gone from the attribute table in 9.2, so drop the
+      # line if an older installation still carries it. The match is anchored so
+      # that a comment mentioning the name is left alone; the entry was optional,
+      # so a file which never had it is unaffected.
+      LogIt "I" "Checking the bootstrap file for the obsolete job_spooling attribute"
+      bootstrap_file="$working_dir/cell/bootstrap"
+      if grep '^job_spooling[[:space:]]' "${bootstrap_file}" >/dev/null 2>&1; then
+         RemoveLineWithMatch "${bootstrap_file}" '^job_spooling[[:space:]]' ""
+         LogIt "I" "Removed the obsolete job_spooling attribute from the bootstrap file"
+      fi
    else
       LogIt "E" "Downgrade to 9.2.x not supported"
       return 1

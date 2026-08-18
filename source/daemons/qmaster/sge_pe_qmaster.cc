@@ -240,7 +240,7 @@ pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
    bool dbret;
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), pep,
-                              lGetString(pep, PE_name), SGE_TYPE_PE, true);
+                              lGetString(pep, PE_name), SGE_TYPE_PE);
    answer_list_output(&answer_list);
 
    if (!dbret) {

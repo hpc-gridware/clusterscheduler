@@ -684,7 +684,7 @@ host_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
          break;
    }
 
-   if (!spool_write_object(alpp, spool_get_default_context(), ep, key, host_type, true)) {
+   if (!spool_write_object(alpp, spool_get_default_context(), ep, key, host_type)) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_ERROR,
                               MSG_PERSISTENCE_WRITE_FAILED_S,
@@ -948,7 +948,7 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
                                                      lGetHost(qinstance, QU_qhostname));
 
                if (!spool_write_object(&spool_answer_list, spool_get_default_context(),
-                                       qinstance, key, SGE_TYPE_QINSTANCE, true)) {
+                                       qinstance, key, SGE_TYPE_QINSTANCE)) {
                   answer_list_output(&spool_answer_list);
                   spool_ok = false;
                   break;

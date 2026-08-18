@@ -287,7 +287,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
 
                if (new_ep == nullptr) {
                   /* object not contained in new list, delete it */
-                  spool_delete_object(&answer_list, context, type, lGetHost(ep, key_nm), false);
+                  spool_delete_object(&answer_list, context, type, lGetHost(ep, key_nm));
                   answer_list_output(&answer_list);
                }
             }   
@@ -301,7 +301,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
                 */
                if (old_ep == nullptr ||
                   spool_compare_objects(&answer_list, context, type, ep, old_ep) != 0)  {
-                  spool_write_object(&answer_list, context, ep, key, type, false);
+                  spool_write_object(&answer_list, context, ep, key, type);
                   answer_list_output(&answer_list);
                }
             }
@@ -317,7 +317,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
                const lListElem *new_ep = lGetElemStr(new_list, key_nm, lGetString(ep, key_nm));
                if (new_ep == nullptr) {
                   /* object not contained in new list, delete it */
-                  spool_delete_object(&answer_list, context, type, lGetString(ep, key_nm), false);
+                  spool_delete_object(&answer_list, context, type, lGetString(ep, key_nm));
                   answer_list_output(&answer_list);
                }
             }
@@ -331,7 +331,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
                 */
                if(old_ep == nullptr ||
                   spool_compare_objects(&answer_list, context, type, ep, old_ep))  {
-                  spool_write_object(&answer_list, context, ep, key, type, false);
+                  spool_write_object(&answer_list, context, ep, key, type);
                   answer_list_output(&answer_list);
                }
             }
@@ -344,7 +344,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
                   const char *job_key;
                   job_key = job_get_key(lGetUlong(ep, key_nm), 0, nullptr, &buffer);
                   /* object not contained in new list, delete it */
-                  spool_delete_object(&answer_list, context, type, job_key, false);
+                  spool_delete_object(&answer_list, context, type, job_key);
                   answer_list_output(&answer_list);
                }
             }
@@ -360,7 +360,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
                   spool_compare_objects(&answer_list, context, type, ep, old_ep))  {
                   const char *job_key;
                   job_key = job_get_key(lGetUlong(ep, key_nm), 0, nullptr, &buffer);
-                  spool_write_object(&answer_list, context, ep, job_key, type, false);
+                  spool_write_object(&answer_list, context, ep, job_key, type);
                   answer_list_output(&answer_list);
                }
             }
@@ -376,7 +376,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
             ep = lFirst(*master_list);
             if(ep != nullptr) {
                /* delete sharetree */
-               spool_delete_object(&answer_list, context, type, SHARETREE_FILE, false);
+               spool_delete_object(&answer_list, context, type, SHARETREE_FILE);
                answer_list_output(&answer_list);
             }
             break;
@@ -399,7 +399,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
                   pe_task_id = lGetString(event, ET_strkey);
 
                   job_key = job_get_key(job_id, ja_task_id, pe_task_id, &buffer);
-                  spool_delete_object(&answer_list, context, type, job_key, false);
+                  spool_delete_object(&answer_list, context, type, job_key);
                   answer_list_output(&answer_list);
                }
                break;
@@ -411,7 +411,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
                   job_id = lGetUlong(event, ET_intkey);
 
                   job_key = job_get_key(job_id, 0, nullptr, &buffer);
-                  spool_delete_object(&answer_list, context, type, job_key, false);
+                  spool_delete_object(&answer_list, context, type, job_key);
                   answer_list_output(&answer_list);
                }
                break;
@@ -461,7 +461,7 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
                ep = lFirst(*master_list);
                if(ep != nullptr) {
                   /* spool sharetree */
-                  spool_write_object(&answer_list, context, ep, SHARETREE_FILE, type, false);
+                  spool_write_object(&answer_list, context, ep, SHARETREE_FILE, type);
                   answer_list_output(&answer_list);
                }
                break;
@@ -483,7 +483,7 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
             case SGE_TYPE_USERSET:
             case SGE_TYPE_HGROUP:
                key = lGetString(event, ET_strkey);
-               spool_delete_object(&answer_list, context, type, key, false);
+               spool_delete_object(&answer_list, context, type, key);
                answer_list_output(&answer_list);
 
             default:
@@ -503,7 +503,7 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
                   ret = SGE_EMA_FAILURE;
                }
                if (ret == SGE_EMA_OK) {
-                  spool_write_object(&answer_list, context, ep, key, type, false);
+                  spool_write_object(&answer_list, context, ep, key, type);
                   answer_list_output(&answer_list);
                }
                break;
@@ -524,7 +524,7 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
                }
                
                if (ret == SGE_EMA_OK) {
-                  spool_write_object(&answer_list, context, ep, key, type, false);
+                  spool_write_object(&answer_list, context, ep, key, type);
                   answer_list_output(&answer_list);
                }
                break;
@@ -536,7 +536,7 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
                   ret = SGE_EMA_FAILURE;
                }
                if (ret == SGE_EMA_OK) {
-                  spool_write_object(&answer_list, context, ep, "default", type, false);
+                  spool_write_object(&answer_list, context, ep, "default", type);
                   answer_list_output(&answer_list);
                }
                break;
@@ -554,7 +554,7 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
 
                   ep = lGetElemUlong(master_job_list, JB_job_number, job_id);
                   job_key = job_get_key(job_id, ja_task_id, pe_task_id, &buffer);
-                  spool_write_object(&answer_list, context, ep, job_key, type, false);
+                  spool_write_object(&answer_list, context, ep, job_key, type);
                   answer_list_output(&answer_list);
                }
                break;
