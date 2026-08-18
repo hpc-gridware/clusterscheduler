@@ -1343,20 +1343,48 @@ namespace ocs::uti {
                sge_switch2start_user();
             }
             // @todo CS-1530 need to lock the directory? Otherwise multiple processes might try to create the certificate at the same time
+            // The block further up sets 0700 on the key directory, but only in the case where
+            // it created it. A directory that was already there keeps whatever mode it has,
+            // and nothing used to look at it - that was the unstated precondition behind the
+            // old comment "the key directory is only readable/writable by root or the user
+            // himself".
+            //
+            // With the key file created 0600 below, its content is safe even under a 0755
+            // directory, so read access is not what has to be refused. Write access is: in a
+            // directory others may write to, the key file can be removed and replaced, or
+            // pre-created as a symlink so that this write lands wherever someone else chose.
+            // Refuse rather than produce a key we cannot vouch for. Existing permissions are
+            // deliberately NOT changed here - silently widening or narrowing a directory an
+            // administrator set up is worse than saying no.
+            const std::string key_dir_str = key_path.parent_path().string();
+            struct stat key_dir_st{};
+            if (stat(key_dir_str.c_str(), &key_dir_st) != 0) {
+               sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_STAT_KEY_DIR_SS, key_dir_str.c_str(), strerror(errno));
+               DPRINTF(SFNMAX "\n", sge_dstring_get_string(error_dstr));
+               ret = false;
+            } else if ((key_dir_st.st_mode & (S_IWGRP | S_IWOTH)) != 0) {
+               const char *who = (key_dir_st.st_mode & S_IWOTH) != 0 ? "others" : "the group";
+               sge_dstring_sprintf(error_dstr, MSG_OPENSSL_KEY_DIR_WRITABLE_SS, key_dir_str.c_str(), who);
+               DPRINTF(SFNMAX "\n", sge_dstring_get_string(error_dstr));
+               ret = false;
+            }
+
             DPRINTF("writing key to file %s\n", key_path.c_str());
-            FILE *f = fopen(key_path.c_str(), "wb");
-            if (f == nullptr) {
+            FILE *f = nullptr;
+            if (ret) {
+               f = fopen(key_path.c_str(), "wb");
+            }
+            if (ret && f == nullptr) {
                sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_OPEN_KEY_FILE_SS, key_path.c_str(), strerror(errno));
                DPRINTF(SFNMAX "\n", sge_dstring_get_string(error_dstr));
                ret = false;
-            } else {
+            } else if (ret) {
                // Restrict the file BEFORE any key material goes into it. fopen() creates it
                // with the process umask - typically 0644 - and the chmod that used to sit
                // after the write ran only once PEM_write_PrivateKey() and fclose() were done.
                // The window was therefore not "very short": it covered writing the private
-               // key itself. It stayed harmless only as long as the key directory happens to
-               // be 0700, and this code sets that mode only when it creates the directory -
-               // a pre-existing one keeps whatever permissions it has.
+               // key itself. It stayed harmless only because the key directory is normally
+               // 0700 - a precondition the check above now verifies instead of assuming.
                //
                // fchmod() acts on the descriptor rather than the path, which also removes the
                // symlink swap a path based chmod invites in a directory we do not control.

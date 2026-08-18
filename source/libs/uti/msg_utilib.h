@@ -267,6 +267,8 @@
 #define MSG_OPENSSL_CANNOT_CALC_DIFF_TIME          _MESSAGE(59305, _("cannot calculate difference between current time and certificate notAfter time"))
 #define MSG_OPENSSL_CANNOT_OPEN_KEY_FILE_SS        _MESSAGE(59306, _("cannot open key file: " PFQMAX ": " SFN4))
 #define MSG_OPENSSL_CANNOT_PERM_KEY_FILE_SS        _MESSAGE(59314, _("cannot set permissions on key file: " PFQMAX ": " SFN4))
+#define MSG_OPENSSL_CANNOT_STAT_KEY_DIR_SS         _MESSAGE(59315, _("cannot examine key directory " PFQMAX ": " SFN4))
+#define MSG_OPENSSL_KEY_DIR_WRITABLE_SS            _MESSAGE(59316, _("refusing to write a private key into " PFQMAX ": the directory is writable by " SFN4))
 #define MSG_OPENSSL_CANNOT_USE_CERT_X509_S         _MESSAGE(59307, _("cannot use certificate from x509: " SFN4))
 #define MSG_OPENSSL_CANNOT_USE_CERT_FILE_SS        _MESSAGE(59308, _("cannot use certificate file: " PFQMAX ": " SFN4))
 #define MSG_OPENSSL_CANNOT_USE_KEY_PKEY_S          _MESSAGE(59309, _("cannot use private key from pkey: " SFN4))
