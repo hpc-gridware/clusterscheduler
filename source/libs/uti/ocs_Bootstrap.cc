@@ -290,6 +290,14 @@ void
 ocs::Bootstrap::set_communication_params(const char *new_communication_params) {
    DENTER(TOP_LAYER);
 
+   // "none" is how this file says that nothing is configured - default_domain and
+   // spooling_lib use it the same way, and an administrator writing it here should not
+   // be told that "none" is a parameter nobody knows
+   if (new_communication_params == nullptr ||
+       SGE_STRCASECMP(new_communication_params, NONE_STR) == 0) {
+      DRETURN_VOID;
+   }
+
    saved_vars_s *context = nullptr;
    const char *param = sge_strtok_r(new_communication_params, ",", &context);
    while (param != nullptr) {
