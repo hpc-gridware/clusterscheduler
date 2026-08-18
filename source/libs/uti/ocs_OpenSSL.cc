@@ -1350,11 +1350,25 @@ namespace ocs::uti {
                DPRINTF(SFNMAX "\n", sge_dstring_get_string(error_dstr));
                ret = false;
             } else {
-               PEM_write_PrivateKey_func(f, pkey, nullptr, nullptr, 0, nullptr, nullptr);
-               fclose(f);
-               // @todo in theory we have a very short time window here where the file is created but not yet protected
-               //       OTOH the key directory is only readable/writable by root or the user himself
-               chmod(key_path.c_str(), S_IRUSR | S_IWUSR); // key file should be only readable/writable by owner
+               // Restrict the file BEFORE any key material goes into it. fopen() creates it
+               // with the process umask - typically 0644 - and the chmod that used to sit
+               // after the write ran only once PEM_write_PrivateKey() and fclose() were done.
+               // The window was therefore not "very short": it covered writing the private
+               // key itself. It stayed harmless only as long as the key directory happens to
+               // be 0700, and this code sets that mode only when it creates the directory -
+               // a pre-existing one keeps whatever permissions it has.
+               //
+               // fchmod() acts on the descriptor rather than the path, which also removes the
+               // symlink swap a path based chmod invites in a directory we do not control.
+               if (fchmod(fileno(f), S_IRUSR | S_IWUSR) != 0) {
+                  sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_PERM_KEY_FILE_SS, key_path.c_str(), strerror(errno));
+                  DPRINTF(SFNMAX "\n", sge_dstring_get_string(error_dstr));
+                  fclose(f);
+                  ret = false;
+               } else {
+                  PEM_write_PrivateKey_func(f, pkey, nullptr, nullptr, 0, nullptr, nullptr);
+                  fclose(f);
+               }
             }
             if (switch_user && !called_as_root) {
                DPRINTF("  --> switching to admin user\n");
