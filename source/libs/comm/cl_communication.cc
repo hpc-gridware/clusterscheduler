@@ -3996,8 +3996,20 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
 
          cl_com_free_cm_message(&cm_message);
 
-         /* check if remote connection matches resolved client host name */
+         /* Check if remote connection matches resolved client host name.
+          *
+          * trust_client_hostname takes the name the client announced and asks nothing
+          * further of it. What is given up is this check and only this check: the
+          * name is no longer held against the host the connection address resolves
+          * to. Where a client reaches the master through address translation the two
+          * can never agree - the address belongs to whatever forwarded the
+          * connection, the name to the client behind it.
+          *
+          * The rdata check further up is a different question and stays as it is. It
+          * asks whether the announced name resolves to itself, which says nothing
+          * about where the connection came from. */
          if (connection->crm_state == CL_CRM_CS_UNDEFINED &&
+             !cl_commlib_get_global_param(CL_COMMLIB_TRUST_CLIENT_HOSTNAME) &&
              cl_com_compare_hosts(connection->remote->comp_host, connection->client_host_name) != CL_RETVAL_OK) {
             int string_size = 1;
             CL_LOG(CL_LOG_ERROR, "hostname address resolving error (IP based)");
