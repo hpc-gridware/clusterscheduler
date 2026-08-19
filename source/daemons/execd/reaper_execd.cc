@@ -33,11 +33,13 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <sys/types.h>
 #include <cerrno>
 #include <cfloat>
+#include <vector>
 
 #include <pwd.h>
 #include <sys/types.h>
@@ -1332,9 +1334,112 @@ void set_enforce_cleanup_old_jobs() {
 }
 
 /**
+ * \brief Shepherds that were already running when this execd started.
+ *
+ * They are not children of this process, so waitpid() in sge_reap_children_execd()
+ * never sees them and their exit produces no SIGCHLD here. Nothing else notices
+ * them either: the lost-SIGCHLD remedy in execd_signal_queue.cc:500 sits in the
+ * signal delivery path, and a job that simply runs to its end is never signalled.
+ *
+ * Without a second mechanism such a job therefore stays in state "running" forever
+ * once its shepherd has finished. Reproduced with "sgeexecd softstop" followed by a
+ * restart -- which is the documented way to restart an execd without killing its
+ * jobs, so this is a normal administrative operation, not a corner case.
+ *
+ * The startup reconciliation records what it found alive here, and
+ * check_adopted_shepherds() polls it. That poll touches only these few processes
+ * -- it does not bring back the per-minute `ps` over the host's whole process
+ * table that CS-2532 removed.
+ */
+struct adopted_shepherd_t {
+   pid_t pid;         ///< pid of the shepherd, as written to active_jobs/<job>/pid
+   u_long32 job_id;   ///< the job it supervises -- part of the shepherd's process name
+};
+static std::vector<adopted_shepherd_t> adopted_shepherds;
+
+/**
+ * \brief Is this pid still the shepherd of that job?
+ *
+ * Asking it that precisely matters because pids get reused. "Does a process with
+ * this pid exist" would also be answered yes by another cluster's shepherd, or by
+ * any unrelated process that happened to get the number -- and a job whose
+ * shepherd has long finished would never be reaped.
+ *
+ * On Linux the answer comes from /proc/<pid>/cmdline: its first entry is argv[0],
+ * which the execd itself set to "sge_shepherd-<job_id>" before the exec
+ * (exec_job.cc:2081, execlp(shepherd_path, ps_name, ...)). That ties the pid to
+ * THIS job without forking anything.
+ *
+ * Elsewhere there is no equally cheap and portable lookup, so the weaker question
+ * is asked via kill(pid, 0). That is not a regression: it is strictly more than
+ * the code did before, where nothing looked at these processes at all.
+ *
+ * \param pid    pid to check
+ * \param job_id job the pid is supposed to belong to
+ * \return true if the process is still that job's shepherd
+ */
+static bool
+adopted_shepherd_still_running(pid_t pid, u_long32 job_id) {
+#if defined(LINUX)
+   char path[SGE_PATH_MAX];
+   snprintf(path, sizeof(path), "/proc/" pid_t_fmt "/cmdline", pid);
+
+   FILE *fp = fopen(path, "r");
+   if (fp == nullptr) {
+      // Process gone -- or no /proc at all. Answering "gone" only marks the
+      // reconciliation as due, and that one re-reads the process table and
+      // decides. The fail-safe direction is therefore the one that checks.
+      return false;
+   }
+
+   // argv is stored NUL separated, so the first entry ends at the first NUL and
+   // a plain strcmp() against it compares exactly argv[0].
+   char cmdline[SGE_PATH_MAX];
+   size_t len = fread(cmdline, 1, sizeof(cmdline) - 1, fp);
+   fclose(fp);
+   cmdline[len] = '\0';
+
+   char expected[SGE_PATH_MAX];
+   snprintf(expected, sizeof(expected), "%s-" sge_u32, SGE_SHEPHERD, job_id);
+   return strcmp(cmdline, expected) == 0;
+#else
+   // ESRCH is the only answer that means "gone"; EPERM means it exists and is
+   // owned by someone else. The job is not part of the question here -- keep the
+   // parameter out of the unused warnings rather than out of the signature, so
+   // both branches stay callable in the same way.
+   (void) job_id;
+   return !(kill(pid, 0) == -1 && errno == ESRCH);
+#endif
+}
+
+static void
+check_adopted_shepherds() {
+   DENTER(TOP_LAYER);
+
+   if (adopted_shepherds.empty()) {
+      DRETURN_VOID;
+   }
+
+   auto gone = std::remove_if(adopted_shepherds.begin(), adopted_shepherds.end(),
+                              [](const adopted_shepherd_t &shepherd) {
+                                 return !adopted_shepherd_still_running(shepherd.pid, shepherd.job_id);
+                              });
+   if (gone != adopted_shepherds.end()) {
+      adopted_shepherds.erase(gone, adopted_shepherds.end());
+
+      // Deliberately not acting on the pid itself: only mark the reconciliation
+      // as due -- it re-reads the process table and decides.
+      set_enforce_cleanup_old_jobs();
+   }
+
+   DRETURN_VOID;
+}
+
+/**
  * \brief Cleans up old jobs and reports them to the qmaster.
  *
- * This function is called at execd startup time and also in regular intervals to
+ * The work itself is a reconciliation between what is on disk and what the execd has
+ * in memory:
  *
  * - look for old jobs hanging around in the active jobs directory on disk
  * - to check if the shepherd is still running for jobs
@@ -1342,7 +1447,20 @@ void set_enforce_cleanup_old_jobs() {
  * - to report the updated job state to the qmaster
  *
  * All this needs only to be done once during the lifetime of the execd process and should be repeated
- * in situations where set_enforce_cleanup_old_jobs() is called.
+ * in situations where set_enforce_cleanup_old_jobs() is called. There are three of them:
+ *
+ * - a KEEP_ACTIVE change (execd_get_new_conf.cc:100). While KEEP_ACTIVE was on, finished jobs
+ *   deliberately left their active job directory behind. Switching it off makes those directories
+ *   garbage that nothing else will collect, so the reconciliation has to run once more --
+ *   this is a second entry point besides startup, not a variant of it.
+ * - state changes (delete, reschedule) that a job went through while the execd was down.
+ * - a shepherd adopted at startup has ended (check_adopted_shepherds()). Nothing else can
+ *   notice that: it is not our child, so there is no SIGCHLD.
+ *
+ * The function is nevertheless *called* once per OLD_JOB_INTERVAL (execd_ck_to_do.cc:612)
+ * and returns immediately unless a cleanup is due. That periodic call is the poll that picks up
+ * such a later set_enforce_cleanup_old_jobs() and that checks the adopted shepherds, so it has to
+ * stay -- but it must not be mistaken for the cleanup itself running periodically. See CS-2532.
  *
  * During startup, the function produces more output.
  *
@@ -1353,24 +1471,50 @@ bool
 clean_up_old_jobs(bool startup) {
    DENTER(TOP_LAYER);
 
-   // No early exit when
-   // - enforce_cleanup_old_jobs is set
-   //    - during startup
-   //    - when KEEP_ACTIVE has been changed
-   // - simulate_jobs is set
-   // - there are no jobs in the job list
-   if (enforce_cleanup_old_jobs) {
-      enforce_cleanup_old_jobs = false;
-   } else if (mconf_get_simulate_jobs() ||
-       lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)) == 0) {
-      // Do early exit:
-      // - if cleanup was already done
-      // - if there are no jobs to process (0 jobs or only simulated jobs)
-      // @todo do we actually want to do the cleanup if there are (only) running jobs?
-      //       and even with finished jobs, cleanup could get between the job having finished and the ack from qmaster
-      //       triggering deletion of the active job directory
+   // Simulated jobs have no shepherd and no active job directory -- there is nothing
+   // to reconcile, whether or not the cleanup is due.
+   if (mconf_get_simulate_jobs()) {
       DRETURN(true);
    }
+
+   // Run only when the cleanup is actually due: at startup, and whenever
+   // set_enforce_cleanup_old_jobs() marks it due again (a KEEP_ACTIVE change, or
+   // state changes that happened while the execd was down). The flag is consumed
+   // here, so a due cleanup runs exactly once.
+   //
+   // This used to fall through to the scan whenever the job list was NOT empty
+   // (CS-2532), which inverted the intent: the scan was skipped on an idle execd
+   // and performed once per OLD_JOB_INTERVAL on a busy one. Each pass forks a
+   // shell and a `ps` over the host's entire process table, and with several
+   // execds per host they all do it, every minute, counting each other's
+   // shepherds -- measured at up to 392 on a host running 34 of them.
+   //
+   // Scanning the process table periodically is not needed for correctness, with
+   // one exception that is handled separately below. A shepherd that exits is
+   // reaped through SIGCHLD via sge_reap_children_execd() (waitpid, :171), and the
+   // case of a lost SIGCHLD has its own remedy: execd_signal_queue.cc:500 sets
+   // sge_sig_handler_dead_children when a signal cannot be delivered while the
+   // active job directory is still there. Reconciling against `ps` is a startup
+   // concern -- it answers "what survived my downtime", which is a question only
+   // the startup (or an enforced re-check) has.
+   //
+   // The exception: both of those cover shepherds that are OUR children. A
+   // shepherd adopted at startup is not, and nothing signals a job that simply
+   // runs to its end, so neither mechanism ever fires for it. Polling those few
+   // pids restores that -- see adopted_shepherds. It is skipped during startup
+   // because the list is filled by the startup reconciliation itself.
+   //
+   // The job list is deliberately NOT consulted: at startup it may be empty while
+   // active job directories from before the restart are still on disk, and those
+   // are exactly what has to be cleaned up.
+   if (!startup) {
+      check_adopted_shepherds();
+   }
+
+   if (!enforce_cleanup_old_jobs) {
+      DRETURN(true);
+   }
+   enforce_cleanup_old_jobs = false;
 
    if (startup) {
       INFO(SFNMAX, MSG_SHEPHERD_CKECKINGFOROLDJOBS);
@@ -1494,11 +1638,17 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
    if (shepherd_alive) {     /* shepherd alive -> nothing to do */
 
       if (startup) {
-         /*  
-            at startup we need to change the 
-            state of not exited jobs from JWRITTEN 
+         // A shepherd that is already running while we are still starting up cannot
+         // be one of ours, so its exit will not reach us as a SIGCHLD. Remember it;
+         // check_adopted_shepherds() takes it from here. Only the startup fills this
+         // list -- on a later enforced run the alive shepherds are our own children.
+         adopted_shepherds.push_back({pid, jobid});
+
+         /*
+            at startup we need to change the
+            state of not exited jobs from JWRITTEN
             to JRUNNING
-         */ 
+         */
          if ((jr=get_job_report(jobid, jataskid, pe_task_id_str))) {
             lSetUlong(jr, JR_state, JRUNNING);
          } else {
