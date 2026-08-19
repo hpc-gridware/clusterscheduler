@@ -48,6 +48,13 @@ target_link_libraries(test_qmaster_hgroup_cache PRIVATE gdi sgeobj cull comm com
 add_test(NAME test_qmaster_hgroup_cache COMMAND test_qmaster_hgroup_cache)
 set_tests_properties(test_qmaster_hgroup_cache PROPERTIES DISABLED TRUE)
 
+add_executable(test_qmaster_rusage
+      test_qmaster_rusage.cc
+      ../../../source/daemons/qmaster/sge_rusage.cc)
+target_include_directories(test_qmaster_rusage PRIVATE "./" "../../../source/daemons/qmaster")
+target_link_libraries(test_qmaster_rusage PRIVATE sched sgeobj gdi cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_qmaster_rusage COMMAND test_qmaster_rusage)
+
 add_executable(test_qmaster_calendar
       test_qmaster_calendar.cc
         ../../../source/daemons/qmaster/ocs_CategoryQmaster.cc
@@ -120,6 +127,7 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_qmaster_hgroup_reserved DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_hgroup_cache DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_timed_event DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_qmaster_rusage DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_calendar DESTINATION testbin/${SGE_ARCH})
 endif ()
 
