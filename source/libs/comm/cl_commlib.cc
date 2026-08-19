@@ -39,6 +39,7 @@
 #include <sys/resource.h>
 #include <cerrno>
 
+#include "uti/sge_hostname.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_signal.h"
@@ -153,6 +154,10 @@ static cl_raw_list_t *cl_com_log_list = nullptr;
 static char *cl_commlib_debug_resolvable_hosts = nullptr;
 static char *cl_commlib_debug_unresolvable_hosts = nullptr;
 
+/* SGE_ADDRESS_FROM_HOSTNAME overrides what the bootstrap file asked for. It exists so
+   the conversion can be exercised by a client that never reads a bootstrap file. */
+static char *cl_commlib_env_address_from_hostname = nullptr;
+
 /* cl_com_host_list
  * ================
  *
@@ -233,6 +238,11 @@ static pthread_mutex_t cl_com_external_fd_list_setup_mutex = PTHREAD_MUTEX_INITI
    TODO: merge all global settings into this structure */
 typedef struct cl_com_global_settings_def {
    bool delayed_listen;
+   bool trust_client_hostname;
+
+   /* format the address of a client is derived from, instead of resolving its host
+      name; nullptr while names are resolved as usual */
+   char *address_from_hostname;
 } cl_com_global_settings_t;
 
 /*
@@ -247,7 +257,7 @@ typedef struct cl_com_thread_data_def {
 } cl_com_thread_data_t;
 
 static pthread_mutex_t cl_com_global_settings_mutex = PTHREAD_MUTEX_INITIALIZER;
-static cl_com_global_settings_t cl_com_global_settings = {false};
+static cl_com_global_settings_t cl_com_global_settings = {false, false, nullptr};
 
 static int cl_message_list_append_send(cl_com_connection_t *c, cl_com_message_t *m, int l);
 
@@ -635,6 +645,16 @@ int cl_com_setup_commlib(cl_thread_mode_t t_mode, cl_log_t debug_level, cl_log_f
          cl_commlib_debug_unresolvable_hosts = strdup(help);
       }
    }
+   help = getenv("SGE_ADDRESS_FROM_HOSTNAME");
+   if (help != nullptr) {
+      /* the format is handed to snprintf() to build a host name, so it is checked
+         here as well and not only where the bootstrap file is read */
+      if (!sge_hostname_format_valid(help)) {
+         CL_LOG_STR(CL_LOG_ERROR, "SGE_ADDRESS_FROM_HOSTNAME is not a usable format:", help);
+      } else if (cl_commlib_env_address_from_hostname == nullptr) {
+         cl_commlib_env_address_from_hostname = strdup(help);
+      }
+   }
 
    if (cl_com_log_list != nullptr) {
       duplicate_call = true;
@@ -885,6 +905,9 @@ int cl_com_cleanup_commlib() {
    if (cl_commlib_debug_resolvable_hosts != nullptr) {
       sge_free(&cl_commlib_debug_resolvable_hosts);
    }
+   if (cl_commlib_env_address_from_hostname != nullptr) {
+      sge_free(&cl_commlib_env_address_from_hostname);
+   }
    if (cl_commlib_debug_unresolvable_hosts != nullptr) {
       sge_free(&cl_commlib_debug_unresolvable_hosts);
    }
@@ -928,6 +951,10 @@ int cl_commlib_set_global_param(cl_global_settings_params_t parameter, bool valu
          cl_com_global_settings.delayed_listen = value;
          break;
       }
+      case CL_COMMLIB_TRUST_CLIENT_HOSTNAME: {
+         cl_com_global_settings.trust_client_hostname = value;
+         break;
+      }
    }
    pthread_mutex_unlock(&cl_com_global_settings_mutex);
    return CL_RETVAL_OK;
@@ -941,7 +968,44 @@ bool cl_commlib_get_global_param(cl_global_settings_params_t parameter) {
          retval = cl_com_global_settings.delayed_listen;
          break;
       }
+      case CL_COMMLIB_TRUST_CLIENT_HOSTNAME: {
+         retval = cl_com_global_settings.trust_client_hostname;
+         break;
+      }
    }
+   pthread_mutex_unlock(&cl_com_global_settings_mutex);
+   return retval;
+}
+
+/* Sets the format from which a client address is derived instead of resolving the
+   client's host name. A nullptr or empty format restores plain resolving.
+
+   The format belongs to the setup of a component and is meant to be set once, before
+   any connection is handled. The getter hands out the stored string itself, which
+   stays valid as long as no later call replaces it. */
+int cl_commlib_set_address_from_hostname(const char *format) {
+   pthread_mutex_lock(&cl_com_global_settings_mutex);
+   sge_free(&(cl_com_global_settings.address_from_hostname));
+   if (format != nullptr && *format != '\0') {
+      cl_com_global_settings.address_from_hostname = strdup(format);
+   }
+   pthread_mutex_unlock(&cl_com_global_settings_mutex);
+   return CL_RETVAL_OK;
+}
+
+/* Returns the format in effect, or nullptr when host names are resolved as usual.
+ *
+ * SGE_ADDRESS_FROM_HOSTNAME wins over the bootstrap file. A client that never reads a
+ * bootstrap file can then be pointed at a format, which is what makes the conversion
+ * testable on its own, and an installation can be observed with a different format
+ * without being reconfigured. */
+const char *cl_commlib_get_address_from_hostname() {
+   if (cl_commlib_env_address_from_hostname != nullptr) {
+      return cl_commlib_env_address_from_hostname;
+   }
+
+   pthread_mutex_lock(&cl_com_global_settings_mutex);
+   const char *retval = cl_com_global_settings.address_from_hostname;
    pthread_mutex_unlock(&cl_com_global_settings_mutex);
    return retval;
 }

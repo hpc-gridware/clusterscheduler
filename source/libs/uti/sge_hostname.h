@@ -77,6 +77,8 @@ void sge_free_hostent(struct hostent **he);
 
 struct hostent *sge_copy_hostent(struct hostent *orig);
 
+bool sge_hostname_format_valid(const char *format);
+
 
 int sge_get_qmaster_port(bool *from_services);
 

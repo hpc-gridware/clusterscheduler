@@ -1350,6 +1350,11 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, u_long32 ta
  *
  * Qmaster internal requests are not checked for permissions
  *
+ * The qmaster_params ALLOW_ANY_SUBMITHOSTS lets any host which can reach the qmaster
+ * count as a submit host. Nothing here needs to ask for it separately: wherever a
+ * submit host is accepted, such a host is accepted too, and wherever an admin host is
+ * required it is not.
+ *
  * @param packet - packet to check
  * @param alpp - answer list pointer
  * @param target - target to check
@@ -1364,7 +1369,8 @@ sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, const u_lon
       const lList *master_admin_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
       bool is_admin_host = host_list_locate(master_admin_host_list, packet->host) != nullptr ? true : false;
       const lList *master_submit_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
-      bool is_submit_host = host_list_locate(master_submit_host_list, packet->host) != nullptr ? true : false;
+      bool is_submit_host = mconf_get_allow_any_submithosts() ||
+                            host_list_locate(master_submit_host_list, packet->host) != nullptr;
 
       switch (target) {
          case ocs::gdi::Target::SGE_EH_LIST: {
@@ -1434,6 +1440,11 @@ sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, const u_lon
  *
  * Qmaster internal requests are not checked for permissions
  *
+ * The qmaster_params ALLOW_ANY_SUBMITHOSTS lets any host which can reach the qmaster
+ * count as a submit host here as well. A host which may place work in the cluster has
+ * to be able to look at it afterwards, otherwise it can submit a job and never learn
+ * what became of it.
+ *
  * @param packet - packet to check
  * @param task - task to check
  * @param monitor - monitoring structure
@@ -1449,7 +1460,8 @@ sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
       const lList *master_admin_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
       bool is_admin_host = host_list_locate(master_admin_host_list, packet->host) != nullptr ? true : false;
       const lList *master_submit_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
-      bool is_submit_host = host_list_locate(master_submit_host_list, packet->host) != nullptr ? true : false;
+      bool is_submit_host = mconf_get_allow_any_submithosts() ||
+                            host_list_locate(master_submit_host_list, packet->host) != nullptr;
 
       switch (task->target) {
          case ocs::gdi::Target::SGE_CONF_LIST: {

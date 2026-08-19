@@ -835,6 +835,7 @@ PrintBootstrap()
    $ECHO "binary_path             $SGE_ROOT_VAL/bin"
    $ECHO "qmaster_spool_dir       $QMDIR"
    $ECHO "security_mode           $PRODUCT_MODE"
+   $ECHO "communication_params    none"
    $ECHO "listener_threads        4"
    $ECHO "worker_threads          4"
    $ECHO "reader_threads          4"

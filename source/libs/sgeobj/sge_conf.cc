@@ -150,6 +150,7 @@ static bool enable_sup_grp_eval = false;
 static bool enable_enforce_master_limit = false;
 static bool enable_test_sleep_after_request = false;
 static bool enable_forced_qdel_if_unknown = false;
+static bool allow_any_submithosts = false;
 static bool ignore_ngroups_max_limit = false;
 static bool enable_systemd = true;
 static bool do_credentials = true;
@@ -755,6 +756,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       enable_enforce_master_limit = false;
       enable_test_sleep_after_request = false;
       enable_forced_qdel_if_unknown = false;
+      allow_any_submithosts = false;
       ignore_ngroups_max_limit = false;
       enable_systemd = true;
       do_credentials = true;
@@ -838,6 +840,9 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "ENABLE_FORCED_QDEL_IF_UNKNOWN", &enable_forced_qdel_if_unknown)) {
+            continue;
+         }
+         if (parse_bool_param(s, "ALLOW_ANY_SUBMITHOSTS", &allow_any_submithosts)) {
             continue;
          }
 #ifdef LINUX
@@ -3029,6 +3034,23 @@ bool mconf_get_enable_forced_qdel_if_unknown() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = enable_forced_qdel_if_unknown;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+/**
+ * Whether any host which can reach the qmaster counts as a submit host.
+ *
+ * It grants what a submit host is granted and no more. Requests which ask for an admin
+ * host are unaffected, and so is everything which is decided by the user rather than by
+ * the host the request came from.
+ */
+bool mconf_get_allow_any_submithosts() {
+   bool ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = allow_any_submithosts;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
