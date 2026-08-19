@@ -709,7 +709,11 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
 
       writer->Key("eusage");
       writer->StartObject();
-      write_json(*writer, USAGE_ATTR_WALLCLOCK, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+      // wallclock is elapsed time, not a consumable: the pe tasks of a job run
+      // concurrently, so summing their wallclock over the slots of an
+      // accounting_summary parallel environment would report slot seconds
+      // instead of the time the job ran. ru_wallclock above is not summed either.
+      write_json(*writer, USAGE_ATTR_WALLCLOCK, reporting_get_double_usage(usage_list, reported_list,
                                                                         USAGE_ATTR_WALLCLOCK, USAGE_ATTR_WALLCLOCK, 0));
       write_json(*writer, USAGE_ATTR_CPU, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
                                      intermediate ? USAGE_ATTR_CPU : USAGE_ATTR_CPU_ACCT, USAGE_ATTR_CPU, 0));
