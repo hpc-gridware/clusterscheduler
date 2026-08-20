@@ -133,8 +133,10 @@
 #define MSG_PROF_NULLLEVELNAME_S                _MESSAGE(49097, _(SFN ": the assigned level name is nullptr"))
 #define MSG_LOG_PROFILING                       _MESSAGE(49098, _("profiling: "))
 #define MSG_UTI_CANNOTRESOLVEBOOTSTRAPFILE      _MESSAGE(49100, _("cannot resolve name of bootstrap file"))
+#define MSG_UTI_UNKNOWNCOMMUNICATIONPARAM_S     _MESSAGE(49101, _("unknown parameter " SFQ " in communication_params of the bootstrap file - it has no effect"))
 #define MSG_UTI_CANNOTLOCATEATTRIBUTE_SS        _MESSAGE(49102, _("cannot read attribute <" SFN "> from bootstrap file " PFNMAX))
 #define MSG_UTI_CANNOTLOCATEATTRIBUTEMAN_SS     _MESSAGE(49103, _("cannot read attribute <" SFN "> from management.properties file " PFNMAX))
+#define MSG_UTI_INVALIDADDRESSFORMAT_S          _MESSAGE(49104, _("address_from_hostname format " SFQ " does not hold four %%d and cannot yield an IPv4 address - host names are resolved as usual"))
 
 #define MSG_UTI_SGEROOTNOTADIRECTORY_S          _MESSAGE(49110, _("$SGE_ROOT=" SFN " is not a directory"))
 #define MSG_UTI_DIRECTORYNOTEXIST_S             _MESSAGE(49111, _("directory doesn't exist: " PFNMAX))

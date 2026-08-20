@@ -147,6 +147,11 @@ host_is_admin_host(const char *hostname);
 bool
 host_is_submit_host(const char *hostname);
 
+/* Submit host by configuration alone, ignoring ALLOW_ANY_SUBMITHOSTS (CS-2578).
+ * See the implementation for when to prefer it over host_is_submit_host(). */
+bool
+host_is_configured_submit_host(const char *hostname);
+
 bool
 host_list_merge(lList *this_list);
 

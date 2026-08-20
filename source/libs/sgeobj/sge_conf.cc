@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2011-2012 Univa Corporation
  *
  *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
@@ -353,6 +353,8 @@ struct qmaster_params_t {
    bool enable_test_sleep_after_request = false;
    /// `ENABLE_FORCED_QDEL_IF_UNKNOWN` -- force deletion while the host is unknown
    bool enable_forced_qdel_if_unknown = false;
+   /// `ALLOW_ANY_SUBMITHOSTS` -- allow any host to be submit host
+   bool allow_any_submithosts = false;
    /// `LOG_MONITOR_MESSAGE` -- write monitoring output to the messages file
    bool is_monitor_message = true;
    /// `DISABLE_AUTO_RESCHEDULING` -- never reschedule a job automatically
@@ -1180,6 +1182,9 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "ENABLE_FORCED_QDEL_IF_UNKNOWN", &qmaster_conf.enable_forced_qdel_if_unknown)) {
+            continue;
+         }
+         if (parse_bool_param(s, "ALLOW_ANY_SUBMITHOSTS", &qmaster_conf.allow_any_submithosts)) {
             continue;
          }
 #ifdef LINUX
@@ -4538,6 +4543,24 @@ bool mconf_get_enable_forced_qdel_if_unknown() {
 }
 
 /**
+ * Whether any host which can reach the qmaster counts as a submit host.
+ *
+ * It grants what a submit host is granted and no more. Requests which ask for an admin
+ * host are unaffected, and so is everything which is decided by the user rather than by
+ * the host the request came from.
+ */
+bool mconf_get_allow_any_submithosts() {
+   DENTER(BASIS_LAYER);
+
+   bool ret;
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = qmaster_conf.allow_any_submithosts;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+/**
  * @brief The `ignore_ngroups_max_limit` setting of the master configuration
  *
  * Takes the master configuration read lock, so the value is a consistent
@@ -4653,7 +4676,7 @@ void mconf_get_h_descriptors(char **pret) {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    *pret = strdup(execd_conf.h_descriptors);
-   
+
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
 }
@@ -4673,7 +4696,7 @@ void mconf_get_s_descriptors(char **pret) {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    *pret = strdup(execd_conf.s_descriptors);
-   
+
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
 }
@@ -4693,7 +4716,7 @@ void mconf_get_h_maxproc(char **pret) {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    *pret = strdup(execd_conf.h_maxproc);
-   
+
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
 }
@@ -4713,7 +4736,7 @@ void mconf_get_s_maxproc(char **pret) {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    *pret = strdup(execd_conf.s_maxproc);
-   
+
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
 }
@@ -4733,7 +4756,7 @@ void mconf_get_h_memorylocked(char **pret) {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    *pret = strdup(execd_conf.h_memorylocked);
-   
+
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
 }
@@ -4753,7 +4776,7 @@ void mconf_get_s_memorylocked(char **pret) {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    *pret = strdup(execd_conf.s_memorylocked);
-   
+
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
 }
@@ -4773,7 +4796,7 @@ void mconf_get_h_locks(char **pret) {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    *pret = strdup(execd_conf.h_locks);
-   
+
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
 }
@@ -4793,7 +4816,7 @@ void mconf_get_s_locks(char **pret) {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    *pret = strdup(execd_conf.s_locks);
-   
+
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN_VOID;
 }

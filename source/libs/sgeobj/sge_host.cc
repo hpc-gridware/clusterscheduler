@@ -194,6 +194,25 @@ bool host_is_admin_host(const char *hostname) {
  * @note MT-NOTE: host_is_submit_host() is MT safe
  */
 bool host_is_submit_host(const char *hostname) {
+   return mconf_get_allow_any_submithosts() || host_is_configured_submit_host(hostname);
+}
+
+/**
+ * @brief Is this host a submit host by configuration alone?
+ *
+ * The same question as host_is_submit_host(), without the ALLOW_ANY_SUBMITHOSTS
+ * qmaster_param (CS-2578). For everything a submit host may do with its own jobs
+ * the flag is meant to apply, and host_is_submit_host() is the one to ask. This
+ * one is for the places which grant more than that and must not widen with the
+ * flag - killing an event client of another client, for instance.
+ *
+ * @param hostname resolved host name, normally packet->host
+ *
+ * @return true if the host is a member of the reserved "@submit_hosts" host group
+ *
+ * @note MT-NOTE: host_is_configured_submit_host() is MT safe
+ */
+bool host_is_configured_submit_host(const char *hostname) {
    return host_is_in_reserved_hostgroup(hostname, SUBMIT_HOSTGROUP);
 }
 

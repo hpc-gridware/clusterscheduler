@@ -106,6 +106,10 @@ namespace ocs {
       static int scheduler_thread_count;
       static bool ignore_fqdn;
 
+      // communication_params
+      static char *address_from_hostname;
+      static bool trust_client_hostname;
+
       static const char*
       get_name_for_sec_mode(bs_sec_mode_t mode) noexcept;
 
@@ -138,6 +142,9 @@ namespace ocs {
 
       static void
       set_security_params(const char *new_security_params);
+
+      static void
+      set_communication_params(const char *new_communication_params);
 
       static void
       set_thread_count(int &thread_count, int new_thread_count, int default_thread_count, int max_thread_count);
@@ -213,6 +220,12 @@ namespace ocs {
 
       static int
       get_scheduler_thread_count();
+
+      static const char *
+      get_address_from_hostname();
+
+      static bool
+      get_trust_client_hostname();
    };
 
 }

@@ -1035,7 +1035,10 @@ sge_gdi_shutdown_event_client(const ocs::gdi::Packet *packet, ocs::gdi::Task *ta
          ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
          continue;
-      } else if (!host_is_submit_host(packet->host) && !host_is_admin_host(packet->host)) {
+      } else if (!host_is_configured_submit_host(packet->host) && !host_is_admin_host(packet->host)) {
+         // Deliberately not host_is_submit_host(): ALLOW_ANY_SUBMITHOSTS grants what a
+         // submit host may do with its own work, and killing another client's event
+         // client is not that. This check stays with the configured submit hosts.
          ERROR(MSG_SGETEXT_NOSUBMITORADMINHOST_S, packet->host);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
          continue;
@@ -1280,6 +1283,11 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::T
  *
  * Qmaster internal requests are not checked for permissions
  *
+ * The qmaster_params ALLOW_ANY_SUBMITHOSTS lets any host which can reach the qmaster
+ * count as a submit host. Nothing here needs to ask for it separately: wherever a
+ * submit host is accepted, such a host is accepted too, and wherever an admin host is
+ * required it is not.
+ *
  * @param packet - packet to check
  * @param alpp - answer list pointer
  * @param target - target to check
@@ -1361,6 +1369,11 @@ sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, const ocs::
 /** @brief checks get-permissions of host for a given target
  *
  * Qmaster internal requests are not checked for permissions
+ *
+ * The qmaster_params ALLOW_ANY_SUBMITHOSTS lets any host which can reach the qmaster
+ * count as a submit host here as well. A host which may place work in the cluster has
+ * to be able to look at it afterwards, otherwise it can submit a job and never learn
+ * what became of it.
  *
  * @param packet - packet to check
  * @param task - task to check

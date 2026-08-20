@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024,2026 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -36,6 +36,7 @@
  * @brief The protocol layer under the public interface
  */
 
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cerrno>
@@ -2396,6 +2397,120 @@ static bool cl_com_is_ip_address_string(const char *resolve_hostname, struct in_
    return true;
 }
 
+/* Derives an IPv4 address from a host name that encodes it.
+ *
+ * The format is walked alongside the name: an ordinary character has to match, "%d"
+ * takes one octet, "%%" matches a percent sign. Both have to run out together, so a
+ * name that merely begins like the format is not accepted.
+ *
+ * The format is deliberately not handed to sscanf. It comes out of a configuration
+ * file, and a function that reads its arguments from a format string would let that
+ * file reach the stack. Walking it here costs a few lines and leaves nothing to
+ * reason about.
+ *
+ * Returns true when the name fits the format and yields four octets.
+ */
+static bool cl_com_address_from_hostname(const char *hostname, const char *format,
+                                         struct in_addr *addr) {
+   const char *name_pos = hostname;
+   const char *format_pos = format;
+   unsigned long octet[4];
+   int count = 0;
+
+   while (*format_pos != '\0') {
+      if (*format_pos == '%' && *(format_pos + 1) == 'd') {
+         if (count >= 4 || isdigit((unsigned char) *name_pos) == 0) {
+            return false;
+         }
+
+         unsigned long value = 0;
+         int digits = 0;
+         while (isdigit((unsigned char) *name_pos) != 0 && digits < 3) {
+            value = value * 10 + (*name_pos - '0');
+            name_pos++;
+            digits++;
+         }
+         if (value > 255) {
+            return false;
+         }
+
+         octet[count++] = value;
+         format_pos += 2;
+      } else if (*format_pos == '%' && *(format_pos + 1) == '%') {
+         if (*name_pos != '%') {
+            return false;
+         }
+         name_pos++;
+         format_pos += 2;
+      } else {
+         if (*name_pos != *format_pos) {
+            return false;
+         }
+         name_pos++;
+         format_pos++;
+      }
+   }
+
+   if (*name_pos != '\0' || count != 4) {
+      return false;
+   }
+
+   addr->s_addr = htonl((octet[0] << 24) | (octet[1] << 16) | (octet[2] << 8) | octet[3]);
+   return true;
+}
+
+/* Builds a hostent for a name and address that were never looked up.
+ *
+ * A caller asking for a hostent gets one whether the answer came from a name service
+ * or from the format, so taking the shortcut stays invisible to it.
+ *
+ * The struct is assembled on the stack and handed to sge_copy_hostent(), which makes
+ * the allocation match what sge_free_hostent() expects without repeating it here.
+ *
+ * Returns a hostent the caller owns, or nullptr.
+ */
+static struct hostent *cl_com_make_hostent(const char *name, const struct in_addr *addr) {
+   struct in_addr addr_copy = *addr;
+   char *addr_list[2] = {(char *) &addr_copy, nullptr};
+   char *aliases[1] = {nullptr};
+   struct hostent he{};
+
+   he.h_name = (char *) name;
+   he.h_aliases = aliases;
+   he.h_addrtype = AF_INET;
+   he.h_length = sizeof(struct in_addr);
+   he.h_addr_list = addr_list;
+
+   return sge_copy_hostent(&he);
+}
+
+/* Builds a host name from an address, the way back from cl_com_address_from_hostname().
+ *
+ * The octets are put into the format in the order they appear, so a name built here is
+ * a name that function accepts again.
+ *
+ * Returns a string the caller owns, or nullptr when the format cannot be filled.
+ */
+static char *cl_com_hostname_from_address(const struct in_addr *addr, const char *format) {
+   const unsigned long host_order = ntohl(addr->s_addr);
+
+   // every "%d" grows to at most three characters, a doubled percent shrinks to one
+   const size_t size = strlen(format) + 4 + 1;
+   char *name = (char *) sge_malloc(size);
+   if (name == nullptr) {
+      return nullptr;
+   }
+
+   /* The format is a printf format holding exactly four "%d" and no other conversion.
+      That is checked by sge_hostname_format_valid() wherever a format is taken in,
+      from the bootstrap file and from the environment alike - an unchecked format
+      here would decide what snprintf() reads. */
+   snprintf(name, size, format, (int) ((host_order >> 24) & 0xff), (int) ((host_order >> 16) & 0xff),
+            (int) ((host_order >> 8) & 0xff), (int) (host_order & 0xff));
+
+   return name;
+}
+
 /** @brief Resolve a host name, through the cache
  *
  * Resolution is on the path of every connection, so both successes and
@@ -2454,6 +2569,37 @@ int cl_com_cached_gethostbyname(const char *unresolved_host, char **unique_hostn
           *
           * Reason: Can't assume any IP addr or alias names
           */
+         return CL_RETVAL_OK;
+      }
+   }
+
+   /* A client whose name carries its address does not need to be looked up, which is
+    * the point of the format: the names in question are not in any name service. The
+    * name is kept as it was announced, so everything downstream sees the client by
+    * the identity it gave. */
+   if ((help = (char *) cl_commlib_get_address_from_hostname()) != nullptr) {
+      struct in_addr derived_addr{};
+
+      if (cl_com_address_from_hostname(unresolved_host, help, &derived_addr)) {
+         CL_LOG_STR(CL_LOG_INFO, "address taken from host name:", unresolved_host);
+
+         *unique_hostname = strdup(unresolved_host);
+         if (*unique_hostname == nullptr) {
+            return CL_RETVAL_MALLOC;
+         }
+
+         if (copy_addr != nullptr) {
+            copy_addr->s_addr = derived_addr.s_addr;
+         }
+
+         if (he_copy != nullptr) {
+            *he_copy = cl_com_make_hostent(unresolved_host, &derived_addr);
+            if (*he_copy == nullptr) {
+               sge_free(unique_hostname);
+               return CL_RETVAL_MALLOC;
+            }
+         }
+
          return CL_RETVAL_OK;
       }
    }
@@ -3038,8 +3184,8 @@ static int cl_com_get_ip_string(struct in_addr *addr, char **ipstr) {
  * @param system_error_val receives `errno`, may be nullptr
  * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
  */
-int cl_com_cached_gethostbyaddr(struct in_addr *addr, char **unique_hostname, struct hostent **he_copy,
-                                int *system_error_val) {
+static int cl_com_cached_gethostbyaddr_resolve(struct in_addr *addr, char **unique_hostname,
+                                               struct hostent **he_copy, int *system_error_val) {
    cl_host_list_elem_t *elem = nullptr;
    cl_com_host_spec_t *elem_host = nullptr;
    cl_host_list_data_t *ldata = nullptr;
@@ -3248,6 +3394,58 @@ int cl_com_cached_gethostbyaddr(struct in_addr *addr, char **unique_hostname, st
    }
    return CL_RETVAL_OK;
 }
+
+/* Resolves an address, and only if that does not work builds a name from the format.
+ *
+ * The format cannot be tried first here. In the other direction a name can be held
+ * against the format and either fits it or does not, but every address fits: nothing
+ * about 192.168.125.22 says whether it belongs to a host the name service knows or to
+ * a client named after its address. Building a name for every address would rename
+ * every host in the cluster and none of them would match what they announce.
+ *
+ * As a fallback it is unambiguous. An address the name service can resolve keeps the
+ * name it has; only an address nothing knows about is given the name the format makes
+ * of it, which is exactly the case the format exists for.
+ */
+int cl_com_cached_gethostbyaddr(struct in_addr *addr, char **unique_hostname, struct hostent **he_copy,
+                                int *system_error_val) {
+   int ret = cl_com_cached_gethostbyaddr_resolve(addr, unique_hostname, he_copy, system_error_val);
+   if (ret == CL_RETVAL_OK) {
+      return ret;
+   }
+
+   const char *format = cl_commlib_get_address_from_hostname();
+   if (format == nullptr) {
+      return ret;
+   }
+
+   /* the step above reports a failure, whatever it may have allocated goes first */
+   if (unique_hostname != nullptr && *unique_hostname != nullptr) {
+      sge_free(unique_hostname);
+   }
+   if (he_copy != nullptr && *he_copy != nullptr) {
+      sge_free_hostent(he_copy);
+   }
+
+   char *built_name = cl_com_hostname_from_address(addr, format);
+   if (built_name == nullptr) {
+      return ret;
+   }
+
+   CL_LOG_STR(CL_LOG_INFO, "address does not resolve, name built from it:", built_name);
+   *unique_hostname = built_name;
+
+   if (he_copy != nullptr) {
+      *he_copy = cl_com_make_hostent(built_name, addr);
+      if (*he_copy == nullptr) {
+         sge_free(unique_hostname);
+         return CL_RETVAL_MALLOC;
+      }
+   }
+
+   return CL_RETVAL_OK;
+}
+
 
 #if CL_DO_COMMUNICATION_DEBUG
 int cl_com_print_host_info(cl_com_hostent_t *hostent_p ) {
@@ -4016,8 +4214,20 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
 
          cl_com_free_cm_message(&cm_message);
 
-         /* check if remote connection matches resolved client host name */
+         /* Check if remote connection matches resolved client host name.
+          *
+          * trust_client_hostname takes the name the client announced and asks nothing
+          * further of it. What is given up is this check and only this check: the
+          * name is no longer held against the host the connection address resolves
+          * to. Where a client reaches the master through address translation the two
+          * can never agree - the address belongs to whatever forwarded the
+          * connection, the name to the client behind it.
+          *
+          * The rdata check further up is a different question and stays as it is. It
+          * asks whether the announced name resolves to itself, which says nothing
+          * about where the connection came from. */
          if (connection->crm_state == CL_CRM_CS_UNDEFINED &&
+             !cl_commlib_get_global_param(CL_COMMLIB_TRUST_CLIENT_HOSTNAME) &&
              cl_com_compare_hosts(connection->remote->comp_host, connection->client_host_name) != CL_RETVAL_OK) {
             int string_size = 1;
             CL_LOG(CL_LOG_ERROR, "hostname address resolving error (IP based)");

@@ -640,6 +640,17 @@ UpOrDowngradeTo902000() {
          RemoveLineWithMatch "${bootstrap_file}" '^job_spooling[[:space:]]' ""
          LogIt "I" "Removed the obsolete job_spooling attribute from the bootstrap file"
       fi
+
+      # CS-2609: communication_params is new in 9.2 and the installation writes it
+      # for a new cluster, so an upgraded one gets it here. Only when it is not
+      # there yet - an operator who has already set
+      # trust_client_hostname by hand must keep that value, which is why this does
+      # not use ReplaceOrAddLine unconditionally.
+      communication_params=$(GetAttrValue "${bootstrap_file}" "communication_params")
+      if [ -z "$communication_params" ]; then
+         ReplaceOrAddLine "${bootstrap_file}" 'communication_params.*' "communication_params    none"
+         LogIt "I" "Added communication_params to the bootstrap file"
+      fi
    else
       LogIt "E" "Downgrade to 9.2.x not supported"
       return 1

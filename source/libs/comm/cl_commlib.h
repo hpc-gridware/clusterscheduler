@@ -288,6 +288,10 @@ bool cl_commlib_get_global_param(cl_global_settings_params_t parameter);
 
 int cl_commlib_set_global_param(cl_global_settings_params_t parameter, bool value);
 
+int cl_commlib_set_address_from_hostname(const char *format);
+
+const char *cl_commlib_get_address_from_hostname();
+
 int
 cl_commlib_get_last_message_time(cl_com_handle_t *handle, const char *un_resolved_hostname, const char *component_name,
                                  unsigned long component_id, unsigned long *msg_time);

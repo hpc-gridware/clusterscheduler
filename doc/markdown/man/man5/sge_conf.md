@@ -533,6 +533,23 @@ exec "$SHEPHERD" "$@"
 
 A list of additional parameters can be passed to the xxQS_NAMExx qmaster. The following values are recognized:
 
+***ALLOW_ANY_SUBMITHOSTS***
+
+If this parameter is set, any host which can reach the master daemon counts as a submit host, whether or not it is
+in the submit host list. Default is *false*.
+
+It is meant for clients whose host cannot be added to the list because it is not known in advance, for example a
+container which is started for one job and carries a name and an address nobody else has seen before.
+
+Such a host is granted what a submit host is granted and no more: it may submit jobs and advance reservations, read
+cluster state, and change the state of a queue or a job with qmod(1) where the user is allowed to. Requests which
+ask for an administrative host are refused as before, and what a user may do is unchanged - the request is still
+made in the name of a user, and that user still has to be allowed to do it.
+
+What is given up is the host as a place to say no. Every host which can reach the master daemon is then as good as
+a submit host, so enable this only where the network reaching the daemons is trusted, or where requests are
+authenticated by other means (see *security_mode* in xxqs_name_sxx_bootstrap(5)).
+
 ***DISABLE_SECONDARY_DS***
 
 Do not use this parameter. It is for internal use only. Default is *false*.

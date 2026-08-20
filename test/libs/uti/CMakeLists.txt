@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2024-2025 HPC-Gridware GmbH
+#  Copyright 2024-2026 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -24,6 +24,13 @@ add_executable(test_uti_bitfield test_uti_bitfield.cc)
 target_include_directories(test_uti_bitfield PRIVATE "./")
 target_link_libraries(test_uti_bitfield PRIVATE uti commlists ${SGE_LIBS})
 add_test(NAME test_uti_bitfield COMMAND test_uti_bitfield)
+
+# No add_test() for test_uti_bootstrap: it reads the bootstrap file of the installation
+# SGE_ROOT and SGE_CELL point at, so it needs a caller that prepares one. The testsuite
+# check drives it with a directory it built itself.
+add_executable(test_uti_bootstrap test_uti_bootstrap.cc)
+target_include_directories(test_uti_bootstrap PRIVATE "./")
+target_link_libraries(test_uti_bootstrap PRIVATE uti commlists ${SGE_LIBS})
 
 add_executable(test_uti_deadlock test_uti_lock_main.cc test_uti_deadlock.cc)
 target_include_directories(test_uti_deadlock PRIVATE "./")
@@ -153,6 +160,7 @@ endif ()
 
 if (INSTALL_SGE_TEST)
    install(TARGETS test_uti_bitfield DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_uti_bootstrap DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_uti_deadlock DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_uti_dstring DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_uti_Encoder DESTINATION testbin/${SGE_ARCH})
