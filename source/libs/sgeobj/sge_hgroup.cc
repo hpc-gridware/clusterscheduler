@@ -161,7 +161,10 @@ bool hgroup_list_update_caches(lList *master_hgroup_list, lList **answer_list) {
  *
  * @return true if hgroup_cache_contains_host() may be used on this element
  *
- * @note MT-NOTE: hgroup_has_host_cache() is MT safe
+ * @note MT-NOTE: hgroup_has_host_cache() is MT safe -- but it reads the master list of the
+ *       calling thread's data store, whose elements the mirror thread frees while
+ *       merging events (CS-2633). The caller must hold that store's READ lock;
+ *       on the GDI permission path that is LOCK_LISTENER.
  *
  *       HGRP_cached_hosts and HGRP_cache_version are a UNIT. A GDI "what" filter
  *       that selects the version without the list would present an empty cache as
@@ -190,7 +193,10 @@ bool hgroup_has_host_cache(const lListElem *hgroup) {
  *
  * @return true if the host is in the group, directly or through nesting
  *
- * @note MT-NOTE: hgroup_cache_contains_host() is MT safe
+ * @note MT-NOTE: hgroup_cache_contains_host() is MT safe -- but it reads the master list of the
+ *       calling thread's data store, whose elements the mirror thread frees while
+ *       merging events (CS-2633). The caller must hold that store's READ lock;
+ *       on the GDI permission path that is LOCK_LISTENER.
  *
  *       Only meaningful when hgroup_has_host_cache() is true; on an element without
  *       a cache it reports false, which is the WRONG answer rather than a safe one.
@@ -221,7 +227,10 @@ bool hgroup_cache_contains_host(const lListElem *hgroup, const char *hostname) {
  *
  * @return true if the host is in the group, directly or transitively
  *
- * @note MT-NOTE: hgroup_contains_host() is MT safe
+ * @note MT-NOTE: hgroup_contains_host() is MT safe -- but it reads the master list of the
+ *       calling thread's data store, whose elements the mirror thread frees while
+ *       merging events (CS-2633). The caller must hold that store's READ lock;
+ *       on the GDI permission path that is LOCK_LISTENER.
  *
  *       The fallback allocates and walks; it is not the hot path and must not
  *       become one. If a caller finds itself here on every request, the cache is

@@ -271,9 +271,24 @@ sge_c_gdi_process_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
 }
 
 /** @brief May this client execute this request at all?
+ *
  * @param packet the client request
  * @param task the GDI task being answered
  * @return true when the request is permitted
+ *
+ * @note MT-NOTE: sge_c_gdi_check_execution_permission() is NOT MT safe on its own.
+ *
+ *       CS-2633. The checks below resolve the reserved manager/operator usersets
+ *       and the reserved @admin_hosts/@submit_hosts host groups in the data store
+ *       of the calling thread. The mirror thread of that store removes and frees
+ *       elements while merging events, so THE CALLER MUST HOLD THE READ LOCK of
+ *       the store it is bound to - LOCK_LISTENER in the listener threads.
+ *
+ *       Do not move the lock in here. The helpers this dispatches to are also
+ *       reached from sge_c_gdi_get_in_listener(), which already runs under that
+ *       lock. LOCK_LISTENER is a FIFO reader/writer lock (sge_lock_fifo.cc) in
+ *       which a reader queues as soon as a writer is waiting, so acquiring it
+ *       recursively deadlocks the thread against the mirror.
  */
 bool
 sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {

@@ -131,7 +131,10 @@ host_list_locate(const lList *host_list, const char *hostname) {
  *
  * @return true if the host is a member, directly or through nesting
  *
- * @note MT-NOTE: host_is_in_reserved_hostgroup() is MT safe
+ * @note MT-NOTE: host_is_in_reserved_hostgroup() is MT safe -- but it reads the master list of the
+ *       calling thread's data store, whose elements the mirror thread frees while
+ *       merging events (CS-2633). The caller must hold that store's READ lock;
+ *       on the GDI permission path that is LOCK_LISTENER.
  *
  *       A missing group answers false. The group cannot be deleted (chunk 1
  *       reserves the names) and setup_qmaster.cc re-seeds it on every startup,
@@ -167,7 +170,10 @@ host_is_in_reserved_hostgroup(const char *hostname, const char *group_name) {
  *
  * @return true if the host may issue admin requests
  *
- * @note MT-NOTE: host_is_admin_host() is MT safe
+ * @note MT-NOTE: host_is_admin_host() is MT safe -- but it reads the master list of the
+ *       calling thread's data store, whose elements the mirror thread frees while
+ *       merging events (CS-2633). The caller must hold that store's READ lock;
+ *       on the GDI permission path that is LOCK_LISTENER.
  *
  *       Backed by the reserved "@admin_hosts" host group since chunk 2b. AH_LIST
  *       is no longer consulted and is no longer written: qconf -ah/-dh maintain
@@ -191,7 +197,10 @@ bool host_is_admin_host(const char *hostname) {
  *
  * @return true if the host may submit
  *
- * @note MT-NOTE: host_is_submit_host() is MT safe
+ * @note MT-NOTE: host_is_submit_host() is MT safe -- but it reads the master list of the
+ *       calling thread's data store, whose elements the mirror thread frees while
+ *       merging events (CS-2633). The caller must hold that store's READ lock;
+ *       on the GDI permission path that is LOCK_LISTENER.
  */
 bool host_is_submit_host(const char *hostname) {
    return mconf_get_allow_any_submithosts() || host_is_configured_submit_host(hostname);

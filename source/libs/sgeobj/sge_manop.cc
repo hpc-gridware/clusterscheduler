@@ -171,6 +171,11 @@ user_is_deadline_user(const ocs::gdi::Packet *packet, const lList *master_userse
  *
  * @param packet  GDI packet containing the ownership information of the request creator
  * @return        True if packet initiator was a manager.
+ *
+ * @note MT-NOTE: manop_is_manager() is MT safe -- but it reads the userset master
+ *       list of the calling thread's data store, whose elements the mirror thread
+ *       frees while merging events (CS-2633). The caller must hold that store's
+ *       READ lock; on the GDI permission path that is LOCK_LISTENER.
  */
 bool
 manop_is_manager(const ocs::gdi::Packet *packet) {
@@ -188,6 +193,9 @@ manop_is_manager(const ocs::gdi::Packet *packet) {
  *
  * @param packet  GDI packet containing the ownership information of the request creator
  * @return        True if packet initiator was an operator.
+ *
+ * @note MT-NOTE: manop_is_operator() is MT safe -- see manop_is_manager() above,
+ *       same requirement on the caller (CS-2633).
  */
 bool
 manop_is_operator(const ocs::gdi::Packet *packet) {
