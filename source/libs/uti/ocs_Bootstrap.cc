@@ -23,6 +23,7 @@
 #include <bitset>
 #include <cstring>
 #include <mutex>
+#include <string_view>
 #include <vector>
 
 #include "basis_types.h"
@@ -30,6 +31,7 @@
 #include "uti/ocs_Bootstrap.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_dstring.h"
+#include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
@@ -121,6 +123,8 @@ int ocs::Bootstrap::reader_thread_count = 0;
 int ocs::Bootstrap::scheduler_thread_count = 0;
 bool ocs::Bootstrap::job_spooling = false;
 bool ocs::Bootstrap::ignore_fqdn = false;
+char *ocs::Bootstrap::address_from_hostname = nullptr;
+bool ocs::Bootstrap::trust_client_hostname = false;
 
 const char*
 ocs::Bootstrap::get_name_for_sec_mode(bs_sec_mode_t mode) noexcept {
@@ -253,6 +257,73 @@ ocs::Bootstrap::set_security_params(const char *new_security_params) {
    sge_free_saved_vars(context);
 }
 
+/**
+ * Matches one comma separated parameter against a "<key>=" prefix and hands back
+ * the value belonging to it.
+ *
+ * The key is written once and its length is known at compile time. A match also
+ * settles where the value starts: the prefix ends in the separator, so what follows
+ * it is the value and no second search is needed.
+ */
+static bool
+param_matches(const char *param, const std::string_view key, const char **value) {
+   if (strncasecmp(param, key.data(), key.size()) != 0) {
+      return false;
+   }
+
+   *value = param + key.size();
+   return true;
+}
+
+/**
+ * Reads the comma separated communication_params of the bootstrap file.
+ *
+ * Both parameters relax a check the communication library performs on incoming
+ * connections, so both default to off and only take effect where an administrator
+ * has asked for them.
+ *
+ * An unknown parameter is reported rather than passed over quietly. A setting that
+ * is accepted without complaint but has no effect is hard to tell apart from one
+ * that works, and costs whoever wrote it a long detour.
+ */
+void
+ocs::Bootstrap::set_communication_params(const char *new_communication_params) {
+   DENTER(TOP_LAYER);
+
+   // "none" is how this file says that nothing is configured - default_domain and
+   // spooling_lib use it the same way, and an administrator writing it here should not
+   // be told that "none" is a parameter nobody knows
+   if (new_communication_params == nullptr ||
+       SGE_STRCASECMP(new_communication_params, NONE_STR) == 0) {
+      DRETURN_VOID;
+   }
+
+   saved_vars_s *context = nullptr;
+   const char *param = sge_strtok_r(new_communication_params, ",", &context);
+   while (param != nullptr) {
+      const char *str_value;
+
+      if (param_matches(param, "address_from_hostname=", &str_value)) {
+         if (sge_hostname_format_valid(str_value)) {
+            address_from_hostname = sge_strdup(address_from_hostname, str_value);
+         } else {
+            WARNING(MSG_UTI_INVALIDADDRESSFORMAT_S, str_value);
+         }
+      } else if (param_matches(param, "trust_client_hostname=", &str_value)) {
+         u_long32 value;
+         parse_ulong_val(nullptr, &value, TYPE_BOO, str_value, nullptr, 0);
+         trust_client_hostname = value != 0;
+      } else {
+         WARNING(MSG_UTI_UNKNOWNCOMMUNICATIONPARAM_S, param);
+      }
+      // next param
+      param = sge_strtok_r(nullptr, ",", &context);
+   }
+   sge_free_saved_vars(context);
+
+   DRETURN_VOID;
+}
+
 void
 ocs::Bootstrap::set_thread_count(int &thread_count, int new_thread_count, int default_thread_count, int max_thread_count) {
    if (new_thread_count <= 0) {
@@ -342,13 +413,15 @@ ocs::Bootstrap::log_all_parameter() {
    DPRINTF("   worker_threads            >%d<\n", worker_thread_count);
    DPRINTF("   reader_threads            >%d<\n", reader_thread_count);
    DPRINTF("   scheduler_threads         >%d<\n", scheduler_thread_count);
+   DPRINTF("   address_from_hostname     >%s<\n", address_from_hostname);
+   DPRINTF("   trust_client_hostname     >%s<\n", trust_client_hostname ? "true" : "false");
 
    DRETURN_VOID;
 }
 
 void
 ocs::Bootstrap::init_from_file() {
-#define NUM_BOOTSTRAP 15
+#define NUM_BOOTSTRAP 16
 #define NUM_REQ_BOOTSTRAP 9
    DENTER(TOP_LAYER);
    bootstrap_entry_t name[NUM_BOOTSTRAP] = {
@@ -369,6 +442,8 @@ ocs::Bootstrap::init_from_file() {
            {"worker_threads",    false},
            {"reader_threads",    false},
            {"scheduler_threads", false},
+
+           {"communication_params", false},
    };
    char value[NUM_BOOTSTRAP][4097];
    dstring error_dstring = DSTRING_INIT;
@@ -426,6 +501,8 @@ ocs::Bootstrap::init_from_file() {
       // entry and the upgrade adds it.
       parse_ulong_val(nullptr, &val, TYPE_INT, value[14], nullptr, 0);
       set_scheduler_thread_count((int) val);
+
+      set_communication_params(value[15]);
    }
 
    log_all_parameter();
@@ -544,4 +621,24 @@ int
 ocs::Bootstrap::get_scheduler_thread_count() {
    ensure_initialized();
    return scheduler_thread_count;
+}
+
+/**
+ * Format from which the address of a client is derived instead of resolving its
+ * host name, or nullptr when no format is configured and names are resolved as usual.
+ */
+const char *
+ocs::Bootstrap::get_address_from_hostname() {
+   ensure_initialized();
+   return address_from_hostname;
+}
+
+/**
+ * Whether the host name a client announces is accepted as its identity without
+ * being checked against the address the connection arrives from.
+ */
+bool
+ocs::Bootstrap::get_trust_client_hostname() {
+   ensure_initialized();
+   return trust_client_hostname;
 }

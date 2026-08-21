@@ -961,3 +961,60 @@ int sge_hostmatch(const char *h1, const char *h2) {
 
    DRETURN(cmp);
 }
+
+/****** uti/host/sge_hostname_format_valid() **********************************
+*  NAME
+*     sge_hostname_format_valid() -- is a host name format usable?
+*
+*  SYNOPSIS
+*     bool sge_hostname_format_valid(const char *format)
+*
+*  FUNCTION
+*     Checks a format which an IPv4 address is taken out of a host name with,
+*     and built back into one, e.g. "ip-%d-%d-%d-%d".
+*
+*     A format has to hold exactly four "%d", one per octet: an address needs
+*     every one of them, so any other number is refused rather than half
+*     applied. A doubled percent stands for a literal one.
+*
+*     No other conversion is accepted. The format reaches this code from a
+*     bootstrap file and from an environment variable, and it is handed to
+*     snprintf() to build a name. A conversion nobody accounted for would let
+*     either of those decide what snprintf() reads.
+*
+*  INPUTS
+*     const char *format - the format to check
+*
+*  RESULT
+*     bool - true if the format can be used
+*
+*  NOTES
+*     MT-NOTE: sge_hostname_format_valid() is MT safe
+******************************************************************************/
+bool sge_hostname_format_valid(const char *format) {
+   int count = 0;
+
+   if (format == nullptr) {
+      return false;
+   }
+
+   for (const char *pos = format; *pos != '\0'; pos++) {
+      if (*pos != '%') {
+         continue;
+      }
+
+      switch (*(pos + 1)) {
+         case 'd':
+            count++;
+            pos++;
+            break;
+         case '%':
+            pos++;
+            break;
+         default:
+            return false;
+      }
+   }
+
+   return count == 4;
+}

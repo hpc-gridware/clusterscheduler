@@ -476,6 +476,24 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
       DRETURN(cl_ret);
    }
 
+   /* hand the communication_params of the bootstrap file to the commlib - both relax a
+      check on incoming connections and are off unless an administrator asked for them */
+   cl_ret = cl_commlib_set_address_from_hostname(Bootstrap::get_address_from_hostname());
+   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              "cl_commlib_set_address_from_hostname failed: %s",
+                              cl_get_error_text(cl_ret));
+      DRETURN(cl_ret);
+   }
+
+   cl_ret = cl_commlib_set_global_param(CL_COMMLIB_TRUST_CLIENT_HOSTNAME,
+                                        Bootstrap::get_trust_client_hostname());
+   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              "cl_commlib_set_global_param failed: %s", cl_get_error_text(cl_ret));
+      DRETURN(cl_ret);
+   }
+
    /*
    ** reresolve qualified hostname with use of host aliases
    ** (corresponds to reresolve_me_qualified_hostname)
