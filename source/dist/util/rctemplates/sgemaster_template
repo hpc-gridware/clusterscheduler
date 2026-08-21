@@ -351,8 +351,38 @@ CheckRunningQmaster()
    # ensure that the test for a running qmaster does not take too long
    # by limiting the total time and numbers the connection test is repeated
    # we also require that the qmaster created a PID file before returning
-   
-   while [ $retries -le 30 ]; do
+
+   # How long to wait for the qmaster to answer, in seconds. 60 is what a
+   # healthy cluster needs many times over, and a short wait is what makes a
+   # genuinely failed start visible quickly - so this stays the default.
+   #
+   # SGE_QMASTER_STARTUP_TIMEOUT raises it for the cases where the qmaster is
+   # legitimately slow to come up and 60 seconds is not a diagnosis but a false
+   # alarm: a qmaster built with a sanitizer (five to fifteen times slower, see
+   # ENABLE_TSAN), a heavily loaded or very large installation, or a host whose
+   # name resolution is slow enough to eat most of the budget. Without it such a
+   # start is reported as "sge_qmaster didn't start!" while the daemon comes up
+   # moments later - and an installation aborts on a qmaster that is running.
+   #
+   # Deliberately an environment variable and not an installer question: it is
+   # needed by the automated testsuite and in rare environments, not by an
+   # ordinary installation, and it must apply to every later start of this
+   # script as well, not only to the one during installation.
+   startup_timeout=60
+   if [ -n "$SGE_QMASTER_STARTUP_TIMEOUT" ]; then
+      # anything that is not a positive number keeps the default rather than
+      # turning the wait into an accidental infinite or zero one
+      if echo "$SGE_QMASTER_STARTUP_TIMEOUT" | grep '^[1-9][0-9]*$' > /dev/null 2>&1; then
+         startup_timeout=$SGE_QMASTER_STARTUP_TIMEOUT
+      else
+         echo "ignoring invalid SGE_QMASTER_STARTUP_TIMEOUT=\"$SGE_QMASTER_STARTUP_TIMEOUT\", using $startup_timeout"
+      fi
+   fi
+   # the loop sleeps 2 seconds per turn, so derive the retry count from the
+   # timeout instead of leaving the two to drift apart
+   max_retries=`expr $startup_timeout / 2`
+
+   while [ $retries -le $max_retries ]; do
       $bin_dir/qping -info $masterhost $ping_port qmaster 1 > /dev/null 2>&1
       if [ $? -eq 0 ]; then
          running=true
@@ -363,7 +393,7 @@ CheckRunningQmaster()
             start=$now
          fi
          elapsed=`expr $now - $start`
-         if [ $elapsed -gt 60 ]; then
+         if [ $elapsed -gt $startup_timeout ]; then
             if [ $retries -eq 0 ]; then
                qping_timeout=true
             fi
