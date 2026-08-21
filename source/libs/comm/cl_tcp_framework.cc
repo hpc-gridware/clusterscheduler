@@ -1011,6 +1011,12 @@ static int cl_com_tcp_connection_request_handler_setup_finalize(cl_com_connectio
    if (listen(sockfd, cl_listen_backlog) != 0) {
       shutdown(sockfd, 2);
       close(sockfd);
+      /* Give the number up here, not only on the success path below. The caller
+       * runs this out of the poll preparation and reaches it again whenever
+       * sockfd is still -1 and pre_sockfd is not, so a descriptor left behind in
+       * pre_sockfd is closed once per loop from now on - and after the first one
+       * the number belongs to whoever opened next. */
+      private_com->pre_sockfd = -1;
       CL_LOG(CL_LOG_ERROR, "listen error");
       return CL_RETVAL_LISTEN_ERROR;
    }

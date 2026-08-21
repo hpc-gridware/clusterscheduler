@@ -3446,6 +3446,10 @@ static int cl_com_ssl_connection_request_handler_setup_finalize(cl_com_connectio
    if (listen(sockfd, cl_listen_backlog) != 0) {
       shutdown(sockfd, 2);
       close(sockfd);
+      /* See the identical spot in cl_tcp_framework.cc: without this the closed
+       * number stays in pre_sockfd and is closed again on every following pass
+       * of the poll preparation. */
+      com_private->pre_sockfd = -1;
       CL_LOG(CL_LOG_ERROR,"listen error");
       return CL_RETVAL_LISTEN_ERROR;
    }
