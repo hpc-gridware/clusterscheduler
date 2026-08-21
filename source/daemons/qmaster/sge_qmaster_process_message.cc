@@ -413,20 +413,39 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
 
 #if defined(WITH_EXTENSIONS)
    // handle GDI request limits but only if request is not triggered by a manager
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   if (local_ret && !manop_is_manager(packet, master_manager_list)) {
-      ocs::RequestLimits& limits_instance = ocs::RequestLimits::get_instance();
-      limits_instance.parse_from_config(&packet->tasks[0]->answer_list);
+   if (local_ret) {
+      // CS-2633: the manager list and the lists will_exceed_limit() reads live in
+      // the listener data store, whose elements the mirror thread removes and frees
+      // while merging events. One read lock around the whole block: one acquisition
+      // of the FIFO lock, and both decisions are taken against the same snapshot.
+      //
+      // The lock has to be taken BEFORE the master list pointer is fetched, not
+      // merely before it is used - the pointer itself is read out of the store.
+      //
+      // parse_from_config() runs inside it although it does not touch the data
+      // store. What it costs while the lock is held is one LOCK_MASTER_CONF read
+      // plus a strdup (mconf_get_gdi_request_limits()), and a re-parse of the
+      // limit string only when the configuration actually changed.
+      // The order LISTENER -> MASTER_CONF is safe: LOCK_LISTENER is acquired in
+      // this file alone, so no configuration path can ever take the two the other
+      // way round.
+      SGE_LOCK(LOCK_LISTENER, LOCK_READ);
+      const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+      if (!manop_is_manager(packet, master_manager_list)) {
+         ocs::RequestLimits& limits_instance = ocs::RequestLimits::get_instance();
+         limits_instance.parse_from_config(&packet->tasks[0]->answer_list);
 
-      for (auto *task : packet->tasks) {
-         if (limits_instance.will_exceed_limit(packet, task, &packet->tasks[0]->answer_list)) {
-            // answer was written by will_exceed_limit()
-            local_ret = false;
+         for (auto *task : packet->tasks) {
+            if (limits_instance.will_exceed_limit(packet, task, &packet->tasks[0]->answer_list)) {
+               // answer was written by will_exceed_limit()
+               local_ret = false;
 
-            // we can stop here. one gdi task is enough to exceed the limit to reject a multi request.
-            break;
+               // we can stop here. one gdi task is enough to exceed the limit to reject a multi request.
+               break;
+            }
          }
       }
+      SGE_UNLOCK(LOCK_LISTENER, LOCK_READ);
    }
 #endif
 
@@ -434,12 +453,29 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
    //    - manager/operator permissions
    //    - admin/submit/exec host
    if (local_ret) {
+      // CS-2633: the checks resolve the manager and operator lists and the admin
+      // and submit host lists in the listener data store, whose elements the mirror
+      // thread frees on every merge. This is the permission path, so an unguarded
+      // read here does not only risk a crash, it risks an authorisation decision
+      // taken on freed memory.
+      //
+      // Taken once around the whole loop rather than per task: one acquisition of
+      // the FIFO lock instead of one per task, and every task of a packet then
+      // decides against the same snapshot.
+      //
+      // It has to be taken HERE and not inside sge_c_gdi_check_execution_permission():
+      // that function's helpers are also reached from sge_c_gdi_get_in_listener(),
+      // which already runs under this lock further below. LOCK_LISTENER is a FIFO
+      // lock (sge_lock_fifo.cc) where a reader queues as soon as a writer waits, so
+      // taking it recursively deadlocks against the mirror thread.
+      SGE_LOCK(LOCK_LISTENER, LOCK_READ);
       for (auto *task : packet->tasks) {
          local_ret = sge_c_gdi_check_execution_permission(packet, task);
          if (!local_ret) {
             break;
          }
       }
+      SGE_UNLOCK(LOCK_LISTENER, LOCK_READ);
    }
 
    // handle errors that might have happened above and then exit
@@ -472,7 +508,16 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
 
    // execute request based on the preferred data store type
    // but do this only is secondary DS are not disabled
+   //
+   // CS-2633: get_gdi_executor_ds() fetches the manager list and asks
+   // manop_is_manager(), so this routing decision reads the listener data store
+   // just like the permission checks above and needs the same guard. Released
+   // again immediately: the LISTENER branch below takes it for the execution
+   // itself, and the READER/GLOBAL branches must not hold it while they hand the
+   // packet to a queue.
+   SGE_LOCK(LOCK_LISTENER, LOCK_READ);
    ocs::DataStore::Id ds_type = get_gdi_executor_ds(packet);
+   SGE_UNLOCK(LOCK_LISTENER, LOCK_READ);
    bool ds_enabled = !mconf_get_disable_secondary_ds();
    if (ds_enabled && ds_type == ocs::DataStore::LISTENER) {
       // prepare packbuffer for the clients answer
