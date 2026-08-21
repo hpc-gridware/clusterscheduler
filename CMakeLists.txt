@@ -125,6 +125,17 @@ endif()
 option(ENABLE_LTO "Enable to add Link Time Optimization in Release Build." ON)
 option(ENABLE_SANITIZERS "Enable address, leak and undefined behaviour sanitizer" OFF)
 
+# CS-2639: ThreadSanitizer, to find data races between the qmaster threads.
+# Deliberately a separate option instead of another -fsanitize in the block
+# above: TSAN and ASAN instrument the same accesses and cannot be linked into
+# one binary, so a defect that needs both tools needs two builds.
+option(ENABLE_TSAN "Enable the thread sanitizer (mutually exclusive with ENABLE_SANITIZERS)" OFF)
+if (ENABLE_SANITIZERS AND ENABLE_TSAN)
+   message(FATAL_ERROR "ENABLE_SANITIZERS and ENABLE_TSAN cannot be used together. "
+         "The thread sanitizer cannot be combined with the address sanitizer. "
+         "Configure two build directories, one with each option.")
+endif ()
+
 
 set(PROJECT_3RDPARTY_HOME
         "$ENV{HOME}/3rd_party"

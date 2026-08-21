@@ -142,6 +142,24 @@ function(architecture_specific_settings)
          add_link_options("-fsanitize=address")
       endif ()
 
+      # Thread sanitizer (CS-2639)
+      # Separate from the block above because -fsanitize=thread cannot be combined
+      # with -fsanitize=address or -fsanitize=leak; CMakeLists.txt rejects the
+      # combination. Like the sanitizers above it needs jemalloc disabled, because
+      # TSAN can only see the synchronisation it intercepts in the allocator.
+      # A Debug build is required as well: with -O3 the reported stacks are
+      # unusable, and TSAN needs the frame pointers kept below.
+      if (ENABLE_TSAN AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+         message(STATUS "Enabling thread sanitizer")
+         set(WITH_JEMALLOC OFF PARENT_SCOPE)
+         add_compile_options("-fno-omit-frame-pointer")
+         add_link_options("-fno-omit-frame-pointer")
+         add_compile_options("-fsanitize=thread")
+         add_link_options("-fsanitize=thread")
+      elseif (ENABLE_TSAN)
+         message(FATAL_ERROR "ENABLE_TSAN requires -DCMAKE_BUILD_TYPE=Debug.")
+      endif ()
+
       # build with systemd?
       # @todo we might want to check the api version, we need at least
       #       - 235: here FreezeUnit and ThawUnit were added (not required, we work around this not being available)
