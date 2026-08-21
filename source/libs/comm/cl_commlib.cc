@@ -256,10 +256,10 @@ static pthread_mutex_t cl_com_external_fd_list_setup_mutex = PTHREAD_MUTEX_INITI
  */
 typedef struct cl_com_global_settings_def {
    bool delayed_listen;   ///< Do not accept connections until the application says it is ready
-   bool trust_client_hostname;
+   bool trust_client_hostname; ///< Accept the host name a client announces, without checking it against its address
 
-   /* format the address of a client is derived from, instead of resolving its host
-      name; nullptr while names are resolved as usual */
+   /** Format the address of a client is derived from, instead of resolving its host
+       name; nullptr while names are resolved as usual */
    char *address_from_hostname;
 } cl_com_global_settings_t;
 
@@ -1086,12 +1086,18 @@ bool cl_commlib_get_global_param(cl_global_settings_params_t parameter) {
    return retval;
 }
 
-/* Sets the format from which a client address is derived instead of resolving the
-   client's host name. A nullptr or empty format restores plain resolving.
-
-   The format belongs to the setup of a component and is meant to be set once, before
-   any connection is handled. The getter hands out the stored string itself, which
-   stays valid as long as no later call replaces it. */
+/** @brief Set the format a client address is derived from
+ *
+ * Sets the format from which a client address is derived instead of resolving the
+ * client's host name. A nullptr or empty format restores plain resolving.
+ *
+ * The format belongs to the setup of a component and is meant to be set once, before
+ * any connection is handled. The getter hands out the stored string itself, which
+ * stays valid as long as no later call replaces it.
+ *
+ * @param format the printf format, or nullptr/empty to resolve names as usual
+ * @return #CL_RETVAL_OK
+ */
 int cl_commlib_set_address_from_hostname(const char *format) {
    pthread_mutex_lock(&cl_com_global_settings_mutex);
    sge_free(&(cl_com_global_settings.address_from_hostname));
@@ -1102,12 +1108,15 @@ int cl_commlib_set_address_from_hostname(const char *format) {
    return CL_RETVAL_OK;
 }
 
-/* Returns the format in effect, or nullptr when host names are resolved as usual.
+/** @brief The format a client address is derived from
  *
  * SGE_ADDRESS_FROM_HOSTNAME wins over the bootstrap file. A client that never reads a
  * bootstrap file can then be pointed at a format, which is what makes the conversion
  * testable on its own, and an installation can be observed with a different format
- * without being reconfigured. */
+ * without being reconfigured.
+ *
+ * @return the format in effect, or nullptr when host names are resolved as usual
+ */
 const char *cl_commlib_get_address_from_hostname() {
    if (cl_commlib_env_address_from_hostname != nullptr) {
       return cl_commlib_env_address_from_hostname;

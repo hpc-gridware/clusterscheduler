@@ -3395,7 +3395,9 @@ static int cl_com_cached_gethostbyaddr_resolve(struct in_addr *addr, char **uniq
    return CL_RETVAL_OK;
 }
 
-/* Resolves an address, and only if that does not work builds a name from the format.
+/** @brief Resolve an address, through the cache, with the name format as fallback
+ *
+ * Resolves an address, and only if that does not work builds a name from the format.
  *
  * The format cannot be tried first here. In the other direction a name can be held
  * against the format and either fits it or does not, but every address fits: nothing
@@ -3406,6 +3408,12 @@ static int cl_com_cached_gethostbyaddr_resolve(struct in_addr *addr, char **uniq
  * As a fallback it is unambiguous. An address the name service can resolve keeps the
  * name it has; only an address nothing knows about is given the name the format makes
  * of it, which is exactly the case the format exists for.
+ *
+ * @param addr the address to resolve
+ * @param unique_hostname receives the canonical name; the caller frees it
+ * @param he_copy receives a copy of the resolver result, may be nullptr
+ * @param system_error_val receives `errno`, may be nullptr
+ * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
  */
 int cl_com_cached_gethostbyaddr(struct in_addr *addr, char **unique_hostname, struct hostent **he_copy,
                                 int *system_error_val) {

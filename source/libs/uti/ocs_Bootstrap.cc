@@ -660,6 +660,8 @@ ocs::Bootstrap::get_scheduler_thread_count() {
 /**
  * Format from which the address of a client is derived instead of resolving its
  * host name, or nullptr when no format is configured and names are resolved as usual.
+ *
+ * @return the configured format, or nullptr when names are resolved as usual
  */
 const char *
 ocs::Bootstrap::get_address_from_hostname() {
@@ -670,6 +672,8 @@ ocs::Bootstrap::get_address_from_hostname() {
 /**
  * Whether the host name a client announces is accepted as its identity without
  * being checked against the address the connection arrives from.
+ *
+ * @return true when the announced host name is trusted
  */
 bool
 ocs::Bootstrap::get_trust_client_hostname() {

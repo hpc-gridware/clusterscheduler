@@ -4548,6 +4548,8 @@ bool mconf_get_enable_forced_qdel_if_unknown() {
  * It grants what a submit host is granted and no more. Requests which ask for an admin
  * host are unaffected, and so is everything which is decided by the user rather than by
  * the host the request came from.
+ *
+ * @return true when any reachable host counts as a submit host
  */
 bool mconf_get_allow_any_submithosts() {
    DENTER(BASIS_LAYER);

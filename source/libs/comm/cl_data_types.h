@@ -90,8 +90,8 @@ typedef enum cl_tcp_connect_def {
 typedef enum cl_global_settings_params_def {
    CL_COMMLIB_DELAYED_LISTEN = 1,  ///< Do not accept connections until the application says it is ready
 
-   /* accept the host name a client announces as its identity, without checking it
-      against the host the connection address resolves to */
+   /** Accept the host name a client announces as its identity, without checking it
+       against the host the connection address resolves to */
    CL_COMMLIB_TRUST_CLIENT_HOSTNAME
 } cl_global_settings_params_t;
 
