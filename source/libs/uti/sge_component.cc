@@ -67,8 +67,23 @@ typedef struct {
    int amount; ///< Number of supplementary groups.
    ocs_grp_elem_t *grp_array; ///< Array containing supplementary group IDs and names.
 
-   std::string unencoded_auth_info;  ///< string for building and caching the auth_info string (not encoded)
-   std::string encoded_auth_info;   ///< cached auth_info (when not using Munge it does never change again - for Munge every request is uniquely encrypted)
+   // CS-2640: pointers, not std::string values, so that sge_component_user_t -
+   // and with it component_ts0_data below - stays trivially destructible and no
+   // module registers an exit-time destructor for it.
+   //
+   // libuti is linked statically into the executable AND into every dlopen'able
+   // library (libspoolb/c/d.so, libdrmaa.so), so each of them carries its own
+   // definition of component_ts0_data. Because the qmaster is linked -rdynamic,
+   // the executable's copy interposes and every module's references resolve to
+   // that one address -- but each module's static initialisation still registers
+   // a __cxa_atexit destructor for it. With a non-trivial destructor the strings
+   // were then destroyed once per loaded module, which is a double free at
+   // shutdown (found by AddressSanitizer).
+   //
+   // Allocated lazily by auth_info_string(), released by
+   // component_ts0_destroy_user(). Only ever touched under component_ts0_data.mutex.
+   std::string *unencoded_auth_info;  ///< string for building and caching the auth_info string (not encoded)
+   std::string *encoded_auth_info;   ///< cached auth_info (when not using Munge it does never change again - for Munge every request is uniquely encrypted)
 } sge_component_user_t;
 
 #define COMPONENT_MUTEX_NAME "component_mutex" ///< name used when logging waits on the mutex
@@ -246,6 +261,25 @@ static void set_username(sge_component_user_t *user, const char *username) {
 }
 
 /**
+ * @brief The auth_info string of a user slot, created on first use.
+ *
+ * See sge_component_user_t: these are pointers so that the enclosing global
+ * has no destructor to be registered - and run - once per loaded module.
+ *
+ * @param[in,out] s the member to return, allocated when still nullptr
+ * @return reference to the string
+ *
+ * @note the caller needs to hold the component mutex
+ */
+static std::string &
+auth_info_string(std::string *&s) {
+   if (s == nullptr) {
+      s = new std::string();
+   }
+   return *s;
+}
+
+/**
  * @brief Initialize the thread shared user data.
  *
  * Fills in user specific data for the current user.
@@ -273,8 +307,12 @@ static void component_ts0_init_user() {
    set_supplementray_groups(user, 0, nullptr);
 
    // initialize auth info strings
-   user->unencoded_auth_info.clear();
-   user->encoded_auth_info.clear();
+   if (user->unencoded_auth_info != nullptr) {
+      user->unencoded_auth_info->clear();
+   }
+   if (user->encoded_auth_info != nullptr) {
+      user->encoded_auth_info->clear();
+   }
 }
 
 /**
@@ -303,8 +341,13 @@ static void component_ts0_init_supplementary_groups() {
  * The function is called from component_ts0_destroy().
  */
 static void component_ts0_destroy_user(component_user_type_t user_type) {
-   component_ts0_data.users[user_type].unencoded_auth_info.clear();
-   component_ts0_data.users[user_type].encoded_auth_info.clear();
+   // the one place the strings are released, and it nulls the pointers, so a
+   // second call is harmless - unlike the compiler generated destructor this
+   // replaces
+   delete component_ts0_data.users[user_type].unencoded_auth_info;
+   component_ts0_data.users[user_type].unencoded_auth_info = nullptr;
+   delete component_ts0_data.users[user_type].encoded_auth_info;
+   component_ts0_data.users[user_type].encoded_auth_info = nullptr;
    if (component_ts0_data.users[user_type].supplementary_grp_initialized) {
       sge_free(&component_ts0_data.users[user_type].grp_array);
    }
@@ -846,7 +889,7 @@ component_get_auth_info() {
    sge_component_user_t *user = &component_ts0_data.users[component_ts0_data.current_user];
 
    // initialize the unencrypted auth info if not already done
-   if (user->unencoded_auth_info.empty()) {
+   if (auth_info_string(user->unencoded_auth_info).empty()) {
       if (!user->user_initialized) {
          component_ts0_init_user();
       }
@@ -888,7 +931,7 @@ component_get_auth_info() {
       for (int i = 0; i < user->amount; i++) {
          user_group_stream << sep << user->grp_array[i].id << sep << user->grp_array[i].name;
       }
-      user->unencoded_auth_info = user_group_stream.str();
+      *user->unencoded_auth_info = user_group_stream.str();
    }
 
    if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_MUNGE)) {
@@ -906,7 +949,7 @@ component_get_auth_info() {
       // munge certificates are valid for a limited time only and for a single use
       char *munge_auth_info = nullptr;
       const munge_err_t err = ocs::uti::Munge::munge_encode_func(&munge_auth_info, nullptr,
-         user->unencoded_auth_info.c_str(), static_cast<int>(user->unencoded_auth_info.length() + 1));
+         user->unencoded_auth_info->c_str(), static_cast<int>(user->unencoded_auth_info->length() + 1));
       if (err != EMUNGE_SUCCESS) {
          ERROR(MSG_UTI_MUNGE_ENCODE_FAILED_S, ocs::uti::Munge::munge_strerror_func(err));
       } else {
@@ -917,13 +960,14 @@ component_get_auth_info() {
 #endif
    } else {
       // encrypt and store the information once - it will never change
-      if (user->encoded_auth_info.empty()) {
-         ocs::Encoder::encode(user->unencoded_auth_info, user->encoded_auth_info);
+      std::string &encoded = auth_info_string(user->encoded_auth_info);
+      if (encoded.empty()) {
+         ocs::Encoder::encode(*user->unencoded_auth_info, encoded);
       }
 
       // if available we return the cached auth info
-      if (!user->encoded_auth_info.empty()) {
-         ret = strdup(user->encoded_auth_info.c_str());
+      if (!encoded.empty()) {
+         ret = strdup(encoded.c_str());
       }
    }
 
