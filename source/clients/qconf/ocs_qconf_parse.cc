@@ -7317,16 +7317,22 @@ static bool mod_reserved_hgroup(lList *arglp, const char *group,
       answer_exit_if_not_recoverable(aep);
       if (answer_get_status(aep) == STATUS_OK) {
          /*
-          * Output is kept exactly as the retired targets produced it: -ah/-as
-          * confirmed each host, -dh/-ds said nothing on success and only spoke
-          * up on failure. There is no client side "removed from list" message
-          * and none is invented here -- a new line of output would be a
-          * compatibility change for every script parsing qconf.
+          * CS-2645: every command reports either success or failure. This used
+          * to confirm APPEND only, on the assumption that the retired targets
+          * had said nothing on a successful -dh/-ds. They did say something:
+          * their delete path printed the whole answer list of the qmaster,
+          * INFO elements included, so a successful remove was confirmed with
+          * "<user>@<host> removed \"<host>\" from submit host list". Staying
+          * silent here was therefore not the preservation of the old behaviour
+          * but a change of it, and it left a successful delete
+          * indistinguishable from one that did nothing.
           */
          if (sub_command == ocs::gdi::SubCommand::APPEND) {
             fprintf(stderr, MSG_QCONF_XADDEDTOYLIST_SS, name, what);
-            fprintf(stderr, "\n");
+         } else {
+            fprintf(stderr, MSG_QCONF_XREMOVEDFROMYLIST_SS, name, what);
          }
+         fprintf(stderr, "\n");
       } else {
          fprintf(stderr, "%s\n", lGetString(aep, AN_text));
          ret = false;

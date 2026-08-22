@@ -278,6 +278,7 @@
 #define MSG_QCONF_EDITORWASTERMINATEDBYSIGX_I      _MESSAGE(23160, _("editor was terminated by a signal %d"))
 #define MSG_QCONF_CANTSTARTEDITORX_S               _MESSAGE(23161, _("can't start editor " SFN))
 #define MSG_QCONF_XADDEDTOYLIST_SS                 _MESSAGE(23162, _(SFN " added to " SFN " list"))
+#define MSG_QCONF_XREMOVEDFROMYLIST_SS             _MESSAGE(23163, _(SFN " removed from " SFN " list"))
 #define MSG_QCONF_CANTREADCONFIG_S                 _MESSAGE(23164, _("can't read configuration: " SFN))
 #define MSG_QCONF_CANTREADX_S                      _MESSAGE(23165, _("cant read " SFN))
 #define MSG_QCONF_CANTREADSHARETREEX_S             _MESSAGE(23166, _("cant read sharetree: " SFN))
