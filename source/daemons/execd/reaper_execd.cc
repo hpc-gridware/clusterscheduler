@@ -2319,7 +2319,19 @@ void execd_slave_job_exit(uint32_t job_id, uint32_t ja_task_id) {
        */
       if (lGetNumberOfElem(lGetList(ja_task, JAT_task_list)) == 0) {
          lListElem *jr = get_job_report(job_id, ja_task_id, nullptr);
-         add_usage(jr, "exit_status", nullptr, 0);
+
+         // qmaster only has to see *an* exit status here to know that this host is
+         // done with the job - the value itself carries no information for a slave
+         // container, whose job report has none of its own.
+         //
+         // The master host gets this request as well: ack_all_slaves() walks the
+         // whole gdil and the master host is one of its entries. There the report is
+         // the master task's own and already carries the status the job ended with,
+         // so overwriting it would replace it with a zero and make the accounting
+         // record of a failed job indistinguishable from a successful one (CS-2632).
+         if (jr != nullptr && lGetSubStr(jr, UA_name, "exit_status", JR_usage) == nullptr) {
+            add_usage(jr, "exit_status", nullptr, 0);
+         }
          flush_job_report(jr);
       }
    }
