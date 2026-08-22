@@ -5418,7 +5418,13 @@ static bool add_host_of_type(lList *arglp, ocs::gdi::Target::TargetValue target)
          fprintf(stderr, MSG_QCONF_XADDEDTOYLIST_SS, host, name);
          fprintf(stderr, "\n");
       } else {
+         /* The qmaster rejected the host - e.g. it is already a member under a
+          * different spelling, which it answers with STATUS_EEXIST. Printing
+          * that text was all this branch did, so qconf reported the failure on
+          * stderr and still exited 0, and any script testing the exit code
+          * believed the host had been added. */
          fprintf(stderr, "%s\n", lGetString(ep, AN_text));
+         ret = false;
       }
 
       lFreeList(&lp);
