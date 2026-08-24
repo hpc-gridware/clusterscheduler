@@ -608,15 +608,28 @@ sigset_t fatal_signal_set;
 int fatal_signal_mask;
 #endif
 
-#if !HAVE_DECL_BSD_SIGNAL && !defined bsd_signal
-# if !defined HAVE_SIGACTION
-#  define bsd_signal signal
-# else
+/* GCS: never call the C library's bsd_signal().  glibc dropped its declaration
+   in 2.26, but config.h.<arch> is pre-generated and keyed on the architecture,
+   while HAVE_DECL_BSD_SIGNAL is a property of the C library - so the same file
+   has to answer for every distribution that architecture is built on, and it
+   cannot.  The amd64 variants still claim 1, which yields an implicit
+   declaration: a warning up to gcc 13, an error from gcc 14 on.  Both crutches
+   used so far are per architecture and do not generalise - the -Wno-implicit-
+   function-declaration in this directory's CMakeLists (which by regex also
+   catches xlx- and ulx-amd64), and setting the macro to 0 by hand in
+   config.h.lx-arm64.  Use our own implementation under a private name instead
+   and route the call sites to it with the macro below: that compiles where the
+   declaration is gone and cannot collide with the libc one where it is still
+   there.  The macro is defined after all system headers, so it never rewrites
+   a declaration in <signal.h>.  */
 typedef void (*bsd_signal_ret_t) (int);
 
 static bsd_signal_ret_t
-bsd_signal (int sig, bsd_signal_ret_t func)
+qmake_bsd_signal (int sig, bsd_signal_ret_t func)
 {
+#if !defined HAVE_SIGACTION
+  return signal (sig, func);
+#else
   struct sigaction act, oact;
   act.sa_handler = func;
   act.sa_flags = SA_RESTART;
@@ -625,9 +638,10 @@ bsd_signal (int sig, bsd_signal_ret_t func)
   if (sigaction (sig, &act, &oact) != 0)
     return SIG_ERR;
   return oact.sa_handler;
-}
-# endif
 #endif
+}
+
+#define bsd_signal qmake_bsd_signal
 
 static void
 initialize_global_hash_tables (void)
