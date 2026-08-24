@@ -59,6 +59,20 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                   # old BDB sources do not compile with modern GCC defaults
                   set(CUSTOM_CFLAGS "CFLAGS=-Wno-implicit-int -Wno-incompatible-pointer-types")
                 endif()
+                # BDB 5.3 predates C99 being enforced: its configure probes write
+                # "main() {" without a return type. GCC 14 and later reject that
+                # instead of warning, so every probe fails - including the one for
+                # POSIX mutexes, after which configure falls back to FCNTL mutexes
+                # and aborts with "Support for FCNTL mutexes was removed in BDB 4.8".
+                # Measured: gcc 11 (Ubuntu 22.04) builds it, gcc 15 (Ubuntu 26.04)
+                # does not, on the same sources - so this is bound to the compiler,
+                # not to SGE_ARCH. Older compilers ignore an unknown -Wno-* option
+                # unless they emit another diagnostic anyway, so this stays harmless
+                # on the CentOS 6/7/8 toolchains.
+                if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND
+                   CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 14)
+                  set(CUSTOM_CFLAGS "CFLAGS=-Wno-implicit-int -Wno-incompatible-pointer-types -Wno-implicit-function-declaration -Wno-return-type")
+                endif()
                 list(APPEND 3rdparty_list 3rd_party_berkeleydb)
                 externalproject_add(
                         3rd_party_berkeleydb
@@ -75,7 +89,12 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                            ${CUSTOM_CFLAGS}
                         BUILD_IN_SOURCE TRUE
                         BUILD_ALWAYS FALSE
-                        BUILD_COMMAND make clean all
+                        # -j1 on purpose: make passes its -j down through MAKEFLAGS,
+                        # and the testsuite builds this target with -j 128. BDB's
+                        # makefile cannot take that - "clean" and "all" then run at
+                        # the same time and the link dies with
+                        # "mut_tas.lo is not a valid libtool object".
+                        BUILD_COMMAND make -j1 clean all
                         INSTALL_COMMAND make install)
                 add_library(berkeleydb SHARED IMPORTED GLOBAL)
                 set_target_properties(
