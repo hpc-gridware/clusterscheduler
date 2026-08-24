@@ -400,6 +400,14 @@ if [ "$UPDATE" = true ]; then
       _bup_admin_user=`BootstrapGetValue "${UPGRADE_BACKUP_DIR}/cell" admin_user`
       if [ -n "$_bup_admin_user" ] && [ "$_bup_admin_user" != "none" ]; then
          chown -R "$_bup_admin_user" "$UPGRADE_BACKUP_DIR"
+         # ProcessSGERoot below verifies write access to SGE_ROOT by creating a temporary
+         # file there. As long as ADMINUSER is "default" it does so as user root, which
+         # fails when SGE_ROOT is on an NFS filesystem that root may not write to - and
+         # interactively that failure asks for the directory again and again forever.
+         # The admin user of the backed up cluster is the one that will own the files
+         # after the upgrade, so the check is run as that user. GetAdminUser and
+         # CheckWhoInstallsSGE further down still determine the final value.
+         ADMINUSER=$_bup_admin_user
       fi
       unset _bup_admin_user
    fi
