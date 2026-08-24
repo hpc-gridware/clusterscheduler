@@ -509,7 +509,10 @@ static bool setup_x11_forwarding(const char *cookie_hex) {
       //
       // Failing to take the lock is not a reason to skip the entry - without it there
       // is no forwarding at all. That case degrades to the previous behaviour.
-      char xauth_lock_path[SGE_PATH_MAX];
+      // + suffix: xauth_path itself may use the full SGE_PATH_MAX, so a plain
+      // SGE_PATH_MAX buffer would silently truncate the lock path (and two jobs
+      // would then share one lock file name).
+      char xauth_lock_path[SGE_PATH_MAX + sizeof("-shepherd.lock")];
       snprintf(xauth_lock_path, sizeof(xauth_lock_path), "%s-shepherd.lock", xauth_path);
       int xauth_lock_fd = open(xauth_lock_path, O_CREAT | O_RDWR, 0600);
       if (xauth_lock_fd >= 0 && flock(xauth_lock_fd, LOCK_EX) != 0) {
@@ -603,7 +606,8 @@ static void cleanup_x11_xauth_entry() {
 
    // Per-user flock so concurrent shepherd add/remove on the same
    // .Xauthority don't lose each other's edits.
-   char lock_path[SGE_PATH_MAX];
+   // + suffix, see setup_x11_forwarding()
+   char lock_path[SGE_PATH_MAX + sizeof("-shepherd.lock")];
    snprintf(lock_path, sizeof(lock_path), "%s-shepherd.lock", g_x11_xauth_path);
    // Do the file work as the user who wrote the entry, not as root.
    //
