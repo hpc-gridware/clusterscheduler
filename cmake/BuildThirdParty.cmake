@@ -151,6 +151,17 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                 set_target_properties(hwloc PROPERTIES IMPORTED_LOCATION
                         ${hwloc_path})
             else ()
+                # A static libhwloc.a carries no dependency information, so every
+                # backend hwloc compiles in has to be resolved by whoever links it.
+                # OpenCL stays enabled and is linked via SGE_TOPO_LIB; CUDA and NVML
+                # are not, because they cannot be linked on the arm64 build host:
+                # libcudart.so lives outside the linker path and libnvidia-ml.so
+                # (the unversioned development symlink) does not exist there at all.
+                # --disable-pci for the same reason, mirrored: libpciaccess links on
+                # the arm64 host but not on the amd64 one, so a shared link list
+                # cannot satisfy both.
+                # GCS calls no hwloc GPU function anyway - verified: not a single
+                # hwloc_opencl/cuda/nvml call under source/.
                 list(APPEND 3rdparty_list 3rd_party_hwloc)
                 if(SGE_ARCH STREQUAL "osol-amd64")
                   set(CUSTOM_CFLAGS CFLAGS=-Wno-incompatible-pointer-types)
@@ -163,7 +174,7 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
                         CONFIGURE_COMMAND ./configure
                            --prefix ${3rdparty_install_path}
-                           --enable-static --disable-libxml2
+                           --enable-static --disable-libxml2 --disable-cuda --disable-nvml --disable-rsmi --disable-levelzero --disable-gl --disable-pci
                            ${CUSTOM_CFLAGS}
                         BUILD_IN_SOURCE TRUE
                         BUILD_ALWAYS FALSE
