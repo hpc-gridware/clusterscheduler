@@ -195,6 +195,13 @@ function(architecture_specific_settings)
          # set(WITH_JEMALLOC OFF PARENT_SCOPE)
       endif()
 
+      if (SGE_ARCH MATCHES "lx-loong64")
+         # Linux LoongArch, New World (upstream ABI, glibc 2.36 and newer).
+         # The Old World of Loongnix/Kylin/UOS is a different ABI and would use
+         # its own architecture string, see CS-2649.
+         add_compile_options(-fPIC)
+      endif()
+
       if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86" OR SGE_ARCH STREQUAL "xlx-x86")
          # we need patchelf for setting the run path in the db_* tools
          # but patchelf is not available on CentOS 7 x86

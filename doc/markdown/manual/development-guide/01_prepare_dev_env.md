@@ -192,6 +192,55 @@ brew install doxygen graphviz
 ```
 ```
 
+### openEuler 24.03 LTS (default for lx-loong64)
+
+The repository configuration that ships in the image has to be replaced first. It
+enables `OS`, `everything`, `update`, `EPOL`, `debuginfo` and `source`, but for
+`loongarch64` the base release publishes **only** `OS` - every other repository answers
+with 404 and `dnf` then refuses to do anything at all. The service packs do carry the
+full set, at an unchanged glibc 2.38 (only the release number moves on), so point the
+configuration at one of those:
+
+```
+mkdir -p /etc/yum.repos.d/disabled
+mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/disabled/
+cat > /etc/yum.repos.d/openEuler-SP4.repo <<EOF
+[OS]
+name=openEuler-24.03-LTS-SP4 OS
+baseurl=https://repo.openeuler.org/openEuler-24.03-LTS-SP4/OS/\$basearch/
+enabled=1
+gpgcheck=0
+
+[everything]
+name=openEuler-24.03-LTS-SP4 everything
+baseurl=https://repo.openeuler.org/openEuler-24.03-LTS-SP4/everything/\$basearch/
+enabled=1
+gpgcheck=0
+EOF
+dnf clean all && dnf makecache
+```
+
+```
+dnf install -y --setopt=strict=0 automake autoconf cmake git patchelf
+dnf install -y --setopt=strict=0 gcc gcc-c++ make binutils
+dnf install -y --setopt=strict=0 systemd-devel libtirpc-devel openssl-devel
+dnf install -y --setopt=strict=0 munge-devel hwloc-devel
+dnf install -y --setopt=strict=0 expect tcl tcllib xterm perl-Env tcsh vim-enhanced
+dnf install -y --setopt=strict=0 doxygen graphviz
+```
+
+Use `--setopt=strict=0`: a single unavailable package name otherwise aborts the whole
+transaction and nothing is installed at all. Two names differ from the Debian lists -
+`vim` is `vim-enhanced` here, and `gnuplot` is not available for `loongarch64`.
+
+`libcurl-devel` is only needed when building with `WITH_CURL=ON`; with the default the
+build does not touch libcurl at all (CS-2664).
+
+#### for repository drmaa-java
+```
+dnf install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel maven
+```
+
 ### Raspian 11
 
 ```
