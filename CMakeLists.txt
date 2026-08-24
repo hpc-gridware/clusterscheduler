@@ -262,7 +262,9 @@ if (WITH_HWLOC)
          set(SGE_TOPO_LIB hwloc picl kstat lgrp pciaccess)
       endif()
    else ()
-      if (OS_ID STREQUAL "ubuntu" AND OS_VERSION EQUAL 24.04)
+      # Was pinned to 24.04, so it matched neither 22.04 nor 26.04 and OpenCL was
+      # silently dropped everywhere else. Link it on every Ubuntu instead.
+      if (OS_ID STREQUAL "ubuntu")
          set(SGE_TOPO_LIB hwloc udev OpenCL)
       else()
          set(SGE_TOPO_LIB hwloc udev)
