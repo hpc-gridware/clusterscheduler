@@ -20,6 +20,13 @@
 
 function(architecture_specific_settings)
    get_os_release_info(OS_ID OS_VERSION OS_CODENAME)
+   # architecture_specific_settings() is a function, so these stay local unless
+   # they are handed up explicitly - without this CMakeLists.txt sees an empty
+   # OS_ID and every "if (OS_ID STREQUAL ...)" silently takes the else branch.
+   # 9.1 and 9.2 already do this; 9.0 was the only one missing it.
+   set(OS_ID ${OS_ID} PARENT_SCOPE)
+   set(OS_VERSION ${OS_VERSION} PARENT_SCOPE)
+   set(OS_CODENAME ${OS_CODENAME} PARENT_SCOPE)
    message(STATUS "Build for Version: ${CMAKE_BUILD_ID}")
 
    message(STATUS "We are on OS: ${OS_ID}; ${OS_VERSION}; ${OS_CODENAME}")
@@ -64,8 +71,8 @@ function(architecture_specific_settings)
    if (SGE_ARCH MATCHES "lx-riscv64")
       # Linux RiscV
       message(STATUS "We are on Linux: ${SGE_ARCH}")
-      set(CMAKE_C_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
 
       add_compile_definitions(LINUX _GNU_SOURCE GETHOSTBYNAME_R6 GETHOSTBYADDR_R8 HAS_IN_PORT_T SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
       add_compile_options(-fPIC)
@@ -85,8 +92,8 @@ function(architecture_specific_settings)
 
       # Linux supported/unsupported amd64/x86
       message(STATUS "We are on Linux: ${SGE_ARCH}")
-      set(CMAKE_C_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
 
       # @todo does -fPIC have any disadvantages when not required (only for shared libs)?
       add_compile_options(-fPIC)
@@ -177,8 +184,8 @@ function(architecture_specific_settings)
       # FreeBSD
       message(STATUS "We are on FreeBSD: ${SGE_ARCH}")
       set(PROJECT_AUTOMAKE_SRC "/usr/local/share/automake-*/config.*" PARENT_SCOPE)
-      set(CMAKE_C_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
       add_compile_definitions(FREEBSD GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
       add_compile_options(-fPIC)
       add_link_options(-lpthread -lutil)
@@ -208,8 +215,8 @@ function(architecture_specific_settings)
       # Darwin M1/M2/M2Max/M2Pro (arm64) platform
       message(STATUS "We are on macOS: ${SGE_ARCH}")
       # -Wextra
-      set(CMAKE_C_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
       set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "Build architectures for Mac OS X" FORCE)
       add_compile_definitions(DARWIN DARWIN10 GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
 
