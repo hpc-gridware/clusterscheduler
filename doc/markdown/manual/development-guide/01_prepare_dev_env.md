@@ -335,7 +335,12 @@ pkg install pkg:/developer/java/openjdk8
 pkg install pkg:/developer/build/maven
 ```
 
-### SUSE Tumbleweed (default for lx-riscv64)
+### SUSE Tumbleweed
+
+Used on the single board machine that verifies `lx-riscv64` binaries on real
+hardware. It is not the build host for that architecture: it ships gcc 15 and a
+correspondingly new `libstdc++`, so binaries produced there require a newer
+runtime than most riscv64 targets provide. Build on Ubuntu 24.04 instead.
 
 ```
 zypper install -y --type pattern devel_C_C++
@@ -352,7 +357,7 @@ zypper install -y libopenssl-devel
 zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven
 ```
 
-### Ubuntu 20/22/24/26
+### Ubuntu 20/22/24/26 (default for lx-riscv64)
 
 ```
 apt-get install -y git autoconf automake build-essential manpages-dev patchelf 
