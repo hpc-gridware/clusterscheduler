@@ -1,5 +1,142 @@
 # Full List of Fixes
 
+## v9.1.5
+
+### [CS-1129](https://hpc-gridware.atlassian.net/browse/CS-1129) Provide a UI for a modern qmon replacement for cluster configuration
+
+- [CS-2421](https://hpc-gridware.atlassian.net/browse/CS-2421) Qontrol: Improve Edit Calendar description and add live-preview
+- [CS-2423](https://hpc-gridware.atlassian.net/browse/CS-2423) Qontrol: Load sensors should be configurable from templates
+- [CS-2428](https://hpc-gridware.atlassian.net/browse/CS-2428) Qontrol: Some env variables used as argument replacements are not active
+- [CS-2429](https://hpc-gridware.atlassian.net/browse/CS-2429) Qontrol: JSV scripts needs to be editable and installable from templates
+- [CS-2433](https://hpc-gridware.atlassian.net/browse/CS-2433) Qontrol: DBWriter log file viewer displays unknown log levels
+- [CS-2439](https://hpc-gridware.atlassian.net/browse/CS-2439) Qontrol needs a dark mode
+- [CS-2505](https://hpc-gridware.atlassian.net/browse/CS-2505) Qontrol: Allow remote cluster registration using qontrol-agent
+- [CS-2506](https://hpc-gridware.atlassian.net/browse/CS-2506) Qontrol: Add favicon
+- [CS-2511](https://hpc-gridware.atlassian.net/browse/CS-2511) Qontrol: update internal API, adapt to serialized extra_fields and ErrNoModification
+- [CS-2528](https://hpc-gridware.atlassian.net/browse/CS-2528) Qontrol: Remove the requirement to have a local cluster available
+- [CS-2534](https://hpc-gridware.atlassian.net/browse/CS-2534) Qontrol: Provide a helm chart for deploying on Kubernetes
+- [CS-2553](https://hpc-gridware.atlassian.net/browse/CS-2553) Qontrol: Provide a Dockerfile for qontrol for running in Kubernetes
+- [CS-2629](https://hpc-gridware.atlassian.net/browse/CS-2629) qontrol: execd_params editor never ticks its switches and cannot express false
+- [CS-2630](https://hpc-gridware.atlassian.net/browse/CS-2630) Provide Qontrol Dockerfile and helm chart under "util/container/qontrol/"
+- [CS-2638](https://hpc-gridware.atlassian.net/browse/CS-2638) Qontrol: version gating asks the central server, not the selected cluster
+
+### [CS-1336](https://hpc-gridware.atlassian.net/browse/CS-1336) Add RSMAP features and combine with binding
+
+- [CS-1338](https://hpc-gridware.atlassian.net/browse/CS-1338) Add infrastructure to add RSMAP characteristics to RSMAP devices
+- [CS-2462](https://hpc-gridware.atlassian.net/browse/CS-2462) Use the "devices" RSMAP characteristic for device isolation
+
+### [CS-1626](https://hpc-gridware.atlassian.net/browse/CS-1626) CRA Part1: Compliance Foundation
+
+- [CS-1639](https://hpc-gridware.atlassian.net/browse/CS-1639) Document authentication and authorization model
+
+### [CS-217](https://hpc-gridware.atlassian.net/browse/CS-217) Provide an observability solution so that GCS can be integrated in any ops/management dashboards
+
+- [CS-1027](https://hpc-gridware.atlassian.net/browse/CS-1027) qtelemetry dashboards should filter "global" hostname
+- [CS-1032](https://hpc-gridware.atlassian.net/browse/CS-1032) As an admin I want to monitor specific jobs with qtelemetry to better understand their behaviour
+
+### [CS-2441](https://hpc-gridware.atlassian.net/browse/CS-2441) event master / client cleanup, improvements and issues
+
+- [CS-2454](https://hpc-gridware.atlassian.net/browse/CS-2454) remove dead code for event client flush_delay / env variable SGE_JAPI_FLUSH_DELAY_RATE
+- [CS-2510](https://hpc-gridware.atlassian.net/browse/CS-2510) modifying the event delivery interval flushes all events
+
+### [CS-2442](https://hpc-gridware.atlassian.net/browse/CS-2442) timed event thread cleanup, improvements and issues
+
+- [CS-971](https://hpc-gridware.atlassian.net/browse/CS-971) reporting_trigger flushing reporting data in the configured flush_time interval is called twice per interval
+
+### [CS-2578](https://hpc-gridware.atlassian.net/browse/CS-2578) Allow to submit jobs from Kubernetes pods
+
+- [CS-2607](https://hpc-gridware.atlassian.net/browse/CS-2607) create a testsuite test reproducing the described issues
+- [CS-2608](https://hpc-gridware.atlassian.net/browse/CS-2608) add qmaster_params ALLOW_ANY_SUBMITHOSTS
+- [CS-2609](https://hpc-gridware.atlassian.net/browse/CS-2609) add communication_params to bootstrap file
+- [CS-2610](https://hpc-gridware.atlassian.net/browse/CS-2610) add communication_params address_from_hostname
+- [CS-2611](https://hpc-gridware.atlassian.net/browse/CS-2611) add communication_params trust_client_hostname
+- [CS-2613](https://hpc-gridware.atlassian.net/browse/CS-2613) document the new parameters and correct the affected guide text
+- [CS-2627](https://hpc-gridware.atlassian.net/browse/CS-2627) qontrol: add qmaster_params ALLOW_ANY_SUBMITHOSTS
+- [CS-2628](https://hpc-gridware.atlassian.net/browse/CS-2628) Qontrol: add editing of bootstrap file attribute communication_params
+
+### [CS-335](https://hpc-gridware.atlassian.net/browse/CS-335) dbwriter: bring-up and stabilization
+
+- [CS-2426](https://hpc-gridware.atlassian.net/browse/CS-2426) dbwriter: inst_dbwriter and the dbwriter.conf template lack the SEVERE debug level
+- [CS-2427](https://hpc-gridware.atlassian.net/browse/CS-2427) installation guide is missing the section header for dbwriter
+- [CS-2430](https://hpc-gridware.atlassian.net/browse/CS-2430) admin guide should explain the dbwriter.log file format
+
+### [CS-822](https://hpc-gridware.atlassian.net/browse/CS-822) Provide Support for AI Workloads
+
+- [CS-2435](https://hpc-gridware.atlassian.net/browse/CS-2435) Qontrol: Add MCP tools for reading daemon log files
+- [CS-2436](https://hpc-gridware.atlassian.net/browse/CS-2436) Qontrol: Add MCP tools for reading cluster config files (prologs, load sensors, JSV, ...)
+- [CS-2626](https://hpc-gridware.atlassian.net/browse/CS-2626)  Qontrol MCP: paginate + filter accounting history for programmatic consumers
+
+### Bug
+
+- [CS-1461](https://hpc-gridware.atlassian.net/browse/CS-1461) load threshold on a consumable: parallel jobs and ARs rejected without a reason
+- [CS-1967](https://hpc-gridware.atlassian.net/browse/CS-1967) A testsuite setup installed from product packages does not install the drmaaj package
+- [CS-2375](https://hpc-gridware.atlassian.net/browse/CS-2375) commlib: TCP listen backlog hardcoded to 5 - connection bursts overflow the accept queue (qrsh -inherit task delivery fails with "can't find connection")
+- [CS-2412](https://hpc-gridware.atlassian.net/browse/CS-2412) qontrol: Add reporting_params sync_write
+- [CS-2422](https://hpc-gridware.atlassian.net/browse/CS-2422) testsuite: get_standard_job_info() truncates queue names
+- [CS-2425](https://hpc-gridware.atlassian.net/browse/CS-2425) testsuite: Remove all init_level functions from tests
+- [CS-2449](https://hpc-gridware.atlassian.net/browse/CS-2449) testsuite: resource_quota_dynamic_limit cleanup times out on high-core hosts (hardcoded wait_for_end_of_all_jobs 20)
+- [CS-2464](https://hpc-gridware.atlassian.net/browse/CS-2464) qmaster logs misleading ERRORs at startup: "event client not properly initialized" for events that are simply not subscribed
+- [CS-2477](https://hpc-gridware.atlassian.net/browse/CS-2477) Build fails on Ubuntu 26.04 with gcc 15: qmake bsd_signal and -Werror=unused-result on setuid/seteuid/setgid
+- [CS-2485](https://hpc-gridware.atlassian.net/browse/CS-2485) id and groups fail inside jobs because the gid_range group has no name
+- [CS-2487](https://hpc-gridware.atlassian.net/browse/CS-2487) TLS: side-by-side upgrade breaks because private key and certificate paths do not identify the installation
+- [CS-2488](https://hpc-gridware.atlassian.net/browse/CS-2488) Backup does not include the TLS certificates, restore leaves the cluster without them
+- [CS-2494](https://hpc-gridware.atlassian.net/browse/CS-2494) functional/usage/io: accounting comparison is unsatisfiable for small io values (qacct prints 3 decimals, tolerance is relative)
+- [CS-2495](https://hpc-gridware.atlassian.net/browse/CS-2495) execd loses track of running jobs: no wallclock usage, no h_rt enforcement, no deleted_by
+- [CS-2516](https://hpc-gridware.atlassian.net/browse/CS-2516) testsuite breaks order of global config entries
+- [CS-2527](https://hpc-gridware.atlassian.net/browse/CS-2527) sge_qmaster installation with postgres spooling fails if root has no write permissions on the SGE_ROOT filesystem
+- [CS-2540](https://hpc-gridware.atlassian.net/browse/CS-2540) inst_sge -start-all without settings file sourced prints garbled error message
+- [CS-2541](https://hpc-gridware.atlassian.net/browse/CS-2541) inst_sge -start-all doesn't use systemd for starting up the cluster
+- [CS-2543](https://hpc-gridware.atlassian.net/browse/CS-2543) inst_sge -um removes spooling_params with rm -rf regardless of the spooling method
+- [CS-2549](https://hpc-gridware.atlassian.net/browse/CS-2549) testsuite: In tests ending jobs with shutdown sge_execd need to wait for systemd job slice to vanish
+- [CS-2561](https://hpc-gridware.atlassian.net/browse/CS-2561) qtelemetry: filesystem metrics overstate size by up to 256x where f_bsize differs from f_frsize
+- [CS-2562](https://hpc-gridware.atlassian.net/browse/CS-2562) testsuite messages file check prevents installation of older versions
+- [CS-2566](https://hpc-gridware.atlassian.net/browse/CS-2566) sge_conf.5: parameter descriptions are duplicated
+- [CS-2567](https://hpc-gridware.atlassian.net/browse/CS-2567) sge_conf.5 in 9.1.x documents 9.2-only finished-job retention parameters
+- [CS-2569](https://hpc-gridware.atlassian.net/browse/CS-2569) Administrator Guide appendices are not the last chapter
+- [CS-2593](https://hpc-gridware.atlassian.net/browse/CS-2593) JSONL reporting: final acct record of a long running job repeats the total usage instead of the delta since the last intermediate record
+- [CS-2601](https://hpc-gridware.atlassian.net/browse/CS-2601) qtelemetry: host arch and topology labels split every host metric into a live and a stale series
+- [CS-2614](https://hpc-gridware.atlassian.net/browse/CS-2614) in the sge_bootstrap.5 man page the list of security_modes is formatted incorrectly
+- [CS-2616](https://hpc-gridware.atlassian.net/browse/CS-2616) JSONL acct record: wallclock is summed over the pe tasks of an accounting_summary parallel environment
+- [CS-2619](https://hpc-gridware.atlassian.net/browse/CS-2619) scheduler_threads 0 in the bootstrap file does not switch the scheduler off
+- [CS-2631](https://hpc-gridware.atlassian.net/browse/CS-2631) testsuite: inst_sge_upd test failed with local berkeleydb spooling
+- [CS-2632](https://hpc-gridware.atlassian.net/browse/CS-2632) Job exit_status recorded as 0 in accounting when the PE has control_slaves TRUE and the job didn't run any tasks
+- [CS-2633](https://hpc-gridware.atlassian.net/browse/CS-2633) qmaster listener evaluates permissions on the data store without holding its read lock
+- [CS-2636](https://hpc-gridware.atlassian.net/browse/CS-2636) testsuite: a failing installation makes installer_reinstall_fresh_cluster recurse without bound
+- [CS-2637](https://hpc-gridware.atlassian.net/browse/CS-2637) testsuite installation would hang in question for SGE_ROOT if started without SGE_ROOT env var set
+- [CS-2640](https://hpc-gridware.atlassian.net/browse/CS-2640) component_ts0_data is destroyed once per loaded module: double free of the auth_info strings at shutdown
+- [CS-2641](https://hpc-gridware.atlassian.net/browse/CS-2641) RequestLimits::parse_from_config() caches the gdi_request_limits string in an unguarded static: double free between listener threads
+- [CS-2644](https://hpc-gridware.atlassian.net/browse/CS-2644) qconf -as/-ah exit 0 when the host is already in the list, while -am/-ao exit 1 for the same kind of error
+- [CS-2652](https://hpc-gridware.atlassian.net/browse/CS-2652) inst_sge -upd: SGE_ROOT write test runs as user root and loops endlessly when root has no write permission
+
+### Improvement
+
+- [CS-2445](https://hpc-gridware.atlassian.net/browse/CS-2445) Installation Guide: Clarify the handling of remote hosts (execution and shadow master hosts)
+- [CS-2466](https://hpc-gridware.atlassian.net/browse/CS-2466) Qontrol: define and initialize a complex resource in one step
+- [CS-2479](https://hpc-gridware.atlassian.net/browse/CS-2479) Add settings for filedescriptor limit to systemd unit files
+- [CS-2480](https://hpc-gridware.atlassian.net/browse/CS-2480) Document how the default max_dyn_ec limit is determined.
+- [CS-2489](https://hpc-gridware.atlassian.net/browse/CS-2489) Installer tests: dissolve the dependency group and split upgrade_config per minor release
+- [CS-2501](https://hpc-gridware.atlassian.net/browse/CS-2501) go-clusterscheduler: Validate CLI arguments to qconf and sibling wrappers to prevent argument injection
+- [CS-2518](https://hpc-gridware.atlassian.net/browse/CS-2518) global/host configuration should be output in a defined order
+- [CS-2522](https://hpc-gridware.atlassian.net/browse/CS-2522) testsuite: For postgres spooling automatically create a unique database per cluster
+- [CS-2546](https://hpc-gridware.atlassian.net/browse/CS-2546) testsuite: report the number of runs when running a test endlessly (menu item 13)
+- [CS-2571](https://hpc-gridware.atlassian.net/browse/CS-2571) testsuite: use fast_add (qconf -Aconf/Mconf) once CS-2518 is fixed
+- [CS-2615](https://hpc-gridware.atlassian.net/browse/CS-2615) test that the bootstrap file is parsed correctly
+- [CS-2639](https://hpc-gridware.atlassian.net/browse/CS-2639) Build option for the thread sanitizer (ENABLE_TSAN), mutually exclusive with ENABLE_SANITIZERS
+- [CS-2643](https://hpc-gridware.atlassian.net/browse/CS-2643) Make a sanitizer-built cluster installable by the testsuite: TSAN exit code, and a raisable qmaster startup wait
+
+### New Feature
+
+- [CS-2535](https://hpc-gridware.atlassian.net/browse/CS-2535) qtelemetry: Support running on execd hosts
+- [CS-2542](https://hpc-gridware.atlassian.net/browse/CS-2542) qtelemetry: Per-job on-host telemetry in execution host mode
+- [CS-2547](https://hpc-gridware.atlassian.net/browse/CS-2547) qtelemetry: Update Grafana Dashboard on Grafana Cloud to contain execd data
+- [CS-2563](https://hpc-gridware.atlassian.net/browse/CS-2563) qtelemetry: Provide an example dashboard for execution host metrics at Grafana Cloud
+
+### Task
+
+- [CS-2602](https://hpc-gridware.atlassian.net/browse/CS-2602) qtelemetry: Update man page to version 9.1.5
+- [CS-2603](https://hpc-gridware.atlassian.net/browse/CS-2603) qtelemetry: Update Admin Guide to include qtelemetry 9.1.5 changes
+- [CS-2642](https://hpc-gridware.atlassian.net/browse/CS-2642) First thread-sanitizer testsuite check (sanitizer/tsan_listener_ds_race) and the pattern for further ones
+
 ## v9.1.4
 
 ### [CS-1105](https://hpc-gridware.atlassian.net/browse/CS-1105) Go API Interface Updates
