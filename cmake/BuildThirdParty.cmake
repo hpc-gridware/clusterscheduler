@@ -219,7 +219,11 @@ function(install_third_party_lib 3rdparty_install_path target_dir files)
         set(libname "${CMAKE_SHARED_LIBRARY_PREFIX}${file}${CMAKE_SHARED_LIBRARY_SUFFIX}")
         add_custom_command(
                 OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${libname}
-                COMMAND cp -a ${3rdparty_install_path}/lib/${libname} ${CMAKE_CURRENT_BINARY_DIR}
+                # -d keeps the symlinks (libdb-5.so points at libdb-5.3.so), but no -a/-p:
+                # since coreutils 9 cp reports a failure to carry the ACLs over from the
+                # NFS source as an error, and the build dies. Timestamps are enough here,
+                # the mode comes from the source and install(PROGRAMS) sets it again.
+                COMMAND cp -d --preserve=timestamps --no-preserve=xattr,context ${3rdparty_install_path}/lib/${libname} ${CMAKE_CURRENT_BINARY_DIR}
                 VERBATIM
         )
         message(STATUS "adding 3rdparty lib ${libname}")
