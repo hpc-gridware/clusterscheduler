@@ -91,8 +91,13 @@
 
 /** @def SIGIGNORE
  * @brief ignore signal @p x, spelled the way this platform requires
+ *
+ * @note `sigignore()` is a legacy SVID call that glibc deprecates since 2.32,
+ *       and `-Werror` turns that deprecation into a build error. `LINUX` is
+ *       defined for every `lx-`/`ulx-`/`xlx-` architecture, so a new one is
+ *       covered without another edit here (CS-2667).
  */
-#if defined(FREEBSD) || defined(LINUXRISCV64) || defined(LINUXAMD64) || defined(LINUXARM64)
+#if defined(FREEBSD) || defined(LINUX)
 #  define SIGIGNORE(x) signal(x,SIG_IGN)
 #else
 #  define SIGIGNORE(x) sigignore(x)
