@@ -352,15 +352,21 @@ static int parse_reconnect_info(const char *path,
       }
 
       if (strncmp(line, "host=", 5) == 0) {
-         strncpy(host, line + 5, host_size - 1);
-         host[host_size - 1] = '\0';
+         if (snprintf(host, host_size, "%s", line + 5) >= (int)host_size) {
+            shepherd_trace("parse_reconnect_info: host= value too long, file is malformed");
+            fclose(fp);
+            return -1;
+         }
          have_host = (strlen(host) > 0);
       } else if (strncmp(line, "port=", 5) == 0) {
          *port = atoi(line + 5);
          have_port = (*port > 0);
       } else if (strncmp(line, "token=", 6) == 0) {
-         strncpy(token, line + 6, token_size - 1);
-         token[token_size - 1] = '\0';
+         if (snprintf(token, token_size, "%s", line + 6) >= (int)token_size) {
+            shepherd_trace("parse_reconnect_info: token= value too long, file is malformed");
+            fclose(fp);
+            return -1;
+         }
          have_token = (strlen(token) > 0);
       }
    }
@@ -423,13 +429,16 @@ static bool setup_x11_forwarding(const char *cookie_hex) {
    // Find a free display number and bind a Unix socket
    bool found = false;
    for (int n = 10; n < 100 && !found; n++) {
-      char sock_path[108];
-      snprintf(sock_path, sizeof(sock_path), "/tmp/.X11-unix/X%d", n);
-
       struct sockaddr_un addr;
       memset(&addr, 0, sizeof(addr));
       addr.sun_family = AF_UNIX;
-      strncpy(addr.sun_path, sock_path, sizeof(addr.sun_path) - 1);
+
+      // Build the path where it is needed. sock_path used to be a second
+      // buffer of exactly sun_path's size, and no strncpy between two equally
+      // sized buffers can both terminate and stay clear of the truncation
+      // warning that -O2 raises (CS-2668).
+      snprintf(addr.sun_path, sizeof(addr.sun_path), "/tmp/.X11-unix/X%d", n);
+      const char *sock_path = addr.sun_path;
 
       int fd = socket(AF_UNIX, SOCK_STREAM, 0);
       if (fd < 0) {
