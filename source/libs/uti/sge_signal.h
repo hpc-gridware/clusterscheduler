@@ -76,7 +76,12 @@
 /* Not all systems have all signals. Fill this in if not known. */
 #define SIGUNKNOWN                         0
 
-#if defined(FREEBSD) || defined(LINUXRISCV64) || defined(LINUXAMD64) || defined(LINUXARM64)
+/* sigignore() is a legacy SVID call that glibc deprecates since 2.32, and
+ * -Werror turns that deprecation into a build error. LINUX is defined for every
+ * lx-/ulx-/xlx- architecture, so a new one is covered without another edit here
+ * (CS-2667).
+ */
+#if defined(FREEBSD) || defined(LINUX)
 #  define SIGIGNORE(x) signal(x,SIG_IGN)
 #else
 #  define SIGIGNORE(x) sigignore(x)
