@@ -34,7 +34,12 @@
 #include <string>
 #include <vector>
 
+// Only needed when curl support is actually compiled in.  WITH_CURL is OFF by
+// default, and every use of curl below is already guarded - so an unguarded
+// include would force libcurl headers onto every build host for nothing.
+#if OCS_WITH_CURL
 #include <curl/curl.h>
+#endif
 
 /** @brief The cloud a host was detected to run on */
 enum class CloudProvider {
