@@ -232,7 +232,11 @@
          "type": "lRefT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       },
       {
          "name": "state",
@@ -256,7 +260,11 @@
          "type": "lRefT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       },
       {
          "name": "update_function_arg",
@@ -272,7 +280,11 @@
          "type": "lRefT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       }
    ]
 }

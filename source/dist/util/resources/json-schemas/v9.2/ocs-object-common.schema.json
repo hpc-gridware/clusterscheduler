@@ -30,6 +30,7 @@
             "JGDI_CONF",
             "JGDI_HIDDEN",
             "JGDI_RO",
+            "NO_TRANSFER",
             "PRIMARY_KEY",
             "SPOOL",
             "SPOOL_PROJECT",

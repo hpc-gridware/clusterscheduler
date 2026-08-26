@@ -888,10 +888,18 @@
          "name": "request_set_list",
          "summary": "Request Set List",
          "description": [
-            {"line": "List of request sets. 0 .. 3 request sets can exist: global, master, slave."},
-            {"line": "Sequential jobs can have a single job request set, the global one."},
-            {"line": "Parallel jobs can have up to 3 request sets: global requests,"},
-            {"line": "requests for the master task, requests for the slave tasks."}
+            {
+               "line": "List of request sets. 0 .. 3 request sets can exist: global, master, slave."
+            },
+            {
+               "line": "Sequential jobs can have a single job request set, the global one."
+            },
+            {
+               "line": "Parallel jobs can have up to 3 request sets: global requests,"
+            },
+            {
+               "line": "requests for the master task, requests for the slave tasks."
+            }
          ],
          "type": "lListT",
          "subClassName": "JobRequestSet",
@@ -921,8 +929,12 @@
          "name": "mail_list",
          "summary": "Mail list",
          "description": [
-            {"line": "Mail recipiants (MR_Type)."},
-            {"line": "(qsub/qalter -M mail_list)"}
+            {
+               "line": "Mail recipiants (MR_Type)."
+            },
+            {
+               "line": "(qsub/qalter -M mail_list)"
+            }
          ],
          "type": "lListT",
          "subClassName": "MR",
@@ -937,8 +949,12 @@
          "name": "pe",
          "summary": "Requested Parallel Environment",
          "description": [
-            {"line": "Name of requested PE or wildcard expression for matching PEs"},
-            {"line": "(qsub/qalter -pe pe-name slot_range)"}
+            {
+               "line": "Name of requested PE or wildcard expression for matching PEs"
+            },
+            {
+               "line": "(qsub/qalter -pe pe-name slot_range)"
+            }
          ],
          "type": "lStringT",
          "flags": [
@@ -951,8 +967,12 @@
          "name": "pe_range",
          "summary": "Requested Slot Range for Parallel Environment",
          "description": [
-            {"line": "PE slot range (RN_Type). Qmaster will ensure that it is ascending and normalized"},
-            {"line": "(qsub/qalter -pe pe-name slot_range)"}
+            {
+               "line": "PE slot range (RN_Type). Qmaster will ensure that it is ascending and normalized"
+            },
+            {
+               "line": "(qsub/qalter -pe pe-name slot_range)"
+            }
          ],
          "type": "lListT",
          "subClassName": "RN",
@@ -978,8 +998,12 @@
          "name": "cred",
          "summary": "DCE/Kerberos/TLS Credentials",
          "description": [
-            {"line": "DCE/Kerberos credentials. Also used for TLS encryption to transport the credentials"},
-            {"line": "from qrsh to the sge_execd, which will store it in the job's active_jobs directory."}
+            {
+               "line": "DCE/Kerberos credentials. Also used for TLS encryption to transport the credentials"
+            },
+            {
+               "line": "from qrsh to the sge_execd, which will store it in the job's active_jobs directory."
+            }
          ],
          "type": "lStringT",
          "flags": []
@@ -988,9 +1012,15 @@
          "name": "ja_structure",
          "summary": "Array Job Structure",
          "description": [
-            {"line": "Elements describe task id range structure during the"},
-            {"line": "submission time of a (array) job (RN_Type)."},
-            {"line": "qsub -t tid_range"}
+            {
+               "line": "Elements describe task id range structure during the"
+            },
+            {
+               "line": "submission time of a (array) job (RN_Type)."
+            },
+            {
+               "line": "qsub -t tid_range"
+            }
          ],
          "type": "lListT",
          "subClassName": "RN",
@@ -1022,9 +1052,15 @@
          "name": "ja_u_h_ids",
          "summary": "Array Task IDs with User Hold",
          "description": [
-            {"line": "Just submitted and user hold applied (RN_Type)."},
-            {"line": "qsub -h -t tid_range"},
-            {"line": "qalter -h u/U jid.tid1-tid2:step"}
+            {
+               "line": "Just submitted and user hold applied (RN_Type)."
+            },
+            {
+               "line": "qsub -h -t tid_range"
+            },
+            {
+               "line": "qalter -h u/U jid.tid1-tid2:step"
+            }
          ],
          "type": "lListT",
          "subClassName": "RN",
@@ -1039,8 +1075,12 @@
          "name": "ja_s_h_ids",
          "summary": "Array Task IDs with System Hold",
          "description": [
-            {"line": "Just submitted and system hold applied (RN_Type)."},
-            {"line": "qalter -h s/S jid.tid1-tid2:step"}
+            {
+               "line": "Just submitted and system hold applied (RN_Type)."
+            },
+            {
+               "line": "qalter -h s/S jid.tid1-tid2:step"
+            }
          ],
          "type": "lListT",
          "subClassName": "RN",
@@ -1055,8 +1095,12 @@
          "name": "ja_o_h_ids",
          "summary": "Array Task IDs with Operator Hold",
          "description": [
-            {"line": "Just submitted and operator hold applied (RN_Type)."},
-            {"line": "qalter -h o/O jid.tid1-tid2:step"}
+            {
+               "line": "Just submitted and operator hold applied (RN_Type)."
+            },
+            {
+               "line": "qalter -h o/O jid.tid1-tid2:step"
+            }
          ],
          "type": "lListT",
          "subClassName": "RN",
@@ -1071,8 +1115,12 @@
          "name": "ja_a_h_ids",
          "summary": "Array Task IDs with Array Hold",
          "description": [
-            {"line": "Just submitted and array hold applied (RN_Type)."},
-            {"line": "qalter -hold_jid_ad wc_job_list"}
+            {
+               "line": "Just submitted and array hold applied (RN_Type)."
+            },
+            {
+               "line": "qalter -hold_jid_ad wc_job_list"
+            }
          ],
          "type": "lListT",
          "subClassName": "RN",
@@ -1087,8 +1135,12 @@
          "name": "ja_template",
          "summary": "Template for new Tasks",
          "description": [
-            {"line": "Template for new tasks. In SGEEE systems the schedd will"},
-            {"line": "store initial tickets in this element. (JAT_Type)"}
+            {
+               "line": "Template for new tasks. In SGEEE systems the schedd will"
+            },
+            {
+               "line": "store initial tickets in this element. (JAT_Type)"
+            }
          ],
          "type": "lListT",
          "subClassName": "JAT",
@@ -1103,8 +1155,12 @@
          "name": "ja_tasks",
          "summary": "List of Array Tasks",
          "description": [
-            {"line": "List of array tasks (in case of array jobs) or one task"},
-            {"line": "(in case of a job) (JAT_Type)."}
+            {
+               "line": "List of array tasks (in case of array jobs) or one task"
+            },
+            {
+               "line": "(in case of a job) (JAT_Type)."
+            }
          ],
          "type": "lListT",
          "subClassName": "JAT",
@@ -1119,9 +1175,15 @@
          "name": "host",
          "summary": "Host the job (array task) is executing on",
          "description": [
-            {"line": "SGEEE - host job is executing on. Local to schedd."},
-            {"line": "Not spooled."},
-            {"line": "@todo still used?"}
+            {
+               "line": "SGEEE - host job is executing on. Local to schedd."
+            },
+            {
+               "line": "Not spooled."
+            },
+            {
+               "line": "@todo still used?"
+            }
          ],
          "type": "lHostT",
          "flags": [
@@ -1141,17 +1203,31 @@
          "type": "lRefT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       },
       {
          "name": "user_list",
          "summary": "List of users for qalter",
          "description": [
-            {"line": "List of usernames (qsub/qalter -u username_list)."},
-            {"line": "qsub -u does not exist. Not part of a job, but only"},
-            {"line": "userd for qalter request as where condition. Could most"},
-            {"line": "probably be passed via lCondition."},
-            {"line": "@todo change qalter, remove this attribute from job"}
+            {
+               "line": "List of usernames (qsub/qalter -u username_list)."
+            },
+            {
+               "line": "qsub -u does not exist. Not part of a job, but only"
+            },
+            {
+               "line": "userd for qalter request as where condition. Could most"
+            },
+            {
+               "line": "probably be passed via lCondition."
+            },
+            {
+               "line": "@todo change qalter, remove this attribute from job"
+            }
          ],
          "type": "lListT",
          "subClassName": "ST",
@@ -1162,8 +1238,12 @@
          "name": "job_identifier_list",
          "summary": "Job Identifier List for qalter",
          "description": [
-            {"line": "condition for qalter? @todo Then it should better be passed"},
-            {"line": "via condition. (ID_Type)"}
+            {
+               "line": "condition for qalter? @todo Then it should better be passed"
+            },
+            {
+               "line": "via condition. (ID_Type)"
+            }
          ],
          "type": "lListT",
          "subClassName": "ID",
@@ -1225,8 +1305,12 @@
          "name": "override_tickets",
          "summary": "Override Tickets",
          "description": [
-            {"line": "SGEEE - override tickets assigned by admin."},
-            {"line": "(qalter -ot tickets)."}
+            {
+               "line": "SGEEE - override tickets assigned by admin."
+            },
+            {
+               "line": "(qalter -ot tickets)."
+            }
          ],
          "type": "lUlongT",
          "flags": [
@@ -1256,10 +1340,18 @@
          "name": "urg",
          "summary": "Urgency",
          "description": [
-            {"line": "SGEEE. Absolute static urgency importance. The admin can use arbitrary"},
-            {"line": "weighting factors in the formula used to determine this number. So any"},
-            {"line": "value is possible. Needed only when scheduling code is run."},
-            {"line": "Not spooled."}
+            {
+               "line": "SGEEE. Absolute static urgency importance. The admin can use arbitrary"
+            },
+            {
+               "line": "weighting factors in the formula used to determine this number. So any"
+            },
+            {
+               "line": "value is possible. Needed only when scheduling code is run."
+            },
+            {
+               "line": "Not spooled."
+            }
          ],
          "type": "lDoubleT",
          "flags": []
@@ -1268,10 +1360,18 @@
          "name": "nurg",
          "summary": "Normalised Urgency",
          "description": [
-            {"line": "SGEEE. Relative importance due to static urgency in the range between 0.0"},
-            {"line": "and 1.0. No need to make this a per task attribute as long as waiting time"},
-            {"line": "and deadline remain job attributes."},
-            {"line": "Not spooled."}
+            {
+               "line": "SGEEE. Relative importance due to static urgency in the range between 0.0"
+            },
+            {
+               "line": "and 1.0. No need to make this a per task attribute as long as waiting time"
+            },
+            {
+               "line": "and deadline remain job attributes."
+            },
+            {
+               "line": "Not spooled."
+            }
          ],
          "type": "lDoubleT",
          "flags": [
@@ -1284,10 +1384,18 @@
          "name": "nppri",
          "summary": "Normalised Posix Priority",
          "description": [
-            {"line": "SGEEE. Relative importance due to Posix priority in the range between 0.0"},
-            {"line": "and 1.0. No need to make this a per task attribute as long as the POSIX"},
-            {"line": "priority remains a job attribute."},
-            {"line": "Not spooled."}
+            {
+               "line": "SGEEE. Relative importance due to Posix priority in the range between 0.0"
+            },
+            {
+               "line": "and 1.0. No need to make this a per task attribute as long as the POSIX"
+            },
+            {
+               "line": "priority remains a job attribute."
+            },
+            {
+               "line": "Not spooled."
+            }
          ],
          "type": "lDoubleT",
          "flags": [
@@ -1300,11 +1408,21 @@
          "name": "rrcontr",
          "summary": "Relative Resource Contribution (?)",
          "description": [
-            {"line": "SGEEE. Combined contribution to static urgency from all resources. This can"},
-            {"line": "be any value. Actually this is a property of job category. This field is"},
-            {"line": "needed only to provide it for diagnosis purposes it as per job information"},
-            {"line": "via GDI."},
-            {"line": "Not spooled."}
+            {
+               "line": "SGEEE. Combined contribution to static urgency from all resources. This can"
+            },
+            {
+               "line": "be any value. Actually this is a property of job category. This field is"
+            },
+            {
+               "line": "needed only to provide it for diagnosis purposes it as per job information"
+            },
+            {
+               "line": "via GDI."
+            },
+            {
+               "line": "Not spooled."
+            }
          ],
          "type": "lDoubleT",
          "flags": [
@@ -1317,10 +1435,18 @@
          "name": "dlcontr",
          "summary": "Deadline Contribution",
          "description": [
-            {"line": "SGEEE. Contribution to static urgency from waiting time. This can be any"},
-            {"line": "value. No need to make this a per task attribute as long as waiting time"},
-            {"line": "is a job attribute. Increases over time."},
-            {"line": "Not spooled."}
+            {
+               "line": "SGEEE. Contribution to static urgency from waiting time. This can be any"
+            },
+            {
+               "line": "value. No need to make this a per task attribute as long as waiting time"
+            },
+            {
+               "line": "is a job attribute. Increases over time."
+            },
+            {
+               "line": "Not spooled."
+            }
          ],
          "type": "lDoubleT",
          "flags": [
@@ -1333,10 +1459,18 @@
          "name": "wtcontr",
          "summary": "Waiting Time Contribution",
          "description": [
-            {"line": "SGEEE. Contribution to static urgency from waiting time. This can be any"},
-            {"line": "value. No need to make this a per task attribute as long as waiting time"},
-            {"line": "is a job attribute. Increases over time."},
-            {"line": "Not spooled."}
+            {
+               "line": "SGEEE. Contribution to static urgency from waiting time. This can be any"
+            },
+            {
+               "line": "value. No need to make this a per task attribute as long as waiting time"
+            },
+            {
+               "line": "is a job attribute. Increases over time."
+            },
+            {
+               "line": "Not spooled."
+            }
          ],
          "type": "lDoubleT",
          "flags": [
@@ -1463,7 +1597,9 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {"name": "SPOOL"}
+            {
+               "name": "SPOOL"
+            }
          ]
       },
       {

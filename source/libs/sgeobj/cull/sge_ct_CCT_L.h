@@ -71,7 +71,7 @@ LISTDEF(CCT_Type)
    SGE_LIST(CCT_ignore_queues, CTI_Type, CULL_DEFAULT)
    SGE_LIST(CCT_ignore_hosts, CTI_Type, CULL_DEFAULT)
    SGE_LIST(CCT_job_messages, MES_Type, CULL_DEFAULT)
-   SGE_REF(CCT_pe_job_slots, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_REF(CCT_pe_job_slots, CULL_ANY_SUBTYPE, CULL_NO_TRANSFER)
    SGE_ULONG(CCT_pe_job_slot_count, CULL_DEFAULT)
 LISTEND
 

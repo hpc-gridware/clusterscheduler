@@ -56,8 +56,8 @@ enum {
 
 LISTDEF(QETI_Type)
    SGE_DOUBLE(QETI_total, CULL_DEFAULT)
-   SGE_REF(QETI_resource_instance, RUE_Type, CULL_DEFAULT)
-   SGE_REF(QETI_queue_end_next, RDE_Type, CULL_DEFAULT)
+   SGE_REF(QETI_resource_instance, RUE_Type, CULL_NO_TRANSFER)
+   SGE_REF(QETI_queue_end_next, RDE_Type, CULL_NO_TRANSFER)
 LISTEND
 
 NAMEDEF(QETIN)

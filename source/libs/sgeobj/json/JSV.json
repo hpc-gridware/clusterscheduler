@@ -99,7 +99,11 @@
          "type": "lRefT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       },
       {
          "name": "out",
@@ -112,7 +116,11 @@
          "type": "lRefT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       },
       {
          "name": "err",
@@ -125,7 +133,11 @@
          "type": "lRefT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       },
       {
          "name": "has_to_restart",
@@ -171,7 +183,11 @@
          "type": "lRefT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       },
       {
          "name": "new_job",
@@ -184,7 +200,11 @@
          "type": "lRefT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       },
       {
          "name": "restart",

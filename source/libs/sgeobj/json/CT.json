@@ -77,7 +77,11 @@
          "type": "lListT",
          "subClassName": "CCT",
          "subCullPrefix": "CCT",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       },
       {
          "name": "messages_added",

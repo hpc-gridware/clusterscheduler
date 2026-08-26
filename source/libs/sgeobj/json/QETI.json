@@ -33,7 +33,11 @@
          "type": "lRefT",
          "subClassName": "ResourceUtilization",
          "subCullPrefix": "RUE",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       },
       {
          "name": "queue_end_next",
@@ -46,7 +50,11 @@
          "type": "lRefT",
          "subClassName": "ResourceDiagramEntry",
          "subCullPrefix": "RDE",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       }
    ]
 }

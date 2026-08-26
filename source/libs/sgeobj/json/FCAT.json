@@ -44,7 +44,11 @@
          "type": "lRefT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       },
       {
          "name": "project_share",
@@ -68,7 +72,11 @@
          "type": "lRefT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       },
       {
          "name": "dept_share",
@@ -92,7 +100,11 @@
          "type": "lRefT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       },
       {
          "name": "jobrelated_ticket_first",
@@ -105,7 +117,11 @@
          "type": "lRefT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       },
       {
          "name": "jobrelated_ticket_last",
@@ -118,7 +134,11 @@
          "type": "lRefT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       }
    ]
 }

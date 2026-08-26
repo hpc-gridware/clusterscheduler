@@ -44,7 +44,11 @@
          "type": "lRefT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": []
+         "flags": [
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
       }
    ]
 }
