@@ -29,7 +29,7 @@
  *
  *  Portions of this software are Copyright (c) 2011 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -69,6 +69,7 @@
 #include "sge_subordinate_qmaster.h"
 #include "sge_qmod_qmaster.h"
 #include "sge_advance_reservation_qmaster.h"
+#include "sge_calendar_qmaster.h"
 #include "msg_qmaster.h"
 
 typedef struct {
@@ -807,6 +808,17 @@ qinstance_change_state_on_calendar(lListElem *this_elem, const lListElem *calend
 
       ret = qinstance_change_state_on_calender_(this_elem, state, &state_changes_list, monitor, gdi_session);
 
+      if (when != 0) {
+         /* Arm the timer for the next state change of the calendar. A calendar gets a timer of its
+            own whenever it is added or modified and whenever one of its timed events is delivered,
+            but a queue instance that just got the calendar assigned would otherwise keep the state
+            computed above until something else re-evaluates the calendar. */
+         const char *cal_name = lGetString(calendar, CAL_name);
+
+         DPRINTF("queue %s: calendar %s, next state change at " sge_u64 "\n",
+                 lGetString(this_elem, QU_full_name), cal_name, when);
+         calendar_arm_timer(cal_name, when);
+      }
    }
    DRETURN(ret);
 }
@@ -895,6 +907,12 @@ static bool qinstance_change_state_on_calender_(lListElem *this_elem, u_long32 c
 
    lSetList(this_elem, QU_state_changes, *state_change_list);
    *state_change_list = nullptr;
+
+   if (old_cal_disabled != new_cal_disabled || old_cal_suspended != new_cal_suspended) {
+      // together with the calendar timer messages this shows whether a state change that the
+      // calendar announced has really reached the queue instance
+      INFO(MSG_CALENDAR_QINSTANCESTATE_SU, lGetString(this_elem, QU_full_name), cal_order);
+   }
 
    if (old_cal_disabled != new_cal_disabled) {
       sge_qmaster_qinstance_state_set_cal_disabled(this_elem, new_cal_disabled, gdi_session);

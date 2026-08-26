@@ -697,4 +697,11 @@
 #define MSG_NO_SSL_CONTEXT_FOUND                   _MESSAGE(33986, _("no SSL context found for security operations"))
 #define MSG_NEXT_CERTIFICATE_RENEWAL_AT_S          _MESSAGE(33987, _("next certificate renewal is scheduled at " SFN))
 
+// calendar timer diagnostics
+#define MSG_CALENDAR_NEXTSTATECHANGE_SUS           _MESSAGE(33988, _("calendar " SFQ ": state " sge_u32 ", next state change scheduled for " SFN))
+#define MSG_CALENDAR_NOSTATECHANGE_SU              _MESSAGE(33989, _("calendar " SFQ ": state " sge_u32 ", no further state change scheduled"))
+#define MSG_CALENDAR_TIMEREVENT_SSS                _MESSAGE(33990, _("calendar " SFQ ": timer event due at " SFN " delivered at " SFN))
+#define MSG_CALENDAR_QINSTANCESTATE_SU             _MESSAGE(33991, _("calendar changes the state of queue " SFQ " to calendar order " sge_u32))
+#define MSG_TE_CANNOTADDEVENT_US                   _MESSAGE(33992, _("cannot add timed event of type " sge_u32 " for " SFQ " to the timed event list"))
+
 // clang-format on

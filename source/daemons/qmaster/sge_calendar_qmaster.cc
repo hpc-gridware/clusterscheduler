@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -35,6 +35,7 @@
 #include <cstring>
 #include <sys/time.h>
 
+#include "uti/sge_dstring.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -252,6 +253,15 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       DRETURN_VOID;
    }
 
+   {
+      // the calendar timer is hard to diagnose after the fact - record that the event which was
+      // announced by calendar_update_queue_states() has indeed been delivered, and when
+      DSTRING_STATIC(due_dstr, 64);
+      DSTRING_STATIC(now_dstr, 64);
+      INFO(MSG_CALENDAR_TIMEREVENT_SSS, cal_name, sge_ctime64(te_get_when(anEvent), &due_dstr),
+           sge_ctime64(sge_get_gmt64(), &now_dstr));
+   }
+
    ocs::gdi::Packet packet;
    ocs::gdi::Task task;
    packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
@@ -264,6 +274,37 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    DRETURN_VOID;
 } /* sge_calendar_event_handler() */
+
+/****** qmaster/sge_calendar_qmaster/calendar_arm_timer() **********************
+*  NAME
+*     calendar_arm_timer() -- schedule the next state change of a calendar
+*
+*  FUNCTION
+*     Adds a one time event that makes the calendar be re-evaluated when its next
+*     state change is due. Any event that is still pending for the calendar is
+*     removed first: delivering an event recomputes the state of every queue
+*     instance using the calendar, so duplicates would repeat that sweep once per
+*     event, and the callers cannot tell whether a timer has been armed already.
+*
+*  INPUTS
+*     const char *cal_name - name of the calendar
+*     u_long64 when        - time of the next state change, must not be 0
+*
+*  NOTES
+*     MT-NOTE: calendar_arm_timer() is MT safe
+*******************************************************************************/
+void
+calendar_arm_timer(const char *cal_name, u_long64 when) {
+   DENTER(TOP_LAYER);
+
+   te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, cal_name);
+
+   te_event_t ev = te_new_event(when, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, cal_name);
+   te_add_event(ev);
+   te_free_event(&ev);
+
+   DRETURN_VOID;
+}
 
 int calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cep, lListElem *old_cep, gdi_object_t *object,
                                  lList **ppList, monitoring_t *monitor) {
@@ -282,11 +323,13 @@ int calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
    lFreeList(&state_changes_list);
 
    if (when != 0) {
-      te_event_t ev;
+      DSTRING_STATIC(when_dstr, 64);
+      INFO(MSG_CALENDAR_NEXTSTATECHANGE_SUS, cal_name, state, sge_ctime64(when, &when_dstr));
 
-      ev = te_new_event(when, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, cal_name);
-      te_add_event(ev);
-      te_free_event(&ev);
+      calendar_arm_timer(cal_name, when);
+   } else {
+      // no timer is armed - from now on only a calendar or queue modification can change the state
+      INFO(MSG_CALENDAR_NOSTATECHANGE_SU, cal_name, state);
    }
 
    DRETURN(0);

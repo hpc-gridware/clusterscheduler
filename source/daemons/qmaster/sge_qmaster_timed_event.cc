@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -479,6 +479,10 @@ te_add_event(te_event_t anEvent) {
    lSetUlong(le, TE_seqno, Event_Control.seq_no++);
 
    if (lInsertSorted(Event_Control.sort_order, le, Event_Control.list) != 0) {
+      // the event is lost here - without this message nothing would ever tell that the timer
+      // for e.g. a calendar state change was never armed
+      ERROR(MSG_TE_CANNOTADDEVENT_US, static_cast<u_long32>(anEvent->type),
+            anEvent->str_key != nullptr ? anEvent->str_key : MSG_SMALLNULL);
       lFreeElem(&le);
    }
 
