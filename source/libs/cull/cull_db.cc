@@ -345,12 +345,15 @@ lList *lSelectDestroy(lList *slp, const lCondition *cp) {
  * @param enp selects columns
  * @param isHash create hash or not
  * @param pb packbuffer
+ * @param skip_no_transfer true when the result will be handed out, so
+ *                         #CULL_NO_TRANSFER fields must not be taken over
  *
  * @return list containing the extracted elements
  */
 lListElem *
 lSelectElemPack(const lListElem *slp, const lCondition *cp,
-                const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) {
+                const lEnumeration *enp, bool isHash, sge_pack_buffer *pb,
+                const bool skip_no_transfer) {
    DENTER(CULL_LAYER);
 
    lListElem *new_ep = nullptr;
@@ -378,13 +381,13 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
          DRETURN(nullptr);
       }
       /* create reduced element */
-      new_ep = lSelectElemDPack(slp, cp, dp, enp, isHash, pb);
+      new_ep = lSelectElemDPack(slp, cp, dp, enp, isHash, pb, skip_no_transfer);
       /* free the descriptor, it has been copied by lCreateList */
       cull_hash_free_descr(dp);
       sge_free(&dp);
    } else {
       /* no enumeration => make a copy of element */
-      new_ep = lCopyElemHash(slp, isHash);
+      new_ep = lCopyElemHash(slp, isHash, skip_no_transfer);
    }
    DRETURN(new_ep);
 }
@@ -402,12 +405,15 @@ lSelectElemPack(const lListElem *slp, const lCondition *cp,
  * @param enp which fields to copy, or nullptr for all of them
  * @param isHash creates hash or not
  * @param pb packbuffer
+ * @param skip_no_transfer true when the result will be handed out, so
+ *                         #CULL_NO_TRANSFER fields must not be taken over
  *
  * @return list containing the extracted elements
  */
 lListElem *
 lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
-                 const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) {
+                 const lEnumeration *enp, bool isHash, sge_pack_buffer *pb,
+                 const bool skip_no_transfer) {
    DENTER(CULL_LAYER);
 
    lListElem *new_ep = nullptr;
@@ -426,7 +432,7 @@ lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
             DRETURN(nullptr);
          }
 
-         if (lCopyElemPartialPack(new_ep, &index, slp, enp, isHash, nullptr)) {
+         if (lCopyElemPartialPack(new_ep, &index, slp, enp, isHash, nullptr, skip_no_transfer)) {
             lFreeElem(&new_ep);
          }
       } else {
@@ -476,12 +482,14 @@ lList *lSelect(const char *name, const lList *slp, const lCondition *cp,
  * @param enp selects columns
  * @param isHash enables/disables the hash generation
  * @param pb packbuffer
+ * @param skip_no_transfer true when the result will be handed out, so
+ *                         #CULL_NO_TRANSFER fields must not be taken over
  *
  * @return list containing the extracted elements
  */
 lList *lSelectHashPack(const char *name, const lList *slp,
                        const lCondition *cp, const lEnumeration *enp,
-                       bool isHash, sge_pack_buffer *pb) {
+                       bool isHash, sge_pack_buffer *pb, const bool skip_no_transfer) {
    DENTER(CULL_LAYER);
 
    lList *ret = nullptr;
@@ -515,7 +523,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
             sge_free(&dp);
             DRETURN(nullptr);
          }
-         ret = lSelectDPack(name, slp, cp, dp, enp, isHash, nullptr);
+         ret = lSelectDPack(name, slp, cp, dp, enp, isHash, nullptr, skip_no_transfer);
 
          /* free the descriptor, it has been copied by lCreateList */
          cull_hash_free_descr(dp);
@@ -564,7 +572,7 @@ lList *lSelectHashPack(const char *name, const lList *slp,
       }
    } else {
       if (pb == nullptr) {
-         ret = lCopyListHash(slp->listname, slp, isHash);
+         ret = lCopyListHash(slp->listname, slp, isHash, skip_no_transfer);
       } else {
          cull_pack_list(pb, slp);
       }
@@ -586,11 +594,14 @@ lList *lSelectHashPack(const char *name, const lList *slp,
  * @param enp selects columns
  * @param isHash enables/disables the hash table creation
  * @param pb packbuffer
+ * @param skip_no_transfer true when the result will be handed out, so
+ *                         #CULL_NO_TRANSFER fields must not be taken over
  *
  * @return list containing the extracted elements
  */
 lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
-                    const lDescr *dp, const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) {
+                    const lDescr *dp, const lEnumeration *enp, bool isHash, sge_pack_buffer *pb,
+                    const bool skip_no_transfer) {
    DENTER(CULL_LAYER);
 
    lListElem *ep, *new_ep;
@@ -614,7 +625,7 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
       depending on result of lCompare
     */
    for (ep = slp->first; ep; ep = ep->next) {
-      new_ep = lSelectElemDPack(ep, cp, descr, enp, isHash, pb);
+      new_ep = lSelectElemDPack(ep, cp, descr, enp, isHash, pb, skip_no_transfer);
       if (new_ep != nullptr) {
          if (lAppendElem(dlp, new_ep) == -1) {
             LERROR(LEAPPENDELEM);

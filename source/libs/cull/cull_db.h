@@ -44,20 +44,23 @@ int lSplit(lList **slp, lList **ulp, const char *ulp_name, const lCondition *cp)
 
 lListElem *
 lSelectElemDPack(const lListElem *slp, const lCondition *cp, const lDescr *dp,
-                 const lEnumeration *enp, bool isHash, sge_pack_buffer *pb);
+                 const lEnumeration *enp, bool isHash, sge_pack_buffer *pb,
+                 bool skip_no_transfer = false);
 
 lListElem *
 lSelectElemPack(const lListElem *slp, const lCondition *cp,
-                const lEnumeration *enp, bool isHash, sge_pack_buffer *pb);
+                const lEnumeration *enp, bool isHash, sge_pack_buffer *pb,
+                bool skip_no_transfer = false);
 
 lList *lSelect(const char *name, const lList *slp, const lCondition *cp, const lEnumeration *ep);
 
 lList *lSelectHashPack(const char *name, const lList *slp,
                        const lCondition *cp, const lEnumeration *enp,
-                       bool isHash, sge_pack_buffer *pb);
+                       bool isHash, sge_pack_buffer *pb,
+                       bool skip_no_transfer = false);
 
 lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp, const lDescr *dp, const lEnumeration *enp,
-                    bool isHash, sge_pack_buffer *pb);
+                    bool isHash, sge_pack_buffer *pb, bool skip_no_transfer = false);
 
 lDescr *lGetReducedDescr(const lDescr *type, const lEnumeration *what);
 

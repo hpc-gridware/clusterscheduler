@@ -122,10 +122,12 @@ lListElem *lCopyElem(const lListElem *ep) {
  *
  * @param ep element
  * @param isHash true to build the hash tables of the copy as well
+ * @param skip_no_transfer true when the copy is one that will be handed out, so
+ *                         #CULL_NO_TRANSFER fields must not be taken over
  *
  * @return copy of 'ep'
  */
-lListElem *lCopyElemHash(const lListElem *ep, bool isHash) {
+lListElem *lCopyElemHash(const lListElem *ep, bool isHash, const bool skip_no_transfer) {
    DENTER(CULL_LAYER);
 
    lListElem *new_ep;
@@ -145,7 +147,7 @@ lListElem *lCopyElemHash(const lListElem *ep, bool isHash) {
    }
 
    for (index = 0; index < max; index++) {
-      if (lCopySwitchPack(ep, new_ep, index, index, isHash, nullptr, nullptr) != 0) {
+      if (lCopySwitchPack(ep, new_ep, index, index, isHash, nullptr, nullptr, skip_no_transfer) != 0) {
          lFreeElem(&new_ep);
 
          LERROR(LECOPYSWITCH);
@@ -195,13 +197,15 @@ int lModifyWhat(lListElem *dst, const lListElem *src, const lEnumeration *enp) {
  * @param enp enumeration
  * @param isHash true to build the hash tables of the copy as well
  * @param pb packbuffer
+ * @param skip_no_transfer true when the copy is one that will be handed out, so
+ *                         #CULL_NO_TRANSFER fields must not be taken over
  *
  * @return error state 0 - OK -1 - Error
  */
 int
 lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
                      const lEnumeration *enp, bool isHash,
-                     sge_pack_buffer *pb) {
+                     sge_pack_buffer *pb, const bool skip_no_transfer) {
    DENTER(CULL_LAYER);
 
    int i;
@@ -215,7 +219,7 @@ lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
       case WHAT_ALL:               /* all fields of element src is copied */
          if (pb == nullptr) {
             for (i = 0; src->descr[i].nm != NoName; i++, (*jp)++) {
-               if (lCopySwitchPack(src, dst, i, *jp, isHash, enp[0].ep, nullptr) != 0) {
+               if (lCopySwitchPack(src, dst, i, *jp, isHash, enp[0].ep, nullptr, skip_no_transfer) != 0) {
                   LERROR(LECOPYSWITCH);
                   DRETURN(-1);
                }
@@ -239,7 +243,8 @@ lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
                   DRETURN(-1);
                }
 
-               if (lCopySwitchPack(src, dst, enp[i].pos, *jp, isHash, enp[i].ep, nullptr) != 0) {
+               if (lCopySwitchPack(src, dst, enp[i].pos, *jp, isHash, enp[i].ep, nullptr,
+                                   skip_no_transfer) != 0) {
                   LERROR(LECOPYSWITCH);
                   DRETURN(-1);
                }
@@ -265,12 +270,14 @@ lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
  * @param isHash create Hash or not
  * @param ep enumeration oiter to be used for sublists
  * @param pb pack buffer
+ * @param skip_no_transfer true when the copy is one that will be handed out, so
+ *                         #CULL_NO_TRANSFER fields must not be taken over
  *
  * @return error state 0 - OK -1 - Error
  */
 int
 lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
-                bool isHash, lEnumeration *ep, sge_pack_buffer *pb) {
+                bool isHash, lEnumeration *ep, sge_pack_buffer *pb, const bool skip_no_transfer) {
    DENTER(CULL_LAYER);
 
    lList *tlp;
@@ -278,6 +285,17 @@ lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
 
    if ((!dep && !pb) || !sep) {
       DRETURN(-1);
+   }
+
+   /* A field marked CULL_NO_TRANSFER holds state that is meaningful only in the
+    * process that built it. When this copy is one that will be handed out - an
+    * event payload - the destination keeps what lCreateElem() gave it, which is
+    * nullptr for the pointer valued types and 0 for the scalar ones. Deciding it
+    * here, in the walk that has to happen anyway, means a marked sub-list is not
+    * even descended into, let alone duplicated. */
+   if (skip_no_transfer && !mt_do_transfer(dep->descr[dst_idx].mt)) {
+      dep->cont[dst_idx] = lMultiType{};
+      DRETURN(0);
    }
 
    switch (mt_get_type(dep->descr[dst_idx].mt)) {
@@ -308,14 +326,14 @@ lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
             dep->cont[dst_idx].glp = nullptr;
          else {
             dep->cont[dst_idx].glp = lSelectHashPack(tlp->listname, tlp, nullptr,
-                                                     ep, isHash, pb);
+                                                     ep, isHash, pb, skip_no_transfer);
          }
          break;
       case lObjectT:
          if ((tep = sep->cont[src_idx].obj) == nullptr) {
             dep->cont[dst_idx].obj = nullptr;
          } else {
-            lListElem *new_ep = lSelectElemPack(tep, nullptr, ep, isHash, pb);
+            lListElem *new_ep = lSelectElemPack(tep, nullptr, ep, isHash, pb, skip_no_transfer);
             new_ep->status = OBJECT_ELEM;
             dep->cont[dst_idx].obj = new_ep;
          }
@@ -1272,10 +1290,12 @@ lList *lCopyList(const char *name, const lList *src) {
  * @param name list name
  * @param src source list
  * @param hash if set to true, a hash table is generated
+ * @param skip_no_transfer true when the copy is one that will be handed out, so
+ *                         #CULL_NO_TRANSFER fields must not be taken over
  *
  * @return Copy of 'src' or nullptr
  */
-lList *lCopyListHash(const char *name, const lList *src, bool hash) {
+lList *lCopyListHash(const char *name, const lList *src, bool hash, const bool skip_no_transfer) {
    DENTER(CULL_LAYER);
 
    lList *dst = nullptr;
@@ -1300,7 +1320,7 @@ lList *lCopyListHash(const char *name, const lList *src, bool hash) {
    }
 
    for (sep = src->first; sep; sep = sep->next) {
-      if (lAppendElem(dst, lCopyElem(sep)) == -1) {
+      if (lAppendElem(dst, lCopyElemHash(sep, true, skip_no_transfer)) == -1) {
          lFreeList(&dst);
          LERROR(LEAPPENDELEM);
          DRETURN(nullptr);

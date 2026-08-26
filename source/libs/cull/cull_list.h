@@ -104,7 +104,7 @@ enum _enum_lMultiType {
 #define CULL_PRIMARY_KEY   0x00000100 ///< the field is part of the primary key; implies neither uniqueness nor hashing
 #define CULL_HASH          0x00000200 ///< build a hash table on this field; non unique unless #CULL_UNIQUE is also given
 #define CULL_UNIQUE        0x00000400 ///< the value must be unique across a list; currently only used when defining hash tables
-#define CULL_UNUSED0       0x00000800 ///< free for reuse
+#define CULL_NO_TRANSFER   0x00000800 ///< the value stays inside the process; it is neither packed nor delivered as event payload
 #define CULL_CONFIGURE     0x00001000 ///< the field may be changed by configuration functions; not yet implemented
 #define CULL_SPOOL         0x00002000 ///< the field is written when the object is spooled
 #define CULL_SUBLIST       0x00010000 ///< the field is spooled when the type appears as a subtype of another, where fewer fields are written
@@ -281,21 +281,23 @@ int lCompListDescr(const lDescr *dp0, const lDescr *dp1);
 
 lList *lCopyList(const char *name, const lList *src);
 
-lList *lCopyListHash(const char *name, const lList *src, bool hash);
+lList *lCopyListHash(const char *name, const lList *src, bool hash, bool skip_no_transfer = false);
 
 lListElem *lCopyElem(const lListElem *src);
 
-lListElem *lCopyElemHash(const lListElem *src, bool isHash);
+lListElem *lCopyElemHash(const lListElem *src, bool isHash, bool skip_no_transfer = false);
 
 int lModifyWhat(lListElem *dst, const lListElem *src, const lEnumeration *enp);
 
 int
 lCopyElemPartialPack(lListElem *dst, int *jp, const lListElem *src,
-                     const lEnumeration *ep, bool isHash, sge_pack_buffer *pb);
+                     const lEnumeration *ep, bool isHash, sge_pack_buffer *pb,
+                     bool skip_no_transfer = false);
 
 int
 lCopySwitchPack(const lListElem *sep, lListElem *dep, int src_idx, int dst_idx,
-                bool isHash, lEnumeration *ep, sge_pack_buffer *pb);
+                bool isHash, lEnumeration *ep, sge_pack_buffer *pb,
+                bool skip_no_transfer = false);
 
 int lAppendElem(lList *lp, lListElem *ep);
 
@@ -344,6 +346,7 @@ lListElem *lFindLastRW(const lList *lp, const lCondition *cp);
 #define mt_get_type(mt) ((mt) & 0x000000FF) ///< the @ref _enum_lMultiType out of a field's flags
 #define mt_do_hashing(mt) (((mt) & CULL_HASH) ? true : false) ///< is #CULL_HASH set on this field?
 #define mt_is_unique(mt) (((mt) & CULL_UNIQUE) ? true : false) ///< is #CULL_UNIQUE set on this field?
+#define mt_do_transfer(mt) (((mt) & CULL_NO_TRANSFER) ? false : true) ///< may the value of this field leave the process? (#CULL_NO_TRANSFER not set)
 
 #define for_each_ep(ep, lp) for (ep=lFirst(lp);ep;ep=lNext(ep))                          ///< walk a list front to back, read only
 #define for_each_rev(ep, lp) for (ep=lLast(lp);ep;ep=lPrev(ep))                          ///< walk a list back to front, read only

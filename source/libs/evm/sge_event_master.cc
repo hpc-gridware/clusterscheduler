@@ -284,6 +284,27 @@ const int SOURCE_LIST[LIST_MAX][3] = {
  *****************************************************
  */
 
+/**
+ * @brief What every event payload copy passes for lCopyElemHash()'s last argument
+ *
+ * CS-2634. A field marked #CULL_NO_TRANSFER holds state that is meaningful only
+ * in the process that built it, so it must not travel as event payload either.
+ * The copy that builds the payload is told to leave such a field at what
+ * lCreateElem() gave it, which costs nothing: the copy walks the whole object
+ * anyway, and a marked sub-list is not even descended into.
+ *
+ * Doing it here rather than per subscriber means the value is never copied at
+ * all. The packing layer honours the property on its own, but that only covers
+ * the subscribers that go over the wire - the qmaster's own mirrors of the
+ * derived data stores never pack, and would otherwise receive a copy of a value
+ * that the receiving side discards in favour of its own.
+ *
+ * Every place that builds an event payload has to pass this. There are three,
+ * all in this file: sge_add_event(), sge_add_list_event() and
+ * total_update_event().
+ */
+static constexpr bool SKIP_NO_TRANSFER = true;
+
 /// Number of entries in #total_update_events, and of rows in #block_events
 #define total_update_eventsMAX 18
 
@@ -1254,7 +1275,7 @@ bool sge_add_event_for_client(uint32_t event_client_id, uint64_t timestamp, ev_e
       }
 
       lp = lCreateListHash("Events", lGetElemDescr(element), false);
-      lAppendElem(lp, lCopyElemHash(element, false));
+      lAppendElem(lp, lCopyElemHash(element, false, SKIP_NO_TRANSFER));
 
       /* restore the original event object */
       if (temp_sub_lp != nullptr) {
@@ -1318,7 +1339,7 @@ bool sge_add_list_event(uint64_t timestamp, ev_event type,
             lXchgList(element, sub_list_elem, &temp_sub_lp);
          }
 
-         lAppendElem(lp, lCopyElemHash(element, false));
+         lAppendElem(lp, lCopyElemHash(element, false, SKIP_NO_TRANSFER));
 
          /* restore the original event object */
          if (temp_sub_lp != nullptr) {
@@ -2581,6 +2602,8 @@ static void total_update_event(lListElem *event_client, ev_event type, bool new_
             lp = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
             break;
          case sgeE_SCHED_CONF:
+            /* the only payload not built by the copy below, so a
+             * CULL_NO_TRANSFER field on SC_Type would need handling here */
             copy_lp = sconf_get_config_list();
             break;
          case sgeE_USER_LIST:
@@ -2607,7 +2630,7 @@ static void total_update_event(lListElem *event_client, ev_event type, bool new_
       } /* switch */
 
       if (lp != nullptr) {
-         copy_lp = lCopyListHash(lGetListName(lp), lp, false);
+         copy_lp = lCopyListHash(lGetListName(lp), lp, false, SKIP_NO_TRANSFER);
       }
 
       /* 'send_events()' will free the copy of 'lp' */

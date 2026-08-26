@@ -1836,7 +1836,9 @@ int lSetPosObject(lListElem *ep, int pos, lListElem *value) {
       ep->cont[pos].obj = value;
 
       /* mark lListElem as bound */
-      value->status = OBJECT_ELEM;
+      if (value != nullptr) {
+         value->status = OBJECT_ELEM;
+      }
    }
 
    DRETURN(0);

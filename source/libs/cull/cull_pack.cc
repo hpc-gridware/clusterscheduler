@@ -486,24 +486,39 @@ cull_pack_cont(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp,
                const lEnumeration *what, int flags) {
    DENTER(CULL_LAYER);
 
-   int i, ret;
-   int n;
+   /* A field marked CULL_NO_TRANSFER keeps its place in the descriptor, so the
+    * receiver sees an object of unchanged shape and lCountWhat() keeps agreeing
+    * with the loops below. Only the value is different: what a freshly created
+    * element carries. A zeroed lMultiType is exactly that — nullptr for the
+    * pointer valued types, 0 for the scalar ones — and packstr(), the list and
+    * the object writer all accept a null pointer, so no type needs a special
+    * encoding here. */
+   static constexpr lMultiType no_transfer_value{};
 
    if (what == nullptr) {
-      n = lCountDescr(dp);
-      for (i = 0; i < n; i++) {
+      const int n = lCountDescr(dp);
+
+      for (int i = 0; i < n; i++) {
          /* if flags are given, pack only fields matching flags, e.g. CULL_SPOOL */
          if (flags == 0 || (dp[i].mt & flags) != 0) {
-            if ((ret = cull_pack_switch(pb, &cp[i], nullptr, mt_get_type(dp[i].mt), flags))) {
+            const lMultiType *value = mt_do_transfer(dp[i].mt) ? &cp[i] : &no_transfer_value;
+            const int ret = cull_pack_switch(pb, value, nullptr, mt_get_type(dp[i].mt), flags);
+
+            if (ret != PACK_SUCCESS) {
                DRETURN(ret);
             }
          }
       }
    } else {
-      for (i = 0; what[i].nm != NoName; i++) {
+      for (int i = 0; what[i].nm != NoName; i++) {
          if (flags == 0 || (what[i].mt & flags) != 0) {
-            if ((ret = cull_pack_switch(pb, &cp[what[i].pos], what[i].ep,
-                                        mt_get_type(what[i].mt), flags))) {
+            /* also when the client asked for the field by name, not through ALL */
+            const bool do_transfer = mt_do_transfer(what[i].mt);
+            const lMultiType *value = do_transfer ? &cp[what[i].pos] : &no_transfer_value;
+            lEnumeration *const sub_what = do_transfer ? what[i].ep : nullptr;
+            const int ret = cull_pack_switch(pb, value, sub_what, mt_get_type(what[i].mt), flags);
+
+            if (ret != PACK_SUCCESS) {
                DRETURN(ret);
             }
          }
