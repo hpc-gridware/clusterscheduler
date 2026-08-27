@@ -722,6 +722,30 @@ in the startup environment. No setting may exceed the kernel's `fs.nr_open` sysc
 A soft `RLIMIT_NOFILE` limit below 32 is rejected by the communication library with "operating system provides
 too few file descriptors (at least 32 are required)" and `sge_qmaster` cannot set up communication at all.
 
+***MAX_RSMAP_IDS***
+
+Limits how many resource map ids xxQS_NAMExx creates implicitly when a *RSMAP* complex value on an exec host is
+written as a bare amount. `complex_values GPU=4` is read as four instances named 0 to 3 and is stored, and
+displayed by `qconf -se`, as `GPU=4(0-3)`; see xxqs_name_sxx_complex(5). Valid values are in the range from 0 to
+1048576. The default value is 512.
+
+Every id is one entry of the exec host object, so it occupies memory in `sge_qmaster`, is written to the spool
+and travels with the object whenever it is transferred. The limit exists to keep a mistyped or simply very large
+amount from doing that at scale. An amount above the limit is rejected with
+
+    RSMAP "<name>" would create <amount> ids implicitly, which exceeds the limit of <limit> - list the ids
+    explicitly or raise MAX_RSMAP_IDS in qmaster_params
+
+and the exec host is not modified. Listing the ids explicitly is not affected by this limit.
+
+0 switches the implicit ids off, so that a *RSMAP* value written as a bare amount is rejected outright. Use this
+if the ids should always be spelled out by the administrator, for instance because the instance names have to
+match device names on the host.
+
+The limit is applied when an exec host is added or modified and when exec hosts are read from the spool at
+startup. Raising it therefore also lets existing hosts that were configured with a large bare amount be
+expanded on the next start of `sge_qmaster`.
+
 ***MONITOR_TIME*** 
 
 Specifies the time interval when the monitoring information should be printed. The monitoring is disabled by 

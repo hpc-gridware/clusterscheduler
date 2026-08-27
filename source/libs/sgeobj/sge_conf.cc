@@ -305,6 +305,13 @@ static binding_params_t binding_conf;
 /// Default `MAX_DS_DEVIATION`: milliseconds before an update of the secondary data store is enforced
 #define DEFAULT_DS_DEVIATION (1000)
 
+/* upper bound for the ids an RSMAP may create implicitly from a bare amount,
+   see MAX_RSMAP_IDS in qmaster_params. 0 switches the implicit ids off, which
+   makes a bare amount an error again. */
+#define DEFAULT_MAX_RSMAP_IDS (512)
+#define LIMIT_MAX_RSMAP_IDS (1048576)
+static int max_rsmap_ids = DEFAULT_MAX_RSMAP_IDS;
+
 /*
  * Reserved usage flags
  *
@@ -401,6 +408,8 @@ struct qmaster_params_t {
    bool enable_mtrace = false;
    /// `MAX_DYN_EC` -- how many dynamic event clients may register
    int max_dynamic_event_clients = 1000;
+   /// `MAX_RSMAP_IDS` -- how many RSMAP ids will in max be created for bare RSMAP specification
+   int max_rsmap_ids = DEFAULT_MAX_RSMAP_IDS;
    /// `SIMULATE_EXECDS` -- pretend that execution daemons are there
    bool simulate_execds = false;
    /// `SCHEDULER_TIMEOUT` -- seconds the qmaster waits for the scheduler
@@ -1229,6 +1238,15 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
                qmaster_conf.max_ds_deviation = DEFAULT_DS_DEVIATION;
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "MAX_DS_DEVIATION", DEFAULT_DS_DEVIATION);
+            }
+            continue;
+         }
+         if (parse_int_param(s, "MAX_RSMAP_IDS", &qmaster_conf.max_rsmap_ids, ocs::CEntry::Type::INT)) {
+            if (qmaster_conf.max_rsmap_ids < 0 || qmaster_conf.max_rsmap_ids > LIMIT_MAX_RSMAP_IDS) {
+               qmaster_conf.max_rsmap_ids = DEFAULT_MAX_RSMAP_IDS;
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "MAX_RSMAP_IDS",
+                                       DEFAULT_MAX_RSMAP_IDS);
             }
             continue;
          }
@@ -3851,14 +3869,6 @@ void mconf_set_max_dynamic_event_clients(int value) {
    DRETURN_VOID;
 }
 
-/**
- * @brief The `max_dynamic_event_clients` setting of the master configuration
- *
- * Takes the master configuration read lock, so the value is a consistent
- * snapshot even while a new configuration is being applied.
- *
- * @return the configured value
- */
 int mconf_get_max_dynamic_event_clients() {
    DENTER(BASIS_LAYER);
 
@@ -3867,6 +3877,19 @@ int mconf_get_max_dynamic_event_clients() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = qmaster_conf.max_dynamic_event_clients;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+int mconf_get_max_rsmap_ids() {
+   DENTER(BASIS_LAYER);
+
+   int ret;
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = max_rsmap_ids;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);

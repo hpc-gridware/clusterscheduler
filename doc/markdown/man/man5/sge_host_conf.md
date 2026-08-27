@@ -99,6 +99,18 @@ Each characteristic name (`device`, `memory`, `affinity_mask` in the example) mu
 as a complex before it can be attached to an RSMAP instance; the referenced complex's
 type governs how the value is parsed. See xxqs_name_sxx_complex(5) for the full grammar.
 
+A *RSMAP* may also be written as a plain amount, without naming the instances. They are then named `0`
+to *amount*-1, so
+
+    complex_values GPU=4
+
+is stored and displayed as
+
+    complex_values GPU=4(0-3)
+
+The number of instances that may be named this way is limited by *MAX_RSMAP_IDS* in *qmaster_params*
+(see xxqs_name_sxx_conf(5)).
+
 ## load_values
 
 This entry cannot be configured but is only displayed in case of a qconf(1) `-se` command. All load values are 
