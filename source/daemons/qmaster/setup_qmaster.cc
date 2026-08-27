@@ -862,7 +862,7 @@ setup_qmaster() {
          if (hgrp == nullptr) {
             hgrp = lAddElemHost(master_hgroup_list, HGRP_name, hgrp_name, HGRP_Type);
             if (hgrp == nullptr) {
-               CRITICAL(MSG_SGETEXT_NOMEM);
+               CRITICAL(SFNMAX, MSG_SGETEXT_NOMEM);
                DRETURN(-1);
             }
             changed = true;

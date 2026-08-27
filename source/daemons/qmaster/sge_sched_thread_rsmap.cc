@@ -142,7 +142,7 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
          // resource list: that list only carries the RSMAP ids and the binding information into the
          // booking, numeric consumables are debited from the job request itself
          // (see rc_debit_consumable()). So we skip it instead of failing.
-         if (type != TYPE_RSMAP) {
+         if (type != ocs::CEntry::Type::RSMAP) {
             DPRINTF("gru_list_add_request: %s not defined at host level, nothing to grant\n", name);
             DRETURN(true);
          }
