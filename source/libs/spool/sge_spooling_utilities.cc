@@ -50,6 +50,7 @@
 
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_schedd_conf.h"
@@ -426,6 +427,13 @@ bool spool_default_validate_func(lList **answer_list,
             /* necessary to init double values of consumable configuration */
             centry_list_fill_request(lGetListRW(object, EH_consumable_config_list), nullptr, master_centry_list, true,
                                      false, true);
+            /* an RSMAP that was spooled as a bare amount gets the ids 0 to amount-1 here, which
+               repairs a host that was configured before the ids were created implicitly. Has to
+               happen before debit_host_consumable() below, which sets up the per id booking. */
+            lList *rsmap_centries = lGetListRW(object, EH_consumable_config_list);
+            if (!centry_list_rsmap_expand_implicit_ids(answer_list, rsmap_centries)) {
+               ret = false;
+            }
             /* necessary to setup actual list of exechost */
             debit_host_consumable(nullptr, nullptr, nullptr, nullptr, object, master_centry_list, 0, true, true, nullptr);
 

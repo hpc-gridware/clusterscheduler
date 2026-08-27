@@ -371,5 +371,6 @@
 #define MSG_RSMAP_CHARACTERISTIC_UNKNOWN_SSS   _MESSAGE(64560, _("RSMAP " SFQ " id " SFQ ": characteristic " SFQ " is not a defined complex"))
 #define MSG_RSMAP_CHARACTERISTIC_DUPLICATE_SSS _MESSAGE(64561, _("RSMAP " SFQ " id " SFQ ": characteristic " SFQ " is set more than once"))
 #define MSG_RSMAP_CHARACTERISTIC_PARSE_SSSS    _MESSAGE(64562, _("RSMAP " SFQ " id " SFQ ": characteristic " SFQ " value cannot be parsed: " SFN))
+#define MSG_RSMAP_TOO_MANY_IMPLICIT_IDS_SUU    _MESSAGE(64563, _("RSMAP " SFQ " would create " sge_u32 " ids implicitly, which exceeds the limit of " sge_u32 " - list the ids explicitly or raise MAX_RSMAP_IDS in qmaster_params"))
 
 // clang-format on

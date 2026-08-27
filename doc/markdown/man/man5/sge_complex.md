@@ -413,6 +413,18 @@ comparisons or in case of load scaling for the load complex entries:
 
         complex_values GPU=2(gpu0[device=/dev/nvidia0,memory=80G] gpu1[device=/dev/nvidia1,memory=80G])
 
+    The id list may be left out, in which case the value is just the amount:
+
+        <name>=<amount>
+
+    The instances are then named `0` to *amount*-1, so `GPU=4` is equivalent to `GPU=4(0-3)` and is
+    stored and displayed in that longer form. This is a convenience for resources whose instances have
+    no meaningful names of their own; instances created this way carry no characteristics. An amount of
+    `0` means the host provides no instance at all and stays `0`. How many ids may be created this way
+    is limited by *MAX_RSMAP_IDS* in *qmaster_params* (default 512, see xxqs_name_sxx_conf(5)); a larger
+    amount is rejected and has to be written as an explicit id list. Setting *MAX_RSMAP_IDS* to 0
+    rejects the short form altogether.
+
     See xxqs_name_sxx_host_conf(5) for placement inside a host configuration.
 
 ## relop
