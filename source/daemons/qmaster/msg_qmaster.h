@@ -697,6 +697,7 @@
 #define MSG_REQLIMIT_NOTSUPPORTED                  _MESSAGE(33978, _("gdi_request_limits are not supported in Open Cluster Scheduler."))
 #define MSG_SGETEXT_BINDING_NOT_AVAILABLE          _MESSAGE(33979, _("-bsort, -bstart and -bstop options are not available in OCS. Request a demo license of GCS to use these options."))
 #define MSG_JOB_ALREADYFINISHED_NOMOD_U            _MESSAGE(33980, _("job " sge_u32 " is already finished; modification requests are not applied"))
+#define MSG_JOB_CANNOTBOOKRESOURCE_SSUU            _MESSAGE(33981, _("cannot book resource " SFQ " on host " SFQ " for job " sge_u32 "." sge_u32 ", the job is started without it"))
 
 // ocs_security_qmaster.cc
 #define MSG_NO_COMMLIB_HANDLE_FOUND                _MESSAGE(33985, _("no commlib handle found for security operations"))
