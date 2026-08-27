@@ -4552,6 +4552,24 @@ int sge_parse_qconf(char *argv[]) {
          }
          lFreeList(&answer_list);
 
+         /*
+          * CS-2677: "qconf -sobjl queue hostlist <pattern>" matches against the
+          * host list, which the queue does not carry any more -- it is the
+          * member list of "@@<queue>". Fetch the groups and join them on, so
+          * the pattern is matched against what "qconf -sq" would print.
+          */
+         {
+            lEnumeration *hgrp_what = lWhat("%T(ALL)", HGRP_Type);
+            lList *hgrp_list = nullptr;
+            lList *hgrp_answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &hgrp_list, nullptr, hgrp_what);
+
+            lFreeWhat(&hgrp_what);
+            answer_exit_if_not_recoverable(lFirst(hgrp_answer_list));
+            cqueue_list_fill_hostlist(list, hgrp_list);
+            lFreeList(&hgrp_list);
+            lFreeList(&hgrp_answer_list);
+         }
+
          for_each_rw_lv (elem, list) {
             int index = 0;
             bool already_handled = false;

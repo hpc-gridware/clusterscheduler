@@ -164,7 +164,9 @@ spool_classic_create_context(lList **answer_list, const char *args) {
                   field_info[i].instr  = nullptr;
                   break;
                case SGE_TYPE_CQUEUE:
-                  field_info[i].fields = CQ_fields;
+                  /* without the host list: it lives in the queue host group
+                   * @@<queue> and is spooled with that group (CS-2677) */
+                  field_info[i].fields = sge_build_CQ_field_list(false);
                   field_info[i].instr  = &qconf_sfi;
                   break;
                case SGE_TYPE_HGROUP:
@@ -382,6 +384,9 @@ bool spool_classic_default_shutdown_func(lList **answer_list,
       // for most type we use static fields but for some we need to free the dynamic fields
       // @see spool_classic_create_context
       switch (i) {
+         case SGE_TYPE_CQUEUE:
+            field_info[i].fields = spool_free_spooling_fields(field_info[i].fields);
+            break;
          case SGE_TYPE_QINSTANCE:
             field_info[i].fields = spool_free_spooling_fields(field_info[i].fields);
             break;

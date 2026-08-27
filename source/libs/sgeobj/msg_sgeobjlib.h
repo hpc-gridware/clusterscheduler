@@ -236,6 +236,13 @@
 #define MSG_CENTRY_QINOTALLOWED        _MESSAGE(64303, _("Queue instance names are not allowed in -l resource requests"))
 #define MSG_OBJECT_VALUENOTULONG_S     _MESSAGE(64304, _(SFQ " is not an uint32_t value"))
 #define MSG_CQUEUE_INVALIDDOMSETTING_SS _MESSAGE(64305, _("Did not modify " SFQ " for host group " SFQ " which does not exist."))
+
+/* CS-2677, N-O-4: a queue host group carries the host list of its cluster queue
+ * and is reachable under the queue's own name; naming it from somewhere else
+ * would make one queue's host set a member of another object's. Lives here
+ * rather than in the qmaster catalogue because the same refusal is needed on
+ * both sides of GDI. */
+#define MSG_HGRP_QUEUEGROUP_NOREF_S _MESSAGE(64563, _(SFQ " belongs to a cluster queue and cannot be referenced"))
 #define MSG_HGRP_INVALIDHOSTGROUPNAME_S _MESSAGE(64306, _("host group name " SFQ " is not valid"))
 #define MSG_WEIGHTFACTNONUMB_SS         _MESSAGE(64307, _(SFQ " uses " SFQ " as weighting factor (only numbers are allowed)"))
 #define MSG_MULTIPLEWEIGHTFACT_S        _MESSAGE(64308, _(SFQ " may not use multiple weighting factors"))

@@ -147,6 +147,34 @@ cqueue_get_via_gdi(lList **answer_list, const char *name) {
       }
       lFreeList(&cqueue_list);
       lFreeList(&gdi_answer_list);
+
+      /*
+       * CS-2677: the queue arrives without its host list -- that list is the
+       * member list of "@@<queue>". Fetch the group and join the two, so the
+       * caller sees the configuration in the shape it has always had (N-X-1).
+       * A second request rather than a multi-request: this is the one-object
+       * path, and the callers that fetch many use cqueue_hgroup_get_*_via_gdi().
+       */
+      if (ret != nullptr) {
+         dstring name_buffer = DSTRING_INIT;
+         const char *group_name = hgroup_queue_group_name(name, &name_buffer);
+         lList *hgroup_list = nullptr;
+
+         what = lWhat("%T(ALL)", HGRP_Type);
+         where = lWhere("%T(%I==%s)", HGRP_Type, HGRP_name, group_name);
+         gdi_answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &hgroup_list, where, what);
+         lFreeWhat(&what);
+         lFreeWhere(&where);
+
+         if (!answer_list_has_error(&gdi_answer_list)) {
+            cqueue_fill_hostlist(ret, hgroup_list);
+         } else {
+            answer_list_replace(answer_list, &gdi_answer_list);
+         }
+         lFreeList(&hgroup_list);
+         lFreeList(&gdi_answer_list);
+         sge_dstring_free(&name_buffer);
+      }
    }
 
    DRETURN(ret);
@@ -201,7 +229,12 @@ static bool cqueue_hgroup_get_via_gdi(lList **answer_list,
    if (hgrp_list != nullptr && cq_list != nullptr) {
       ocs::gdi::Request gdi_multi{};
       lCondition *cqueue_where = nullptr;
-      bool fetch_all_hgroup = false;
+      /*
+       * CS-2677: always. The host groups used to be needed only to resolve a
+       * queue domain; now every queue's host list is one of them ("@@<queue>"),
+       * so a queue cannot be rendered without them.
+       */
+      bool fetch_all_hgroup = true;
       bool fetch_all_qi = false;
       bool fetch_all_nqi = false;
       int hgrp_id = 0;
@@ -221,7 +254,6 @@ static bool cqueue_hgroup_get_via_gdi(lList **answer_list,
                ANSWER_QUALITY_ERROR, MSG_CQUEUE_NOQMATCHING_S, name);
          }
 
-         fetch_all_hgroup = (fetch_all_hgroup || has_domain) ? true : false;
          fetch_all_qi = (fetch_all_qi || (has_domain || has_hostname)) ? true : false;
          fetch_all_nqi = (fetch_all_nqi || (!has_domain && !has_hostname)) ? true : false;
 
@@ -287,6 +319,10 @@ static bool cqueue_hgroup_get_via_gdi(lList **answer_list,
             }
          } 
          lFreeList(&local_answer_list);
+      }
+      /* CS-2677: join the host lists back on, from the groups fetched above */
+      if (ret && fetch_all_hgroup) {
+         cqueue_list_fill_hostlist(*cq_list, *hgrp_list);
       }
       lFreeWhere(&cqueue_where);
    }
@@ -355,6 +391,11 @@ cqueue_hgroup_get_all_via_gdi(lList **answer_list,
          }
       } 
       lFreeList(&local_answer_list);
+
+      /* CS-2677: join the host lists back on, from the groups fetched above */
+      if (ret) {
+         cqueue_list_fill_hostlist(*cq_list, *hgrp_list);
+      }
    }
    DRETURN(ret);
 }

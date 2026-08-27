@@ -92,6 +92,21 @@ char* cqueue_get_name_from_qinstance(const char *queue_instance);
 lListElem *
 cqueue_create(lList **answer_list, const char *name);
 
+/* CS-2677: the host list of a cluster queue, i.e. the member list of the host
+ * group "@@<queue>" it owns. Replaces lGetList(cqueue, CQ_hostlist), which is
+ * empty on every element the master list holds. */
+const lList *
+cqueue_get_hostlist(const lListElem *cqueue, const lList *master_hgroup_list);
+
+/* CS-2677: the client side of the above -- join the member list of "@@<queue>"
+ * back onto a fetched queue, so that the configuration renders and round-trips
+ * in the shape it always had. */
+void
+cqueue_fill_hostlist(lListElem *cqueue, const lList *master_hgroup_list);
+
+void
+cqueue_list_fill_hostlist(lList *cqueue_list, const lList *master_hgroup_list);
+
 bool 
 cqueue_is_href_referenced(const lListElem *this_elem, 
                           const lListElem *href, bool only_hostlist);

@@ -825,7 +825,7 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
          continue;
       }
 
-      const lList *cq_hostlist = lGetList(cqueue, CQ_hostlist);
+      const lList *cq_hostlist = cqueue_get_hostlist(cqueue, master_hgroup_list);
       lList *before_mod_list = nullptr;
       lList *after_mod_list = nullptr;
       lList *real_add_hosts = nullptr;

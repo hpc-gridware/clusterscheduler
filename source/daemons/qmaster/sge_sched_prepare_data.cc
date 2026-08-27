@@ -63,7 +63,10 @@
 
 static const int cqueue_field_ids[] = {
         CQ_name,
-        CQ_hostlist,
+        /* CS-2677: CQ_hostlist was subscribed here and read nowhere in the
+         * scheduler. The host list of a cluster queue is the member list of
+         * its host group now; what the scheduler needs -- which hosts the
+         * queue reaches -- it takes from CQ_qinstances, as it always did. */
         CQ_qinstances,
         CQ_consumable_config_list,
         CQ_projects,

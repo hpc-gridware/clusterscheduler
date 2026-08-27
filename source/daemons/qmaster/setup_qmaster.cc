@@ -966,6 +966,50 @@ setup_qmaster() {
    cqueue_list_set_unknown_state(*(ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE)), nullptr, false, true, ocs::SessionManager::GDI_SESSION_NONE);
 
    /*
+    * CS-2677: every cluster queue owns the host group carrying its host list.
+    * The groups were read above, before the queues, so the ones that exist are
+    * already in place; this seeds the ones that are not.
+    *
+    * A queue without its group is not an error to report but a state to repair:
+    * it is what a spool written before this change leaves behind, and what a
+    * queue add interrupted between the two writes would leave. An empty group
+    * means a queue with no instances, which is the same thing the missing host
+    * list said. The full migration belongs to the upgrade.
+    */
+   {
+      lList **master_hgroup_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
+      dstring name_buffer = DSTRING_INIT;
+      const lListElem *cqueue;
+
+      for_each_ep(cqueue, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
+         const char *group_name = hgroup_queue_group_name(lGetString(cqueue, CQ_name), &name_buffer);
+
+         if (hgroup_list_locate(*master_hgroup_list, group_name) != nullptr) {
+            continue;
+         }
+
+         lListElem *hgrp = hgroup_create(&answer_list, group_name, nullptr, false);
+
+         if (hgrp == nullptr ||
+             !spool_write_object(&answer_list, spooling_context, hgrp, group_name, SGE_TYPE_HGROUP)) {
+            answer_list_output(&answer_list);
+            CRITICAL(MSG_HGRP_RESERVED_NOSEED_S, group_name);
+            sge_dstring_free(&name_buffer);
+            DRETURN(-1);
+         }
+         lAppendElem(*master_hgroup_list, hgrp);
+         INFO(MSG_SGETEXT_ADDEDTOLIST_SSSS, "qmaster", "local", group_name, "host group entry");
+      }
+      sge_dstring_free(&name_buffer);
+
+      /* the seeded groups are empty, so no resolution changed -- but they must
+       * carry a cache like every other group (CS-2451) */
+      if (!hgroup_list_update_caches(*master_hgroup_list, &answer_list)) {
+         answer_list_output(&answer_list);
+      }
+   }
+
+   /*
     * Initialize cached values for each qinstance:
     *    - fullname
     *    - suspend_on_subordinate

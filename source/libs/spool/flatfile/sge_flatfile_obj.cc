@@ -974,6 +974,46 @@ spooling_field *sge_build_CONF_field_list(bool spool_config) {
    return fields;
 }
 
+/** @brief Build the field list of a cluster queue
+ *
+ * A copy of #CQ_fields, optionally without the `hostlist` entry. The two
+ * callers want different things from the same table, which is why this
+ * exists at all: what an administrator edits under `qconf -mq` still carries
+ * the host list, but the queue's spool file must not - the host list of a
+ * cluster queue lives in its queue host group `@@<queue>` and is spooled with
+ * that group (CS-2677). A second copy in the queue file would be a copy that
+ * can disagree.
+ *
+ * @param with_hostlist keep the `hostlist` entry, the layout `qconf -sq` shows
+ * @return the field list, to be freed with #spool_free_spooling_fields
+ */
+spooling_field *sge_build_CQ_field_list(bool with_hostlist) {
+   int size = 0;
+
+   while (CQ_fields[size].nm != NoName) {
+      size++;
+   }
+   size++;   /* the terminating entry */
+
+   auto *fields = (spooling_field *)sge_malloc(sizeof(spooling_field) * size);
+   int count = 0;
+
+   for (int i = 0; CQ_fields[i].nm != NoName; i++) {
+      if (!with_hostlist && CQ_fields[i].nm == CQ_hostlist) {
+         continue;
+      }
+      fields[count] = CQ_fields[i];
+
+      /* the copy owns neither the name nor the sub fields; the static table does */
+      fields[count].free_name = false;
+      fields[count].free_sub_fields = false;
+      count++;
+   }
+   create_spooling_field(&fields[count], NoName, 21, nullptr, false, nullptr, false, nullptr, nullptr, nullptr);
+
+   return fields;
+}
+
 /** @brief Build the field list of a queue instance
  * @param to_stdout use the layout `qconf -sq` shows
  * @param to_file   use the spool file layout

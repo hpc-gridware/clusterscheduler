@@ -303,6 +303,79 @@ bool hgroup_is_system_maintained(const char *name) {
 }
 
 /**
+ * @brief Is this the host group carrying the host list of a cluster queue?
+ *
+ * CS-2677. Queue host groups are named `@@<queue>`. The prefix is reserved
+ * rather than merely conventional: hgroup_check_name() validates a name from
+ * its second character on and `@` is among the characters KEY_TABLE forbids,
+ * so no administrator can write one.
+ *
+ * This is deliberately not part of hgroup_is_system_maintained(): that
+ * predicate refuses every write, and the member list of a queue host group is
+ * exactly what an administrator edits. What the system owns is the lifecycle.
+ *
+ * @param name host group name including the leading '@'
+ *
+ * @return true if the group belongs to a cluster queue
+ *
+ * @note MT-NOTE: hgroup_is_queue_group() is MT safe
+ */
+bool hgroup_is_queue_group(const char *name) {
+   return name != nullptr && strncmp(name, QUEUE_HOSTGROUP_PREFIX,
+                                     sizeof(QUEUE_HOSTGROUP_PREFIX) - 1) == 0;
+}
+
+/**
+ * @brief The name of the host group carrying a cluster queue's host list
+ *
+ * CS-2677. The name is derived and stored nowhere: neither object carries a
+ * field pointing at the other, which is what keeps the two from disagreeing.
+ *
+ * @param cqueue_name name of the cluster queue
+ * @param buffer receives the name
+ *
+ * @return the name, or nullptr if either argument is missing
+ *
+ * @note MT-NOTE: hgroup_queue_group_name() is MT safe
+ */
+const char *
+hgroup_queue_group_name(const char *cqueue_name, dstring *buffer) {
+   if (cqueue_name == nullptr || buffer == nullptr) {
+      return nullptr;
+   }
+   sge_dstring_clear(buffer);
+   sge_dstring_append(buffer, QUEUE_HOSTGROUP_PREFIX);
+   sge_dstring_append(buffer, cqueue_name);
+
+   return sge_dstring_get_string(buffer);
+}
+
+/**
+ * @brief The cluster queue a queue host group belongs to
+ *
+ * CS-2677, the other direction of hgroup_queue_group_name(). N-T-5 rests on
+ * it: a host group change finds the queues it affects by asking each of them
+ * whether it names the group, and a queue host group is named by no host list,
+ * its own included. The relation is carried by the name, and the lookup has to
+ * be told so.
+ *
+ * @param name host group name including the leading '@'
+ *
+ * @return a pointer into "name" past the prefix, or nullptr if "name" is not a queue host group
+ *
+ * @note MT-NOTE: hgroup_queue_of_group_name() is MT safe
+ */
+const char *
+hgroup_queue_of_group_name(const char *name) {
+   if (!hgroup_is_queue_group(name)) {
+      return nullptr;
+   }
+   const char *queue_name = name + sizeof(QUEUE_HOSTGROUP_PREFIX) - 1;
+
+   return (*queue_name != '\0') ? queue_name : nullptr;
+}
+
+/**
  * @brief Determine if the name is a valid hgroup name
  *
  * Determine if the given name is a valid hostgroup name. If not

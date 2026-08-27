@@ -39,6 +39,8 @@
  * @brief Gettext wrappers, so that a message can be marked for translation whether or not the build has gettext
  */
 
+#include <climits>   // NAME_MAX, for the spool-derived name limits below
+
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
 
 #  include <libintl.h>
@@ -103,4 +105,27 @@
 typedef char stringT[MAX_STRING_SIZE];
 
 #define MAX_VERIFY_STRING 512   ///< longest string accepted when verifying a job request
+
+/** @brief The longest object name classic spooling can store
+ *
+ * CS-2677. Classic spooling writes every object to `<dir>/.<name>` and renames
+ * that to `<dir>/<name>` once the write succeeded, so the name plus the leading
+ * dot has to fit into one path component (`NAME_MAX`, 255 on Linux). The limit
+ * is therefore one character below the file name limit and not #MAX_VERIFY_STRING,
+ * which is what #verify_obj_name checks against.
+ *
+ * It is a property of one spooling backend -- Berkeley DB has no file names --
+ * but it is enforced for every backend on purpose: a configuration that cannot
+ * be moved to classic spooling is a trap, and the few characters are worth less
+ * than the guarantee.
+ */
+#define MAX_SPOOL_OBJECT_NAME (NAME_MAX - 1)
+
+/** @brief The longest cluster queue name
+ *
+ * CS-2677: two characters shorter than #MAX_SPOOL_OBJECT_NAME. A cluster queue
+ * owns the host group `@@<queue>` carrying its host list, and that group is
+ * spooled as `.@@<queue>` -- the longer of the two file names is what decides.
+ */
+#define MAX_CQUEUE_NAME (MAX_SPOOL_OBJECT_NAME - 2)
 

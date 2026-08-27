@@ -329,6 +329,86 @@ cqueue_create(lList **answer_list, const char *name) {
 }
 
 /**
+ * @brief The host list of a cluster queue
+ *
+ * CS-2677. A cluster queue does not carry a host list any more -- it owns the
+ * host group `@@<queue>`, and that group's member list is the host list. This
+ * is the accessor that replaces `lGetList(cqueue, CQ_hostlist)`, and the only
+ * way the qmaster should reach it: the field of the same name still exists,
+ * but it carries an instruction on its way in and is empty on every element
+ * the master list holds.
+ *
+ * What is returned is the member list as written -- host names, group
+ * references, and whatever else a host group may contain. Callers wanting the
+ * hosts it reaches resolve it with href_list_find_all_references().
+ *
+ * @param cqueue CQ_Type object
+ * @param master_hgroup_list HGRP_Type master list
+ *
+ * @return the member list (HR_Type), or nullptr when the queue has no group yet
+ *
+ * @note MT-NOTE: cqueue_get_hostlist() is MT safe
+ */
+const lList *
+cqueue_get_hostlist(const lListElem *cqueue, const lList *master_hgroup_list) {
+   if (cqueue == nullptr) {
+      return nullptr;
+   }
+   dstring name_buffer = DSTRING_INIT;
+   const char *group_name = hgroup_queue_group_name(lGetString(cqueue, CQ_name), &name_buffer);
+   const lListElem *hgroup = hgroup_list_locate(master_hgroup_list, group_name);
+
+   sge_dstring_free(&name_buffer);
+
+   return (hgroup != nullptr) ? lGetList(hgroup, HGRP_host_list) : nullptr;
+}
+
+/**
+ * @brief Put the host list onto a cluster queue, for a client that renders it
+ *
+ * CS-2677, the client side of cqueue_get_hostlist(). What GDI hands out is a
+ * queue without a host list -- the list is the member list of the queue's host
+ * group, and travels as a host group. A client that displays or edits a queue
+ * configuration wants the two joined again, in the shape the configuration
+ * format has always had (N-X-1), and this joins them: on the client's own
+ * copy, from the host groups it fetched in the same request.
+ *
+ * The field it fills is the one a write travels in, so an element completed
+ * here and sent back unchanged reproduces the same member list -- which is
+ * what makes the round trip idempotent (N-X-3).
+ *
+ * @param cqueue CQ_Type object, modified in place
+ * @param master_hgroup_list HGRP_Type list, as fetched from the qmaster
+ *
+ * @note MT-NOTE: cqueue_fill_hostlist() is MT safe
+ */
+void
+cqueue_fill_hostlist(lListElem *cqueue, const lList *master_hgroup_list) {
+   const lList *href_list = cqueue_get_hostlist(cqueue, master_hgroup_list);
+
+   if (cqueue != nullptr) {
+      lSetList(cqueue, CQ_hostlist, (href_list != nullptr) ? lCopyList("", href_list) : nullptr);
+   }
+}
+
+/**
+ * @brief Put the host list onto every cluster queue of a list
+ *
+ * @param cqueue_list CQ_Type list, modified in place
+ * @param master_hgroup_list HGRP_Type list, as fetched from the qmaster
+ *
+ * @note MT-NOTE: cqueue_list_fill_hostlist() is MT safe
+ */
+void
+cqueue_list_fill_hostlist(lList *cqueue_list, const lList *master_hgroup_list) {
+   lListElem *cqueue;
+
+   for_each_rw(cqueue, cqueue_list) {
+      cqueue_fill_hostlist(cqueue, master_hgroup_list);
+   }
+}
+
+/**
  * @brief Is a host/hostgroup referenced in cqueue
  *
  * Is the given "href" (host or hostgroup referenece) used in the
@@ -350,15 +430,22 @@ bool cqueue_is_href_referenced(const lListElem *this_elem,
       const char *href_name = lGetHost(href, HR_name);
       
       if (href_name != nullptr) {
-         const lList *href_list = lGetList(this_elem, CQ_hostlist);
-         const lListElem *tmp_href = lGetElemHost(href_list, HR_name, href_name);
-
          /*
-          * Is the host group part of the hostlist definition ...
+          * Is it the host group carrying this queue's host list ...
+          *
+          * CS-2677, N-T-5. This used to be a lookup in the queue's own host
+          * list. There is none any more: the host list is the member list of
+          * "@@<queue>", and no host list names that group -- its own included.
+          * The relation is carried by the name, so the name is what is asked.
           */
-         if (tmp_href != nullptr) {
+         dstring group_buffer = DSTRING_INIT;
+         const char *own_group = hgroup_queue_group_name(lGetString(this_elem, CQ_name),
+                                                         &group_buffer);
+
+         if (own_group != nullptr && strcmp(own_group, href_name) == 0) {
             ret = true;
          }
+         sge_dstring_free(&group_buffer);
 
          /*
           * ... or is it contained on one of the attribute lists
@@ -399,13 +486,18 @@ bool cqueue_is_hgroup_referenced(const lListElem *this_elem, const lListElem *hg
       const char *name = lGetHost(hgroup, HGRP_name);
       
       if (name != nullptr) {
-         const lList *href_list = lGetList(this_elem, CQ_hostlist);
-         const lListElem *tmp_href = lGetElemHost(href_list, HR_name, name);
-
          /*
-          * Is the host group part of the hostlist definition ...
+          * Is it the host group carrying this queue's host list ... (N-T-5,
+          * see cqueue_is_href_referenced() for why this is a name comparison)
           */
-         if (tmp_href != nullptr) {
+         dstring group_buffer = DSTRING_INIT;
+         const char *own_group = hgroup_queue_group_name(lGetString(this_elem, CQ_name),
+                                                         &group_buffer);
+         const bool is_own_group = (own_group != nullptr && strcmp(own_group, name) == 0);
+
+         sge_dstring_free(&group_buffer);
+
+         if (is_own_group) {
             ret = true;
          } else {
             /*
@@ -924,6 +1016,19 @@ bool cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                      break;
                   }
                   if (ocs::is_hgroup_name(hostname)) {
+                     /*
+                      * CS-2677, N-O-4: the host group of a cluster queue is
+                      * that queue's host set and belongs to nobody else.
+                      * Checked on both sides of GDI, and independently of
+                      * whether the group exists -- the name is reserved, so a
+                      * missing one is still not something to write.
+                      */
+                     if (hgroup_is_queue_group(hostname)) {
+                        ERROR(MSG_HGRP_QUEUEGROUP_NOREF_S, hostname);
+                        answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+                        ret = false;
+                        break;
+                     }
                      if (in_master && strcmp(hostname, HOSTREF_DEFAULT)) {
                         const lListElem *hgroup = hgroup_list_locate(master_hgroup_list, hostname);
 

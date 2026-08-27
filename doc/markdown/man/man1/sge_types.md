@@ -63,6 +63,11 @@ host group names easily be differed from host names a "@" prefix is used.
 
     hostgroup_name := '@' object_name
 
+A second "@" is reserved. Host groups named "@@" followed by a cluster queue name carry the host list of that
+queue, are created and removed with it, and cannot be added or deleted with xxqs_name_sxx_conf(1). Their member
+list is modified like that of any other host group, through the group itself or through the *hostlist* line of
+the queue.
+
 ## *host_name*
 
 A host name is the official name of a host node. Host names with a domain specification such as 
@@ -113,6 +118,12 @@ A queue name is the name of a xxQS_NAMExx queue described in xxqs_name_sxx_queue
 
     queue_name := object_name
 
+A cluster queue name is limited to **252** characters, two below the limit of an *object_name* under classic
+spooling described below. Every cluster queue owns the host group that carries its host list, named "@@" followed
+by the queue name, and that group is spooled under a file name two characters longer than the queue's own.
+An attempt to create a queue with a longer name is rejected, and the message names the cluster queue rather
+than the host group derived from it.
+
 ## *time_specifier*
 
 A time specifier either consists of a positive decimal, hexadecimal or octal integer constant, in which case the 
@@ -143,6 +154,12 @@ Beginning with version 9.2 the characters "\*", "?", "&" and "!" are excluded as
 meant to match it, and would resolve differently depending on which part of xxQS_NAMExx does the resolution. 
 Wildcards remain available wherever an object is *referenced*, i.e. in the matching types below - only the names 
 of the objects themselves are restricted.
+
+With **classic spooling** a shorter limit applies: **254** characters. Each object is written to a file named
+after it, and the write goes to a temporary file with a leading dot which is renamed once it succeeded, so the
+name plus that dot has to fit into a single file name of the spool file system (255 characters on most systems).
+The limit is enforced whichever spooling method is configured - a configuration that cannot be moved to classic
+spooling later would be a trap - and a cluster queue is limited further still, see *queue_name* above.
 
 # MATCHING TYPES
 

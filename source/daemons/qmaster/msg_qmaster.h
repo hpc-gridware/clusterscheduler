@@ -560,6 +560,13 @@
 
 #define MSG_CQUEUE_NAMENOTGUILTY_S                 _MESSAGE(33687, _("cluster queue name " SFQ " is not valid"))
 #define MSG_CQUEUE_NONAMECHANGE                    _MESSAGE(33688, _("unable to change cluster queue name"))
+
+/* CS-2677: the four refusals around the host group carrying a queue's host list.
+ * The first names the cluster queue rather than the group, because the group it
+ * is about is one the administrator never wrote. */
+#define MSG_CQUEUE_NAMETOOLONG_U                   _MESSAGE(33689, _("the name of a cluster queue may be at most " sge_u32 " characters long, so that the spool file of the host group carrying its host list stays within the file name limit"))
+#define MSG_HGRP_QUEUEGROUP_NOADD_S                _MESSAGE(33692, _(SFQ " is maintained by the qmaster and is created with its cluster queue"))
+#define MSG_HGRP_QUEUEGROUP_NODEL_S                _MESSAGE(33693, _(SFQ " is maintained by the qmaster and is removed with its cluster queue"))
 #define MSG_HGROUP_CYCLEINDEF_SS                   _MESSAGE(33690, _("Hostgroup " SFQ " in specification of " SFQ " would create a cycle"))
 #define MSG_HGROUP_REFINHGOUP_SS                   _MESSAGE(33691, _("denied: following hostgroups still reference " SFQ ": " SFN))
 

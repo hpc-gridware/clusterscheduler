@@ -52,6 +52,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_hgroup.h"
+#include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/ocs_DataStore.h"
 
@@ -258,6 +259,25 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
                               reduced_elem, cmd, sub_command, SGE_ATTR_HOSTLIST,
                               SGE_OBJ_HGROUP, 0, nullptr);
             href_list = lGetList(hgroup, HGRP_host_list);
+         }
+         if (ret) {
+            /*
+             * CS-2677, N-O-4. The resulting member list is examined rather than
+             * the incoming one, so that removing such an entry stays possible
+             * while adding one does not.
+             */
+            const lListElem *member;
+
+            for_each_ep(member, href_list) {
+               const char *member_name = lGetHost(member, HR_name);
+
+               if (hgroup_is_queue_group(member_name)) {
+                  ERROR(MSG_HGRP_QUEUEGROUP_NOREF_S, member_name);
+                  answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+                  ret = false;
+                  break;
+               }
+            }
          }
          if (ret) {
             ret &= href_list_find_diff(href_list, answer_list, old_href_list,
@@ -476,6 +496,18 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
       }
 
       if (add) {
+         /*
+          * CS-2677, N-O-1: a queue host group is created with its cluster
+          * queue and by nothing else. hgroup_check_name() would refuse the
+          * "@@" name anyway -- as an invalid name, which says nothing about
+          * why. This says why, and it is the message the specification names.
+          */
+         if (hgroup_is_queue_group(name)) {
+            ERROR(MSG_HGRP_QUEUEGROUP_NOADD_S, name);
+            answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_EEXIST);
+         }
+
          /* Check groupname for new hostgroups */
          if (hgroup_check_name(answer_list, name)) {
             lSetHost(hgroup, HGRP_name, name);
@@ -582,10 +614,22 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
                    * instances. See the NOTES at href_list_find_all_references().
                    */
 
-                  href_list = lGetList(cqueue, CQ_hostlist);
                   name = lGetHost(hgroup, HGRP_name);
                   org_hgroup = lGetElemHostRW(master_hgroup_list, HGRP_name, name);
 
+                  /*
+                   * CS-2677: the host list is fetched again after the swap, not
+                   * hoisted out of the two calls. For a queue that merely
+                   * REFERENCES this group its own list is unaffected and one
+                   * fetch would do -- but the host list of a cluster queue is
+                   * now the member list of "@@<queue>", and for the queue that
+                   * OWNS the group being modified that list is the very thing
+                   * that changes. A hoisted pointer still refers to the old
+                   * element's list, both resolutions then answer the same, the
+                   * difference comes out empty, and the queue silently keeps
+                   * queue instances for hosts it no longer reaches.
+                   */
+                  href_list = cqueue_get_hostlist(cqueue, master_hgroup_list);
                   ret &= href_list_find_all_references(href_list, answer_list, master_hgroup_list, &before_mod_list,
                                                        nullptr);
 
@@ -597,6 +641,7 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
                      lDechainElem(master_hgroup_list, org_hgroup);
                   }
                   lAppendElem(master_hgroup_list, hgroup);
+                  href_list = cqueue_get_hostlist(cqueue, master_hgroup_list);
                   ret &= href_list_find_all_references(href_list,
                                                        answer_list,
                                                        master_hgroup_list,
@@ -753,6 +798,17 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
           */
          if (hgroup_is_reserved(name)) {
             ERROR(MSG_HGRP_RESERVED_NODELETE_S, name);
+            answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_EEXIST);
+         }
+
+         /*
+          * CS-2677, N-O-2: likewise for a queue host group. It is removed with
+          * its cluster queue, and removing it on its own would leave a queue
+          * without the object holding its host list.
+          */
+         if (hgroup_is_queue_group(name)) {
+            ERROR(MSG_HGRP_QUEUEGROUP_NODEL_S, name);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }

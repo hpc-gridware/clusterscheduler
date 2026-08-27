@@ -161,7 +161,7 @@ constexpr const int CQ_Type[] = {
  */
 #define CQ_ATTRIBUTES \
    {CQ_name, "CQ_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
-   {CQ_hostlist, "CQ_hostlist", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {CQ_hostlist, "CQ_hostlist", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {CQ_qinstances, "CQ_qinstances", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {CQ_seq_no, "CQ_seq_no", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {CQ_nsuspend, "CQ_nsuspend", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \

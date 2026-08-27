@@ -39,6 +39,8 @@
  * @see sge_hgroup.cc
  */
 
+#include "uti/sge_dstring.h"
+
 #include "sgeobj/cull/sge_hgroup_HGRP_L.h"
 
 /* Reserved host groups backing the admin/submit host lists (CS-2438), the
@@ -58,6 +60,17 @@
 #define SUBMIT_HOSTGROUP   "@submit_hosts"
 /// The reserved host group holding every execution host; read-only
 #define EXEC_HOSTGROUP     "@exec_hosts"
+
+/** @brief The prefix of a queue host group
+ *
+ * CS-2677. Every cluster queue owns one host group carrying its host list,
+ * named after the queue: `@@all.q` for `all.q`. The prefix is unusable from
+ * outside because hgroup_check_name() validates the name from its second
+ * character and `@` is among the characters KEY_TABLE forbids -- which is what
+ * makes it reservable. The qmaster creates these groups itself, with the
+ * name check switched off (hgroup_create(..., is_name_validate = false)).
+ */
+#define QUEUE_HOSTGROUP_PREFIX  "@@"
 
 bool hgroup_check_name(lList **answer_list, const char* name);
 
@@ -101,6 +114,27 @@ bool hgroup_is_reserved(const char *name);
 /* true if name is a reserved group that no role may write (currently only
  * EXEC_HOSTGROUP, which the system maintains from the exec host list) */
 bool hgroup_is_system_maintained(const char *name);
+
+/* CS-2677: is this the host group carrying the host list of a cluster queue?
+ *
+ * Deliberately NOT hgroup_is_system_maintained(): that one refuses every write,
+ * and the member list of a queue host group is exactly what an administrator
+ * edits -- through the queue (qconf -mq) or through the group itself
+ * (qconf -mhgrp @@all.q). What the system owns here is the lifecycle, not the
+ * content: the group is created with its queue and removed with it, and this
+ * predicate is what refuses an administrative create or delete. */
+bool hgroup_is_queue_group(const char *name);
+
+/* CS-2677: the name of the host group carrying the host list of "cqueue_name",
+ * written into "buffer", which is also returned */
+const char *
+hgroup_queue_group_name(const char *cqueue_name, dstring *buffer);
+
+/* CS-2677: the cluster queue a queue host group belongs to, or nullptr when
+ * "name" is not one. The relation is carried by the name and by nothing else --
+ * no field on either object refers to the other. */
+const char *
+hgroup_queue_of_group_name(const char *name);
 
 /* --- */
 

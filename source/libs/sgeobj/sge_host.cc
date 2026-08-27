@@ -255,7 +255,7 @@ bool host_is_configured_submit_host(const char *hostname) {
 static bool
 cqueue_reaches_host_without_exec_hosts(const lListElem *cqueue, const char *hostname,
                                        const lList *hgrp_list) {
-   const lList *cq_hostlist = lGetList(cqueue, CQ_hostlist);
+   const lList *cq_hostlist = cqueue_get_hostlist(cqueue, hgrp_list);
    const lListElem *href;
    lList *filtered = nullptr;
    lList *resolved = nullptr;
@@ -368,6 +368,20 @@ bool host_is_referenced(const lListElem *host,
              * edit it.
              */
             if (hgroup_is_reserved(hgrp_name)) {
+               continue;
+            }
+
+            /*
+             * CS-2677: a queue host group is not a third party naming this host
+             * -- it IS the host list of its cluster queue, and the loop over the
+             * queues above has already judged it, with the "@exec_hosts" filter
+             * CS-2438 requires (cqueue_reaches_host_without_exec_hosts()).
+             * Counting it again here would undo that: a queue whose host list is
+             * the reserved group reaches every exec host, so every exec host
+             * would be undeletable -- exactly the outcome that filter exists to
+             * prevent, reintroduced through the group the queue now owns.
+             */
+            if (hgroup_is_queue_group(hgrp_name)) {
                continue;
             }
 

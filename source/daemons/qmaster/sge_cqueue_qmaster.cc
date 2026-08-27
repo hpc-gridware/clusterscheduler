@@ -48,6 +48,8 @@
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 
+#include "uti/ocs_Pattern.h"
+
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_job.h"
@@ -70,6 +72,7 @@
 #include "sge_cqueue_qmaster.h"
 #include "sge_qinstance_qmaster.h"
 #include "sge_host_qmaster.h"
+#include "sge_hgroup_qmaster.h"
 #include "sge_qmod_qmaster.h"
 #include "sge_subordinate_qmaster.h"
 #include "evm/sge_queue_event_master.h"
@@ -82,9 +85,17 @@
 
 
 static bool
-cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
-                    ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
-                    lList **add_hosts, lList **rem_hosts);
+cqueue_hgroup_create(ocs::gdi::Packet *packet, lList **answer_list, const char *cqueue_name);
+
+static bool
+cqueue_hgroup_delete(ocs::gdi::Packet *packet, lList **answer_list, const char *cqueue_name);
+
+static bool
+cqueue_verify_hostlist(lList **answer_list, lList *href_list, ocs::gdi::SubCommand sub_command);
+
+static bool
+cqueue_route_hostlist(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *cqueue_name,
+                      lList *href_list, monitoring_t *monitor);
 
 static bool
 cqueue_mod_attributes(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem,
@@ -299,80 +310,226 @@ cqueue_mod_attributes(lListElem *cqueue, lList **answer_list,
    DRETURN(ret);
 }
 
+/** @brief Create the host group carrying a cluster queue's host list
+ *
+ * CS-2677, N-R-1..3. A cluster queue does not define a set of hosts any more;
+ * it owns one, and this creates it: `@@<queue>`, empty, spooled, announced.
+ *
+ * Called from the add path before anything reads the queue's host list, and
+ * before the queue instances are computed -- with the group missing, a host
+ * list arriving in the same request would have nowhere to go.
+ *
+ * The name check is switched off deliberately (`is_name_validate = false`):
+ * `@@` is exactly what hgroup_check_name() refuses, which is what reserves the
+ * prefix for the qmaster in the first place.
+ *
+ * @param packet the client request
+ * @param answer_list receives messages for the caller
+ * @param cqueue_name the cluster queue the group belongs to
+ * @return true on success
+ */
 static bool
-cqueue_mod_hostlist(lListElem *cqueue, lList **answer_list, lListElem *reduced_elem, ocs::gdi::Command cmd,
-                    ocs::gdi::SubCommand sub_command, lList **add_hosts, lList **rem_hosts) {
+cqueue_hgroup_create(ocs::gdi::Packet *packet, lList **answer_list, const char *cqueue_name) {
    DENTER(TOP_LAYER);
 
+   dstring name_buffer = DSTRING_INIT;
+   const char *name = hgroup_queue_group_name(cqueue_name, &name_buffer);
+   lList **master_hgroup_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
    bool ret = true;
-   const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
 
-   if (cqueue != nullptr && reduced_elem != nullptr) {
-      int pos = lGetPosViaElem(reduced_elem, CQ_hostlist, SGE_NO_ABORT);
+   if (hgroup_list_locate(*master_hgroup_list, name) != nullptr) {
+      /* the queue is new, so its group cannot be -- unless one was left behind */
+      ERROR(MSG_SGETEXT_ALREADYEXISTS_SS, "host group", name);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+      ret = false;
+   }
 
-      if (pos >= 0) {
-         const char *cqueue_name = lGetString(cqueue, CQ_name);
-         lList *list = lGetPosList(reduced_elem, pos);
-         lList *old_href_list = lCopyList("", lGetList(cqueue, CQ_hostlist));
-         const lList *href_list = nullptr;
-         lList *add_groups = nullptr;
-         lList *rem_groups = nullptr;
+   lListElem *hgroup = nullptr;
 
-         ret &= href_list_resolve_hostnames(list, answer_list, true);
-         if (ret) {
-            ret = attr_mod_sub_list(answer_list, cqueue, CQ_hostlist, HR_name, reduced_elem, cmd, sub_command,
-                                    SGE_ATTR_HOST_LIST, cqueue_name, 0, nullptr);
-            href_list = lGetList(cqueue, CQ_hostlist);
-         }
-         if (ret) {
-            ret &= href_list_find_diff(href_list, answer_list, old_href_list,
-                                       add_hosts, rem_hosts, &add_groups,
-                                       &rem_groups);
-         }
-         if (ret && add_groups != nullptr) {
-            ret &= hgroup_list_exists(master_hgroup_list, answer_list, add_groups);
-         }
-         if (ret) {
-            ret &= href_list_find_effective_diff(answer_list, add_groups,
-                                                 rem_groups, master_hgroup_list,
-                                                 add_hosts, rem_hosts);
-         }
-         if (ret) {
-            ret &= href_list_resolve_hostnames(*add_hosts, answer_list, false);
-         }
-
-         /*
-          * Make sure that:
-          *   - added hosts where not already part the old hostlist
-          *   - removed hosts are not part of the new hostlist
-          */
-         if (ret) {
-            lList *tmp_hosts = nullptr;
-
-            ret &= href_list_find_all_references(old_href_list, answer_list,
-                                                 master_hgroup_list, &tmp_hosts, nullptr);
-            ret &= href_list_remove_existing(add_hosts, answer_list, tmp_hosts);
-            lFreeList(&tmp_hosts);
-
-            ret &= href_list_find_all_references(href_list, answer_list,
-                                                 master_hgroup_list, &tmp_hosts, nullptr);
-            ret &= href_list_remove_existing(rem_hosts, answer_list, tmp_hosts);
-            lFreeList(&tmp_hosts);
-         }
-
-#if 0 /* EB: DEBUG */
-         if (ret) {
-            href_list_debug_print(*add_hosts, "add_hosts: ");
-            href_list_debug_print(*rem_hosts, "rem_hosts: ");
-         }
-#endif
-
-         lFreeList(&old_href_list);
-         lFreeList(&add_groups);
-         lFreeList(&rem_groups);
+   if (ret) {
+      hgroup = hgroup_create(answer_list, name, nullptr, false);
+      if (hgroup == nullptr) {
+         ret = false;
       }
    }
+
+   if (ret && !spool_write_object(answer_list, spool_get_default_context(), hgroup, name,
+                                  SGE_TYPE_HGROUP)) {
+      ERROR(MSG_CANTSPOOL_SS, "host group entry", name);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+      lFreeElem(&hgroup);
+      ret = false;
+   }
+
+   if (ret) {
+      if (*master_hgroup_list == nullptr) {
+         *master_hgroup_list = lCreateList("host group", HGRP_Type);
+      }
+      lAppendElem(*master_hgroup_list, hgroup);
+
+      /* CS-2451: an element without a cache answers "no" to every membership
+       * question, so the cache is established before the event goes out */
+      lList *referencees = nullptr;
+      hgroup_refresh_caches(hgroup, *master_hgroup_list, &referencees);
+      sge_add_event(0, sgeE_HGROUP_ADD, 0, 0, name, nullptr, nullptr, hgroup, packet->gdi_session);
+      hgroup_send_referencee_events(referencees, *master_hgroup_list, packet->gdi_session);
+      lFreeList(&referencees);
+   }
+
+   sge_dstring_free(&name_buffer);
    DRETURN(ret);
+}
+
+/** @brief Remove the host group carrying a cluster queue's host list
+ *
+ * CS-2677, N-R-3 and N-O-2: the group goes with its queue, and only with it.
+ * The counterpart of cqueue_hgroup_create(); also the rollback when a queue
+ * add fails after the group was created.
+ *
+ * A missing group is not an error. The queue may predate the change, or the
+ * add may have failed before the group existed.
+ *
+ * @param packet the client request
+ * @param answer_list receives messages for the caller
+ * @param cqueue_name the cluster queue the group belongs to
+ * @return true on success
+ */
+static bool
+cqueue_hgroup_delete(ocs::gdi::Packet *packet, lList **answer_list, const char *cqueue_name) {
+   DENTER(TOP_LAYER);
+
+   dstring name_buffer = DSTRING_INIT;
+   const char *name = hgroup_queue_group_name(cqueue_name, &name_buffer);
+   lList *master_hgroup_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
+   lListElem *hgroup = hgroup_list_locate(master_hgroup_list, name);
+   bool ret = true;
+
+   if (hgroup != nullptr) {
+      if (sge_event_spool(answer_list, 0, sgeE_HGROUP_DEL, 0, 0, name, nullptr, nullptr,
+                          nullptr, nullptr, nullptr, true, true, packet->gdi_session)) {
+         lRemoveElem(master_hgroup_list, &hgroup);
+      } else {
+         ERROR(MSG_CANTSPOOL_SS, "host group entry", name);
+         answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+         ret = false;
+      }
+   }
+
+   sge_dstring_free(&name_buffer);
+   DRETURN(ret);
+}
+
+/** @brief Check a host list instruction before the queue is written
+ *
+ * CS-2677, N-T-4. The host list of a cluster queue is the member list of its
+ * host group, and the write is performed by the host group path -- but that
+ * happens in cqueue_success(), once the queue itself is installed and the
+ * cascade can find it. This runs earlier, in the modifier, so that an input
+ * the host group path would reject anyway rejects the whole request, the way
+ * it does today.
+ *
+ * It checks what can be checked without touching state: that the names
+ * resolve, that no queue host group is named (N-O-4), and that a host group
+ * named as a member exists. The last one is skipped for a removal, where the
+ * instruction names what is being taken away rather than what is being added.
+ *
+ * @param answer_list receives messages for the caller
+ * @param href_list the instruction, an HR_Type list; host names are resolved in place
+ * @param sub_command how the instruction is merged with the member list
+ * @return true when the input is acceptable
+ */
+static bool
+cqueue_verify_hostlist(lList **answer_list, lList *href_list, ocs::gdi::SubCommand sub_command) {
+   DENTER(TOP_LAYER);
+
+   bool ret = href_list_resolve_hostnames(href_list, answer_list, true);
+   const bool is_remove = (sub_command & ocs::gdi::SubCommand::REMOVE) == ocs::gdi::SubCommand::REMOVE;
+   const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lListElem *href;
+
+   for_each_ep(href, href_list) {
+      const char *name = lGetHost(href, HR_name);
+
+      if (!ret) {
+         break;
+      }
+      if (name == nullptr || !ocs::is_hgroup_name(name)) {
+         continue;
+      }
+      if (hgroup_is_queue_group(name)) {
+         ERROR(MSG_HGRP_QUEUEGROUP_NOREF_S, name);
+         answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+         ret = false;
+         break;
+      }
+      if (!is_remove && hgroup_list_locate(master_hgroup_list, name) == nullptr) {
+         ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, "host group", name);
+         answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+         ret = false;
+         break;
+      }
+   }
+
+   DRETURN(ret);
+}
+
+/** @brief Write a cluster queue's host list into its host group
+ *
+ * CS-2677, N-T-4: every write to a host group is owned by the host group
+ * write path, and one that arrives as a change to a cluster queue is no
+ * exception. This is the routing, and it is deliberately not a
+ * reimplementation -- it hands the instruction to sge_gdi_add_mod_generic()
+ * with the host group's own table entry, so the request travels
+ * hgroup_mod() -> hgroup_spool() -> hgroup_success() exactly as
+ * `qconf -mhgrp @@<queue>` would. The queue instances the change creates or
+ * removes come from the cascade inside that path, not from here.
+ *
+ * Called from cqueue_success() rather than from the modifier: the cascade
+ * looks for the affected queues in the master list, and until the queue is
+ * installed there the version it would find is the one being replaced.
+ *
+ * @param packet the client request
+ * @param task the GDI task being answered
+ * @param cqueue_name the cluster queue whose host list is written
+ * @param href_list the instruction, an HR_Type list
+ * @param monitor for monitoring qmaster threads
+ * @return true on success
+ */
+static bool
+cqueue_route_hostlist(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *cqueue_name,
+                      lList *href_list, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
+   dstring name_buffer = DSTRING_INIT;
+   const char *group_name = hgroup_queue_group_name(cqueue_name, &name_buffer);
+   gdi_object_t *hgroup_object = get_gdi_object(ocs::gdi::Target::HGRP_LIST);
+   lListElem *instructions = lCreateElem(HGRP_Type);
+   lList *answer_list = nullptr;
+   lList *tmp_list = nullptr;
+
+   lList *members = lCopyList("", href_list);
+
+   if (members == nullptr) {
+      members = lCreateList("", HR_Type);   /* see cqueue_mod(): empty is an instruction */
+   }
+   lSetHost(instructions, HGRP_name, group_name);
+   lSetList(instructions, HGRP_host_list, members);
+
+   const int status = sge_gdi_add_mod_generic(packet, task, &answer_list, instructions, 0,
+                                              hgroup_object, packet->user, packet->host,
+                                              task->command, task->sub_command, &tmp_list, monitor);
+
+   /* the caller's answer list is the queue's; the group's messages name the
+    * group, which is not the object the administrator addressed */
+   if (status != STATUS_OK) {
+      answer_list_log(&answer_list, false, true);
+   }
+   lFreeList(&answer_list);
+   lFreeList(&tmp_list);
+   lFreeElem(&instructions);
+   sge_dstring_free(&name_buffer);
+
+   DRETURN(status == STATUS_OK);
 }
 
 /** @brief Bring a cluster queue's instances into line with its new configuration
@@ -623,8 +780,6 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   lList *add_hosts = nullptr;
-   lList *rem_hosts = nullptr;
    const lList *master_calendar_list = *ocs::DataStore::get_master_list(SGE_TYPE_CALENDAR);
    const lList *master_ckpt_list = *ocs::DataStore::get_master_list(SGE_TYPE_CKPT);
    const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
@@ -632,7 +787,6 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
    const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
-   const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
 
    int pos = lGetPosViaElem(reduced_elem, CQ_name, SGE_NO_ABORT);
@@ -640,15 +794,39 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
       const char *name = lGetPosString(reduced_elem, pos);
 
       if (add) {
+         /*
+          * CS-2677, N-R-4. The binding limit is not MAX_VERIFY_STRING but the
+          * spool file name: classic spooling writes ".<name>", so an object name
+          * fits in NAME_MAX - 1, and a cluster queue is two characters shorter
+          * still because it owns "@@<queue>", spooled as ".@@<queue>".
+          *
+          * The check is drawn here, where the name that is too long is the one
+          * the administrator typed. Left to the spool it would surface as
+          * "unable to spool host group entry" -- a fault reported against an
+          * object nobody wrote, which is exactly what N-R-5 exists to prevent.
+          */
          if (verify_obj_name(
-                 answer_list, name, MAX_VERIFY_STRING, "cqueue") == STATUS_OK) {
+                 answer_list, name, MAX_CQUEUE_NAME, "cqueue") == STATUS_OK) {
             DTRACE;
             lSetString(cqueue, CQ_name, name);
          } else {
-            ERROR(MSG_CQUEUE_NAMENOTGUILTY_S, name);
+            if (name != nullptr && strlen(name) > MAX_CQUEUE_NAME) {
+               ERROR(MSG_CQUEUE_NAMETOOLONG_U, static_cast<uint32_t>(MAX_CQUEUE_NAME));
+            } else {
+               ERROR(MSG_CQUEUE_NAMENOTGUILTY_S, name);
+            }
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                             ANSWER_QUALITY_ERROR);
             ret = false;
+         }
+
+         /*
+          * N-R-1..3: the queue owns a host group and it comes into being here,
+          * before the host list arriving in this same request is routed into it
+          * and before the queue instances are computed.
+          */
+         if (ret) {
+            ret = cqueue_hgroup_create(packet, answer_list, name);
          }
       } else {
          const char *old_name = lGetString(cqueue, CQ_name);
@@ -667,10 +845,36 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
    }
 
    /*
-    * Find differences of hostlist configuration
+    * CS-2677, N-T-4: a host list arriving with a queue change is an
+    * instruction, not a value of the queue. It is checked here and carried on
+    * the element until cqueue_success() hands it to the host group write path;
+    * the master list never holds it. What used to stand here -- 152 lines
+    * resolving the list against the host groups -- was the queue's own copy of
+    * what that path does, and has nothing left to operate on.
     */
    if (ret) {
-      ret &= cqueue_mod_hostlist(cqueue, answer_list, reduced_elem, cmd, sub_command, &add_hosts, &rem_hosts);
+      int hostlist_pos = lGetPosViaElem(reduced_elem, CQ_hostlist, SGE_NO_ABORT);
+
+      if (hostlist_pos >= 0) {
+         lList *instruction = lCopyList("", lGetPosList(reduced_elem, hostlist_pos));
+
+         /*
+          * An empty instruction is an instruction: "qconf -rattr queue hostlist
+          * NONE" empties the host list, and the queue instances go with it. It
+          * has to reach the host group as an empty list rather than as nothing
+          * at all, or emptying a host list would silently do nothing.
+          */
+         if (instruction == nullptr) {
+            instruction = lCreateList("", HR_Type);
+         }
+
+         ret &= cqueue_verify_hostlist(answer_list, instruction, sub_command);
+         if (ret) {
+            lSetList(cqueue, CQ_hostlist, instruction);
+         } else {
+            lFreeList(&instruction);
+         }
+      }
    }
 
    /*
@@ -690,30 +894,34 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
    }
 
    /*
-    * Now we have to add/mod/del all qinstances
+    * Now we have to mod/del all qinstances the queue already has.
+    *
+    * Instances the host list change creates or removes are not handled here
+    * any more: they come from the cascade inside the host group write path,
+    * together with the EH_Type elements the new hosts need
+    * (host_list_add_missing_href() is called there for the same reason it was
+    * called here). refresh_all_values stays false for the same reason -- the
+    * cascade sets it itself for the queues whose membership moved.
     */
    if (ret) {
-      bool refresh_all_values = ((add_hosts != nullptr) || (rem_hosts != nullptr)) ? true : false;
-
       ret &= cqueue_handle_qinstances(packet, task, cqueue, answer_list, reduced_elem,
-                                      add_hosts, rem_hosts, refresh_all_values, monitor, master_hgroup_list,
+                                      nullptr, nullptr, false, monitor, master_hgroup_list,
                                       master_cqueue_list);
    }
 
    /*
-    * Client and scheduler code expects existing EH_Type elements
-    * for all hosts used in CQ_hostlist. Therefore it is neccessary
-    * to create all not existing EH_Type elements.
+    * CS-2677: an add that failed after its host group was created would leave
+    * the group behind -- a "@@<queue>" without a queue, which nothing can then
+    * remove, since N-O-2 refuses an administrative delete.
     */
-   if (ret) {
-      ret &= host_list_add_missing_href(packet, task, master_ehost_list, answer_list, add_hosts, monitor);
-   }
+   if (!ret && add) {
+      lList *rollback_answer_list = nullptr;
 
-   /*
-    * Cleanup
-    */
-   lFreeList(&add_hosts);
-   lFreeList(&rem_hosts);
+      if (!cqueue_hgroup_delete(packet, &rollback_answer_list, lGetString(cqueue, CQ_name))) {
+         answer_list_output(&rollback_answer_list);
+      }
+      lFreeList(&rollback_answer_list);
+   }
 
    if (ret) {
       DRETURN(0);
@@ -740,6 +948,21 @@ cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue
    DENTER(TOP_LAYER);
    const lList *qinstances;
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+
+   /*
+    * CS-2677: take the host list instruction off the element before anything
+    * else happens. It travelled here on the queue (N-T-4) but is no part of
+    * it, so neither the event below nor the master list may carry it. It is
+    * written into the queue host group at the very end of this function.
+    */
+   lList *hostlist_instruction = nullptr;
+   lXchgList(cqueue, CQ_hostlist, &hostlist_instruction);
+
+   /* a copy: the element this name lives on is replaced by the host group
+    * path below, and the name is needed after that */
+   dstring name_buffer = DSTRING_INIT;
+   sge_dstring_copy_string(&name_buffer, lGetString(cqueue, CQ_name));
+   const char *queue_name = sge_dstring_get_string(&name_buffer);
 
    cqueue_update_categories(cqueue, old_cqueue, packet->gdi_session);
 
@@ -819,6 +1042,18 @@ cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *cqueue
          }
       }
    }
+
+   /*
+    * CS-2677, N-T-4: last, because the host group write path replaces the
+    * queue element in the master list with its own copy -- the one carrying
+    * the queue instances the host list change creates or removes. Nothing may
+    * touch "cqueue" after this point.
+    */
+   if (hostlist_instruction != nullptr) {
+      cqueue_route_hostlist(packet, task, queue_name, hostlist_instruction, monitor);
+      lFreeList(&hostlist_instruction);
+   }
+   sge_dstring_free(&name_buffer);
 
    DRETURN(0);
 }
@@ -1010,6 +1245,14 @@ cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
                                    nullptr, nullptr, nullptr, true, true, packet->gdi_session)) {
                   cqueue_update_categories(nullptr, cqueue, packet->gdi_session);
                   lRemoveElem(master_cqueue_list, &cqueue);
+
+                  /*
+                   * CS-2677, N-R-3: the host group carrying this queue's host
+                   * list goes with it. After the queue, so that a group that
+                   * cannot be removed leaves the queue standing rather than the
+                   * other way round.
+                   */
+                  ret &= cqueue_hgroup_delete(packet, answer_list, name);
 
                   INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, remote_user, remote_host, name, "cluster queue");
                   answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
