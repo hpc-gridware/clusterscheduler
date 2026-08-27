@@ -35,6 +35,7 @@
 #include "uti/sge_string.h"
 
 #include "sge_sched_thread_rsmap.h"
+#include "msg_qmaster.h"
 
 static bool
 gru_add_free_rsmap_ids(lListElem *gru, const char *name, const char *host_name, const lList *host_list,
@@ -115,9 +116,19 @@ gru_list_add_request(lList **granted_resources_list, const char *name, u_long32 
       host_name = SGE_GLOBAL_NAME;
       host = host_list_locate(host_list, host_name);
       if (host == nullptr || lGetSubStr(host, CE_name, name, EH_consumable_config_list) == nullptr) {
-         // may never happen, the global host must exist and the resource must be defined somewhere on host level
-         // @todo what about queue resources?
-         DPRINTF("gru_list_add_request: resource %s not found on host %s\n", name, host_name);
+         // The resource has no capacity at host level. For a RSMAP that is an inconsistency: it can
+         // only be configured on a host (see sge_complex(5)) and we would have to select instances
+         // of it here.
+         // Any other consumable may well be configured on the queue, or be satisfied from a load
+         // value reported by the execution daemon. There is nothing to record for it in the granted
+         // resource list: that list only carries the RSMAP ids and the binding information into the
+         // booking, numeric consumables are debited from the job request itself
+         // (see rc_debit_consumable()). So we skip it instead of failing.
+         if (type != TYPE_RSMAP) {
+            DPRINTF("gru_list_add_request: %s not defined at host level, nothing to grant\n", name);
+            DRETURN(true);
+         }
+         DPRINTF("gru_list_add_request: RSMAP %s not found on host %s\n", name, host_name);
          DRETURN(false);
       }
    }
@@ -157,6 +168,25 @@ gru_list_add_request(lList **granted_resources_list, const char *name, u_long32 
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief report a resource which could not be booked for a just scheduled task
+ *
+ * Without this the task is started with fewer granted resources than it asked for and nothing
+ * anywhere says so, which makes the situation impossible to recognise in a production build
+ * (CS-2673).
+ *
+ * @param job       the job the task belongs to
+ * @param ja_task   the task which is being started
+ * @param name      name of the resource which could not be booked
+ * @param host_name host the booking was attempted on
+ */
+static void
+gru_report_booking_failure(const lListElem *job, const lListElem *ja_task, const char *name,
+                           const char *host_name) {
+   WARNING(MSG_JOB_CANNOTBOOKRESOURCE_SSUU, name, host_name,
+           lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
 }
 
 /**
@@ -209,13 +239,11 @@ bool add_granted_resource_list(lListElem *ja_task, const lListElem *job, const l
          u_long32 type = lGetUlong(request, CE_valtype);
          double amount = lGetDouble(request, CE_doubleval);
          DPRINTF("  global: %s, %d, %f\n", name, debit_slots, amount);
-         ret = gru_list_add_request(&granted_resources_list, name, consumable, type, host_name, host_list, amount, debit_slots);
-         if (!ret) {
-            break;
+         if (!gru_list_add_request(&granted_resources_list, name, consumable, type, host_name,
+                                   host_list, amount, debit_slots)) {
+            gru_report_booking_failure(job, ja_task, name, host_name);
+            ret = false;
          }
-      }
-      if (!ret) {
-         break;
       }
 
       // book the master resources
@@ -232,18 +260,15 @@ bool add_granted_resource_list(lListElem *ja_task, const lListElem *job, const l
             u_long32 type = lGetUlong(request, CE_valtype);
             double amount = lGetDouble(request, CE_doubleval);
             DPRINTF("  master: %s, %d, %f\n", name, debit_slots, amount);
-            ret = gru_list_add_request(&granted_resources_list, name, consumable, type, host_name, host_list, amount,
-                                       debit_slots);
-            if (!ret) {
-               break;
+            if (!gru_list_add_request(&granted_resources_list, name, consumable, type, host_name,
+                                      host_list, amount, debit_slots)) {
+               gru_report_booking_failure(job, ja_task, name, host_name);
+               ret = false;
             }
          }
          // we booked a master task, what remains are the slave tasks (one less slot)
          is_master_task = false;
          adjust_slave_task_debit_slots(pe, slots);
-      }
-      if (!ret) {
-         break;
       }
 
       // book slave resources
@@ -259,25 +284,22 @@ bool add_granted_resource_list(lListElem *ja_task, const lListElem *job, const l
          u_long32 type = lGetUlong(request, CE_valtype);
          double amount = lGetDouble(request, CE_doubleval);
          DPRINTF("  slave: %s, %d, %f\n", name, debit_slots, amount);
-         ret = gru_list_add_request(&granted_resources_list, name, consumable, type, host_name, host_list, amount, debit_slots);
-         if (!ret) {
-            break;
+         if (!gru_list_add_request(&granted_resources_list, name, consumable, type, host_name,
+                                   host_list, amount, debit_slots)) {
+            gru_report_booking_failure(job, ja_task, name, host_name);
+            ret = false;
          }
-      }
-      if (!ret) {
-         break;
       }
 
       last_host = host_name;
    }
 
-   // if we had some consumables, add the list to the ja_task
-   if (ret) {
-      if (granted_resources_list != nullptr) {
-         lSetList(ja_task, JAT_granted_resources_list, granted_resources_list);
-      }
-   } else {
-      lFreeList(&granted_resources_list);
+   // If we had some consumables, add the list to the ja_task - also when one of the requests
+   // could not be booked. Such a resource says nothing about the others: throwing the list away
+   // would cost the task the RSMAP ids and the binding information of every unrelated request
+   // as well (CS-2672).
+   if (granted_resources_list != nullptr) {
+      lSetList(ja_task, JAT_granted_resources_list, granted_resources_list);
    }
 
    DRETURN(ret);

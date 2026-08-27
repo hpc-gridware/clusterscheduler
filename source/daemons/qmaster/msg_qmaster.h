@@ -670,4 +670,6 @@
 #define MSG_JOB_DEPTNOEXIST_S                      _MESSAGE(33962, _("Department " SFQ " does not exist"))
 #define MSG_JOB_USERNOTPARTDEPT_S                  _MESSAGE(33963, _("User " SFQ " is not part of a department"))
 
+#define MSG_JOB_CANNOTBOOKRESOURCE_SSUU            _MESSAGE(33993, _("cannot book resource " SFQ " on host " SFQ " for job " sge_u32 "." sge_u32 ", the job is started without it"))
+
 // clang-format on
