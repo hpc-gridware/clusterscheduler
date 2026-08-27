@@ -362,4 +362,6 @@
 #define MSG_CAPACITYEXCEEDED_FSSSIFF    _MESSAGE(64555, _("debiting %f of " SFN " on " SFN " " SFN " for %d slots (+ %f) would exceed remaining capacity of %f"))
 #define MSG_EXCLCAPACITYEXCEEDED_FSSSI _MESSAGE(64556, _("debiting (implicit exclusive) %f of " SFN " on " SFN " " SFN " for %d slots would exceed capacity"))
 
+#define MSG_RSMAP_TOO_MANY_IMPLICIT_IDS_SUU    _MESSAGE(64557, _("RSMAP " SFQ " would create " sge_u32 " ids implicitly, which exceeds the limit of " sge_u32 " - list the ids explicitly or raise MAX_RSMAP_IDS in qmaster_params"))
+
 // clang-format on

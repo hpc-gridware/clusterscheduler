@@ -244,7 +244,14 @@ static int spool_time = STREESPOOLTIMEDEF;
 #define DEFAULT_DS_DEVIATION (1000)
 static int max_ds_deviation = DEFAULT_DS_DEVIATION;
 
-/* 
+/* upper bound for the ids an RSMAP may create implicitly from a bare amount,
+   see MAX_RSMAP_IDS in qmaster_params. 0 switches the implicit ids off, which
+   makes a bare amount an error again. */
+#define DEFAULT_MAX_RSMAP_IDS (512)
+#define LIMIT_MAX_RSMAP_IDS (1048576)
+static int max_rsmap_ids = DEFAULT_MAX_RSMAP_IDS;
+
+/*
  * Reserved usage flags
  *
  * In SGE, hosts which support DR (dynamic repriorization) default to using
@@ -704,6 +711,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       monitor_time = 0;
       scheduler_timeout = 0;
       max_dynamic_event_clients = 1000;
+      max_rsmap_ids = DEFAULT_MAX_RSMAP_IDS;
       max_job_deletion_time = 3;
       enable_reschedule_kill = false;
       enable_reschedule_slave = false;
@@ -808,6 +816,15 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
                max_ds_deviation = DEFAULT_DS_DEVIATION;
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "MAX_DS_DEVIATION", DEFAULT_DS_DEVIATION);
+            }
+            continue;
+         }
+         if (parse_int_param(s, "MAX_RSMAP_IDS", &max_rsmap_ids, TYPE_INT)) {
+            if (max_rsmap_ids < 0 || max_rsmap_ids > LIMIT_MAX_RSMAP_IDS) {
+               max_rsmap_ids = DEFAULT_MAX_RSMAP_IDS;
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "MAX_RSMAP_IDS",
+                                       DEFAULT_MAX_RSMAP_IDS);
             }
             continue;
          }
@@ -2418,6 +2435,18 @@ void mconf_set_max_dynamic_event_clients(int value) {
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
    DRETURN_VOID;
+}
+
+int mconf_get_max_rsmap_ids() {
+   int ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = max_rsmap_ids;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
 }
 
 int mconf_get_max_dynamic_event_clients() {

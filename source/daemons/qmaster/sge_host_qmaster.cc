@@ -61,6 +61,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_cqueue.h"
+#include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_pe.h"
@@ -1494,6 +1495,16 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, int sub_comma
          lFreeElem(&tmp_elem);
          DRETURN(STATUS_EUNKNOWN);
       }
+
+      // an RSMAP written as a bare amount gets the ids 0 to amount-1 here - has to happen before
+      // the resources are debited below, which books the utilization per id
+      if (!centry_list_rsmap_expand_implicit_ids(alpp,
+                                                 lGetListRW(tmp_elem, EH_consumable_config_list))) {
+         lFreeElem(&tmp_elem);
+         DRETURN(STATUS_EUNKNOWN);
+      }
+
+      // debit resources
       {
          lListElem *jep = nullptr;
          const lListElem *ar_ep;

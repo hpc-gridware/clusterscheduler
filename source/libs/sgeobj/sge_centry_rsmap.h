@@ -24,3 +24,7 @@
 
 bool centry_check_rsmap(lList **answer_list, u_long32 status, const char* attrname);
 
+bool centry_rsmap_expand_implicit_ids(lList **answer_list, lListElem *centry, u_long32 max_ids);
+
+bool centry_list_rsmap_expand_implicit_ids(lList **answer_list, lList *centry_list);
+

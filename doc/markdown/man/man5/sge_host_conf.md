@@ -87,6 +87,23 @@ are always handled on a per job slot basis.
 The default value for this parameter is NONE, i.e. no administrator defined resource attribute quotas are 
 associated with the host.
 
+For a Resource Map (*RSMAP*, see xxqs_name_sxx_complex(5)) the value on the right of the `=` names the
+individual instances the host provides.
+
+    complex_values GPU=2(gpu0 gpu1)
+
+A *RSMAP* may also be written as a plain amount, without naming the instances. They are then named `0`
+to *amount*-1, so
+
+    complex_values GPU=4
+
+is stored and displayed as
+
+    complex_values GPU=4(0-3)
+
+The number of instances that may be named this way is limited by *MAX_RSMAP_IDS* in *qmaster_params*
+(see xxqs_name_sxx_conf(5)).
+
 ## load_values
 
 This entry cannot be configured but is only displayed in case of a qconf(1) `-se` command. All load values are 

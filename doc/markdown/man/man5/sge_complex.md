@@ -365,6 +365,34 @@ comparisons or in case of load scaling for the load complex entries:
 
 -   *HOST* is like *CSTRING* but the expression must match a valid hostname.
 
+-   *RSMAP* (Resource Map) manages a fixed pool of individually named resource instances on a host — GPUs,
+    NICs, licence seats, or any per-host resource where the scheduler needs to both count and place. RSMAP
+    is always consumable (see *consumable* below) and appears only in the *complex_values* list of a host
+    (see xxqs_name_sxx_host_conf(5)); it cannot be used as a per-queue limit. The value has the form:
+
+        <name>=<amount>(<id-spec> <id-spec> ...)
+
+    where each *id-spec* is either a bare identifier (`gpu0`), or an integer range (`1-3` — expanded to
+    individual numeric ids at parse time).
+- 
+    An id may appear more than once inside the `(...)` block to model N-way sharing of a single physical
+    resource (e.g. `gpu=2(gpu0 gpu0)` — one GPU shared between two jobs).
+
+    The id list may be left out, in which case the value is just the amount:
+
+        <name>=<amount>
+
+    The instances are then named `0` to *amount*-1, so `GPU=4` is equivalent to `GPU=4(0-3)` and is
+    stored and displayed in that longer form. This is a convenience for resources whose instances have
+    no meaningful names of their own; instances created this way carry no characteristics. An amount of
+    `0` means the host provides no instance at all and stays `0`. How many ids may be created this way
+    is limited by *MAX_RSMAP_IDS* in *qmaster_params* (default 512, see xxqs_name_sxx_conf(5)); a larger
+    amount is rejected and has to be written as an explicit id list. Setting *MAX_RSMAP_IDS* to 0
+    rejects the short form altogether.
+
+    See xxqs_name_sxx_host_conf(5) for placement inside a host configuration.
+
+
 ## relop
 
 The relation operator. The relation operator is used when the value requested by the user for this parameter is 
