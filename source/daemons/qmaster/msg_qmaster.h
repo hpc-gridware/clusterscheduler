@@ -697,4 +697,6 @@
 #define MSG_NO_SSL_CONTEXT_FOUND                   _MESSAGE(33986, _("no SSL context found for security operations"))
 #define MSG_NEXT_CERTIFICATE_RENEWAL_AT_S          _MESSAGE(33987, _("next certificate renewal is scheduled at " SFN))
 
+#define MSG_JOB_CANNOTBOOKRESOURCE_SSUU            _MESSAGE(33993, _("cannot book resource " SFQ " on host " SFQ " for job " sge_u32 "." sge_u32 ", the job is started without it"))
+
 // clang-format on
