@@ -56,6 +56,25 @@ qmaster. The upgrade procedure handles this automatically: any such rule is remo
 during the upgrade (if no rule remains, the value is set to *NONE*). No manual action is required; adapt your
 rules to *HGROUP* afterwards if you want to keep limiting these operations.
 
+## GDI Request Limits Now Admit the Number of Requests They Name
+
+Two details of the `gdi_request_limits` enforcement have been corrected in version 9.2.
+
+A limit is checked before a request is counted, and the sliding one-second window did not advance when exactly
+one second had passed since the last request, which merged two seconds into one interval. Together, a limit of
+*n* admitted roughly *(n+1)/2* requests per second instead of the *n* per second it names. In version 9.2 a
+limit of *n* admits exactly *n* request steps per second.
+
+A multi request is also accepted or rejected as a whole now. Previously the tasks ahead of the one that hit the
+limit had already been counted, so a rejected request still consumed part of the limit, and a client repeating
+it kept the rule saturated.
+
+**Impact on existing configurations:** a rule keeps its meaning but becomes effectively about twice as
+permissive as it was in 9.1.x, because it now grants what it says. Halve the value of a rule whose 9.1
+behavior you want to reproduce exactly. Note that this interacts with the request counts of the individual
+commands, which changed in 9.2 as well -- see *GDI Request Limits for Status Query Commands* above and the
+multi request note in xxqs_name_sxx_conf(5).
+
 ## *qquota* Plain Output: Memory and Time Limits Shown With Units
 
 In the plain (non-XML, non-JSON) output of *qquota*, resource-quota limit and usage values are now displayed in the

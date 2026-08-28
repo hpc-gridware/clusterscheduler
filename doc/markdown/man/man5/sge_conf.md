@@ -1432,6 +1432,8 @@ GDI request limits are not respected for manager requests. This means that users
 
 To enforce the limits, time is divided into 1-second intervals. The algorithm tracks the number of requests in the current second and the previous second. Each time a request arrives, the number of requests within a sliding 1-second window is calculated. This window includes the requests from the current second and a proportionate number of requests from the previous second. The difference between the number of requests in this window and the limit determines whether a new request can be accepted or rejected. The algorithm assumes that requests were evenly distributed in the previous second to prevent spikes at the start of a new interval.
 
+A client may bundle several operations into one multi request. Every task within it is counted separately, and for each task only the first matching rule applies, so one command can consume more than one request step -- and can consume steps on more than one rule when its tasks address different objects. A multi request is accepted or rejected as a whole: a single task over its limit rejects the entire request, and a rejected request consumes nothing. For example *qconf -sq* fetches the host groups next to the cluster queue, because a queue's host list is the member list of its *@@<queue>* host group, and therefore counts as two request steps against a rule that does not name an object.
+
 For example:
 
     gdi_request_limits=*:add:job:john:*=500,
