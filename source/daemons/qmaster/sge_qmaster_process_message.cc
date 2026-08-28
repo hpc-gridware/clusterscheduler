@@ -443,14 +443,12 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
          ocs::RequestLimits& limits_instance = ocs::RequestLimits::get_instance();
          limits_instance.parse_from_config(&packet->tasks[0]->answer_list);
 
-         for (const auto *task : packet->tasks) {
-            if (limits_instance.will_exceed_limit(packet, task, &packet->tasks[0]->answer_list)) {
-               // answer was written by will_exceed_limit()
-               local_ret = false;
-
-               // we can stop here. one gdi task is enough to exceed the limit to reject a multi request.
-               break;
-            }
+         // The whole packet is decided at once: one gdi task over the limit is
+         // enough to reject a multi request, and a rejected packet must then not
+         // have booked anything either.
+         if (limits_instance.will_exceed_limit(packet, &packet->tasks[0]->answer_list)) {
+            // answer was written by will_exceed_limit()
+            local_ret = false;
          }
       }
       SGE_UNLOCK(LOCK_LISTENER, LOCK_READ);

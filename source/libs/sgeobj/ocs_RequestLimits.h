@@ -52,6 +52,6 @@ namespace ocs {
 
       bool parse(const std::string &request_limit_string, lList **answer_list);
       bool parse_from_config(lList **answer_list);
-      bool will_exceed_limit(gdi::Packet *packet, gdi::Task *task, lList **answer_list);
+      bool will_exceed_limit(const gdi::Packet *packet, lList **answer_list);
    };
 }
