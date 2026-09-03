@@ -39,7 +39,7 @@
  * @brief Gettext wrappers, so that a message can be marked for translation whether or not the build has gettext
  */
 
-#include <climits>   // NAME_MAX, for the spool-derived name limits below
+#include <limits.h>   // NAME_MAX, for the spool-derived name limits below
 
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
 
