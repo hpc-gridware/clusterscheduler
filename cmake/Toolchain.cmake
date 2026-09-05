@@ -21,7 +21,7 @@ message(STATUS "Arch:     ${SGE_ARCH}")
 
 set(LINK_CPP_STATICALLY OFF)
 
-# The lab build hosts (h047, h018) are Debian style multiarch systems, but the
+# The lab build host h047 is a Debian style multiarch system, but the
 # gcc under /tools was not configured for one: on its own it finds neither
 # crt1.o (in /usr/lib/<triplet>) nor bits/wordsize.h (in /usr/include/<triplet>),
 # so both locations have to be handed to it.  The triplet is asked from the
@@ -84,10 +84,10 @@ elseif (("${SGE_ARCH}" STREQUAL "lx-amd64") AND (${HOSTNAME} STREQUAL "h047"))
    # Ubuntu 26.04; system gcc is 15 already, but use the same tool chain as
    # every other build host so that what one host accepts the next accepts too.
    gcs_use_tools_toolchain()
-elseif (("${SGE_ARCH}" STREQUAL "lx-arm64") AND (${HOSTNAME} STREQUAL "h018"))
-   # Ubuntu 22.04; here the system libstdc++ (GLIBCXX_3.4.30, gcc 11) is visibly
-   # older than what gcc 15.2 emits - the static C++ runtime the macro selects is
-   # not optional on this host.
+elseif (("${SGE_ARCH}" STREQUAL "lx-arm64") AND (${HOSTNAME} STREQUAL "build-lx-arm64"))
+   # Rocky/CentOs 8; gcc 8.5 and there is no gcc-toolset-15 for EL8, so the tool chain under
+   # /tools is the only way to c++23 here.  Its libstdc++ is far older than what
+   # gcc 15.2 emits, so the static C++ runtime the macro selects is not optional.
    gcs_use_tools_toolchain()
 elseif (("${SGE_ARCH}" STREQUAL "lx-riscv64") AND (${HOSTNAME} STREQUAL "su0-0-lx-riscv64"))
    # Default is gcc 15.2.1 => c++23 fully supported and stable
