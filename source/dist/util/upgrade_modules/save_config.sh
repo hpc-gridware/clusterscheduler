@@ -296,7 +296,12 @@ DumpListToLocation "$list" $DEST_DIR/ckpt "-sckpt"
 DumpOptionToFile "-ssconf" "$DEST_DIR/schedconf"
 
 #     -shgrpl                       <show host group lists>
-list=`$QCONF -shgrpl 2>/dev/null`
+# CS-2678: queue host groups (@@<queue>) are left out of the dump. Host groups
+# are restored before the cluster queues, so "qconf -Ahgrp @@all.q" would reach
+# the lifecycle rule before its queue exists. Nothing is lost: the queue
+# recreates the group from its own hostlist. Filtering also keeps the queue the
+# single source of the host list in a saved configuration.
+list=`$QCONF -shgrpl 2>/dev/null | grep -v "^@@"`
 #     -shgrp group                  <show host group config.>
 DumpListToLocation "$list" $DEST_DIR/hostgroups "-shgrp"
 
