@@ -236,6 +236,56 @@ events for these changes now. Clusters that use a host group named `@admin_hosts
 explanatory message — see the
 [Upgrade Notes](06_upgrade_notes.md#admin-and-submit-hosts-are-stored-as-host-groups).
 
+## The Host List of a Cluster Queue Is a Host Group
+
+Every cluster queue now owns one host group which carries its host list. The group is named after the queue
+with a doubled `@` as prefix: the host list of *all.q* is the member list of the host group `@@all.q`. The
+cluster queue no longer holds a host list of its own, and the *hostlist* line of a queue configuration is that
+group's member list.
+
+**At the user interface this changes almost nothing.** `qconf -sq` prints the *hostlist* line as before,
+`qconf -mq` writes it as before, and `-fmt json` emits the same `hostlist` property against the same schema.
+The same list can now also be reached through the host group commands -- `qconf -mhgrp @@all.q` and
+`qconf -mq all.q` write the same object -- and it may contain everything any other host group member list may
+contain, nested groups included.
+
+**One thing does change:** `qconf -shgrpl` lists these groups along with all others, so its output holds one
+additional entry per cluster queue. A script that parses the host group listing sees more entries than before
+and should skip the names beginning with `@@`. This is the only externally visible change of the feature. The
+upgrade procedure does the same when it saves a configuration -- see the
+[Upgrade Notes](06_upgrade_notes.md#the-host-list-of-a-cluster-queue-is-stored-as-a-host-group).
+
+Because the group belongs to its queue, four operations are refused that were not refused before:
+
+| Operation | Message |
+|---|---|
+| `qconf -ahgrp @@all.q`, `-Ahgrp` with such a name | `"@@all.q" is maintained by the qmaster and is created with its cluster queue` |
+| `qconf -dhgrp @@all.q`, `-Dhgrp` with such a name | `"@@all.q" is maintained by the qmaster and is removed with its cluster queue` |
+| naming `@@all.q` in any member list or *hostlist* | `"@@all.q" belongs to a cluster queue and cannot be referenced` |
+| `qconf -aq` with a queue name too long for the derived group name | `the name of a cluster queue may be at most 252 characters long, ...` |
+
+The member list itself is not restricted: it is modified through `-mhgrp`, `-Mhgrp` and the `-?attr` options
+like that of any other group, or through the queue. What the qmaster owns here is the lifetime of the group,
+not its contents. See xxqs_name_sxx_hostgroup(5) and xxqs_name_sxx_queue_conf(5).
+
+## Cluster Queue Names Are Limited to 252 Characters
+
+The name of a cluster queue may now be at most **252** characters long. A longer name is rejected when the
+queue is created, with a message naming the cluster queue:
+
+    the name of a cluster queue may be at most 252 characters long, so that the spool
+    file of the host group carrying its host list stays within the file name limit
+
+The limit follows from the host group each queue owns (see above). Classic spooling writes every object to a
+file named after it, using a temporary file with a leading dot that is renamed once the write succeeded, so the
+name plus that dot has to fit into one file name of the spool file system -- 255 characters on most systems.
+The group is spooled under a name two characters longer than the queue's own, and that is the name which has to
+fit. The limit is applied whichever spooling method is configured, because a queue that cannot be moved to
+classic spooling later would be a trap.
+
+Names of that length are unusual, so practically no cluster is affected. Existing queues are not rejected
+retroactively; only the creation of new ones is validated. See *queue_name* in xxqs_name_sxx_types(1).
+
 ## Wildcard Characters Are No Longer Allowed in Object Names
 
 The name an object is created with may no longer contain any of the characters that make up a wildcard

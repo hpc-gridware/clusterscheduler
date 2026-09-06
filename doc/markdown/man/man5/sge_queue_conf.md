@@ -61,6 +61,12 @@ maintains a queue instance for running jobs on that particular host. Large amoun
 by using host groups rather than by single host names. As list separators white-spaces and "," can be used. 
 (template default: NONE).
 
+This list is the member list of the host group owned by the cluster queue, named "@@" followed by the queue
+name -- the host list of *all.q* is the member list of *@@all.q* (see xxqs_name_sxx_hostgroup(5)). It may
+therefore contain everything a host group member list may contain, and the same list can be modified through
+the group with qconf(1) `-mhgrp @@all.q`. The group is created and removed with its cluster queue, and no
+other object may reference it: naming the host group of another cluster queue here is rejected.
+
 
 ## seq_no
 

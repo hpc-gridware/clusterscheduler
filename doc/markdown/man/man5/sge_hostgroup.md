@@ -69,6 +69,51 @@ from a cluster queue's *hostlist* to have the queue follow the execution host li
 
 This asymmetry is deliberate: *@admin_hosts* and *@submit_hosts* are yours to edit, *@exec_hosts* is derived.
 
+# QUEUE HOST GROUPS
+
+Every cluster queue owns one host group which carries its host list. The group is named after the queue with a
+doubled "@" as prefix: the host list of the cluster queue *all.q* is the member list of the host group
+*@@all.q*. The *hostlist* line of a queue configuration (see xxqs_name_sxx_queue_conf(5)) and the member list
+of that group are one and the same list, reachable through two sets of commands.
+
+The prefix "@@" is reserved for these groups. It cannot be used for a host group of your own, because a host
+group name is validated from its second character onwards and "@" is not allowed there (see *hostgroup_name*
+in xxqs_name_sxx_types(1)).
+
+## Lifetime
+
+A queue host group is created together with its cluster queue and removed together with it. It can therefore
+neither be added nor deleted on its own. Creating one with `-ahgrp` or `-Ahgrp` is rejected:
+
+    "@@all.q" is maintained by the qmaster and is created with its cluster queue
+
+and deleting one with `-dhgrp` or `-Dhgrp` likewise:
+
+    "@@all.q" is maintained by the qmaster and is removed with its cluster queue
+
+## Contents
+
+The member list, in contrast, is modified like that of any other host group -- either through the group
+itself with the `-mhgrp`, `-Mhgrp` and `-?attr` options of qconf(1), or through the *hostlist* line of the
+cluster queue with `-mq` and `-Mq`. Both write the same object, and a member list may contain everything any
+other host group member list may contain, subgroup references included.
+
+## References
+
+A queue host group belongs to its cluster queue and may not be named anywhere else -- neither in the member
+list of another host group nor in the *hostlist* of another cluster queue. Such a reference is rejected:
+
+    "@@all.q" belongs to a cluster queue and cannot be referenced
+
+## Listing
+
+qconf(1) `-shgrpl` lists queue host groups along with all others, so the listing holds one entry per cluster
+queue in addition to the host groups defined by the administrator. The `-shgrp`, `-shgrp_tree` and
+`-shgrp_resolved` options display them like any other group.
+
+The name of a cluster queue is limited so that the name derived from it still fits the spool file name limit;
+see *queue_name* in xxqs_name_sxx_types(1).
+
 # EXAMPLE
 
 This is a typical host group entry:

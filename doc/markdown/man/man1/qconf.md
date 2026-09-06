@@ -113,6 +113,13 @@ Object-specific notes:
 - Usersets (ACLs) have no template-editor add: create one from a file with `-Au`, or
   add a user to an ACL with `-au` (which creates the ACL if it does not yet exist;
   see below). The scheduler configuration always exists and has no add form.
+- `-ahgrp` refuses a name beginning with "@@". Such a name belongs to the host group
+  carrying the host list of a cluster queue, which is created with its queue and by
+  nothing else (see xxqs_name_sxx_hostgroup(5)). The upsert is unaffected: applied to
+  a queue host group that exists, `-ahgrp` modifies its member list like `-mhgrp`.
+- `-aq` refuses a queue name longer than the limit given for *queue_name* in
+  xxqs_name_sxx_types(1), so that the name of the host group derived from it still
+  fits the spool file name limit.
 
 Requires root/manager privileges.
 
@@ -129,9 +136,11 @@ available for the same objects as `-M<obj>`: `-Acal`, `-Ackpt`, `-Ace`, `-Ae`,
 `-Astree` (share tree) and `-Aconf` (cluster/host configuration).
 
 `-Astree` takes a single *fname* (the share tree is a singleton); the scheduler
-configuration always exists and has no add form. See also `-dry`, `-strict` and the
-EXIT STATUS section. Requires root/manager privileges (`-Au` also accepts operator
-privilege).
+configuration always exists and has no add form. The restrictions noted at `-a<obj>`
+apply here as well: `-Ahgrp` refuses to create a host group whose name begins with
+"@@", and `-Aq` refuses a queue name too long for the host group derived from it.
+See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager
+privileges (`-Au` also accepts operator privilege).
 
 ## -ah *hostname*,...
 Adds hosts *hostname* to the xxQS_NAMExx trusted host list. A host must be in this list to execute administrative
@@ -279,6 +288,9 @@ Object-specific notes:
 - `-dul` deletion is refused for the reserved *manager* and *operator* usersets, which
   hold the cluster's manager and operator lists (see xxqs_name_sxx_access_list(5)).
   Remove their members instead.
+- `-dhgrp` deletion is refused for the three reserved host groups and for the host
+  group of a cluster queue, whose name begins with "@@": that group is removed with
+  its queue, so use `-dq` (see xxqs_name_sxx_hostgroup(5)).
 
 Requires root/manager privileges (`-dul` also accepts operator privilege).
 
@@ -325,6 +337,9 @@ Object-specific notes:
 - `-Drole` deletion is refused if a role is still referenced as a parent by another
   role.
 - `-Dq` lets active jobs run to completion.
+- `-Dhgrp` deletion is refused for the three reserved host groups and for the host
+  group of a cluster queue, whose name begins with "@@" (see
+  xxqs_name_sxx_hostgroup(5)).
 
 Requires root/manager privileges (`-Du` also accepts operator privilege).
 
@@ -482,6 +497,12 @@ Object-specific notes:
 - `-mstree` and `-msconf` are singletons and take no name argument; `-mstree`
   creates the share tree if none exists (`-mstree` and `-astree` are
   interchangeable).
+- `-mhgrp` edits the host group of a cluster queue (a name beginning with "@@") like
+  any other group -- its member list is the host list of that queue, and `-mq` writes
+  the same list. What is refused is naming such a group in the member list of another
+  host group, and likewise in the *hostlist* of another cluster queue under `-mq`: a
+  queue host group belongs to its queue and cannot be referenced (see
+  xxqs_name_sxx_hostgroup(5)).
 
 Requires root/manager privilege.
 
@@ -536,6 +557,9 @@ Object-specific notes:
   directory.
 - `-Mstree` and `-Msconf` are singletons — they take a single *fname*, not a
   directory; `-Mstree` creates the share tree if none exists.
+- `-Mhgrp` and `-Mq` accept and refuse the same things as `-mhgrp` and `-mq`: the
+  member list of a queue host group is written through either of them, and no member
+  list and no *hostlist* may reference a queue host group.
 
 ## -mstnode *node_path*=*shares*,...
 Modifies the specified share tree node(s) in the share tree (see xxqs_name_sxxshare_tree(5)). The *node_path*

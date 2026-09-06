@@ -147,6 +147,23 @@ measured on the same six hosts with the same cluster configuration.
 
 (Available in Open and Gridware Cluster Scheduler.)
 
+### The Host List of a Cluster Queue Is a Host Group
+
+The hosts of a cluster queue used to be a list on the queue itself -- a second way of writing down a set of
+hosts, next to host groups, with its own commands and its own rules. Version 9.2 makes it a host group like
+any other: every cluster queue owns one, named after the queue with a doubled `@` as prefix, and the
+*hostlist* line of the queue configuration is that group's member list.
+
+Nothing has to be learned for it. `qconf -sq` and `qconf -mq` show and write the *hostlist* exactly as before.
+What is new is that the same list can be reached with the host group commands -- `qconf -mhgrp @@all.q` edits
+the hosts of *all.q* -- and that it accepts everything a host group member list accepts. The group is created
+and removed with its queue, and belongs to it: it cannot be added, deleted or referenced on its own.
+
+The one visible consequence is that `qconf -shgrpl` now lists one entry per cluster queue in addition to the
+host groups you defined; see the *Compatibility Notes*.
+
+(Available in Open and Gridware Cluster Scheduler.)
+
 ### X11 Forwarding for Interactive Jobs
 
 The builtin Interactive Job Support (IJS) mode now supports X11 forwarding for qrsh(1) and qlogin(1).

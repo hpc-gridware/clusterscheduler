@@ -120,6 +120,31 @@ Rename the host group in the old cluster, adapt the objects that reference it, a
 
 Compare `qconf -shgrp_resolved` before and after the rename to confirm the intended host set.
 
+## The Host List of a Cluster Queue Is Stored as a Host Group
+
+A cluster queue no longer stores a host list of its own. Every queue owns a host group named after it with a
+doubled `@` as prefix -- `@@all.q` for *all.q* -- and that group's member list is the queue's host list. See the
+[Compatibility Notes](07_compatibility_notes.md#the-host-list-of-a-cluster-queue-is-a-host-group) for what this
+changes at the user interface; in short, only the output of `qconf -shgrpl`.
+
+The regular upgrade procedure (`inst_sge -upd`) handles the migration automatically. The host lists are dumped
+with the cluster queues of the old cluster and re-added to the upgraded one with `qconf -Aq`, which creates
+each queue together with its host group and writes the host list into it. No manual action is required. As
+always, the upgrade procedure has to be run -- replacing only the binaries is not a supported way to install a
+new minor or major version. A queue that reaches the new qmaster without its host group, from a spool directory written before this change, is given an empty one at startup, which is the same thing the missing host list said.
+
+**Saved configurations do not contain queue host groups.** When a configuration is saved from a cluster
+running this version, the queue host groups are left out of the dump: they are restored before the cluster
+queues exist, and each one is recreated from its queue's *hostlist* a few steps later anyway. A configuration
+saved by an earlier version restores unchanged, and every queue reaches the same hosts as before.
+
+**If your cluster has a cluster queue whose name is longer than 252 characters**, rename it before the
+upgrade. Queue names are now limited so that the name of the host group derived from them still fits the spool
+file name limit (see *Cluster Queue Names Are Limited to 252 Characters* in the Compatibility Notes). There is no
+advance check for this in the upgrade procedure: such a queue is refused while the saved configuration is being
+loaded, with a message naming the cluster queue. Names of that length are unusual, so this affects practically
+no cluster.
+
 ## Wildcard Characters in Object Names
 
 Beginning with version 9.2 the name of a configuration object may no longer contain any of the characters
