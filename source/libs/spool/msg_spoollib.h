@@ -85,5 +85,6 @@
 #define MSG_NOTABLENAMEPASSEDTO_S _MESSAGE(59908, _("no table_name passed to function " SFN))
 #define MSG_UNKNOWNPREFIXORKEYNMFORTABLE_S _MESSAGE(59909, _("prefix or primary key unknown for table " SFN))
 #define MSG_SPOOL_WRONGVERSION_SS      _MESSAGE(59910, _("wrong version: database schema was created for version " SFQ ", we run version " SFQ))
+#define MSG_SPOOL_JOBREQUESTNOTPARSABLE_U _MESSAGE(59911, _("job " sge_u32 ": a resource request could not be parsed when reading it from the spool - the job will not be scheduled correctly"))
 
 // clang-format on

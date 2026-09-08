@@ -1513,6 +1513,10 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
    if (!implicit_slots_request) {
       implicit_slots_request = lCreateElem(CE_Type);
       lSetString(implicit_slots_request, CE_name, SGE_ATTR_SLOTS);
+      // slots is an INT; the type has to be set like on any other request, both
+      // because it is true and because a CE_valtype of 0 is what marks a request
+      // centry_list_fill_request() could not resolve - see ri_time_by_slots()
+      lSetUlong(implicit_slots_request, CE_valtype, TYPE_INT);
       lSetString(implicit_slots_request, CE_stringval, "1");
       lSetDouble(implicit_slots_request, CE_doubleval, 1);
    }
@@ -5881,6 +5885,10 @@ parallel_available_slots(const sge_assignment_t *a, int *slots)
    if (implicit_slots_request == nullptr) {
       implicit_slots_request = lCreateElem(CE_Type);
       lSetString(implicit_slots_request, CE_name, SGE_ATTR_SLOTS);
+      // slots is an INT; the type has to be set like on any other request, both
+      // because it is true and because a CE_valtype of 0 is what marks a request
+      // centry_list_fill_request() could not resolve - see ri_time_by_slots()
+      lSetUlong(implicit_slots_request, CE_valtype, TYPE_INT);
       lSetString(implicit_slots_request, CE_stringval, "1");
       lSetDouble(implicit_slots_request, CE_doubleval, 1);
    }
@@ -6117,12 +6125,22 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
    /* determine 'total' and 'request' values */
    total = lGetDouble(capacitiy_el, CE_doubleval);
 
-   if (!parse_ulong_val(&request, nullptr, lGetUlong(cplx_el, CE_valtype),
-      lGetString(rep, CE_stringval), nullptr, 0)) {
-      sge_dstring_append(reason, "wrong type");
+   // The amount was parsed once already, when the request was built: centry_fill_and_check()
+   // stores it in CE_doubleval, and every element reaching this function has been through it -
+   // job requests via centry_list_fill_request() at submit, on spool read and at startup, and
+   // the two elements synthesized in rc_time_by_slots() set it explicitly. Re-parsing the
+   // string here would repeat that work per request, per layer and per queue instance.
+   //
+   // A request centry_list_fill_request() could not fill in is marked by a CE_valtype of 0,
+   // which is never legitimate: the field is spooled and always holds a real type otherwise.
+   // Such a request has no amount either - CE_doubleval is not spooled - so it must be refused
+   // rather than read as a request for nothing, which would match every host and book nothing.
+   if (lGetUlong(rep, CE_valtype) == 0) {
+      sge_dstring_append(reason, MSG_SCHEDD_REQUESTNOTRESOLVED);
       lFreeElem(&cplx_el);
       DRETURN(DISPATCH_NEVER_CAT);
    }
+   request = lGetDouble(rep, CE_doubleval);
 
    if (request != 0.0) {
       DPRINTF("exclusive_request\n");
@@ -6494,6 +6512,10 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
       if (!implicit_slots_request) {
          implicit_slots_request = lCreateElem(CE_Type);
          lSetString(implicit_slots_request, CE_name, SGE_ATTR_SLOTS);
+         // slots is an INT; the type has to be set like on any other request, both
+         // because it is true and because a CE_valtype of 0 is what marks a request
+         // centry_list_fill_request() could not resolve - see ri_time_by_slots()
+         lSetUlong(implicit_slots_request, CE_valtype, TYPE_INT);
          lSetString(implicit_slots_request, CE_stringval, "1");
          lSetDouble(implicit_slots_request, CE_doubleval, 1);
       }

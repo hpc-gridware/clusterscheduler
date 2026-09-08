@@ -102,6 +102,10 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
     if (implicit_slots_request == nullptr) {
       implicit_slots_request = lCreateElem(CE_Type);
       lSetString(implicit_slots_request, CE_name, SGE_ATTR_SLOTS);
+      // slots is an INT; the type has to be set like on any other request, both
+      // because it is true and because a CE_valtype of 0 is what marks a request
+      // centry_list_fill_request() could not resolve - see ri_time_by_slots()
+      lSetUlong(implicit_slots_request, CE_valtype, TYPE_INT);
       lSetString(implicit_slots_request, CE_stringval, "1");
       lSetDouble(implicit_slots_request, CE_doubleval, 1);
    }

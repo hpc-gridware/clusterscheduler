@@ -682,8 +682,9 @@ centry_list_init_double(lList *this_list) {
 *     centry_list_fill_request() -- fills and checks list of complex entries
 *
 *  SYNOPSIS
-*     int centry_list_fill_request(lList *centry_list,
-*                                  lList *master_centry_list,
+*     int centry_list_fill_request(lList *this_list,
+*                                  lList **answer_list,
+*                                  const lList *master_centry_list,
 *                                  bool allow_non_requestable,
 *                                  bool allow_empty_boolean,
 *                                  bool allow_neg_consumable)
@@ -691,7 +692,14 @@ centry_list_init_double(lList *this_list) {
 *  FUNCTION
 *     This function fills a given list of complex entries with missing
 *     attributes which can be found in the complex. It checks also
-*     wether the given in the centry_list-List are valid.
+*     whether the entries in the this_list-List are valid.
+*
+*     Every entry is visited, also after a failure. An entry which cannot be
+*     filled in is marked by setting its CE_valtype to 0, which is never a
+*     valid type, so that a consumer can tell it apart from a filled one. This
+*     matters because the amount is kept in CE_doubleval, which is not spooled
+*     and is 0 for an entry read back from the spool: without the marker an
+*     unfilled entry would look like a request for nothing.
 *
 *  INPUTS
 *     lList *this_list           - resources as complex list CE_Type
@@ -712,8 +720,9 @@ centry_list_init_double(lList *this_list) {
 *  RESULT
 *     int - error
 *        0 on success
-*       -1 on error
-*        an error message will be written into SGE_EVENT
+*       -1 if at least one entry could not be filled in; every such entry has
+*          its CE_valtype cleared, and a message describing it is appended to
+*          answer_list
 *******************************************************************************/
 int
 centry_list_fill_request(lList *this_list, lList **answer_list, const lList *master_centry_list,
@@ -721,9 +730,21 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
                          bool allow_neg_consumable) {
    lListElem *entry = nullptr;
    lListElem *cep = nullptr;
+   int ret = 0;
 
    DENTER(CENTRY_LAYER);
 
+   /* An entry which cannot be filled in is marked by clearing its CE_valtype, and the loop
+    * carries on with the remaining ones. Marking matters because the amount lives in
+    * CE_doubleval, which is not spooled and is therefore 0 on a request read back from the
+    * spool: an unfilled entry would otherwise look like a request for nothing, match every
+    * host and book nothing. CE_valtype is spooled and is never legitimately 0, so it is a
+    * sentinel the scheduler can test - see ri_time_by_slots().
+    *
+    * Carrying on rather than returning at the first failure is what makes the marking
+    * complete; entries behind the failing one would otherwise keep their spooled valtype and
+    * be indistinguishable from filled ones. Callers see the same -1 as before.
+    */
    for_each_rw(entry, this_list) {
       const char *name = lGetString(entry, CE_name);
       u_long32 requestable;
@@ -734,7 +755,9 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
          if (!allow_non_requestable && requestable == REQU_NO) {
 /*             ERROR(MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name); */
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name);
-            DRETURN(-1);
+            lSetUlong(entry, CE_valtype, 0);
+            ret = -1;
+            continue;
          }
 
          /* replace name in request/threshold/consumable list,
@@ -750,7 +773,9 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
 
          if (centry_fill_and_check(entry, answer_list, allow_empty_boolean, allow_neg_consumable)) {
             /* no error msg here - centry_fill_and_check() makes it */
-            DRETURN(-1);
+            lSetUlong(entry, CE_valtype, 0);
+            ret = -1;
+            continue;
          }
 
          /* RSMAP entries may carry per-instance characteristics on
@@ -758,7 +783,9 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
             populate valtype, and type-check each value. */
          if (lGetUlong(entry, CE_valtype) == TYPE_RSMAP) {
             if (!centry_check_rsmap_characteristics(answer_list, entry, master_centry_list)) {
-               DRETURN(-1);
+               lSetUlong(entry, CE_valtype, 0);
+               ret = -1;
+               continue;
             }
          }
       } else {
@@ -766,11 +793,13 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
             returned via argument. */
 /*          ERROR(MSG_SGETEXT_UNKNOWN_RESOURCE_S, name); */
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_UNKNOWN_RESOURCE_S, name);
-         DRETURN(-1);
+         lSetUlong(entry, CE_valtype, 0);
+         ret = -1;
+         continue;
       }
    }
 
-   DRETURN(0);
+   DRETURN(ret);
 }
 
 /**

@@ -529,12 +529,24 @@ bool spool_default_validate_func(lList **answer_list,
          break;
       case SGE_TYPE_JOB:
          // fill in non spooled fields, see also code for SGE_TYPE_EXECHOST
+         // The amount of every request is (re)computed here, into CE_doubleval, which is not
+         // spooled. The scheduler reads it directly and no longer re-parses the string, so a
+         // failure here would otherwise leave the amount at 0 and the job would be dispatched
+         // while booking nothing. Report it rather than discarding the answer list.
          lListElem *jrs;
          for_each_rw (jrs, lGetList(object, JB_request_set_list)) {
-            centry_list_fill_request(lGetListRW(jrs, JRS_hard_resource_list), nullptr, master_centry_list, true,
-                                     false, true);
-            centry_list_fill_request(lGetListRW(jrs, JRS_soft_resource_list), nullptr, master_centry_list, true,
-                                     false, true);
+            lList *fill_answer_list = nullptr;
+            // both calls must run; do not let the first failure skip the soft list
+            int hard_ret = centry_list_fill_request(lGetListRW(jrs, JRS_hard_resource_list), &fill_answer_list,
+                                                    master_centry_list, true, false, true);
+            int soft_ret = centry_list_fill_request(lGetListRW(jrs, JRS_soft_resource_list), &fill_answer_list,
+                                                    master_centry_list, true, false, true);
+            if (hard_ret != 0 || soft_ret != 0) {
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                       MSG_SPOOL_JOBREQUESTNOTPARSABLE_U, lGetUlong(object, JB_job_number));
+               answer_list_append_list(answer_list, &fill_answer_list);
+            }
+            lFreeList(&fill_answer_list);
          }
          break;
       default:
