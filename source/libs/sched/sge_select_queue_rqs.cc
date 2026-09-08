@@ -475,8 +475,36 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool
                   } else if (job_centry != nullptr) {
                      char availability_text[2048];
 
+                     // A dynamic limit carries a load formula rather than a number, and
+                     // RQRL_dvalue is filled in only by rqs_set_dynamical_limit(), which
+                     // evaluates the formula against the host under consideration. Without
+                     // this call the value read below is 0 for a dynamic limit that nothing
+                     // else has evaluated in this scheduling run, or one computed for a
+                     // different host if something has - and a dynamic limit is host
+                     // dependent by definition, so both are wrong (CS-2740). The consumable
+                     // branch above and the sequential path in rqs_limitation_reached() both
+                     // evaluate the limit before using it.
+                     if (!rqs_set_dynamical_limit(limit, a->gep, exec_host, a->centry_list)) {
+                        result = DISPATCH_NEVER_CAT;
+                        break;
+                     }
+
+                     // compare_complexes() takes the relation operator from its second
+                     // argument. Passing the job request there took it from an element which
+                     // never carries one - centry_list_fill_request() copies CE_name,
+                     // CE_valtype and CE_consumable into a request and nothing else - so the
+                     // operator was 0, resource_cmp() fell through to its default of "no match"
+                     // and every parallel job requesting a non consumable limited complex was
+                     // rejected, whatever the values (CS-2739). raw_centry is the complex
+                     // definition and does carry the operator, so it belongs in the second
+                     // position, which is also the order every other caller uses.
+                     //
+                     // Both values have to be set: compare_complexes() compares against
+                     // CE_pj_doubleval and against CE_doubleval and ANDs the two results.
                      lSetString(raw_centry, CE_stringval, lGetString(limit, RQRL_value));
-                     if (compare_complexes(1, raw_centry, job_centry, availability_text, false, false) != 1) {
+                     lSetDouble(raw_centry, CE_doubleval, lGetDouble(limit, RQRL_dvalue));
+                     lSetDouble(raw_centry, CE_pj_doubleval, lGetDouble(limit, RQRL_dvalue));
+                     if (compare_complexes(1, job_centry, raw_centry, availability_text, false, false) != 1) {
                         result = DISPATCH_NEVER_CAT;
                         break;
                      }
