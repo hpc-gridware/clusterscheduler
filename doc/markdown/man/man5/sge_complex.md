@@ -378,8 +378,8 @@ comparisons or in case of load scaling for the load complex entries:
 
         <id>[<char-name>=<char-value>,<char-name>=<char-value>,...]
 
-    Characteristics attach arbitrary typed metadata to one specific instance — the PCI device path of a
-    GPU, its on-board memory, a topology-affinity mask, a NIC's bandwidth, etc. Available in GCS only.
+    Characteristics attach typed metadata to one specific instance — the device files of a GPU, its
+    on-board memory, a topology-affinity mask, a NIC's bandwidth, etc. Available in GCS only.
     Multiple characteristics
     are separated by `,` (comma). The `,` inside the brackets is unambiguous because the flatfile
     parser is bracket-depth aware; the outer complex_values list separator is also `,`, so the two
@@ -388,7 +388,15 @@ comparisons or in case of load scaling for the load complex entries:
     parsed (so `memory=80G` is parsed as *MEMORY*, `bandwidth=100000` as *INT*, an affinity mask as
     *STRING*). A *char-value* may contain any byte except `,`, `]`, whitespace, `=`, `(`, and `)`;
     there is no quoting or escape mechanism. Characteristics cannot be attached to a range spec — list
-    ids explicitly (`gpu=3(0[device=/dev/nvidia0] 1[device=/dev/nvidia1] 2[device=/dev/nvidia2])`).
+    ids explicitly (`gpu=3(0[memory=80G] 1[memory=80G] 2[memory=80G])`).
+
+    Most characteristics are metadata that only a prolog or the job itself interprets, but one is
+    read by xxQS_NAMExx: a characteristic named *devices* lists the device files a job granted that
+    instance may use, and the execution daemon confines the job to them. Its value is a list of
+    device paths separated by `;`, each with an optional access mode after a `:`, which is `r`, `w`
+    or `rw`; a path given without a mode is granted read access. See xxqs_name_sxx_host_conf(5) for
+    an example. Because the name is what makes it work, a characteristic called *device* is an
+    ordinary piece of metadata and confines nothing.
 
     An id may appear more than once inside the `(...)` block to model N-way sharing of a single physical
     resource (e.g. `gpu=2(gpu0 gpu0)` — one GPU shared between two jobs). If any of the duplicate
@@ -401,8 +409,8 @@ comparisons or in case of load scaling for the load complex entries:
     Whitespace inside a `[...]` characteristics block is ignored, so a long RSMAP definition can be
     split across lines using the standard `\` + newline continuation:
 
-        complex_values GPU=2(gpu0[device=/dev/nvidia0,memory=80G,affinity_mask=SCCCCCCCCScccccccc] \
-                            gpu1[device=/dev/nvidia1,memory=80G,\
+        complex_values GPU=2(gpu0[devices=/dev/nvidia0:rw,memory=80G,affinity_mask=SCCCCCCCCScccccccc] \
+                            gpu1[devices=/dev/nvidia1:rw,memory=80G,\
                                  affinity_mask=SccccccccSCCCCCCCC])
 
     The line-continuation whitespace between `,` and the next characteristic is stripped before the
@@ -411,7 +419,7 @@ comparisons or in case of load scaling for the load complex entries:
 
     Example:
 
-        complex_values GPU=2(gpu0[device=/dev/nvidia0,memory=80G] gpu1[device=/dev/nvidia1,memory=80G])
+        complex_values GPU=2(gpu0[devices=/dev/nvidia0:rw,memory=80G] gpu1[devices=/dev/nvidia1:rw,memory=80G])
 
     The id list may be left out, in which case the value is just the amount:
 
