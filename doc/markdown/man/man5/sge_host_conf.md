@@ -90,14 +90,23 @@ associated with the host.
 For a Resource Map (*RSMAP*, see xxqs_name_sxx_complex(5)) the value on the right of the `=` names the
 individual instances the host provides, and may attach per-instance characteristics inside square
 brackets. Per-instance characteristics are available in GCS only. Example — a host with two NVIDIA
-GPUs, each carrying a device path, on-board memory, and a topology affinity mask:
+GPUs, each carrying its device files, on-board memory, and a topology affinity mask:
 
-    complex_values GPU=2(gpu0[device=/dev/nvidia0,memory=80G,affinity_mask=SCCCCCCCCScccccccc] \
-                        gpu1[device=/dev/nvidia1,memory=80G,affinity_mask=SccccccccSCCCCCCCC])
+    complex_values GPU=2(gpu0[devices=/dev/nvidia0:rw;/dev/nvidiactl:r,memory=80G,\
+                              affinity_mask=SCCCCCCCCScccccccc] \
+                         gpu1[devices=/dev/nvidia1:rw;/dev/nvidiactl:r,memory=80G,\
+                              affinity_mask=SccccccccSCCCCCCCC])
 
-Each characteristic name (`device`, `memory`, `affinity_mask` in the example) must already be defined
-as a complex before it can be attached to an RSMAP instance; the referenced complex's
+Each characteristic name (`devices`, `memory`, `affinity_mask` in the example) must already be
+defined as a complex before it can be attached to an RSMAP instance; the referenced complex's
 type governs how the value is parsed. See xxqs_name_sxx_complex(5) for the full grammar.
+
+The name *devices* is not just a label: a job granted an instance is confined to the device files
+listed there, so it reaches the GPU it was given and none of the others. The value is a list of
+device paths separated by `;`, each with an optional access mode after a `:` — `r`, `w` or `rw`. A
+path written without a mode is granted read access, which is why both paths above name one
+explicitly. The remaining characteristics in the example are ordinary metadata; nothing reads them
+unless a prolog or the job itself does.
 
 A *RSMAP* may also be written as a plain amount, without naming the instances. They are then named `0`
 to *amount*-1, so
