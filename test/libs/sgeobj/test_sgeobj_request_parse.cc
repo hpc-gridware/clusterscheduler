@@ -36,6 +36,7 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 
 static int failures = 0;
@@ -419,6 +420,137 @@ test_parameter_values_and_defaults() {
    lFreeList(&centries);
 }
 
+/**
+ * Build the resource map of a host: "gpu=8(0 0 0 0 1 1 1 1)" as the reader leaves it, two
+ * elements carrying a count rather than eight elements.
+ */
+static lListElem *
+make_resource_definition() {
+   lListElem *ep = lCreateElem(CE_Type);
+   lSetString(ep, CE_name, "gpu");
+   lSetUlong(ep, CE_valtype, TYPE_RSMAP);
+   lSetDouble(ep, CE_doubleval, 8);
+
+   lListElem *resl = lAddSubStr(ep, RESL_value, "0", CE_resource_map_list, RESL_Type);
+   lSetUlong(resl, RESL_amount, 4);
+   resl = lAddSubStr(ep, RESL_value, "1", CE_resource_map_list, RESL_Type);
+   lSetUlong(resl, RESL_amount, 4);
+
+   return ep;
+}
+
+/**
+ * Book "used" instances of one id, the way the host's utilization records them.
+ */
+static lListElem *
+make_utilization(const char *id, u_long32 used) {
+   lListElem *ep = lCreateElem(RUE_Type);
+   lSetString(ep, RUE_name, "gpu");
+   if (id != nullptr) {
+      lListElem *resl = lAddSubStr(ep, RESL_value, id, RUE_utilized_now_resource_map_list,
+                                   RESL_Type);
+      lSetUlong(resl, RESL_amount, used);
+   }
+   return ep;
+}
+
+static void
+test_find_id_with_free() {
+   lListElem *def = make_resource_definition();
+   lListElem *use;
+
+   /* nothing booked: the first id serves any amount up to its own count */
+   check_str("T70", "an unused map offers its first id",
+             centry_rsmap_find_id_with_free(def, nullptr, 4), "0");
+   check_str("T71", "and for a smaller amount too",
+             centry_rsmap_find_id_with_free(def, nullptr, 1), "0");
+   check_int("T72", "but not for more than one id holds",
+             centry_rsmap_find_id_with_free(def, nullptr, 5) == nullptr, 1);
+
+   /* the amount is per id, not the total: eight are free in all, no id has five */
+   check_int("T73", "the count is per id, not the total of the map",
+             centry_rsmap_find_id_with_free(def, nullptr, 8) == nullptr, 1);
+
+   /* one share of id 0 booked: it can no longer serve four, id 1 still can */
+   use = make_utilization("0", 1);
+   check_str("T74", "a partly used id is skipped for a full request",
+             centry_rsmap_find_id_with_free(def, use, 4), "1");
+   check_str("T75", "and still serves a smaller one",
+             centry_rsmap_find_id_with_free(def, use, 3), "0");
+   lFreeElem(&use);
+
+   /* both cards partly used: four of one id is impossible although four are free in total */
+   use = make_utilization("0", 2);
+   lListElem *resl = lAddSubStr(use, RESL_value, "1", RUE_utilized_now_resource_map_list,
+                                RESL_Type);
+   lSetUlong(resl, RESL_amount, 2);
+   check_int("T76", "no id serves the request although the map has enough free",
+             centry_rsmap_find_id_with_free(def, use, 4) == nullptr, 1);
+   check_str("T77", "a smaller request still finds one",
+             centry_rsmap_find_id_with_free(def, use, 2), "0");
+   lFreeElem(&use);
+
+   /* an id booked beyond its count must not underflow into a huge free amount */
+   use = make_utilization("0", 99);
+   check_str("T78", "an over-booked id is treated as full, not as underflowed",
+             centry_rsmap_find_id_with_free(def, use, 4), "1");
+   lFreeElem(&use);
+
+   check_int("T79", "an amount of zero finds nothing",
+             centry_rsmap_find_id_with_free(def, nullptr, 0) == nullptr, 1);
+   check_int("T80", "a missing definition finds nothing",
+             centry_rsmap_find_id_with_free(nullptr, nullptr, 1) == nullptr, 1);
+
+   lFreeElem(&def);
+}
+
+static void
+test_get_request_param() {
+   lList *lp;
+   DSTRING_STATIC(value, 256);
+
+   lp = parse("gpu=4[same=id]");
+   check_int("T81", "a single parameter is found",
+             centry_rsmap_get_request_param(lFirst(lp), "same", &value) ? 1 : 0, 1);
+   check_str("T81b", "with its value", sge_dstring_get_string(&value), "id");
+   lFreeList(&lp);
+
+   lp = parse("gpu=4[scope=host,same=id,memory=40G]");
+   check_int("T82", "a parameter in the middle is found",
+             centry_rsmap_get_request_param(lFirst(lp), "same", &value) ? 1 : 0, 1);
+   check_str("T82b", "with its value", sge_dstring_get_string(&value), "id");
+   check_int("T83", "the last parameter is found",
+             centry_rsmap_get_request_param(lFirst(lp), "memory", &value) ? 1 : 0, 1);
+   check_str("T83b", "with its value", sge_dstring_get_string(&value), "40G");
+   lFreeList(&lp);
+
+   /* a name which is a prefix of another must not match it */
+   lp = parse("gpu=4[same_thing=x]");
+   check_int("T84", "a longer name is not matched by a shorter one",
+             centry_rsmap_get_request_param(lFirst(lp), "same", &value) ? 1 : 0, 0);
+   lFreeList(&lp);
+
+   /* a value containing a bracket does not confuse the scan */
+   lp = parse("gpu=4[id=gpu[01]*,same=id]");
+   check_int("T85", "a parameter after a bracketed value is found",
+             centry_rsmap_get_request_param(lFirst(lp), "same", &value) ? 1 : 0, 1);
+   check_str("T85b", "with its value", sge_dstring_get_string(&value), "id");
+   check_int("T86", "and the bracketed value itself is returned whole",
+             centry_rsmap_get_request_param(lFirst(lp), "id", &value) ? 1 : 0, 1);
+   check_str("T86b", "including its brackets", sge_dstring_get_string(&value), "gpu[01]*");
+   lFreeList(&lp);
+
+   lp = parse("gpu=4");
+   check_int("T87", "a request without a parameter list has no parameters",
+             centry_rsmap_get_request_param(lFirst(lp), "same", &value) ? 1 : 0, 0);
+   lFreeList(&lp);
+
+   lp = parse("gpu=4[same=id]");
+   check_int("T88", "a parameter which is not there is not found",
+             centry_rsmap_get_request_param(lFirst(lp), "scope", &value) ? 1 : 0, 0);
+   lFreeList(&lp);
+}
+
 int
 main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_request_parse");
@@ -430,6 +562,8 @@ main(int argc, char *argv[]) {
    test_parameter_validation();
    test_reserved_names();
    test_parameter_values_and_defaults();
+   test_find_id_with_free();
+   test_get_request_param();
 
    if (failures == 0) {
       printf("\nPASS - 0 failure(s)\n");

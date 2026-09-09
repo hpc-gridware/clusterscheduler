@@ -28,6 +28,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_host.h"
+#include "sgeobj/sge_resource_utilization.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "msg_common.h"
 
@@ -355,6 +356,135 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
    }
 
    return ret;
+}
+
+/**
+ * @brief read one parameter out of the bracketed list of a resource map request
+ *
+ * The parameters live in CE_stringval after the amount, "4[same=id,memory=40G]". They are read
+ * back out on demand rather than stored anywhere, because a request is a spooled object and
+ * caching the parsed form in a field of it would be a cull change - which the maintenance branch
+ * cannot take.
+ *
+ * That makes the call site responsible for the cost. This is a scan of the value, so it is cheap
+ * once and not cheap per queue instance: ri_time_by_slots() runs per request, per layer and per
+ * queue instance, and in the parallel path again per slot count probe. Call it where the answer
+ * is needed once - a per host constraint belongs at the host layer - rather than inside the
+ * innermost loop.
+ *
+ * The list has already been validated by centry_rsmap_check_request_params() by the time anything
+ * asks for a parameter, so this does not report errors - a malformed list simply has no
+ * parameters to find.
+ *
+ * @param centry  the request
+ * @param param   name of the parameter, e.g. RSMAP_REQUEST_PARAM_SAME
+ * @param value   filled in with the value if the parameter is present; untouched otherwise
+ * @return        true if the parameter is present
+ */
+bool
+centry_rsmap_get_request_param(const lListElem *centry, const char *param, dstring *value) {
+   const char *s = lGetString(centry, CE_stringval);
+
+   if (s == nullptr || param == nullptr) {
+      return false;
+   }
+
+   const char *open = strchr(s, '[');
+   if (open == nullptr) {
+      return false;
+   }
+
+   const size_t param_len = strlen(param);
+   const char *p = open + 1;
+   int depth = 0;
+
+   while (*p != '\0') {
+      // the start of an entry: does it begin with "<param>=" at this level?
+      if (depth == 0 && strncmp(p, param, param_len) == 0 && *(p + param_len) == '=') {
+         const char *v = p + param_len + 1;
+         const char *end = v;
+         int d = 0;
+         while (*end != '\0' && !(d == 0 && (*end == ',' || *end == ']'))) {
+            if (*end == '[') {
+               d++;
+            } else if (*end == ']') {
+               d--;
+            }
+            ++end;
+         }
+         sge_dstring_clear(value);
+         sge_dstring_sprintf(value, "%.*s", (int)(end - v), v);
+         return true;
+      }
+
+      // skip to the start of the next entry at this level
+      while (*p != '\0' && !(depth == 0 && *p == ',')) {
+         if (*p == '[') {
+            depth++;
+         } else if (*p == ']') {
+            depth--;
+            if (depth < 0) {
+               return false;
+            }
+         }
+         ++p;
+      }
+      if (*p == ',') {
+         ++p;
+      }
+   }
+
+   return false;
+}
+
+/**
+ * @brief find an id of a resource map which has at least the requested amount free
+ *
+ * This is what "all the instances I am granted must carry the same id" reduces to. The reader
+ * folds repeated identifiers into one element carrying a count, see store_resl() in the flatfile
+ * reader, so "gpu=8(0 0 0 0 1 1 1 1)" is two elements of four rather than eight elements, and
+ * the free count of an id is its configured amount less what is booked against it.
+ *
+ * Both the matching and the booking side call this, which is the point of it living here. They
+ * run against the same host configuration and the same utilization - add_granted_resource_list()
+ * is called as soon as the assignment is fixed, before anything is debited - so they reach the
+ * same answer without the choice having to be carried from one to the other. If they ever
+ * disagreed a job would be granted a mixed set while matching believed otherwise, which is why
+ * there is one function and not two.
+ *
+ * @param resource_definition  the resource map on the host, from EH_consumable_config_list
+ * @param resource_utilization the matching element of EH_resource_utilization, may be nullptr
+ *                             when nothing is booked yet
+ * @param amount               how many instances of one id are needed
+ * @return                     the id, or nullptr if no single id has that many free
+ */
+const char *
+centry_rsmap_find_id_with_free(const lListElem *resource_definition,
+                               const lListElem *resource_utilization, u_long32 amount) {
+   if (resource_definition == nullptr || amount == 0) {
+      return nullptr;
+   }
+
+   const lListElem *defined_ep;
+   for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
+      const char *id = lGetString(defined_ep, RESL_value);
+      u_long32 free_amount = lGetUlong(defined_ep, RESL_amount);
+
+      if (resource_utilization != nullptr) {
+         const lListElem *used_ep = lGetSubStr(resource_utilization, RESL_value, id,
+                                               RUE_utilized_now_resource_map_list);
+         if (used_ep != nullptr) {
+            const u_long32 used = lGetUlong(used_ep, RESL_amount);
+            free_amount = (used >= free_amount) ? 0 : free_amount - used;
+         }
+      }
+
+      if (free_amount >= amount) {
+         return id;
+      }
+   }
+
+   return nullptr;
 }
 
 /**
