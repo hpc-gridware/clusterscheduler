@@ -226,6 +226,18 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
       return false;
    }
 
+   // This is the single point where a parameter list enters the system from a request, the way
+   // parse_id_characteristics() is for a configuration, so refusing it here keeps every consumer
+   // downstream unreachable in an OCS build without a guard of its own. The list is parsed
+   // everywhere - centry_list_parse_from_string() is shared with the open source clients and
+   // cannot be made conditional - so what an OCS build rejects is a well formed request with a
+   // clear message, not a parse error.
+#if !defined(WITH_EXTENSIONS)
+   answer_list_add_sprintf(answer_list, STATUS_ENOTAVAILABLE, ANSWER_QUALITY_ERROR,
+                           MSG_RSMAP_PARAM_NOT_AVAILABLE_SS, name, value);
+   return false;
+#endif
+
    // the list has to be closed, and nothing may follow it. Bracket depth is tracked because a
    // value may itself contain a character class, "[id=gpu[01]*]"
    const char *close = nullptr;
@@ -309,6 +321,27 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
       }
 
       if (centry_rsmap_is_reserved_param(param_name.c_str())) {
+         const std::string param_value = param.substr(eq + 1);
+
+         // bind= is reserved and validated from the start, but nothing reads it until
+         // affinity aware core binding exists (CS-2706). Only "no" is defined; rejecting any
+         // other value now is what leaves room to add one later without breaking a script
+         // which had been accepted and ignored.
+         if (param_name == RSMAP_REQUEST_PARAM_BIND && param_value != "no") {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_RSMAP_PARAM_BAD_VALUE_SSS, name, param_name.c_str(),
+                                    param_value.c_str());
+            ret = false;
+         }
+
+         // distinct= is reserved so that the grammar has room for it, but is not implemented.
+         // Refuse it rather than accept and ignore it, for the same reason.
+         if (param_name == RSMAP_REQUEST_PARAM_DISTINCT) {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_RSMAP_PARAM_NOT_YET_SS, name, param_name.c_str());
+            ret = false;
+         }
+
          continue;
       }
 

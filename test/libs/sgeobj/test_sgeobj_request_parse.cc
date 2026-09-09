@@ -377,6 +377,48 @@ test_reserved_names() {
    lFreeElem(&ep);
 }
 
+static void
+test_parameter_values_and_defaults() {
+   lList *centries = make_centry_list();
+   lListElem *ep;
+   lList *answer_list;
+
+   /* bind= is reserved and validated now, although nothing reads it until CS-2706 */
+   check_int("T60", "bind=no is accepted", fill("gpu=4[bind=no]", centries), 0);
+   check_int("T61", "any other value of bind is rejected", fill("gpu=4[bind=yes]", centries), -1);
+   check_int("T62", "an empty value of bind is rejected", fill("gpu=4[bind=]", centries), -1);
+
+   /* distinct= is reserved so the grammar has room for it, and refused until it exists */
+   check_int("T63", "distinct is refused as not yet supported",
+             fill("gpu=4[distinct=id]", centries), -1);
+
+   /* a default value must be an amount. requestable YES is the case with no other validation,
+      so it is the one worth pinning */
+   ep = make_complex("gpu2", "g2");
+   lSetUlong(ep, CE_valtype, TYPE_RSMAP);
+   lSetUlong(ep, CE_consumable, CONSUMABLE_HOST);
+   lSetUlong(ep, CE_requestable, REQU_YES);
+   lSetString(ep, CE_defaultval, "4");
+   answer_list = nullptr;
+   check_int("T64", "a numeric default is accepted",
+             centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 1);
+   lFreeList(&answer_list);
+   lFreeElem(&ep);
+
+   ep = make_complex("gpu2", "g2");
+   lSetUlong(ep, CE_valtype, TYPE_RSMAP);
+   lSetUlong(ep, CE_consumable, CONSUMABLE_HOST);
+   lSetUlong(ep, CE_requestable, REQU_YES);
+   lSetString(ep, CE_defaultval, "4[same=id]");
+   answer_list = nullptr;
+   check_int("T65", "a default carrying a parameter list is refused",
+             centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 0);
+   lFreeList(&answer_list);
+   lFreeElem(&ep);
+
+   lFreeList(&centries);
+}
+
 int
 main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_request_parse");
@@ -387,6 +429,7 @@ main(int argc, char *argv[]) {
    test_amount_split();
    test_parameter_validation();
    test_reserved_names();
+   test_parameter_values_and_defaults();
 
    if (failures == 0) {
       printf("\nPASS - 0 failure(s)\n");

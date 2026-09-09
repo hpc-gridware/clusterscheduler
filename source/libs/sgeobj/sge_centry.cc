@@ -1175,6 +1175,24 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
          break;
    }
 
+   /* A default request is applied to jobs which did not ask for the resource at all, so a
+      parameter list in it would hand them a constraint they never requested. It is also never
+      evaluated: the scheduler parses the default value as a plain number, which fails, and the
+      default is then dropped as "value is 0" without a word. Refuse it instead.
+
+      This is checked here rather than with the other default value checks below because those
+      only run for a consumable which is requestable NO or FORCED, and for a non consumable -
+      and a resource map is always consumable, so the ordinary configuration, requestable YES,
+      reaches none of them. */
+   if (lGetUlong(centry, CE_valtype) == TYPE_RSMAP) {
+      const char *defaultval = lGetString(centry, CE_defaultval);
+      if (defaultval != nullptr && strchr(defaultval, '[') != nullptr) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_RSMAP_DEFAULT_HAS_PARAMS_SS, attrname, defaultval);
+         ret = false;
+      }
+   }
+
    /* The names of the parameters of a resource map request are reserved across the whole complex
       namespace. A parameter which is not one of them names a characteristic to match, so a
       complex called "same" or "scope" could never be matched as one - the request would be read
@@ -1322,7 +1340,12 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
    }
 
    if (type == TYPE_RSMAP) {
-      ret = centry_check_rsmap(answer_list, lGetUlong(centry, CE_consumable), attrname);
+      // accumulate: this used to assign, which discarded every earlier failure in this
+      // function for a resource map - an invalid relation operator, for instance, was
+      // reported into the answer list and the complex was accepted anyway
+      if (!centry_check_rsmap(answer_list, lGetUlong(centry, CE_consumable), attrname)) {
+         ret = false;
+      }
    }
 
 
