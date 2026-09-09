@@ -475,8 +475,12 @@ test_find_id_with_free() {
    use = make_utilization("0", 1);
    check_str("T74", "a partly used id is skipped for a full request",
              centry_rsmap_find_id_with_free(def, use, 4), "1");
-   check_str("T75", "and still serves a smaller one",
-             centry_rsmap_find_id_with_free(def, use, 3), "0");
+   // the id with the most free is returned, not the first which fits: matching computes the
+   // host capacity from the best id, so booking has to pick that same one or the two would
+   // disagree. Packing the least free id which still fits would fragment less and is worth
+   // considering later, but only if both sides adopt it together.
+   check_str("T75", "the emptiest id is returned, not the first which fits",
+             centry_rsmap_find_id_with_free(def, use, 3), "1");
    lFreeElem(&use);
 
    /* both cards partly used: four of one id is impossible although four are free in total */
@@ -500,6 +504,49 @@ test_find_id_with_free() {
              centry_rsmap_find_id_with_free(def, nullptr, 0) == nullptr, 1);
    check_int("T80", "a missing definition finds nothing",
              centry_rsmap_find_id_with_free(nullptr, nullptr, 1) == nullptr, 1);
+
+   lFreeElem(&def);
+}
+
+/**
+ * The count reading of the same helper. This is what lets the constraint take part in the
+ * ordinary "how many slots can this host offer" calculation: a per slot request can serve
+ * free/amount slots from one id, which is MINed with what every other resource allows.
+ */
+static void
+test_best_free_id() {
+   lListElem *def = make_resource_definition();
+   lListElem *use;
+   u_long32 free = 0;
+
+   check_str("T90", "an unused map reports its first id", centry_rsmap_best_free_id(def, nullptr, &free), "0");
+   check_int("T90b", "with its full count", (int)free, 4);
+
+   /* one share of card 0 booked, so card 1 is now the emptiest */
+   use = make_utilization("0", 1);
+   check_str("T91", "the emptiest id is reported", centry_rsmap_best_free_id(def, use, &free), "1");
+   check_int("T91b", "with its count", (int)free, 4);
+   lFreeElem(&use);
+
+   /* both cards half used: four free in the map, two on the best id */
+   use = make_utilization("0", 2);
+   lListElem *resl = lAddSubStr(use, RESL_value, "1", RUE_utilized_now_resource_map_list, RESL_Type);
+   lSetUlong(resl, RESL_amount, 2);
+   check_int("T92", "the count is of one id, not of the map", (int)(centry_rsmap_best_free_id(def, use, &free), free), 2);
+   lFreeElem(&use);
+
+   /* a full map reports zero rather than nothing, so a caller can tell "no room" from
+      "no such resource map" */
+   use = make_utilization("0", 4);
+   resl = lAddSubStr(use, RESL_value, "1", RUE_utilized_now_resource_map_list, RESL_Type);
+   lSetUlong(resl, RESL_amount, 4);
+   check_int("T93", "a full map reports an id", centry_rsmap_best_free_id(def, use, &free) != nullptr, 1);
+   check_int("T93b", "with a free count of zero", (int)free, 0);
+   lFreeElem(&use);
+
+   check_int("T94", "a missing definition reports nothing",
+             centry_rsmap_best_free_id(nullptr, nullptr, &free) == nullptr, 1);
+   check_int("T94b", "and a free count of zero", (int)free, 0);
 
    lFreeElem(&def);
 }
@@ -563,6 +610,7 @@ main(int argc, char *argv[]) {
    test_reserved_names();
    test_parameter_values_and_defaults();
    test_find_id_with_free();
+   test_best_free_id();
    test_get_request_param();
 
    if (failures == 0) {

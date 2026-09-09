@@ -67,6 +67,7 @@
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_schedd_conf.h"
@@ -6477,6 +6478,85 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
 //              master/slave requests
 //              also where we filter and sort the queue list
 //              have a tag TAG4SCHED_DISJOINT? Here we would have the necessary information. Or a bool &disjoint.
+/**
+ * @brief how many slots the resource maps of this host can serve under a same= constraint
+ *
+ * A request may require that every instance it is granted carries the same id:
+ *
+ *     qsub -l 'gpu=4[same=id]' ...
+ *
+ * That reduces to a count. The reader folds repeated identifiers into one element with a count,
+ * so "gpu=8(0 0 0 0 1 1 1 1)" is two cards of four shares, and the question is what one card can
+ * serve rather than what the map holds in total - four shares may be free across two cards while
+ * no card can serve four.
+ *
+ * How the count becomes slots depends on how often the amount is taken:
+ *
+ *   consumable YES        the amount is taken per slot, so one id serves free/amount slots
+ *   consumable JOB, HOST  the amount is taken once, so the id either serves the request or not
+ *
+ * Evaluated once per host, from the same host configuration and utilization the booking will see
+ * later, so that add_granted_resource_list() reaches the same id without it being carried.
+ *
+ * @param a          the assignment
+ * @param total_list the host's consumable configuration
+ * @param rue_list   the host's resource utilization
+ * @param reason     filled in when the constraint cannot be met at all
+ * @return           the number of slots the constraint permits, INT_MAX when no request carries
+ *                   one, 0 when it cannot be met
+ */
+static int
+parallel_rsmap_same_id_slots(const sge_assignment_t *a, const lList *total_list,
+                             const lList *rue_list, dstring *reason) {
+   int max_slots = INT_MAX;
+   DSTRING_STATIC(param, 64);
+
+   const lListElem *jrs;
+   for_each_ep (jrs, lGetList(a->job, JB_request_set_list)) {
+      const lListElem *req;
+      for_each_ep (req, lGetList(jrs, JRS_hard_resource_list)) {
+         if (lGetUlong(req, CE_valtype) != TYPE_RSMAP) {
+            continue;
+         }
+         if (!centry_rsmap_get_request_param(req, RSMAP_REQUEST_PARAM_SAME, &param)) {
+            continue;
+         }
+
+         const char *name = lGetString(req, CE_name);
+         const lListElem *definition = lGetElemStr(total_list, CE_name, name);
+         if (definition == nullptr) {
+            // the map is not configured on this host; the ordinary matching rejects the host
+            continue;
+         }
+         const lListElem *utilization = lGetElemStr(rue_list, RUE_name, name);
+
+         u_long32 best_free = 0;
+         centry_rsmap_best_free_id(definition, utilization, &best_free);
+
+         const auto amount = static_cast<u_long32>(lGetDouble(req, CE_doubleval));
+         if (amount == 0) {
+            continue;
+         }
+
+         int slots;
+         if (lGetUlong(req, CE_consumable) == CONSUMABLE_YES) {
+            slots = static_cast<int>(best_free / amount);
+         } else {
+            slots = (best_free >= amount) ? INT_MAX : 0;
+         }
+
+         if (slots == 0) {
+            sge_dstring_sprintf(reason, MSG_SCHEDD_SAMEIDNOTFULLFILLED_SS, name,
+                                sge_dstring_get_string(&param));
+            return 0;
+         }
+         max_slots = MIN(max_slots, slots);
+      }
+   }
+
+   return max_slots;
+}
+
 dispatch_t
 parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_list,
                           const lList *rue_list, const lList *load_attr, bool force_slots,
@@ -6821,6 +6901,22 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
       } // end for each request per scope
       // @todo if global requests have not matched, no need to check other scopes
    } // end for each scope
+
+   // A resource map request may require every instance it is granted to carry the same id. That
+   // is a property of the host, not of a queue instance, so it belongs here next to the binding
+   // and is evaluated once per host rather than per queue instance or per slot count probe.
+   //
+   // It reads as a capacity, which is what lets it take part in the calculation above instead of
+   // sitting beside it as a separate filter: one id can serve free/amount slots of a per slot
+   // request, and either all or none of a request which takes its amount once.
+   if (layer == DOMINANT_LAYER_HOST) {
+      int slots_with_same_id = parallel_rsmap_same_id_slots(a, total_list, rue_list, &reason);
+
+      if (slots_with_same_id == 0) {
+         DRETURN(DISPATCH_NEVER_CAT);
+      }
+      max_available_slots = MIN(max_available_slots, slots_with_same_id);
+   }
 
    // do the binding
    if (layer == DOMINANT_LAYER_HOST) {

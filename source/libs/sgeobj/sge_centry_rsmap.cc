@@ -438,12 +438,19 @@ centry_rsmap_get_request_param(const lListElem *centry, const char *param, dstri
 }
 
 /**
- * @brief find an id of a resource map which has at least the requested amount free
+ * @brief find the id of a resource map with the most free instances
  *
  * This is what "all the instances I am granted must carry the same id" reduces to. The reader
  * folds repeated identifiers into one element carrying a count, see store_resl() in the flatfile
  * reader, so "gpu=8(0 0 0 0 1 1 1 1)" is two elements of four rather than eight elements, and
  * the free count of an id is its configured amount less what is booked against it.
+ *
+ * The answer is a count rather than a yes or no because the scheduler wants both readings. A
+ * request which takes its amount once - consumable JOB or HOST - only asks whether some id has
+ * enough, while a per slot request asks how many slots one id can serve, which is the free count
+ * divided by the amount. Returning the count lets the caller do either, and lets the constraint
+ * take part in the ordinary "how many slots can this host offer" calculation instead of being a
+ * separate filter beside it.
  *
  * Both the matching and the booking side call this, which is the point of it living here. They
  * run against the same host configuration and the same utilization - add_granted_resource_list()
@@ -455,36 +462,73 @@ centry_rsmap_get_request_param(const lListElem *centry, const char *param, dstri
  * @param resource_definition  the resource map on the host, from EH_consumable_config_list
  * @param resource_utilization the matching element of EH_resource_utilization, may be nullptr
  *                             when nothing is booked yet
- * @param amount               how many instances of one id are needed
- * @return                     the id, or nullptr if no single id has that many free
+ * @param free_amount          out: the free count of the id returned, 0 if there is none
+ * @return                     the id with the most free instances, or nullptr for an empty map
  */
 const char *
-centry_rsmap_find_id_with_free(const lListElem *resource_definition,
-                               const lListElem *resource_utilization, u_long32 amount) {
-   if (resource_definition == nullptr || amount == 0) {
+centry_rsmap_best_free_id(const lListElem *resource_definition,
+                          const lListElem *resource_utilization, u_long32 *free_amount) {
+   const char *best_id = nullptr;
+   u_long32 best_free = 0;
+
+   if (free_amount != nullptr) {
+      *free_amount = 0;
+   }
+   if (resource_definition == nullptr) {
       return nullptr;
    }
 
    const lListElem *defined_ep;
    for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
       const char *id = lGetString(defined_ep, RESL_value);
-      u_long32 free_amount = lGetUlong(defined_ep, RESL_amount);
+      u_long32 free = lGetUlong(defined_ep, RESL_amount);
 
       if (resource_utilization != nullptr) {
          const lListElem *used_ep = lGetSubStr(resource_utilization, RESL_value, id,
                                                RUE_utilized_now_resource_map_list);
          if (used_ep != nullptr) {
             const u_long32 used = lGetUlong(used_ep, RESL_amount);
-            free_amount = (used >= free_amount) ? 0 : free_amount - used;
+            // RESL_amount is unsigned: an id booked beyond its count must read as full rather
+            // than wrap round to an enormous free amount
+            free = (used >= free) ? 0 : free - used;
          }
       }
 
-      if (free_amount >= amount) {
-         return id;
+      if (best_id == nullptr || free > best_free) {
+         best_id = id;
+         best_free = free;
       }
    }
 
-   return nullptr;
+   if (free_amount != nullptr) {
+      *free_amount = best_free;
+   }
+   return best_id;
+}
+
+/**
+ * @brief find an id which has at least the requested amount free
+ *
+ * The threshold reading of centry_rsmap_best_free_id(), for a request which takes its amount
+ * once rather than per slot.
+ *
+ * @param resource_definition  the resource map on the host
+ * @param resource_utilization what is booked against it, may be nullptr
+ * @param amount               how many instances of one id are needed
+ * @return                     the id, or nullptr if no single id has that many free
+ */
+const char *
+centry_rsmap_find_id_with_free(const lListElem *resource_definition,
+                               const lListElem *resource_utilization, u_long32 amount) {
+   u_long32 best_free = 0;
+
+   if (amount == 0) {
+      return nullptr;
+   }
+
+   const char *best_id = centry_rsmap_best_free_id(resource_definition, resource_utilization,
+                                                   &best_free);
+   return (best_id != nullptr && best_free >= amount) ? best_id : nullptr;
 }
 
 /**

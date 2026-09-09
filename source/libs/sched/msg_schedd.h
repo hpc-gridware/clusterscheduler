@@ -245,5 +245,6 @@
 #define MSG_QINSTANCE_VALUEMISSINGMASTERDOWN_S        _MESSAGE(47404, _("error: no value for " SFQ " because execd is in unknown state"))
 #define MSG_CANTFINDCATINMASTERLIST_U                 _MESSAGE(47405, _("could not find category " sge_u32 " in master list"))
 #define MSG_SCHEDD_REQUESTNOTRESOLVED                 _MESSAGE(47406, _("the request could not be resolved against the complex configuration"))
+#define MSG_SCHEDD_SAMEIDNOTFULLFILLED_SS             _MESSAGE(47407, _("no single id of resource map " SFQ " has enough free instances for the requested same=" SFN))
 
 // clang-format on

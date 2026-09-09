@@ -47,6 +47,10 @@ bool centry_rsmap_check_request_params(lList **answer_list, const lListElem *cen
 bool centry_rsmap_get_request_param(const lListElem *centry, const char *param,
                                     dstring *value);
 
+const char *centry_rsmap_best_free_id(const lListElem *resource_definition,
+                                      const lListElem *resource_utilization,
+                                      u_long32 *free_amount);
+
 const char *centry_rsmap_find_id_with_free(const lListElem *resource_definition,
                                            const lListElem *resource_utilization,
                                            u_long32 amount);
