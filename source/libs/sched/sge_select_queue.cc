@@ -6523,6 +6523,18 @@ parallel_rsmap_same_id_slots(const sge_assignment_t *a, const lList *total_list,
          }
 
          const char *name = lGetString(req, CE_name);
+
+         // Inside an advance reservation the constraint cannot be honoured yet. Matching runs
+         // against the reservation's copy of the host lists, which sge_ar_swap_resource_lists()
+         // swaps back before add_granted_resource_list() books - so the two sides would look at
+         // different resource maps, and the agreement the whole design rests on does not hold.
+         // Refuse rather than grant a mixed set behind the constraint's back. CS-2730 makes the
+         // reservation itself id aware and lifts this.
+         if (a->ar_id != 0) {
+            sge_dstring_sprintf(reason, MSG_SCHEDD_SAMEIDNOTINAR_S, name);
+            return 0;
+         }
+
          const lListElem *definition = lGetElemStr(total_list, CE_name, name);
          if (definition == nullptr) {
             // the map is not configured on this host; the ordinary matching rejects the host

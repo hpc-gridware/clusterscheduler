@@ -246,5 +246,8 @@
 #define MSG_CANTFINDCATINMASTERLIST_U                 _MESSAGE(47405, _("could not find category " sge_u32 " in master list"))
 #define MSG_SCHEDD_REQUESTNOTRESOLVED                 _MESSAGE(47406, _("the request could not be resolved against the complex configuration"))
 #define MSG_SCHEDD_SAMEIDNOTFULLFILLED_SS             _MESSAGE(47407, _("no single id of resource map " SFQ " has enough free instances for the requested same=" SFN))
+#define MSG_SCHEDD_INFO_NORESERVATIONSAMEID_S         _MESSAGE(47408, _("no reservation for job " SFN " because it requires all instances of a resource map to carry the same id"))
+#define MSG_SCHEDD_INFO_NORESERVATIONSAMEID           _MESSAGE(47409, _("no reservation because the job requires all instances of a resource map to carry the same id"))
+#define MSG_SCHEDD_SAMEIDNOTINAR_S                    _MESSAGE(47410, _("resource map " SFQ " cannot be granted from one id inside an advance reservation"))
 
 // clang-format on

@@ -47,6 +47,7 @@
 
 #include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_schedd_conf.h"
@@ -718,12 +719,26 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
           * - the job is an immediate one
           * - if the job reservation is disabled by category
           */
+         // A request which requires all its instances to carry the same id cannot be given a
+         // reservation yet. Reservation mode asks when the resource will be free, and answers
+         // it from the resource diagram of the whole complex, which has no per id breakdown -
+         // "when will one id have four free shares" cannot be derived from it. Reserving the
+         // amount while ignoring the ids would pick a start time the constraint may not permit,
+         // hold capacity for it and block lower priority jobs meanwhile. Immediate scheduling
+         // is unaffected. CS-2720 lifts this.
+         const bool same_id_constrained = centry_rsmap_job_has_same_constraint(orig_job);
+
          if (nreservation < max_reserve &&
              lGetBool(orig_job, JB_reserve) &&
              !JOB_TYPE_IS_IMMEDIATE(lGetUlong(orig_job, JB_type)) &&
+             !same_id_constrained &&
              !ocs::CategorySchedd::job_is_category_reservation_rejected(orig_job)) {
             is_reserve = true;
          } else {
+            if (same_id_constrained && lGetBool(orig_job, JB_reserve)) {
+               schedd_mes_add(nullptr, false, lGetUlong(orig_job, JB_job_number),
+                              SCHEDD_INFO_NORESERVATIONSAMEID);
+            }
             is_reserve = false;
          }
 

@@ -28,6 +28,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_host.h"
+#include "sgeobj/sge_job.h"
 #include "sgeobj/sge_resource_utilization.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "msg_common.h"
@@ -431,6 +432,34 @@ centry_rsmap_get_request_param(const lListElem *centry, const char *param, dstri
       }
       if (*p == ',') {
          ++p;
+      }
+   }
+
+   return false;
+}
+
+/**
+ * @brief does the job require any of its resource maps to be granted from one id?
+ *
+ * Answered from the request itself rather than from a flag on the job, so that it cannot fall
+ * out of step with what the request says. It walks every request scope, because the constraint
+ * is a statement about the resource map and holds over all of them.
+ *
+ * @param job  the job
+ * @return     true if any hard request carries a same= parameter
+ */
+bool
+centry_rsmap_job_has_same_constraint(const lListElem *job) {
+   DSTRING_STATIC(param, 64);
+
+   const lListElem *jrs;
+   for_each_ep (jrs, lGetList(job, JB_request_set_list)) {
+      const lListElem *req;
+      for_each_ep (req, lGetList(jrs, JRS_hard_resource_list)) {
+         if (lGetUlong(req, CE_valtype) == TYPE_RSMAP &&
+             centry_rsmap_get_request_param(req, RSMAP_REQUEST_PARAM_SAME, &param)) {
+            return true;
+         }
       }
    }
 
