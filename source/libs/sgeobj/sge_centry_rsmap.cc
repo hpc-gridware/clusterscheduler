@@ -18,6 +18,8 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <cstring>
+
 #include <unordered_set>
 
 #include <string>
@@ -142,6 +144,180 @@ bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry,
             continue;
          }
          lFreeList(&sub_answers);
+      }
+   }
+
+   return ret;
+}
+
+const char *const RSMAP_REQUEST_PARAM_ID       = "id";
+const char *const RSMAP_REQUEST_PARAM_SAME     = "same";
+const char *const RSMAP_REQUEST_PARAM_SCOPE    = "scope";
+const char *const RSMAP_REQUEST_PARAM_DISTINCT = "distinct";
+const char *const RSMAP_REQUEST_PARAM_BIND     = "bind";
+
+/**
+ * Is this the name of a parameter of a resource map request?
+ *
+ * The names are reserved across the whole complex namespace, not only inside a bracket: a
+ * parameter which is not one of them names a characteristic to match, so a complex of one of
+ * these names could never be matched. Reserving them is what keeps that unambiguous.
+ *
+ * @param name  a parameter or complex name
+ * @return      true if the name is one of the reserved parameter names
+ */
+bool
+centry_rsmap_is_reserved_param(const char *name) {
+   if (name == nullptr) {
+      return false;
+   }
+   return strcmp(name, RSMAP_REQUEST_PARAM_ID) == 0 ||
+          strcmp(name, RSMAP_REQUEST_PARAM_SAME) == 0 ||
+          strcmp(name, RSMAP_REQUEST_PARAM_SCOPE) == 0 ||
+          strcmp(name, RSMAP_REQUEST_PARAM_DISTINCT) == 0 ||
+          strcmp(name, RSMAP_REQUEST_PARAM_BIND) == 0;
+}
+
+/**
+ * Validate the bracketed parameter list of a resource map request.
+ *
+ * A request may carry a list of named parameters after the amount:
+ *
+ *     -l 'gpu=4[id=gpu1*,same=id,memory=40G]'
+ *
+ * The whole string is in CE_stringval; CE_doubleval holds the amount in front of the bracket,
+ * split off by centry_fill_and_check(). This function looks at what follows it.
+ *
+ * The list is order independent and its entries combine with AND, so a name given twice is a
+ * conflict rather than a refinement and is refused. Each name is either one of the reserved
+ * parameter names or the name of a complex, which is then matched against the characteristic of
+ * that name on an instance. Nothing here evaluates a parameter - it establishes that the request
+ * is well formed and that every name means something.
+ *
+ * A bracket in the value of a *configuration* is a different thing entirely, the per instance
+ * characteristics of an id. Those never reach this function: the reader stores only the amount in
+ * CE_stringval and puts the ids in CE_resource_map_list, so a bracket here is unambiguously a
+ * request parameter list.
+ *
+ * @param answer_list        errors are appended here
+ * @param centry             the request; CE_name and CE_stringval are read
+ * @param master_centry_list complex list, used to resolve a parameter which is not reserved
+ * @return                   true if the request carries no parameter list or a valid one
+ */
+bool
+centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
+                                  const lList *master_centry_list) {
+   const char *name = lGetString(centry, CE_name);
+   const char *value = lGetString(centry, CE_stringval);
+
+   if (value == nullptr) {
+      return true;
+   }
+
+   const char *open = strchr(value, '[');
+   if (open == nullptr) {
+      return true;
+   }
+
+   // a parameter list is meaningful only for a resource map
+   if (lGetUlong(centry, CE_valtype) != TYPE_RSMAP) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_RSMAP_PARAM_NOT_RSMAP_SS, name, value);
+      return false;
+   }
+
+   // the list has to be closed, and nothing may follow it. Bracket depth is tracked because a
+   // value may itself contain a character class, "[id=gpu[01]*]"
+   const char *close = nullptr;
+   int depth = 0;
+   for (const char *p = open; *p != '\0'; ++p) {
+      if (*p == '[') {
+         depth++;
+      } else if (*p == ']') {
+         depth--;
+         if (depth == 0) {
+            close = p;
+            break;
+         }
+      }
+   }
+   if (close == nullptr) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_RSMAP_PARAM_UNCLOSED_SS, name, value);
+      return false;
+   }
+   if (*(close + 1) != '\0') {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_RSMAP_PARAM_TRAILING_SSS, name, close + 1, value);
+      return false;
+   }
+
+   bool ret = true;
+   std::unordered_set<std::string> seen;
+   const char *p = open + 1;
+
+   while (p <= close) {
+      // find the end of this parameter: the next comma at depth 0, or the closing bracket
+      const char *end = p;
+      int d = 0;
+      while (end < close && !(d == 0 && *end == ',')) {
+         if (*end == '[') {
+            d++;
+         } else if (*end == ']') {
+            d--;
+         }
+         ++end;
+      }
+
+      const std::string param(p, end - p);
+      p = end + 1;
+
+      if (param.empty()) {
+         // "[]" is an empty list and means the same as no list at all; "[a=1,,b=2]" is a mistake
+         if (open + 1 == close) {
+            break;
+         }
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_RSMAP_PARAM_EMPTY_SS, name, value);
+         ret = false;
+         continue;
+      }
+
+      const size_t eq = param.find('=');
+      if (eq == std::string::npos) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_RSMAP_PARAM_NO_EQ_SS, name, param.c_str());
+         ret = false;
+         continue;
+      }
+      if (eq == 0) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_RSMAP_PARAM_NO_NAME_SS, name, value);
+         ret = false;
+         continue;
+      }
+
+      const std::string param_name = param.substr(0, eq);
+
+      // order does not matter and the entries combine with AND, so a repeated name is a
+      // conflict, not a refinement
+      if (!seen.insert(param_name).second) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_RSMAP_PARAM_DUPLICATE_SS, name, param_name.c_str());
+         ret = false;
+         continue;
+      }
+
+      if (centry_rsmap_is_reserved_param(param_name.c_str())) {
+         continue;
+      }
+
+      // not a reserved name, so it has to name a complex - it will be matched against the
+      // characteristic of that name on an instance
+      if (centry_list_locate(master_centry_list, param_name.c_str()) == nullptr) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_RSMAP_PARAM_UNKNOWN_SS, name, param_name.c_str());
+         ret = false;
       }
    }
 

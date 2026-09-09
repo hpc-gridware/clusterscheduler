@@ -27,6 +27,22 @@ bool centry_check_rsmap(lList **answer_list, u_long32 status, const char* attrna
 bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry,
                                         const lList *master_centry_list);
 
+/**
+ * The parameters a resource map request may carry in brackets after its amount. The names are
+ * reserved: a complex of one of these names cannot be matched as a characteristic, which is why
+ * they are also refused as complex names when a complex is created or modified.
+ */
+extern const char *const RSMAP_REQUEST_PARAM_ID;
+extern const char *const RSMAP_REQUEST_PARAM_SAME;
+extern const char *const RSMAP_REQUEST_PARAM_SCOPE;
+extern const char *const RSMAP_REQUEST_PARAM_DISTINCT;
+extern const char *const RSMAP_REQUEST_PARAM_BIND;
+
+bool centry_rsmap_is_reserved_param(const char *name);
+
+bool centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
+                                       const lList *master_centry_list);
+
 bool centry_rsmap_expand_implicit_ids(lList **answer_list, lListElem *centry, u_long32 max_ids);
 
 bool centry_list_rsmap_expand_implicit_ids(lList **answer_list, lList *centry_list);

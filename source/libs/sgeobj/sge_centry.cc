@@ -806,6 +806,15 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
                continue;
             }
          }
+
+         /* A request may carry a bracketed parameter list after the amount. Validate it here,
+            which is the choke point every request passes: submit, AR submit, the spool read,
+            and the -l filters of the clients. */
+         if (!centry_rsmap_check_request_params(answer_list, entry, master_centry_list)) {
+            lSetUlong(entry, CE_valtype, 0);
+            ret = -1;
+            continue;
+         }
       } else {
          /* CLEANUP: message should be put into answer_list and
             returned via argument. */

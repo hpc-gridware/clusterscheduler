@@ -166,6 +166,14 @@ make_centry_list() {
    lAppendElem(lp, ep);
 
    ep = lCreateElem(CE_Type);
+   lSetString(ep, CE_name, "gpu_memory");
+   lSetUlong(ep, CE_valtype, TYPE_MEM);
+   lSetUlong(ep, CE_relop, CMPLXLE_OP);
+   lSetUlong(ep, CE_consumable, CONSUMABLE_NO);
+   lSetUlong(ep, CE_requestable, REQU_YES);
+   lAppendElem(lp, ep);
+
+   ep = lCreateElem(CE_Type);
    lSetString(ep, CE_name, "mem");
    lSetUlong(ep, CE_valtype, TYPE_MEM);
    lSetUlong(ep, CE_relop, CMPLXLE_OP);
@@ -253,6 +261,62 @@ test_amount_split() {
    lFreeList(&centries);
 }
 
+/**
+ * The parameter list is validated by centry_list_fill_request(), so these go through the same
+ * entry point as a real submit. A return of 0 means accepted, -1 rejected.
+ */
+static int
+fill(const char *request, lList *centries) {
+   lList *lp = parse(request);
+   lList *answer_list = nullptr;
+   int ret = centry_list_fill_request(lp, &answer_list, centries, true, false, true);
+   lFreeList(&answer_list);
+   lFreeList(&lp);
+   return ret;
+}
+
+static void
+test_parameter_validation() {
+   lList *centries = make_centry_list();
+
+   /* accepted: reserved names, a characteristic name, any order, and no list at all */
+   check_int("T30", "a reserved parameter is accepted", fill("gpu=4[same=id]", centries), 0);
+   check_int("T31", "several reserved parameters are accepted",
+             fill("gpu=4[same=id,scope=host,bind=no]", centries), 0);
+   check_int("T32", "a characteristic name is accepted",
+             fill("gpu=1[gpu_memory=40G]", centries), 0);
+   check_int("T33", "order does not matter",
+             fill("gpu=1[gpu_memory=40G,same=id]", centries), 0);
+   check_int("T34", "an empty parameter list is accepted", fill("gpu=4[]", centries), 0);
+   check_int("T35", "no parameter list at all is accepted", fill("gpu=4", centries), 0);
+
+   /* a value may itself contain a bracket */
+   check_int("T36", "a character class in a parameter value is accepted",
+             fill("gpu=1[id=gpu[01]*]", centries), 0);
+
+   /* rejected */
+   check_int("T37", "a parameter list on a non resource map is rejected",
+             fill("mem=2G[same=id]", centries), -1);
+   check_int("T38", "an unknown parameter name is rejected",
+             fill("gpu=4[nosuchthing=1]", centries), -1);
+   check_int("T39", "a repeated parameter is rejected",
+             fill("gpu=4[same=id,same=id]", centries), -1);
+   check_int("T40", "a repeated characteristic is rejected",
+             fill("gpu=4[gpu_memory=1G,gpu_memory=2G]", centries), -1);
+   check_int("T41", "a parameter without a value is rejected",
+             fill("gpu=4[same]", centries), -1);
+   check_int("T42", "a parameter without a name is rejected",
+             fill("gpu=4[=id]", centries), -1);
+   check_int("T43", "an empty parameter between two commas is rejected",
+             fill("gpu=4[same=id,,scope=host]", centries), -1);
+   check_int("T44", "an unclosed parameter list is rejected",
+             fill("gpu=4[same=id", centries), -1);
+   check_int("T45", "text after the parameter list is rejected",
+             fill("gpu=4[same=id]x", centries), -1);
+
+   lFreeList(&centries);
+}
+
 int
 main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_request_parse");
@@ -261,6 +325,7 @@ main(int argc, char *argv[]) {
 
    test_splitting();
    test_amount_split();
+   test_parameter_validation();
 
    if (failures == 0) {
       printf("\nPASS - 0 failure(s)\n");
