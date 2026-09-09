@@ -36,6 +36,7 @@
 
 #include <cstring>
 #include <cfloat>
+#include <string>
 
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
@@ -224,8 +225,24 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
       case TYPE_TIM:
       case TYPE_MEM:
       case TYPE_BOO:
-      case TYPE_DOUBLE:
-         if (!extended_parse_ulong_val(&dval, nullptr, type, s, tmp, sizeof(tmp)-1, allow_infinity, false)) {
+      case TYPE_DOUBLE: {
+         // A resource map request may carry a bracketed parameter list after the amount,
+         // "gpu=4[id=gpu1*,same=id]". The whole string stays in CE_stringval - that is what
+         // carries the parameters on - but only the text in front of the bracket is the amount.
+         // Everything downstream reads the amount from CE_doubleval, so this is the one place
+         // that has to know where it ends. Only the value handed to the parser differs; the
+         // checks below apply to a resource map like to any other numeric type.
+         std::string amount_buf;
+         const char *amount = s;
+         if (type == TYPE_RSMAP) {
+            const char *bracket = strchr(s, '[');
+            if (bracket != nullptr) {
+               amount_buf.assign(s, bracket - s);
+               amount = amount_buf.c_str();
+            }
+         }
+
+         if (!extended_parse_ulong_val(&dval, nullptr, type, amount, tmp, sizeof(tmp)-1, allow_infinity, false)) {
 /*             ERROR(MSG_CPLX_WRONGTYPE_SSS, name, s, tmp); */
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ATTRIB_XISNOTAY_SS, name, tmp);
             DRETURN(-1);
@@ -260,6 +277,7 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
             DRETURN(-1);
          }
          break;
+      }
       case TYPE_HOST:
          /* resolve hostname and store it */
          ret = sge_resolve_host(this_elem, CE_stringval);
@@ -896,6 +914,66 @@ centry_list_append_to_string(lList *this_list, char *buff, u_long32 max_len) {
    DRETURN(0);
 }
 
+/**
+ * @brief return the next "name=value" token of a resource request string
+ *
+ * Behaves like strtok over "," and " ", with one difference: a separator inside a bracketed
+ * block is payload rather than a separator, so a value may contain one. Two kinds of value
+ * need that. A resource map request carries its parameters in brackets,
+ *
+ *     -l 'gpu=4[id=gpu1*,same=id]',mem=2G
+ *
+ * where only the second comma separates two requests; and a string type may be matched with a
+ * character class, "-l h='node[1,2]'", which the old splitting tore in half. The configuration
+ * reader is bracket depth aware for the same reason, see sge_flatfile.cc.
+ *
+ * An unbalanced "[" swallows the rest of the string, which then fails as one malformed
+ * request rather than being silently split into two.
+ *
+ * @param pos - in/out: scan position in a writable copy of the request string. Tokens are
+ *              terminated in place, so the buffer is modified. Set to nullptr when exhausted.
+ * @return the next token, or nullptr
+ */
+static char *
+request_next_token(char **pos) {
+   char *p = *pos;
+
+   if (p == nullptr) {
+      return nullptr;
+   }
+
+   // skip separators in front of the token, as strtok does
+   while (*p == ',' || *p == ' ') {
+      p++;
+   }
+   if (*p == '\0') {
+      *pos = nullptr;
+      return nullptr;
+   }
+
+   char *token = p;
+   int depth = 0;
+   while (*p != '\0') {
+      if (*p == '[') {
+         depth++;
+      } else if (*p == ']' && depth > 0) {
+         depth--;
+      } else if (depth == 0 && (*p == ',' || *p == ' ')) {
+         break;
+      }
+      p++;
+   }
+
+   if (*p == '\0') {
+      *pos = nullptr;
+   } else {
+      *p = '\0';
+      *pos = p + 1;
+   }
+
+   return token;
+}
+
 /* CLEANUP: add answer_list remove SGE_EVENT */
 /*
  * NOTE
@@ -905,7 +983,6 @@ lList *
 centry_list_parse_from_string(lList *complex_attributes,
                               const char *str, bool check_value) {
    char *cp;
-   struct saved_vars_s *context = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -917,17 +994,16 @@ centry_list_parse_from_string(lList *complex_attributes,
       }
    }
 
-   /* str now points to the attr=value pairs */
-   while ((cp = sge_strtok_r(str, ", ", &context))) {
+   /* tokens are terminated in place, so work on a copy of the caller's string */
+   char *buffer = sge_strdup(nullptr, str);
+   char *pos = buffer;
+
+   /* buffer now points to the attr=value pairs */
+   while ((cp = request_next_token(&pos)) != nullptr) {
       lListElem *complex_attribute = nullptr;
       const char *attr = nullptr;
       char *value = nullptr;
 
-      str = nullptr;       /* for the next strtoks */
-
-      /*
-      ** recursive strtoks did not work
-      */
       attr = cp;
       if ((value = strchr(cp, '='))) {
          *value++ = 0;
@@ -936,7 +1012,7 @@ centry_list_parse_from_string(lList *complex_attributes,
       if (attr == nullptr || *attr == '\0') {
          ERROR(MSG_SGETEXT_UNKNOWN_RESOURCE_S, "");
          lFreeList(&complex_attributes);
-         sge_free_saved_vars(context);
+         sge_free(&buffer);
          DRETURN(nullptr);
       }
 
@@ -948,7 +1024,7 @@ centry_list_parse_from_string(lList *complex_attributes,
       } else if (check_value && (value == nullptr || *value == '\0')) {
          ERROR(MSG_CPLX_VALUEMISSING_S, attr);
          lFreeList(&complex_attributes);
-         sge_free_saved_vars(context);
+         sge_free(&buffer);
          DRETURN(nullptr);
       }
 
@@ -963,7 +1039,7 @@ centry_list_parse_from_string(lList *complex_attributes,
       lSetString(complex_attribute, CE_stringval, value);
    }
 
-   sge_free_saved_vars(context);
+   sge_free(&buffer);
 
    DRETURN(complex_attributes);
 }
