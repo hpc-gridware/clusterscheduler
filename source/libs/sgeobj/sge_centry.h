@@ -156,7 +156,8 @@ centry_list_locate(const lList *this_list,
                    const char *name);
 
 bool
-centry_elem_validate(lListElem *centry, const lList *centry_list, lList **answer_list);
+centry_elem_validate(lListElem *centry, const lList *centry_list, lList **answer_list,
+                     bool from_spool_read);
 
 
 bool

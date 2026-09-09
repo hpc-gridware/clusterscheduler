@@ -492,7 +492,7 @@ centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **
             cmp_elem = lNextRW(cmp_elem);
          }
 
-         if (!centry_elem_validate(centry_elem, nullptr, answer_list)) {
+         if (!centry_elem_validate(centry_elem, nullptr, answer_list, false)) {
             cont = false;
          }
 

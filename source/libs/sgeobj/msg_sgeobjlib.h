@@ -381,5 +381,7 @@
 #define MSG_RSMAP_PARAM_DUPLICATE_SS           _MESSAGE(64570, _("RSMAP " SFQ ": parameter " SFQ " is given more than once"))
 #define MSG_RSMAP_PARAM_UNKNOWN_SS             _MESSAGE(64571, _("RSMAP " SFQ ": " SFQ " is neither a parameter of a resource map request nor a defined complex"))
 #define MSG_RSMAP_PARAM_NOT_YET_SS             _MESSAGE(64572, _("RSMAP " SFQ ": parameter " SFQ " is not supported yet"))
+#define MSG_RSMAP_RESERVED_NAME_SS             _MESSAGE(64573, _("complex " SFQ " cannot use the " SFQ ", it is a reserved parameter name of a resource map request"))
+#define MSG_RSMAP_RESERVED_NAME_SPOOLED_SS     _MESSAGE(64574, _("complex " SFQ " uses the " SFQ ", which is a reserved parameter name of a resource map request - it stays usable as an ordinary resource but cannot be matched as a characteristic of a resource map instance"))
 
 // clang-format on

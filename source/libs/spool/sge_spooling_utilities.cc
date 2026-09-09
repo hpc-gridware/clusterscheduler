@@ -501,7 +501,8 @@ bool spool_default_validate_func(lList **answer_list,
          }
          break;
       case SGE_TYPE_CENTRY:
-         if (!centry_elem_validate(object, master_centry_list, answer_list)) {
+         // a complex already in the spool is reported, not refused - see centry_elem_validate()
+         if (!centry_elem_validate(object, master_centry_list, answer_list, true)) {
             ret = false;
          }
          break;

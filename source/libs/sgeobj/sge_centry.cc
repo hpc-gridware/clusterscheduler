@@ -1108,7 +1108,7 @@ centry_list_remove_duplicates(lList *this_list) {
 *
 *******************************************************************************/
 bool centry_elem_validate(lListElem *centry, const lList *centry_list,
-                          lList **answer_list) {
+                          lList **answer_list, bool from_spool_read) {
    u_long32 relop = lGetUlong(centry, CE_relop);
    u_long32 type = lGetUlong(centry, CE_valtype);
    const char *attrname = lGetString(centry, CE_name);
@@ -1173,6 +1173,39 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
                                  MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, type);
          ret = false;
          break;
+   }
+
+   /* The names of the parameters of a resource map request are reserved across the whole complex
+      namespace. A parameter which is not one of them names a characteristic to match, so a
+      complex called "same" or "scope" could never be matched as one - the request would be read
+      as carrying that parameter instead. Refuse to create or modify such a complex.
+
+      A complex already in the spool is a different matter: refusing it there would stop a qmaster
+      which has one from starting. It keeps working as an ordinary resource, and is reported once
+      at startup so that somebody knows to rename it. */
+   {
+      const char *shortcut = lGetString(centry, CE_shortcut);
+      const char *reserved = nullptr;
+      const char *which = nullptr;
+
+      if (centry_rsmap_is_reserved_param(attrname)) {
+         reserved = attrname;
+         which = "name";
+      } else if (centry_rsmap_is_reserved_param(shortcut)) {
+         reserved = shortcut;
+         which = "shortcut";
+      }
+
+      if (reserved != nullptr) {
+         if (from_spool_read) {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_WARNING,
+                                    MSG_RSMAP_RESERVED_NAME_SPOOLED_SS, attrname, which);
+         } else {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_RSMAP_RESERVED_NAME_SS, attrname, which);
+            ret = false;
+         }
+      }
    }
 
    {

@@ -317,6 +317,66 @@ test_parameter_validation() {
    lFreeList(&centries);
 }
 
+/**
+ * A complex may not be created or modified under one of the reserved parameter names, but one
+ * already in the spool keeps working - refusing it there would stop qmaster from starting.
+ */
+static lListElem *
+make_complex(const char *name, const char *shortcut) {
+   lListElem *ep = lCreateElem(CE_Type);
+   lSetString(ep, CE_name, name);
+   lSetString(ep, CE_shortcut, shortcut);
+   lSetUlong(ep, CE_valtype, TYPE_INT);
+   lSetUlong(ep, CE_relop, CMPLXLE_OP);
+   lSetUlong(ep, CE_consumable, CONSUMABLE_NO);
+   lSetUlong(ep, CE_requestable, REQU_YES);
+   return ep;
+}
+
+static void
+test_reserved_names() {
+   lListElem *ep;
+   lList *answer_list;
+
+   /* every reserved name is refused, by name and by shortcut */
+   const char *reserved[] = {"id", "same", "scope", "distinct", "bind"};
+   for (int i = 0; i < 5; i++) {
+      char id[8];
+      snprintf(id, sizeof(id), "T5%d", i);
+
+      ep = make_complex(reserved[i], "sc");
+      answer_list = nullptr;
+      check_int(id, "a reserved name is refused when a complex is created",
+                centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 0);
+      lFreeList(&answer_list);
+      lFreeElem(&ep);
+   }
+
+   ep = make_complex("something", "same");
+   answer_list = nullptr;
+   check_int("T55", "a reserved shortcut is refused too",
+             centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 0);
+   lFreeList(&answer_list);
+   lFreeElem(&ep);
+
+   /* an ordinary complex is unaffected */
+   ep = make_complex("gpu_temp", "gt");
+   answer_list = nullptr;
+   check_int("T56", "an ordinary complex is accepted",
+             centry_elem_validate(ep, nullptr, &answer_list, false) ? 1 : 0, 1);
+   lFreeList(&answer_list);
+   lFreeElem(&ep);
+
+   /* read from the spool it is kept, so that a qmaster which has one still starts */
+   ep = make_complex("same", "sc");
+   answer_list = nullptr;
+   check_int("T57", "a reserved name found in the spool is kept",
+             centry_elem_validate(ep, nullptr, &answer_list, true) ? 1 : 0, 1);
+   check_int("T57b", "and is reported", (int)lGetNumberOfElem(answer_list), 1);
+   lFreeList(&answer_list);
+   lFreeElem(&ep);
+}
+
 int
 main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_request_parse");
@@ -326,6 +386,7 @@ main(int argc, char *argv[]) {
    test_splitting();
    test_amount_split();
    test_parameter_validation();
+   test_reserved_names();
 
    if (failures == 0) {
       printf("\nPASS - 0 failure(s)\n");
