@@ -39,6 +39,23 @@
 #include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 
+/*
+ * A request which carries a parameter list is refused outright on a build without the
+ * extensions - centry_rsmap_check_request_params() gates the whole syntax there. So what
+ * a case which the full build accepts is expected to return depends on the build.
+ *
+ * The cases are kept rather than left out, because on such a build they assert the gate
+ * itself, which nothing else covers: the gate is compiled out of every build which has
+ * the extensions, so this is the only place it is ever executed.
+ */
+#if defined(WITH_EXTENSIONS)
+#  define PARAM_LIST_RC    0
+#  define PARAM_LIST_NOTE  ""
+#else
+#  define PARAM_LIST_RC    -1
+#  define PARAM_LIST_NOTE  " (refused, this build has no extensions)"
+#endif
+
 static int failures = 0;
 
 static void
@@ -204,8 +221,9 @@ test_amount_split() {
    /* the amount in front of the bracket is what CE_doubleval holds */
    lp = parse("gpu=4[same=id]");
    answer_list = nullptr;
-   check_int("T20", "a request with a parameter list is accepted",
-             centry_list_fill_request(lp, &answer_list, centries, true, false, true), 0);
+   check_int("T20", "a request with a parameter list is accepted" PARAM_LIST_NOTE,
+             centry_list_fill_request(lp, &answer_list, centries, true, false, true),
+             PARAM_LIST_RC);
    ep = lGetElemStr(lp, CE_name, "gpu");
    check_int("T20b", "CE_doubleval is the amount", (int)lGetDouble(ep, CE_doubleval), 4);
    check_str("T20c", "CE_stringval still carries the parameters",
@@ -290,19 +308,21 @@ test_parameter_validation() {
    lList *centries = make_centry_list();
 
    /* accepted: reserved names, a characteristic name, any order, and no list at all */
-   check_int("T30", "a reserved parameter is accepted", fill("gpu=4[same=id]", centries), 0);
-   check_int("T31", "several reserved parameters are accepted",
-             fill("gpu=4[same=id,bind=no]", centries), 0);
-   check_int("T32", "a characteristic name is accepted",
-             fill("gpu=1[gpu_memory=40G]", centries), 0);
-   check_int("T33", "order does not matter",
-             fill("gpu=1[gpu_memory=40G,same=id]", centries), 0);
-   check_int("T34", "an empty parameter list is accepted", fill("gpu=4[]", centries), 0);
+   check_int("T30", "a reserved parameter is accepted" PARAM_LIST_NOTE,
+             fill("gpu=4[same=id]", centries), PARAM_LIST_RC);
+   check_int("T31", "several reserved parameters are accepted" PARAM_LIST_NOTE,
+             fill("gpu=4[same=id,bind=no]", centries), PARAM_LIST_RC);
+   check_int("T32", "a characteristic name is accepted" PARAM_LIST_NOTE,
+             fill("gpu=1[gpu_memory=40G]", centries), PARAM_LIST_RC);
+   check_int("T33", "order does not matter" PARAM_LIST_NOTE,
+             fill("gpu=1[gpu_memory=40G,same=id]", centries), PARAM_LIST_RC);
+   check_int("T34", "an empty parameter list is accepted" PARAM_LIST_NOTE,
+             fill("gpu=4[]", centries), PARAM_LIST_RC);
    check_int("T35", "no parameter list at all is accepted", fill("gpu=4", centries), 0);
 
    /* a value may itself contain a bracket */
-   check_int("T36", "a character class in a parameter value is accepted",
-             fill("gpu=1[gpu_model=tesla[AB]]", centries), 0);
+   check_int("T36", "a character class in a parameter value is accepted" PARAM_LIST_NOTE,
+             fill("gpu=1[gpu_model=tesla[AB]]", centries), PARAM_LIST_RC);
 
    /* rejected */
    check_int("T37", "a parameter list on a non resource map is rejected",
@@ -404,7 +424,8 @@ test_parameter_values_and_defaults() {
    lList *answer_list;
 
    /* bind= is reserved and validated now, although nothing reads it until CS-2706 */
-   check_int("T60", "bind=no is accepted", fill("gpu=4[bind=no]", centries), 0);
+   check_int("T60", "bind=no is accepted" PARAM_LIST_NOTE,
+             fill("gpu=4[bind=no]", centries), PARAM_LIST_RC);
    check_int("T61", "any other value of bind is rejected", fill("gpu=4[bind=yes]", centries), -1);
    check_int("T62", "an empty value of bind is rejected", fill("gpu=4[bind=]", centries), -1);
 
