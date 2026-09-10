@@ -336,9 +336,16 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
             ret = false;
          }
 
-         // distinct= is reserved so that the grammar has room for it, but is not implemented.
-         // Refuse it rather than accept and ignore it, for the same reason.
-         if (param_name == RSMAP_REQUEST_PARAM_DISTINCT) {
+         // id=, scope= and distinct= are reserved so that the grammar has room for them, but
+         // nothing reads any of them yet - same= is the only one the scheduler honours. Were
+         // one of them accepted, a job which asked for a named instance, or for a constraint
+         // across the whole job rather than per host, would run as though it had asked for
+         // nothing at all. Refusing them keeps that from happening quietly, and a request the
+         // system refuses today can be accepted later without breaking anything, which is not
+         // true the other way round.
+         if (param_name == RSMAP_REQUEST_PARAM_ID ||
+             param_name == RSMAP_REQUEST_PARAM_SCOPE ||
+             param_name == RSMAP_REQUEST_PARAM_DISTINCT) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_RSMAP_PARAM_NOT_YET_SS, name, param_name.c_str());
             ret = false;
