@@ -18,13 +18,11 @@ limitations under the License.
 """
 #___INFO__MARK_END_NEW__
 
-from __future__ import annotations
-
 import os
 import sys
 import time
 from dataclasses import dataclass, field
-from typing import Callable, Dict, Optional, Set
+from typing import Callable, Dict, List, Optional, Set
 
 
 @dataclass
@@ -102,11 +100,38 @@ class JSV:
     # ---------------------------
 
     @staticmethod
+    def _split_subparams(raw: str) -> List[str]:
+        """Split a comma separated list, ignoring commas inside brackets.
+
+        A resource map request carries its parameters in brackets after the amount,
+        "gpu=4[id=gpu1*,same=id]", and a string type may be matched with a character
+        class, "h=node[1,2]". Splitting on every comma tears those apart: the value
+        becomes "gpu=4[id=gpu1*" and the remainder looks like a second entry with a
+        name nobody wrote. Since a JSV may modify and send the list back, that
+        corruption reaches qmaster.
+        """
+        tokens: List[str] = []
+        token = ""
+        depth = 0
+        for c in raw:
+            if c == "[":
+                depth += 1
+            elif c == "]":
+                depth -= 1
+            if c == "," and depth == 0:
+                tokens.append(token)
+                token = ""
+            else:
+                token += c
+        tokens.append(token)
+        return tokens
+
+    @staticmethod
     def _parse_subparams(raw: str) -> Dict[str, str]:
         out: Dict[str, str] = {}
         if not raw:
             return out
-        for token in raw.split(","):
+        for token in JSV._split_subparams(raw):
             token = token.strip()
             if not token:
                 continue
@@ -120,7 +145,7 @@ class JSV:
     @staticmethod
     def _format_subparams(d: Dict[str, str]) -> str:
         # Keep insertion order (Python 3.7+) to avoid surprising reordering.
-        parts: list[str] = []
+        parts: List[str] = []
         for k, v in d.items():
             parts.append(f"{k}={v}" if v else k)
         return ",".join(parts)

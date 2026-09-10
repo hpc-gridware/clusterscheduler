@@ -104,6 +104,8 @@ __jsv_all_envs=""
 __jsv_undef="variable_is_undefined"
 __jsv_quit="false"
 __jsv_saved_ifs="$IFS"
+__jsv_sp_separator="
+"
 
 ###### jsv/jsv_clear_params() ##################################################
 #  NAME
@@ -702,6 +704,56 @@ jsv_del_param()
    unset __jsv_isdef
 }
 
+################################################################################
+# __jsv_split_subparams
+#
+# Splits a comma separated list into $__jsv_split_result, one entry per line,
+# ignoring commas inside brackets.
+#
+# A resource map request carries its parameters in brackets after the amount,
+# "gpu=4[id=gpu1*,same=id]", and a string type may be matched with a character
+# class, "h=node[1,2]". Splitting on every comma tears those apart: the value
+# becomes "gpu=4[id=gpu1*" and the remainder looks like a second entry with a
+# name nobody wrote. Since a JSV may modify and send the list back, that
+# corruption reaches the qmaster.
+#
+# The result is newline separated because a newline cannot appear in a request,
+# and it is scanned in the shell rather than with an external command so that a
+# job submission does not pay for a fork here.
+################################################################################
+__jsv_split_subparams() {
+   __jsv_sp_rest="$1"
+   __jsv_sp_depth=0
+   __jsv_sp_token=""
+   __jsv_split_result=""
+
+   while [ -n "$__jsv_sp_rest" ]; do
+      __jsv_sp_tail="${__jsv_sp_rest#?}"
+      __jsv_sp_char="${__jsv_sp_rest%"$__jsv_sp_tail"}"
+      __jsv_sp_rest="$__jsv_sp_tail"
+
+      case "$__jsv_sp_char" in
+         "[") __jsv_sp_depth=$((__jsv_sp_depth + 1)) ;;
+         "]") __jsv_sp_depth=$((__jsv_sp_depth - 1)) ;;
+      esac
+
+      if [ "$__jsv_sp_char" = "," ] && [ $__jsv_sp_depth -eq 0 ]; then
+         __jsv_split_result="${__jsv_split_result}${__jsv_sp_token}${__jsv_sp_separator}"
+         __jsv_sp_token=""
+      else
+         __jsv_sp_token="${__jsv_sp_token}${__jsv_sp_char}"
+      fi
+   done
+   __jsv_split_result="${__jsv_split_result}${__jsv_sp_token}"
+
+   unset __jsv_sp_rest
+   unset __jsv_sp_tail
+   unset __jsv_sp_char
+   unset __jsv_sp_token
+   unset __jsv_sp_depth
+   return 0
+}
+
 ###### jsv/jsv_sub_is_param() ##################################################
 #  NAME
 #     jsv_sub_is_param() -- Returns whether or not a job parameter list 
@@ -776,8 +828,9 @@ jsv_sub_is_param() {
    __jsv_command=`eval "echo \$\{$__jsv_name\:\-$__jsv_undef\}"`
    __jsv_list=`eval "echo $__jsv_command"`
    if [ "$__jsv_list" != "$__jsv_undef" ]; then
-      IFS=","
-      for __jsv_i in $__jsv_list; do
+      __jsv_split_subparams "$__jsv_list"
+      IFS="$__jsv_sp_separator"
+      for __jsv_i in $__jsv_split_result; do
          IFS="="
          for __jsv_j in $__jsv_i; do
             IFS="$__jsv_saved_ifs"
@@ -793,7 +846,7 @@ jsv_sub_is_param() {
          if [ "$__jsv_ret" = "true" ]; then
             break
          fi
-         IFS=","
+         IFS="$__jsv_sp_separator"
       done
       IFS="$__jsv_saved_ifs"
    fi
@@ -867,8 +920,9 @@ jsv_sub_del_param()
    if [ "$__jsv_list" != "$__jsv_undef" ]; then
 
       # split token between ',' character
-      IFS=","
-      for __jsv_i in $__jsv_list; do
+      __jsv_split_subparams "$__jsv_list"
+      IFS="$__jsv_sp_separator"
+      for __jsv_i in $__jsv_split_result; do
          __jsv_found="false"
 
          # split the first string before '=' character
@@ -896,7 +950,7 @@ jsv_sub_del_param()
                __jsv_new_param="${__jsv_new_param},$__jsv_i"
             fi
          fi
-         IFS=","
+         IFS="$__jsv_sp_separator"
       done
       IFS="$__jsv_saved_ifs"
 
@@ -974,32 +1028,25 @@ jsv_sub_get_param()
    if [ "$__jsv_list" != "$__jsv_undef" ]; then
 
       # split token between ',' character
-      IFS=","
-      for __jsv_i in $__jsv_list; do
-         __jsv_found="false"
-
-         # split the first string before '=' character
-         # This is the variable name and if it is the
-         # one which should be deleted then set "found" 
-         # to "true" 
-         IFS="="
-         for __jsv_j in $__jsv_i; do
-            IFS="$__jsv_saved_ifs"
-            if [ "$__jsv_found" = "true" ]; then
-               echo "$__jsv_j"
-            else
-               if [ "$__jsv_j" = "$__jsv_sub_name" ]; then
-                  __jsv_found="true"
-               fi
-            fi
-            IFS="="
-         done
+      __jsv_split_subparams "$__jsv_list"
+      IFS="$__jsv_sp_separator"
+      for __jsv_i in $__jsv_split_result; do
          IFS="$__jsv_saved_ifs"
-         if [ "$__jsv_found" = "true" ]; then
-            break;
+
+         # everything in front of the first '=' character is the name of the
+         # sub parameter, everything behind it is its value. The value may well
+         # contain further '=' characters, as a resource map request does in
+         # "gpu=4[id=gpu1*,same=id]", so only the first one separates the two.
+         __jsv_sp_key="${__jsv_i%%=*}"
+         if [ "$__jsv_sp_key" = "$__jsv_sub_name" ]; then
+            if [ "$__jsv_i" != "$__jsv_sp_key" ]; then
+               echo "${__jsv_i#*=}"
+            fi
+            break
          fi
-         IFS=","
+         IFS="$__jsv_sp_separator"
       done
+      unset __jsv_sp_key
       IFS="$__jsv_saved_ifs"
    fi
    unset __jsv_list
@@ -1079,8 +1126,9 @@ jsv_sub_add_param()
    __jsv_found="false"
 
    # split token between ',' character
-   IFS=","
-   for __jsv_i in $__jsv_list; do
+   __jsv_split_subparams "$__jsv_list"
+   IFS="$__jsv_sp_separator"
+   for __jsv_i in $__jsv_split_result; do
       # split the first string before '=' character
       # This is the variable name and if it is the
       # one which should be deleted then set "found" 
