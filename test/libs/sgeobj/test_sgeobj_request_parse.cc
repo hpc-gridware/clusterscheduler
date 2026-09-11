@@ -318,6 +318,11 @@ test_parameter_validation() {
              fill("gpu=4[]", centries), PARAM_LIST_RC);
    check_int("T35", "no parameter list at all is accepted", fill("gpu=4", centries), 0);
 
+   /* same= takes the name of a characteristic as well as "id". Whether an instance carries it
+    * is a question for the scheduler, not for the submission. */
+   check_int("T49c", "same naming a characteristic is accepted" PARAM_LIST_NOTE,
+             fill("gpu=4[same=gpu_memory]", centries), PARAM_LIST_RC);
+
    /* rejected */
    check_int("T37", "a parameter list on a non resource map is rejected",
              fill("mem=2G[same=id]", centries), -1);
@@ -348,9 +353,6 @@ test_parameter_validation() {
    check_int("T49", "a refused reserved parameter is refused next to an accepted one",
              fill("gpu=4[same=id,scope=job]", centries), -1);
 
-   /* same= is honoured, but only with the value "id" - CS-2735 takes a characteristic name */
-   check_int("T49c", "same naming a characteristic is refused until it is implemented",
-             fill("gpu=4[same=gpu_memory]", centries), -1);
    check_int("T49d", "same with a value which names nothing at all is refused",
              fill("gpu=4[same=banana]", centries), -1);
 
