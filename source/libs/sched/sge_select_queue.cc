@@ -450,6 +450,7 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
    if (move_gdil) {
       lFreeList(&(dst->gdil));
       lFreeList(&(dst->binding_to_use));
+      lFreeList(&(dst->granted_rsmaps));
       lFreeList(&(dst->limit_list));
       lFreeList(&(dst->skip_cqueue_list));
       lFreeList(&(dst->skip_host_list));
@@ -462,9 +463,11 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
    }
 
    if (move_gdil) {
-      src->gdil = src->binding_to_use = src->limit_list = src->skip_cqueue_list = src->skip_host_list = nullptr;
+      src->gdil = src->binding_to_use = src->granted_rsmaps = src->limit_list =
+            src->skip_cqueue_list = src->skip_host_list = nullptr;
    } else {
-      dst->gdil = dst->binding_to_use = dst->limit_list = dst->skip_cqueue_list = dst->skip_host_list = nullptr;
+      dst->gdil = dst->binding_to_use = dst->granted_rsmaps = dst->limit_list =
+            dst->skip_cqueue_list = dst->skip_host_list = nullptr;
    }
 }
 
@@ -472,6 +475,7 @@ void assignment_release(sge_assignment_t *a)
 {
    lFreeList(&(a->gdil));
    lFreeList(&(a->binding_to_use));
+   lFreeList(&(a->granted_rsmaps));
    lFreeList(&(a->limit_list));
    lFreeList(&(a->skip_cqueue_list));
    lFreeList(&(a->skip_host_list));

@@ -41,9 +41,34 @@
 
 #include "ocs_GrantedResources.h"
 
+/**
+ * @brief choose the resource map ids this assignment is granted, and record the choice
+ *
+ * The ids are decided here, once, and kept on the assignment in a->granted_rsmaps - a GRU_Type
+ * list keyed the same way the granted resource list is, by name and host. Booking then copies
+ * them (see gru_list_apply_selected_rsmap_ids()) instead of searching the host a second time.
+ *
+ * Before this, matching and booking each derived the ids from the host configuration and the
+ * host utilization, and agreed only because nothing is debited between the two. Nothing
+ * enforced that, and it does not hold where the lists differ between the two points - inside an
+ * advance reservation sge_ar_swap_resource_lists() swaps them back before booking, which is why
+ * a same=id request is refused there today (CS-2730).
+ *
+ * The decision is still taken during booking for now. What has changed is that there is one
+ * place which takes it and a place to keep it, so moving it earlier - to where matching knows
+ * which instances it chose - is a change to this function's caller and not to the booking.
+ *
+ * @param a          the assignment, receives the selection in a->granted_rsmaps
+ * @param name       name of the resource map
+ * @param host_name  host the instances are taken on
+ * @param host_list  the host list holding configuration and utilization
+ * @param amount     how many instances to select
+ * @param same_id    whether every instance has to carry the same id
+ * @return true on success, false when no set of ids could be selected
+ */
 static bool
-gru_add_free_rsmap_ids(lListElem *gru, const char *name, const char *host_name, const lList *host_list,
-                       u_long32 amount, bool same_id) {
+rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host_name,
+                         const lList *host_list, u_long32 amount, bool same_id) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -51,7 +76,23 @@ gru_add_free_rsmap_ids(lListElem *gru, const char *name, const char *host_name, 
    if (host == nullptr) {
       ret = false;
    }
-   DPRINTF("      ==> gru_add_free_rsmap_ids: %s, %s, %d\n", name, host_name, amount);
+   DPRINTF("      ==> rsmap_select_granted_ids: %s, %s, %d\n", name, host_name, amount);
+
+   // the selection for this map on this host, created on the first request scope which
+   // reaches it and added to by the ones which follow
+   lListElem *gru = nullptr;
+   if (ret) {
+      gru = gru_list_search(a->granted_rsmaps, name, host_name);
+      if (gru == nullptr) {
+         gru = lAddElemStr(&(a->granted_rsmaps), GRU_name, name, GRU_Type);
+         if (gru == nullptr) {
+            ret = false;
+         } else {
+            lSetHost(gru, GRU_host, host_name);
+            lSetUlong(gru, GRU_type, GRU_RESOURCE_MAP_TYPE);
+         }
+      }
+   }
    if (ret) {
       const lListElem *resource_definition = lGetSubStr(host, CE_name, name, EH_consumable_config_list);
       const lListElem *resource_utilization = lGetSubStr(host, RUE_name, name, EH_resource_utilization);
@@ -108,7 +149,7 @@ gru_add_free_rsmap_ids(lListElem *gru, const char *name, const char *host_name, 
             if (id == nullptr) {
                // matching said otherwise, so the two have diverged; refuse rather than hand
                // out a mixed set behind the constraint's back
-               DPRINTF("gru_add_free_rsmap_ids: no single id of %s on %s holds %d\n",
+               DPRINTF("rsmap_select_granted_ids: no single id of %s on %s holds %d\n",
                        name, host_name, amount);
                ret = false;
             } else {
@@ -123,7 +164,7 @@ gru_add_free_rsmap_ids(lListElem *gru, const char *name, const char *host_name, 
                      lSetList(resl, RESL_properties, lCopyList("granted_properties", src_props));
                   }
                }
-               DPRINTF("      ==> gru_add_free_rsmap_ids: same id %s, amount %d\n", id, amount);
+               DPRINTF("      ==> rsmap_select_granted_ids: same id %s, amount %d\n", id, amount);
                lAddUlong(resl, RESL_amount, amount);
             }
          } else {
@@ -156,14 +197,15 @@ gru_add_free_rsmap_ids(lListElem *gru, const char *name, const char *host_name, 
                      }
                   }
                   if (free_amount >= amount) {
-                     DPRINTF("      ==> gru_add_free_rsmap_ids: id %s, amount %d\n", id, amount);
+                     DPRINTF("      ==> rsmap_select_granted_ids: id %s, amount %d\n", id, amount);
                      lAddUlong(resl, RESL_amount, amount);
                      //lSetUlong(resl, RESL_amount, lGetUlong(resl, RESL_amount) + amount);
                      amount = 0;
                      // we are done
                      break;
                   } else {
-                     DPRINTF("      ==> gru_add_free_rsmap_ids: id %s, amount %d\n", id, free_amount);
+                     DPRINTF("      ==> rsmap_select_granted_ids: id %s, amount %d\n",
+                             id, free_amount);
                      lAddUlong(resl, RESL_amount, free_amount);
                      //lSetUlong(resl, RESL_amount, lGetUlong(resl, RESL_amount) + free_amount);
                      amount -= free_amount;
@@ -245,12 +287,52 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
                               centry_rsmap_get_request_param(request, RSMAP_REQUEST_PARAM_SAME,
                                                              &same_param);
 
-         ret = gru_add_free_rsmap_ids(gru, name, host_name, host_list, amount * slots, same_id);
+         ret = rsmap_select_granted_ids(a, name, host_name, host_list, amount * slots, same_id);
       }
    } else {
       // couldn't malloc gru?
       DPRINTF("gru_list_add_request: couldn't malloc GRU\n");
       ret = false;
+   }
+
+   DRETURN(ret);
+}
+
+/**
+ * @brief give every resource map in the granted resource list the ids selected for it
+ *
+ * The two lists are keyed alike, by name and host, so this is a copy and not a second search.
+ * It is a deep copy: the granted resource list is handed to the ja_task and outlives the
+ * assignment, which frees its selection in assignment_release().
+ *
+ * @param a                       the assignment carrying the selection
+ * @param granted_resources_list  the list being built for the task
+ * @return true on success, false when a selection has no resource map to belong to
+ */
+static bool
+gru_list_apply_selected_rsmap_ids(const sge_assignment_t *a, lList *granted_resources_list) {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   const lListElem *selected;
+   for_each_ep (selected, a->granted_rsmaps) {
+      const char *name = lGetString(selected, GRU_name);
+      const char *host_name = lGetHost(selected, GRU_host);
+
+      lListElem *gru = gru_list_search(granted_resources_list, name, host_name);
+      if (gru == nullptr) {
+         // the selection is made from the same walk which creates these, so this cannot
+         // happen without the two having drifted apart
+         DPRINTF("gru_list_apply_selected_rsmap_ids: no granted resource %s on host %s\n",
+                 name, host_name);
+         ret = false;
+         continue;
+      }
+
+      const lList *ids = lGetList(selected, GRU_resource_map_list);
+      if (ids != nullptr) {
+         lSetList(gru, GRU_resource_map_list, lCopyList("granted_rsmap_ids", ids));
+      }
    }
 
    DRETURN(ret);
@@ -382,6 +464,14 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
       }
 
       last_host = host_name;
+   }
+
+   // The ids were selected once, onto the assignment; hand them to the resource maps they
+   // were selected for. Doing it after the walk rather than inside it means a map requested
+   // in more than one scope is copied once, when its selection is complete.
+   if (granted_resources_list != nullptr &&
+       !gru_list_apply_selected_rsmap_ids(a, granted_resources_list)) {
+      ret = false;
    }
 
    // If we had some consumables, add the list to the ja_task - also when one of the requests
