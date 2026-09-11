@@ -164,6 +164,19 @@ host groups you defined; see the *Compatibility Notes*.
 
 (Available in Open and Gridware Cluster Scheduler.)
 
+### The Default Queue Follows the Execution Host List
+
+A new cluster no longer needs the host group `@allhosts` to keep its default queue complete. The default queue
+*all.q* references `@exec_hosts`, which the qmaster maintains from the execution host list, so every execution
+host gets an *all.q* queue instance as soon as it is added. The installation of an execution host no longer
+asks about a queue; it only sets the slots of the new queue instance to the number of processors of the host.
+
+Whoever relies on `@allhosts` answers the new question of the qmaster installation with *yes*, or sets
+`CREATE_ALLHOSTS_HOSTGROUP="true"` for the automatic installation, and gets the previous setup. Upgraded clusters
+keep their configuration; see the *Upgrade Notes* and the *Compatibility Notes*.
+
+(Available in Open and Gridware Cluster Scheduler.)
+
 ### X11 Forwarding for Interactive Jobs
 
 The builtin Interactive Job Support (IJS) mode now supports X11 forwarding for qrsh(1) and qlogin(1).

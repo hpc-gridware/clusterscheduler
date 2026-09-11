@@ -477,12 +477,6 @@ StartExecd()
 #
 AddQueue()
 {
-   #if [ $addqueue = false ]; then
-   #   return
-   #fi
-
-   #exechost=`$SGE_UTILBIN/gethostname -aname | cut -f1 -d.`
-
    ignore_fqdn=`cat $SGE_ROOT/$SGE_CELL/common/bootstrap | grep "^ignore_fqdn" | awk '{print $2}'| egrep -i "true|1"`
    if [ "$ignore_fqdn" != "" ]; then
       ignore_fqdn=true
@@ -510,6 +504,21 @@ AddQueue()
 
    LOADCHECK_COMMAND="$SGE_UTILBIN/loadcheck"
    slots=`$LOADCHECK_COMMAND -loadval num_proc < /dev/null 2>/dev/null | sed "s/num_proc *//"`
+
+   # Without @allhosts the default queue all.q references @exec_hosts. The
+   # qmaster adds every execution host to that host group, so the host gets its
+   # all.q queue instance without asking. Only the slots have to be set.
+   if [ x`$SGE_BIN/qconf -shgrpl 2>/dev/null | grep '^@allhosts$'` = x ]; then
+      $INFOTEXT -u "\nConfiguring the queue instance for this host"
+      $INFOTEXT "\nThis host gets a queue instance of the default queue <all.q>, which\n" \
+                "references the >exec_hosts< host group. The queue instance provides\n" \
+                "%s slot(s) for jobs.\n" $slots
+      $INFOTEXT -log "Setting %s slot(s) for queue instance all.q@%s" $slots $exechost
+      $SGE_BIN/qconf -aattr queue slots "$slots" "all.q@$exechost"
+      $INFOTEXT -wait -auto $AUTO -n "\nHit <RETURN> to continue >> "
+      $CLEAR
+      return
+   fi
 
    $INFOTEXT -u "\nAdding a queue for this host"
    $INFOTEXT "\nWe can now add a queue instance for this host:\n\n" \

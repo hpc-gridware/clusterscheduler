@@ -486,6 +486,38 @@ This dialog will only be shown once during the installation of the first service
 
 22. Default Configuration Steps: Depending on your host setup and configuration steps, some default configuration objects will be created for your cluster.
 
+    The default queue `all.q` spans all execution hosts. Choose which host group it references:
+
+    ```
+    Host list of the default <all.q> queue
+    --------------------------------------
+
+    The default queue <all.q> can reference one of the following host groups:
+
+       - <@exec_hosts> is maintained by the qmaster. Every execution host is a
+         member of it and gets an <all.q> queue instance automatically.
+
+       - <@allhosts> is created now and maintained by the administrator.
+         The installation of an execution host asks whether the host shall be
+         added to it. This is the behaviour of older versions. Create it only
+         if your scripts or your configuration rely on <@allhosts>.
+
+    Do you want to create the <allhosts> hostgroup (y/n) [n] >>
+    ```
+
+    With the default answer `n`, `all.q` references `@exec_hosts`:
+
+    ```
+    Creating the default <all.q> queue referencing the <exec_hosts> hostgroup
+    -------------------------------------------------------------------------
+
+    root@<hostname>.<domainname> added "all.q" to cluster queue list
+
+    Hit <RETURN> to continue >>
+    ```
+
+    With `y`, the host group `@allhosts` is created and referenced by `all.q`:
+
     ```
     Creating the default <all.q> queue and <allhosts> hostgroup
     -----------------------------------------------------------
@@ -739,7 +771,24 @@ Here are the steps required to complete the installation.
    Hit <RETURN> to continue >>
    ```
 
-13. Specify a queue for the new host.
+13. Configure the queue instance of the new host.
+
+   If the cluster has no `@allhosts` host group (the default of a new installation), the host is a member of
+   `@exec_hosts` and therefore gets an `all.q` queue instance without further questions. The installation sets
+   its number of slots to the number of processors of the host:
+
+   ```
+   Configuring the queue instance for this host
+   --------------------------------------------
+
+   This host gets a queue instance of the default queue <all.q>, which
+   references the >exec_hosts< host group. The queue instance provides
+   32 slot(s) for jobs.
+
+   Hit <RETURN> to continue >>
+   ```
+
+   If the cluster has an `@allhosts` host group, the installation asks whether to add the host to it:
 
    ```
    Adding a queue for this host
@@ -779,6 +828,12 @@ The auto installation is also able to install services on remote hosts if either
    and ensure the PostgreSQL database and qmaster role already
    exist — see the dedicated chapter **PostgreSQL Spooling** for
    the full provisioning workflow.
+
+   `CREATE_ALLHOSTS_HOSTGROUP` decides which host group the default queue `all.q` references. The template sets it
+   to `false`: `all.q` references `@exec_hosts`, and every execution host gets an `all.q` queue instance
+   automatically. With `true` the host group `@allhosts` is created and referenced by `all.q`, as in older versions.
+   A configuration file without this entry, e.g. one derived from the template of an older version, is treated
+   like `true`.
 
 3. On the master machine start the master installation
 

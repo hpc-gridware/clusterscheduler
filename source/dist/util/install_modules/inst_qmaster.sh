@@ -1397,9 +1397,37 @@ AddHosts()
    if [ "$Overwrite" = "true" -a "$SPOOLING_METHOD" = "classic" ]; then
       $INFOTEXT -u "\nSkipping creation of the default <all.q> queue and <allhosts> hostgroup"
    else
-      $INFOTEXT -u "\nCreating the default <all.q> queue and <allhosts> hostgroup"
-      echo
-      $INFOTEXT -log "Creating the default <all.q> queue and <allhosts> hostgroup"
+      if [ "$AUTO" = "true" ]; then
+         create_allhosts=$CREATE_ALLHOSTS_HOSTGROUP
+      else
+         $INFOTEXT -u "\nHost list of the default <all.q> queue"
+         $INFOTEXT "\nThe default queue <all.q> can reference one of the following host groups:\n\n" \
+                   "   - <@exec_hosts> is maintained by the qmaster. Every execution host is a\n" \
+                   "     member of it and gets an <all.q> queue instance automatically.\n\n" \
+                   "   - <@allhosts> is created now and maintained by the administrator.\n" \
+                   "     The installation of an execution host asks whether the host shall be\n" \
+                   "     added to it. This is the behaviour of older versions. Create it only\n" \
+                   "     if your scripts or your configuration rely on <@allhosts>.\n\n"
+         $INFOTEXT -auto $AUTO -ask "y" "n" -def "n" -n \
+                   "Do you want to create the <allhosts> hostgroup (y/n) [n] >> "
+         if [ $? = 0 ]; then
+            create_allhosts=true
+         else
+            create_allhosts=false
+         fi
+      fi
+
+      if [ "$create_allhosts" = "true" ]; then
+         allq_hostlist=@allhosts
+         $INFOTEXT -u "\nCreating the default <all.q> queue and <allhosts> hostgroup"
+         echo
+         $INFOTEXT -log "Creating the default <all.q> queue and <allhosts> hostgroup"
+      else
+         allq_hostlist=@exec_hosts
+         $INFOTEXT -u "\nCreating the default <all.q> queue referencing the <exec_hosts> hostgroup"
+         echo
+         $INFOTEXT -log "Creating the default <all.q> queue referencing the <exec_hosts> hostgroup"
+      fi
       TMPL=/tmp/hostqueue$$
       TMPL2=${TMPL}.q
       rm -f $TMPL $TMPL2
@@ -1408,17 +1436,19 @@ AddHosts()
       else
 		   #Issue if old qmaster is running, new installation succeeds, but in fact the old qmaster is still running!
 		   #Reinstall can cause, that these already exist. So we skip them if they already exist.
-		   if [ x`$SGE_BIN/qconf -shgrpl 2>/dev/null | grep '^@allhosts$'` = x ]; then
-            PrintHostGroup @allhosts > $TMPL
-            Execute $SGE_BIN/qconf -Ahgrp $TMPL
-			else
-			   $INFOTEXT "Skipping creation of <allhosts> hostgroup as it already exists"
-				$INFOTEXT -log "Skipping creation of <allhosts> hostgroup as it already exists"
-			fi
+         if [ "$create_allhosts" = "true" ]; then
+            if [ x`$SGE_BIN/qconf -shgrpl 2>/dev/null | grep '^@allhosts$'` = x ]; then
+               PrintHostGroup @allhosts > $TMPL
+               Execute $SGE_BIN/qconf -Ahgrp $TMPL
+            else
+               $INFOTEXT "Skipping creation of <allhosts> hostgroup as it already exists"
+               $INFOTEXT -log "Skipping creation of <allhosts> hostgroup as it already exists"
+            fi
+         fi
 			if [ x`$SGE_BIN/qconf -sql 2>/dev/null | grep '^all.q$'` = x ]; then
             Execute $SGE_BIN/qconf -sq > $TMPL
             Execute sed -e "/qname/s/template/all.q/" \
-                        -e "/hostlist/s/NONE/@allhosts/" \
+                        -e "/hostlist/s/NONE/$allq_hostlist/" \
                         -e "/pe_list/s/NONE/make/" $TMPL > $TMPL2
             Execute $SGE_BIN/qconf -Aq $TMPL2
 			else

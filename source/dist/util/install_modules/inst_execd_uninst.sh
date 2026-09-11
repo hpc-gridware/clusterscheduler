@@ -81,7 +81,12 @@ FetchHostname()
       HOSTS="$tmp_host_list $tmp_local"
       REMOTE_UNINST_ARGS="-auto $FILE"
    else
-      HOSTS="$HOST"
+      # resolved like local_host, the comparison below is literal: an
+      # unresolved short name would uninstall the local host via rsh/ssh
+      HOSTS=`ResolveHosts $HOST`
+      if [ -z "$HOSTS" ]; then
+         HOSTS="$HOST"
+      fi
    fi
 
    if [ "$ALL_EXECDS" = true ]; then
@@ -222,16 +227,25 @@ RemoveQueues()
    exechost=$1
 
    for q in `qstat -F -l h=$exechost | grep qname | cut -d"=" -f2`; do
-
      $INFOTEXT "Deleting queue %s!" $q
      $INFOTEXT -log "Deleting queue %s!" $q
-     
-     for hgrp in `qconf -shgrpl`; do
-         $SGE_BIN/qconf -dattr hostgroup hostlist $exechost $hgrp
-     done
-
    done
 
+   # Remove the host from every host group, once. This includes the host groups
+   # carrying the host lists of the cluster queues (@@<queue>), so a host named
+   # in a queue's host list is removed from it as well.
+   for hgrp in `qconf -shgrpl`; do
+      # The reserved host groups are not queue configuration. @exec_hosts is
+      # maintained by the qmaster and follows the exec host list, the submit
+      # and admin host properties are removed by their own steps (see
+      # RemoveExecd and RemoveExecdAdminHost).
+      case "$hgrp" in
+         @admin_hosts|@submit_hosts|@exec_hosts)
+            continue
+            ;;
+      esac
+      $SGE_BIN/qconf -dattr hostgroup hostlist $exechost $hgrp
+   done
 }
 
 #--------------------------------------------------------------------------------

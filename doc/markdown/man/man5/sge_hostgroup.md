@@ -67,6 +67,9 @@ recomputed from the execution host list whenever a host is added or removed and 
 startup, so any attempt to modify it via `-mhgrp`, `-Mhgrp` or the `-?attr` options is rejected. Reference it
 from a cluster queue's *hostlist* to have the queue follow the execution host list automatically.
 
+Unless the installation was asked to create the host group *@allhosts*, the default queue *all.q* references
+*@exec_hosts*, so every execution host has an *all.q* queue instance.
+
 This asymmetry is deliberate: *@admin_hosts* and *@submit_hosts* are yours to edit, *@exec_hosts* is derived.
 
 # QUEUE HOST GROUPS

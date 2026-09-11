@@ -268,6 +268,37 @@ The member list itself is not restricted: it is modified through `-mhgrp`, `-Mhg
 like that of any other group, or through the queue. What the qmaster owns here is the lifetime of the group,
 not its contents. See xxqs_name_sxx_hostgroup(5) and xxqs_name_sxx_queue_conf(5).
 
+## The Host Group @allhosts Is Optional
+
+The qmaster installation asks whether to create the host group `@allhosts`; the default answer is **no**. In
+that case the default queue *all.q* references the host group `@exec_hosts`, which the qmaster maintains from
+the execution host list (see xxqs_name_sxx_hostgroup(5)). With the answer **yes** the installation creates
+`@allhosts` and lets *all.q* reference it, as in earlier versions.
+
+**What changes on a cluster installed without `@allhosts`:**
+
+- Every execution host has an *all.q* queue instance, without further action. This includes a host added
+  with `qconf -ae` on which no execution daemon is installed yet; its queue instance is in state `u`
+  (unknown) until the daemon reports. `@exec_hosts` is maintained by the qmaster: a host is a member
+  exactly as long as its execution host object exists, and it cannot be removed from the group by any
+  other means. As long as *all.q* references `@exec_hosts`, no single execution host can be excluded from
+  it. If some execution hosts shall not run jobs from *all.q*, let *all.q* reference a host group of your
+  own instead, e.g. `@allhosts`.
+- The installation of an execution host no longer asks whether to add a default queue instance. It sets the
+  slots of the host's *all.q* queue instance to the number of processors of the host.
+- Scripts and configurations that expect `@allhosts` to exist, e.g. by adding hosts to it or by referencing it
+  in a queue, a resource quota set or a host specific setting, fail on such a cluster. Either create
+  `@allhosts` during the installation or change them to use `@exec_hosts`.
+
+**Automatic installation:** the new entry `CREATE_ALLHOSTS_HOSTGROUP` of the autoinstall configuration file
+decides. The shipped template sets it to `false`. A configuration file without this entry, for example one
+derived from the template of an earlier version, is treated like `true`, so existing automatic installations
+keep creating `@allhosts`. Do not add the entry to a configuration file used with an installer of an earlier
+version: it rejects every entry it does not know.
+
+Upgraded clusters are not affected, see the
+[Upgrade Notes](06_upgrade_notes.md#the-default-queue-can-follow-the-execution-host-list).
+
 ## Cluster Queue Names Are Limited to 252 Characters
 
 The name of a cluster queue may now be at most **252** characters long. A longer name is rejected when the

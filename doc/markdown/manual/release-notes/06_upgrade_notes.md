@@ -145,6 +145,29 @@ advance check for this in the upgrade procedure: such a queue is refused while t
 loaded, with a message naming the cluster queue. Names of that length are unusual, so this affects practically
 no cluster.
 
+## The Default Queue Can Follow the Execution Host List
+
+A new installation lets the default queue *all.q* reference the host group `@exec_hosts`, which the qmaster
+maintains from the execution host list, and no longer creates the host group `@allhosts` unless asked to. See
+the [Compatibility Notes](07_compatibility_notes.md#the-host-group-allhosts-is-optional) for the details.
+
+**The upgrade procedure does not change this in an existing cluster.** `@allhosts` and the host list of *all.q*
+are carried over as they are, and the installation of an additional execution host keeps asking whether to add
+the host to `@allhosts`, as long as that group exists.
+
+To switch an upgraded cluster over, let *all.q* reference `@exec_hosts`:
+
+```
+qconf -mattr queue hostlist @exec_hosts all.q
+```
+
+From then on every execution host has an *all.q* queue instance, including hosts that were deliberately left
+out of `@allhosts`. `@exec_hosts` is maintained by the qmaster and contains every execution host; a single
+host cannot be removed from it. If such hosts exist, keep the previous host list of *all.q*. Once no queue,
+resource quota set or other host group references `@allhosts` any more, it can be deleted with
+`qconf -dhgrp @allhosts`. Without `@allhosts` the installation of an execution host no longer asks about a
+queue; it only sets the slots of the host's *all.q* queue instance.
+
 ## Wildcard Characters in Object Names
 
 Beginning with version 9.2 the name of a configuration object may no longer contain any of the characters
