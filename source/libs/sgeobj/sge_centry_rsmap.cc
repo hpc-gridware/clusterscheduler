@@ -21,6 +21,7 @@
 #include <cstring>
 
 #include <unordered_set>
+#include <vector>
 
 #include <string>
 
@@ -497,6 +498,139 @@ centry_rsmap_job_has_same_constraint(const lListElem *job) {
 }
 
 /**
+ * @brief the value an instance is grouped by for a same= constraint
+ *
+ * "Every instance I am granted must carry the same key" is one mechanism with the key read in
+ * two ways. For same=id the key is the identifier itself, which is why that case groups nothing:
+ * the reader has already folded repeated identifiers into one element, so every group has
+ * exactly one member. For same=<characteristic> the key is that characteristic's value on the
+ * instance, and several identifiers can share one.
+ *
+ * An instance which does not carry the characteristic has no key. It cannot satisfy the
+ * constraint - there is nothing to agree with - so it is left out rather than being treated as
+ * a group of its own, which would let a job be granted instances that agree about nothing.
+ *
+ * @param defined_ep  one instance of the map, a RESL_Type element of CE_resource_map_list
+ * @param key_name    nullptr or "id" for the identifier, otherwise a characteristic name
+ * @return            the key, or nullptr when the instance cannot take part
+ */
+static const char *
+centry_rsmap_instance_key(const lListElem *defined_ep, const char *key_name) {
+   if (key_name == nullptr || strcmp(key_name, RSMAP_REQUEST_PARAM_ID) == 0) {
+      return lGetString(defined_ep, RESL_value);
+   }
+
+   const lListElem *property = lGetSubStr(defined_ep, CE_name, key_name, RESL_properties);
+   if (property == nullptr) {
+      return nullptr;
+   }
+   return lGetString(property, CE_stringval);
+}
+
+/**
+ * @brief how many instances of one element of a resource map are free
+ *
+ * @param defined_ep           the instance, from CE_resource_map_list
+ * @param resource_utilization the host's utilization of the map, may be nullptr
+ * @return                     the configured amount less what is booked against it
+ */
+static u_long32
+centry_rsmap_instance_free(const lListElem *defined_ep, const lListElem *resource_utilization) {
+   u_long32 free = lGetUlong(defined_ep, RESL_amount);
+
+   if (resource_utilization != nullptr) {
+      const char *id = lGetString(defined_ep, RESL_value);
+      const lListElem *used_ep = lGetSubStr(resource_utilization, RESL_value, id,
+                                            RUE_utilized_now_resource_map_list);
+      if (used_ep != nullptr) {
+         const u_long32 used = lGetUlong(used_ep, RESL_amount);
+         // RESL_amount is unsigned: an id booked beyond its count must read as full rather
+         // than wrap round to an enormous free amount
+         free = (used >= free) ? 0 : free - used;
+      }
+   }
+
+   return free;
+}
+
+/**
+ * @brief find the key of a resource map with the most free instances
+ *
+ * The general form of centry_rsmap_best_free_id(): same=id asks for the identifier with the
+ * most free instances, same=<characteristic> for the characteristic value whose instances have
+ * the most free between them.
+ *
+ * The group is named by its key and not handed back as a list of its members. Neither caller
+ * needs the members: the matching side wants the count, and the booking side walks the map
+ * again taking from whatever carries the key. Returning a list would mean an allocation on a
+ * path which runs once per host per probe, and a question about how long the identifiers in it
+ * stay valid, for nothing.
+ *
+ * The identifier case keeps its own loop rather than going through the accumulator. Every group
+ * has one member there, so there is nothing to add up, and it is the case every existing request
+ * takes - it should not start paying for a generalization it does not use.
+ *
+ * @param resource_definition  the resource map on the host, from EH_consumable_config_list
+ * @param resource_utilization the matching element of EH_resource_utilization, may be nullptr
+ * @param key_name             nullptr or "id" for the identifier, otherwise a characteristic
+ * @param free_amount          out: the free count of the group returned, 0 if there is none
+ * @return                     the key of the group with the most free instances, or nullptr
+ */
+const char *
+centry_rsmap_best_free_group(const lListElem *resource_definition,
+                             const lListElem *resource_utilization, const char *key_name,
+                             u_long32 *free_amount) {
+   if (free_amount != nullptr) {
+      *free_amount = 0;
+   }
+   if (resource_definition == nullptr) {
+      return nullptr;
+   }
+   if (key_name == nullptr || strcmp(key_name, RSMAP_REQUEST_PARAM_ID) == 0) {
+      return centry_rsmap_best_free_id(resource_definition, resource_utilization, free_amount);
+   }
+
+   // sum the free instances per key. A resource map holds the devices of one host, so this is
+   // a handful of entries and a linear scan beats hashing and copying the keys into strings
+   std::vector<std::pair<const char *, u_long32>> groups;
+
+   const lListElem *defined_ep;
+   for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
+      const char *key = centry_rsmap_instance_key(defined_ep, key_name);
+      if (key == nullptr) {
+         continue;
+      }
+      const u_long32 free = centry_rsmap_instance_free(defined_ep, resource_utilization);
+
+      bool found = false;
+      for (auto &group : groups) {
+         if (strcmp(group.first, key) == 0) {
+            group.second += free;
+            found = true;
+            break;
+         }
+      }
+      if (!found) {
+         groups.emplace_back(key, free);
+      }
+   }
+
+   const char *best_key = nullptr;
+   u_long32 best_free = 0;
+   for (const auto &group : groups) {
+      if (best_key == nullptr || group.second > best_free) {
+         best_key = group.first;
+         best_free = group.second;
+      }
+   }
+
+   if (free_amount != nullptr) {
+      *free_amount = best_free;
+   }
+   return best_key;
+}
+
+/**
  * @brief find the id of a resource map with the most free instances
  *
  * This is what "all the instances I am granted must carry the same id" reduces to. The reader
@@ -540,18 +674,7 @@ centry_rsmap_best_free_id(const lListElem *resource_definition,
    const lListElem *defined_ep;
    for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
       const char *id = lGetString(defined_ep, RESL_value);
-      u_long32 free = lGetUlong(defined_ep, RESL_amount);
-
-      if (resource_utilization != nullptr) {
-         const lListElem *used_ep = lGetSubStr(resource_utilization, RESL_value, id,
-                                               RUE_utilized_now_resource_map_list);
-         if (used_ep != nullptr) {
-            const u_long32 used = lGetUlong(used_ep, RESL_amount);
-            // RESL_amount is unsigned: an id booked beyond its count must read as full rather
-            // than wrap round to an enormous free amount
-            free = (used >= free) ? 0 : free - used;
-         }
-      }
+      const u_long32 free = centry_rsmap_instance_free(defined_ep, resource_utilization);
 
       if (best_id == nullptr || free > best_free) {
          best_id = id;

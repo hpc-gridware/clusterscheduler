@@ -245,9 +245,9 @@
 #define MSG_QINSTANCE_VALUEMISSINGMASTERDOWN_S        _MESSAGE(47404, _("error: no value for " SFQ " because execd is in unknown state"))
 #define MSG_CANTFINDCATINMASTERLIST_U                 _MESSAGE(47405, _("could not find category " sge_u32 " in master list"))
 #define MSG_SCHEDD_REQUESTNOTRESOLVED                 _MESSAGE(47406, _("the request could not be resolved against the complex configuration"))
-#define MSG_SCHEDD_SAMEIDNOTFULLFILLED_SS             _MESSAGE(47407, _("no single id of resource map " SFQ " has enough free instances for the requested same=" SFN))
-#define MSG_SCHEDD_INFO_NORESERVATIONSAMEID_S         _MESSAGE(47408, _("no reservation for job " SFN " because it requires all instances of a resource map to carry the same id"))
-#define MSG_SCHEDD_INFO_NORESERVATIONSAMEID           _MESSAGE(47409, _("no reservation because the job requires all instances of a resource map to carry the same id"))
-#define MSG_SCHEDD_SAMEIDNOTINAR_S                    _MESSAGE(47410, _("resource map " SFQ " cannot be granted from one id inside an advance reservation"))
+#define MSG_SCHEDD_SAMEIDNOTFULLFILLED_SS             _MESSAGE(47407, _("resource map " SFQ " does not have enough free instances sharing one " SFN))
+#define MSG_SCHEDD_INFO_NORESERVATIONSAMEID_S         _MESSAGE(47408, _("no reservation for job " SFN " because it requires all instances of a resource map to agree"))
+#define MSG_SCHEDD_INFO_NORESERVATIONSAMEID           _MESSAGE(47409, _("no reservation because the job requires all instances of a resource map to agree"))
+#define MSG_SCHEDD_SAMEIDNOTINAR_S                    _MESSAGE(47410, _("resource map " SFQ " cannot be granted under a same= constraint inside an advance reservation"))
 
 // clang-format on

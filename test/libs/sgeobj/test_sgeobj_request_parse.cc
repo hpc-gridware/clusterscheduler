@@ -486,6 +486,35 @@ make_resource_definition() {
 }
 
 /**
+ * Build a map whose instances carry a characteristic, four identifiers on two NUMA nodes:
+ *
+ *    gpu=8(0[numa_node=0] 0[..] 1[numa_node=0] 1[..] 2[numa_node=1] 2[..] 3[numa_node=1] 3[..])
+ *
+ * Two instances per identifier, two identifiers per node, so a node holds four and no single
+ * identifier does. That is the shape which tells same=<characteristic> apart from same=id: a
+ * request for three can be served by a node and by no identifier.
+ */
+static lListElem *
+make_resource_definition_numa() {
+   lListElem *ep = lCreateElem(CE_Type);
+   lSetString(ep, CE_name, "gpu");
+   lSetUlong(ep, CE_valtype, TYPE_RSMAP);
+   lSetDouble(ep, CE_doubleval, 8);
+
+   static const char *const node_of[] = {"0", "0", "1", "1"};
+   for (int i = 0; i < 4; i++) {
+      char id[2] = {static_cast<char>('0' + i), '\0'};
+      lListElem *resl = lAddSubStr(ep, RESL_value, id, CE_resource_map_list, RESL_Type);
+      lSetUlong(resl, RESL_amount, 2);
+
+      lListElem *property = lAddSubStr(resl, CE_name, "numa_node", RESL_properties, CE_Type);
+      lSetString(property, CE_stringval, node_of[i]);
+   }
+
+   return ep;
+}
+
+/**
  * Book "used" instances of one id, the way the host's utilization records them.
  */
 static lListElem *
@@ -597,6 +626,53 @@ test_best_free_id() {
    lFreeElem(&def);
 }
 
+/**
+ * Grouping by a characteristic rather than by the identifier. The map has four identifiers of
+ * two on two NUMA nodes, so a node holds four instances and no identifier holds more than two.
+ */
+static void
+test_best_free_group() {
+   lListElem *def = make_resource_definition_numa();
+   u_long32 free = 0;
+
+   /* keying on the identifier has to reach exactly what the id function reaches, since that is
+    * the case every request in the field takes today */
+   const char *key = centry_rsmap_best_free_group(def, nullptr, "id", &free);
+   check_str("T95", "keying on id returns an id", key, "0");
+   check_int("T95b", "with the free count of that one id", (int)free, 2);
+   check_int("T95c", "and a nullptr key means the same thing",
+             centry_rsmap_best_free_group(def, nullptr, nullptr, &free) != nullptr, 1);
+
+   /* the point of the generalization: a node has more than any one id it is made of */
+   key = centry_rsmap_best_free_group(def, nullptr, "numa_node", &free);
+   check_int("T96", "keying on a characteristic finds a group", key != nullptr, 1);
+   check_int("T96b", "which holds the instances of both its ids", (int)free, 4);
+
+   /* booking one id shrinks its node but not the other */
+   lListElem *use = make_utilization("0", 2);
+   key = centry_rsmap_best_free_group(def, use, "numa_node", &free);
+   check_str("T97", "the emptier node is returned", key, "1");
+   check_int("T97b", "with its full count", (int)free, 4);
+   lFreeElem(&use);
+
+   /* an instance which does not carry the characteristic cannot agree with anything, so it is
+    * left out rather than forming a group of its own */
+   lListElem *def_partial = make_resource_definition_numa();
+   lListElem *stray = lAddSubStr(def_partial, RESL_value, "9", CE_resource_map_list, RESL_Type);
+   lSetUlong(stray, RESL_amount, 99);
+   key = centry_rsmap_best_free_group(def_partial, nullptr, "numa_node", &free);
+   check_int("T98", "an instance without the characteristic is left out", (int)free, 4);
+   check_int("T98b", "so the group is still a node", key != nullptr && strcmp(key, "9") != 0, 1);
+
+   /* a characteristic no instance carries leaves nothing to group by */
+   key = centry_rsmap_best_free_group(def, nullptr, "no_such_characteristic", &free);
+   check_int("T99", "a characteristic nothing carries finds no group", key == nullptr, 1);
+   check_int("T99b", "and a free count of zero", (int)free, 0);
+
+   lFreeElem(&def_partial);
+   lFreeElem(&def);
+}
+
 static void
 test_get_request_param() {
    lList *lp;
@@ -657,6 +733,7 @@ main(int argc, char *argv[]) {
    test_parameter_values_and_defaults();
    test_find_id_with_free();
    test_best_free_id();
+   test_best_free_group();
    test_get_request_param();
 
    if (failures == 0) {

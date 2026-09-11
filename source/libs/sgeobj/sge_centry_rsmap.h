@@ -49,6 +49,10 @@ bool centry_rsmap_get_request_param(const lListElem *centry, const char *param,
 
 bool centry_rsmap_job_has_same_constraint(const lListElem *job);
 
+const char *centry_rsmap_best_free_group(const lListElem *resource_definition,
+                                         const lListElem *resource_utilization,
+                                         const char *key_name, u_long32 *free_amount);
+
 const char *centry_rsmap_best_free_id(const lListElem *resource_definition,
                                       const lListElem *resource_utilization,
                                       u_long32 *free_amount);

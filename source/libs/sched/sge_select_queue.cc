@@ -6485,22 +6485,28 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
 /**
  * @brief how many slots the resource maps of this host can serve under a same= constraint
  *
- * A request may require that every instance it is granted carries the same id:
+ * A request may require that every instance it is granted agrees in some respect:
  *
  *     qsub -l 'gpu=4[same=id]' ...
+ *     qsub -l 'gpu=4[same=numa_node]' ...
  *
- * That reduces to a count. The reader folds repeated identifiers into one element with a count,
- * so "gpu=8(0 0 0 0 1 1 1 1)" is two cards of four shares, and the question is what one card can
- * serve rather than what the map holds in total - four shares may be free across two cards while
- * no card can serve four.
+ * Either way the instances are grouped by a key - the identifier itself, or the value of a
+ * characteristic they carry - and the question is what one group can serve rather than what the
+ * map holds in total.
+ *
+ * The reader folds repeated identifiers into one element with a count, so
+ * "gpu=8(0 0 0 0 1 1 1 1)" is two cards of four shares. Four shares may be free across the two
+ * cards while no card can serve four. Grouping by a characteristic widens the group rather than
+ * changing the question: several cards on one NUMA node are one group, and what counts is what
+ * they have free between them.
  *
  * How the count becomes slots depends on how often the amount is taken:
  *
- *   consumable YES        the amount is taken per slot, so one id serves free/amount slots
- *   consumable JOB, HOST  the amount is taken once, so the id either serves the request or not
+ *   consumable YES        the amount is taken per slot, so a group serves free/amount slots
+ *   consumable JOB, HOST  the amount is taken once, so the group either serves it or not
  *
  * Evaluated once per host, from the same host configuration and utilization the booking will see
- * later, so that add_granted_resource_list() reaches the same id without it being carried.
+ * later, so that add_granted_resource_list() reaches the same group without it being carried.
  *
  * @param a          the assignment
  * @param total_list the host's consumable configuration
@@ -6510,8 +6516,8 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
  *                   one, 0 when it cannot be met
  */
 static int
-parallel_rsmap_same_id_slots(const sge_assignment_t *a, const lList *total_list,
-                             const lList *rue_list, dstring *reason) {
+parallel_rsmap_same_slots(const sge_assignment_t *a, const lList *total_list,
+                          const lList *rue_list, dstring *reason) {
    int max_slots = INT_MAX;
    DSTRING_STATIC(param, 64);
 
@@ -6546,8 +6552,12 @@ parallel_rsmap_same_id_slots(const sge_assignment_t *a, const lList *total_list,
          }
          const lListElem *utilization = lGetElemStr(rue_list, RUE_name, name);
 
+         // same=id groups by the identifier, same=<characteristic> by that characteristic's
+         // value on the instance - several identifiers can then share one group, and the
+         // constraint is met by any of them together
          u_long32 best_free = 0;
-         centry_rsmap_best_free_id(definition, utilization, &best_free);
+         centry_rsmap_best_free_group(definition, utilization, sge_dstring_get_string(&param),
+                                      &best_free);
 
          const auto amount = static_cast<u_long32>(lGetDouble(req, CE_doubleval));
          if (amount == 0) {
@@ -6926,7 +6936,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
    // sitting beside it as a separate filter: one id can serve free/amount slots of a per slot
    // request, and either all or none of a request which takes its amount once.
    if (layer == DOMINANT_LAYER_HOST) {
-      int slots_with_same_id = parallel_rsmap_same_id_slots(a, total_list, rue_list, &reason);
+      int slots_with_same_id = parallel_rsmap_same_slots(a, total_list, rue_list, &reason);
 
       if (slots_with_same_id == 0) {
          DRETURN(DISPATCH_NEVER_CAT);
