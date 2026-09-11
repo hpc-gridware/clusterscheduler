@@ -530,65 +530,6 @@ make_utilization(const char *id, u_long32 used) {
 }
 
 static void
-test_find_id_with_free() {
-   lListElem *def = make_resource_definition();
-   lListElem *use;
-
-   /* nothing booked: the first id serves any amount up to its own count */
-   check_str("T70", "an unused map offers its first id",
-             centry_rsmap_find_id_with_free(def, nullptr, 4), "0");
-   check_str("T71", "and for a smaller amount too",
-             centry_rsmap_find_id_with_free(def, nullptr, 1), "0");
-   check_int("T72", "but not for more than one id holds",
-             centry_rsmap_find_id_with_free(def, nullptr, 5) == nullptr, 1);
-
-   /* the amount is per id, not the total: eight are free in all, no id has five */
-   check_int("T73", "the count is per id, not the total of the map",
-             centry_rsmap_find_id_with_free(def, nullptr, 8) == nullptr, 1);
-
-   /* one share of id 0 booked: it can no longer serve four, id 1 still can */
-   use = make_utilization("0", 1);
-   check_str("T74", "a partly used id is skipped for a full request",
-             centry_rsmap_find_id_with_free(def, use, 4), "1");
-   // the id with the most free is returned, not the first which fits: matching computes the
-   // host capacity from the best id, so booking has to pick that same one or the two would
-   // disagree. Packing the least free id which still fits would fragment less and is worth
-   // considering later, but only if both sides adopt it together.
-   check_str("T75", "the emptiest id is returned, not the first which fits",
-             centry_rsmap_find_id_with_free(def, use, 3), "1");
-   lFreeElem(&use);
-
-   /* both cards partly used: four of one id is impossible although four are free in total */
-   use = make_utilization("0", 2);
-   lListElem *resl = lAddSubStr(use, RESL_value, "1", RUE_utilized_now_resource_map_list,
-                                RESL_Type);
-   lSetUlong(resl, RESL_amount, 2);
-   check_int("T76", "no id serves the request although the map has enough free",
-             centry_rsmap_find_id_with_free(def, use, 4) == nullptr, 1);
-   check_str("T77", "a smaller request still finds one",
-             centry_rsmap_find_id_with_free(def, use, 2), "0");
-   lFreeElem(&use);
-
-   /* an id booked beyond its count must not underflow into a huge free amount */
-   use = make_utilization("0", 99);
-   check_str("T78", "an over-booked id is treated as full, not as underflowed",
-             centry_rsmap_find_id_with_free(def, use, 4), "1");
-   lFreeElem(&use);
-
-   check_int("T79", "an amount of zero finds nothing",
-             centry_rsmap_find_id_with_free(def, nullptr, 0) == nullptr, 1);
-   check_int("T80", "a missing definition finds nothing",
-             centry_rsmap_find_id_with_free(nullptr, nullptr, 1) == nullptr, 1);
-
-   lFreeElem(&def);
-}
-
-/**
- * The count reading of the same helper. This is what lets the constraint take part in the
- * ordinary "how many slots can this host offer" calculation: a per slot request can serve
- * free/amount slots from one id, which is MINed with what every other resource allows.
- */
-static void
 test_best_free_id() {
    lListElem *def = make_resource_definition();
    lListElem *use;
@@ -673,6 +614,82 @@ test_best_free_group() {
    lFreeElem(&def);
 }
 
+/**
+ * Taking the instances, rather than only asking what a group could serve.
+ */
+static void
+test_select_group_instances() {
+   lList *selected = nullptr;
+
+   /* keying on the identifier: one entry, because a group has one member there */
+   lListElem *def = make_resource_definition();
+   check_int("T100", "four taken from the plain map",
+             centry_rsmap_select_group_instances(def, nullptr, nullptr, "id", 4, &selected), 1);
+   check_int("T100b", "come from a single id", (int)lGetNumberOfElem(selected), 1);
+   check_int("T100c", "with the whole amount on it",
+             (int)lGetUlong(lFirst(selected), RESL_amount), 4);
+   lFreeList(&selected);
+
+   check_int("T101", "more than any id holds is refused",
+             centry_rsmap_select_group_instances(def, nullptr, nullptr, "id", 5, &selected), 0);
+   check_int("T101b", "and nothing is handed back", selected == nullptr, 1);
+   lFreeElem(&def);
+
+   /* keying on a characteristic: a node of two cards of two serves three, no card does */
+   lListElem *numa = make_resource_definition_numa();
+   check_int("T102", "three taken from one node",
+             centry_rsmap_select_group_instances(numa, nullptr, nullptr, "numa_node", 3,
+                                                 &selected), 1);
+   check_int("T102b", "spread over the two cards of it", (int)lGetNumberOfElem(selected), 2);
+   check_int("T102c", "filling the first before touching the second",
+             (int)lGetUlong(lFirst(selected), RESL_amount), 2);
+   check_int("T102d", "and taking the remainder from the second",
+             (int)lGetUlong(lLast(selected), RESL_amount), 1);
+   lFreeList(&selected);
+
+   check_int("T103", "the same three are refused by the identifier keying",
+             centry_rsmap_select_group_instances(numa, nullptr, nullptr, "id", 3, &selected), 0);
+   lFreeList(&selected);
+
+   check_int("T104", "more than a node holds is refused",
+             centry_rsmap_select_group_instances(numa, nullptr, nullptr, "numa_node", 5,
+                                                 &selected), 0);
+   lFreeList(&selected);
+
+   /* a second request scope: the group is read back from what was granted already, and what
+    * this job holds is subtracted along with what other jobs hold */
+   lList *already = nullptr;
+   lListElem *held = lAddElemStr(&already, RESL_value, "0", RESL_Type);
+   lSetUlong(held, RESL_amount, 2);
+
+   check_int("T105", "a later scope takes from the group the first one took from",
+             centry_rsmap_select_group_instances(numa, nullptr, already, "numa_node", 2,
+                                                 &selected), 1);
+   check_str("T105b", "from the other card of that node, the first being spent",
+             lGetString(lFirst(selected), RESL_value), "1");
+   check_int("T105c", "and only what is left of it",
+             (int)lGetUlong(lFirst(selected), RESL_amount), 2);
+   lFreeList(&selected);
+
+   check_int("T106", "what this job already holds is not free for it again",
+             centry_rsmap_select_group_instances(numa, nullptr, already, "numa_node", 3,
+                                                 &selected), 0);
+   lFreeList(&selected);
+   lFreeList(&already);
+
+   /* what other jobs hold counts against the group too */
+   lListElem *use = make_utilization("0", 2);
+   check_int("T107", "a node booked down to two cannot serve three",
+             centry_rsmap_select_group_instances(numa, use, nullptr, "numa_node", 3,
+                                                 &selected), 1);
+   check_str("T107b", "it moves to the node which can",
+             lGetString(lFirst(selected), RESL_value), "2");
+   lFreeList(&selected);
+   lFreeElem(&use);
+
+   lFreeElem(&numa);
+}
+
 static void
 test_get_request_param() {
    lList *lp;
@@ -731,9 +748,9 @@ main(int argc, char *argv[]) {
    test_parameter_validation();
    test_reserved_names();
    test_parameter_values_and_defaults();
-   test_find_id_with_free();
    test_best_free_id();
    test_best_free_group();
+   test_select_group_instances();
    test_get_request_param();
 
    if (failures == 0) {

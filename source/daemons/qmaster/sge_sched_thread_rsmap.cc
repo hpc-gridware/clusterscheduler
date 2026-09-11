@@ -63,12 +63,13 @@
  * @param host_name  host the instances are taken on
  * @param host_list  the host list holding configuration and utilization
  * @param amount     how many instances to select
- * @param same_id    whether every instance has to carry the same id
+ * @param same_key   nullptr when the request carries no same= constraint, otherwise what the
+ *                   granted instances have to agree in: "id" or the name of a characteristic
  * @return true on success, false when no set of ids could be selected
  */
 static bool
 rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host_name,
-                         const lList *host_list, u_long32 amount, bool same_id) {
+                         const lList *host_list, u_long32 amount, const char *same_key) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -104,68 +105,49 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
          if ((defined - used) < amount) {
             // not enough available
             ret = false;
-         } else if (same_id) {
-            // The request requires every instance to carry the same id. Matching already
-            // established that one does - and did so from this same configuration and this same
-            // utilization, since nothing is debited between the two - so asking the same
-            // function here reaches the same id without it having been carried along.
+         } else if (same_key != nullptr) {
+            // The request requires every instance to agree - in the identifier, or in a
+            // characteristic they carry. Matching established that some group can serve the
+            // amount, from this same configuration and this same utilization, so asking again
+            // here reaches the same group without it having been carried along.
             //
             // This function is entered once per request scope, so a parallel job which requests
             // the map for its master and for its slave tasks arrives here twice. The constraint
-            // covers every grant of the complex for the job, so the second visit has to take the
-            // id the first one took rather than choose again - and the host utilization does not
-            // change in between, so choosing again could both pick a different id and overlook
-            // what this job has already taken from it.
-            const lListElem *already = lFirst(lGetList(gru, GRU_resource_map_list));
-            const char *id = nullptr;
-
-            if (already != nullptr) {
-               const char *chosen = lGetString(already, RESL_value);
-               const lListElem *defined_ep = lGetSubStr(resource_definition, RESL_value, chosen,
-                                                        CE_resource_map_list);
-               if (defined_ep != nullptr) {
-                  u_long32 free_amount = lGetUlong(defined_ep, RESL_amount);
-                  const lListElem *used_ep = lGetSubStr(resource_utilization, RESL_value, chosen,
-                                                        RUE_utilized_now_resource_map_list);
-                  if (used_ep != nullptr) {
-                     // what other jobs hold of this one id, not of the whole map - which is what
-                     // "used" means further up in this function
-                     const u_long32 used_on_id = lGetUlong(used_ep, RESL_amount);
-                     free_amount = (used_on_id >= free_amount) ? 0 : free_amount - used_on_id;
-                  }
-                  // and what this job already holds of it, which is not in the utilization yet
-                  const u_long32 mine = lGetUlong(already, RESL_amount);
-                  free_amount = (mine >= free_amount) ? 0 : free_amount - mine;
-
-                  if (free_amount >= amount) {
-                     id = chosen;
-                  }
-               }
-            } else {
-               id = centry_rsmap_find_id_with_free(resource_definition, resource_utilization,
-                                                   amount);
-            }
-
-            if (id == nullptr) {
+            // covers every grant of the complex for the job, so the second visit takes from the
+            // group the first one took from, which is what passing the instances granted so far
+            // tells it - they also say what this job already holds, which the host utilization
+            // does not know yet.
+            lList *selected = nullptr;
+            if (!centry_rsmap_select_group_instances(resource_definition, resource_utilization,
+                                                     lGetList(gru, GRU_resource_map_list),
+                                                     same_key, amount, &selected)) {
                // matching said otherwise, so the two have diverged; refuse rather than hand
                // out a mixed set behind the constraint's back
-               DPRINTF("rsmap_select_granted_ids: no single id of %s on %s holds %d\n",
-                       name, host_name, amount);
+               DPRINTF("rsmap_select_granted_ids: no group of %s on %s sharing one %s holds %d\n",
+                       name, host_name, same_key, amount);
                ret = false;
             } else {
-               lListElem *resl = lGetSubStrRW(gru, RESL_value, id, GRU_resource_map_list);
-               if (resl == nullptr) {
-                  resl = lAddSubStr(gru, RESL_value, id, GRU_resource_map_list, RESL_Type);
-                  const lListElem *defined_ep = lGetSubStr(resource_definition, RESL_value, id,
-                                                           CE_resource_map_list);
-                  const lList *src_props = (defined_ep != nullptr)
-                                           ? lGetList(defined_ep, RESL_properties) : nullptr;
-                  if (src_props != nullptr) {
-                     lSetList(resl, RESL_properties, lCopyList("granted_properties", src_props));
+               lListElem *sel_ep;
+               for_each_rw (sel_ep, selected) {
+                  const char *id = lGetString(sel_ep, RESL_value);
+                  const u_long32 take = lGetUlong(sel_ep, RESL_amount);
+
+                  lListElem *resl = lGetSubStrRW(gru, RESL_value, id, GRU_resource_map_list);
+                  if (resl == nullptr) {
+                     resl = lAddSubStr(gru, RESL_value, id, GRU_resource_map_list, RESL_Type);
+                     const lListElem *defined_ep = lGetSubStr(resource_definition, RESL_value, id,
+                                                              CE_resource_map_list);
+                     const lList *src_props = (defined_ep != nullptr)
+                                              ? lGetList(defined_ep, RESL_properties) : nullptr;
+                     if (src_props != nullptr) {
+                        lSetList(resl, RESL_properties, lCopyList("granted_properties", src_props));
+                     }
                   }
+                  DPRINTF("      ==> rsmap_select_granted_ids: same %s, id %s, amount %d\n",
+                          same_key, id, take);
+                  lAddUlong(resl, RESL_amount, take);
                }
-               DPRINTF("      ==> rsmap_select_granted_ids: same id %s, amount %d\n", id, amount);
-               lAddUlong(resl, RESL_amount, amount);
+               lFreeList(&selected);
             }
          } else {
             const lListElem *defined_ep;
@@ -283,11 +265,13 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
          // does the request require all the instances to carry the same id?
          DSTRING_STATIC(same_param, 64);
          const lListElem *request = job_get_hard_request(a->job, name, false);
-         const bool same_id = request != nullptr &&
-                              centry_rsmap_get_request_param(request, RSMAP_REQUEST_PARAM_SAME,
-                                                             &same_param);
+         const char *same_key = nullptr;
+         if (request != nullptr &&
+             centry_rsmap_get_request_param(request, RSMAP_REQUEST_PARAM_SAME, &same_param)) {
+            same_key = sge_dstring_get_string(&same_param);
+         }
 
-         ret = rsmap_select_granted_ids(a, name, host_name, host_list, amount * slots, same_id);
+         ret = rsmap_select_granted_ids(a, name, host_name, host_list, amount * slots, same_key);
       }
    } else {
       // couldn't malloc gru?

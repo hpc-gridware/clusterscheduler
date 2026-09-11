@@ -53,13 +53,15 @@ const char *centry_rsmap_best_free_group(const lListElem *resource_definition,
                                          const lListElem *resource_utilization,
                                          const char *key_name, u_long32 *free_amount);
 
+bool centry_rsmap_select_group_instances(const lListElem *resource_definition,
+                                         const lListElem *resource_utilization,
+                                         const lList *already, const char *key_name,
+                                         u_long32 amount, lList **selected);
+
 const char *centry_rsmap_best_free_id(const lListElem *resource_definition,
                                       const lListElem *resource_utilization,
                                       u_long32 *free_amount);
 
-const char *centry_rsmap_find_id_with_free(const lListElem *resource_definition,
-                                           const lListElem *resource_utilization,
-                                           u_long32 amount);
 
 bool centry_rsmap_expand_implicit_ids(lList **answer_list, lListElem *centry, u_long32 max_ids);
 
