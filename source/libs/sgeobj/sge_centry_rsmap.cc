@@ -336,6 +336,19 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
             ret = false;
          }
 
+         // same= is the one parameter which is honoured, and only with the value "id".
+         // Nothing reads the value anywhere else: the scheduler tests that the parameter is
+         // present and then constrains the grant to one identifier, and puts the value into
+         // the message it writes when it cannot. So "same=numa_node" was accepted and quietly
+         // did what "same=id" does, while reporting the name the user wrote. Refuse any other
+         // value until CS-2735 makes the constraint take the name of a characteristic.
+         if (param_name == RSMAP_REQUEST_PARAM_SAME && param_value != RSMAP_REQUEST_PARAM_ID) {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_RSMAP_PARAM_BAD_VALUE_SSS, name, param_name.c_str(),
+                                    param_value.c_str());
+            ret = false;
+         }
+
          // id=, scope= and distinct= are reserved so that the grammar has room for them, but
          // nothing reads any of them yet - same= is the only one the scheduler honours. Were
          // one of them accepted, a job which asked for a named instance, or for a constraint

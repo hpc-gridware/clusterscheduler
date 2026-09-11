@@ -348,6 +348,12 @@ test_parameter_validation() {
    check_int("T49", "a refused reserved parameter is refused next to an accepted one",
              fill("gpu=4[same=id,scope=job]", centries), -1);
 
+   /* same= is honoured, but only with the value "id" - CS-2735 takes a characteristic name */
+   check_int("T49c", "same naming a characteristic is refused until it is implemented",
+             fill("gpu=4[same=gpu_memory]", centries), -1);
+   check_int("T49d", "same with a value which names nothing at all is refused",
+             fill("gpu=4[same=banana]", centries), -1);
+
    /* a characteristic name resolves, but nothing matches it against an instance yet */
    check_int("T32", "a characteristic name is refused until it is implemented",
              fill("gpu=1[gpu_memory=40G]", centries), -1);
