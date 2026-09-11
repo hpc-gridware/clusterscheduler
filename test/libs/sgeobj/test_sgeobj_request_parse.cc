@@ -307,22 +307,16 @@ static void
 test_parameter_validation() {
    lList *centries = make_centry_list();
 
-   /* accepted: reserved names, a characteristic name, any order, and no list at all */
+   /* accepted: the reserved names which are implemented, in any order, and no list at all */
    check_int("T30", "a reserved parameter is accepted" PARAM_LIST_NOTE,
              fill("gpu=4[same=id]", centries), PARAM_LIST_RC);
    check_int("T31", "several reserved parameters are accepted" PARAM_LIST_NOTE,
              fill("gpu=4[same=id,bind=no]", centries), PARAM_LIST_RC);
-   check_int("T32", "a characteristic name is accepted" PARAM_LIST_NOTE,
-             fill("gpu=1[gpu_memory=40G]", centries), PARAM_LIST_RC);
    check_int("T33", "order does not matter" PARAM_LIST_NOTE,
-             fill("gpu=1[gpu_memory=40G,same=id]", centries), PARAM_LIST_RC);
+             fill("gpu=4[bind=no,same=id]", centries), PARAM_LIST_RC);
    check_int("T34", "an empty parameter list is accepted" PARAM_LIST_NOTE,
              fill("gpu=4[]", centries), PARAM_LIST_RC);
    check_int("T35", "no parameter list at all is accepted", fill("gpu=4", centries), 0);
-
-   /* a value may itself contain a bracket */
-   check_int("T36", "a character class in a parameter value is accepted" PARAM_LIST_NOTE,
-             fill("gpu=1[gpu_model=tesla[AB]]", centries), PARAM_LIST_RC);
 
    /* rejected */
    check_int("T37", "a parameter list on a non resource map is rejected",
@@ -353,6 +347,12 @@ test_parameter_validation() {
              fill("gpu=4[distinct=id]", centries), -1);
    check_int("T49", "a refused reserved parameter is refused next to an accepted one",
              fill("gpu=4[same=id,scope=job]", centries), -1);
+
+   /* a characteristic name resolves, but nothing matches it against an instance yet */
+   check_int("T32", "a characteristic name is refused until it is implemented",
+             fill("gpu=1[gpu_memory=40G]", centries), -1);
+   check_int("T36", "a character class in a characteristic value does not derail the walk",
+             fill("gpu=1[gpu_model=tesla[AB]]", centries), -1);
 
    lFreeList(&centries);
 }

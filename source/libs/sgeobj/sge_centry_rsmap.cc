@@ -355,10 +355,20 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
       }
 
       // not a reserved name, so it has to name a complex - it will be matched against the
-      // characteristic of that name on an instance
+      // characteristic of that name on an instance. The name is resolved first so that one
+      // nobody defined is still told it does not exist, which is the more useful of the two
+      // messages.
       if (centry_list_locate(master_centry_list, param_name.c_str()) == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  MSG_RSMAP_PARAM_UNKNOWN_SS, name, param_name.c_str());
+         ret = false;
+      } else {
+         // Nothing matches a request against the characteristics of an instance yet, so a
+         // request naming one would select nothing and the job would run on whichever
+         // instances happened to be free - the same quiet failure id= and scope= are refused
+         // for above. CS-2733 implements the matching and lifts this.
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_RSMAP_PARAM_NOT_YET_SS, name, param_name.c_str());
          ret = false;
       }
    }
