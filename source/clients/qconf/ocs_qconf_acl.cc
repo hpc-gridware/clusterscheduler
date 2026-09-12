@@ -53,20 +53,21 @@
 #include "ocs_qconf_acl.h"
 #include "msg_qconf.h"
 
-/* - -- -- -- -- -- -- -- -- -- -- -- -- -- -
-
-   user_args - a cull list(UE_Type) of users
-   acl_args - a cull list(US_Type) of acl
-
-   returns 
-      0 on success
-      -1 on error
-
-*/
 /** @brief Add users to access lists, the `qconf -au` switch
  *
  * Every named user is added to every named list, so one invocation can be a
  * cross product rather than a single pair.
+ *
+ * CS-2754: one GET and at most one write PER ACCESS LIST, not per (user, list)
+ * pair. The old shape fetched the whole user set and sent the whole user set
+ * back once for every single user, so the payload grew with the list while the
+ * request count grew with the users -- quadratic on the wire for what is one
+ * administrative command.
+ *
+ * The per-pair messages are unchanged; they were always produced here rather
+ * than by the qmaster. Only their source moves: when the single write fails,
+ * its text goes to every user of that batch instead of to the one user whose
+ * own request failed.
  *
  * @param alpp used to return error messages
  * @param user_args the users to add (`UE_Type`)
@@ -76,92 +77,96 @@
 int
 sge_client_add_user(lList **alpp, lList *user_args, lList *acl_args) {
    DENTER(TOP_LAYER);
-   lList *acl=nullptr, *answers=nullptr;
-   const char *acl_name, *user_name;
-   lCondition *where;
-   lEnumeration *what;
-   uint32_t status;
-   int already;
 
-   what = lWhat("%T(ALL)", US_Type);
+   lEnumeration *what = lWhat("%T(ALL)", US_Type);
 
-   for_each_ep_lv(aclarg,acl_args) {
-      acl_name = lGetString(aclarg, US_name);
-      where = lWhere("%T(%I==%s)", US_Type, US_name, acl_name);
+   for_each_ep_lv(aclarg, acl_args) {
+      const char *acl_name = lGetString(aclarg, US_name);
+      lCondition *where = lWhere("%T(%I==%s)", US_Type, US_name, acl_name);
+      lList *acl = nullptr;
 
-      for_each_ep_lv(userarg, user_args) {
-
-         already = 0;
-         user_name=lGetString(userarg, UE_name);
-   
-         /* get old acl */
-         answers = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, ocs::gdi::Command::GET,
-                           ocs::gdi::SubCommand::NONE, &acl, where, what);
-         lFreeList(&answers);
-
-         if (acl && lGetNumberOfElem(acl) > 0) {
-            if (!lGetSubStr(lFirst(acl), UE_name, user_name, US_entries)) {
-               lAddSubStr(lFirstRW(acl), UE_name, user_name, US_entries, UE_Type);
-
-               /* mod the acl */
-               answers = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &acl, nullptr, nullptr);
-            } else {
-               already = 1;
-            }
-         } else {
-            /* build new list */
-            lAddElemStr(&acl, US_name, acl_name, US_Type);
-            lAddSubStr(lFirstRW(acl), UE_name, user_name, US_entries, UE_Type);
-            
-            /* add the acl */
-            answers = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &acl, nullptr, nullptr);
-         }
-
-         if (already) {
-            status = STATUS_EEXIST;
-             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_USERINACL_SS, user_name, acl_name);
-         }
-         else {
-            if ((status = lGetUlong(lFirst(answers), AN_status))!=STATUS_OK) {
-               const char *cp;
-            
-               cp = lGetString(lFirst(answers), AN_text);
-               if (cp) {
-                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s", cp);
-               }
-               else {
-                   snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_CANTADDTOACL_SS, user_name, acl_name);
-               }
-            } else {
-               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_ADDTOACL_SS, user_name, acl_name);
-            }
-            lFreeList(&answers);
-         }
-         answer_list_add(alpp, SGE_EVENT, status, 
-            ((status == STATUS_OK) ? ANSWER_QUALITY_INFO : ANSWER_QUALITY_ERROR));
-         lFreeList(&acl);
-
-      }
+      /* get the old acl -- once for all users */
+      lList *answers = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, ocs::gdi::Command::GET,
+                                                 ocs::gdi::SubCommand::NONE, &acl, where, what);
+      lFreeList(&answers);
       lFreeWhere(&where);
+
+      const bool acl_exists = (acl != nullptr && lGetNumberOfElem(acl) > 0);
+
+      if (!acl_exists) {
+         /* the list does not exist yet -- one ADD creates it with every user in it */
+         lFreeList(&acl);
+         lAddElemStr(&acl, US_name, acl_name, US_Type);
+      }
+      lListElem *acl_elem = lFirstRW(acl);
+
+      /*
+       * Decide locally who has to be added. "added" is also what tells the
+       * message loop below which users this request carried, so a user named
+       * twice gets the success message once and "already in list" for the
+       * repeat, exactly as the per-user version did.
+       */
+      lList *added = nullptr;
+      for_each_ep_lv(userarg, user_args) {
+         const char *user_name = lGetString(userarg, UE_name);
+
+         if (lGetSubStr(acl_elem, UE_name, user_name, US_entries) == nullptr) {
+            lAddSubStr(acl_elem, UE_name, user_name, US_entries, UE_Type);
+            lAddElemStr(&added, UE_name, user_name, UE_Type);
+         }
+      }
+
+      /* one write for all of them */
+      uint32_t write_status = STATUS_OK;
+      char *write_text = nullptr;
+      if (!acl_exists || lGetNumberOfElem(added) > 0) {
+         answers = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST,
+                                             acl_exists ? ocs::gdi::Command::MOD : ocs::gdi::Command::ADD,
+                                             ocs::gdi::SubCommand::NONE, &acl, nullptr, nullptr);
+         write_status = lGetUlong(lFirst(answers), AN_status);
+         if (write_status != STATUS_OK) {
+            write_text = sge_strdup(nullptr, lGetString(lFirst(answers), AN_text));
+         }
+         lFreeList(&answers);
+      }
+
+      /* report in the order the users were named */
+      for_each_ep_lv(userarg, user_args) {
+         const char *user_name = lGetString(userarg, UE_name);
+         lListElem *carried = lGetElemStrRW(added, UE_name, user_name);
+         uint32_t status;
+
+         if (carried == nullptr) {
+            status = STATUS_EEXIST;
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_USERINACL_SS, user_name, acl_name);
+         } else {
+            lRemoveElem(added, &carried);
+            status = write_status;
+            if (status == STATUS_OK) {
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_ADDTOACL_SS, user_name, acl_name);
+            } else if (write_text != nullptr) {
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s", write_text);
+            } else {
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_CANTADDTOACL_SS, user_name, acl_name);
+            }
+         }
+         answer_list_add(alpp, SGE_EVENT, status,
+                         ((status == STATUS_OK) ? ANSWER_QUALITY_INFO : ANSWER_QUALITY_ERROR));
+      }
+
+      sge_free(&write_text);
+      lFreeList(&added);
+      lFreeList(&acl);
    }
    lFreeWhat(&what);
 
    DRETURN(0);
 }
 
-/* - -- -- -- -- -- -- -- -- -- -- -- -- -- -
-
-   user_args - a cull list(UE_Type) of users
-   acl_args - a cull list(US_Type) of acl
-
-   returns 
-      0 on success
-      -1 on error
-
-*/
 /** @brief Remove users from access lists, the `qconf -du` switch
  *
  * The counterpart of #sge_client_add_user, and a cross product in the same way.
+ * CS-2754: one GET and at most one MOD per access list, see there.
  *
  * @param alpp used to return error messages
  * @param user_args the users to remove (`UE_Type`)
@@ -172,72 +177,82 @@ int
 sge_client_del_user(lList **alpp, lList *user_args, lList *acl_args) {
    DENTER(TOP_LAYER);
 
-   lList *acl=nullptr, *answers=nullptr;
-   const char *acl_name, *user_name;
-   lCondition *where;
-   lEnumeration *what;
-   uint32_t status;
+   lEnumeration *what = lWhat("%T(ALL)", US_Type);
 
-   what = lWhat("%T(ALL)", US_Type);
+   for_each_ep_lv(aclarg, acl_args) {
+      const char *acl_name = lGetString(aclarg, US_name);
+      lCondition *where = lWhere("%T(%I==%s)", US_Type, US_name, acl_name);
+      lList *acl = nullptr;
 
-   for_each_ep_lv(aclarg,acl_args) {
-      acl_name = lGetString(aclarg, US_name);
-      where = lWhere("%T(%I==%s)", US_Type, US_name, acl_name);
-
-      for_each_ep_lv(userarg, user_args) {
-         int breakit = 0;
-         char *cp = nullptr;
-         user_name=lGetString(userarg, UE_name);
-         /* get old acl */
-         answers = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &acl, where, what);
-         cp = sge_strdup(cp, lGetString(lFirst(answers), AN_text));
-         lFreeList(&answers);
-         if (acl && lGetNumberOfElem(acl) > 0) {
-            sge_free(&cp);
-            if (lGetSubStr(lFirst(acl), UE_name, user_name, US_entries)) {
-               lDelSubStr(lFirstRW(acl), UE_name, user_name, US_entries);
-               answers = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &acl, nullptr, nullptr);
-               cp = sge_strdup(cp, lGetString(lFirst(answers), AN_text));
-               status = lGetUlong(lFirst(answers), AN_status);
-               lFreeList(&answers);
-            }
-            else
-               status = STATUS_EEXIST + 1;
-         }
-         else 
-            status = STATUS_EEXIST;
-
-         if (status != STATUS_OK) {
-            if (status == STATUS_EEXIST) {
-                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_ACLDOESNOTEXIST_S, acl_name);
-               breakit = 1;        
-            }
-	    else if (status == STATUS_EEXIST + 1) {
-                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_USERNOTINACL_SS, user_name, acl_name);
-            }
-            else if (cp) {
-               snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s", cp);
-            }
-	    else {
-                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_CANTDELFROMACL_SS, user_name, acl_name);
-            }
-
-         }
-         else {
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_DELFROMACL_SS, user_name, acl_name);
-         }
-         answer_list_add(alpp, SGE_EVENT, status, 
-                        ((status == STATUS_OK) ? ANSWER_QUALITY_INFO : ANSWER_QUALITY_ERROR));
-         lFreeList(&acl);
-         
-         if (cp) {
-            sge_free(&cp);
-         }
-         if (breakit)
-            break;
-            
-      }
+      /* get the old acl -- once for all users */
+      lList *answers = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, ocs::gdi::Command::GET,
+                                                 ocs::gdi::SubCommand::NONE, &acl, where, what);
+      lFreeList(&answers);
       lFreeWhere(&where);
+
+      if (acl == nullptr || lGetNumberOfElem(acl) == 0) {
+         /*
+          * One message for the list, not one per user: the per-user version
+          * reported this for the first user and then left the user loop.
+          */
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_ACLDOESNOTEXIST_S, acl_name);
+         answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+         lFreeList(&acl);
+         continue;
+      }
+      lListElem *acl_elem = lFirstRW(acl);
+
+      /* decide locally who actually has to go */
+      lList *removed = nullptr;
+      for_each_ep_lv(userarg, user_args) {
+         const char *user_name = lGetString(userarg, UE_name);
+
+         if (lGetSubStr(acl_elem, UE_name, user_name, US_entries) != nullptr) {
+            lDelSubStr(acl_elem, UE_name, user_name, US_entries);
+            lAddElemStr(&removed, UE_name, user_name, UE_Type);
+         }
+      }
+
+      /* one write for all of them */
+      uint32_t write_status = STATUS_OK;
+      char *write_text = nullptr;
+      if (lGetNumberOfElem(removed) > 0) {
+         answers = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, ocs::gdi::Command::MOD,
+                                             ocs::gdi::SubCommand::NONE, &acl, nullptr, nullptr);
+         write_status = lGetUlong(lFirst(answers), AN_status);
+         if (write_status != STATUS_OK) {
+            write_text = sge_strdup(nullptr, lGetString(lFirst(answers), AN_text));
+         }
+         lFreeList(&answers);
+      }
+
+      /* report in the order the users were named */
+      for_each_ep_lv(userarg, user_args) {
+         const char *user_name = lGetString(userarg, UE_name);
+         lListElem *carried = lGetElemStrRW(removed, UE_name, user_name);
+         uint32_t status;
+
+         if (carried == nullptr) {
+            status = STATUS_EEXIST + 1;
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_USERNOTINACL_SS, user_name, acl_name);
+         } else {
+            lRemoveElem(removed, &carried);
+            status = write_status;
+            if (status == STATUS_OK) {
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_DELFROMACL_SS, user_name, acl_name);
+            } else if (write_text != nullptr) {
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, "%s", write_text);
+            } else {
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ACL_CANTDELFROMACL_SS, user_name, acl_name);
+            }
+         }
+         answer_list_add(alpp, SGE_EVENT, status,
+                         ((status == STATUS_OK) ? ANSWER_QUALITY_INFO : ANSWER_QUALITY_ERROR));
+      }
+
+      sge_free(&write_text);
+      lFreeList(&removed);
+      lFreeList(&acl);
    }
    lFreeWhat(&what);
 

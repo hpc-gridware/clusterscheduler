@@ -151,7 +151,7 @@ option above) to the xxQS_NAMExx trusted host list automatically. Requires root/
 The trusted host list is the *@admin_hosts* host group (see xxqs_name_sxx_hostgroup(5)). *hostname* may
 therefore also be the name of a host group (*@group*), which adds a reference to that group rather than a
 single host; every host the group resolves to is then an administrative host. Adding a host that is already
-a member is refused.
+a member is refused. Several names are one request: if any of them is refused, none of them is added.
 
 ## -am *user*,...
 Adds the indicated users to the xxQS_NAMExx manager list. Requires root/manager privileges.
@@ -172,7 +172,7 @@ Requires root/manager privileges.
 The submit host list is the *@submit_hosts* host group (see xxqs_name_sxx_hostgroup(5)). *hostname* may
 therefore also be the name of a host group (*@group*), which adds a reference to that group rather than a
 single host; every host the group resolves to is then a submit host. Adding a host that is already a member
-is refused.
+is refused. Several names are one request: if any of them is refused, none of them is added.
 
 ## -astnode *node_path*=*shares*, ...
 Adds the specified share tree node(s) to the share tree (see xxqs_name_sxx_share_tree(5)). The *node_path* is
@@ -351,7 +351,8 @@ The trusted host list is the *@admin_hosts* host group (see xxqs_name_sxx_hostgr
 member is removed: *host_name* may be a host or a host group reference (*@group*). Deleting a host that is an
 administrative host only because some nested group contains it is refused, naming the containing group(s) --
 change the nesting with `-mhgrp` instead. Deleting a host that is not a member at all is refused as well.
-Both refusals exit non-zero.
+Both refusals exit non-zero. Several names are one request: if any of them is refused, none of them is
+removed.
 
 ## -dm *user*\[,*user*,...\]
 Deletes managers from the manager list. It is not possible to delete the admin user or the user root
@@ -369,7 +370,7 @@ The submit host list is the *@submit_hosts* host group (see xxqs_name_sxx_hostgr
 member is removed: *host_name* may be a host or a host group reference (*@group*). Deleting a host that is a
 submit host only because some nested group contains it is refused, naming the containing group(s) -- change
 the nesting with `-mhgrp` instead. Deleting a host that is not a member at all is refused as well. Both
-refusals exit non-zero.
+refusals exit non-zero. Several names are one request: if any of them is refused, none of them is removed.
 
 ## -dstnode *node_path*,...
 Deletes the specified share tree node(s). The *node_path* is a hierarchical path

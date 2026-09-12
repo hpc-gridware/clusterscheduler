@@ -7280,21 +7280,39 @@ static int sge_error_and_exit(const char *ptr) {
  * Privilege is unchanged: AH_LIST, SH_LIST and HGRP_LIST are labels of the
  * same manager-only case in sge_c_gdi.cc, so redirecting the target neither
  * grants nor removes any right.
- * One request per host, as before, so a failure names the host it belongs to
- * rather than failing a whole batch.
+ * CS-2754: ONE request for the whole name list, not one per host. The list
+ * syntax always existed, the bulk behind it did not: "qconf -ah h1,...,h1000"
+ * used to be a thousand round trips, each of which made the qmaster run
+ * hgroup_mod() with its cache refresh and its event.
+ *
+ * The operation is atomic as a consequence. "qconf -ah h1,h2" with h1 already a
+ * member used to add h2 and refuse h1; it now refuses both. That is the
+ * behaviour these two groups are documented to have -- a script writing
+ * "qconf -ds host || alert" has to fail when the removal did not happen -- and
+ * it is the safer half of the trade for a security relevant list.
+ *
+ * The other half of the trade is the diagnosis. hgroup_reserved_delta_is_strict()
+ * does report one error per offending entry, but only the LAST of them reaches
+ * the client: sge_gdi_add_mod_generic() propagates lLast(tmp_alp) alone when the
+ * modifier fails, because earlier elements may be success messages. So a list
+ * with several bad names is refused naming one of them, where the per-host
+ * version named every one. Every answer that does arrive is printed below, so
+ * lifting that restriction in the qmaster is all it would take.
  *
  * @param arglp HR_Type list of names as parsed from the command line
  * @param group ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP ocs::gdi::SubCommand sub_command - APPEND to add, REMOVE to delete
  * @param what "administrative host" / "submit host", for messages
  *
- * @return true if every request succeeded
+ * @return true if every named host was resolved and the request succeeded
  */
 static bool mod_reserved_hgroup(lList *arglp, const char *group,
                                 ocs::gdi::SubCommand sub_command, const char *what) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
+   lList *hosts = nullptr;
 
+   /* resolve first, locally, so an unusable name never reaches the request */
    for_each_rw_lv(argep, arglp) {
       const char *name = lGetHost(argep, HR_name);
 
@@ -7319,46 +7337,66 @@ static bool mod_reserved_hgroup(lList *arglp, const char *group,
          name = lGetHost(argep, HR_name);
       }
 
-      /* the reduced element the qmaster merges: just the group name and the
-       * one entry to add to or remove from its host list */
-      lList *lp = lCreateList("host group to modify", HGRP_Type);
-      lListElem *hgrp = lAddElemHost(&lp, HGRP_name, group, HGRP_Type);
-      lList *hosts = nullptr;
-
       lAddElemHost(&hosts, HR_name, name, HR_Type);
-      lSetList(hgrp, HGRP_host_list, hosts);
+   }
 
-      lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::MOD,
-                                             sub_command, &lp, nullptr, nullptr);
+   if (hosts == nullptr) {
+      DRETURN(ret);
+   }
 
-      lListElem *aep = lFirstRW(alp);
-      answer_exit_if_not_recoverable(aep);
-      if (answer_get_status(aep) == STATUS_OK) {
-         /*
-          * CS-2645: every command reports either success or failure. This used
-          * to confirm APPEND only, on the assumption that the retired targets
-          * had said nothing on a successful -dh/-ds. They did say something:
-          * their delete path printed the whole answer list of the qmaster,
-          * INFO elements included, so a successful remove was confirmed with
-          * "<user>@<host> removed \"<host>\" from submit host list". Staying
-          * silent here was therefore not the preservation of the old behaviour
-          * but a change of it, and it left a successful delete
-          * indistinguishable from one that did nothing.
-          */
+   /* the names this request carries, kept for the report: the list itself
+    * belongs to the request element once it is chained in below */
+   lList *sent = lCopyList("hosts sent", hosts);
+
+   /* the reduced element the qmaster merges: the group name and every entry to
+    * add to or remove from its host list */
+   lList *lp = lCreateList("host group to modify", HGRP_Type);
+   lListElem *hgrp = lAddElemHost(&lp, HGRP_name, group, HGRP_Type);
+   lSetList(hgrp, HGRP_host_list, hosts);
+
+   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::MOD,
+                                          sub_command, &lp, nullptr, nullptr);
+
+   lListElem *aep = lFirstRW(alp);
+   answer_exit_if_not_recoverable(aep);
+   if (answer_get_status(aep) == STATUS_OK) {
+      /*
+       * CS-2645: every command reports either success or failure. This used
+       * to confirm APPEND only, on the assumption that the retired targets
+       * had said nothing on a successful -dh/-ds. They did say something:
+       * their delete path printed the whole answer list of the qmaster,
+       * INFO elements included, so a successful remove was confirmed with
+       * "<user>@<host> removed \"<host>\" from submit host list". Staying
+       * silent here was therefore not the preservation of the old behaviour
+       * but a change of it, and it left a successful delete
+       * indistinguishable from one that did nothing.
+       *
+       * Still one line per host, from the list this request carried: the
+       * request became a batch, the report to the administrator did not.
+       */
+      const lListElem *host;
+
+      for_each_ep(host, sent) {
          if (sub_command == ocs::gdi::SubCommand::APPEND) {
-            fprintf(stderr, MSG_QCONF_XADDEDTOYLIST_SS, name, what);
+            fprintf(stderr, MSG_QCONF_XADDEDTOYLIST_SS, lGetHost(host, HR_name), what);
          } else {
-            fprintf(stderr, MSG_QCONF_XREMOVEDFROMYLIST_SS, name, what);
+            fprintf(stderr, MSG_QCONF_XREMOVEDFROMYLIST_SS, lGetHost(host, HR_name), what);
          }
          fprintf(stderr, "\n");
-      } else {
-         fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-         ret = false;
       }
+   } else {
+      /* every answer, not just the first: the qmaster names each offending host */
+      const lListElem *answer;
 
-      lFreeList(&lp);
-      lFreeList(&alp);
+      for_each_ep(answer, alp) {
+         fprintf(stderr, "%s\n", lGetString(answer, AN_text));
+      }
+      ret = false;
    }
+
+   lFreeList(&sent);
+   lFreeList(&lp);
+   lFreeList(&alp);
 
    DRETURN(ret);
 }
