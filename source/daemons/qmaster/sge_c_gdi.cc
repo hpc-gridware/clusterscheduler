@@ -453,6 +453,31 @@ sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
    }
 
+   /*
+    * CS-2753: bring @exec_hosts back in line with the execution host list, once
+    * for the whole request.
+    *
+    * The rebuild walks the execution host list, drives the queue instances of
+    * every referencing cluster queue and emits an event carrying the entire
+    * membership. Doing that per element made adding or deleting N hosts cost
+    * O(N^2): measured on a cluster of 1000 simulated hosts, one "qconf -de" took
+    * 67 s, of which only 13 s was the round trips.
+    *
+    * Here, not after the element loops of sge_c_gdi_add()/_del()/_mod(): the
+    * execution host list is also written outside EH_LIST requests -- by
+    * host_list_add_missing_href() under an HGRP_LIST request, and by an execd
+    * reporting in for the first time. The flag catches all of them.
+    *
+    * Safe at this point: the worker holds LOCK_GLOBAL for writing around the
+    * whole task loop, the reader thread never dispatches anything but GET here,
+    * and sge_commit() has not run yet, so the queue instances the rebuild spools
+    * are committed with the rest of the request.
+    */
+   if (task->exec_hostgroup_out_of_sync) {
+      task->exec_hostgroup_out_of_sync = false;
+      host_sync_exec_hostgroup(packet, task, monitor, true);
+   }
+
    // send the response
    packet->pack_task(task, answer_list, pb, has_next);
 

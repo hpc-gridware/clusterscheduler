@@ -62,6 +62,23 @@ namespace ocs::gdi {
        * into an intermediate list first.
        */
       bool do_select_pack_simultaneous;
+
+      /**
+       * @brief Does `@exec_hosts` still have to follow this request?
+       *
+       * CS-2753. The reserved host group mirrors the execution host list, and
+       * something in this task changed that list. Set by the writers
+       * (`sge_del_host()`, `host_success()`), consumed once by
+       * `sge_c_gdi_process_in_worker()` after the request is done.
+       *
+       * A flag rather than a call at the end of each element loop, because the
+       * execution host list is not only written through EH_LIST requests:
+       * `host_list_add_missing_href()` creates hosts from inside `hgroup_mod()`,
+       * i.e. under an HGRP_LIST request, and an execd reporting in for the first
+       * time creates one through `sge_execd_startedup()`. A flag cannot be
+       * forgotten by whoever adds the next such path.
+       */
+      bool exec_hostgroup_out_of_sync;
    public:
       Task(Target target, Command command, SubCommand sub_cmd, lList **lp,
            lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy);

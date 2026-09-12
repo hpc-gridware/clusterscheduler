@@ -435,10 +435,15 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
    /* delete found host element */
    lRemoveElem(*host_list, &ep);
 
-   /* CS-2438 chunk 7: @exec_hosts follows the exec host list. After the removal,
-    * so the rebuild sees the list without the deleted host. */
-   if (target == ocs::gdi::Target::EH_LIST) {
-      host_sync_exec_hostgroup(packet, task, monitor, true);
+   /* CS-2438 chunk 7: @exec_hosts follows the exec host list.
+    *
+    * CS-2753: noted, not done here. The rebuild is O(n) in the execution host
+    * list and it used to run after every single removal, which made "qconf -de"
+    * with a thousand names quadratic. sge_c_gdi_process_in_worker() does it once
+    * when the request is through, by which time the list has lost every host the
+    * request deletes -- which is what the rebuild has to see. */
+   if (target == ocs::gdi::Target::EH_LIST && task != nullptr) {
+      task->exec_hostgroup_out_of_sync = true;
    }
 
    INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, unique, name);
@@ -1009,11 +1014,17 @@ host_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
          host_update_categories(ep, old_ep, packet->gdi_session);
          sge_add_event(0, old_ep ? sgeE_EXECHOST_MOD : sgeE_EXECHOST_ADD, 0, 0, host, nullptr, nullptr, ep, packet->gdi_session);
 
-         /* CS-2438 chunk 7: @exec_hosts follows the exec host list. Called for
-          * MOD too, not just ADD -- it is a no-op when the membership did not
-          * move, and that is cheaper than reasoning about which modify paths
-          * can rename a host. */
-         host_sync_exec_hostgroup(packet, task, monitor, true);
+         /* CS-2438 chunk 7: @exec_hosts follows the exec host list. Marked for
+          * MOD too, not just ADD -- the sync is a no-op when the membership did
+          * not move, and that is cheaper than reasoning about which modify paths
+          * can rename a host.
+          *
+          * CS-2753: marked rather than done, see sge_del_host(). The add side had
+          * the same problem: one rebuild per element, even though "qconf -Ae" hands
+          * the qmaster every host in a single request. */
+         if (task != nullptr) {
+            task->exec_hostgroup_out_of_sync = true;
+         }
       }
          break;
 

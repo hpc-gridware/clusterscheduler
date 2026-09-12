@@ -7408,10 +7408,25 @@ static bool mod_reserved_hgroup(lList *arglp, const char *group,
  * still the implementation of -de for EH_LIST. */
 /* ------------------------------------------------------------ */
 
+/** @brief Delete every named host, the `qconf -de` switch
+ *
+ * CS-2753: ONE request for the whole name list. The list syntax always existed,
+ * the bulk behind it did not -- this used to send one GDI DEL per name, and each
+ * of those made the qmaster rebuild `@exec_hosts` from scratch.
+ *
+ * Nothing is given up for it, unlike in the host group case of CS-2754.
+ * sge_c_gdi_del() walks the request element by element and appends one answer per
+ * host to the task's answer list, so the report stays one line per host, and a
+ * host that cannot be deleted holds up the others no more than it did before --
+ * every element is still handled on its own in the qmaster.
+ *
+ * @param arglp the hosts to delete, as parsed from the command line
+ * @param target the host list to delete from, EH_LIST
+ * @return true if every host was deleted
+ */
 static bool del_host_of_type(lList *arglp, ocs::gdi::Target target) {
    DENTER(TOP_LAYER);
 
-   lListElem *ep=nullptr;
    lList *lp=nullptr, *alp=nullptr;
    lDescr *type = nullptr;
    bool ret = true;
@@ -7423,25 +7438,23 @@ static bool del_host_of_type(lList *arglp, ocs::gdi::Target target) {
    default: ;
    }
 
+   /* every named host in one request */
+   lp = lCreateList("hosts_to_del", type);
    for_each_rw_lv (argep, arglp) {
-
-      /* make a new host element */
-      lp = lCreateList("host_to_del", type);
-      ep = lCopyElem(argep);
-      lAppendElem(lp, ep);
-
-      /* delete element */
-      alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-
-      /* print results */
-      if (answer_list_has_error(&alp)) {
-         ret = false;
-      }
-      answer_list_on_error_print_or_exit(&alp, stderr);
-
-      lFreeList(&alp);
-      lFreeList(&lp);
+      lAppendElem(lp, lCopyElem(argep));
    }
+
+   /* delete them */
+   alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+
+   /* print results */
+   if (answer_list_has_error(&alp)) {
+      ret = false;
+   }
+   answer_list_on_error_print_or_exit(&alp, stderr);
+
+   lFreeList(&alp);
+   lFreeList(&lp);
 
    DRETURN(ret);
 }

@@ -45,7 +45,7 @@
 ocs::gdi::Task::Task(Target target, Command command, SubCommand sub_cmd,
                      lList **lp, lList **a_list, lCondition **condition, lEnumeration **enumeration, bool do_copy)
       : command(command), sub_command(sub_cmd), target(target), data_list(nullptr), answer_list(nullptr), condition(nullptr),
-        enumeration(nullptr), do_select_pack_simultaneous(false) {
+        enumeration(nullptr), do_select_pack_simultaneous(false), exec_hostgroup_out_of_sync(false) {
    DENTER(TOP_LAYER);
 
    if (do_copy) {
@@ -87,7 +87,8 @@ ocs::gdi::Task::Task(Target target, Command command, SubCommand sub_cmd,
 
 ocs::gdi::Task::Task()
        : command(Command::NONE), sub_command(SubCommand::NONE), target(Target::NO_TARGET), data_list(nullptr),
-         answer_list(nullptr), condition(nullptr), enumeration(nullptr), do_select_pack_simultaneous(false) {
+         answer_list(nullptr), condition(nullptr), enumeration(nullptr), do_select_pack_simultaneous(false),
+         exec_hostgroup_out_of_sync(false) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
