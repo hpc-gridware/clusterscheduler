@@ -124,7 +124,7 @@ static int edit_usersets(lList *arglp);
 
 /************************************************************************/
 static int print_config(const char *config_name);
-static int delete_config(const char *config_name);
+static int delete_configs(const lList *conf_list);
 static int add_modify_config(const char *cfn, const char *filename, uint32_t flags);
 static lList* edit_sched_conf(lList *confl, uid_t uid, gid_t gid);
 static lListElem* edit_project(lListElem *ep, uid_t uid, gid_t gid);
@@ -1493,7 +1493,7 @@ qconf_rqs_delete(const char *path) {
  * field inside the file), and -Aconf/-Mconf already accept a comma-separated
  * file list. So config gets its own file/dir helpers (like RQS) rather than the
  * field-name-based qconf_apply_path/qconf_delete_path. add_modify_config() and
- * delete_config() are forward-declared at the top of this file. */
+ * delete_configs() are forward-declared at the top of this file. */
 
 /** @brief Resolve the host key of a config file: its basename, host-resolved
  *         in place into @p host_ep (EH_name). Returns the resolved host name. */
@@ -1631,13 +1631,7 @@ qconf_conf_delete_path(const char *path) {
          return 0;
       }
    }
-   int ret = 0;
-   const lListElem *e;
-   for_each_ep(e, ctx.hosts) {
-      if (delete_config(lGetHost(e, CONF_name)) != 0) {
-         ret++;
-      }
-   }
+   int ret = delete_configs(ctx.hosts);
    lFreeList(&ctx.hosts);
    return ret;
 }
@@ -5624,8 +5618,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-dconf", *spp) == 0) {
          char *host_list = nullptr;
          lListElem *host_ep = nullptr;
-         const char *hostname = nullptr;
-         int ret;
+         lList *conf_list = nullptr;
 
          /* no adminhost/manager check needed here */
 
@@ -5635,6 +5628,7 @@ int sge_parse_qconf(char *argv[]) {
             host_list = sge_strdup(nullptr, *spp);
             host_ep = lCreateElem(EH_Type);
 
+            /* CS-2754: collect the names, then delete them in one request */
             for ((cp = sge_strtok(host_list, ",")); cp && *cp;
                 (cp = sge_strtok(nullptr, ","))) {
 
@@ -5649,16 +5643,21 @@ int sge_parse_qconf(char *argv[]) {
                   sge_parse_return = 1;
                   break;
                }
-               hostname = lGetHost(host_ep, EH_name);
-               ret = delete_config(hostname);
-               /*
-               ** try the unresolved name if this was different
-               */
-               if (ret && strcmp(cp, hostname) != 0) {
-                  delete_config(cp);
-               }
+               lAddElemHost(&conf_list, CONF_name, lGetHost(host_ep, EH_name), CONF_Type);
             } /* end for */
 
+            /*
+             * A failed delete counts towards the exit code, as it does for
+             * every other -d<obj> switch (they all fold show_answer_list()
+             * into sge_parse_return) and as -Dconf already did. -dconf alone
+             * used to throw the result away and exit 0 after telling the
+             * administrator that it could not delete anything.
+             */
+            if (delete_configs(conf_list) != 0) {
+               sge_parse_return = 1;
+            }
+
+            lFreeList(&conf_list);
             sge_free(&host_list);
             lFreeElem(&host_ep);
          }
@@ -8548,24 +8547,54 @@ static int print_config(const char *config_name) {
    DRETURN(fail);
 }
 
-/*------------------------------------------------------------------------*
- * delete_config
- *------------------------------------------------------------------------*/
-static int delete_config(const char *config_name) {
+/** @brief Delete every named configuration in one request
+ *
+ * CS-2754: one `sge_gdi(CONF_LIST, DEL)` for the whole list, where `-dconf` and
+ * `-Dconf` used to send one request per host.
+ *
+ * The qmaster needs nothing for this: sge_c_gdi_del() walks the request element
+ * by element and sge_del_configuration() appends its own answer for each, so the
+ * report stays one line per configuration and one host that cannot be deleted
+ * does not stop the others.
+ *
+ * Gone with it is the client's "if the resolved name failed, try the name as it
+ * was typed" retry. It cannot survive a single request -- the answers cannot be
+ * mapped back to the elements reliably, because sge_event_spool() adds an answer
+ * of its own when spooling fails -- and it turned out to be redundant anyway:
+ * the qmaster looks the configuration up with lGetElemHostRW(), which normalises
+ * both sides through sge_hostcpy() before comparing, so a configuration spooled
+ * under the short name is found when the FQDN is requested and the other way
+ * round.
+ *
+ * @param conf_list the configurations to delete, elements carrying CONF_name
+ * @return the number of configurations that could not be deleted
+ */
+static int delete_configs(const lList *conf_list) {
    DENTER(TOP_LAYER);
 
-   lList *alp = nullptr, *lp = nullptr;
-   const lListElem *ep = nullptr;
+   if (lGetNumberOfElem(conf_list) == 0) {
+      DRETURN(0);
+   }
+
+   lList *lp = lCreateList("configs_to_del", CONF_Type);
+   const lListElem *ep;
+   for_each_ep(ep, conf_list) {
+      lAddElemHost(&lp, CONF_name, lGetHost(ep, CONF_name), CONF_Type);
+   }
+
+   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CONF_LIST, ocs::gdi::Command::DEL,
+                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+
+   /* one line per configuration, as before -- the qmaster reports each of them */
    int fail = 0;
-
-   lAddElemHost(&lp, CONF_name, config_name, CONF_Type);
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CONF_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-
-   ep = lFirst(alp);
-   fprintf(stderr, "%s\n", lGetString(ep, AN_text));
-
-   answer_exit_if_not_recoverable(ep);
-   fail = !(answer_get_status(ep) == STATUS_OK);
+   const lListElem *aep;
+   for_each_ep(aep, alp) {
+      fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+      answer_exit_if_not_recoverable(aep);
+      if (answer_get_status(aep) != STATUS_OK) {
+         fail++;
+      }
+   }
 
    lFreeList(&alp);
    lFreeList(&lp);

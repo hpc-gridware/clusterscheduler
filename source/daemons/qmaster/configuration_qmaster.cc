@@ -110,6 +110,9 @@ do_add_config(char *aConfName, lListElem *aConf, lList **anAnswer, uint64_t gdi_
 static int
 remove_conf_by_name(char *aConfName);
 
+static bool
+conf_exists_by_name(const char *aConfName);
+
 static lListElem *
 get_entry_from_conf(lListElem *aConf, const char *anEntryName);
 
@@ -282,6 +285,22 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
    /* Do not allow to delete global configuration */
    if (!strcasecmp(SGE_GLOBAL_NAME, unique_name)) {
       ERROR(MSG_SGETEXT_CANT_DEL_CONFIG_S, unique_name);
+      answer_list_add(anAnswer, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+      DRETURN(STATUS_EEXIST);
+   }
+
+   /*
+    * CS-2754: refuse a configuration that is not there, before touching the
+    * spool. remove_conf_by_name() ignores whether it found anything, so this
+    * used to report success for a host that never had a local configuration --
+    * right after the spooling layer had complained about the missing object,
+    * which made the pair read as "it went wrong, and it worked". The client hid
+    * the contradiction as long as it printed only the first answer of a delete;
+    * once qconf -dconf became one request for the whole name list it had to
+    * print them all, and the second line was plainly wrong.
+    */
+   if (!conf_exists_by_name(unique_name)) {
+      ERROR(MSG_SGETEXT_CANT_DEL_CONFIG2_S, unique_name);
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -1056,4 +1075,29 @@ remove_conf_by_name(char *aConfName) {
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
    DRETURN(0);
+}
+
+/** @brief Is there a configuration under this name?
+ *
+ * CS-2754. The lookup is the one remove_conf_by_name() uses, so both agree on
+ * what counts as a match -- lGetElemHost() normalises through sge_hostcpy(),
+ * which is why a configuration spooled under the short name is found when the
+ * fully qualified name is asked for, and the other way round.
+ *
+ * @param aConfName the configuration name, already host-resolved
+ * @return true if a configuration of that name exists
+ */
+static bool
+conf_exists_by_name(const char *aConfName) {
+   DENTER(TOP_LAYER);
+
+   const lList *config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   bool exists = (lGetElemHost(config_list, CONF_name, aConfName) != nullptr);
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   DRETURN(exists);
 }
