@@ -105,6 +105,10 @@ curl -s https://raw.githubusercontent.com/hpc-gridware/quickinstall/refs/heads/m
 
 ## Cluster Scheduler Related Blog-Posts of HPC-Gridware
 
+- [Open Cluster Scheduler and Gridware Cluster Scheduler 9.1.5: Device Isolation for Accelerators, Multi-Cluster Qontrol, and Scalable Per-Job Telemetry](https://hpc-gridware.com/open-cluster-scheduler-and-gridware-cluster-scheduler-9-1-5-device-isolation-for-accelerators-multi-cluster-qontrol-and-scalable-per-job-telemetry/)
+- [Open Cluster Scheduler and Gridware Cluster Scheduler 9.1.3: PostgreSQL Spooling, a Smoother Qontrol, and Sharper Reliability](https://hpc-gridware.com/open-cluster-scheduler-and-gridware-cluster-scheduler-9-1-3-postgresql-spooling-a-smoother-qontrol-and-sharper-reliability/)
+- [Bringing Posit Workbench to Gridware Cluster Scheduler](https://hpc-gridware.com/bringing-posit-workbench-to-gridware-cluster-scheduler/)
+- [Gridware Cluster Scheduler 9.1.1 Released](https://hpc-gridware.com/gridware-cluster-scheduler-9-1-1-released/)
 - [HPC Gridware Releases Gridware Cluster Scheduler 9.1.0 and Open Cluster Scheduler 9.1.0](https://hpc-gridware.com/hpc-gridware-releases-gridware-cluster-scheduler-9-1-0-and-open-cluster-scheduler-9-1-0/)
 - [Don’t Panic! Running Containers in Gridware and Open Cluster Scheduler](https://hpc-gridware.com/dont-panic-running-containers-in-gridware-and-open-cluster-scheduler/)
 - [Professional Workload Management for NVIDIA DGX SPARK: Desktop and Edge to Datacenter Scalability](https://hpc-gridware.com/professional-workload-management-for-nvidia-dgx-spark-desktop-and-edge-to-datacenter-scalability/)
