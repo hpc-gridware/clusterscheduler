@@ -154,7 +154,8 @@ hgroup_find_references(const lListElem *this_elem, lList **answer_list,
 bool 
 hgroup_find_all_references(const lListElem *this_elem, lList **answer_list,
                            const lList *master_list, lList **used_hosts,
-                           lList **used_groups);
+                           lList **used_groups, lList **used_matchers = nullptr,
+                           bool expand_matchers = true);
 
 bool 
 hgroup_find_all_referencees(const lListElem *this_elem, 

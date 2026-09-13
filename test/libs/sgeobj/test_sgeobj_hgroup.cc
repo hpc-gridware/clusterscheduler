@@ -31,6 +31,7 @@
 
 #include "uti/ocs_Bootstrap.h"
 #include "uti/ocs_Pattern.h"
+#include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
 
 #include "sgeobj/sge_answer.h"
@@ -699,6 +700,319 @@ test_member_classes() {
 }
 
 // ---------------------------------------------------------------------------
+// Enumeration: the three-class walk and its third output
+// ---------------------------------------------------------------------------
+
+/*
+ * CS-2683. The walk is the second enumeration path -- the one that deliberately
+ * does not use the cache. It has to know the third member class itself, expand
+ * matchers over the candidate set, and hand the matchers back separately so an
+ * interface can show them.
+ *
+ * Whether a matcher captures anything depends on the edition: the open source
+ * build compiles the same branches but its expansion contributes no hosts. Both
+ * are asserted, so the boundary is evidenced rather than assumed.
+ */
+
+/** @brief Add a host group with the given members to a list
+ *
+ * @param list the host group list, created if empty
+ * @param name the group name
+ * @param members the member names, nullptr-terminated
+ * @return the new element
+ */
+static lListElem *
+add_group(lList **list, const char *name, const char *const *members) {
+   lListElem *hgroup = lAddElemHost(list, HGRP_name, name, HGRP_Type);
+   lList *member_list = nullptr;
+
+   for (int i = 0; members[i] != nullptr; i++) {
+      lAddElemHost(&member_list, HR_name, members[i], HR_Type);
+   }
+   lSetList(hgroup, HGRP_host_list, member_list);
+   return hgroup;
+}
+
+static void
+test_walk_three_classes() {
+   printf("\n--- the three-class walk ---\n");
+
+   const char *const exec_members[] = {"gpu001", "gpu002", "node001", nullptr};
+   const char *const sub_members[] = {"login01", nullptr};
+   const char *const top_members[] = {"host:gpu*", "node001", "@sub", nullptr};
+
+   lList *hgroup_list = nullptr;
+   add_group(&hgroup_list, EXEC_HOSTGROUP, exec_members);
+   add_group(&hgroup_list, "@sub", sub_members);
+   lListElem *top = add_group(&hgroup_list, "@top", top_members);
+
+   lList *hosts = nullptr;
+   lList *groups = nullptr;
+   lList *matchers = nullptr;
+   lList *answer_list = nullptr;
+
+   CHECK(90, "the walk succeeds",
+         hgroup_find_all_references(top, &answer_list, hgroup_list, &hosts, &groups, &matchers));
+
+   // T91-T92: the classes stay apart -- this is what keeps an execution host
+   // from ever being created out of a pattern
+   CHECK(91, "the matcher comes back separately",
+         lGetNumberOfElem(matchers) == 1 && href_list_locate(matchers, "host:gpu*") != nullptr);
+   CHECK(92, "and never as a host or a group",
+         href_list_locate(hosts, "host:gpu*") == nullptr &&
+         href_list_locate(groups, "host:gpu*") == nullptr);
+
+   // T93: the literal member and the one reached through the reference
+   CHECK(93, "the literal members are found, directly and through the reference",
+         href_list_locate(hosts, "node001") != nullptr &&
+         href_list_locate(hosts, "login01") != nullptr);
+
+   // T94: the expansion, and the edition boundary
+#ifdef WITH_EXTENSIONS
+   CHECK(94, "the matcher captures the hosts of the candidate set that fit it",
+         href_list_locate(hosts, "gpu001") != nullptr &&
+         href_list_locate(hosts, "gpu002") != nullptr);
+#else
+   CHECK(94, "without the extensions the matcher captures nothing",
+         href_list_locate(hosts, "gpu001") == nullptr &&
+         href_list_locate(hosts, "gpu002") == nullptr);
+#endif
+
+   // T95: the walk can be asked for the hosts a configuration *names*, without
+   // what its matchers describe. That distinction is what keeps a host a matcher
+   // happens to capture from becoming undeletable: a matcher names nothing, and
+   // a host leaving the set it describes is what the set is for.
+   {
+      lList *named = nullptr;
+
+      hgroup_find_all_references(top, &answer_list, hgroup_list, &named, nullptr, nullptr, false);
+      CHECK(95, "without expansion only the named hosts come back",
+            href_list_locate(named, "node001") != nullptr &&
+            href_list_locate(named, "login01") != nullptr &&
+            href_list_locate(named, "gpu001") == nullptr &&
+            href_list_locate(named, "gpu002") == nullptr);
+      lFreeList(&named);
+   }
+
+   lFreeList(&answer_list);
+   lFreeList(&hosts);
+   lFreeList(&groups);
+   lFreeList(&matchers);
+   lFreeList(&hgroup_list);
+}
+
+// ---------------------------------------------------------------------------
+// Enumeration: generated trees against an independent oracle
+// ---------------------------------------------------------------------------
+
+/*
+ * N-W-1 demands that both enumeration paths yield the same set. Today they are
+ * the same function, so that equality is structural -- which is exactly why it
+ * is worth pinning: the note on the walk explains under what circumstances
+ * somebody might be tempted to make the cache the faster of the two.
+ *
+ * The oracle makes the test more than a tautology. It flattens each tree by a
+ * second, obvious implementation written here, so a wrong answer that both
+ * paths share is caught as well.
+ */
+
+/// Deterministic, so a failure can be reproduced from the test name alone
+static unsigned int s_seed = 20260913u;
+
+/** @brief A small deterministic pseudo random number generator
+ * @param bound exclusive upper bound
+ * @return a value in [0, bound)
+ */
+static unsigned int
+next_random(const unsigned int bound) {
+   s_seed = s_seed * 1103515245u + 12345u;
+   return (s_seed >> 16) % bound;
+}
+
+/** @brief Flatten a group the obvious way, independently of the product
+ *
+ * @param hgroup_list the groups
+ * @param name the group to flatten
+ * @param candidates the hosts a matcher is resolved against
+ * @param[out] out receives the host names
+ * @param depth guards against a cycle the generator should not produce
+ */
+static void
+oracle_flatten(const lList *hgroup_list, const char *name, const lList *candidates,
+               lList **out, int depth) {
+   if (depth > 32) {
+      return;
+   }
+   const lListElem *hgroup = lGetElemHost(hgroup_list, HGRP_name, name);
+
+   if (hgroup == nullptr) {
+      return;
+   }
+   for_each_ep_lv(member, lGetList(hgroup, HGRP_host_list)) {
+      const char *member_name = lGetHost(member, HR_name);
+
+      switch (ocs::classify_member(member_name)) {
+         case ocs::MemberClass::GROUP_REFERENCE:
+            oracle_flatten(hgroup_list, member_name, candidates, out, depth + 1);
+            break;
+         case ocs::MemberClass::MATCHER:
+#ifdef WITH_EXTENSIONS
+            for_each_ep_lv(candidate, candidates) {
+               const char *host = lGetHost(candidate, HR_name);
+
+               if (sge_hostmatch_pattern(ocs::matcher_payload(member_name), host) == 0) {
+                  href_list_add(out, nullptr, host);
+               }
+            }
+#endif
+            break;
+         case ocs::MemberClass::LITERAL_HOST:
+            href_list_add(out, nullptr, member_name);
+            break;
+      }
+   }
+}
+
+/** @brief Do two host reference lists hold the same set of names?
+ *
+ * @param a one list
+ * @param b the other
+ * @return true if each holds exactly the names of the other
+ */
+static bool
+same_host_set(const lList *a, const lList *b) {
+   if (lGetNumberOfElem(a) != lGetNumberOfElem(b)) {
+      return false;
+   }
+   for_each_ep_lv(href, a) {
+      if (href_list_locate(b, lGetHost(href, HR_name)) == nullptr) {
+         return false;
+      }
+   }
+   return true;
+}
+
+/** @brief Print the first disagreement, so a failure names its own case
+ *
+ * @param hgroup_list the generated tree
+ * @param name the group that disagreed
+ * @param expected what the oracle says
+ * @param got what the product says
+ * @param what which path produced it
+ */
+static void
+dump_mismatch(const lList *hgroup_list, const char *name, const lList *expected,
+              const lList *got, const char *what) {
+   printf("      mismatch in %s for %s\n", what, name);
+   for_each_ep_lv(hgroup, hgroup_list) {
+      dstring members = DSTRING_INIT;
+
+      href_list_append_to_dstring(lGetList(hgroup, HGRP_host_list), &members);
+      printf("        %-14s = %s\n", lGetHost(hgroup, HGRP_name), sge_dstring_get_string(&members));
+      sge_dstring_free(&members);
+   }
+   dstring a = DSTRING_INIT;
+   dstring b = DSTRING_INIT;
+   href_list_append_to_dstring(expected, &a);
+   href_list_append_to_dstring(got, &b);
+   printf("        expected = %s\n        got      = %s\n",
+          sge_dstring_get_string(&a), sge_dstring_get_string(&b));
+   sge_dstring_free(&a);
+   sge_dstring_free(&b);
+}
+
+static void
+test_generated_trees() {
+   printf("\n--- generated group trees ---\n");
+
+   constexpr int TREES = 40;
+   constexpr int GROUPS = 8;
+   constexpr int CANDIDATES = 12;
+   const char *const patterns[] = {"host:h0*", "host:h1*", "host:h?1", "host:x*", "host:*"};
+
+   int cache_mismatches = 0;
+   int walk_mismatches = 0;
+
+   for (int tree = 0; tree < TREES; tree++) {
+      lList *hgroup_list = nullptr;
+      lList *exec_members = nullptr;
+      char buffer[64];
+
+      for (int h = 0; h < CANDIDATES; h++) {
+         snprintf(buffer, sizeof(buffer), "h%02d", h);
+         lAddElemHost(&exec_members, HR_name, buffer, HR_Type);
+      }
+      lListElem *exec_group = lAddElemHost(&hgroup_list, HGRP_name, EXEC_HOSTGROUP, HGRP_Type);
+      lSetList(exec_group, HGRP_host_list, exec_members);
+
+      /* a group may only reference one already built, so no cycle can arise */
+      for (int g = 0; g < GROUPS; g++) {
+         lList *members = nullptr;
+         const int count = 1 + next_random(4);
+
+         for (int m = 0; m < count; m++) {
+            switch (next_random(4)) {
+               case 0:
+                  if (g > 0) {
+                     snprintf(buffer, sizeof(buffer), "@g%d", next_random(g));
+                     break;
+                  }
+                  [[fallthrough]];
+               case 1:
+                  snprintf(buffer, sizeof(buffer), "%s", patterns[next_random(5)]);
+                  break;
+               case 2:
+                  snprintf(buffer, sizeof(buffer), "h%02d", next_random(CANDIDATES));
+                  break;
+               default:
+                  /* a host that is not an execution host, so it is in the group
+                   * but never in the candidate set */
+                  snprintf(buffer, sizeof(buffer), "outside%02d", next_random(5));
+                  break;
+            }
+            lAddElemHost(&members, HR_name, buffer, HR_Type);
+         }
+         snprintf(buffer, sizeof(buffer), "@g%d", g);
+         lListElem *hgroup = lAddElemHost(&hgroup_list, HGRP_name, buffer, HGRP_Type);
+         lSetList(hgroup, HGRP_host_list, members);
+      }
+
+      lList *answer_list = nullptr;
+      hgroup_list_update_caches(hgroup_list, &answer_list);
+      lFreeList(&answer_list);
+
+      for (int g = 0; g < GROUPS; g++) {
+         snprintf(buffer, sizeof(buffer), "@g%d", g);
+         const lListElem *hgroup = lGetElemHost(hgroup_list, HGRP_name, buffer);
+         lList *expected = nullptr;
+         lList *walked = nullptr;
+
+         oracle_flatten(hgroup_list, buffer, lGetList(exec_group, HGRP_host_list), &expected, 0);
+         hgroup_find_all_references(hgroup, nullptr, hgroup_list, &walked, nullptr, nullptr);
+
+         if (!same_host_set(lGetList(hgroup, HGRP_cached_hosts), expected)) {
+            if (cache_mismatches == 0) {
+               dump_mismatch(hgroup_list, buffer, expected, lGetList(hgroup, HGRP_cached_hosts), "cache");
+            }
+            cache_mismatches++;
+         }
+         if (!same_host_set(walked, expected)) {
+            if (walk_mismatches == 0) {
+               dump_mismatch(hgroup_list, buffer, expected, walked, "walk");
+            }
+            walk_mismatches++;
+         }
+         lFreeList(&expected);
+         lFreeList(&walked);
+      }
+      lFreeList(&hgroup_list);
+   }
+
+   CHECK(97, "every cache of every generated tree matches the oracle", cache_mismatches == 0);
+   CHECK(98, "and so does a fresh walk -- the two paths agree", walk_mismatches == 0);
+}
+
+// ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
@@ -716,6 +1030,8 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_host_is_referenced_reserved();
    test_hostmatch_pattern();
    test_member_classes();
+   test_walk_three_classes();
+   test_generated_trees();
    teardown_bootstrap();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

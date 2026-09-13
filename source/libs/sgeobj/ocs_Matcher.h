@@ -54,6 +54,9 @@ namespace ocs {
    public:
       static bool prepare(const char *member, const lListElem *hgroup, dstring *out, lList **answer_list);
 
+      static bool expand(const lList *member_list, const lList *candidates, lList **hosts,
+                         lList **answer_list);
+
       static bool report_ineffective(const lList *master_hgroup_list, lList **answer_list);
    };
 }

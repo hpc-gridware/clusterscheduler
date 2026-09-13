@@ -907,6 +907,16 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
    lList *referencees = nullptr;
    hgroup_refresh_caches(hgrp, master_hgroup_list, &referencees);
 
+   /*
+    * CS-2680, N-C-1. The refresh above follows references, and that is not
+    * enough any more: a group carrying a matcher depends on the execution host
+    * list because that list is the set its patterns are resolved against, even
+    * when it references nothing that mirrors it. This is the step that lets a
+    * node which has just registered appear in its groups without anyone editing
+    * one.
+    */
+   hgroup_refresh_matcher_caches(master_hgroup_list, &referencees);
+
    if (send_events) {
       lList *pending = nullptr;
 

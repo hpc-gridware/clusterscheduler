@@ -63,6 +63,26 @@ ocs::Matcher::prepare(const char *member, const lListElem *hgroup, dstring *out,
    DRETURN(false);
 }
 
+/** @brief Contributes no hosts, because no member here is ever a matcher
+ *
+ * The caller unites this with the literal members and the members reached
+ * through group references, so an empty contribution leaves the enumeration
+ * exactly as it was before the feature existed.
+ *
+ * @param member_list the members to expand
+ * @param candidates the hosts a matcher would be resolved against
+ * @param[out] hosts receives nothing
+ * @param[out] answer_list receives nothing
+ *
+ * @return always true
+ */
+bool
+ocs::Matcher::expand(const lList *member_list, const lList *candidates, lList **hosts,
+                     lList **answer_list) {
+   DENTER(TOP_LAYER);
+   DRETURN(true);
+}
+
 /** @brief Reports nothing, because no host group can carry a matcher here
  *
  * @param master_hgroup_list the host groups to examine

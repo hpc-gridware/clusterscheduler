@@ -385,7 +385,20 @@ bool host_is_referenced(const lListElem *host,
                continue;
             }
 
-            hgroup_find_all_references(hgrp_elem, nullptr, hgrp_list, &host_list, nullptr);
+            /*
+             * CS-2680. Resolved WITHOUT expanding matchers, and that is the
+             * whole point of this call. The question here is whether somebody's
+             * configuration *names* this host, so that deleting it would leave a
+             * member pointing at nothing. A matcher names nothing -- it describes
+             * a set, and a host leaving that set is what the set is for.
+             *
+             * Expanding here would make every host a matcher happens to capture
+             * permanently undeletable, which is the same trap the reserved groups
+             * are skipped for above, and it would break the second half of the
+             * requirement this feature exists for: an elastically provisioned
+             * node has to be able to disappear again.
+             */
+            hgroup_find_all_references(hgrp_elem, nullptr, hgrp_list, &host_list, nullptr, nullptr, false);
             if (host_list != nullptr) {
                if (lGetElemHost(host_list, HR_name, hostname) != nullptr) {
                   snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_HOSTREFINHGRP_SS, hostname, hgrp_name);

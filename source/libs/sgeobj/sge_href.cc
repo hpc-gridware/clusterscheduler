@@ -340,55 +340,95 @@ href_list_locate(const lList *this_list, const char *name) {
  */
 bool href_list_find_references(const lList *this_list, lList **answer_list,
                                const lList *master_list, lList **used_hosts,
-                               lList **used_groups) {
+                               lList **used_groups, lList **used_matchers,
+                               bool expand_matchers) {
    DENTER(HOSTREF_LAYER);
 
    bool ret = true;
 
    if (this_list != nullptr && master_list != nullptr) {
       /*
+       * CS-2680, N-K-1. A matcher describes a set of hosts, and the only way to
+       * turn that into a set is to filter one that is configured -- no operation
+       * anywhere returns the names matching a pattern. That set is the execution
+       * host list, which the reserved group mirrors, so it is already in the list
+       * this function was handed. No group means no candidates, and matchers then
+       * capture nothing; a matcher inside that group is refused when written
+       * (N-B-2), so expanding it can never lead back here.
+       */
+      const lListElem *exec_hgroup = hgroup_list_locate(master_list, EXEC_HOSTGROUP);
+      const lList *candidates = (exec_hgroup != nullptr) ? lGetList(exec_hgroup, HGRP_host_list) : nullptr;
+
+      /*
        * Handle each reference which was given by the calling context
        */
       for_each_ep_lv(href, this_list) {
          const char *name = lGetHost(href, HR_name);
-         bool is_group = ocs::is_hgroup_name(name);
          lListElem *hgroup = nullptr;  /* HGRP_name */
 
          /*
-          * Try to locate the concerned hgroup object
-          * or add host
+          * Try to locate the concerned hgroup object, record the matcher, or
+          * add the host. Three classes, not two -- a matcher is neither a host
+          * nor a group, and reaching either output as a name is the fault N-W-5
+          * is directed against.
           */
-         if (is_group) {
-            hgroup = hgroup_list_locate(master_list, name);
-         } else {
-            if (used_hosts != nullptr) {
-               href_list_add(used_hosts, answer_list, name);
-            }
+         switch (ocs::classify_member(name)) {
+            case ocs::MemberClass::GROUP_REFERENCE:
+               hgroup = hgroup_list_locate(master_list, name);
+               break;
+            case ocs::MemberClass::MATCHER:
+               if (used_matchers != nullptr) {
+                  href_list_add(used_matchers, answer_list, name);
+               }
+               break;
+            case ocs::MemberClass::LITERAL_HOST:
+               if (used_hosts != nullptr) {
+                  href_list_add(used_hosts, answer_list, name);
+               }
+               break;
          }
 
          if (hgroup != nullptr) {
             const lList *href_list2 = lGetList(hgroup, HGRP_host_list);
 
-            /* 
+            /*
              * Add each element contained in the sublist of the hostgroup
              * we found previously to one of the result lists.
              */
             for_each_ep_lv(href2, href_list2) {
                const char *name2 = lGetHost(href2, HR_name);
 
-               if (ocs::is_hgroup_name(name2)) {
-                  if (used_groups != nullptr) {
-                     href_list_add(used_groups, answer_list, name2); 
-                  }
-               } else {
-                  if (used_hosts != nullptr) {
-                     href_list_add(used_hosts, answer_list, name2); 
-                  }
-               }   
+               switch (ocs::classify_member(name2)) {
+                  case ocs::MemberClass::GROUP_REFERENCE:
+                     if (used_groups != nullptr) {
+                        href_list_add(used_groups, answer_list, name2);
+                     }
+                     break;
+                  case ocs::MemberClass::MATCHER:
+                     if (used_matchers != nullptr) {
+                        href_list_add(used_matchers, answer_list, name2);
+                     }
+                     break;
+                  case ocs::MemberClass::LITERAL_HOST:
+                     if (used_hosts != nullptr) {
+                        href_list_add(used_hosts, answer_list, name2);
+                     }
+                     break;
+               }
+            }
+
+            /* N-W-3: what the matchers of that group capture is part of its hosts */
+            if (used_hosts != nullptr && expand_matchers) {
+               ret &= ocs::Matcher::expand(href_list2, candidates, used_hosts, answer_list);
             }
          }
-      } 
-   } 
+      }
+
+      /* ... and likewise for the matchers of the list handed in */
+      if (used_hosts != nullptr && expand_matchers) {
+         ret &= ocs::Matcher::expand(this_list, candidates, used_hosts, answer_list);
+      }
+   }
    DRETURN(ret);
 }
 
@@ -436,7 +476,8 @@ bool href_list_find_references(const lList *this_list, lList **answer_list,
  */
 bool href_list_find_all_references(const lList *this_list, lList **answer_list,
                                    const lList *master_list, lList **used_hosts,
-                                   lList **used_groups) {
+                                   lList **used_groups, lList **used_matchers,
+                                   bool expand_matchers) {
    DENTER(HOSTREF_LAYER);
 
    bool ret = true;
@@ -454,7 +495,7 @@ bool href_list_find_all_references(const lList *this_list, lList **answer_list,
        * Find all direct referenced hgroups and hosts
        */
       ret &= href_list_find_references(this_list, answer_list, master_list,
-                                       used_hosts, used_groups);
+                                       used_hosts, used_groups, used_matchers, expand_matchers);
 
       /* 
        * If there are subgroups then try to find their direct referenced
@@ -465,10 +506,13 @@ bool href_list_find_all_references(const lList *this_list, lList **answer_list,
       if (ret && used_groups != nullptr && *used_groups != nullptr) {
          lList *used_sub_groups = nullptr;
          lList *used_sub_hosts = nullptr;
+         lList *used_sub_matchers = nullptr;
 
          ret &= href_list_find_all_references(*used_groups, answer_list,
                                               master_list, &used_sub_hosts,
-                                              &used_sub_groups);
+                                              &used_sub_groups,
+                                              used_matchers != nullptr ? &used_sub_matchers : nullptr,
+                                              expand_matchers);
          if (ret) {
             if (used_hosts != nullptr && used_sub_hosts != nullptr) {
                if (*used_hosts != nullptr) {
@@ -486,7 +530,39 @@ bool href_list_find_all_references(const lList *this_list, lList **answer_list,
                   used_sub_groups = nullptr;
                }
             }
-         } 
+            /* N-W-4: the matchers encountered come back beside the hosts and the
+             * groups, because an interface cannot show what it is not told */
+            if (used_matchers != nullptr && used_sub_matchers != nullptr) {
+               if (*used_matchers != nullptr) {
+                  lAddList(*used_matchers, &used_sub_matchers);
+               } else {
+                  *used_matchers = used_sub_matchers;
+                  used_sub_matchers = nullptr;
+               }
+            }
+         }
+         lFreeList(&used_sub_matchers);
+      }
+
+      /*
+       * CS-2680. The merge above concatenates, so a host reachable by two paths
+       * is listed once per path. That was rare while every path was a chain of
+       * literal names -- it took a diamond -- and it is the normal case once a
+       * matcher is involved, because a group and one it references may well
+       * carry patterns that overlap.
+       *
+       * Deduplicated here rather than at each consumer, and with the
+       * order-preserving form: the resolved membership is a set, and sorting it
+       * would change output that has to stay as it is for a configuration
+       * carrying no matcher. The answer list is deliberately not passed on --
+       * this is enumeration, where a repetition means nothing, not the write
+       * path, where collapsing two members is a change worth reporting.
+       */
+      if (used_hosts != nullptr) {
+         href_list_make_uniq(*used_hosts, nullptr);
+      }
+      if (used_matchers != nullptr) {
+         href_list_make_uniq(*used_matchers, nullptr);
       }
 
       if (free_tmp_list) {

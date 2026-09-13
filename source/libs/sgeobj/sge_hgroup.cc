@@ -516,7 +516,8 @@ bool hgroup_add_references(lListElem *this_elem, lList **answer_list,
  */
 bool hgroup_find_all_references(const lListElem *this_elem, lList **answer_list,
                                 const lList *master_list, lList **used_hosts,
-                                lList **used_groups) {
+                                lList **used_groups, lList **used_matchers,
+                                bool expand_matchers) {
    DENTER(HGROUP_LAYER);
 
    bool ret = true;
@@ -528,7 +529,8 @@ bool hgroup_find_all_references(const lListElem *this_elem, lList **answer_list,
       ret &= href_list_add(&href_list, answer_list, name);
 
       if (ret) {
-         ret &= href_list_find_all_references(href_list, answer_list, master_list, used_hosts, used_groups);
+         ret &= href_list_find_all_references(href_list, answer_list, master_list, used_hosts, used_groups,
+                                              used_matchers, expand_matchers);
       }
       lFreeList(&href_list);
    }

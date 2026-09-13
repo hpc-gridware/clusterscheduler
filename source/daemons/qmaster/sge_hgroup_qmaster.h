@@ -54,6 +54,9 @@ hgroup_refresh_caches(lListElem *hgroup, lList *master_hgroup_list, lList **refe
 void
 hgroup_send_referencee_events(const lList *referencees, lList *master_hgroup_list, uint64_t gdi_session);
 
+void
+hgroup_refresh_matcher_caches(lList *master_hgroup_list, lList **refreshed);
+
 /* CS-2438 chunk 7: install the queue copies a membership change produced, and
  * discard them if the change is abandoned. Shared with the @exec_hosts sync. */
 void

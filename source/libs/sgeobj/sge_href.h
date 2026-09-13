@@ -75,12 +75,14 @@ href_list_find_effective_diff(lList **answer_list, const lList *add_groups,
 bool 
 href_list_find_references(const lList *this_list, lList **answer_list,
                           const lList *master_list, lList **used_hosts,
-                          lList **used_groups);
+                          lList **used_groups, lList **used_matchers = nullptr,
+                          bool expand_matchers = true);
 
 bool 
 href_list_find_all_references(const lList *this_list, lList **answer_list,
                               const lList *master_list, lList **used_hosts,
-                              lList **used_groups);
+                              lList **used_groups, lList **used_matchers = nullptr,
+                              bool expand_matchers = true);
 
 bool 
 href_list_find_referencees(const lList *this_list, lList **answer_list,

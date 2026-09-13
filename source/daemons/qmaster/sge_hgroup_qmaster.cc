@@ -989,6 +989,69 @@ void hgroup_refresh_caches(lListElem *hgroup, lList *master_hgroup_list, lList *
 }
 
 /**
+ * @brief Recompute every group that carries a matcher, after the candidate set moved
+ *
+ * CS-2680, N-C-1. The resolved membership of a matcher-carrying group is the set
+ * of execution hosts its patterns capture, so it depends on the execution host
+ * list even when the group references nothing that mirrors it. Today's triggers
+ * do not cover that case: they follow references, and there is no reference to
+ * follow.
+ *
+ * This is what closes the roll-out. A node that registers becomes an execution
+ * host, and with it a member of every matcher-carrying group whose pattern fits
+ * it - with no administrative act anywhere in between.
+ *
+ * A group carrying no matcher is not touched (N-C-3), so a cluster that
+ * configures none pays a prefix comparison over groups times members and nothing
+ * else. Whether a group carries one is derived rather than stored: a stored flag
+ * would be redundant state that can drift from the member list.
+ *
+ * @param master_hgroup_list the (already updated) master list
+ * @param[in,out] refreshed HR_Type names of every group refreshed here and of its
+ *        referencees, appended to what the caller already collected; the CALLER
+ *        frees it and sends one event per name
+ *
+ * @note MT-NOTE: call under the write lock, like every other writer of the list
+ *
+ * @see #hgroup_refresh_caches
+ */
+void hgroup_refresh_matcher_caches(lList *master_hgroup_list, lList **refreshed) {
+   DENTER(TOP_LAYER);
+
+   lList *answer_list = nullptr;
+
+   for_each_rw_lv(hgroup, master_hgroup_list) {
+      const char *group_name = lGetHost(hgroup, HGRP_name);
+      bool carries_matcher = false;
+
+      for_each_ep_lv(member, lGetList(hgroup, HGRP_host_list)) {
+         if (ocs::is_matcher(lGetHost(member, HR_name))) {
+            carries_matcher = true;
+            break;
+         }
+      }
+      if (!carries_matcher) {
+         continue;
+      }
+
+      /* the group itself and, through the existing refresh, everything that
+       * reaches it */
+      lList *referencees = nullptr;
+
+      hgroup_refresh_caches(hgroup, master_hgroup_list, &referencees);
+      href_list_add(refreshed, &answer_list, group_name);
+
+      for_each_ep_lv(href, referencees) {
+         href_list_add(refreshed, &answer_list, lGetHost(href, HR_name));
+      }
+      lFreeList(&referencees);
+   }
+   answer_list_output(&answer_list);
+
+   DRETURN_VOID;
+}
+
+/**
  * @brief One HGROUP_MOD per refreshed referencee
  *
  * CS-2451. One event per referencee so the mirrors pick up their refreshed

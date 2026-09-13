@@ -36,6 +36,7 @@
  * @brief qconf - the host group switches
  */
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_edit.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -75,9 +76,20 @@ hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent) {
    for (i = 0; i < indent; i++) {
       printf("%s", indent_string);
    }
+
+   /*
+    * CS-2680, N-I-6. A matcher is a leaf: it references nothing that could be
+    * expanded, and looking it up as a group name would be asking the wrong
+    * question. It is marked, because the tree is where the shape of a group is
+    * read off and a rule among the names should not read like one more name.
+    */
+   if (ocs::is_matcher(name)) {
+      printf("%s (matcher)\n", name);
+      DRETURN_VOID;
+   }
    printf("%s\n", name);
 
-   hgroup = lGetElemHost(hgroup_list, HGRP_name, name);   
+   hgroup = lGetElemHost(hgroup_list, HGRP_name, name);
    if (hgroup != nullptr) {
       const lList *sub_list = lGetList(hgroup, HGRP_host_list);
 
@@ -499,16 +511,39 @@ bool hgroup_show_structure(lList **answer_list, const char *name, bool show_tree
             dstring string = DSTRING_INIT;
             lList *sub_host_list = nullptr;
             lList *sub_hgroup_list = nullptr;
+            lList *sub_matcher_list = nullptr;
 
-            hgroup_find_all_references(hgroup, answer_list, hgroup_list, &sub_host_list, &sub_hgroup_list);
+            hgroup_find_all_references(hgroup, answer_list, hgroup_list, &sub_host_list, &sub_hgroup_list,
+                                       &sub_matcher_list);
             href_list_make_uniq(sub_host_list, answer_list);
             href_list_append_to_dstring(sub_host_list, &string);
             if (sge_dstring_get_string(&string)) {
                printf("%s\n", sge_dstring_get_string(&string));
             }
+
+            /*
+             * CS-2680, N-I-5. The resolved membership says which hosts the system
+             * knows are members, never which hosts the group would admit. For a
+             * group carrying matchers those are two different things, and the gap
+             * may be total -- a submit host group whose population is disjoint
+             * from the execution host list resolves to nothing while admitting a
+             * host on every request. So the matchers are shown with it, and the
+             * output above is never left standing on its own as "the membership".
+             * Without matchers nothing is added and the output is unchanged.
+             */
+            if (sub_matcher_list != nullptr) {
+               dstring matchers = DSTRING_INIT;
+
+               href_list_make_uniq(sub_matcher_list, answer_list);
+               href_list_append_to_dstring(sub_matcher_list, &matchers);
+               printf("matchers: %s\n", sge_dstring_get_string(&matchers));
+               sge_dstring_free(&matchers);
+            }
+
             sge_dstring_free(&string);
             lFreeList(&sub_host_list);
             lFreeList(&sub_hgroup_list);
+            lFreeList(&sub_matcher_list);
          }
       } else {
          answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR, MSG_HGROUP_NOTEXIST_S, name);
