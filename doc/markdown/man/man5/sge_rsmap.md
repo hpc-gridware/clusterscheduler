@@ -139,6 +139,42 @@ The *consumable* setting of the complex decides how often the requested amount i
 A shared-GPU host of the shape shown above is normally *HOST* or *JOB*, so that a multithreaded job
 can ask for the instances of one card in a single request.
 
+## Requiring that the granted instances agree
+
+A request may carry a list of parameters in brackets after the amount:
+
+    qsub -l 'gpu=4[same=id]' ...
+
+Quote the request. A shell would otherwise read the brackets as a file name pattern.
+
+*same=* names what the instances granted for this request must have in common. It takes either
+`id`, meaning the identifier itself, or the name of a characteristic.
+
+    qsub -l 'gpu=4[same=id]' ...
+
+Four shares of one identifier. On a shared-GPU host of the shape shown above this is how a job
+asks for a whole card rather than shares of two.
+
+    qsub -l 'gpu=2[same=numa_node]' ...
+
+Two instances whose `numa_node` characteristic has the same value. Several identifiers may carry
+the same value, so the instances granted here can come from different identifiers as long as they
+agree - which is the difference from *same=id*, where every instance is a share of one identifier.
+
+An instance which does not carry the named characteristic cannot take part; there is nothing for
+it to agree with. If no instance of a map carries it, the request cannot be met on that host.
+
+The name after *same=* must be `id` or a configured complex, and anything else is refused when the
+job is submitted. Whether any instance carries it is not decided then: which instances a job will
+be offered is not known until it is scheduled, so a name which is configured but carried by
+nothing leaves the job waiting rather than being refused.
+
+The *consumable* setting decides what the constraint costs. For *consumable YES* the amount is
+taken per slot, so the constraint limits how many slots a host can offer - a group of four
+instances serves four slots of `-l 'gpu=1[same=id]'`, whatever the queue would otherwise allow.
+For *consumable JOB* and *consumable HOST* the amount is taken once, so a group either serves the
+request or the host cannot run the job.
+
 # WHAT A JOB SEES
 
 The identifiers granted on a host are exported to the job as
@@ -189,7 +225,12 @@ A resource map cannot be attached to a queue.
 An identifier is meaningful only on the host it is configured on. Two hosts using the same
 identifier are related only by convention.
 
-A request cannot say which instances it wants; the scheduler chooses among the free ones.
+A request cannot name the instances it wants. It can require that the instances it is granted
+agree, as described above, but the scheduler chooses among the free ones. The parameter names
+`id`, `scope` and `distinct` are reserved for naming instances and for constraints which are not
+implemented, and a request using one of them is refused.
+
+A request carrying a parameter list cannot be used inside an advance reservation.
 
 # SEE ALSO
 
