@@ -24,6 +24,7 @@
  */
 
 #include <array>
+#include <strings.h>
 
 namespace ocs {
    /** @brief Checks if a string contains any of the special characters that are used in expressions.
@@ -121,5 +122,125 @@ namespace ocs {
    [[nodiscard]] inline bool
    is_hgroup_name(const char *name) noexcept {
       return name != nullptr && name[0] == '@';
+   }
+
+   /// The prefix of a host name matcher; the payload is an fnmatch expression
+   inline constexpr const char *MATCHER_PREFIX_HOST = "host:";
+   /// The prefix of an address matcher; reserved, not supported yet
+   inline constexpr const char *MATCHER_PREFIX_IP = "ip:";
+   /// The prefix of an IPv6 address matcher; reserved, not supported yet
+   inline constexpr const char *MATCHER_PREFIX_IP6 = "ip6:";
+
+   /** @brief Which reserved prefix a host group member carries, if any
+    *
+    * The three prefixes are part of the configuration language from the first
+    * release on and cannot be changed afterwards. A host must therefore not be
+    * named such that its name begins with one of them.
+    */
+   enum class MatcherKind {
+      NONE, ///< no reserved prefix; the member is not a matcher
+      HOST, ///< `host:` followed by an fnmatch expression over host names
+      IP,   ///< `ip:` followed by an IPv4 range; reserved, rejected on validation
+      IP6   ///< `ip6:` followed by an IPv6 range; reserved, rejected on validation
+   };
+
+   /** @brief The three classes an entry of a host group member list belongs to
+    *
+    * The classification is total and needs no heuristic: it is a prefix
+    * comparison, exactly as `@` already marks a host group.
+    */
+   enum class MemberClass {
+      GROUP_REFERENCE, ///< `@name`, the membership of another host group
+      MATCHER,         ///< a reserved prefix and a payload; describes a set of hosts
+      LITERAL_HOST     ///< everything else; names exactly one host
+   };
+
+   /** @brief Which matcher prefix a member carries.
+    *
+    * The comparison is not case-sensitive, so `host:`, `HOST:` and every mixed
+    * spelling are recognised alike.
+    *
+    * A member beginning with `@` never carries a prefix as far as this function
+    * is concerned: no reserved prefix starts with that character, so a group
+    * reference always answers #MatcherKind::NONE and the precedence of `@` over
+    * every other rule holds without a test of its own.
+    *
+    * @param s the member to classify, may be nullptr
+    * @return the prefix the member carries, #MatcherKind::NONE if it carries none
+    */
+   [[nodiscard]] inline MatcherKind
+   matcher_kind(const char *s) noexcept {
+      if (s == nullptr) {
+         return MatcherKind::NONE;
+      }
+      if (strncasecmp(s, MATCHER_PREFIX_HOST, sizeof("host:") - 1) == 0) {
+         return MatcherKind::HOST;
+      }
+      if (strncasecmp(s, MATCHER_PREFIX_IP6, sizeof("ip6:") - 1) == 0) {
+         return MatcherKind::IP6;
+      }
+      if (strncasecmp(s, MATCHER_PREFIX_IP, sizeof("ip:") - 1) == 0) {
+         return MatcherKind::IP;
+      }
+      return MatcherKind::NONE;
+   }
+
+   /** @brief Checks if a member is a matcher, that is, carries a reserved prefix.
+    *
+    * The reserved but unsupported prefixes answer true as well. They are matchers
+    * syntactically and are refused during validation with a message saying so;
+    * reading them as host names instead would report an unknown host.
+    *
+    * @param s the member to check, may be nullptr
+    * @return true if the member carries one of the reserved prefixes
+    */
+   [[nodiscard]] inline bool
+   is_matcher(const char *s) noexcept {
+      return matcher_kind(s) != MatcherKind::NONE;
+   }
+
+   /** @brief The payload of a matcher, that is, the member without its prefix.
+    *
+    * The result points into @p s and is valid as long as that string is. It may
+    * be the empty string; a matcher with an empty payload is refused during
+    * validation, not here.
+    *
+    * @param s the member, may be nullptr
+    * @return the payload, or nullptr if the member is not a matcher
+    */
+   [[nodiscard]] inline const char *
+   matcher_payload(const char *s) noexcept {
+      switch (matcher_kind(s)) {
+         case MatcherKind::HOST:
+            return s + sizeof("host:") - 1;
+         case MatcherKind::IP6:
+            return s + sizeof("ip6:") - 1;
+         case MatcherKind::IP:
+            return s + sizeof("ip:") - 1;
+         case MatcherKind::NONE:
+            break;
+      }
+      return nullptr;
+   }
+
+   /** @brief Classifies one entry of a host group member list.
+    *
+    * A member beginning with `@` is a group reference, and that rule takes
+    * precedence over all others. A member carrying one of the reserved prefixes
+    * is a matcher. Every other member is a literal host name and is subject to
+    * the handling of host names unchanged, including the obligation to resolve.
+    *
+    * @param s the member to classify, may be nullptr
+    * @return the class the member belongs to; nullptr counts as a literal host name
+    */
+   [[nodiscard]] inline MemberClass
+   classify_member(const char *s) noexcept {
+      if (is_hgroup_name(s)) {
+         return MemberClass::GROUP_REFERENCE;
+      }
+      if (is_matcher(s)) {
+         return MemberClass::MATCHER;
+      }
+      return MemberClass::LITERAL_HOST;
    }
 }

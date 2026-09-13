@@ -29,6 +29,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "uti/ocs_Bootstrap.h"
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_hostname.h"
 
@@ -466,6 +467,128 @@ test_host_is_referenced_reserved() {
 }
 
 // ---------------------------------------------------------------------------
+// classify_member() and its neighbours
+// ---------------------------------------------------------------------------
+
+/*
+ * CS-2681: a host group member may describe a set of hosts instead of naming
+ * one. The classification is what tells the three member classes apart, and it
+ * lives in the core rather than behind the edition boundary because the host
+ * name normaliser needs it and every host value of the system passes through
+ * that. What the prefixes mean is interpreted elsewhere; here they are only
+ * recognised.
+ */
+static void
+test_classify_member() {
+   printf("\n--- classify_member ---\n");
+
+   // T46-T47: a leading '@' decides, and it decides first
+   CHECK(46, "@gpu_nodes is a group reference",
+         ocs::classify_member("@gpu_nodes") == ocs::MemberClass::GROUP_REFERENCE);
+   CHECK(47, "@host:gpu* is a group reference, not a matcher",
+         ocs::classify_member("@host:gpu*") == ocs::MemberClass::GROUP_REFERENCE);
+
+   // T48-T50: the prefix comparison is not case-sensitive
+   CHECK(48, "host:gpu* is a matcher",
+         ocs::classify_member("host:gpu*") == ocs::MemberClass::MATCHER);
+   CHECK(49, "HOST:gpu* is a matcher",
+         ocs::classify_member("HOST:gpu*") == ocs::MemberClass::MATCHER);
+   CHECK(50, "HoSt:gpu* is a matcher",
+         ocs::classify_member("HoSt:gpu*") == ocs::MemberClass::MATCHER);
+
+   // T51-T52: the reserved prefixes are matchers too, so that validation can
+   // refuse them with a message of their own instead of reporting an unknown host
+   CHECK(51, "ip:10.1.0.0-10.1.0.99 is a matcher",
+         ocs::classify_member("ip:10.1.0.0-10.1.0.99") == ocs::MemberClass::MATCHER);
+   CHECK(52, "ip6:fe80::/10 is a matcher",
+         ocs::classify_member("ip6:fe80::/10") == ocs::MemberClass::MATCHER);
+   CHECK(53, "ip6: is told apart from ip:",
+         ocs::matcher_kind("ip6:fe80::/10") == ocs::MatcherKind::IP6);
+   CHECK(54, "ip: is told apart from ip6:",
+         ocs::matcher_kind("ip:10.1.0.5") == ocs::MatcherKind::IP);
+
+   // T55-T59: everything else is a literal host name, unchanged
+   CHECK(55, "node001 is a literal host name",
+         ocs::classify_member("node001") == ocs::MemberClass::LITERAL_HOST);
+   CHECK(56, "hostname01 is a literal host name - the prefix is host: and nothing else",
+         ocs::classify_member("hostname01") == ocs::MemberClass::LITERAL_HOST);
+   CHECK(57, "ip is a literal host name",
+         ocs::classify_member("ip") == ocs::MemberClass::LITERAL_HOST);
+   CHECK(58, "the empty name is a literal host name",
+         ocs::classify_member("") == ocs::MemberClass::LITERAL_HOST);
+   CHECK(59, "nullptr is a literal host name",
+         ocs::classify_member(nullptr) == ocs::MemberClass::LITERAL_HOST);
+
+   // T60-T63: the payload is the member without its prefix
+   CHECK(60, "the payload of host:gpu* is gpu*",
+         strcmp(ocs::matcher_payload("host:gpu*"), "gpu*") == 0);
+   CHECK(61, "the payload of ip6:fe80::/10 is fe80::/10",
+         strcmp(ocs::matcher_payload("ip6:fe80::/10"), "fe80::/10") == 0);
+   CHECK(62, "the payload of HOST: is empty, not absent",
+         ocs::matcher_payload("HOST:") != nullptr && ocs::matcher_payload("HOST:")[0] == '\0');
+   CHECK(63, "a literal host name has no payload",
+         ocs::matcher_payload("node001") == nullptr);
+}
+
+// ---------------------------------------------------------------------------
+// sge_hostmatch_pattern()
+// ---------------------------------------------------------------------------
+
+/*
+ * CS-2681: the comparison of a stored pattern against a host name. It differs
+ * from sge_hostmatch() in that only the host side is normalised - the pattern
+ * was brought into canonical form when it was written - and in that both sides
+ * are lowered, as host names compare everywhere else in the system.
+ *
+ * Runs under the throwaway bootstrap environment of this file, that is with
+ * ignore_fqdn set and no default domain. The domain rules cannot be varied
+ * within one process: ocs::Bootstrap keeps its setters private and reads its
+ * configuration once.
+ */
+static void
+test_hostmatch_pattern() {
+   printf("\n--- sge_hostmatch_pattern ---\n");
+
+   CHECK(64, "the environment of this group has ignore_fqdn set",
+         ocs::Bootstrap::get_ignore_fqdn() && !ocs::Bootstrap::has_default_domain());
+
+   // T65-T71: the fnmatch metacharacters, negation among them
+   CHECK(65, "node* matches node001", sge_hostmatch_pattern("node*", "node001") == 0);
+   CHECK(66, "node* does not match gpu001", sge_hostmatch_pattern("node*", "gpu001") != 0);
+   CHECK(67, "node00? matches node001", sge_hostmatch_pattern("node00?", "node001") == 0);
+   CHECK(68, "node[0-9]* matches node001", sge_hostmatch_pattern("node[0-9]*", "node001") == 0);
+   CHECK(69, "node[!0-9]* does not match node001",
+         sge_hostmatch_pattern("node[!0-9]*", "node001") != 0);
+   CHECK(70, "node[!0-9]* matches nodeX01",
+         sge_hostmatch_pattern("node[!0-9]*", "nodeX01") == 0);
+   CHECK(71, "a missing argument is an error, not a match",
+         sge_hostmatch_pattern(nullptr, "node001") == -1 &&
+         sge_hostmatch_pattern("node*", nullptr) == -1);
+
+   // T72-T73: case-insensitive on both sides
+   CHECK(72, "Node* matches node001", sge_hostmatch_pattern("Node*", "node001") == 0);
+   CHECK(73, "node* matches NODE001", sge_hostmatch_pattern("node*", "NODE001") == 0);
+
+   // T74: the candidate is normalised
+   CHECK(74, "with ignore_fqdn, node* matches node001.example.com",
+         sge_hostmatch_pattern("node*", "node001.example.com") == 0);
+
+   // T75-T76: the pattern is not. sge_hostmatch() sends both sides through
+   // sge_hostcpy(), which looks for a dot without knowing what a bracket
+   // expression is and cuts this pattern down to "node[0" - the reason this
+   // function exists is that the stored pattern must survive the comparison.
+   CHECK(75, "with ignore_fqdn, a dot inside a bracket expression survives",
+         sge_hostmatch_pattern("node[0.9]x", "node0x") == 0);
+   CHECK(76, "sge_hostmatch would have cut the same pattern",
+         sge_hostmatch("node[0.9]x", "node0x") != 0);
+
+   // T77: a pattern whose domain no longer matches the domain rules in force
+   // fails; it does not widen
+   CHECK(77, "with ignore_fqdn, node*.example.com admits nothing",
+         sge_hostmatch_pattern("node*.example.com", "node001") != 0);
+}
+
+// ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
@@ -473,6 +596,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_is_reserved();
    test_is_system_maintained();
    test_constants();
+   test_classify_member();
 
    if (!setup_bootstrap()) {
       printf("FAIL - cannot create the throwaway bootstrap environment\n");
@@ -480,6 +604,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    }
    test_update_cache();
    test_host_is_referenced_reserved();
+   test_hostmatch_pattern();
    teardown_bootstrap();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

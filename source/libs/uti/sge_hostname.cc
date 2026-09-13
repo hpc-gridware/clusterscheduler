@@ -929,8 +929,56 @@ int sge_hostmatch(const char *h1, const char *h2) {
 
       cmp = fnmatch(h1_cpy, h2_cpy, 0);
 
-      DPRINTF("sge_hostmatch(%s, %s) = %d\n", h1_cpy, h2_cpy);
+      DPRINTF("sge_hostmatch(%s, %s) = %d\n", h1_cpy, h2_cpy, cmp);
    }
+
+   DRETURN(cmp);
+}
+
+/**
+ * @brief Fnmatch() for a stored host name pattern against a host name
+ *
+ * Differs from #sge_hostmatch in the two points that matter for a pattern which
+ * was brought into canonical form when it was written:
+ *
+ *   - **Only the host side is normalised.** The pattern is used exactly as it is
+ *     stored. #sge_hostcpy finds the end of the domain-free part with a plain
+ *     search for a dot, which is right for a name and wrong for a pattern: it
+ *     knows nothing of bracket expressions and would cut `node[0.9]*` down to
+ *     `node[0`. A pattern is normalised once, at the place where the result can
+ *     be validated and reported, and never again afterwards.
+ *   - **Both sides are lowered before comparing.** Host names compare
+ *     case-insensitively everywhere in the system; fnmatch() on its own does not.
+ *     Lowering both sides rather than passing a case-folding flag is what the
+ *     evaluation of resource expressions does, so the two agree in the corners
+ *     as well.
+ *
+ * @param pattern an fnmatch expression over host names, already in canonical form
+ * @param host the host name to test, normalised here
+ *
+ * @return 0 if the host matches, non-zero if it does not, -1 on invalid input
+ *
+ * @see #sge_hostmatch, #sge_hostcpy
+ */
+int sge_hostmatch_pattern(const char *pattern, const char *host) {
+   DENTER(BASIS_LAYER);
+
+   if (pattern == nullptr || host == nullptr) {
+      DRETURN(-1);
+   }
+
+   char pattern_cpy[CL_MAXHOSTNAMELEN + 1];
+   char host_cpy[CL_MAXHOSTNAMELEN + 1];
+
+   sge_strlcpy(pattern_cpy, pattern, sizeof(pattern_cpy));
+   sge_strtolower(pattern_cpy, sizeof(pattern_cpy));
+
+   sge_hostcpy(host_cpy, host);
+   sge_strtolower(host_cpy, sizeof(host_cpy));
+
+   const int cmp = fnmatch(pattern_cpy, host_cpy, 0);
+
+   DPRINTF("sge_hostmatch_pattern(%s, %s) = %d\n", pattern_cpy, host_cpy, cmp);
 
    DRETURN(cmp);
 }
