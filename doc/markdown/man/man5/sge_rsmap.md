@@ -102,7 +102,12 @@ supplies the type, so `memory=80G` is read as *MEMORY* and `bandwidth=100000` as
 type *RSMAP* cannot be used as a characteristic. A *char-value* may contain any byte except `,`,
 `]`, whitespace, `=`, `(` and `)`; there is no quoting or escape mechanism.
 
-Characteristics cannot be attached to a range, so the identifiers have to be listed one by one.
+Characteristics cannot be attached to a range which covers more than one identifier, because the
+block would have to belong to every instance the range expands to; those identifiers have to be
+listed one by one. A single identifier may be a name or a number, so `0[devices=/dev/nvidia0]` is
+as good as `gpu0[devices=/dev/nvidia0]` - which matters because the short form `gpu=4` creates the
+identifiers `0` to `3`.
+
 Whitespace inside the brackets is ignored, so a long definition can be continued with `\`:
 
     complex_values gpu=2(gpu0[devices=/dev/nvidia0:rw,memory=80G,\

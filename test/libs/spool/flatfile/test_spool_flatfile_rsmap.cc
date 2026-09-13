@@ -304,6 +304,38 @@ test_reject_characteristics_on_range() {
    return 0;
 }
 
+/*
+ * A bare number is a range of exactly one id, and there it names a single instance: it takes
+ * characteristics like any other identifier. Only a range covering more than one is refused.
+ */
+static int
+test_characteristics_on_numeric_id() {
+   T_START("characteristics_on_numeric_id");
+   lListElem *ce = make_rsmap_ce("gpu");
+   lList *alp = nullptr;
+
+   T_ASSERT(run_reader(ce, "2(0[device=/dev/nvidia0] 1[device=/dev/nvidia1])", &alp) == 1);
+   T_ASSERT(lGetNumberOfElem(lGetList(ce, CE_resource_map_list)) == 2);
+
+   const lListElem *resl = lGetSubStr(ce, RESL_value, "0", CE_resource_map_list);
+   T_ASSERT(resl != nullptr);
+   T_ASSERT(lGetNumberOfElem(lGetList(resl, RESL_properties)) == 1);
+   T_ASSERT(strcmp(lGetString(lFirst(lGetList(resl, RESL_properties)), CE_stringval),
+                   "/dev/nvidia0") == 0);
+
+   lFreeElem(&ce);
+   lFreeList(&alp);
+
+   /* a range of one written as a range is still a single instance */
+   ce = make_rsmap_ce("gpu");
+   T_ASSERT(run_reader(ce, "1(3-3[device=/dev/nvidia3])", &alp) == 1);
+   T_ASSERT(lGetSubStr(ce, RESL_value, "3", CE_resource_map_list) != nullptr);
+
+   lFreeElem(&ce);
+   lFreeList(&alp);
+   return 0;
+}
+
 #endif /* WITH_EXTENSIONS */
 
 /* ------------------------------------------------------------------ */
@@ -505,6 +537,7 @@ int main(int, char **) {
    test_reject_unclosed_bracket();
    test_reject_missing_eq();
    test_reject_characteristics_on_range();
+   test_characteristics_on_numeric_id();
    test_duplicate_matching_characteristics();
    test_duplicate_matching_reordered();
    test_reject_duplicate_conflict();
