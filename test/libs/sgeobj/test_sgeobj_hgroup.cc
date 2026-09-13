@@ -40,6 +40,7 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_href.h"
+#include "sgeobj/ocs_Matcher.h"
 #include "sgeobj/sge_utility.h"
 
 /*
@@ -932,6 +933,8 @@ test_generated_trees() {
 
    int cache_mismatches = 0;
    int walk_mismatches = 0;
+   int invariant_breaks = 0;
+   int unfindable = 0;
 
    for (int tree = 0; tree < TREES; tree++) {
       lList *hgroup_list = nullptr;
@@ -1002,6 +1005,55 @@ test_generated_trees() {
             }
             walk_mismatches++;
          }
+
+         /*
+          * CS-2684, N-S-3. The two layers answer different questions and must
+          * not contradict each other. Over the candidate set, where both can
+          * speak about the same host, the agreement has to be exact:
+          *
+          *   admitted  => resolved   a host a matcher fits is in the candidate
+          *                           set here, so the expansion must have taken
+          *                           it as well
+          *   resolved & not named
+          *             => admitted   it got in through a matcher, so the point
+          *                           question has to say so too
+          *
+          * Both directions hold in an open source build as well, where nothing
+          * is admitted and nothing is expanded.
+          */
+         /*
+          * Every entry of the cache has to be findable in it. The key is unique
+          * and hashed, so a list that ever held two entries under one key cannot
+          * be repaired by removing one -- that drops the key from the hash and
+          * leaves the survivor present but unfindable, which on this list means
+          * the membership test missing a host that is plainly in it. A linear
+          * scan would not notice; this is the check that does.
+          */
+         for_each_ep_lv(cached, lGetList(hgroup, HGRP_cached_hosts)) {
+            if (href_list_locate(lGetList(hgroup, HGRP_cached_hosts),
+                                 lGetHost(cached, HR_name)) == nullptr) {
+               unfindable++;
+            }
+         }
+
+         lList *named = nullptr;
+         hgroup_find_all_references(hgroup, nullptr, hgroup_list, &named, nullptr, nullptr, false);
+
+         for_each_ep_lv(candidate, lGetList(exec_group, HGRP_host_list)) {
+            const char *host = lGetHost(candidate, HR_name);
+            const bool admitted = ocs::Matcher::admits(hgroup, host, hgroup_list);
+            const bool resolved = href_list_locate(lGetList(hgroup, HGRP_cached_hosts), host) != nullptr;
+            const bool is_named = href_list_locate(named, host) != nullptr;
+
+            if (admitted && !resolved) {
+               invariant_breaks++;
+            }
+            if (resolved && !is_named && !admitted) {
+               invariant_breaks++;
+            }
+         }
+         lFreeList(&named);
+
          lFreeList(&expected);
          lFreeList(&walked);
       }
@@ -1010,6 +1062,10 @@ test_generated_trees() {
 
    CHECK(97, "every cache of every generated tree matches the oracle", cache_mismatches == 0);
    CHECK(98, "and so does a fresh walk -- the two paths agree", walk_mismatches == 0);
+   CHECK(99, "enumeration and the membership test never contradict each other",
+         invariant_breaks == 0);
+   CHECK(100, "every host in a cache can be found in it, not merely be present",
+         unfindable == 0);
 }
 
 // ---------------------------------------------------------------------------

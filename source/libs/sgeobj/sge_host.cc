@@ -49,6 +49,7 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_hgroup.h"
+#include "sgeobj/ocs_Matcher.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_qinstance.h"
@@ -151,7 +152,29 @@ host_is_in_reserved_hostgroup(const char *hostname, const char *group_name) {
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
    const lListElem *hgroup = hgroup_list_locate(master_hgroup_list, group_name);
 
-   DRETURN(hgroup_contains_host(hgroup, hostname, master_hgroup_list));
+   /*
+    * CS-2680. Two layers, and the order is the rule rather than an optimisation.
+    *
+    * The enumerated membership is asked first and answers every host the qmaster
+    * knows -- which is every host that exists today, so this costs exactly what
+    * it cost before the feature.
+    *
+    * Only when it says no is the second question asked: does a matcher of this
+    * group fit the name? That question exists because enumeration structurally
+    * cannot answer it for the hosts that matter most here. A freshly started
+    * instance appears in no object, so it cannot be in a resolved membership,
+    * and the answer would be a silent no in exactly the case a matcher was
+    * written for -- the node that cannot be admitted because it is not yet an
+    * execution host, and cannot become one because it is not admitted.
+    *
+    * Neither layer resolves a name; both compare the host name the request
+    * already carries.
+    */
+   if (hgroup_contains_host(hgroup, hostname, master_hgroup_list)) {
+      DRETURN(true);
+   }
+
+   DRETURN(ocs::Matcher::admits(hgroup, hostname, master_hgroup_list));
 }
 
 /**

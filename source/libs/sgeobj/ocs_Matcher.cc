@@ -83,6 +83,24 @@ ocs::Matcher::expand(const lList *member_list, const lList *candidates, lList **
    DRETURN(true);
 }
 
+/** @brief Answers no, because no host group here can carry a matcher
+ *
+ * The caller asks this only after the enumerated membership has already said
+ * no, so answering no leaves the permission decision exactly what it was before
+ * the feature existed.
+ *
+ * @param hgroup the group to ask
+ * @param hostname the host in question
+ * @param master_hgroup_list the groups its references resolve against
+ *
+ * @return always false
+ */
+bool
+ocs::Matcher::admits(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
+   DRETURN(false);
+}
+
 /** @brief Reports nothing, because no host group can carry a matcher here
  *
  * @param master_hgroup_list the host groups to examine

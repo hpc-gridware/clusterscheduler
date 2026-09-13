@@ -772,13 +772,23 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
           * host_list_add_missing_href() with it.
           */
          /*
-          * CS-2680, N-V-5. A matcher newly entered into a group that a cluster
-          * queue reaches makes every host it captures receive a queue instance,
-          * without anybody naming that host. The change is carried out; naming
-          * the queues is what makes the reach visible.
+          * CS-2680, N-V-5 and N-V-6. Both warnings are owed when a matcher is
+          * *introduced* into a group, and neither on a later edit of a group
+          * that already carries one, nor when one is taken out, nor on a rewrite
+          * that changes nothing. That distinction is a statement about the write
+          * as a whole, so it is made here and not where a member is validated:
+          * that place sees one member at a time and cannot tell an addition from
+          * a removal.
+          *
+          * What each one names is the reach the administrator has just granted.
+          * In a group a cluster queue reaches, every host the matcher captures
+          * receives a queue instance; in the administrative host group, anything
+          * that can obtain a matching name becomes an administrative host. The
+          * change is carried out either way.
           */
-         if (ret && is_referenced_by_cqueue) {
+         if (ret) {
             const char *group_name = lGetHost(hgroup, HGRP_name);
+            const bool is_admin_group = group_name != nullptr && strcmp(group_name, ADMIN_HOSTGROUP) == 0;
 
             for_each_ep_lv(member, lGetList(hgroup, HGRP_host_list)) {
                const char *member_name = lGetHost(member, HR_name);
@@ -787,10 +797,17 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
                    href_list_locate(members_before, member_name) != nullptr) {
                   continue;
                }
-               answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_WARNING,
-                                       MSG_MATCHER_IN_QUEUE_GROUP_SSS,
-                                       group_name != nullptr ? group_name : "", member_name,
-                                       sge_dstring_get_string(&referencing_queues));
+               if (is_referenced_by_cqueue) {
+                  answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_WARNING,
+                                          MSG_MATCHER_IN_QUEUE_GROUP_SSS,
+                                          group_name != nullptr ? group_name : "", member_name,
+                                          sge_dstring_get_string(&referencing_queues));
+               }
+               if (is_admin_group) {
+                  answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_WARNING,
+                                          MSG_MATCHER_IN_ADMIN_HOSTS_SSS, group_name,
+                                          ocs::matcher_payload(member_name), member_name);
+               }
             }
          }
 

@@ -103,6 +103,38 @@ bool href_list_add(lList **this_list, lList **answer_list, const char *host_or_g
 }
 
 /**
+ * @brief Append one host reference list to another, without creating a duplicate
+ *
+ * The key of these lists is unique and hashed, so two entries under one key are
+ * a state the list is not supposed to reach - and one it cannot be brought out
+ * of, because removing either of them drops the key from the hash and leaves the
+ * survivor unfindable. Adding entry by entry never creates it.
+ *
+ * @param this_list the list to append to; nullptr is ignored
+ * @param answer_list AN_Type list
+ * @param other the entries to append; the caller frees it
+ *
+ * @return error state true - Success false - Error
+ *
+ * @see #href_list_add
+ */
+static bool
+href_list_merge(lList **this_list, lList **answer_list, const lList *other) {
+   bool ret = true;
+
+   if (this_list == nullptr || other == nullptr) {
+      return ret;
+   }
+   for_each_ep_lv(href, other) {
+      ret = href_list_add(this_list, answer_list, lGetHost(href, HR_name));
+      if (!ret) {
+         break;
+      }
+   }
+   return ret;
+}
+
+/**
  * @brief Is reference already in list
  *
  * Is the given host or hostgroup ('host_or_group') already
@@ -514,55 +546,33 @@ bool href_list_find_all_references(const lList *this_list, lList **answer_list,
                                               used_matchers != nullptr ? &used_sub_matchers : nullptr,
                                               expand_matchers);
          if (ret) {
-            if (used_hosts != nullptr && used_sub_hosts != nullptr) {
-               if (*used_hosts != nullptr) {
-                  lAddList(*used_hosts, &used_sub_hosts);
-               } else {
-                  *used_hosts = used_sub_hosts;
-                  used_sub_hosts = nullptr;
-               }
-            }
-            if (used_groups != nullptr && used_sub_groups != nullptr) {
-               if (*used_groups != nullptr) {
-                  lAddList(*used_groups, &used_sub_groups);
-               } else {
-                  *used_groups = used_sub_groups;
-                  used_sub_groups = nullptr;
-               }
-            }
+            /*
+             * CS-2680. Merged entry by entry rather than by concatenating the
+             * lists, and that is not a matter of taste.
+             *
+             * A name reachable by two paths would otherwise appear once per
+             * path. That took a diamond while every path was a chain of literal
+             * names and is the ordinary case once matchers are involved, since a
+             * group and one it references may carry overlapping patterns. And
+             * the key of these lists is unique and hashed, so two entries under
+             * one key are a state the list is not supposed to reach: removing
+             * one of them afterwards drops the key from the hash and leaves the
+             * survivor unfindable -- which on this list means the membership test
+             * missing a host that is plainly in it.
+             *
+             * href_list_add() asks before it adds, so the state never arises.
+             * The cost is a hash lookup per entry instead of a splice, on lists
+             * whose length is the membership of a host group.
+             */
+            ret &= href_list_merge(used_hosts, answer_list, used_sub_hosts);
+            ret &= href_list_merge(used_groups, answer_list, used_sub_groups);
             /* N-W-4: the matchers encountered come back beside the hosts and the
              * groups, because an interface cannot show what it is not told */
-            if (used_matchers != nullptr && used_sub_matchers != nullptr) {
-               if (*used_matchers != nullptr) {
-                  lAddList(*used_matchers, &used_sub_matchers);
-               } else {
-                  *used_matchers = used_sub_matchers;
-                  used_sub_matchers = nullptr;
-               }
-            }
+            ret &= href_list_merge(used_matchers, answer_list, used_sub_matchers);
          }
+         lFreeList(&used_sub_hosts);
+         lFreeList(&used_sub_groups);
          lFreeList(&used_sub_matchers);
-      }
-
-      /*
-       * CS-2680. The merge above concatenates, so a host reachable by two paths
-       * is listed once per path. That was rare while every path was a chain of
-       * literal names -- it took a diamond -- and it is the normal case once a
-       * matcher is involved, because a group and one it references may well
-       * carry patterns that overlap.
-       *
-       * Deduplicated here rather than at each consumer, and with the
-       * order-preserving form: the resolved membership is a set, and sorting it
-       * would change output that has to stay as it is for a configuration
-       * carrying no matcher. The answer list is deliberately not passed on --
-       * this is enumeration, where a repetition means nothing, not the write
-       * path, where collapsing two members is a change worth reporting.
-       */
-      if (used_hosts != nullptr) {
-         href_list_make_uniq(*used_hosts, nullptr);
-      }
-      if (used_matchers != nullptr) {
-         href_list_make_uniq(*used_matchers, nullptr);
       }
 
       if (free_tmp_list) {
