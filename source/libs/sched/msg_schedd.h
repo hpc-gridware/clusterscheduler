@@ -249,5 +249,7 @@
 #define MSG_SCHEDD_INFO_NORESERVATIONSAMEID_S         _MESSAGE(47408, _("no reservation for job " SFN " because it requires all instances of a resource map to agree"))
 #define MSG_SCHEDD_INFO_NORESERVATIONSAMEID           _MESSAGE(47409, _("no reservation because the job requires all instances of a resource map to agree"))
 #define MSG_SCHEDD_SAMEIDNOTINAR_S                    _MESSAGE(47410, _("resource map " SFQ " cannot be granted under a same= constraint inside an advance reservation"))
+#define MSG_SCHEDD_INFO_CANNOTBOOKRESOURCE_SS         _MESSAGE(47411, _("resource " SFQ " could not be granted on host " SFQ " although the host was selected for the job"))
+#define MSG_SCHEDD_INFO_CANNOTBOOKRESOURCE            _MESSAGE(47412, _("a resource could not be granted on a host although the host was selected for the job"))
 
 // clang-format on

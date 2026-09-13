@@ -1237,7 +1237,26 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
    if (result == DISPATCH_OK) {
       // create the granted resource list containing all granted consumables
       // including RSMAPs and the info which RSMAP ids were granted
-      add_granted_resource_list(&a, ja_task, job, host_list);
+      if (!add_granted_resource_list(&a, ja_task, job, host_list)) {
+         // A resource map could not be granted on a host which matching had selected - only a
+         // resource map reaches this, every other consumable is debited from the request and
+         // has nothing to grant. Matching and booking have therefore disagreed about the same
+         // data, which is a fault in the scheduler and not a host which filled up.
+         //
+         // The task is not started. It used to be, with whatever could be granted: for a
+         // resource map that means the instance ids, so the job would run with SGE_HGR_<name>
+         // empty and no device isolation, holding a card the accounting says it holds and the
+         // system never gave it. Leaving the job pending is the lesser fault, and the reason is
+         // on the job (see gru_report_booking_failure) rather than only in the messages file.
+         //
+         // Nothing is committed at this point - the start order is built below and the
+         // resources are debited after it - so returning here leaves the cluster as it was.
+         // The partially filled list is taken off the task so that a later run does not find
+         // it. DISPATCH_NEVER_JOB puts the job aside for this run and leaves it pending.
+         lSetList(ja_task, JAT_granted_resources_list, nullptr);
+         assignment_release(&a);
+         DRETURN(DISPATCH_NEVER_JOB);
+      }
 
       /* in SGEEE we must account for job tickets on hosts due to parallel jobs */
       {

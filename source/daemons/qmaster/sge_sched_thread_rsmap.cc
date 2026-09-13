@@ -36,10 +36,17 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
+#include "sched/schedd_message.h"
+#include "sched/sge_schedd_text.h"
+
 #include "sge_sched_thread_rsmap.h"
 #include "msg_qmaster.h"
 
 #include "ocs_GrantedResources.h"
+
+static void
+gru_report_booking_failure(const sge_assignment_t *a, const lListElem *job,
+                           const lListElem *ja_task, const char *name, const char *host_name);
 
 /**
  * @brief choose the resource map ids this assignment is granted, and record the choice
@@ -294,7 +301,8 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
  * @return true on success, false when a selection has no resource map to belong to
  */
 static bool
-gru_list_apply_selected_rsmap_ids(const sge_assignment_t *a, lList *granted_resources_list) {
+gru_list_apply_selected_rsmap_ids(const sge_assignment_t *a, const lListElem *ja_task,
+                                  lList *granted_resources_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -307,8 +315,7 @@ gru_list_apply_selected_rsmap_ids(const sge_assignment_t *a, lList *granted_reso
       if (gru == nullptr) {
          // the selection is made from the same walk which creates these, so this cannot
          // happen without the two having drifted apart
-         DPRINTF("gru_list_apply_selected_rsmap_ids: no granted resource %s on host %s\n",
-                 name, host_name);
+         gru_report_booking_failure(a, a->job, ja_task, name, host_name);
          ret = false;
          continue;
       }
@@ -323,22 +330,34 @@ gru_list_apply_selected_rsmap_ids(const sge_assignment_t *a, lList *granted_reso
 }
 
 /**
- * @brief report a resource which could not be booked for a just scheduled task
+ * @brief report a resource which could not be granted on a host already selected for the task
  *
- * Without this the task is started with fewer granted resources than it asked for and nothing
- * anywhere says so, which makes the situation impossible to recognise in a production build
- * (CS-2673).
+ * Only a resource map reaches this: gru_list_add_request() skips any other kind of consumable,
+ * which is debited from the request itself rather than being granted as instances.
  *
+ * It means matching and booking have disagreed. Both read the same host configuration and the
+ * same utilization, with nothing debited between them, and matching checks everything booking
+ * checks - the amount, the map being configured on the host, and a same= constraint on both the
+ * sequential and the parallel path. So this is an inconsistency inside the scheduler and not a
+ * host which filled up, which is why it is an error and not a warning (CS-2673, CS-2751).
+ *
+ * The message goes to the job as well as to the log. Left only in the qmaster messages file it
+ * is invisible to the person whose job is affected, and a job which is not started because of it
+ * would otherwise sit pending with nothing to say why.
+ *
+ * @param a         the assignment, for the scheduling message
  * @param job       the job the task belongs to
  * @param ja_task   the task which is being started
  * @param name      name of the resource which could not be booked
  * @param host_name host the booking was attempted on
  */
 static void
-gru_report_booking_failure(const lListElem *job, const lListElem *ja_task, const char *name,
-                           const char *host_name) {
-   WARNING(MSG_JOB_CANNOTBOOKRESOURCE_SSUU, name, host_name,
-           lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
+gru_report_booking_failure(const sge_assignment_t *a, const lListElem *job,
+                           const lListElem *ja_task, const char *name, const char *host_name) {
+   ERROR(MSG_JOB_CANNOTBOOKRESOURCE_SSUU, name, host_name,
+         lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
+   schedd_mes_add(a->monitor_alpp, a->monitor_next_run, lGetUlong(job, JB_job_number),
+                  SCHEDD_INFO_CANNOTBOOKRESOURCE_SS, name, host_name);
 }
 
 /**
@@ -397,7 +416,7 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
          DPRINTF("  global: %s, %d, %f\n", name, debit_slots, amount);
          if (!gru_list_add_request(a, &granted_resources_list, name, consumable, type, host_name,
                                    host_list, amount, debit_slots)) {
-            gru_report_booking_failure(job, ja_task, name, host_name);
+            gru_report_booking_failure(a, job, ja_task, name, host_name);
             ret = false;
          }
       }
@@ -418,7 +437,7 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
             DPRINTF("  master: %s, %d, %f\n", name, debit_slots, amount);
             if (!gru_list_add_request(a, &granted_resources_list, name, consumable, type, host_name,
                                       host_list, amount, debit_slots)) {
-               gru_report_booking_failure(job, ja_task, name, host_name);
+               gru_report_booking_failure(a, job, ja_task, name, host_name);
                ret = false;
             }
          }
@@ -442,7 +461,7 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
          DPRINTF("  slave: %s, %d, %f\n", name, debit_slots, amount);
          if (!gru_list_add_request(a, &granted_resources_list, name, consumable, type, host_name,
                                    host_list, amount, debit_slots)) {
-            gru_report_booking_failure(job, ja_task, name, host_name);
+            gru_report_booking_failure(a, job, ja_task, name, host_name);
             ret = false;
          }
       }
@@ -454,7 +473,7 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
    // were selected for. Doing it after the walk rather than inside it means a map requested
    // in more than one scope is copied once, when its selection is complete.
    if (granted_resources_list != nullptr &&
-       !gru_list_apply_selected_rsmap_ids(a, granted_resources_list)) {
+       !gru_list_apply_selected_rsmap_ids(a, ja_task, granted_resources_list)) {
       ret = false;
    }
 
