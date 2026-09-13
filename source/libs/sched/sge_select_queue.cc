@@ -198,6 +198,10 @@ match_static_advance_reservation(const sge_assignment_t *a);
 static int
 sequential_update_host_order(lList *host_list, lList *queues);
 
+static int
+rsmap_same_slots(const sge_assignment_t *a, const lList *total_list, const lList *rue_list,
+                 dstring *reason);
+
 /* -- base functions ---------------------------------------------- */
 
 static int
@@ -5695,6 +5699,20 @@ sequential_host_time(u_long64 *start, sge_assignment_t *a, int *violations, cons
          &reason, 1, DOMINANT_LAYER_HOST,
          lc_factor, HOST_TAG, &tmp_time, eh_name);
 
+   // A same= constraint asks whether one group of instances can serve the request, which
+   // rc_time_by_slots() knows nothing about - it checks the amount against the map as a whole.
+   // The parallel path evaluates it in parallel_rc_slots_by_time() at this same layer; a
+   // sequential job needs one slot, so the constraint is met when a group can serve one.
+   //
+   // Without this a sequential job was matched on the amount alone and the constraint was left
+   // to the booking, which cannot refuse a host - it has already been chosen - and whose
+   // failure does not stop the job from starting. The job then ran with instances which did
+   // not agree, or with none at all.
+   if ((result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR) &&
+       rsmap_same_slots(a, config_attr, actual_attr, &reason) == 0) {
+      result = DISPATCH_NEVER_CAT;
+   }
+
    if (result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR) {
       if (violations != nullptr) {
          *violations = compute_soft_violations(a, hep, nullptr, *violations, load_attr, config_attr,
@@ -6516,7 +6534,7 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
  *                   one, 0 when it cannot be met
  */
 static int
-parallel_rsmap_same_slots(const sge_assignment_t *a, const lList *total_list,
+rsmap_same_slots(const sge_assignment_t *a, const lList *total_list,
                           const lList *rue_list, dstring *reason) {
    int max_slots = INT_MAX;
    DSTRING_STATIC(param, 64);
@@ -6936,7 +6954,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
    // sitting beside it as a separate filter: one id can serve free/amount slots of a per slot
    // request, and either all or none of a request which takes its amount once.
    if (layer == DOMINANT_LAYER_HOST) {
-      int slots_with_same_id = parallel_rsmap_same_slots(a, total_list, rue_list, &reason);
+      int slots_with_same_id = rsmap_same_slots(a, total_list, rue_list, &reason);
 
       if (slots_with_same_id == 0) {
          DRETURN(DISPATCH_NEVER_CAT);
