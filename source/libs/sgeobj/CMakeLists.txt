@@ -164,6 +164,7 @@ set(LIBRARY_SOURCES
         sge_userset.cc
         sge_utility.cc
         sge_var.cc
+        ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/ocs_Matcher.cc
         ../../../../${PROJECT_FEATURES}/source/libs/sgeobj/ocs_RequestLimits.cc
         cull/sge_sub_object.cc
 )

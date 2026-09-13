@@ -248,7 +248,14 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
          lList *rem_groups = nullptr;
 
          if (ret) {
-            ret &= href_list_resolve_hostnames(list, answer_list, true);
+            /*
+             * CS-2680. This is the last point at which the incoming member list
+             * can still be changed - attr_mod_sub_list() below dechains these
+             * very elements into the master element. Literal members are
+             * resolved here, matchers are normalised and validated here, and
+             * both report what was done to them.
+             */
+            ret &= href_list_resolve_hostnames(list, answer_list, true, hgroup);
          }
          if (ret) {
             ret &= hgroup_reserved_delta_is_strict(hgroup, answer_list, list, sub_command,
@@ -258,6 +265,14 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
             attr_mod_sub_list(answer_list, hgroup, HGRP_host_list, HR_name,
                               reduced_elem, cmd, sub_command, SGE_ATTR_HOSTLIST,
                               SGE_OBJ_HGROUP, 0, nullptr);
+            /*
+             * CS-2680, N-N-5. Members denoting the same set are collapsed into
+             * one, and the collapse is reported. Run on the *result* list, so
+             * that it covers duplicates within a list submitted as a whole as
+             * well as against the existing one - the attribute-wise path
+             * already drops the latter, the whole-list path dropped neither.
+             */
+            href_list_make_uniq(lGetListRW(hgroup, HGRP_host_list), answer_list);
             href_list = lGetList(hgroup, HGRP_host_list);
          }
          if (ret) {
@@ -548,6 +563,15 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
 
          DPRINTF("got new HGRP_host_list\n");
 
+         /*
+          * CS-2680, N-V-5. The warning below is owed only when a matcher is
+          * *introduced*, not on every later edit of a group that carries one, so
+          * the member list as it stands before the change has to be kept. At
+          * this point it still is the one of the stored group: the driver hands
+          * the modifier a copy of the old object.
+          */
+         lList *members_before = lCopyList("", lGetList(hgroup, HGRP_host_list));
+
          if (ret) {
             ret &= hgroup_mod_hostlist(hgroup, answer_list, reduced_elem, cmd, sub_command, &add_hosts, &rem_hosts, &occupant_groups);
          }
@@ -581,6 +605,7 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
          }
 
          bool is_referenced_by_cqueue = false;
+         dstring referencing_queues = DSTRING_INIT;
 
          if (ret) {
             const lListElem *cqueue;
@@ -597,6 +622,11 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
                   lListElem *org_hgroup = nullptr;
 
                   is_referenced_by_cqueue = true;
+
+                  if (sge_dstring_strlen(&referencing_queues) > 0) {
+                     sge_dstring_append(&referencing_queues, ", ");
+                  }
+                  sge_dstring_append(&referencing_queues, lGetString(cqueue, CQ_name));
 
                   /*
                    * Find CQs lists of referenced hosts before and after
@@ -741,10 +771,35 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
           * their effective host set (href_list_find_effective_diff()) and calls
           * host_list_add_missing_href() with it.
           */
+         /*
+          * CS-2680, N-V-5. A matcher newly entered into a group that a cluster
+          * queue reaches makes every host it captures receive a queue instance,
+          * without anybody naming that host. The change is carried out; naming
+          * the queues is what makes the reach visible.
+          */
+         if (ret && is_referenced_by_cqueue) {
+            const char *group_name = lGetHost(hgroup, HGRP_name);
+
+            for_each_ep_lv(member, lGetList(hgroup, HGRP_host_list)) {
+               const char *member_name = lGetHost(member, HR_name);
+
+               if (!ocs::is_matcher(member_name) ||
+                   href_list_locate(members_before, member_name) != nullptr) {
+                  continue;
+               }
+               answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_WARNING,
+                                       MSG_MATCHER_IN_QUEUE_GROUP_SSS,
+                                       group_name != nullptr ? group_name : "", member_name,
+                                       sge_dstring_get_string(&referencing_queues));
+            }
+         }
+
          if (ret && is_referenced_by_cqueue) {
             ret &= host_list_add_missing_href(packet, task, master_ehost_list, answer_list, add_hosts, monitor);
          }
 
+         sge_dstring_free(&referencing_queues);
+         lFreeList(&members_before);
          lFreeList(&add_hosts);
          lFreeList(&rem_hosts);
          lFreeList(&occupant_groups);

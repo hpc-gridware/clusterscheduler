@@ -707,6 +707,27 @@
 #define MSG_JOB_ALREADYFINISHED_NOMOD_U            _MESSAGE(33980, _("job " sge_u32 " is already finished; modification requests are not applied"))
 #define MSG_JOB_CANNOTBOOKRESOURCE_SSUU            _MESSAGE(33981, _("cannot book resource " SFQ " on host " SFQ " for job " sge_u32 "." sge_u32 ", the job is started without it"))
 
+// ocs_Matcher.cc -- hostname patterns in host groups (CS-2680).
+// Ids 33730-33759 are reserved for this feature; the work packages take them in
+// order. A matcher is a host group member that describes a set of hosts instead
+// of naming one, so its messages are about the payload behind the prefix.
+//
+// The three levels are fixed and each has an effect on the return value of the
+// client: a note and a warning carry STATUS_OK and leave it alone, only a
+// rejection carries an error status. See the display rules of the specification.
+#define MSG_MATCHER_NOTSUPPORTED                   _MESSAGE(33730, _("hostname patterns in host groups are not supported in Open Cluster Scheduler."))
+#define MSG_MATCHER_EMPTY_PAYLOAD_S                _MESSAGE(33731, _(SFQ " has an empty pattern; a matcher has to describe something."))
+#define MSG_MATCHER_RESERVED_PREFIX_SS             _MESSAGE(33732, _("address matchers (" SFQ ") are not yet supported in this version: " SFQ))
+#define MSG_MATCHER_TRUNCATED_SSS                  _MESSAGE(33733, _("NOTE: " SFQ " was truncated to " SFQ " (" SFN " is set)."))
+#define MSG_MATCHER_DOMAIN_APPENDED_SSS            _MESSAGE(33734, _("NOTE: " SFQ " was extended to " SFQ " (" SFN " is set)."))
+#define MSG_MATCHER_INCOMPLETE_S                   _MESSAGE(33735, _(SFQ " becomes a syntactically incomplete pattern when it is truncated."))
+#define MSG_MATCHER_CATCHALL_WRITTEN_SS            _MESSAGE(33736, _("WARNING: " SFQ " admits every host. " SFN " thereby confers a standing grant on every host that can reach the qmaster."))
+#define MSG_MATCHER_CATCHALL_ARISEN_SSS            _MESSAGE(33737, _(SFQ " is truncated to " SFQ " when " SFN " is set and then admits every host. Write the catch-all itself if that is what you want."))
+#define MSG_MATCHER_IN_ADMIN_HOSTS_SSS             _MESSAGE(33738, _("WARNING: " SFN " now contains a matcher. Every host whose name matches " SFQ " is thereby admitted as an administrative host without any further administrative act: " SFN))
+#define MSG_MATCHER_IN_QUEUE_GROUP_SSS             _MESSAGE(33739, _("WARNING: " SFN " now contains the matcher " SFQ " and is referenced by cluster queue(s) " SFN "; hosts it captures receive queue instances."))
+#define MSG_MATCHER_INEFFECTIVE_SSS                _MESSAGE(33740, _("WARNING: " SFN ": the matcher " SFQ " matches no host while " SFN " is set."))
+#define MSG_MATCHER_WHITESPACE_S                   _MESSAGE(33741, _(SFQ " contains white space. A host name cannot, so neither can a pattern for one - check for an unclosed bracket expression swallowing the next entry."))
+
 // ocs_security_qmaster.cc
 #define MSG_NO_COMMLIB_HANDLE_FOUND                _MESSAGE(33985, _("no commlib handle found for security operations"))
 #define MSG_NO_SSL_CONTEXT_FOUND                   _MESSAGE(33986, _("no SSL context found for security operations"))

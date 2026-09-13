@@ -243,6 +243,10 @@
  * rather than in the qmaster catalogue because the same refusal is needed on
  * both sides of GDI. */
 #define MSG_HGRP_QUEUEGROUP_NOREF_S _MESSAGE(64563, _(SFQ " belongs to a cluster queue and cannot be referenced"))
+/* CS-2680: two entries of a member list denoting the same set are collapsed into
+ * one when the list is written. The collapse is carried out and reported; it is
+ * not a rejection, so the message carries STATUS_OK. */
+#define MSG_HGRP_DUPLICATE_COLLAPSED_S _MESSAGE(64565, _("NOTE: duplicate entry " SFQ " collapsed."))
 #define MSG_HGRP_INVALIDHOSTGROUPNAME_S _MESSAGE(64306, _("host group name " SFQ " is not valid"))
 #define MSG_WEIGHTFACTNONUMB_SS         _MESSAGE(64307, _(SFQ " uses " SFQ " as weighting factor (only numbers are allowed)"))
 #define MSG_MULTIPLEWEIGHTFACT_S        _MESSAGE(64308, _(SFQ " may not use multiple weighting factors"))
@@ -271,6 +275,10 @@
 #define MSG_HOSTNAME_NOT_EMPTY            _MESSAGE(64332, _("hostnames may not be empty string"))
 #define MSG_HOSTNAME_TOO_LONG_D           _MESSAGE(64333, _("hostnames may not be longer than %d characters"))
 #define MSG_HOSTNAME_ILLEGAL_CHAR_S       _MESSAGE(64334, _("hostname " SFQ " contains an illegal path character ('/' or a leading '.')"))
+/* CS-2680: the matcher prefixes are reserved strings in every host field of the
+ * system, so no object may be named after one. A host group member may be a
+ * matcher; the name of a host never may. */
+#define MSG_HOSTNAME_IS_MATCHER_S         _MESSAGE(64564, _("hostname " SFQ " begins with a reserved prefix; the prefixes of a host group matcher may not name a host"))
 
 #define MSG_EVENT_INVALIDNAME _MESSAGE(64340, _("invalid event client name"))
 #define MSG_EVENT_ONLYADMINMAYSTARTSPECIALEVC _MESSAGE(64341, _("only admin user or root may start special event clients"))

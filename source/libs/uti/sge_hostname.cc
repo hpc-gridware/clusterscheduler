@@ -790,7 +790,12 @@ void sge_hostcpy(char *dst, const char *raw) {
 
    constexpr size_t N = CL_MAXHOSTNAMELEN;
 
-   if (ocs::is_hgroup_name(raw)) {
+   // A host group name and a matcher are not host names and are passed through
+   // untouched. For the matcher this is what keeps two of them distinguishable:
+   // the hash key of a host field is built from this function's result, so
+   // truncating "gpu*.a.example.com" and "gpu*.b.example.com" at their first dot
+   // would give both the same key, and looking one up would find the other.
+   if (ocs::is_hgroup_name(raw) || ocs::is_matcher(raw)) {
       sge_strlcpy(dst, raw, N);
       return;
    }
@@ -863,9 +868,12 @@ int sge_hostcmp(const char* h1, const char* h2) {
       DRETURN(0);
    }
 
-   // Host group names are compared as they are, no normalization
-   const bool h1_is_group = ocs::is_hgroup_name(h1);
-   const bool h2_is_group = ocs::is_hgroup_name(h2);
+   // Host group names and matchers are compared as they are, no normalization.
+   // Routing them through sge_hostcpy() would give the same answer, since that
+   // passes both through untouched, but this says the rule where a reader looks
+   // for it and skips the scan for a domain part neither of them has.
+   const bool h1_is_group = ocs::is_hgroup_name(h1) || ocs::is_matcher(h1);
+   const bool h2_is_group = ocs::is_hgroup_name(h2) || ocs::is_matcher(h2);
    if (h1_is_group || h2_is_group) {
       DRETURN(SGE_STRCASECMP(h1, h2));
    }

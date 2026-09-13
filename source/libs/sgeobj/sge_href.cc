@@ -42,6 +42,7 @@
 
 
 #include "uti/ocs_Pattern.h"
+#include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -53,6 +54,7 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_hgroup.h"
+#include "sgeobj/ocs_Matcher.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include <cinttypes>
@@ -169,8 +171,22 @@ bool href_list_compare(const lList *this_list, lList **answer_list,
    for_each_rw_lv(this_elem, this_list) {
       const char *host_or_group = lGetHost(this_elem, HR_name);
 
+      // Three classes, not two. A matcher belongs in neither output: the host
+      // side of this difference is what missing execution host objects are
+      // created from, so a matcher landing there would bring an execution host
+      // named after it into being - and through the reserved execution host
+      // group that host would become part of the very candidate set matchers
+      // are resolved against.
+      const ocs::MemberClass member_class = ocs::classify_member(host_or_group);
+
+      if (member_class == ocs::MemberClass::MATCHER) {
+         continue;
+      }
+
+      const bool is_group = (member_class == ocs::MemberClass::GROUP_REFERENCE);
+
       if (!href_list_has_member(list, host_or_group)) {
-         if (ocs::is_hgroup_name(host_or_group)) {
+         if (is_group) {
             if (add_groups != nullptr) {
                ret = href_list_add(add_groups, answer_list, host_or_group);
             }
@@ -178,7 +194,7 @@ bool href_list_compare(const lList *this_list, lList **answer_list,
             ret = href_list_add(add_hosts, answer_list, host_or_group);
          }
       } else {
-         if (ocs::is_hgroup_name(host_or_group)) {
+         if (is_group) {
             if (equity_groups != nullptr) {
                ret = href_list_add(equity_groups, answer_list, host_or_group);
             }
@@ -588,20 +604,35 @@ bool href_list_find_all_referencees(const lList *this_list, lList **answer_list,
 }
 
 /**
- * @brief Resolve hostnames
+ * @brief Bring every member of a list into the form it is stored in
  *
- * Resolve hostnames contained in 'this_list'. Depending on the
- * 'ignore_errors' parameter the function will either fail if a
- * host is not resolvable or this will be ignored.
+ * The three member classes are treated differently, and the classification is a
+ * prefix comparison (see ocs::classify_member()):
+ *
+ *   - a **group reference** is stored as written;
+ *   - a **literal host name** is resolved and replaced by the resolver's
+ *     canonical name. Depending on `ignore_errors` a name that does not resolve
+ *     either fails the call or is left alone;
+ *   - a **matcher** is never resolved - it describes a set of hosts rather than
+ *     naming one, so there is nothing to look up. It goes through
+ *     ocs::Matcher::prepare() instead, which normalises its payload by the
+ *     domain rules in force, validates the result, and reports what it did.
+ *
+ * `ignore_errors` covers **resolution** only. A malformed matcher is a
+ * validation error and always fails the call: the tolerant caller is tolerant
+ * so that a host which is temporarily not resolvable does not kill an unrelated
+ * change, not so that an unusable member gets stored.
  *
  * @param this_list HR_Type list
  * @param answer_list AN_Type list
  * @param ignore_errors ignore if a host is not resolvable
+ * @param hgroup the host group the list belongs to, for the messages about a
+ *        matcher; may be nullptr where the caller has none
  *
  * @return error state true  - Success false - Error
  */
 bool href_list_resolve_hostnames(lList *this_list, lList **answer_list,
-                                 bool ignore_errors) {
+                                 bool ignore_errors, const lListElem *hgroup) {
    DENTER(HOSTREF_LAYER);
 
    bool ret = true;
@@ -610,19 +641,41 @@ bool href_list_resolve_hostnames(lList *this_list, lList **answer_list,
       for_each_rw_lv (href, this_list) {
          const char *name = lGetHost(href, HR_name);
 
-         if (!ocs::is_hgroup_name(name)) {
-            char resolved_name[CL_MAXHOSTNAMELEN+1];
-            int back = getuniquehostname(name, resolved_name, 0);
+         switch (ocs::classify_member(name)) {
+            case ocs::MemberClass::GROUP_REFERENCE:
+               break;
 
-            if (back == CL_RETVAL_OK) {
-               lSetHost(href, HR_name, resolved_name);
-            } else {
-               if (!ignore_errors) {
-                  INFO(MSG_HGRP_UNKNOWNHOST, name);
-                  answer_list_add(answer_list, SGE_EVENT, 
-                                  STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+            case ocs::MemberClass::MATCHER: {
+               dstring prepared = DSTRING_INIT;
+
+               if (ocs::Matcher::prepare(name, hgroup, &prepared, answer_list)) {
+                  const char *stored = sge_dstring_get_string(&prepared);
+
+                  if (stored != nullptr) {
+                     lSetHost(href, HR_name, stored);
+                  }
+               } else {
                   ret = false;
                }
+               sge_dstring_free(&prepared);
+               break;
+            }
+
+            case ocs::MemberClass::LITERAL_HOST: {
+               char resolved_name[CL_MAXHOSTNAMELEN+1];
+               int back = getuniquehostname(name, resolved_name, 0);
+
+               if (back == CL_RETVAL_OK) {
+                  lSetHost(href, HR_name, resolved_name);
+               } else {
+                  if (!ignore_errors) {
+                     INFO(MSG_HGRP_UNKNOWNHOST, name);
+                     answer_list_add(answer_list, SGE_EVENT,
+                                     STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+                     ret = false;
+                  }
+               }
+               break;
             }
          }
       }
@@ -755,8 +808,13 @@ void href_list_make_uniq(lList *this_list, lList **answer_list) {
       const void *iterator = nullptr;
 
       next_elem = lNextRW(elem);
-      elem2 = lGetElemHostFirstRW(this_list, HR_name, lGetHost(elem, HR_name), &iterator); 
+      elem2 = lGetElemHostFirstRW(this_list, HR_name, lGetHost(elem, HR_name), &iterator);
       if (elem2 != nullptr && elem != elem2) {
+         // The collapse is carried out and reported. Two entries denoting the
+         // same set have no place in a security relevant object, but dropping
+         // one silently is exactly the behaviour that object cannot afford.
+         answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
+                                 MSG_HGRP_DUPLICATE_COLLAPSED_S, lGetHost(elem, HR_name));
          lRemoveElem(this_list, &elem);
       }
    }

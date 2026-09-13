@@ -70,6 +70,7 @@
 #include "sgeobj/ocs_Session.h"
 #include "sgeobj/ocs_Usage.h"
 #include "sgeobj/sge_hgroup.h"
+#include "sgeobj/ocs_Matcher.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_answer.h"
@@ -914,6 +915,18 @@ setup_qmaster() {
    if (!hgroup_list_update_caches(*ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), &answer_list)) {
       answer_list_output(&answer_list);
    }
+
+   /*
+    * CS-2680, N-M-5. A matcher is normalised once, when it is written. If the
+    * domain handling changed afterwards -- which takes a bootstrap file edit and
+    * therefore a restart -- its stored form no longer fits the rules in force
+    * and it matches no host. That is the safe direction, but a silent one: what
+    * remains is a group whose definition promises a grant it no longer confers.
+    * Reported at every start, because the state persists and a one-off message
+    * would be lost in exactly the restart that caused it.
+    */
+   ocs::Matcher::report_ineffective(*ocs::DataStore::get_master_list(SGE_TYPE_HGROUP), &answer_list);
+   answer_list_output(&answer_list);
 
    DPRINTF("userset_list------------------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET), SGE_TYPE_USERSET);

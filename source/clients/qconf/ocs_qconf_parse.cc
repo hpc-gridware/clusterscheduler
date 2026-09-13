@@ -8026,11 +8026,30 @@ static bool show_reserved_hgroup_hosts(const char *group, const char *json_type,
       printf("%s", sge_dstring_get_string(&out));
       sge_dstring_free(&out);
    } else if (lGetNumberOfElem(entries) > 0) {
-      const lListElem *ep;
-      for_each_ep(ep, entries) {
-         const char *line = lGetHost(ep, HR_name);
+      /*
+       * CS-2680. Host names and group references first, matchers after them,
+       * each block sorted ascending in itself -- the list was sorted as a whole
+       * above, so walking it twice preserves that within each block.
+       *
+       * The separation exists because the output is no longer necessarily a
+       * list of host names: a script passing it to a command that expects hosts
+       * has to filter the matchers out, and one block boundary reduces that to
+       * a single line. For a configuration carrying no matcher the second pass
+       * prints nothing and the output is unchanged, character for character.
+       */
+      for (int pass = 0; pass < 2; pass++) {
+         const bool matchers = (pass == 1);
+         const lListElem *ep;
 
-         if (line != nullptr && line[0] != COMMENT_CHAR) {
+         for_each_ep(ep, entries) {
+            const char *line = lGetHost(ep, HR_name);
+
+            if (line == nullptr || line[0] == COMMENT_CHAR) {
+               continue;
+            }
+            if (ocs::is_matcher(line) != matchers) {
+               continue;
+            }
             printf("%s\n", line);
          }
       }

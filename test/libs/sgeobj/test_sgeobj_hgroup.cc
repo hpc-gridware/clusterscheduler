@@ -39,6 +39,7 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_href.h"
+#include "sgeobj/sge_utility.h"
 
 /*
  * CS-2438: admin and submit hosts become the members of the reserved host groups
@@ -589,6 +590,115 @@ test_hostmatch_pattern() {
 }
 
 // ---------------------------------------------------------------------------
+// The three member classes on the write path
+// ---------------------------------------------------------------------------
+
+/*
+ * CS-2682. Everything here is core code and answers the same in both editions -
+ * the branch structure is identical, only what lies behind ocs::Matcher differs.
+ * Whether a matcher can be *stored* is therefore not tested here but in the
+ * extension's own test, where the implementation exists.
+ */
+static void
+test_member_classes() {
+   printf("\n--- member classes on the write path ---\n");
+
+   // A matcher must reach neither output of the difference. The host side of it
+   // is what missing execution host objects are created from, so a matcher
+   // landing there would bring an execution host named after it into being -
+   // and through @exec_hosts that host would join the candidate set matchers
+   // are resolved against.
+   {
+      lList *before = nullptr;
+      lList *after = nullptr;
+      lList *add_hosts = nullptr;
+      lList *add_groups = nullptr;
+      lList *answer_list = nullptr;
+
+      lAddElemHost(&before, HR_name, "node001", HR_Type);
+      lAddElemHost(&after, HR_name, "node001", HR_Type);
+      lAddElemHost(&after, HR_name, "node002", HR_Type);
+      lAddElemHost(&after, HR_name, "@other", HR_Type);
+      lAddElemHost(&after, HR_name, "host:gpu*", HR_Type);
+
+      CHECK(78, "the difference of two member lists succeeds",
+            href_list_compare(after, &answer_list, before, &add_hosts, &add_groups, nullptr, nullptr));
+      CHECK(79, "the added host is found",
+            href_list_locate(add_hosts, "node002") != nullptr);
+      CHECK(80, "the added group is found",
+            href_list_locate(add_groups, "@other") != nullptr);
+      CHECK(81, "the matcher is not among the hosts -- no execution host is made of it",
+            href_list_locate(add_hosts, "host:gpu*") == nullptr);
+      CHECK(82, "and not among the groups either",
+            href_list_locate(add_groups, "host:gpu*") == nullptr);
+
+      lFreeList(&answer_list);
+      lFreeList(&add_hosts);
+      lFreeList(&add_groups);
+      lFreeList(&before);
+      lFreeList(&after);
+   }
+
+   // Two members denoting the same set are collapsed, and the collapse is
+   // reported. Dropping one silently is what a security relevant object cannot
+   // afford; the report carries STATUS_OK so it cannot fail the client.
+   {
+      lList *members = nullptr;
+      lList *answer_list = nullptr;
+
+      lAddElemHost(&members, HR_name, "host:gpu*", HR_Type);
+      lAddElemHost(&members, HR_name, "node001", HR_Type);
+      lAddElemHost(&members, HR_name, "HOST:GPU*", HR_Type);
+
+      href_list_make_uniq(members, &answer_list);
+
+      CHECK(83, "the duplicate matcher is gone, case notwithstanding",
+            lGetNumberOfElem(members) == 2);
+      CHECK(84, "the collapse is reported",
+            lGetNumberOfElem(answer_list) == 1);
+      CHECK(85, "and the report cannot fail the client",
+            lGetUlong(lFirst(answer_list), AN_status) == STATUS_OK);
+
+      lFreeList(&answer_list);
+      lFreeList(&members);
+   }
+
+   // Two matchers that differ are two members. They would collide if the host
+   // name normaliser truncated them at their first dot, as it does a host name.
+   {
+      lList *members = nullptr;
+      lList *answer_list = nullptr;
+
+      lAddElemHost(&members, HR_name, "host:gpu*.a.example.com", HR_Type);
+      lAddElemHost(&members, HR_name, "host:gpu*.b.example.com", HR_Type);
+
+      href_list_make_uniq(members, &answer_list);
+
+      CHECK(86, "two different matchers stay two members",
+            lGetNumberOfElem(members) == 2);
+      CHECK(87, "and each is found under its own name",
+            href_list_locate(members, "host:gpu*.a.example.com") != nullptr &&
+            href_list_locate(members, "host:gpu*.b.example.com") != nullptr);
+
+      lFreeList(&answer_list);
+      lFreeList(&members);
+   }
+
+   // A host group member may be a matcher; the name of a host never may.
+   {
+      lList *answer_list = nullptr;
+
+      CHECK(88, "a host may not be named after a matcher",
+            !verify_host_name(&answer_list, "host:gpu*"));
+      lFreeList(&answer_list);
+
+      CHECK(89, "an ordinary host name is still accepted",
+            verify_host_name(&answer_list, "node001.example.com"));
+      lFreeList(&answer_list);
+   }
+}
+
+// ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
@@ -605,6 +715,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_update_cache();
    test_host_is_referenced_reserved();
    test_hostmatch_pattern();
+   test_member_classes();
    teardown_bootstrap();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

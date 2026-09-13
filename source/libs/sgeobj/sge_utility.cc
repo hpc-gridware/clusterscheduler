@@ -323,6 +323,18 @@ bool verify_host_name(lList **answer_list, const char *host_name) {
       ret = false;
    }
 
+   /* CS-2680: the matcher prefixes are reserved in every host field of the
+    * system. A host group *member* may be a matcher; the *name* of a host never
+    * may - an execution host or a queue instance named after one would appear in
+    * the host overviews and, through the reserved execution host group, in the
+    * candidate set matchers are resolved against. This is the one check both the
+    * execution host and the queue instance host part go through. */
+   if (ret && ocs::is_matcher(host_name)) {
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                              MSG_HOSTNAME_IS_MATCHER_S, host_name);
+      ret = false;
+   }
+
    return ret;
 }
 
