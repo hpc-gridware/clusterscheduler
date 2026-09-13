@@ -150,6 +150,7 @@
 #define MSG_GDI_WRONG_GDI_SSIUS  _MESSAGE(33116, _("denied: client (" SFN "/" SFN "/%d) uses GDI version 0x" sge_x32 " while qmaster uses version " SFN))
 #define MSG_GDI_NULL_IN_GDI_SSS  _MESSAGE(33117, _("denied: got nullptr in " SFN "/" SFN " of gdi request from host " SFQ))
 #define MSG_GDI_OKNL             _MESSAGE(33118, _("ok"))
+#define MSG_GDI_WRONG_EDITION_SSISSS _MESSAGE(33119, _("denied: client (" SFN "/" SFN "/%d) belongs to " SFN ", qmaster to " SFN " - one installation must use one edition, release " SFN " on both sides"))
 #define MSG_MEM_MALLOC           _MESSAGE(33121, _("malloc failure"))
 #define MSG_SGETEXT_UNKNOWNOP    _MESSAGE(33122, _("unknown operation"))
 

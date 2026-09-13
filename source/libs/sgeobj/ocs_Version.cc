@@ -54,13 +54,43 @@ const std::string OCS_VERSION_STRING{std::to_string(OCS_VERSION_MAJOR) + "."
          + std::to_string(OCS_VERSION_MINOR) + "." + std::to_string(OCS_VERSION_PATCH) + OCS_VERSION_SUFFIX};
 
 // When you change this the also add an entry to the table below
+/// The release part of the version word; the low half identifies the release
+#define OCS_VERSION_RELEASE 0x10009200
+
+/**
+ * @brief The bit that tells the two editions apart (CS-2635)
+ *
+ * Set in a build that carries the extensions, clear in one that does not.
+ * Every value the table below ever held lies in `0x1000xxxx`, so the nibble
+ * above the release is free and cannot collide with anything historical.
+ *
+ * `WITH_EXTENSIONS` rather than `ADD_GRIDWARE_COPYRIGHT`: both come out of the
+ * same `PROJECT_FEATURES MATCHES "gcs-extensions"` branch today, but this one
+ * names what the refusal is about -- the build that carries the extensions --
+ * where the other names the branding.
+ */
+#define OCS_VERSION_EDITION_MASK 0x00010000
+
+#ifdef WITH_EXTENSIONS
+#  define OCS_VERSION_EDITION OCS_VERSION_EDITION_MASK
+#else
+#  define OCS_VERSION_EDITION 0
+#endif
+
 /**
  * @brief The version as a single comparable number, used in the GDI handshake
+ *
+ * Release and edition in one word, because the handshake compares it for
+ * equality: with the edition in it, a client of one edition is refused by a
+ * qmaster of the other in both directions, through the check that is already
+ * there. Before CS-2635 this was the release alone, so the two editions of one
+ * release considered each other compatible -- and the commercial one carries
+ * object content the open source one cannot read.
  *
  * Add a matching entry to the version table below whenever this changes,
  * otherwise a peer cannot name this release in a mismatch message.
  */
-const uint32_t OCS_VERSION{0x10009200};
+const uint32_t OCS_VERSION{OCS_VERSION_RELEASE | OCS_VERSION_EDITION};
 
 static const std::vector<std::tuple<uint32_t, std::string>> OCS_ALL_VERSIONS_VECTOR{
    { 0x10000000, "5.0"},
@@ -90,19 +120,42 @@ static const std::vector<std::tuple<uint32_t, std::string>> OCS_ALL_VERSIONS_VEC
    { 0x100020F8, "6.2u5"},
    { 0x10003000, "8.0.x Univa"},
    { 0x10003001, "8.0.x Some Gridengine"},
+   // 9.0 and 9.1 had no edition split: both editions used the one number, so
+   // these stay as they are. From 9.2 on the low value is the open source
+   // edition and the one with the edition bit is the commercial one (CS-2635).
    { 0x10009000, "9.0.x Gridware Cluster Scheduler"},
    { 0x10009100, "9.1.x Gridware Cluster Scheduler"},
-   { 0x10009200, "9.2.x Gridware Cluster Scheduler"},
+   { 0x10009200, "9.2.x Open Cluster Scheduler"},
+   { 0x10019200, "9.2.x Gridware Cluster Scheduler"},
    { OCS_VERSION, OCS_VERSION_STRING},
 };
 
+/*
+ * Both edition names exist in every build, because a mismatch message has to
+ * name the PEER's edition and the peer is only known by its version word.
+ * The product name of this build is one of the two.
+ */
+static const std::string OCS_EDITION_NAME_OPEN{"Open Cluster Scheduler"};
+static const std::string OCS_EDITION_NAME_COMMERCIAL{"Gridware Cluster Scheduler"};
+
 #ifdef ADD_GRIDWARE_COPYRIGHT
-static const std::string OCS_LONG_PRODUCT_NAME{"Gridware Cluster Scheduler"};
+static const std::string &OCS_LONG_PRODUCT_NAME{OCS_EDITION_NAME_COMMERCIAL};
 static const std::string OCS_SHORT_PRODUCT_NAME{"GCS"};
 #else
-static const std::string OCS_LONG_PRODUCT_NAME{"Open Cluster Scheduler"};
+static const std::string &OCS_LONG_PRODUCT_NAME{OCS_EDITION_NAME_OPEN};
 static const std::string OCS_SHORT_PRODUCT_NAME{"OCS"};
 #endif
+
+/**
+ * @brief The edition a version word belongs to
+ * @param version the version word, this build's own or a peer's
+ * @return the long product name of that edition
+ */
+static const std::string &
+edition_name(const uint32_t version) {
+   return (version & OCS_VERSION_EDITION_MASK) != 0 ? OCS_EDITION_NAME_COMMERCIAL
+                                                    : OCS_EDITION_NAME_OPEN;
+}
 
 /**
  * @brief The version as it is shown to users
@@ -172,6 +225,13 @@ ocs::Version::get_version_token() {
  * The message that might be added to the answer list will contain the product name and version if the client version
  * is known. Otherwise, it will just contain the version number.
  *
+ * CS-2635: the version word carries the edition as well as the release, so this one
+ * comparison refuses a client of the other edition too, in both directions. When only
+ * the edition differs the two sides are of the same release and saying "your versions
+ * differ" would send the administrator looking for the wrong thing, so that case gets
+ * its own message. Everything else about the refusal is unchanged -- same function,
+ * same STATUS_EVERSION, same answer list.
+ *
  * @param alpp In case of a version mismatch, this list will be filled with an error message
  * @param version The version of the client
  * @param host The host name of the client
@@ -186,6 +246,16 @@ ocs::Version::do_versions_match(lList **alpp, const uint32_t version, const char
    // Do the clients version match the servers version?
    if (version != get_version()) {
 
+      // Same release, only the edition differs? Then say so - "your versions differ"
+      // would be true but useless, both sides show the same release to their user.
+      if ((version & ~OCS_VERSION_EDITION_MASK) == (get_version() & ~OCS_VERSION_EDITION_MASK)) {
+         WARNING(MSG_GDI_WRONG_EDITION_SSISSS, host, commproc, id,
+                 edition_name(version).c_str(), edition_name(get_version()).c_str(),
+                 get_version_string().c_str());
+         answer_list_add(alpp, SGE_EVENT, STATUS_EVERSION, ANSWER_QUALITY_ERROR);
+         DRETURN(false);
+      }
+
       // find the version string for the client version
       std::string client_version;
       bool found = false;
@@ -198,9 +268,6 @@ ocs::Version::do_versions_match(lList **alpp, const uint32_t version, const char
 
       // If we know the version string we can print it a specific warning message
       // otherwise we just print the version ID
-      dstring ds;
-      char buffer[256];
-      sge_dstring_init(&ds, buffer, sizeof(buffer));
       if (found) {
          WARNING(MSG_GDI_WRONG_GDI_SSISS, host, commproc, id, client_version.c_str(), get_version_string().c_str());
       } else {
