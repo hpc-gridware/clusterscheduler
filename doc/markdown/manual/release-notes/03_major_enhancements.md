@@ -481,7 +481,21 @@ and `ip6:` are reserved system-wide and rejected in this version, so that addres
 added later without a second notation.
 
 Cost, for a cluster that configures no matcher: nothing. Every mechanism is conditional on one
-being present.
+being present. And for a cluster that does configure one, measured rather than estimated:
+
+| | |
+|:---|:---|
+| a request from a host admitted through a matcher | **0.4 µs** from the cache, against 17 µs for the full walk — a factor of 40 |
+| a request from a host no matcher fits | **15 µs**, about 66 000 per second; such a host is not cached, by design |
+| a resource quota filter naming a matcher-carrying group | **unchanged** — it reads the resolved membership and never runs the walk |
+| an execution host arriving or departing | about **1 ms per matcher-carrying group**, at a few hundred groups in total |
+
+The last row is the only ongoing cost the feature adds, and it is the one to keep an eye on,
+because it is paid on every arrival and every departure. In practice it disappears into the
+round trip for a long while: on a test cluster, adding and removing an execution host took
+about 70 ms whether 0, 4 or 16 matcher-carrying groups were configured. It becomes the larger
+half of that round trip somewhere around 64 of them — which is the number to stay well below in
+a fleet that starts and stops instances all day. 
 
 See `sge_hostgroup(5)`, `sge_types(1)`, `qconf(1)` and `sge_conf(5)` — the last for
 `matcher_cache_time`, which governs how long an admitted host is remembered.
