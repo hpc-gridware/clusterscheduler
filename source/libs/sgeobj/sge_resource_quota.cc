@@ -298,6 +298,77 @@ rqs_verify_filter(const lListElem *rule, lList **answer_list, int nm, const char
 }
 
 /**
+ * @brief Bring the entries of a host filter into the form they are stored in
+ *
+ * The reference side takes expressions, and a literal there is merely an
+ * expression without metacharacters - but a literal still has to be resolved, so
+ * that a short name and the fully qualified one denote the same host whichever
+ * way the filter was written. Which entries that applies to is a question of
+ * class, and since CS-2680 there are three of them.
+ *
+ * Neither a host group reference nor a matcher is resolved. The first names a
+ * group, the second describes a set; asking the name service about either is how
+ * the wrong question gets asked. A group reference reached the resolver before
+ * this and failed there silently, which cost nothing but was never right.
+ *
+ * The matcher notation is accepted as an equivalent spelling of the pattern it
+ * carries (N-B-5). Two forms are refused rather than stored:
+ *
+ *   - an **empty pattern**, which would match no host at all;
+ *   - the reserved **address prefixes**, which this version does not support.
+ *
+ * Both would otherwise be stored, displayed back unchanged and quietly match
+ * nothing - and in an exclusion filter, matching nothing widens the limit
+ * instead of narrowing it. That is exactly the failure shape a limit must not
+ * have, so it is refused where it is written.
+ *
+ * @param scope the scope or xscope of a host filter (ST_Type), rewritten in place
+ * @param[out] answer_list receives the refusal
+ *
+ * @return true when every entry is acceptable
+ *
+ * @see #rqs_verify_attributes, ocs::reference_pattern
+ */
+static bool
+rqs_verify_host_scope(lList *scope, lList **answer_list) {
+   DENTER(TOP_LAYER);
+
+   bool ret = true;
+
+   for_each_rw_lv(host, scope) {
+      const char *name = lGetString(host, ST_name);
+
+      switch (ocs::classify_member(name)) {
+         case ocs::MemberClass::GROUP_REFERENCE:
+            break;
+
+         case ocs::MemberClass::MATCHER: {
+            const ocs::MatcherKind kind = ocs::matcher_kind(name);
+
+            if (kind != ocs::MatcherKind::HOST) {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                       MSG_RESOURCEQUOTA_MATCHER_PREFIX_SS,
+                                       kind == ocs::MatcherKind::IP ? ocs::MATCHER_PREFIX_IP
+                                                                    : ocs::MATCHER_PREFIX_IP6, name);
+               ret = false;
+            } else if (ocs::matcher_payload(name)[0] == '\0') {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                       MSG_RESOURCEQUOTA_MATCHER_EMPTY_S, name);
+               ret = false;
+            }
+            break;
+         }
+
+         case ocs::MemberClass::LITERAL_HOST:
+            sge_resolve_host(host, ST_name);
+            break;
+      }
+   }
+
+   DRETURN(ret);
+}
+
+/**
  * @brief Verify the attributes of a rqs Object
  *
  * This function verifies the attributes of a given rqs object. A valid rqs
@@ -360,13 +431,11 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, 
          if ((filter = lGetObject(rule, RQR_filter_hosts))) {
             host_expand = lGetBool(filter, RQRF_expand) ? true : false;
 
-            for_each_rw_lv(host, lGetList(filter, RQRF_xscope)) {
-               sge_resolve_host(host, ST_name);
+            if (!rqs_verify_host_scope(lGetListRW(filter, RQRF_xscope), answer_list) ||
+                !rqs_verify_host_scope(lGetListRW(filter, RQRF_scope), answer_list)) {
+               ret = false;
+               break;
             }
-            for_each_rw_lv(host, lGetList(filter, RQRF_scope)) {
-               sge_resolve_host(host, ST_name);
-            }
-            
          }
          if ((filter = lGetObject(rule, RQR_filter_queues))) {
             queue_expand = lGetBool(filter, RQRF_expand) ? true : false;
@@ -963,7 +1032,16 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
       } else {
          for_each_rw_lv(ep, scope) {
             const lListElem *group_ep;
-            const char *cp = lGetString(ep, ST_name);
+            /*
+             * CS-2680, N-B-5. A host filter entry is stored as it was written,
+             * so the matcher notation still carries its prefix; here the prefix
+             * is spelling and what it denotes is the pattern behind it. Only for
+             * the host filter: this function also serves the user filter, and a
+             * user named "host:x" is a user.
+             */
+            const char *cp = filter_type == FILTER_HOSTS
+                             ? ocs::reference_pattern(lGetString(ep, ST_name))
+                             : lGetString(ep, ST_name);
             const char *group_name = nullptr;
             const char *query = nullptr;
 
@@ -1063,7 +1141,11 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
    } else {
       /* only used in qquota */ 
       for_each_ep_lv(ep, scope) {
-         const char *cp = lGetString(ep, ST_name);
+         // see the note in the branch above: the prefix is spelling, and only
+         // the host filter has it
+         const char *cp = filter_type == FILTER_HOSTS
+                          ? ocs::reference_pattern(lGetString(ep, ST_name))
+                          : lGetString(ep, ST_name);
          const char *group_name = nullptr;
          const char *query = nullptr;
 
@@ -1224,7 +1306,14 @@ rqs_match_host_scope(const lList *scope, const char *name, const lList *master_h
 
    /* at this stage we know 'name' is a simple hostname */
    for_each_ep(ep, scope) {
-      if (!qref_list_host_rejected(lGetString(ep, ST_name), name, master_hgroup_list)) {
+      /*
+       * CS-2680, N-B-5. The entry is stored as it was written, so a matcher
+       * notation still carries its prefix here; on this side the prefix is
+       * spelling and the pattern behind it is what the entry denotes.
+       */
+      const char *pattern = ocs::reference_pattern(lGetString(ep, ST_name));
+
+      if (!qref_list_host_rejected(pattern, name, master_hgroup_list)) {
          DRETURN(true);
       }
    }

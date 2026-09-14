@@ -223,6 +223,40 @@ namespace ocs {
       return nullptr;
    }
 
+   /** @brief What a reference-side entry denotes, as a pattern.
+    *
+    * The **reference side** - the host filters of a resource quota set - has
+    * always taken expressions, where a literal is merely an expression without
+    * metacharacters. CS-2680 lets the matcher notation be written there too:
+    * `host:gpu*` is an equivalent spelling of `gpu*`, so that one notation works
+    * on both sides. Nothing is deprecated; the spelling without prefix stays
+    * exactly as valid as it was.
+    *
+    * This is **spelling, not semantics**. On the definition side a matcher says
+    * what a set *is* and has to be interpreted; here the pattern already meant
+    * what the prefixed form is to mean, so stripping the prefix is the whole of
+    * it - which is why this belongs beside the classification rather than behind
+    * the matcher interface (N-E-4).
+    *
+    * Only `host:` is stripped. The reserved address prefixes are refused where
+    * the rule set is written and can therefore not arrive here; were they
+    * stripped instead, an address range would quietly become a host name pattern
+    * that fits nothing - and in an exclusion filter, fitting nothing widens the
+    * limit rather than narrowing it.
+    *
+    * The result points into @p s and is valid as long as that string is.
+    *
+    * @param s the entry as it is stored, may be nullptr
+    * @return the pattern it denotes; @p s itself unless it carries `host:`
+    */
+   [[nodiscard]] inline const char *
+   reference_pattern(const char *s) noexcept {
+      if (matcher_kind(s) == MatcherKind::HOST) {
+         return matcher_payload(s);
+      }
+      return s;
+   }
+
    /** @brief Classifies one entry of a host group member list.
     *
     * A member beginning with `@` is a group reference, and that rule takes

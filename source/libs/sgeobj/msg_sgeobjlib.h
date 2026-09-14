@@ -310,6 +310,10 @@
 #define MSG_RESOURCEQUOTA_DYNAMICLIMITNOTSUPPORTED   _MESSAGE(64375, _("dynamic limits are only supported for per host rules"))
 #define MSG_RESOURCEQUOTA_NORULES                    _MESSAGE(64377, _("resource quota set has no rules"))
 #define MSG_RESOURCEQUOTA_NONAME                     _MESSAGE(64378, _("resource quota set has no name"))
+
+/* CS-2680, N-B-5: the matcher notation on the reference side, that is, in a host filter */
+#define MSG_RESOURCEQUOTA_MATCHER_EMPTY_S            _MESSAGE(64566, _("host filter entry " SFQ " has an empty pattern; it would match no host"))
+#define MSG_RESOURCEQUOTA_MATCHER_PREFIX_SS          _MESSAGE(64567, _("address matchers (" SFQ ") are not supported in a host filter: " SFQ))
 #define MSG_CENTRYREFINRQS_SS                   _MESSAGE(64379, _("Complex attribute " SFQ " is still referenced in resource quota set " SFQ "."))
 
 

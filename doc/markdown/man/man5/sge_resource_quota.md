@@ -92,7 +92,14 @@ The following filter tags are supported:
   Contains a comma separated list of cluster queues (see xxqs_name_sxx_queue_conf(5)). This parameter filters for jobs that may be scheduled in a queue in the list. Any queue not in the list will not be considered for the resource quota rule. The default value is '\*', which means any queue. To exclude a queue from the rule, the name can be prefixed with the '!' sign.
 
 * hosts  
-  Contains a comma separated list of host or host groups (see xxqs_name_sxx_host_conf(5) and xxqs_name_sxx_hostgroup(5)). This parameter filters for jobs that may be scheduled in a host in the list or a host contained in a host group in the list. Any host not in the list will not be considered for the resource quota rule. The default value is '\*', which means any hosts. To exclude a host or host group from the rule, the name can be prefixed with the
+  Contains a comma separated list of host or host groups (see xxqs_name_sxx_host_conf(5) and xxqs_name_sxx_hostgroup(5)). This parameter filters for jobs that may be scheduled in a host in the list or a host contained in a host group in the list. Any host not in the list will not be considered for the resource quota rule. The default value is '\*', which means any hosts. To exclude a host or host group from the rule, the name can be prefixed with the '!' character.
+
+  An entry may also be written with the *host:* prefix: *host:gpu\** means the same here as *gpu\**
+  (see xxqs_name_sxx_hostgroup(5), where the same notation describes the members of a host group).
+  The spelling without the prefix remains valid and nothing is deprecated; the purpose is one
+  notation that works both where a host set is defined and where it is referred to. Put such an
+  entry in quotes — it contains a '\*', which the shell would otherwise replace with file names
+  from the working directory. The *ip:* and *ip6:* prefixes are reserved and are rejected here.
 
 ## to  
 

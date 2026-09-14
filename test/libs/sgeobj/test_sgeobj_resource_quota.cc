@@ -23,7 +23,9 @@
  */
 
 #include <cstdio>
+#include <cstring>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_component.h"
 
@@ -149,6 +151,22 @@ int main(int /*argc*/, char * /*argv*/[]) {
       {{nullptr, nullptr, nullptr, nullptr, "h1,h2,h3", nullptr},
        {"*", "staff", "*", "*", "h3", "*"},
        "simple: h3 in host list"},
+
+   // CS-2680, N-B-5: the matcher notation on the reference side. "host:h3" is an
+   // equivalent spelling of "h3" - the prefix is spelling, and the pattern
+   // behind it is what the entry denotes.
+      {{nullptr, nullptr, nullptr, nullptr, "host:h3", nullptr},
+       {"*", "staff", "*", "*", "h3", "*"},
+       "matcher notation: host:h3 matches h3"},
+      {{nullptr, nullptr, nullptr, nullptr, "host:h*", nullptr},
+       {"*", "staff", "*", "*", "h3", "*"},
+       "matcher notation: host:h* matches h3"},
+      {{nullptr, nullptr, nullptr, nullptr, "h1,host:h2,h3", nullptr},
+       {"*", "staff", "*", "*", "h2", "*"},
+       "matcher notation: both spellings in one filter"},
+      {{nullptr, nullptr, nullptr, nullptr, "HOST:h3", nullptr},
+       {"*", "staff", "*", "*", "h3", "*"},
+       "matcher notation: the prefix is not case sensitive"},
       {{nullptr, nullptr, nullptr, nullptr, nullptr, "queue1,queue2,queue3"},
        {"*", "staff", "*", "*", "*", "queue1"},
        "simple: queue1 in queue list"},
@@ -396,6 +414,14 @@ int main(int /*argc*/, char * /*argv*/[]) {
       {{"!*", nullptr, nullptr, nullptr, nullptr, nullptr},
        {"*", "staff", "*", "*", "*", "*"},
        "!* user rule matches nothing"},
+   // CS-2680, N-B-5: the notation narrows exactly as the bare pattern does, and
+   // it excludes exactly as the bare pattern does
+      {{nullptr, nullptr, nullptr, nullptr, "host:h*", nullptr},
+       {"*", "staff", "*", "*", "x3", "*"},
+       "matcher notation: host:h* does not match x3"},
+      {{nullptr, nullptr, nullptr, nullptr, "!host:h3", nullptr},
+       {"*", "staff", "*", "*", "h3", "*"},
+       "matcher notation: !host:h3 excludes h3"},
    };
 
    // run positive tests
@@ -460,6 +486,80 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
       lFreeList(&sup_staff);
       lFreeList(&sup_other);
+   }
+
+   /*
+    * CS-2680, N-B-5: what a reference-side entry denotes. Only "host:" is
+    * stripped - the reserved address prefixes are refused where a rule set is
+    * written, and stripping one here would turn an address range into a host
+    * name pattern that fits nothing.
+    */
+   printf("\n--- reference_pattern ---\n");
+   CHECK(id++, "host: is stripped",
+         strcmp(ocs::reference_pattern("host:gpu*"), "gpu*") == 0);
+   CHECK(id++, "and the comparison is not case sensitive",
+         strcmp(ocs::reference_pattern("HOST:gpu*"), "gpu*") == 0);
+   CHECK(id++, "a plain pattern and a plain name are returned unchanged",
+         strcmp(ocs::reference_pattern("gpu*"), "gpu*") == 0 &&
+         strcmp(ocs::reference_pattern("gpu001"), "gpu001") == 0);
+   CHECK(id++, "a host group reference is returned unchanged",
+         strcmp(ocs::reference_pattern("@gpu_nodes"), "@gpu_nodes") == 0);
+   CHECK(id++, "an address prefix is left alone, so it cannot quietly become a pattern",
+         strcmp(ocs::reference_pattern("ip:10.0.0.0/8"), "ip:10.0.0.0/8") == 0 &&
+         strcmp(ocs::reference_pattern("ip6:fd00::/8"), "ip6:fd00::/8") == 0);
+   CHECK(id++, "an empty payload stays empty, and nothing is dereferenced",
+         strcmp(ocs::reference_pattern("host:"), "") == 0 &&
+         ocs::reference_pattern(nullptr) == nullptr);
+
+   /*
+    * CS-2680, N-B-5: what a host filter refuses to store. Both forms would
+    * otherwise be accepted, displayed back unchanged and quietly match nothing -
+    * and in an exclusion filter, matching nothing widens the limit instead of
+    * narrowing it.
+    *
+    * The rules carry no limits, which verification accepts; that keeps the case
+    * to the filter and needs no complex entry to be set up.
+    */
+   printf("\n--- host filter verification ---\n");
+   {
+      struct {
+         const char *hosts;
+         bool acceptable;
+         const char *label;
+      } scope_tests[] = {
+         {"host:h*",        true,  "a matcher notation is accepted"},
+         {"h*",             true,  "and so is the spelling without the prefix"},
+         {"@hgrp1",         true,  "and a host group reference"},
+         {"h1,host:h2",     true,  "and both spellings in one filter"},
+         {"host:",          false, "an empty pattern is refused"},
+         {"!host:",         false, "also in an exclusion filter, where it would widen"},
+         {"ip:10.0.0.0/8",  false, "an address matcher is refused"},
+         {"ip6:fd00::/8",   false, "and so is an IPv6 one"},
+         {"h1,ip:10.0.0.1", false, "one bad entry refuses the whole filter"},
+      };
+
+      for (auto &t : scope_tests) {
+         lListElem *rqs = lCreateElem(RQS_Type);
+         lList *rules = lCreateList("", RQR_Type);
+         lListElem *filter = nullptr;
+         lList *alp = nullptr;
+
+         lSetString(rqs, RQS_name, "cs2687");
+         lListElem *rule = lCreateElem(RQR_Type);
+         if (rqs_parse_filter_from_string(&filter, t.hosts, nullptr)) {
+            lSetObject(rule, RQR_filter_hosts, filter);
+         }
+         lAppendElem(rules, rule);
+         lSetList(rqs, RQS_rule, rules);
+
+         const bool ret = rqs_verify_attributes(rqs, &alp, true, nullptr);
+
+         CHECK(id++, t.label, ret == t.acceptable &&
+               (t.acceptable || lGetNumberOfElem(alp) > 0));
+
+         lFreeList(&alp);
+         lFreeElem(&rqs);
+      }
    }
 
    lFreeList(&hgroup_list);
