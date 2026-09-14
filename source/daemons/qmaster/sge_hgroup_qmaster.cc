@@ -791,13 +791,32 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
           *
           * What each one names is the reach the administrator has just granted.
           * In a group a cluster queue reaches, every host the matcher captures
-          * receives a queue instance; in the administrative host group, anything
-          * that can obtain a matching name becomes an administrative host. The
-          * change is carried out either way.
+          * receives a queue instance; in the scope of a reserved host group,
+          * anything that can obtain a matching name becomes an administrative or
+          * a submit host. The change is carried out either way.
+          *
+          * CS-2690: the reach is what is warned about, so the question is one of
+          * SCOPE and not of identity. A matcher in a group that "@admin_hosts"
+          * references grants exactly what one written into "@admin_hosts" grants,
+          * and it is the way an administrator would naturally organise this.
+          * Asking only whether this group IS the reserved one left that silent -
+          * while the queue warning beside it had the transitive case right from
+          * the start, from the same occupant_groups set. "@submit_hosts" was
+          * silent in every order, because only "@admin_hosts" was ever compared.
+          *
+          * occupant_groups holds every group that reaches this one, transitively,
+          * and this group itself (see the cycle check above), so one lookup
+          * answers both. Which of the four texts is used follows from the
+          * distinction the reader needs: a message saying that "@admin_hosts now
+          * contains a matcher" would be false when the matcher sits three groups
+          * away, and one naming the path would be noise when it does not.
           */
          if (ret) {
             const char *group_name = lGetHost(hgroup, HGRP_name);
-            const bool is_admin_group = group_name != nullptr && strcmp(group_name, ADMIN_HOSTGROUP) == 0;
+            const bool is_admin  = group_name != nullptr && strcmp(group_name, ADMIN_HOSTGROUP) == 0;
+            const bool is_submit = group_name != nullptr && strcmp(group_name, SUBMIT_HOSTGROUP) == 0;
+            const bool via_admin  = !is_admin  && href_list_has_member(occupant_groups, ADMIN_HOSTGROUP);
+            const bool via_submit = !is_submit && href_list_has_member(occupant_groups, SUBMIT_HOSTGROUP);
 
             for_each_ep_lv(member, lGetList(hgroup, HGRP_host_list)) {
                const char *member_name = lGetHost(member, HR_name);
@@ -806,16 +825,31 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
                    href_list_locate(members_before, member_name) != nullptr) {
                   continue;
                }
+               const char *payload = ocs::matcher_payload(member_name);
+
                if (is_referenced_by_cqueue) {
                   answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_WARNING,
                                           MSG_MATCHER_IN_QUEUE_GROUP_SSS,
                                           group_name != nullptr ? group_name : "", member_name,
                                           sge_dstring_get_string(&referencing_queues));
                }
-               if (is_admin_group) {
+               if (is_admin) {
                   answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_WARNING,
                                           MSG_MATCHER_IN_ADMIN_HOSTS_SSS, group_name,
-                                          ocs::matcher_payload(member_name), member_name);
+                                          payload, member_name);
+               } else if (via_admin) {
+                  answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_WARNING,
+                                          MSG_MATCHER_VIA_ADMIN_HOSTS_SSSS, group_name,
+                                          member_name, ADMIN_HOSTGROUP, payload);
+               }
+               if (is_submit) {
+                  answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_WARNING,
+                                          MSG_MATCHER_IN_SUBMIT_HOSTS_SSS, group_name,
+                                          payload, member_name);
+               } else if (via_submit) {
+                  answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_WARNING,
+                                          MSG_MATCHER_VIA_SUBMIT_HOSTS_SSSS, group_name,
+                                          member_name, SUBMIT_HOSTGROUP, payload);
                }
             }
          }

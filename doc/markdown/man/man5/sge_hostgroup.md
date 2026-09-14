@@ -181,6 +181,15 @@ Whoever can make a host answer to a matching name can make it an administrative 
 point of the feature and the reason it is worth a warning: use a pattern that only your own naming
 scheme can satisfy, and remember that the name comes from the name service, not from xxQS_NAMExx.
 
+The warning follows the **reach**, not the group. A matcher written into a group that
+*@admin_hosts* references grants exactly what one written into *@admin_hosts* grants, so it is
+announced in the same way and names the reserved group it reaches:
+
+    $ qconf -aattr hostgroup hostlist 'host:mgmt*' @management
+    WARNING: @management now contains the matcher host:mgmt* and is reached by @admin_hosts;
+    every host whose name matches "mgmt*" thereby becomes an administrative host without any
+    further administrative act.
+
 ## @submit_hosts
 
 The list of hosts allowed to submit jobs. Modified through qconf(1) `-as`/`-ds` as well as the ordinary host
