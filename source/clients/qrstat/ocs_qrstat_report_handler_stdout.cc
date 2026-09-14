@@ -122,6 +122,16 @@ static bool
 qrstat_report_exec_binding_list_node(qrstat_report_handler_t* handler, lList **alpp, const char *name, const char *value);
 
 static bool
+qrstat_report_start_granted_resource_list(qrstat_report_handler_t* handler, lList **alpp);
+
+static bool
+qrstat_report_finish_granted_resource_list(qrstat_report_handler_t* handler, lList **alpp);
+
+static bool
+qrstat_report_granted_resource_list_node(qrstat_report_handler_t* handler, lList **alpp,
+                                         const char *host, const char *value);
+
+static bool
 qrstat_report_start_granted_parallel_environment(qrstat_report_handler_t* handler, lList **alpp);
 
 static bool
@@ -212,6 +222,9 @@ qrstat_create_report_handler_stdout(qrstat_env_t *qrstat_env,
       ret->report_start_exec_binding_list = qrstat_report_start_exec_binding_list;
       ret->report_finish_exec_binding_list = qrstat_report_finish_exec_binding_list;
       ret->report_exec_binding_list_node = qrstat_report_exec_binding_list_node;
+      ret->report_start_granted_resource_list = qrstat_report_start_granted_resource_list;
+      ret->report_finish_granted_resource_list = qrstat_report_finish_granted_resource_list;
+      ret->report_granted_resource_list_node = qrstat_report_granted_resource_list_node;
 
       ret->report_start_granted_parallel_environment = qrstat_report_start_granted_parallel_environment;
       ret->report_finish_granted_parallel_environment = qrstat_report_finish_granted_parallel_environment;
@@ -560,6 +573,60 @@ qrstat_report_exec_queue_list_node(qrstat_report_handler_t* handler, lList **alp
       } 
    }
    DRETURN(ret); 
+}
+
+/*
+ * The granted resource maps, one line per host:
+ *
+ *    granted_resources_list         node01: gpu=2(gpu0 gpu1)
+ *                                   node02: gpu=1(gpu3)
+ *
+ * A line per host rather than the comma separated single line the neighbouring lists use: the
+ * value carries both an '=' and a parenthesised id list, so a single line would nest a
+ * separator inside a value and be ambiguous to read and to parse.
+ */
+static bool
+qrstat_report_start_granted_resource_list(qrstat_report_handler_t* handler, lList **alpp)
+{
+   bool ret = true;
+
+   DENTER(TOP_LAYER);
+   handler->first_granted_resource = true;
+   DRETURN(ret);
+}
+
+static bool
+qrstat_report_finish_granted_resource_list(qrstat_report_handler_t* handler, lList **alpp)
+{
+   bool ret = true;
+   FILE *out = (FILE*)handler->ctx;
+
+   DENTER(TOP_LAYER);
+   if (!handler->show_summary && !handler->first_granted_resource) {
+      fprintf(out, "\n");
+   }
+   DRETURN(ret);
+}
+
+static bool
+qrstat_report_granted_resource_list_node(qrstat_report_handler_t* handler, lList **alpp,
+                                         const char *host, const char *value)
+{
+   bool ret = true;
+   FILE *out = (FILE*)handler->ctx;
+
+   DENTER(TOP_LAYER);
+   if (!handler->show_summary) {
+      // the label on the first line only, the rest indented to the same column
+      if (handler->first_granted_resource) {
+         fprintf(out, SFN_FIRST_COLUMN" ", "granted_resources_list");
+         handler->first_granted_resource = false;
+      } else {
+         fprintf(out, "\n" SFN_FIRST_COLUMN" ", "");
+      }
+      fprintf(out, SFN ": " SFN, host, value);
+   }
+   DRETURN(ret);
 }
 
 static bool

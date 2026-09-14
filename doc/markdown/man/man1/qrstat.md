@@ -73,6 +73,16 @@ Following the header line, a section for each AR is provided. The  columns conta
 
 The output contains two columns. The first one contains all AR attributes. The second one the corresponding value.
 
+*granted_resources_list* lists the resource maps the reservation holds, one line per execution host,
+with the identifiers of the granted instances:
+
+    granted_resources_list         node01: gpu=2(gpu0 gpu1)
+                                   node02: gpu=1(gpu3)
+
+The attribute name appears on the first line only; the lines which follow are indented to the same
+column. The value is written the way a resource map is written in a host's *complex_values*, so an
+amount on its own means the reservation holds that many instances without naming them.
+
 # ENVIRONMENTAL VARIABLES
 
 For a complete list of common environment variables used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).

@@ -41,6 +41,7 @@
 #include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/ocs_GrantedResources.h"
 #include "sgeobj/sge_advance_reservation.h"
+#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_range.h"
@@ -153,6 +154,49 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                      }
                   }
                   handler->report_finish_exec_binding_list(handler, answer_list);
+               }
+
+               // the resource maps the reservation holds, per host, with the granted ids. The
+               // binding above comes from the same list but is reported on its own, so only
+               // resource map entries are of interest here.
+               if (lGetList(ar, AR_granted_resources_list) != nullptr) {
+                  bool any = false;
+                  const lListElem *resource;
+
+                  for_each_ep (resource, lGetList(ar, AR_granted_resources_list)) {
+                     if (lGetUlong(resource, GRU_type) != GRU_RESOURCE_MAP_TYPE) {
+                        continue;
+                     }
+                     if (!any) {
+                        handler->report_start_granted_resource_list(handler, answer_list);
+                        any = true;
+                     }
+
+                     DSTRING_STATIC(dstr, 256);
+                     sge_dstring_sprintf(&dstr, SFN "=" sge_u32, lGetString(resource, GRU_name),
+                                         static_cast<u_long32>(lGetDouble(resource, GRU_amount)));
+                     const lList *ids = lGetList(resource, GRU_resource_map_list);
+                     if (ids != nullptr && lGetNumberOfElem(ids) > 0) {
+                        const char *sep = "(";
+                        const lListElem *resl;
+                        for_each_ep (resl, ids) {
+                           // the reader folds a repeated id into one element with a count, so
+                           // write it out the way the configuration does
+                           for (u_long32 i = lGetUlong(resl, RESL_amount); i > 0; i--) {
+                              sge_dstring_sprintf_append(&dstr, SFN SFN, sep,
+                                                         lGetString(resl, RESL_value));
+                              sep = " ";
+                           }
+                        }
+                        sge_dstring_append(&dstr, ")");
+                     }
+                     handler->report_granted_resource_list_node(handler, answer_list,
+                                                                lGetHost(resource, GRU_host),
+                                                                sge_dstring_get_string(&dstr));
+                  }
+                  if (any) {
+                     handler->report_finish_granted_resource_list(handler, answer_list);
+                  }
                }
 
                if (lGetList(ar, AR_granted_slots) != nullptr) {

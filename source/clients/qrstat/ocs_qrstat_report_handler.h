@@ -83,6 +83,12 @@ struct qrstat_report_handler_str {
    bool (*report_exec_binding_list_node)(qrstat_report_handler_t* handler, lList **alpp,
                                          const char *name, const char *value);
 
+   bool first_granted_resource;
+   bool (*report_start_granted_resource_list)(qrstat_report_handler_t* handler, lList **alpp);
+   bool (*report_finish_granted_resource_list)(qrstat_report_handler_t* handler, lList **alpp);
+   bool (*report_granted_resource_list_node)(qrstat_report_handler_t* handler, lList **alpp,
+                                             const char *host, const char *value);
+
    bool (*report_start_granted_parallel_environment)(qrstat_report_handler_t* handler, lList **alpp);
    bool (*report_finish_granted_parallel_environment)(qrstat_report_handler_t* handler, lList **alpp);
    bool (*report_granted_parallel_environment_node)(qrstat_report_handler_t* handler, lList **alpp,
