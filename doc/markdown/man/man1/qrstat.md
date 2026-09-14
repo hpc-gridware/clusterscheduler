@@ -73,15 +73,52 @@ Following the header line, a section for each AR is provided. The  columns conta
 
 The output contains two columns. The first one contains all AR attributes. The second one the corresponding value.
 
-*granted_resources_list* lists the resource maps the reservation holds, one line per execution host,
-with the identifiers of the granted instances:
+An attribute which does not apply to a reservation is left out. A reservation which requests no
+parallel environment, for instance, has no *granted_parallel_environment* line at all. The
+attributes are printed in the order below.
+
+* *id* - the identifier of the AR, assigned when the AR was submitted.
+* *name* - the name of the AR, as given with `qrsub -N`. Empty if the AR was submitted without one.
+* *owner* - the user who submitted the AR.
+* *state* - the current state of the AR, one of the letters listed for the summary format above.
+* *start_time* and *end_time* - the beginning and the end of the reservation.
+* *duration* - the length of the reservation, as *hours*:*minutes*:*seconds*.
+* *message* - the reason the AR is in error state, one line per reason. Printed only while the AR
+  has such a reason. This is the same information the `-explain` option adds to the summary format.
+* *submission_time* - the time the AR was submitted.
+* *group* - the UNIX group of the AR owner.
+* *account* - the account string given with `qrsub -A`.
+* *binding* - the core binding the AR requested, as a comma separated list of the parameters the
+  `qrsub` switches `-bamount`, `-btype`, `-bunit`, `-bstrategy`, `-bstart`, `-bstop`, `-bsort` and
+  `-binstance` set, for example *bamount=2,btype=core,bunit=core*.
+* *resource_list* - the resources the AR requested, as *name*=*value* pairs, in the form they were
+  given to `qrsub -l`.
+* *error_handling* - *true* when the AR was submitted with hard error handling, `qrsub -he yes`.
+  Not printed for the default, soft error handling.
+* *exec_binding_list* - the cores the AR holds, one entry per execution host, as a topology string.
+  Lower case letters are the cores the AR holds, upper case letters the ones it does not.
+* *granted_resources_list* - the resource maps the AR holds, one line per execution host, with the
+  identifiers of the granted instances. See below.
+* *exec_queue_list* - the queue instances the AR reserved and the number of slots it holds in each,
+  as *queue*=*slots*.
+* *granted_parallel_environment* - the parallel environment the AR was granted, followed by the
+  slot range it was submitted with, in the form *pe_name* slots *range*.
+* *master hard queue_list* - the queues the AR requested for its master task, as given with
+  `qrsub -masterq`.
+* *checkpoint_name* - the checkpointing environment the AR requested, as given with `qrsub -ckpt`.
+* *mail_options* - when mail about the AR is sent, in the letters `qrsub -m` accepts.
+* *mail_list* - the addresses mail about the AR is sent to, as *user*@*host*.
+* *acl_list* and *xacl_list* - the users and access lists which may, and which may not, submit jobs
+  into the AR, as given with `qrsub -u`.
+
+*granted_resources_list* is printed with one line per execution host:
 
     granted_resources_list         node01: gpu=2(gpu0 gpu1)
                                    node02: gpu=1(gpu3)
 
 The attribute name appears on the first line only; the lines which follow are indented to the same
 column. The value is written the way a resource map is written in a host's *complex_values*, so an
-amount on its own means the reservation holds that many instances without naming them.
+amount on its own means the AR holds that many instances without naming them.
 
 # ENVIRONMENTAL VARIABLES
 
