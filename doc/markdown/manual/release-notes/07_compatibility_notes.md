@@ -347,5 +347,36 @@ correct, scope after the upgrade. Existing objects are not rejected retroactivel
 is validated. The upgrade procedure detects such names and aborts with an explanatory message before anything is
 loaded — see the [Upgrade Notes](06_upgrade_notes.md#wildcard-characters-in-object-names).
 
+## *qconf -sh* and *-ss* May Return Entries That Are Not Host Names
+
+A host group member can now be a *matcher* — an entry such as `host:gpu*` that describes a set of
+hosts instead of naming one (see `sge_hostgroup(5)`). `@admin_hosts` and `@submit_hosts` are host
+groups, so `qconf -sh` and `qconf -ss`, which show the **direct** members of those groups, can now
+return such an entry:
+
+```
+$ qconf -sh
+host-0000.example.com
+host-0002.example.com
+ts.example.com
+host:mgmt*
+```
+
+The output is therefore no longer necessarily a list of host names. A script that pipes it into
+something expecting hosts — a loop over `ssh`, a comparison against `qhost` — has to remove the
+matchers first. They are printed **after** the host names and the group references, each block
+sorted in itself, so cutting at the end is enough:
+
+```
+$ qconf -sh | grep -v '^host:'
+```
+
+**This affects only an installation that has configured a matcher.** For every cluster that has
+not, the output of both commands is unchanged, character for character, including its sorting and
+its exit value — the entries that could trigger it cannot exist before somebody writes one.
+
+The same applies to `qconf -shgrp`, which has always been able to return `@group` entries and now
+can return matchers as well.
+
 [//]: # (Each file has to end with two empty lines)
 

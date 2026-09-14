@@ -52,9 +52,45 @@ A department name is the name of a xxQS_NAMExx department described in xxqs_name
 
 ## *host_identifier*
 
-A host identifier can be either a host name or a host group name.
+A host identifier can be a host name, a host group name, or a host matcher.
 
-    host_identifier  := host_name | hostgroup_name
+    host_identifier  := host_name | hostgroup_name | host_matcher
+
+## *host_matcher*
+
+A host matcher **describes** a set of hosts instead of naming one. It is written as a reserved
+prefix followed by a pattern:
+
+    host_matcher := 'host:' fnmatch_pattern
+
+The pattern is matched against host names as xxqs_name_sxx_hostgroup(5) describes, under the same
+domain handling (*ignore_fqdn*, *default_domain*) that applies to host names themselves. A host
+matched by it is a member of the group without appearing anywhere in the configuration — which is
+the point: an instance that has just booted can be a member before the cluster has ever heard of
+it.
+
+Matchers are accepted in the member list of a host group (xxqs_name_sxx_hostgroup(5)), with one
+exception named there. Put one in quotes on the command line: it contains a '\*', which the shell
+replaces with file names from the working directory if you do not.
+
+The prefixes **ip:** and **ip6:** are likewise reserved, in every field of the system that takes a
+host name, but are not supported in this version and are rejected with a message saying so. They
+are reserved now so that address ranges can be added later without a second notation.
+
+**Two sides, and only one of them takes a prefix.**
+This is the first wildcard on the **definition side** — the side on which a host set is *defined*:
+the member list of a host group. There a literal has always been a literal, and a pattern needs
+the prefix to be told apart from a host name that happens to contain unusual characters.
+
+On the **reference side** — the side on which something *refers to* hosts: the host filters of
+xxqs_name_sxx_resource_quota(5), the wildcard queue domains of *-q*, see *wc_host* and
+*wc_hostgroup* below — expressions have always been the rule, and a literal is merely an
+expression without metacharacters. Patterns are written there **without** a prefix, and that does
+not change.
+
+Since the two sides now both take patterns, the prefixed spelling is accepted on the reference
+side as well, where *host:gpu\** means exactly what *gpu\** means: one notation works on both
+sides. Nothing is deprecated.
 
 ## *hostgroup_name*
 
@@ -240,6 +276,11 @@ wildcard character. E.g.
     *	all hosts
     a*	all host beginning with an 'a'	
 
+This is the **reference side**: no prefix is needed, because an expression is what is expected
+here. The *host:* prefix of a *host_matcher* is accepted as an equivalent spelling — *host:a\**
+means the same as *a\** — so that one notation can be used on both sides. See *host_matcher*
+above for what the two sides are.
+
 ## *wc_hostgroup*
 
 A wildcard host group specification is a wildcard expression which might match one or more host groups. The first 
@@ -418,7 +459,8 @@ The *name* may be any arbitrary alphanumeric ASCII string, but may not contain
 
 # SEE ALSO
 
-qacct(1), qconf(1), qquota(1), qsub(1), qrsub(1)
+qacct(1), qconf(1), qquota(1), qsub(1), qrsub(1), xxqs_name_sxx_hostgroup(5),
+xxqs_name_sxx_resource_quota(5)
 
 # COPYRIGHT
 

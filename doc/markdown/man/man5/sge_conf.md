@@ -808,6 +808,24 @@ Sets the value of how long the qmaster will spend deleting jobs. After this time
 other tasks and schedule the deletion of remaining jobs at a later time. The default value is 3 seconds, and will be 
 used if no value is entered. The range of valid values is \> 0 and \<= 5. (e.g. MAX_JOB_DELETION_TIME=1)
 
+***matcher_cache_time***
+
+Sets how long an entry of the matching cache stays valid, in seconds. The default is 86400 (24
+hours); the value **0** means that an entry does not expire, as it does for *auto_user_delete_time*.
+A negative value is refused and the default is used instead.
+
+The matching cache holds the hosts that a **matcher** of a host group has already admitted (see
+xxqs_name_sxx_hostgroup(5)). Such a host is by definition not in the resolved membership of the
+group, so without the cache every one of its requests would repeat the whole matcher walk. An
+entry expires when it has not been *used* for this period, which bounds the cache by the working
+set rather than by the uptime of the qmaster.
+
+Choosing a value is a trade-off between memory and hit rate, and it has no security dimension: an
+entry is invalidated immediately when the matchers of its group change, whatever this parameter
+says, and the parameter does not influence *what* matches. An installation that reuses its
+instance names can leave the default; one whose fleet never reuses a name -- so that every entry
+belongs to a host that will not come back -- shortens it. (e.g. matcher_cache_time=3600)
+
 ***gdi_timeout***
 
 Sets how long the communication will wait for gdi send/receive operations. The default value is set to 60 seconds. 

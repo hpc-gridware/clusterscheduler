@@ -101,6 +101,13 @@ The following filter tags are supported:
   entry in quotes — it contains a '\*', which the shell would otherwise replace with file names
   from the working directory. The *ip:* and *ip6:* prefixes are reserved and are rejected here.
 
+  A host group named in this filter contributes its **complete** membership, including the hosts
+  its matchers describe. That is worth stating because those hosts appear in no object of the
+  cluster: a host admitted to *@gpu_nodes* by *host:gpu\** is subject to a limit written for
+  *@gpu_nodes*, exactly as a host entered there by name is. Were it otherwise, such a host would
+  carry the queue instances of the group and escape the limit written for that same group,
+  silently and with no message.
+
 ## to  
 
 This mandatory field defines the quota for resource attributes for this rule. The quota is expressed by one or more limit definitions separated by commas. The configuration allows two kind of limits definitions

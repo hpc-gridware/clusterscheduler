@@ -153,6 +153,18 @@ therefore also be the name of a host group (*@group*), which adds a reference to
 single host; every host the group resolves to is then an administrative host. Adding a host that is already
 a member is refused. Several names are one request: if any of them is refused, none of them is added.
 
+*hostname* may also be a **matcher** -- see xxqs_name_sxx_hostgroup(5) -- which admits every host
+whose name fits the pattern, without any further administrative act per host. Because that is a
+standing grant, it is reported when one is introduced:
+
+    $ qconf -ah 'host:mgmt*'
+    WARNING: @admin_hosts now contains a matcher. Every host whose name matches "mgmt*" is thereby
+    admitted as an administrative host without any further administrative act: host:mgmt*
+
+    host:mgmt* added to administrative host list
+
+Note the quotes. See *MESSAGES AND QUOTING* below.
+
 ## -am *user*,...
 Adds the indicated users to the xxQS_NAMExx manager list. Requires root/manager privileges.
 
@@ -173,6 +185,9 @@ The submit host list is the *@submit_hosts* host group (see xxqs_name_sxx_hostgr
 therefore also be the name of a host group (*@group*), which adds a reference to that group rather than a
 single host; every host the group resolves to is then a submit host. Adding a host that is already a member
 is refused. Several names are one request: if any of them is refused, none of them is added.
+
+*hostname* may also be a **matcher**, with the same effect and the same warning as for `-ah`; see
+xxqs_name_sxx_hostgroup(5) and *MESSAGES AND QUOTING* below.
 
 ## -astnode *node_path*=*shares*, ...
 Adds the specified share tree node(s) to the share tree (see xxqs_name_sxx_share_tree(5)). The *node_path* is
@@ -351,6 +366,11 @@ The trusted host list is the *@admin_hosts* host group (see xxqs_name_sxx_hostgr
 member is removed: *host_name* may be a host or a host group reference (*@group*). Deleting a host that is an
 administrative host only because some nested group contains it is refused, naming the containing group(s) --
 change the nesting with `-mhgrp` instead. Deleting a host that is not a member at all is refused as well.
+
+A **matcher** is removed the same way, and the argument passes through the same normalisation as
+on entry -- so whoever wrote `'host:gpu*.example.com'` and finds `host:gpu*` in the display can
+remove it with either spelling. A removal is normalised but not judged: it produces no warning
+about what the entry would have admitted, because the grant is being taken away.
 Both refusals exit non-zero. Several names are one request: if any of them is refused, none of them is
 removed.
 
@@ -667,6 +687,24 @@ groups, those appear as *@group* entries; use `-shgrp_resolved` *@admin_hosts* f
 or `-shgrp_tree` *@admin_hosts* for the nesting structure. An empty list is reported on stderr and exits
 non-zero.
 
+If the group contains matchers, those are printed **after** the host names and group references,
+each block sorted in itself:
+
+    $ qconf -sh
+    host-0000.lab.hpc-gridware.com
+    host-0002.lab.hpc-gridware.com
+    ts.lab.hpc-gridware.com
+    host:mgmt*
+
+**The output is therefore no longer necessarily a list of host names.** A script that passes it to
+something expecting hosts has to remove the matchers -- and because they come last, cutting at the
+end is enough:
+
+    $ qconf -sh | grep -v '^host:'
+
+This affects only an installation that has configured a matcher; for every other cluster the
+output is unchanged, character for character.
+
 ## -shgrp *group*
 Displays the host group entries for the group specified in *group*.
 
@@ -674,11 +712,30 @@ Displays the host group entries for the group specified in *group*.
 Displays a name list of all currently defined host groups which have a valid host group configuration.
 
 ## -shgrp_tree *group*
-Shows a tree like structure of a host group.
+Shows a tree like structure of a host group. A matcher appears as a leaf, marked as such: it
+references nothing that could be expanded.
+
+    $ qconf -shgrp_tree @gpu_nodes
+    @gpu_nodes
+       host-0002.lab.hpc-gridware.com
+       host:gpu* (matcher)
 
 ## -shgrp_resolved *group* 
 Shows a list of all hosts which are part of the definition of host group. If the host group definition contains 
 sub host groups than also these groups are resolved and the hostnames are printed.
+
+If the group carries matchers -- directly or through a group it references -- an additional line
+identifies them:
+
+    $ qconf -shgrp_resolved @gpu_nodes
+    host-0002.lab.hpc-gridware.com
+    matchers: host:gpu*
+
+The resolved list says which of the hosts xxQS_NAMExx *knows about* are members. It cannot say
+which hosts would be admitted, because no operation returns the names matching a pattern, so the
+matchers are shown beside it and the list is never left standing on its own as "the membership".
+For a group whose hosts are not configured anywhere the resolved list is legitimately empty while
+the matcher line is not. Without matchers the output is unchanged.
 
 ## -shgrp_why *group* *host*
 Shows by which route *host* is a member of *group*: as an entry of the group itself, through a
@@ -749,6 +806,9 @@ those appear as *@group* entries; use `-shgrp_resolved` *@submit_hosts* for the 
 `-shgrp_tree` *@submit_hosts* for the nesting structure. An empty list is reported on stderr and exits
 non-zero.
 
+As for `-sh`, matchers are printed after the host names, and the output is then not a plain list
+of host names.
+
 ## -ssconf  
 Displays the current scheduler configuration in the format explained in xxqs_name_sxx_sched_conf(5).
 
@@ -787,6 +847,36 @@ being selected in that run. Requires root/manager privileges.
 displayed using the format as described for the `qstat` *-F* option (see description of
 **Full Format** in section **OUTPUT FORMATS** of the qstat(1) manual page.
 
+# MESSAGES AND QUOTING
+
+## Quoting a matcher
+
+A matcher (see xxqs_name_sxx_hostgroup(5)) contains a '\*'. Written without quotes, the shell
+replaces it with file names from the working directory before `qconf` is started, and what
+xxQS_NAMExx receives is whatever happened to be in that directory:
+
+    $ qconf -ah  host:mgmt*      <- wrong: the shell expands this
+    $ qconf -ah 'host:mgmt*'     <- right
+
+Every example in this manual and in xxqs_name_sxx_hostgroup(5) quotes them, for that reason.
+
+## The three levels of message
+
+Writing a matcher can produce three kinds of message, and they differ in what they do to the
+exit value:
+
+| Level | Occasion | Exit value |
+|:---|:---|:---|
+| NOTE | the stored form differs from what was written, or a duplicate was collapsed | unchanged |
+| WARNING | a catch-all, or a matcher entering *@admin_hosts* or *@submit_hosts* | unchanged |
+| (error) | the entry is refused and nothing is stored | non-zero |
+
+A note or a warning does **not** make the command fail. The change was carried out; the message
+says what was carried out, or what it means. A script that treats any output as failure would
+otherwise report an error for a change that succeeded.
+
+All three go to the standard error stream, as every other message of `qconf` does.
+
 # EXIT STATUS
 `qconf` exits with status 0 on success and a non-zero status on error. For the file/directory based add, modify and
 delete operations the exit status reflects the number of failed objects: when a directory contains files that fail
@@ -809,7 +899,8 @@ For a complete list of files used by all xxQS_NAMExx commands, see xxqs_name_sxx
 
 xxqs_name_sxx_intro(1), qstat(1), qsub(1), xxqs_name_sxx_checkpoint(5), xxqs_name_sxx_complex(5),
 xxqs_name_sxx_conf(5), xxqs_name_sxx_host_conf(5), xxqs_name_sxx_pe(5), xxqs_name_sxx_queue_conf(5), 
-xxqs_name_sxx_execd(8), xxqs_name_sxx_qmaster(8), xxqs_name_sxx_resource_quota(5)
+xxqs_name_sxx_execd(8), xxqs_name_sxx_qmaster(8), xxqs_name_sxx_resource_quota(5),
+xxqs_name_sxx_hostgroup(5), xxqs_name_sxx_types(1)
 
 # COPYRIGHT
 

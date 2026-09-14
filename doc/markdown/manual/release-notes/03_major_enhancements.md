@@ -423,5 +423,70 @@ to `-s f` (retained finished jobs) or, for accounting history beyond the retenti
 
 (Available in Open and Gridware Cluster Scheduler.)
 
+### Hostname Patterns in Host Groups
+
+A host group member has always named a host, or referenced another group. It can now also
+**describe** a set of hosts: an entry written with the reserved prefix `host:` is a *matcher*, and
+every host whose name fits the pattern is a member — whether or not the cluster has ever heard of
+that host.
+
+```bash
+$ qconf -aattr hostgroup hostlist 'host:gpu*' @gpu_nodes
+
+$ qconf -shgrp @gpu_nodes
+group_name @gpu_nodes
+hostlist host-0002.lab.hpc-gridware.com host:gpu*
+```
+
+*host-0002* is a member because it is named; every host called *gpu...* is a member because it is
+described.
+
+The case this exists for is the node that enrols itself. A freshly started instance cannot be
+admitted, because it is not an execution host; and it cannot become an execution host, because the
+command that would make it one has to come from an admitted host. A matcher in the group closes
+that circle in the configuration: the node is a member on its first request, and nothing has to be
+entered for it.
+
+Two views, where there used to be one. `qconf -shgrp` shows the definition, `-shgrp_resolved`
+shows which of the *configured* hosts are members — and names the matchers beside them, because a
+list of configured hosts cannot answer who would be admitted:
+
+```bash
+$ qconf -shgrp_resolved @gpu_nodes
+host-0002.lab.hpc-gridware.com
+matchers: host:gpu*
+```
+
+A new switch answers the question the definition stops answering by inspection once a group
+carries several matchers — by what is this host a member:
+
+```bash
+$ qconf -shgrp_why @gpu_nodes gpu007
+gpu007 is a member through the matcher "host:gpu*"
+```
+
+Its exit value distinguishes member from non-member, so it can be used in a control flow without
+parsing the output.
+
+A matcher is allowed in `@admin_hosts` and `@submit_hosts`, and there it is a standing grant that
+no longer comes with an administrative act per host. The qmaster warns when the first one enters
+such a group, and a pattern that admits *every* host is warned about wherever it stands. A
+catch-all that arises only because the domain handling truncated the pattern is refused — nobody
+decided that one. See the security chapter of the administration guide before putting a matcher
+into `@admin_hosts`.
+
+The notation is accepted in resource quota host filters too, where `host:gpu*` means the same as
+`gpu*`; the spelling without the prefix stays valid and nothing is deprecated. The prefixes `ip:`
+and `ip6:` are reserved system-wide and rejected in this version, so that address ranges can be
+added later without a second notation.
+
+Cost, for a cluster that configures no matcher: nothing. Every mechanism is conditional on one
+being present.
+
+See `sge_hostgroup(5)`, `sge_types(1)`, `qconf(1)` and `sge_conf(5)` — the last for
+`matcher_cache_time`, which governs how long an admitted host is remembered.
+
+(Available in Gridware Cluster Scheduler.)
+
 [//]: # (Each file has to end with two empty lines)
 
