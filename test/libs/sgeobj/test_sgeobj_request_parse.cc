@@ -692,6 +692,61 @@ test_select_group_instances() {
    lFreeElem(&numa);
 }
 
+/**
+ * Taking instances without a constraint between them.
+ */
+static void
+test_select_instances() {
+   lListElem *def = make_resource_definition();   /* two ids of four */
+   lList *selected = nullptr;
+
+   check_int("T110", "four are taken from one id",
+             centry_rsmap_select_instances(def, nullptr, nullptr, 4, &selected), 1);
+   check_int("T110b", "so a single entry is returned", (int)lGetNumberOfElem(selected), 1);
+   lFreeList(&selected);
+
+   check_int("T111", "six spread over both ids",
+             centry_rsmap_select_instances(def, nullptr, nullptr, 6, &selected), 1);
+   check_int("T111b", "two entries", (int)lGetNumberOfElem(selected), 2);
+   check_int("T111c", "the first id filled before the second is touched",
+             (int)lGetUlong(lFirst(selected), RESL_amount), 4);
+   check_int("T111d", "and the remainder from the second",
+             (int)lGetUlong(lLast(selected), RESL_amount), 2);
+   lFreeList(&selected);
+
+   check_int("T112", "more than the map holds is refused",
+             centry_rsmap_select_instances(def, nullptr, nullptr, 9, &selected), 0);
+   lFreeList(&selected);
+
+   /* What this job already holds is not free for it a second time. A map requested in more
+    * than one request scope reaches the selection twice, and the first grant is not in the
+    * utilization yet - nothing is debited until the assignment is complete. */
+   lList *already = nullptr;
+   lListElem *held = lAddElemStr(&already, RESL_value, "0", RESL_Type);
+   lSetUlong(held, RESL_amount, 4);
+
+   check_int("T113", "a later scope skips the id the first one used up",
+             centry_rsmap_select_instances(def, nullptr, already, 4, &selected), 1);
+   check_str("T113b", "and takes from the other", lGetString(lFirst(selected), RESL_value), "1");
+   check_int("T113c", "in one entry", (int)lGetNumberOfElem(selected), 1);
+   lFreeList(&selected);
+
+   check_int("T114", "and cannot take more than the rest of the map holds",
+             centry_rsmap_select_instances(def, nullptr, already, 5, &selected), 0);
+   lFreeList(&selected);
+   lFreeList(&already);
+
+   /* what other jobs hold counts too */
+   lListElem *use = make_utilization("0", 4);
+   check_int("T115", "an id used up by other jobs is skipped",
+             centry_rsmap_select_instances(def, use, nullptr, 4, &selected), 1);
+   check_str("T115b", "so the free one is taken", lGetString(lFirst(selected), RESL_value), "1");
+   lFreeList(&selected);
+   lFreeElem(&use);
+
+   lFreeElem(&def);
+}
+
 static void
 test_get_request_param() {
    lList *lp;
@@ -753,6 +808,7 @@ main(int argc, char *argv[]) {
    test_best_free_id();
    test_best_free_group();
    test_select_group_instances();
+   test_select_instances();
    test_get_request_param();
 
    if (failures == 0) {

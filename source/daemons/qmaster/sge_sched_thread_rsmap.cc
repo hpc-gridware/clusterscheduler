@@ -49,6 +49,39 @@ gru_report_booking_failure(const sge_assignment_t *a, const lListElem *job,
                            const lListElem *ja_task, const char *name, const char *host_name);
 
 /**
+ * @brief add the instances a selection names to the granted resource map, with their characteristics
+ *
+ * The selection says which identifiers and how many of each; this records them and copies the
+ * per instance characteristics across. The copy has to be deep: the source lives on the exec
+ * host object and the granted list is owned by the task (CS-2462).
+ *
+ * @param gru                 the granted resource element being built
+ * @param resource_definition the resource map on the host, for the characteristics
+ * @param selected            the (identifier, amount) pairs to record
+ */
+static void
+gru_add_selected_instances(lListElem *gru, const lListElem *resource_definition,
+                           const lList *selected) {
+   const lListElem *sel_ep;
+   for_each_ep (sel_ep, selected) {
+      const char *id = lGetString(sel_ep, RESL_value);
+
+      lListElem *resl = lGetSubStrRW(gru, RESL_value, id, GRU_resource_map_list);
+      if (resl == nullptr) {
+         resl = lAddSubStr(gru, RESL_value, id, GRU_resource_map_list, RESL_Type);
+         const lListElem *defined_ep = lGetSubStr(resource_definition, RESL_value, id,
+                                                  CE_resource_map_list);
+         const lList *src_props = (defined_ep != nullptr)
+                                  ? lGetList(defined_ep, RESL_properties) : nullptr;
+         if (src_props != nullptr) {
+            lSetList(resl, RESL_properties, lCopyList("granted_properties", src_props));
+         }
+      }
+      lAddUlong(resl, RESL_amount, lGetUlong(sel_ep, RESL_amount));
+   }
+}
+
+/**
  * @brief choose the resource map ids this assignment is granted, and record the choice
  *
  * The ids are decided here, once, and kept on the assignment in a->granted_rsmaps - a GRU_Type
@@ -112,99 +145,43 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
          if ((defined - used) < amount) {
             // not enough available
             ret = false;
-         } else if (same_key != nullptr) {
-            // The request requires every instance to agree - in the identifier, or in a
-            // characteristic they carry. Matching established that some group can serve the
-            // amount, from this same configuration and this same utilization, so asking again
-            // here reaches the same group without it having been carried along.
+         } else {
+            // A same= constraint requires every instance to agree - in the identifier, or in a
+            // characteristic they carry - and matching established that some group can serve
+            // the amount, from this same configuration and this same utilization. Without one,
+            // any free instance will do and they are taken in the order the map defines them.
             //
-            // This function is entered once per request scope, so a parallel job which requests
-            // the map for its master and for its slave tasks arrives here twice. The constraint
-            // covers every grant of the complex for the job, so the second visit takes from the
-            // group the first one took from, which is what passing the instances granted so far
-            // tells it - they also say what this job already holds, which the host utilization
-            // does not know yet.
+            // Either way this function is entered once per request scope, so a parallel job
+            // which requests the map for its master and for its slave tasks arrives here twice.
+            // What has been granted so far is passed in: it says which group the first visit
+            // took from, and how much of each instance this job already holds, which the host
+            // utilization does not know yet because nothing is debited until the assignment is
+            // complete.
             lList *selected = nullptr;
-            if (!centry_rsmap_select_group_instances(resource_definition, resource_utilization,
-                                                     lGetList(gru, GRU_resource_map_list),
-                                                     same_key, amount, &selected)) {
+            const lList *already = lGetList(gru, GRU_resource_map_list);
+            bool selected_ok;
+
+            if (same_key != nullptr) {
+               selected_ok = centry_rsmap_select_group_instances(resource_definition,
+                                                                 resource_utilization, already,
+                                                                 same_key, amount, &selected);
+            } else {
+               selected_ok = centry_rsmap_select_instances(resource_definition,
+                                                           resource_utilization, already,
+                                                           amount, &selected);
+            }
+
+            if (!selected_ok) {
                // matching said otherwise, so the two have diverged; refuse rather than hand
-               // out a mixed set behind the constraint's back
-               DPRINTF("rsmap_select_granted_ids: no group of %s on %s sharing one %s holds %d\n",
-                       name, host_name, same_key, amount);
+               // out a set which does not meet the request
+               DPRINTF("rsmap_select_granted_ids: %s on %s cannot serve %d%s%s\n",
+                       name, host_name, amount,
+                       same_key != nullptr ? " sharing one " : "",
+                       same_key != nullptr ? same_key : "");
                ret = false;
             } else {
-               lListElem *sel_ep;
-               for_each_rw (sel_ep, selected) {
-                  const char *id = lGetString(sel_ep, RESL_value);
-                  const u_long32 take = lGetUlong(sel_ep, RESL_amount);
-
-                  lListElem *resl = lGetSubStrRW(gru, RESL_value, id, GRU_resource_map_list);
-                  if (resl == nullptr) {
-                     resl = lAddSubStr(gru, RESL_value, id, GRU_resource_map_list, RESL_Type);
-                     const lListElem *defined_ep = lGetSubStr(resource_definition, RESL_value, id,
-                                                              CE_resource_map_list);
-                     const lList *src_props = (defined_ep != nullptr)
-                                              ? lGetList(defined_ep, RESL_properties) : nullptr;
-                     if (src_props != nullptr) {
-                        lSetList(resl, RESL_properties, lCopyList("granted_properties", src_props));
-                     }
-                  }
-                  DPRINTF("      ==> rsmap_select_granted_ids: same %s, id %s, amount %d\n",
-                          same_key, id, take);
-                  lAddUlong(resl, RESL_amount, take);
-               }
+               gru_add_selected_instances(gru, resource_definition, selected);
                lFreeList(&selected);
-            }
-         } else {
-            const lListElem *defined_ep;
-            for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
-               const char *id = lGetString(defined_ep, RESL_value);
-               u_long32 free_amount = lGetUlong(defined_ep, RESL_amount);
-               const lListElem *used_ep = lGetSubStr(resource_utilization, RESL_value, id,
-                                                     RUE_utilized_now_resource_map_list);
-               if (used_ep != nullptr) {
-                  free_amount -= lGetUlong(used_ep, RESL_amount);
-               }
-               if (free_amount > 0) {
-                  // we might call this function multiple times, e.g. if we have requested a RSMAP
-                  // both for mater and slave tasks - then resl already exists when booking the slave tasks
-                  lListElem *resl = lGetSubStrRW(gru, RESL_value, id, GRU_resource_map_list);
-                  if (resl == nullptr) {
-                     resl = lAddSubStr(gru, RESL_value, id, GRU_resource_map_list, RESL_Type);
-                     /* CS-2462: propagate per-instance characteristics (e.g. the
-                      * "devices" characteristic used for systemd device isolation)
-                      * from the host's RSMAP definition into the granted RESL, so
-                      * they reach sge_execd along with the job start order. Must
-                      * be a deep copy (lCopyList): the source list lives on the
-                      * exec host object and would otherwise be shared with the
-                      * ja_task-owned granted_resources_list. */
-                     const lList *src_props = lGetList(defined_ep, RESL_properties);
-                     if (src_props != nullptr) {
-                        lSetList(resl, RESL_properties,
-                                 lCopyList("granted_properties", src_props));
-                     }
-                  }
-                  if (free_amount >= amount) {
-                     DPRINTF("      ==> rsmap_select_granted_ids: id %s, amount %d\n", id, amount);
-                     lAddUlong(resl, RESL_amount, amount);
-                     //lSetUlong(resl, RESL_amount, lGetUlong(resl, RESL_amount) + amount);
-                     amount = 0;
-                     // we are done
-                     break;
-                  } else {
-                     DPRINTF("      ==> rsmap_select_granted_ids: id %s, amount %d\n",
-                             id, free_amount);
-                     lAddUlong(resl, RESL_amount, free_amount);
-                     //lSetUlong(resl, RESL_amount, lGetUlong(resl, RESL_amount) + free_amount);
-                     amount -= free_amount;
-                  }
-               }
-            }
-            // should never happen, it would mean that RUE_utilized_now is not consistent
-            // with the per id counters
-            if (amount > 0) {
-               ret = false;
             }
          }
       }
