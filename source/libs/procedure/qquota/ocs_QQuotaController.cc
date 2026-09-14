@@ -282,7 +282,24 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                        if (lListElem *hgroup = hgroup_list_locate(hgroup_list, qquota_filter.host); hgroup != nullptr) {
                                           lList *host_list = nullptr;
                                           hgroup_find_all_references(hgroup, nullptr, hgroup_list, &host_list, nullptr);
-                                          if (host_list == nullptr && lGetElemHost(host_list, HR_name, host) == nullptr) {
+
+                                          /*
+                                           * The row is suppressed unless its host is a member of the
+                                           * group the user filtered on.
+                                           *
+                                           * This used to read "host_list == nullptr && lGetElemHost(...)
+                                           * == nullptr", where the second half can never decide
+                                           * anything: it is only evaluated when the list is null, and
+                                           * then it is null too. So the filter suppressed nothing for
+                                           * any non-empty group and everything for an empty one -
+                                           * exactly backwards. Measured: with a group holding only
+                                           * host-0003, "qquota -h @group" still printed the row of
+                                           * host-0002.
+                                           *
+                                           * A null list needs no case of its own; the lookup answers
+                                           * "not a member" for it.
+                                           */
+                                          if (lGetElemHost(host_list, HR_name, host) == nullptr) {
                                              lFreeList(&host_list);
                                              continue;
                                           }
