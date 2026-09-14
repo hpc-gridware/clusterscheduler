@@ -698,5 +698,6 @@
 #define MSG_NEXT_CERTIFICATE_RENEWAL_AT_S          _MESSAGE(33987, _("next certificate renewal is scheduled at " SFN))
 
 #define MSG_JOB_CANNOTBOOKRESOURCE_SSUU            _MESSAGE(33993, _("cannot book resource " SFQ " on host " SFQ " for job " sge_u32 "." sge_u32 ", the task is not started"))
+#define MSG_AR_CANNOTNAMERSMAPIDS_SSU              _MESSAGE(33994, _("cannot name the instances of resource map " SFQ " on host " SFQ " which an advance reservation was granted (" sge_u32 ")"))
 
 // clang-format on
