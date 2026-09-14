@@ -48,6 +48,7 @@
 
 #include "sgeobj/cull/sge_hgroup_HGRP_L.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/sge_hgroup.h"
 #include "sgeobj/ocs_MatchCache.h"
 #include "sgeobj/ocs_Matcher.h"
 
@@ -163,11 +164,47 @@ hgroup_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    // that configures no matcher, and every group whose hosts have not yet made a
    // request, so the recomputation that follows an execution host movement stays
    // as cheap as it is today.
-   lListElem *before = action == SGE_EMA_MOD ? lGetElemHostRW(*list, key_nm, key) : nullptr;
-   const bool carry = before != nullptr &&
-                      lGetList(before, HGRP_match_cache) != nullptr &&
-                      ocs::Matcher::cache_carries_over(before, lFirst(lGetList(event, ET_new_version)));
+   lListElem *before = (action == SGE_EMA_MOD || action == SGE_EMA_DEL)
+                       ? lGetElemHostRW(*list, key_nm, key) : nullptr;
+   const bool matchers_changed =
+           action == SGE_EMA_MOD && before != nullptr &&
+           !ocs::Matcher::cache_carries_over(before, lFirst(lGetList(event, ET_new_version)));
+   const bool carry = action == SGE_EMA_MOD && before != nullptr && !matchers_changed &&
+                      lGetList(before, HGRP_match_cache) != nullptr;
    lList *cache = nullptr;
+
+   /*
+    * CS-2690. A matcher that is taken away has to stop admitting, by every
+    * route - and the cache holding the admission does not sit on the group that
+    * changed. A cache belongs to the group that was ASKED: the permission check
+    * asks "@admin_hosts", the walk behind it descends into whatever groups that
+    * one references, and the entry is written where the question was put. Change
+    * the matcher in the referenced group and the event arrives for THAT group,
+    * while the stale entry sits on the other one.
+    *
+    * Measured, not reasoned about: with the matcher directly in "@admin_hosts"
+    * the revocation worked and was verified in CS-2685; through a referenced
+    * group the host stayed an administrative host after the matcher was gone.
+    * The integration test of this package is what surfaced it.
+    *
+    * So every cache goes whenever a matcher set changes, and likewise when a
+    * group that carried matchers is deleted. An addition needs none of this: a
+    * cache holds positive results only, so a new matcher can widen what is
+    * admitted but cannot make a stored entry wrong.
+    */
+   bool deleted_a_carrier = false;
+
+   if (action == SGE_EMA_DEL && before != nullptr) {
+      lList *literal_hosts = nullptr;
+      lList *group_refs = nullptr;
+      lList *matchers = nullptr;
+
+      deleted_a_carrier = hgroup_split_members(before, &literal_hosts, &group_refs, &matchers);
+      lFreeList(&literal_hosts);
+      lFreeList(&group_refs);
+      lFreeList(&matchers);
+   }
+   const bool drop_everything = matchers_changed || deleted_a_carrier;
 
    if (carry) {
       // out of the way of the merge, which frees the old element
@@ -186,6 +223,10 @@ hgroup_update_master_list(sge_evc_class_t *evc, sge_object_type type,
       ocs::MatchCache::adopt(lGetElemHostRW(*list, key_nm, key), &cache);
    }
    lFreeList(&cache);
+
+   if (drop_everything) {
+      ocs::MatchCache::discard_all(*list);
+   }
 
    DRETURN(SGE_EMA_OK);
 }

@@ -297,3 +297,44 @@ ocs::MatchCache::adopt(lListElem *hgroup, lList **cache) {
 
    DRETURN_VOID;
 }
+
+/**
+ * @brief Throw away the matching cache of every host group
+ *
+ * A cache belongs to the group that was **asked**, not to the group whose
+ * matcher answered. The walk behind it descends through group references, so the
+ * entries of `@admin_hosts` may rest on a matcher three groups away - and when
+ * that matcher changes, the object that changed is not the object holding the
+ * cache. Nothing in the event for the one reaches the other.
+ *
+ * Hence the blunt rule: when any group's matcher set changes, every cache goes.
+ * The alternative is to compute, at merge time, which groups can reach the one
+ * that changed - and to do it against a master list in which the other groups
+ * may or may not have been merged yet, since the order of events across objects
+ * is not guaranteed. A rule whose correctness depends on that ordering is a rule
+ * nobody can check.
+ *
+ * The cost is a re-learn, and it is paid only on an administrative change to a
+ * matcher, never on a request. What it buys is that an admission cannot outlive
+ * the matcher that granted it, by any route - which is the one property of this
+ * design that must not be argued, only guaranteed.
+ *
+ * @param master_hgroup_list the host groups of one data store
+ *
+ * @see #carry_over, ocs::Matcher::cache_carries_over
+ */
+void
+ocs::MatchCache::discard_all(lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
+
+   std::lock_guard<std::mutex> guard(match_cache_mutex);
+
+   for_each_rw_lv(hgroup, master_hgroup_list) {
+      lList *cache = nullptr;
+
+      lXchgList(hgroup, HGRP_match_cache, &cache);
+      lFreeList(&cache);
+   }
+
+   DRETURN_VOID;
+}

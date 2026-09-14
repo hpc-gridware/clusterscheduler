@@ -60,5 +60,7 @@ namespace ocs {
       static lList *detach(lListElem *hgroup);
 
       static void adopt(lListElem *hgroup, lList **cache);
+
+      static void discard_all(lList *master_hgroup_list);
    };
 }
