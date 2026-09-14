@@ -1042,6 +1042,8 @@
 #define MSG_GDI_UTEXT_shgrp_tree_OPT      _MESSAGE(60610, _("show host group and used hostgroups as tree"))
 #define MSG_GDI_USAGE_shgrp_resolved_OPT  "[-shgrp_resolved group]"
 #define MSG_GDI_UTEXT_shgrp_resolved_OPT  _MESSAGE(60611, _("show host group with resolved hostlist"))
+#define MSG_GDI_USAGE_shgrp_why_OPT       "[-shgrp_why group host]"
+#define MSG_GDI_UTEXT_shgrp_why_OPT       _MESSAGE(60791, _("show by which route a host is a member of a host group"))
 
 #define MSG_GDI_USAGE_sick_OPT            "[-sds]"
 #define MSG_GDI_UTEXT_sick_OPT            _MESSAGE(60612, _("show detached settings"))

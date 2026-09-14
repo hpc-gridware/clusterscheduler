@@ -1302,6 +1302,9 @@ void sge_usage(ProgName prog_number, FILE *fp) {
    if (VALID_OPT(shgrp_resolved_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_shgrp_resolved_OPT, MSG_GDI_UTEXT_shgrp_resolved_OPT);
    }
+   if (VALID_OPT(shgrp_why_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_shgrp_why_OPT, MSG_GDI_UTEXT_shgrp_why_OPT);
+   }
 
    if (VALID_OPT(shgrpl_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_shgrpl_OPT, MSG_GDI_UTEXT_shgrpl_OPT);

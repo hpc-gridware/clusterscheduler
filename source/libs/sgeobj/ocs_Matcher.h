@@ -52,7 +52,23 @@ namespace ocs {
     */
    class Matcher {
    public:
-      static bool prepare(const char *member, const lListElem *hgroup, dstring *out, lList **answer_list);
+      /** @brief By what a host is a member of a host group
+       *
+       * The three member classes, plus the answer that there is no route at all.
+       * A host may of course be reachable by more than one; the walk reports the
+       * first it finds, in the order of the membership test itself - a host
+       * somebody entered by name is reported as entered, and the matcher route
+       * is what is left when nothing named the host.
+       */
+      enum class Route {
+         NOT_A_MEMBER,     ///< no route found
+         LITERAL,          ///< named in the member list of the group asked
+         GROUP_REFERENCE,  ///< named in a group the asked group reaches
+         MATCHER           ///< admitted by a matcher, without being named anywhere
+      };
+
+      static bool prepare(const char *member, const lListElem *hgroup, bool introducing,
+                          dstring *out, lList **answer_list);
 
       static bool expand(const lList *member_list, const lList *candidates, lList **hosts,
                          lList **answer_list);
@@ -60,6 +76,9 @@ namespace ocs {
       static bool admits(lListElem *hgroup, const char *hostname, const lList *master_hgroup_list);
 
       static bool cache_carries_over(const lListElem *before, const lListElem *after);
+
+      static Route why(const lListElem *hgroup, const char *hostname,
+                       const lList *master_hgroup_list, dstring *group, dstring *detail);
 
       static bool report_ineffective(const lList *master_hgroup_list, lList **answer_list);
    };

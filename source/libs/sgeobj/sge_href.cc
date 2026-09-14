@@ -709,16 +709,25 @@ bool href_list_find_all_referencees(const lList *this_list, lList **answer_list,
  * so that a host which is temporarily not resolvable does not kill an unrelated
  * change, not so that an unusable member gets stored.
  *
+ * `introducing` says whether these members are going into a member list or
+ * coming out of one. It reaches ocs::Matcher::prepare(), which normalises either
+ * way - so that the written and the stored form of a matcher hit the same entry
+ * - but judges only what is going in. There is no default: every caller knows
+ * which it is doing, and getting it wrong is not visible in the output.
+ *
  * @param this_list HR_Type list
  * @param answer_list AN_Type list
  * @param ignore_errors ignore if a host is not resolvable
+ * @param introducing true when the members are being put into a list, false when
+ *        they are being taken out
  * @param hgroup the host group the list belongs to, for the messages about a
  *        matcher; may be nullptr where the caller has none
  *
  * @return error state true  - Success false - Error
  */
 bool href_list_resolve_hostnames(lList *this_list, lList **answer_list,
-                                 bool ignore_errors, const lListElem *hgroup) {
+                                 bool ignore_errors, bool introducing,
+                                 const lListElem *hgroup) {
    DENTER(HOSTREF_LAYER);
 
    bool ret = true;
@@ -734,7 +743,7 @@ bool href_list_resolve_hostnames(lList *this_list, lList **answer_list,
             case ocs::MemberClass::MATCHER: {
                dstring prepared = DSTRING_INIT;
 
-               if (ocs::Matcher::prepare(name, hgroup, &prepared, answer_list)) {
+               if (ocs::Matcher::prepare(name, hgroup, introducing, &prepared, answer_list)) {
                   const char *stored = sge_dstring_get_string(&prepared);
 
                   if (stored != nullptr) {

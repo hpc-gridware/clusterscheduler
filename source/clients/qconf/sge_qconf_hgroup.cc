@@ -46,10 +46,12 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_hgroup.h"
+#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_href.h"
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
+#include "spool/flatfile/ocs_spool_json.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -450,10 +452,49 @@ bool hgroup_show(lList **answer_list, const char *name) {
       lListElem *hgroup = hgroup_get_via_gdi(answer_list, name);
    
       if (hgroup != nullptr) {
-         const char *filename;
-         filename = spool_flatfile_write_object(answer_list, hgroup, false, HGRP_fields, &qconf_sfi, SP_DEST_STDOUT, qconf_opt_format, nullptr, false);
-      
-         sge_free(&filename);
+         /*
+          * CS-2680, N-I-14. In the machine readable output the three member
+          * classes get keys of their own, so a program reading along need not
+          * guess the class of an entry from its text. They are written *beside*
+          * the unchanged "hostlist", not instead of it: that one is the
+          * definition as it is stored, it is what -Mhgrp reads back, and the
+          * round trip has to stay idempotent.
+          *
+          * Only a group carrying a matcher gets them. Splitting the entries of
+          * every other group would change the output of installations that never
+          * heard of this feature, which N-I-1 rules out - and a member list
+          * without matchers holds nothing a reader cannot tell apart by its
+          * leading '@' already.
+          */
+         lList *derived_hosts = nullptr;
+         lList *derived_groups = nullptr;
+         lList *derived_matchers = nullptr;
+         const bool typed = qconf_opt_format == SP_FORM_JSON &&
+                            hgroup_split_members(hgroup, &derived_hosts, &derived_groups,
+                                                 &derived_matchers);
+
+         if (typed) {
+            const ocs_json_derived_list derived[] = {
+                    {"hosts",      derived_hosts,    HR_name},
+                    {"hostgroups", derived_groups,   HR_name},
+                    {"matchers",   derived_matchers, HR_name},
+                    {nullptr,      nullptr,          0}
+            };
+            dstring document = DSTRING_INIT;
+
+            if (spool_json_write_object_ex(answer_list, hgroup, HGRP_fields, derived, &document)) {
+               printf("%s", sge_dstring_get_string(&document));
+            }
+            sge_dstring_free(&document);
+         } else {
+            const char *filename;
+            filename = spool_flatfile_write_object(answer_list, hgroup, false, HGRP_fields, &qconf_sfi, SP_DEST_STDOUT, qconf_opt_format, nullptr, false);
+
+            sge_free(&filename);
+         }
+         lFreeList(&derived_hosts);
+         lFreeList(&derived_groups);
+         lFreeList(&derived_matchers);
          lFreeElem(&hgroup);
 
          if (answer_list_has_error(answer_list)) {
@@ -464,6 +505,120 @@ bool hgroup_show(lList **answer_list, const char *name) {
          ret = false;
       }
    }
+   DRETURN(ret);
+}
+
+/** @brief Say by which route a host is a member of a host group (CS-2680, N-I-7)
+ *
+ * As long as a member list was an enumeration the answer stood there to be read.
+ * With a matcher it no longer does: a group may carry several, and the resolved
+ * membership says only *who* - for a host admitted through a matcher it does not
+ * even contain the host. The typical occasion is a host that is permitted
+ * something nobody knowingly allowed it, and the question is which entry did it.
+ *
+ * The **definition** is walked, never the resolution, and the first route found
+ * is reported (see hgroup_why()).
+ *
+ * @param answer_list used to return error messages
+ * @param group the host group to ask
+ * @param hostname the host in question, as it was written on the command line
+ * @param[out] is_member receives whether a route was found, for the return value
+ *        of the command (N-I-8); a caller uninterested in it may pass nullptr
+ *
+ * @return true when the question could be answered at all; false with
+ *         @p answer_list filled when the group does not exist
+ */
+bool hgroup_show_why(lList **answer_list, const char *group, const char *hostname, bool *is_member) {
+   DENTER(TOP_LAYER);
+
+   if (is_member != nullptr) {
+      *is_member = false;
+   }
+   if (group == nullptr || hostname == nullptr) {
+      DRETURN(false);
+   }
+
+   lList *hgroup_list = nullptr;
+   lEnumeration *what = lWhat("%T(ALL)", HGRP_Type);
+   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET,
+                                          ocs::gdi::SubCommand::NONE, &hgroup_list, nullptr, what);
+   lFreeWhat(&what);
+
+   const lListElem *alep = lFirst(alp);
+   answer_exit_if_not_recoverable(alep);
+   if (answer_get_status(alep) != STATUS_OK) {
+      fprintf(stderr, "%s\n", lGetString(alep, AN_text));
+      lFreeList(&alp);
+      lFreeList(&hgroup_list);
+      DRETURN(false);
+   }
+
+   const lListElem *hgroup = lGetElemHost(hgroup_list, HGRP_name, group);
+   bool ret = true;
+
+   if (hgroup == nullptr) {
+      answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR,
+                              MSG_HGROUP_NOTEXIST_S, group);
+      ret = false;
+   } else {
+      /*
+       * The host is resolved the way every other host argument of this client is,
+       * so that a short name and the name the group stores compare equal. A name
+       * that does not resolve is not an error here: the question is answerable
+       * for it, and the answer is that it is not a member.
+       */
+      lListElem *probe = lCreateElem(HR_Type);
+      lSetHost(probe, HR_name, hostname);
+      sge_resolve_host(probe, HR_name);
+
+      dstring found_in = DSTRING_INIT;
+      dstring matcher = DSTRING_INIT;
+      const ocs::Matcher::Route route =
+              hgroup_why(hgroup, lGetHost(probe, HR_name), hgroup_list, &found_in, &matcher);
+      const char *host = lGetHost(probe, HR_name);
+      const char *in = sge_dstring_get_string(&found_in);
+
+      // a cleared dstring hands back an empty string rather than nothing once it
+      // has held a value, so "no group to report" is emptiness and not nullptr
+      if (in != nullptr && in[0] == '\0') {
+         in = nullptr;
+      }
+
+      // the message macros expand to a catalogue lookup, not to a string literal,
+      // so the newline cannot be concatenated onto them
+      switch (route) {
+         case ocs::Matcher::Route::LITERAL:
+            printf(MSG_QCONF_WHY_LITERAL_S, host);
+            break;
+         case ocs::Matcher::Route::GROUP_REFERENCE:
+            printf(MSG_QCONF_WHY_GROUP_SS, host, in != nullptr ? in : "");
+            break;
+         case ocs::Matcher::Route::MATCHER:
+            if (in != nullptr) {
+               printf(MSG_QCONF_WHY_MATCHER_GROUP_SSS, host,
+                      sge_dstring_get_string(&matcher), in);
+            } else {
+               printf(MSG_QCONF_WHY_MATCHER_SS, host, sge_dstring_get_string(&matcher));
+            }
+            break;
+         case ocs::Matcher::Route::NOT_A_MEMBER:
+            printf(MSG_QCONF_WHY_NOT_S, host);
+            break;
+      }
+      printf("\n");
+
+      if (is_member != nullptr) {
+         *is_member = route != ocs::Matcher::Route::NOT_A_MEMBER;
+      }
+
+      sge_dstring_free(&found_in);
+      sge_dstring_free(&matcher);
+      lFreeElem(&probe);
+   }
+
+   lFreeList(&alp);
+   lFreeList(&hgroup_list);
+
    DRETURN(ret);
 }
 

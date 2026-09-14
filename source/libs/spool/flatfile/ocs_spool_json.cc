@@ -1208,6 +1208,29 @@ spool_json_write_list_array(lList **answer_list, const lList *list,
  */
 bool spool_json_write_object(lList **answer_list, const lListElem *object,
                              const spooling_field *fields, dstring *out) {
+   return spool_json_write_object_ex(answer_list, object, fields, nullptr, out);
+}
+
+/**
+ * @brief Serialize a single object, with derived keys beside its fields.
+ *
+ * The document is the one #spool_json_write_object produces, plus one key per
+ * entry of @p derived written after the fields. Passing nullptr, or an array
+ * whose first key is nullptr, therefore yields a byte-identical document -- which
+ * is what lets a caller add the derived view only where it has something to say
+ * and leave every other configuration untouched.
+ *
+ * @param answer_list  for returning errors
+ * @param object       the object to serialize
+ * @param fields       spooling fields describing the object
+ * @param derived      derived keys, terminated by an entry whose key is nullptr;
+ *                     may be nullptr
+ * @param out          dstring the JSON document is appended to
+ * @return true on success, false on error (answer_list set)
+ */
+bool spool_json_write_object_ex(lList **answer_list, const lListElem *object,
+                                const spooling_field *fields,
+                                const ocs_json_derived_list *derived, dstring *out) {
    DENTER(JSON_LAYER);
 
    rapidjson::StringBuffer sb;
@@ -1217,6 +1240,19 @@ bool spool_json_write_object(lList **answer_list, const lListElem *object,
    writer.StartObject();
    spool_json_write_envelope(writer, object);
    bool ok = spool_json_write_object_members(answer_list, object, writer, fields);
+
+   for (const ocs_json_derived_list *d = derived; ok && d != nullptr && d->key != nullptr; d++) {
+      writer.Key(d->key);
+      writer.StartArray();
+
+      const lListElem *ep;
+      for_each_ep(ep, d->names) {
+         const char *name = lGetHost(ep, d->keynm);
+
+         writer.String(name != nullptr ? name : "");
+      }
+      writer.EndArray();
+   }
    writer.EndObject();
 
    if (!ok) {

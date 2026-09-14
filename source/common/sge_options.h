@@ -271,6 +271,7 @@ enum {
    shgrp_OPT,   ///< `-shgrp`: show host group entry
    shgrp_tree_OPT,   ///< `-shgrp_tree`: show host group entry as tree
    shgrp_resolved_OPT,   ///< `-shgrp_resolved`: show host group entry with resolved hostlist
+   shgrp_why_OPT,   ///< `-shgrp_why`: show by which route a host is a member (CS-2680)
    shgrpl_OPT,   ///< `-shgrpl`: show host group entry list
    Mhgrp_OPT,   ///< `-Mhgrp`: modify host group entry from file
 

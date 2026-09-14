@@ -42,6 +42,7 @@
 #include "uti/sge_dstring.h"
 
 #include "sgeobj/cull/sge_hgroup_HGRP_L.h"
+#include "sgeobj/ocs_Matcher.h"
 
 /* Reserved host groups backing the admin/submit host lists (CS-2438), the
  * counterpart to MANAGER_USERSET/OPERATOR_USERSET in sge_userset.h.
@@ -107,6 +108,53 @@ hgroup_cache_contains_host(const lListElem *hgroup, const char *hostname);
  * element without a cache, which on the permission path denies a GDI request. */
 bool
 hgroup_contains_host(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list);
+
+/**
+ * @brief By which route is a host a member of a host group? (CS-2680, N-I-7)
+ *
+ * The question `qconf -shgrp_why` asks. It walks the **definition**, never the
+ * resolved membership: a host admitted through a matcher is not in the resolved
+ * membership at all, and one that is there gives no hint of what put it there.
+ *
+ * The order is that of the membership test - the literal members of the group
+ * itself, then the groups it references, then the matchers - and the first route
+ * found is the answer. A host somebody entered by name is therefore reported as
+ * entered even when a matcher would fit it too.
+ *
+ * @param hgroup the group to ask
+ * @param hostname the host in question, already resolved by the caller
+ * @param master_hgroup_list the groups its references resolve against
+ * @param[out] group receives the group the entry was found in, empty when that
+ *        is @p hgroup itself
+ * @param[out] detail receives the matcher on the matcher route, empty otherwise
+ *
+ * @return the route, or ocs::Matcher::Route::NOT_A_MEMBER
+ */
+ocs::Matcher::Route
+hgroup_why(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list,
+           dstring *group, dstring *detail);
+
+/**
+ * @brief Split a member list into its three classes (CS-2680, N-I-14)
+ *
+ * The definition of a host group holds literal host names, references to other
+ * groups and matchers as alike strings in one list. This takes them apart, in
+ * the order they are stored, for a consumer that should not have to tell them
+ * apart by their text.
+ *
+ * Nothing is resolved and no reference is followed: this is the definition of
+ * the one group, not its membership.
+ *
+ * @param hgroup the group whose member list is split
+ * @param[out] hosts receives the literal host names; untouched when none
+ * @param[out] groups receives the group references; untouched when none
+ * @param[out] matchers receives the matchers; untouched when none
+ *
+ * @return true when the group carries at least one matcher - the case in which
+ *         the split says something the leading '@' does not
+ */
+bool
+hgroup_split_members(const lListElem *hgroup, lList **hosts, lList **groups, lList **matchers);
 
 /* true if name is one of the three reserved host groups above */
 bool hgroup_is_reserved(const char *name);

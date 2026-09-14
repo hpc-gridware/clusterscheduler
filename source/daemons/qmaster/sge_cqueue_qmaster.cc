@@ -442,8 +442,8 @@ static bool
 cqueue_verify_hostlist(lList **answer_list, lList *href_list, ocs::gdi::SubCommand sub_command) {
    DENTER(TOP_LAYER);
 
-   bool ret = href_list_resolve_hostnames(href_list, answer_list, true);
    const bool is_remove = (sub_command & ocs::gdi::SubCommand::REMOVE) == ocs::gdi::SubCommand::REMOVE;
+   bool ret = href_list_resolve_hostnames(href_list, answer_list, true, !is_remove);
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
    const lListElem *href;
 

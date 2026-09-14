@@ -6695,6 +6695,34 @@ int sge_parse_qconf(char *argv[]) {
       }
 
       /*
+       * "-shgrp_why <group> <host>"
+       *
+       * CS-2680, N-I-7/N-I-8. Once membership can be a rule instead of an
+       * enumeration, the definition no longer answers "why is this host a
+       * member" by inspection. The return value distinguishes member from
+       * non-member so the command is usable in a control flow without taking
+       * the output apart -- which is why a host that is simply not a member is
+       * not an error here, only a non-zero exit.
+       */
+      if (strcmp("-shgrp_why", *spp) == 0) {
+         lList *answer_list = nullptr;
+         bool is_member = false;
+
+         spp = sge_parser_get_next(spp);
+         const char *why_group = *spp;
+         spp = sge_parser_get_next(spp);
+
+         if (!hgroup_show_why(&answer_list, why_group, *spp, &is_member) || !is_member) {
+            sge_parse_return |= 1;
+         }
+         show_answer(answer_list);
+         lFreeList(&answer_list);
+
+         spp++;
+         continue;
+      }
+
+      /*
        * Cluster Queue parameter
        */
 
@@ -7321,19 +7349,40 @@ static bool mod_reserved_hgroup(lList *arglp, const char *group,
       }
 
       /*
+       * CS-2680, N-I-9. The class of the entry decides, and it is decided
+       * *before* anything is resolved.
+       *
        * A host group reference is passed through untouched: "-ah @group" is
        * legal (see the plan for CS-2438), and sge_resolve_host() would fail on
        * it. hgroup_mod() checks in the qmaster that the group exists and that
        * the reference introduces no cycle, so nothing has to be validated here.
+       *
+       * A matcher is passed through for a different reason: it describes a set
+       * of hosts rather than naming one, so there is nothing to look up. The
+       * qmaster normalises and validates it (ocs::Matcher::prepare()), which is
+       * where the domain rules and the message catalogue are.
+       *
+       * Asking the classification rather than the resolver is the whole point.
+       * sge_resolve_host() skips whatever ocs::is_expression() calls an
+       * expression, so a matcher used to get through only when it happened to
+       * carry a metacharacter: "host:gpu*" was let past by its star, while
+       * "host:gpu001" - a perfectly good matcher describing exactly one name -
+       * was sent to the name service and failed there.
        */
-      if (!ocs::is_hgroup_name(name)) {
-         if (sge_resolve_host(argep, HR_name) != CL_RETVAL_OK) {
-            fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, name);
-            fprintf(stderr, "\n");
-            ret = false;
-            continue;
-         }
-         name = lGetHost(argep, HR_name);
+      switch (ocs::classify_member(name)) {
+         case ocs::MemberClass::GROUP_REFERENCE:
+         case ocs::MemberClass::MATCHER:
+            break;
+
+         case ocs::MemberClass::LITERAL_HOST:
+            if (sge_resolve_host(argep, HR_name) != CL_RETVAL_OK) {
+               fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, name);
+               fprintf(stderr, "\n");
+               ret = false;
+               continue;
+            }
+            name = lGetHost(argep, HR_name);
+            break;
       }
 
       lAddElemHost(&hosts, HR_name, name, HR_Type);
@@ -7372,7 +7421,29 @@ static bool mod_reserved_hgroup(lList *arglp, const char *group,
        *
        * Still one line per host, from the list this request carried: the
        * request became a batch, the report to the administrator did not.
+       *
+       * CS-2680, N-I-12. What the qmaster said on the way is printed first.
+       * Notes and warnings live in that answer list - the transformation of a
+       * matcher by the domain rules, the collapse of a duplicate, the catch-all,
+       * the scope of a matcher in a reserved group - and dropping them made
+       * "qconf -ah host:*" confer a standing grant on every host that can
+       * reach the qmaster without saying a word. Everything but the last element
+       * is printed; the last is the generic confirmation of the object layer,
+       * which these commands deliberately replace with the per-host lines below.
+       *
+       * The return value stays what it is. A note or a warning must not turn a
+       * change that was carried out into a reported failure.
        */
+      const lListElem *aep_msg;
+      const lListElem *aep_last = lLast(alp);
+
+      for_each_ep(aep_msg, alp) {
+         if (aep_msg == aep_last) {
+            break;
+         }
+         fprintf(stderr, "%s\n", lGetString(aep_msg, AN_text));
+      }
+
       const lListElem *host;
 
       for_each_ep(host, sent) {

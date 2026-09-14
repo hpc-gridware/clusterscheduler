@@ -48,13 +48,16 @@
  *
  * @param member the member as it was written
  * @param hgroup the host group the member is destined for
+ * @param introducing whether the member is going in or coming out; irrelevant
+ *        here, because neither is possible
  * @param[out] out unused; nothing is stored
  * @param[out] answer_list receives the refusal
  *
  * @return always false
  */
 bool
-ocs::Matcher::prepare(const char *member, const lListElem *hgroup, dstring *out, lList **answer_list) {
+ocs::Matcher::prepare(const char *member, const lListElem *hgroup, const bool introducing,
+                      dstring *out, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_MATCHER_NOTSUPPORTED);
@@ -118,6 +121,27 @@ bool
 ocs::Matcher::cache_carries_over(const lListElem *before, const lListElem *after) {
    DENTER(TOP_LAYER);
    DRETURN(true);
+}
+
+/** @brief Answers that there is no route, because no matcher can be reached
+ *
+ * The caller asks this only after the literal members and the group references
+ * have failed to explain the membership, so answering *not a member* leaves the
+ * diagnosis exactly what it was before the feature existed.
+ *
+ * @param hgroup the group to ask
+ * @param hostname the host in question
+ * @param master_hgroup_list the groups its references resolve against
+ * @param[out] group receives nothing
+ * @param[out] detail receives nothing
+ *
+ * @return always Route::NOT_A_MEMBER
+ */
+ocs::Matcher::Route
+ocs::Matcher::why(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list,
+                  dstring *group, dstring *detail) {
+   DENTER(TOP_LAYER);
+   DRETURN(Route::NOT_A_MEMBER);
 }
 
 /** @brief Reports nothing, because no host group can carry a matcher here

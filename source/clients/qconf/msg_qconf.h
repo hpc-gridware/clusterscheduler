@@ -104,5 +104,12 @@
 
 #define MSG_QCONF_UNKNOWNFMTVAL_S                     _MESSAGE(5254, _("unknown -fmtval value " SFQ " (expected compact|numeric)"))
 
+/* CS-2680, N-I-7: "qconf -shgrp_why <group> <host>" - by which route a host is a member */
+#define MSG_QCONF_WHY_LITERAL_S                       _MESSAGE(5255, _(SFN " is a member as a literal entry"))
+#define MSG_QCONF_WHY_GROUP_SS                        _MESSAGE(5256, _(SFN " is a member through the group " SFN " (literal entry)"))
+#define MSG_QCONF_WHY_MATCHER_SS                      _MESSAGE(5257, _(SFN " is a member through the matcher " SFQ))
+#define MSG_QCONF_WHY_MATCHER_GROUP_SSS               _MESSAGE(5258, _(SFN " is a member through the matcher " SFQ " of the group " SFN))
+#define MSG_QCONF_WHY_NOT_S                           _MESSAGE(5259, _(SFN " is not a member"))
+
 // clang-format on
 

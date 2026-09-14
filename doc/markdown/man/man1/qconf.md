@@ -680,6 +680,17 @@ Shows a tree like structure of a host group.
 Shows a list of all hosts which are part of the definition of host group. If the host group definition contains 
 sub host groups than also these groups are resolved and the hostnames are printed.
 
+## -shgrp_why *group* *host*
+Shows by which route *host* is a member of *group*: as an entry of the group itself, through a
+host group it references, or through a matcher (see xxqs_name_sxx_hostgroup(5)). If the host is
+not a member, that is reported. The exit value is zero for a member and non-zero otherwise, so
+the command can be used in a control flow without parsing its output.
+
+The **definition** is examined, never the resolved host list. A host admitted through a matcher
+does not appear in the resolved list at all, and one that does appear gives no hint of what put
+it there. Where more than one route applies, the first is reported, in the order entry --
+referenced group -- matcher: a host somebody entered by name is reported as entered.
+
 ## -srqs \[*rqs_name_list*\]  
 Show the definition of the resource quota sets (RQS) specified by the argument list.
 

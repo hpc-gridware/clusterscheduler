@@ -1269,6 +1269,184 @@ test_match_cache() {
    }
 }
 
+
+// ---------------------------------------------------------------------------
+// The diagnostic walk
+// ---------------------------------------------------------------------------
+
+/** @brief Did the walk leave this dstring without a value?
+ *
+ * A cleared dstring hands back an empty string rather than nothing once it has
+ * held a value, so "nothing to report" is emptiness, not nullptr.
+ *
+ * @param ds the dstring to inspect
+ * @return true when it carries no value
+ */
+static bool
+is_empty(const dstring *ds) {
+   const char *s = sge_dstring_get_string(const_cast<dstring *>(ds));
+
+   return s == nullptr || s[0] == '\0';
+}
+
+/*
+ * CS-2686, N-I-7. Which route makes a host a member - the question "qconf
+ * -shgrp_why" asks, and the one the definition stops answering by inspection
+ * once a group carries a matcher. The order is that of the membership test, and
+ * the first route found is the answer.
+ */
+static void
+test_why() {
+   printf("\n--- why ---\n");
+
+   const char *const leaf[] = {"node009", "host:login*", nullptr};
+   const char *const mid[] = {"@leaf", "node005", nullptr};
+   const char *const top[] = {"node001", "@mid", "host:gpu*", nullptr};
+
+   lList *hgroup_list = nullptr;
+   add_group(&hgroup_list, "@leaf", leaf);
+   add_group(&hgroup_list, "@mid", mid);
+   lListElem *group = add_group(&hgroup_list, "@top", top);
+
+   dstring found_in = DSTRING_INIT;
+   dstring detail = DSTRING_INIT;
+
+   // T117: named in the group that was asked. The group is not reported then -
+   // it is the one in the question.
+   CHECK(117, "a literal member of the group itself is reported as such",
+         hgroup_why(group, "node001", hgroup_list, &found_in, &detail) ==
+                 ocs::Matcher::Route::LITERAL &&
+         is_empty(&found_in));
+
+   // T118-T119: named in a group it reaches, directly and transitively; the
+   // group that holds the entry is named, not the one in between
+   CHECK(118, "a literal member of a referenced group names that group",
+         hgroup_why(group, "node005", hgroup_list, &found_in, &detail) ==
+                 ocs::Matcher::Route::GROUP_REFERENCE &&
+         strcmp(sge_dstring_get_string(&found_in), "@mid") == 0);
+   CHECK(119, "and so does one two levels down",
+         hgroup_why(group, "node009", hgroup_list, &found_in, &detail) ==
+                 ocs::Matcher::Route::GROUP_REFERENCE &&
+         strcmp(sge_dstring_get_string(&found_in), "@leaf") == 0);
+
+   // T120-T121: the matcher route, of the group itself and of one it reaches -
+   // and the edition boundary. A build without the extensions carries the same
+   // walk and the same command; what it cannot do is find a matcher, because in
+   // that build no group ever comes to hold one.
+#ifdef WITH_EXTENSIONS
+   CHECK(120, "a matcher of the group is reported with the matcher itself",
+         hgroup_why(group, "gpu999", hgroup_list, &found_in, &detail) ==
+                 ocs::Matcher::Route::MATCHER &&
+         strcmp(sge_dstring_get_string(&detail), "host:gpu*") == 0 &&
+         is_empty(&found_in));
+   CHECK(121, "a matcher of a referenced group names that group too",
+         hgroup_why(group, "login07", hgroup_list, &found_in, &detail) ==
+                 ocs::Matcher::Route::MATCHER &&
+         strcmp(sge_dstring_get_string(&detail), "host:login*") == 0 &&
+         strcmp(sge_dstring_get_string(&found_in), "@leaf") == 0);
+#else
+   CHECK(120, "without the extensions a matcher explains nothing",
+         hgroup_why(group, "gpu999", hgroup_list, &found_in, &detail) ==
+                 ocs::Matcher::Route::NOT_A_MEMBER);
+   CHECK(121, "and neither does one of a referenced group",
+         hgroup_why(group, "login07", hgroup_list, &found_in, &detail) ==
+                 ocs::Matcher::Route::NOT_A_MEMBER);
+#endif
+
+   // T122: a host nothing explains
+   CHECK(122, "a host no route reaches is not a member",
+         hgroup_why(group, "storage01", hgroup_list, &found_in, &detail) ==
+                 ocs::Matcher::Route::NOT_A_MEMBER);
+
+   // T123: the order is the rule. "gpu001" is both named in the group and fitted
+   // by its matcher; what somebody entered by name is the more informative
+   // answer, so that is what is reported.
+   {
+      const char *const both[] = {"gpu001", "host:gpu*", nullptr};
+      lList *list = nullptr;
+      lListElem *g = add_group(&list, "@both", both);
+
+      CHECK(123, "a host that is named and also matched is reported as named",
+            hgroup_why(g, "gpu001", list, &found_in, &detail) ==
+                    ocs::Matcher::Route::LITERAL);
+      lFreeList(&list);
+   }
+
+   // T124: the degenerate arguments
+   CHECK(124, "a missing group or host has no route",
+         hgroup_why(nullptr, "node001", hgroup_list, &found_in, &detail) ==
+                 ocs::Matcher::Route::NOT_A_MEMBER &&
+         hgroup_why(group, nullptr, hgroup_list, &found_in, &detail) ==
+                 ocs::Matcher::Route::NOT_A_MEMBER);
+
+   sge_dstring_free(&found_in);
+   sge_dstring_free(&detail);
+   lFreeList(&hgroup_list);
+
+   // T125: a cycle terminates. Writing one is refused, so this is a guard - but
+   // a diagnostic command must be able to return whatever it is handed.
+   {
+      const char *const a_members[] = {"@cycle_b", nullptr};
+      const char *const b_members[] = {"@cycle_a", nullptr};
+      lList *cyclic = nullptr;
+      lListElem *a = add_group(&cyclic, "@cycle_a", a_members);
+      dstring g = DSTRING_INIT;
+      dstring d = DSTRING_INIT;
+
+      add_group(&cyclic, "@cycle_b", b_members);
+      CHECK(125, "a cycle terminates and finds no route",
+            hgroup_why(a, "node001", cyclic, &g, &d) == ocs::Matcher::Route::NOT_A_MEMBER);
+      sge_dstring_free(&g);
+      sge_dstring_free(&d);
+      lFreeList(&cyclic);
+   }
+}
+
+/*
+ * CS-2686, N-I-14. The three classes taken apart for a consumer that should not
+ * have to tell them apart by their text.
+ */
+static void
+test_split_members() {
+   printf("\n--- split members ---\n");
+
+   const char *const mixed[] = {"node001", "@other", "host:gpu*", "node002", nullptr};
+   const char *const plain[] = {"node001", "@other", nullptr};
+
+   lList *list = nullptr;
+   lListElem *with = add_group(&list, "@with", mixed);
+   lListElem *without = add_group(&list, "@without", plain);
+
+   lList *hosts = nullptr;
+   lList *groups = nullptr;
+   lList *matchers = nullptr;
+
+   // T126-T127: every entry lands in exactly one class, in the stored order
+   CHECK(126, "a group carrying a matcher reports that it does",
+         hgroup_split_members(with, &hosts, &groups, &matchers));
+   CHECK(127, "and every member lands in its class, in the order stored",
+         lGetNumberOfElem(hosts) == 2 && lGetNumberOfElem(groups) == 1 &&
+         lGetNumberOfElem(matchers) == 1 &&
+         sge_hostcmp(lGetHost(lFirst(hosts), HR_name), "node001") == 0 &&
+         strcmp(lGetHost(lFirst(matchers), HR_name), "host:gpu*") == 0);
+
+   lFreeList(&hosts);
+   lFreeList(&groups);
+   lFreeList(&matchers);
+
+   // T128: without a matcher the split says nothing the leading '@' does not,
+   // and the caller is told so - that is what keeps the output of every existing
+   // configuration unchanged
+   CHECK(128, "a group with no matcher reports that the split adds nothing",
+         !hgroup_split_members(without, &hosts, &groups, &matchers) &&
+         lGetNumberOfElem(hosts) == 1 && lGetNumberOfElem(groups) == 1);
+
+   lFreeList(&hosts);
+   lFreeList(&groups);
+   lFreeList(&matchers);
+   lFreeList(&list);
+}
+
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
@@ -1290,6 +1468,8 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_walk_three_classes();
    test_generated_trees();
    test_match_cache();
+   test_why();
+   test_split_members();
    teardown_bootstrap();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

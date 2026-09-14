@@ -61,6 +61,8 @@ bool hgroup_show(lList **answer_list, const char *name);
 
 bool hgroup_show_structure(lList **answer_list, const char *name, bool show_tree);
 
+bool hgroup_show_why(lList **answer_list, const char *group, const char *hostname, bool *is_member);
+
 bool hgroup_add(lList **answer_list, const char *name, bool is_name_validate);
 
 bool hgroup_modify(lList **answer_list, const char *name);

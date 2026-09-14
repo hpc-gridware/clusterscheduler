@@ -260,6 +260,156 @@ bool hgroup_contains_host(const lListElem *hgroup, const char *hostname, const l
    DRETURN(ret);
 }
 
+/// How deep hgroup_why() follows group references before it gives up
+static constexpr int HGROUP_WHY_MAX_NESTING = 32;
+
+/**
+ * @brief Find a host named literally in this group or in one it references
+ *
+ * @param hgroup the group to search
+ * @param hostname the host in question
+ * @param master_hgroup_list the groups its references resolve against
+ * @param depth how deep the recursion already is
+ * @param[out] group receives the name of the group the entry was found in
+ *
+ * @return true when the host is named somewhere below @p hgroup
+ */
+static bool
+hgroup_why_named(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list,
+                 const int depth, dstring *group) {
+   if (hgroup == nullptr || depth > HGROUP_WHY_MAX_NESTING) {
+      // A cycle is refused when a group is written, so this is a guard and not
+      // a case - but a diagnostic command must return whatever it is given.
+      return false;
+   }
+
+   const lList *member_list = lGetList(hgroup, HGRP_host_list);
+   const lListElem *member;
+
+   // the names of this group before those of the groups it references, so that
+   // the nearest explanation is the one reported
+   for_each_ep(member, member_list) {
+      const char *name = lGetHost(member, HR_name);
+
+      if (ocs::classify_member(name) == ocs::MemberClass::LITERAL_HOST &&
+          sge_hostcmp(name, hostname) == 0) {
+         sge_dstring_copy_string(group, lGetHost(hgroup, HGRP_name));
+         return true;
+      }
+   }
+
+   for_each_ep(member, member_list) {
+      const char *name = lGetHost(member, HR_name);
+
+      if (ocs::classify_member(name) == ocs::MemberClass::GROUP_REFERENCE &&
+          hgroup_why_named(hgroup_list_locate(master_hgroup_list, name), hostname,
+                           master_hgroup_list, depth + 1, group)) {
+         return true;
+      }
+   }
+
+   return false;
+}
+
+/**
+ * @brief By which route is a host a member of a host group?
+ *
+ * @see sge_hgroup.h for what the routes mean and why the order is what it is.
+ *
+ * @param hgroup the group to ask
+ * @param hostname the host in question, already resolved by the caller
+ * @param master_hgroup_list the groups its references resolve against
+ * @param[out] group receives the group the entry was found in, empty when that
+ *        is @p hgroup itself
+ * @param[out] detail receives the matcher on the matcher route, empty otherwise
+ *
+ * @return the route, or ocs::Matcher::Route::NOT_A_MEMBER
+ */
+ocs::Matcher::Route
+hgroup_why(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list,
+           dstring *group, dstring *detail) {
+   DENTER(HGROUP_LAYER);
+
+   if (hgroup == nullptr || hostname == nullptr || group == nullptr || detail == nullptr) {
+      DRETURN(ocs::Matcher::Route::NOT_A_MEMBER);
+   }
+
+   sge_dstring_clear(group);
+   sge_dstring_clear(detail);
+
+   if (hgroup_why_named(hgroup, hostname, master_hgroup_list, 0, group)) {
+      const char *found_in = sge_dstring_get_string(group);
+      const char *asked = lGetHost(hgroup, HGRP_name);
+
+      // the group is reported only when it is not the one that was asked
+      if (found_in != nullptr && asked != nullptr && strcmp(found_in, asked) == 0) {
+         sge_dstring_clear(group);
+         DRETURN(ocs::Matcher::Route::LITERAL);
+      }
+      DRETURN(ocs::Matcher::Route::GROUP_REFERENCE);
+   }
+
+   // Only now the matchers. A host that is named somewhere was put there by
+   // somebody, and that is the more informative answer even when a matcher would
+   // fit it as well.
+   const ocs::Matcher::Route route =
+           ocs::Matcher::why(hgroup, hostname, master_hgroup_list, group, detail);
+
+   if (route == ocs::Matcher::Route::MATCHER) {
+      const char *found_in = sge_dstring_get_string(group);
+      const char *asked = lGetHost(hgroup, HGRP_name);
+
+      if (found_in != nullptr && asked != nullptr && strcmp(found_in, asked) == 0) {
+         sge_dstring_clear(group);
+      }
+   }
+
+   DRETURN(route);
+}
+
+/**
+ * @brief Split a member list into its three classes
+ *
+ * @see sge_hgroup.h
+ *
+ * @param hgroup the group whose member list is split
+ * @param[out] hosts receives the literal host names
+ * @param[out] groups receives the group references
+ * @param[out] matchers receives the matchers
+ *
+ * @return true when the group carries at least one matcher
+ */
+bool
+hgroup_split_members(const lListElem *hgroup, lList **hosts, lList **groups, lList **matchers) {
+   DENTER(HGROUP_LAYER);
+
+   if (hgroup == nullptr || hosts == nullptr || groups == nullptr || matchers == nullptr) {
+      DRETURN(false);
+   }
+
+   bool has_matcher = false;
+   const lListElem *member;
+
+   for_each_ep(member, lGetList(hgroup, HGRP_host_list)) {
+      const char *name = lGetHost(member, HR_name);
+
+      switch (ocs::classify_member(name)) {
+         case ocs::MemberClass::LITERAL_HOST:
+            lAddElemHost(hosts, HR_name, name, HR_Type);
+            break;
+         case ocs::MemberClass::GROUP_REFERENCE:
+            lAddElemHost(groups, HR_name, name, HR_Type);
+            break;
+         case ocs::MemberClass::MATCHER:
+            lAddElemHost(matchers, HR_name, name, HR_Type);
+            has_matcher = true;
+            break;
+      }
+   }
+
+   DRETURN(has_matcher);
+}
+
 /**
  * @brief Is this one of the reserved host groups?
  *

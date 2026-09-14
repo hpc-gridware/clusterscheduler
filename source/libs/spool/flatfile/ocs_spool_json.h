@@ -53,9 +53,32 @@ extern ocs_json_value_format ocs_json_value_format_opt;
  * Both functions append a pretty-printed JSON document (with a $schema/$id
  * envelope) to @p out and return true on success.
  */
+/**
+ * @brief One derived key of a JSON document
+ *
+ * A key that has no attribute of its own behind it, carrying a projection of one
+ * that has. The matching case, and the reason this exists, is the member list of
+ * a host group (CS-2680, N-I-14): it holds three classes of entry as alike
+ * strings, and a program reading along should not have to guess which is which
+ * from the text.
+ *
+ * Derived keys are written **in addition** to the fields, never instead of them,
+ * so the document a reader already knows stays whole.
+ */
+struct ocs_json_derived_list {
+   const char *key;      ///< the JSON key; a nullptr key terminates the array
+   const lList *names;   ///< the values, as a list of name elements
+   int keynm;            ///< the attribute of an element holding the name
+};
+
 bool
 spool_json_write_object(lList **answer_list, const lListElem *object,
                         const spooling_field *fields, dstring *out);
+
+bool
+spool_json_write_object_ex(lList **answer_list, const lListElem *object,
+                           const spooling_field *fields,
+                           const ocs_json_derived_list *derived, dstring *out);
 
 bool
 spool_json_write_list(lList **answer_list, const lList *list,

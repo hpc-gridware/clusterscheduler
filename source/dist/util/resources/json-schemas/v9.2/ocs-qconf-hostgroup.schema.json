@@ -16,7 +16,19 @@
       },
       "hostlist": {
          "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
-         "description": "Member host names and/or nested host group names (or empty when NONE)."
+         "description": "Member host names, nested host group names and/or matchers, as stored (or empty when NONE). This is the definition and the only member key qconf -Mhgrp reads."
+      },
+      "hosts": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Derived from hostlist: the literal host names. Written by qconf -fmt json -shgrp only when the group carries a matcher; ignored on input."
+      },
+      "hostgroups": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Derived from hostlist: the references to other host groups. Written by qconf -fmt json -shgrp only when the group carries a matcher; ignored on input."
+      },
+      "matchers": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Derived from hostlist: the matchers, which describe a set of hosts instead of naming one. Written by qconf -fmt json -shgrp only when the group carries one; ignored on input."
       }
    }
 }

@@ -254,8 +254,15 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
              * very elements into the master element. Literal members are
              * resolved here, matchers are normalised and validated here, and
              * both report what was done to them.
+             *
+             * N-I-10, N-L-20: a removal is normalised like everything else, so
+             * that the written form finds the stored one, but it is not judged.
+             * This is the only caller that can tell the two apart.
              */
-            ret &= href_list_resolve_hostnames(list, answer_list, true, hgroup);
+            const bool introducing =
+                    (sub_command & ocs::gdi::SubCommand::REMOVE) != ocs::gdi::SubCommand::REMOVE;
+
+            ret &= href_list_resolve_hostnames(list, answer_list, true, introducing, hgroup);
          }
          if (ret) {
             ret &= hgroup_reserved_delta_is_strict(hgroup, answer_list, list, sub_command,
@@ -308,7 +315,9 @@ hgroup_mod_hostlist(lListElem *hgroup, lList **answer_list, lListElem *reduced_e
                                                  add_hosts, rem_hosts);
          }
          if (ret) {
-            ret &= href_list_resolve_hostnames(*add_hosts, answer_list, false);
+            // the hosts this change adds to the effective membership; matchers
+            // are not among them, so the distinction does not arise here
+            ret &= href_list_resolve_hostnames(*add_hosts, answer_list, false, true);
          }
 
          /*
