@@ -150,6 +150,7 @@
 #include "sgeobj/lwdb/ocs_PACK_attributes.h"
 #include "sgeobj/lwdb/ocs_SPP_attributes.h"
 #include "sgeobj/lwdb/ocs_RL_attributes.h"
+#include "sgeobj/lwdb/ocs_HM_attributes.h"
 
 namespace ocs {   
 constexpr AttributeStatic all_attributes[] = {
@@ -283,5 +284,6 @@ constexpr AttributeStatic all_attributes[] = {
       PACK_ATTRIBUTES,
       SPP_ATTRIBUTES,
       RL_ATTRIBUTES,
+      HM_ATTRIBUTES,
    };
 }

@@ -150,7 +150,14 @@ host_is_in_reserved_hostgroup(const char *hostname, const char *group_name) {
    }
 
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
-   const lListElem *hgroup = hgroup_list_locate(master_hgroup_list, group_name);
+   /*
+    * CS-2680. Not const, and that is the signature saying what happens here: a
+    * hit in the matching cache advances the time of its last use, so asking
+    * whether a matcher admits this host writes. The write is atomic and needs no
+    * lock of its own; only a structural change of the cache takes one, and that
+    * one is neither of the data store's.
+    */
+   lListElem *hgroup = hgroup_list_locate(master_hgroup_list, group_name);
 
    /*
     * CS-2680. Two layers, and the order is the rule rather than an optimisation.

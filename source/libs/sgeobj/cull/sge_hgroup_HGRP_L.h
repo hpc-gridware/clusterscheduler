@@ -136,6 +136,31 @@
 *    partially stale. Do not add logic that compares two version values - a
 *    consumer has nothing to compare against.
 *
+*    SGE_LIST(HGRP_match_cache) - Matching Cache
+*    CS-2680: the hosts a matcher of this group has admitted.
+*     
+*    The membership test asks the resolved host list first and this cache
+*    second. It exists because a host admitted through a matcher need not be
+*    in any object of the cluster, so it is never in the resolved list and
+*    every one of its requests would otherwise repeat the matcher walk.
+*     
+*    Unlike the resolved host list this one does NOT leave the process. It is
+*    neither spooled nor packed nor delivered as event payload: a reader
+*    asking for all fields receives it empty, and so does an event
+*    subscriber, external or one of the qmaster's own mirrors. That is what
+*    NO_TRANSFER says, and this field is its first user.
+*     
+*    Two reasons, the second being the sharper one. A receiver decides for
+*    itself whether it may keep what it had, so anything handed over is
+*    waste - and an execution host movement produces one event per
+*    referencing group, which multiplies that waste by their number.
+*     
+*    Invalidation happens when an event is merged: the cache is carried over
+*    to the new element only if the matcher set did not change, and is
+*    discarded otherwise. A hit in it confers, so the completeness of that
+*    invalidation is a security property rather than a question of
+*    performance.
+*
 */
 
 enum {
@@ -144,7 +169,8 @@ enum {
    HGRP_cqueue_list,   ///< Cluster Queue List
    HGRP_joker,   ///< Joker
    HGRP_cached_hosts,   ///< Cached Resolved Host List
-   HGRP_cache_version   ///< Cache Validity
+   HGRP_cache_version,   ///< Cache Validity
+   HGRP_match_cache   ///< Matching Cache
 };
 
 LISTDEF(HGRP_Type)
@@ -154,6 +180,7 @@ LISTDEF(HGRP_Type)
    SGE_LIST(HGRP_joker, VA_Type, CULL_SPOOL)
    SGE_LIST(HGRP_cached_hosts, HR_Type, CULL_DEFAULT)
    SGE_ULONG(HGRP_cache_version, CULL_DEFAULT)
+   SGE_LIST(HGRP_match_cache, HM_Type, CULL_NO_TRANSFER)
 LISTEND
 
 NAMEDEF(HGRPN)
@@ -163,6 +190,7 @@ NAMEDEF(HGRPN)
    NAME("HGRP_joker")
    NAME("HGRP_cached_hosts")
    NAME("HGRP_cache_version")
+   NAME("HGRP_match_cache")
 NAMEEND
 
 /** @brief Number of attributes of the type, i.e. the size of its name table */

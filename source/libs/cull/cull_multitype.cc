@@ -38,6 +38,7 @@
  * @brief Reading and writing the fields of a cull element
  */
 
+#include <atomic>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -1288,6 +1289,107 @@ int lAddUlong(lListElem *ep, int name, lUlong offset) {
  *
  * @return error state 0 - OK -1 - Error
  */
+/** @brief Read a 64 bit unsigned field without being able to observe it torn
+ *
+ * For a field that several threads write while others read it, and that carries
+ * no invariant with any other field of the element. The canonical case is a time
+ * of last use: competing writers each store a valid recent time, nothing is
+ * derived from it, and a reader only has to be sure it never sees half of one
+ * value and half of another.
+ *
+ * That is a guarantee about a single load, not about ordering with anything
+ * else, so the access is relaxed. Whoever needs the value to be ordered against
+ * other state needs a lock, not this.
+ *
+ * Relying on an aligned 64 bit load being indivisible in practice would not do:
+ * it is not what the language guarantees, and it does not hold on every platform
+ * this product is built for.
+ *
+ * @param ep the element to read from
+ * @param name field name id
+ *
+ * @return the value
+ *
+ * @see #lGetUlong64, #lSetUlong64Atomic
+ */
+lUlong64 lGetUlong64Atomic(const lListElem *ep, int name) {
+   DENTER(CULL_BASIS_LAYER);
+
+   int pos;
+   pos = lGetPosViaElem(ep, name, SGE_DO_ABORT);
+
+   if (mt_get_type(ep->descr[pos].mt) != lUlong64T) {
+      incompatibleType2(MSG_CULL_GETULONG64_WRONGTYPEFORFIELDXY_SS,
+                        lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
+   }
+
+   static_assert(std::atomic_ref<lUlong64>::required_alignment <= alignof(lMultiType),
+                 "a cull value is not aligned well enough to be accessed atomically");
+
+   const std::atomic_ref<lUlong64> value(const_cast<lUlong64 &>(ep->cont[pos].ul64));
+
+   DRETURN(value.load(std::memory_order_relaxed));
+}
+
+/** @brief Write a 64 bit unsigned field without a reader being able to see it torn
+ *
+ * The counterpart of #lGetUlong64Atomic, and subject to one restriction the
+ * ordinary setter does not have: a field **declared** hashed is refused.
+ * #lSetUlong64 keeps the hash table in step by removing the old entry and
+ * inserting the new one, and an atomic store cannot do that - it would leave the
+ * table pointing at a value that is no longer there. A field written this way is
+ * therefore a field nobody looks up by value.
+ *
+ * The declaration is what decides, not whether a table is present: the tables
+ * are built when an element enters a list, so a free element would otherwise be
+ * allowed what the same element is refused a moment later.
+ *
+ * @param ep the element to write to
+ * @param name field name id
+ * @param value the value to store
+ *
+ * @return 0 on success, -1 on error
+ *
+ * @see #lSetUlong64, #lGetUlong64Atomic
+ */
+int lSetUlong64Atomic(lListElem *ep, int name, lUlong64 value) {
+   DENTER(CULL_BASIS_LAYER);
+
+   int pos;
+
+   if (!ep) {
+      LERROR(LEELEMNULL);
+      DRETURN(-1);
+   }
+
+   pos = lGetPosViaElem(ep, name, SGE_NO_ABORT);
+   if (pos < 0) {
+      DPRINTF(("!!!!!!!!!! lSetUlong64Atomic(): %s not found in element !!!!!!!!!!\n",
+              lNm2Str(name)));
+      DRETURN(-1);
+   }
+
+   if (mt_get_type(ep->descr[pos].mt) != lUlong64T) {
+      incompatibleType2(MSG_CULL_SETULONG64_WRONGTYPEFORFIELDXY_SS, lNm2Str(name),
+                        multitypes[mt_get_type(ep->descr[pos].mt)]);
+      DRETURN(-1);
+   }
+
+   // by the declaration and not by whether a table exists: the tables are built
+   // when an element enters a list, so asking for the table would let the same
+   // field be written atomically while the element is still free and refuse it
+   // afterwards
+   if (mt_do_hashing(ep->descr[pos].mt)) {
+      CRITICAL("lSetUlong64Atomic() refuses the hashed field " SFQ, lNm2Str(name));
+      DRETURN(-1);
+   }
+
+   std::atomic_ref<lUlong64> slot(ep->cont[pos].ul64);
+   slot.store(value, std::memory_order_relaxed);
+
+   DRETURN(0);
+}
+
 int lSetUlong64(lListElem *ep, int name, lUlong64 value) {
    DENTER(CULL_BASIS_LAYER);
 

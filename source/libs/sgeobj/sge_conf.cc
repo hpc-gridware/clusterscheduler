@@ -94,6 +94,29 @@
 #define STREESPOOLTIMEDEF 240
 
 /**
+ * @name matcher_cache_time bounds
+ *
+ * CS-2680. How long an entry of the matching cache stays valid, in seconds.
+ *
+ * The cache remembers hosts a host group matcher has admitted, so that the
+ * second request of such a host does not repeat the matcher walk. It is bounded
+ * by the working set rather than by the uptime of the qmaster: in an environment
+ * that does not reuse instance names it would otherwise grow without bound.
+ *
+ * Expiry has no security dimension. An entry is invalidated event driven and
+ * immediately as soon as the matchers of its group change; this value decides
+ * only how long an unused entry is kept, never what matches. What remains is a
+ * trade between memory and hit rate, and it falls to the hit rate: a day keeps
+ * every host warm that was active once within a working day.
+ *
+ * `0` means an entry does not expire, which is the meaning `0` already has for
+ * `auto_user_delete_time`, in the same unit.
+ * @{
+ */
+#define MATCHER_CACHE_TIME_DEF 86400   ///< default when `qmaster_params` does not set it
+/** @} */
+
+/**
  * @name STREE_TICK_INTERVAL bounds
  *
  * Seconds between two runs of the periodic share tree decay and republish
@@ -418,6 +441,8 @@ struct qmaster_params_t {
    int spool_time = STREESPOOLTIMEDEF;
    /// `STREE_TICK_INTERVAL` -- how often share tree usage is decayed
    int sharetree_tick_interval = STREE_TICK_INTERVAL_DEF;
+   /// `matcher_cache_time` -- how long an entry of the matching cache stays valid
+   int matcher_cache_time = MATCHER_CACHE_TIME_DEF;
    /// `FINISHED_JOBS_SWEEP_INTERVAL` -- how often finished jobs are swept
    int finished_jobs_sweep_interval = FINISHED_JOBS_SWEEP_INTERVAL_DEF;
    /// `FINISHED_JOBS_SWEEP_BATCH` -- how many finished jobs one sweep removes
@@ -1143,6 +1168,19 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
           * ticks. Out-of-range values (<= 0) reject + warn + fall back to
           * the default. Values above the upper bound are clamped silently
           * at read time in mconf_get_sharetree_tick_interval(). */
+         /* CS-2680: matcher_cache_time = how long an entry of the matching
+          * cache stays valid. 0 means it does not expire, as it does for
+          * auto_user_delete_time; only a negative value is refused, with a
+          * warning and the default. */
+         if (parse_int_param(s, "matcher_cache_time", &qmaster_conf.matcher_cache_time, ocs::CEntry::Type::TIME)) {
+            if (qmaster_conf.matcher_cache_time < 0) {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "matcher_cache_time",
+                                       MATCHER_CACHE_TIME_DEF);
+               qmaster_conf.matcher_cache_time = MATCHER_CACHE_TIME_DEF;
+            }
+            continue;
+         }
          if (parse_int_param(s, "STREE_TICK_INTERVAL", &qmaster_conf.sharetree_tick_interval, ocs::CEntry::Type::TIME)) {
             if (qmaster_conf.sharetree_tick_interval <= 0) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
@@ -3990,6 +4028,31 @@ int mconf_get_spool_time() {
  *
  * @return the configured value
  */
+/**
+ * @brief The `matcher_cache_time` setting of the master configuration
+ *
+ * Takes the master configuration read lock, so the value is a consistent
+ * snapshot even while a new configuration is being applied.
+ *
+ * A change to it affects subsequent expiry checks and does **not** invalidate
+ * the matching cache: it governs how long an entry is valid, not what matches.
+ *
+ * @return the configured number of seconds; 0 means an entry does not expire
+ */
+int mconf_get_matcher_cache_time() {
+   DENTER(BASIS_LAYER);
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   int value = qmaster_conf.matcher_cache_time;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   if (value < 0) {
+      value = MATCHER_CACHE_TIME_DEF;
+   }
+
+   DRETURN(value);
+}
+
 int mconf_get_sharetree_tick_interval() {
    DENTER(BASIS_LAYER);
 

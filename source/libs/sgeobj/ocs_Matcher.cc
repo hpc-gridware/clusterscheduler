@@ -96,9 +96,28 @@ ocs::Matcher::expand(const lList *member_list, const lList *candidates, lList **
  * @return always false
  */
 bool
-ocs::Matcher::admits(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list) {
+ocs::Matcher::admits(lListElem *hgroup, const char *hostname, const lList *master_hgroup_list) {
    DENTER(TOP_LAYER);
    DRETURN(false);
+}
+
+/** @brief Answers yes, because there is never anything to carry here
+ *
+ * No host group of this edition holds a matcher, so no matching cache is ever
+ * filled. Answering yes keeps the caller on its short path: it hands an empty
+ * list back and does no work. Answering no would be equally correct and would
+ * make the caller throw away nothing, at the cost of pretending something had
+ * changed.
+ *
+ * @param before the element as it was
+ * @param after the element as it will be
+ *
+ * @return always true
+ */
+bool
+ocs::Matcher::cache_carries_over(const lListElem *before, const lListElem *after) {
+   DENTER(TOP_LAYER);
+   DRETURN(true);
 }
 
 /** @brief Reports nothing, because no host group can carry a matcher here

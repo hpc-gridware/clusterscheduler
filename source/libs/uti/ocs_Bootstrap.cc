@@ -88,12 +88,31 @@ ocs::Bootstrap::set_admin_user(const char *new_admin_user) {
    admin_user = sge_strdup(admin_user, new_admin_user);
 }
 
+/** @brief Set the domain appended to a dot-free host name
+ *
+ * @param new_default_domain_new the domain, or `"none"` for no default domain
+ *
+ * @note Called once, when the bootstrap file is parsed, and the matching cache
+ *       of CS-2680 relies on that: a host group member written as `host:gpu*` is
+ *       normalised against this rule when it is written, and a host admitted on
+ *       the strength of it is then remembered by name. Should this ever become
+ *       changeable at run time, that change **must** invalidate the matching
+ *       cache of every host group - otherwise it keeps conferring on the basis
+ *       of a name handling that no longer applies.
+ */
 void
 ocs::Bootstrap::set_default_domain(const char *new_default_domain_new) {
    default_domain = sge_strdup(default_domain, new_default_domain_new);
    has_default_domain_set = default_domain != nullptr && SGE_STRCASECMP(default_domain, NONE_STR) != 0;
 }
 
+/** @brief Set whether host names are compared without their domain part
+ *
+ * @param new_ignore_fqdn true to cut the domain part off every host name
+ *
+ * @note Called once, when the bootstrap file is parsed; see the note on
+ *       #set_default_domain for what a run-time change would have to invalidate.
+ */
 void
 ocs::Bootstrap::set_ignore_fqdn(const bool new_ignore_fqdn) {
    ignore_fqdn = new_ignore_fqdn;

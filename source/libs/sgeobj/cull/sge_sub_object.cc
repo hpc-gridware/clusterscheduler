@@ -24,7 +24,8 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 
 const lDescr *
-object_get_subtype(int nm) {
+object_get_subtype(int nm)
+{
    const lDescr *ret = nullptr;
    switch (nm) {
       case JB_jid_request_list:
@@ -476,6 +477,9 @@ object_get_subtype(int nm) {
          break;
       case HGRP_cached_hosts:
          ret = HR_Type;
+         break;
+      case HGRP_match_cache:
+         ret = HM_Type;
          break;
       case LS_incomplete:
          ret = LR_Type;

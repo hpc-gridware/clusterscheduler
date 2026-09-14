@@ -940,7 +940,14 @@
          "className": "Role",
          "cullPrefix": "RL",
          "cullNameSpec": "role",
-         "size_in_basic_units": 1,
+         "size_in_basic_units": 2,
+         "add_to_sge_all_lists": true
+      },
+      {
+         "className": "MatchCacheEntry",
+         "cullPrefix": "HM",
+         "cullNameSpec": "matchcache",
+         "size_in_basic_units": 2,
          "add_to_sge_all_lists": true
       }
    ]

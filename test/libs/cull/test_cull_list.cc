@@ -56,7 +56,9 @@ enum {
    TEST_bool,   ///< a bool attribute
    TEST_list,   ///< a sublist attribute
    TEST_object,   ///< a sub-object attribute
-   TEST_ref   ///< a reference attribute
+   TEST_ref,   ///< a reference attribute
+   TEST_ulong64,   ///< a 64 bit unsigned attribute
+   TEST_ulong64_hashed   ///< a 64 bit unsigned attribute that is looked up by value
 };
 
 LISTDEF(TEST_Type)
@@ -70,6 +72,8 @@ LISTDEF(TEST_Type)
    SGE_LIST   (TEST_list,   TEST_Type, CULL_DEFAULT)
    SGE_OBJECT (TEST_object, TEST_Type, CULL_DEFAULT)
    SGE_REF    (TEST_ref,    TEST_Type, CULL_DEFAULT)
+   SGE_ULONG64(TEST_ulong64, CULL_DEFAULT)
+   SGE_ULONG64(TEST_ulong64_hashed, CULL_HASH)
 LISTEND
 
 NAMEDEF(TEST_Name)
@@ -83,6 +87,8 @@ NAMEDEF(TEST_Name)
    NAME("TEST_list")
    NAME("TEST_object")
    NAME("TEST_ref")
+   NAME("TEST_ulong64")
+   NAME("TEST_ulong64_hashed")
 NAMEEND
 
 #define TEST_Size sizeof(TEST_Name) / sizeof(char *)    ///< number of attributes of the synthetic type
@@ -643,6 +649,52 @@ static void test_sort_and_uniq() {
    lFreeList(&uniq_list);
 }
 
+
+// ---------------------------------------------------------------------------
+// The atomic accessors
+// ---------------------------------------------------------------------------
+
+/*
+ * CS-2685: a field written on a path that holds only a read lock. The value
+ * carries no invariant with any other field, so what it needs is that no reader
+ * can see it torn - not mutual exclusion. Relying on an aligned 64 bit store
+ * being indivisible would be relying on something the language does not
+ * guarantee and that does not hold on every platform this is built for.
+ */
+static void test_atomic_ulong64() {
+   printf("\n--- atomic 64 bit accessors ---\n");
+
+   lListElem *ep = lCreateElem(TEST_Type);
+
+   // T56-T57: the plain round trip, and that the two kinds of accessor address
+   // the same storage - a field must be readable by whichever of them the caller
+   // happens to use
+   CHECK(56, "lSetUlong64Atomic/lGetUlong64Atomic: round trip",
+         lSetUlong64Atomic(ep, TEST_ulong64, 4242) == 0 &&
+         lGetUlong64Atomic(ep, TEST_ulong64) == 4242);
+   CHECK(57, "the ordinary and the atomic accessor see the same field",
+         lGetUlong64(ep, TEST_ulong64) == 4242 &&
+         (lSetUlong64(ep, TEST_ulong64, 7), lGetUlong64Atomic(ep, TEST_ulong64) == 7));
+
+   // T58: a hashed field is refused. The ordinary setter keeps the hash table in
+   // step by removing the old entry and inserting the new one; an atomic store
+   // cannot, and would leave the table pointing at a value that is no longer
+   // there. A field written atomically is a field nobody looks up by value.
+   CHECK(58, "a hashed field is refused rather than silently corrupting its table",
+         lSetUlong64Atomic(ep, TEST_ulong64_hashed, 1) == -1);
+
+   // T59: a field that is not there. A field of the wrong type is not checked
+   // here, because that is a programming error the object layer terminates on,
+   // exactly as the ordinary setter does.
+   CHECK(59, "a field that is not in the element is refused",
+         lSetUlong64Atomic(ep, TEST_int + 10000, 1) == -1);
+
+   // T60: no element at all
+   CHECK(60, "a missing element is refused", lSetUlong64Atomic(nullptr, TEST_ulong64, 1) == -1);
+
+   lFreeElem(&ep);
+}
+
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
@@ -663,6 +715,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_copy_list();
    test_ref_field();
    test_sort_and_uniq();
+   test_atomic_ulong64();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

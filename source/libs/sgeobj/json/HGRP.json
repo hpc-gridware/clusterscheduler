@@ -367,5 +367,91 @@
             }
          ]
       }
-   ]
+         ,{
+         "name": "match_cache",
+         "summary": "Matching Cache",
+         "description": [
+            {
+               "line": "CS-2680: the hosts a matcher of this group has admitted."
+            },
+            {
+               "line": " "
+            },
+            {
+               "line": "The membership test asks the resolved host list first and this cache"
+            },
+            {
+               "line": "second. It exists because a host admitted through a matcher need not be"
+            },
+            {
+               "line": "in any object of the cluster, so it is never in the resolved list and"
+            },
+            {
+               "line": "every one of its requests would otherwise repeat the matcher walk."
+            },
+            {
+               "line": " "
+            },
+            {
+               "line": "Unlike the resolved host list this one does NOT leave the process. It is"
+            },
+            {
+               "line": "neither spooled nor packed nor delivered as event payload: a reader"
+            },
+            {
+               "line": "asking for all fields receives it empty, and so does an event"
+            },
+            {
+               "line": "subscriber, external or one of the qmaster's own mirrors. That is what"
+            },
+            {
+               "line": "NO_TRANSFER says, and this field is its first user."
+            },
+            {
+               "line": " "
+            },
+            {
+               "line": "Two reasons, the second being the sharper one. A receiver decides for"
+            },
+            {
+               "line": "itself whether it may keep what it had, so anything handed over is"
+            },
+            {
+               "line": "waste - and an execution host movement produces one event per"
+            },
+            {
+               "line": "referencing group, which multiplies that waste by their number."
+            },
+            {
+               "line": " "
+            },
+            {
+               "line": "Invalidation happens when an event is merged: the cache is carried over"
+            },
+            {
+               "line": "to the new element only if the matcher set did not change, and is"
+            },
+            {
+               "line": "discarded otherwise. A hit in it confers, so the completeness of that"
+            },
+            {
+               "line": "invalidation is a security property rather than a question of"
+            },
+            {
+               "line": "performance."
+            }
+         ],
+         "type": "lListT",
+         "subClassName": "MatchCacheEntry",
+         "subCullPrefix": "HM",
+         "flags": [
+            {
+               "name": "JGDI_HIDDEN"
+            },
+            {
+               "name": "NO_TRANSFER"
+            }
+         ]
+      }
+]
 }

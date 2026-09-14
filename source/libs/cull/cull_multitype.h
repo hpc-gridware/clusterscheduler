@@ -137,6 +137,8 @@ lUlong lGetUlong(const lListElem *ep, int name);
 
 lUlong64 lGetUlong64(const lListElem *ep, int name);
 
+lUlong64 lGetUlong64Atomic(const lListElem *ep, int name);
+
 const char *lGetString(const lListElem *ep, int name);
 const char *lGetStringNotNull(const lListElem *ep, int name);
 
@@ -163,6 +165,8 @@ int lSetInt(lListElem *ep, int name, int value);
 int lSetUlong(lListElem *ep, int name, lUlong value);
 
 int lSetUlong64(lListElem *ep, int name, lUlong64 value);
+
+int lSetUlong64Atomic(lListElem *ep, int name, lUlong64 value);
 
 int lSetString(lListElem *ep, int name, const char *value);
 

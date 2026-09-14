@@ -2636,6 +2636,13 @@ int cl_com_set_alias_file(const char *alias_file) {
 
 /** @brief Force the alias file to be read again on next use
  * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
+ *
+ * @note No caller in the daemons today, and the matching cache of CS-2680
+ *       relies on that: a host admitted by a host group matcher is remembered
+ *       under the name the alias file produced. Whoever gives this function a
+ *       caller **must** also invalidate the matching cache of every host group,
+ *       or it keeps conferring on the basis of a name handling that no longer
+ *       applies.
  */
 int cl_com_set_alias_file_dirty() {
    int ret_val = CL_RETVAL_NO_FRAMEWORK_INIT;

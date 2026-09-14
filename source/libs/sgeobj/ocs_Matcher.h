@@ -57,7 +57,9 @@ namespace ocs {
       static bool expand(const lList *member_list, const lList *candidates, lList **hosts,
                          lList **answer_list);
 
-      static bool admits(const lListElem *hgroup, const char *hostname, const lList *master_hgroup_list);
+      static bool admits(lListElem *hgroup, const char *hostname, const lList *master_hgroup_list);
+
+      static bool cache_carries_over(const lListElem *before, const lListElem *after);
 
       static bool report_ineffective(const lList *master_hgroup_list, lList **answer_list);
    };

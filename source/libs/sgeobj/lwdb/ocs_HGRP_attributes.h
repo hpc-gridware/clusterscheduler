@@ -44,7 +44,8 @@ enum {
    HGRP_cqueue_list,   ///< Cluster Queue List
    HGRP_joker,   ///< Joker
    HGRP_cached_hosts,   ///< Cached Resolved Host List
-   HGRP_cache_version   ///< Cache Validity
+   HGRP_cache_version,   ///< Cache Validity
+   HGRP_match_cache   ///< Matching Cache
 };
 
 /** @brief The attribute ids of HGRP, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
@@ -58,6 +59,7 @@ constexpr const int HGRP_Type[] = {
    HGRP_joker,
    HGRP_cached_hosts,
    HGRP_cache_version,
+   HGRP_match_cache,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -71,7 +73,8 @@ constexpr const int HGRP_Type[] = {
    {HGRP_cqueue_list, "HGRP_cqueue_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {HGRP_joker, "HGRP_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {HGRP_cached_hosts, "HGRP_cached_hosts", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {HGRP_cache_version, "HGRP_cache_version", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
+   {HGRP_cache_version, "HGRP_cache_version", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {HGRP_match_cache, "HGRP_match_cache", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

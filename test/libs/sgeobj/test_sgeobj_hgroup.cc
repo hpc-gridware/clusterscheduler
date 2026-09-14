@@ -33,13 +33,19 @@
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_stdlib.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_pack.h"
+
+#include "cull/pack.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_href.h"
+#include "sgeobj/ocs_MatchCache.h"
 #include "sgeobj/ocs_Matcher.h"
 #include "sgeobj/sge_utility.h"
 
@@ -986,7 +992,7 @@ test_generated_trees() {
 
       for (int g = 0; g < GROUPS; g++) {
          snprintf(buffer, sizeof(buffer), "@g%d", g);
-         const lListElem *hgroup = lGetElemHost(hgroup_list, HGRP_name, buffer);
+         lListElem *hgroup = lGetElemHostRW(hgroup_list, HGRP_name, buffer);
          lList *expected = nullptr;
          lList *walked = nullptr;
 
@@ -1068,6 +1074,201 @@ test_generated_trees() {
          unfindable == 0);
 }
 
+
+// ---------------------------------------------------------------------------
+// The matching cache
+// ---------------------------------------------------------------------------
+
+/** @brief How many entries the matching cache of this group holds
+ *
+ * @param hgroup the group to look at
+ * @return the number of entries
+ */
+static int
+cache_size(const lListElem *hgroup) {
+   return lGetNumberOfElem(lGetList(hgroup, HGRP_match_cache));
+}
+
+/** @brief Is this host in the matching cache of this group, and findable?
+ *
+ * Findable rather than merely present: the key is hashed, and a host that is in
+ * the list but has lost its key is exactly the fault a hash-keyed list can
+ * develop (CS-2755).
+ *
+ * @param hgroup the group to look at
+ * @param hostname the host in question
+ * @return true if the entry can be found by name
+ */
+static bool
+cache_holds(const lListElem *hgroup, const char *hostname) {
+   return lGetElemHost(lGetList(hgroup, HGRP_match_cache), HM_name, hostname) != nullptr;
+}
+
+/** @brief Send an element through a pack buffer and read it back
+ *
+ * What a client asking for all fields receives, which is the boundary
+ * #CULL_NO_TRANSFER takes effect at.
+ *
+ * @param ep the element to pack
+ *
+ * @return the unpacked element, owned by the caller, or nullptr on failure
+ */
+static lListElem *
+round_trip(const lListElem *ep) {
+   sge_pack_buffer pb;
+   lListElem *copy = nullptr;
+
+   if (init_packbuffer(&pb, 100, false, false) != PACK_SUCCESS) {
+      return nullptr;
+   }
+   if (cull_pack_elem_partial(&pb, ep, nullptr, 0) == PACK_SUCCESS) {
+      char *buf = sge_malloc(pb.bytes_used);
+      sge_pack_buffer copy_pb;
+
+      if (buf != nullptr) {
+         memcpy(buf, pb.head_ptr, pb.bytes_used);
+         if (init_packbuffer_from_buffer(&copy_pb, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+            if (cull_unpack_elem_partial(&copy_pb, &copy, nullptr, 0) != PACK_SUCCESS) {
+               lFreeElem(&copy);
+            }
+            clear_packbuffer(&copy_pb);
+         } else {
+            sge_free(&buf);
+         }
+      }
+   }
+   clear_packbuffer(&pb);
+
+   return copy;
+}
+
+/*
+ * CS-2685: layer 3a. The cache the matcher walk writes to and reads from, in
+ * isolation from the walk - the core owns the structure, the commercial edition
+ * owns only the question of whether a host is admitted at all.
+ */
+static void
+test_match_cache() {
+   printf("\n--- matching cache ---\n");
+
+   lList *hgroup_list = nullptr;
+   lListElem *hgroup = lAddElemHost(&hgroup_list, HGRP_name, "@gpu_nodes", HGRP_Type);
+
+   // T101-T103: an empty cache misses, an insertion is findable, and a second
+   // lookup hits
+   CHECK(101, "an empty cache does not admit", !ocs::MatchCache::lookup(hgroup, "gpu001"));
+
+   ocs::MatchCache::insert(hgroup, "gpu001");
+   CHECK(102, "an inserted host is findable by name", cache_holds(hgroup, "gpu001"));
+   CHECK(103, "and the lookup answers with it", ocs::MatchCache::lookup(hgroup, "gpu001"));
+
+   // T104: the key is unique and hashed, and a list that ever held two entries
+   // under one key could not be repaired
+   ocs::MatchCache::insert(hgroup, "gpu001");
+   CHECK(104, "inserting the same host twice leaves one entry", cache_size(hgroup) == 1);
+
+   // T105: a host nobody inserted is not admitted - only positive results are
+   // cached, so the key space cannot be determined from outside
+   CHECK(105, "an unknown host is not admitted", !ocs::MatchCache::lookup(hgroup, "storage01"));
+
+   // T106: a hit advances the time of last use; this is not a read path
+   {
+      lListElem *entry = lGetElemHostRW(lGetListRW(hgroup, HGRP_match_cache), HM_name, "gpu001");
+      lSetUlong64(entry, HM_last_used, 1);
+      ocs::MatchCache::lookup(hgroup, "gpu001");
+      CHECK(106, "a hit advances the time of last use", lGetUlong64(entry, HM_last_used) > 1);
+   }
+
+   // T107: expiry. The entry is back-dated by two days, which is past any
+   // plausible configured period, and the reclamation that rides on the next
+   // insertion drops it. There is no sweeper to wait for.
+   {
+      const uint64_t two_days = sge_gmt32_to_gmt64(2 * 24 * 3600);
+      lListElem *entry = lGetElemHostRW(lGetListRW(hgroup, HGRP_match_cache), HM_name, "gpu001");
+
+      lSetUlong64(entry, HM_last_used, sge_get_gmt64() - two_days);
+      ocs::MatchCache::insert(hgroup, "gpu002");
+
+      CHECK(107, "an entry unused for longer than the period is reclaimed",
+            !cache_holds(hgroup, "gpu001") && cache_holds(hgroup, "gpu002"));
+   }
+   lFreeList(&hgroup_list);
+
+   // T108-T110: the move across an event merge, and the pruning that goes with
+   // it. An entry whose host has meanwhile entered the resolved membership is
+   // not merely stale but unreachable: layer 3 is entered only after layer 2 has
+   // said no.
+   {
+      lList *before_list = nullptr;
+      lList *after_list = nullptr;
+      lListElem *before = lAddElemHost(&before_list, HGRP_name, "@gpu_nodes", HGRP_Type);
+      lListElem *after = lAddElemHost(&after_list, HGRP_name, "@gpu_nodes", HGRP_Type);
+
+      ocs::MatchCache::insert(before, "gpu001");
+      ocs::MatchCache::insert(before, "gpu002");
+
+      // gpu002 has become an execution host in the meantime
+      lList *resolved = nullptr;
+      lAddElemHost(&resolved, HR_name, "gpu002", HR_Type);
+      lSetList(after, HGRP_cached_hosts, resolved);
+
+      lList *cache = ocs::MatchCache::detach(before);
+      CHECK(108, "detaching takes the cache off the old element",
+            cache != nullptr && cache_size(before) == 0);
+
+      ocs::MatchCache::adopt(after, &cache);
+      CHECK(109, "the new element carries it, and the caller's handle is empty",
+            cache == nullptr && cache_holds(after, "gpu001"));
+      CHECK(110, "an entry that has entered the resolved membership is dropped",
+            !cache_holds(after, "gpu002") && cache_size(after) == 1);
+
+      lFreeList(&before_list);
+      lFreeList(&after_list);
+   }
+
+   // T111: nothing to carry, and nothing that has to be guarded against
+   {
+      lList *empty = nullptr;
+
+      CHECK(111, "detaching from nothing and adopting nothing are both harmless",
+            ocs::MatchCache::detach(nullptr) == nullptr &&
+            (ocs::MatchCache::adopt(nullptr, &empty), true));
+   }
+
+   // T112-T116: the matching cache is process-local derived state and must not
+   // leave the object. The property that says so, CULL_NO_TRANSFER, is covered
+   // generically by the cull tests on a synthetic type; what is checked here is
+   // its first real user, because this is the field where a regression would
+   // actually confer - qconf asks for all fields.
+   {
+      // a free element, so that the descriptor travels with it, which is what
+      // a client that knows nothing of the type needs
+      lListElem *hgroup = lCreateElem(HGRP_Type);
+      lList *members = nullptr;
+
+      lSetHost(hgroup, HGRP_name, "@gpu_nodes");
+      lAddElemHost(&members, HR_name, "host:gpu*", HR_Type);
+      lSetList(hgroup, HGRP_host_list, members);
+      ocs::MatchCache::insert(hgroup, "gpu001");
+
+      lListElem *at_client = round_trip(hgroup);
+
+      CHECK(112, "a host group reaches a client that asks for all fields",
+            at_client != nullptr &&
+            sge_hostcmp(lGetHost(at_client, HGRP_name), "@gpu_nodes") == 0);
+      CHECK(113, "its matching cache arrives empty",
+            lGetList(at_client, HGRP_match_cache) == nullptr);
+      CHECK(114, "the field is still addressable, so nobody lands in an error path",
+            lGetPosViaElem(at_client, HGRP_match_cache, SGE_NO_ABORT) >= 0);
+      CHECK(115, "the member list, which is what defines the group, arrives in full",
+            lGetNumberOfElem(lGetList(at_client, HGRP_host_list)) == 1);
+      CHECK(116, "and what the qmaster holds is unchanged", cache_holds(hgroup, "gpu001"));
+
+      lFreeElem(&at_client);
+      lFreeElem(&hgroup);
+   }
+}
+
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
@@ -1088,6 +1289,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_member_classes();
    test_walk_three_classes();
    test_generated_trees();
+   test_match_cache();
    teardown_bootstrap();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

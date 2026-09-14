@@ -153,6 +153,7 @@
 #include "sgeobj/cull/sge_pack_PACK_L.h"
 #include "sgeobj/cull/sge_param_SPP_L.h"
 #include "sgeobj/cull/sge_role_RL_L.h"
+#include "sgeobj/cull/sge_matchcache_HM_L.h"
 #if defined(__SGE_GDI_LIBRARY_HOME_OBJECT_FILE__)
 
 lNameSpace nmv[] = {
@@ -294,6 +295,7 @@ lNameSpace nmv[] = {
    {TEST_LOWERBOUND, TEST_SIZE, TESTN, TEST_Type},
    {SPP_LOWERBOUND, SPP_SIZE, SPPN, SPP_Type},
    {RL_LOWERBOUND, RL_SIZE, RLN, RL_Type},
+   {HM_LOWERBOUND, HM_SIZE, HMN, HM_Type},
    {0, 0, nullptr, nullptr}
 };
 

@@ -1,0 +1,128 @@
+{
+   "className": "MatchCacheEntry",
+   "summary": "Match Cache Entry",
+   "description": [
+      {
+         "line": "CS-2680: one host that a matcher of a host group has admitted."
+      },
+      {
+         "line": " "
+      },
+      {
+         "line": "A matcher describes a set of hosts instead of naming one, so a host it"
+      },
+      {
+         "line": "admits need not appear in any object of the cluster - and therefore"
+      },
+      {
+         "line": "cannot appear in the resolved host list either. For such a host every"
+      },
+      {
+         "line": "request misses the resolved list and would otherwise repeat the whole"
+      },
+      {
+         "line": "recursive matcher walk, on the entry path of the qmaster, per request."
+      },
+      {
+         "line": " "
+      },
+      {
+         "line": "An entry records that the walk has already said yes. It is process local:"
+      },
+      {
+         "line": "not spooled, and never handed to a reader or an event subscriber, so each"
+      },
+      {
+         "line": "data store holds what its own threads have learned. The entry cannot be"
+      },
+      {
+         "line": "a bare name because it expires by the time of its last use."
+      }
+   ],
+   "cullPrefix": "HM",
+   "attributes": [
+      {
+         "name": "name",
+         "summary": "Name",
+         "description": [
+            {
+               "line": "The admitted host name."
+            },
+            {
+               "line": " "
+            },
+            {
+               "line": "Hashed, so that the lookup in front of the matcher walk is a hash access"
+            },
+            {
+               "line": "and so that an entry can be found again by name when it has to be"
+            },
+            {
+               "line": "removed."
+            }
+         ],
+         "type": "lHostT",
+         "flags": [
+            {
+               "name": "PRIMARY_KEY"
+            },
+            {
+               "name": "UNIQUE"
+            },
+            {
+               "name": "HASH"
+            }
+         ]
+      },
+      {
+         "name": "last_used",
+         "summary": "Time of Last Use",
+         "description": [
+            {
+               "line": "When this entry was last consulted, as a 64 bit timestamp - which"
+            },
+            {
+               "line": "in this product means microseconds since the epoch, the convention every"
+            },
+            {
+               "line": "other 64 bit timestamp of the object model follows."
+            },
+            {
+               "line": " "
+            },
+            {
+               "line": "An entry expires when it has not been used for the configured period, so"
+            },
+            {
+               "line": "the cache is bounded by the working set rather than by the uptime of the"
+            },
+            {
+               "line": "qmaster - in an environment that does not reuse instance names it would"
+            },
+            {
+               "line": "otherwise grow without bound."
+            },
+            {
+               "line": " "
+            },
+            {
+               "line": "Written on every hit, and therefore written under no lock but the read"
+            },
+            {
+               "line": "lock the caller already holds. It carries no invariant with any other"
+            },
+            {
+               "line": "field: several threads writing \"now\" produce competing values, every one"
+            },
+            {
+               "line": "of which is a valid recent time of use. What it needs is atomicity, not"
+            },
+            {
+               "line": "mutual exclusion - see the atomic accessors of the object layer."
+            }
+         ],
+         "type": "lUlong64T",
+         "flags": []
+      }
+   ]
+}

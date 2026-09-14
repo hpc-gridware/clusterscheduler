@@ -213,6 +213,7 @@ bool mconf_get_inherit_env();
 bool mconf_get_enable_hwloc();
 int mconf_get_spool_time();
 int mconf_get_sharetree_tick_interval();
+int mconf_get_matcher_cache_time();
 uint32_t mconf_get_finished_jobs_keep_time();
 uint32_t mconf_get_finished_jobs_max();
 int mconf_get_finished_jobs_sweep_interval();

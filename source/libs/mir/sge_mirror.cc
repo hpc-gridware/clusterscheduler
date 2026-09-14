@@ -177,7 +177,7 @@ static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
    { nullptr, sge_mirror_process_mark4registration,   nullptr, nullptr },
    { nullptr, generic_update_master_list,             nullptr, nullptr },
    { nullptr, generic_update_master_list,             nullptr, nullptr },
-   { nullptr, host_update_master_list,                nullptr, nullptr }, /*hgroup*/
+   { nullptr, hgroup_update_master_list,              nullptr, nullptr }, /*hgroup*/
    { nullptr, generic_update_master_list,             nullptr, nullptr },
    { nullptr, generic_update_master_list,             nullptr, nullptr }, /*suser*/
    { nullptr, generic_update_master_list,             nullptr, nullptr }, /*rqs*/

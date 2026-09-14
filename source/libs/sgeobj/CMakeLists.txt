@@ -98,6 +98,7 @@ set(LIBRARY_SOURCES
         ocs_DataStore.cc
         ocs_GrantedResources.cc
         ocs_Job.cc
+        ocs_MatchCache.cc
         ocs_ObjectContainer.cc
         ocs_ResourceQuota.cc
         ocs_Role.cc
