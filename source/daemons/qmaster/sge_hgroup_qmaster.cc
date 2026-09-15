@@ -986,7 +986,15 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
              * not hold under that name.
              */
             if (ret) {
-               const char *stored_name = lGetHost(hgroup, HGRP_name);
+               /*
+                * A COPY, not the pointer into the element: lRemoveElem() below
+                * frees the element, and the message after it would then read
+                * freed memory. It did -- "qconf -dhgrp @fake_hostgroup" reported
+                * removing "C", whatever happened to be left at that address.
+                */
+               dstring stored_name_dstring = DSTRING_INIT;
+               sge_dstring_copy_string(&stored_name_dstring, lGetHost(hgroup, HGRP_name));
+               const char *stored_name = sge_dstring_get_string(&stored_name_dstring);
 
                if (sge_event_spool(answer_list, 0, sgeE_HGROUP_DEL,
                                    0, 0, stored_name, nullptr, nullptr, nullptr, nullptr, nullptr, true, true, packet->gdi_session)) {
@@ -1003,6 +1011,7 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                   ret = false;
                }
+               sge_dstring_free(&stored_name_dstring);
             }
          } else {
             ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, "host group", name);
