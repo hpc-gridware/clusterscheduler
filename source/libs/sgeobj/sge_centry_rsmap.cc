@@ -31,6 +31,7 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_resource_utilization.h"
+#include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "msg_common.h"
 
@@ -475,33 +476,6 @@ centry_rsmap_get_request_param(const lListElem *centry, const char *param, dstri
    return false;
 }
 
-/**
- * @brief does the job require any of its resource maps to be granted from one id?
- *
- * Answered from the request itself rather than from a flag on the job, so that it cannot fall
- * out of step with what the request says. It walks every request scope, because the constraint
- * is a statement about the resource map and holds over all of them.
- *
- * @param job  the job
- * @return     true if any hard request carries a same= parameter
- */
-bool
-centry_rsmap_job_has_same_constraint(const lListElem *job) {
-   DSTRING_STATIC(param, 64);
-
-   const lListElem *jrs;
-   for_each_ep (jrs, lGetList(job, JB_request_set_list)) {
-      const lListElem *req;
-      for_each_ep (req, lGetList(jrs, JRS_hard_resource_list)) {
-         if (lGetUlong(req, CE_valtype) == TYPE_RSMAP &&
-             centry_rsmap_get_request_param(req, RSMAP_REQUEST_PARAM_SAME, &param)) {
-            return true;
-         }
-      }
-   }
-
-   return false;
-}
 
 /**
  * @brief the value an instance is grouped by for a same= constraint
@@ -585,6 +559,65 @@ centry_rsmap_instance_free(const lListElem *defined_ep, const lList *taken) {
  * @param free_amount          out: the free count of the group returned, 0 if there is none
  * @return                     the key of the group with the most free instances, or nullptr
  */
+/**
+ * @brief the identifiers a resource map groups its instances by
+ *
+ * For same=id every identifier is its own group; for same=<characteristic> the instances
+ * carrying the same value of that characteristic form one. An instance which does not carry the
+ * characteristic belongs to no group and cannot satisfy the constraint, so it is left out.
+ *
+ * @param resource_definition the resource map on the host, from EH_consumable_config_list
+ * @param key_name            "id" or the name of a characteristic
+ * @return                    the distinct keys, an ST_Type list, to be freed by the caller
+ */
+lList *
+centry_rsmap_group_keys(const lListElem *resource_definition, const char *key_name) {
+   lList *keys = nullptr;
+
+   const lListElem *defined_ep;
+   for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
+      const char *key = centry_rsmap_instance_key(defined_ep, key_name);
+      if (key != nullptr && lGetElemStr(keys, ST_name, key) == nullptr) {
+         lAddElemStr(&keys, ST_name, key, ST_Type);
+      }
+   }
+
+   return keys;
+}
+
+/**
+ * @brief how many instances of one group of a resource map are free
+ *
+ * The group counterpart of centry_rsmap_instance_free(): what the instances sharing one key
+ * have free between them. This is what a same= request asks for - the instances it is granted
+ * have to come from one group, so what matters is what one group can serve, not the map.
+ *
+ * @param resource_definition the resource map on the host, from EH_consumable_config_list
+ * @param taken               the identifiers which are spoken for, may be nullptr
+ * @param key_name            "id" or the name of a characteristic
+ * @param key                 which group
+ * @return                    the free instances of that group
+ */
+u_long32
+centry_rsmap_group_free(const lListElem *resource_definition, const lList *taken,
+                        const char *key_name, const char *key) {
+   u_long32 free = 0;
+
+   if (resource_definition == nullptr || key == nullptr) {
+      return 0;
+   }
+
+   const lListElem *defined_ep;
+   for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
+      const char *instance_key = centry_rsmap_instance_key(defined_ep, key_name);
+      if (instance_key != nullptr && strcmp(instance_key, key) == 0) {
+         free += centry_rsmap_instance_free(defined_ep, taken);
+      }
+   }
+
+   return free;
+}
+
 const char *
 centry_rsmap_best_free_group(const lListElem *resource_definition,
                              const lList *taken, const char *key_name,

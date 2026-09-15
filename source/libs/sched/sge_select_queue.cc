@@ -6181,6 +6181,34 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
       } else {
          /* seek for the time near queue end where resources are sufficient */
          u_long64 when = utilization_below(a, host, actual_el, threshold, total, slots, object_name, is_exclusive, binding_inuse);
+
+         // A request which requires its instances to agree asks a question the amount cannot
+         // answer: the aggregate says when enough shares are free, not when enough shares of
+         // one card are. The aggregate stays authoritative for the amount and this refines it,
+         // so the answer is the later of the two.
+         DSTRING_STATIC(same_key, 64);
+         if (lGetUlong(rep, CE_valtype) == TYPE_RSMAP &&
+             centry_rsmap_get_request_param(rep, RSMAP_REQUEST_PARAM_SAME, &same_key)) {
+            const auto group_amount = static_cast<u_long32>(request * slots);
+            u_long64 group_when = utilization_rsmap_below(capacitiy_el, actual_el,
+                                                          sge_dstring_get_string(&same_key),
+                                                          group_amount);
+            if (group_when == U_LONG64_MAX) {
+               // no group of this map is ever free enough, so there is nothing to wait for
+               sge_dstring_sprintf(reason, MSG_SCHEDD_SAMEIDNOTFULLFILLED_SS, attrname,
+                                   sge_dstring_get_string(&same_key));
+               lFreeElem(&cplx_el);
+               DRETURN(DISPATCH_NEVER_CAT);
+            }
+            if (group_when > when) {
+               DSTRING_STATIC(when_dstr, 64);
+               DPRINTF("%s: time_by_slots: %s delays the start to %s, the amount alone allowed "
+                       sge_u64 "\n", object_name, attrname,
+                       sge_ctime64(group_when, &when_dstr), when);
+               when = group_when;
+            }
+         }
+
          if (when == 0) {
             /* may happen only if scheduler code is run outside scheduler with
                DISPATCH_TIME_QUEUE_END time spec */

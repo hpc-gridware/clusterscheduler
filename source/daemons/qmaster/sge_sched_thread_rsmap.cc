@@ -150,15 +150,21 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
    if (ret) {
       const lListElem *resource_definition = lGetSubStr(host, CE_name, name, EH_consumable_config_list);
       const lListElem *resource_utilization = lGetSubStr(host, RUE_name, name, EH_resource_utilization);
-      if (resource_definition == nullptr || resource_utilization == nullptr) {
+      if (resource_definition == nullptr) {
+         // the map is not configured on this host, which matching should have ruled out
          ret = false;
       } else {
-         u_long32 defined = lGetDouble(resource_definition, CE_doubleval);
-         u_long32 used = lGetDouble(resource_utilization, RUE_utilized_now);
-         if ((defined - used) < amount) {
-            // not enough available
-            ret = false;
-         } else {
+         {
+            // A host which has never had anything booked against this map has no utilization
+            // entry for it at all, which means everything is free rather than nothing.
+            // There is no separate check of the amount here. It would have to ask the same
+            // question over the same window as the selection below, and asking it of the
+            // utilization of this moment instead is wrong wherever the window is not now: a
+            // reservation is granted for a time at which the instances it needs are free, and
+            // what is in use while it is being worked out says nothing about that. The
+            // selection answers both questions at once - it cannot name the instances unless
+            // there are enough of them - so this asks it once.
+
             // A same= constraint requires every instance to agree - in the identifier, or in a
             // characteristic they carry - and matching established that some group can serve
             // the amount, from this same configuration and this same utilization. Without one,

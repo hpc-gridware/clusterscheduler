@@ -47,7 +47,11 @@ bool centry_rsmap_check_request_params(lList **answer_list, const lListElem *cen
 bool centry_rsmap_get_request_param(const lListElem *centry, const char *param,
                                     dstring *value);
 
-bool centry_rsmap_job_has_same_constraint(const lListElem *job);
+
+lList *centry_rsmap_group_keys(const lListElem *resource_definition, const char *key_name);
+
+u_long32 centry_rsmap_group_free(const lListElem *resource_definition, const lList *taken,
+                                 const char *key_name, const char *key);
 
 const char *centry_rsmap_best_free_group(const lListElem *resource_definition,
                                          const lList *taken,

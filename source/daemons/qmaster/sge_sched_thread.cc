@@ -719,26 +719,12 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
           * - the job is an immediate one
           * - if the job reservation is disabled by category
           */
-         // A request which requires all its instances to carry the same id cannot be given a
-         // reservation yet. Reservation mode asks when the resource will be free, and answers
-         // it from the resource diagram of the whole complex, which has no per id breakdown -
-         // "when will one id have four free shares" cannot be derived from it. Reserving the
-         // amount while ignoring the ids would pick a start time the constraint may not permit,
-         // hold capacity for it and block lower priority jobs meanwhile. Immediate scheduling
-         // is unaffected. CS-2720 lifts this.
-         const bool same_id_constrained = centry_rsmap_job_has_same_constraint(orig_job);
-
          if (nreservation < max_reserve &&
              lGetBool(orig_job, JB_reserve) &&
              !JOB_TYPE_IS_IMMEDIATE(lGetUlong(orig_job, JB_type)) &&
-             !same_id_constrained &&
              !ocs::CategorySchedd::job_is_category_reservation_rejected(orig_job)) {
             is_reserve = true;
          } else {
-            if (same_id_constrained && lGetBool(orig_job, JB_reserve)) {
-               schedd_mes_add(nullptr, false, lGetUlong(orig_job, JB_job_number),
-                              SCHEDD_INFO_NORESERVATIONSAMEID);
-            }
             is_reserve = false;
          }
 
@@ -1234,7 +1220,12 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       DRETURN(result);
    }
 
-   if (result == DISPATCH_OK) {
+   // The granted resource list carries the resource map instances into the booking, and a
+   // reservation has to book them as much as a job which starts: a reservation which held an
+   // amount and no instances would let a later job take the very instances it is waiting for,
+   // and the job would find the constraint unsatisfiable when its time came. DISPATCH_NOT_AT_TIME
+   // means a reservation was found, so a.gdil is the reserved assignment and a.start its time.
+   if (result == DISPATCH_OK || result == DISPATCH_NOT_AT_TIME) {
       // create the granted resource list containing all granted consumables
       // including RSMAPs and the info which RSMAP ids were granted
       if (!add_granted_resource_list(&a, ja_task, job, host_list)) {
@@ -1249,15 +1240,23 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
          // system never gave it. Leaving the job pending is the lesser fault, and the reason is
          // on the job (see gru_report_booking_failure) rather than only in the messages file.
          //
+         // A reservation which cannot be given its instances is simply not made. The same
+         // answer serves: DISPATCH_NEVER_JOB puts the job aside for this run, and because the
+         // reservation is abandoned rather than recorded, nreservation is not spent on it.
+         // Rejecting the whole category would be wrong here - another job in it may well
+         // reserve, on another host or at another time.
+         //
          // Nothing is committed at this point - the start order is built below and the
          // resources are debited after it - so returning here leaves the cluster as it was.
          // The partially filled list is taken off the task so that a later run does not find
-         // it. DISPATCH_NEVER_JOB puts the job aside for this run and leaves it pending.
+         // it.
          lSetList(ja_task, JAT_granted_resources_list, nullptr);
          assignment_release(&a);
          DRETURN(DISPATCH_NEVER_JOB);
       }
+   }
 
+   if (result == DISPATCH_OK) {
       /* in SGEEE we must account for job tickets on hosts due to parallel jobs */
       {
          double job_tickets_per_slot;

@@ -57,6 +57,7 @@
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_advance_reservation.h"
+#include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/sge_str.h"
 
 #include "debit.h"
@@ -371,12 +372,16 @@ utilization_rsmap_max(const lListElem *cr, u_long64 now, u_long64 start_time, u_
       DRETURN(nullptr);
    }
 
+   // At queue end every job holding something at this moment has ended - that is what queue
+   // end means - so only the diagram beyond them counts there, and the diagram's last entry is
+   // where that is. The window reaches to the end either way.
+   const bool at_queue_end = (start_time == DISPATCH_TIME_QUEUE_END);
    if (start_time == DISPATCH_TIME_NOW) {
       start_time = now;
    }
 
    // what is held at this moment
-   if (start_time <= now) {
+   if (!at_queue_end && start_time <= now) {
       const lList *in_use = lGetList(cr, RUE_utilized_now_resource_map_list);
       if (in_use != nullptr) {
          taken = lCopyList("rsmap_taken", in_use);
@@ -423,6 +428,100 @@ utilization_rsmap_max(const lListElem *cr, u_long64 now, u_long64 start_time, u_
    }
 
    DRETURN(taken);
+}
+
+/**
+ * @brief the earliest time one group of a resource map has a number of instances free
+ *
+ * The per group counterpart of utilization_below(). That one asks when the amount of a
+ * consumable drops below a threshold and stays there; this asks when one group of a resource
+ * map - one identifier for same=id, the instances sharing a characteristic for
+ * same=<characteristic> - has enough instances free and keeps them.
+ *
+ * The distinction matters and is the reason this cannot be answered from the aggregate. "Four
+ * free shares" and "four free shares of one card" are different questions, and the second does
+ * not follow from the first at any level of approximation worth having. It can be answered here
+ * because each entry of the diagram carries what is in use per identifier at its time, so a
+ * group's free count is available at every point the diagram describes.
+ *
+ * The same group has to serve the request for the whole time, so this is a search per group and
+ * the answer is the earliest of them - not the earliest point at which some group or other
+ * happens to fit, which a job could not run on.
+ *
+ * Like utilization_below() it searches from the end of the diagram backwards, so the time it
+ * returns is one from which the group stays free rather than a gap which closes again.
+ *
+ * @param definition the resource map on the host, from EH_consumable_config_list
+ * @param cr         the resource utilization of the map (RUE_Type), may be nullptr
+ * @param key_name   "id" or the name of a characteristic
+ * @param amount     how many instances of one group are needed
+ * @return           the time from which a group can serve the request, DISPATCH_TIME_NOW when
+ *                   one can already, U_LONG64_MAX when no group ever can
+ */
+u_long64
+utilization_rsmap_below(const lListElem *definition, const lListElem *cr, const char *key_name,
+                        u_long32 amount) {
+   DENTER(TOP_LAYER);
+
+   if (definition == nullptr || amount == 0) {
+      DRETURN(DISPATCH_TIME_NOW);
+   }
+
+   const lList *diagram = (cr != nullptr) ? lGetList(cr, RUE_utilized) : nullptr;
+   if (diagram == nullptr || lGetNumberOfElem(diagram) == 0) {
+      // nothing is booked over any period, so whether a group can serve the request is a
+      // question about the configuration alone and the answer does not change with time
+      DRETURN(DISPATCH_TIME_NOW);
+   }
+
+   lList *keys = centry_rsmap_group_keys(definition, key_name);
+   u_long64 earliest = U_LONG64_MAX;
+   bool found = false;
+
+   const lListElem *key_ep;
+   for_each_ep (key_ep, keys) {
+      const char *key = lGetString(key_ep, ST_name);
+
+      // Walk this group's history backwards. The entry which does not fit ends the search: the
+      // one after it is the point from which the group is free to the end of the diagram.
+      //
+      // The last entry is the state from its time onwards, so a group which does not fit there
+      // never becomes free and is no use to this request. That is not the same as the map being
+      // full - another group may well serve it - so this group is passed over rather than the
+      // search being given up.
+      u_long64 when = DISPATCH_TIME_NOW;
+      bool never = false;
+      const lListElem *rde;
+      for_each_rev (rde, diagram) {
+         if (centry_rsmap_group_free(definition, lGetList(rde, RDE_resource_map_list),
+                                     key_name, key) >= amount) {
+            continue;
+         }
+         const lListElem *next = lNext(rde);
+         if (next == nullptr) {
+            never = true;
+         } else {
+            when = lGetUlong64(next, RDE_time);
+         }
+         break;
+      }
+      if (never) {
+         continue;
+      }
+
+      if (when == DISPATCH_TIME_NOW) {
+         // this group is free throughout, so there is nothing to wait for
+         lFreeList(&keys);
+         DRETURN(DISPATCH_TIME_NOW);
+      }
+      if (!found || when < earliest) {
+         earliest = when;
+         found = true;
+      }
+   }
+   lFreeList(&keys);
+
+   DRETURN(found ? earliest : U_LONG64_MAX);
 }
 
 /****** sge_resource_utilization/utilization_add() *****************************

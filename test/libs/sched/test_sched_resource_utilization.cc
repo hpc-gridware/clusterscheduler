@@ -56,6 +56,7 @@ static int do_qeti_test(lListElem *cr, u_long64 *qeti_expected_result);
 static int test_normal_utilization();
 static int test_extensive_utilization();
 static int test_rsmap_utilization();
+static int test_rsmap_below();
 
 int main(int argc, char *argv[]) 
 {
@@ -68,6 +69,7 @@ int main(int argc, char *argv[])
    ret += test_normal_utilization();
    ret += test_extensive_utilization();
    ret += test_rsmap_utilization();
+   ret += test_rsmap_below();
 
    if (ret != 0) {
       printf("\ntest failed!\n");
@@ -508,6 +510,20 @@ static int test_rsmap_utilization() {
       lFreeList(&taken);
    }
 
+   printf("and at queue end\n");
+   {
+      // every job holding something now has ended by then, so the now list does not count;
+      // what remains is what the diagram says at its end, which here is nothing
+      lList *taken = utilization_rsmap_max(cr, 1000, DISPATCH_TIME_QUEUE_END, 100);
+      if (lGetNumberOfElem(taken) != 0) {
+         printf("   FAIL: something is taken at queue end, expected nothing\n");
+         ret++;
+      } else {
+         printf("   ok: nothing is taken at queue end\n");
+      }
+      lFreeList(&taken);
+   }
+
    printf("and for a window which begins after this moment\n");
    {
       // gpu2 is held now and nothing says it still is at 1200, so it does not count there
@@ -567,6 +583,136 @@ static int test_rsmap_utilization() {
 
    if (ret == 0) {
       printf("\n - resource map instances in the diagram: ok -\n");
+   }
+   return ret;
+}
+
+/**
+ * @brief a resource map of two cards, each shared twice: "gpu=4(gpu0 gpu0 gpu1 gpu1)"
+ *
+ * Each identifier also carries a characteristic "rack", both cards being in rack r1, so that
+ * grouping by the identifier and grouping by a characteristic can be told apart.
+ */
+static lListElem *
+make_two_cards() {
+   lListElem *def = lCreateElem(CE_Type);
+   lSetString(def, CE_name, "gpu");
+   lSetUlong(def, CE_valtype, TYPE_RSMAP);
+
+   for (const char *id : {"gpu0", "gpu1"}) {
+      lListElem *resl = lAddSubStr(def, RESL_value, id, CE_resource_map_list, RESL_Type);
+      lSetUlong(resl, RESL_amount, 2);
+      lListElem *prop = lAddSubStr(resl, CE_name, "rack", RESL_properties, CE_Type);
+      lSetString(prop, CE_stringval, "r1");
+   }
+
+   return def;
+}
+
+static int
+check_below(const lListElem *def, const lListElem *cr, const char *key_name, u_long32 amount,
+            u_long64 expected, const char *what) {
+   u_long64 got = utilization_rsmap_below(def, cr, key_name, amount);
+
+   if (got != expected) {
+      printf("   FAIL: %s: expected " sge_u64 ", got " sge_u64 "\n", what, expected, got);
+      return 1;
+   }
+   printf("   ok: %s\n", what);
+   return 0;
+}
+
+/**
+ * @brief when one group of a resource map has a number of instances free, and keeps them
+ *
+ * "Four free shares" and "four free shares of one card" are different questions. These are the
+ * cases which tell them apart: a whole card wanted while the shares are spread over both, a
+ * gap which closes again before the end, and a group which never comes free at all.
+ */
+static int test_rsmap_below() {
+   int ret = 0;
+
+   printf("\n - test when a group of a resource map comes free - \n\n");
+
+   lListElem *def = make_two_cards();
+   lListElem *cr = lCreateElem(RUE_Type);
+   lSetString(cr, RUE_name, "gpu");
+
+   // nothing booked at all: any group can serve the request straight away
+   ret += check_below(def, cr, "id", 2, DISPATCH_TIME_NOW, "an empty diagram answers now");
+
+   // one share of each card held to 1000 and 2000. Two shares in total are free the whole
+   // time, but never two of one card until the first is given back.
+   lList *one_of_gpu0 = make_rsmap("gpu0", 1, nullptr);
+   lList *one_of_gpu1 = make_rsmap("gpu1", 1, nullptr);
+   utilization_add(cr, 0, 1000, 1, 100, 1, HOST_TAG, "node01", "STARTING", false, false,
+                   nullptr, one_of_gpu0);
+   utilization_add(cr, 0, 2000, 1, 101, 1, HOST_TAG, "node01", "STARTING", false, false,
+                   nullptr, one_of_gpu1);
+
+   ret += check_below(def, cr, "id", 1, DISPATCH_TIME_NOW,
+                      "one share is free on both cards now");
+   ret += check_below(def, cr, "id", 2, 1000,
+                      "a whole card comes free when the share on gpu0 is given back");
+
+   // grouped by a characteristic both cards are one group, so the shares add up and two of
+   // the group are free from the start
+   ret += check_below(def, cr, "rack", 2, DISPATCH_TIME_NOW,
+                      "grouped by rack the two free shares are in one group");
+   ret += check_below(def, cr, "rack", 3, 1000,
+                      "three of the group need the gpu0 share back");
+   ret += check_below(def, cr, "rack", 4, 2000,
+                      "the whole group needs both shares back");
+
+   // A gap which closes again must not be offered. On a fresh diagram gpu0 is free from 1000,
+   // taken again from 1500 to 2500 and free for good after that, while gpu1 is held to 3000.
+   // The gap at 1000 fits a whole card but does not last, so the answer is gpu0 at 2500.
+   lListElem *gap = lCreateElem(RUE_Type);
+   lSetString(gap, RUE_name, "gpu");
+   lList *two_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
+   utilization_add(gap, 0, 1000, 1, 102, 1, HOST_TAG, "node01", "STARTING", false, false,
+                   nullptr, one_of_gpu0);
+   utilization_add(gap, 1500, 1000, 2, 103, 1, HOST_TAG, "node01", "STARTING", false, false,
+                   nullptr, two_of_gpu0);
+   utilization_add(gap, 0, 3000, 1, 104, 1, HOST_TAG, "node01", "STARTING", false, false,
+                   nullptr, one_of_gpu1);
+
+   ret += check_below(def, gap, "id", 2, 2500,
+                      "the gap at 1000 closes again, so gpu0 answers at 2500 instead");
+
+   // a group still taken at the end of the diagram never comes free, but another group which
+   // is free throughout still answers
+   lListElem *full = lCreateElem(RUE_Type);
+   lSetString(full, RUE_name, "gpu");
+   lList *both_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
+   utilization_add(full, 0, U_LONG64_MAX, 2, 105, 1, HOST_TAG, "node01", "STARTING", false,
+                   false, nullptr, both_of_gpu0);
+
+   ret += check_below(def, full, "id", 2, DISPATCH_TIME_NOW,
+                      "gpu0 never comes free, gpu1 is untouched and answers now");
+
+   lList *both_cards = make_rsmap("gpu0", 2, "gpu1", 2, nullptr);
+   lListElem *all_full = lCreateElem(RUE_Type);
+   lSetString(all_full, RUE_name, "gpu");
+   utilization_add(all_full, 0, U_LONG64_MAX, 4, 104, 1, HOST_TAG, "node01", "STARTING", false,
+                   false, nullptr, both_cards);
+
+   ret += check_below(def, all_full, "id", 2, U_LONG64_MAX,
+                      "when no card ever comes free there is nothing to reserve");
+
+   lFreeList(&one_of_gpu0);
+   lFreeList(&one_of_gpu1);
+   lFreeList(&two_of_gpu0);
+   lFreeList(&both_of_gpu0);
+   lFreeList(&both_cards);
+   lFreeElem(&cr);
+   lFreeElem(&gap);
+   lFreeElem(&full);
+   lFreeElem(&all_full);
+   lFreeElem(&def);
+
+   if (ret == 0) {
+      printf("\n - when a group comes free: ok -\n");
    }
    return ret;
 }

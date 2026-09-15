@@ -187,6 +187,11 @@ instances serves four slots of `-l 'gpu=1[same=id]'`, whatever the queue would o
 For *consumable JOB* and *consumable HOST* the amount is taken once, so a group either serves the
 request or the host cannot run the job.
 
+A request carrying *same=* takes part in resource reservation like any other. A job submitted with
+`-R y` is given a reserved start time at which one group is actually free, not merely one at which
+the amount is free across several groups, so a job waiting for a whole card is not passed over
+indefinitely by jobs asking for single shares.
+
 # WHAT A JOB SEES
 
 The identifiers granted on a host are exported to the job as
