@@ -152,7 +152,14 @@ hgroup_get_via_gdi(lList **answer_list, const char *name) {
       lList *hostgroup_list = nullptr;
 
       what = lWhat("%T(ALL)", HGRP_Type);
-      where = lWhere("%T(%I==%s)", HGRP_Type, HGRP_name, name);
+      /*
+       * CS-2762: "h=", not "==" with %s. HGRP_name is an lHostT field, and the
+       * object layer folds its case - a group created as "@MixedCase" is found
+       * and modified by writing "@MIXEDCASE". A string comparison here made the
+       * lookup the one place that disagreed, so a group could be created in one
+       * spelling and displayed through none but that one.
+       */
+      where = lWhere("%T(%I h= %s)", HGRP_Type, HGRP_name, name);
       gdi_answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &hostgroup_list, where, what);
       lFreeWhat(&what);
       lFreeWhere(&where);

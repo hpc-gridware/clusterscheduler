@@ -161,7 +161,8 @@ cqueue_get_via_gdi(lList **answer_list, const char *name) {
          lList *hgroup_list = nullptr;
 
          what = lWhat("%T(ALL)", HGRP_Type);
-         where = lWhere("%T(%I==%s)", HGRP_Type, HGRP_name, group_name);
+         // CS-2762: host field, so the host comparison - see sge_qconf_hgroup.cc
+         where = lWhere("%T(%I h= %s)", HGRP_Type, HGRP_name, group_name);
          gdi_answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &hgroup_list, where, what);
          lFreeWhat(&what);
          lFreeWhere(&where);

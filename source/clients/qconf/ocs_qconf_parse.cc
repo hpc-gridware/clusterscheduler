@@ -8065,7 +8065,9 @@ static bool show_reserved_hgroup_hosts(const char *group, const char *json_type,
    bool ret = true;
 
    lEnumeration *what = lWhat("%T(%I %I)", HGRP_Type, HGRP_name, HGRP_host_list);
-   lCondition *where = lWhere("%T(%I==%s)", HGRP_Type, HGRP_name, group);
+   // CS-2762: a host field is compared with "h=", which folds case as the
+   // object layer does; "==" with %s is the string comparison
+   lCondition *where = lWhere("%T(%I h= %s)", HGRP_Type, HGRP_name, group);
 
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET,
                                    ocs::gdi::SubCommand::NONE, &lp, where, what);
