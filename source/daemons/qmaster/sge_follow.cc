@@ -711,7 +711,12 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
             jep = lGetElemUlongRW(master_job_list, JB_job_number, job_number);
             if (jep == nullptr) {
-               WARNING(MSG_JOB_UNABLE2FINDJOBORD_U, job_number);
+               // CS-2765: INFO, not a warning and certainly not an error. The
+               // scheduler computed this order for a job that has finished in the
+               // meantime -- ordinary operation in any busy cluster, and the line
+               // below says as much. Logged at all because it explains a dropped
+               // order when a scheduling decision is traced.
+               INFO(MSG_JOB_UNABLE2FINDJOBORD_U, job_number);
                DRETURN(0); /* it's ok - job has exited - forget about him */
             }
 
@@ -812,7 +817,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
             jep = lGetElemUlongRW(master_job_list, JB_job_number, job_number);
             if (jep == nullptr) {
-               WARNING(MSG_JOB_UNABLE2FINDJOBORD_U, job_number);
+               // CS-2765: INFO for the reason given at the first of these three.
+               INFO(MSG_JOB_UNABLE2FINDJOBORD_U, job_number);
                DRETURN(0); /* it's ok - job has exited - forget about him */
             }
 
@@ -930,7 +936,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
             jep = lGetElemUlongRW(master_job_list, JB_job_number, job_number);
             if (jep == nullptr) {
-               ERROR(MSG_JOB_UNABLE2FINDJOBORD_U, job_number);
+               // CS-2765: INFO for the reason given at the first of these three.
+               INFO(MSG_JOB_UNABLE2FINDJOBORD_U, job_number);
                DRETURN(0); /* it's ok - job has exited - forget about him */
             }
             task_number = lGetUlong(ep, OR_ja_task_number);
