@@ -416,9 +416,21 @@ hgroup_split_members(const lListElem *hgroup, lList **hosts, lList **groups, lLi
  * True for `@admin_hosts`, `@submit_hosts` and `@exec_hosts` (CS-2438). These
  * back what used to be the AH_LIST/SH_LIST data models and the execution
  * host list, so they may not be deleted and carry extra rules on write.
- * Comparison is case-sensitive, matching how the reserved usersets are
- * compared in sge_userset_qmaster.cc: the names are fixed literals the
- * product creates itself, not something a user types in a locale.
+ * Comparison is case-INsensitive (CS-2763), because `HGRP_name` is an
+ * `SGE_HOST` field: the object layer folds it, so `@ADMIN_HOSTS` and
+ * `@admin_hosts` are one and the same group and a predicate that answered
+ * differently for the two would disagree with the lookup that finds them.
+ *
+ * It used to be `strcmp()`, justified by the parallel to the reserved usersets
+ * in sge_userset_qmaster.cc. That parallel does not hold: `US_name` is an
+ * `SGE_STRING` field, where case-sensitivity is right, and `HGRP_name` is not.
+ * The consequence was measurable -- `qconf -dhgrp @ADMIN_HOSTS` walked past
+ * this guard, found the group, and was stopped only by the spool file carrying
+ * the stored spelling.
+ *
+ * sge_hostcmp() is the comparison the object layer itself uses, and it already
+ * handles a group name as a group name: `@`-prefixed operands are compared
+ * case-insensitively with no domain normalisation applied.
  *
  * @param name host group name including the leading '@'
  *
@@ -428,9 +440,9 @@ hgroup_split_members(const lListElem *hgroup, lList **hosts, lList **groups, lLi
  */
 bool hgroup_is_reserved(const char *name) {
    return name != nullptr &&
-          (strcmp(name, ADMIN_HOSTGROUP) == 0 ||
-           strcmp(name, SUBMIT_HOSTGROUP) == 0 ||
-           strcmp(name, EXEC_HOSTGROUP) == 0);
+          (sge_hostcmp(name, ADMIN_HOSTGROUP) == 0 ||
+           sge_hostcmp(name, SUBMIT_HOSTGROUP) == 0 ||
+           sge_hostcmp(name, EXEC_HOSTGROUP) == 0);
 }
 
 /**
@@ -442,6 +454,9 @@ bool hgroup_is_reserved(const char *name) {
  * Object Keys"), because a hand-edited copy would silently disagree with the
  * exec host list it is supposed to mirror.
  *
+ * Case-insensitive for the reason given at hgroup_is_reserved() (CS-2763):
+ * `HGRP_name` is an `SGE_HOST` field, so `@EXEC_HOSTS` names this very group.
+ *
  * @param name host group name including the leading '@'
  *
  * @return true if the group is maintained by the system
@@ -449,7 +464,7 @@ bool hgroup_is_reserved(const char *name) {
  * @note MT-NOTE: hgroup_is_system_maintained() is MT safe
  */
 bool hgroup_is_system_maintained(const char *name) {
-   return name != nullptr && strcmp(name, EXEC_HOSTGROUP) == 0;
+   return name != nullptr && sge_hostcmp(name, EXEC_HOSTGROUP) == 0;
 }
 
 /**
@@ -459,6 +474,9 @@ bool hgroup_is_system_maintained(const char *name) {
  * rather than merely conventional: hgroup_check_name() validates a name from
  * its second character on and `@` is among the characters KEY_TABLE forbids,
  * so no administrator can write one.
+ *
+ * No case folding is needed here, unlike the two predicates above (CS-2763):
+ * the test is for the literal prefix `@@`, which has no case.
  *
  * This is deliberately not part of hgroup_is_system_maintained(): that
  * predicate refuses every write, and the member list of a queue host group is

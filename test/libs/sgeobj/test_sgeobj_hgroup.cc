@@ -63,6 +63,10 @@
  * The tests drive both predicates directly. The guards that use them live in the
  * qmaster (hgroup_del(), hgroup_mod()) and need a data store plus a GDI packet,
  * so they are covered by the testsuite checks rather than here.
+ *
+ * CS-2763: both predicates compare case-insensitively, because HGRP_name is an
+ * SGE_HOST field and the object layer folds it. A predicate that answered
+ * otherwise disagreed with the very lookup that finds the group.
  */
 
 // ---------------------------------------------------------------------------
@@ -124,10 +128,20 @@ test_is_reserved() {
    CHECK(10, "@admin_hosts2 is not reserved", !hgroup_is_reserved("@admin_hosts2"));
    CHECK(11, "@my_admin_hosts is not reserved", !hgroup_is_reserved("@my_admin_hosts"));
 
-   // T12-T13: matching is case sensitive, like the reserved usersets in
-   // sge_userset_qmaster.cc -- the names are literals the product writes itself
-   CHECK(12, "@ADMIN_HOSTS is not reserved", !hgroup_is_reserved("@ADMIN_HOSTS"));
-   CHECK(13, "@Exec_Hosts is not reserved", !hgroup_is_reserved("@Exec_Hosts"));
+   // T12-T13: matching is case INsensitive (CS-2763). These two used to assert
+   // the opposite, on the stated parallel to the reserved usersets. The parallel
+   // is false: US_name is an SGE_STRING field, HGRP_name is an SGE_HOST field,
+   // and the object layer folds the latter. While these expectations stood,
+   // "qconf -dhgrp @ADMIN_HOSTS" walked past the guard in hgroup_del() and was
+   // stopped only by the spool file carrying the stored spelling.
+   CHECK(12, "@ADMIN_HOSTS is reserved", hgroup_is_reserved("@ADMIN_HOSTS"));
+   CHECK(13, "@Exec_Hosts is reserved", hgroup_is_reserved("@Exec_Hosts"));
+   CHECK(13, "@Submit_Hosts is reserved", hgroup_is_reserved("@Submit_Hosts"));
+
+   // T13a: folding must not reach past the name itself -- the look-alikes of
+   // T09-T11 stay unreserved in any spelling
+   CHECK(13, "@MY_ADMIN_HOSTS is not reserved", !hgroup_is_reserved("@MY_ADMIN_HOSTS"));
+   CHECK(13, "@Admin_Hosts2 is not reserved", !hgroup_is_reserved("@Admin_Hosts2"));
 
    // T14: empty string
    CHECK(14, "empty name is not reserved", !hgroup_is_reserved(""));
@@ -143,6 +157,12 @@ test_is_system_maintained() {
 
    // T15: only @exec_hosts is refused for every role including manager
    CHECK(15, "@exec_hosts is system maintained", hgroup_is_system_maintained(EXEC_HOSTGROUP));
+
+   // T15a: and in any spelling (CS-2763), for the reason given at T12-T13
+   CHECK(15, "@EXEC_HOSTS is system maintained", hgroup_is_system_maintained("@EXEC_HOSTS"));
+   CHECK(15, "@Exec_Hosts is system maintained", hgroup_is_system_maintained("@Exec_Hosts"));
+   CHECK(15, "@my_exec_hosts is not system maintained",
+         !hgroup_is_system_maintained("@my_exec_hosts"));
 
    // T16-T17: the writable reserved groups. This is the distinction that makes
    // two predicates necessary -- both are reserved, neither is read-only.

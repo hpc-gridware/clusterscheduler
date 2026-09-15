@@ -910,6 +910,14 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
           * reserved usersets get in sge_del_userset(). Checked before the
           * existence lookup so the answer does not depend on whether the group
           * happens to be spooled yet.
+          *
+          * CS-2763: this reaches a folded spelling too. hgroup_is_reserved()
+          * used to compare with strcmp(), so "@ADMIN_HOSTS" walked past this
+          * guard, was found by the lookup below -- HGRP_name is an SGE_HOST
+          * field -- and got as far as the spool call, which failed only because
+          * the file carries the stored spelling. That accident was the only
+          * thing standing between a manager and the deletion of every admin
+          * host at once; the predicate now folds case, as the object layer does.
           */
          if (hgroup_is_reserved(name)) {
             ERROR(MSG_HGRP_RESERVED_NODELETE_S, name);
@@ -966,20 +974,32 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *this_elem,
 
             /*
              * Try to unlink the concerned spoolfile
+             *
+             * CS-2763: with the STORED name, not the one the request carried.
+             * HGRP_name is an SGE_HOST field, so hgroup_list_locate() above
+             * finds the group under any spelling -- but the spool file and the
+             * event key are the stored spelling, and handing this call
+             * "@MixedCase" as "@mixedcase" made the unlink miss a file that was
+             * there and refused a delete that should have succeeded. The same
+             * name is the key of the sgeE_HGROUP_DEL event, where a wrong
+             * spelling would tell every event client about an object it does
+             * not hold under that name.
              */
             if (ret) {
+               const char *stored_name = lGetHost(hgroup, HGRP_name);
+
                if (sge_event_spool(answer_list, 0, sgeE_HGROUP_DEL,
-                                   0, 0, name, nullptr, nullptr, nullptr, nullptr, nullptr, true, true, packet->gdi_session)) {
+                                   0, 0, stored_name, nullptr, nullptr, nullptr, nullptr, nullptr, true, true, packet->gdi_session)) {
                   /*
                    * Let's remove the object => Success!
                    */
 
                   lRemoveElem(master_hgroup_list, &hgroup);
 
-                  INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, remote_user, remote_host, name, "host group entry");
+                  INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, remote_user, remote_host, stored_name, "host group entry");
                   answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                } else {
-                  ERROR(MSG_CANTSPOOL_SS, "host group entry", name);
+                  ERROR(MSG_CANTSPOOL_SS, "host group entry", stored_name);
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                   ret = false;
                }
