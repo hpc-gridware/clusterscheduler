@@ -22,6 +22,8 @@
  * @brief RBAC roles and the permissions they grant
  */
 
+#include <algorithm>
+#include <cctype>
 #include <fnmatch.h>
 #include <unordered_map>
 #include <unordered_set>
@@ -247,9 +249,55 @@ static const std::unordered_map<std::string, std::vector<std::string>> &object_t
 }
 
 /**
+ * fnmatch() that disregards the case of both operands.
+ *
+ * FNM_CASEFOLD would do this in one flag, but it is a GNU/BSD extension and
+ * this product is also built for SOLARIS (see cmake/ArchitectureSpecificSettings.cmake),
+ * where it is not guaranteed to exist. Folding both operands to lower case
+ * ourselves is portable and says literally what is meant: the case, and nothing
+ * else about the two names, is disregarded.
+ *
+ * The pattern is folded too, so a bracket expression written as `[A-Z]` becomes
+ * `[a-z]` and keeps matching the same set of (now folded) characters. That is
+ * the same behaviour FNM_CASEFOLD has.
+ *
+ * @param pattern  fnmatch pattern.
+ * @param str      String to match against it.
+ * @return         True if the pattern matches the string, ignoring case.
+ */
+static bool fnmatch_nocase(const std::string &pattern, const std::string &str) {
+   std::string p{pattern};
+   std::string s{str};
+   std::transform(p.begin(), p.end(), p.begin(), [](unsigned char c) { return std::tolower(c); });
+   std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
+   return fnmatch(p.c_str(), s.c_str(), 0) == 0;
+}
+
+/**
  * Match characteristic 1 (source of request).
- * @p @-prefixed tokens are fnmatch-matched against ctx.source_hostgroups;
- * plain tokens are fnmatch-matched against ctx.source (hostname).
+ *
+ * @p @-prefixed tokens are matched against ctx.source_hostgroups, plain tokens
+ * against ctx.source (hostname). Both are matched **case-insensitively**
+ * (CS-2761), because both name things this product compares case-insensitively
+ * everywhere else:
+ *
+ *   - a host name, which sge_hostcmp() folds and the cull host key normalises
+ *     with sge_hostcpy() plus upper-casing. A rule naming `Node001` has to match
+ *     a request from `node001`.
+ *   - a host group name, because HGRP_name is an lHostT field and the object
+ *     layer folds it too - `@casetest` and `@CASETEST` are one group, not two.
+ *
+ * **Only the case**, via fnmatch_nocase() above. A full host comparison would
+ * also apply the domain rules in force (ignore_fqdn, default_domain), and that
+ * is deliberately not done here: the rule field is stored as it was written and
+ * is never normalised, so normalising only the candidate would make a rule
+ * naming `submit*.example.com` unable to match anything the moment ignore_fqdn
+ * is set. Whether these rules
+ * should be normalised when they are written, as a host group matcher is, is a
+ * question for whoever wires this evaluation up - it has no caller yet. Until
+ * then the field is an fnmatch pattern over the name as it arrives, which is
+ * what the tests of this file pin down.
+ *
  * @param field  Rule source field; may contain '|'-separated alternatives.
  * @param ctx    Request context.
  * @return       True if any alternative matches.
@@ -265,12 +313,12 @@ static bool match_source(const std::string &field, const ocs::Role::MatchContext
       }
       if (!tok.empty() && tok[0] == '@') {
          for (const auto &hg : ctx.source_hostgroups) {
-            if (fnmatch(tok.c_str(), hg.c_str(), 0) == 0) {
+            if (fnmatch_nocase(tok, hg)) {
                DRETURN(true);
             }
          }
       } else {
-         if (fnmatch(tok.c_str(), ctx.source.c_str(), 0) == 0) {
+         if (fnmatch_nocase(tok, ctx.source)) {
             DRETURN(true);
          }
       }

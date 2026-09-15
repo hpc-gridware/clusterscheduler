@@ -248,12 +248,46 @@ static void test_match_rule() {
    CHECK(16, "source fnmatch: admin1 does not match", !ocs::Role::match_rule(rule, ctx));
    ctx.source = "host1.example.com";
 
+   /*
+    * CS-2761: the source is matched case-insensitively, because every other
+    * host comparison in this product is. A rule naming "Node001" that does not
+    * reach a request from "node001" is an authorization rule that silently
+    * fails to apply - the kind of defect nobody notices until it matters.
+    */
+   rule = {"Node001", "*", "*", "*", "*", "*"};
+   ctx.source = "node001";
+   CHECK(16, "source case: Node001 in the rule matches node001", ocs::Role::match_rule(rule, ctx));
+   rule = {"node001", "*", "*", "*", "*", "*"};
+   ctx.source = "NODE001";
+   CHECK(16, "source case: node001 in the rule matches NODE001", ocs::Role::match_rule(rule, ctx));
+   rule = {"Submit*", "*", "*", "*", "*", "*"};
+   ctx.source = "submit7";
+   CHECK(16, "source case: the folding survives a pattern", ocs::Role::match_rule(rule, ctx));
+   rule = {"node001", "*", "*", "*", "*", "*"};
+   ctx.source = "node002";
+   CHECK(16, "source case: folding does not make unrelated hosts match",
+         !ocs::Role::match_rule(rule, ctx));
+   ctx.source = "host1.example.com";
+
    // T17: @-prefixed source token is matched against the source_hostgroups vector
    rule = {"@submit_hosts", "*", "*", "*", "*", "*"};
    ctx.source_hostgroups = {"@submit_hosts", "@other"};
    CHECK(17, "@submit_hosts matched in source_hostgroups",      ocs::Role::match_rule(rule, ctx));
    ctx.source_hostgroups = {"@exec_hosts"};
    CHECK(17, "@submit_hosts not in source_hostgroups → false",  !ocs::Role::match_rule(rule, ctx));
+
+   /*
+    * CS-2761: and the group token likewise. HGRP_name is an lHostT field, so
+    * the object layer folds its case - "@casetest" and "@CASETEST" are one
+    * group, not two - and a rule naming one spelling has to reach the other.
+    */
+   rule = {"@SUBMIT_HOSTS", "*", "*", "*", "*", "*"};
+   ctx.source_hostgroups = {"@submit_hosts"};
+   CHECK(17, "group case: @SUBMIT_HOSTS in the rule matches @submit_hosts",
+         ocs::Role::match_rule(rule, ctx));
+   ctx.source_hostgroups = {"@other_hosts"};
+   CHECK(17, "group case: folding does not make unrelated groups match",
+         !ocs::Role::match_rule(rule, ctx));
    ctx.source_hostgroups = {};
 
    // T18: owner=$request_user resolves to the requesting user's name
