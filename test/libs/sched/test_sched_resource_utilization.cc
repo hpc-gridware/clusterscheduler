@@ -32,6 +32,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <cstdarg>
 #include <cstdio>
 
 #include "uti/sge_rmon_macros.h"
@@ -54,6 +55,7 @@ static int do_qeti_test(lListElem *cr, u_long64 *qeti_expected_result);
 
 static int test_normal_utilization();
 static int test_extensive_utilization();
+static int test_rsmap_utilization();
 
 int main(int argc, char *argv[]) 
 {
@@ -65,6 +67,7 @@ int main(int argc, char *argv[])
 
    ret += test_normal_utilization();
    ret += test_extensive_utilization();
+   ret += test_rsmap_utilization();
 
    if (ret != 0) {
       printf("\ntest failed!\n");
@@ -162,13 +165,16 @@ static int test_normal_utilization()
 
 
    printf("adding a 200s now assignment of 8 starting at 800\n");
-   utilization_add(cr, 800, 200, 8, 100, 1, PE_TAG, "pe_slots", "STARTING", false, false, nullptr);
+   utilization_add(cr, 800, 200, 8, 100, 1, PE_TAG, "pe_slots",
+                   "STARTING", false, false, nullptr, nullptr);
 
    printf("adding a 100s now assignment of 4 starting at 1000\n");
-   utilization_add(cr, 1000, 100, 4, 101, 1, PE_TAG, "pe_slots", "STARTING", false, false, nullptr);
+   utilization_add(cr, 1000, 100, 4, 101, 1, PE_TAG, "pe_slots",
+                   "STARTING", false, false, nullptr, nullptr);
 
    printf("adding a 100s reservation of 8 starting at 1100\n");
-   utilization_add(cr, 1100, 100, 8, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr);
+   utilization_add(cr, 1100, 100, 8, 102, 1, PE_TAG, "pe_slots",
+                   "RESERVING", false, false, nullptr, nullptr);
 
    ret += do_utilization_test(cr, test_array);
    ret += do_qeti_test(cr, qeti_expected_result);
@@ -217,16 +223,20 @@ static int test_extensive_utilization() {
       printf("1. reserved and verify result\n\n");
 
       printf("adding a 200s now assignment of 8 starting at 800\n");
-      utilization_add(cr, 800, 200, 8, 100, 1, PE_TAG, "pe_slots", "STARTING", false, false, nullptr);
+      utilization_add(cr, 800, 200, 8, 100, 1, PE_TAG, "pe_slots",
+                   "STARTING", false, false, nullptr, nullptr);
 
       printf("adding a 100s now assignment of 4 starting at 1000\n");
-      utilization_add(cr, 1000, 100, 4, 101, 1, PE_TAG, "pe_slots", "STARTING", false, false, nullptr);
+      utilization_add(cr, 1000, 100, 4, 101, 1, PE_TAG, "pe_slots",
+                   "STARTING", false, false, nullptr, nullptr);
 
       printf("adding a unlimited reservation of 4 starting at 1100\n");
-      utilization_add(cr, 1100, U_LONG64_MAX, 4, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr);
+      utilization_add(cr, 1100, U_LONG64_MAX, 4, 102, 1, PE_TAG, "pe_slots",
+                   "RESERVING", false, false, nullptr, nullptr);
 
       printf("adding a unlimited reservation of 4 starting at 2000\n");
-      utilization_add(cr, 2000, U_LONG64_MAX, 4, 103, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr);
+      utilization_add(cr, 2000, U_LONG64_MAX, 4, 103, 1, PE_TAG, "pe_slots",
+                   "RESERVING", false, false, nullptr, nullptr);
 
       ret += do_utilization_test(cr, test_array);
       ret += do_qeti_test(cr, qeti_expected_result);
@@ -264,10 +274,12 @@ static int test_extensive_utilization() {
       printf("2. unreserve some and test result\n\n");
 
       printf("removing a 100s now assignment of 4 starting at 1000\n");
-      utilization_add(cr, 1000, 100, -4, 101, 1, PE_TAG, "pe_slots", "STARTING", false, false, nullptr);
+      utilization_add(cr, 1000, 100, -4, 101, 1, PE_TAG, "pe_slots",
+                   "STARTING", false, false, nullptr, nullptr);
 
       printf("removing a unlimited reservation of 4 starting at 1100\n");
-      utilization_add(cr, 1100, U_LONG64_MAX, -4, 102, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr);
+      utilization_add(cr, 1100, U_LONG64_MAX, -4, 102, 1, PE_TAG, "pe_slots",
+                   "RESERVING", false, false, nullptr, nullptr);
 
       ret += do_utilization_test(cr, test_array);
       ret += do_qeti_test(cr, qeti_expected_result);
@@ -288,10 +300,12 @@ static int test_extensive_utilization() {
       printf("3. unreserve all\n\n");
 
       printf("removing a 200s now assignment of 8 starting at 800\n");
-      utilization_add(cr, 800, 200, -8, 100, 1, PE_TAG, "pe_slots", "STARTING", false, false, nullptr);
+      utilization_add(cr, 800, 200, -8, 100, 1, PE_TAG, "pe_slots",
+                   "STARTING", false, false, nullptr, nullptr);
 
       printf("removing a unlimited reservation of 4 starting at 2000\n");
-      utilization_add(cr, 2000, U_LONG64_MAX, -4, 103, 1, PE_TAG, "pe_slots", "RESERVING", false, false, nullptr);
+      utilization_add(cr, 2000, U_LONG64_MAX, -4, 103, 1, PE_TAG, "pe_slots",
+                   "RESERVING", false, false, nullptr, nullptr);
 
       ret += do_utilization_test(cr, test_array);
       ret += do_qeti_test(cr, nullptr);
@@ -299,5 +313,260 @@ static int test_extensive_utilization() {
 
    lFreeElem(&cr);
 
+   return ret;
+}
+
+/**
+ * @brief build a resource map instance list, as the granted resources carry it
+ *
+ * The arguments are identifier and amount pairs, ended by a nullptr identifier.
+ */
+static lList *
+make_rsmap(const char *id, u_long32 amount, ...) {
+   lList *ids = nullptr;
+   va_list ap;
+
+   va_start(ap, amount);
+   while (id != nullptr) {
+      lListElem *ep = lAddElemStr(&ids, RESL_value, id, RESL_Type);
+      lSetUlong(ep, RESL_amount, amount);
+      id = va_arg(ap, const char *);
+      if (id != nullptr) {
+         amount = va_arg(ap, u_long32);
+      }
+   }
+   va_end(ap);
+
+   return ids;
+}
+
+/**
+ * @brief how much of an identifier a diagram entry says is in use
+ */
+static u_long32
+rsmap_at(const lListElem *rde, const char *id) {
+   const lListElem *ep = lGetSubStr(rde, RESL_value, id, RDE_resource_map_list);
+   return (ep != nullptr) ? lGetUlong(ep, RESL_amount) : 0;
+}
+
+/**
+ * @brief the entry of the diagram which is in force at a point in time
+ */
+static const lListElem *
+rde_at_time(const lListElem *cr, u_long64 time) {
+   const lListElem *hit = nullptr;
+   const lListElem *ep;
+
+   for_each_ep (ep, lGetList(cr, RUE_utilized)) {
+      if (lGetUlong64(ep, RDE_time) > time) {
+         break;
+      }
+      hit = ep;
+   }
+
+   return hit;
+}
+
+static int
+check_rsmap(const lListElem *cr, u_long64 time, const char *id, u_long32 expected) {
+   const lListElem *rde = rde_at_time(cr, time);
+   u_long32 got = (rde != nullptr) ? rsmap_at(rde, id) : 0;
+
+   if (got != expected) {
+      printf("   FAIL: at " sge_u64 " expected " sge_u32 " of %s, got " sge_u32 "\n",
+             time, expected, id, got);
+      return 1;
+   }
+   printf("   ok: at " sge_u64 " %s is used " sge_u32 " times\n", time, id, got);
+   return 0;
+}
+
+/**
+ * @brief the diagram records which instances of a resource map are held, over the window
+ *
+ * The amount alone cannot say which card a reservation took, so a job scheduled into the same
+ * window has no way to avoid it. These are the cases the booking has to get right: instances
+ * held for a window and given back at its end, two bookings of the same identifier adding up,
+ * and a booking withdrawn again leaving nothing behind.
+ */
+static int test_rsmap_utilization() {
+   int ret = 0;
+
+   printf("\n - test resource map instances in the diagram - \n\n");
+
+   lListElem *cr = lCreateElem(RUE_Type);
+   lSetString(cr, RUE_name, "gpu");
+
+   // a reservation takes two instances of gpu0 from 1000 for 200 seconds
+   lList *two_of_gpu0 = make_rsmap("gpu0", 2, nullptr);
+   utilization_add(cr, 1000, 200, 2, 100, 1, HOST_TAG, "node01", "RESERVING", false, false,
+                   nullptr, two_of_gpu0);
+
+   printf("a reservation of gpu0 twice, from 1000 for 200s\n");
+   ret += check_rsmap(cr, 900, "gpu0", 0);
+   ret += check_rsmap(cr, 1000, "gpu0", 2);
+   ret += check_rsmap(cr, 1100, "gpu0", 2);
+   ret += check_rsmap(cr, 1200, "gpu0", 0);
+
+   // a job inside that window takes one of gpu1, which has to leave gpu0 alone
+   lList *one_of_gpu1 = make_rsmap("gpu1", 1, nullptr);
+   utilization_add(cr, 1050, 100, 1, 101, 1, HOST_TAG, "node01", "STARTING", false, false,
+                   nullptr, one_of_gpu1);
+
+   printf("a job taking gpu1 once, from 1050 for 100s\n");
+   ret += check_rsmap(cr, 1000, "gpu1", 0);
+   ret += check_rsmap(cr, 1050, "gpu1", 1);
+   ret += check_rsmap(cr, 1100, "gpu1", 1);
+   ret += check_rsmap(cr, 1150, "gpu1", 0);
+   ret += check_rsmap(cr, 1100, "gpu0", 2);
+
+   // a second booking of gpu0 inside the same window adds up
+   lList *one_of_gpu0 = make_rsmap("gpu0", 1, nullptr);
+   utilization_add(cr, 1100, 50, 1, 102, 1, HOST_TAG, "node01", "STARTING", false, false,
+                   nullptr, one_of_gpu0);
+
+   printf("a job taking gpu0 once more, from 1100 for 50s\n");
+   ret += check_rsmap(cr, 1050, "gpu0", 2);
+   ret += check_rsmap(cr, 1100, "gpu0", 3);
+   ret += check_rsmap(cr, 1150, "gpu0", 2);
+   ret += check_rsmap(cr, 1200, "gpu0", 0);
+
+   // and withdrawing it leaves what the others hold
+   utilization_add(cr, 1100, 50, -1, 102, 1, HOST_TAG, "node01", "STARTING", false, false,
+                   nullptr, one_of_gpu0);
+
+   printf("that job is withdrawn again\n");
+   ret += check_rsmap(cr, 1100, "gpu0", 2);
+   ret += check_rsmap(cr, 1150, "gpu0", 2);
+   ret += check_rsmap(cr, 1200, "gpu0", 0);
+   ret += check_rsmap(cr, 1100, "gpu1", 1);
+
+   // the reader: how much of an identifier is taken anywhere in a window. The diagram now has
+   // gpu0 held twice over [1000,1200) and gpu1 once over [1050,1150).
+   struct {
+      u_long64 start;
+      u_long64 duration;
+      const char *id;
+      u_long32 expected;
+      const char *what;
+   } windows[] = {
+      {1000, 200, "gpu0", 2, "the whole window the reservation holds"},
+      {1000, 200, "gpu1", 1, "a window covering the job as well"},
+      {1000,  40, "gpu1", 0, "a window ending before the job starts"},
+      { 800, 100, "gpu0", 0, "a window ending before anything starts"},
+      {1200, 100, "gpu0", 0, "a window starting after everything ended"},
+      { 900, 200, "gpu0", 2, "a window opening before and reaching into the reservation"},
+      {1150,  50, "gpu1", 0, "a window opening exactly when the job ended"},
+      {1100,  10, "gpu0", 2, "a window wholly inside the reservation"},
+      {0, 0, nullptr, 0, nullptr}
+   };
+
+   printf("reading back what is taken over a window\n");
+   for (int i = 0; windows[i].id != nullptr; i++) {
+      lList *taken = utilization_rsmap_max(cr, 1000, windows[i].start, windows[i].duration);
+      const lListElem *ep = lGetElemStr(taken, RESL_value, windows[i].id);
+      u_long32 got = (ep != nullptr) ? lGetUlong(ep, RESL_amount) : 0;
+
+      if (got != windows[i].expected) {
+         printf("   FAIL: %s: expected " sge_u32 " of %s over [" sge_u64 "," sge_u64 "),"
+                " got " sge_u32 "\n",
+                windows[i].what, windows[i].expected, windows[i].id, windows[i].start,
+                windows[i].start + windows[i].duration, got);
+         ret++;
+      } else {
+         printf("   ok: %s: " sge_u32 " of %s\n", windows[i].what, got, windows[i].id);
+      }
+      lFreeList(&taken);
+   }
+
+   // What a job holds right now is in the utilization of the moment as well as in the diagram,
+   // so the two are combined by taking the larger and not by adding them up. gpu0 is held twice
+   // over [1000,1200) in the diagram; saying the same in the now list must not make it four.
+   lSetList(cr, RUE_utilized_now_resource_map_list, make_rsmap("gpu0", 2, "gpu2", 1, nullptr));
+
+   printf("with the same instances also recorded as held right now\n");
+   {
+      lList *taken = utilization_rsmap_max(cr, 1000, 1000, 200);
+      const lListElem *ep = lGetElemStr(taken, RESL_value, "gpu0");
+      u_long32 got = (ep != nullptr) ? lGetUlong(ep, RESL_amount) : 0;
+      if (got != 2) {
+         printf("   FAIL: gpu0 is held twice, in both places, expected 2 got " sge_u32 "\n", got);
+         ret++;
+      } else {
+         printf("   ok: gpu0 counts once, " sge_u32 "\n", got);
+      }
+
+      // an instance only the now list knows about still counts
+      ep = lGetElemStr(taken, RESL_value, "gpu2");
+      got = (ep != nullptr) ? lGetUlong(ep, RESL_amount) : 0;
+      if (got != 1) {
+         printf("   FAIL: gpu2 is held right now, expected 1 got " sge_u32 "\n", got);
+         ret++;
+      } else {
+         printf("   ok: gpu2 is held right now, " sge_u32 "\n", got);
+      }
+      lFreeList(&taken);
+   }
+
+   printf("and for a window which begins after this moment\n");
+   {
+      // gpu2 is held now and nothing says it still is at 1200, so it does not count there
+      lList *taken = utilization_rsmap_max(cr, 1000, 1200, 100);
+      const lListElem *ep = lGetElemStr(taken, RESL_value, "gpu2");
+      u_long32 got = (ep != nullptr) ? lGetUlong(ep, RESL_amount) : 0;
+      if (got != 0) {
+         printf("   FAIL: gpu2 is held now but the window is later, expected 0 got "
+                sge_u32 "\n", got);
+         ret++;
+      } else {
+         printf("   ok: what is held now does not count against a later window\n");
+      }
+      lFreeList(&taken);
+   }
+
+   // A map is configured on an exec host or on the global host, and a job takes it from
+   // whichever has it, so both layers have to record the instances. A queue cannot carry a map
+   // and must not record any.
+   {
+      lListElem *global_cr = lCreateElem(RUE_Type);
+      lSetString(global_cr, RUE_name, "gpu");
+      utilization_add(global_cr, 1000, 100, 1, 200, 1, GLOBAL_TAG, "global", "STARTING", false,
+                      false, nullptr, one_of_gpu1);
+
+      lList *taken = utilization_rsmap_max(global_cr, 1000, 1000, 100);
+      const lListElem *ep = lGetElemStr(taken, RESL_value, "gpu1");
+      if (ep == nullptr || lGetUlong(ep, RESL_amount) != 1) {
+         printf("   FAIL: a map on the global host records nothing\n");
+         ret++;
+      } else {
+         printf("   ok: a map on the global host records its instances\n");
+      }
+      lFreeList(&taken);
+      lFreeElem(&global_cr);
+
+      lListElem *queue_cr = lCreateElem(RUE_Type);
+      lSetString(queue_cr, RUE_name, "gpu");
+      utilization_add(queue_cr, 1000, 100, 1, 201, 1, QUEUE_TAG, "a.q", "STARTING", false,
+                      false, nullptr, one_of_gpu1);
+
+      taken = utilization_rsmap_max(queue_cr, 1000, 1000, 100);
+      if (lGetNumberOfElem(taken) != 0) {
+         printf("   FAIL: a queue recorded resource map instances\n");
+         ret++;
+      } else {
+         printf("   ok: a queue records no instances\n");
+      }
+      lFreeList(&taken);
+      lFreeElem(&queue_cr);
+   }
+
+   lFreeList(&two_of_gpu0);
+   lFreeList(&one_of_gpu1);
+   lFreeList(&one_of_gpu0);
+   lFreeElem(&cr);
+
+   if (ret == 0) {
+      printf("\n - resource map instances in the diagram: ok -\n");
+   }
    return ret;
 }

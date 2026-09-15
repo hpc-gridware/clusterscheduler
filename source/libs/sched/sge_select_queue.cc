@@ -6552,30 +6552,25 @@ rsmap_same_slots(const sge_assignment_t *a, const lList *total_list,
 
          const char *name = lGetString(req, CE_name);
 
-         // Inside an advance reservation the constraint cannot be honoured yet. Matching runs
-         // against the reservation's copy of the host lists, which sge_ar_swap_resource_lists()
-         // swaps back before add_granted_resource_list() books - so the two sides would look at
-         // different resource maps, and the agreement the whole design rests on does not hold.
-         // Refuse rather than grant a mixed set behind the constraint's back. CS-2730 makes the
-         // reservation itself id aware and lifts this.
-         if (a->ar_id != 0) {
-            sge_dstring_sprintf(reason, MSG_SCHEDD_SAMEIDNOTINAR_S, name);
-            return 0;
-         }
-
          const lListElem *definition = lGetElemStr(total_list, CE_name, name);
          if (definition == nullptr) {
             // the map is not configured on this host; the ordinary matching rejects the host
             continue;
          }
-         const lListElem *utilization = lGetElemStr(rue_list, RUE_name, name);
+
+         // What is not free over the time this job would run. The booking asks the same
+         // question of the same lists when it chooses the instances, which is what lets the
+         // two agree - see rsmap_select_granted_ids().
+         lList *taken = utilization_rsmap_max(lGetElemStr(rue_list, RUE_name, name), a->now,
+                                              a->start, a->duration);
 
          // same=id groups by the identifier, same=<characteristic> by that characteristic's
          // value on the instance - several identifiers can then share one group, and the
          // constraint is met by any of them together
          u_long32 best_free = 0;
-         centry_rsmap_best_free_group(definition, utilization, sge_dstring_get_string(&param),
+         centry_rsmap_best_free_group(definition, taken, sge_dstring_get_string(&param),
                                       &best_free);
+         lFreeList(&taken);
 
          const auto amount = static_cast<u_long32>(lGetDouble(req, CE_doubleval));
          if (amount == 0) {

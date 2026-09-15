@@ -519,22 +519,20 @@ make_resource_definition_numa() {
 /**
  * Book "used" instances of one id, the way the host's utilization records them.
  */
-static lListElem *
+static lList *
 make_utilization(const char *id, u_long32 used) {
-   lListElem *ep = lCreateElem(RUE_Type);
-   lSetString(ep, RUE_name, "gpu");
+   lList *taken = nullptr;
    if (id != nullptr) {
-      lListElem *resl = lAddSubStr(ep, RESL_value, id, RUE_utilized_now_resource_map_list,
-                                   RESL_Type);
+      lListElem *resl = lAddElemStr(&taken, RESL_value, id, RESL_Type);
       lSetUlong(resl, RESL_amount, used);
    }
-   return ep;
+   return taken;
 }
 
 static void
 test_best_free_id() {
    lListElem *def = make_resource_definition();
-   lListElem *use;
+   lList *use;
    u_long32 free = 0;
 
    check_str("T90", "an unused map reports its first id", centry_rsmap_best_free_id(def, nullptr, &free), "0");
@@ -544,23 +542,23 @@ test_best_free_id() {
    use = make_utilization("0", 1);
    check_str("T91", "the emptiest id is reported", centry_rsmap_best_free_id(def, use, &free), "1");
    check_int("T91b", "with its count", (int)free, 4);
-   lFreeElem(&use);
+   lFreeList(&use);
 
    /* both cards half used: four free in the map, two on the best id */
    use = make_utilization("0", 2);
-   lListElem *resl = lAddSubStr(use, RESL_value, "1", RUE_utilized_now_resource_map_list, RESL_Type);
+   lListElem *resl = lAddElemStr(&use, RESL_value, "1", RESL_Type);
    lSetUlong(resl, RESL_amount, 2);
    check_int("T92", "the count is of one id, not of the map", (int)(centry_rsmap_best_free_id(def, use, &free), free), 2);
-   lFreeElem(&use);
+   lFreeList(&use);
 
    /* a full map reports zero rather than nothing, so a caller can tell "no room" from
       "no such resource map" */
    use = make_utilization("0", 4);
-   resl = lAddSubStr(use, RESL_value, "1", RUE_utilized_now_resource_map_list, RESL_Type);
+   resl = lAddElemStr(&use, RESL_value, "1", RESL_Type);
    lSetUlong(resl, RESL_amount, 4);
    check_int("T93", "a full map reports an id", centry_rsmap_best_free_id(def, use, &free) != nullptr, 1);
    check_int("T93b", "with a free count of zero", (int)free, 0);
-   lFreeElem(&use);
+   lFreeList(&use);
 
    check_int("T94", "a missing definition reports nothing",
              centry_rsmap_best_free_id(nullptr, nullptr, &free) == nullptr, 1);
@@ -592,11 +590,11 @@ test_best_free_group() {
    check_int("T96b", "which holds the instances of both its ids", (int)free, 4);
 
    /* booking one id shrinks its node but not the other */
-   lListElem *use = make_utilization("0", 2);
+   lList *use = make_utilization("0", 2);
    key = centry_rsmap_best_free_group(def, use, "numa_node", &free);
    check_str("T97", "the emptier node is returned", key, "1");
    check_int("T97b", "with its full count", (int)free, 4);
-   lFreeElem(&use);
+   lFreeList(&use);
 
    /* an instance which does not carry the characteristic cannot agree with anything, so it is
     * left out rather than forming a group of its own */
@@ -680,14 +678,14 @@ test_select_group_instances() {
    lFreeList(&already);
 
    /* what other jobs hold counts against the group too */
-   lListElem *use = make_utilization("0", 2);
+   lList *use = make_utilization("0", 2);
    check_int("T107", "a node booked down to two cannot serve three",
              centry_rsmap_select_group_instances(numa, use, nullptr, "numa_node", 3,
                                                  &selected), 1);
    check_str("T107b", "it moves to the node which can",
              lGetString(lFirst(selected), RESL_value), "2");
    lFreeList(&selected);
-   lFreeElem(&use);
+   lFreeList(&use);
 
    lFreeElem(&numa);
 }
@@ -737,12 +735,12 @@ test_select_instances() {
    lFreeList(&already);
 
    /* what other jobs hold counts too */
-   lListElem *use = make_utilization("0", 4);
+   lList *use = make_utilization("0", 4);
    check_int("T115", "an id used up by other jobs is skipped",
              centry_rsmap_select_instances(def, use, nullptr, 4, &selected), 1);
    check_str("T115b", "so the free one is taken", lGetString(lFirst(selected), RESL_value), "1");
    lFreeList(&selected);
-   lFreeElem(&use);
+   lFreeList(&use);
 
    lFreeElem(&def);
 }

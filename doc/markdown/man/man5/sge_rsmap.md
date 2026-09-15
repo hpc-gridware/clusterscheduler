@@ -144,6 +144,13 @@ The *consumable* setting of the complex decides how often the requested amount i
 A shared-GPU host of the shape shown above is normally *HOST* or *JOB*, so that a multithreaded job
 can ask for the instances of one card in a single request.
 
+## Inside an advance reservation
+
+An advance reservation holds particular instances, not only a count, and xxqs_name_sxx_qrstat(1)
+reports which. A job running inside a reservation is granted from that set, and a job running
+outside one is not granted an instance a reservation holds for the time it runs. A job whose
+request cannot be met from the reserved instances is refused when it is submitted.
+
 ## Requiring that the granted instances agree
 
 A request may carry a list of parameters in brackets after the amount:
@@ -235,12 +242,10 @@ agree, as described above, but the scheduler chooses among the free ones. The pa
 `id`, `scope` and `distinct` are reserved for naming instances and for constraints which are not
 implemented, and a request using one of them is refused.
 
-A request carrying a parameter list cannot be used inside an advance reservation.
-
 # SEE ALSO
 
-xxqs_name_sxx_intro(1), xxqs_name_sxx_qsub(1), xxqs_name_sxx_qconf(1), xxqs_name_sxx_complex(5),
-xxqs_name_sxx_host_conf(5), xxqs_name_sxx_conf(5)
+xxqs_name_sxx_intro(1), xxqs_name_sxx_qsub(1), xxqs_name_sxx_qconf(1), xxqs_name_sxx_qrstat(1),
+xxqs_name_sxx_complex(5), xxqs_name_sxx_host_conf(5), xxqs_name_sxx_conf(5)
 
 # COPYRIGHT
 

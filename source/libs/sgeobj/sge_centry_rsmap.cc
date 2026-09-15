@@ -536,21 +536,24 @@ centry_rsmap_instance_key(const lListElem *defined_ep, const char *key_name) {
 /**
  * @brief how many instances of one element of a resource map are free
  *
- * @param defined_ep           the instance, from CE_resource_map_list
- * @param resource_utilization the host's utilization of the map, may be nullptr
- * @return                     the configured amount less what is booked against it
+ * What is not free is passed in rather than read from a host, so that this stays arithmetic on
+ * two lists. Who holds an instance, and over what period, is a scheduling question and is
+ * answered where the utilization and the resource diagram are - see utilization_rsmap_max().
+ *
+ * @param defined_ep the instance, from CE_resource_map_list
+ * @param taken      the identifiers which are spoken for and how many of each, may be nullptr
+ * @return           the configured amount less what is taken of it
  */
 static u_long32
-centry_rsmap_instance_free(const lListElem *defined_ep, const lListElem *resource_utilization) {
+centry_rsmap_instance_free(const lListElem *defined_ep, const lList *taken) {
    u_long32 free = lGetUlong(defined_ep, RESL_amount);
 
-   if (resource_utilization != nullptr) {
+   if (taken != nullptr) {
       const char *id = lGetString(defined_ep, RESL_value);
-      const lListElem *used_ep = lGetSubStr(resource_utilization, RESL_value, id,
-                                            RUE_utilized_now_resource_map_list);
+      const lListElem *used_ep = lGetElemStr(taken, RESL_value, id);
       if (used_ep != nullptr) {
          const u_long32 used = lGetUlong(used_ep, RESL_amount);
-         // RESL_amount is unsigned: an id booked beyond its count must read as full rather
+         // RESL_amount is unsigned: an id taken beyond its count must read as full rather
          // than wrap round to an enormous free amount
          free = (used >= free) ? 0 : free - used;
       }
@@ -577,14 +580,14 @@ centry_rsmap_instance_free(const lListElem *defined_ep, const lListElem *resourc
  * takes - it should not start paying for a generalization it does not use.
  *
  * @param resource_definition  the resource map on the host, from EH_consumable_config_list
- * @param resource_utilization the matching element of EH_resource_utilization, may be nullptr
+ * @param taken                the identifiers which are already spoken for, may be nullptr
  * @param key_name             nullptr or "id" for the identifier, otherwise a characteristic
  * @param free_amount          out: the free count of the group returned, 0 if there is none
  * @return                     the key of the group with the most free instances, or nullptr
  */
 const char *
 centry_rsmap_best_free_group(const lListElem *resource_definition,
-                             const lListElem *resource_utilization, const char *key_name,
+                             const lList *taken, const char *key_name,
                              u_long32 *free_amount) {
    if (free_amount != nullptr) {
       *free_amount = 0;
@@ -593,7 +596,7 @@ centry_rsmap_best_free_group(const lListElem *resource_definition,
       return nullptr;
    }
    if (key_name == nullptr || strcmp(key_name, RSMAP_REQUEST_PARAM_ID) == 0) {
-      return centry_rsmap_best_free_id(resource_definition, resource_utilization, free_amount);
+      return centry_rsmap_best_free_id(resource_definition, taken, free_amount);
    }
 
    // sum the free instances per key. A resource map holds the devices of one host, so this is
@@ -606,7 +609,7 @@ centry_rsmap_best_free_group(const lListElem *resource_definition,
       if (key == nullptr) {
          continue;
       }
-      const u_long32 free = centry_rsmap_instance_free(defined_ep, resource_utilization);
+      const u_long32 free = centry_rsmap_instance_free(defined_ep, taken);
 
       bool found = false;
       for (auto &group : groups) {
@@ -657,7 +660,7 @@ centry_rsmap_best_free_group(const lListElem *resource_definition,
  * same thing the unconstrained path does.
  *
  * @param resource_definition  the resource map on the host, from EH_consumable_config_list
- * @param resource_utilization the matching element of EH_resource_utilization, may be nullptr
+ * @param taken                the identifiers which are already spoken for, may be nullptr
  * @param already              what this job already holds of the map (RESL_Type), may be nullptr
  * @param key_name             nullptr or "id" for the identifier, otherwise a characteristic
  * @param amount               how many instances to take
@@ -678,10 +681,10 @@ centry_rsmap_best_free_group(const lListElem *resource_definition,
  */
 static bool
 centry_rsmap_take_instances(const lListElem *resource_definition,
-                            const lListElem *resource_utilization, const lList *already,
+                            const lList *taken, const lList *already,
                             const char *key_name, const char *key, u_long32 amount,
                             lList **selected) {
-   lList *taken = nullptr;
+   lList *chosen = nullptr;
    u_long32 remaining = amount;
 
    const lListElem *defined_ep;
@@ -697,7 +700,7 @@ centry_rsmap_take_instances(const lListElem *resource_definition,
       }
 
       const char *id = lGetString(defined_ep, RESL_value);
-      u_long32 free = centry_rsmap_instance_free(defined_ep, resource_utilization);
+      u_long32 free = centry_rsmap_instance_free(defined_ep, taken);
 
       if (already != nullptr) {
          const lListElem *mine = lGetElemStr(already, RESL_value, id);
@@ -711,9 +714,9 @@ centry_rsmap_take_instances(const lListElem *resource_definition,
       }
 
       const u_long32 take = (free >= remaining) ? remaining : free;
-      lListElem *ep = lAddElemStr(&taken, RESL_value, id, RESL_Type);
+      lListElem *ep = lAddElemStr(&chosen, RESL_value, id, RESL_Type);
       if (ep == nullptr) {
-         lFreeList(&taken);
+         lFreeList(&chosen);
          return false;
       }
       lSetUlong(ep, RESL_amount, take);
@@ -721,11 +724,11 @@ centry_rsmap_take_instances(const lListElem *resource_definition,
    }
 
    if (remaining > 0) {
-      lFreeList(&taken);
+      lFreeList(&chosen);
       return false;
    }
 
-   *selected = taken;
+   *selected = chosen;
    return true;
 }
 
@@ -737,7 +740,7 @@ centry_rsmap_take_instances(const lListElem *resource_definition,
  * that whole identifiers stay free for the requests which need a whole one.
  *
  * @param resource_definition  the resource map on the host, from EH_consumable_config_list
- * @param resource_utilization the matching element of EH_resource_utilization, may be nullptr
+ * @param taken                the identifiers which are already spoken for, may be nullptr
  * @param already              what this job already holds of the map (RESL_Type), may be nullptr
  * @param amount               how many instances to take
  * @param selected             out: a new list of (RESL_value, RESL_amount), untouched on failure
@@ -745,18 +748,18 @@ centry_rsmap_take_instances(const lListElem *resource_definition,
  */
 bool
 centry_rsmap_select_instances(const lListElem *resource_definition,
-                              const lListElem *resource_utilization, const lList *already,
+                              const lList *taken, const lList *already,
                               u_long32 amount, lList **selected) {
    if (resource_definition == nullptr || selected == nullptr || amount == 0) {
       return false;
    }
-   return centry_rsmap_take_instances(resource_definition, resource_utilization, already,
+   return centry_rsmap_take_instances(resource_definition, taken, already,
                                       nullptr, nullptr, amount, selected);
 }
 
 bool
 centry_rsmap_select_group_instances(const lListElem *resource_definition,
-                                    const lListElem *resource_utilization, const lList *already,
+                                    const lList *taken, const lList *already,
                                     const char *key_name, u_long32 amount, lList **selected) {
    if (resource_definition == nullptr || selected == nullptr || amount == 0) {
       return false;
@@ -775,14 +778,14 @@ centry_rsmap_select_group_instances(const lListElem *resource_definition,
       key = centry_rsmap_instance_key(chosen_ep, key_name);
    } else {
       u_long32 free_in_group = 0;
-      key = centry_rsmap_best_free_group(resource_definition, resource_utilization, key_name,
+      key = centry_rsmap_best_free_group(resource_definition, taken, key_name,
                                          &free_in_group);
    }
    if (key == nullptr) {
       return false;
    }
 
-   return centry_rsmap_take_instances(resource_definition, resource_utilization, already,
+   return centry_rsmap_take_instances(resource_definition, taken, already,
                                       key_name, key, amount, selected);
 }
 
@@ -809,14 +812,14 @@ centry_rsmap_select_group_instances(const lListElem *resource_definition,
  * there is one function and not two.
  *
  * @param resource_definition  the resource map on the host, from EH_consumable_config_list
- * @param resource_utilization the matching element of EH_resource_utilization, may be nullptr
- *                             when nothing is booked yet
+ * @param taken                the identifiers which are already spoken for and how many of
+ *                             each, may be nullptr when nothing is
  * @param free_amount          out: the free count of the id returned, 0 if there is none
  * @return                     the id with the most free instances, or nullptr for an empty map
  */
 const char *
 centry_rsmap_best_free_id(const lListElem *resource_definition,
-                          const lListElem *resource_utilization, u_long32 *free_amount) {
+                          const lList *taken, u_long32 *free_amount) {
    const char *best_id = nullptr;
    u_long32 best_free = 0;
 
@@ -830,7 +833,7 @@ centry_rsmap_best_free_id(const lListElem *resource_definition,
    const lListElem *defined_ep;
    for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
       const char *id = lGetString(defined_ep, RESL_value);
-      const u_long32 free = centry_rsmap_instance_free(defined_ep, resource_utilization);
+      const u_long32 free = centry_rsmap_instance_free(defined_ep, taken);
 
       if (best_id == nullptr || free > best_free) {
          best_id = id;

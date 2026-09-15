@@ -1291,6 +1291,10 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
 
    lListElem *global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
 
+   // the instances the reservation holds, so that they are taken on the real hosts for the
+   // reservation's window and a job scheduled outside the reservation does not take them too
+   const lList *granted_resources = lGetList(ar, AR_granted_resources_list);
+
    const char *granted_pe = lGetString(ar, AR_granted_pe);
    lListElem *pe = nullptr;
    if (granted_pe != nullptr) {
@@ -1337,7 +1341,8 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
                                  global_host_ep, master_centry_list, tmp_slots,
                                  EH_consumable_config_list, EH_resource_utilization,
                                  SGE_GLOBAL_NAME, start_time, duration, GLOBAL_TAG,
-                                 false, is_master_task, do_per_host_booking) != 0) {
+                                 false, is_master_task, do_per_host_booking,
+                                 granted_resources) != 0) {
          /* this info is not spooled */
          sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                        SGE_GLOBAL_NAME, nullptr, nullptr, global_host_ep, gdi_session);
@@ -1348,7 +1353,8 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
       if (rc_add_job_utilization(gdil_ep, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                  host_ep, master_centry_list, tmp_slots, EH_consumable_config_list,
                                  EH_resource_utilization, queue_hostname, start_time,
-                                 duration, HOST_TAG, false, is_master_task, do_per_host_booking) != 0) {
+                                 duration, HOST_TAG, false, is_master_task, do_per_host_booking,
+                                 granted_resources) != 0) {
          /* this info is not spooled */
          sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
                        queue_hostname, nullptr, nullptr, host_ep, gdi_session);
@@ -1358,7 +1364,8 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
       rc_add_job_utilization(gdil_ep, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                              queue, master_centry_list, tmp_slots, QU_consumable_config_list,
                              QU_resource_utilization, queue_name, start_time, duration,
-                             QUEUE_TAG, false, is_master_task, do_per_host_booking);
+                             QUEUE_TAG, false, is_master_task, do_per_host_booking,
+                             granted_resources);
 
       qinstance_increase_qversion(queue);
       /* this info is not spooled */
@@ -1378,7 +1385,7 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
       } else {
          utilization_add(lFirstRW(lGetList(master_pe, PE_resource_utilization)), start_time,
                          duration, pe_slots, 0, 0, PE_TAG, granted_pe,
-                         SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false, nullptr);
+                         SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false, nullptr, nullptr);
          sge_add_event(0, sgeE_PE_MOD, 0, 0, granted_pe, nullptr, nullptr, pe, gdi_session);
       }
    }
@@ -1616,66 +1623,6 @@ ar_add_consumable(lListElem *target, const lListElem *source, int nm, const lLis
 }
 
 /**
- * @brief add the instances of a resource map to a list of the ones already spoken for
- *
- * The amounts of an identifier appearing in both lists add up, which is what the selection
- * needs: it asks how much of an identifier is left, not who holds it.
- *
- * @param held  the list to add to, created when it is still empty
- * @param add   the instances to add, may be nullptr
- */
-static void
-ar_merge_rsmap_ids(lList **held, const lList *add) {
-   const lListElem *ep;
-   for_each_ep (ep, add) {
-      const char *id = lGetString(ep, RESL_value);
-      lListElem *dst = lGetElemStrRW(*held, RESL_value, id);
-      if (dst == nullptr) {
-         dst = lAddElemStr(held, RESL_value, id, RESL_Type);
-      }
-      if (dst != nullptr) {
-         lAddUlong(dst, RESL_amount, lGetUlong(ep, RESL_amount));
-      }
-   }
-}
-
-/**
- * @brief collect the instances of a resource map which overlapping reservations hold
- *
- * Two reservations may hold the same identifier as long as they do not run at the same time,
- * so only the ones whose time window overlaps this one's are in the way.
- *
- * @param ar        the reservation being booked
- * @param name      name of the resource map
- * @param host_name name of the host
- * @return          the instances held on that host, to be freed by the caller
- */
-static lList *
-ar_collect_overlapping_rsmap_ids(const lListElem *ar, const char *name, const char *host_name) {
-   const u_long64 start = lGetUlong64(ar, AR_start_time);
-   const u_long64 end = lGetUlong64(ar, AR_end_time);
-   const u_long32 ar_id = lGetUlong(ar, AR_id);
-
-   lList *held = nullptr;
-   const lListElem *other;
-   for_each_ep (other, *ocs::DataStore::get_master_list(SGE_TYPE_AR)) {
-      if (lGetUlong(other, AR_id) == ar_id) {
-         continue;
-      }
-      if (lGetUlong64(other, AR_end_time) <= start || lGetUlong64(other, AR_start_time) >= end) {
-         continue;
-      }
-      auto *other_granted = const_cast<lList *>(lGetList(other, AR_granted_resources_list));
-      const lListElem *gru = gru_list_search(other_granted, name, host_name);
-      if (gru != nullptr && lGetUlong(gru, GRU_type) == GRU_RESOURCE_MAP_TYPE) {
-         ar_merge_rsmap_ids(&held, lGetList(gru, GRU_resource_map_list));
-      }
-   }
-
-   return held;
-}
-
-/**
  * @brief give the reserved host's copy of a resource map the instances the reservation holds
  *
  * The copy carries the granted amount and, without this, no instances at all, which would make
@@ -1730,19 +1677,14 @@ ar_add_rsmap_ids(const lListElem *ar, const lList *previous, lList **granted_res
       // the map is not configured on this host, so there is nothing to name
       DRETURN_VOID;
    }
-   const lListElem *utilization = lGetSubStr(master_host, RUE_name, name, EH_resource_utilization);
-
-   // What is not free for this reservation: what a running job holds now, which the utilization
-   // above carries, plus what the other reservations overlapping this one hold. The latter is
-   // nowhere in the host's utilization - a reservation books an amount into the time diagram,
-   // never a particular instance - so it has to be gathered here.
-   lList *held = ar_collect_overlapping_rsmap_ids(ar, name, host_name);
-
-   // Note the asymmetry this leaves: instances a job holds right now count against a
-   // reservation which starts long after that job will have ended. A reservation far enough in
-   // the future can therefore be granted an amount whose instances cannot be named, which the
-   // warning below reports. The conservative direction is the right one to err in - the other
-   // would name an instance a job still holds when the reservation starts.
+   // What is not free over the window this reservation covers: the instances other
+   // reservations hold and the ones jobs hold, both of which the exec host's resource diagram
+   // records for the time they are held. A reservation starting long after a job ends is
+   // therefore not blocked by what that job holds now.
+   lList *held = utilization_rsmap_max(lGetSubStr(master_host, RUE_name, name,
+                                                  EH_resource_utilization),
+                                       sge_get_gmt64(), lGetUlong64(ar, AR_start_time),
+                                       lGetUlong64(ar, AR_duration));
 
    lListElem *gru = gru_list_search(*granted_resources_list, name, host_name);
    if (gru == nullptr) {
@@ -1797,10 +1739,8 @@ ar_add_rsmap_ids(const lListElem *ar, const lList *previous, lList **granted_res
    }
    const u_long32 needed = want - have;
 
-   ar_merge_rsmap_ids(&held, taken);
-
    lList *selected = nullptr;
-   if (!centry_rsmap_select_instances(definition, utilization, held, needed, &selected)) {
+   if (!centry_rsmap_select_instances(definition, held, taken, needed, &selected)) {
       // the reservation was granted an amount the map cannot name instances for, so matching
       // and this booking disagree. Say so rather than leaving the reservation looking complete.
       WARNING(MSG_AR_CANNOTNAMERSMAPIDS_SSU, name, host_name, needed);
@@ -2032,7 +1972,15 @@ ar_initialize_resource_booking(lListElem *ar) {
                // booked: nothing else knows what the reservation took, and a job which later
                // runs inside it has to be granted from that set rather than from whatever the
                // host has free (CS-2730).
+               //
+               // A map is looked for on both layers because it can be configured on either,
+               // and a job takes it from the exec host when it is there and from the global
+               // host when it is not (see gru_list_add_request()). Each call does nothing when
+               // the map is not configured on the layer it is given.
                if (lGetUlong(cr, CE_valtype) == TYPE_RSMAP) {
+                  ar_add_rsmap_ids(ar, previous_granted_resources, &granted_resources_list,
+                                   global_host, master_global_host, cr_name, SGE_GLOBAL_NAME,
+                                   doubleval);
                   ar_add_rsmap_ids(ar, previous_granted_resources, &granted_resources_list,
                                    host, master_host, cr_name, host_name, doubleval);
                }

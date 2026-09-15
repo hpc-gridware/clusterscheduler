@@ -26,6 +26,7 @@
 #include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/sge_grantedres.h"
 #include "sgeobj/sge_host.h"
+#include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_resource_utilization.h"
@@ -36,6 +37,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
+#include "sched/sge_resource_utilization.h"
 #include "sched/schedd_message.h"
 #include "sched/sge_schedd_text.h"
 
@@ -113,7 +115,18 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   const lListElem *host = host_list_locate(host_list, host_name);
+   // Inside an advance reservation the instances come from what the reservation holds, not
+   // from what the host has free: the reservation reserved particular instances and a job
+   // running in it has to be granted from that set. Its copy of the host carries them, and its
+   // utilization records what the other jobs in the reservation took. Outside a reservation
+   // the host itself answers both questions.
+   const lListElem *host = nullptr;
+   if (a->ar != nullptr) {
+      host = lGetSubHost(a->ar, EH_name, host_name, AR_reserved_hosts);
+   }
+   if (host == nullptr) {
+      host = host_list_locate(host_list, host_name);
+   }
    if (host == nullptr) {
       ret = false;
    }
@@ -157,19 +170,24 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
             // took from, and how much of each instance this job already holds, which the host
             // utilization does not know yet because nothing is debited until the assignment is
             // complete.
+            // what is not free over the time this job will run, the same question matching
+            // asked of the same lists in rsmap_same_slots()
+            lList *taken = utilization_rsmap_max(resource_utilization, a->now, a->start,
+                                                 a->duration);
+
             lList *selected = nullptr;
             const lList *already = lGetList(gru, GRU_resource_map_list);
             bool selected_ok;
 
             if (same_key != nullptr) {
-               selected_ok = centry_rsmap_select_group_instances(resource_definition,
-                                                                 resource_utilization, already,
-                                                                 same_key, amount, &selected);
+               selected_ok = centry_rsmap_select_group_instances(resource_definition, taken,
+                                                                 already, same_key, amount,
+                                                                 &selected);
             } else {
-               selected_ok = centry_rsmap_select_instances(resource_definition,
-                                                           resource_utilization, already,
+               selected_ok = centry_rsmap_select_instances(resource_definition, taken, already,
                                                            amount, &selected);
             }
+            lFreeList(&taken);
 
             if (!selected_ok) {
                // matching said otherwise, so the two have diverged; refuse rather than hand
