@@ -214,10 +214,26 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
    DRETURN(ret);
 }
 
+/**
+ * @brief book one granted request of a job into the granted resource list
+ *
+ * @param a                      the assignment
+ * @param granted_resources_list the list being built
+ * @param request                the request being booked, from the scope it was written in
+ * @param host_name              host it is booked on
+ * @param host_list              the host list
+ * @param amount                 the requested amount
+ * @param slots                  how often it is taken here
+ * @return true on success, false when a resource map could not be granted
+ */
 static bool
-gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const char *name, u_long32 consumable, u_long32 type,
+gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const lListElem *request,
                      const char *host_name, const lList *host_list, double amount, u_long32 slots) {
    DENTER(TOP_LAYER);
+
+   const char *name = lGetString(request, CE_name);
+   const u_long32 consumable = lGetUlong(request, CE_consumable);
+   const u_long32 type = lGetUlong(request, CE_valtype);
 
    bool ret = true;
 
@@ -270,12 +286,14 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
       DPRINTF("   ==> gru_list_add_request: booking %f * %d\n", amount, slots);
       lAddDouble(gru, GRU_amount, amount * slots);
       if (type == TYPE_RSMAP) {
-         // does the request require all the instances to carry the same id?
+         // Does the request require all the instances to carry the same id? It is read from
+         // the request being booked rather than looked up by name, so that it is the one the
+         // scope in hand actually carries. A lookup by name has to pick a scope, and a
+         // constraint written in the master scope is then lost - matching walks every scope
+         // and would have enforced it, and the two would disagree (CS-2769).
          DSTRING_STATIC(same_param, 64);
-         const lListElem *request = job_get_hard_request(a->job, name, false);
          const char *same_key = nullptr;
-         if (request != nullptr &&
-             centry_rsmap_get_request_param(request, RSMAP_REQUEST_PARAM_SAME, &same_param)) {
+         if (centry_rsmap_get_request_param(request, RSMAP_REQUEST_PARAM_SAME, &same_param)) {
             same_key = sge_dstring_get_string(&same_param);
          }
 
@@ -412,10 +430,9 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
 
          int debit_slots = consumable_get_debit_slots(consumable, slots);
          const char *name = lGetString(request, CE_name);
-         u_long32 type = lGetUlong(request, CE_valtype);
          double amount = lGetDouble(request, CE_doubleval);
          DPRINTF("  global: %s, %d, %f\n", name, debit_slots, amount);
-         if (!gru_list_add_request(a, &granted_resources_list, name, consumable, type, host_name,
+         if (!gru_list_add_request(a, &granted_resources_list, request, host_name,
                                    host_list, amount, debit_slots)) {
             gru_report_booking_failure(a, job, ja_task, name, host_name);
             ret = false;
@@ -433,10 +450,9 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
 
             int debit_slots = 1;
             const char *name = lGetString(request, CE_name);
-            u_long32 type = lGetUlong(request, CE_valtype);
             double amount = lGetDouble(request, CE_doubleval);
             DPRINTF("  master: %s, %d, %f\n", name, debit_slots, amount);
-            if (!gru_list_add_request(a, &granted_resources_list, name, consumable, type, host_name,
+            if (!gru_list_add_request(a, &granted_resources_list, request, host_name,
                                       host_list, amount, debit_slots)) {
                gru_report_booking_failure(a, job, ja_task, name, host_name);
                ret = false;
@@ -457,10 +473,9 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
 
          int debit_slots = consumable_get_debit_slots(consumable, slots);
          const char *name = lGetString(request, CE_name);
-         u_long32 type = lGetUlong(request, CE_valtype);
          double amount = lGetDouble(request, CE_doubleval);
          DPRINTF("  slave: %s, %d, %f\n", name, debit_slots, amount);
-         if (!gru_list_add_request(a, &granted_resources_list, name, consumable, type, host_name,
+         if (!gru_list_add_request(a, &granted_resources_list, request, host_name,
                                    host_list, amount, debit_slots)) {
             gru_report_booking_failure(a, job, ja_task, name, host_name);
             ret = false;
