@@ -1514,7 +1514,14 @@ int lRemoveElem(lList *lp, lListElem **ep1) {
    lObserveChangeOwner(ep, nullptr, lp, NoName);
 #endif
 
+   /* lFreeElem() takes the element out of the hash tables, but it does not know
+    * the list and so cannot repair one that has seen a duplicate key. The
+    * element is already unchained and no longer counted, so the repair can run
+    * after it is gone -- it works from the list, not from the element.
+    * CS-2755. */
    lFreeElem(ep1);
+   cull_hash_repair(lp);
+
    DRETURN(0);
 }
 
@@ -1615,8 +1622,6 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
 lListElem *lDechainElem(lList *lp, lListElem *ep) {
    DENTER(CULL_LAYER);
 
-   int i;
-
    if (!lp) {
       LERROR(LELISTNULL);
       DRETURN(nullptr);
@@ -1642,18 +1647,25 @@ lListElem *lDechainElem(lList *lp, lListElem *ep) {
       lp->last = ep->prev;
    }
 
+   lp->nelem--;
+
    /* remove hash entries */
-   for (i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
+   for (int i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
       if (ep->descr[i].ht != nullptr) {
          cull_hash_remove(ep, i);
       }
    }
 
+   /* CS-2755: a table that has seen a duplicate key needs more than the removal
+    * of this element's own entry -- the element left behind may be the one it
+    * has no entry for. The element is already unchained, so the repair sees the
+    * list as it will be. */
+   cull_hash_repair(lp);
+
    /* nullptr the ep next and previous pointers */
    ep->prev = ep->next = (lListElem *) nullptr;
    ep->descr = lCopyDescr(ep->descr);
    ep->status = FREE_ELEM;
-   lp->nelem--;
 
 #ifdef OBSERVE
    lObserveChangeOwner(ep, nullptr, lp, NoName);

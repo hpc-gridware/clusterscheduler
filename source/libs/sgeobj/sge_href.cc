@@ -673,13 +673,22 @@ bool href_list_find_all_referencees(const lList *this_list, lList **answer_list,
           * Recursive!
           */
          ret &= href_list_find_all_referencees(*occupant_groups, answer_list,
-                                               master_list, 
+                                               master_list,
                                                &occupant_sub_groups);
 
+         /*
+          * CS-2755. Merged entry by entry, for the reason spelled out in
+          * href_list_find_all_references(): a group reachable by two paths would
+          * otherwise appear once per path, and HR_name is unique and hashed, so
+          * two entries under one key are a state the list is not supposed to
+          * reach. The caller of this function is hgroup_refresh_caches(), which
+          * deduplicates with lUniqHost() straight afterwards -- and that used to
+          * be what dropped the key from the hash.
+          */
          if (occupant_sub_groups != nullptr && ret) {
-            lAddList(*occupant_groups, &occupant_sub_groups);
-            occupant_sub_groups = nullptr;
-         } 
+            ret &= href_list_merge(occupant_groups, answer_list, occupant_sub_groups);
+         }
+         lFreeList(&occupant_sub_groups);
       }
    } else {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);

@@ -1061,7 +1061,10 @@ void hgroup_refresh_caches(lListElem *hgroup, lList *master_hgroup_list, lList *
    if (hgroup_find_all_referencees(hgroup, &cache_answer_list, master_hgroup_list, referencees)) {
       const lListElem *href;
 
-      /* a diamond (@top -> @a, @b -> @x) lists @x once per path */
+      /* A diamond (@top -> @a, @b -> @x) used to list @x once per path; since
+       * CS-2755 href_list_find_all_referencees() merges entry by entry and no
+       * longer produces the duplicate. Kept as a backstop, and because this list
+       * goes on to the caller, which sends one event per entry. */
       lUniqHost(*referencees, HR_name);
 
       for_each_ep(href, *referencees) {

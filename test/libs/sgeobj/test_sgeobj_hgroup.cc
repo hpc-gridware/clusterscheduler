@@ -1468,6 +1468,73 @@ test_split_members() {
 }
 
 // ---------------------------------------------------------------------------
+// The referencee walk  [T129–T131]
+//
+// CS-2755. hgroup_find_all_referencees() answers "which groups reach this one",
+// and its result is what hgroup_refresh_caches() walks to recompute the caches
+// and to send one event per entry.
+//
+// A group can be reached both directly and through another group. The walk then
+// meets it twice: once among the direct referencees, once among those found by
+// the recursion. Merging the two by concatenating the lists put two entries
+// under one key -- and HR_name is CULL_UNIQUE | CULL_HASH, so the second entry
+// displaces the first in the hash and the list starts answering differently
+// depending on whether it is scanned or looked up. The deduplication that
+// follows in hgroup_refresh_caches() then removed the key altogether.
+//
+//   @top  ->  @a, @x        @top reaches @x directly ...
+//   @a    ->  @x            ... and through @a
+//   @x    ->  a host
+// ---------------------------------------------------------------------------
+
+static void
+test_find_all_referencees() {
+   printf("\n--- the referencee walk ---\n");
+
+   const char *const x_members[] = {"node001", nullptr};
+   const char *const a_members[] = {"@x", nullptr};
+   const char *const top_members[] = {"@a", "@x", nullptr};
+
+   lList *hgroup_list = nullptr;
+   lListElem *x = add_group(&hgroup_list, "@x", x_members);
+   add_group(&hgroup_list, "@a", a_members);
+   add_group(&hgroup_list, "@top", top_members);
+
+   lList *referencees = nullptr;
+   lList *answer_list = nullptr;
+
+   CHECK(129, "the referencee walk succeeds",
+         hgroup_find_all_referencees(x, &answer_list, hgroup_list, &referencees));
+
+   // T130: @top is reachable by two paths and must still appear once. Two
+   // entries under one key is a state the list is not supposed to reach.
+   CHECK(130, "a group reachable by two paths is listed once",
+         lGetNumberOfElem(referencees) == 2);
+
+   // T131: and every entry is findable through the key, which is a different
+   // code path from walking the list -- href_list_locate() goes through the
+   // hash. This is the half that a linear comparison cannot see.
+   CHECK(131, "every referencee is findable by name",
+         href_list_locate(referencees, "@a") != nullptr &&
+         href_list_locate(referencees, "@top") != nullptr);
+
+   // T132: the whole chain, as hgroup_refresh_caches() runs it. With a duplicate
+   // present the key still resolves -- to the second entry -- so T131 alone does
+   // not catch it. It is the deduplication that follows which used to drop the
+   // key from the hash and leave the survivor in the list but unfindable, on the
+   // list this function hands back for the cache refresh and the events.
+   lUniqHost(referencees, HR_name);
+   CHECK(132, "after deduplication every referencee is still findable",
+         lGetNumberOfElem(referencees) == 2 &&
+         href_list_locate(referencees, "@a") != nullptr &&
+         href_list_locate(referencees, "@top") != nullptr);
+
+   lFreeList(&referencees);
+   lFreeList(&answer_list);
+   lFreeList(&hgroup_list);
+}
+
+// ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
@@ -1490,6 +1557,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_match_cache();
    test_why();
    test_split_members();
+   test_find_all_referencees();
    teardown_bootstrap();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

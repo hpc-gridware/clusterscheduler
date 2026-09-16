@@ -53,6 +53,10 @@ void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool uniqu
 
 void cull_hash_remove(const lListElem *ep, const int pos);
 
+void cull_hash_rebuild_unique(lList *lp, const int pos);
+
+void cull_hash_repair(lList *lp);
+
 void cull_hash_elem(const lListElem *ep);
 
 lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,

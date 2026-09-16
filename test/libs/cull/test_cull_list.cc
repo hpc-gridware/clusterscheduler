@@ -58,7 +58,8 @@ enum {
    TEST_object,   ///< a sub-object attribute
    TEST_ref,   ///< a reference attribute
    TEST_ulong64,   ///< a 64 bit unsigned attribute
-   TEST_ulong64_hashed   ///< a 64 bit unsigned attribute that is looked up by value
+   TEST_ulong64_hashed,   ///< a 64 bit unsigned attribute that is looked up by value
+   TEST_string_ukey   ///< a string attribute that is a unique key and looked up by value
 };
 
 LISTDEF(TEST_Type)
@@ -74,6 +75,7 @@ LISTDEF(TEST_Type)
    SGE_REF    (TEST_ref,    TEST_Type, CULL_DEFAULT)
    SGE_ULONG64(TEST_ulong64, CULL_DEFAULT)
    SGE_ULONG64(TEST_ulong64_hashed, CULL_HASH)
+   SGE_STRING (TEST_string_ukey, CULL_UNIQUE | CULL_HASH)
 LISTEND
 
 NAMEDEF(TEST_Name)
@@ -89,6 +91,7 @@ NAMEDEF(TEST_Name)
    NAME("TEST_ref")
    NAME("TEST_ulong64")
    NAME("TEST_ulong64_hashed")
+   NAME("TEST_string_ukey")
 NAMEEND
 
 #define TEST_Size sizeof(TEST_Name) / sizeof(char *)    ///< number of attributes of the synthetic type
@@ -696,6 +699,160 @@ static void test_atomic_ulong64() {
 }
 
 // ---------------------------------------------------------------------------
+// Integrity of a unique hashed key  [T61–T70]
+//
+// CS-2755. A list whose key field is CULL_UNIQUE | CULL_HASH answers two
+// different things depending on how it is asked: a linear scan walks the
+// elements, a keyed lookup goes through the hash table
+// (lGetElemStrFirstRW(), cull_multitype.cc). The two must not disagree.
+//
+// What can be asked of a unique hash is not that every element is findable —
+// two elements under one key cannot both be, since the table holds one entry
+// per key. What can be asked is this:
+//
+//   every key that occurs in the list resolves to an element that is in the
+//   list and carries that key.
+//
+// Once the duplicates are gone, that is the same statement as "every entry is
+// findable". While they are there, it is the strongest form the structure
+// allows, and it is exactly what breaks today: the key resolves to nothing.
+// ---------------------------------------------------------------------------
+
+/** @brief Does every key in the list resolve to a list element carrying it?
+ *
+ * Walks the list and looks each element's key up again through the hash. A
+ * linear comparison would pass on a corrupt list, so the point of the check is
+ * that the lookup and the walk are two different paths to the same answer.
+ *
+ * @param lp the list to check
+ * @param nm the CULL_UNIQUE | CULL_HASH string field acting as the key
+ * @return true when every key resolves to an element of lp that carries it
+ */
+static bool all_keys_resolve(const lList *lp, int nm) {
+   const lListElem *ep;
+
+   for_each_ep(ep, lp) {
+      const char *key = lGetString(ep, nm);
+      const lListElem *found = lGetElemStr(lp, nm, key);
+
+      if (found == nullptr) {
+         return false;
+      }
+      // the hash may legitimately hand back the other element of a duplicate
+      // pair, but never one carrying a different key
+      if (strcmp(lGetString(found, nm), key) != 0) {
+         return false;
+      }
+   }
+   return true;
+}
+
+/** @brief Build a list of TEST_Type holding the given unique keys
+ *
+ * @param name the list name
+ * @param keys the key values to append, in order
+ * @param n how many of them
+ * @return the new list, owned by the caller
+ */
+static lList *make_keyed_list(const char *name, const char *const *keys, int n) {
+   lList *lp = lCreateList(name, TEST_Type);
+
+   for (int i = 0; i < n; i++) {
+      lListElem *ep = lCreateElem(TEST_Type);
+      lSetString(ep, TEST_string_ukey, keys[i]);
+      lAppendElem(lp, ep);
+   }
+   return lp;
+}
+
+static void test_unique_key_integrity() {
+   printf("\n--- unique hashed key integrity (CS-2755) ---\n");
+
+   static const char *const one_dup[] = {"h10", "h10"};
+   static const char *const three[] = {"h10", "h20", "h30"};
+
+   // T61: the state the ticket is about can be reached at all. href_list_add()
+   // and its kind refuse a duplicate within one list, so in the product this
+   // arises from concatenating two lists that are each clean on their own.
+   lList *a = make_keyed_list("a", &one_dup[0], 1);
+   lList *b = make_keyed_list("b", &one_dup[1], 1);
+   lAddList(a, &b);
+   CHECK(61, "lAddList: two entries under one key end up in the list",
+         lGetNumberOfElem(a) == 2);
+
+   // T62: with both still there the key must resolve — to one of the two, and
+   // the test does not say which
+   CHECK(62, "duplicate present: the key still resolves to an element of the list",
+         all_keys_resolve(a, TEST_string_ukey));
+
+   // T63-T64: the repair. lUniqStr() drops one of the pair with lRemoveElem(),
+   // which is where the hash entry is lost today: the survivor stays in the
+   // list and becomes unfindable through the key.
+   lUniqStr(a, TEST_string_ukey);
+   CHECK(63, "lUniqStr: one of the two is gone", lGetNumberOfElem(a) == 1);
+   CHECK(64, "lUniqStr: the survivor is still findable by its key",
+         all_keys_resolve(a, TEST_string_ukey));
+   CHECK(65, "lUniqStr: the key resolves to the element that is actually in the list",
+         lGetElemStr(a, TEST_string_ukey, "h10") == lFirst(a));
+   lFreeList(&a);
+
+   // T66: remove the SECOND of the pair. It is the one the hash points at, so
+   // this is the case where the entry legitimately goes and has to be handed on
+   // to the element left behind.
+   lList *c = make_keyed_list("c", &one_dup[0], 1);
+   lList *d = make_keyed_list("d", &one_dup[1], 1);
+   lAddList(c, &d);
+   lListElem *second = lLastRW(c);
+   lRemoveElem(c, &second);
+   CHECK(66, "lRemoveElem of the second duplicate: the first stays findable",
+         all_keys_resolve(c, TEST_string_ukey) && lGetNumberOfElem(c) == 1);
+   lFreeList(&c);
+
+   // T67: remove the FIRST of the pair — the one the hash does NOT point at.
+   // Deleting by key rather than by entry takes the other one's entry with it.
+   lList *e = make_keyed_list("e", &one_dup[0], 1);
+   lList *f = make_keyed_list("f", &one_dup[1], 1);
+   lAddList(e, &f);
+   lListElem *first = lFirstRW(e);
+   lRemoveElem(e, &first);
+   CHECK(67, "lRemoveElem of the first duplicate: the second stays findable",
+         all_keys_resolve(e, TEST_string_ukey) && lGetNumberOfElem(e) == 1);
+   lFreeList(&e);
+
+   // T68: the same through lDechainElem(), which removes the hash entries on its
+   // own rather than by way of lFreeElem()
+   lList *g = make_keyed_list("g", &one_dup[0], 1);
+   lList *h = make_keyed_list("h", &one_dup[1], 1);
+   lAddList(g, &h);
+   lListElem *dechained = lDechainElem(g, lFirstRW(g));
+   CHECK(68, "lDechainElem of the first duplicate: the second stays findable",
+         all_keys_resolve(g, TEST_string_ukey) && lGetNumberOfElem(g) == 1);
+   lFreeElem(&dechained);
+   lFreeList(&g);
+
+   // T69: the setter route. No concatenation anywhere — writing a key that is
+   // already taken puts the list in the same state.
+   lList *i = make_keyed_list("i", three, 2);          // h10, h20
+   lSetString(lLastRW(i), TEST_string_ukey, "h10");    // now h10, h10
+   lListElem *victim = lLastRW(i);
+   lRemoveElem(i, &victim);
+   CHECK(69, "lSetString onto an existing key: the remaining element stays findable",
+         all_keys_resolve(i, TEST_string_ukey) && lGetNumberOfElem(i) == 1);
+   lFreeList(&i);
+
+   // T70: the ordinary case must not regress. Distinct keys, one removed: the
+   // others resolve, the removed one does not.
+   lList *j = make_keyed_list("j", three, 3);
+   lListElem *middle = lNextRW(lFirstRW(j));
+   lRemoveElem(j, &middle);
+   CHECK(70, "distinct keys: removal takes exactly its own entry out of the hash",
+         all_keys_resolve(j, TEST_string_ukey) &&
+         lGetNumberOfElem(j) == 2 &&
+         lGetElemStr(j, TEST_string_ukey, "h20") == nullptr);
+   lFreeList(&j);
+}
+
+// ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
@@ -716,6 +873,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_ref_field();
    test_sort_and_uniq();
    test_atomic_ulong64();
+   test_unique_key_integrity();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;
