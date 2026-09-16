@@ -583,8 +583,26 @@ sge_c_gdi_get_in_worker(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Ta
    DRETURN_VOID;
 }
 
-/*
+/**
+ * @brief Handles the ADD command of a GDI request.
+ *
+ * Dispatches on the request target. Event clients, jobs and the scheduler
+ * configuration each have their own registration path; every other target is
+ * handled by the generic object add below.
+ *
  * MT-NOTE: sge_c_gdi_add() is MT safe
+ *
+ * @param[in]     packet       GDI packet the task belongs to; carries the
+ *                             authentication and address infos of the sender
+ * @param[in,out] task         GDI task; its data_list holds the objects to add
+ *                             and receives the answers
+ * @param[in]     ao           descriptor of the object type to add, used by the
+ *                             generic path
+ * @param[in]     cmd          the GDI command, passed on to the generic path
+ * @param[in]     sub_command  GDI sub command, e.g. RETURN_NEW_VERSION
+ * @param[in]     monitor      monitoring structure of the calling thread
+ *
+ * @return void
  */
 static void
 sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
@@ -596,8 +614,21 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
 
    if (task->target == ocs::gdi::Target::EV_LIST) {
       lListElem *next;
+      bool return_new_version =
+              (sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) == ocs::gdi::SubCommand::RETURN_NEW_VERSION;
 
-      next = lFirstRW(task->data_list);
+      /*
+       * The registered event clients are returned in task->data_list, the very
+       * list the requests arrive in. Take the requests aside first: otherwise
+       * sge_add_event_client() assigns the new EV_id to the request element and
+       * then appends the registered client with that same id to the list it is
+       * a member of - two elements under a key that EV_id declares unique, and
+       * the walk below would run into the appended elements as well.
+       */
+      lList *requests = task->data_list;
+      task->data_list = nullptr;
+
+      next = lFirstRW(requests);
       while ((ep = next) != nullptr) {/* is thread save. the global lock is used when needed */
          next = lNextRW(ep);
 
@@ -612,9 +643,16 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
             ERROR(MSG_QMASTER_INVALIDEVENTCLIENT_SSS, packet->user, packet->commproc, packet->host);
          } else {
             sge_add_event_client(packet, ep, &(task->answer_list),
-                                 (sub_command & ocs::gdi::SubCommand::RETURN_NEW_VERSION) == ocs::gdi::SubCommand::RETURN_NEW_VERSION ? &(task->data_list) : nullptr,
+                                 return_new_version ? &(task->data_list) : nullptr,
                                  (event_client_update_func_t) nullptr, nullptr);
          }
+      }
+
+      if (return_new_version) {
+         lFreeList(&requests);
+      } else {
+         /* nothing was returned, so the requests go back as they always did */
+         task->data_list = requests;
       }
    } else if (task->target == ocs::gdi::Target::JB_LIST) {
       lListElem *next;
