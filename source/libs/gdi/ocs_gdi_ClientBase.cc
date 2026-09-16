@@ -51,6 +51,7 @@
 
 #include "uti/ocs_Munge.h"
 #include "uti/msg_utilib.h"
+#include "msg_common.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_csp_path.h"
