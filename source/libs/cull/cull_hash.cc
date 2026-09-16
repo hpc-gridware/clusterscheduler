@@ -238,6 +238,47 @@ static const char *cull_hash_field_name(const lListElem *ep, const cull_htable h
 }
 
 /**
+ * @brief The value of the hashed field, for a diagnostic message
+ *
+ * CS-2782: naming the field alone says where the collision is, not which key
+ * collided -- and that is the difference between "somewhere in the event
+ * clients" and "twice under id 0". Whoever reads the message is looking for the
+ * second thing.
+ *
+ * @param ep  the element being inserted
+ * @param ht  the table it is inserted into, used to find the field
+ * @param buf buffer for the formatted value
+ * @param len size of @p buf
+ * @return buf, filled with the value, or "?" when the field cannot be found
+ */
+static const char *cull_hash_key_value(const lListElem *ep, const cull_htable ht, char *buf, size_t len) {
+   for (int i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
+      if (ep->descr[i].ht != ht) {
+         continue;
+      }
+      switch (mt_get_type(ep->descr[i].mt)) {
+         case lUlongT:
+            snprintf(buf, len, sge_u32, ep->cont[i].ul);
+            return buf;
+         case lUlong64T:
+            snprintf(buf, len, sge_u64, ep->cont[i].ul64);
+            return buf;
+         case lStringT:
+            snprintf(buf, len, SFQ, ep->cont[i].str != nullptr ? ep->cont[i].str : "");
+            return buf;
+         case lHostT:
+            snprintf(buf, len, SFQ, ep->cont[i].host != nullptr ? ep->cont[i].host : "");
+            return buf;
+         default:
+            break;
+      }
+      break;
+   }
+   snprintf(buf, len, "?");
+   return buf;
+}
+
+/**
  * @brief Insert a new element in a hash table
  *
  * Stores @p ep under @p key, honouring whether the table holds unique or non
@@ -272,9 +313,12 @@ void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool uniqu
           * overlapping lists -- and the point of the message is that it happened
           * at all, not how often. */
          if (ht->dup_count == 1) {
-            CRITICAL("CULL: two elements share the key of field " SFN ", which is "
+            char value[MAX_STRING_SIZE];
+
+            CRITICAL("CULL: two elements share the key " SFN " of field " SFN ", which is "
                      "declared unique; the one stored first is no longer findable "
-                     "through it", cull_hash_field_name(ep, ht));
+                     "through it", cull_hash_key_value(ep, ht, value, sizeof(value)),
+                     cull_hash_field_name(ep, ht));
          }
       }
       sge_htable_store(ht->ht, key, ep);
