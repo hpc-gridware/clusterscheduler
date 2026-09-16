@@ -6589,8 +6589,19 @@ rsmap_same_slots(const sge_assignment_t *a, const lList *total_list,
          // What is not free over the time this job would run. The booking asks the same
          // question of the same lists when it chooses the instances, which is what lets the
          // two agree - see rsmap_select_granted_ids().
-         lList *taken = utilization_rsmap_max(lGetElemStr(rue_list, RUE_name, name), a->now,
-                                              a->start, a->duration);
+         //
+         // Unless the cluster is to be imagined idle. That is how -w e and -w v ask whether a
+         // job could ever run rather than whether it can run now, and the amount side does the
+         // same a few hundred lines up in ri_slots_by_time(). The two have to agree, or a
+         // constraint which is satisfiable once the map drains refuses the job at submission -
+         // and since qsub adds -w e to a job requesting an advance reservation, refuses every
+         // such job whose map is in use (CS-2770). An advance reservation is itself exempt: it
+         // is scheduled against what is really there.
+         lList *taken = nullptr;
+         if (a->is_advance_reservation || sconf_get_qs_state() != QS_STATE_EMPTY) {
+            taken = utilization_rsmap_max(lGetElemStr(rue_list, RUE_name, name), a->now,
+                                          a->start, a->duration);
+         }
 
          // same=id groups by the identifier, same=<characteristic> by that characteristic's
          // value on the instance - several identifiers can then share one group, and the
