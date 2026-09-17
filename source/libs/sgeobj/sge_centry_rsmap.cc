@@ -218,16 +218,19 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
       return true;
    }
 
-   const char *open = strchr(value, '[');
-   if (open == nullptr) {
+   // A parameter list belongs to a resource map request and to nothing else. Asked of any
+   // other resource, a bracket is part of the value: a string valued resource is matched with
+   // a pattern, so "-l h=[r]ocky-8-amd64-1" is a host name whose first character is written as
+   // a character class, not a malformed parameter list. The type is known here - the caller
+   // fills CE_valtype from the complex before asking - so the question is decided before a
+   // bracket is looked for rather than after.
+   if (lGetUlong(centry, CE_valtype) != TYPE_RSMAP) {
       return true;
    }
 
-   // a parameter list is meaningful only for a resource map
-   if (lGetUlong(centry, CE_valtype) != TYPE_RSMAP) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_RSMAP_PARAM_NOT_RSMAP_SS, name, value);
-      return false;
+   const char *open = strchr(value, '[');
+   if (open == nullptr) {
+      return true;
    }
 
    // This is the single point where a parameter list enters the system from a request, the way

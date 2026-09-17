@@ -343,6 +343,19 @@ test_parameter_validation() {
    check_int("T45", "text after the parameter list is rejected",
              fill("gpu=4[same=id]x", centries), -1);
 
+   /* A bracket in the value of anything which is not a resource map is part of the value. A
+      string valued resource is matched with a pattern, so a character class is how a request
+      writes one, wherever in the value it falls - "-l h=[r]ocky-8-amd64-1" is a host name and
+      not a malformed parameter list (CS-2783). */
+   check_int("T58", "a character class at the start of a string value is accepted",
+             fill("gpu_model=[A]100", centries), 0);
+   check_int("T58b", "one at the end of it too",
+             fill("gpu_model=A10[01]", centries), 0);
+   check_int("T58c", "and one in the middle",
+             fill("gpu_model=A[01]00", centries), 0);
+   check_int("T58d", "a class holding a comma is accepted, the request not being split there",
+             fill("gpu_model=[A,B]100", centries), 0);
+
    /* reserved, but nothing reads them yet - see centry_rsmap_check_request_params() */
    check_int("T46", "id is refused until it is implemented",
              fill("gpu=4[id=gpu0]", centries), -1);
