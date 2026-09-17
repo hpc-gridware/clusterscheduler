@@ -242,6 +242,8 @@ const char* sge_get_schedd_text( int nr )
 
       case SCHEDD_INFO_CONSUMABLENOVALUE_SS:
          return MSG_SCHEDD_INFO_CONSUMABLENOVALUE_SS;
+      case SCHEDD_INFO_CANNOTBOOKRESOURCE_SS:
+         return MSG_SCHEDD_INFO_CANNOTBOOKRESOURCE_SS;
 
 /* */
 
@@ -412,6 +414,8 @@ const char* sge_get_schedd_text( int nr )
 
       case SCHEDD_INFO_CONSUMABLENOVALUE:
          return MSG_SCHEDD_INFO_CONSUMABLENOVALUE;
+      case SCHEDD_INFO_CANNOTBOOKRESOURCE:
+         return MSG_SCHEDD_INFO_CANNOTBOOKRESOURCE;
 
       default:
          return "";

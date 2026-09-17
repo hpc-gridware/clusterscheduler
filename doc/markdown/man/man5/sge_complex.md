@@ -365,75 +365,19 @@ comparisons or in case of load scaling for the load complex entries:
 
 -   *HOST* is like *CSTRING* but the expression must match a valid hostname.
 
--   *RSMAP* (Resource Map) manages a fixed pool of individually named resource instances on a host — GPUs,
-    NICs, licence seats, or any per-host resource where the scheduler needs to both count and place. RSMAP
-    is always consumable (see *consumable* below) and appears only in the *complex_values* list of a host
-    (see xxqs_name_sxx_host_conf(5)); it cannot be used as a per-queue limit. The value has the form:
+-   *RSMAP* (Resource Map) manages a fixed pool of individually named resource instances on a host —
+    GPUs, NICs, licence seats, or any per-host resource where the scheduler needs to both count and
+    place. A resource map is always consumable (see *consumable* below), its relation operator must
+    be `<=`, and it appears only in the *complex_values* list of a host (see
+    xxqs_name_sxx_host_conf(5)); it cannot be used as a per-queue limit. The value names the
+    instances the host provides:
 
         <name>=<amount>(<id-spec> <id-spec> ...)
 
-    where each *id-spec* is either a bare identifier (`gpu0`), an integer range (`1-3` — expanded to
-    individual numeric ids at parse time), or an identifier followed by a per-instance characteristics
-    block:
-
-        <id>[<char-name>=<char-value>,<char-name>=<char-value>,...]
-
-    Characteristics attach typed metadata to one specific instance — the device files of a GPU, its
-    on-board memory, a topology-affinity mask, a NIC's bandwidth, etc. Available in GCS only.
-    Multiple characteristics
-    are separated by `,` (comma). The `,` inside the brackets is unambiguous because the flatfile
-    parser is bracket-depth aware; the outer complex_values list separator is also `,`, so the two
-    layers stay visually consistent. Each *char-name* must itself be defined in the complex list before
-    it can be used as a characteristic; the referenced complex's *type* determines how *char-value* is
-    parsed (so `memory=80G` is parsed as *MEMORY*, `bandwidth=100000` as *INT*, an affinity mask as
-    *STRING*). A *char-value* may contain any byte except `,`, `]`, whitespace, `=`, `(`, and `)`;
-    there is no quoting or escape mechanism. Characteristics cannot be attached to a range spec — list
-    ids explicitly (`gpu=3(0[memory=80G] 1[memory=80G] 2[memory=80G])`).
-
-    Most characteristics are metadata that only a prolog or the job itself interprets, but one is
-    read by xxQS_NAMExx: a characteristic named *devices* lists the device files a job granted that
-    instance may use, and the execution daemon confines the job to them. Its value is a list of
-    device paths separated by `;`, each with an optional access mode after a `:`, which is `r`, `w`
-    or `rw`; a path given without a mode is granted read access. See xxqs_name_sxx_host_conf(5) for
-    an example. Because the name is what makes it work, a characteristic called *device* is an
-    ordinary piece of metadata and confines nothing.
-
-    An id may appear more than once inside the `(...)` block to model N-way sharing of a single physical
-    resource (e.g. `gpu=2(gpu0 gpu0)` — one GPU shared between two jobs). If any of the duplicate
-    occurrences carry characteristics, all occurrences of that id must carry an identical set of
-    characteristics (or all must be bare); the comparison is order-independent, so
-    `[a=1,b=2]` and `[b=2,a=1]` are treated as equal. A bare occurrence and an annotated occurrence
-    of the same id count as a mismatch and are rejected. Redundant identical annotations
-    (`gpu=2(gpu0[memory=80G] gpu0[memory=80G])`) are accepted and silently deduplicated.
-
-    Whitespace inside a `[...]` characteristics block is ignored, so a long RSMAP definition can be
-    split across lines using the standard `\` + newline continuation:
-
-        complex_values GPU=2(gpu0[devices=/dev/nvidia0:rw,memory=80G,affinity_mask=SCCCCCCCCScccccccc] \
-                            gpu1[devices=/dev/nvidia1:rw,memory=80G,\
-                                 affinity_mask=SccccccccSCCCCCCCC])
-
-    The line-continuation whitespace between `,` and the next characteristic is stripped before the
-    value is parsed. Whitespace between id-specs (outside brackets) still serves as the id separator
-    as normal.
-
-    Example:
-
-        complex_values GPU=2(gpu0[devices=/dev/nvidia0:rw,memory=80G] gpu1[devices=/dev/nvidia1:rw,memory=80G])
-
-    The id list may be left out, in which case the value is just the amount:
-
-        <name>=<amount>
-
-    The instances are then named `0` to *amount*-1, so `GPU=4` is equivalent to `GPU=4(0-3)` and is
-    stored and displayed in that longer form. This is a convenience for resources whose instances have
-    no meaningful names of their own; instances created this way carry no characteristics. An amount of
-    `0` means the host provides no instance at all and stays `0`. How many ids may be created this way
-    is limited by *MAX_RSMAP_IDS* in *qmaster_params* (default 512, see xxqs_name_sxx_conf(5)); a larger
-    amount is rejected and has to be written as an explicit id list. Setting *MAX_RSMAP_IDS* to 0
-    rejects the short form altogether.
-
-    See xxqs_name_sxx_host_conf(5) for placement inside a host configuration.
+    and each instance may carry typed per-instance characteristics, which are available in GCS only.
+    See xxqs_name_sxx_rsmap(5) for the full grammar, the short form, repeated identifiers,
+    characteristics, how a resource map is requested, and what a job is told about the instances it
+    was granted.
 
 ## relop
 

@@ -155,8 +155,8 @@ sub handle_command_param {
          # parse $val into hashref
          #   $val contains something like 'foo=bar,baz=blub' or 'foo,bar,baz'
          my %h;
-         for my $item (split /,/, $val) {
-            my ($k,$v) = split /=/, $item;
+         for my $item (jsv_split_subparams($val)) {
+            my ($k,$v) = split /=/, $item, 2;
             $h{$k} = $v;
          }
          $param{$key} = { %h };
@@ -170,6 +170,37 @@ sub handle_command_param {
 
 } # end of closure over %is_list_command
 
+
+# Split a comma separated list, ignoring commas inside brackets.
+#
+# A resource map request carries its parameters in brackets after the amount,
+# "gpu=4[id=gpu1*,same=id]", and a string type may be matched with a character class,
+# "h=node[1,2]". Splitting on every comma tears those apart: the value becomes
+# "gpu=4[id=gpu1*" and the remainder looks like a second entry with a name nobody wrote.
+# Since a JSV may modify and send the list back, that corruption reaches qmaster.
+sub jsv_split_subparams {
+   my ($val) = @_;
+   my @tokens;
+   my $token = '';
+   my $depth = 0;
+
+   for my $c (split //, $val) {
+      if ($c eq '[') {
+         $depth++;
+      } elsif ($c eq ']') {
+         $depth--;
+      }
+      if ($c eq ',' && $depth == 0) {
+         push @tokens, $token;
+         $token = '';
+      } else {
+         $token .= $c;
+      }
+   }
+   push @tokens, $token;
+
+   return @tokens;
+}
 
 sub handle_command_env {
    my ($action, $key, @val) = @_;

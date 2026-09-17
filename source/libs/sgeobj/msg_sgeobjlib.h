@@ -372,5 +372,18 @@
 #define MSG_RSMAP_CHARACTERISTIC_DUPLICATE_SSS _MESSAGE(64561, _("RSMAP " SFQ " id " SFQ ": characteristic " SFQ " is set more than once"))
 #define MSG_RSMAP_CHARACTERISTIC_PARSE_SSSS    _MESSAGE(64562, _("RSMAP " SFQ " id " SFQ ": characteristic " SFQ " value cannot be parsed: " SFN))
 #define MSG_RSMAP_TOO_MANY_IMPLICIT_IDS_SUU    _MESSAGE(64563, _("RSMAP " SFQ " would create " sge_u32 " ids implicitly, which exceeds the limit of " sge_u32 " - list the ids explicitly or raise MAX_RSMAP_IDS in qmaster_params"))
+#define MSG_RSMAP_PARAM_UNCLOSED_SS            _MESSAGE(64565, _("RSMAP " SFQ ": the parameter list " SFQ " is not closed"))
+#define MSG_RSMAP_PARAM_TRAILING_SSS           _MESSAGE(64566, _("RSMAP " SFQ ": " SFQ " follows the parameter list in " SFQ))
+#define MSG_RSMAP_PARAM_EMPTY_SS               _MESSAGE(64567, _("RSMAP " SFQ ": empty parameter in " SFQ))
+#define MSG_RSMAP_PARAM_NO_EQ_SS               _MESSAGE(64568, _("RSMAP " SFQ ": parameter " SFQ " has no value, it must be written as name=value"))
+#define MSG_RSMAP_PARAM_NO_NAME_SS             _MESSAGE(64569, _("RSMAP " SFQ ": a parameter in " SFQ " has no name"))
+#define MSG_RSMAP_PARAM_DUPLICATE_SS           _MESSAGE(64570, _("RSMAP " SFQ ": parameter " SFQ " is given more than once"))
+#define MSG_RSMAP_PARAM_UNKNOWN_SS             _MESSAGE(64571, _("RSMAP " SFQ ": " SFQ " is neither a parameter of a resource map request nor a defined complex"))
+#define MSG_RSMAP_PARAM_NOT_YET_SS             _MESSAGE(64572, _("RSMAP " SFQ ": parameter " SFQ " is not supported yet"))
+#define MSG_RSMAP_RESERVED_NAME_SS             _MESSAGE(64573, _("complex " SFQ " cannot use the " SFQ ", it is a reserved parameter name of a resource map request"))
+#define MSG_RSMAP_RESERVED_NAME_SPOOLED_SS     _MESSAGE(64574, _("complex " SFQ " uses the " SFQ ", which is a reserved parameter name of a resource map request - it stays usable as an ordinary resource but cannot be matched as a characteristic of a resource map instance"))
+#define MSG_RSMAP_PARAM_NOT_AVAILABLE_SS       _MESSAGE(64575, _("RSMAP " SFQ ": the parameter list " SFQ " is not available in OCS"))
+#define MSG_RSMAP_PARAM_BAD_VALUE_SSS          _MESSAGE(64576, _("RSMAP " SFQ ": parameter " SFQ " does not take the value " SFQ))
+#define MSG_RSMAP_DEFAULT_HAS_PARAMS_SS        _MESSAGE(64577, _("complex " SFQ ": the default value " SFQ " must be an amount, a resource map default request cannot carry a parameter list"))
 
 // clang-format on

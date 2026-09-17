@@ -883,7 +883,6 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
    u_long32 type, relop, used_relop = 0;
    double req_dl, src_dl;
    int match, m1, m2;
-   const char *s;
    const char *name;
    const char *offer;
    char dom_str[5];
@@ -949,13 +948,10 @@ int compare_complexes(int slots, lListElem *req_cplx, lListElem *src_cplx, char 
    case TYPE_MEM:
    case TYPE_BOO:
    case TYPE_DOUBLE:
-      s=lGetString(req_cplx, CE_stringval); 
-      if (!parse_ulong_val(&req_dl, nullptr, type, s, nullptr, 0)) {
-#if 0
-         DPRINTF("%s is not of type %s\n", s, map_type2str(type));
-#endif
-         req_dl = 0;
-      }   
+      // CE_doubleval carries the parsed amount; see the comment in ri_time_by_slots().
+      // The previous code re-parsed CE_stringval here and silently substituted 0 when the
+      // parse failed, which turned a malformed request into a request for nothing.
+      req_dl = lGetDouble(req_cplx, CE_doubleval);
 
       if (is_threshold) {
          m1 = m2 = 0; /* nothing exceeded per default */
@@ -1359,10 +1355,12 @@ bool request_cq_rejected(const lList* hard_resource_list, const lListElem *cq,
          case TYPE_BOO:
          case TYPE_DOUBLE:
             {
-               double req_dl, off_dl;
-               if (!parse_ulong_val(&req_dl, nullptr, type, request, nullptr, 0) ||
-                    !parse_ulong_val(&off_dl, nullptr, type, offer, nullptr, 0)) {
-                  DPRINTF("%s is not of type %s\n", request, map_type2str(type));
+               // the request side is already parsed (CE_doubleval); only the offer, which
+               // comes from a queue or host configuration value, still needs parsing
+               double req_dl = lGetDouble(req, CE_doubleval);
+               double off_dl;
+               if (!parse_ulong_val(&off_dl, nullptr, type, offer, nullptr, 0)) {
+                  DPRINTF("%s is not of type %s\n", offer, map_type2str(type));
                   match = 0;
                } else {
                   match = resource_cmp(relop, req_dl, off_dl);

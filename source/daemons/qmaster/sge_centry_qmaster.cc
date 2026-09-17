@@ -229,7 +229,7 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
    }
 
    if (ret) {
-      ret = centry_elem_validate(centry, nullptr, answer_list);
+      ret = centry_elem_validate(centry, nullptr, answer_list, false);
    }
 
    if (ret) {

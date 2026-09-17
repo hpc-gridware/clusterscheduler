@@ -219,11 +219,41 @@ proc jsv_del_param {suffix} {
    }
 }
 
+# Split a comma separated list, ignoring commas inside brackets.
+#
+# A resource map request carries its parameters in brackets after the amount,
+# "gpu=4[id=gpu1*,same=id]", and a string type may be matched with a character class,
+# "h=node[1,2]". Splitting on every comma tears those apart: the value becomes
+# "gpu=4[id=gpu1*" and the remainder looks like a second entry with a name nobody wrote.
+# Since a JSV may modify and send the list back, that corruption reaches qmaster.
+proc jsv_split_subparams {value} {
+   set token_list {}
+   set token ""
+   set depth 0
+
+   foreach c [split $value ""] {
+      if {[string compare $c "\["] == 0} {
+         incr depth
+      } elseif {[string compare $c "\]"] == 0} {
+         incr depth -1
+      }
+      if {[string compare $c ","] == 0 && $depth == 0} {
+         lappend token_list $token
+         set token ""
+      } else {
+         append token $c
+      }
+   }
+   lappend token_list $token
+
+   return $token_list
+}
+
 proc jsv_sub_is_param {suffix sub_param} {
    set ret 0
 
    if {[jsv_is_param $suffix] == 1} {
-      set token_list [split [jsv_get_param $suffix] ","]
+      set token_list [jsv_split_subparams [jsv_get_param $suffix]]
 
       foreach token $token_list {
          set sub_token [split $token "="]
@@ -241,7 +271,7 @@ proc jsv_sub_get_param {suffix sub_param} {
    set ret {}
 
    if {[jsv_is_param $suffix] == 1} {
-      set token_list [split [jsv_get_param $suffix] ","]
+      set token_list [jsv_split_subparams [jsv_get_param $suffix]]
 
       foreach token $token_list {
          set sub_token [split $token "="]
@@ -264,7 +294,7 @@ proc jsv_sub_add_param {suffix sub_param {sub_value ""}} {
    global $name
    set exists [llength [info globals $name]]
    if {$exists == 1} {
-      set token_list [split [set $name] ","]
+      set token_list [jsv_split_subparams [set $name]]
    } else {
       set token_list {} 
    }
@@ -329,7 +359,7 @@ proc jsv_sub_del_param {suffix sub_param} {
    global $name
    set exists [llength [info globals $name]]
    if {$exists == 1} {
-      set token_list [split [set $name] ","]
+      set token_list [jsv_split_subparams [set $name]]
    } else {
       set token_list {} 
    }
@@ -545,7 +575,11 @@ proc jsv_main {} {
          if {[string compare "QUIT" "$first"] == 0} {
             set quit "true"
          } elseif {[string compare "PARAM" $first] == 0} {
-            jsv_handle_param_command "$second" "$remaining"
+            # hand over the rest of the line as the string it arrived as. Taking the
+            # list representation of it instead puts braces around a value which
+            # contains a bracket, the way a resource map request does in
+            # "gpu=2[same=id]", and every reader of the parameter sees them.
+            jsv_handle_param_command "$second" [join [lrange $arguments 2 end] " "]
          } elseif {[string compare "ENV" $first] == 0} {
             set third [lindex $remaining 0]
             set remaining [lrange $remaining 1 [llength $remaining]]

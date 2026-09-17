@@ -313,15 +313,31 @@ read_CE_stringval_host(lListElem *ep, int nm, const char *buf, lList **alpp) {
                   ret = 0;
                   break;
                }
-               // reject characteristics attached to a range spec like "1-3[foo=bar]"
+               // Reject characteristics attached to a range which covers more than one id,
+               // like "1-3[foo=bar]": the block would have to belong to all three instances
+               // and there is no sense in which it does.
+               //
+               // A bare number is a range of one - "0" parses as 0 to 0 - and there it names a
+               // single instance, so it takes a block like any other identifier. Refusing it
+               // was an accident of asking the range parser rather than a rule: numeric
+               // identifiers are the natural ones for GPUs, since that is what
+               // CUDA_VISIBLE_DEVICES takes, and the short form "gpu=4" creates exactly those.
+               // The writer already emits an identifier carrying characteristics on its own
+               // instead of folding it into a range, see write_CE_stringval_host().
                if (has_characteristics &&
                    range_parse_get_ids(id_str.c_str(), 0, range_start, range_end, range_step)) {
-                  answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
-                                          MSG_RSMAP_CHARACTERISTIC_ON_RANGE_SS,
-                                          rsmap_name, token);
-                  lFreeList(&properties);
-                  ret = 0;
-                  break;
+                  if (range_start != range_end) {
+                     answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                             MSG_RSMAP_CHARACTERISTIC_ON_RANGE_SS,
+                                             rsmap_name, token);
+                     lFreeList(&properties);
+                     ret = 0;
+                     break;
+                  }
+                  // Store it under the identifier the range expands to rather than under the
+                  // text which was written, so that "3-3[...]" and "3[...]" are one instance
+                  // and not two. A bare "0" expands to itself and is unaffected.
+                  id_str = std::to_string(range_start);
                }
                if (!store_resl(ep, id_str.c_str(), &properties, alpp, rsmap_name)) {
                   ret = 0;

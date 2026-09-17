@@ -2721,18 +2721,20 @@ job_get_contribution(const lListElem *job, lList **answer_list, const char *name
    // we only consider *hard* requests (consumables), there are no soft consumables
    centry = job_get_hard_request(job, name, is_master_task);
    if (centry != nullptr) {
-      // @todo CS-537 could we rely on CE_doubleval? Would spare us the string parsing below.
-      value_string = lGetString(centry, CE_stringval);
+      // CS-537: the amount was parsed when the request was built and is kept in CE_doubleval.
+      // Parsing CE_stringval again would also be wrong for a resource map, whose string carries
+      // a bracketed parameter list after the amount.
+      *value = lGetDouble(centry, CE_doubleval);
    } else {
       // if the job did not request the consumable, there might still be a default request
       // @todo CE-459 if there was a CE_default_doubleval we wouldn't have to parse the string
       value_string = lGetString(complex_definition, CE_defaultval);
-   }
-   if (!(parse_ulong_val(value, nullptr, TYPE_INT, value_string,
-                         error_str, sizeof(error_str)-1))) {
-      answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
-                              MSG_ATTRIB_PARSATTRFAILED_SS, name, error_str);
-      ret = false;
+      if (!(parse_ulong_val(value, nullptr, lGetUlong(complex_definition, CE_valtype), value_string,
+                            error_str, sizeof(error_str)-1))) {
+         answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                                 MSG_ATTRIB_PARSATTRFAILED_SS, name, error_str);
+         ret = false;
+      }
    }
 
    DRETURN(ret);
@@ -2753,18 +2755,19 @@ job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const c
    // we only consider *hard* requests (consumables), there are no soft consumables
    centry = job_get_hard_request(job, name, scope);
    if (centry != nullptr) {
-      // @todo CS-537 could we rely on CE_doubleval? Would spare us the string parsing below.
-      value_string = lGetString(centry, CE_stringval);
+      // CS-537: see job_get_contribution()
+      *value = lGetDouble(centry, CE_doubleval);
    } else {
       // if the job did not request the consumable, there might still be a default request
       // @todo CE-459 if there was a CE_default_doubleval we wouldn't have to parse the string
       value_string = lGetString(complex_definition, CE_defaultval);
       is_default_request = true;
-   }
-   if (!(parse_ulong_val(value, nullptr, TYPE_INT, value_string, error_str, sizeof(error_str)-1))) {
-      answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
-                              MSG_ATTRIB_PARSATTRFAILED_SS, name, error_str);
-      ret = false;
+      if (!(parse_ulong_val(value, nullptr, lGetUlong(complex_definition, CE_valtype), value_string,
+                            error_str, sizeof(error_str)-1))) {
+         answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                                 MSG_ATTRIB_PARSATTRFAILED_SS, name, error_str);
+         ret = false;
+      }
    }
    if (is_default_request && *value == 0) {
 #if 0

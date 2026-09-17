@@ -1579,7 +1579,8 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
                                          tmp_elem, master_centry_list, lGetUlong(gdil_ep, JG_slots),
                                          EH_consumable_config_list, EH_resource_utilization, host,
                                          lGetUlong64(ar_ep, AR_start_time), lGetUlong64(ar_ep, AR_duration),
-                                         HOST_TAG, false, is_master_task, do_per_host_booking);
+                                         HOST_TAG, false, is_master_task, do_per_host_booking,
+                                         lGetList(ar_ep, AR_granted_resources_list));
                   is_master_task = false;
                   do_per_host_booking = false;
                   gdil_ep = lGetElemHostNext(gdil, JG_qhostname, host, &iterator);
