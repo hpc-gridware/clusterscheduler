@@ -1739,6 +1739,26 @@ FCLOSE_ERROR:
    DRETURN(nullptr);
 }
 
+/**
+ * @brief Read one object from the current scanner input.
+ *
+ * The object is discarded if reading it produced an error. Only the errors of
+ * this read count: the caller's answer list may already hold errors of earlier
+ * reads, e.g. spool_read_list() passes one list for all files of a spool
+ * directory. Judging by that whole list made one broken file discard every
+ * intact object read after it.
+ *
+ * @param answer_list receives the messages of this read, may be nullptr
+ * @param descr       descriptor of the object to read
+ * @param root        root element for sub-objects, nullptr for a new object
+ * @param instr       the spooling instructions
+ * @param fields      the fields to read
+ * @param fields_out  receives the fields read, nullptr if not needed
+ * @param token       the current scanner token, advanced while reading
+ * @param end_token   characters ending the object, nullptr for none
+ * @param parse_values whether to parse the attribute values
+ * @return the object, nullptr if it could not be read
+ */
 static lListElem *
 _spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
                             lListElem *root, const spool_flatfile_instr *instr,
@@ -1747,6 +1767,7 @@ _spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
                             bool parse_values) {
    lListElem *object = nullptr;
    int *my_fields_out = nullptr;
+   lList *read_answer_list = nullptr;
 
    /* BUGFIX: Issuezilla #732
     * If we're not given a fields_out array, create one for internal use. */
@@ -1759,13 +1780,15 @@ _spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
       my_fields_out[0] = NoName;
    }
 
-   _spool_flatfile_read_live_object(answer_list, &object, descr, root, instr,
+   _spool_flatfile_read_live_object(&read_answer_list, &object, descr, root, instr,
                                     fields, my_fields_out, token, end_token,
                                     parse_values);
 
-   if (answer_list_has_error(answer_list)) {
+   if (answer_list_has_error(&read_answer_list)) {
       lFreeElem(&object);
    }
+   answer_list_append_list(answer_list, &read_answer_list);
+   lFreeList(&read_answer_list);
 
    if (fields_out == nullptr) {
       sge_free(&my_fields_out);
