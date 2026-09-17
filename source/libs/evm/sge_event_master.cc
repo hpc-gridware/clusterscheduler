@@ -125,7 +125,7 @@
  *  pthread_mutex_t  transaction_mutex;
  *  lList            *transaction_events;
  *  pthread_mutex_t  t_add_event_mutex;
- *  bool             is_transaction;
+ *  uint32_t         transaction_depth;
  *
  * related methods:
  *  sge_set_commit_required()
@@ -443,7 +443,7 @@ sge_event_master_destroy_transaction_store(void *transaction_store) {
 
 static void
 sge_event_master_init_transaction_store(event_master_transaction_t *t_store) {
-   t_store->is_transaction = false;
+   t_store->transaction_depth = 0;
    t_store->transaction_requests = lCreateListHash("Event Master Requests", EVR_Type, false);
 }
 
@@ -1502,7 +1502,7 @@ add_list_event_for_client(const uint32_t event_client_id, uint64_t timestamp, co
     * need a new C block, as the GET_SPECIFIC macro declares new variables
     */
    GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store, Event_Master_Control.transaction_key);
-   if (t_store->is_transaction) {
+   if (t_store->transaction_depth > 0) {
       lAppendElem(t_store->transaction_requests, evr);
    } else {
       add_list_event_for_client_after_commit(evr, nullptr, gdi_session);
@@ -2933,14 +2933,16 @@ free_dynamic_id(lList **answer_list, uint32_t id) {
 }
 
 /**
- * @brief Commit the queued events
+ * @brief Close one transaction, sending the queued events when the last closes
+ *
+ * Counterpart of sge_set_commit_required(). Only the outermost commit hands the
+ * collected events to the delivery thread and clears the queue; an inner one
+ * just decreases the depth, so a nested handler cannot flush the events its
+ * caller is still collecting.
  *
  * @param gdi_session the session the queued events belong to
  *
- * Sends any events that this thread currently has queued and clears the
- * queue.
- *
- * @return Whether the call succeeded.
+ * @return true, or false when no transaction was open on this thread
  *
  * @note MT-NOTE: sge_commit is thread safe.
  */
@@ -2950,14 +2952,53 @@ sge_commit(uint64_t gdi_session) {
    bool ret = true;
 
    GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store, Event_Master_Control.transaction_key);
-   if (t_store->is_transaction) {
-      t_store->is_transaction = false;
+   if (t_store->transaction_depth > 0) {
+      t_store->transaction_depth--;
 
-      if (lGetNumberOfElem(t_store->transaction_requests) > 0) {
+      if (t_store->transaction_depth == 0 && lGetNumberOfElem(t_store->transaction_requests) > 0) {
          add_list_event_for_client_after_commit(nullptr, t_store->transaction_requests, gdi_session);
       }
    } else {
       WARNING("attempting to commit an event master transaction, but no transaction is open");
+      ret = false;
+   }
+
+   DRETURN(ret);
+}
+
+/**
+ * @brief Close whatever this thread left open, and report it
+ *
+ * Meant for the outermost bracket of a request handler, after its own
+ * sge_commit(): at that point the depth has to be back to 0. A leftover means
+ * some handler opened a transaction without committing it - which, unlike the
+ * unmatched commit sge_commit() reports, would otherwise go unnoticed and strand
+ * the collected events until this thread's next commit.
+ *
+ * The events are delivered rather than dropped, so an imbalance costs a warning
+ * and the atomicity of that one request, not the events themselves.
+ *
+ * @param gdi_session the session the stranded events belong to
+ * @param context     what just finished, named in the warning
+ *
+ * @return true when nothing was left open
+ *
+ * @note MT-NOTE: sge_close_leftover_transactions is thread safe.
+ */
+bool
+sge_close_leftover_transactions(uint64_t gdi_session, const char *context) {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store, Event_Master_Control.transaction_key);
+   if (t_store->transaction_depth > 0) {
+      WARNING(SFN " left " sge_u32 " event master transaction(s) open; committing them now",
+              context, t_store->transaction_depth);
+      t_store->transaction_depth = 0;
+
+      if (lGetNumberOfElem(t_store->transaction_requests) > 0) {
+         add_list_event_for_client_after_commit(nullptr, t_store->transaction_requests, gdi_session);
+      }
       ret = false;
    }
 
@@ -3027,13 +3068,16 @@ void sge_event_master_flush_requests(bool force) {
 }
 
 /**
- * @brief Require commits (make multipe object changes atomic)
+ * @brief Open a transaction (make multiple object changes atomic)
  *
  * Enables transactions on events. So far a rollback is not supported. It allows to accumulate
  * events, while multiple objects are modified and events are issued and to submit them as
- * one event package. There can only be one event session open at a time. The transaction_mutex
- * will block multiple calles to this method.
- * The method cannot be called recursivly, and sge_commit has to be called to close the transaction.
+ * one event package.
+ *
+ * Every call has to be matched by a sge_commit(). Calls nest: a handler that
+ * already runs inside a transaction - the worker opens one around every GDI
+ * request - may open another, and the collected events are handed on only when
+ * the outermost one commits.
  *
  * @note MT-NOTE: sge_set_commit_required is thread safe.  Transactional event
  *       processing is handled for each thread individually.
@@ -3044,11 +3088,7 @@ void sge_set_commit_required() {
    /* need a new C block, as the GET_SPECIFIC macro declares new variables */
    {
       GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store, Event_Master_Control.transaction_key);
-      if (t_store->is_transaction) {
-         WARNING("attempting to open a new event master transaction, but we already have a transaction open");
-      } else {
-         t_store->is_transaction = true;
-      }
+      t_store->transaction_depth++;
    }
 
    DRETURN_VOID;

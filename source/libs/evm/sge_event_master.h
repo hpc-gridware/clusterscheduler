@@ -72,9 +72,15 @@
  * collected here instead of being handed to the delivery thread, so a client
  * never sees half of a change. Thread local, keyed by
  * #event_master_control_t::transaction_key.
+ *
+ * Transactions nest: a handler that already runs inside one (the worker opens
+ * one around every GDI request) may open another, and only the outermost commit
+ * hands the collected events on. Hence a depth rather than a flag - with a flag
+ * an inner commit ended the outer transaction and flushed its events early
+ * (CS-2295).
  */
 typedef struct {
-   bool     is_transaction;         ///< identifies, if a transaction is open, or not
+   uint32_t transaction_depth;      ///< number of transactions open on this thread, 0 -> none
    lList    *transaction_requests;  ///< all event add requests collected while the transaction is open
 } event_master_transaction_t;
  
@@ -168,4 +174,5 @@ uint32_t sge_get_num_event_clients();
 
 void sge_event_master_init();
 bool sge_commit(uint64_t gdi_session);
+bool sge_close_leftover_transactions(uint64_t gdi_session, const char *context);
 void sge_set_commit_required();

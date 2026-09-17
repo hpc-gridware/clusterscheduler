@@ -324,6 +324,7 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
       }
 
       sge_commit(ocs::SessionManager::GDI_SESSION_NONE);
+      sge_close_leftover_transactions(ocs::SessionManager::GDI_SESSION_NONE, "share tree usage calculation");
    }
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);

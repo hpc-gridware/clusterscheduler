@@ -304,12 +304,14 @@ sge_worker_main(void *arg) {
             }
 
             sge_commit(packet->gdi_session);
+            sge_close_leftover_transactions(packet->gdi_session, "GDI request handling");
          } else if (packet->request_type == PACKET_REPORT_REQUEST) {
             sge_set_commit_required();
 
             sge_c_report(packet, packet->tasks[0], packet->host, packet->commproc, packet->commproc_id, packet->tasks[0]->data_list, p_monitor);
 
             sge_commit(packet->gdi_session);
+            sge_close_leftover_transactions(packet->gdi_session, "report request handling");
          } else if (packet->request_type == PACKET_ACK_REQUEST) {
             sge_c_ack(packet, packet->tasks[0], p_monitor);
          } else {
