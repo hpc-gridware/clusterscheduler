@@ -115,7 +115,7 @@ ShutdownMaster()
    # configuration, local_conf and sched_configuration are no longer stored in
    # the common directory (classic spooling now keeps them in the spool dir,
    # which is removed wholesale above); they are therefore not listed here.
-   toDelete="accounting act_qmaster bootstrap cluster_name jmx qtask sgeCA sge_request sgemaster"
+   toDelete="accounting act_qmaster bootstrap cluster_name jmx qtask sge_request sgemaster"
 
    # The qmaster systemd unit / init script is shared with sge_shadowd —
    # if this host is still listed in shadow_masters the shadowd role still

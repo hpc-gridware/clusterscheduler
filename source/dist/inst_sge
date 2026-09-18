@@ -74,7 +74,6 @@ AUTO=false
 RESCHEDULE=true
 RESPORT=false
 AFS=false
-CSP=false
 TLS=false
 MUNGE=false
 NOREMOTE=false
@@ -84,7 +83,6 @@ ADD_RC=false
 UPDATE_RC=false
 DEL_EXECD_SPOOL=false
 POST_UPDATE=false
-COPY_CA="false"
 RECREATE_SETTINGS="false"
 USE_OLD_IJS="false"
 START_CLUSTER="false"
@@ -253,24 +251,11 @@ while [ $ARGC != 0 ]; do
      RESPORT=true
      #echo set resport to true
      ;;
-   -csp)
-     CSP=true
-     ;;
    -tls)
      TLS=true
      ;;
    -munge)
      MUNGE=true
-     ;;
-   -copycerts)
-     if [ "$2" = "" ]; then
-        ErrUsage
-     fi
-     #copy ca certs to the given hosts
-     COPY_CA="true"
-     shift
-     CERT_COPY_HOST_LIST=$*
-     ARGC=`expr $ARGC - 1`
      ;;
    -oldijs)
       USE_OLD_IJS="true"
@@ -317,21 +302,9 @@ if [ -z "$REMOVE_RC" ]; then
    REMOVE_RC="false"
 fi
 
-for item in CSP_RECREATE CSP_COPY_CERTS; do
-   if [ x`eval echo '$'$item` = x ]; then
-      eval $item="false"
-   fi
-done
-
 if [ -z "$EXEC_HOST_LIST" ]; then
    EXEC_HOST_LIST="undef"
 fi
-for item in CSP_COUNTRY_CODE CSP_STATE CSP_LOCATION CSP_ORGA CSP_ORGA_UNIT CSP_MAIL_ADDRESS; do
-   if [ x`eval echo '$'$item` = x ]; then
-      eval $item="undef"
-   fi
-done
-
 
 if [ $AUTO = "false" -a $QMASTER = "undef" -a $EXECD = "install" -a $SHADOW = "install" ]; then
    ErrUsage
@@ -507,9 +480,6 @@ if [ "$UPDATE" = true ]; then
          afs)
             AFS=true
             ;;
-         csp)
-            CSP=true
-            ;;
          tls)
             TLS=true
             ;;
@@ -521,7 +491,6 @@ if [ "$UPDATE" = true ]; then
    else
       # We don't care about switches, setup is going to be reused
       AFS=false
-      CSP=false
       TLS=false
       MUNGE=false
    fi
@@ -559,7 +528,6 @@ if [ "$UPDATE" = true ]; then
    CreateSGEStartUpScripts $euid true qmaster
    CreateSGEStartUpScripts $euid true execd
    CreateSettingsFile
-   InitCA
    SetupSystemdSliceName
    SetupRcScriptNames qmaster #New qmaster RC script/SMF
    InstallRcScript
@@ -571,8 +539,6 @@ if [ "$UPDATE" = true ]; then
       DeleteQueueNumberAttribute $QMDIR
    fi
    StartQmaster
-   CopyCA execd
-   CopyCA submit
    CheckRunningDaemon sge_qmaster
 
    tmp_file="/tmp/upgrade_config_${current_date}.log"
@@ -709,13 +675,10 @@ if [ "$QMASTER" = "install" -a "$UPDATE" != "true" ]; then
  CreateSGEStartUpScripts $euid true qmaster
  CreateSGEStartUpScripts $euid true execd
  CreateSettingsFile
- InitCA
  SetupSystemdSliceName
  AddSGEStartUpScript $euid qmaster
  StartQmaster
  AddHosts
- CopyCA execd
- CopyCA submit
 
  SetScheddConfig
  GiveHints
@@ -870,7 +833,6 @@ if [ "$EXECD" = "install" -a "$UPDATE" != "true" ]; then
       CheckCellDirectory
       . $SGE_ROOT/$SGE_CELL/common/settings.sh
       SearchForExistingInstallations "execd"
-      CheckCSP
       CheckHostNameResolving install
       GetLocalExecdSpoolDir
       AddLocalConfiguration_With_Qconf
@@ -904,7 +866,6 @@ if [ "$EXECD" = "install" -a "$UPDATE" != "true" ]; then
       . $SGE_ROOT/$SGE_CELL/common/settings.sh
       SearchForExistingInstallations "execd"
       GetAdminUser
-      CheckCSP
       CheckHostNameResolving install
       GetLocalExecdSpoolDir
       AddLocalConfiguration_With_Qconf
@@ -1342,50 +1303,9 @@ if [ "$SUBMIT" = "install" ]; then
    . $SGE_ROOT/$SGE_CELL/common/settings.sh
    CheckHostNameResolving install
    AddSubmitHosts
-   product_mode=`cat $SGE_ROOT/$SGE_CELL/common/bootstrap | grep "security_mode" | awk '{ print $2 }'`
-   if [ "$product_mode" = "csp" ]; then
-      CSP="true"
-   fi
-   #TODO XXX: This will attempt to copy certs to every submit host! We just need one.
-   #Also, we probably prefer to do this from trusted (qmaster) node, that has remote
-   #access to this submit host
-   CopyCA submit
    MoveLog
    $INFOTEXT "Submit host installation is complete!"
    exit 0
-fi
-
-if [ "$COPY_CA" = "true" ]; then
-   #In standalone -copycert auto mode we don't have SGE_CELL
-   if [ -z "$SGE_CELL" -a "$AUTO" = "true" ]; then
-      SGE_CELL="$CELL_NAME"
-   fi
-   if [ "$SGE_ROOT" = "" -o "$SGE_CELL" = "" ]; then
-      $INFOTEXT "SGE_ROOT or SGE_CELL is not set!"
-      exit 1
-   fi
-
-   if [ -f $SGE_ROOT/$SGE_CELL/common/bootstrap ]; then
-      GetAdminUser
-   else
-      $INFOTEXT "\nObviously there was no qmaster installation for this cell yet. The file\n\n" \
-                "   %s\n\n" \
-                "does not exist. Exit." \$SGE_ROOT/$SGE_CELL/common/bootstrap
-      exit 1
-   fi
-
-   product_mode=`cat $SGE_ROOT/$SGE_CELL/common/bootstrap | grep "security_mode" | awk '{ print $2 }'`
-   if [ "$product_mode" = "csp" ]; then
-      CSP="true"
-   fi
-   CopyCA copyonly
-   ret=$?
-   if [ $ret -eq 0 ]; then
-      $INFOTEXT "Copying certificates is complete!"
-   else
-      $INFOTEXT "No certificats to copy in your current cluster setup!"
-   fi
-   exit $ret
 fi
 
 if [ $BACKUP = "true" ]; then

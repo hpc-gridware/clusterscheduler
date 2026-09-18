@@ -135,7 +135,7 @@ TLS security can be enabled at installation time or later by editing the bootstr
 
 The modes differ in what they protect, and they can be combined. `munge` **authenticates the requesting user** (it cross-checks the uid, gid, user and group of every request against the Munge-authenticated identity). `tls` provides **transport encryption and host authentication** using automatically generated host/daemon certificates; it does **not** authenticate the requesting user, because no per-user certificates are involved. A cluster that needs both encrypted communication and verified user identity should therefore enable `tls` **and** `munge` together.
 
-Further security modes can be enabled by doing custom-builds of xxQS_NAMExx: afs, dce, kerberos, csp (AFS, DCE, KERBEROS, CSP security model).
+One further mode exists: `afs`. It makes the execution side renew the AFS token of a running job and requires the AFS commands to be configured in the cluster configuration, see *pag_cmd*, *set_token_cmd* and *token_extend_time* in xxqs_name_sxx_conf(5). It cannot be combined with the modes above.
 
 ## *security_params*
 

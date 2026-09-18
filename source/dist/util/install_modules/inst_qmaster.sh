@@ -699,19 +699,6 @@ SetProductMode()
       AFS_PREFIX=""
    fi
 
-   if [ "$CSP" = "true" ]; then
-      SEC_COUNT=`strings "$SGE_BIN/sge_qmaster" | grep "AIMK_SECURE_OPTION_ENABLED" | wc -l`
-      if [ "$SEC_COUNT" -ne 1 ]; then
-         $INFOTEXT "\n>sge_qmaster< binary is not compiled with >-secure< option!\n"
-         $INFOTEXT -wait -auto "$AUTO" -n "Hit <RETURN> to cancel the installation >> "
-         exit 1
-      else
-         CSP_PREFIX="csp"
-      fi
-   else
-      CSP_PREFIX=""
-   fi
-
    if [ "$MUNGE" = "true" ]; then
       SEC_COUNT=`strings "$SGE_BIN/sge_qmaster" | grep "munge_encode" | wc -l`
       if [ "$SEC_COUNT" -lt 1 ]; then
@@ -740,7 +727,7 @@ SetProductMode()
 
    # Allow multiple security options, at least munge and tls.
    if [ "$AFS" = "true" ]; then
-      if [ "$CSP" = "true" -o "$MUNGE" = "true" -o "$TLS" = "true" ]; then
+      if [ "$MUNGE" = "true" -o "$TLS" = "true" ]; then
          $INFOTEXT "\nAFS security can't be combined with other security options!\n"
          $INFOTEXT -wait -auto "$AUTO" -n "Hit <RETURN> to cancel the installation >> "
          exit 1
@@ -748,24 +735,14 @@ SetProductMode()
          PRODUCT_MODE="${AFS_PREFIX}"
       fi
    else
-      if [ "$CSP" = "true" ]; then
-         if [ "$AFS" = "true" -o "$MUNGE" = "true" -o "$TLS" = "true" ]; then
-            $INFOTEXT "\nCSP security can't be combined with other security options!\n"
-            $INFOTEXT -wait -auto "$AUTO" -n "Hit <RETURN> to cancel the installation >> "
-            exit 1
-         else
-            PRODUCT_MODE="${CSP_PREFIX}"
-         fi
+      if [ "$TLS" = "true" -a "$MUNGE" = "true" ]; then
+         PRODUCT_MODE="${MUNGE_PREFIX},${TLS_PREFIX}"
+      elif [ "$TLS" = "true" ]; then
+         PRODUCT_MODE="${TLS_PREFIX}"
+      elif [ "$MUNGE" = "true" ]; then
+         PRODUCT_MODE="${MUNGE_PREFIX}"
       else
-         if [ "$TLS" = "true" -a "$MUNGE" = "true" ]; then
-            PRODUCT_MODE="${MUNGE_PREFIX},${TLS_PREFIX}"
-         elif [ "$TLS" = "true" ]; then
-            PRODUCT_MODE="${TLS_PREFIX}"
-         elif [ "$MUNGE" = "true" ]; then
-            PRODUCT_MODE="${MUNGE_PREFIX}"
-         else
-            PRODUCT_MODE="none"
-         fi
+         PRODUCT_MODE="none"
       fi
    fi
 }
@@ -1199,35 +1176,6 @@ CreateSettingsFile()
 
    $INFOTEXT -wait -auto $AUTO -n "\nHit <RETURN> to continue >> "
 }
-
-#--------------------------------------------------------------------------
-# InitCA Create CA and initialize it for daemons and users
-#
-InitCA()
-{
-
-   if [ "$CSP" = true ]; then
-      # Initialize CA, make directories and get DN info
-      #
-      SGE_CA_CMD=util/sgeCA/sge_ca
-      CATOP_TMP=`grep "CATOP=" util/sgeCA/sge_ca.cnf | awk -F= '{print $2}' 2>/dev/null`
-      eval CATOP_TMP=$CATOP_TMP
-      if [ "$AUTO" = "true" ]; then
-         if [ "$CSP_RECREATE" != "false" -o ! -f $CATOP_TMP/certs/cert.pem ]; then
-            $SGE_CA_CMD -init -days 365 -auto $FILE
-            #if [ -f "$CSP_USERFILE" ]; then
-            #   $SGE_CA_CMD -usercert $CSP_USERFILE
-            #fi
-         fi
-      else
-         $SGE_CA_CMD -init -days 365
-      fi
-
-      $INFOTEXT -auto $AUTO -wait -n "Hit <RETURN> to continue >> "
-      $CLEAR
-   fi
-}
-
 
 #--------------------------------------------------------------------------
 # StartQmaster

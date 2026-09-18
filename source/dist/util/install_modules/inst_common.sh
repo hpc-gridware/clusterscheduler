@@ -382,7 +382,6 @@ SetPerm()
 SetCellDependentVariables()
 {
    COMMONDIR=$SGE_CELL_VAL/common
-   CASHAREDDIR=$COMMONDIR/sgeCA
 }
 
 
@@ -485,9 +484,9 @@ ErrUsage()
    myname=`basename $0`
    $INFOTEXT -e \
              "Usage: %s -m|-um|-x|-ux [all]|-sm|-usm|-s|-db|-udb|-bup|-rst| \n" \
-             "       -copycerts <host|hostlist>|-v|-upd|-upd-execd|-upd-rc| \n" \
+             "       -v|-upd|-upd-execd|-upd-rc| \n" \
              "       -post_upd|-start-all|-rccreate|[-host <hostname>] [-resport] [-rsh] \n" \
-             "       [-auto <filename>] [-nr] [-csp] [-munge]\n" \
+             "       [-auto <filename>] [-nr] [-munge]\n" \
              "       [-oldijs] [-afs] [-noremote] [-nosmf] [-nost]\n" \
              "   -m         install qmaster host\n" \
              "   -um        uninstall qmaster host\n" \
@@ -498,7 +497,6 @@ ErrUsage()
              "   -s         install submit host(s)\n" \
              "   -bup       backup of your configuration\n" \
              "   -rst       restore configuration from backup\n" \
-             "   -copycerts copy local certificates to given hosts\n" \
              "   -v         print version\n" \
              "   -upd       upgrade cluster from 6.0 or higher to 6.2\n" \
              "   -upd-execd delete/initialize all execd spool directories\n" \
@@ -514,8 +512,6 @@ ErrUsage()
              "   -rsh       use rsh instead of ssh (default is ssh)\n" \
              "   -auto      full automatic installation (qmaster and exec hosts)\n" \
              "   -nr        set reschedule to false\n" \
-             "   -csp       install system with security framework protocol\n" \
-             "              functionality\n" \
              "   -munge     install system with Munge authentication enabled\n" \
              "   -oldijs    configure old interactive job support\n" \
              "   -afs       install system with AFS functionality\n" \
@@ -535,8 +531,7 @@ ErrUsage()
              "   inst_sge -ux -host hostname\n" \
              "                     Uninstalls execd on given execution host\n" \
              "   inst_sge -ux all  Uninstalls all registered execution hosts\n" \
-             "   inst_sge -sm      Install a Shadow Master Host on local host\n" \
-             "   inst_sge -copycerts host or inst_sge -copycerts \"host1 host2\"\n" $myname
+             "   inst_sge -sm      Install a Shadow Master Host on local host\n" $myname
 
    if [ "$option" != "" ]; then
       $INFOTEXT -e "   The option %s is not valid!" $option
@@ -759,8 +754,13 @@ AddChangedHost()
 CheckConfigFile()
 {
    CONFIG_FILE=$1
-   KNOWN_CONFIG_FILE_ENTRIES_INSTALL="SGE_ROOT SGE_QMASTER_PORT SGE_EXECD_PORT CELL_NAME ADMIN_USER QMASTER_SPOOL_DIR EXECD_SPOOL_DIR GID_RANGE SPOOLING_METHOD DB_SPOOLING_DIR SPOOLING_PG_HOST SPOOLING_PG_PORT SPOOLING_PG_DBNAME SPOOLING_PG_USER SPOOLING_PG_SSLMODE SPOOLING_PG_PASSFILE SPOOLING_PG_PASSWORD PAR_EXECD_INST_COUNT ADMIN_HOST_LIST SUBMIT_HOST_LIST EXEC_HOST_LIST CREATE_ALLHOSTS_HOSTGROUP EXECD_SPOOL_DIR_LOCAL HOSTNAME_RESOLVING SHELL_NAME COPY_COMMAND DEFAULT_DOMAIN ADMIN_MAIL ADD_TO_RC SLICE_NAME SET_FILE_PERMS RESCHEDULE_JOBS SCHEDD_CONF SHADOW_HOST EXEC_HOST_LIST_RM REMOVE_RC CSP_RECREATE CSP_COPY_CERTS CSP_COUNTRY_CODE CSP_STATE CSP_LOCATION CSP_ORGA CSP_ORGA_UNIT CSP_MAIL_ADDRESS SGE_ENABLE_SMF SGE_CLUSTER_NAME"
+   KNOWN_CONFIG_FILE_ENTRIES_INSTALL="SGE_ROOT SGE_QMASTER_PORT SGE_EXECD_PORT CELL_NAME ADMIN_USER QMASTER_SPOOL_DIR EXECD_SPOOL_DIR GID_RANGE SPOOLING_METHOD DB_SPOOLING_DIR SPOOLING_PG_HOST SPOOLING_PG_PORT SPOOLING_PG_DBNAME SPOOLING_PG_USER SPOOLING_PG_SSLMODE SPOOLING_PG_PASSFILE SPOOLING_PG_PASSWORD PAR_EXECD_INST_COUNT ADMIN_HOST_LIST SUBMIT_HOST_LIST EXEC_HOST_LIST CREATE_ALLHOSTS_HOSTGROUP EXECD_SPOOL_DIR_LOCAL HOSTNAME_RESOLVING SHELL_NAME DEFAULT_DOMAIN ADMIN_MAIL ADD_TO_RC SLICE_NAME SET_FILE_PERMS RESCHEDULE_JOBS SCHEDD_CONF SHADOW_HOST EXEC_HOST_LIST_RM REMOVE_RC SGE_ENABLE_SMF SGE_CLUSTER_NAME"
    KNOWN_CONFIG_FILE_ENTRIES_BACKUP="SGE_ROOT SGE_CELL BACKUP_DIR TAR BACKUP_FILE"
+   # Entries of removed features. They are accepted and ignored rather than
+   # rejected, because a customer may still install from an autoinstall config
+   # file that was written for an older release - including one carried over
+   # from Grid Engine or Altair Grid Engine.
+   OBSOLETE_CONFIG_FILE_ENTRIES="COPY_COMMAND CSP_RECREATE CSP_COPY_CERTS CSP_COUNTRY_CODE CSP_STATE CSP_LOCATION CSP_ORGA CSP_ORGA_UNIT CSP_MAIL_ADDRESS"
    MAX_GID=2147483647 #unsigned int = 32bit - 1
    MIN_GID=100        #from 0 - 100 may be reserved GIDs
    is_valid="true"
@@ -856,6 +856,15 @@ CheckConfigFile()
       for e in $CONFIG_ENTRIES; do
          echo $KNOWN_CONFIG_FILE_ENTRIES_INSTALL | grep $e 2> /dev/null > /dev/null
          if [ $? != 0 ]; then
+            echo $OBSOLETE_CONFIG_FILE_ENTRIES | grep $e 2> /dev/null > /dev/null
+            if [ $? = 0 ]; then
+               # An entry of a feature that no longer exists. The installation
+               # does not need it, so say so and carry on instead of aborting a
+               # config file that is otherwise still valid.
+               $INFOTEXT "Your configuration entry >%s< belongs to a feature that has been\nremoved and is ignored." $e
+               $INFOTEXT -log "Your configuration entry >%s< belongs to a feature that has been\nremoved and is ignored." $e
+               continue
+            fi
             $INFOTEXT -e "Your configuration entry >%s< is not allowed or not in the list of known\nentries!" $e
             $INFOTEXT -e "Please check your autoinstall config file!\n >%s<" $FILE
             $INFOTEXT -log "Your configuration entry >%s< is not allowed or not in the list of known\nentries!" $e
@@ -1137,78 +1146,6 @@ CheckConfigFile()
          $INFOTEXT -e "For a automatic execd unintallation you have to enter a valid exechost name!"
          $INFOTEXT -log "Your >EXEC_HOST_LIST_RM< is empty or not resolvable!"
          $INFOTEXT -log "For a automatic execd unintallation you have to enter a valid exechost name!"
-         is_valid="false"
-      fi
-   fi
-
-   if [ "$CSP" = "true" ]; then
-      if [ "$CSP_COUNTRY_CODE" = "" -o `echo $CSP_COUNTRY_CODE | wc -c` != 3 ]; then
-         $INFOTEXT -e "The >CSP_COUNTRY_CODE< entry contains more or less than 2 characters!\n"
-         $INFOTEXT -log "The >CSP_COUNTRY_CODE< entry contains more or less than 2 characters!\n"
-         is_valid="false"
-      fi
-      if [ "$CSP_STATE" = "" ]; then
-         $INFOTEXT -e "The >CSP_STATE< entry is empty!\n"
-         $INFOTEXT -log "The >CSP_STATE< entry is empty!\n"
-         is_valid="false"
-      fi
-      if [ "$CSP_LOCATION" = "" ]; then
-         $INFOTEXT -e "The >CSP_LOCATION< entry is empty!\n"
-         $INFOTEXT -log "The >CSP_LOCATION< entry is empty!\n"
-         is_valid="false"
-      fi
-      if [ "$CSP_ORGA" = "" ]; then
-         $INFOTEXT -e "The >CSP_ORGA< entry is empty!\n"
-         $INFOTEXT -log "The >CSP_ORGA< entry is empty!\n"
-         is_valid="false"
-      fi
-      if [ "$CSP_ORGA_UNIT" = "" ]; then
-         $INFOTEXT -e "The >CSP_ORGA_UNIT< entry is empty!\n"
-         $INFOTEXT -log "The >CSP_ORGA_UNIT< entry is empty!\n"
-         is_valid="false"
-      fi
-      if [ "$CSP_MAIL_ADDRESS" = "" ]; then
-         $INFOTEXT -e "The>CSP_MAIL_ADDRESS< entry is empty!\n"
-         $INFOTEXT -log "The>CSP_MAIL_ADDRESS< entry is empty!\n"
-         is_valid="false"
-      fi
-      if [ -z "$CSP_RECREATE" ]; then
-         $INFOTEXT -e "Your >CSP_RECREATE< flag is not set!"
-         $INFOTEXT -log "Your >CSP_RECREATE< flag is not set!"
-         is_valid="false"
-      fi
-      if [ "$CSP_RECREATE" = "1" ]; then
-         CSP_RECREATE="true"
-      elif [ "$CSP_RECREATE" = "0" ]; then
-         CSP_RECREATE="false"
-      fi
-      CSP_RECREATE=`echo $CSP_RECREATE | tr "[A-Z]" "[a-z]"`
-      if [ "$CSP_RECREATE" != "true" -a "$CSP_RECREATE" != "false" ]; then
-         $INFOTEXT -e "Your >CSP_RECREATE< flag is wrong! Valid values are: 0, 1, true, false"
-         $INFOTEXT -log "Your >CSP_RECREATE< flag is wrong! Valid values are: 0, 1, true, false"
-         is_valid="false"
-      fi
-
-      if [ -z "$CSP_COPY_CERTS" ]; then
-         $INFOTEXT -e "Your >CSP_COPY_CERTS< flag is not set!"
-         $INFOTEXT -log "Your >CSP_COPY_CERTS< flag is not set!"
-         is_valid="false"
-      fi
-      if [ "$CSP_COPY_CERTS" = "1" ]; then
-         CSP_COPY_CERTS="true"
-      elif [ "$CSP_COPY_CERTS" = "0" ]; then
-         CSP_COPY_CERTS="false"
-      fi
-      CSP_COPY_CERTS=`echo $CSP_COPY_CERTS | tr "[A-Z]" "[a-z]"`
-      if [ "$CSP_COPY_CERTS" != "true" -a "$CSP_COPY_CERTS" != "false" ]; then
-         $INFOTEXT -e "Your >CSP_COPY_CERTS< flag is wrong! Valid values are:0, 1, true, false"
-         $INFOTEXT -log "Your >CSP_COPY_CERTS< flag is wrong! Valid values are:0, 1, true, false"
-         is_valid="false"
-      fi
-      #COPY_COMMAND is checked only if CSP_COPY_CERTS=true
-      if [ "$CSP_COPY_CERTS" = true -a \( "$COPY_COMMAND" != "scp" -a "$COPY_COMMAND" != "rcp" \) ]; then
-         $INFOTEXT -e "Your >COPY_COMMAND< entry is invalid"
-         $INFOTEXT -log "Your >COPY_COMMAND< entry is invalid"
          is_valid="false"
       fi
    fi
@@ -2991,13 +2928,13 @@ BackupConfig()
    # must also be restorable. sge_request and the other user-request/default
    # files are backed up here so a backup/restore cycle does not drop them.
    BUP_BDB_COMMON_FILE_LIST_TMP="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
-   BUP_BDB_COMMON_DIR_LIST_TMP="sgeCA certs"
+   BUP_BDB_COMMON_DIR_LIST_TMP="certs"
    BUP_BDB_SPOOL_FILE_LIST_TMP="jobseqnum"
    BUP_PG_COMMON_FILE_LIST_TMP="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
-   BUP_PG_COMMON_DIR_LIST_TMP="sgeCA certs"
+   BUP_PG_COMMON_DIR_LIST_TMP="certs"
    BUP_PG_DUMP_FILE="postgres-config.sql"
    BUP_CLASSIC_COMMON_FILE_LIST_TMP="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
-   BUP_CLASSIC_DIR_LIST_TMP="sgeCA certs"
+   BUP_CLASSIC_DIR_LIST_TMP="certs"
    # CS-2394: no managers/operators files any more - managers/operators are members of
    # the reserved "manager"/"operator" usersets, covered by the usersets entry below.
    BUP_CLASSIC_SPOOL_FILE_LIST_TMP="configs sched_configuration jobseqnum advance_reservations admin_hosts calendars centry ckpt cqueues exec_hosts hostgroups resource_quotas pe projects qinstances schedd submit_hosts users usersets"
@@ -3134,17 +3071,17 @@ RestoreConfig()
    # moved aside with the cell dir and is never put back). sge_request and the
    # other user-request/default files are restored here for exactly that reason.
    BUP_COMMON_FILE_LIST="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
-   BUP_COMMON_DIR_LIST="sgeCA certs"
+   BUP_COMMON_DIR_LIST="certs"
    BUP_SPOOL_FILE_LIST="jobseqnum"
    BUP_PG_COMMON_FILE_LIST="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
-   BUP_PG_COMMON_DIR_LIST="sgeCA certs"
+   BUP_PG_COMMON_DIR_LIST="certs"
    BUP_PG_DUMP_FILE="postgres-config.sql"
    # The configs directory (global + per-host configuration) and the
    # sched_configuration file now live in the spool directory (classic spooling),
-   # so they are restored into the spool dir (not common). sgeCA remains a common
+   # so they are restored into the spool dir (not common). certs remains a common
    # directory. Same-version restore only.
    BUP_CLASSIC_COMMON_FILE_LIST="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
-   BUP_CLASSIC_DIR_LIST="sgeCA certs"
+   BUP_CLASSIC_DIR_LIST="certs"
    # CS-2394: no managers/operators files any more - their content lives in the reserved
    # "manager"/"operator" usersets, restored via the usersets entry.
    BUP_CLASSIC_SPOOL_FILE_LIST="configs sched_configuration jobseqnum admin_hosts advance_reservations calendars centry ckpt cqueues exec_hosts hostgroups pe projects qinstances resource_quotas schedd submit_hosts users usersets"
@@ -4210,196 +4147,6 @@ CheckServiceAndPorts()
    elif [ "$to_check" = "port" ]; then
       $SGE_UTILBIN/getservbyname -check $check_val > /dev/null 2>&1
       ret=$?
-   fi
-}
-
-CopyCA()
-{
-   if [ "$CSP" = "false" -a "$1" != "copyonly" ]; then
-      return 1
-   fi
-
-   hosttype="undef"
-   if [ "$1" = "execd" ]; then
-      hosttype="execd"
-      out_text="execution"
-   elif [ "$1" = "submit" ]; then
-      hosttype="submit"
-      out_text="submit"
-   elif [ "$1" = "copyonly" ]; then
-      hosttype="copyonly"
-      out_text="remote"
-   else
-      hosttype="remote"
-      out_text="remote"
-   fi
-
-   $INFOTEXT -u "Installing SGE in CSP mode"
-   if [ "$hosttype" = "copyonly" ]; then
-      $INFOTEXT "\nThe script copies the cert files to each %s host. \n" $out_text
-      $INFOTEXT "To use this functionality, it is recommended, that user root\n" \
-             "may do rsh/ssh to the %s host, without being asked for a password!\n" $out_text
-      `true`
-   else
-      $INFOTEXT "\nInstalling SGE in CSP mode needs to copy the cert\n" \
-                "files to each %s host. This can be done by script!\n" $out_text
-      $INFOTEXT "To use this functionality, it is recommended, that user root\n" \
-                "may do rsh/ssh to the %s host, without being asked for a password!\n" $out_text
-      $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "Should the script try to copy the cert files, for you, to each\n" \
-      "<%s> host? (y/n) [y] >>" $out_text
-   fi
-   ret=$?
-
-   if [ "$AUTOGUI" != "true" ]; then #GUI made has the correct shell already
-    if [ "$ret" = 0 ]; then
-      $INFOTEXT "You can use a rsh or a ssh copy to transfer the cert files to each\n" \
-                "<%s> host (default: ssh)" $out_text
-      $INFOTEXT -auto $AUTO -ask "y" "n" -def "n" -n "Do you want to use rsh/rcp instead of ssh/scp? (y/n) [n] >>"
-      if [ "$?" = 0 ]; then
-         SHELL_NAME="rsh"
-         COPY_COMMAND="rcp"
-      fi
-      which $COPY_COMMAND > /dev/null
-      if [ "$?" != 0 ]; then
-         $INFOTEXT "The remote copy command <%s> could not be found!" $COPY_COMMAND
-         $INFOTEXT -log "The remote copy command <%s> could not be found!" $COPY_COMMAND
-         return
-      fi
-    else
-      return
-    fi
-   fi
-
-   if [ "$hosttype" = "execd" ]; then
-      CopyCaToHostType admin
-   elif [ "$hosttype" = "submit" ]; then
-      CopyCaToHostType submit
-   elif [ "$hosttype" = "copyonly" -o "$hosttype" = "remote" ]; then
-      CopyCaToHostType remote
-   fi
-
-}
-
-# copy the ca certs to all cluster host, which equals the given host type
-# TODO: Does not work from trusted node != qmaster node (no certs on trusted node)
-CopyCaToHostType()
-{
-   if [ "$1" = "admin" ]; then
-      cmd=`$SGE_BIN/qconf -sh`
-   elif [ "$1" = "submit" ]; then
-      cmd=`$SGE_BIN/qconf -ss`
-   elif [ "$1" = "remote" ]; then
-      cmd=$CERT_COPY_HOST_LIST
-   fi
-
-   for RHOST in $cmd; do
-      if [ "$RHOST" != "$HOST" ]; then
-         CheckRSHConnection $RHOST
-         if [ "$?" = 0 ]; then
-            $INFOTEXT "Copying certificates to host %s" $RHOST
-            $INFOTEXT -log "Copying certificates to host %s" $RHOST
-            echo "mkdir /var/sgeCA > /dev/null 2>&1" | $SHELL_NAME $RHOST /bin/sh &
-            if [ "$SGE_QMASTER_PORT" = "" ]; then
-               $COPY_COMMAND -pr $HOST:/var/sgeCA/sge_qmaster $RHOST:/var/sgeCA
-            else
-               $COPY_COMMAND -pr $HOST:/var/sgeCA/port$SGE_QMASTER_PORT $RHOST:/var/sgeCA
-            fi
-            if [ "$?" = 0 ]; then
-               $INFOTEXT "Setting ownership to adminuser %s" $ADMINUSER
-               $INFOTEXT -log "Setting ownership to adminuser %s" $ADMINUSER
-               if [ "$SGE_QMASTER_PORT" = "" ]; then
-                  PORT_DIR="sge_qmaster"
-               else
-                  PORT_DIR="port$SGE_QMASTER_PORT"
-               fi
-               echo "chown $ADMINUSER /var/sgeCA/$PORT_DIR" | $SHELL_NAME $RHOST /bin/sh &
-               echo "chown -R $ADMINUSER /var/sgeCA/$PORT_DIR/$SGE_CELL" | $SHELL_NAME $RHOST /bin/sh &
-               for dir in `ls /var/sgeCA/$PORT_DIR/$SGE_CELL/userkeys`; do
-                  echo "chown -R $dir /var/sgeCA/$PORT_DIR/$SGE_CELL/userkeys/$dir" | $SHELL_NAME $RHOST /bin/sh &
-               done
-            else
-               $INFOTEXT "The certificate copy failed!"
-               $INFOTEXT -log "The certificate copy failed!"
-            fi
-         else
-            $INFOTEXT "rsh/ssh connection to host %s is not working!" $RHOST
-            $INFOTEXT "Certificates couldn't be copied!"
-            $INFOTEXT -log "rsh/ssh connection to host %s is not working!" $RHOST
-            $INFOTEXT -log "Certificates couldn't be copied!"
-            $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
-         fi
-      fi
-  done
-}
-
-
-#-------------------------------------------------------------------------
-# CopyCaFromQmaster
-#
-CopyCaFromQmaster()
-{
-   # TODO: PrimaryMaster?
-   QMASTER_HOST=`cat $SGE_ROOT/$SGE_CELL/common/act_qmaster 2>/dev/null`
-   #Skip qmaster host
-   if [ x`ResolveHosts $HOST` = x`ResolveHosts $QMASTER_HOST` ]; then
-      return
-   fi
-
-   CA_TOP="/var/sgeCA"
-
-   #Setup CA location
-   if [ "$SGE_QMASTER_PORT" = "" ]; then
-      PORT_DIR="sge_qmaster"
-   else
-      PORT_DIR="port$SGE_QMASTER_PORT"
-   fi
-
-   $INFOTEXT "Copying certificates to host %s" $HOST
-   $INFOTEXT -log "Copying certificates to host %s" $HOST
-
-   #TODO: Better to have global clever parsing for ssh options when SHELL_NAME is first specified
-   #Prepare SSH
-   echo $SHELL_NAME | grep "ssh" >/dev/null 2>&1
-   no_ssh=$?
-   if [ $no_ssh -eq 1 ]; then
-      REM_SH=$SHELL_NAME
-   else
-      REM_SH="$SHELL_NAME -o StrictHostKeyChecking=no"
-      if [ $AUTO = "true" ]; then
-         REM_SH="$REM_SH -o PreferredAuthentications=gssapi-keyex,publickey"
-      fi
-   fi
-
-   #Need to verify we can connect without a password for AUTO mode
-   if [ $AUTO = "true" ]; then
-      rem_host=`$REM_SH $QMASTER_HOST hostname 2>/dev/null`
-      if [ -z "$rem_host" ]; then
-         $INFOTEXT "%s connection to host %s is not working!" $SHELL_NAME $QMASTER_HOST
-         $INFOTEXT "Certificates couldn't be copied!"
-         $INFOTEXT -log "rsh/ssh connection to host %s is not working!" $QMASTER_HOST
-         $INFOTEXT -log "Certificates couldn't be copied!"
-         $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
-         return 1
-      fi
-   fi
-
-   tmp_dir=/tmp/sgeCA.$$
-   mkdir -p $tmp_dir ; chmod 600 $tmp_dir
-   connect_user=`id |awk '{print $1}' 2>/dev/null`
-   $INFOTEXT "Connecting as %s to host %s ..." "${connect_user:-root}" "$QMASTER_HOST"
-   $REM_SH $QMASTER_HOST "cd $CA_TOP ; tar cpf - ./$PORT_DIR | gzip -" > "$tmp_dir".tar.gz
-   (mkdir -p $CA_TOP ; cd $CA_TOP ; rm -rf $CA_TOP/$PORT_DIR ; gunzip "$tmp_dir".tar.gz ; \
-   tar xpf "$tmp_dir".tar && \
-   for user in `ls -1 ${CA_TOP}/${PORT_DIR}/${SGE_CELL}/userkeys`; do \
-      chown -R $user ${CA_TOP}/${PORT_DIR}/${SGE_CELL}/userkeys/${user} ;\
-   done)
-   rm -f "$tmp_dir".tar
-   rm -rf "$tmp_dir"
-
-   #Let's verify we have the keystores
-   if [ ! -f /var/sgeCA/$PORT_DIR/$SGE_CELL/userkeys/$ADMINUSER/keystore ]; then
-      $INFOTEXT "The certificate copy failed for host %s!" "$HOST"
-      $INFOTEXT -log "The certificate copy failed for host %s!" "$HOST"
    fi
 }
 

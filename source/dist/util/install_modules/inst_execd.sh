@@ -189,32 +189,6 @@ CheckCellDirectory()
 }
 
 
-#--------------------------------------------------------------------------
-# CheckCSP check that there are no old certs/keys
-# And for windows host, also check and create the right windows specific certs
-# eg. certs for Administrator are created, but certs for HOSTNAME+Administrator
-# are also needed.
-#
-CheckCSP()
-{
-   if [ $CSP = false ]; then
-      return
-   fi
-
-   if [ "$SGE_QMASTER_PORT" != "" ]; then
-      CA_PORT=port$SGE_QMASTER_PORT
-   else
-      CA_PORT=sge_qmaster
-   fi
-
-   $SGE_UTILBIN/adminrun $ADMINUSER test -f $HOME/.sge/$CA_PORT/$SGE_CELL
-   if [ ! $? ]; then
-      $INFOTEXT -e "Please remove the old CSP security directory \$HOME/.sge/\$CA_PORT/\$SGE_CELL. Exit."
-      exit 1
-   fi
-}
-
-
 #-------------------------------------------------------------------------
 # CheckHostNameResolving
 #
