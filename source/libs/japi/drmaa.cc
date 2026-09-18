@@ -2215,7 +2215,7 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
  *
  * @return DRMAA error codes
  *
- * @note MT-NOTE: drmaa_job2sge_job() is MT safe except on AIX4.2 and FreeBSD, with
+ * @note MT-NOTE: drmaa_job2sge_job() is MT safe except on FreeBSD, with
  *       restrictions imposed by sge_get_qtask_args().
  */
 static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_jt,
@@ -3474,7 +3474,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag) {
  *
  * @return The expanded path as a string
  *
- * @note MT-NOTE: drmaa_expand_wd_path() is MT safe except on AIX4.2 and FreeBSD
+ * @note MT-NOTE: drmaa_expand_wd_path() is MT safe except on FreeBSD
  */
 static char *drmaa_expand_wd_path(const char *username, const char *path, lList **answer_list) {
    DENTER(TOP_LAYER);
@@ -3530,8 +3530,7 @@ static char *drmaa_expand_wd_path(const char *username, const char *path, lList 
  *
  * @return the home directory path as a string
  *
- * @note MT-NOTE: drmaa_get_home_directory() is MT safe except on AIX4.2 and
- *       MT-NOTE: FreeBSD
+ * @note MT-NOTE: drmaa_get_home_directory() is MT safe except on FreeBSD
  */
 static char *drmaa_get_home_directory(const char *username, lList **answer_list) {
    DENTER(TOP_LAYER);

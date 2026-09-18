@@ -876,7 +876,6 @@ if [ "$EXECD" = "install" -a "$UPDATE" != "true" ]; then
       AddLocalConfiguration_With_Qconf
       AddSubmitHostsExecd
       AddSGEStartUpScript $euid execd
-      CopyIBMLoadSensor
       StartExecd
       AddQueue
       GiveHints
@@ -910,7 +909,6 @@ if [ "$EXECD" = "install" -a "$UPDATE" != "true" ]; then
       GetLocalExecdSpoolDir
       AddLocalConfiguration_With_Qconf
       AddSGEStartUpScript $euid execd
-      CopyIBMLoadSensor
       StartExecd
       AddQueue
       GiveHints

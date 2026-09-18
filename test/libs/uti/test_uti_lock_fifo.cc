@@ -162,8 +162,8 @@ int validate(int count) {
       } else {
          for (i = 0; i < count; i++) {
             if (is_in_tolerance(results[i] * 2, maxlocks, 50) != 0) {
-#if !defined(DARWIN) && !defined(AIX)
-               /* pthreads on darwin and aix scales very bad and this test fail */
+#if !defined(DARWIN)
+               /* pthreads on darwin scales very bad and this test fail */
                ret = 1;
                break;
 #endif

@@ -95,27 +95,8 @@ while [ $end = false ]; do
    # ---------------------------------------- 
    # send load value oslevel and disk
    #
-   disk_total=0
-   disk_free=0
-
-   case "$ARCH" in 
-      aix*)
-         disk_total=`df -k $DISK | tail -1 | awk '{print $2}'`
-         disk_free=`df -k $DISK | tail -1 | awk '{print $3}'`
-         ;;
-      'hp*')
-         disk_total=`bdf -k $DISK | tail -1 | awk '{print $2}'`
-         disk_free=`bdf -k $DISK | tail -1 | awk '{print $4}'`
-         ;;
-      'irix6')
-         disk_total=`df -k $DISK | tail -1 | awk '{print $3}'`
-         disk_free=`df -k $DISK | tail -1 | awk '{print $5}'`
-         ;;
-      *)
-         disk_total=`df -k $DISK | tail -1 | awk '{print $2}'`
-         disk_free=`df -k $DISK | tail -1 | awk '{print $4}'`
-         ;;
-   esac
+   disk_total=`df -k $DISK | tail -1 | awk '{print $2}'`
+   disk_free=`df -k $DISK | tail -1 | awk '{print $4}'`
 
    echo "$HOST:disk_total:${disk_total}k"
    echo "$HOST:disk_free:${disk_free}k"

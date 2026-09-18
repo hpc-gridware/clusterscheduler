@@ -2119,7 +2119,6 @@ GetJvmLibFromJavaHome() {
       darwin-x64)
          suffix=../Libraries/libjvm.dylib
          ;;
-   #TODO: Missing HP, AIX platforms
    esac
    if [ -f $java_home/$suffix ]; then
       echo $java_home/$suffix

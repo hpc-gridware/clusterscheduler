@@ -658,31 +658,6 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_
    }
 #endif
 
-#ifdef GETHOSTBYADDR
-#define SGE_GETHOSTBYADDR_FOUND
-   /* This is for HPUX >= 11 */
-   DPRINTF("Getting host by addr - Thread safe\n");
-   he = gethostbyaddr((const char *)addr, 4, AF_INET);
-   /*
-    * JG: TODO: shouldn't it be 
-    * he = gethostbyaddr((const char *)addr, sizeof(struct in_addr), AF_INET);
-    */
-
-   /* The location of the error code is actually undefined.  I'm just
-    * assuming that it's in h_errno since that's where it is in the unsafe
-    * version.
-    * h_errno is, of course, not thread safe, but if there's an error we're
-    * already screwed, so we won't worry too much about it.
-    * An alternative would be to set errno to HOST_NOT_FOUND. */
-   l_errno = h_errno;
-   if (he != nullptr) {
-      struct hostent *new_he = sge_copy_hostent(he);
-      /* do not free he, there was no malloc() */
-      he = new_he;
-   }
-#endif
-
-
 #ifdef GETHOSTBYADDR_M
 #define SGE_GETHOSTBYADDR_FOUND
    /* This is for everone else. */
