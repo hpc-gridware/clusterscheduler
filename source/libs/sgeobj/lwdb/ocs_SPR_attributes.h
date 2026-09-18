@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   SPR_name = 7650,   ///< Name
+   SPR_name = 7450,   ///< Name
    SPR_url,   ///< URL
    SPR_option_func,   ///< Option Function
    SPR_startup_func,   ///< Startup Function

@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   QETI_total = 10700,   ///< Total Capacity
+   QETI_total = 10500,   ///< Total Capacity
    QETI_resource_instance,   ///< Resource Instance
    QETI_queue_end_next   ///< Next Position
 };

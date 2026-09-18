@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   AINTER_href = 8750,   ///< Host Reference
+   AINTER_href = 8550,   ///< Host Reference
    AINTER_value   ///< Value
 };
 

@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   CQ_name = 9550,   ///< Name
+   CQ_name = 9350,   ///< Name
    CQ_hostlist,   ///< Host List
    CQ_qinstances,   ///< Queue Instances
    CQ_seq_no,   ///< Sequence Number

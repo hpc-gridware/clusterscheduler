@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   AUSRLIST_href = 9050,   ///< Host Reference
+   AUSRLIST_href = 8850,   ///< Host Reference
    AUSRLIST_value   ///< Value
 };
 

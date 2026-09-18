@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   EVR_operation = 12200,   ///< Operation
+   EVR_operation = 12000,   ///< Operation
    EVR_timestamp,   ///< Timestamp
    EVR_event_client_id,   ///< Event Client Id
    EVR_event_number,   ///< Event Number

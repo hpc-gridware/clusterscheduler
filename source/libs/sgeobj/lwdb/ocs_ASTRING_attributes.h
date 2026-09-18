@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   ASTRING_href = 8850,   ///< Host Reference
+   ASTRING_href = 8650,   ///< Host Reference
    ASTRING_value   ///< Value
 };
 

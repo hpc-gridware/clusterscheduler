@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   SU_name = 7450,   ///< Name
+   SU_name = 7250,   ///< Name
    SU_jobs   ///< Jobs
 };
 

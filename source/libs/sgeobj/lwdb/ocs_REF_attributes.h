@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   REF_ref = 11300   ///< Referenced Element
+   REF_ref = 11100   ///< Referenced Element
 };
 
 /** @brief The attribute ids of REF, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

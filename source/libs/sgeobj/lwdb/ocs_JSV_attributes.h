@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   JSV_name = 12300,   ///< Name
+   JSV_name = 12100,   ///< Name
    JSV_context,   ///< Context
    JSV_url,   ///< Script URL
    JSV_type,   ///< Script Type

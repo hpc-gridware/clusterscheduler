@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   TM_mday = 5950,   ///< Month Day
+   TM_mday = 5850,   ///< Month Day
    TM_mon,   ///< Month
    TM_year,   ///< Year
    TM_sec,   ///< Seconds

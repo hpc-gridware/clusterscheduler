@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   CCT_pe_name = 11000,   ///< Parallel Environment
+   CCT_pe_name = 10800,   ///< Parallel Environment
    CCT_ignore_queues,   ///< Rejected Queues
    CCT_ignore_hosts,   ///< Rejected Hosts
    CCT_job_messages,   ///< Scheduler Messages

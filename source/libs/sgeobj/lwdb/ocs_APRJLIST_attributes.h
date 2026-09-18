@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   APRJLIST_href = 9150,   ///< Host Reference
+   APRJLIST_href = 8950,   ///< Host Reference
    APRJLIST_value   ///< Value
 };
 

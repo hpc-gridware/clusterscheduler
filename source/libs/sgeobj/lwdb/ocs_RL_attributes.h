@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RL_name = 13100,   ///< Role Name
+   RL_name = 12900,   ///< Role Name
    RL_enabled,   ///< Enabled
    RL_user_list,   ///< User List
    RL_parent_role_list,   ///< Parent Role List

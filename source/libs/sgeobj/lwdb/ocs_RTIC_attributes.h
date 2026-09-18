@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RTIC_host = 12400,   ///< Host
+   RTIC_host = 12200,   ///< Host
    RTIC_tickets   ///< Tickets
 };
 

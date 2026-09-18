@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   LS_name = 7250,   ///< Name
+   LS_name = 7050,   ///< Name
    LS_command,   ///< Command
    LS_pid,   ///< Pid
    LS_in,   ///< Stdin File Handle

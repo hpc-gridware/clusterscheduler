@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   SPTR_is_default = 7850,   ///< Is Default
+   SPTR_is_default = 7650,   ///< Is Default
    SPTR_rule_name,   ///< Rule Name
    SPTR_rule   ///< Rule
 };

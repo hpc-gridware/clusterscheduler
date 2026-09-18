@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   SGEJ_priority = 6750,   ///< Priority
+   SGEJ_priority = 6550,   ///< Priority
    SGEJ_job_number,   ///< Job Number
    SGEJ_job_name,   ///< Job Name
    SGEJ_owner,   ///< Owner

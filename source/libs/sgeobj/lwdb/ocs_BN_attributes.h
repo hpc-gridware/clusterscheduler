@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   BN_new_type = 12700,   ///< type of binding
+   BN_new_type = 12500,   ///< type of binding
    BN_instance,   ///< Instance that applies the binding
    BN_amount,   ///< Amount of units
    BN_unit,   ///< Unit type that should be bound

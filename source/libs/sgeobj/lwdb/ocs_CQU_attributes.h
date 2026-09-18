@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   CQU_state = 11100,   ///< State
+   CQU_state = 10900,   ///< State
    CQU_till   ///< Until
 };
 

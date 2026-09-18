@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   AR_id = 11900,   ///< AR Id
+   AR_id = 11700,   ///< AR Id
    AR_name,   ///< AR Name
    AR_account,   ///< Account
    AR_owner,   ///< Owner

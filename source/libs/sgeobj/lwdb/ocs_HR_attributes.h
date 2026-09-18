@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   HR_name = 7050   ///< Name
+   HR_name = 6850   ///< Name
 };
 
 /** @brief The attribute ids of HR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

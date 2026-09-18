@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   JRE_job_number = 5250,   ///< Job Number
+   JRE_job_number = 5150,   ///< Job Number
    JRE_job_name   ///< Job Name
 };
 

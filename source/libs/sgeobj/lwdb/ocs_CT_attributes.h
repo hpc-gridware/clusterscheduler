@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   CT_id = 6650,   ///< Category ID
+   CT_id = 6450,   ///< Category ID
    CT_str,   ///< Category String
    CT_refcount,   ///< Reference Count
    CT_rejected,   ///< Rejected

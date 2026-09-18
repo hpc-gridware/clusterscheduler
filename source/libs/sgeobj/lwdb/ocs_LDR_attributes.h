@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   LDR_queue_ref_list = 10800,   ///< Queue References
+   LDR_queue_ref_list = 10600,   ///< Queue References
    LDR_limit,   ///< Limit
    LDR_global,   ///< Global Object
    LDR_host,   ///< Host Object

@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   AQTLIST_href = 9450,   ///< Host Reference
+   AQTLIST_href = 9250,   ///< Host Reference
    AQTLIST_value   ///< Value
 };
 

@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   GR_group = 12600   ///< Group Id
+   GR_group = 12400   ///< Group Id
 };
 
 /** @brief The attribute ids of GR, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

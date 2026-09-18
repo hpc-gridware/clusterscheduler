@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   SPC_name = 7550,   ///< Name
+   SPC_name = 7350,   ///< Name
    SPC_rules,   ///< Rules
    SPC_types   ///< Types
 };

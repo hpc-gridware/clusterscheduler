@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   FCAT_job_share = 9800,   ///< Job Share
+   FCAT_job_share = 9600,   ///< Job Share
    FCAT_user_share,   ///< User Share
    FCAT_user,   ///< User
    FCAT_project_share,   ///< Project Share

@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   NSV_name = 8150,   ///< Name
+   NSV_name = 7950,   ///< Name
    NSV_strings   ///< Strings
 };
 

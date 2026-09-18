@@ -69,7 +69,6 @@
 #include "sgeobj/lwdb/ocs_JO_attributes.h"
 #include "sgeobj/lwdb/ocs_UPU_attributes.h"
 #include "sgeobj/lwdb/ocs_CK_attributes.h"
-#include "sgeobj/lwdb/ocs_KRB_attributes.h"
 #include "sgeobj/lwdb/ocs_PA_attributes.h"
 #include "sgeobj/lwdb/ocs_JRE_attributes.h"
 #include "sgeobj/lwdb/ocs_ID_attributes.h"
@@ -81,7 +80,6 @@
 #include "sgeobj/lwdb/ocs_TM_attributes.h"
 #include "sgeobj/lwdb/ocs_RT_attributes.h"
 #include "sgeobj/lwdb/ocs_UPP_attributes.h"
-#include "sgeobj/lwdb/ocs_KTGT_attributes.h"
 #include "sgeobj/lwdb/ocs_SME_attributes.h"
 #include "sgeobj/lwdb/ocs_MES_attributes.h"
 #include "sgeobj/lwdb/ocs_JAT_attributes.h"
@@ -203,7 +201,6 @@ constexpr AttributeStatic all_attributes[] = {
       JO_ATTRIBUTES,
       UPU_ATTRIBUTES,
       CK_ATTRIBUTES,
-      KRB_ATTRIBUTES,
       PA_ATTRIBUTES,
       JRE_ATTRIBUTES,
       ID_ATTRIBUTES,
@@ -215,7 +212,6 @@ constexpr AttributeStatic all_attributes[] = {
       TM_ATTRIBUTES,
       RT_ATTRIBUTES,
       UPP_ATTRIBUTES,
-      KTGT_ATTRIBUTES,
       SME_ATTRIBUTES,
       MES_ATTRIBUTES,
       JAT_ATTRIBUTES,

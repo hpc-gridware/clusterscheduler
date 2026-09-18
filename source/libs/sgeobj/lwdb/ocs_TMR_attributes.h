@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   TMR_begin = 5850,   ///< Begin
+   TMR_begin = 5750,   ///< Begin
    TMR_end   ///< End
 };
 

@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   ULNG_value = 6850   ///< Value
+   ULNG_value = 6650   ///< Value
 };
 
 /** @brief The attribute ids of ULNG, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   AULNG_href = 8350,   ///< Host Reference
+   AULNG_href = 8150,   ///< Host Reference
    AULNG_value   ///< Value
 };
 

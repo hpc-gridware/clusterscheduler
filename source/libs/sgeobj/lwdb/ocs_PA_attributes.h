@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   PA_origin = 5150,   ///< Original Path
+   PA_origin = 5050,   ///< Original Path
    PA_submit_host,   ///< Submit Host
    PA_exec_host,   ///< Exec Host
    PA_translation   ///< Translation

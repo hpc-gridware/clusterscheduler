@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   ARA_name = 12000,   ///< Name
+   ARA_name = 11800,   ///< Name
    ARA_group   ///< Group
 };
 

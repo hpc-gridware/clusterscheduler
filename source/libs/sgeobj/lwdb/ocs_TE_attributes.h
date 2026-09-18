@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   TE_when = 5550,   ///< When
+   TE_when = 5450,   ///< When
    TE_type,   ///< Type
    TE_mode,   ///< Mode
    TE_interval,   ///< Interval

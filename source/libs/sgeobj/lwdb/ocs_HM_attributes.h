@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   HM_name = 13200,   ///< Name
+   HM_name = 13000,   ///< Name
    HM_last_used   ///< Time of Last Use
 };
 

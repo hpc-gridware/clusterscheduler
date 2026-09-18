@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   MES_job_number_list = 6450,   ///< Job Number List
+   MES_job_number_list = 6250,   ///< Job Number List
    MES_message_number,   ///< Message Number
    MES_message   ///< Message
 };

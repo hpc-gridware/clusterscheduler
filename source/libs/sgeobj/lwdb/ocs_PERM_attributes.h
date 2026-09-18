@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   PERM_is_manager = 7150,   ///< true if manager
+   PERM_is_manager = 6950,   ///< true if manager
    PERM_is_operator,   ///< true if operator
    PERM_is_admin_host,   ///< true if admin host
    PERM_is_submit_host,   ///< true if submit host

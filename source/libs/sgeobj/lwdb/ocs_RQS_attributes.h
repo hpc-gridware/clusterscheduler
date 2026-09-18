@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RQS_name = 11400,   ///< Name
+   RQS_name = 11200,   ///< Name
    RQS_description,   ///< Description
    RQS_enabled,   ///< Enabled
    RQS_rule,   ///< Rules

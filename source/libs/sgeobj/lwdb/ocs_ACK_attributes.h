@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   ACK_type = 12100,   ///< Acknowledgement Type
+   ACK_type = 11900,   ///< Acknowledgement Type
    ACK_id,   ///< First Id
    ACK_id2,   ///< Second Id
    ACK_str   ///< Name

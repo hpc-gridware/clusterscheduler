@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RT_tid = 6050,   ///< Task Id
+   RT_tid = 5950,   ///< Task Id
    RT_hostname,   ///< Hostname
    RT_status,   ///< Status
    RT_state   ///< State

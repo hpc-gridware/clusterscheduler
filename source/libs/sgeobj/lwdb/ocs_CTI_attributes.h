@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   CTI_name = 9900   ///< Name
+   CTI_name = 9700   ///< Name
 };
 
 /** @brief The attribute ids of CTI, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES

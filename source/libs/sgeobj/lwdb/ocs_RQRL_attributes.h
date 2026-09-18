@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RQRL_name = 11700,   ///< Resource Name
+   RQRL_name = 11500,   ///< Resource Name
    RQRL_value,   ///< Configured Value
    RQRL_type,   ///< Value Type
    RQRL_dvalue,   ///< Evaluated Value

@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   PRO_pid = 12500,   ///< Pid
+   PRO_pid = 12300,   ///< Pid
    PRO_utime,   ///< User Time
    PRO_stime,   ///< System Time
    PRO_vsize,   ///< Virtual Memory

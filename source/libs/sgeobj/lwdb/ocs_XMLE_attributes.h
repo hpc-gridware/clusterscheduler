@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   XMLE_Attribute = 10400,   ///< Attributes
+   XMLE_Attribute = 10200,   ///< Attributes
    XMLE_Print,   ///< Print
    XMLE_Element,   ///< Value
    XMLE_List   ///< Children

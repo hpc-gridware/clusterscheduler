@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   PACK_id = 12900,   ///< Kind
+   PACK_id = 12700,   ///< Kind
    PACK_string   ///< Packed Data
 };
 

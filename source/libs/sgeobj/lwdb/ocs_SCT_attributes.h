@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   SCT_str = 11200,   ///< Category String
+   SCT_str = 11000,   ///< Category String
    SCT_job_pending_ref,   ///< Pending Jobs
    SCT_job_ref   ///< Running Jobs
 };

@@ -376,9 +376,6 @@ object_get_subtype(int nm)
       case CK_joker:
          ret = VA_Type;
          break;
-      case KRB_tgt_list:
-         ret = KTGT_Type;
-         break;
       case ID_ja_structure:
          ret = RN_Type;
          break;

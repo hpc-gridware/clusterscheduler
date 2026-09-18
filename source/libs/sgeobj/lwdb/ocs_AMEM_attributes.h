@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   AMEM_href = 8650,   ///< Host Reference
+   AMEM_href = 8450,   ///< Host Reference
    AMEM_value   ///< Value
 };
 

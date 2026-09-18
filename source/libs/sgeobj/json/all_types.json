@@ -377,13 +377,6 @@
          "add_to_sge_all_lists": true
       },
       {
-         "className": "KerberosAuthentication",
-         "cullPrefix": "KRB",
-         "cullNameSpec": "krb",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
-      },
-      {
          "className": "PathAlias",
          "cullPrefix": "PA",
          "cullNameSpec": "path_alias",
@@ -457,13 +450,6 @@
          "className": "ProjectUsage",
          "cullPrefix": "UPP",
          "cullNameSpec": "userprj",
-         "size_in_basic_units": 2,
-         "add_to_sge_all_lists": true
-      },
-      {
-         "className": "KerberosClientTGT",
-         "cullPrefix": "KTGT",
-         "cullNameSpec": "krb",
          "size_in_basic_units": 2,
          "add_to_sge_all_lists": true
       },

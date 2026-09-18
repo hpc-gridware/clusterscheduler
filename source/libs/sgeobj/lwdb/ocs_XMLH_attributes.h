@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   XMLH_Version = 10200,   ///< XML Version
+   XMLH_Version = 10000,   ///< XML Version
    XMLH_Name,   ///< Root Element Name
    XMLH_Stylesheet,   ///< Stylesheets
    XMLH_Attribute,   ///< Root Attributes

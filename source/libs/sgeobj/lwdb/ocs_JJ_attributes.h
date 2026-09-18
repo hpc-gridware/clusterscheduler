@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   JJ_jobid = 7950,   ///< Job Id
+   JJ_jobid = 7750,   ///< Job Id
    JJ_type,   ///< Type
    JJ_finished_tasks,   ///< Finished Tasks
    JJ_not_yet_finished_ids,   ///< Not Yet Finished Ids

@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RQRF_expand = 11600,   ///< Expand
+   RQRF_expand = 11400,   ///< Expand
    RQRF_scope,   ///< Scope
    RQRF_xscope   ///< Excluded Scope
 };

@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   SPP_name = 13000,   ///< Parameter name
+   SPP_name = 12800,   ///< Parameter name
    SPP_value_list   ///< List of value for this parameter.
 };
 

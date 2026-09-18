@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   TEST_bool = 12800,   ///< Boolean type attribute
+   TEST_bool = 12600,   ///< Boolean type attribute
    TEST_uint32,   ///< uint32_t type attribute
    TEST_uint64,   ///< uint64_t type attribute
    TEST_int,   ///< int type attribute

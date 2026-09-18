@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   ID_str = 5350,   ///< Id String
+   ID_str = 5250,   ///< Id String
    ID_ja_structure,   ///< Array Task Structure
    ID_action,   ///< Action
    ID_force,   ///< Force

@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   SME_message_list = 6350,   ///< Message List
+   SME_message_list = 6150,   ///< Message List
    SME_global_message_list   ///< Global Message List
 };
 

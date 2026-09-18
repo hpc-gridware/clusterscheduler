@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RU_job_number = 7350,   ///< Job Number
+   RU_job_number = 7150,   ///< Job Number
    RU_task_number,   ///< Task Number
    RU_state   ///< State
 };

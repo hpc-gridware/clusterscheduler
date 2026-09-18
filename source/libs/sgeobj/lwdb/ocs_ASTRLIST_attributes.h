@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   ASTRLIST_href = 8950,   ///< Host Reference
+   ASTRLIST_href = 8750,   ///< Host Reference
    ASTRLIST_value   ///< Value
 };
 

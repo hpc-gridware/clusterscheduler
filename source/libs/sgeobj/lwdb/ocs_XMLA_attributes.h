@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   XMLA_Name = 10100,   ///< Name
+   XMLA_Name = 9900,   ///< Name
    XMLA_Value   ///< Value
 };
 

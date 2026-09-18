@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   CA_yday_range_list = 5750,   ///< YearDay Range List
+   CA_yday_range_list = 5650,   ///< YearDay Range List
    CA_wday_range_list,   ///< WeekDay Range List
    CA_daytime_range_list,   ///< DayTime Range List
    CA_state   ///< State

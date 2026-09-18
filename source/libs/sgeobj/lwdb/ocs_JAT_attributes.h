@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   JAT_task_number = 6550,   ///< Task Number
+   JAT_task_number = 6350,   ///< Task Number
    JAT_status,   ///< Status
    JAT_start_time,   ///< Start Time
    JAT_end_time,   ///< End Time

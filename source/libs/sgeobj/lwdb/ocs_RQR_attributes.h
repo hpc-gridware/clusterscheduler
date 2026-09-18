@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RQR_name = 11500,   ///< Name
+   RQR_name = 11300,   ///< Name
    RQR_filter_users,   ///< User Filter
    RQR_filter_projects,   ///< Project Filter
    RQR_filter_pes,   ///< Parallel Environment Filter

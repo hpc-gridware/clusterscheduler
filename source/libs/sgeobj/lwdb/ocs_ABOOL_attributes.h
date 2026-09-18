@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   ABOOL_href = 8450,   ///< Host Reference
+   ABOOL_href = 8250,   ///< Host Reference
    ABOOL_value   ///< Value
 };
 

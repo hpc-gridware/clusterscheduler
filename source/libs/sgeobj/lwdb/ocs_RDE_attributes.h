@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RDE_time = 10500,   ///< Time
+   RDE_time = 10300,   ///< Time
    RDE_amount,   ///< Amount
    RDE_resource_map_list,   ///< Resource Map List
    RDE_binding_inuse   ///< Binding

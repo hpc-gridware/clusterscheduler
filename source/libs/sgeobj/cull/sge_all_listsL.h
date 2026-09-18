@@ -72,7 +72,6 @@
 #include "sgeobj/cull/sge_ptf_JO_L.h"
 #include "sgeobj/cull/sge_userprj_UPU_L.h"
 #include "sgeobj/cull/sge_ckpt_CK_L.h"
-#include "sgeobj/cull/sge_krb_KRB_L.h"
 #include "sgeobj/cull/sge_path_alias_PA_L.h"
 #include "sgeobj/cull/sge_job_ref_JRE_L.h"
 #include "sgeobj/cull/sge_id_ID_L.h"
@@ -84,7 +83,6 @@
 #include "sgeobj/cull/sge_calendar_TM_L.h"
 #include "sgeobj/cull/sge_qexec_RT_L.h"
 #include "sgeobj/cull/sge_userprj_UPP_L.h"
-#include "sgeobj/cull/sge_krb_KTGT_L.h"
 #include "sgeobj/cull/sge_message_SME_L.h"
 #include "sgeobj/cull/sge_message_MES_L.h"
 #include "sgeobj/cull/sge_ja_task_JAT_L.h"
@@ -215,7 +213,6 @@ lNameSpace nmv[] = {
    {JO_LOWERBOUND, JO_SIZE, JON, JO_Type},
    {UPU_LOWERBOUND, UPU_SIZE, UPUN, UPU_Type},
    {CK_LOWERBOUND, CK_SIZE, CKN, CK_Type},
-   {KRB_LOWERBOUND, KRB_SIZE, KRBN, KRB_Type},
    {PA_LOWERBOUND, PA_SIZE, PAN, PA_Type},
    {JRE_LOWERBOUND, JRE_SIZE, JREN, JRE_Type},
    {ID_LOWERBOUND, ID_SIZE, IDN, ID_Type},
@@ -227,7 +224,6 @@ lNameSpace nmv[] = {
    {TM_LOWERBOUND, TM_SIZE, TMN, TM_Type},
    {RT_LOWERBOUND, RT_SIZE, RTN, RT_Type},
    {UPP_LOWERBOUND, UPP_SIZE, UPPN, UPP_Type},
-   {KTGT_LOWERBOUND, KTGT_SIZE, KTGTN, KTGT_Type},
    {SME_LOWERBOUND, SME_SIZE, SMEN, SME_Type},
    {MES_LOWERBOUND, MES_SIZE, MESN, MES_Type},
    {JAT_LOWERBOUND, JAT_SIZE, JATN, JAT_Type},

@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RUE_name = 10600,   ///< Resource Name
+   RUE_name = 10400,   ///< Resource Name
    RUE_utilized_now,   ///< Utilized Now
    RUE_utilized_now_resource_map_list,   ///< Utilized Now Resource Map List
    RUE_utilized_now_binding_inuse,   ///< Utilized Now Binding In Use

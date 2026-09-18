@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   PARA_name = 10000,   ///< Name
+   PARA_name = 9800,   ///< Name
    PARA_value   ///< Value
 };
 

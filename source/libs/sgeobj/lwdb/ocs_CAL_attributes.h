@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   CAL_name = 5650,   ///< Name
+   CAL_name = 5550,   ///< Name
    CAL_year_calendar,   ///< Year Calendar
    CAL_week_calendar,   ///< Week Calendar
    CAL_parsed_year_calendar,   ///< Parsed Year Calendar

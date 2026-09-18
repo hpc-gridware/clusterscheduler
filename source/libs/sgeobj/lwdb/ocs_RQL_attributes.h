@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   RQL_name = 11800,   ///< Limit Key
+   RQL_name = 11600,   ///< Limit Key
    RQL_result,   ///< Cached Result
    RQL_time,   ///< Earliest Time
    RQL_slots,   ///< Slots

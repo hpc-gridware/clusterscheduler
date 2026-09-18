@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   UPP_name = 6150,   ///< Name
+   UPP_name = 6050,   ///< Name
    UPP_usage,   ///< Usage
    UPP_long_term_usage   ///< Long Term Usage
 };

@@ -39,7 +39,7 @@ namespace ocs {
  * construction rather than by review.
  */
 enum {
-   HGRP_name = 6950,   ///< Name
+   HGRP_name = 6750,   ///< Name
    HGRP_host_list,   ///< Host List
    HGRP_cqueue_list,   ///< Cluster Queue List
    HGRP_joker,   ///< Joker
