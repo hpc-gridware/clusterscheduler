@@ -66,7 +66,7 @@ Filter4()
 Filter()
 {
 case $arch in
-sol-sparc|sol-sparc64|sol-x86|sol-amd64)
+sol-sparc64|sol-amd64)
    Filter1
    ;;
 lx2*)
@@ -116,7 +116,7 @@ fi
 
 if [ $waiver = true ]; then  
    case $arch in 
-   sol-sparc|sol-sparc64|sol-x86|sol-amd64|lx2*)
+   sol-sparc64|sol-amd64|lx2*)
       ;;
    *)
       # when run with -w option we don't check at all in these cases

@@ -48,7 +48,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
-#if defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)
+#if defined(SOLARIS64) || defined(SOLARISAMD64)
 #  include <stropts.h>
 #  include <termio.h>
 #endif

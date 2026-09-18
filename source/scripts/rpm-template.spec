@@ -33,11 +33,7 @@
 %define        sge_root #vdir#
 %define        debug_package %{nil}
 
-%ifarch i386
-%define        sge_arch lx-x86
-%else
 %define        sge_arch lx-amd64
-%endif
 
 %define        _rpmdir		   #basedir#
 %define        _sourcedir		#basedir#

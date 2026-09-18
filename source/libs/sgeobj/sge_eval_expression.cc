@@ -36,7 +36,7 @@
  * @brief Evaluating a resource request written as a boolean expression
  *
  * A request may be an expression over `fnmatch` patterns rather than a plain
- * value, e.g. `arch=lx*&!lx-x86`. This is the recursive descent evaluation of
+ * value, e.g. `arch=lx*&!lx-arm64`. This is the recursive descent evaluation of
  * that grammar; the operators are `!`, `|` and `&` with parentheses.
  *
  * @see sge_eval_expression.h

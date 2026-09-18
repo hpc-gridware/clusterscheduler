@@ -26,7 +26,7 @@
 #include <termios.h>
 #if defined(DARWIN)
 #  include <sys/ioctl.h>
-#elif defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)
+#elif defined(SOLARIS64) || defined(SOLARISAMD64)
 #  include <stropts.h>
 #endif
 

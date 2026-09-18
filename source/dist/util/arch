@@ -81,9 +81,6 @@ Darwin)
    case $osmachine in
       i386)
          case $osrelease in
-            10.1.*)
-               darwin_machine=x86
-               ;;
             10.[2-8].*)
                darwin_machine=x64
                ;;
@@ -92,9 +89,6 @@ Darwin)
                ;;
             esac
          ;;
-      Power*)
-         darwin_machine=ppc
-         ;;
       arm64)
          darwin_machine=arm64
          ;;
@@ -102,12 +96,7 @@ Darwin)
          darwin_machine=unsupported
          ;;
    esac
-   osversion=`echo $osrelease | cut -f 1 -d .`
-   if [ $osversion -lt 8 ]; then
-      ARCH=darwin
-   else
-      ARCH=darwin-$darwin_machine
-   fi
+   ARCH=darwin-$darwin_machine
    ;;
 FreeBSD|DragonFly)
    ARCH=fbsd-$osmachine
@@ -120,9 +109,6 @@ Linux)
    unsupported=""
 
    case $osmachine in
-   i*86)
-      lxmachine=x86
-      ;;
    armv6*)
       lxmachine=arm6
       ;;
@@ -132,14 +118,8 @@ Linux)
    armv7*)
       lxmachine=arm7
       ;;
-   alpha)
-      lxmachine=alpha
-      ;;
-   sparc)
-      lxmachine=sparc
-      ;;
    sparc64)
-      lxmachine=sparc
+      lxmachine=sparc64
       ;;
    x86_64)
       lxmachine=amd64
@@ -161,26 +141,8 @@ Linux)
          ;;
       esac
       ;;
-   ia64)
-      lxmachine=ia64
-      ;;
-   ppc)
-      lxmachine=ppc
-      ;;
-   ppc64)
-      lxmachine=ppc64
-      ;;
    ppc64le)
       lxmachine=ppc64le
-      ;;
-   mips)
-      lxmachine=mips
-      ;;
-   mips64)
-      lxmachine=mips64
-      ;;
-   s390)
-      lxmachine=s390
       ;;
    s390x)
       lxmachine=s390x
@@ -255,16 +217,12 @@ SunOS)
       ARCH=UNSUPPORTED-sun4
       ;;
    i86*)
-      ARCH=sol-x86
       case $osrelease in
-      5.[8]*)
-         ARCH=usol-x86
-         ;;
       5.[91]*)
          if [ `isainfo -b` = 64 ]; then
             ARCH=$SOLARCH-amd64
          else
-            ARCH=$SOLARCH-x86
+            ARCH=UNSUPPORTED-SunOS-32bit
          fi
          ;;
       *)
@@ -278,7 +236,7 @@ SunOS)
          if [ `isainfo -b` = 64 ]; then
             ARCH=usol-sparc64
          else
-            ARCH=usol-sparc
+            ARCH=UNSUPPORTED-SunOS-32bit
          fi
          ;;
       5.[91]*)
@@ -291,7 +249,7 @@ SunOS)
          if [ `isainfo -b` = 64 ]; then
             ARCH=$SOLARCH-sparc64
          else
-            ARCH=$SOLARCH-sparc
+            ARCH=UNSUPPORTED-SunOS-32bit
          fi
          ;;
       *)

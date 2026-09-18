@@ -333,31 +333,31 @@ comparisons or in case of load scaling for the load complex entries:
 
         -l arch="*x*|sol*"  
 
-    results in "arch=lx-x86" OR "arch=lx-amd64" OR "arch=sol-amd64" OR ... 
+    results in "arch=lx-amd64" OR "arch=lx-arm64" OR "arch=sol-amd64" OR ... 
 
-        -l arch="sol-x??" 
+        -l arch="?lx-amd64" 
 
-    results in "arch=sol-x86" OR "arch=sol-x64" OR ...
+    results in "arch=ulx-amd64" OR "arch=xlx-amd64"
 
-         -l arch="lx2[246]-x86"
+         -l arch="lx-arm[67]"
 
-    results in "arch=lx22-x86" OR "arch=lx24-x86"  OR "arch=lx26-x86"
+    results in "arch=lx-arm6" OR "arch=lx-arm7"
 
-         -l arch="lx2[4-6]-x86" 
+         -l arch="lx-arm[6-7]" 
 
-    results in "arch=lx24-x86" OR "arch=lx25-x86" OR "arch=lx26-x86"
+    results in "arch=lx-arm6" OR "arch=lx-arm7"
 
-         -l arch="lx2[24-6]-x86" 
+         -l arch="lx-*[46]4" 
 
-    results in "arch=lx22-x86" OR "arch=lx24-x86" OR "arch=lx25-x86" OR "arch=lx26-x86"
+    results in "arch=lx-amd64" OR "arch=lx-arm64" OR "arch=lx-riscv64" OR ...
 
-         -l arch="!lx-x86&!sol-amd64"
+         -l arch="!lx-arm64&!sol-amd64"
 
-    results in NEITHER "arch=lx-x86" NOR "arch=sol-amd64"
+    results in NEITHER "arch=lx-arm64" NOR "arch=sol-amd64"
 
-         -l arch="lx2[4|6]-amd64"
+         -l arch="[ux]lx-amd64"
 
-    results in "arch=lx24-amd64" OR "arch=lx26-amd64"  
+    results in "arch=ulx-amd64" OR "arch=xlx-amd64"  
 
 -   *CSTRING* is like *STRING* except comparisons are case-insensitive.
 

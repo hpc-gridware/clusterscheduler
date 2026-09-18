@@ -42,7 +42,7 @@
 
 #include "uti/ocs_Bootstrap.h"
 
-#if defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)
+#if defined(SOLARIS64) || defined(SOLARISAMD64)
 #  include <stropts.h>
 #  include <termio.h>
 #endif

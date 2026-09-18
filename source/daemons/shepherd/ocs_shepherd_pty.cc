@@ -49,7 +49,7 @@
 #if defined(DARWIN)
 #  include <sys/ioctl.h>
 #  include <grp.h>
-#elif defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)
+#elif defined(SOLARIS64) || defined(SOLARISAMD64)
 #  include <stropts.h>
 #elif defined(FREEBSD) || defined(NETBSD)
 #  include <libutil.h>
@@ -245,7 +245,7 @@ ptys_open(int fdm, char *pts_name) {
       close(fdm);
       return -5;
    }
-#if defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)
+#if defined(SOLARIS64) || defined(SOLARISAMD64)
    if (ioctl(fds, I_PUSH, "ptem") < 0) {
       shepherd_trace("ioctl(ptem) failed %d: %s", errno, strerror(errno));
       close(fdm);

@@ -2105,16 +2105,8 @@ GetJvmLibFromJavaHome() {
       sol-amd64)   
          suffix=lib/amd64/server/libjvm.so
          ;;
-      sol-x86)     
-         #causes a SEGV of libjvm.so for JVM_RawMonitorCreate
-         #suffix=lib/i386/server/libjvm.so
-         suffix=lib/i386/client/libjvm.so
-         ;;
       lx*-amd64)   
          suffix=lib/amd64/server/libjvm.so
-         ;;
-      lx*-x86)     
-         suffix=lib/i386/server/libjvm.so
          ;;
       darwin-x64)
          suffix=../Libraries/libjvm.dylib

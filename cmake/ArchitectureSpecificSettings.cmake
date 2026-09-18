@@ -89,7 +89,7 @@ function(architecture_specific_settings)
          endif()
       endif()
 
-      # Linux supported/unsupported amd64/x86
+      # Linux supported/unsupported amd64
       message(STATUS "We are on Linux: ${SGE_ARCH}")
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
@@ -201,13 +201,6 @@ function(architecture_specific_settings)
          # its own architecture string, see CS-2649.
          add_compile_options(-fPIC)
       endif()
-
-      if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86" OR SGE_ARCH STREQUAL "xlx-x86")
-         # we need patchelf for setting the run path in the db_* tools
-         # but patchelf is not available on CentOS 7 x86
-         message(STATUS "Building without Berkeley DB on ${SGE_ARCH}")
-         set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
-      endif ()
 
       if (SGE_ARCH STREQUAL "xlx-amd64")
          # can't build jemalloc on CentOS 6 - autoconf is too old
