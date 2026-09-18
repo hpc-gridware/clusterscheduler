@@ -1592,16 +1592,12 @@ dstring       *dstr_error       /* OUT: error message - if any */
    job_owner = get_conf_val("job_owner");
 
    /*
-    * For performance reasons, we read the csp state from the config,
+    * For performance reasons, we read the tls state from the config,
     * not from the bootstrap file. The bootstrap file might reside on
     * a very, very slow drive.
     */
    cl_framework_t communication_mode = CL_CT_TCP;
-   if (strcasecmp(get_conf_val("csp"), "true") == 0 ||
-       strcasecmp(get_conf_val("csp"), "1") == 0) {
-      communication_mode = CL_CT_SSL;
-      shepherd_trace("using csp mode");
-   } else if (strcasecmp(get_conf_val("tls"), "true") == 0 ||
+   if (strcasecmp(get_conf_val("tls"), "true") == 0 ||
               strcasecmp(get_conf_val("tls"), "1") == 0) {
       communication_mode = CL_CT_SSL_TLS;
       shepherd_trace("using tls encryption");

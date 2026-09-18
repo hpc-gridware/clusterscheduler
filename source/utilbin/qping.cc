@@ -857,12 +857,11 @@ static void usage(int ret) {
    }
 
    fprintf(out, "%s %s\n", ocs::Version::get_short_product_name().c_str(), ocs::Version::get_version_string().c_str());
-   fprintf(out, "%s qping [-help] [-noalias] [-ssl|-tcp] [ [ [-i <interval>] [-info] [-f] ] | [ [-dump_tag tag [param] ] [-dump] [-nonewline] ] ] <host> <port> <name> <id>\n", MSG_UTILBIN_USAGE);
+   fprintf(out, "%s qping [-help] [-noalias] [-tls|-tcp] [ [ [-i <interval>] [-info] [-f] ] | [ [-dump_tag tag [param] ] [-dump] [-nonewline] ] ] <host> <port> <name> <id>\n", MSG_UTILBIN_USAGE);
    fprintf(out, "   -i         : set ping interval time\n");
    fprintf(out, "   -info      : show full status information and exit\n");
    fprintf(out, "   -f         : show full status information on each ping interval\n");
    fprintf(out, "   -noalias   : ignore $SGE_ROOT/SGE_CELL/common/host_aliases file\n");
-   fprintf(out, "   -ssl       : use SSL framework\n");
    fprintf(out, "   -tcp       : use TCP framework\n");
    fprintf(out, "   -dump      : dump communication traffic (see \"communication traffic output options\" for additional information)\n");
    fprintf(out, "                   (provides the same output like -dump_tag MSG)\n");
@@ -933,9 +932,6 @@ int main(int argc, char *argv[]) {
    cl_tcp_connect_t connect_type = CL_TCP_DEFAULT;
    cl_xml_connection_type_t connection_type = CL_CM_CT_MESSAGE;
    const char* client_name  = "qping";
-#ifdef SECURE
-   int   got_no_framework  = 0;
-#endif
 
    int   parameter_start   = 1;
    int   comp_id           = -1;
@@ -949,7 +945,6 @@ int main(int argc, char *argv[]) {
    int   option_f          = 0;
    int   option_info       = 0;
    int   option_noalias    = 0;
-   int   option_ssl        = 0;
    int   option_tls        = 0;
    int   option_tcp        = 0;
    int   option_dump       = 0;
@@ -1008,11 +1003,6 @@ int main(int argc, char *argv[]) {
              option_tcp = 1;
              parameter_count++;
              parameter_start++;
-         }
-         if (strcmp( argv[i] , "-ssl") == 0) {
-            option_ssl = 1;
-            parameter_count++;
-            parameter_start++;
          }
          if (strcmp( argv[i] , "-tls") == 0) {
              option_tls = 1;
@@ -1168,20 +1158,15 @@ int main(int argc, char *argv[]) {
       }
    }
 
-   if (option_ssl + option_tcp + option_tls > 1) {
-      fprintf(stderr,"only one option of -ssl, -tls,  and -tcp may be used\n");
+   if (option_tcp + option_tls > 1) {
+      fprintf(stderr,"only one option of -tls and -tcp may be used\n");
       exit(1);
    }
    
 
    /* find out the framework type to use */
-   if (option_ssl == 0 && option_tcp == 0 && option_tls == 0) {
-#ifdef SECURE
-      got_no_framework = 1;
-#endif
-      if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_CSP)) {
-         option_ssl = 1;
-      } else if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_TLS)) {
+   if (option_tcp == 0 && option_tls == 0) {
+      if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_TLS)) {
          option_tls = 1;
       } else {
          option_tcp = 1;
@@ -1195,40 +1180,6 @@ int main(int argc, char *argv[]) {
       exit(1);
    }
 
-   if (option_ssl != 0) {
-      communication_framework = CL_CT_SSL;
-#ifdef SECURE
-      if (got_no_framework == 1) {
-         /* we got no framework and we have a bootstrap file */
-         sge_getme(QPING);
-         sge_ssl_setup_security_path("qping", component_get_username());
-      } else {
-         if (getenv("SSL_CA_CERT_FILE") == nullptr) {
-            fprintf(stderr,"You have not set the SGE default environment or you specified the -ssl option.\n");
-            fprintf(stderr,"Please set the following environment variables to specifiy your certificates:\n");
-            fprintf(stderr,"- SSL_CA_CERT_FILE - CA certificate file\n");
-            fprintf(stderr,"- SSL_CERT_FILE    - certificates file\n");
-            fprintf(stderr,"- SSL_KEY_FILE     - key file\n");
-            fprintf(stderr,"- SSL_RAND_FILE    - rand file\n");
-            exit(1);
-         } else {
-            cl_ssl_setup_t ssl_config;
-            ssl_config.ssl_method           = CL_SSL_v23;                 /*  v23 method                                  */
-            ssl_config.ssl_CA_cert_pem_file = getenv("SSL_CA_CERT_FILE"); /*  CA certificate file                         */
-            ssl_config.ssl_CA_key_pem_file  = nullptr;                       /*  private certificate file of CA (not used)   */
-            ssl_config.ssl_cert_pem_file    = getenv("SSL_CERT_FILE");    /*  certificates file                           */
-            ssl_config.ssl_key_pem_file     = getenv("SSL_KEY_FILE");     /*  key file                                    */
-            ssl_config.ssl_rand_file        = getenv("SSL_RAND_FILE");    /*  rand file (if RAND_status() not ok)         */
-            ssl_config.ssl_reconnect_file   = nullptr;                       /*  file for reconnect data    (not used)       */
-            ssl_config.ssl_crl_file         = nullptr;                       /*  file for revocation list */
-            ssl_config.ssl_refresh_time     = 0;                          /*  key alive time for connections (not used)   */
-            ssl_config.ssl_password         = nullptr;                       /*  password for encrypted keyfiles (not used)  */
-            ssl_config.ssl_verify_func      = nullptr;                       /*  function callback for peer user/name check  */
-            cl_com_specify_ssl_configuration(&ssl_config);
-         }
-      }
-#endif
-   }
    if (option_tcp != 0) {
       communication_framework = CL_CT_TCP;
    }

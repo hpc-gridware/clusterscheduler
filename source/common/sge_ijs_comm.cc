@@ -551,41 +551,7 @@ int comm_open_connection(bool b_server,
       DRETURN(COMM_INVALID_PARAMETER);
    }
 
-   if (communication_framework == CL_CT_SSL) {
-#ifdef SECURE
-      /*
-       * Got to do this with euid = root
-       */
-      int old_euid = SGE_SUPERUSER_UID;
-      if (getuid() == SGE_SUPERUSER_UID) {
-         old_euid = geteuid();
-         seteuid(SGE_SUPERUSER_UID);
-      }
-      ret = sge_ssl_setup_security_path(this_component, user_name);
-      /*
-       * Switch back to old euid before error handling to do tracing as
-       * the SGE admin user.
-       */
-      if (old_euid != SGE_SUPERUSER_UID) {
-         seteuid(old_euid);
-      }
-
-      if (ret != 0) {
-         DPRINTF("sge_ssl_setup_security_path() failed!\n");
-         sge_dstring_sprintf(err_msg, "Setting up SSL failed!");
-         ret_val = COMM_CANT_SETUP_SSL;
-      }
-#else
-      /*
-       * If secure communication was requested but we cannot provide it
-       * because seclib support was not compiled in, we must not fall back to
-       * insecure mode, instead we must return with a fatal error.
-       */
-      sge_dstring_sprintf(err_msg, "No CSP support compiled into this binary!");
-      DPRINTF("%s\n", sge_dstring_get_string(err_msg));
-      ret_val = COMM_NO_SECURITY_COMPILED_IN;
-#endif
-   } else if (communication_framework == CL_CT_SSL_TLS) {
+   if (communication_framework == CL_CT_SSL_TLS) {
 #if defined(OCS_WITH_OPENSSL)
       std::string client_cert_path;
       std::string server_cert_path;
@@ -692,27 +658,8 @@ int comm_open_connection(bool b_server,
       }
    }
 
-   /*
-    * Need to do this as SUPERUSER, because in csp and tls mode we need the permissions
-    * to load the job users keys.
-    */
    if (!b_server) {
-#if defined(SECURE)
-      if (communication_framework == CL_CT_SSL) {
-         if (getuid() == SGE_SUPERUSER_UID) {
-            old_euid = geteuid();
-            seteuid(SGE_SUPERUSER_UID);
-         }
-      }
-#endif
       ret = cl_commlib_open_connection(*handle, hostname, (char*)other_component, 1);
-#if defined(SECURE)
-      if (communication_framework == CL_CT_SSL) {
-         if (old_euid != SGE_SUPERUSER_UID) {
-            seteuid(old_euid);
-         }
-      }
-#endif
       if (ret != CL_RETVAL_OK) {
          sge_dstring_sprintf(err_msg, "comm_open_connection(): cl_commlib_open_connection() failed %d: %s", ret, cl_get_error_text(ret));
          DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));

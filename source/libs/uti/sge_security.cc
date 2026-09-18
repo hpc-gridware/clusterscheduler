@@ -594,53 +594,6 @@ bool sge_security_verify_unique_identifier(bool check_admin_user, const char* us
         unsigned long progid, const char* hostname, const char* commproc, unsigned long commid) {
    DENTER(TOP_LAYER);
 
-#ifdef SECURE
-
-   if (user == nullptr || progname == nullptr || hostname == nullptr || commproc == nullptr) {
-      DRETURN(false);
-   }
-
-   if (ocs::Bootstrap::bootstrap_has_security_mode(ocs::Bootstrap::BS_SEC_MODE_CSP)) {
-      int ret = CL_RETVAL_OK;
-      cl_com_handle_t* handle = nullptr;
-      char* unique_identifier = nullptr;
-
-      DPRINTF("sge_security_verify_unique_identifier: progname, progid = %s, %d\n", progname, (int)progid);
-      handle = cl_com_get_handle(progname, progid);
-      DPRINTF("sge_security_verify_unique_identifier: hostname, commproc, commid = %s, %s, %d\n", hostname, commproc, (int)commid);
-      ret = cl_com_ssl_get_unique_id(handle, (char*)hostname, (char*)commproc, commid, &unique_identifier);
-      if (ret == CL_RETVAL_OK) {
-         DPRINTF("unique identifier = " SFQ "\n", unique_identifier );
-         DPRINTF("user = " SFQ "\n", user);
-      } else {
-         DPRINTF("-------> CL_RETVAL: %s\n", cl_get_error_text(ret));
-      }
-
-      if ( unique_identifier == nullptr ) {
-         DPRINTF("unique_identifier is nullptr\n");
-         DRETURN(false);
-      }
-
-      if (check_admin_user) {
-         if (strcmp(unique_identifier, user) != 0 
-            && !sge_is_user_superuser(unique_identifier)) { 
-            DPRINTF(MSG_ADMIN_REQUEST_DENIED_FOR_USER_S, user ? user: "nullptr");
-            WARNING(MSG_ADMIN_REQUEST_DENIED_FOR_USER_S, user ? user: "nullptr");
-            sge_free(&unique_identifier);
-            DRETURN(false);
-         }     
-      } else {
-         if (strcmp(unique_identifier, user) != 0) {
-            DPRINTF(MSG_REQUEST_DENIED_FOR_USER_S, user ? user: "nullptr");
-            WARNING(MSG_REQUEST_DENIED_FOR_USER_S, user ? user: "nullptr");
-            sge_free(&unique_identifier);
-            DRETURN(false);
-         }
-      }
-      
-      sge_free(&unique_identifier);
-   }
-#endif
    DRETURN(true);
 }
 

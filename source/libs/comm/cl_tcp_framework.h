@@ -36,11 +36,10 @@
 /** @file
  * @brief The plain TCP transport
  *
- * One of the interchangeable transports behind #cl_framework_t. Every
- * `cl_com_*` call in `cl_communication.cc` that touches a socket dispatches
- * here when the connection's framework is #CL_CT_TCP, and into
- * `cl_ssl_framework.cc` when it is not - so the two files implement the same
- * set of operations under different names.
+ * The transport behind #cl_framework_t. Every `cl_com_*` call in
+ * `cl_communication.cc` that touches a socket dispatches here, for
+ * #CL_CT_TCP and #CL_CT_SSL_TLS alike - TLS adds its encryption on top of
+ * these same socket operations.
  */
 
 #include <netinet/in.h>

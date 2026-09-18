@@ -562,63 +562,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
          DRETURN(CL_RETVAL_UNKNOWN);
       }
 
-      /*
-      ** CSP initialize
-      */
-      if (Bootstrap::has_security_mode(Bootstrap::BS_SEC_MODE_CSP)) {
-         communication_framework = CL_CT_SSL;
-#ifdef SECURE
-         cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
-         cl_ssl_cert_mode_t ssl_cert_mode = CL_SSL_PEM_FILE;
-         sge_csp_path_class_t *sge_csp = gdi_data_get_csp_path_obj();
-
-         if (gdi_data_get_ssl_certificate() != nullptr) {
-            ssl_cert_mode = CL_SSL_PEM_BYTE;
-            sge_csp->set_cert_file(sge_csp, gdi_data_get_ssl_certificate());
-            sge_csp->set_key_file(sge_csp, gdi_data_get_ssl_private_key());
-         }
-         sge_csp->dprintf(sge_csp);
-
-         cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config,
-                                          ssl_cert_mode,
-                                          CL_SSL_v23,                                   /* ssl_method           */
-                                          (char *) sge_csp->get_CA_cert_file(sge_csp),    /* ssl_CA_cert_pem_file */
-                                          (char *) sge_csp->get_CA_key_file(sge_csp),     /* ssl_CA_key_pem_file  */
-                                          (char *) sge_csp->get_cert_file(sge_csp),       /* ssl_cert_pem_file    */
-                                          (char *) sge_csp->get_key_file(sge_csp),        /* ssl_key_pem_file     */
-                                          (char *) sge_csp->get_rand_file(sge_csp),       /* ssl_rand_file        */
-                                          (char *) sge_csp->get_reconnect_file(sge_csp),  /* ssl_reconnect_file   */
-                                          (char *) sge_csp->get_crl_file(sge_csp),        /* ssl_crl_file         */
-                                          sge_csp->get_refresh_time(sge_csp),           /* ssl_refresh_time     */
-                                          (char *) sge_csp->get_password(sge_csp),        /* ssl_password         */
-                                          sge_csp->get_verify_func(sge_csp));           /* ssl_verify_func (cl_ssl_verify_func_t)  */
-         if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
-            DPRINTF("return value of cl_com_create_ssl_setup(): %s\n", cl_get_error_text(cl_ret));
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                    MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, qualified_hostname, component_get_component_name(),
-                                    0, sge_qmaster_port, cl_get_error_text(cl_ret));
-            DRETURN(cl_ret);
-         }
-
-         /*
-         ** set the CSP credential info into commlib
-         */
-         cl_ret = cl_com_specify_ssl_configuration(sec_ssl_setup_config);
-         if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
-            DPRINTF("return value of cl_com_specify_ssl_configuration(): %s\n", cl_get_error_text(cl_ret));
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                    MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, component_get_component_name(),
-                                    0, sge_qmaster_port, cl_get_error_text(cl_ret));
-            cl_com_free_ssl_setup(&sec_ssl_setup_config);
-            DRETURN(cl_ret);
-         }
-         cl_com_free_ssl_setup(&sec_ssl_setup_config);
-#else
-         // @todo ERROR
-#endif
-      }
-
-      // new SSL encryption mode
+      // TLS encryption mode
       if (Bootstrap::has_security_mode(Bootstrap::BS_SEC_MODE_TLS)) {
          communication_framework = CL_CT_SSL_TLS;
 #if defined(OCS_WITH_OPENSSL)

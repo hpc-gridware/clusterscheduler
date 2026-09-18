@@ -118,69 +118,6 @@ unsigned long my_application_status(char **info_message) {
    return (unsigned long) 1;
 }
 
-#if defined(SECURE)
-static bool my_ssl_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char *value) {
-   const char *user_name = nullptr;
-   struct passwd *paswd = nullptr;
-   struct passwd pw_struct;
-   char *pw_buffer;
-   int pw_buffer_size;
-
-   pw_buffer_size = get_pw_buffer_size();
-   pw_buffer = sge_malloc(pw_buffer_size);
-   if (getpwuid_r(getuid(), &pw_struct, pw_buffer, pw_buffer_size, &paswd) != 0) {
-      CL_LOG(CL_LOG_ERROR, "getpwuid_r failed");
-   }
-   if (paswd != nullptr) {
-      user_name = paswd->pw_name;
-   }
-   if (user_name == nullptr) {
-      user_name = "unexpected user name";
-   }
-   if (service_mode) {
-      CL_LOG(CL_LOG_WARNING, "running in service mode");
-      switch (mode) {
-         case CL_SSL_PEER_NAME: {
-            CL_LOG(CL_LOG_WARNING, "CL_SSL_PEER_NAME");
-            if (strcmp(value, "SGE admin user") != 0) {
-               CL_LOG(CL_LOG_WARNING, "CL_SSL_PEER_NAME is not \"SGE admin user\"");
-               return false;
-            }
-            break;
-         }
-         case CL_SSL_USER_NAME: {
-            CL_LOG(CL_LOG_WARNING, "CL_SSL_USER_NAME");
-            if (strcmp(value, user_name) != 0) {
-               CL_LOG_STR(CL_LOG_WARNING, "CL_SSL_USER_NAME is not", user_name);
-               return false;
-            }
-            break;
-         }
-      }
-   } else {
-      CL_LOG(CL_LOG_WARNING, "running in client mode");
-      switch (mode) {
-         case CL_SSL_PEER_NAME: {
-            CL_LOG(CL_LOG_WARNING, "CL_SSL_PEER_NAME");
-            if (strcmp(value, "SGE admin user") != 0) {
-               CL_LOG(CL_LOG_WARNING, "CL_SSL_PEER_NAME is not \"SGE Daemon\"");
-               return false;
-            }
-            break;
-         }
-         case CL_SSL_USER_NAME: {
-            CL_LOG(CL_LOG_WARNING, "CL_SSL_USER_NAME");
-            if (strcmp(value, user_name) != 0) {
-               CL_LOG_STR(CL_LOG_WARNING, "CL_SSL_USER_NAME is not", user_name);
-               return false;
-            }
-            break;
-         }
-      }
-   }
-   return true;
-}
-#endif
 
 /** @brief Run the test
  * @param argc argument count
@@ -199,21 +136,6 @@ extern int main(int argc, char **argv) {
    cl_log_t log_level;
    cl_framework_t framework = CL_CT_TCP;
 
-#if defined(SECURE)
-   cl_ssl_setup_t ssl_config;
-   memset(&ssl_config, 0, sizeof(ssl_config));
-   ssl_config.ssl_method = CL_SSL_v23;                 /*  v23 method                                  */
-   ssl_config.ssl_CA_cert_pem_file = getenv("SSL_CA_CERT_FILE"); /*  CA certificate file                         */
-   ssl_config.ssl_CA_key_pem_file = nullptr;                       /*  private certificate file of CA (not used)   */
-   ssl_config.ssl_cert_pem_file = getenv("SSL_CERT_FILE");    /*  certificates file                           */
-   ssl_config.ssl_key_pem_file = getenv("SSL_KEY_FILE");     /*  key file                                    */
-   ssl_config.ssl_rand_file = getenv("SSL_RAND_FILE");    /*  rand file (if RAND_status() not ok)         */
-   ssl_config.ssl_crl_file = getenv("SSL_CRL_FILE");     /*  revocation list file                        */
-   ssl_config.ssl_reconnect_file = nullptr;                       /*  file for reconnect data    (not used)       */
-   ssl_config.ssl_refresh_time = 0;                          /*  key alive time for connections (not used)   */
-   ssl_config.ssl_password = nullptr;                       /*  password for encrypted keyfiles (not used)  */
-   ssl_config.ssl_verify_func = my_ssl_verify_func;         /*  function callback for peer user/name check  */
-#endif
 
    if (getenv("CL_PORT")) {
       handle_port = atoi(getenv("CL_PORT"));
@@ -230,23 +152,6 @@ extern int main(int argc, char **argv) {
          framework = CL_CT_TCP;
          printf("using TCP framework\n");
       }
-#if defined(SECURE)
-      if (strcmp(argv[2], "SSL") == 0) {
-         framework = CL_CT_SSL;
-         printf("using SSL framework\n");
-
-         if (ssl_config.ssl_CA_cert_pem_file == nullptr ||
-             ssl_config.ssl_cert_pem_file == nullptr ||
-             ssl_config.ssl_key_pem_file == nullptr ||
-             ssl_config.ssl_rand_file == nullptr) {
-            printf("please set the following environment variables:\n");
-            printf("SSL_CA_CERT_FILE         = CA certificate file\n");
-            printf("SSL_CERT_FILE            = certificates file\n");
-            printf("SSL_KEY_FILE             = key file\n");
-            printf("(optional) SSL_RAND_FILE = rand file (if RAND_status() not ok)\n");
-         }
-      }
-#endif
       if (framework == CL_CT_UNDEFINED) {
          printf("unexpected framework type\n");
          exit(1);
@@ -305,11 +210,6 @@ extern int main(int argc, char **argv) {
 
    cl_com_set_tag_name_func(my_application_tag_name);
 
-#if defined(SECURE)
-   if (framework == CL_CT_SSL) {
-      cl_com_specify_ssl_configuration(&ssl_config);
-   }
-#endif
 
    handle = cl_com_create_handle(nullptr, framework, CL_CM_CT_MESSAGE, true, handle_port, CL_TCP_DEFAULT, "server", 1, 1,
                                  0);

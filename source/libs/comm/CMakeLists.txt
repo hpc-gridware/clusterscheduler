@@ -32,7 +32,6 @@ set(LIBRARY_SOURCES
         cl_host_alias_list.cc
         cl_host_list.cc
         cl_message_list.cc
-        cl_ssl_framework.cc
         cl_tcp_framework.cc
         cl_xml_parsing.cc)
 set(LIBRARY_INCLUDES "./")

@@ -117,10 +117,6 @@ extern int main(int argc, char **argv) {
          framework = CL_CT_TCP;
          printf("using TCP framework\n");
       }
-      if (strcmp(argv[2], "SSL") == 0) {
-         framework = CL_CT_SSL;
-         printf("using SSL framework\n");
-      }
       if (framework == CL_CT_UNDEFINED) {
          printf("unexpected framework type\n");
          exit(1);

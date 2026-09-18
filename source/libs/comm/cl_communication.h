@@ -42,7 +42,7 @@
  *
  * Nothing here is framework specific - a `cl_com_*` call in this file
  * dispatches on #cl_com_connection_type::framework_type into
- * `cl_tcp_framework.cc` or `cl_ssl_framework.cc`.
+ * `cl_tcp_framework.cc`.
  *
  * @see @ref cl_commlib.h for the interface an application uses
  */
@@ -156,21 +156,6 @@ int cl_com_create_debug_client_setup(cl_debug_client_setup_t **new_setup,
 
 int cl_com_free_debug_client_setup(cl_debug_client_setup_t **new_setup);
 
-#if defined(SECURE)
-int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
-                            cl_ssl_cert_mode_t ssl_cert_mode,
-                            cl_ssl_method_t ssl_method,
-                            const char *ssl_CA_cert_pem_file,
-                            const char *ssl_CA_key_pem_file,
-                            const char *ssl_cert_pem_file,
-                            const char *ssl_key_pem_file,
-                            const char *ssl_rand_file,
-                            const char *ssl_reconnect_file,
-                            const char *ssl_crl_file,
-                            unsigned long ssl_refresh_time,
-                            const char *ssl_password,
-                            cl_ssl_verify_func_t ssl_verify_func);
-#endif
 #if defined(OCS_WITH_OPENSSL)
 int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
                             cl_ssl_cert_mode_t ssl_cert_mode,

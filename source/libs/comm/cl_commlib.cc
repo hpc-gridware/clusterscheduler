@@ -63,7 +63,6 @@
 #include "comm/cl_fd_list.h"
 #include "comm/cl_communication.h"
 #include "comm/cl_tcp_framework.h"
-#include "comm/cl_ssl_framework.h"
 #include "comm/lists/cl_parameter_list.h"
 #include "comm/lists/cl_util.h"
 
@@ -791,14 +790,6 @@ int cl_com_setup_commlib(cl_thread_mode_t t_mode, cl_log_t debug_level, cl_log_f
    }
    pthread_mutex_unlock(&cl_com_application_error_list_mutex);
 
-   /* setup ssl framework */
-   ret_val = cl_com_ssl_framework_setup();
-   if (ret_val != CL_RETVAL_OK) {
-      cl_com_cleanup_commlib();
-      return ret_val;
-   }
-
-
    /* setup global cl_com_handle_list */
    pthread_mutex_lock(&cl_com_handle_list_mutex);
    if (cl_com_handle_list == nullptr) {
@@ -978,9 +969,6 @@ int cl_com_cleanup_commlib() {
    pthread_mutex_lock(&cl_com_parameter_list_mutex);
    cl_parameter_list_cleanup(&cl_com_parameter_list);
    pthread_mutex_unlock(&cl_com_parameter_list_mutex);
-
-   CL_LOG(CL_LOG_INFO, "cleanup ssl framework configuration object ...");
-   cl_com_ssl_framework_cleanup();
 
    CL_LOG(CL_LOG_INFO, "cleanup application error list ...");
    pthread_mutex_lock(&cl_com_application_error_list_mutex);
@@ -1304,36 +1292,6 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
       case CL_CT_UNDEFINED:
       case CL_CT_TCP:
          break;
-      case CL_CT_SSL: {
-         pthread_mutex_lock(&cl_com_ssl_setup_mutex);
-         if (cl_com_ssl_setup_config == nullptr) {
-            CL_LOG(CL_LOG_ERROR, "use cl_com_specify_ssl_configuration() to specify a ssl configuration");
-            sge_free(&local_hostname);
-            sge_free(&new_handle);
-            cl_raw_list_unlock(cl_com_handle_list);
-            if (commlib_error) {
-               *commlib_error = CL_RETVAL_NO_FRAMEWORK_INIT;
-            }
-            pthread_mutex_unlock(&cl_com_ssl_setup_mutex);
-            cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_NO_FRAMEWORK_INIT, nullptr);
-            return nullptr;
-         }
-
-         if ((return_value = cl_com_dup_ssl_setup(&(new_handle->ssl_setup), cl_com_ssl_setup_config)) != CL_RETVAL_OK) {
-            sge_free(&local_hostname);
-            sge_free(&new_handle);
-            cl_raw_list_unlock(cl_com_handle_list);
-            if (commlib_error) {
-               *commlib_error = return_value;
-            }
-            pthread_mutex_unlock(&cl_com_ssl_setup_mutex);
-            cl_commlib_push_application_error(CL_LOG_ERROR, return_value, nullptr);
-            return nullptr;
-         }
-
-         pthread_mutex_unlock(&cl_com_ssl_setup_mutex);
-         break;
-      }
       case CL_CT_SSL_TLS: {
          pthread_mutex_lock(&cl_com_ssl_setup_mutex);
          if (cl_com_ssl_setup_config == nullptr) {
@@ -2429,18 +2387,6 @@ int cl_com_setup_connection(cl_com_handle_t *handle, cl_com_connection_t **conne
                                                   handle->auto_close_mode,
                                                   handle->framework,
                                                   CL_CM_DF_BIN, handle->tcp_connect_mode);
-            break;
-         }
-         case CL_CT_SSL: {
-            ret_val = cl_com_ssl_setup_connection(connection,
-                                                  handle->service_port,
-                                                  handle->connect_port,
-                                                  handle->data_flow_type,
-                                                  handle->auto_close_mode,
-                                                  handle->framework,
-                                                  CL_CM_DF_BIN,
-                                                  handle->tcp_connect_mode,
-                                                  handle->ssl_setup);
             break;
          }
          case CL_CT_UNDEFINED: {

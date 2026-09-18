@@ -35,11 +35,10 @@
 /** @file
  * @brief The plain TCP transport
  *
- * One of the interchangeable transports behind #cl_framework_t. Every
- * `cl_com_*` call in `cl_communication.cc` that touches a socket dispatches
- * here when the connection's framework is #CL_CT_TCP, and into
- * `cl_ssl_framework.cc` when it is not - so the two files implement the same
- * set of operations under different names.
+ * The transport behind #cl_framework_t. Every `cl_com_*` call in
+ * `cl_communication.cc` that touches a socket dispatches here, for
+ * #CL_CT_TCP and #CL_CT_SSL_TLS alike - TLS adds its encryption on top of
+ * these same socket operations.
  */
 
 #include <cstdio>
@@ -570,8 +569,7 @@ int cl_com_tcp_setup_connection(cl_com_handle_t *handle,
       case CL_CT_TCP:
       case CL_CT_SSL_TLS:
          break;
-      case CL_CT_UNDEFINED:
-      case CL_CT_SSL: {
+      case CL_CT_UNDEFINED: {
          CL_LOG_STR(CL_LOG_ERROR, "unexpected framework:", cl_com_get_framework_type(*connection));
          cl_com_close_connection(connection);
          return CL_RETVAL_WRONG_FRAMEWORK;
@@ -1732,8 +1730,7 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                }
                break;
             }
-            case CL_CT_UNDEFINED:
-            case CL_CT_SSL: {
+            case CL_CT_UNDEFINED: {
                CL_LOG_STR(CL_LOG_WARNING, "ignoring unexpected connection type:",
                           cl_com_get_framework_type(connection));
             }

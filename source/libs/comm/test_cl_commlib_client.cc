@@ -145,10 +145,6 @@ extern int main(int argc, char **argv) {
          framework = CL_CT_TCP;
          printf("using TCP framework\n");
       }
-      if (strcmp(argv[7], "SSL") == 0) {
-         framework = CL_CT_SSL;
-         printf("using SSL framework\n");
-      }
       if (framework == CL_CT_UNDEFINED) {
          printf("unexpected framework type\n");
          exit(1);
@@ -156,34 +152,6 @@ extern int main(int argc, char **argv) {
    }
 
    cl_com_set_alias_file("./alias_file");
-#if defined(SECURE)
-   if (framework == CL_CT_SSL) {
-      cl_ssl_setup_t ssl_config;
-      ssl_config.ssl_method = CL_SSL_v23;                 /*  v23 method                                  */
-      ssl_config.ssl_CA_cert_pem_file = getenv("SSL_CA_CERT_FILE"); /*  CA certificate file                         */
-      ssl_config.ssl_CA_key_pem_file = nullptr;                       /*  private certificate file of CA (not used)   */
-      ssl_config.ssl_cert_pem_file = getenv("SSL_CERT_FILE");    /*  certificates file                           */
-      ssl_config.ssl_key_pem_file = getenv("SSL_KEY_FILE");     /*  key file                                    */
-      ssl_config.ssl_rand_file = getenv("SSL_RAND_FILE");    /*  rand file (if RAND_status() not ok)         */
-      ssl_config.ssl_crl_file = getenv("SSL_CRL_FILE");     /*  revocation list file                        */
-      ssl_config.ssl_reconnect_file = nullptr;                       /*  file for reconnect data    (not used)       */
-      ssl_config.ssl_refresh_time = 0;                          /*  key alive time for connections (not used)   */
-      ssl_config.ssl_password = nullptr;                       /*  password for encrypted keyfiles (not used)  */
-      ssl_config.ssl_verify_func = nullptr;                       /*  function callback for peer user/name check  */
-
-      if (ssl_config.ssl_CA_cert_pem_file == nullptr ||
-          ssl_config.ssl_cert_pem_file == nullptr ||
-          ssl_config.ssl_key_pem_file == nullptr ||
-          ssl_config.ssl_rand_file == nullptr) {
-         printf("please set the following environment variables:\n");
-         printf("SSL_CA_CERT_FILE         = CA certificate file\n");
-         printf("SSL_CERT_FILE            = certificates file\n");
-         printf("SSL_KEY_FILE             = key file\n");
-         printf("(optional) SSL_RAND_FILE = rand file (if RAND_status() not ok)\n");
-      }
-      cl_com_specify_ssl_configuration(&ssl_config);
-   }
-#endif
    CL_LOG_STR(CL_LOG_INFO, "connection to server on host", argv[1]);
    CL_LOG_INT(CL_LOG_INFO, "using port", atoi(argv[2]));
 

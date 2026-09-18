@@ -58,7 +58,6 @@
 #include "comm/cl_commlib.h"
 #include "comm/cl_data_types.h"
 #include "comm/cl_tcp_framework.h"
-#include "comm/cl_ssl_framework.h"
 #include "comm/cl_message_list.h"
 #include "comm/cl_host_list.h"
 #include "comm/cl_host_alias_list.h"
@@ -90,31 +89,6 @@ static bool cl_ingore_timeout = false;
 
 static bool cl_com_is_ip_address_string(const char *hostname, struct in_addr *addr);
 
-#if defined(SECURE)
-static bool cl_com_default_ssl_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char *value) {
-   switch (mode) {
-      case CL_SSL_PEER_NAME: {
-         CL_LOG(CL_LOG_INFO, "checking peer name");
-         break;
-      }
-      case CL_SSL_USER_NAME: {
-         CL_LOG(CL_LOG_INFO, "checking user name");
-         break;
-      }
-   }
-   if (service_mode) {
-      CL_LOG(CL_LOG_INFO, "running in service mode");
-   } else {
-      CL_LOG(CL_LOG_INFO, "running in client mode");
-   }
-   if (value != nullptr) {
-      CL_LOG_STR(CL_LOG_INFO, "compare value is:", value);
-   } else {
-      CL_LOG(CL_LOG_ERROR, "compare value is not set");
-   }
-   return true;
-}
-#endif
 
 /** @brief Are these the same endpoint?
  * @param endpoint1 one endpoint
@@ -463,169 +437,9 @@ int cl_com_free_debug_client_setup(cl_debug_client_setup_t **dc_setup) {
    return ret_val;
 }
 
-#if defined(SECURE)
-/** @brief Build an SSL configuration for the older `SECURE` framework
- *
- * @param new_setup receives the configuration
- * @param ssl_cert_mode whether the file parameters are names or PEM data
- * @param ssl_method which method is handed to `SSL_CTX_new()`
- * @param ssl_CA_cert_pem_file CA certificate
- * @param ssl_CA_key_pem_file private key of the CA; not used
- * @param ssl_cert_pem_file our certificate
- * @param ssl_key_pem_file our key
- * @param ssl_rand_file entropy file, used when the pool is not seeded
- * @param ssl_reconnect_file reconnect data; not used
- * @param ssl_crl_file certificate revocation list
- * @param ssl_refresh_time key lifetime for a service; not used
- * @param ssl_password password for an encrypted key file; not used
- * @param ssl_verify_func hook checking the peer's name
- * @return #CL_RETVAL_OK on success, else a `CL_RETVAL_*` code
- *
- * @note Four of these parameters are marked unused in #cl_ssl_setup_t and are
- *       stored but never read.
- */
-int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
-                            cl_ssl_cert_mode_t ssl_cert_mode,
-                            cl_ssl_method_t ssl_method,
-                            const char *ssl_CA_cert_pem_file,
-                            const char *ssl_CA_key_pem_file,
-                            const char *ssl_cert_pem_file,
-                            const char *ssl_key_pem_file,
-                            const char *ssl_rand_file,
-                            const char *ssl_reconnect_file,
-                            const char *ssl_crl_file,
-                            unsigned long ssl_refresh_time,
-                            const char *ssl_password,
-                            cl_ssl_verify_func_t ssl_verify_func) {
-
-   cl_ssl_setup_t *tmp_setup = nullptr;
-
-   if (new_setup == nullptr) {
-      return CL_RETVAL_PARAMS;
-   }
-
-   if (*new_setup != nullptr) {
-      CL_LOG(CL_LOG_ERROR, "setup configuration pointer is not nullptr");
-      return CL_RETVAL_PARAMS;
-   }
-
-   switch (ssl_method) {
-      case CL_SSL_v23:
-         break;
-      default:
-         CL_LOG(CL_LOG_ERROR, "unsupported ssl method");
-         return CL_RETVAL_PARAMS;
-   }
-
-
-   tmp_setup = (cl_ssl_setup_t *) sge_malloc(sizeof(cl_ssl_setup_t));
-   if (tmp_setup == nullptr) {
-      return CL_RETVAL_MALLOC;
-   }
-
-   memset(tmp_setup, 0, sizeof(cl_ssl_setup_t));
-
-   tmp_setup->ssl_cert_mode = ssl_cert_mode;
-   tmp_setup->ssl_method = ssl_method;
-
-   if (ssl_CA_cert_pem_file != nullptr) {
-      tmp_setup->ssl_CA_cert_pem_file = strdup(ssl_CA_cert_pem_file);
-      if (tmp_setup->ssl_CA_cert_pem_file == nullptr) {
-         cl_com_free_ssl_setup(&tmp_setup);
-         return CL_RETVAL_MALLOC;
-      }
-   } else {
-      CL_LOG(CL_LOG_ERROR, "CA certificate file not set");
-      cl_com_free_ssl_setup(&tmp_setup);
-      return CL_RETVAL_PARAMS;
-   }
-
-   if (ssl_CA_key_pem_file != nullptr) {
-      tmp_setup->ssl_CA_key_pem_file = strdup(ssl_CA_key_pem_file);
-      if (tmp_setup->ssl_CA_key_pem_file == nullptr) {
-         cl_com_free_ssl_setup(&tmp_setup);
-         return CL_RETVAL_MALLOC;
-      }
-   }
-
-   if (ssl_cert_pem_file != nullptr) {
-      tmp_setup->ssl_cert_pem_file = strdup(ssl_cert_pem_file);
-      if (tmp_setup->ssl_cert_pem_file == nullptr) {
-         cl_com_free_ssl_setup(&tmp_setup);
-         return CL_RETVAL_MALLOC;
-      }
-   } else {
-      CL_LOG(CL_LOG_ERROR, "certificates file not set");
-      cl_com_free_ssl_setup(&tmp_setup);
-      return CL_RETVAL_PARAMS;
-   }
-
-
-   if (ssl_key_pem_file != nullptr) {
-      tmp_setup->ssl_key_pem_file = strdup(ssl_key_pem_file);
-      if (tmp_setup->ssl_key_pem_file == nullptr) {
-         cl_com_free_ssl_setup(&tmp_setup);
-         return CL_RETVAL_MALLOC;
-      }
-   } else {
-      CL_LOG(CL_LOG_ERROR, "key file not set");
-      cl_com_free_ssl_setup(&tmp_setup);
-      return CL_RETVAL_PARAMS;
-   }
-
-
-   if (ssl_rand_file != nullptr) {
-      tmp_setup->ssl_rand_file = strdup(ssl_rand_file);
-      if (tmp_setup->ssl_rand_file == nullptr) {
-         cl_com_free_ssl_setup(&tmp_setup);
-         return CL_RETVAL_MALLOC;
-      }
-   }
-
-   if (ssl_reconnect_file != nullptr) {
-      tmp_setup->ssl_reconnect_file = strdup(ssl_reconnect_file);
-      if (tmp_setup->ssl_reconnect_file == nullptr) {
-         cl_com_free_ssl_setup(&tmp_setup);
-         return CL_RETVAL_MALLOC;
-      }
-   }
-
-   if (ssl_crl_file != nullptr) {
-      tmp_setup->ssl_crl_file = strdup(ssl_crl_file);
-      if (tmp_setup->ssl_crl_file == nullptr) {
-         cl_com_free_ssl_setup(&tmp_setup);
-         return CL_RETVAL_MALLOC;
-      }
-   }
-
-   tmp_setup->ssl_refresh_time = ssl_refresh_time;
-
-   if (ssl_password != nullptr) {
-      tmp_setup->ssl_password = strdup(ssl_password);
-      if (tmp_setup->ssl_password == nullptr) {
-         cl_com_free_ssl_setup(&tmp_setup);
-         return CL_RETVAL_MALLOC;
-      }
-   }
-
-   if (ssl_verify_func != nullptr) {
-      tmp_setup->ssl_verify_func = ssl_verify_func;
-   } else {
-      CL_LOG(CL_LOG_WARNING, "no verify func set, doing no additional certificate checks");
-      tmp_setup->ssl_verify_func = cl_com_default_ssl_verify_func;
-   }
-
-   *new_setup = tmp_setup;
-
-   return CL_RETVAL_OK;
-}
-#endif
 
 #if defined(OCS_WITH_OPENSSL)
-/** @brief Build an SSL configuration for the newer OpenSSL framework
- *
- * The same name as the `SECURE` overload above, and both are compiled - the
- * shorter parameter list is what tells them apart.
+/** @brief Build an SSL configuration for the TLS framework
  *
  * @param new_setup receives the configuration
  * @param ssl_cert_mode whether the file parameters are names or PEM data
@@ -730,21 +544,6 @@ int cl_com_dup_ssl_setup(cl_ssl_setup_t **new_setup, cl_ssl_setup_t *source) {
       return CL_RETVAL_PARAMS;
    }
 
-#if defined(SECURE)
-   return cl_com_create_ssl_setup(new_setup,
-                                  source->ssl_cert_mode,
-                                  source->ssl_method,
-                                  source->ssl_CA_cert_pem_file,
-                                  source->ssl_CA_key_pem_file,
-                                  source->ssl_cert_pem_file,
-                                  source->ssl_key_pem_file,
-                                  source->ssl_rand_file,
-                                  source->ssl_reconnect_file,
-                                  source->ssl_crl_file,
-                                  source->ssl_refresh_time,
-                                  source->ssl_password,
-                                  source->ssl_verify_func);
-#endif
 #if defined(OCS_WITH_OPENSSL)
    return cl_com_create_ssl_setup(new_setup,
                                   source->ssl_cert_mode,
@@ -770,35 +569,6 @@ int cl_com_free_ssl_setup(cl_ssl_setup_t **del_setup) {
       return CL_RETVAL_PARAMS;
    }
 
-#if defined(SECURE)
-   /* free structure members */
-   if ((*del_setup)->ssl_CA_cert_pem_file != nullptr) {
-      sge_free(&((*del_setup)->ssl_CA_cert_pem_file));
-   }
-   if ((*del_setup)->ssl_CA_key_pem_file != nullptr) {
-      sge_free(&((*del_setup)->ssl_CA_key_pem_file));
-   }
-   if ((*del_setup)->ssl_cert_pem_file != nullptr) {
-      sge_free(&((*del_setup)->ssl_cert_pem_file));
-   }
-   if ((*del_setup)->ssl_key_pem_file != nullptr) {
-      sge_free(&((*del_setup)->ssl_key_pem_file));
-   }
-   if ((*del_setup)->ssl_rand_file != nullptr) {
-      sge_free(&((*del_setup)->ssl_rand_file));
-   }
-   if ((*del_setup)->ssl_reconnect_file != nullptr) {
-      sge_free(&((*del_setup)->ssl_reconnect_file));
-   }
-
-   if ((*del_setup)->ssl_crl_file != nullptr) {
-      sge_free(&((*del_setup)->ssl_crl_file));
-   }
-
-   if ((*del_setup)->ssl_password != nullptr) {
-      sge_free(&((*del_setup)->ssl_password));
-   }
-#endif
 
 #if defined(OCS_WITH_OPENSSL)
    sge_free(&((*del_setup)->ssl_client_cert_file));
@@ -1031,10 +801,6 @@ static void cl_dump_private(cl_com_connection_t* connection) {  /* CR check */
             cl_dump_tcp_private(connection);
             break;
          }
-         case CL_CT_SSL: {
-            cl_dump_ssl_private(connection);
-            break;
-         }
          case CL_CT_UNDEFINED: {
             break;
          }
@@ -1067,9 +833,6 @@ int cl_com_read_GMSH(cl_com_connection_t *connection, unsigned long *only_one_re
       case CL_CT_SSL_TLS: {
          return cl_com_tcp_read_GMSH(connection, only_one_read);
       }
-      case CL_CT_SSL: {
-         return cl_com_ssl_read_GMSH(connection, only_one_read);
-      }
       case CL_CT_UNDEFINED: {
          break;
       }
@@ -1091,8 +854,6 @@ const char *cl_com_get_framework_type(cl_com_connection_t *connection) {  /* CR 
          return "CL_CT_TCP";
       case CL_CT_SSL_TLS:
          return "CL_CT_SSL_TLS";
-      case CL_CT_SSL:
-         return "CL_CT_SSL";
       case CL_CT_UNDEFINED:
          return "CL_CT_UNDEFINED";
    }
@@ -1543,21 +1304,6 @@ int cl_com_open_connection(cl_com_connection_t *connection, int timeout, cl_com_
             }
             return retval;
          }
-         case CL_CT_SSL: {
-            connection->connection_type = CL_COM_SEND_RECEIVE;
-
-            retval = cl_com_ssl_open_connection(connection, timeout);
-            if (retval == CL_RETVAL_OK) {
-               /* OK set follow state */
-               connection->connection_state = CL_CONNECTING;
-               connection->connection_sub_state = CL_COM_SEND_INIT;
-               connection->data_write_flag = CL_COM_DATA_READY;
-            } else if (retval != CL_RETVAL_UNCOMPLETE_WRITE) {
-               CL_LOG(CL_LOG_ERROR, "connect error");
-               connection->connection_type = CL_COM_UNDEFINED;
-            }
-            return retval;
-         }
          case CL_CT_UNDEFINED: {
             CL_LOG(CL_LOG_ERROR, "undefined framework type");
             retval = CL_RETVAL_UNDEFINED_FRAMEWORK;
@@ -1659,17 +1405,13 @@ int cl_com_close_connection(cl_com_connection_t **connection) {
             retval = cl_com_tcp_close_connection(connection);
             break;
          }
-         case CL_CT_SSL: {
-            retval = cl_com_ssl_close_connection(connection);
-            break;
-         }
          case CL_CT_UNDEFINED: {
             retval = CL_RETVAL_UNDEFINED_FRAMEWORK;
             break;
          }
       }
       (*connection)->handler = nullptr;
-      /* com_private is set to nullptr by cl_com_tcp_close_connection() or cl_com_ssl_close_connection() */
+      /* com_private is set to nullptr by cl_com_tcp_close_connection() */
       sge_free(connection);
       return retval;
    } else {
@@ -1691,9 +1433,6 @@ int cl_com_connection_get_service_port(cl_com_connection_t *connection, int *por
       case CL_CT_TCP:
       case CL_CT_SSL_TLS: {
          return cl_com_tcp_get_service_port(connection, port);
-      }
-      case CL_CT_SSL: {
-         return cl_com_ssl_get_service_port(connection, port);
       }
       case CL_CT_UNDEFINED: {
          break;
@@ -1720,9 +1459,6 @@ int cl_com_connection_get_client_socket_in_port(cl_com_connection_t *connection,
       case CL_CT_SSL_TLS: {
          return cl_com_tcp_get_client_socket_in_port(connection, port);
       }
-      case CL_CT_SSL: {
-         return cl_com_ssl_get_client_socket_in_port(connection, port);
-      }
       case CL_CT_UNDEFINED: {
          break;
       }
@@ -1744,10 +1480,6 @@ int cl_com_connection_get_fd(cl_com_connection_t *connection, int *fd) {
       case CL_CT_TCP:
       case CL_CT_SSL_TLS: {
          ret_val = cl_com_tcp_get_fd(connection, fd);
-         break;
-      }
-      case CL_CT_SSL: {
-         ret_val = cl_com_ssl_get_fd(connection, fd);
          break;
       }
       case CL_CT_UNDEFINED: {
@@ -1812,9 +1544,6 @@ int cl_com_connection_get_connect_port(cl_com_connection_t *connection, int *por
       case CL_CT_SSL_TLS: {
          return cl_com_tcp_get_connect_port(connection, port);
       }
-      case CL_CT_SSL: {
-         return cl_com_ssl_get_connect_port(connection, port);
-      }
       case CL_CT_UNDEFINED: {
          break;
       }
@@ -1835,9 +1564,6 @@ int cl_com_connection_set_connect_port(cl_com_connection_t *connection, int port
       case CL_CT_TCP:
       case CL_CT_SSL_TLS: {
          return cl_com_tcp_set_connect_port(connection, port);
-      }
-      case CL_CT_SSL: {
-         return cl_com_ssl_set_connect_port(connection, port);
       }
       case CL_CT_UNDEFINED: {
          break;
@@ -3529,10 +3255,6 @@ int cl_com_connection_request_handler_setup(cl_com_connection_t *connection, cl_
             retval = cl_com_tcp_connection_request_handler_setup(connection, only_prepare_service);
             break;
          }
-         case CL_CT_SSL: {
-            retval = cl_com_ssl_connection_request_handler_setup(connection, only_prepare_service);
-            break;
-         }
          case CL_CT_UNDEFINED: {
             retval = CL_RETVAL_UNDEFINED_FRAMEWORK;
             break;
@@ -3585,10 +3307,6 @@ int cl_com_connection_request_handler(cl_com_connection_t *connection, cl_com_co
             retval = cl_com_tcp_connection_request_handler(connection, new_connection);
             break;
          }
-         case CL_CT_SSL: {
-            retval = cl_com_ssl_connection_request_handler(connection, new_connection);
-            break;
-         }
          case CL_CT_UNDEFINED: {
             retval = CL_RETVAL_UNDEFINED_FRAMEWORK;
             break;
@@ -3602,11 +3320,6 @@ int cl_com_connection_request_handler(cl_com_connection_t *connection, cl_com_co
             case CL_CT_SSL_TLS: {
                (*new_connection)->connection_state = CL_CONNECTING;
                (*new_connection)->connection_sub_state = CL_COM_READ_INIT;
-               break;
-            }
-            case CL_CT_SSL: {
-               (*new_connection)->connection_state = CL_ACCEPTING;
-               (*new_connection)->connection_sub_state = CL_COM_ACCEPT_INIT;
                break;
             }
             case CL_CT_UNDEFINED: {
@@ -3654,9 +3367,6 @@ int cl_com_connection_request_handler_cleanup(cl_com_connection_t *connection) {
          case CL_CT_TCP:
          case CL_CT_SSL_TLS: {
             return cl_com_tcp_connection_request_handler_cleanup(connection);
-         }
-         case CL_CT_SSL: {
-            return cl_com_ssl_connection_request_handler_cleanup(connection);
          }
          case CL_CT_UNDEFINED: {
             break;
@@ -3735,11 +3445,6 @@ int cl_com_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_com_ha
          case CL_CT_TCP:
          case CL_CT_SSL_TLS: {
             return cl_com_tcp_open_connection_request_handler(poll_handle, handle, handle->connection_list,
-                                                              service_connection,
-                                                              sec_param, usec_rest, select_mode);
-         }
-         case CL_CT_SSL: {
-            return cl_com_ssl_open_connection_request_handler(poll_handle, handle, handle->connection_list,
                                                               service_connection,
                                                               sec_param, usec_rest, select_mode);
          }
@@ -5112,10 +4817,6 @@ int cl_com_connection_complete_accept(cl_com_connection_t *connection, long time
          /* tcp framework does not support this state */
          return CL_RETVAL_OK;
       }
-      case CL_CT_SSL: {
-         return cl_com_ssl_connection_complete_accept(connection, timeout);
-
-      }
       case CL_CT_UNDEFINED: {
          break;
       }
@@ -5141,9 +4842,6 @@ int cl_com_read(cl_com_connection_t *connection, cl_byte_t *message, unsigned lo
       case CL_CT_TCP:
       case CL_CT_SSL_TLS: {
          return cl_com_tcp_read(connection, message, size, only_one_read);
-      }
-      case CL_CT_SSL: {
-         return cl_com_ssl_read(connection, message, size, only_one_read);
       }
       case CL_CT_UNDEFINED: {
          break;
@@ -5173,9 +4871,6 @@ int cl_com_connection_complete_shutdown(cl_com_connection_t *connection) {
          /* tcp framework does not support this state */
          return CL_RETVAL_OK;
       }
-      case CL_CT_SSL: {
-         return cl_com_ssl_connection_complete_shutdown(connection);
-      }
       case CL_CT_UNDEFINED: {
          break;
       }
@@ -5203,9 +4898,6 @@ cl_com_write(cl_com_connection_t *connection, cl_byte_t *message, unsigned long 
       case CL_CT_TCP:
       case CL_CT_SSL_TLS: {
          return cl_com_tcp_write(connection, message, size, only_one_write);
-      }
-      case CL_CT_SSL: {
-         return cl_com_ssl_write(connection, message, size, only_one_write);
       }
       case CL_CT_UNDEFINED: {
          break;

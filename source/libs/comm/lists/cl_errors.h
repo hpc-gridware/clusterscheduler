@@ -179,15 +179,14 @@
 #define CL_RETVAL_UNKNOWN_PARAMETER                (CL_RETVAL_START_ID + 124)   ///< Parameter not found
 /** @warning Has no case in #cl_get_error_text, so a caller that hits it is
  *           told `"undefined commlib error code"` and nothing more. It is
- *           returned from eight places - `cl_tcp_framework.cc`,
- *           `cl_ssl_framework.cc` and `cl_commlib.cc` - whenever `dup()` on a
- *           socket fails.
+ *           returned by `cl_tcp_framework.cc` and `cl_commlib.cc` whenever
+ *           `dup()` on a socket fails.
  */
 #define CL_RETVAL_DUP_SOCKET_FD_ERROR              (CL_RETVAL_START_ID + 125)
 
 /** @warning Has no case in #cl_get_error_text either, same consequence.
- *           Returned by `cl_ssl_framework.cc` when the OpenSSL library path
- *           cannot be determined.
+ *           No longer returned anywhere; the code is kept so that the numeric
+ *           values of the codes around it do not shift.
  */
 #define CL_RETVAL_SSL_CANT_GET_LIB_PATH            (CL_RETVAL_START_ID + 126)
 

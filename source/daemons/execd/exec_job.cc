@@ -443,7 +443,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    const char *binary_path = ocs::Bootstrap::get_binary_path();
    const char *admin_user = ocs::Bootstrap::get_admin_user();
    const char *masterhost = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
-   bool csp_mode = false;
    bool tls_mode = false;
    sigset_t sigset, sigset_oset;
    struct passwd pw_struct;
@@ -1894,10 +1893,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    /* should the addgrp-id be used to kill processes? */
    fprintf(fp, "enable_addgrp_kill=%d\n", (int) mconf_get_enable_addgrp_kill());
 
-   if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_CSP)) {
-      csp_mode = true;
-   }
-   fprintf(fp, "csp=%d\n", (int) csp_mode);
    if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_TLS)) {
       tls_mode = true;
    }

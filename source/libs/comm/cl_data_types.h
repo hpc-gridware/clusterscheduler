@@ -103,7 +103,6 @@ typedef enum cl_global_settings_params_def {
 typedef enum cl_framework_def {
    CL_CT_UNDEFINED = 0,   ///< Unset
    CL_CT_TCP,             ///< Plain TCP, `cl_tcp_framework.cc`
-   CL_CT_SSL,             ///< The older SSL framework, `cl_ssl_framework.cc`
    CL_CT_SSL_TLS          ///< The newer SSL/TLS framework
 } cl_framework_t;
 
@@ -345,10 +344,6 @@ typedef struct cl_debug_client_setup_type {
  * Created with `cl_com_create_ssl_setup()`, copied with
  * `cl_com_dup_ssl_setup()`, released with `cl_com_free_ssl_setup()`.
  *
- * Two generations of members live here side by side: the `SECURE` block is
- * the older SSL framework, the `OCS_WITH_OPENSSL` block the newer one. Which
- * is compiled depends on how the tree was built.
- *
  * @note The comment that used to stand here explained
  *       #cl_ssl_cert_mode_t by giving two branches with **identical**
  *       contents - `if PEM_FILE` and `else` said the same thing - so it
@@ -361,18 +356,6 @@ typedef struct cl_debug_client_setup_type {
 typedef struct cl_ssl_setup_type {
    cl_ssl_cert_mode_t ssl_cert_mode;   ///< Whether the members below are file names or PEM data
    cl_ssl_method_t ssl_method;         ///< Passed to `SSL_CTX_new()`
-#if defined(SECURE)
-   char *ssl_CA_cert_pem_file;   ///< CA certificate
-   char *ssl_CA_key_pem_file;    ///< Private key of the CA. @warning Not used
-   char *ssl_cert_pem_file;      ///< Our certificate
-   char *ssl_key_pem_file;       ///< Our key
-   char *ssl_rand_file;          ///< Entropy file, used when `RAND_status()` reports the pool is not seeded
-   char *ssl_reconnect_file;     ///< Reconnect data. @warning Not used
-   char *ssl_crl_file;           ///< Certificate revocation list
-   unsigned long ssl_refresh_time;   ///< How long a service keeps a key alive. @warning Not used
-   char *ssl_password;           ///< Password for an encrypted key file. @warning Not used
-   cl_ssl_verify_func_t ssl_verify_func;   ///< Application hook checking the peer's name
-#endif
 #if defined(OCS_WITH_OPENSSL)
    char *ssl_client_cert_file;   ///< Client certificate used to verify the peer, if set
    char *ssl_server_cert_file;   ///< Server certificate identifying us
