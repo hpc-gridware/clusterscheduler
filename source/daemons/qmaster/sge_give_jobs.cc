@@ -372,7 +372,6 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, uint64_t gdi_session) 
    int failed = CL_RETVAL_OK;
    lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
 
-   const char *sge_root = bootstrap_get_sge_root();
    bool simulate_execd = mconf_get_simulate_execds();
 
    gdil = saved_gdil = lCreateList("", JG_Type);
@@ -411,20 +410,9 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, uint64_t gdi_session) 
          }
       }
 
-      /*
-      ** get credential for job
-      */
-      if (mconf_get_do_credentials()) {
-         cache_sec_cred(sge_root, jep, hostname);
-      }
-
       lDechainElem(saved_gdil, gdil_ep);
       lAppendElem(gdil, gdil_ep);
 
-      /*
-      ** security hook
-      */
-      tgt2cc(jep, hostname);
       {
          uint32_t dummymid = 0;
          sge_pack_buffer send_pb;
@@ -440,11 +428,6 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, uint64_t gdi_session) 
          clear_packbuffer(&send_pb);
       }
       MONITOR_MESSAGES_OUT(monitor);
-      /*
-      ** security hook
-      */
-      tgtcclr(jep, hostname);
-
       if (failed != CL_RETVAL_OK) {
          /* we failed to send the job to the execd */
          ERROR(MSG_COM_SENDJOBTOHOST_US, lGetUlong(jep, JB_job_number), hostname);
@@ -469,7 +452,6 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
    sge_pack_buffer pb;
    lListElem *tmpjep, *qep, *tmpjatep = nullptr;
    unsigned long last_heard_from;
-   const char *sge_root = bootstrap_get_sge_root();
    const char *myprogname = component_get_component_name();
    bool simulate_execd = mconf_get_simulate_execds();
    lDescr *rdp = nullptr;
@@ -565,13 +547,6 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
    sge_free(&rdp);
 
    /*
-   ** get credential for job
-   */
-   if (mconf_get_do_credentials()) {
-      cache_sec_cred(sge_root, tmpjep, rhost);
-   }
-
-   /*
    ** remove some data not used at execd side
    */
    lSetList(tmpjep, JB_ja_template, nullptr);
@@ -584,11 +559,6 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
    pack_job_delivery(&pb, tmpjep);
    lFreeElem(&tmpjep);
 
-   /*
-   ** security hook
-   */
-   tgt2cc(jep, rhost);
-
    if (simulate_execd) {
       failed = CL_RETVAL_OK;
    } else {
@@ -596,11 +566,6 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
       failed = ocs::gdi::ClientServerBase::gdi_send_message_pb(0, to_cstr(EXECD), 1, rhost,
                                                            master ? ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION : ocs::gdi::ClientServerBase::TAG_SLAVE_ALLOW, &pb, &dummymid);
    }
-
-   /*
-   ** security hook
-   */
-   tgtcclr(jep, rhost);
 
    clear_packbuffer(&pb);
 
@@ -1962,9 +1927,6 @@ sge_finish_ja_task(const char *sge_root, lListElem *job, uint32_t job_id, lListE
 
    if (job_done) {
       release_successor_jobs(job, gdi_session);
-
-      // security hook
-      delete_credentials(sge_root, job);
 
       // release the SUSER slot the JB held
       const lList *master_suser_list = *ocs::DataStore::get_master_list(SGE_TYPE_SUSER);

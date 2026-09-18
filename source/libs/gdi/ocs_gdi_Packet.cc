@@ -296,14 +296,6 @@ bool ocs::gdi::Packet::execute_external(lList **answer_list) {
    int commlib_error;
    uint32_t message_id;
 
-#ifdef KERBEROS
-   /* request that the Kerberos library forward the TGT */
-   if (ret && packet->first_task->target == SGE_JB_LIST &&
-       packet->first_task->command == SGE_GDI_ADD ) {
-      krb_set_client_flags(krb_get_client_flags() | KRB_FORWARD_TGT);
-      krb_set_tgt_id(packet->id);
-   }
-#endif
 
     /*
      * Now we will execute the JSV script if we got a job submission request.
@@ -534,14 +526,6 @@ bool ocs::gdi::Packet::execute_external(lList **answer_list) {
       }
    }
 
-#ifdef KERBEROS
-   /* clear the forward TGT request */
-   if (ret && state->first->target == SGE_JB_LIST &&
-       packet->first_task->command == SGE_GDI_ADD) {
-      krb_set_client_flags(krb_get_client_flags() & ~KRB_FORWARD_TGT);
-      krb_set_tgt_id(0);
-   }
-#endif
 
    delete ret_packet;
    DRETURN(ret);

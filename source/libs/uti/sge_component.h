@@ -46,13 +46,10 @@
 #define PE_HOSTFILE     "pe_hostfile"   ///< name of the file listing a parallel job's hosts
 
 /// Names of the security modes, indexed by @ref ocs::Bootstrap::bs_sec_mode_t, with `"NONE"` last
-constexpr std::array<const char*, 7> sec_mode_names = {
+constexpr std::array<const char*, 4> sec_mode_names = {
    "tls",
    "munge",
    "afs",
-   "csp",
-   "dce",
-   "kerberos",
    NONE_STR
 };
 

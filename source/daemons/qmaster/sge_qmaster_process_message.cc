@@ -162,17 +162,6 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
                ERROR(MSG_MESSAGE_FROM_DAEMON_WRONG_UID_SSUU, message->snd_host, message->snd_name, message->buf.uid, component_get_uid());
             }
          }
-#if defined(SECURE)
-         // accept only ack requests from admin or root
-         const char *admin_user = bootstrap_get_admin_user();
-         const char *component = component_get_component_name();
-         if (!sge_security_verify_unique_identifier(true, admin_user, component, 0,
-                                                    message->snd_host, message->snd_name, message->snd_id)) {
-            ERROR("ACK request from unexpected sender");
-            lFreeElem(&ack);
-            DRETURN_VOID;
-         }
-#endif
       } else if (ack_tag == ACK_EVENT_DELIVERY) {
          // TODO: here we should check if the event belongs to the user who sent the request
          ;
@@ -411,7 +400,6 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       packet->gdi_session = ocs::SessionManager::get_session_id(packet->user);
    }
 
-   // check CSP mode if enabled
    if (local_ret) {
       if (!sge_security_verify_user(packet->host, packet->commproc, packet->commproc_id, packet->user)) {
          CRITICAL(MSG_SEC_CRED_SSSI, packet->user, packet->host, packet->commproc, (int) packet->commproc_id);
@@ -597,15 +585,6 @@ do_report_request(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *
       }
    }
 
-#if defined(SECURE)
-   /* Load reports are only accepted from admin/root user */
-   const char *admin_user = bootstrap_get_admin_user();
-   const char *myprogname = component_get_component_name();
-   if (!sge_security_verify_unique_identifier(true, admin_user, myprogname, 0,
-                                              aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
-      DRETURN_VOID;
-   }
-#endif
 
    lList *rep = nullptr;
    if (cull_unpack_list(&(aMsg->buf), &rep)) {

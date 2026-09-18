@@ -54,7 +54,6 @@
 #include "msg_common.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_bootstrap_files.h"
-#include "uti/sge_csp_path.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -78,7 +77,6 @@
 
 
 static void gdi_default_exit_func(int i) {
-   sge_security_exit(i);
    cl_com_cleanup_commlib();
    component_ts0_destroy();
 }
@@ -758,15 +756,6 @@ ocs::gdi::ClientBase::setup(ProgName component_id, ThreadName thread_id, lList *
       DRETURN(AE_ERROR);
    }
 
-#ifdef SECURE
-   gdi_data_set_csp_path_obj(sge_csp_path_class_create(gdi_data_get_error_handle()));
-   if (!gdi_data_get_csp_path_obj()) {
-      // EB: TODO: I18N + replace by an end user error message
-      CRITICAL("sgdi_data_get_csp_path_obj() failed");
-      answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_CRITICAL);
-      DRETURN(AE_ERROR);
-   }
-#endif
 
    component_set_exit_func(gdi_default_exit_func);
 

@@ -1507,11 +1507,11 @@ bool ijs_was_escape_disconnect() {
  * restrict qrsh to a firewall-friendly port range.
  *
  * @param communication_framework Communication framework; controls whether
- *                                 TLS (CSP) is used.
+ *                                 TLS is used.
  * @param hostname                 Hostname of the execution host the shepherd
  *                                 will connect back to.
  * @param username                 Owner of the TLS certificates; used only
- *                                 when CSP mode is active, otherwise ignored.
+ *                                 when TLS is active, otherwise ignored.
  * @param port_range               RN_Type CULL range list of ports to try, or
  *                                 nullptr/empty for an OS-assigned ephemeral
  *                                 port.  Supports N-M and N-M:S (step) syntax.

@@ -41,23 +41,6 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_security.h"
 
-#ifdef KERBEROS
-#   include "krb_lib.h"
-#endif
 
-#ifdef KERBEROS
-int kerb_job(lListElem *jelem, struct dispatch_entry *de);
-#endif
 
-void tgt2cc(lListElem *jep, const char *rhost);
-void tgtcclr(lListElem *jep, const char *rhost);
 int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, lList **alpp);
-void delete_credentials(const char *sge_root, lListElem *jep);
-bool cache_sec_cred(const char *sge_root, lListElem *jep, const char *rhost);
-int store_sec_cred(const char *sge_root, lListElem *jep, int do_authentication, lList **alpp);
-int store_sec_cred2(const char* sge_root, 
-                    const char* unqualified_hostname, 
-                    lListElem *jelem, 
-                    int do_authentication, 
-                    int *general, 
-                    dstring *err_str);

@@ -136,6 +136,8 @@
 #define MSG_UTI_UNKNOWNCOMMUNICATIONPARAM_S     _MESSAGE(49101, _("unknown parameter " SFQ " in communication_params of the bootstrap file - it has no effect"))
 #define MSG_UTI_CANNOTLOCATEATTRIBUTE_SS        _MESSAGE(49102, _("cannot read attribute <" SFN "> from bootstrap file " PFNMAX))
 #define MSG_UTI_CANNOTLOCATEATTRIBUTEMAN_SS     _MESSAGE(49103, _("cannot read attribute <" SFN "> from management.properties file " PFNMAX))
+#define MSG_UTI_SECURITYMODEREMOVED_S           _MESSAGE(49105, _("security mode " SFQ " is no longer supported - use \"tls\" and/or \"munge\" instead"))
+#define MSG_UTI_UNKNOWNSECURITYMODE_S           _MESSAGE(49106, _("unknown security mode " SFQ " in the bootstrap file"))
 #define MSG_UTI_INVALIDADDRESSFORMAT_S          _MESSAGE(49104, _("address_from_hostname format " SFQ " does not hold four %%d and cannot yield an IPv4 address - host names are resolved as usual"))
 
 #define MSG_UTI_SGEROOTNOTADIRECTORY_S          _MESSAGE(49110, _("$SGE_ROOT=" SFN " is not a directory"))

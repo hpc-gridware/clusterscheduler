@@ -39,20 +39,8 @@
 
 #include <string>
 
-void sge_security_exit(int i);
 
-#ifdef SECURE
-/* int 0 on success, -1 on failure */
-int sge_ssl_setup_security_path(const char *progname, const char *username);
-#endif
 
 bool
 sge_security_verify_user(const char *host, const char *commproc, uint32_t id, const char *user);
 
-bool sge_security_verify_unique_identifier(bool check_admin_user, 
-                                           const char* user, 
-                                           const char* progname,
-                                           unsigned long progid, 
-                                           const char* hostname, 
-                                           const char* commproc, 
-                                           unsigned long commid);

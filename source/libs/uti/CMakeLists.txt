@@ -40,7 +40,6 @@ set(LIBRARY_SOURCES
         sge_bootstrap_env.cc
         sge_bootstrap_files.cc
         sge_component.cc
-        sge_csp_path.cc
         sge_dstring.cc
         sge_edit.cc
         sge_err.cc

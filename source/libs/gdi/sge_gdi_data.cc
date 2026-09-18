@@ -37,7 +37,6 @@
  */
 
 #include <cinttypes>
-#include "uti/sge_csp_path.h"
 #include "uti/sge_error_class.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
@@ -74,11 +73,6 @@ typedef struct {
    // retry the client TLS configuration on each re-read of act_qmaster as long
    // as this flag is set.
    bool tls_client_cert_pending;     ///< true while the client TLS certificate still has to be loaded
-   char *ssl_private_key;            ///< path of the client's private key
-   char *ssl_certificate;            ///< path of the client's certificate
-#ifdef SECURE
-   sge_csp_path_class_t *csp_path_obj; ///< the CSP file locations, when that security mode is used
-#endif
 } sge_gdi_ts_t;
 
 // once initializer
@@ -152,18 +146,12 @@ static void
 gdi_data_ts_destroy() {
    DENTER(TOP_LAYER);
 
-#ifdef SECURE
-   sge_csp_path_class_destroy(&ts.csp_path_obj);
-#endif
 
    pthread_mutex_destroy(&ts.mutex);
 
    /* @todo CS-591 don't we have to free all the other attributes as well?
     * char *master_host;
     * uint64_t timestamp_qmaster_file;
-    * char *ssl_private_key;
-    * char *ssl_certificate;
-    * sge_csp_path_class_t *csp_path_obj;
     */
    DRETURN_VOID;
 }
@@ -337,64 +325,3 @@ gdi_data_set_last_commlib_error(int last_commlib_error) {
    tl->last_commlib_error = last_commlib_error;
 }
 
-#ifdef SECURE
-/**
- * @brief Path of the client's TLS private key
- *
- * @return the path; shared, do not free
- */
-const char *
-gdi_data_get_ssl_private_key() {
-   return ts.ssl_private_key;
-}
-
-/**
- * @brief Set the path of the client's TLS private key
- *
- * @param ssl_private_key the path, which is copied
- */
-void
-gdi_data_set_ssl_private_key(const char *ssl_private_key) {
-   ts.ssl_private_key = sge_strdup(ts.ssl_private_key, ssl_private_key);
-}
-
-/**
- * @brief Path of the client's TLS certificate
- *
- * @return the path; shared, do not free
- */
-const char *
-gdi_data_get_ssl_certificate() {
-   return ts.ssl_certificate;
-}
-
-/**
- * @brief Set the path of the client's TLS certificate
- *
- * @param ssl_certificate the path, which is copied
- */
-void
-gdi_data_set_ssl_certificate(const char *ssl_certificate) {
-   ts.ssl_certificate = sge_strdup(ts.ssl_certificate, ssl_certificate);
-}
-
-/**
- * @brief The CSP file locations in use
- *
- * @return the path set, or nullptr when CSP is not configured
- */
-sge_csp_path_class_t *
-gdi_data_get_csp_path_obj() {
-   return ts.csp_path_obj;
-}
-
-/**
- * @brief Set the CSP file locations
- *
- * @param csp_path_obj the path set; taken over
- */
-void
-gdi_data_set_csp_path_obj(sge_csp_path_class_t *csp_path_obj) {
-   ts.csp_path_obj = csp_path_obj;
-}
-#endif

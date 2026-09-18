@@ -150,7 +150,6 @@
 
 #define MSG_EXECD_NOSHEPHERD_SSS       _MESSAGE(29108, _("unable to find shepherd executable neither in architecture directory " PFNMAX " nor in " SFN ": " SFN))
 #define MSG_EXECD_NOSHEPHERDWRAP_SS    _MESSAGE(29109, _("unable to find shepherd wrapper command " SFN ": " SFN))
-#define MSG_DCE_NOSHEPHERDWRAP_SS      _MESSAGE(29110, _("unable to find DCE shepherd wrapper command " SFN ": " SFN))
 #define MSG_EXECD_NOCOSHEPHERD_SSS     _MESSAGE(29111, _("unable to find coshepherd executable neither in architecture directory " PFNMAX " nor in " SFN ": " SFN))
 #define MSG_EXECD_AFSCONFINCOMPLETE    _MESSAGE(29112, _("incomplete AFS configuration - set_token_cmd and token_extend_time must be configured"))
 #define MSG_EXECD_NOCREATETOKENFILE_S  _MESSAGE(29113, _("can't create token file: " PFNMAX))

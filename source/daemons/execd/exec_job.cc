@@ -396,7 +396,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    dstring cwd_out;
 
    const lList *path_aliases = nullptr;
-   char dce_wrapper_cmd[128];
    bool starting_shepherd_ok = true;
 
 #if COMPILE_DC
@@ -1970,15 +1969,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          DRETURN(-2);
       }
    }
-   else if (mconf_get_do_credentials() && ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE)) {
-      snprintf(dce_wrapper_cmd, sizeof(dce_wrapper_cmd), "/%s/utilbin/%s/starter_cred", sge_root, arch);
-      if (SGE_STAT(dce_wrapper_cmd, &buf)) {
-         snprintf(err_str, err_length, MSG_DCE_NOSHEPHERDWRAP_SS, dce_wrapper_cmd, strerror(errno));
-         sge_free(&pag_cmd);
-         sge_free(&shepherd_cmd);
-         DRETURN(-2);
-      }
-   } else if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_AFS) && pag_cmd &&
+   else if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_AFS) && pag_cmd &&
               strlen(pag_cmd) && strcasecmp(pag_cmd, "none")) {
       int fd, len;
       const char *cp;
@@ -2169,21 +2160,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       sge_close_all_fds(keep_open, 3);
    }
 
-   /*
-    * set KRB5CCNAME so shepherd assumes user's identify for
-    * access to DFS or AFS file systems
-    */
-   if (starting_shepherd_ok) {
-      if ((ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE) ||
-           ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_KERBEROS)) &&
-          lGetString(jep, JB_cred)) {
-
-         char ccname[1024];
-         snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_%s_" sge_u32, "sge", job_id);
-         putenv(ccname);
-      }
-   }
-
    if (starting_shepherd_ok) {
       DPRINTF("**********************CHILD*********************\n");
       shepherd_name = SGE_SHEPHERD;
@@ -2201,11 +2177,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          } else {
             execlp(shepherd_cmd, ps_name, "-bg", nullptr);
          }
-      } else if (mconf_get_do_credentials() && ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE)) {
-         DPRINTF("CHILD - About to exec DCE shepherd wrapper job ->%s< under queue -<%s<\n",
-                 lGetString(jep, JB_job_name),
-                 lGetString(master_q, QU_full_name));
-         execlp(dce_wrapper_cmd, ps_name, nullptr);
       } else if (!ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_AFS) || !pag_cmd ||
                  !strlen(pag_cmd) || !strcasecmp(pag_cmd, "none")) {
          DPRINTF("CHILD - About to exec ->%s< under queue -<%s<\n",

@@ -364,8 +364,7 @@ int japi_init_mt(dstring *diag) {
 
    /* current major assumptions are
       - code is not compiled with -DCRYPTO
-      - code is not compiled with -DKERBEROS
-      - neither AFS nor DCE/KERBEROS security may be used */
+      - AFS security may not be used */
 
    /* as long as signal handling is not restored japi_init_mt() is
       good place to install library signal handling */

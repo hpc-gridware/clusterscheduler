@@ -1030,20 +1030,6 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   /*
-   ** security hook
-   **
-   ** Execute command to store the client's DCE or Kerberos credentials.
-   ** This also creates a forwardable credential for the user.
-   */
-   if (mconf_get_do_credentials()) {
-      const char *sge_root = bootstrap_get_sge_root();
-
-      if (store_sec_cred(sge_root, jep, mconf_get_do_authentication(), alpp) != 0) {
-         DRETURN(STATUS_EUNKNOWN);
-      }
-   }
-
    job_suc_pre(jep);
 
    job_suc_pre_ad(jep);

@@ -105,14 +105,6 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
       lListElem *job, *ja_task;
       lList *answer_list = nullptr;
 
-#if defined(SECURE)
-      const char *admin_user = bootstrap_get_admin_user();
-      const char *progname = component_get_component_name();
-      if (!sge_security_verify_unique_identifier(true, admin_user, progname, 0,
-                                            aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
-         DRETURN(0);
-      }
-#endif
 
       if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &job, JB_Type)) {
          answer_list_output(&answer_list);
@@ -354,25 +346,6 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
          }
       }
    }
-
-   /*
-   ** security hook
-   **
-   ** Execute command to store the client's DCE or Kerberos credentials.
-   ** This also creates a forwardable credential for the user.
-   */
-   if (mconf_get_do_credentials()) {
-      const char *sge_root = bootstrap_get_sge_root();
-      const char *unqualified_hostname = component_get_unqualified_hostname();
-
-      if (store_sec_cred2(sge_root, unqualified_hostname, jelem, mconf_get_do_authentication(), &general, &err_str) != 0) {
-         goto Error;
-      }
-   }
-
-#ifdef KERBEROS
-   kerb_job(jelem, de);
-#endif
 
 #if defined (OCS_WITH_SYSTEMD)
    // Store the slice name before the ja_task is spooled below. The slice of a
@@ -635,17 +608,9 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    char new_task_id[1024];
    lList *gdil = nullptr;
    int tid = 0;
-   const char *progname = component_get_component_name();
    const char *qualified_hostname = component_get_qualified_hostname();
    const char *unqualified_hostname = component_get_unqualified_hostname();
 
-#ifdef KERBEROS
-   if (krb_verify_user(de->host, de->commproc, de->id,
-                       lGetString(petrep, PETR_owner)) < 0) {
-      ERROR(MSG_SEC_KRB_CRED_SSSI, lGetString(petrep, PETR_owner), de->host, de->commproc, de->id);
-      goto Error;
-   }
-#endif /* KERBEROS */
 
    jobid    = lGetUlong(petrep, PETR_jobid);
    jataskid = lGetUlong(petrep, PETR_jataskid);
@@ -655,16 +620,9 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    }
 
 /*
- * Verify that it is actually the job owner starting a pe task:
- * - in CSP mode, we can check against the user certificate
- * - in general we can compare the pe task request owner against the job owner
+ * Verify that it is actually the job owner starting a pe task: compare the
+ * pe task request owner against the job owner.
  */
-   if (!sge_security_verify_unique_identifier(false,
-                                         lGetString(jep, JB_owner), progname, 0,
-                                         host, commproc, id)) {
-      /* Error message is generated in sge_security_verify_unique_identifier */
-      goto Error;
-   }
    if (strcmp(lGetString(jep, JB_owner), lGetString(petrep, PETR_owner)) != 0) {
       WARNING(MSG_DENIED_PETASKREQUEST_WRONG_USER_SS, lGetString(petrep, PETR_owner), lGetString(jep, JB_owner));
       goto Error;

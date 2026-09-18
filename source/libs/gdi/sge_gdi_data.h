@@ -39,7 +39,8 @@
 
 #include <cinttypes>
 
-#include "uti/sge_csp_path.h"
+#include "uti/sge_error_class.h"
+
 
 void
 gdi_data_mt_done();
@@ -80,22 +81,3 @@ gdi_data_get_tls_client_cert_pending();
 void
 gdi_data_set_tls_client_cert_pending(bool tls_client_cert_pending);
 
-#ifdef SECURE
-const char *
-gdi_data_get_ssl_private_key();
-
-void
-gdi_data_set_ssl_private_key(const char *ssl_private_key);
-
-const char *
-gdi_data_get_ssl_certificate();
-
-void
-gdi_data_set_ssl_certificate(const char *ssl_certificate);
-
-sge_csp_path_class_t *
-gdi_data_get_csp_path_obj();
-
-void
-gdi_data_set_csp_path_obj(sge_csp_path_class_t *csp_path_obj);
-#endif

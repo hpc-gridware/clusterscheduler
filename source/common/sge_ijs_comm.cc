@@ -508,7 +508,7 @@ int comm_cleanup_lib(dstring *err_msg) {
  * Either start a comm server or connect to a running comm server.
  *
  * @param b_server If true, a comm server is started, if false a connection to a server is established.
- * @param communication_framework which communication framework to use (TCP, CSP, SSL_TLS)
+ * @param communication_framework which communication framework to use (TCP or SSL_TLS)
  * @param this_component A unique name for this end of the connection.
  * @param port In case of server: Port on which the server should listen. If this is 0, a free port is selected. In case of client: Port on which the server listens.
  * @param other_component The unique name of the other end of the connection.
@@ -567,7 +567,7 @@ int comm_open_connection(bool b_server,
          }
       }
       if (ret_val == COMM_RETVAL_OK) {
-         // Set up a dummy ssl_config (from CSP) to pass cert and key path to commlib
+         // Set up a dummy ssl_config to pass cert and key path to commlib
          // TLS: We must pass different certs to commlib:
          // - if we are server, this is the qrsh commlib server, we keep certificate and key in memory
          // - if we are client, this is the sge_shepherd connecting to qrsh, we read from file

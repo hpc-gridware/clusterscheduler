@@ -156,18 +156,22 @@ ocs::Bootstrap::set_security_mode(const char *new_security_mode) {
          security_modes[BS_SEC_MODE_MUNGE] = true;
       } else if (strcmp(mode, "afs") == 0) {
          security_modes[BS_SEC_MODE_AFS] = true;
-      } else if (strcmp(mode, "csp") == 0) {
-         security_modes[BS_SEC_MODE_CSP] = true;
-      } else if (strcmp(mode, "dce") == 0) {
-         security_modes[BS_SEC_MODE_DCE] = true;
-      } else if (strcmp(mode, "kerberos") == 0) {
-         security_modes[BS_SEC_MODE_KERBEROS] = true;
+      } else if (strcmp(mode, "csp") == 0 || strcmp(mode, "dce") == 0 || strcmp(mode, "kerberos") == 0) {
+         // These modes were removed. Refusing to start is deliberate: the
+         // administrator asked for a security mode, so coming up without one
+         // would be worse than not coming up at all.
+         CRITICAL(MSG_UTI_SECURITYMODEREMOVED_S, mode);
+         sge_free_saved_vars(context);
+         sge_exit(1);
       } else if (strcasecmp(mode, NONE_STR) == 0) {
          // "none" is a special case, it means that no security mode is enabled, so we just ignore it
          ;
       } else {
-         // @todo Add error handling
-         DPRINTF("invalid security mode %s\n", mode);
+         // A typo here means the administrator believes the cluster is secured
+         // when it is not, so this is fatal as well.
+         CRITICAL(MSG_UTI_UNKNOWNSECURITYMODE_S, mode);
+         sge_free_saved_vars(context);
+         sge_exit(1);
       }
       // next mode
       mode = sge_strtok_r(nullptr, ",", &context);

@@ -478,9 +478,6 @@ int do_ck_to_do(bool is_qmaster_down) {
    int return_value = 0;
    const char *qualified_hostname = component_get_qualified_hostname();
 
-#ifdef KERBEROS
-   krb_renew_tgts(Master_Job_List);
-#endif
 
    // start jobs if present
    // when job start orders are received, they are not started immediately,

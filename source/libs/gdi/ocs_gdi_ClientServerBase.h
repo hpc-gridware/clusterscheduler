@@ -70,9 +70,6 @@ namespace ocs::gdi {
          TAG_EVENT_CLIENT_EXIT,   ///< an event client is going away
          TAG_FULL_LOAD_REPORT,    ///< qmaster to execd: send a complete load report, not a delta
          TAG_RECONNECT_PREPARE          ///< qmaster → execd: write reconnect.info into a job's active_jobs spool (CS-2143)
-      #ifdef KERBEROS
-         ,TAG_AUTH_FAILURE     ///< Kerberos authentication failed
-      #endif
       };
 
       /**

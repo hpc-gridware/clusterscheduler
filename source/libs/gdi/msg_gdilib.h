@@ -50,14 +50,6 @@
 #define MSG_QSH_QSUBFAILED            _MESSAGE(43001, _("qsub failed"))
 #define MSG_QSUB_CANTSTARTCOMMANDXTOGETTOKENQSUBFAILED_S    _MESSAGE(43002, _("can't start command " SFQ " to get token - qsub failed"))
 #define MSG_QSH_CANTGETCREDENTIALS    _MESSAGE(43004, _("warning: could not get credentials"))
-#define MSG_SEC_KRBAUTHFAILURE        _MESSAGE(43013, _("job " sge_u32 " rejected because authentication failed"))
-#define MSG_SEC_KRBAUTHFAILUREONHOST  _MESSAGE(43014, _("job " sge_u32 " rejected because authentication failed on host " SFN))
-#define MSG_SEC_NOCREDNOBIN_US        _MESSAGE(43017, _("could not get client credentials for job " sge_u32 " - " SFN " binary does not exist"))
-#define MSG_SEC_KRB_CRED_SSSI         _MESSAGE(43018, _("denied: request for user " SFQ " does not match Kerberos credentials for connection <" SFN "," SFN ",%d>"))
-#define MSG_SEC_KRBDECRYPTTGT_US      _MESSAGE(43019, _("could not decrypt TGT for job " sge_u32 "- " SFN))
-#define MSG_SEC_KRBENCRYPTTGT_SSIS    _MESSAGE(43020, _("could not encrypt TGT for client <" SFN "," SFN ",%d> - " SFN))
-#define MSG_SEC_KRBENCRYPTTGTUSER_SUS _MESSAGE(43021, _("could not encrypt TGT for user " SFN ", job " sge_u32 " - " SFN))
-#define MSG_SEC_NOUID_SU              _MESSAGE(43022, _("could not get user ID for " SFN ", job " sge_u32))
 #define MSG_REQUEST_DENIED_FOR_USER_S _MESSAGE(43023, _("request denied for user " SFN))
 #define MSG_ADMIN_REQUEST_DENIED_FOR_USER_S _MESSAGE(43024, _("admin request denied for user " SFN))
 
@@ -122,15 +114,6 @@
 #define MSG_GDI_ENDPOINT_UPTIME_UU           _MESSAGE(43303, _("endpoint is up since " sge_u32 " seconds and has status " sge_u32))
 #define MSG_GDI_CANT_CREATE_HANDLE_TOEXECD_S _MESSAGE(43306, _("can't create handle to execd \"%s\""))
 
-#define MSG_SEC_CAROOTNOTFOUND_S         _MESSAGE(55000, _("CA_ROOT directory " PFQMAX " doesn't exist"))
-#define MSG_SEC_CALOCALROOTNOTFOUND_S    _MESSAGE(55001, _("CA_LOCAL_ROOT directory " PFQMAX " doesn't exist"))
-#define MSG_SEC_CAKEYFILENOTFOUND_S      _MESSAGE(55002, _("CA private key " SFQ " doesn't exist"))
-#define MSG_SEC_CACERTFILENOTFOUND_S     _MESSAGE(55003, _("CA certificate " SFQ " doesn't exist"))
-#define MSG_SEC_USERNOTFOUND_S           _MESSAGE(55007, _("user " SFQ " not found in password database"))
-#define MSG_SEC_KEYFILENOTFOUND_S        _MESSAGE(55004, _("key " SFQ " doesn't exist"))
-#define MSG_SEC_CERTFILENOTFOUND_S       _MESSAGE(55006, _("certificate " SFQ " doesn't exist"))
-#define MSG_SEC_RANDFILENOTFOUND_S       _MESSAGE(55005, _("random data file " PFQMAX " doesn't exist"))
-#define MSG_SEC_CERT_VERIFY_FUNC_NO_VAL  _MESSAGE(55011, _("certificate verify callback function called without value"))
 
 #define MSG_GDI_MASTER_ON_HOST_X_RUNINNG_TERMINATE_S _MESSAGE(55013, _("qmaster on host " SFQ " is still running - terminating"))
 

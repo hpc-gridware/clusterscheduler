@@ -75,11 +75,9 @@ namespace ocs {
          BS_SEC_MODE_TLS,          ///< TLS transport security
          BS_SEC_MODE_MUNGE,        ///< MUNGE authentication
 
-         // we still have code for AFS, CSP, DCE and KERBEROS, but it is probably broken
-         BS_SEC_MODE_AFS,          ///< AFS token handling; legacy, likely broken
-         BS_SEC_MODE_CSP,          ///< certificate security protocol; legacy, likely broken
-         BS_SEC_MODE_DCE,          ///< DCE security; legacy, likely broken
-         BS_SEC_MODE_KERBEROS,     ///< Kerberos security; legacy, likely broken
+         // AFS needs the AFS commands configured in the cluster configuration,
+         // see pag_cmd, set_token_cmd and token_extend_time in sge_conf(5)
+         BS_SEC_MODE_AFS,          ///< AFS token handling
 
          BS_SEC_MODE_NUM_ENTRIES   ///< number of valid modes, and the bitset size
       } bs_sec_mode_t;

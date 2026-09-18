@@ -861,7 +861,6 @@ void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_
    SGE_STRUCT_STAT statbuf;
    lListElem *jep = nullptr, *petep = nullptr, *jatep = nullptr;
    const char *pe_task_id_str; 
-   const char *sge_root = bootstrap_get_sge_root();
    bool do_rm_active_dir = true;
 
    sge_dstring_init(&err_str, err_str_buffer, sizeof(err_str_buffer));
@@ -932,21 +931,6 @@ void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_
       /* use mail list of job instead of tasks one */
       if (jr != nullptr && lGetUlong(jr, JR_state) != JSLAVE) {
          reaper_sendmail(jep, jr);
-      }
-
-      /*
-      ** security hook
-      */
-#ifdef KERBEROS
-      /* destroy credentials cache of job */
-      if (!pe_task_id_str)
-         krb_destroy_forwarded_tgt(job_id);
-#endif
-      /*
-      ** Execute command to delete the client's DCE or Kerberos credentials.
-      */
-      if (mconf_get_do_credentials()) {
-         delete_credentials(sge_root, jep);
       }
 
       /* remove job/task active dir */
@@ -1054,9 +1038,6 @@ void remove_acked_job_exit(uint32_t job_id, uint32_t ja_task_id, const char *pe_
       /*
       ** security hook
       */
-#ifdef KERBEROS
-         krb_destroy_forwarded_tgt(job_id);
-#endif
          sge_get_active_job_file_path(&jobdir, job_id, ja_task_id, pe_task_id, nullptr);
          if (SGE_STAT(sge_dstring_get_string(&jobdir), &statbuf)) {
             ERROR(MSG_SHEPHERD_CANTFINDACTIVEJOBSDIRXFORREAPINGJOBY_SU, sge_dstring_get_string(&jobdir), job_id);
