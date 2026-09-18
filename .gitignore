@@ -16,6 +16,10 @@ cvs_update.*
 local_notes
 .compound-engineering/*.local.yaml
 
+# python byte code caches
+__pycache__/
+*.py[cod]
+
 # clion build
 cmake-build-debug
 cmake-build-release
