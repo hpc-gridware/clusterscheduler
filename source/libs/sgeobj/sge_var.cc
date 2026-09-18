@@ -82,7 +82,7 @@
  *       a non sge library libgdi.so might be executed as user root.
  */
 const char *var_get_sharedlib_path_name() {
-#if defined(LINUX) || defined(SOLARIS) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD)
+#if defined(LINUX) || defined(SOLARIS) || defined(FREEBSD) || defined(NETBSD)
    return "LD_LIBRARY_PATH";
 #elif defined(DARWIN)
    return "DYLD_LIBRARY_PATH";
