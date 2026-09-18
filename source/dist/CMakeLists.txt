@@ -32,5 +32,6 @@ if (INSTALL_SGE_COMMON)
          util
          containerruntimes
          DESTINATION .
-         USE_SOURCE_PERMISSIONS)
+         USE_SOURCE_PERMISSIONS
+         PATTERN "__pycache__" EXCLUDE)
 endif ()
