@@ -6106,11 +6106,15 @@ int sge_parse_qconf(char *argv[]) {
             const char *nodepath = nullptr;
             nodepath = lGetString(argep, STN_name);
             if (nodepath) {
-               show_sharetree_path(ep, nodepath);
+               /* CS-2800: the result decides the exit code. It used to be discarded,
+                * leaving "found" at 0, so the branch below fired on success whenever
+                * -rsstnode was the last option and never fired when one followed.
+                * Accumulate so that a failure on any of several paths is reported. */
+               found |= show_sharetree_path(ep, nodepath);
             }
          }
 
-         if (!found && *(spp+1) == nullptr) {
+         if (found != 0) {
             DRETURN(1);
          }
 
@@ -6199,6 +6203,14 @@ int sge_parse_qconf(char *argv[]) {
          lFreeList(&alp);
 
          ep = lFirstRW(lp);
+
+         /* CS-2800: -bonsai is an alias of -sst and has to report a missing share
+          * tree the same way. Without this it printed nothing at all. */
+         if (!ep) {
+            fprintf(stderr, "%s\n", MSG_TREE_NOSHARETREE);
+            spp++;
+            continue;
+         }
 
          show_sharetree(ep, nullptr);
 
