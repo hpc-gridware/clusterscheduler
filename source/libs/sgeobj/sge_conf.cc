@@ -466,22 +466,6 @@ struct qmaster_params_t {
 };
 static qmaster_params_t qmaster_conf;
 
-/// Settings #merge_configuration accepts in `qmaster_params` and in
-/// `execd_params` alike
-///
-/// They are restored once, before the first of the two loops. Giving them to
-/// either #qmaster_params_t or #execd_params_t would break them: a reset per
-/// string would let the second loop discard what the first one had parsed.
-/// Otherwise the same rule as everywhere else -- the default lives at the
-/// member and nowhere else.
-struct security_params_t {
-   /// `NO_SECURITY` (stored inverted) -- exchange credentials with the clients
-   bool do_credentials = true;
-   /// `NO_AUTHENTICATION` (stored inverted) -- authenticate the client of every request
-   bool do_authentication = true;
-};
-static security_params_t security_conf;
-
 /*
  * notify_kill_default and notify_susp_default
  *       0  -> use the signal type stored in notify_kill and notify_susp
@@ -1129,10 +1113,6 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
       // always equal and removing ENABLE_MTRACE would never reach muntrace().
       qmaster_conf = {};
 
-      // accepted in qmaster_params and execd_params alike, so it is reset here,
-      // before the first of the two loops -- see security_params_t
-      security_conf = {};
-
       for (s=sge_strtok_r(qmaster_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
          if (parse_bool_param(s, "FORBID_RESCHEDULE", &qmaster_conf.forbid_reschedule)) {
             continue;
@@ -1244,16 +1224,6 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
          }
          if (!strncasecmp(s, "MAX_DYN_EC", sizeof("MAX_DYN_EC")-1)) {
             qmaster_conf.max_dynamic_event_clients = atoi(&s[sizeof("MAX_DYN_EC=")-1]);
-            continue;
-         }
-         if (parse_bool_param(s, "NO_SECURITY", &security_conf.do_credentials)) {
-            /* reversed logic */
-            security_conf.do_credentials = security_conf.do_credentials ? false : true;
-            continue;
-         }
-         if (parse_bool_param(s, "NO_AUTHENTICATION", &security_conf.do_authentication)) {
-            /* reversed logic */
-            security_conf.do_authentication = security_conf.do_authentication ? false : true;
             continue;
          }
          if (parse_bool_param(s, "DISABLE_AUTO_RESCHEDULING", &qmaster_conf.disable_reschedule)) {
@@ -1413,21 +1383,6 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
       for (s=sge_strtok_r(execd_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
          if (parse_bool_param(s, "USE_QIDLE", &execd_conf.use_qidle)) {
             continue;
-         }
-         if (progid == EXECD) {
-            if (parse_bool_param(s, "NO_SECURITY", &security_conf.do_credentials)) {
-               /* reversed logic */
-               security_conf.do_credentials = security_conf.do_credentials ? false : true;
-               continue;
-            }
-            if (parse_bool_param(s, "NO_AUTHENTICATION", &security_conf.do_authentication)) {
-               /* reversed logic */
-               security_conf.do_authentication = security_conf.do_authentication ? false : true;
-               continue;
-            }
-            if (parse_bool_param(s, "DO_AUTHENTICATION", &security_conf.do_authentication)) {
-               continue;
-            }
          }
          {
             if (strncasecmp(s, "KEEP_ACTIVE", sizeof("KEEP_ACTIVE")-1) == 0) {
@@ -3264,48 +3219,6 @@ bool mconf_get_forbid_apperror() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = qmaster_conf.forbid_apperror;
-
-   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(ret);
-}
-
-/**
- * @brief The `do_credentials` setting of the master configuration
- *
- * Takes the master configuration read lock, so the value is a consistent
- * snapshot even while a new configuration is being applied.
- *
- * @return the configured value
- */
-bool mconf_get_do_credentials() {
-   DENTER(BASIS_LAYER);
-
-   bool ret;
-
-   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-
-   ret = security_conf.do_credentials;
-
-   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(ret);
-}
-
-/**
- * @brief The `do_authentication` setting of the master configuration
- *
- * Takes the master configuration read lock, so the value is a consistent
- * snapshot even while a new configuration is being applied.
- *
- * @return the configured value
- */
-bool mconf_get_do_authentication() {
-   DENTER(BASIS_LAYER);
-
-   bool ret;
-
-   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-
-   ret = security_conf.do_authentication;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);

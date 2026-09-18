@@ -172,8 +172,6 @@ bool mconf_is_monitor_message();
 bool mconf_get_use_qidle();
 bool mconf_get_forbid_reschedule();
 bool mconf_get_forbid_apperror();
-bool mconf_get_do_credentials();
-bool mconf_get_do_authentication();
 bool mconf_get_acct_reserved_usage();
 bool mconf_get_sharetree_reserved_usage();
 keep_active_t mconf_get_keep_active();
