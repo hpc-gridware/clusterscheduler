@@ -182,6 +182,21 @@ namespace ocs {
        */
       virtual void report_exec_binding_list_node(std::ostream &os, const char *name, const char *value) = 0;
 
+      /** @brief Begin the resource maps the reservation holds
+       * @param os stream to write to
+       */
+      virtual void report_granted_resource_list_start(std::ostream &os) = 0;
+      /** @brief End the resource maps the reservation holds
+       * @param os stream to write to
+       */
+      virtual void report_granted_resource_list_finish(std::ostream &os) = 0;
+      /** @brief Report the instances of one resource map held on one host
+       * @param os stream to write to
+       * @param name the host
+       * @param value the map and the identifiers granted of it, "gpu=2(gpu0 gpu0)"
+       */
+      virtual void report_granted_resource_list_node(std::ostream &os, const char *name, const char *value) = 0;
+
       /** @brief Begin the granted parallel environment
 
        * @param os stream to write to

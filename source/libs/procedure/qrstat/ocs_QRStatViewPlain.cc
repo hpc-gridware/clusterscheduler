@@ -327,6 +327,40 @@ ocs::QRStatViewPlain::report_exec_binding_list_node(std::ostream &os, const char
 }
 
 void
+ocs::QRStatViewPlain::report_granted_resource_list_start(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   if (!show_summary) {
+      first_granted_resource = true;
+   }
+   DRETURN_VOID;
+}
+
+void
+ocs::QRStatViewPlain::report_granted_resource_list_finish(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   if (!show_summary && !first_granted_resource) {
+      os << "\n";
+   }
+   DRETURN_VOID;
+}
+
+void
+ocs::QRStatViewPlain::report_granted_resource_list_node(std::ostream &os, const char *name, const char *value) {
+   DENTER(TOP_LAYER);
+   if (!show_summary) {
+      // the label on the first line only, the rest indented to the same column
+      if (first_granted_resource) {
+         os << std::format("{:<30.30} ", "granted_resources_list");
+         first_granted_resource = false;
+      } else {
+         os << "\n" << std::format("{:<30.30} ", "");
+      }
+      os << name << ": " << value;
+   }
+   DRETURN_VOID;
+}
+
+void
 ocs::QRStatViewPlain::report_granted_parallel_environment_start(std::ostream &os) {
    DENTER(TOP_LAYER);
    if (!show_summary) {

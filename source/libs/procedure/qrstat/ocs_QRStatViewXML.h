@@ -62,6 +62,9 @@ namespace ocs {
       void report_exec_binding_list_start(std::ostream &os) override;
       void report_exec_binding_list_finish(std::ostream &os) override;
       void report_exec_binding_list_node(std::ostream &os, const char *name, const char *value) override;
+      void report_granted_resource_list_start(std::ostream &os) override;
+      void report_granted_resource_list_finish(std::ostream &os) override;
+      void report_granted_resource_list_node(std::ostream &os, const char *name, const char *value) override;
       void report_granted_parallel_environment_start(std::ostream &os) override;
       void report_granted_parallel_environment_finish(std::ostream &os) override;
       void report_granted_parallel_environment_node(std::ostream &os, const char *name, const char *slots_range) override;

@@ -52,6 +52,7 @@
 
 #include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_schedd_conf.h"
@@ -1209,11 +1210,43 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       DRETURN(result);
    }
 
-   if (result == DISPATCH_OK) {
+   // The granted resource list carries the resource map instances into the booking, and a
+   // reservation has to book them as much as a job which starts: a reservation which held an
+   // amount and no instances would let a later job take the very instances it is waiting for,
+   // and the job would find the constraint unsatisfiable when its time came. DISPATCH_NOT_AT_TIME
+   // means a reservation was found, so a.gdil is the reserved assignment and a.start its time.
+   if (result == DISPATCH_OK || result == DISPATCH_NOT_AT_TIME) {
       // create the granted resource list containing all granted consumables
       // including RSMAPs and the info which RSMAP ids were granted
-      add_granted_resource_list(&a, ja_task, job, host_list);
+      if (!add_granted_resource_list(&a, ja_task, job, host_list)) {
+         // A resource map could not be granted on a host which matching had selected - only a
+         // resource map reaches this, every other consumable is debited from the request and
+         // has nothing to grant. Matching and booking have therefore disagreed about the same
+         // data, which is a fault in the scheduler and not a host which filled up.
+         //
+         // The task is not started. It used to be, with whatever could be granted: for a
+         // resource map that means the instance ids, so the job would run with SGE_HGR_<name>
+         // empty and no device isolation, holding a card the accounting says it holds and the
+         // system never gave it. Leaving the job pending is the lesser fault, and the reason is
+         // on the job (see gru_report_booking_failure) rather than only in the messages file.
+         //
+         // A reservation which cannot be given its instances is simply not made. The same
+         // answer serves: DISPATCH_NEVER_JOB puts the job aside for this run, and because the
+         // reservation is abandoned rather than recorded, nreservation is not spent on it.
+         // Rejecting the whole category would be wrong here - another job in it may well
+         // reserve, on another host or at another time.
+         //
+         // Nothing is committed at this point - the start order is built below and the
+         // resources are debited after it - so returning here leaves the cluster as it was.
+         // The partially filled list is taken off the task so that a later run does not find
+         // it.
+         lSetList(ja_task, JAT_granted_resources_list, nullptr);
+         assignment_release(&a);
+         DRETURN(DISPATCH_NEVER_JOB);
+      }
+   }
 
+   if (result == DISPATCH_OK) {
       /* in SGEEE we must account for job tickets on hosts due to parallel jobs */
       {
          double job_tickets_per_slot;

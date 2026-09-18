@@ -705,7 +705,7 @@
 #define MSG_REQLIMIT_NOTSUPPORTED                  _MESSAGE(33978, _("gdi_request_limits are not supported in Open Cluster Scheduler."))
 #define MSG_SGETEXT_BINDING_NOT_AVAILABLE          _MESSAGE(33979, _("-bsort, -bstart and -bstop options are not available in OCS. Request a demo license of GCS to use these options."))
 #define MSG_JOB_ALREADYFINISHED_NOMOD_U            _MESSAGE(33980, _("job " sge_u32 " is already finished; modification requests are not applied"))
-#define MSG_JOB_CANNOTBOOKRESOURCE_SSUU            _MESSAGE(33981, _("cannot book resource " SFQ " on host " SFQ " for job " sge_u32 "." sge_u32 ", the job is started without it"))
+#define MSG_JOB_CANNOTBOOKRESOURCE_SSUU            _MESSAGE(33981, _("cannot book resource " SFQ " on host " SFQ " for job " sge_u32 "." sge_u32 ", the task is not started"))
 
 // ocs_Matcher.cc -- hostname patterns in host groups (CS-2680).
 // Ids 33730-33759 are reserved for this feature; the work packages take them in
@@ -752,5 +752,7 @@
 #define MSG_HGRP_RESERVED_NOSEED_S             _MESSAGE(33997, _("can't write reserved host group " SFQ " to the spool area"))
 #define MSG_HGRP_RESERVED_NESTED_SSS           _MESSAGE(33998, _("denied: host " SFQ " is not a direct member of " SFQ " but is contained in " SFN "; use \"qconf -mhgrp\" to change the nesting"))
 #define MSG_HGRP_RESERVED_NOSYNC_S             _MESSAGE(33999, _("could not update the reserved host group " SFQ " from the execution host list; it is left unchanged"))
+
+#define MSG_AR_CANNOTNAMERSMAPIDS_SSU              _MESSAGE(34001, _("cannot name the instances of resource map " SFQ " on host " SFQ " which an advance reservation was granted (" sge_u32 ")"))
 
 // clang-format on

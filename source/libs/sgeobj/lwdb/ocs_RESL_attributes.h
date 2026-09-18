@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2026 HPC-Gridware GmbH
+ *  Copyright 2024-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -43,8 +43,7 @@ enum {
    RESL_id_instance,   ///< ID Instance
    RESL_pe_task_id,   ///< PE Task ID
    RESL_amount,   ///< Resource Amount
-   RESL_properties,   ///< Resource Properties
-   RESL_utilization   ///< Resource Utilization
+   RESL_properties   ///< Resource Properties
 };
 
 /** @brief The attribute ids of RESL, terminated by ocs::AttributeStatic::END_OF_ATTRIBUTES
@@ -57,7 +56,6 @@ constexpr const int RESL_Type[] = {
    RESL_pe_task_id,
    RESL_amount,
    RESL_properties,
-   RESL_utilization,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -70,8 +68,7 @@ constexpr const int RESL_Type[] = {
    {RESL_id_instance, "RESL_id_instance", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {RESL_pe_task_id, "RESL_pe_task_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {RESL_amount, "RESL_amount", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
-   {RESL_properties, "RESL_properties", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
-   {RESL_utilization, "RESL_utilization", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
+   {RESL_properties, "RESL_properties", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

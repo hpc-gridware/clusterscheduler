@@ -65,6 +65,8 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_grantedres.h"
+#include "sgeobj/ocs_GrantedResources.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_ja_task.h"
@@ -72,6 +74,7 @@
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_advance_reservation.h"
+#include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/sge_str.h"
 
 #include "debit.h"
@@ -275,6 +278,268 @@ static uint64_t utilization_endtime(uint64_t start, uint64_t duration) {
 }
 
 /**
+ * @brief set the instances a diagram entry carries, from a previous entry plus or minus a change
+ *
+ * The resource map counterpart of the topology string a diagram entry carries for core
+ * bindings: an entry says how much of each identifier is in use from its time onwards, and an
+ * entry is built from the one before it plus what starts there, or minus what ends there.
+ *
+ * An identifier which falls to nothing is dropped rather than kept at zero, so that two entries
+ * describing the same state compare equal and utilization_normalize() can merge them.
+ *
+ * @param rde      the diagram entry to fill
+ * @param previous the instances in use up to this point, may be nullptr
+ * @param change   the instances starting or ending here
+ * @param add      true when they start here, false when they end here
+ */
+static void
+utilization_rsmap_set(lListElem *rde, const lList *previous, const lList *change, bool add) {
+   lList *ids = (previous != nullptr) ? lCopyList("rsmap_inuse", previous) : nullptr;
+
+   const lListElem *ep;
+   for_each_ep (ep, change) {
+      const char *id = lGetString(ep, RESL_value);
+      const uint32_t amount = lGetUlong(ep, RESL_amount);
+
+      lListElem *dst = lGetElemStrRW(ids, RESL_value, id);
+      if (dst == nullptr) {
+         if (!add) {
+            // nothing of this identifier was in use, so there is nothing to give back. The
+            // booking and the unbooking have disagreed, which the amount side would report
+            // as a negative utilization.
+            continue;
+         }
+         dst = lAddElemStr(&ids, RESL_value, id, RESL_Type);
+         if (dst == nullptr) {
+            continue;
+         }
+      }
+
+      const uint32_t in_use = lGetUlong(dst, RESL_amount);
+      if (add) {
+         lSetUlong(dst, RESL_amount, in_use + amount);
+      } else if (in_use > amount) {
+         lSetUlong(dst, RESL_amount, in_use - amount);
+      } else {
+         lRemoveElem(ids, &dst);
+      }
+   }
+
+   lSetList(rde, RDE_resource_map_list, ids);
+}
+
+/**
+ * @brief do two diagram entries have the same resource map instances in use
+ *
+ * Used by utilization_normalize() to decide whether an entry says anything the one before it
+ * did not. Order is not significant, only which identifiers are present and with what count.
+ */
+static bool
+utilization_rsmap_equal(const lList *a, const lList *b) {
+   if (lGetNumberOfElem(a) != lGetNumberOfElem(b)) {
+      return false;
+   }
+
+   const lListElem *ep;
+   for_each_ep (ep, a) {
+      const lListElem *other = lGetElemStr(b, RESL_value, lGetString(ep, RESL_value));
+      if (other == nullptr || lGetUlong(other, RESL_amount) != lGetUlong(ep, RESL_amount)) {
+         return false;
+      }
+   }
+
+   return true;
+}
+
+/**
+ * @brief how much of each resource map instance is taken anywhere in a time window
+ *
+ * The instance counterpart of utilization_max(): that says how much of the amount is taken at
+ * its worst point in the window, this says the same per identifier. A job is granted particular
+ * instances and holds them for as long as it runs, so the question an id aware selection has to
+ * ask is not what is free at one moment but what is free throughout.
+ *
+ * Two sources are combined, and combined by taking the larger of the two rather than by adding
+ * them, because a job which is running now appears in both:
+ *
+ *   what is held right now, which is the whole picture when no reservation exists and nothing
+ *   reserves ahead, because then no diagram is built at all
+ *
+ *   the diagram over the window, which is the whole picture when one is built - the scheduler
+ *   puts the running jobs into it along with the reservations
+ *
+ * What is held right now is left out for a window which begins in the future: an instance a job
+ * holds at this moment says nothing about a window starting after that job will have ended, and
+ * a window in the future is only ever asked about when the diagram is being maintained.
+ *
+ * @param cr         the resource utilization of the map (RUE_Type)
+ * @param now        this moment
+ * @param start_time when the window begins, DISPATCH_TIME_NOW for this moment
+ * @param duration   how long it lasts
+ * @return           the identifiers and how many of each are taken, to be freed by the caller
+ */
+lList *
+utilization_rsmap_max(const lListElem *cr, uint64_t now, uint64_t start_time, uint64_t duration) {
+   DENTER(TOP_LAYER);
+
+   lList *taken = nullptr;
+   if (cr == nullptr) {
+      DRETURN(nullptr);
+   }
+
+   // At queue end every job holding something at this moment has ended - that is what queue
+   // end means - so only the diagram beyond them counts there, and the diagram's last entry is
+   // where that is. The window reaches to the end either way.
+   const bool at_queue_end = (start_time == DISPATCH_TIME_QUEUE_END);
+   if (start_time == DISPATCH_TIME_NOW) {
+      start_time = now;
+   }
+
+   // what is held at this moment
+   if (!at_queue_end && start_time <= now) {
+      const lList *in_use = lGetList(cr, RUE_utilized_now_resource_map_list);
+      if (in_use != nullptr) {
+         taken = lCopyList("rsmap_taken", in_use);
+      }
+   }
+
+   // and what the diagram says about the window
+   const lList *diagram = lGetList(cr, RUE_utilized);
+   if (diagram != nullptr) {
+      const uint64_t end_time = utilization_endtime(start_time, duration);
+
+      lListElem *hit, *before;
+      utilization_find_time_or_prevstart_or_prev(diagram, start_time, &hit, &before);
+
+      // the entry in force when the window opens, then every entry which begins inside it
+      const lListElem *rde = (hit != nullptr) ? hit : before;
+      if (rde == nullptr) {
+         // the window opens before the diagram does
+         rde = lFirst(diagram);
+         if (rde != nullptr && lGetUlong64(rde, RDE_time) >= end_time) {
+            rde = nullptr;
+         }
+      }
+      while (rde != nullptr) {
+         const lListElem *ep;
+         for_each_ep (ep, lGetList(rde, RDE_resource_map_list)) {
+            const char *id = lGetString(ep, RESL_value);
+            const uint32_t amount = lGetUlong(ep, RESL_amount);
+
+            lListElem *dst = lGetElemStrRW(taken, RESL_value, id);
+            if (dst == nullptr) {
+               dst = lAddElemStr(&taken, RESL_value, id, RESL_Type);
+            }
+            if (dst != nullptr && lGetUlong(dst, RESL_amount) < amount) {
+               lSetUlong(dst, RESL_amount, amount);
+            }
+         }
+
+         rde = lNext(rde);
+         if (rde != nullptr && lGetUlong64(rde, RDE_time) >= end_time) {
+            break;
+         }
+      }
+   }
+
+   DRETURN(taken);
+}
+
+/**
+ * @brief the earliest time one group of a resource map has a number of instances free
+ *
+ * The per group counterpart of utilization_below(). That one asks when the amount of a
+ * consumable drops below a threshold and stays there; this asks when one group of a resource
+ * map - one identifier for same=id, the instances sharing a characteristic for
+ * same=<characteristic> - has enough instances free and keeps them.
+ *
+ * The distinction matters and is the reason this cannot be answered from the aggregate. "Four
+ * free shares" and "four free shares of one card" are different questions, and the second does
+ * not follow from the first at any level of approximation worth having. It can be answered here
+ * because each entry of the diagram carries what is in use per identifier at its time, so a
+ * group's free count is available at every point the diagram describes.
+ *
+ * The same group has to serve the request for the whole time, so this is a search per group and
+ * the answer is the earliest of them - not the earliest point at which some group or other
+ * happens to fit, which a job could not run on.
+ *
+ * Like utilization_below() it searches from the end of the diagram backwards, so the time it
+ * returns is one from which the group stays free rather than a gap which closes again.
+ *
+ * @param definition the resource map on the host, from EH_consumable_config_list
+ * @param cr         the resource utilization of the map (RUE_Type), may be nullptr
+ * @param key_name   "id" or the name of a characteristic
+ * @param amount     how many instances of one group are needed
+ * @return           the time from which a group can serve the request, DISPATCH_TIME_NOW when
+ *                   one can already, std::numeric_limits<uint64_t>::max() when no group ever can
+ */
+uint64_t
+utilization_rsmap_below(const lListElem *definition, const lListElem *cr, const char *key_name,
+                        uint32_t amount) {
+   DENTER(TOP_LAYER);
+
+   if (definition == nullptr || amount == 0) {
+      DRETURN(DISPATCH_TIME_NOW);
+   }
+
+   const lList *diagram = (cr != nullptr) ? lGetList(cr, RUE_utilized) : nullptr;
+   if (diagram == nullptr || lGetNumberOfElem(diagram) == 0) {
+      // nothing is booked over any period, so whether a group can serve the request is a
+      // question about the configuration alone and the answer does not change with time
+      DRETURN(DISPATCH_TIME_NOW);
+   }
+
+   lList *keys = centry_rsmap_group_keys(definition, key_name);
+   uint64_t earliest = std::numeric_limits<uint64_t>::max();
+   bool found = false;
+
+   const lListElem *key_ep;
+   for_each_ep (key_ep, keys) {
+      const char *key = lGetString(key_ep, ST_name);
+
+      // Walk this group's history backwards. The entry which does not fit ends the search: the
+      // one after it is the point from which the group is free to the end of the diagram.
+      //
+      // The last entry is the state from its time onwards, so a group which does not fit there
+      // never becomes free and is no use to this request. That is not the same as the map being
+      // full - another group may well serve it - so this group is passed over rather than the
+      // search being given up.
+      uint64_t when = DISPATCH_TIME_NOW;
+      bool never = false;
+      const lListElem *rde;
+      for_each_rev (rde, diagram) {
+         if (centry_rsmap_group_free(definition, lGetList(rde, RDE_resource_map_list),
+                                     key_name, key) >= amount) {
+            continue;
+         }
+         const lListElem *next = lNext(rde);
+         if (next == nullptr) {
+            never = true;
+         } else {
+            when = lGetUlong64(next, RDE_time);
+         }
+         break;
+      }
+      if (never) {
+         continue;
+      }
+
+      if (when == DISPATCH_TIME_NOW) {
+         // this group is free throughout, so there is nothing to wait for
+         lFreeList(&keys);
+         DRETURN(DISPATCH_TIME_NOW);
+      }
+      if (!found || when < earliest) {
+         earliest = when;
+         found = true;
+      }
+   }
+   lFreeList(&keys);
+
+   DRETURN(found ? earliest : std::numeric_limits<uint64_t>::max());
+}
+
+/**
  * @brief Debit a jobs resource utilization
  *
  * A jobs resource utilization is debited into the resource
@@ -300,7 +565,9 @@ static uint64_t utilization_endtime(uint64_t start, uint64_t duration) {
  */
 int utilization_add(lListElem *cr, uint64_t start_time, uint64_t duration, double utilization,
                      uint32_t job_id, uint32_t ja_taskid, uint32_t level, const char *object_name,
-                     const char *type, bool for_job, bool implicit_non_exclusive, const lList *binding_touse) {
+                     const char *type, bool for_job, bool implicit_non_exclusive,
+                     const lList *binding_touse,
+                     const lList *rsmap_inuse) {
    DENTER(TOP_LAYER);
    lList *resource_diagram;
    lListElem *thiz, *prev, *start, *end;
@@ -350,6 +617,19 @@ int utilization_add(lListElem *cr, uint64_t start_time, uint64_t duration, doubl
    }
    DPRINTF("utilization_add: binding to add is %s\n", binding_to_use_obj.to_product_topology_string().c_str());
 
+   // A resource map is held as particular instances, and which ones is as much part of the
+   // diagram as the amount: a job scheduled into a window has to know which instances are
+   // taken over that window, not only how many. The instances ride on the entry of the map
+   // they belong to, the way a core binding rides on the slots entry.
+   // a map is configured on an exec host or on the global host, never on a queue
+   const bool handle_rsmap = ((level == HOST_TAG || level == GLOBAL_TAG) &&
+                              lGetNumberOfElem(rsmap_inuse) > 0);
+
+   // The same call books and gives back, the second with a negated amount - an advance
+   // reservation being removed, a job being undebited. The instances follow the amount: they
+   // are taken from the start of the window and given back at its end, or the other way round.
+   const bool rsmap_taken = (utilization >= 0.0);
+
    /* ensure the resource diagram is initialized */
    if (resource_diagram == nullptr) {
       resource_diagram = lCreateList(name, RDE_Type);
@@ -372,13 +652,19 @@ int utilization_add(lListElem *cr, uint64_t start_time, uint64_t duration, doubl
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused(start, RDE_binding_inuse, topo_binding_now,
                                                                 binding_to_use_obj, true);
       }
+      if (handle_rsmap) {
+         utilization_rsmap_set(start, lGetList(start, RDE_resource_map_list), rsmap_inuse,
+         rsmap_taken);
+      }
    } else {
       // no start element found, so we need to create one
       // if there is a previous element, we can add its amount and binding_inuse to the new element
       // otherwise we just create a new element with the utilization. it is the new list beginning
+      const lList *rsmap_prev = nullptr;
       if (prev != nullptr) {
          util_prev = lGetDouble(prev, RDE_amount);
          binding_prev = lGetString(prev, RDE_binding_inuse);
+         rsmap_prev = lGetList(prev, RDE_resource_map_list);
       }
 
       // create a new start element with the utilization and binding_inuse
@@ -393,6 +679,9 @@ int utilization_add(lListElem *cr, uint64_t start_time, uint64_t duration, doubl
          }
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused(start, RDE_binding_inuse, topo_binding_now,
                                                                 binding_to_use_obj, true);
+      }
+      if (handle_rsmap) {
+         utilization_rsmap_set(start, rsmap_prev, rsmap_inuse, rsmap_taken);
       }
 
       // Insert the new element with our start time after the previous element that has an earlier start time
@@ -424,6 +713,10 @@ int utilization_add(lListElem *cr, uint64_t start_time, uint64_t duration, doubl
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused(thiz, RDE_binding_inuse, topo_binding_now,
                                                                 binding_to_use_obj, true);
       }
+      if (handle_rsmap) {
+         utilization_rsmap_set(thiz, lGetList(thiz, RDE_resource_map_list), rsmap_inuse,
+         rsmap_taken);
+      }
       prev = thiz;
       thiz = lNextRW(thiz);
    }
@@ -431,6 +724,7 @@ int utilization_add(lListElem *cr, uint64_t start_time, uint64_t duration, doubl
    if (!end) {
       util_prev = lGetDouble(prev, RDE_amount);
       binding_prev = lGetString(prev, RDE_binding_inuse);
+      const lList *rsmap_prev_end = lGetList(prev, RDE_resource_map_list);
 
       end = lCreateElem(RDE_Type);
       lSetUlong64(end, RDE_time, end_time);
@@ -442,6 +736,9 @@ int utilization_add(lListElem *cr, uint64_t start_time, uint64_t duration, doubl
          }
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused(end, RDE_binding_inuse, topo_binding_now,
                                                                 binding_to_use_obj, false);
+      }
+      if (handle_rsmap) {
+         utilization_rsmap_set(end, rsmap_prev_end, rsmap_inuse, !rsmap_taken);
       }
 
       lInsertElem(resource_diagram, prev, end);
@@ -522,20 +819,26 @@ static void utilization_normalize(lList *diagram) {
 
    util_prev = lGetDouble(thiz, RDE_amount);
    bind_prev = lGetString(thiz, RDE_binding_inuse);
+   const lList *rsmap_prev = lGetList(thiz, RDE_resource_map_list);
 
    while ((thiz = next) != nullptr) {
       next = lNextRW(thiz);
 
       double util = lGetDouble(thiz, RDE_amount);
       const char *bind = lGetString(thiz, RDE_binding_inuse);
+      const lList *rsmap = lGetList(thiz, RDE_resource_map_list);
 
-      // values need to be the same, and binding also needs to be the same so that we can remove an entry
+      // values need to be the same, and binding and the resource map instances also need to be
+      // the same so that we can remove an entry
       if (util_prev == util &&
-          ((bind_prev == nullptr && bind == nullptr) || (bind_prev != nullptr && bind != nullptr && strcmp(bind_prev, bind) == 0))) {
+          ((bind_prev == nullptr && bind == nullptr) ||
+           (bind_prev != nullptr && bind != nullptr && strcmp(bind_prev, bind) == 0)) &&
+          utilization_rsmap_equal(rsmap_prev, rsmap)) {
          lRemoveElem(diagram, &thiz);
       } else {
          util_prev = util;
          bind_prev = bind;
+         rsmap_prev = rsmap;
       }
    }
 
@@ -1023,6 +1326,12 @@ utilization_below(const sge_assignment_t *a, const lListElem *host, const lListE
  * @note MT-NOTE: add_job_utilization() is MT safe
  */
 int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_job_scheduling) {
+   // the resource map instances this assignment holds, so that the diagram records which ones
+   // are taken over its window and not only how many
+   const lList *job_granted_resources = (a->ja_task != nullptr)
+                                        ? lGetList(a->ja_task, JAT_granted_resources_list)
+                                        : nullptr;
+
    DENTER(TOP_LAYER);
 
    lListElem *qep;
@@ -1035,7 +1344,8 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
       /* parallel environment  */
       if (a->pe) {
          utilization_add(lFirstRW(lGetList(a->pe, PE_resource_utilization)), a->start, a->duration, a->slots,
-               a->job_id, a->ja_task_id, PE_TAG, lGetString(a->pe, PE_name), type, for_job_scheduling, false, nullptr);
+               a->job_id, a->ja_task_id, PE_TAG, lGetString(a->pe, PE_name), type,
+               for_job_scheduling, false, nullptr, nullptr);
       }
 
       bool is_master_task = true;
@@ -1055,13 +1365,17 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
          // we really need to do it per gdil_ep, because we have to consider is_master_task and ign_sreq_on_mhost
          rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, a->gep, a->centry_list, slots,
                                 EH_consumable_config_list, EH_resource_utilization, SGE_GLOBAL_NAME,
-                                a->start, a->duration, GLOBAL_TAG, for_job_scheduling, is_master_task, do_per_global_host_booking);
+                                a->start, a->duration, GLOBAL_TAG, for_job_scheduling,
+                                is_master_task,
+                                do_per_global_host_booking, job_granted_resources);
 
          // host
          if ((hep = host_list_locate(a->host_list, eh_name)) != nullptr) {
             rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, hep, a->centry_list, slots,
                                    EH_consumable_config_list, EH_resource_utilization, eh_name, a->start,
-                                   a->duration, HOST_TAG, for_job_scheduling, is_master_task, do_per_host_booking);
+                                   a->duration, HOST_TAG, for_job_scheduling, is_master_task,
+                                   do_per_host_booking,
+                                   job_granted_resources);
          }
 
          // queue
@@ -1076,7 +1390,9 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
              */
             rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, qep, a->centry_list, slots,
                                    QU_consumable_config_list, QU_resource_utilization, qname, a->start,
-                                   a->duration, QUEUE_TAG, for_job_scheduling, is_master_task, false);
+                                   a->duration, QUEUE_TAG, for_job_scheduling, is_master_task,
+                                   false,
+                                   job_granted_resources);
          }
 
          /* resource quotas */
@@ -1124,18 +1440,23 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
             if ((qep = lGetSubStrRW(a->ar, QU_full_name, qname, AR_reserved_queues)) != nullptr) {
                rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, qep, a->centry_list, slots,
                                       QU_consumable_config_list, QU_resource_utilization, qname, a->start,
-                                      a->duration, QUEUE_TAG, for_job_scheduling, is_master_task, do_per_host_booking);
+                                      a->duration, QUEUE_TAG, for_job_scheduling, is_master_task,
+                                      do_per_host_booking,
+                                      job_granted_resources);
             }
             if (ar_global_host != nullptr) {
                rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, ar_global_host, a->centry_list, slots,
                                       EH_consumable_config_list, EH_resource_utilization, SGE_GLOBAL_NAME, a->start,
-                                      a->duration, HOST_TAG, for_job_scheduling, is_master_task, do_per_global_host_booking);
+                                      a->duration, HOST_TAG, for_job_scheduling, is_master_task,
+                                      do_per_global_host_booking, job_granted_resources);
             }
             lListElem *host = lGetSubHostRW(a->ar, EH_name, eh_name, AR_reserved_hosts);
             if (host != nullptr) {
                rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, host, a->centry_list, slots,
                                       EH_consumable_config_list, EH_resource_utilization, eh_name, a->start,
-                                      a->duration, HOST_TAG, for_job_scheduling, is_master_task, do_per_host_booking);
+                                      a->duration, HOST_TAG, for_job_scheduling, is_master_task,
+                                      do_per_host_booking,
+                                      job_granted_resources);
             }
             is_master_task = false;
             do_per_global_host_booking = false;
@@ -1182,8 +1503,11 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
  */
 int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListElem *pe, uint32_t task_id, const char *type, lListElem *ep,
                            const lList *centry_list, int slots, int config_nm, int actual_nm, const char *obj_name,
-                           uint64_t start_time, uint64_t duration, uint32_t tag, bool for_job_scheduling,
-                           bool is_master_task, bool do_per_host_booking) {
+                           uint64_t start_time, uint64_t duration, uint32_t tag,
+                           bool for_job_scheduling,
+                           bool is_master_task, bool do_per_host_booking,
+                           const lList *granted_resources_list)
+{
    DENTER(TOP_LAYER);
 
    lListElem *cr = nullptr, *dcep;
@@ -1220,6 +1544,19 @@ int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListEle
          }
       }
 
+      // The instances of a resource map which this booking takes, so that the diagram says
+      // which ones are held over the window and not only how many. They were chosen when the
+      // assignment was granted and are looked up here by the map and the object they were
+      // granted on.
+      const lList *rsmap_inuse = nullptr;
+      if ((tag == HOST_TAG || tag == GLOBAL_TAG) && static_cast<ocs::CEntry::Type>(lGetUlong(dcep, CE_valtype)) == ocs::CEntry::Type::RSMAP) {
+         const lListElem *gru = gru_list_search(const_cast<lList *>(granted_resources_list),
+                                                name, obj_name);
+         if (gru != nullptr && static_cast<ocs::GrantedResources::Type>(lGetUlong(gru, GRU_type)) == ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
+            rsmap_inuse = lGetList(gru, GRU_resource_map_list);
+         }
+      }
+
       if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking)) {
          continue;
       }
@@ -1237,7 +1574,7 @@ int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListEle
                binding_to_use = lGetList(gdil, JG_binding_to_use);
             }
             utilization_add(cr, start_time, duration, debit_slots * dval, job_id, task_id, tag,
-                            obj_name, type, for_job_scheduling, false, binding_to_use);
+                            obj_name, type, for_job_scheduling, false, binding_to_use, rsmap_inuse);
             mods++;
             did_booking = true;
          }
@@ -1255,7 +1592,9 @@ int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListEle
                   /* update RUE_utilized resource diagram to reflect jobs utilization */
                   // book it for one slot (the master task)
                   utilization_add(cr, start_time, duration, slot_signum(debit_slots) * dval, job_id, task_id, tag,
-                                  obj_name, type, for_job_scheduling, false, lGetList(gdil, JG_binding_to_use));
+                                  obj_name, type, for_job_scheduling, false, lGetList(gdil,
+                                  JG_binding_to_use),
+                               rsmap_inuse);
                   mods++;
                   did_booking = true;
                }
@@ -1283,7 +1622,9 @@ int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListEle
                // book it for the remaining slave tasks
                slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
                utilization_add(cr, start_time, duration, slave_debit_slots * dval, job_id, task_id, tag,
-                               obj_name, type, for_job_scheduling, false, lGetList(gdil, JG_binding_to_use));
+                               obj_name, type, for_job_scheduling, false, lGetList(gdil,
+                               JG_binding_to_use),
+                               rsmap_inuse);
                mods++;
                did_booking = true;
             }
@@ -1295,7 +1636,9 @@ int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListEle
          dval = 1.0;
          /* update RUE_utilized resource diagram to reflect jobs utilization */
          utilization_add(cr, start_time, duration, debit_slots * dval, job_id, task_id, tag,
-                         obj_name, type, for_job_scheduling, true, lGetList(gdil, JG_binding_to_use));
+                         obj_name, type, for_job_scheduling, true, lGetList(gdil,
+                         JG_binding_to_use),
+                         nullptr);
          mods++;
       }
    }
@@ -1369,7 +1712,7 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, uint32_t task_id, c
             if (dval != 0.0) {
                /* update RUE_utilized resource diagram to reflect jobs utilization */
                utilization_add(rue_elem, start_time, duration, debit_slots * dval, job_id, task_id,
-                               RQS_TAG, obj_name, type, true, false, nullptr);
+                               RQS_TAG, obj_name, type, true, false, nullptr, nullptr);
                mods++;
                did_booking = true;
             }
@@ -1387,7 +1730,7 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, uint32_t task_id, c
                      /* update RUE_utilized resource diagram to reflect jobs utilization */
                      // book it for one slot (the master task)
                      utilization_add(rue_elem, start_time, duration, slot_signum(debit_slots) * dval, job_id, task_id,
-                                     RQS_TAG, obj_name, type, true, false, nullptr);
+                                     RQS_TAG, obj_name, type, true, false, nullptr, nullptr);
                      mods++;
                      did_booking = true;
                   }
@@ -1415,7 +1758,7 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, uint32_t task_id, c
                      // book it for the remaining slave tasks
                      slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
                      utilization_add(rue_elem, start_time, duration, slave_debit_slots * dval, job_id, task_id,
-                                     RQS_TAG, obj_name, type, true, false, nullptr);
+                                     RQS_TAG, obj_name, type, true, false, nullptr, nullptr);
                      mods++;
                      did_booking = true;
                   }
@@ -1427,7 +1770,7 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, uint32_t task_id, c
          if (!did_booking && lGetUlong(raw_centry, CE_relop) == CMPLXEXCL_OP) {
             dval = 1.0;
             utilization_add(rue_elem, start_time, duration, debit_slots * dval, job_id, task_id,
-                            RQS_TAG, obj_name, type, true, true, nullptr);
+                            RQS_TAG, obj_name, type, true, true, nullptr, nullptr);
             mods++;
          }
       }

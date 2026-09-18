@@ -60,7 +60,14 @@ void utilization_print_all(const lList* pe_list, const lList *host_list, const l
 int
 utilization_add(lListElem *cr, uint64_t start_time, uint64_t duration, double utilization,
                 uint32_t job_id, uint32_t ja_taskid, uint32_t level, const char *object_name,
-                const char *type, bool for_job, bool implicit_non_exclusive, const lList *binding_touse);
+                const char *type, bool for_job, bool implicit_non_exclusive,
+                const lList *binding_touse, const lList *rsmap_inuse);
+
+lList *utilization_rsmap_max(const lListElem *cr, uint64_t now, uint64_t start_time,
+                             uint64_t duration);
+
+uint64_t utilization_rsmap_below(const lListElem *definition, const lListElem *cr,
+                                 const char *key_name, uint32_t amount);
 
 double utilization_max(const sge_assignment_t *a, const lListElem *host, const lListElem *cr, uint64_t start_time, uint64_t duration, double total, double request, double slots, bool for_excl_request, ocs::TopologyString& binding_inuse);
 
@@ -74,7 +81,8 @@ double utilization_queue_end(const sge_assignment_t *a, const lListElem *host, c
 int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListElem *pe, uint32_t task_id, const char *type, lListElem *ep,
                            const lList *centry_list, int slots, int config_nm, int actual_nm, const char *obj_name,
                            uint64_t start_time, uint64_t duration, uint32_t tag, bool for_job_scheduling,
-                           bool is_master_task, bool do_per_host_booking);
+                           bool is_master_task, bool do_per_host_booking,
+                           const lList *granted_resources_list);
 
 void prepare_resource_schedules(const lList *running_jobs,
       const lList *suspended_jobs, lList *pe_list, lList *host_list,

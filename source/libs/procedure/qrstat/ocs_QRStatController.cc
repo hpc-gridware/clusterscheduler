@@ -33,6 +33,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/ocs_GrantedResources.h"
+#include "sgeobj/cull/sge_host_RESL_L.h"
 #include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_mailrec.h"
@@ -128,6 +129,45 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
                }
             }
             view.report_exec_binding_list_finish(out_);
+         }
+
+         // the resource maps the reservation holds, per host, with the granted ids. The
+         // binding above comes from the same list but is reported on its own, so only
+         // resource map entries are of interest here.
+         if (lGetList(ar, AR_granted_resources_list) != nullptr) {
+            bool any = false;
+
+            for_each_ep_lv(resource, lGetList(ar, AR_granted_resources_list)) {
+               if (static_cast<GrantedResources::Type>(lGetUlong(resource, GRU_type)) !=
+                   GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
+                  continue;
+               }
+               if (!any) {
+                  view.report_granted_resource_list_start(out_);
+                  any = true;
+               }
+
+               std::string text = std::string(lGetString(resource, GRU_name)) + "=" +
+                                  std::to_string(static_cast<uint32_t>(lGetDouble(resource, GRU_amount)));
+               const lList *ids = lGetList(resource, GRU_resource_map_list);
+               if (ids != nullptr && lGetNumberOfElem(ids) > 0) {
+                  const char *sep = "(";
+                  for_each_ep_lv(resl, ids) {
+                     // the reader folds a repeated id into one element with a count, so
+                     // write it out the way the configuration does
+                     for (uint32_t i = lGetUlong(resl, RESL_amount); i > 0; i--) {
+                        text += sep;
+                        text += lGetString(resl, RESL_value);
+                        sep = " ";
+                     }
+                  }
+                  text += ")";
+               }
+               view.report_granted_resource_list_node(out_, lGetHost(resource, GRU_host), text.c_str());
+            }
+            if (any) {
+               view.report_granted_resource_list_finish(out_);
+            }
          }
 
          if (lGetList(ar, AR_granted_slots) != nullptr) {

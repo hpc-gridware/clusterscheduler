@@ -348,6 +348,47 @@ ocs::QRStatViewJSON::report_exec_binding_list_node(std::ostream &os, const char 
 }
 
 void
+ocs::QRStatViewJSON::report_granted_resource_list_start(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   if (!first_ar_attr) {
+      os << ",\n";
+   } else {
+      first_ar_attr = false;
+   }
+   os << std::string(indent * 3, ' ') << "\"granted_resource_list\": [";
+   indent++;
+   DRETURN_VOID;
+}
+
+void
+ocs::QRStatViewJSON::report_granted_resource_list_finish(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   indent--;
+   os << "\n";
+   os << std::string(indent * 3, ' ') << "]";
+   first_granted_resource = true;
+   DRETURN_VOID;
+}
+
+void
+ocs::QRStatViewJSON::report_granted_resource_list_node(std::ostream &os, const char *name, const char *value) {
+   DENTER(TOP_LAYER);
+   if (!first_granted_resource) {
+      os << ",\n";
+   } else {
+      os << "\n";
+      first_granted_resource = false;
+   }
+   os << std::string(indent * 3, ' ') << "{\n";
+   indent++;
+   os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(name) << ",\n";
+   os << std::string(indent * 3, ' ') << "\"resource_map\": " << raw2quotedJSON(value) << "\n";
+   indent--;
+   os << std::string(indent * 3, ' ') << "}";
+   DRETURN_VOID;
+}
+
+void
 ocs::QRStatViewJSON::report_granted_parallel_environment_start(std::ostream &os) {
    DENTER(TOP_LAYER);
    if (!first_ar_attr) {

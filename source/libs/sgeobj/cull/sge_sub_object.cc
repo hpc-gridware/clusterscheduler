@@ -313,9 +313,6 @@ object_get_subtype(int nm)
       case RESL_properties:
          ret = CE_Type;
          break;
-      case RESL_utilization:
-         ret = RUE_Type;
-         break;
       case STN_children:
          ret = STN_Type;
          break;

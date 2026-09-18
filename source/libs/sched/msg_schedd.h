@@ -248,5 +248,9 @@
 #define MSG_SCONF_NO_CONFIG                           _MESSAGE(47403, _("sconf_printf_config: no config to validate"))
 #define MSG_QINSTANCE_VALUEMISSINGMASTERDOWN_S        _MESSAGE(47404, _("error: no value for " SFQ " because execd is in unknown state"))
 #define MSG_CANTFINDCATINMASTERLIST_U                 _MESSAGE(47405, _("could not find category " sge_u32 " in master list"))
+#define MSG_SCHEDD_REQUESTNOTRESOLVED                 _MESSAGE(47406, _("the request could not be resolved against the complex configuration"))
+#define MSG_SCHEDD_SAMEIDNOTFULLFILLED_SS             _MESSAGE(47407, _("resource map " SFQ " does not have enough free instances sharing one " SFN))
+#define MSG_SCHEDD_INFO_CANNOTBOOKRESOURCE_SS         _MESSAGE(47411, _("resource " SFQ " could not be granted on host " SFQ " although the host was selected for the job"))
+#define MSG_SCHEDD_INFO_CANNOTBOOKRESOURCE            _MESSAGE(47412, _("a resource could not be granted on a host although the host was selected for the job"))
 
 // clang-format on

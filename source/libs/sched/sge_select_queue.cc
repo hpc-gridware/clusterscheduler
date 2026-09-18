@@ -76,6 +76,7 @@
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_schedd_conf.h"
@@ -234,6 +235,10 @@ match_static_advance_reservation(const sge_assignment_t *a);
 
 static int
 sequential_update_host_order(lList *host_list, lList *queues);
+
+static int
+rsmap_same_slots(const sge_assignment_t *a, const lList *total_list, const lList *rue_list,
+                 dstring *reason);
 
 /* -- base functions ---------------------------------------------- */
 
@@ -509,6 +514,7 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
    if (move_gdil) {
       lFreeList(&(dst->gdil));
       lFreeList(&(dst->binding_to_use));
+      lFreeList(&(dst->granted_rsmaps));
       lFreeList(&(dst->limit_list));
       lFreeList(&(dst->skip_cqueue_list));
       lFreeList(&(dst->skip_host_list));
@@ -521,9 +527,11 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
    }
 
    if (move_gdil) {
-      src->gdil = src->binding_to_use = src->limit_list = src->skip_cqueue_list = src->skip_host_list = nullptr;
+      src->gdil = src->binding_to_use = src->granted_rsmaps = src->limit_list =
+            src->skip_cqueue_list = src->skip_host_list = nullptr;
    } else {
-      dst->gdil = dst->binding_to_use = dst->limit_list = dst->skip_cqueue_list = dst->skip_host_list = nullptr;
+      dst->gdil = dst->binding_to_use = dst->granted_rsmaps = dst->limit_list =
+            dst->skip_cqueue_list = dst->skip_host_list = nullptr;
    }
 }
 
@@ -535,6 +543,7 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
 void assignment_release(sge_assignment_t *a) {
    lFreeList(&(a->gdil));
    lFreeList(&(a->binding_to_use));
+   lFreeList(&(a->granted_rsmaps));
    lFreeList(&(a->limit_list));
    lFreeList(&(a->skip_cqueue_list));
    lFreeList(&(a->skip_host_list));
@@ -1493,6 +1502,10 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
    if (!implicit_slots_request) {
       implicit_slots_request = lCreateElem(CE_Type);
       lSetString(implicit_slots_request, CE_name, SGE_ATTR_SLOTS);
+      // slots is an INT; the type has to be set like on any other request, both
+      // because it is true and because a CE_valtype of 0 is what marks a request
+      // centry_list_fill_request() could not resolve - see ri_time_by_slots()
+      lSetUlong(implicit_slots_request, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::INT));
       lSetString(implicit_slots_request, CE_stringval, "1");
       lSetDouble(implicit_slots_request, CE_doubleval, 1);
    }
@@ -5432,6 +5445,20 @@ sequential_host_time(uint64_t *start, sge_assignment_t *a, int *violations, cons
          &reason, 1, DOMINANT_LAYER_HOST,
          lc_factor, HOST_TAG, &tmp_time, eh_name);
 
+   // A same= constraint asks whether one group of instances can serve the request, which
+   // rc_time_by_slots() knows nothing about - it checks the amount against the map as a whole.
+   // The parallel path evaluates it in parallel_rc_slots_by_time() at this same layer; a
+   // sequential job needs one slot, so the constraint is met when a group can serve one.
+   //
+   // Without this a sequential job was matched on the amount alone and the constraint was left
+   // to the booking, which cannot refuse a host - it has already been chosen - and whose
+   // failure does not stop the job from starting. The job then ran with instances which did
+   // not agree, or with none at all.
+   if ((result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR) &&
+       rsmap_same_slots(a, config_attr, actual_attr, &reason) == 0) {
+      result = DISPATCH_NEVER_CAT;
+   }
+
    if (result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR) {
       if (violations != nullptr) {
          *violations = compute_soft_violations(a, hep, nullptr, *violations, load_attr, config_attr,
@@ -5613,6 +5640,10 @@ parallel_available_slots(const sge_assignment_t *a, int *slots) {
    if (implicit_slots_request == nullptr) {
       implicit_slots_request = lCreateElem(CE_Type);
       lSetString(implicit_slots_request, CE_name, SGE_ATTR_SLOTS);
+      // slots is an INT; the type has to be set like on any other request, both
+      // because it is true and because a CE_valtype of 0 is what marks a request
+      // centry_list_fill_request() could not resolve - see ri_time_by_slots()
+      lSetUlong(implicit_slots_request, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::INT));
       lSetString(implicit_slots_request, CE_stringval, "1");
       lSetDouble(implicit_slots_request, CE_doubleval, 1);
    }
@@ -5846,12 +5877,22 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
    /* determine 'total' and 'request' values */
    total = lGetDouble(capacitiy_el, CE_doubleval);
 
-   if (!parse_ulong_val(&request, nullptr, static_cast<ocs::CEntry::Type>(lGetUlong(cplx_el, CE_valtype)),
-      lGetString(rep, CE_stringval), nullptr, 0)) {
-      sge_dstring_append(reason, "wrong type");
+   // The amount was parsed once already, when the request was built: centry_fill_and_check()
+   // stores it in CE_doubleval, and every element reaching this function has been through it -
+   // job requests via centry_list_fill_request() at submit, on spool read and at startup, and
+   // the two elements synthesized in rc_time_by_slots() set it explicitly. Re-parsing the
+   // string here would repeat that work per request, per layer and per queue instance.
+   //
+   // A request centry_list_fill_request() could not fill in is marked by a CE_valtype of 0,
+   // which is never legitimate: the field is spooled and always holds a real type otherwise.
+   // Such a request has no amount either - CE_doubleval is not spooled - so it must be refused
+   // rather than read as a request for nothing, which would match every host and book nothing.
+   if (static_cast<ocs::CEntry::Type>(lGetUlong(rep, CE_valtype)) == ocs::CEntry::Type::NONE) {
+      sge_dstring_append(reason, MSG_SCHEDD_REQUESTNOTRESOLVED);
       lFreeElem(&cplx_el);
       DRETURN(DISPATCH_NEVER_CAT);
    }
+   request = lGetDouble(rep, CE_doubleval);
 
    if (request != 0.0) {
       DPRINTF("exclusive_request\n");
@@ -5869,6 +5910,34 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
       } else {
          /* seek for the time near queue end where resources are sufficient */
          uint64_t when = utilization_below(a, host, actual_el, threshold, total, slots, object_name, is_exclusive, binding_inuse);
+
+         // A request which requires its instances to agree asks a question the amount cannot
+         // answer: the aggregate says when enough shares are free, not when enough shares of
+         // one card are. The aggregate stays authoritative for the amount and this refines it,
+         // so the answer is the later of the two.
+         DSTRING_STATIC(same_key, 64);
+         if (static_cast<ocs::CEntry::Type>(lGetUlong(rep, CE_valtype)) == ocs::CEntry::Type::RSMAP &&
+             centry_rsmap_get_request_param(rep, RSMAP_REQUEST_PARAM_SAME, &same_key)) {
+            const auto group_amount = static_cast<uint32_t>(request * slots);
+            uint64_t group_when = utilization_rsmap_below(capacitiy_el, actual_el,
+                                                          sge_dstring_get_string(&same_key),
+                                                          group_amount);
+            if (group_when == std::numeric_limits<uint64_t>::max()) {
+               // no group of this map is ever free enough, so there is nothing to wait for
+               sge_dstring_sprintf(reason, MSG_SCHEDD_SAMEIDNOTFULLFILLED_SS, attrname,
+                                   sge_dstring_get_string(&same_key));
+               lFreeElem(&cplx_el);
+               DRETURN(DISPATCH_NEVER_CAT);
+            }
+            if (group_when > when) {
+               DSTRING_STATIC(when_dstr, 64);
+               DPRINTF("%s: time_by_slots: %s delays the start to %s, the amount alone allowed "
+                       sge_u64 "\n", object_name, attrname,
+                       sge_ctime64(group_when, &when_dstr), when);
+               when = group_when;
+            }
+         }
+
          if (when == 0) {
             /* may happen only if scheduler code is run outside scheduler with
                DISPATCH_TIME_QUEUE_END time spec */
@@ -6199,6 +6268,113 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
 //              master/slave requests
 //              also where we filter and sort the queue list
 //              have a tag TAG4SCHED_DISJOINT? Here we would have the necessary information. Or a bool &disjoint.
+/**
+ * @brief how many slots the resource maps of this host can serve under a same= constraint
+ *
+ * A request may require that every instance it is granted agrees in some respect:
+ *
+ *     qsub -l 'gpu=4[same=id]' ...
+ *     qsub -l 'gpu=4[same=numa_node]' ...
+ *
+ * Either way the instances are grouped by a key - the identifier itself, or the value of a
+ * characteristic they carry - and the question is what one group can serve rather than what the
+ * map holds in total.
+ *
+ * The reader folds repeated identifiers into one element with a count, so
+ * "gpu=8(0 0 0 0 1 1 1 1)" is two cards of four shares. Four shares may be free across the two
+ * cards while no card can serve four. Grouping by a characteristic widens the group rather than
+ * changing the question: several cards on one NUMA node are one group, and what counts is what
+ * they have free between them.
+ *
+ * How the count becomes slots depends on how often the amount is taken:
+ *
+ *   consumable YES        the amount is taken per slot, so a group serves free/amount slots
+ *   consumable JOB, HOST  the amount is taken once, so the group either serves it or not
+ *
+ * Evaluated once per host, from the same host configuration and utilization the booking will see
+ * later, so that add_granted_resource_list() reaches the same group without it being carried.
+ *
+ * @param a          the assignment
+ * @param total_list the host's consumable configuration
+ * @param rue_list   the host's resource utilization
+ * @param reason     filled in when the constraint cannot be met at all
+ * @return           the number of slots the constraint permits, INT_MAX when no request carries
+ *                   one, 0 when it cannot be met
+ */
+static int
+rsmap_same_slots(const sge_assignment_t *a, const lList *total_list,
+                          const lList *rue_list, dstring *reason) {
+   int max_slots = INT_MAX;
+   DSTRING_STATIC(param, 64);
+
+   const lListElem *jrs;
+   for_each_ep (jrs, lGetList(a->job, JB_request_set_list)) {
+      const lListElem *req;
+      for_each_ep (req, lGetList(jrs, JRS_hard_resource_list)) {
+         if (static_cast<ocs::CEntry::Type>(lGetUlong(req, CE_valtype)) != ocs::CEntry::Type::RSMAP) {
+            continue;
+         }
+         if (!centry_rsmap_get_request_param(req, RSMAP_REQUEST_PARAM_SAME, &param)) {
+            continue;
+         }
+
+         const char *name = lGetString(req, CE_name);
+
+         const lListElem *definition = lGetElemStr(total_list, CE_name, name);
+         if (definition == nullptr) {
+            // the map is not configured on this host; the ordinary matching rejects the host
+            continue;
+         }
+
+         // What is not free over the time this job would run. The booking asks the same
+         // question of the same lists when it chooses the instances, which is what lets the
+         // two agree - see rsmap_select_granted_ids().
+         //
+         // Unless the cluster is to be imagined idle. That is how -w e and -w v ask whether a
+         // job could ever run rather than whether it can run now, and the amount side does the
+         // same a few hundred lines up in ri_slots_by_time(). The two have to agree, or a
+         // constraint which is satisfiable once the map drains refuses the job at submission -
+         // and since qsub adds -w e to a job requesting an advance reservation, refuses every
+         // such job whose map is in use (CS-2770). An advance reservation is itself exempt: it
+         // is scheduled against what is really there.
+         lList *taken = nullptr;
+         if (a->is_advance_reservation || sconf_get_qs_state() != QS_STATE_EMPTY) {
+            taken = utilization_rsmap_max(lGetElemStr(rue_list, RUE_name, name), a->now,
+                                          a->start, a->duration);
+         }
+
+         // same=id groups by the identifier, same=<characteristic> by that characteristic's
+         // value on the instance - several identifiers can then share one group, and the
+         // constraint is met by any of them together
+         uint32_t best_free = 0;
+         centry_rsmap_best_free_group(definition, taken, sge_dstring_get_string(&param),
+                                      &best_free);
+         lFreeList(&taken);
+
+         const auto amount = static_cast<uint32_t>(lGetDouble(req, CE_doubleval));
+         if (amount == 0) {
+            continue;
+         }
+
+         int slots;
+         if (lGetUlong(req, CE_consumable) == CONSUMABLE_YES) {
+            slots = static_cast<int>(best_free / amount);
+         } else {
+            slots = (best_free >= amount) ? INT_MAX : 0;
+         }
+
+         if (slots == 0) {
+            sge_dstring_sprintf(reason, MSG_SCHEDD_SAMEIDNOTFULLFILLED_SS, name,
+                                sge_dstring_get_string(&param));
+            return 0;
+         }
+         max_slots = MIN(max_slots, slots);
+      }
+   }
+
+   return max_slots;
+}
+
 dispatch_t
 parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_list,
                           const lList *rue_list, const lList *load_attr, bool force_slots,
@@ -6233,6 +6409,10 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
       if (!implicit_slots_request) {
          implicit_slots_request = lCreateElem(CE_Type);
          lSetString(implicit_slots_request, CE_name, SGE_ATTR_SLOTS);
+         // slots is an INT; the type has to be set like on any other request, both
+         // because it is true and because a CE_valtype of 0 is what marks a request
+         // centry_list_fill_request() could not resolve - see ri_time_by_slots()
+         lSetUlong(implicit_slots_request, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::INT));
          lSetString(implicit_slots_request, CE_stringval, "1");
          lSetDouble(implicit_slots_request, CE_doubleval, 1);
       }
@@ -6537,6 +6717,22 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
       } // end for each request per scope
       // @todo if global requests have not matched, no need to check other scopes
    } // end for each scope
+
+   // A resource map request may require every instance it is granted to carry the same id. That
+   // is a property of the host, not of a queue instance, so it belongs here next to the binding
+   // and is evaluated once per host rather than per queue instance or per slot count probe.
+   //
+   // It reads as a capacity, which is what lets it take part in the calculation above instead of
+   // sitting beside it as a separate filter: one id can serve free/amount slots of a per slot
+   // request, and either all or none of a request which takes its amount once.
+   if (layer == DOMINANT_LAYER_HOST) {
+      int slots_with_same_id = rsmap_same_slots(a, total_list, rue_list, &reason);
+
+      if (slots_with_same_id == 0) {
+         DRETURN(DISPATCH_NEVER_CAT);
+      }
+      max_available_slots = MIN(max_available_slots, slots_with_same_id);
+   }
 
    // do the binding
    if (layer == DOMINANT_LAYER_HOST) {

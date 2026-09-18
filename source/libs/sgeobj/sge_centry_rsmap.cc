@@ -27,7 +27,10 @@
  * @see sge_centry_rsmap.h
  */
 
+#include <cstring>
+
 #include <unordered_set>
+#include <vector>
 
 #include <string>
 
@@ -35,6 +38,9 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_host.h"
+#include "sgeobj/sge_job.h"
+#include "sgeobj/sge_resource_utilization.h"
+#include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "msg_common.h"
 
@@ -166,6 +172,735 @@ bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry,
    }
 
    return ret;
+}
+
+const char *const RSMAP_REQUEST_PARAM_ID       = "id";
+const char *const RSMAP_REQUEST_PARAM_SAME     = "same";
+const char *const RSMAP_REQUEST_PARAM_SCOPE    = "scope";
+const char *const RSMAP_REQUEST_PARAM_DISTINCT = "distinct";
+const char *const RSMAP_REQUEST_PARAM_BIND     = "bind";
+
+/**
+ * Is this the name of a parameter of a resource map request?
+ *
+ * The names are reserved across the whole complex namespace, not only inside a bracket: a
+ * parameter which is not one of them names a characteristic to match, so a complex of one of
+ * these names could never be matched. Reserving them is what keeps that unambiguous.
+ *
+ * @param name  a parameter or complex name
+ * @return      true if the name is one of the reserved parameter names
+ */
+bool
+centry_rsmap_is_reserved_param(const char *name) {
+   if (name == nullptr) {
+      return false;
+   }
+   return strcmp(name, RSMAP_REQUEST_PARAM_ID) == 0 ||
+          strcmp(name, RSMAP_REQUEST_PARAM_SAME) == 0 ||
+          strcmp(name, RSMAP_REQUEST_PARAM_SCOPE) == 0 ||
+          strcmp(name, RSMAP_REQUEST_PARAM_DISTINCT) == 0 ||
+          strcmp(name, RSMAP_REQUEST_PARAM_BIND) == 0;
+}
+
+/**
+ * Validate the bracketed parameter list of a resource map request.
+ *
+ * A request may carry a list of named parameters after the amount:
+ *
+ *     -l 'gpu=4[id=gpu1*,same=id,memory=40G]'
+ *
+ * The whole string is in CE_stringval; CE_doubleval holds the amount in front of the bracket,
+ * split off by centry_fill_and_check(). This function looks at what follows it.
+ *
+ * The list is order independent and its entries combine with AND, so a name given twice is a
+ * conflict rather than a refinement and is refused. Each name is either one of the reserved
+ * parameter names or the name of a complex, which is then matched against the characteristic of
+ * that name on an instance. Nothing here evaluates a parameter - it establishes that the request
+ * is well formed and that every name means something.
+ *
+ * A bracket in the value of a *configuration* is a different thing entirely, the per instance
+ * characteristics of an id. Those never reach this function: the reader stores only the amount in
+ * CE_stringval and puts the ids in CE_resource_map_list, so a bracket here is unambiguously a
+ * request parameter list.
+ *
+ * @param answer_list        errors are appended here
+ * @param centry             the request; CE_name and CE_stringval are read
+ * @param master_centry_list complex list, used to resolve a parameter which is not reserved
+ * @return                   true if the request carries no parameter list or a valid one
+ */
+bool
+centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
+                                  const lList *master_centry_list) {
+   const char *name = lGetString(centry, CE_name);
+   const char *value = lGetString(centry, CE_stringval);
+
+   if (value == nullptr) {
+      return true;
+   }
+
+   // A parameter list belongs to a resource map request and to nothing else. Asked of any
+   // other resource, a bracket is part of the value: a string valued resource is matched with
+   // a pattern, so "-l h=[r]ocky-8-amd64-1" is a host name whose first character is written as
+   // a character class, not a malformed parameter list. The type is known here - the caller
+   // fills CE_valtype from the complex before asking - so the question is decided before a
+   // bracket is looked for rather than after.
+   if (static_cast<ocs::CEntry::Type>(lGetUlong(centry, CE_valtype)) != ocs::CEntry::Type::RSMAP) {
+      return true;
+   }
+
+   const char *open = strchr(value, '[');
+   if (open == nullptr) {
+      return true;
+   }
+
+   // This is the single point where a parameter list enters the system from a request, the way
+   // parse_id_characteristics() is for a configuration, so refusing it here keeps every consumer
+   // downstream unreachable in an OCS build without a guard of its own. The list is parsed
+   // everywhere - centry_list_parse_from_string() is shared with the open source clients and
+   // cannot be made conditional - so what an OCS build rejects is a well formed request with a
+   // clear message, not a parse error.
+#if !defined(WITH_EXTENSIONS)
+   answer_list_add_sprintf(answer_list, STATUS_ENOTAVAILABLE, ANSWER_QUALITY_ERROR,
+                           MSG_RSMAP_PARAM_NOT_AVAILABLE_SS, name, value);
+   return false;
+#endif
+
+   // the list has to be closed, and nothing may follow it. Bracket depth is tracked because a
+   // value may itself contain a character class, "[id=gpu[01]*]"
+   const char *close = nullptr;
+   int depth = 0;
+   for (const char *p = open; *p != '\0'; ++p) {
+      if (*p == '[') {
+         depth++;
+      } else if (*p == ']') {
+         depth--;
+         if (depth == 0) {
+            close = p;
+            break;
+         }
+      }
+   }
+   if (close == nullptr) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_RSMAP_PARAM_UNCLOSED_SS, name, value);
+      return false;
+   }
+   if (*(close + 1) != '\0') {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_RSMAP_PARAM_TRAILING_SSS, name, close + 1, value);
+      return false;
+   }
+
+   bool ret = true;
+   std::unordered_set<std::string> seen;
+   const char *p = open + 1;
+
+   while (p <= close) {
+      // find the end of this parameter: the next comma at depth 0, or the closing bracket
+      const char *end = p;
+      int d = 0;
+      while (end < close && !(d == 0 && *end == ',')) {
+         if (*end == '[') {
+            d++;
+         } else if (*end == ']') {
+            d--;
+         }
+         ++end;
+      }
+
+      const std::string param(p, end - p);
+      p = end + 1;
+
+      if (param.empty()) {
+         // "[]" is an empty list and means the same as no list at all; "[a=1,,b=2]" is a mistake
+         if (open + 1 == close) {
+            break;
+         }
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_RSMAP_PARAM_EMPTY_SS, name, value);
+         ret = false;
+         continue;
+      }
+
+      const size_t eq = param.find('=');
+      if (eq == std::string::npos) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_RSMAP_PARAM_NO_EQ_SS, name, param.c_str());
+         ret = false;
+         continue;
+      }
+      if (eq == 0) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_RSMAP_PARAM_NO_NAME_SS, name, value);
+         ret = false;
+         continue;
+      }
+
+      const std::string param_name = param.substr(0, eq);
+
+      // order does not matter and the entries combine with AND, so a repeated name is a
+      // conflict, not a refinement
+      if (!seen.insert(param_name).second) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_RSMAP_PARAM_DUPLICATE_SS, name, param_name.c_str());
+         ret = false;
+         continue;
+      }
+
+      if (centry_rsmap_is_reserved_param(param_name.c_str())) {
+         const std::string param_value = param.substr(eq + 1);
+
+         // bind= is reserved and validated from the start, but nothing reads it until
+         // affinity aware core binding exists (CS-2706). Only "no" is defined; rejecting any
+         // other value now is what leaves room to add one later without breaking a script
+         // which had been accepted and ignored.
+         if (param_name == RSMAP_REQUEST_PARAM_BIND && param_value != "no") {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_RSMAP_PARAM_BAD_VALUE_SSS, name, param_name.c_str(),
+                                    param_value.c_str());
+            ret = false;
+         }
+
+         // same= takes "id" or the name of a characteristic, and the instances granted then
+         // have to agree in whichever it names.
+         //
+         // The name has to resolve to a complex, which is what a characteristic is configured
+         // as. Whether any instance of the map actually carries it is not a question for the
+         // submission: which instances a job will be offered is not known until it is
+         // scheduled, and the same request is valid on a host whose instances carry the
+         // characteristic and unsatisfiable on one whose instances do not. A name which
+         // resolves and is carried by nothing leaves the job pending, with the scheduling
+         // message saying the map has no instances sharing one of them.
+         if (param_name == RSMAP_REQUEST_PARAM_SAME &&
+             param_value != RSMAP_REQUEST_PARAM_ID &&
+             centry_list_locate(master_centry_list, param_value.c_str()) == nullptr) {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_RSMAP_PARAM_BAD_VALUE_SSS, name, param_name.c_str(),
+                                    param_value.c_str());
+            ret = false;
+         }
+
+         // id=, scope= and distinct= are reserved so that the grammar has room for them, but
+         // nothing reads any of them yet - same= is the only one the scheduler honours. Were
+         // one of them accepted, a job which asked for a named instance, or for a constraint
+         // across the whole job rather than per host, would run as though it had asked for
+         // nothing at all. Refusing them keeps that from happening quietly, and a request the
+         // system refuses today can be accepted later without breaking anything, which is not
+         // true the other way round.
+         if (param_name == RSMAP_REQUEST_PARAM_ID ||
+             param_name == RSMAP_REQUEST_PARAM_SCOPE ||
+             param_name == RSMAP_REQUEST_PARAM_DISTINCT) {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_RSMAP_PARAM_NOT_YET_SS, name, param_name.c_str());
+            ret = false;
+         }
+
+         continue;
+      }
+
+      // not a reserved name, so it has to name a complex - it will be matched against the
+      // characteristic of that name on an instance. The name is resolved first so that one
+      // nobody defined is still told it does not exist, which is the more useful of the two
+      // messages.
+      if (centry_list_locate(master_centry_list, param_name.c_str()) == nullptr) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_RSMAP_PARAM_UNKNOWN_SS, name, param_name.c_str());
+         ret = false;
+      } else {
+         // Nothing matches a request against the characteristics of an instance yet, so a
+         // request naming one would select nothing and the job would run on whichever
+         // instances happened to be free - the same quiet failure id= and scope= are refused
+         // for above. CS-2733 implements the matching and lifts this.
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_RSMAP_PARAM_NOT_YET_SS, name, param_name.c_str());
+         ret = false;
+      }
+   }
+
+   return ret;
+}
+
+/**
+ * @brief read one parameter out of the bracketed list of a resource map request
+ *
+ * The parameters live in CE_stringval after the amount, "4[same=id,memory=40G]". They are read
+ * back out on demand rather than stored anywhere, because a request is a spooled object and
+ * caching the parsed form in a field of it would be a cull change - which the maintenance branch
+ * cannot take.
+ *
+ * That makes the call site responsible for the cost. This is a scan of the value, so it is cheap
+ * once and not cheap per queue instance: ri_time_by_slots() runs per request, per layer and per
+ * queue instance, and in the parallel path again per slot count probe. Call it where the answer
+ * is needed once - a per host constraint belongs at the host layer - rather than inside the
+ * innermost loop.
+ *
+ * The list has already been validated by centry_rsmap_check_request_params() by the time anything
+ * asks for a parameter, so this does not report errors - a malformed list simply has no
+ * parameters to find.
+ *
+ * @param centry  the request
+ * @param param   name of the parameter, e.g. RSMAP_REQUEST_PARAM_SAME
+ * @param value   filled in with the value if the parameter is present; untouched otherwise
+ * @return        true if the parameter is present
+ */
+bool
+centry_rsmap_get_request_param(const lListElem *centry, const char *param, dstring *value) {
+   const char *s = lGetString(centry, CE_stringval);
+
+   if (s == nullptr || param == nullptr) {
+      return false;
+   }
+
+   const char *open = strchr(s, '[');
+   if (open == nullptr) {
+      return false;
+   }
+
+   const size_t param_len = strlen(param);
+   const char *p = open + 1;
+   int depth = 0;
+
+   while (*p != '\0') {
+      // the start of an entry: does it begin with "<param>=" at this level?
+      if (depth == 0 && strncmp(p, param, param_len) == 0 && *(p + param_len) == '=') {
+         const char *v = p + param_len + 1;
+         const char *end = v;
+         int d = 0;
+         while (*end != '\0' && !(d == 0 && (*end == ',' || *end == ']'))) {
+            if (*end == '[') {
+               d++;
+            } else if (*end == ']') {
+               d--;
+            }
+            ++end;
+         }
+         sge_dstring_clear(value);
+         sge_dstring_sprintf(value, "%.*s", (int)(end - v), v);
+         return true;
+      }
+
+      // skip to the start of the next entry at this level
+      while (*p != '\0' && !(depth == 0 && *p == ',')) {
+         if (*p == '[') {
+            depth++;
+         } else if (*p == ']') {
+            depth--;
+            if (depth < 0) {
+               return false;
+            }
+         }
+         ++p;
+      }
+      if (*p == ',') {
+         ++p;
+      }
+   }
+
+   return false;
+}
+
+
+/**
+ * @brief the value an instance is grouped by for a same= constraint
+ *
+ * "Every instance I am granted must carry the same key" is one mechanism with the key read in
+ * two ways. For same=id the key is the identifier itself, which is why that case groups nothing:
+ * the reader has already folded repeated identifiers into one element, so every group has
+ * exactly one member. For same=<characteristic> the key is that characteristic's value on the
+ * instance, and several identifiers can share one.
+ *
+ * An instance which does not carry the characteristic has no key. It cannot satisfy the
+ * constraint - there is nothing to agree with - so it is left out rather than being treated as
+ * a group of its own, which would let a job be granted instances that agree about nothing.
+ *
+ * @param defined_ep  one instance of the map, a RESL_Type element of CE_resource_map_list
+ * @param key_name    nullptr or "id" for the identifier, otherwise a characteristic name
+ * @return            the key, or nullptr when the instance cannot take part
+ */
+static const char *
+centry_rsmap_instance_key(const lListElem *defined_ep, const char *key_name) {
+   if (key_name == nullptr || strcmp(key_name, RSMAP_REQUEST_PARAM_ID) == 0) {
+      return lGetString(defined_ep, RESL_value);
+   }
+
+   const lListElem *property = lGetSubStr(defined_ep, CE_name, key_name, RESL_properties);
+   if (property == nullptr) {
+      return nullptr;
+   }
+   return lGetString(property, CE_stringval);
+}
+
+/**
+ * @brief how many instances of one element of a resource map are free
+ *
+ * What is not free is passed in rather than read from a host, so that this stays arithmetic on
+ * two lists. Who holds an instance, and over what period, is a scheduling question and is
+ * answered where the utilization and the resource diagram are - see utilization_rsmap_max().
+ *
+ * @param defined_ep the instance, from CE_resource_map_list
+ * @param taken      the identifiers which are spoken for and how many of each, may be nullptr
+ * @return           the configured amount less what is taken of it
+ */
+static uint32_t
+centry_rsmap_instance_free(const lListElem *defined_ep, const lList *taken) {
+   uint32_t free = lGetUlong(defined_ep, RESL_amount);
+
+   if (taken != nullptr) {
+      const char *id = lGetString(defined_ep, RESL_value);
+      const lListElem *used_ep = lGetElemStr(taken, RESL_value, id);
+      if (used_ep != nullptr) {
+         const uint32_t used = lGetUlong(used_ep, RESL_amount);
+         // RESL_amount is unsigned: an id taken beyond its count must read as full rather
+         // than wrap round to an enormous free amount
+         free = (used >= free) ? 0 : free - used;
+      }
+   }
+
+   return free;
+}
+
+/**
+ * @brief find the key of a resource map with the most free instances
+ *
+ * The general form of centry_rsmap_best_free_id(): same=id asks for the identifier with the
+ * most free instances, same=<characteristic> for the characteristic value whose instances have
+ * the most free between them.
+ *
+ * The group is named by its key and not handed back as a list of its members. Neither caller
+ * needs the members: the matching side wants the count, and the booking side walks the map
+ * again taking from whatever carries the key. Returning a list would mean an allocation on a
+ * path which runs once per host per probe, and a question about how long the identifiers in it
+ * stay valid, for nothing.
+ *
+ * The identifier case keeps its own loop rather than going through the accumulator. Every group
+ * has one member there, so there is nothing to add up, and it is the case every existing request
+ * takes - it should not start paying for a generalization it does not use.
+ *
+ * @param resource_definition  the resource map on the host, from EH_consumable_config_list
+ * @param taken                the identifiers which are already spoken for, may be nullptr
+ * @param key_name             nullptr or "id" for the identifier, otherwise a characteristic
+ * @param free_amount          out: the free count of the group returned, 0 if there is none
+ * @return                     the key of the group with the most free instances, or nullptr
+ */
+/**
+ * @brief the identifiers a resource map groups its instances by
+ *
+ * For same=id every identifier is its own group; for same=<characteristic> the instances
+ * carrying the same value of that characteristic form one. An instance which does not carry the
+ * characteristic belongs to no group and cannot satisfy the constraint, so it is left out.
+ *
+ * @param resource_definition the resource map on the host, from EH_consumable_config_list
+ * @param key_name            "id" or the name of a characteristic
+ * @return                    the distinct keys, an ST_Type list, to be freed by the caller
+ */
+lList *
+centry_rsmap_group_keys(const lListElem *resource_definition, const char *key_name) {
+   lList *keys = nullptr;
+
+   const lListElem *defined_ep;
+   for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
+      const char *key = centry_rsmap_instance_key(defined_ep, key_name);
+      if (key != nullptr && lGetElemStr(keys, ST_name, key) == nullptr) {
+         lAddElemStr(&keys, ST_name, key, ST_Type);
+      }
+   }
+
+   return keys;
+}
+
+/**
+ * @brief how many instances of one group of a resource map are free
+ *
+ * The group counterpart of centry_rsmap_instance_free(): what the instances sharing one key
+ * have free between them. This is what a same= request asks for - the instances it is granted
+ * have to come from one group, so what matters is what one group can serve, not the map.
+ *
+ * @param resource_definition the resource map on the host, from EH_consumable_config_list
+ * @param taken               the identifiers which are spoken for, may be nullptr
+ * @param key_name            "id" or the name of a characteristic
+ * @param key                 which group
+ * @return                    the free instances of that group
+ */
+uint32_t
+centry_rsmap_group_free(const lListElem *resource_definition, const lList *taken,
+                        const char *key_name, const char *key) {
+   uint32_t free = 0;
+
+   if (resource_definition == nullptr || key == nullptr) {
+      return 0;
+   }
+
+   const lListElem *defined_ep;
+   for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
+      const char *instance_key = centry_rsmap_instance_key(defined_ep, key_name);
+      if (instance_key != nullptr && strcmp(instance_key, key) == 0) {
+         free += centry_rsmap_instance_free(defined_ep, taken);
+      }
+   }
+
+   return free;
+}
+
+const char *
+centry_rsmap_best_free_group(const lListElem *resource_definition,
+                             const lList *taken, const char *key_name,
+                             uint32_t *free_amount) {
+   if (free_amount != nullptr) {
+      *free_amount = 0;
+   }
+   if (resource_definition == nullptr) {
+      return nullptr;
+   }
+   if (key_name == nullptr || strcmp(key_name, RSMAP_REQUEST_PARAM_ID) == 0) {
+      return centry_rsmap_best_free_id(resource_definition, taken, free_amount);
+   }
+
+   // sum the free instances per key. A resource map holds the devices of one host, so this is
+   // a handful of entries and a linear scan beats hashing and copying the keys into strings
+   std::vector<std::pair<const char *, uint32_t>> groups;
+
+   const lListElem *defined_ep;
+   for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
+      const char *key = centry_rsmap_instance_key(defined_ep, key_name);
+      if (key == nullptr) {
+         continue;
+      }
+      const uint32_t free = centry_rsmap_instance_free(defined_ep, taken);
+
+      bool found = false;
+      for (auto &group : groups) {
+         if (strcmp(group.first, key) == 0) {
+            group.second += free;
+            found = true;
+            break;
+         }
+      }
+      if (!found) {
+         groups.emplace_back(key, free);
+      }
+   }
+
+   const char *best_key = nullptr;
+   uint32_t best_free = 0;
+   for (const auto &group : groups) {
+      if (best_key == nullptr || group.second > best_free) {
+         best_key = group.first;
+         best_free = group.second;
+      }
+   }
+
+   if (free_amount != nullptr) {
+      *free_amount = best_free;
+   }
+   return best_key;
+}
+
+/**
+ * @brief take a number of instances from one group of a resource map
+ *
+ * The selection half of the same= constraint. centry_rsmap_best_free_group() answers what a
+ * group could serve; this takes the instances and says which they are.
+ *
+ * The answer is a list of (identifier, amount) pairs and not a list of identifiers, because the
+ * reader folds repeated identifiers into one element with a count. Three instances from a node
+ * made of two cards of two is two entries and not three.
+ *
+ * A request which names the map in more than one scope arrives here more than once, and the
+ * later visits must not choose again: the group is read back from what has already been granted,
+ * and what this job holds of each instance is subtracted along with what other jobs hold - the
+ * former is not in the utilization yet, because nothing is debited until the assignment is
+ * complete.
+ *
+ * Instances are taken in the order the map defines them, so one is filled before the next is
+ * touched. That leaves whole identifiers free for the jobs which need a whole one, which is the
+ * same thing the unconstrained path does.
+ *
+ * @param resource_definition  the resource map on the host, from EH_consumable_config_list
+ * @param taken                the identifiers which are already spoken for, may be nullptr
+ * @param already              what this job already holds of the map (RESL_Type), may be nullptr
+ * @param key_name             nullptr or "id" for the identifier, otherwise a characteristic
+ * @param amount               how many instances to take
+ * @param selected             out: a new list of (RESL_value, RESL_amount), untouched on failure
+ * @return                     true when the amount was taken, false when no group can serve it
+ */
+/**
+ * @brief take a number of instances, optionally restricted to one group
+ *
+ * The body shared by centry_rsmap_select_instances() and
+ * centry_rsmap_select_group_instances(). With key_name nullptr every instance is a candidate;
+ * otherwise only those whose key equals the one given.
+ *
+ * What an instance has free is what it is configured with, less what other jobs hold, less what
+ * this job already holds - the last of those is not in the utilization yet, because nothing is
+ * debited until the assignment is complete, and a map requested in more than one request scope
+ * arrives here more than once.
+ */
+static bool
+centry_rsmap_take_instances(const lListElem *resource_definition,
+                            const lList *taken, const lList *already,
+                            const char *key_name, const char *key, uint32_t amount,
+                            lList **selected) {
+   lList *chosen = nullptr;
+   uint32_t remaining = amount;
+
+   const lListElem *defined_ep;
+   for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
+      if (remaining == 0) {
+         break;
+      }
+      if (key != nullptr) {
+         const char *instance_key = centry_rsmap_instance_key(defined_ep, key_name);
+         if (instance_key == nullptr || strcmp(instance_key, key) != 0) {
+            continue;
+         }
+      }
+
+      const char *id = lGetString(defined_ep, RESL_value);
+      uint32_t free = centry_rsmap_instance_free(defined_ep, taken);
+
+      if (already != nullptr) {
+         const lListElem *mine = lGetElemStr(already, RESL_value, id);
+         if (mine != nullptr) {
+            const uint32_t held = lGetUlong(mine, RESL_amount);
+            free = (held >= free) ? 0 : free - held;
+         }
+      }
+      if (free == 0) {
+         continue;
+      }
+
+      const uint32_t take = (free >= remaining) ? remaining : free;
+      lListElem *ep = lAddElemStr(&chosen, RESL_value, id, RESL_Type);
+      if (ep == nullptr) {
+         lFreeList(&chosen);
+         return false;
+      }
+      lSetUlong(ep, RESL_amount, take);
+      remaining -= take;
+   }
+
+   if (remaining > 0) {
+      lFreeList(&chosen);
+      return false;
+   }
+
+   *selected = chosen;
+   return true;
+}
+
+/**
+ * @brief take a number of instances of a resource map, without any constraint between them
+ *
+ * The unconstrained counterpart of centry_rsmap_select_group_instances(): the instances are
+ * taken in the order the map defines them, filling one identifier before touching the next, so
+ * that whole identifiers stay free for the requests which need a whole one.
+ *
+ * @param resource_definition  the resource map on the host, from EH_consumable_config_list
+ * @param taken                the identifiers which are already spoken for, may be nullptr
+ * @param already              what this job already holds of the map (RESL_Type), may be nullptr
+ * @param amount               how many instances to take
+ * @param selected             out: a new list of (RESL_value, RESL_amount), untouched on failure
+ * @return                     true when the amount was taken, false when the map cannot serve it
+ */
+bool
+centry_rsmap_select_instances(const lListElem *resource_definition,
+                              const lList *taken, const lList *already,
+                              uint32_t amount, lList **selected) {
+   if (resource_definition == nullptr || selected == nullptr || amount == 0) {
+      return false;
+   }
+   return centry_rsmap_take_instances(resource_definition, taken, already,
+                                      nullptr, nullptr, amount, selected);
+}
+
+bool
+centry_rsmap_select_group_instances(const lListElem *resource_definition,
+                                    const lList *taken, const lList *already,
+                                    const char *key_name, uint32_t amount, lList **selected) {
+   if (resource_definition == nullptr || selected == nullptr || amount == 0) {
+      return false;
+   }
+
+   // which group: the one an earlier request scope took from, or the emptiest one
+   const char *key;
+   if (already != nullptr && lGetNumberOfElem(already) > 0) {
+      const char *chosen_id = lGetString(lFirst(already), RESL_value);
+      const lListElem *chosen_ep = lGetSubStr(resource_definition, RESL_value, chosen_id,
+                                              CE_resource_map_list);
+      if (chosen_ep == nullptr) {
+         // the map changed under us between one scope and the next
+         return false;
+      }
+      key = centry_rsmap_instance_key(chosen_ep, key_name);
+   } else {
+      uint32_t free_in_group = 0;
+      key = centry_rsmap_best_free_group(resource_definition, taken, key_name,
+                                         &free_in_group);
+   }
+   if (key == nullptr) {
+      return false;
+   }
+
+   return centry_rsmap_take_instances(resource_definition, taken, already,
+                                      key_name, key, amount, selected);
+}
+
+/**
+ * @brief find the id of a resource map with the most free instances
+ *
+ * This is what "all the instances I am granted must carry the same id" reduces to. The reader
+ * folds repeated identifiers into one element carrying a count, see store_resl() in the flatfile
+ * reader, so "gpu=8(0 0 0 0 1 1 1 1)" is two elements of four rather than eight elements, and
+ * the free count of an id is its configured amount less what is booked against it.
+ *
+ * The answer is a count rather than a yes or no because the scheduler wants both readings. A
+ * request which takes its amount once - consumable JOB or HOST - only asks whether some id has
+ * enough, while a per slot request asks how many slots one id can serve, which is the free count
+ * divided by the amount. Returning the count lets the caller do either, and lets the constraint
+ * take part in the ordinary "how many slots can this host offer" calculation instead of being a
+ * separate filter beside it.
+ *
+ * Both the matching and the booking side call this, which is the point of it living here. They
+ * run against the same host configuration and the same utilization - add_granted_resource_list()
+ * is called as soon as the assignment is fixed, before anything is debited - so they reach the
+ * same answer without the choice having to be carried from one to the other. If they ever
+ * disagreed a job would be granted a mixed set while matching believed otherwise, which is why
+ * there is one function and not two.
+ *
+ * @param resource_definition  the resource map on the host, from EH_consumable_config_list
+ * @param taken                the identifiers which are already spoken for and how many of
+ *                             each, may be nullptr when nothing is
+ * @param free_amount          out: the free count of the id returned, 0 if there is none
+ * @return                     the id with the most free instances, or nullptr for an empty map
+ */
+const char *
+centry_rsmap_best_free_id(const lListElem *resource_definition,
+                          const lList *taken, uint32_t *free_amount) {
+   const char *best_id = nullptr;
+   uint32_t best_free = 0;
+
+   if (free_amount != nullptr) {
+      *free_amount = 0;
+   }
+   if (resource_definition == nullptr) {
+      return nullptr;
+   }
+
+   const lListElem *defined_ep;
+   for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
+      const char *id = lGetString(defined_ep, RESL_value);
+      const uint32_t free = centry_rsmap_instance_free(defined_ep, taken);
+
+      if (best_id == nullptr || free > best_free) {
+         best_id = id;
+         best_free = free;
+      }
+   }
+
+   if (free_amount != nullptr) {
+      *free_amount = best_free;
+   }
+   return best_id;
 }
 
 /**

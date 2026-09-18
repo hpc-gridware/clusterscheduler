@@ -125,6 +125,7 @@ enum {
    SCHEDD_INFO_HNOTARRESERVED_SI,                    ///< cannot run on host "%s" because it was not reserved by advance reservation %d
    SCHEDD_INFO_ARISINERROR_I,                        ///< cannot run because requested advance reservation %d is in error state
    SCHEDD_INFO_CONSUMABLENOVALUE_SS,                 ///< cannot run in queue instance "%s" because consumable "%s" used as load threshold has no value at queue, host or global level
+   SCHEDD_INFO_CANNOTBOOKRESOURCE_SS,                ///< resource "%s" could not be granted on host "%s" although the host was selected for the job
 
    /* global messages*/
    SCHEDD_INFO_CANNOTRUNATHOST,                      ///< Jobs can not run because no host can satisfy the resource requirements
@@ -183,6 +184,7 @@ enum {
    SCHEDD_INFO_HNOTARRESERVED,                       ///< Jobs can not run because host was not reserved by advance reservation
    SCHEDD_INFO_ARISINERROR,                          ///< Jobs can not run because requested advance reservation is in error state
    SCHEDD_INFO_CONSUMABLENOVALUE,                    ///< Jobs can not run because a consumable used as load threshold has no value
+   SCHEDD_INFO_CANNOTBOOKRESOURCE,                   ///< a resource could not be granted on a host which was selected for the job
 
    TOOBIG   ///< Number of ids, must stay in the last position
 };

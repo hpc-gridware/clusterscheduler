@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2024 HPC-Gridware GmbH
+#  Copyright 2023-2026 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -25,7 +25,8 @@ set(PAGES sge_access_list sge_accounting sge_aliases sge_binding
       sge_bootstrap sge_calendar_conf sge_checkpoint sge_ckpt sge_complex
       sge_category sge_conf sge_host_aliases sge_host_conf sge_hostgroup sge_ijs sge_monitoring
       sge_pe sge_priority sge_project sge_qhost sge_qstat sge_qselect sge_qtask
-      sge_queue_conf sge_reporting sge_request sge_resource_quota sge_role sge_sched_conf sge_share_tree sge_user)
+      sge_queue_conf sge_reporting sge_request sge_resource_quota sge_role sge_rsmap sge_sched_conf
+      sge_share_tree sge_user)
 build_markdown_man("5" PAGES "0")
 
 # target for building all troff man pages from section 5
@@ -59,6 +60,7 @@ add_custom_target(troffman5 ALL DEPENDS
       ${CMAKE_CURRENT_BINARY_DIR}/sge_request.5
       ${CMAKE_CURRENT_BINARY_DIR}/sge_resource_quota.5
       ${CMAKE_CURRENT_BINARY_DIR}/sge_role.5
+      ${CMAKE_CURRENT_BINARY_DIR}/sge_rsmap.5
       ${CMAKE_CURRENT_BINARY_DIR}/sge_sched_conf.5
       ${CMAKE_CURRENT_BINARY_DIR}/sge_share_tree.5
       ${CMAKE_CURRENT_BINARY_DIR}/sge_user.5

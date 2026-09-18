@@ -41,6 +41,7 @@ namespace ocs {
       bool first_resource = true;   ///< Whether no resource has been written yet
       bool first_queue = true;      ///< Whether no granted queue has been written yet
       bool first_binding = true;    ///< Whether no core binding has been written yet
+      bool first_granted_resource = true;    ///< Whether no core binding has been written yet
       bool first_mail = true;       ///< Whether no mail recipient has been written yet
       bool first_acl = true;        ///< Whether no allowed user has been written yet
       bool first_xacl = true;       ///< Whether no barred user has been written yet
@@ -72,6 +73,9 @@ namespace ocs {
       void report_exec_binding_list_start(std::ostream &os) override;
       void report_exec_binding_list_finish(std::ostream &os) override;
       void report_exec_binding_list_node(std::ostream &os, const char *name, const char *value) override;
+      void report_granted_resource_list_start(std::ostream &os) override;
+      void report_granted_resource_list_finish(std::ostream &os) override;
+      void report_granted_resource_list_node(std::ostream &os, const char *name, const char *value) override;
       void report_granted_parallel_environment_start(std::ostream &os) override;
       void report_granted_parallel_environment_finish(std::ostream &os) override;
       void report_granted_parallel_environment_node(std::ostream &os, const char *name, const char *slots_range) override;

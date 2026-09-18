@@ -135,23 +135,6 @@
                "name": "SPOOL"
             }
          ]
-      },
-      {
-         "name": "utilization",
-         "summary": "Resource Utilization",
-         "description": [
-            {
-               "line": "contains per consumable information about resource utilization for this RSMAP ID"
-            }
-         ],
-         "type": "lListT",
-         "subClassName": "RUE",
-         "subCullPrefix": "RUE",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
       }
    ]
 }

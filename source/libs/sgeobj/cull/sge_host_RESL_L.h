@@ -68,9 +68,6 @@
 *    They can have different types, e.g., string for a GPU model or the affinity mask,
 *    double for numerical values like the bandwidth or the memory amount.
 *
-*    SGE_LIST(RESL_utilization) - Resource Utilization
-*    contains per consumable information about resource utilization for this RSMAP ID
-*
 */
 
 enum {
@@ -78,8 +75,7 @@ enum {
    RESL_id_instance,   ///< ID Instance
    RESL_pe_task_id,   ///< PE Task ID
    RESL_amount,   ///< Resource Amount
-   RESL_properties,   ///< Resource Properties
-   RESL_utilization   ///< Resource Utilization
+   RESL_properties   ///< Resource Properties
 };
 
 LISTDEF(RESL_Type)
@@ -88,7 +84,6 @@ LISTDEF(RESL_Type)
    SGE_ULONG(RESL_pe_task_id, CULL_SPOOL)
    SGE_ULONG(RESL_amount, CULL_SPOOL)
    SGE_LIST(RESL_properties, CE_Type, CULL_SPOOL)
-   SGE_LIST(RESL_utilization, RUE_Type, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(RESLN)
@@ -97,7 +92,6 @@ NAMEDEF(RESLN)
    NAME("RESL_pe_task_id")
    NAME("RESL_amount")
    NAME("RESL_properties")
-   NAME("RESL_utilization")
 NAMEEND
 
 /** @brief Number of attributes of the type, i.e. the size of its name table */

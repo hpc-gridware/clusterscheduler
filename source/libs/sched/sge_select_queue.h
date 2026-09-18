@@ -210,6 +210,7 @@ typedef struct {
    lList      **monitor_alpp;   ///< place scheduler diagnosis here if non-nullptr
    bool       monitor_next_run; ///< controls qconf -tsm scheduler diagnosis
    lList      *binding_to_use;  ///< Core/thread binding information
+   lList      *granted_rsmaps;  ///< resource map ids granted, keyed by GRU_name and GRU_host (GRU_Type)
    bool       filter_first_core; ///< globals binding filter: true if first core of first socket should not be used
    // -------------------- scheduler profiling index as picky pack data -------------------------
    sched_prof_t *pi;            ///< Profiling counters, or nullptr when profiling is off
@@ -221,7 +222,7 @@ typedef struct {
    false, false,                                                                                                       \
    nullptr, nullptr, nullptr,                            /* caching */                                                 \
    nullptr, nullptr, nullptr, 0, nullptr, 0,             /* parallel job related settings */                           \
-   nullptr, 0, 0, 0, nullptr, false, nullptr, false,     /* resulting assignment */                                    \
+   nullptr, 0, 0, 0, nullptr, false, nullptr, nullptr, false, /* resulting assignment */                               \
    nullptr                                               /* profiling */                                               \
 }
 

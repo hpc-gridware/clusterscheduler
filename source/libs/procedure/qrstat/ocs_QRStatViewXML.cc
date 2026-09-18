@@ -195,6 +195,25 @@ void ocs::QRStatViewXML::report_exec_binding_list_node(std::ostream &os, const c
    DRETURN_VOID;
 }
 
+void ocs::QRStatViewXML::report_granted_resource_list_start(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   os << "      <granted_resource_list>\n";
+   DRETURN_VOID;
+}
+
+void ocs::QRStatViewXML::report_granted_resource_list_finish(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   os << "      </granted_resource_list>\n";
+   DRETURN_VOID;
+}
+
+void ocs::QRStatViewXML::report_granted_resource_list_node(std::ostream &os, const char *name, const char *value) {
+   DENTER(TOP_LAYER);
+   os << "         <granted_resource><exec_host>" << EscapedString(name)
+      << "</exec_host><resource_map>" << EscapedString(value) << "</resource_map></granted_resource>\n";
+   DRETURN_VOID;
+}
+
 void ocs::QRStatViewXML::report_granted_parallel_environment_start(std::ostream &os) {
    DENTER(TOP_LAYER);
    os << "      <granted_parallel_environment>\n";

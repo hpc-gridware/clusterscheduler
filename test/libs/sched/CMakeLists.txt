@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2024 HPC-Gridware GmbH
+#  Copyright 2024-2026 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -37,6 +37,11 @@ target_include_directories(test_sched_resource_utilization PRIVATE "./")
 target_link_libraries(test_sched_resource_utilization PRIVATE sched sgeobj gdi cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sched_resource_utilization COMMAND test_sched_resource_utilization)
 
+add_executable(test_sched_request_amount test_sched_request_amount.cc)
+target_include_directories(test_sched_request_amount PRIVATE "./")
+target_link_libraries(test_sched_request_amount PRIVATE sched sgeobj gdi cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_sched_request_amount COMMAND test_sched_request_amount)
+
 add_executable(test_sched_load_formula test_sched_load_formula.cc)
 target_include_directories(test_sched_load_formula PRIVATE "./")
 target_link_libraries(test_sched_load_formula PRIVATE sched sgeobj gdi cull comm commlists uti ${SGE_LIBS})
@@ -46,4 +51,5 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_sched_eval_performance DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sched_resource_utilization DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sched_load_formula DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sched_request_amount DESTINATION testbin/${SGE_ARCH})
 endif ()

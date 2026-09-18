@@ -40,6 +40,7 @@ namespace ocs {
    class QRStatViewPlain : public QRStatViewBase {
       bool header_printed = false;     ///< Whether the summary table already has its header line
       bool first_resource = false;     ///< Whether no resource has been written for this reservation yet
+      bool first_granted_resource = true;   ///< Whether no resource map has been written yet
       bool first_exec_queue = false;   ///< Whether no granted queue has been written yet
       bool first_mail = false;         ///< Whether no mail recipient has been written yet
       bool first_acl = false;          ///< Whether no allowed user has been written yet
@@ -71,6 +72,9 @@ namespace ocs {
       void report_exec_binding_list_start(std::ostream &os) override;
       void report_exec_binding_list_finish(std::ostream &os) override;
       void report_exec_binding_list_node(std::ostream &os, const char *name, const char *value) override;
+      void report_granted_resource_list_start(std::ostream &os) override;
+      void report_granted_resource_list_finish(std::ostream &os) override;
+      void report_granted_resource_list_node(std::ostream &os, const char *name, const char *value) override;
       void report_granted_parallel_environment_start(std::ostream &os) override;
       void report_granted_parallel_environment_finish(std::ostream &os) override;
       void report_granted_parallel_environment_node(std::ostream &os, const char *name, const char *slots_range) override;
