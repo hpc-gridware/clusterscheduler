@@ -7511,12 +7511,13 @@ static bool mod_reserved_hgroup(lList *arglp, const char *group,
       const lListElem *host;
 
       for_each_ep(host, sent) {
+         /* CS-2645 follow-up: this reports success, so it belongs on stdout.
+          * qconf_info_printf() writes there and appends the newline itself. */
          if (sub_command == ocs::gdi::SubCommand::APPEND) {
-            fprintf(stderr, MSG_QCONF_XADDEDTOYLIST_SS, lGetHost(host, HR_name), what);
+            qconf_info_printf(MSG_QCONF_XADDEDTOYLIST_SS, lGetHost(host, HR_name), what);
          } else {
-            fprintf(stderr, MSG_QCONF_XREMOVEDFROMYLIST_SS, lGetHost(host, HR_name), what);
+            qconf_info_printf(MSG_QCONF_XREMOVEDFROMYLIST_SS, lGetHost(host, HR_name), what);
          }
-         fprintf(stderr, "\n");
       }
    } else {
       /* every answer, not just the first: the qmaster names each offending host */
