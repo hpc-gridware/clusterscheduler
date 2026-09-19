@@ -464,20 +464,44 @@ qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), voi
 }
 
 /** @brief Context shared by the per-file callbacks driven by qconf_for_each_file(). */
+typedef spooling_field *(*qconf_build_fields_fn)(spool_flatfile_format format, bool *owned);
+
+/** @brief The configuration object types the generic engines handle.
+ *
+ * The cluster configuration is deliberately absent: it is keyed on the host
+ * basename rather than on a field, which is why it has its own
+ * qconf_conf_export()/qconf_conf_apply_path(). */
+enum class QConfObj {
+   CAL, CK, CE, EH, HGRP, PE, PR, CQ, RL, RQS, US, UU, STN, SC
+};
+
+/** @brief Everything the generic engines need to know about one object type. */
+struct qconf_object_desc {
+   ocs::gdi::Target target;                          ///< GDI target list
+   const lDescr *descr;                              ///< CULL descriptor
+   int name_nm;                                      ///< name field, NoName for the singletons
+   qconf_build_fields_fn build_fields;               ///< field list provider (may allocate)
+   const spool_flatfile_instr *sfi;                  ///< flatfile spooling instruction
+   const char *json_type_name;                       ///< explicit JSON $id, nullptr derives it
+   int (*validate)(const lListElem *, lList **);     ///< semantic check, nullptr for none
+   int (*prepare)(lListElem *, lList **);            ///< pre-send fixup, nullptr for none
+   ocs::gdi::SubCommand sub_cmd;                     ///< GDI sub-command of an upsert
+   bool as_list;                                     ///< file holds a list, not one object
+   bool del_parse_values;                            ///< parse values when reading for a delete
+   bool is_root;                                     ///< singleton export: object is the root
+   const char *exclude1;                             ///< export: skip this name
+   const char *exclude2;                             ///< export: skip this name too
+};
+
 struct qconf_file_ctx {
-   ocs::gdi::Target target;   ///< GDI target list (e.g. CAL_LIST)
-   const lDescr *descr;       ///< CULL descriptor of the object type
-   spooling_field *fields;    ///< spooling field list describing the file format
-   int name_nm;               ///< name attribute of the object (e.g. CAL_name)
+   const qconf_object_desc *desc;  ///< everything that identifies the object type (CS-2795)
+   spooling_field *fields;    ///< spooling field list, resolved from the descriptor's provider
+   bool parse_values;         ///< spool_flatfile_read_object parse_values flag; the delete path
+                              ///< takes it from the descriptor, the apply path always parses
    lList *names;              ///< delete path: collected name elements
    lList *elems;              ///< -strict apply: parsed objects pending send (CS-2299 H2)
    int n_ok;                  ///< files applied / names collected (CS-2299 H1)
    int n_fail;                ///< files that failed (CS-2299 H1)
-   int (*validate)(const lListElem *, lList **);  ///< optional object validator, or nullptr
-   const spool_flatfile_instr *sfi;  ///< flatfile spooling instruction (CS-2303: e.g. qconf_ce_sfi)
-   int (*prepare)(lListElem *, lList **);  ///< optional transform, e.g. resolve hostname (CS-2304)
-   bool parse_values;         ///< spool_flatfile_read_object parse_values flag (CS-2305: cqueue uses false)
-   ocs::gdi::SubCommand sub_cmd;  ///< GDI sub-command for ADD/MOD (CS-2305: cqueue uses SET_ALL)
 };
 
 /**
@@ -496,12 +520,12 @@ struct qconf_file_ctx {
 [[maybe_unused]] static int
 qconf_apply_one(const char *filepath, void *vctx) {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
-   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate, ctx->sfi, ctx->prepare, ctx->parse_values);
+   lListElem *ep = qconf_read_object_file(ctx->desc->descr, ctx->fields, filepath, ctx->desc->validate, ctx->desc->sfi, ctx->desc->prepare, ctx->parse_values);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
    }
-   if (qconf_send_upsert(ctx->target, ctx->descr, ctx->name_nm, ep, ctx->sub_cmd) != 0) {
+   if (qconf_send_upsert(ctx->desc->target, ctx->desc->descr, ctx->desc->name_nm, ep, ctx->desc->sub_cmd) != 0) {
       ctx->n_fail++;
       return 1;
    }
@@ -523,21 +547,21 @@ static int
 qconf_collect_name(const char *filepath, void *vctx) {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
    /* deletion only needs the name, so no object validator is applied here */
-   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, nullptr, ctx->sfi, ctx->prepare, ctx->parse_values);
+   lListElem *ep = qconf_read_object_file(ctx->desc->descr, ctx->fields, filepath, nullptr, ctx->desc->sfi, ctx->desc->prepare, ctx->parse_values);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
    }
-   const char *name = qconf_get_name(ep, ctx->name_nm);
+   const char *name = qconf_get_name(ep, ctx->desc->name_nm);
    if (name != nullptr) {
       /* CS-2299 H5: deleting is idempotent — a name that no longer exists is a
        * warning, not a batch failure, and is dropped from the delete request. */
-      if (qconf_object_exists(ctx->target, ctx->descr, ctx->name_nm, name)) {
+      if (qconf_object_exists(ctx->desc->target, ctx->desc->descr, ctx->desc->name_nm, name)) {
          /* CS-2304: host fields must be added with lAddElemHost, not lAddElemStr. */
-         if (qconf_name_is_host(ctx->descr, ctx->name_nm)) {
-            lAddElemHost(&ctx->names, ctx->name_nm, name, ctx->descr);
+         if (qconf_name_is_host(ctx->desc->descr, ctx->desc->name_nm)) {
+            lAddElemHost(&ctx->names, ctx->desc->name_nm, name, ctx->desc->descr);
          } else {
-            lAddElemStr(&ctx->names, ctx->name_nm, name, ctx->descr);
+            lAddElemStr(&ctx->names, ctx->desc->name_nm, name, ctx->desc->descr);
          }
          ctx->n_ok++;
       } else {
@@ -561,7 +585,7 @@ qconf_collect_name(const char *filepath, void *vctx) {
 static int
 qconf_collect_elem(const char *filepath, void *vctx) {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
-   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate, ctx->sfi, ctx->prepare, ctx->parse_values);
+   lListElem *ep = qconf_read_object_file(ctx->desc->descr, ctx->fields, filepath, ctx->desc->validate, ctx->desc->sfi, ctx->desc->prepare, ctx->parse_values);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
@@ -601,19 +625,15 @@ qconf_collect_elem(const char *filepath, void *vctx) {
  * @return the number of objects that failed
  */
 static int
-qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *fields,
-                 int name_nm, const char *path,
-                 int (*validate)(const lListElem *, lList **),
-                 const spool_flatfile_instr *sfi = &qconf_sfi,
-                 int (*prepare)(lListElem *, lList **) = nullptr,
-                 ocs::gdi::SubCommand sub_cmd = ocs::gdi::SubCommand::NONE,
-                 bool parse_values = true) {
+qconf_apply_path(const qconf_object_desc &d, spooling_field *fields, const char *path) {
+   const lDescr *descr = d.descr;
+   const int name_nm = d.name_nm;
    bool is_dir = sge_is_directory(path);
 
-   /* 1. Read every file (running prepare/validate per object) into one list. */
-   qconf_file_ctx ctx = {target, descr, fields, name_nm, nullptr,
-                         lCreateList("qconf apply", descr), 0, 0,
-                         validate, sfi, prepare, parse_values, sub_cmd};
+   /* 1. Read every file (running prepare/validate per object) into one list.
+    * The apply path always parses values; only a delete may skip it. */
+   qconf_file_ctx ctx = {&d, fields, true, nullptr,
+                         lCreateList("qconf apply", descr), 0, 0};
    qconf_for_each_file(path, qconf_collect_elem, &ctx);
    int n_read_fail = ctx.n_fail;   /* files that did not parse (skipped) */
 
@@ -625,7 +645,7 @@ qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *f
    }
 
    /* 2. One bulk name GET, then partition the parsed objects into add vs mod. */
-   lList *existing = qconf_get_name_list(target, descr, name_nm);
+   lList *existing = qconf_get_name_list(d.target, descr, name_nm);
    lList *add_list = lCreateList("qconf add", descr);
    lList *mod_list = lCreateList("qconf mod", descr);
    int n_dry = 0;
@@ -668,7 +688,7 @@ qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *f
 
    if (n_mod > 0) {
       ocs::gdi::Mode mode = (--remaining > 0) ? ocs::gdi::Mode::RECORD : ocs::gdi::Mode::SEND;
-      mod_id = gdi_multi.request(&send_alp, mode, target, ocs::gdi::Command::MOD, sub_cmd,
+      mod_id = gdi_multi.request(&send_alp, mode, d.target, ocs::gdi::Command::MOD, d.sub_cmd,
                                  &mod_list, nullptr, nullptr, false);
       if (mode == ocs::gdi::Mode::SEND) {
          gdi_multi.wait();
@@ -676,7 +696,7 @@ qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *f
    }
    if (n_add > 0) {
       ocs::gdi::Mode mode = (--remaining > 0) ? ocs::gdi::Mode::RECORD : ocs::gdi::Mode::SEND;
-      add_id = gdi_multi.request(&send_alp, mode, target, ocs::gdi::Command::ADD, sub_cmd,
+      add_id = gdi_multi.request(&send_alp, mode, d.target, ocs::gdi::Command::ADD, d.sub_cmd,
                                  &add_list, nullptr, nullptr, false);
       if (mode == ocs::gdi::Mode::SEND) {
          gdi_multi.wait();
@@ -687,12 +707,12 @@ qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *f
    lList *result_alp = nullptr;
    if (n_mod > 0) {
       lList *resp = nullptr;
-      gdi_multi.get_response(&resp, ocs::gdi::Command::MOD, sub_cmd, target, mod_id, nullptr);
+      gdi_multi.get_response(&resp, ocs::gdi::Command::MOD, d.sub_cmd, d.target, mod_id, nullptr);
       answer_list_append_list(&result_alp, &resp);
    }
    if (n_add > 0) {
       lList *resp = nullptr;
-      gdi_multi.get_response(&resp, ocs::gdi::Command::ADD, sub_cmd, target, add_id, nullptr);
+      gdi_multi.get_response(&resp, ocs::gdi::Command::ADD, d.sub_cmd, d.target, add_id, nullptr);
       answer_list_append_list(&result_alp, &resp);
    }
    answer_list_append_list(&result_alp, &send_alp);
@@ -735,14 +755,11 @@ qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *f
  * @return the number of objects that failed to be deleted
  */
 static int
-qconf_delete_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *fields,
-                  int name_nm, const char *path,
-                  const spool_flatfile_instr *sfi = &qconf_sfi,
-                  int (*prepare)(lListElem *, lList **) = nullptr,
-                  bool parse_values = true) {
-   qconf_file_ctx ctx = {target, descr, fields, name_nm,
-                         lCreateList("qconf del", descr), nullptr, 0, 0, nullptr, sfi, prepare,
-                         parse_values, ocs::gdi::SubCommand::NONE};
+qconf_delete_path(const qconf_object_desc &d, spooling_field *fields, const char *path) {
+   const lDescr *descr = d.descr;
+   const int name_nm = d.name_nm;
+   qconf_file_ctx ctx = {&d, fields, d.del_parse_values,
+                         lCreateList("qconf del", descr), nullptr, 0, 0};
    bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_collect_name, &ctx);
 
@@ -774,7 +791,7 @@ qconf_delete_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *
       }
    }
    if (n_names > 0) {
-      lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::DEL,
+      lList *alp = ocs::gdi::Client::sge_gdi(d.target, ocs::gdi::Command::DEL,
                                              ocs::gdi::SubCommand::NONE, &ctx.names,
                                              nullptr, nullptr);
       ctx.n_fail += show_answer_list(alp);
@@ -824,7 +841,6 @@ qconf_name_is_fs_safe(const char *name) {
  *  free it afterwards (a dynamically built list, e.g. exechost/project/user) or false
  *  for a shared static table (e.g. CQ_fields). The format lets sharetree pick its
  *  JSON vs ASCII field list. */
-typedef spooling_field *(*qconf_build_fields_fn)(spool_flatfile_format format, bool *owned);
 
 /**
  * @brief Write one object element to @p dest as a re-importable flatfile (KTD4).
@@ -1326,6 +1342,126 @@ qconf_cq_verify(const lListElem *ep, lList **alpp) {
 static int
 qconf_us_validate(const lListElem *ep, lList **alpp) {
    return userset_validate_entries(const_cast<lListElem *>(ep), alpp);
+}
+
+/* ===== CS-2795: the object descriptor table ================================
+ * The generic engines above (qconf_apply_path, qconf_delete_path,
+ * qconf_export_path, qconf_export_singleton) already drive every file-based
+ * option from one implementation each. What every call site still repeated was
+ * the tuple identifying the object: target, descriptor, name field, field list,
+ * spooling instruction and the object's hooks. This table holds it once.
+ *
+ * Adding a new configuration object type is now one row plus its field
+ * provider, instead of a tuple copied into each of the add, modify, delete and
+ * export branches. */
+
+/** @brief One row per object type, indexed by QConfObj.
+ *
+ * Kept in the order of the enum so that qconf_desc() is a plain index. */
+static const qconf_object_desc qconf_object_table[] = {
+   /* CAL  */ { ocs::gdi::Target::CAL_LIST,  CAL_Type,  CAL_name,  qconf_fields_CAL,  &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
+   /* CK   */ { ocs::gdi::Target::CK_LIST,   CK_Type,   CK_name,   qconf_fields_CK,   &qconf_sfi,                 nullptr,      ckpt_validate,       nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
+   /* CE   */ { ocs::gdi::Target::CE_LIST,   CE_Type,   CE_name,   qconf_fields_CE,   &qconf_ce_sfi,              nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
+   /* EH   */ { ocs::gdi::Target::EH_LIST,   EH_Type,   EH_name,   qconf_fields_EH,   &qconf_sfi,                 "exechost",   nullptr,             qconf_eh_resolve,  ocs::gdi::SubCommand::NONE,    false, true,  false, SGE_TEMPLATE_NAME,  SGE_GLOBAL_NAME },
+   /* HGRP */ { ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_name, qconf_fields_HGRP, &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
+   /* PE   */ { ocs::gdi::Target::PE_LIST,   PE_Type,   PE_name,   qconf_fields_PE,   &qconf_sfi,                 nullptr,      qconf_pe_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
+   /* PR   */ { ocs::gdi::Target::PR_LIST,   PR_Type,   PR_name,   qconf_fields_PR,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
+   /* CQ   */ { ocs::gdi::Target::CQ_LIST,   CQ_Type,   CQ_name,   qconf_fields_CQ,   &qconf_sfi,                 nullptr,      qconf_cq_verify,     nullptr,           ocs::gdi::SubCommand::SET_ALL, false, false, false, nullptr,            nullptr },
+   /* RL   */ { ocs::gdi::Target::RL_LIST,   RL_Type,   RL_name,   qconf_fields_RL,   &qconf_sfi,                 nullptr,      qconf_role_validate, nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
+   /* RQS  */ { ocs::gdi::Target::RQS_LIST,  RQS_Type,  RQS_name,  qconf_fields_RQS,  &qconf_rqs_sfi,             nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    true,  true,  false, nullptr,            nullptr },
+   /* US   */ { ocs::gdi::Target::US_LIST,   US_Type,   US_name,   qconf_fields_US,   &qconf_param_sfi,           nullptr,      qconf_us_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
+   /* UU   */ { ocs::gdi::Target::UU_LIST,   UU_Type,   UU_name,   qconf_fields_UU,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
+   /* STN  */ { ocs::gdi::Target::STN_LIST,  STN_Type,  NoName,    qconf_fields_STN,  &qconf_name_value_list_sfi, "sharetree",  nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  true,  nullptr,            nullptr },
+   /* SC   */ { ocs::gdi::Target::SC_LIST,   SC_Type,   NoName,    qconf_fields_SC,   &qconf_comma_sfi,           "sched_conf", nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
+};
+
+/** @brief The descriptor of one object type.
+ * @param o the object type
+ * @return its row in qconf_object_table
+ */
+static const qconf_object_desc &
+qconf_desc(QConfObj o) {
+   return qconf_object_table[static_cast<size_t>(o)];
+}
+
+/** @brief Add or modify from a file or directory, driven by the descriptor.
+ *
+ * The field list comes from the descriptor's provider, which allocates for the
+ * object types whose list is built on demand (EH, PR, UU, STN) and hands back a
+ * shared static one otherwise; @c owned says which, so this frees exactly what
+ * it allocated.
+ *
+ * @param o    the object type
+ * @param path file or directory to read
+ * @return 0 on success, non-zero on error
+ */
+static int
+qconf_apply_obj(QConfObj o, const char *path) {
+   const qconf_object_desc &d = qconf_desc(o);
+   bool owned = false;
+   spooling_field *fields = d.build_fields(qconf_opt_format, &owned);
+   int ret = qconf_apply_path(d, fields, path);
+   if (owned) {
+      sge_free(&fields);
+   }
+   return ret;
+}
+
+/** @brief Delete the objects named by a file or directory, driven by the descriptor.
+ * @param o    the object type
+ * @param path file or directory to read
+ * @return 0 on success, non-zero on error
+ */
+static int
+qconf_delete_obj(QConfObj o, const char *path) {
+   const qconf_object_desc &d = qconf_desc(o);
+   bool owned = false;
+   spooling_field *fields = d.build_fields(qconf_opt_format, &owned);
+   int ret = qconf_delete_path(d, fields, path);
+   if (owned) {
+      sge_free(&fields);
+   }
+   return ret;
+}
+
+/** @brief Export one object or a whole directory, driven by the descriptor.
+ * @param o    the object type
+ * @param path object name, or a directory for the bulk export
+ * @return the number of objects that failed to export
+ */
+static int
+qconf_export_obj(QConfObj o, const char *path) {
+   const qconf_object_desc &d = qconf_desc(o);
+   return qconf_export_path(d.target, d.descr, d.name_nm, d.build_fields,
+                            d.sfi, d.json_type_name, d.as_list, path,
+                            d.exclude1, d.exclude2);
+}
+
+/** @brief Export a singleton object (share tree, scheduler configuration).
+ * @param o    the object type
+ * @param path file to write
+ * @return the number of objects that failed to export
+ */
+static int
+qconf_export_obj_singleton(QConfObj o, const char *path) {
+   const qconf_object_desc &d = qconf_desc(o);
+   return qconf_export_singleton(d.target, d.descr, d.build_fields,
+                                 d.sfi, d.json_type_name, d.is_root, path);
+}
+
+/** @brief Upsert one object, driven by the descriptor.
+ *
+ * The target, descriptor, name field and GDI sub-command all come from the
+ * table, so the editor branches no longer name the object type four times.
+ *
+ * @param o  the object type
+ * @param ep the element to send; consumed by the call
+ * @return 0 on success, non-zero on error
+ */
+static int
+qconf_send_upsert_obj(QConfObj o, lListElem *ep) {
+   const qconf_object_desc &d = qconf_desc(o);
+   return qconf_send_upsert(d.target, d.descr, d.name_nm, ep, d.sub_cmd);
 }
 
 /* ===== CS-2307: resource quota set helpers =================================
@@ -1987,8 +2123,7 @@ int sge_parse_qconf(char *argv[]) {
             }
          } else { /* -Acal: CS-2299 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_path(ocs::gdi::Target::CAL_LIST, CAL_Type, CAL_fields,
-                                 CAL_name, *spp, nullptr) != 0) {
+            if (qconf_apply_obj(QConfObj::CAL, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -1997,8 +2132,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -acal editor path: CS-2299 C2 — upsert (modify if it already exists) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::CAL_LIST, CAL_Type,
-                                                  CAL_name, ep);
+            sge_parse_return |= qconf_send_upsert_obj(QConfObj::CAL, ep);
          }
 
          spp++;
@@ -2091,8 +2225,7 @@ int sge_parse_qconf(char *argv[]) {
             }
          } else { /* -Ackpt: CS-2300 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_path(ocs::gdi::Target::CK_LIST, CK_Type, CK_fields,
-                                 CK_name, *spp, ckpt_validate) != 0) {
+            if (qconf_apply_obj(QConfObj::CK, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -2101,8 +2234,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -ackpt editor path: CS-2300 C2 — upsert (modify if it already exists) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::CK_LIST, CK_Type,
-                                                  CK_name, ep);
+            sge_parse_return |= qconf_send_upsert_obj(QConfObj::CK, ep);
          }
 
          spp++;
@@ -2229,15 +2361,12 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-Ae fname|dir": CS-2304 C2/C3 — add/modify exec host(s) from a file or directory */
       if (strcmp("-Ae", *spp) == 0) {
-         spooling_field *fields = sge_build_EH_field_list(false, false, false);
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_path(ocs::gdi::Target::EH_LIST, EH_Type, fields,
-                              EH_name, *spp, nullptr, &qconf_sfi, qconf_eh_resolve) != 0) {
+         if (qconf_apply_obj(QConfObj::EH, *spp) != 0) {
             sge_parse_return = 1;
          }
-         sge_free(&fields);
 
          spp++;
          continue;
@@ -2343,8 +2472,7 @@ int sge_parse_qconf(char *argv[]) {
             }
          } else { /* -Arole: CS-2302 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_path(ocs::gdi::Target::RL_LIST, RL_Type, RL_fields,
-                                 RL_name, *spp, qconf_role_validate) != 0) {
+            if (qconf_apply_obj(QConfObj::RL, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -2353,8 +2481,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -arole editor path: CS-2302 C2 — upsert (modify if it already exists) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::RL_LIST, RL_Type,
-                                                  RL_name, ep);
+            sge_parse_return |= qconf_send_upsert_obj(QConfObj::RL, ep);
          }
 
          spp++;
@@ -2539,8 +2666,7 @@ int sge_parse_qconf(char *argv[]) {
             }
          } else { /* -Ap: CS-2301 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_path(ocs::gdi::Target::PE_LIST, PE_Type, PE_fields,
-                                 PE_name, *spp, qconf_pe_validate) != 0) {
+            if (qconf_apply_obj(QConfObj::PE, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -2549,8 +2675,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -ap editor path: CS-2301 C2 — upsert (modify if it already exists) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::PE_LIST, PE_Type,
-                                                  PE_name, ep);
+            sge_parse_return |= qconf_send_upsert_obj(QConfObj::PE, ep);
          }
 
          spp++;
@@ -2582,8 +2707,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* CS-2308 C2: upsert (modify if the user already exists) */
          if (newep != nullptr) {
-            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::UU_LIST, UU_Type,
-                                                  UU_name, newep);
+            sge_parse_return |= qconf_send_upsert_obj(QConfObj::UU, newep);
          }
 
          spp++;
@@ -2615,8 +2739,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* CS-2309 C2: upsert (modify if the project already exists) */
          if (newep != nullptr) {
-            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::PR_LIST, PR_Type,
-                                                  PR_name, newep);
+            sge_parse_return |= qconf_send_upsert_obj(QConfObj::PR, newep);
          }
 
          spp++;
@@ -2630,16 +2753,13 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Auser", *spp) == 0) {
          /* CS-2308 C2+C3: accept a file OR a directory, upsert each user.
           * The user object uses a dynamically built field list. */
-         spooling_field *fields = sge_build_UU_field_list(false);
 
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_path(ocs::gdi::Target::UU_LIST, UU_Type, fields,
-                              UU_name, *spp, nullptr) != 0) {
+         if (qconf_apply_obj(QConfObj::UU, *spp) != 0) {
             sge_parse_return = 1;
          }
-         sge_free(&fields);
 
          spp++;
          continue;
@@ -2652,16 +2772,13 @@ int sge_parse_qconf(char *argv[]) {
 
       if (strcmp("-Aprj", *spp) == 0) {
          /* CS-2309 C2+C3: accept a file OR a directory, upsert each project. */
-         spooling_field *fields = sge_build_PR_field_list(false);
 
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_path(ocs::gdi::Target::PR_LIST, PR_Type, fields,
-                              PR_name, *spp, nullptr) != 0) {
+         if (qconf_apply_obj(QConfObj::PR, *spp) != 0) {
             sge_parse_return = 1;
          }
-         sge_free(&fields);
 
          spp++;
          continue;
@@ -3056,8 +3173,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Dcal", *spp) == 0) {
          /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_path(ocs::gdi::Target::CAL_LIST, CAL_Type, CAL_fields,
-                               CAL_name, *spp) != 0) {
+         if (qconf_delete_obj(QConfObj::CAL, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -3085,8 +3201,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Dckpt", *spp) == 0) {
          /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_path(ocs::gdi::Target::CK_LIST, CK_Type, CK_fields,
-                               CK_name, *spp) != 0) {
+         if (qconf_delete_obj(QConfObj::CK, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -3110,14 +3225,11 @@ int sge_parse_qconf(char *argv[]) {
 
       /* "-De file|dir": CS-2304 C5 — delete the exec host(s) named in the file(s) */
       if (strcmp("-De", *spp) == 0) {
-         spooling_field *fields = sge_build_EH_field_list(false, false, false);
          /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_path(ocs::gdi::Target::EH_LIST, EH_Type, fields,
-                               EH_name, *spp, &qconf_sfi, qconf_eh_resolve) != 0) {
+         if (qconf_delete_obj(QConfObj::EH, *spp) != 0) {
             sge_parse_return = 1;
          }
-         sge_free(&fields);
          spp++;
          continue;
       }
@@ -3155,8 +3267,7 @@ int sge_parse_qconf(char *argv[]) {
       /* "-Drole file|dir": CS-2302 C5 — delete the role(s) named in the file(s) */
       if (strcmp("-Drole", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_path(ocs::gdi::Target::RL_LIST, RL_Type, RL_fields,
-                               RL_name, *spp) != 0) {
+         if (qconf_delete_obj(QConfObj::RL, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -3249,8 +3360,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Dp", *spp) == 0) {
          /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_path(ocs::gdi::Target::PE_LIST, PE_Type, PE_fields,
-                               PE_name, *spp) != 0) {
+         if (qconf_delete_obj(QConfObj::PE, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -3747,8 +3857,7 @@ int sge_parse_qconf(char *argv[]) {
             }
          } else { /* -Mcal: CS-2299 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_path(ocs::gdi::Target::CAL_LIST, CAL_Type, CAL_fields,
-                                 CAL_name, *spp, nullptr) != 0) {
+            if (qconf_apply_obj(QConfObj::CAL, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -3757,8 +3866,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -mcal editor path: CS-2299 C2 — upsert (add if it did not exist) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::CAL_LIST, CAL_Type,
-                                                  CAL_name, ep);
+            sge_parse_return |= qconf_send_upsert_obj(QConfObj::CAL, ep);
          }
 
          spp++;
@@ -3892,8 +4000,7 @@ int sge_parse_qconf(char *argv[]) {
             }
          } else { /* -Mckpt: CS-2300 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_path(ocs::gdi::Target::CK_LIST, CK_Type, CK_fields,
-                                 CK_name, *spp, ckpt_validate) != 0) {
+            if (qconf_apply_obj(QConfObj::CK, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -3902,8 +4009,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -mckpt editor path: CS-2300 C2 — upsert (add if it did not exist) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::CK_LIST, CK_Type,
-                                                  CK_name, ep);
+            sge_parse_return |= qconf_send_upsert_obj(QConfObj::CK, ep);
          }
 
          spp++;
@@ -3913,16 +4019,13 @@ int sge_parse_qconf(char *argv[]) {
 /*----------------------------------------------------------------------------*/
       /* "-Me fname|dir": CS-2304 C2/C3 — add/modify exec host(s) from a file or directory */
       if (strcmp("-Me", *spp) == 0) {
-         spooling_field *fields = sge_build_EH_field_list(false, false, false);
 
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_path(ocs::gdi::Target::EH_LIST, EH_Type, fields,
-                              EH_name, *spp, nullptr, &qconf_sfi, qconf_eh_resolve) != 0) {
+         if (qconf_apply_obj(QConfObj::EH, *spp) != 0) {
             sge_parse_return = 1;
          }
-         sge_free(&fields);
 
          spp++;
          continue;
@@ -4094,8 +4197,7 @@ int sge_parse_qconf(char *argv[]) {
             }
          } else { /* -Mrole: CS-2302 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_path(ocs::gdi::Target::RL_LIST, RL_Type, RL_fields,
-                                 RL_name, *spp, qconf_role_validate) != 0) {
+            if (qconf_apply_obj(QConfObj::RL, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -4104,8 +4206,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -mrole editor path: CS-2302 C2 — upsert (add if it did not exist) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::RL_LIST, RL_Type,
-                                                  RL_name, ep);
+            sge_parse_return |= qconf_send_upsert_obj(QConfObj::RL, ep);
          }
 
          spp++;
@@ -4264,8 +4365,7 @@ int sge_parse_qconf(char *argv[]) {
             }
          } else { /* -Mp: CS-2301 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_path(ocs::gdi::Target::PE_LIST, PE_Type, PE_fields,
-                                 PE_name, *spp, qconf_pe_validate) != 0) {
+            if (qconf_apply_obj(QConfObj::PE, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -4274,8 +4374,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -mp editor path: CS-2301 C2 — upsert (add if it did not exist) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::PE_LIST, PE_Type,
-                                                  PE_name, ep);
+            sge_parse_return |= qconf_send_upsert_obj(QConfObj::PE, ep);
          }
 
          spp++;
@@ -5131,8 +5230,7 @@ int sge_parse_qconf(char *argv[]) {
           * The userset uses the static US_fields, the param sfi and the
           * userset entry validator. */
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_path(ocs::gdi::Target::US_LIST, US_Type, US_fields,
-                              US_name, *spp, qconf_us_validate, &qconf_param_sfi) != 0) {
+         if (qconf_apply_obj(QConfObj::US, *spp) != 0) {
             sge_parse_return = 1;
          }
 
@@ -5147,8 +5245,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Au", *spp) == 0) {
          /* CS-2310 C2+C3: accept a file OR a directory, upsert each userset. */
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_path(ocs::gdi::Target::US_LIST, US_Type, US_fields,
-                              US_name, *spp, qconf_us_validate, &qconf_param_sfi) != 0) {
+         if (qconf_apply_obj(QConfObj::US, *spp) != 0) {
             sge_parse_return = 1;
          }
 
@@ -5163,8 +5260,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Du", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_path(ocs::gdi::Target::US_LIST, US_Type, US_fields,
-                               US_name, *spp, &qconf_param_sfi) != 0) {
+         if (qconf_delete_obj(QConfObj::US, *spp) != 0) {
             sge_parse_return = 1;
          }
 
@@ -5219,8 +5315,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* CS-2308 C2: upsert (add if it did not exist) */
          if (newep != nullptr) {
-            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::UU_LIST, UU_Type,
-                                                  UU_name, newep);
+            sge_parse_return |= qconf_send_upsert_obj(QConfObj::UU, newep);
          }
 
          spp++;
@@ -5272,8 +5367,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* CS-2309 C2: upsert (add if it did not exist) */
          if (newep != nullptr) {
-            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::PR_LIST, PR_Type,
-                                                  PR_name, newep);
+            sge_parse_return |= qconf_send_upsert_obj(QConfObj::PR, newep);
          }
 
          spp++;
@@ -5289,16 +5383,13 @@ int sge_parse_qconf(char *argv[]) {
 
       if (strcmp("-Muser", *spp) == 0) {
          /* CS-2308 C2+C3: accept a file OR a directory, upsert each user. */
-         spooling_field *fields = sge_build_UU_field_list(false);
 
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_path(ocs::gdi::Target::UU_LIST, UU_Type, fields,
-                              UU_name, *spp, nullptr) != 0) {
+         if (qconf_apply_obj(QConfObj::UU, *spp) != 0) {
             sge_parse_return = 1;
          }
-         sge_free(&fields);
 
          spp++;
          continue;
@@ -5309,15 +5400,12 @@ int sge_parse_qconf(char *argv[]) {
       /* "-Duser file|dir": CS-2308 C5 — delete the user(s) named in the file(s) */
 
       if (strcmp("-Duser", *spp) == 0) {
-         spooling_field *fields = sge_build_UU_field_list(false);
 
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_path(ocs::gdi::Target::UU_LIST, UU_Type, fields,
-                               UU_name, *spp) != 0) {
+         if (qconf_delete_obj(QConfObj::UU, *spp) != 0) {
             sge_parse_return = 1;
          }
-         sge_free(&fields);
 
          spp++;
          continue;
@@ -5329,16 +5417,13 @@ int sge_parse_qconf(char *argv[]) {
 
       if (strcmp("-Mprj", *spp) == 0) {
          /* CS-2309 C2+C3: accept a file OR a directory, upsert each project. */
-         spooling_field *fields = sge_build_PR_field_list(false);
 
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_path(ocs::gdi::Target::PR_LIST, PR_Type, fields,
-                              PR_name, *spp, nullptr) != 0) {
+         if (qconf_apply_obj(QConfObj::PR, *spp) != 0) {
             sge_parse_return = 1;
          }
-         sge_free(&fields);
 
          spp++;
          continue;
@@ -5349,15 +5434,12 @@ int sge_parse_qconf(char *argv[]) {
       /* "-Dprj file|dir": CS-2309 C5 — delete the project(s) named in the file(s) */
 
       if (strcmp("-Dprj", *spp) == 0) {
-         spooling_field *fields = sge_build_PR_field_list(false);
 
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_path(ocs::gdi::Target::PR_LIST, PR_Type, fields,
-                               PR_name, *spp) != 0) {
+         if (qconf_delete_obj(QConfObj::PR, *spp) != 0) {
             sge_parse_return = 1;
          }
-         sge_free(&fields);
 
          spp++;
          continue;
@@ -6418,8 +6500,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -mce editor path: CS-2303 C2 — upsert (add if it did not exist) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::CE_LIST, CE_Type,
-                                                  CE_name, ep);
+            sge_parse_return |= qconf_send_upsert_obj(QConfObj::CE, ep);
          }
          spp++;
          continue;
@@ -6431,8 +6512,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Mce", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_path(ocs::gdi::Target::CE_LIST, CE_Type, CE_fields,
-                              CE_name, *spp, nullptr, &qconf_ce_sfi) != 0) {
+         if (qconf_apply_obj(QConfObj::CE, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6461,8 +6541,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Dce", *spp) == 0) {
          qconf_is_manager(username);
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_path(ocs::gdi::Target::CE_LIST, CE_Type, CE_fields,
-                               CE_name, *spp, &qconf_ce_sfi) != 0) {
+         if (qconf_delete_obj(QConfObj::CE, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6545,8 +6624,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -ace editor path: CS-2303 C2 — upsert (modify if it already exists) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::CE_LIST, CE_Type,
-                                                  CE_name, ep);
+            sge_parse_return |= qconf_send_upsert_obj(QConfObj::CE, ep);
          }
          spp++;
          continue;
@@ -6556,8 +6634,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Ace", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_path(ocs::gdi::Target::CE_LIST, CE_Type, CE_fields,
-                              CE_name, *spp, nullptr, &qconf_ce_sfi) != 0) {
+         if (qconf_apply_obj(QConfObj::CE, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6596,8 +6673,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Mhgrp", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_path(ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_fields,
-                              HGRP_name, *spp, nullptr) != 0) {
+         if (qconf_apply_obj(QConfObj::HGRP, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6632,8 +6708,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Ahgrp", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_path(ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_fields,
-                              HGRP_name, *spp, nullptr) != 0) {
+         if (qconf_apply_obj(QConfObj::HGRP, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6658,8 +6733,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Dhgrp", *spp) == 0) {
          qconf_is_manager(username);
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_path(ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_fields,
-                               HGRP_name, *spp) != 0) {
+         if (qconf_delete_obj(QConfObj::HGRP, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6766,9 +6840,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Mq", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_path(ocs::gdi::Target::CQ_LIST, CQ_Type, CQ_fields,
-                              CQ_name, *spp, qconf_cq_verify, &qconf_sfi, nullptr,
-                              ocs::gdi::SubCommand::SET_ALL, false) != 0) {
+         if (qconf_apply_obj(QConfObj::CQ, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6797,9 +6869,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Aq", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_path(ocs::gdi::Target::CQ_LIST, CQ_Type, CQ_fields,
-                              CQ_name, *spp, qconf_cq_verify, &qconf_sfi, nullptr,
-                              ocs::gdi::SubCommand::SET_ALL, false) != 0) {
+         if (qconf_apply_obj(QConfObj::CQ, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6811,8 +6881,7 @@ int sge_parse_qconf(char *argv[]) {
        * IMPORT field list so the exported files re-import unchanged. */
       if (strcmp("-Scal", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_path(ocs::gdi::Target::CAL_LIST, CAL_Type, CAL_name,
-                               qconf_fields_CAL, &qconf_sfi, nullptr, false, *spp) != 0) {
+         if (qconf_export_obj(QConfObj::CAL, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6820,8 +6889,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Sckpt", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_path(ocs::gdi::Target::CK_LIST, CK_Type, CK_name,
-                               qconf_fields_CK, &qconf_sfi, nullptr, false, *spp) != 0) {
+         if (qconf_export_obj(QConfObj::CK, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6829,8 +6897,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Sce", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_path(ocs::gdi::Target::CE_LIST, CE_Type, CE_name,
-                               qconf_fields_CE, &qconf_ce_sfi, nullptr, false, *spp) != 0) {
+         if (qconf_export_obj(QConfObj::CE, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6840,9 +6907,7 @@ int sge_parse_qconf(char *argv[]) {
          spp = sge_parser_get_next(spp);
          /* exclude the template and global pseudo-hosts (KTD5); explicit "exechost"
           * JSON $id (EH shares its name field with adminhost). */
-         if (qconf_export_path(ocs::gdi::Target::EH_LIST, EH_Type, EH_name,
-                               qconf_fields_EH, &qconf_sfi, "exechost", false, *spp,
-                               SGE_TEMPLATE_NAME, SGE_GLOBAL_NAME) != 0) {
+         if (qconf_export_obj(QConfObj::EH, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6850,8 +6915,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Shgrp", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_path(ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_name,
-                               qconf_fields_HGRP, &qconf_sfi, nullptr, false, *spp) != 0) {
+         if (qconf_export_obj(QConfObj::HGRP, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6859,8 +6923,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Sp", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_path(ocs::gdi::Target::PE_LIST, PE_Type, PE_name,
-                               qconf_fields_PE, &qconf_sfi, nullptr, false, *spp) != 0) {
+         if (qconf_export_obj(QConfObj::PE, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6868,8 +6931,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Sprj", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_path(ocs::gdi::Target::PR_LIST, PR_Type, PR_name,
-                               qconf_fields_PR, &qconf_sfi, nullptr, false, *spp) != 0) {
+         if (qconf_export_obj(QConfObj::PR, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6877,8 +6939,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Sq", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_path(ocs::gdi::Target::CQ_LIST, CQ_Type, CQ_name,
-                               qconf_fields_CQ, &qconf_sfi, nullptr, false, *spp) != 0) {
+         if (qconf_export_obj(QConfObj::CQ, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6886,8 +6947,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Srole", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_path(ocs::gdi::Target::RL_LIST, RL_Type, RL_name,
-                               qconf_fields_RL, &qconf_sfi, nullptr, false, *spp) != 0) {
+         if (qconf_export_obj(QConfObj::RL, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6896,8 +6956,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Srqs", *spp) == 0) {
          spp = sge_parser_get_next(spp);
          /* rqs files carry a rule-set list, so export with list framing (as_list). */
-         if (qconf_export_path(ocs::gdi::Target::RQS_LIST, RQS_Type, RQS_name,
-                               qconf_fields_RQS, &qconf_rqs_sfi, nullptr, true, *spp) != 0) {
+         if (qconf_export_obj(QConfObj::RQS, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6905,8 +6964,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Su", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_path(ocs::gdi::Target::US_LIST, US_Type, US_name,
-                               qconf_fields_US, &qconf_param_sfi, nullptr, false, *spp) != 0) {
+         if (qconf_export_obj(QConfObj::US, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6914,8 +6972,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Suser", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_path(ocs::gdi::Target::UU_LIST, UU_Type, UU_name,
-                               qconf_fields_UU, &qconf_sfi, nullptr, false, *spp) != 0) {
+         if (qconf_export_obj(QConfObj::UU, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6925,9 +6982,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Sstree", *spp) == 0) {
          spp = sge_parser_get_next(spp);
          /* sharetree writes the root node (is_root=true) with the name/value sfi */
-         if (qconf_export_singleton(ocs::gdi::Target::STN_LIST, STN_Type,
-                                    qconf_fields_STN, &qconf_name_value_list_sfi,
-                                    "sharetree", true, *spp) != 0) {
+         if (qconf_export_obj_singleton(QConfObj::STN, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6935,9 +6990,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Ssconf", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_singleton(ocs::gdi::Target::SC_LIST, SC_Type,
-                                    qconf_fields_SC, &qconf_comma_sfi,
-                                    "sched_conf", false, *spp) != 0) {
+         if (qconf_export_obj_singleton(QConfObj::SC, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6971,8 +7024,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Dq", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_path(ocs::gdi::Target::CQ_LIST, CQ_Type, CQ_fields,
-                               CQ_name, *spp, &qconf_sfi, nullptr, false) != 0) {
+         if (qconf_delete_obj(QConfObj::CQ, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
