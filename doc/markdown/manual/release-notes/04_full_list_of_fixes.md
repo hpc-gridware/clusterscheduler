@@ -1,5 +1,75 @@
 # Full List of Fixes
 
+## v9.1.6
+
+### [CS-1129](https://hpc-gridware.atlassian.net/browse/CS-1129) Provide a UI for a modern qmon replacement for cluster configuration
+
+- [CS-2722](https://hpc-gridware.atlassian.net/browse/CS-2722) Qontrol: operations log is invisible and unattributed when managing only remote clusters
+
+### [CS-2554](https://hpc-gridware.atlassian.net/browse/CS-2554) Qontrol: Pluggable Authentication
+
+- [CS-2555](https://hpc-gridware.atlassian.net/browse/CS-2555) Qontrol: OIDC login for the web console
+
+### [CS-2697](https://hpc-gridware.atlassian.net/browse/CS-2697) As a user I want to request specific RSMAP instances and the relationship between them so that a job gets e.g. all ids of one device
+
+- [CS-1080](https://hpc-gridware.atlassian.net/browse/CS-1080) add RSMAP ids to AR booking
+- [CS-2720](https://hpc-gridware.atlassian.net/browse/CS-2720) Give a job with a per id RSMAP constraint a resource reservation
+- [CS-2725](https://hpc-gridware.atlassian.net/browse/CS-2725) New man page sge_rsmap.5 describing resource maps, characteristics and requests
+- [CS-2726](https://hpc-gridware.atlassian.net/browse/CS-2726) Parse a bracketed parameter list on a resource map request
+- [CS-2727](https://hpc-gridware.atlassian.net/browse/CS-2727) Validate resource map request parameters and reserve the keyword names
+- [CS-2728](https://hpc-gridware.atlassian.net/browse/CS-2728) JSV libraries handle resource requests containing a bracketed parameter list
+- [CS-2729](https://hpc-gridware.atlassian.net/browse/CS-2729) Grant all instances of a resource map request from the same id (same=id)
+- [CS-2730](https://hpc-gridware.atlassian.net/browse/CS-2730) Advance reservations grant resource map instances from the reserved set
+- [CS-2735](https://hpc-gridware.atlassian.net/browse/CS-2735) Extend same= to any characteristic, not only the id
+- [CS-2767](https://hpc-gridware.atlassian.net/browse/CS-2767) Cover parallel jobs, allocation rules and the global host layer in the resource map checks
+
+### [CS-2703](https://hpc-gridware.atlassian.net/browse/CS-2703) RSMAP improvements and fixes
+
+- [CS-2669](https://hpc-gridware.atlassian.net/browse/CS-2669) Initializing a RSMAP value with bare number should add IDs automatically
+- [CS-2672](https://hpc-gridware.atlassian.net/browse/CS-2672) A consumable that cannot be booked discards the whole granted resource list of the task
+- [CS-2673](https://hpc-gridware.atlassian.net/browse/CS-2673) Granted resources can be discarded silently - no message when add_granted_resource_list() fails
+- [CS-2719](https://hpc-gridware.atlassian.net/browse/CS-2719) The man pages document the RSMAP device isolation characteristic under the wrong name and without its access mode
+- [CS-2745](https://hpc-gridware.atlassian.net/browse/CS-2745) An invalid RSMAP complex definition is accepted because centry_elem_validate() discards the earlier result
+- [CS-2750](https://hpc-gridware.atlassian.net/browse/CS-2750) A numeric resource map identifier cannot carry characteristics
+- [CS-2751](https://hpc-gridware.atlassian.net/browse/CS-2751) A job whose resource map instances could not be booked is started without them
+- [CS-2758](https://hpc-gridware.atlassian.net/browse/CS-2758) qrstat reports the resource map instances an advance reservation holds
+- [CS-2801](https://hpc-gridware.atlassian.net/browse/CS-2801) RSMAP: writing a resource map drops repeated identifiers, so gpu=4(0 0 0 1) comes back as gpu=4(0 1)
+
+### [CS-335](https://hpc-gridware.atlassian.net/browse/CS-335) dbwriter: bring-up and stabilization
+
+- [CS-2716](https://hpc-gridware.atlassian.net/browse/CS-2716) dbwriter: sgedbwriter stop returns exit code 1 after a successful shutdown
+- [CS-2723](https://hpc-gridware.atlassian.net/browse/CS-2723) dbwriter: daily derived values are stored on week boundaries on Oracle (TRUNC with 'DAY')
+
+### [CS-991](https://hpc-gridware.atlassian.net/browse/CS-991) Reservation or advance reservation issues and enhancements
+
+- [CS-2759](https://hpc-gridware.atlassian.net/browse/CS-2759) qrstat.1 man page shall describe all attributes printed by qrstat -ar ar_id
+
+### Bug
+
+- [CS-2532](https://hpc-gridware.atlassian.net/browse/CS-2532) clean_up_old_jobs() rescans the whole process table every 60s while jobs run, though it is documented to run once per execd lifetime
+- [CS-2655](https://hpc-gridware.atlassian.net/browse/CS-2655) qmake: pre-generated config.h.<arch> answers C-library questions per architecture, so bsd_signal breaks on gcc 14 and newer
+- [CS-2658](https://hpc-gridware.atlassian.net/browse/CS-2658) Berkeley DB 5.3 does not build with current tool chains: configure probes fail from gcc 14 on, and the link breaks under parallel make
+- [CS-2659](https://hpc-gridware.atlassian.net/browse/CS-2659) Static libhwloc drags CUDA, NVML and pciaccess into every link, and no build host can satisfy all of them
+- [CS-2661](https://hpc-gridware.atlassian.net/browse/CS-2661) OpenCL is not linked into SGE_TOPO_LIB: the condition was pinned to Ubuntu 24.04 in 9.1/9.2 and missing entirely in 9.0
+- [CS-2693](https://hpc-gridware.atlassian.net/browse/CS-2693) qgpu: DCGM stats output file is written into the job's TMPDIR, breaking GPU accounting when prolog/epilog run as a non-root user
+- [CS-2694](https://hpc-gridware.atlassian.net/browse/CS-2694) Admin guide GPU chapter: prolog/epilog example uses invalid [host@path] syntax and omits the required root@ user prefix
+- [CS-2696](https://hpc-gridware.atlassian.net/browse/CS-2696) testsuite: a version range naming one version per release branch is evaluated as the first version only
+- [CS-2739](https://hpc-gridware.atlassian.net/browse/CS-2739) A resource quota limit on a non consumable complex rejects every parallel job that requests the complex
+- [CS-2741](https://hpc-gridware.atlassian.net/browse/CS-2741) A character class containing a comma or a space in a resource request is split into two requests
+- [CS-2768](https://hpc-gridware.atlassian.net/browse/CS-2768) testsuite: leftover systemd job slice check builds invalid unit names for tightly integrated jobs
+- [CS-2791](https://hpc-gridware.atlassian.net/browse/CS-2791) Running a Python JSV writes a __pycache__ directory into $SGE_ROOT/util/resources/jsv
+
+### Improvement
+
+- [CS-2656](https://hpc-gridware.atlassian.net/browse/CS-2656) One tool chain definition for every build host in cmake/Toolchain.cmake
+- [CS-2663](https://hpc-gridware.atlassian.net/browse/CS-2663) Qontrol: Provide the MCP server documentation with GCS release
+- [CS-2717](https://hpc-gridware.atlassian.net/browse/CS-2717) testsuite needs to ensure consistent timezone setup over all hosts
+- [CS-2784](https://hpc-gridware.atlassian.net/browse/CS-2784) Add SBOM to qgpu
+
+### Task
+
+- [CS-2674](https://hpc-gridware.atlassian.net/browse/CS-2674) qgpu: close documentation gaps in the GPU admin guide chapter (prolog/epilog user, accounting mode, device isolation, global config)
+
 ## v9.1.5
 
 ### [CS-1129](https://hpc-gridware.atlassian.net/browse/CS-1129) Provide a UI for a modern qmon replacement for cluster configuration
