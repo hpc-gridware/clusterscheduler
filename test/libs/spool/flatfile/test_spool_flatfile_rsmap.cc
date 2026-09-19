@@ -31,6 +31,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
 #include "cull/cull_list.h"
 
@@ -39,6 +40,7 @@
 #include "spool/flatfile/sge_flatfile_obj_rsmap.h"
 
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_dstring.h"
 #include "uti/sge_unistd.h"
 
 namespace {
@@ -85,6 +87,36 @@ run_reader(lListElem *ce, const char *input, lList **alp) {
    return rc;
 }
 
+/* Write a CE back out the way the flatfile spooler does and return what it
+ * produced, so that a value can be read in and written out again. */
+static std::string
+run_writer(const lListElem *ce) {
+   dstring buffer = DSTRING_INIT;
+   lList *alp = nullptr;
+   write_CE_stringval_host(ce, CE_stringval, &buffer, &alp);
+   std::string out{sge_dstring_get_string(&buffer) == nullptr ? "" : sge_dstring_get_string(&buffer)};
+   sge_dstring_free(&buffer);
+   lFreeList(&alp);
+   return out;
+}
+
+/* Read a value and write it straight back out. What comes out has to be
+ * something the reader accepts again and which describes the same map. */
+static std::string
+round_trip(const char *input) {
+   lListElem *ce = make_rsmap_ce("gpu");
+   lList *alp = nullptr;
+   if (run_reader(ce, input, &alp) != 1) {
+      lFreeElem(&ce);
+      lFreeList(&alp);
+      return "<reader rejected>";
+   }
+   std::string out = run_writer(ce);
+   lFreeElem(&ce);
+   lFreeList(&alp);
+   return out;
+}
+
 /* Look up a property by name inside a RESL's properties list; returns nullptr
  * if absent. Only used by the GCS-only characteristics tests. */
 #if defined(WITH_EXTENSIONS)
@@ -95,6 +127,35 @@ find_prop(const lListElem *resl, const char *name) {
    return lGetElemStr(props, CE_name, name);
 }
 #endif /* WITH_EXTENSIONS */
+
+/* ------------------------------------------------------------------ */
+/* writing: what is read in has to come back out unchanged              */
+/* ------------------------------------------------------------------ */
+
+/* An id which occurs more than once describes N-way sharing of one device,
+ * and the count is part of the configuration. Writing has to repeat the id,
+ * not collapse the map to the set of distinct ids. */
+static int
+test_write_repeated_id() {
+   T_START("write_repeated_id");
+   T_ASSERT(round_trip("4(0 0 0 1)") == "4(0 0 0 1)");
+   T_ASSERT(round_trip("4(0 0 1 1)") == "4(0 0 1 1)");
+   T_ASSERT(round_trip("3(A A B)") == "3(A A B)");
+   return 0;
+}
+
+/* Ids which occur equally often may share a range, because the written form
+ * repeats the whole range once per occurrence. Ids which occur a different
+ * number of times may not. */
+static int
+test_write_range_compaction() {
+   T_START("write_range_compaction");
+   T_ASSERT(round_trip("4(1-4)") == "4(1-4)");
+   T_ASSERT(round_trip("6(0 0 1 1 2 2)") == "6(0-2 0-2)");
+   T_ASSERT(round_trip("5(0 0 1 2 2)") == "5(0 0 1 2 2)");
+   T_ASSERT(round_trip("2(A B)") == "2(A B)");
+   return 0;
+}
 
 /* ------------------------------------------------------------------ */
 /* positive: base grammar — must still parse exactly as before CS-1338  */
@@ -537,6 +598,8 @@ int main(int, char **) {
    test_range_only();
    test_mixed_range_and_names();
    test_duplicate_bare();
+   test_write_repeated_id();
+   test_write_range_compaction();
 
 #if defined(WITH_EXTENSIONS)
    /* per-instance characteristics - GCS only */

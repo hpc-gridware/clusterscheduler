@@ -446,18 +446,20 @@ write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, lList **al
       const lList *resource_map = lGetList(ep, CE_resource_map_list);
       if (resource_map != nullptr && lGetNumberOfElem(resource_map) > 0) {
          long range_start = -1, range_last = -1, range_current;
-         uint32_t amount = 0;
+         // How often the identifiers of the range being built occur. A range is written once
+         // per occurrence, so it can only hold identifiers which occur equally often.
+         uint32_t range_amount = 0;
 
          for_each_ep_lv (resource, resource_map) {
             str_value = lGetString(resource, RESL_value);
-            amount = lGetUlong(resource, RESL_amount);
+            const uint32_t amount = lGetUlong(resource, RESL_amount);
             const lList *props = lGetList(resource, RESL_properties);
             const bool has_props = (props != nullptr && lGetNumberOfElem(props) > 0);
 
             if (has_props) {
                // flush any pending range before emitting a characteristic-bearing id
                if (range_start != -1) {
-                  store_range(str_out, range_start, range_last, amount, -1);
+                  store_range(str_out, range_start, range_last, range_amount, -1);
                }
 
                // build "id[k1=v1;k2=v2;...]" with characteristics sorted asc by CE_name
@@ -489,22 +491,27 @@ write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, lList **al
                if (range_start == -1) {
                   // a new potential range started
                   range_start = range_last = range_current;
+                  range_amount = amount;
                } else {
                   // additional number in range
-                  if (range_current == range_last + 1) {
+                  // An identifier joins the range only when it occurs as often as the ones
+                  // already in it. "0 0 0 1" holds 0 three times and 1 once, and writing that
+                  // as the range 0-1 would say that both occur equally often.
+                  if (range_current == range_last + 1 && amount == range_amount) {
                      // we only support step = 1
                      // continue the range
                      range_last = range_current;
                   } else {
                      // store and start a new range
-                     store_range(str_out, range_start, range_last, amount, range_current);
+                     store_range(str_out, range_start, range_last, range_amount, range_current);
+                     range_amount = amount;
                   }
                }
             } else {
                // it is a name
                // if we have stored range values, then add the range to our output list
                if (range_start != -1) {
-                  store_range(str_out, range_start, range_last, amount, -1);
+                  store_range(str_out, range_start, range_last, range_amount, -1);
                }
 
                // add the non number value to our output list
@@ -513,7 +520,7 @@ write_CE_stringval_host(const lListElem *ep, int nm, dstring *buffer, lList **al
          }
          // we might end up having stored range values, add the range to our output list
          if (range_start != -1) {
-            store_range(str_out, range_start, range_last, amount, -1);
+            store_range(str_out, range_start, range_last, range_amount, -1);
          }
 
          // add the RSMAP entries to the output buffer
