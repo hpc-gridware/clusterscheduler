@@ -1464,6 +1464,158 @@ qconf_send_upsert_obj(QConfObj o, lListElem *ep) {
    return qconf_send_upsert(d.target, d.descr, d.name_nm, ep, d.sub_cmd);
 }
 
+/** @brief Write an object to a temporary file for the editor.
+ *
+ * The field list and the spooling instruction come from the descriptor, so the
+ * editor branches no longer name them. The list is freed here when the
+ * provider allocated it.
+ *
+ * @param o    the object type
+ * @param alpp answer list for errors
+ * @param ep   the object to write
+ * @return the temporary file name (caller frees), or nullptr on error
+ */
+static char *
+qconf_write_tmp_obj(QConfObj o, lList **alpp, const lListElem *ep) {
+   const qconf_object_desc &d = qconf_desc(o);
+   bool owned = false;
+   spooling_field *fields = d.build_fields(qconf_opt_format, &owned);
+   auto *filename = (char *)spool_flatfile_write_object(alpp, ep, false, fields, d.sfi,
+                                                        SP_DEST_TMP, qconf_opt_format,
+                                                        nullptr, false);
+   if (owned) {
+      sge_free(&fields);
+   }
+   return filename;
+}
+
+/** @brief Read back the file the editor wrote, and consume it.
+ *
+ * Removes the temporary file and frees @p filename whatever the outcome, so the
+ * caller does not have to unwind it on every branch. Returns nullptr when the
+ * file did not parse or left a field unprocessed - the reason is in @p alpp and
+ * has already been printed.
+ *
+ * The field list has to outlive the read, because spool_get_unprocessed_field()
+ * needs it to name the field that was not consumed; it is freed only afterwards.
+ *
+ * @param o        the object type
+ * @param alpp     answer list for errors
+ * @param filename the temporary file; set to nullptr on return
+ * @return the parsed object (caller owns), or nullptr on error
+ */
+static lListElem *
+qconf_read_tmp_obj(QConfObj o, lList **alpp, char **filename) {
+   const qconf_object_desc &d = qconf_desc(o);
+   bool owned = false;
+   spooling_field *fields = d.build_fields(qconf_opt_format, &owned);
+   int fields_out[MAX_NUM_FIELDS];
+   fields_out[0] = NoName;
+
+   lListElem *ep = spool_flatfile_read_object(alpp, d.descr, nullptr, fields, fields_out,
+                                              true, d.sfi, qconf_opt_format, nullptr, *filename);
+   unlink(*filename);
+   sge_free(filename);
+
+   if (answer_list_output(alpp)) {
+      lFreeElem(&ep);
+   }
+   if (ep != nullptr && spool_get_unprocessed_field(fields, fields_out, alpp) != NoName) {
+      lFreeElem(&ep);
+      answer_list_output(alpp);
+   }
+   /* the descriptor knows the object's validator; the file path already runs it
+    * through qconf_read_object_file(), so the editor path does the same */
+   if (ep != nullptr && d.validate != nullptr && d.validate(ep, alpp) != STATUS_OK) {
+      lFreeElem(&ep);
+      answer_list_output(alpp);
+   }
+   if (owned) {
+      sge_free(&fields);
+   }
+   return ep;
+}
+
+/** @brief Why an interactive edit did not yield an object. */
+enum class QConfEditStatus {
+   OK,            ///< the object was edited and parsed
+   WRITE_FAILED,  ///< the template could not be written for the editor
+   EDIT_FAILED,   ///< the editor itself reported an error
+   UNCHANGED,     ///< the editor left the file untouched
+   READ_FAILED    ///< the result did not parse, or left a field unprocessed
+};
+
+/** @brief Offer an object to $EDITOR and read the result back.
+ *
+ * Deliberately **exit-free**: every failure is reported through the return
+ * value and @p alpp, never by terminating the process. Part of this logic is
+ * meant to run inside qmaster once the stored procedure conversion reaches the
+ * write path (CS-2792), where sge_exit() would take the daemon down with it.
+ * The caller decides what a failure means - see qconf_edit_fail_exit() for what
+ * the command line client does.
+ *
+ * The temporary file is consumed in every case, including every error path.
+ *
+ * @param o    the object type
+ * @param alpp answer list for errors
+ * @param epp  in: the object to offer, consumed; out: the edited object or nullptr
+ * @param uid  uid to run the editor as
+ * @param gid  gid to run the editor as
+ * @return OK, or the reason no object came back
+ */
+static QConfEditStatus
+qconf_edit_obj(QConfObj o, lList **alpp, lListElem **epp, uid_t uid, gid_t gid) {
+   char *filename = qconf_write_tmp_obj(o, alpp, *epp);
+   lFreeElem(epp);
+
+   if (answer_list_output(alpp) || filename == nullptr) {
+      if (filename != nullptr) {
+         unlink(filename);
+         sge_free(&filename);
+      }
+      return QConfEditStatus::WRITE_FAILED;
+   }
+
+   int status = sge_edit(filename, uid, gid);
+   if (status != 0) {
+      unlink(filename);
+      sge_free(&filename);
+      return (status < 0) ? QConfEditStatus::EDIT_FAILED : QConfEditStatus::UNCHANGED;
+   }
+
+   *epp = qconf_read_tmp_obj(o, alpp, &filename);
+   return (*epp == nullptr) ? QConfEditStatus::READ_FAILED : QConfEditStatus::OK;
+}
+
+/** @brief Report an edit failure the way the option branches always did, and exit.
+ *
+ * The one place where the interactive path terminates the process, kept apart
+ * from qconf_edit_obj() so that the editing logic stays reusable. Does not
+ * return - sge_error_and_exit() calls sge_exit().
+ *
+ * @param st the failure reported by qconf_edit_obj()
+ * @return none
+ */
+static void
+qconf_edit_fail_exit(QConfEditStatus st) {
+   switch (st) {
+      case QConfEditStatus::WRITE_FAILED:
+         sge_error_and_exit(nullptr);
+         break;
+      case QConfEditStatus::EDIT_FAILED:
+         sge_error_and_exit(MSG_PARSE_EDITFAILED);
+         break;
+      case QConfEditStatus::UNCHANGED:
+         sge_error_and_exit(MSG_FILE_FILEUNCHANGED);
+         break;
+      case QConfEditStatus::READ_FAILED:
+         sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE);
+         break;
+      case QConfEditStatus::OK:
+         break;
+   }
+}
+
 /* ===== CS-2307: resource quota set helpers =================================
  * RQS files hold a *list* of rule sets (read with spool_flatfile_read_list and
  * applied with SET_ALL), so they get their own helpers rather than the
@@ -1914,7 +2066,6 @@ qconf_json_type_load_values(lListElem *host, int load_list_nm) {
 int sge_parse_qconf(char *argv[]) {
    DENTER(TOP_LAYER);
 
-   int status;
    char *cp = nullptr;
    char **spp = nullptr;
    int opt;
@@ -1926,7 +2077,6 @@ int sge_parse_qconf(char *argv[]) {
    const lListElem *aep=nullptr;
    lListElem *newep = nullptr;
    const char *host = nullptr;
-   char *filename;
    const char *filename_stdout;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
@@ -2063,65 +2213,16 @@ int sge_parse_qconf(char *argv[]) {
 
             /* get a generic calendar */
             ep = sge_generic_cal(cal_name);
-            filename = (char *)spool_flatfile_write_object(&alp, ep, false,
-                                                 CAL_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, qconf_opt_format,
-                                                 nullptr, false);
-            lFreeElem(&ep);
-            if (answer_list_output(&alp)) {
-               if (filename != nullptr) {
-                  unlink(filename);
-                  sge_free(&filename);
-               }
-               sge_error_and_exit(nullptr);
-            }
-
-            /* edit this file */
-            status = sge_edit(filename, uid, gid);
-            if (status < 0) {
-               unlink(filename);
-               sge_free(&filename);
-               if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
-                  continue;
-               }
-            }
-
-            if (status > 0) {
-               unlink(filename);
-               sge_free(&filename);
-               if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
-                  continue;
-               }
-            }
-         
-            /* read it in again */
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CAL_Type, nullptr,
-                                            CAL_fields, fields_out, true, &qconf_sfi,
-                                            qconf_opt_format, nullptr, filename);
-            unlink(filename);
-            sge_free(&filename);
-            
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(CAL_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            /* hand it to the editor and read the result back; the engine
+             * is exit-free, the client decides that a failure is fatal */
+            QConfEditStatus est = qconf_edit_obj(QConfObj::CAL, &alp, &ep, uid, gid);
+            if (est != QConfEditStatus::OK) {
                sge_parse_return = 1;
-            }      
-            
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
+               qconf_edit_fail_exit(est);
+               continue;
             }
-         } else { /* -Acal: CS-2299 C3 — accept a file OR a directory, upsert each */
+            ep = ep;
+} else { /* -Acal: CS-2299 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(QConfObj::CAL, *spp) != 0) {
                sge_parse_return = 1;
@@ -2159,71 +2260,16 @@ int sge_parse_qconf(char *argv[]) {
 
             /* get a generic ckpt configuration */
             ep = sge_generic_ckpt(ckpt_name);
-            filename = (char *)spool_flatfile_write_object(&alp, ep, false,
-                                                 CK_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, qconf_opt_format,
-                                                 nullptr, false);
-            lFreeElem(&ep);
-            if (answer_list_output(&alp)) {
-               if (filename != nullptr) {
-                  unlink(filename);
-                  sge_free(&filename);
-               }
-               sge_error_and_exit(nullptr);
-            }
-
-            /* edit this file */
-            status = sge_edit(filename, uid, gid);
-            if (status < 0) {
-               unlink(filename);
-               sge_free(&filename);
-               if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
-                  continue;
-               }
-            }
-
-            if (status > 0) {
-               unlink(filename);
-               sge_free(&filename);
-               if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
-                  continue;
-               }
-            }
-
-            /* read it in again */
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CK_Type, nullptr,
-                                            CK_fields, fields_out, true, &qconf_sfi,
-                                            qconf_opt_format, nullptr, filename);
-            unlink(filename);
-            sge_free(&filename);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(CK_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            /* hand it to the editor and read the result back; the engine is
+             * exit-free, the client decides that a failure is fatal */
+            QConfEditStatus est = qconf_edit_obj(QConfObj::CK, &alp, &ep, uid, gid);
+            if (est != QConfEditStatus::OK) {
                sge_parse_return = 1;
+               qconf_edit_fail_exit(est);
+               continue;
             }
-
-            if ((ep != nullptr) && (ckpt_validate(ep, &alp) != STATUS_OK)) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
-               sge_parse_return = 1;
-            }
-
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
-            }
-         } else { /* -Ackpt: CS-2300 C3 — accept a file OR a directory, upsert each */
+            ep = ep;
+} else { /* -Ackpt: CS-2300 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(QConfObj::CK, *spp) != 0) {
                sge_parse_return = 1;
@@ -2407,70 +2453,16 @@ int sge_parse_qconf(char *argv[]) {
 
             ep = ocs::Role::create_template();
             lSetString(ep, RL_name, role_name);
-            filename = (char *)spool_flatfile_write_object(&alp, ep, false,
-                                                 RL_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, qconf_opt_format,
-                                                 nullptr, false);
-            lFreeElem(&ep);
-
-            if (answer_list_output(&alp)) {
-               if (filename != nullptr) {
-                  unlink(filename);
-                  sge_free(&filename);
-               }
-               sge_error_and_exit(nullptr);
-            }
-
-            status = sge_edit(filename, uid, gid);
-            if (status < 0) {
-               unlink(filename);
-               sge_free(&filename);
-               if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
-                  continue;
-               }
-            }
-
-            if (status > 0) {
-               unlink(filename);
-               sge_free(&filename);
-               if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
-                  continue;
-               }
-            }
-
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, RL_Type, nullptr,
-                                            RL_fields, fields_out, true, &qconf_sfi,
-                                            qconf_opt_format, nullptr, filename);
-            unlink(filename);
-            sge_free(&filename);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(RL_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            /* hand it to the editor and read the result back; the engine is
+             * exit-free, the client decides that a failure is fatal */
+            QConfEditStatus est = qconf_edit_obj(QConfObj::RL, &alp, &ep, uid, gid);
+            if (est != QConfEditStatus::OK) {
                sge_parse_return = 1;
+               qconf_edit_fail_exit(est);
+               continue;
             }
-
-            if ((ep != nullptr) && (qconf_role_validate(ep, &alp) != STATUS_OK)) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
-               sge_parse_return = 1;
-            }
-
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
-            }
-         } else { /* -Arole: CS-2302 C3 — accept a file OR a directory, upsert each */
+            ep = ep;
+} else { /* -Arole: CS-2302 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(QConfObj::RL, *spp) != 0) {
                sge_parse_return = 1;
@@ -2599,72 +2591,16 @@ int sge_parse_qconf(char *argv[]) {
 
             /* get a generic parallel environment */
             ep = pe_create_template(pe_name);
-            filename = (char *)spool_flatfile_write_object(&alp, ep, false,
-                                                 PE_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, qconf_opt_format,
-                                                 nullptr, false);
-            lFreeElem(&ep);
-
-            if (answer_list_output(&alp)) {
-               if (filename != nullptr) {
-                  unlink(filename);
-                  sge_free(&filename);
-               }
-               sge_error_and_exit(nullptr);
-            }
-
-            /* edit this file */
-            status = sge_edit(filename, uid, gid);
-            if (status < 0) {
-               unlink(filename);
-               sge_free(&filename);
-               if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
-                  continue;
-               }
-            }
-
-            if (status > 0) {
-               unlink(filename);
-               sge_free(&filename);
-               if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
-                  continue;
-               }
-            }
-
-            /* read it in again */
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
-                                            PE_fields, fields_out,  true, &qconf_sfi,
-                                            qconf_opt_format, nullptr, filename);
-            unlink(filename);
-            sge_free(&filename);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(PE_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            /* hand it to the editor and read the result back; the engine is
+             * exit-free, the client decides that a failure is fatal */
+            QConfEditStatus est = qconf_edit_obj(QConfObj::PE, &alp, &ep, uid, gid);
+            if (est != QConfEditStatus::OK) {
                sge_parse_return = 1;
+               qconf_edit_fail_exit(est);
+               continue;
             }
-
-            if ((ep != nullptr) && (qconf_pe_validate(ep, &alp) != STATUS_OK)) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
-               sge_parse_return = 1;
-            }
-
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
-            }
-         } else { /* -Ap: CS-2301 C3 — accept a file OR a directory, upsert each */
+            ep = ep;
+} else { /* -Ap: CS-2301 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(QConfObj::PE, *spp) != 0) {
                sge_parse_return = 1;
@@ -3798,64 +3734,16 @@ int sge_parse_qconf(char *argv[]) {
             }
             lFreeList(&lp);
 
-            filename = (char *)spool_flatfile_write_object(&alp, cal_src, false,
-                                                 CAL_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, qconf_opt_format,
-                                                 nullptr, false);
-            lFreeElem(&cal_src);
-
-            if (answer_list_output(&alp)) {
-               if (filename != nullptr) {
-                  unlink(filename);
-                  sge_free(&filename);
-               }
-               sge_error_and_exit(nullptr);
-            }
-
-            /* edit this file */
-            status = sge_edit(filename, uid, gid);
-            if (status < 0) {
-               unlink(filename);
-               sge_free(&filename);
-               if (sge_error_and_exit(MSG_PARSE_EDITFAILED))
-                  continue;
-            }
-
-            if (status > 0) {
-               unlink(filename);
-               sge_free(&filename);
-               if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED))
-                  continue;
-            }
-
-            /* read it in again */
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CAL_Type, nullptr,
-                                            CAL_fields, fields_out, true, &qconf_sfi,
-                                            qconf_opt_format, nullptr, filename);
-            unlink(filename);
-            sge_free(&filename);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(CAL_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            /* hand it to the editor and read the result back; the engine is
+             * exit-free, the client decides that a failure is fatal */
+            QConfEditStatus est = qconf_edit_obj(QConfObj::CAL, &alp, &cal_src, uid, gid);
+            if (est != QConfEditStatus::OK) {
                sge_parse_return = 1;
+               qconf_edit_fail_exit(est);
+               continue;
             }
-
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
-            }
-         } else { /* -Mcal: CS-2299 C3 — accept a file OR a directory, upsert each */
+            ep = cal_src;
+} else { /* -Mcal: CS-2299 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(QConfObj::CAL, *spp) != 0) {
                sge_parse_return = 1;
@@ -3935,70 +3823,16 @@ int sge_parse_qconf(char *argv[]) {
             }
             lFreeList(&lp);
 
-            filename = (char *)spool_flatfile_write_object(&alp, ckpt_src, false,
-                                                 CK_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, qconf_opt_format,
-                                                 nullptr, false);
-            lFreeElem(&ckpt_src);
-
-            if (answer_list_output(&alp)) {
-               if (filename != nullptr) {
-                  unlink(filename);
-                  sge_free(&filename);
-               }
-               sge_error_and_exit(nullptr);
-            }
-
-            /* edit this file */
-            status = sge_edit(filename, uid, gid);
-            if (status < 0) {
-               unlink(filename);
-               sge_free(&filename);
-               if (sge_error_and_exit(MSG_PARSE_EDITFAILED))
-                  continue;
-            }
-
-            if (status > 0) {
-               unlink(filename);
-               sge_free(&filename);
-               if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED))
-                  continue;
-            }
-
-            /* read it in again */
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CK_Type, nullptr,
-                                            CK_fields, fields_out, true, &qconf_sfi,
-                                            qconf_opt_format, nullptr, filename);
-            unlink(filename);
-            sge_free(&filename);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(CK_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            /* hand it to the editor and read the result back; the engine is
+             * exit-free, the client decides that a failure is fatal */
+            QConfEditStatus est = qconf_edit_obj(QConfObj::CK, &alp, &ckpt_src, uid, gid);
+            if (est != QConfEditStatus::OK) {
                sge_parse_return = 1;
+               qconf_edit_fail_exit(est);
+               continue;
             }
-
-            if ((ep != nullptr) && (ckpt_validate(ep, &alp) != STATUS_OK)) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
-               sge_parse_return = 1;
-            }
-
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
-            }
-         } else { /* -Mckpt: CS-2300 C3 — accept a file OR a directory, upsert each */
+            ep = ckpt_src;
+} else { /* -Mckpt: CS-2300 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(QConfObj::CK, *spp) != 0) {
                sge_parse_return = 1;
@@ -4131,71 +3965,16 @@ int sge_parse_qconf(char *argv[]) {
             }
             lFreeList(&lp);
 
-            filename = (char *)spool_flatfile_write_object(&alp, role_src, false,
-                                                 RL_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, qconf_opt_format,
-                                                 nullptr, false);
-            lFreeElem(&role_src);
-
-            if (answer_list_output(&alp)) {
-               if (filename != nullptr) {
-                  unlink(filename);
-                  sge_free(&filename);
-               }
-               sge_error_and_exit(nullptr);
-            }
-
-            status = sge_edit(filename, uid, gid);
-            if (status < 0) {
-               unlink(filename);
-               if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
-                  sge_free(&filename);
-                  continue;
-               }
-            }
-
-            if (status > 0) {
-               unlink(filename);
-               if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
-                  sge_free(&filename);
-                  continue;
-               }
-            }
-
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, RL_Type, nullptr,
-                                            RL_fields, fields_out, true, &qconf_sfi,
-                                            qconf_opt_format, nullptr, filename);
-
-            unlink(filename);
-            sge_free(&filename);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(RL_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            /* hand it to the editor and read the result back; the engine is
+             * exit-free, the client decides that a failure is fatal */
+            QConfEditStatus est = qconf_edit_obj(QConfObj::RL, &alp, &role_src, uid, gid);
+            if (est != QConfEditStatus::OK) {
                sge_parse_return = 1;
+               qconf_edit_fail_exit(est);
+               continue;
             }
-
-            if ((ep != nullptr) && (qconf_role_validate(ep, &alp) != STATUS_OK)) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
-               sge_parse_return = 1;
-            }
-
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
-            }
-         } else { /* -Mrole: CS-2302 C3 — accept a file OR a directory, upsert each */
+            ep = role_src;
+} else { /* -Mrole: CS-2302 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(QConfObj::RL, *spp) != 0) {
                sge_parse_return = 1;
@@ -4298,72 +4077,16 @@ int sge_parse_qconf(char *argv[]) {
             lFreeList(&lp);
 
             /* write pe to temp file */
-            filename = (char *)spool_flatfile_write_object(&alp, pe_src, false,
-                                                 PE_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, qconf_opt_format,
-                                                 nullptr, false);
-            lFreeElem(&pe_src);
-
-            if (answer_list_output(&alp)) {
-               if (filename != nullptr) {
-                  unlink(filename);
-                  sge_free(&filename);
-               }
-               sge_error_and_exit(nullptr);
-            }
-
-            /* edit this file */
-            status = sge_edit(filename, uid, gid);
-            if (status < 0) {
-               unlink(filename);
-               if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
-                  sge_free(&filename);
-                  continue;
-               }
-            }
-
-            if (status > 0) {
-               unlink(filename);
-               if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
-                  sge_free(&filename);
-                  continue;
-               }
-            }
-
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
-                                            PE_fields, fields_out, true, &qconf_sfi,
-                                            qconf_opt_format, nullptr, filename);
-
-            unlink(filename);
-            sge_free(&filename);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(PE_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            /* hand it to the editor and read the result back; the engine is
+             * exit-free, the client decides that a failure is fatal */
+            QConfEditStatus est = qconf_edit_obj(QConfObj::PE, &alp, &pe_src, uid, gid);
+            if (est != QConfEditStatus::OK) {
                sge_parse_return = 1;
+               qconf_edit_fail_exit(est);
+               continue;
             }
-
-            if ((ep != nullptr) && (qconf_pe_validate(ep, &alp) != STATUS_OK)) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
-               sge_parse_return = 1;
-            }
-
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
-            }
-         } else { /* -Mp: CS-2301 C3 — accept a file OR a directory, upsert each */
+            ep = pe_src;
+} else { /* -Mp: CS-2301 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_obj(QConfObj::PE, *spp) != 0) {
                sge_parse_return = 1;
@@ -6440,65 +6163,16 @@ int sge_parse_qconf(char *argv[]) {
          }
          lFreeList(&lp);
 
-         filename = (char *)spool_flatfile_write_object(&alp, ce_src, false,
-                                              CE_fields, &qconf_ce_sfi,
-                                              SP_DEST_TMP, qconf_opt_format,
-                                              nullptr, false);
-         lFreeElem(&ce_src);
-
-         if (answer_list_output(&alp)) {
-            if (filename != nullptr) {
-               unlink(filename);
-               sge_free(&filename);
-            }
-            sge_error_and_exit(nullptr);
-         }
-
-         status = sge_edit(filename, uid, gid);
-         if (status < 0) {
-            unlink(filename);
-            sge_free(&filename);
-            if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
+            /* hand it to the editor and read the result back; the engine
+             * is exit-free, the client decides that a failure is fatal */
+            QConfEditStatus est = qconf_edit_obj(QConfObj::CE, &alp, &ce_src, uid, gid);
+            if (est != QConfEditStatus::OK) {
+               sge_parse_return = 1;
+               qconf_edit_fail_exit(est);
                continue;
             }
-         }
-
-         if (status > 0) {
-            unlink(filename);
-            sge_free(&filename);
-            if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
-               continue;
-            }
-         }
-
-         fields_out[0] = NoName;
-         ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
-                                         CE_fields, fields_out, true, &qconf_ce_sfi,
-                                         qconf_opt_format, nullptr, filename);
-         unlink(filename);
-         sge_free(&filename);
-
-         if (answer_list_output(&alp)) {
-            lFreeElem(&ep);
-         }
-
-         if (ep != nullptr) {
-            missing_field = spool_get_unprocessed_field(CE_fields, fields_out, &alp);
-         }
-
-         if (missing_field != NoName) {
-            lFreeElem(&ep);
-            answer_list_output(&alp);
-            sge_parse_return = 1;
-         }
-
-         if (ep == nullptr) {
-            if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-               continue;
-            }
-         }
-
-         /* -mce editor path: CS-2303 C2 — upsert (add if it did not exist) */
+            ep = ce_src;
+/* -mce editor path: CS-2303 C2 — upsert (add if it did not exist) */
          if (ep != nullptr) {
             sge_parse_return |= qconf_send_upsert_obj(QConfObj::CE, ep);
          }
@@ -6564,65 +6238,16 @@ int sge_parse_qconf(char *argv[]) {
          }
 
          ep = centry_create(&alp, ce_name);
-         filename = (char *)spool_flatfile_write_object(&alp, ep, false,
-                                              CE_fields, &qconf_ce_sfi,
-                                              SP_DEST_TMP, qconf_opt_format,
-                                              nullptr, false);
-         lFreeElem(&ep);
-
-         if (answer_list_output(&alp)) {
-            if (filename != nullptr) {
-               unlink(filename);
-               sge_free(&filename);
-            }
-            sge_error_and_exit(nullptr);
-         }
-
-         status = sge_edit(filename, uid, gid);
-         if (status < 0) {
-            unlink(filename);
-            sge_free(&filename);
-            if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
+            /* hand it to the editor and read the result back; the engine
+             * is exit-free, the client decides that a failure is fatal */
+            QConfEditStatus est = qconf_edit_obj(QConfObj::CE, &alp, &ep, uid, gid);
+            if (est != QConfEditStatus::OK) {
+               sge_parse_return = 1;
+               qconf_edit_fail_exit(est);
                continue;
             }
-         }
-
-         if (status > 0) {
-            unlink(filename);
-            sge_free(&filename);
-            if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
-               continue;
-            }
-         }
-
-         fields_out[0] = NoName;
-         ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
-                                         CE_fields, fields_out, true, &qconf_ce_sfi,
-                                         qconf_opt_format, nullptr, filename);
-         unlink(filename);
-         sge_free(&filename);
-
-         if (answer_list_output(&alp)) {
-            lFreeElem(&ep);
-         }
-
-         if (ep != nullptr) {
-            missing_field = spool_get_unprocessed_field(CE_fields, fields_out, &alp);
-         }
-
-         if (missing_field != NoName) {
-            lFreeElem(&ep);
-            answer_list_output(&alp);
-            sge_parse_return = 1;
-         }
-
-         if (ep == nullptr) {
-            if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-               continue;
-            }
-         }
-
-         /* -ace editor path: CS-2303 C2 — upsert (modify if it already exists) */
+            ep = ep;
+/* -ace editor path: CS-2303 C2 — upsert (modify if it already exists) */
          if (ep != nullptr) {
             sge_parse_return |= qconf_send_upsert_obj(QConfObj::CE, ep);
          }
