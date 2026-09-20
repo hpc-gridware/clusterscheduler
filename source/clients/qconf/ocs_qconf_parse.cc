@@ -475,6 +475,26 @@ enum class QConfObj {
    CAL, CK, CE, EH, HGRP, PE, PR, CQ, RL, RQS, US, UU, STN, SC
 };
 
+/** @brief What the read path needs on top of the common descriptor (CS-2796).
+ *
+ * There is one deliberate difference between showing an object and writing it
+ * to a file, and it is in @c fields: -se builds its field list with
+ * to_stdout=true, so it shows load_values and processors, which -Se leaves out
+ * on purpose - the export has to round-trip. Pinned by exechost.show.plain vs
+ * exechost.export.plain (CS-2794). nullptr means "the same as the write path".
+ *
+ * The layout itself is now the same for both: -suser used to render with
+ * qconf_param_sfi where -Suser uses qconf_sfi, which never reached the output
+ * (every UU field has width 0, so align_names does nothing, and the sublist
+ * fields only exist with spool=true, which qconf does not use). -Suser is new
+ * in 9.2, so there was no compatibility reason to keep the two apart. */
+struct qconf_read_desc {
+   qconf_build_fields_fn fields;   ///< field list for -s<obj>, nullptr to use build_fields
+   const char *list_name;          ///< object name in the "no X defined" message of -s<obj>l
+   const char *not_found_msg;      ///< format string of the "X is not a Y" message of -s<obj>
+   void (*prepare)(lListElem *);   ///< fixup before rendering, nullptr for none
+};
+
 /** @brief Everything the generic engines need to know about one object type. */
 struct qconf_object_desc {
    ocs::gdi::Target target;                          ///< GDI target list
@@ -491,6 +511,7 @@ struct qconf_object_desc {
    bool is_root;                                     ///< singleton export: object is the root
    const char *exclude1;                             ///< export: skip this name
    const char *exclude2;                             ///< export: skip this name too
+   qconf_read_desc read;                             ///< the read path additions (CS-2796)
 };
 
 struct qconf_file_ctx {
@@ -1138,6 +1159,11 @@ static spooling_field *qconf_fields_RQS (spool_flatfile_format, bool *o) { *o = 
 static spooling_field *qconf_fields_SC  (spool_flatfile_format, bool *o) { *o = false; return SC_fields;   }
 /* import list omits runtime load_values/processors (to_stdout=false) so it round-trips (KTD2) */
 static spooling_field *qconf_fields_EH  (spool_flatfile_format, bool *o) { *o = true;  return sge_build_EH_field_list(false, false, false); }
+/* -se shows the host as it is now, so the runtime values are included (CS-2796) */
+static spooling_field *qconf_show_fields_EH(spool_flatfile_format, bool *o) { *o = true;  return sge_build_EH_field_list(false, true, false); }
+
+/* defined below, next to the json helpers it uses */
+static void qconf_show_prepare_EH(lListElem *ep);
 static spooling_field *qconf_fields_PR  (spool_flatfile_format, bool *o) { *o = true;  return sge_build_PR_field_list(false); }
 static spooling_field *qconf_fields_UU  (spool_flatfile_format, bool *o) { *o = true;  return sge_build_UU_field_list(false); }
 static spooling_field *qconf_fields_STN (spool_flatfile_format fmt, bool *o) {
@@ -1359,20 +1385,34 @@ qconf_us_validate(const lListElem *ep, lList **alpp) {
  *
  * Kept in the order of the enum so that qconf_desc() is a plain index. */
 static const qconf_object_desc qconf_object_table[] = {
-   /* CAL  */ { ocs::gdi::Target::CAL_LIST,  CAL_Type,  CAL_name,  qconf_fields_CAL,  &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
-   /* CK   */ { ocs::gdi::Target::CK_LIST,   CK_Type,   CK_name,   qconf_fields_CK,   &qconf_sfi,                 nullptr,      ckpt_validate,       nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
-   /* CE   */ { ocs::gdi::Target::CE_LIST,   CE_Type,   CE_name,   qconf_fields_CE,   &qconf_ce_sfi,              nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
-   /* EH   */ { ocs::gdi::Target::EH_LIST,   EH_Type,   EH_name,   qconf_fields_EH,   &qconf_sfi,                 "exechost",   nullptr,             qconf_eh_resolve,  ocs::gdi::SubCommand::NONE,    false, true,  false, SGE_TEMPLATE_NAME,  SGE_GLOBAL_NAME },
-   /* HGRP */ { ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_name, qconf_fields_HGRP, &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
-   /* PE   */ { ocs::gdi::Target::PE_LIST,   PE_Type,   PE_name,   qconf_fields_PE,   &qconf_sfi,                 nullptr,      qconf_pe_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
-   /* PR   */ { ocs::gdi::Target::PR_LIST,   PR_Type,   PR_name,   qconf_fields_PR,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
-   /* CQ   */ { ocs::gdi::Target::CQ_LIST,   CQ_Type,   CQ_name,   qconf_fields_CQ,   &qconf_sfi,                 nullptr,      qconf_cq_verify,     nullptr,           ocs::gdi::SubCommand::SET_ALL, false, false, false, nullptr,            nullptr },
-   /* RL   */ { ocs::gdi::Target::RL_LIST,   RL_Type,   RL_name,   qconf_fields_RL,   &qconf_sfi,                 nullptr,      qconf_role_validate, nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
-   /* RQS  */ { ocs::gdi::Target::RQS_LIST,  RQS_Type,  RQS_name,  qconf_fields_RQS,  &qconf_rqs_sfi,             nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    true,  true,  false, nullptr,            nullptr },
-   /* US   */ { ocs::gdi::Target::US_LIST,   US_Type,   US_name,   qconf_fields_US,   &qconf_param_sfi,           nullptr,      qconf_us_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
-   /* UU   */ { ocs::gdi::Target::UU_LIST,   UU_Type,   UU_name,   qconf_fields_UU,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
-   /* STN  */ { ocs::gdi::Target::STN_LIST,  STN_Type,  NoName,    qconf_fields_STN,  &qconf_name_value_list_sfi, "sharetree",  nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  true,  nullptr,            nullptr },
-   /* SC   */ { ocs::gdi::Target::SC_LIST,   SC_Type,   NoName,    qconf_fields_SC,   &qconf_comma_sfi,           "sched_conf", nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr },
+   /* CAL  */ { ocs::gdi::Target::CAL_LIST,  CAL_Type,  CAL_name,  qconf_fields_CAL,  &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
+              { nullptr, "calendar", MSG_CALENDAR_XISNOTACALENDAR_S, nullptr } },
+   /* CK   */ { ocs::gdi::Target::CK_LIST,   CK_Type,   CK_name,   qconf_fields_CK,   &qconf_sfi,                 nullptr,      ckpt_validate,       nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
+              { nullptr, "ckpt interface definition", MSG_CKPT_XISNOTCHKPINTERFACEDEF_S, nullptr } },
+   /* CE   */ { ocs::gdi::Target::CE_LIST,   CE_Type,   CE_name,   qconf_fields_CE,   &qconf_ce_sfi,              nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
+              { nullptr, "complex entry", nullptr, nullptr } },
+   /* EH   */ { ocs::gdi::Target::EH_LIST,   EH_Type,   EH_name,   qconf_fields_EH,   &qconf_sfi,                 "exechost",   nullptr,             qconf_eh_resolve,  ocs::gdi::SubCommand::NONE,    false, true,  false, SGE_TEMPLATE_NAME,  SGE_GLOBAL_NAME,
+              { qconf_show_fields_EH, "execution host", MSG_EXEC_XISNOTANEXECUTIONHOST_S, qconf_show_prepare_EH } },
+   /* HGRP */ { ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_name, qconf_fields_HGRP, &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
+              { nullptr, "host group list", nullptr, nullptr } },
+   /* PE   */ { ocs::gdi::Target::PE_LIST,   PE_Type,   PE_name,   qconf_fields_PE,   &qconf_sfi,                 nullptr,      qconf_pe_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
+              { nullptr, "parallel environment", MSG_PARALLEL_XNOTAPARALLELEVIRONMENT_S, nullptr } },
+   /* PR   */ { ocs::gdi::Target::PR_LIST,   PR_Type,   PR_name,   qconf_fields_PR,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
+              { nullptr, "project list", MSG_PROJECT_XISNOKNWOWNPROJECT_S, nullptr } },
+   /* CQ   */ { ocs::gdi::Target::CQ_LIST,   CQ_Type,   CQ_name,   qconf_fields_CQ,   &qconf_sfi,                 nullptr,      qconf_cq_verify,     nullptr,           ocs::gdi::SubCommand::SET_ALL, false, false, false, nullptr,            nullptr,
+              { nullptr, "cqueue list", nullptr, nullptr } },
+   /* RL   */ { ocs::gdi::Target::RL_LIST,   RL_Type,   RL_name,   qconf_fields_RL,   &qconf_sfi,                 nullptr,      qconf_role_validate, nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
+              { nullptr, "role", MSG_ROLE_DOESNOTEXIST_S, nullptr } },
+   /* RQS  */ { ocs::gdi::Target::RQS_LIST,  RQS_Type,  RQS_name,  qconf_fields_RQS,  &qconf_rqs_sfi,             nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    true,  true,  false, nullptr,            nullptr,
+              { nullptr, "resource quota set list", nullptr, nullptr } },
+   /* US   */ { ocs::gdi::Target::US_LIST,   US_Type,   US_name,   qconf_fields_US,   &qconf_param_sfi,           nullptr,      qconf_us_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
+              { nullptr, "userset list", nullptr, nullptr } },
+   /* UU   */ { ocs::gdi::Target::UU_LIST,   UU_Type,   UU_name,   qconf_fields_UU,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
+              { nullptr, "user list", MSG_USER_XISNOKNOWNUSER_S, nullptr } },
+   /* STN  */ { ocs::gdi::Target::STN_LIST,  STN_Type,  NoName,    qconf_fields_STN,  &qconf_name_value_list_sfi, "sharetree",  nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  true,  nullptr,            nullptr,
+              { nullptr, nullptr, nullptr, nullptr } },
+   /* SC   */ { ocs::gdi::Target::SC_LIST,   SC_Type,   NoName,    qconf_fields_SC,   &qconf_comma_sfi,           "sched_conf", nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
+              { nullptr, nullptr, nullptr, nullptr } },
 };
 
 /** @brief The descriptor of one object type.
@@ -1382,6 +1422,176 @@ static const qconf_object_desc qconf_object_table[] = {
 static const qconf_object_desc &
 qconf_desc(QConfObj o) {
    return qconf_object_table[static_cast<size_t>(o)];
+}
+
+/** @brief How a show of one object ended (CS-2796).
+ *
+ * The show options do not agree on what to do about a failure - the classic
+ * four leave the parser when the object does not exist, -se and -sprj only set
+ * the return code and -suser ignores it altogether. The engine therefore
+ * reports what happened and leaves the reaction to the call site, which is
+ * also what CS-2799 needs: no exit call inside the engine. */
+enum class QConfShowStatus {
+   OK,            ///< object found and written
+   GDI_FAILED,    ///< the GDI request was answered with an error
+   NOT_FOUND,     ///< the request succeeded but returned no object
+   WRITE_FAILED   ///< the object could not be rendered
+};
+
+/** @brief Show one object of the given type on stdout.
+ *
+ * Fetches the object by name - or, for a type without a name field, the single
+ * one that exists - and renders it in the layout of the descriptor.
+ *
+ * @param o    the object type
+ * @param name the object name, ignored for a type without a name field
+ * @return what happened, see QConfShowStatus
+ */
+static QConfShowStatus
+qconf_show_object(QConfObj o, const char *name) {
+   DENTER(TOP_LAYER);
+   const qconf_object_desc &d = qconf_desc(o);
+   lList *lp = nullptr;
+   lList *alp = nullptr;
+
+   // a type without a name field holds exactly one object, so it is fetched unconditionally;
+   // a host name is matched with the host comparison, which folds the domain away
+   lCondition *where = nullptr;
+   if (d.name_nm != NoName) {
+      int pos = lGetPosInDescr(d.descr, d.name_nm);
+      bool by_host = (lGetPosType(d.descr, pos) == lHostT);
+      where = by_host ? lWhere("%T( %Ih=%s )", d.descr, d.name_nm, name)
+                      : lWhere("%T( %I==%s )", d.descr, d.name_nm, name);
+   }
+   lEnumeration *what = lWhat("%T(ALL)", d.descr);
+   alp = ocs::gdi::Client::sge_gdi(d.target, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
+   lFreeWhere(&where);
+   lFreeWhat(&what);
+
+   const lListElem *aep = lFirst(alp);
+   answer_exit_if_not_recoverable(aep);
+   if (answer_get_status(aep) != STATUS_OK) {
+      fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+      lFreeList(&alp);
+      lFreeList(&lp);
+      DRETURN(QConfShowStatus::GDI_FAILED);
+   }
+   lFreeList(&alp);
+
+   // lGetNumberOfElem() would flag a null list as a CULL error, so it is checked first
+   if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
+      // the wording is per object type, the shape of the message is not
+      if (d.read.not_found_msg != nullptr) {
+         fprintf(stderr, d.read.not_found_msg, name);
+         fprintf(stderr, "\n");
+      }
+      lFreeList(&lp);
+      DRETURN(QConfShowStatus::NOT_FOUND);
+   }
+
+   // -se is the one type whose read field list differs from the write one
+   qconf_build_fields_fn provider = (d.read.fields != nullptr) ? d.read.fields : d.build_fields;
+   bool owned = false;
+   spooling_field *fields = provider(qconf_opt_format, &owned);
+
+   lListElem *ep = lFirstRW(lp);
+   if (d.read.prepare != nullptr) {
+      d.read.prepare(ep);
+   }
+   const char *filename = spool_flatfile_write_object(&alp, ep, d.is_root, fields, d.sfi,
+                                                      SP_DEST_STDOUT, qconf_opt_format, nullptr,
+                                                      false, d.json_type_name);
+   sge_free(&filename);
+   if (owned) {
+      sge_free(&fields);
+   }
+   lFreeList(&lp);
+
+   if (answer_list_output(&alp)) {
+      DRETURN(QConfShowStatus::WRITE_FAILED);
+   }
+   DRETURN(QConfShowStatus::OK);
+}
+
+/** @brief Map a show status onto the convention of the classic show options.
+ *
+ * -scal, -sckpt, -srole and -sp have always left the parser when the object
+ * does not exist, printed the GDI error and carried on otherwise, and exited on
+ * a rendering failure. The DRETURN cannot live in here, so the caller is told
+ * to leave instead.
+ *
+ * @param st           the status the engine reported
+ * @param parse_return the parser's return code, set on a GDI failure
+ * @return true when the caller has to leave the parser with 1
+ */
+static bool
+qconf_show_status_classic(QConfShowStatus st, int *parse_return) {
+   switch (st) {
+      case QConfShowStatus::OK:
+         break;
+      case QConfShowStatus::GDI_FAILED:
+         *parse_return = 1;
+         break;
+      case QConfShowStatus::NOT_FOUND:
+         return true;
+      case QConfShowStatus::WRITE_FAILED:
+         sge_error_and_exit(nullptr);
+         break;
+   }
+   return false;
+}
+
+/** @brief Show the names of all objects of the given type, one per line.
+ *
+ * @param o the object type
+ * @return true when the list was printed, false when it was empty or the request failed
+ */
+static bool
+qconf_show_names(QConfObj o) {
+   const qconf_object_desc &d = qconf_desc(o);
+   return show_object_list(d.target, const_cast<lDescr *>(d.descr), d.name_nm, d.read.list_name);
+}
+
+/** @brief Delete the objects named by an already parsed list.
+ *
+ * Split out of qconf_delete_names() because -dhgrp parses its argument with
+ * parse_name_list_to_cull() rather than lString2List(), which reports an empty
+ * argument instead of accepting it.
+ *
+ * @param o   the object type
+ * @param lpp the name list; consumed, set to nullptr
+ * @return 0 on success, 1 when the master reported an error
+ */
+static int
+qconf_delete_list(QConfObj o, lList **lpp) {
+   DENTER(TOP_LAYER);
+   const qconf_object_desc &d = qconf_desc(o);
+
+   lList *alp = ocs::gdi::Client::sge_gdi(d.target, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE,
+                                          lpp, nullptr, nullptr);
+   int ret = show_answer_list(alp);
+   lFreeList(&alp);
+   lFreeList(lpp);
+   DRETURN(ret);
+}
+
+/** @brief Delete objects of the given type by name.
+ *
+ * @param o     the object type
+ * @param names comma or blank separated list of names; ignored for a type
+ *              without a name field, which holds exactly one object
+ * @return 0 on success, 1 when the master reported an error
+ */
+static int
+qconf_delete_names(QConfObj o, const char *names) {
+   const qconf_object_desc &d = qconf_desc(o);
+   lList *lp = nullptr;
+
+   // a type without a name field is deleted as a whole, so there is nothing to name
+   if (d.name_nm != NoName) {
+      lString2List(names, &lp, const_cast<lDescr *>(d.descr), d.name_nm, ", ");
+   }
+   return qconf_delete_list(o, &lp);
 }
 
 /** @brief Add or modify from a file or directory, driven by the descriptor.
@@ -2050,6 +2260,20 @@ qconf_json_type_load_values(lListElem *host, int load_list_nm) {
 
    lSetList(host, load_list_nm, ce_list);
    lFreeList(&master_centry_list);
+}
+
+/** @brief Type the numeric fields of an exec host before it is rendered.
+ *
+ * CS-2313a: complex_values and the load values are strings in CULL, so -fmt
+ * json would quote them without this.
+ *
+ * @param ep the exec host about to be written
+ */
+static void
+qconf_show_prepare_EH(lListElem *ep) {
+   static const int eh_ce_fields[] = { EH_consumable_config_list };
+   qconf_json_fill_complex(ep, eh_ce_fields, 1);
+   qconf_json_type_load_values(ep, EH_load_list);
 }
 
 /*------------------------------------------------------------*/
@@ -3094,11 +3318,7 @@ int sge_parse_qconf(char *argv[]) {
          /* no adminhost/manager check needed here */
          /* CS-2299 C4: accept a comma-separated list of calendar names. */
          spp = sge_parser_get_next(spp);
-         lString2List(*spp, &lp, CAL_Type, CAL_name, ", ");
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_parse_return |= qconf_delete_names(QConfObj::CAL, *spp);
 
          spp++;
          continue;
@@ -3122,11 +3342,7 @@ int sge_parse_qconf(char *argv[]) {
          /* no adminhost/manager check needed here */
          /* CS-2300 C4: accept a comma-separated list of checkpoint names. */
          spp = sge_parser_get_next(spp);
-         lString2List(*spp, &lp, CK_Type, CK_name, ", ");
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CK_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_parse_return |= qconf_delete_names(QConfObj::CK, *spp);
 
          spp++;
          continue;
@@ -3190,11 +3406,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-drole", *spp) == 0) {
          /* CS-2302 C4: accept a comma-separated list of role names. */
          spp = sge_parser_get_next(spp);
-         lString2List(*spp, &lp, RL_Type, RL_name, ", ");
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RL_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_parse_return |= qconf_delete_names(QConfObj::RL, *spp);
 
          spp++;
          continue;
@@ -3214,12 +3426,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-drqs", *spp) == 0) {
          /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
-
-         lString2List(*spp, &lp, RQS_Type, RQS_name, ", ");
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RQS_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_parse_return |= qconf_delete_names(QConfObj::RQS, *spp);
 
          spp++;
          continue;
@@ -3282,11 +3489,7 @@ int sge_parse_qconf(char *argv[]) {
          /* no adminhost/manager check needed here */
          /* CS-2301 C4: accept a comma-separated list of PE names. */
          spp = sge_parser_get_next(spp);
-         lString2List(*spp, &lp, PE_Type, PE_name, ", ");
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PE_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_parse_return |= qconf_delete_names(QConfObj::PE, *spp);
 
          spp++;
          continue;
@@ -3354,14 +3557,8 @@ int sge_parse_qconf(char *argv[]) {
 
       if (strcmp("-dul", *spp) == 0) {
          /* no adminhost/manager check needed here */
-
          spp = sge_parser_get_next(spp);
-
-         lString2List(*spp, &lp, US_Type, US_name, ", ");
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_parse_return |= qconf_delete_names(QConfObj::US, *spp);
 
          spp++;
          continue;
@@ -3371,14 +3568,8 @@ int sge_parse_qconf(char *argv[]) {
 
       if (strcmp("-duser", *spp) == 0) {
          /* no adminhost/manager check needed here */
-
          spp = sge_parser_get_next(spp);
-
-         lString2List(*spp, &lp, UU_Type, UU_name, ", ");
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::UU_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_parse_return |= qconf_delete_names(QConfObj::UU, *spp);
 
          spp++;
          continue;
@@ -3390,15 +3581,8 @@ int sge_parse_qconf(char *argv[]) {
 
       if (strcmp("-dprj", *spp) == 0) {
          /* no adminhost/manager check needed here */
-
          spp = sge_parser_get_next(spp);
-
-         lString2List(*spp, &lp, PR_Type, PR_name, ", ");
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PR_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_parse_return |= qconf_delete_names(QConfObj::PR, *spp);
 
          spp++;
          continue;
@@ -3514,11 +3698,7 @@ int sge_parse_qconf(char *argv[]) {
 
       if (strcmp("-dstree", *spp) == 0) {
          /* no adminhost/manager check needed here */
-
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, nullptr, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_parse_return |= qconf_delete_names(QConfObj::STN, nullptr);
 
          spp++;
          continue;
@@ -5203,39 +5383,8 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-scal", *spp) == 0) {
          spp = sge_parser_get_next(spp);
 
-         /* get the existing pe entry .. */
-         where = lWhere("%T( %I==%s )", CAL_Type, CAL_name, *spp);
-         what = lWhat("%T(ALL)", CAL_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-         lFreeWhere(&where);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-         lFreeList(&alp);
-
-         if (!lp || lGetNumberOfElem(lp) == 0) {
-            fprintf(stderr, MSG_CALENDAR_XISNOTACALENDAR_S, *spp);
-            fprintf(stderr, "\n");
-            lFreeList(&lp);
+         if (qconf_show_status_classic(qconf_show_object(QConfObj::CAL, *spp), &sge_parse_return)) {
             DRETURN(1);
-         }
-
-         ep = lFirstRW(lp);
-         filename_stdout = spool_flatfile_write_object(&alp, ep, false,
-                                              CAL_fields, &qconf_sfi,
-                                              SP_DEST_STDOUT, qconf_opt_format,
-                                              nullptr, false);
-         sge_free(&filename_stdout);
-         lFreeList(&lp);
-         if (answer_list_output(&alp)) {
-            sge_error_and_exit(nullptr);
          }
 
          spp++;
@@ -5245,7 +5394,7 @@ int sge_parse_qconf(char *argv[]) {
       /* "-scall" */
 
       if (strcmp("-scall", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::CAL_LIST, CAL_Type, CAL_name, "calendar")) {
+         if (!qconf_show_names(QConfObj::CAL)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5357,41 +5506,8 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-sckpt", *spp) == 0) {
          spp = sge_parser_get_next(spp);
 
-         /* get the existing ckpt entry .. */
-         where = lWhere("%T( %I==%s )", CK_Type, CK_name, *spp);
-         what = lWhat("%T(ALL)", CK_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CK_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-         lFreeWhere(&where);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            sge_parse_return = 1;
-            spp++;
-            lFreeList(&alp);
-            lFreeList(&lp);
-            continue;
-         }
-         lFreeList(&alp);
-
-         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-            fprintf(stderr, MSG_CKPT_XISNOTCHKPINTERFACEDEF_S, *spp);
-            fprintf(stderr, "\n");
-            lFreeList(&lp);
+         if (qconf_show_status_classic(qconf_show_object(QConfObj::CK, *spp), &sge_parse_return)) {
             DRETURN(1);
-         }
-
-         ep = lFirstRW(lp);
-         filename_stdout = spool_flatfile_write_object(&alp, ep, false,
-                                             CK_fields, &qconf_sfi,
-                                             SP_DEST_STDOUT, qconf_opt_format,
-                                             nullptr, false);
-         sge_free(&filename_stdout);
-         lFreeList(&lp);
-         if (answer_list_output(&alp)) {
-            sge_error_and_exit(nullptr);
          }
 
          spp++;
@@ -5400,8 +5516,7 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-sckptl" */
       if (strcmp("-sckptl", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::CK_LIST, CK_Type, CK_name,
-               "ckpt interface definition")) {
+         if (!qconf_show_names(QConfObj::CK)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5507,60 +5622,10 @@ int sge_parse_qconf(char *argv[]) {
             DRETURN(1);
          }
 
-         host = lGetHost(hep, EH_name);
-
-         /* get the existing host entry .. */
-         where = lWhere("%T( %Ih=%s )", EH_Type, EH_name, host);
-         what = lWhat("%T(ALL)", EH_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-         lFreeWhere(&where);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&lp);
-            lFreeList(&alp);
-            lFreeElem(&hep);
+         if (qconf_show_object(QConfObj::EH, lGetHost(hep, EH_name)) != QConfShowStatus::OK) {
             sge_parse_return = 1;
-            spp++;
-            continue;
          }
-         lFreeList(&alp);
-
-         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-            fprintf(stderr, MSG_EXEC_XISNOTANEXECUTIONHOST_S, host);
-            fprintf(stderr, "\n");
-            lFreeList(&lp);
-            lFreeElem(&hep);
-            sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-
          lFreeElem(&hep);
-         ep = lFirstRW(lp);
-
-         {
-            spooling_field *fields = sge_build_EH_field_list(false, true, false);
-            /* CS-2313a: type complex_values numerically for -fmt json */
-            static const int eh_ce_fields[] = { EH_consumable_config_list };
-            qconf_json_fill_complex(ep, eh_ce_fields, 1);
-            qconf_json_type_load_values(ep, EH_load_list);
-            /* EH shares its name field with AH, so the JSON $id type must be set
-             * explicitly (content resolution would yield "adminhost") */
-            filename_stdout = spool_flatfile_write_object(&alp, ep, false, fields, &qconf_sfi,
-                                        SP_DEST_STDOUT, qconf_opt_format, nullptr,
-                                        false, "exechost");
-            lFreeList(&lp);
-            sge_free(&fields);
-            sge_free(&filename_stdout);
-
-            if (answer_list_output(&alp)) {
-               sge_parse_return = 1;
-            }
-         }
 
          spp++;
          continue;
@@ -5575,8 +5640,7 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-sel" */
       if (strcmp("-sel", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::EH_LIST, EH_Type, EH_name,
-               "execution host")) {
+         if (!qconf_show_names(QConfObj::EH)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5602,7 +5666,7 @@ int sge_parse_qconf(char *argv[]) {
 /*----------------------------------------------------------------------------*/
       /* "-srqsl " */
       if (strcmp("-srqsl", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::RQS_LIST, RQS_Type, RQS_name, "resource quota set list")) {
+         if (!qconf_show_names(QConfObj::RQS)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5655,42 +5719,8 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-srole", *spp) == 0) {
          spp = sge_parser_get_next(spp);
 
-         where = lWhere("%T( %I==%s )", RL_Type, RL_name, *spp);
-         what = lWhat("%T(ALL)", RL_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RL_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-         lFreeWhere(&where);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&lp);
-            lFreeList(&alp);
-            sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-         lFreeList(&alp);
-
-         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-            fprintf(stderr, MSG_ROLE_DOESNOTEXIST_S, *spp);
-            fprintf(stderr, "\n");
-            lFreeList(&lp);
+         if (qconf_show_status_classic(qconf_show_object(QConfObj::RL, *spp), &sge_parse_return)) {
             DRETURN(1);
-         }
-
-         ep = lFirstRW(lp);
-
-         filename_stdout = spool_flatfile_write_object(&alp, ep, false,
-                                              RL_fields, &qconf_sfi,
-                                              SP_DEST_STDOUT, qconf_opt_format,
-                                              nullptr, false);
-         lFreeList(&lp);
-         sge_free(&filename_stdout);
-
-         if (answer_list_output(&alp)) {
-            sge_error_and_exit(nullptr);
          }
 
          spp++;
@@ -5699,7 +5729,7 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-srolel" */
       if (strcmp("-srolel", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::RL_LIST, RL_Type, RL_name, "role")) {
+         if (!qconf_show_names(QConfObj::RL)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5710,45 +5740,8 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-sp", *spp) == 0) {
          spp = sge_parser_get_next(spp);
 
-         /* get the existing pe entry .. */
-         where = lWhere("%T( %I==%s )", PE_Type, PE_name, *spp);
-         what = lWhat("%T(ALL)", PE_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PE_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-         lFreeWhere(&where);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&lp);
-            lFreeList(&alp);
-            sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-         lFreeList(&alp);
-
-         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-            fprintf(stderr,  MSG_PARALLEL_XNOTAPARALLELEVIRONMENT_S , *spp);
-            fprintf(stderr, "\n");
-            lFreeList(&lp);
+         if (qconf_show_status_classic(qconf_show_object(QConfObj::PE, *spp), &sge_parse_return)) {
             DRETURN(1);
-         }
-
-         ep = lFirstRW(lp);
-
-         {
-            filename_stdout = spool_flatfile_write_object(&alp, ep, false,
-                                                 PE_fields, &qconf_sfi,
-                                                 SP_DEST_STDOUT, qconf_opt_format,
-                                                 nullptr, false);
-            lFreeList(&lp);
-            sge_free(&filename_stdout);
-
-            if (answer_list_output(&alp)) {
-               sge_error_and_exit(nullptr);
-            }
          }
 
          spp++;
@@ -5757,8 +5750,7 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-spl" */
       if (strcmp("-spl", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::PE_LIST, PE_Type, PE_name,
-               "parallel environment")) {
+         if (!qconf_show_names(QConfObj::PE)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5768,7 +5760,7 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-scel" */
       if (strcmp("-scel", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::CE_LIST, CE_Type, CE_name, "complex entry")) {
+         if (!qconf_show_names(QConfObj::CE)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6200,11 +6192,8 @@ int sge_parse_qconf(char *argv[]) {
          /* CS-2303 C4: accept a comma-separated list of complex entry names. */
          spp = sge_parser_get_next(spp);
          qconf_is_manager(username);
-         lString2List(*spp, &lp, CE_Type, CE_name, ", ");
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CE_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_parse_return |= qconf_delete_names(QConfObj::CE, *spp);
+
          spp++;
          continue;
       }
@@ -6272,8 +6261,7 @@ int sge_parse_qconf(char *argv[]) {
 
       /* "-shgrpl" */
       if (strcmp("-shgrpl", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_name,
-                          "host group list")) {
+         if (!qconf_show_names(QConfObj::HGRP)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6344,11 +6332,9 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-dhgrp", *spp) == 0) {
          spp = sge_parser_get_next(spp);
          qconf_is_manager(username);
+         /* parse_name_list_to_cull() rejects an empty argument, lString2List() would not */
          parse_name_list_to_cull("host groups to del", &lp, HGRP_Type, HGRP_name, *spp);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_parse_return |= qconf_delete_list(QConfObj::HGRP, &lp);
 
          spp++;
          continue;
@@ -6439,7 +6425,7 @@ int sge_parse_qconf(char *argv[]) {
 
       /* "-sql" */
       if (strcmp("-sql", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::CQ_LIST, CQ_Type, CQ_name, "cqueue list")) {
+         if (!qconf_show_names(QConfObj::CQ)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6635,11 +6621,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-dq", *spp) == 0) {
          spp = sge_parser_get_next(spp);
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-         lString2List(*spp, &lp, CQ_Type, CQ_name, ", ");
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_parse_return |= qconf_delete_names(QConfObj::CQ, *spp);
 
          spp++;
          continue;
@@ -6707,56 +6689,21 @@ int sge_parse_qconf(char *argv[]) {
       /* "-suser username" */
 
       if (strcmp("-suser", *spp) == 0) {
-         const char*  user = nullptr;
-         lList* uList = nullptr;
+         lList *uList = nullptr;
          bool first = true;
-         spooling_field *fields = nullptr;
 
          spp = sge_parser_get_next(spp);
 
          lString2List(*spp, &uList, ST_Type, ST_name , ", ");
          for_each_ep_lv(uep, uList) {
-            user = lGetString(uep, ST_name);
-            /* get user */
-            where = lWhere("%T( %I==%s )", UU_Type, UU_name, user);
-            what = lWhat("%T(ALL)", UU_Type);
-            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::UU_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-            lFreeWhere(&where);
-            lFreeWhat(&what);
-
+            // the users are separated by a blank line, the first one is not preceded by one
             if (first) {
                first = false;
             } else {
                printf("\n");
             }
-
-            aep = lFirst(alp);
-            answer_exit_if_not_recoverable(aep);
-            if (answer_get_status(aep) != STATUS_OK) {
-               fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-               lFreeList(&alp);
-               lFreeList(&lp);
-               continue;
-            }
-            lFreeList(&alp);
-
-            if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-               fprintf(stderr, MSG_USER_XISNOKNOWNUSER_S, user);
-               fprintf(stderr, "\n");
-               lFreeList(&lp);
-               continue;
-            }
-            ep = lFirstRW(lp);
-
-            /* print to stdout */
-            fields = sge_build_UU_field_list(false);
-            filename_stdout = spool_flatfile_write_object(&alp, ep, false, fields, &qconf_param_sfi,
-                                                 SP_DEST_STDOUT, qconf_opt_format,
-                                                 nullptr, false);
-            lFreeList(&lp);
-            lFreeList(&alp);
-            sge_free(&filename_stdout);
-            sge_free(&fields);
+            /* a user that does not exist has never changed the exit code here */
+            (void)qconf_show_object(QConfObj::UU, lGetString(uep, ST_name));
          }
 
          lFreeList(&uList);
@@ -6769,48 +6716,11 @@ int sge_parse_qconf(char *argv[]) {
       /* "-sprj projectname" */
 
       if (strcmp("-sprj", *spp) == 0) {
-         spooling_field *fields = nullptr;
-
          spp = sge_parser_get_next(spp);
 
-         /* get project */
-         where = lWhere("%T( %I==%s )", PR_Type, PR_name, *spp);
-         what = lWhat("%T(ALL)", PR_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PR_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-         lFreeWhere(&where);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&alp);
-            lFreeList(&lp);
-            spp++;
+         if (qconf_show_object(QConfObj::PR, *spp) != QConfShowStatus::OK) {
             sge_parse_return = 1;
-            continue;
          }
-
-         lFreeList(&alp);
-         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-            fprintf(stderr, MSG_PROJECT_XISNOKNWOWNPROJECT_S, *spp);
-            fprintf(stderr, "\n");
-            lFreeList(&lp);
-            spp++;
-            sge_parse_return = 1;
-            continue;
-         }
-         ep = lFirstRW(lp);
-
-         /* print to stdout */
-         fields = sge_build_PR_field_list(false);
-         filename_stdout = spool_flatfile_write_object(&alp, ep, false, fields, &qconf_sfi,
-                                              SP_DEST_STDOUT, qconf_opt_format,
-                                              nullptr, false);
-         lFreeList(&alp);
-         lFreeList(&lp);
-         sge_free(&filename_stdout);
-         sge_free(&fields);
 
          spp++;
          continue;
@@ -6833,8 +6743,7 @@ int sge_parse_qconf(char *argv[]) {
       /* "-sul" */
 
       if (strcmp("-sul", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::US_LIST, US_Type, US_name,
-               "userset list")) {
+         if (!qconf_show_names(QConfObj::US)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6846,8 +6755,7 @@ int sge_parse_qconf(char *argv[]) {
        /* "-suserl" */
 
       if (strcmp("-suserl", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::UU_LIST, UU_Type, UU_name,
-               "user list")) {
+         if (!qconf_show_names(QConfObj::UU)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6859,8 +6767,7 @@ int sge_parse_qconf(char *argv[]) {
        /* "-sprjl" */
 
       if (strcmp("-sprjl", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::PR_LIST, PR_Type, PR_name,
-               "project list")) {
+         if (!qconf_show_names(QConfObj::PR)) {
             sge_parse_return = 1;
          }
          spp++;
