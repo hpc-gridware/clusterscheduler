@@ -7221,75 +7221,31 @@ static bool del_host_of_type(lList *arglp, ocs::gdi::Target target) {
 
 /* ------------------------------------------------------------ */
 
+/** @brief Offer an exec host to the editor and return the edited object.
+ *
+ * @param ep  the host to edit; consumed
+ * @param uid uid to run the editor as
+ * @param gid gid to run the editor as
+ * @return the edited host, or nullptr when the result could not be read
+ */
 static lListElem *edit_exechost(lListElem *ep, uid_t uid, gid_t gid) {
    DENTER(TOP_LAYER);
-
-   int status;
-   lListElem *hep = nullptr;
-   spooling_field *fields = sge_build_EH_field_list(false, false, false);
    lList *alp = nullptr;
-   int fields_out[MAX_NUM_FIELDS];
-   int missing_field = NoName;
 
-   /* used for generating filenames */
-   char *filename = nullptr;
+   /* The caller keeps ownership of ep - it either frees it itself or it is
+    * still chained into a list - while qconf_edit_obj() consumes what it is
+    * given, so the engine works on a copy. */
+   lListElem *work = lCopyElem(ep);
 
-   filename = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
-                                                  &qconf_sfi, SP_DEST_TMP,
-                                                  qconf_opt_format, filename,
-                                                  false);
-   if (answer_list_output(&alp)) {
-      if (filename != nullptr) {
-         unlink(filename);
-         sge_free(&filename);
-      }
-      sge_free(&fields);
-      sge_error_and_exit(nullptr);
-   }
-
+   QConfEditStatus st = qconf_edit_obj(QConfObj::EH, &alp, &work, uid, gid);
    lFreeList(&alp);
-   status = sge_edit(filename, uid, gid);
 
-   if (status < 0) {
-      unlink(filename);
-      sge_free(&filename);
-      sge_free(&fields);
-      if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
-         DRETURN(nullptr);
-      }
+   /* a read failure is reported to the caller as a nullptr, the way this
+    * function has always behaved; only the editor itself is fatal */
+   if (st != QConfEditStatus::OK && st != QConfEditStatus::READ_FAILED) {
+      qconf_edit_fail_exit(st);
    }
-
-   if (status > 0) {
-      unlink(filename);
-      sge_free(&filename);
-      sge_free(&fields);
-      if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
-         DRETURN(nullptr);
-      }
-   }
-
-   fields_out[0] = NoName;
-   hep = spool_flatfile_read_object(&alp, EH_Type, nullptr,
-                                   fields, fields_out, true, &qconf_sfi,
-                                   qconf_opt_format, nullptr, filename);
-
-   if (answer_list_output(&alp)) {
-      lFreeElem(&hep);
-   }
-
-   if (hep != nullptr) {
-      missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
-   }
-
-   if (missing_field != NoName) {
-      lFreeElem(&hep);
-      answer_list_output(&alp);
-   }
-
-   unlink(filename);
-   sge_free(&filename);
-   sge_free(&fields);
-   DRETURN(hep);
+   DRETURN(work);
 }
 
 /* ------------------------------------------------------------ */
@@ -7379,155 +7335,75 @@ static lList *edit_sched_conf(lList *confl, uid_t uid, gid_t gid) {
 
 /* ------------------------------------------------------------ */
 
+/** @brief Offer a user to the editor and return the edited object.
+ *
+ * Exits when the result cannot be read, naming the object - the wording this
+ * branch has always used.
+ *
+ * @param ep  the user to edit; consumed
+ * @param uid uid to run the editor as
+ * @param gid gid to run the editor as
+ * @return the edited user
+ */
 static lListElem *edit_user(lListElem *ep, uid_t uid, gid_t gid) {
    DENTER(TOP_LAYER);
-
-   int status;
-   lListElem *newep = nullptr;
    lList *alp = nullptr;
-   char *filename = nullptr;
-   spooling_field *fields = sge_build_UU_field_list(false);
-   int fields_out[MAX_NUM_FIELDS];
-   int missing_field = NoName;
 
-   filename = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
-                                                  &qconf_sfi, SP_DEST_TMP,
-                                                  qconf_opt_format, nullptr, false);
-   if (answer_list_output(&alp)) {
-      if (filename != nullptr) {
-         unlink(filename);
-         sge_free(&filename);
-      }
-      sge_free(&fields);
-      sge_error_and_exit(nullptr);
-   }
+   /* The caller keeps ownership of ep - it either frees it itself or it is
+    * still chained into a list - while qconf_edit_obj() consumes what it is
+    * given, so the engine works on a copy. */
+   lListElem *work = lCopyElem(ep);
 
+   QConfEditStatus st = qconf_edit_obj(QConfObj::UU, &alp, &work, uid, gid);
    lFreeList(&alp);
 
-   status = sge_edit(filename, uid, gid);
-
-   if (status < 0) {
-      sge_free(&fields);
-      unlink(filename);
-      if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
-         DRETURN(nullptr);
-      }
-   }
-
-   if (status > 0) {
-      sge_free(&fields);
-      unlink(filename);
-      if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
-         DRETURN(nullptr);
-      }
-   }
-
-   fields_out[0] = NoName;
-   newep = spool_flatfile_read_object(&alp, UU_Type, nullptr, fields, fields_out,
-                                    true, &qconf_sfi, qconf_opt_format, nullptr,
-                                    filename);
-
-   if (answer_list_output(&alp)) {
-      lFreeElem(&newep);
-   }
-
-   if (newep != nullptr) {
-      missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
-   }
-
-   sge_free(&fields);
-
-   if (missing_field != NoName) {
-      lFreeElem(&newep);
-      answer_list_output(&alp);
-   }
-
-   unlink(filename);
-   sge_free(&filename);
-
-   if (!newep) {
+   if (st == QConfEditStatus::READ_FAILED) {
+      /* the user branch has always named the object in this message rather
+       * than using the generic "error reading in file" */
       fprintf(stderr, MSG_QCONF_CANTREADX_S, MSG_OBJ_USER);
       fprintf(stderr, "\n");
       sge_exit(1);
    }
-
-   DRETURN(newep);
+   if (st != QConfEditStatus::OK) {
+      qconf_edit_fail_exit(st);
+   }
+   DRETURN(work);
 }
 
 /* ------------------------------------------------------------ */
+/** @brief Offer a project to the editor and return the edited object.
+ *
+ * Exits when the result cannot be read, naming the object - the wording this
+ * branch has always used.
+ *
+ * @param ep  the project to edit; consumed
+ * @param uid uid to run the editor as
+ * @param gid gid to run the editor as
+ * @return the edited project
+ */
 static lListElem *edit_project(lListElem *ep, uid_t uid, gid_t gid) {
    DENTER(TOP_LAYER);
-
-   int status;
-   lListElem *newep = nullptr;
    lList *alp = nullptr;
-   char *filename = nullptr;
-   spooling_field *fields = sge_build_PR_field_list(false);
-   int fields_out[MAX_NUM_FIELDS];
-   int missing_field = NoName;
 
-   filename = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
-                                                  &qconf_sfi, SP_DEST_TMP,
-                                                  qconf_opt_format, nullptr, false);
-   if (answer_list_output(&alp)) {
-      if (filename != nullptr) {
-         unlink(filename);
-         sge_free(&filename);
-      }
-      sge_free(&fields);
-      sge_error_and_exit(nullptr);
-   }
+   /* The caller keeps ownership of ep - it either frees it itself or it is
+    * still chained into a list - while qconf_edit_obj() consumes what it is
+    * given, so the engine works on a copy. */
+   lListElem *work = lCopyElem(ep);
 
+   QConfEditStatus st = qconf_edit_obj(QConfObj::PR, &alp, &work, uid, gid);
    lFreeList(&alp);
 
-   status = sge_edit(filename, uid, gid);
-
-   if (status < 0) {
-      sge_free(&fields);
-      unlink(filename);
-      if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
-         DRETURN(nullptr);
-      }
-   }
-
-   if (status > 0) {
-      sge_free(&fields);
-      unlink(filename);
-      if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
-         DRETURN(nullptr);
-      }
-   }
-
-   fields_out[0] = NoName;
-   newep = spool_flatfile_read_object(&alp, PR_Type, nullptr, fields, fields_out,
-                                    true, &qconf_sfi, qconf_opt_format, nullptr,
-                                    filename);
-
-   if (answer_list_output(&alp)) {
-      lFreeElem(&newep);
-   }
-
-   if (newep != nullptr) {
-      missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
-   }
-
-   sge_free(&fields);
-
-   if (missing_field != NoName) {
-      lFreeElem(&newep);
-      answer_list_output(&alp);
-   }
-
-   unlink(filename);
-   sge_free(&filename);
-
-   if (!newep) {
+   if (st == QConfEditStatus::READ_FAILED) {
+      /* the project branch has always named the object in this message rather
+       * than using the generic "error reading in file" */
       fprintf(stderr, MSG_QCONF_CANTREADX_S, MSG_JOB_PROJECT);
       fprintf(stderr, "\n");
       sge_exit(1);
    }
-
-   DRETURN(newep);
+   if (st != QConfEditStatus::OK) {
+      qconf_edit_fail_exit(st);
+   }
+   DRETURN(work);
 }
 
 /****************************************************************/
