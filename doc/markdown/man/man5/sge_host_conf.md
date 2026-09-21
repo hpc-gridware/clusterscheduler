@@ -87,17 +87,25 @@ are always handled on a per job slot basis.
 The default value for this parameter is NONE, i.e. no administrator defined resource attribute quotas are 
 associated with the host.
 
-For a Resource Map (*RSMAP*, see xxqs_name_sxx_complex(5)) the value on the right of the `=` names the
+For a Resource Map (*RSMAP*, see xxqs_name_sxx_rsmap(5)) the value on the right of the `=` names the
 individual instances the host provides, and may attach per-instance characteristics inside square
-brackets. Per-instance characteristics are available in GCS only. Example — a host with two NVIDIA
-GPUs, each carrying a device path, on-board memory, and a topology affinity mask:
+brackets. Example — a host with two NVIDIA GPUs, each carrying its device files, on-board memory,
+and a topology affinity mask:
 
-    complex_values GPU=2(gpu0[device=/dev/nvidia0,memory=80G,affinity_mask=SCCCCCCCCScccccccc] \
-                        gpu1[device=/dev/nvidia1,memory=80G,affinity_mask=SccccccccSCCCCCCCC])
+    complex_values GPU=2(gpu0[devices=/dev/nvidia0:rw;/dev/nvidiactl:r,memory=80G,\
+                              affinity_mask=SCCCCCCCCScccccccc] \
+                         gpu1[devices=/dev/nvidia1:rw;/dev/nvidiactl:r,memory=80G,\
+                              affinity_mask=SccccccccSCCCCCCCC])
 
-Each characteristic name (`device`, `memory`, `affinity_mask` in the example) must already be defined
-as a complex before it can be attached to an RSMAP instance; the referenced complex's
-type governs how the value is parsed. See xxqs_name_sxx_complex(5) for the full grammar.
+A resource map may also be written as a plain amount, without naming the instances:
+
+    complex_values GPU=4
+
+which is stored and displayed as `GPU=4(0-3)`.
+
+See xxqs_name_sxx_rsmap(5) for the grammar, for the characteristics — including *devices*, which
+confines a job to the device files of the instances it was granted — and for how a resource map is
+requested.
 
 ## load_values
 

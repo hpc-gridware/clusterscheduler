@@ -68,16 +68,16 @@ macro(gcs_use_tools_toolchain)
    set(LINK_CPP_STATICALLY ON)
 endmacro()
 
-if (("${SGE_ARCH}" STREQUAL "ulx-amd64") AND ((${HOSTNAME} STREQUAL "ce7-0-ulx-amd64") OR (${HOSTNAME} STREQUAL "v047-ulx-amd64")))
+if (("${SGE_ARCH}" STREQUAL "ulx-amd64") AND ((${HOSTNAME} STREQUAL "ce7-0-ulx-amd64") OR (${HOSTNAME} STREQUAL "v047-ulx-amd64") OR (${HOSTNAME} STREQUAL "build-ulx-amd64")))
    # CentOS 7: the system compiler is gcc 4.8.5 and provides c++20 partially only.
    # The macro picks the same tools that used to be listed by hand here; its
    # multiarch part stays without effect because "gcc -print-multiarch" returns
    # nothing on CentOS.
    gcs_use_tools_toolchain()
-elseif (("${SGE_ARCH}" STREQUAL "lx-amd64") AND ((${HOSTNAME} STREQUAL "ce8-0-lx-amd64") OR (${HOSTNAME} STREQUAL "v047-lx-amd64")))
+elseif (("${SGE_ARCH}" STREQUAL "lx-amd64") AND ((${HOSTNAME} STREQUAL "ce8-0-lx-amd64") OR (${HOSTNAME} STREQUAL "v047-lx-amd64") OR (${HOSTNAME} STREQUAL "build-lx-amd64")))
    # CentOS 8: the system compiler supports c++20 only partially.
    gcs_use_tools_toolchain()
-elseif (("${SGE_ARCH}" STREQUAL "xlx-amd64") AND ((${HOSTNAME} STREQUAL "ce6-0-xlx-amd64") OR (${HOSTNAME} STREQUAL "v047-xlx-amd64")))
+elseif (("${SGE_ARCH}" STREQUAL "xlx-amd64") AND ((${HOSTNAME} STREQUAL "ce6-0-xlx-amd64") OR (${HOSTNAME} STREQUAL "v047-xlx-amd64") OR (${HOSTNAME} STREQUAL "build-xlx-amd64")))
    # CentOS 6: the system compiler supports c++20 only partially.
    gcs_use_tools_toolchain()
 elseif (("${SGE_ARCH}" STREQUAL "lx-amd64") AND (${HOSTNAME} STREQUAL "h047"))

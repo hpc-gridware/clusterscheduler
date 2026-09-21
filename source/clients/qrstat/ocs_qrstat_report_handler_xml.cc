@@ -117,6 +117,16 @@ static bool
 qrstat_report_exec_binding_list_node(qrstat_report_handler_t* handler, lList **alpp, const char *name, const char *value);
 
 static bool
+qrstat_report_start_granted_resource_list(qrstat_report_handler_t* handler, lList **alpp);
+
+static bool
+qrstat_report_finish_granted_resource_list(qrstat_report_handler_t* handler, lList **alpp);
+
+static bool
+qrstat_report_granted_resource_list_node(qrstat_report_handler_t* handler, lList **alpp,
+                                         const char *host, const char *value);
+
+static bool
 qrstat_report_start_granted_parallel_environment(qrstat_report_handler_t* handler, lList **alpp);
 
 static bool
@@ -214,6 +224,10 @@ qrstat_create_report_handler_xml(qrstat_env_t *qrstat_env, lList **answer_list)
          ret->report_start_exec_binding_list = qrstat_report_start_exec_binding_list;
          ret->report_finish_exec_binding_list = qrstat_report_finish_exec_binding_list;
          ret->report_exec_binding_list_node = qrstat_report_exec_binding_list_node;
+
+         ret->report_start_granted_resource_list = qrstat_report_start_granted_resource_list;
+         ret->report_finish_granted_resource_list = qrstat_report_finish_granted_resource_list;
+         ret->report_granted_resource_list_node = qrstat_report_granted_resource_list_node;
 
          ret->report_start_granted_parallel_environment = qrstat_report_start_granted_parallel_environment;
          ret->report_finish_granted_parallel_environment = qrstat_report_finish_granted_parallel_environment;
@@ -513,6 +527,42 @@ qrstat_report_exec_queue_list_node(qrstat_report_handler_t* handler, lList **alp
                               "</queue_instance><slots>" sge_u32 "</slots></exec_queue>\n", name, value);
 
    DRETURN(ret); 
+}
+
+static bool
+qrstat_report_start_granted_resource_list(qrstat_report_handler_t* handler, lList **alpp)
+{
+   bool ret = true;
+   dstring *buffer = (dstring*)handler->ctx;
+
+   DENTER(TOP_LAYER);
+   sge_dstring_append(buffer, "      <granted_resources_list>\n");
+   DRETURN(ret);
+}
+
+static bool
+qrstat_report_finish_granted_resource_list(qrstat_report_handler_t* handler, lList **alpp)
+{
+   bool ret = true;
+   dstring *buffer = (dstring*)handler->ctx;
+
+   DENTER(TOP_LAYER);
+   sge_dstring_append(buffer, "      </granted_resources_list>\n");
+   DRETURN(ret);
+}
+
+static bool
+qrstat_report_granted_resource_list_node(qrstat_report_handler_t* handler, lList **alpp,
+                                         const char *host, const char *value)
+{
+   bool ret = true;
+   dstring *buffer = (dstring*)handler->ctx;
+
+   DENTER(TOP_LAYER);
+   sge_dstring_sprintf_append(buffer, "         <granted_resource><exec_host>" SFN
+                              "</exec_host><resource>" SFN "</resource></granted_resource>\n",
+                              host, value);
+   DRETURN(ret);
 }
 
 static bool

@@ -16,6 +16,10 @@ local_notes
 .claude
 .compound-engineering/*.local.yaml
 
+# python byte code caches
+__pycache__/
+*.py[cod]
+
 # clion build
 cmake-build-debug
 

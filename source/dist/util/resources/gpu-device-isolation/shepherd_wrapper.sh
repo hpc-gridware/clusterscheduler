@@ -19,23 +19,45 @@
 #     qconf -mconf <host>   (per execution host)
 #     -> shepherd_cmd  /path/to/shepherd_wrapper.sh
 #
-# Configuration — adapt these to your cluster:
-#   RSMAP_NAME        : name of your GPU RSMAP resource (e.g. "gpu")
-#   REAL_SHEPHERD     : full path to the original sge_shepherd binary
+#   The execution daemon has to be restarted so that a new or changed
+#   shepherd_cmd is used.
+#
+# Configuration - adapt these to your cluster:
+#   RSMAP_NAME        : name of your GPU RSMAP resource (e.g. "NVIDIA_GPUS").
+#                       The name is case sensitive and must match the complex
+#                       name exactly, because the granted IDs are exported as
+#                       SGE_HGR_<complex name>.
+#   REAL_SHEPHERD     : full path to the original sge_shepherd binary. By
+#                       default it is derived from SGE_ROOT.
 # ---------------------------------------------------------------------------
 
-#echo "WRAPPER DEBUG: SGE_JOB_SPOOL_DIR=$SGE_JOB_SPOOL_DIR" >> /tmp/wrapper_debug.log
-#echo "WRAPPER DEBUG: ENV_FILE exists: $(test -f "$SGE_JOB_SPOOL_DIR/environment" && echo YES || echo NO)" >> /tmp/wrapper_debug.log
-#echo "WRAPPER DEBUG: GPU_IDS=$(grep "^SGE_HGR_NVIDIA_GPUS=" "$SGE_JOB_SPOOL_DIR/environment" 2>&1 | head -1 | cut -d'=' -f2-)" >> /tmp/wrapper_debug.log
-
-
 RSMAP_NAME="${RSMAP_NAME:-NVIDIA_GPUS}"
-REAL_SHEPHERD="${REAL_SHEPHERD:-/opt/ocs/bin/lx-amd64/sge_shepherd}"
+
+# The shepherd is started with SGE_ROOT set in its environment. Derive the
+# path of the real binary from it so that the wrapper works for any
+# installation path and architecture.
+if [ -z "$REAL_SHEPHERD" ]; then
+    if [ -n "$SGE_ROOT" ] && [ -x "$SGE_ROOT/util/arch" ]; then
+        REAL_SHEPHERD="$SGE_ROOT/bin/$("$SGE_ROOT/util/arch")/sge_shepherd"
+    else
+        echo "shepherd_wrapper: ERROR - SGE_ROOT is not usable and REAL_SHEPHERD is not set" >&2
+        exit 1
+    fi
+fi
+
+if [ ! -x "$REAL_SHEPHERD" ]; then
+    echo "shepherd_wrapper: ERROR - shepherd binary not executable: $REAL_SHEPHERD" >&2
+    exit 1
+fi
 
 # ---------------------------------------------------------------------------
 # 1. Locate the job spool files
 #    - environment file: contains SGE_HGR_<RSMAP> with selected GPU IDs
 #    - config file:      contains devices_allow= line to be patched
+#
+#    The shepherd is started with the job spool directory as working
+#    directory. SGE_JOB_SPOOL_DIR is NOT set in the shepherd environment,
+#    so it must not be used here.
 # ---------------------------------------------------------------------------
 JOB_SPOOL_DIR="$(pwd)"
 ENV_FILE="$JOB_SPOOL_DIR/environment"
@@ -51,17 +73,23 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exec "$REAL_SHEPHERD" "$@"
 fi
 
-touch $SGE_JOB_SPOOL_DIR/usage
+# Pre-create the usage file so that the execution daemon can always write the
+# job usage, even when the job is rejected very early.
+touch "$JOB_SPOOL_DIR/usage"
 
 # ---------------------------------------------------------------------------
 # 2. Read the GPU RSMAP selection from the environment file
 #    The variable is stored as:  SGE_HGR_<RSMAP_NAME>=<gpu_ids>
 #    Multiple GPUs are space-separated, e.g. "0 2 3"
 #
-#    IMPORTANT: Do NOT rely on NVIDIA_VISIBLE_DEVICES — it is set later
+#    The complex name is used verbatim. xxQS_NAMExx exports the granted IDs as
+#    SGE_HGR_<complex name> preserving the case of the complex name, so a
+#    complex named "gpu" results in SGE_HGR_gpu and not SGE_HGR_GPU.
+#
+#    IMPORTANT: Do NOT rely on NVIDIA_VISIBLE_DEVICES - it is set later
 #    by the qgpu prolog and is NOT available when the shepherd starts.
 # ---------------------------------------------------------------------------
-RSMAP_VAR="SGE_HGR_$(echo "$RSMAP_NAME" | tr '[:lower:]' '[:upper:]')"
+RSMAP_VAR="SGE_HGR_${RSMAP_NAME}"
 
 GPU_IDS=$(grep "^${RSMAP_VAR}=" "$ENV_FILE" | head -1 | cut -d'=' -f2-)
 
@@ -90,7 +118,7 @@ echo "shepherd_wrapper: GPU RSMAP selection (${RSMAP_VAR}): $GPU_IDS"
 #      GPUs need read+write access -> use "rw"
 #
 #    Each GPU ID N maps to:
-#      /dev/nvidia<N>   — the GPU device
+#      /dev/nvidia<N>   - the GPU device
 #
 #    Shared control devices are always included:
 #      /dev/nvidiactl
@@ -142,17 +170,25 @@ echo "shepherd_wrapper: devices_allow -> $DEVICE_LIST"
 # ---------------------------------------------------------------------------
 # 4. Patch the devices_allow entry in the CONFIG file
 #
-#    The config file ($SGE_JOB_SPOOL_DIR/config) contains a line:
+#    The config file contains a line:
 #      devices_allow=
 #    Replace it with the resolved device list using sed.
 #
 #    Example result:
 #      devices_allow=/dev/nvidia0=rw;/dev/nvidia2=rw;/dev/nvidiactl=rw;/dev/nvidia-uvm=rw
+#
+#    The entry is only written by the execution daemon when cgroup based
+#    device isolation is available on the host. Without it there is nothing to
+#    patch and the job would silently run without isolation, so this case is
+#    reported instead of being ignored.
 # ---------------------------------------------------------------------------
-sed -i "s|^devices_allow=.*|devices_allow=${DEVICE_LIST}|" "$CONFIG_FILE"
-
-if [ $? -ne 0 ]; then
-    echo "shepherd_wrapper: ERROR - failed to update devices_allow in $CONFIG_FILE" >&2
+if grep -q "^devices_allow=" "$CONFIG_FILE"; then
+    if ! sed -i "s|^devices_allow=.*|devices_allow=${DEVICE_LIST}|" "$CONFIG_FILE"; then
+        echo "shepherd_wrapper: ERROR - failed to update devices_allow in $CONFIG_FILE" >&2
+    fi
+else
+    echo "shepherd_wrapper: WARNING - no devices_allow entry in $CONFIG_FILE," \
+         "GPU device isolation is not active on this host" >&2
 fi
 
 # ---------------------------------------------------------------------------
@@ -169,9 +205,8 @@ if ! grep -q "^SGE_RESORT_CUDA_VISIBLE_DEVICES=" "$ENV_FILE"; then
     echo "SGE_RESORT_CUDA_VISIBLE_DEVICES=from0" >> "$ENV_FILE"
 fi
 
-
 # ---------------------------------------------------------------------------
-# 6. Hand off to the real shepherd — exec replaces this process
+# 6. Hand off to the real shepherd - exec replaces this process
 # ---------------------------------------------------------------------------
 echo "shepherd_wrapper: launching real shepherd: $REAL_SHEPHERD $*"
 exec "$REAL_SHEPHERD" "$@"

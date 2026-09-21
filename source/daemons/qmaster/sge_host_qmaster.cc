@@ -57,6 +57,7 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_pe.h"
@@ -1505,6 +1506,14 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
          DRETURN(STATUS_EUNKNOWN);
       }
 
+      // an RSMAP written as a bare amount gets the ids 0 to amount-1 here - has to happen before
+      // the resources are debited below, which books the utilization per id
+      if (!centry_list_rsmap_expand_implicit_ids(alpp,
+                                                 lGetListRW(tmp_elem, EH_consumable_config_list))) {
+         lFreeElem(&tmp_elem);
+         DRETURN(STATUS_EUNKNOWN);
+      }
+
       // debit resources
       {
          lListElem *jep = nullptr;
@@ -1570,7 +1579,8 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
                                          tmp_elem, master_centry_list, lGetUlong(gdil_ep, JG_slots),
                                          EH_consumable_config_list, EH_resource_utilization, host,
                                          lGetUlong64(ar_ep, AR_start_time), lGetUlong64(ar_ep, AR_duration),
-                                         HOST_TAG, false, is_master_task, do_per_host_booking);
+                                         HOST_TAG, false, is_master_task, do_per_host_booking,
+                                         lGetList(ar_ep, AR_granted_resources_list));
                   is_master_task = false;
                   do_per_host_booking = false;
                   gdil_ep = lGetElemHostNext(gdil, JG_qhostname, host, &iterator);

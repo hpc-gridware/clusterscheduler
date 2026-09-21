@@ -50,6 +50,7 @@
 
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_schedd_conf.h"
@@ -426,6 +427,13 @@ bool spool_default_validate_func(lList **answer_list,
             /* necessary to init double values of consumable configuration */
             centry_list_fill_request(lGetListRW(object, EH_consumable_config_list), nullptr, master_centry_list, true,
                                      false, true);
+            /* an RSMAP that was spooled as a bare amount gets the ids 0 to amount-1 here, which
+               repairs a host that was configured before the ids were created implicitly. Has to
+               happen before debit_host_consumable() below, which sets up the per id booking. */
+            lList *rsmap_centries = lGetListRW(object, EH_consumable_config_list);
+            if (!centry_list_rsmap_expand_implicit_ids(answer_list, rsmap_centries)) {
+               ret = false;
+            }
             /* necessary to setup actual list of exechost */
             debit_host_consumable(nullptr, nullptr, nullptr, nullptr, object, master_centry_list, 0, true, true, nullptr);
 
@@ -493,7 +501,8 @@ bool spool_default_validate_func(lList **answer_list,
          }
          break;
       case SGE_TYPE_CENTRY:
-         if (!centry_elem_validate(object, master_centry_list, answer_list)) {
+         // a complex already in the spool is reported, not refused - see centry_elem_validate()
+         if (!centry_elem_validate(object, master_centry_list, answer_list, true)) {
             ret = false;
          }
          break;
@@ -521,12 +530,24 @@ bool spool_default_validate_func(lList **answer_list,
          break;
       case SGE_TYPE_JOB:
          // fill in non spooled fields, see also code for SGE_TYPE_EXECHOST
+         // The amount of every request is (re)computed here, into CE_doubleval, which is not
+         // spooled. The scheduler reads it directly and no longer re-parses the string, so a
+         // failure here would otherwise leave the amount at 0 and the job would be dispatched
+         // while booking nothing. Report it rather than discarding the answer list.
          lListElem *jrs;
          for_each_rw (jrs, lGetList(object, JB_request_set_list)) {
-            centry_list_fill_request(lGetListRW(jrs, JRS_hard_resource_list), nullptr, master_centry_list, true,
-                                     false, true);
-            centry_list_fill_request(lGetListRW(jrs, JRS_soft_resource_list), nullptr, master_centry_list, true,
-                                     false, true);
+            lList *fill_answer_list = nullptr;
+            // both calls must run; do not let the first failure skip the soft list
+            int hard_ret = centry_list_fill_request(lGetListRW(jrs, JRS_hard_resource_list), &fill_answer_list,
+                                                    master_centry_list, true, false, true);
+            int soft_ret = centry_list_fill_request(lGetListRW(jrs, JRS_soft_resource_list), &fill_answer_list,
+                                                    master_centry_list, true, false, true);
+            if (hard_ret != 0 || soft_ret != 0) {
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                       MSG_SPOOL_JOBREQUESTNOTPARSABLE_U, lGetUlong(object, JB_job_number));
+               answer_list_append_list(answer_list, &fill_answer_list);
+            }
+            lFreeList(&fill_answer_list);
          }
          break;
       default:

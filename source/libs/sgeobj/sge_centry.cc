@@ -36,6 +36,7 @@
 
 #include <cstring>
 #include <cfloat>
+#include <string>
 
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
@@ -224,8 +225,24 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
       case TYPE_TIM:
       case TYPE_MEM:
       case TYPE_BOO:
-      case TYPE_DOUBLE:
-         if (!extended_parse_ulong_val(&dval, nullptr, type, s, tmp, sizeof(tmp)-1, allow_infinity, false)) {
+      case TYPE_DOUBLE: {
+         // A resource map request may carry a bracketed parameter list after the amount,
+         // "gpu=4[id=gpu1*,same=id]". The whole string stays in CE_stringval - that is what
+         // carries the parameters on - but only the text in front of the bracket is the amount.
+         // Everything downstream reads the amount from CE_doubleval, so this is the one place
+         // that has to know where it ends. Only the value handed to the parser differs; the
+         // checks below apply to a resource map like to any other numeric type.
+         std::string amount_buf;
+         const char *amount = s;
+         if (type == TYPE_RSMAP) {
+            const char *bracket = strchr(s, '[');
+            if (bracket != nullptr) {
+               amount_buf.assign(s, bracket - s);
+               amount = amount_buf.c_str();
+            }
+         }
+
+         if (!extended_parse_ulong_val(&dval, nullptr, type, amount, tmp, sizeof(tmp)-1, allow_infinity, false)) {
 /*             ERROR(MSG_CPLX_WRONGTYPE_SSS, name, s, tmp); */
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ATTRIB_XISNOTAY_SS, name, tmp);
             DRETURN(-1);
@@ -260,6 +277,7 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
             DRETURN(-1);
          }
          break;
+      }
       case TYPE_HOST:
          /* resolve hostname and store it */
          ret = sge_resolve_host(this_elem, CE_stringval);
@@ -682,8 +700,9 @@ centry_list_init_double(lList *this_list) {
 *     centry_list_fill_request() -- fills and checks list of complex entries
 *
 *  SYNOPSIS
-*     int centry_list_fill_request(lList *centry_list,
-*                                  lList *master_centry_list,
+*     int centry_list_fill_request(lList *this_list,
+*                                  lList **answer_list,
+*                                  const lList *master_centry_list,
 *                                  bool allow_non_requestable,
 *                                  bool allow_empty_boolean,
 *                                  bool allow_neg_consumable)
@@ -691,7 +710,14 @@ centry_list_init_double(lList *this_list) {
 *  FUNCTION
 *     This function fills a given list of complex entries with missing
 *     attributes which can be found in the complex. It checks also
-*     wether the given in the centry_list-List are valid.
+*     whether the entries in the this_list-List are valid.
+*
+*     Every entry is visited, also after a failure. An entry which cannot be
+*     filled in is marked by setting its CE_valtype to 0, which is never a
+*     valid type, so that a consumer can tell it apart from a filled one. This
+*     matters because the amount is kept in CE_doubleval, which is not spooled
+*     and is 0 for an entry read back from the spool: without the marker an
+*     unfilled entry would look like a request for nothing.
 *
 *  INPUTS
 *     lList *this_list           - resources as complex list CE_Type
@@ -712,8 +738,9 @@ centry_list_init_double(lList *this_list) {
 *  RESULT
 *     int - error
 *        0 on success
-*       -1 on error
-*        an error message will be written into SGE_EVENT
+*       -1 if at least one entry could not be filled in; every such entry has
+*          its CE_valtype cleared, and a message describing it is appended to
+*          answer_list
 *******************************************************************************/
 int
 centry_list_fill_request(lList *this_list, lList **answer_list, const lList *master_centry_list,
@@ -721,9 +748,21 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
                          bool allow_neg_consumable) {
    lListElem *entry = nullptr;
    lListElem *cep = nullptr;
+   int ret = 0;
 
    DENTER(CENTRY_LAYER);
 
+   /* An entry which cannot be filled in is marked by clearing its CE_valtype, and the loop
+    * carries on with the remaining ones. Marking matters because the amount lives in
+    * CE_doubleval, which is not spooled and is therefore 0 on a request read back from the
+    * spool: an unfilled entry would otherwise look like a request for nothing, match every
+    * host and book nothing. CE_valtype is spooled and is never legitimately 0, so it is a
+    * sentinel the scheduler can test - see ri_time_by_slots().
+    *
+    * Carrying on rather than returning at the first failure is what makes the marking
+    * complete; entries behind the failing one would otherwise keep their spooled valtype and
+    * be indistinguishable from filled ones. Callers see the same -1 as before.
+    */
    for_each_rw(entry, this_list) {
       const char *name = lGetString(entry, CE_name);
       u_long32 requestable;
@@ -734,7 +773,9 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
          if (!allow_non_requestable && requestable == REQU_NO) {
 /*             ERROR(MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name); */
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name);
-            DRETURN(-1);
+            lSetUlong(entry, CE_valtype, 0);
+            ret = -1;
+            continue;
          }
 
          /* replace name in request/threshold/consumable list,
@@ -750,7 +791,9 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
 
          if (centry_fill_and_check(entry, answer_list, allow_empty_boolean, allow_neg_consumable)) {
             /* no error msg here - centry_fill_and_check() makes it */
-            DRETURN(-1);
+            lSetUlong(entry, CE_valtype, 0);
+            ret = -1;
+            continue;
          }
 
          /* RSMAP entries may carry per-instance characteristics on
@@ -758,19 +801,32 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
             populate valtype, and type-check each value. */
          if (lGetUlong(entry, CE_valtype) == TYPE_RSMAP) {
             if (!centry_check_rsmap_characteristics(answer_list, entry, master_centry_list)) {
-               DRETURN(-1);
+               lSetUlong(entry, CE_valtype, 0);
+               ret = -1;
+               continue;
             }
+         }
+
+         /* A request may carry a bracketed parameter list after the amount. Validate it here,
+            which is the choke point every request passes: submit, AR submit, the spool read,
+            and the -l filters of the clients. */
+         if (!centry_rsmap_check_request_params(answer_list, entry, master_centry_list)) {
+            lSetUlong(entry, CE_valtype, 0);
+            ret = -1;
+            continue;
          }
       } else {
          /* CLEANUP: message should be put into answer_list and
             returned via argument. */
 /*          ERROR(MSG_SGETEXT_UNKNOWN_RESOURCE_S, name); */
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_UNKNOWN_RESOURCE_S, name);
-         DRETURN(-1);
+         lSetUlong(entry, CE_valtype, 0);
+         ret = -1;
+         continue;
       }
    }
 
-   DRETURN(0);
+   DRETURN(ret);
 }
 
 /**
@@ -867,6 +923,66 @@ centry_list_append_to_string(lList *this_list, char *buff, u_long32 max_len) {
    DRETURN(0);
 }
 
+/**
+ * @brief return the next "name=value" token of a resource request string
+ *
+ * Behaves like strtok over "," and " ", with one difference: a separator inside a bracketed
+ * block is payload rather than a separator, so a value may contain one. Two kinds of value
+ * need that. A resource map request carries its parameters in brackets,
+ *
+ *     -l 'gpu=4[id=gpu1*,same=id]',mem=2G
+ *
+ * where only the second comma separates two requests; and a string type may be matched with a
+ * character class, "-l h='node[1,2]'", which the old splitting tore in half. The configuration
+ * reader is bracket depth aware for the same reason, see sge_flatfile.cc.
+ *
+ * An unbalanced "[" swallows the rest of the string, which then fails as one malformed
+ * request rather than being silently split into two.
+ *
+ * @param pos - in/out: scan position in a writable copy of the request string. Tokens are
+ *              terminated in place, so the buffer is modified. Set to nullptr when exhausted.
+ * @return the next token, or nullptr
+ */
+static char *
+request_next_token(char **pos) {
+   char *p = *pos;
+
+   if (p == nullptr) {
+      return nullptr;
+   }
+
+   // skip separators in front of the token, as strtok does
+   while (*p == ',' || *p == ' ') {
+      p++;
+   }
+   if (*p == '\0') {
+      *pos = nullptr;
+      return nullptr;
+   }
+
+   char *token = p;
+   int depth = 0;
+   while (*p != '\0') {
+      if (*p == '[') {
+         depth++;
+      } else if (*p == ']' && depth > 0) {
+         depth--;
+      } else if (depth == 0 && (*p == ',' || *p == ' ')) {
+         break;
+      }
+      p++;
+   }
+
+   if (*p == '\0') {
+      *pos = nullptr;
+   } else {
+      *p = '\0';
+      *pos = p + 1;
+   }
+
+   return token;
+}
+
 /* CLEANUP: add answer_list remove SGE_EVENT */
 /*
  * NOTE
@@ -876,7 +992,6 @@ lList *
 centry_list_parse_from_string(lList *complex_attributes,
                               const char *str, bool check_value) {
    char *cp;
-   struct saved_vars_s *context = nullptr;
 
    DENTER(TOP_LAYER);
 
@@ -888,17 +1003,16 @@ centry_list_parse_from_string(lList *complex_attributes,
       }
    }
 
-   /* str now points to the attr=value pairs */
-   while ((cp = sge_strtok_r(str, ", ", &context))) {
+   /* tokens are terminated in place, so work on a copy of the caller's string */
+   char *buffer = sge_strdup(nullptr, str);
+   char *pos = buffer;
+
+   /* buffer now points to the attr=value pairs */
+   while ((cp = request_next_token(&pos)) != nullptr) {
       lListElem *complex_attribute = nullptr;
       const char *attr = nullptr;
       char *value = nullptr;
 
-      str = nullptr;       /* for the next strtoks */
-
-      /*
-      ** recursive strtoks did not work
-      */
       attr = cp;
       if ((value = strchr(cp, '='))) {
          *value++ = 0;
@@ -907,7 +1021,7 @@ centry_list_parse_from_string(lList *complex_attributes,
       if (attr == nullptr || *attr == '\0') {
          ERROR(MSG_SGETEXT_UNKNOWN_RESOURCE_S, "");
          lFreeList(&complex_attributes);
-         sge_free_saved_vars(context);
+         sge_free(&buffer);
          DRETURN(nullptr);
       }
 
@@ -919,7 +1033,7 @@ centry_list_parse_from_string(lList *complex_attributes,
       } else if (check_value && (value == nullptr || *value == '\0')) {
          ERROR(MSG_CPLX_VALUEMISSING_S, attr);
          lFreeList(&complex_attributes);
-         sge_free_saved_vars(context);
+         sge_free(&buffer);
          DRETURN(nullptr);
       }
 
@@ -934,7 +1048,7 @@ centry_list_parse_from_string(lList *complex_attributes,
       lSetString(complex_attribute, CE_stringval, value);
    }
 
-   sge_free_saved_vars(context);
+   sge_free(&buffer);
 
    DRETURN(complex_attributes);
 }
@@ -994,7 +1108,7 @@ centry_list_remove_duplicates(lList *this_list) {
 *
 *******************************************************************************/
 bool centry_elem_validate(lListElem *centry, const lList *centry_list,
-                          lList **answer_list) {
+                          lList **answer_list, bool from_spool_read) {
    u_long32 relop = lGetUlong(centry, CE_relop);
    u_long32 type = lGetUlong(centry, CE_valtype);
    const char *attrname = lGetString(centry, CE_name);
@@ -1059,6 +1173,57 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
                                  MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, type);
          ret = false;
          break;
+   }
+
+   /* A default request is applied to jobs which did not ask for the resource at all, so a
+      parameter list in it would hand them a constraint they never requested. It is also never
+      evaluated: the scheduler parses the default value as a plain number, which fails, and the
+      default is then dropped as "value is 0" without a word. Refuse it instead.
+
+      This is checked here rather than with the other default value checks below because those
+      only run for a consumable which is requestable NO or FORCED, and for a non consumable -
+      and a resource map is always consumable, so the ordinary configuration, requestable YES,
+      reaches none of them. */
+   if (lGetUlong(centry, CE_valtype) == TYPE_RSMAP) {
+      const char *defaultval = lGetString(centry, CE_defaultval);
+      if (defaultval != nullptr && strchr(defaultval, '[') != nullptr) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_RSMAP_DEFAULT_HAS_PARAMS_SS, attrname, defaultval);
+         ret = false;
+      }
+   }
+
+   /* The names of the parameters of a resource map request are reserved across the whole complex
+      namespace. A parameter which is not one of them names a characteristic to match, so a
+      complex called "same" or "scope" could never be matched as one - the request would be read
+      as carrying that parameter instead. Refuse to create or modify such a complex.
+
+      A complex already in the spool is a different matter: refusing it there would stop a qmaster
+      which has one from starting. It keeps working as an ordinary resource, and is reported once
+      at startup so that somebody knows to rename it. */
+   {
+      const char *shortcut = lGetString(centry, CE_shortcut);
+      const char *reserved = nullptr;
+      const char *which = nullptr;
+
+      if (centry_rsmap_is_reserved_param(attrname)) {
+         reserved = attrname;
+         which = "name";
+      } else if (centry_rsmap_is_reserved_param(shortcut)) {
+         reserved = shortcut;
+         which = "shortcut";
+      }
+
+      if (reserved != nullptr) {
+         if (from_spool_read) {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_WARNING,
+                                    MSG_RSMAP_RESERVED_NAME_SPOOLED_SS, attrname, which);
+         } else {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_RSMAP_RESERVED_NAME_SS, attrname, which);
+            ret = false;
+         }
+      }
    }
 
    {
@@ -1175,7 +1340,12 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
    }
 
    if (type == TYPE_RSMAP) {
-      ret = centry_check_rsmap(answer_list, lGetUlong(centry, CE_consumable), attrname);
+      // accumulate: this used to assign, which discarded every earlier failure in this
+      // function for a resource map - an invalid relation operator, for instance, was
+      // reported into the answer list and the complex was accepted anyway
+      if (!centry_check_rsmap(answer_list, lGetUlong(centry, CE_consumable), attrname)) {
+         ret = false;
+      }
    }
 
 
