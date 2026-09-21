@@ -64,6 +64,8 @@
  * @{
  */
 
+#include <iosfwd>
+
 #include "cull/cull.h"
 
 #include "spool/sge_spooling_utilities.h"
@@ -76,7 +78,8 @@ typedef enum {
    SP_DEST_STDOUT,   ///< Standard output, for `qconf -s*`
    SP_DEST_STDERR,   ///< Standard error
    SP_DEST_TMP,      ///< A temporary file, whose name is returned - this is what `qconf -m*` hands to the editor
-   SP_DEST_SPOOL     ///< The named file, for the classic spooling backend
+   SP_DEST_SPOOL,    ///< The named file, for the classic spooling backend
+   SP_DEST_STREAM    ///< A `std::ostream` handed in by the caller, for `qconf` output that has to reach a response buffer instead of a terminal (CS-1841)
 } spool_flatfile_destination;
 
 /** @brief The text format to read or write */
@@ -185,7 +188,8 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
                             const spool_flatfile_destination destination,
                             const spool_flatfile_format format,
                             const char *filepath, bool print_header,
-                            const char *json_type_name = nullptr);
+                            const char *json_type_name = nullptr,
+                            std::ostream *stream = nullptr);
 
 const char *
 spool_flatfile_write_list(lList **answer_list,
@@ -194,7 +198,8 @@ spool_flatfile_write_list(lList **answer_list,
                           const spool_flatfile_instr *instr,
                           const spool_flatfile_destination destination,
                           const spool_flatfile_format format,
-                          const char *filepath, bool print_header);
+                          const char *filepath, bool print_header,
+                          std::ostream *stream = nullptr);
 
 lListElem *
 spool_flatfile_read_object(lList **answer_list, const lDescr *descr, lListElem *root,

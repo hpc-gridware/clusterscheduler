@@ -56,6 +56,7 @@
 
 /* system */
 #include <cstdio>
+#include <ostream>
 #include <fcntl.h>
 
 /* #define USE_FOPEN */
@@ -627,7 +628,7 @@ spool_flatfile_close_file(lList **answer_list, int fd, const char *filepath,
 static const char *
 spool_flatfile_write_data(lList **answer_list, const void *data, int data_len, 
                           const spool_flatfile_destination destination, 
-                          const char *filepath);
+                          const char *filepath, std::ostream *stream);
 
 static lListElem *
 _spool_flatfile_read_object(lList **answer_list, const lDescr *descr, lListElem *root,
@@ -756,6 +757,7 @@ bool spool_flatfile_align_list(lList **answer_list, const lList *list,
  * @param filepath if destination == SP_DEST_SPOOL, path to the spool file
  * @param print_header prepend the product version as a comment line; ASCII
  *                     output only
+ * @param stream the stream to write to when `destination` is #SP_DEST_STREAM
  *
  * @return on success the name of the spool file / stream, else nullptr
  *
@@ -768,7 +770,8 @@ spool_flatfile_write_list(lList **answer_list,
                           const spool_flatfile_instr *instr,
                           const spool_flatfile_destination destination,
                           const spool_flatfile_format format,
-                          const char *filepath, bool print_header) {
+                          const char *filepath, bool print_header,
+                          std::ostream *stream) {
    DENTER(FLATFILE_LAYER);
 
    dstring char_buffer = DSTRING_INIT;
@@ -892,7 +895,7 @@ spool_flatfile_write_list(lList **answer_list,
       DRETURN(nullptr);
    }
 
-   result = spool_flatfile_write_data(answer_list, data, data_len, destination, filepath);
+   result = spool_flatfile_write_data(answer_list, data, data_len, destination, filepath, stream);
 
    /* cleanup */
    sge_dstring_free(&char_buffer);
@@ -927,6 +930,8 @@ spool_flatfile_write_list(lList **answer_list,
  *                       output only
  * @param json_type_name overrides the `$id` type that JSON output would
  *                       otherwise derive from the content
+ * @param stream         the stream to write to when `destination` is
+ *                       #SP_DEST_STREAM
  *
  * @return on success the name of the file or stream written, which the caller
  *         has to free, else nullptr
@@ -940,7 +945,8 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
                             const spool_flatfile_destination destination,
                             const spool_flatfile_format format,
                             const char *filepath, bool print_header,
-                            const char *json_type_name) {
+                            const char *json_type_name,
+                            std::ostream *stream) {
    DENTER(FLATFILE_LAYER);
 
    dstring char_buffer = DSTRING_INIT;
@@ -1037,8 +1043,8 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
       DRETURN(nullptr);
    } 
 
-   result = spool_flatfile_write_data(answer_list, data, data_len, destination, 
-                                      filepath);
+   result = spool_flatfile_write_data(answer_list, data, data_len, destination,
+                                      filepath, stream);
 
    /* cleanup */
    sge_dstring_free(&char_buffer);
@@ -1183,6 +1189,9 @@ spool_flatfile_open_file(lList **answer_list,
          fflush(stderr);
          *filepath_out = strdup("<stderr>");
          break;
+      case SP_DEST_STREAM:
+         /* handled in spool_flatfile_write_data(), no file handle involved */
+         break;
    }
 
    DRETURN(fd);
@@ -1238,15 +1247,37 @@ spool_flatfile_close_file(lList **answer_list, int fd, const char *filepath,
          fflush(stderr);
          funlockfile(stderr);
          break;
+      case SP_DEST_STREAM:
+         /* handled in spool_flatfile_write_data(), no file handle involved */
+         break;
    }
 
    return true;
 }
 
+/**
+ * @brief Write the rendered bytes to the destination
+ *
+ * The single sink of both write functions: everything they produce ends up
+ * here as one buffer. #SP_DEST_STREAM writes it to the caller's stream and is
+ * handled before any file handle is opened, because a stream needs neither a
+ * path nor the locking the standard streams get (CS-1841).
+ *
+ * @param answer_list for error reporting
+ * @param data        the rendered bytes
+ * @param data_len    their length
+ * @param destination where to put them
+ * @param filepath    the file to write when `destination` is #SP_DEST_SPOOL
+ * @param stream      the stream to write to when `destination` is
+ *                    #SP_DEST_STREAM
+ *
+ * @return on success the name of the file or stream written, which the caller
+ *         has to free, else nullptr
+ */
 static const char *
 spool_flatfile_write_data(lList **answer_list, const void *data, int data_len,
                           const spool_flatfile_destination destination,
-                          const char *filepath) {
+                          const char *filepath, std::ostream *stream) {
    DENTER(FLATFILE_LAYER);
 
 #ifdef USE_FOPEN
@@ -1257,6 +1288,17 @@ spool_flatfile_write_data(lList **answer_list, const void *data, int data_len,
    const char *result = nullptr;
 
    SGE_CHECK_POINTER_NULL(data, answer_list);
+
+   if (destination == SP_DEST_STREAM) {
+      SGE_CHECK_POINTER_NULL(stream, answer_list);
+      stream->write(static_cast<const char *>(data), data_len);
+      if (!stream->good()) {
+         answer_list_add_sprintf(answer_list, STATUS_EDISK, ANSWER_QUALITY_ERROR,
+                                 MSG_ERRORWRITINGFILE_SS, "<stream>", strerror(errno));
+         DRETURN(nullptr);
+      }
+      DRETURN(strdup("<stream>"));
+   }
 
    PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
 
