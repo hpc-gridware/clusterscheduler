@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -526,10 +526,10 @@ lListElem *year_entry, CA_Type
 *
 *******************************************************************************/
 static u_long32 is_year_entry_active(lListElem *tm, lListElem *year_entry, time_t *limit) {
+   DENTER(TOP_LAYER);
+
    u_long32 state;
    bool in_yday_range, in_daytime_range = false;
-
-   DENTER(TOP_LAYER);
 
    /* compute state */
    if ((in_yday_range=in_range_list(tm, lGetList(year_entry, CA_yday_range_list), tm_yday_cmp)) 
@@ -555,7 +555,8 @@ static u_long32 is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
          DPRINTF("trying the next time slot\n");
          /* we have to add a second to get into the next time slot */
          (*limit)++;
-         
+         time_t next_day = *limit;
+
          /* convert time_t format into struct tm format */
          tm_now = localtime_r(limit, &res);
 
@@ -563,7 +564,18 @@ static u_long32 is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
          new_tm= lCreateElem(TM_Type);
          cullify_tm(new_tm, tm_now);
       
-         state = is_year_entry_active(new_tm, year_entry, limit);
+         u_long32 next_day_state = is_year_entry_active(new_tm, year_entry, limit);
+
+         /* The state does not change for the rest of the day, that is why we look at the next day.
+            If the next day starts in a different state then the change happens right at midnight
+            and that is the limit we are looking for - the limit the recursion reported belongs to
+            the state of the next day and would be too late. Otherwise the state indeed continues
+            and both the state and its limit are the ones of the next day. */
+         if (next_day_state != state) {
+            *limit = next_day;
+         } else {
+            state = next_day_state;
+         }
 
          lFreeElem(&new_tm);
       }
@@ -739,6 +751,8 @@ u_long32 calender_state_changes(const lListElem *cep, lList **state_changes_list
 static time_t compute_limit(bool today, bool active, const lList *year_time, const lList *week_time, 
                             const lList *day_time, const lListElem *now, bool *is_end_of_day_reached) {
 
+   DENTER(TOP_LAYER);
+
    lListElem *lep = nullptr;
    bool end_of_day = false;
    struct tm tm_limit;
@@ -750,8 +764,6 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
                                               but might be overriden with a temp object, which needs to be freed within 
                                               the function. But a const lListElem cannot be freed. */
    bool is_new_now_copy = false;
-
-   DENTER(TOP_LAYER);
 
    if (day_time == nullptr) {
       DPRINTF("no day time calendar is set ");
@@ -929,23 +941,21 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          }
       } else {
          const lListElem *begin;
-         /* outside of range - seek nearest begin of range */
+         /* outside of range - seek nearest begin of range.
+            A day starts at 0:0:0 o'clock, therefore we have to check if we hit the start of the
+            range right away or if we are smaller. This matters whenever new_now was synthesized
+            above as 0:0:0 of a day in the future: a range that begins at 0:0 is the next state
+            change on that day and a strict comparison would skip it, leaving the calendar without
+            any further state change at all.
+            A range that begins at the very daytime of the real now cannot show up here, because
+            in_range() includes both ends of a range - we would be inside of it and "active" would
+            be set. */
          for_each_ep(time, day_time) {
             begin = lFirst(lGetList(time, TMR_begin));
-            if (year_time != nullptr) {
-               if (tm_daytime_cmp(new_now, begin) < 0 && 
-                  (!lep || tm_daytime_cmp(lep, begin) > 0)) {
-                  lFreeElem(&lep);
-                  lep = lCopyElem(begin); 
-               }
-            } 
-            else { /* a day starts at 0:0:0 o'clock, therefore we have to check,
-                      if we hit the start date right away or if we are smaller */
-               if (tm_daytime_cmp(new_now, begin) <= 0 && 
-                  (!lep || tm_daytime_cmp(lep, begin) > 0)) {
-                  lFreeElem(&lep);
-                  lep = lCopyElem(begin); 
-               }
+            if (tm_daytime_cmp(new_now, begin) <= 0 &&
+               (!lep || tm_daytime_cmp(lep, begin) > 0)) {
+               lFreeElem(&lep);
+               lep = lCopyElem(begin);
             }
          }
       }

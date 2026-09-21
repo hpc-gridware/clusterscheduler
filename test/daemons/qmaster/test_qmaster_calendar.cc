@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -155,6 +155,12 @@ static cal_entry_t calendars[] = {
 
 /* issue 1787 */                   {"NONE","mon=0:0:0-21:0:0", "queue is off every monday from 0 to 21 hours"},
 
+/* CS-2653 */                      {"1.3.2004=0:0-0:10=off","NONE",
+                                    "queue is off in the first ten minutes of 3/1/2004"},
+
+                                   {"1.3.2004-2.3.2004=0:0-0:10=off","NONE",
+                                    "queue is off in the first ten minutes of 3/1/2004 and 3/2/2004"},
+
 
 /* end of definition */            {nullptr, nullptr}
                                 };
@@ -196,7 +202,12 @@ static date_entry_t tests[] = { {0, {0,0,0, 1,0,104, 0,0,0}, {0,0,0, 1,1,104, 0,
                                 {4, {0,0,19, 2,2,104, 0,0,0}, {0,0, 9, 3,2,104, 0,0,0}, QI_DO_NOTHING, {0,0,18, 3,2,104, 0,0,0}, QI_DO_CAL_SUSPEND},
                                 {4, {0,0,0, 2,4,104, 0,0,0}, {0,0,1, 1,0, 70, 0,0,0}, QI_DO_NOTHING, {0,0,1, 1,0, 70, 0,0,0}, -1}, 
                           
-                                {5, {0,0, 0, 1,0,104, 0,0,0}, {0,0,18, 1,1,104, 0,0,0}, QI_DO_NOTHING, {0,0, 9, 2,1,104, 0,0,0}, QI_DO_CAL_SUSPEND},
+                     /* CS-2653: the queue is suspended during the night, so the
+                        first night of the year range starts at 0:0 on 2/1/2004 and
+                        ends at 9:00 on the same day. Until the fix the switch was
+                        reported for 18:00 - the state change at the beginning of the
+                        day was skipped. */
+                                {5, {0,0, 0, 1,0,104, 0,0,0}, {0,0, 0, 1,1,104, 0,0,0}, QI_DO_NOTHING, {0,0, 9, 1,1,104, 0,0,0}, QI_DO_CAL_SUSPEND},
                                 {5, {0,0,20, 1,2,104, 0,0,0}, {0,0, 9, 2,2,104, 0,0,0}, QI_DO_CAL_SUSPEND, {0,0,18, 2,2,104, 0,0,0}, QI_DO_NOTHING},
                                 {5, {0,0,10, 2,2,104, 0,0,0}, {0,0,18, 2,2,104, 0,0,0}, QI_DO_NOTHING, {0,0,9, 3,2,104, 0,0,0}, QI_DO_CAL_SUSPEND},
                                 {5, {0,0,0, 2,4,104, 0,0,0}, {0,0,1, 1,0, 70, 0,0,0}, QI_DO_NOTHING, {0,0,1, 1,0, 70, 0,0,0}, -1},      
@@ -248,7 +259,18 @@ static date_entry_t tests[] = { {0, {0,0,0, 1,0,104, 0,0,0}, {0,0,0, 1,1,104, 0,
                                 {26, {0,0, 10, 1,2,104, 0,0,0}, {0,0,21, 1,2, 104, 0,0,0}, QI_DO_CAL_DISABLE, {0,0,0, 8,2, 104, 0,0,0}, QI_DO_NOTHING},
                                 {26, {0,0, 22, 1,2,104, 0,0,0}, {0,0,0, 8,2, 104, 0,0,0}, QI_DO_NOTHING, {0,0,21, 8,2, 104, 0,0,0}, QI_DO_CAL_DISABLE}, 
                                 {26, {0,0, 12, 3,2,104, 0,0,0}, {0,0,0, 8,2, 104, 0,0,0}, QI_DO_NOTHING, {0,0,21, 8,2, 104, 0,0,0}, QI_DO_CAL_DISABLE},  
-                                
+
+                     /* CS-2653: a year calendar whose daytime range begins at 0:0 on
+                        a day that is still ahead has to arm a state change at 0:0 of
+                        that day. Before the fix the next state change was reported as
+                        "never" for the single day calendar, and a day too late for the
+                        calendar spanning two days. */
+                                {27, {0,0,12, 20,1,104, 0,0,0}, {0,0,0, 1,2,104, 0,0,0}, QI_DO_NOTHING, {0,10,0, 1,2,104, 0,0,0}, QI_DO_CAL_DISABLE},
+                                {27, {0,58,23, 29,1,104, 0,0,0}, {0,0,0, 1,2,104, 0,0,0}, QI_DO_NOTHING, {0,10,0, 1,2,104, 0,0,0}, QI_DO_CAL_DISABLE},
+                                {27, {0,5,0, 1,2,104, 0,0,0}, {0,10,0, 1,2,104, 0,0,0}, QI_DO_CAL_DISABLE, {0,0,1, 1,0, 70, 0,0,0}, QI_DO_NOTHING},
+
+                                {28, {0,0,12, 20,1,104, 0,0,0}, {0,0,0, 1,2,104, 0,0,0}, QI_DO_NOTHING, {0,10,0, 1,2,104, 0,0,0}, QI_DO_CAL_DISABLE},
+
                                 {-1, {0,0,0, 0,0,104, 0,0,0}, {0,0,0, 0,0,104, 0,0,0}, -1, {0,0,0, 0,0,104, 0,0,0}, -1}
                                   };
 
@@ -281,6 +303,8 @@ static int test_state_change_list(date_entry_t *test, lList *state_changes);
 static int test_state_change(lListElem *stateObject, u_long32 state, struct tm *time, int elemNr);
 
 static int test_time_frame(time_frame_entry_t *test, cal_entry_t *calendar, int test_nr);
+
+static int test_calendar_timer();
 
 /* setup functions */
 static lListElem *createCalObject(cal_entry_t *calendar);
@@ -615,6 +639,11 @@ int main(int argc, char* argv[])
       i++;
    }
    test_counter+=i;
+
+   if (test_calendar_timer() != 0) {
+      failed++;
+   }
+   test_counter++;
    
    if (failed == 0) {
       printf("\n==> All tests are okay <==\n");
@@ -679,6 +708,64 @@ static int test_time_frame(time_frame_entry_t *test, cal_entry_t *calendar, int 
    /* test cleanup */
    printf("----------------\n");
    lFreeElem(&destCal);
+
+   return ret;
+}
+
+/****** test_sge_calendar/test_calendar_timer() ********************************
+*  NAME
+*     test_calendar_timer() -- a calendar has at most one pending timed event
+*
+*  FUNCTION
+*     calendar_arm_timer() is called when a calendar is added or modified, when one
+*     of its events is delivered, and when a queue instance gets the calendar
+*     assigned. Delivering an event recomputes the state of every queue instance
+*     using the calendar, so the events must not accumulate: a cluster queue with
+*     many queue instances would otherwise repeat that sweep once per queue
+*     instance, and would keep doing so for every further state change.
+*
+*  RESULT
+*     static int - 0 okay / 1 test failed
+*
+*  NOTES
+*     MT-NOTE: test_calendar_timer() is MT safe
+*
+*******************************************************************************/
+static int test_calendar_timer() {
+   int ret = 0;
+   int pending;
+
+   printf("\n==> Calendar timer test <==\n");
+
+   te_init();
+
+   /* no calendar has been armed yet */
+   if ((pending = te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "cal_a")) != 0) {
+      printf("expected no pending event for \"cal_a\", got %d\n", pending);
+      ret = 1;
+   }
+
+   /* arming the same calendar again replaces its event instead of adding one */
+   calendar_arm_timer("cal_a", sge_time_t_to_gmt64(1000000));
+   calendar_arm_timer("cal_a", sge_time_t_to_gmt64(1000060));
+   calendar_arm_timer("cal_a", sge_time_t_to_gmt64(1000120));
+
+   /* a different calendar keeps a timer of its own */
+   calendar_arm_timer("cal_b", sge_time_t_to_gmt64(1000180));
+
+   if ((pending = te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "cal_a")) != 1) {
+      printf("expected 1 pending event for \"cal_a\", got %d\n", pending);
+      ret = 1;
+   }
+   if ((pending = te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "cal_b")) != 1) {
+      printf("expected 1 pending event for \"cal_b\", got %d\n", pending);
+      ret = 1;
+   }
+
+   if (ret == 0) {
+      printf("==> Test is okay\n");
+   }
+   printf("----------------\n");
 
    return ret;
 }

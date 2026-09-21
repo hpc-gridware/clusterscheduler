@@ -28,7 +28,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -55,6 +55,9 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, 
 
 void
 sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor);
+
+void
+calendar_arm_timer(const char *cal_name, u_long64 when);
 
 void
 calendar_initalize_timer(monitoring_t *monitor);
