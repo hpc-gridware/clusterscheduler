@@ -39,6 +39,8 @@
  * @see sge_sharetree.cc
  */
 
+#include <iosfwd>
+
 #include "sgeobj/cull/sge_sharetree_STN_L.h"
 
 /**
@@ -101,8 +103,8 @@ typedef struct {
 } ancestors_t;
 
 bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id);
-int show_sharetree_path(lListElem *root, const char *path);
-int show_sharetree(const lListElem *ep, const char *indent);
+int show_sharetree_path(std::ostream &os, lListElem *root, const char *path);
+int show_sharetree(std::ostream &os, const lListElem *ep, const char *indent, int level = 0);
 lListElem *getSNTemplate();
 lListElem *search_named_node ( lListElem *ep, const char *name );
 lListElem *search_named_node_path ( lListElem *ep, const char *path, ancestors_t *ancestors );

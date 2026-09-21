@@ -40,6 +40,9 @@
 #include <cstdarg>
 #include <cerrno>
 #include <cctype>
+#include <format>
+#include <iostream>
+#include <ostream>
 #include <fnmatch.h>
 #include <dirent.h>
 
@@ -105,25 +108,25 @@ static int sge_next_is_an_opt(char **ptr);
 static int sge_error_and_exit(const char *ptr);
 
 /* ------------------------------------------------------------- */
-static bool show_object_list(ocs::gdi::Target, lDescr *, int, const char *);
-static bool show_reserved_hgroup_hosts(const char *, const char *, const char *);
-static bool show_manop_list(const char *userset_name, const char *display_name);
-static int show_thread_list();
-static int show_processors(bool has_binding_param);
-static int show_eventclients();
+static bool show_object_list(std::ostream &os, ocs::gdi::Target, lDescr *, int, const char *);
+static bool show_reserved_hgroup_hosts(std::ostream &os, const char *, const char *, const char *);
+static bool show_manop_list(std::ostream &os, const char *userset_name, const char *display_name);
+static int show_thread_list(std::ostream &os);
+static int show_processors(std::ostream &os, bool has_binding_param);
+static int show_eventclients(std::ostream &os);
 
 /* ------------------------------------------------------------- */
 static void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, char *s);
 static bool del_host_of_type(lList *arglp, ocs::gdi::Target target);
-static bool mod_reserved_hgroup(lList *arglp, const char *group,
+static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *group,
                                 ocs::gdi::SubCommand sub_command, const char *what);
-static int print_acl(lList *arglp);
+static int print_acl(std::ostream &os, lList *arglp);
 static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp, lListElem **epp, ocs::gdi::SubCommand sub_command, struct object_info_entry *info_entry);
 static lListElem *edit_exechost(lListElem *ep, uid_t uid, gid_t gid);
-static int edit_usersets(lList *arglp);
+static int edit_usersets(std::ostream &os, lList *arglp);
 
 /************************************************************************/
-static int print_config(const char *config_name);
+static int print_config(std::ostream &os, const char *config_name);
 static int delete_configs(const lList *conf_list);
 static int add_modify_config(const char *cfn, const char *filename, uint32_t flags);
 static lList* edit_sched_conf(lList *confl, uid_t uid, gid_t gid);
@@ -168,25 +171,54 @@ static bool qconf_opt_force = false;     /* H6 (-f):      skip the bulk-delete p
 static bool qconf_opt_strict = false;    /* H2 (-strict): apply nothing unless all files valid */
 spool_flatfile_format qconf_opt_format = SP_FORM_ASCII;  ///< see the declaration in `ocs_qconf_parse.h`
 
+const char *
+qconf_cstr(const char *s) {
+   return s != nullptr ? s : "(null)";
+}
+
+void
+qconf_msg(std::ostream &os, const char *fmt, ...) {
+   va_list ap;
+   va_start(ap, fmt);
+   dstring buffer = DSTRING_INIT;
+   sge_dstring_vsprintf(&buffer, fmt, ap);
+   va_end(ap);
+   const char *text = sge_dstring_get_string(&buffer);
+   if (text != nullptr) {
+      os << text;
+   }
+   sge_dstring_free(&buffer);
+}
+
 /**
- * @brief Print a message-catalogue line (plus newline) to stdout.
+ * @brief Print a message-catalogue line (plus newline) to a stream.
  *
  * Used for the always-visible informational output (batch summaries, dry-run
  * previews). These are not errors or warnings, and LOG_INFO is suppressed at the
- * default client log level, so they go to stdout like qconf's other normal
- * output.
+ * default client log level, so they go to the output stream like qconf's other
+ * normal output.
  *
+ * @param os  the stream to write to
  * @param fmt a MSG_* catalogue (printf-style) format string
  * @param ... arguments for @p fmt
  * @return none
  */
 static void
-qconf_info_printf(const char *fmt, ...) {
+qconf_info(std::ostream &os, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+
+static void
+qconf_info(std::ostream &os, const char *fmt, ...) {
    va_list ap;
    va_start(ap, fmt);
-   vprintf(fmt, ap);
+   dstring buffer = DSTRING_INIT;
+   sge_dstring_vsprintf(&buffer, fmt, ap);
    va_end(ap);
-   printf("\n");
+   const char *text = sge_dstring_get_string(&buffer);
+   if (text != nullptr) {
+      os << text;
+   }
+   sge_dstring_free(&buffer);
+   os << "\n";
 }
 
 /**
@@ -194,6 +226,10 @@ qconf_info_printf(const char *fmt, ...) {
  *
  * @param prompt a MSG_* line to print, including its own "(y/n)" suffix
  * @return true on an explicit yes; false on no, EOF or a non-tty stdin
+ *
+ * @note Deliberately still on stdout/stdin rather than on the output stream
+ *       (CS-1841): a prompt and its answer belong to a terminal, and there is
+ *       nothing to ask once this runs inside qmaster.
  */
 static bool
 qconf_confirm(const char *prompt) {
@@ -328,6 +364,7 @@ qconf_count_failures(const lList *alp) {
  * Honours the -dry flag (reports the action and sends nothing). Consumes @p ep
  * in every case.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param target  GDI target list (e.g. CAL_LIST)
  * @param descr   CULL descriptor of the object type
  * @param name_nm name attribute of the object
@@ -336,14 +373,14 @@ qconf_count_failures(const lList *alp) {
  * @return 0 on success, non-zero on error
  */
 static int
-qconf_send_upsert(ocs::gdi::Target target, const lDescr *descr, int name_nm,
+qconf_send_upsert(std::ostream &os, ocs::gdi::Target target, const lDescr *descr, int name_nm,
                   lListElem *ep, ocs::gdi::SubCommand sub_cmd = ocs::gdi::SubCommand::NONE) {
    const char *name = qconf_get_name(ep, name_nm);
    bool exists = (name != nullptr && qconf_object_exists(target, descr, name_nm, name));
 
    if (qconf_opt_dry_run) {
       /* CS-2299 H3: report the intended action without contacting qmaster. */
-      qconf_info_printf(exists ? MSG_QCONF_DRYRUNWOULDMODIFY_S : MSG_QCONF_DRYRUNWOULDADD_S,
+      qconf_info(os, exists ? MSG_QCONF_DRYRUNWOULDMODIFY_S : MSG_QCONF_DRYRUNWOULDADD_S,
                         name != nullptr ? name : "");
       lFreeElem(&ep);
       return 0;
@@ -515,6 +552,7 @@ struct qconf_object_desc {
 };
 
 struct qconf_file_ctx {
+   std::ostream *os;               ///< where the per-file messages go (CS-1841)
    const qconf_object_desc *desc;  ///< everything that identifies the object type (CS-2795)
    spooling_field *fields;    ///< spooling field list, resolved from the descriptor's provider
    bool parse_values;         ///< spool_flatfile_read_object parse_values flag; the delete path
@@ -546,7 +584,7 @@ qconf_apply_one(const char *filepath, void *vctx) {
       ctx->n_fail++;
       return 1;
    }
-   if (qconf_send_upsert(ctx->desc->target, ctx->desc->descr, ctx->desc->name_nm, ep, ctx->desc->sub_cmd) != 0) {
+   if (qconf_send_upsert(*ctx->os, ctx->desc->target, ctx->desc->descr, ctx->desc->name_nm, ep, ctx->desc->sub_cmd) != 0) {
       ctx->n_fail++;
       return 1;
    }
@@ -632,6 +670,7 @@ qconf_collect_elem(const char *filepath, void *vctx) {
  * not a server-side transaction: qmaster still commits each element separately, so
  * a partial failure can leave some objects applied.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param target   GDI target list (e.g. CAL_LIST)
  * @param descr    CULL descriptor of the object type
  * @param fields   spooling field list describing the file format
@@ -646,14 +685,14 @@ qconf_collect_elem(const char *filepath, void *vctx) {
  * @return the number of objects that failed
  */
 static int
-qconf_apply_path(const qconf_object_desc &d, spooling_field *fields, const char *path) {
+qconf_apply_path(std::ostream &os, const qconf_object_desc &d, spooling_field *fields, const char *path) {
    const lDescr *descr = d.descr;
    const int name_nm = d.name_nm;
    bool is_dir = sge_is_directory(path);
 
    /* 1. Read every file (running prepare/validate per object) into one list.
     * The apply path always parses values; only a delete may skip it. */
-   qconf_file_ctx ctx = {&d, fields, true, nullptr,
+   qconf_file_ctx ctx = {&os, &d, fields, true, nullptr,
                          lCreateList("qconf apply", descr), 0, 0};
    qconf_for_each_file(path, qconf_collect_elem, &ctx);
    int n_read_fail = ctx.n_fail;   /* files that did not parse (skipped) */
@@ -677,7 +716,7 @@ qconf_apply_path(const qconf_object_desc &d, spooling_field *fields, const char 
       bool exists = qconf_name_in_list(existing, descr, name_nm, name);
       if (qconf_opt_dry_run) {
          /* CS-2299 H3: report the intended action, contact no one. */
-         qconf_info_printf(exists ? MSG_QCONF_DRYRUNWOULDMODIFY_S : MSG_QCONF_DRYRUNWOULDADD_S,
+         qconf_info(os, exists ? MSG_QCONF_DRYRUNWOULDMODIFY_S : MSG_QCONF_DRYRUNWOULDADD_S,
                            name != nullptr ? name : "");
          lFreeElem(&e);
          n_dry++;
@@ -690,7 +729,7 @@ qconf_apply_path(const qconf_object_desc &d, spooling_field *fields, const char 
 
    if (qconf_opt_dry_run) {
       if (is_dir) {
-         qconf_info_printf(MSG_QCONF_ADDMODSUMMARY_SII, path, n_dry, n_read_fail);
+         qconf_info(os, MSG_QCONF_ADDMODSUMMARY_SII, path, n_dry, n_read_fail);
       }
       lFreeList(&add_list);
       lFreeList(&mod_list);
@@ -752,7 +791,7 @@ qconf_apply_path(const qconf_object_desc &d, spooling_field *fields, const char 
    int n_fail = n_read_fail + n_send_fail;
    if (is_dir) {
       /* CS-2299 H1: one summary line per directory batch. */
-      qconf_info_printf(MSG_QCONF_ADDMODSUMMARY_SII, path, n_ok, n_fail);
+      qconf_info(os, MSG_QCONF_ADDMODSUMMARY_SII, path, n_ok, n_fail);
    }
    return n_fail;
 }
@@ -765,6 +804,7 @@ qconf_apply_path(const qconf_object_desc &d, spooling_field *fields, const char 
  * unless -f is given (CS-2299 H6), can be previewed with -dry (CS-2299 H3), and a
  * name that no longer exists is skipped rather than failed (CS-2299 H5).
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param target  GDI target list (e.g. CAL_LIST)
  * @param descr   CULL descriptor of the object type
  * @param fields  spooling field list describing the file format
@@ -776,17 +816,17 @@ qconf_apply_path(const qconf_object_desc &d, spooling_field *fields, const char 
  * @return the number of objects that failed to be deleted
  */
 static int
-qconf_delete_path(const qconf_object_desc &d, spooling_field *fields, const char *path) {
+qconf_delete_path(std::ostream &os, const qconf_object_desc &d, spooling_field *fields, const char *path) {
    const lDescr *descr = d.descr;
    const int name_nm = d.name_nm;
-   qconf_file_ctx ctx = {&d, fields, d.del_parse_values,
+   qconf_file_ctx ctx = {&os, &d, fields, d.del_parse_values,
                          lCreateList("qconf del", descr), nullptr, 0, 0};
    bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_collect_name, &ctx);
 
    if (is_dir) {
       /* CS-2299 H1: report the read phase before the batch delete. */
-      qconf_info_printf(MSG_QCONF_DELCOLLECTSUMMARY_SII, path, ctx.n_ok, ctx.n_fail);
+      qconf_info(os, MSG_QCONF_DELCOLLECTSUMMARY_SII, path, ctx.n_ok, ctx.n_fail);
    }
 
    int n_names = lGetNumberOfElem(ctx.names);
@@ -794,7 +834,7 @@ qconf_delete_path(const qconf_object_desc &d, spooling_field *fields, const char
       /* CS-2299 H3: list what would be deleted, contact no one. */
       const lListElem *nep;
       for_each_ep(nep, ctx.names) {
-         qconf_info_printf(MSG_QCONF_DRYRUNWOULDDELETE_S, qconf_get_name(nep, name_nm));
+         qconf_info(os, MSG_QCONF_DRYRUNWOULDDELETE_S, qconf_get_name(nep, name_nm));
       }
       lFreeList(&ctx.names);
       return ctx.n_fail;
@@ -872,6 +912,7 @@ qconf_name_is_fs_safe(const char *name) {
  * destination) then relocated with rename(), falling back to
  * sge_copy_append(src, dst, COPY) + unlink(src) across filesystems.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param as_list  write the element wrapped in a one-element list (rqs rule-set
  *                 framing) instead of as a bare object.
  * @param is_root  spool_flatfile_write_object is_root flag (sharetree writes the
@@ -879,7 +920,7 @@ qconf_name_is_fs_safe(const char *name) {
  * @return 0 on success or a (non-fatal) skip, 1 on a write/relocate failure.
  */
 static int
-qconf_export_write_one(const lListElem *ep, const spooling_field *fields,
+qconf_export_write_one(std::ostream &os, const lListElem *ep, const spooling_field *fields,
                        const spool_flatfile_instr *sfi, const char *json_type_name,
                        bool as_list, bool is_root, const char *dest) {
    if (sge_is_file(dest)) {
@@ -927,7 +968,7 @@ qconf_export_write_one(const lListElem *ep, const spooling_field *fields,
    }
    sge_free(&tmp);
    if (ret == 0) {
-      qconf_info_printf(MSG_QCONF_EXPORTWROTE_S, dest);
+      qconf_info(os, MSG_QCONF_EXPORTWROTE_S, dest);
    }
    return ret;
 }
@@ -958,6 +999,7 @@ qconf_export_dest(dstring *dest, const char *dir, const char *name, const char *
  * (the import field list), and per-object failures are counted and reported but do
  * not abort the run (continue-and-report, KTD9).
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param target       GDI target list (e.g. CQ_LIST)
  * @param descr        CULL descriptor of the object type
  * @param name_nm      name attribute of the object
@@ -970,7 +1012,7 @@ qconf_export_dest(dstring *dest, const char *dir, const char *name, const char *
  * @return the number of objects that failed to export
  */
 static int
-qconf_export_path(ocs::gdi::Target target, const lDescr *descr, int name_nm,
+qconf_export_path(std::ostream &os, ocs::gdi::Target target, const lDescr *descr, int name_nm,
                   qconf_build_fields_fn build_fields,
                   const spool_flatfile_instr *sfi, const char *json_type_name,
                   bool as_list, const char *path,
@@ -1044,14 +1086,14 @@ qconf_export_path(ocs::gdi::Target target, const lDescr *descr, int name_nm,
          lAddElemStr(&seen, ST_name, lcbuf, ST_Type);
 
          qconf_export_dest(&dest, dir, name, suffix);
-         failures += qconf_export_write_one(ep, fields, sfi, json_type_name, as_list,
+         failures += qconf_export_write_one(os, ep, fields, sfi, json_type_name, as_list,
                                             false, sge_dstring_get_string(&dest));
       }
       sge_dstring_free(&dest);
       lFreeList(&seen);
       lFreeList(&lp);
 
-      qconf_info_printf(MSG_QCONF_EXPORTSUMMARY_SII, dir, n_total - failures, failures);
+      qconf_info(os, MSG_QCONF_EXPORTSUMMARY_SII, dir, n_total - failures, failures);
    } else {
       /* single object named by path -> ./<name>[.json] */
       const char *name = path;
@@ -1081,7 +1123,7 @@ qconf_export_path(ocs::gdi::Target target, const lDescr *descr, int name_nm,
       } else {
          dstring dest = DSTRING_INIT;
          qconf_export_dest(&dest, nullptr, name, suffix);
-         failures += qconf_export_write_one(ep, fields, sfi, json_type_name, as_list,
+         failures += qconf_export_write_one(os, ep, fields, sfi, json_type_name, as_list,
                                             false, sge_dstring_get_string(&dest));
          sge_dstring_free(&dest);
       }
@@ -1101,11 +1143,12 @@ qconf_export_path(ocs::gdi::Target target, const lDescr *descr, int name_nm,
  * The one object is fetched (GET all, take the first) and written verbatim to the
  * given path.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param is_root spool_flatfile_write_object is_root flag (sharetree uses true).
  * @return the number of failures (0 on success).
  */
 static int
-qconf_export_singleton(ocs::gdi::Target target, const lDescr *descr,
+qconf_export_singleton(std::ostream &os, ocs::gdi::Target target, const lDescr *descr,
                        qconf_build_fields_fn build_fields,
                        const spool_flatfile_instr *sfi, const char *json_type_name,
                        bool is_root, const char *path) {
@@ -1135,7 +1178,7 @@ qconf_export_singleton(ocs::gdi::Target target, const lDescr *descr,
 
    bool owned = false;
    spooling_field *fields = build_fields(qconf_opt_format, &owned);
-   failures += qconf_export_write_one(ep, fields, sfi, json_type_name, false, is_root, path);
+   failures += qconf_export_write_one(os, ep, fields, sfi, json_type_name, false, is_root, path);
    if (owned) {
       sge_free(&fields);
    }
@@ -1180,10 +1223,11 @@ static spooling_field *qconf_fields_STN (spool_flatfile_format fmt, bool *o) {
  * to a file named after it; `-Sconf global` writes the global config to `global`.
  * Unlike `-sconf host,host`, `-Sconf` takes a single name or a directory only.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @return the number of configs that failed to export
  */
 static int
-qconf_conf_export(const char *path) {
+qconf_conf_export(std::ostream &os, const char *path) {
    const char *suffix = (qconf_opt_format == SP_FORM_JSON) ? ".json" : "";
    size_t plen = strlen(path);
    bool is_bulk = sge_is_directory(path) || (plen > 0 && path[plen - 1] == '/');
@@ -1237,13 +1281,13 @@ qconf_conf_export(const char *path) {
          }
          lAddElemStr(&seen, ST_name, lcbuf, ST_Type);
          qconf_export_dest(&dest, dir, name, suffix);
-         failures += qconf_export_write_one(ep, fields, &qconf_sfi, nullptr, false, false,
+         failures += qconf_export_write_one(os, ep, fields, &qconf_sfi, nullptr, false, false,
                                             sge_dstring_get_string(&dest));
       }
       sge_dstring_free(&dest);
       lFreeList(&seen);
       lFreeList(&lp);
-      qconf_info_printf(MSG_QCONF_EXPORTSUMMARY_SII, dir, n_total - failures, failures);
+      qconf_info(os, MSG_QCONF_EXPORTSUMMARY_SII, dir, n_total - failures, failures);
    } else {
       if (!qconf_name_is_fs_safe(path)) {
          ERROR(MSG_QCONF_EXPORTUNSAFENAME_S, path);
@@ -1272,7 +1316,7 @@ qconf_conf_export(const char *path) {
       } else {
          dstring dest = DSTRING_INIT;
          qconf_export_dest(&dest, nullptr, path, suffix);
-         failures += qconf_export_write_one(ep, fields, &qconf_sfi, nullptr, false, false,
+         failures += qconf_export_write_one(os, ep, fields, &qconf_sfi, nullptr, false, false,
                                             sge_dstring_get_string(&dest));
          sge_dstring_free(&dest);
       }
@@ -1443,12 +1487,13 @@ enum class QConfShowStatus {
  * Fetches the object by name - or, for a type without a name field, the single
  * one that exists - and renders it in the layout of the descriptor.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param o    the object type
  * @param name the object name, ignored for a type without a name field
  * @return what happened, see QConfShowStatus
  */
 static QConfShowStatus
-qconf_show_object(QConfObj o, const char *name) {
+qconf_show_object(std::ostream &os, QConfObj o, const char *name) {
    DENTER(TOP_LAYER);
    const qconf_object_desc &d = qconf_desc(o);
    lList *lp = nullptr;
@@ -1499,8 +1544,8 @@ qconf_show_object(QConfObj o, const char *name) {
       d.read.prepare(ep);
    }
    const char *filename = spool_flatfile_write_object(&alp, ep, d.is_root, fields, d.sfi,
-                                                      SP_DEST_STDOUT, qconf_opt_format, nullptr,
-                                                      false, d.json_type_name);
+                                                      SP_DEST_STREAM, qconf_opt_format, nullptr,
+                                                      false, d.json_type_name, &os);
    sge_free(&filename);
    if (owned) {
       sge_free(&fields);
@@ -1543,13 +1588,14 @@ qconf_show_status_classic(QConfShowStatus st, int *parse_return) {
 
 /** @brief Show the names of all objects of the given type, one per line.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param o the object type
  * @return true when the list was printed, false when it was empty or the request failed
  */
 static bool
-qconf_show_names(QConfObj o) {
+qconf_show_names(std::ostream &os, QConfObj o) {
    const qconf_object_desc &d = qconf_desc(o);
-   return show_object_list(d.target, const_cast<lDescr *>(d.descr), d.name_nm, d.read.list_name);
+   return show_object_list(os, d.target, const_cast<lDescr *>(d.descr), d.name_nm, d.read.list_name);
 }
 
 /** @brief Delete the objects named by an already parsed list.
@@ -1601,16 +1647,17 @@ qconf_delete_names(QConfObj o, const char *names) {
  * shared static one otherwise; @c owned says which, so this frees exactly what
  * it allocated.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param o    the object type
  * @param path file or directory to read
  * @return 0 on success, non-zero on error
  */
 static int
-qconf_apply_obj(QConfObj o, const char *path) {
+qconf_apply_obj(std::ostream &os, QConfObj o, const char *path) {
    const qconf_object_desc &d = qconf_desc(o);
    bool owned = false;
    spooling_field *fields = d.build_fields(qconf_opt_format, &owned);
-   int ret = qconf_apply_path(d, fields, path);
+   int ret = qconf_apply_path(os, d, fields, path);
    if (owned) {
       sge_free(&fields);
    }
@@ -1618,16 +1665,17 @@ qconf_apply_obj(QConfObj o, const char *path) {
 }
 
 /** @brief Delete the objects named by a file or directory, driven by the descriptor.
+ * @param os the stream the output is written to (CS-1841)
  * @param o    the object type
  * @param path file or directory to read
  * @return 0 on success, non-zero on error
  */
 static int
-qconf_delete_obj(QConfObj o, const char *path) {
+qconf_delete_obj(std::ostream &os, QConfObj o, const char *path) {
    const qconf_object_desc &d = qconf_desc(o);
    bool owned = false;
    spooling_field *fields = d.build_fields(qconf_opt_format, &owned);
-   int ret = qconf_delete_path(d, fields, path);
+   int ret = qconf_delete_path(os, d, fields, path);
    if (owned) {
       sge_free(&fields);
    }
@@ -1635,27 +1683,29 @@ qconf_delete_obj(QConfObj o, const char *path) {
 }
 
 /** @brief Export one object or a whole directory, driven by the descriptor.
+ * @param os the stream the output is written to (CS-1841)
  * @param o    the object type
  * @param path object name, or a directory for the bulk export
  * @return the number of objects that failed to export
  */
 static int
-qconf_export_obj(QConfObj o, const char *path) {
+qconf_export_obj(std::ostream &os, QConfObj o, const char *path) {
    const qconf_object_desc &d = qconf_desc(o);
-   return qconf_export_path(d.target, d.descr, d.name_nm, d.build_fields,
+   return qconf_export_path(os, d.target, d.descr, d.name_nm, d.build_fields,
                             d.sfi, d.json_type_name, d.as_list, path,
                             d.exclude1, d.exclude2);
 }
 
 /** @brief Export a singleton object (share tree, scheduler configuration).
+ * @param os the stream the output is written to (CS-1841)
  * @param o    the object type
  * @param path file to write
  * @return the number of objects that failed to export
  */
 static int
-qconf_export_obj_singleton(QConfObj o, const char *path) {
+qconf_export_obj_singleton(std::ostream &os, QConfObj o, const char *path) {
    const qconf_object_desc &d = qconf_desc(o);
-   return qconf_export_singleton(d.target, d.descr, d.build_fields,
+   return qconf_export_singleton(os, d.target, d.descr, d.build_fields,
                                  d.sfi, d.json_type_name, d.is_root, path);
 }
 
@@ -1664,14 +1714,15 @@ qconf_export_obj_singleton(QConfObj o, const char *path) {
  * The target, descriptor, name field and GDI sub-command all come from the
  * table, so the editor branches no longer name the object type four times.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param o  the object type
  * @param ep the element to send; consumed by the call
  * @return 0 on success, non-zero on error
  */
 static int
-qconf_send_upsert_obj(QConfObj o, lListElem *ep) {
+qconf_send_upsert_obj(std::ostream &os, QConfObj o, lListElem *ep) {
    const qconf_object_desc &d = qconf_desc(o);
-   return qconf_send_upsert(d.target, d.descr, d.name_nm, ep, d.sub_cmd);
+   return qconf_send_upsert(os, d.target, d.descr, d.name_nm, ep, d.sub_cmd);
 }
 
 /** @brief Write an object to a temporary file for the editor.
@@ -1834,6 +1885,7 @@ qconf_edit_fail_exit(QConfEditStatus st) {
 
 /** @brief Context for qconf_rqs_collect: the merged RQS list + read-failure count. */
 struct qconf_rqs_ctx {
+   std::ostream *os;   ///< where the per-file messages go (CS-1841)
    lList *all;   ///< merged RQS_Type list collected from every file
    int n_fail;   ///< files that failed to read
 };
@@ -1868,13 +1920,14 @@ qconf_rqs_collect(const char *filepath, void *vctx) {
  * fails to parse nothing is applied (whole-list semantics are inherently strict).
  * Honours -dry and prints a one-line summary.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param path file or directory to apply
  * @param cmd  ocs::gdi::Command::ADD or MOD
  * @param name optional rqs-name list for the single-file -Mrqs form, or nullptr
  * @return 0 on success, non-zero on failure
  */
 static int
-qconf_rqs_apply(const char *path, ocs::gdi::Command cmd, const char *name) {
+qconf_rqs_apply(std::ostream &os, const char *path, ocs::gdi::Command cmd, const char *name) {
    bool is_dir = sge_is_directory(path);
 
    /* preserve the existing single-file behaviour verbatim (only when actually
@@ -1889,7 +1942,7 @@ qconf_rqs_apply(const char *path, ocs::gdi::Command cmd, const char *name) {
       return (ok && ret == 0) ? 0 : 1;
    }
 
-   qconf_rqs_ctx ctx = {lCreateList("rqs", RQS_Type), 0};
+   qconf_rqs_ctx ctx = {&os, lCreateList("rqs", RQS_Type), 0};
    qconf_for_each_file(path, qconf_rqs_collect, &ctx);
 
    if (ctx.n_fail > 0) {
@@ -1902,7 +1955,7 @@ qconf_rqs_apply(const char *path, ocs::gdi::Command cmd, const char *name) {
    if (qconf_opt_dry_run) {
       const lListElem *r;
       for_each_ep(r, ctx.all) {
-         qconf_info_printf(cmd == ocs::gdi::Command::ADD ? MSG_QCONF_DRYRUNWOULDADD_S
+         qconf_info(os, cmd == ocs::gdi::Command::ADD ? MSG_QCONF_DRYRUNWOULDADD_S
                                                          : MSG_QCONF_DRYRUNWOULDMODIFY_S,
                            lGetString(r, RQS_name));
       }
@@ -1918,7 +1971,7 @@ qconf_rqs_apply(const char *path, ocs::gdi::Command cmd, const char *name) {
       lFreeList(&alp);
    }
    if (is_dir) {
-      qconf_info_printf(MSG_QCONF_ADDMODSUMMARY_SII, path, n_ok, 0);
+      qconf_info(os, MSG_QCONF_ADDMODSUMMARY_SII, path, n_ok, 0);
    }
    lFreeList(&ctx.all);
    return ret;
@@ -1931,12 +1984,13 @@ qconf_rqs_apply(const char *path, ocs::gdi::Command cmd, const char *name) {
  * reported and skipped (idempotent). A directory delete is confirmed unless -f,
  * and -dry previews it.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param path file or directory naming the rule sets to delete
  * @return 0 on success, non-zero on failure
  */
 static int
-qconf_rqs_delete(const char *path) {
-   qconf_rqs_ctx ctx = {lCreateList("rqs", RQS_Type), 0};
+qconf_rqs_delete(std::ostream &os, const char *path) {
+   qconf_rqs_ctx ctx = {&os, lCreateList("rqs", RQS_Type), 0};
    bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_rqs_collect, &ctx);
    int ret = ctx.n_fail;
@@ -1957,7 +2011,7 @@ qconf_rqs_delete(const char *path) {
    int n = lGetNumberOfElem(del);
    if (n > 0 && qconf_opt_dry_run) {
       for_each_ep(r, del) {
-         qconf_info_printf(MSG_QCONF_DRYRUNWOULDDELETE_S, lGetString(r, RQS_name));
+         qconf_info(os, MSG_QCONF_DRYRUNWOULDDELETE_S, lGetString(r, RQS_name));
       }
       lFreeList(&del);
       return ret;
@@ -2006,6 +2060,7 @@ qconf_conf_host_of(const char *filepath, lListElem *host_ep) {
 
 /** @brief Context for the config apply/delete per-file callbacks. */
 struct qconf_conf_ctx {
+   std::ostream *os;   ///< where the per-file messages go (CS-1841)
    uint32_t flags;   ///< add_modify_config() flags (apply path only)
    lList *hosts;     ///< delete path: collected CONF_name host elements
    int n_ok;         ///< files applied / hosts collected (CS-2299 H1)
@@ -2032,7 +2087,7 @@ qconf_conf_apply_one(const char *filepath, void *vctx) {
    if (qconf_opt_dry_run) {
       bool exists = qconf_object_exists(ocs::gdi::Target::CONF_LIST, CONF_Type,
                                         CONF_name, hostname);
-      qconf_info_printf(exists ? MSG_QCONF_DRYRUNWOULDMODIFY_S : MSG_QCONF_DRYRUNWOULDADD_S,
+      qconf_info(*ctx->os, exists ? MSG_QCONF_DRYRUNWOULDMODIFY_S : MSG_QCONF_DRYRUNWOULDADD_S,
                         hostname);
       lFreeElem(&host_ep);
       ctx->n_ok++;
@@ -2055,16 +2110,17 @@ qconf_conf_apply_one(const char *filepath, void *vctx) {
  * Each file is upserted (add_modify_config flag 3); the host is the basename.
  * A directory prints the H1 one-line summary.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param path  config file or directory of config files
  * @return the number of files that failed
  */
 static int
-qconf_conf_apply_path(const char *path) {
-   qconf_conf_ctx ctx = {3 /* modify if exists, add if not */, nullptr, 0, 0};
+qconf_conf_apply_path(std::ostream &os, const char *path) {
+   qconf_conf_ctx ctx = {&os, 3 /* modify if exists, add if not */, nullptr, 0, 0};
    bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_conf_apply_one, &ctx);
    if (is_dir) {
-      qconf_info_printf(MSG_QCONF_ADDMODSUMMARY_SII, path, ctx.n_ok, ctx.n_fail);
+      qconf_info(os, MSG_QCONF_ADDMODSUMMARY_SII, path, ctx.n_ok, ctx.n_fail);
    }
    return ctx.n_fail;
 }
@@ -2100,12 +2156,13 @@ qconf_conf_collect_host(const char *filepath, void *vctx) {
  * Honours -dry (preview), -f (skip the directory confirm) and is idempotent
  * (a host whose config no longer exists is skipped, not failed).
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param path  config file or directory naming the host configs to delete
  * @return the number of configs that failed to be deleted
  */
 static int
-qconf_conf_delete_path(const char *path) {
-   qconf_conf_ctx ctx = {0, lCreateList("conf del", CONF_Type), 0, 0};
+qconf_conf_delete_path(std::ostream &os, const char *path) {
+   qconf_conf_ctx ctx = {&os, 0, lCreateList("conf del", CONF_Type), 0, 0};
    bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_conf_collect_host, &ctx);
 
@@ -2113,7 +2170,7 @@ qconf_conf_delete_path(const char *path) {
    if (n > 0 && qconf_opt_dry_run) {
       const lListElem *e;
       for_each_ep(e, ctx.hosts) {
-         qconf_info_printf(MSG_QCONF_DRYRUNWOULDDELETE_S, lGetHost(e, CONF_name));
+         qconf_info(os, MSG_QCONF_DRYRUNWOULDDELETE_S, lGetHost(e, CONF_name));
       }
       lFreeList(&ctx.hosts);
       return 0;
@@ -2284,6 +2341,7 @@ qconf_show_prepare_EH(lListElem *ep) {
  * dispatch. Most switches are handled by the table in #object_info_entry; the
  * ones that are not have their own handlers in this file.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param argv the arguments, not including `argv[0]`
  * @return 0 when every switch succeeded
  */
@@ -2310,6 +2368,11 @@ int sge_parse_qconf(char *argv[]) {
    uid_t uid = component_get_uid();
    gid_t gid = component_get_gid();
    bool has_binding_param = false;
+
+   /* The one place the sink is chosen (CS-1841). Everything below renders into
+    * this stream instead of writing to stdout, so that step 8 (CS-2799) can hand
+    * in qmaster's response buffer here without touching a single print site. */
+   std::ostream &os = std::cout;
 
    /* If no arguments were given, output the help message on stderr. */
    if (*argv == nullptr) {
@@ -2448,7 +2511,7 @@ int sge_parse_qconf(char *argv[]) {
             ep = ep;
 } else { /* -Acal: CS-2299 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(QConfObj::CAL, *spp) != 0) {
+            if (qconf_apply_obj(os, QConfObj::CAL, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -2457,7 +2520,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -acal editor path: CS-2299 C2 — upsert (modify if it already exists) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(QConfObj::CAL, ep);
+            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::CAL, ep);
          }
 
          spp++;
@@ -2495,7 +2558,7 @@ int sge_parse_qconf(char *argv[]) {
             ep = ep;
 } else { /* -Ackpt: CS-2300 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(QConfObj::CK, *spp) != 0) {
+            if (qconf_apply_obj(os, QConfObj::CK, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -2504,7 +2567,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -ackpt editor path: CS-2300 C2 — upsert (modify if it already exists) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(QConfObj::CK, ep);
+            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::CK, ep);
          }
 
          spp++;
@@ -2634,7 +2697,7 @@ int sge_parse_qconf(char *argv[]) {
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(QConfObj::EH, *spp) != 0) {
+         if (qconf_apply_obj(os, QConfObj::EH, *spp) != 0) {
             sge_parse_return = 1;
          }
 
@@ -2649,7 +2712,7 @@ int sge_parse_qconf(char *argv[]) {
 
          spp = sge_parser_get_next(spp);
          parse_name_list_to_cull("host to add", &lp, HR_Type, HR_name, *spp);
-         if (!mod_reserved_hgroup(lp, ADMIN_HOSTGROUP,
+         if (!mod_reserved_hgroup(os, lp, ADMIN_HOSTGROUP,
                                   ocs::gdi::SubCommand::APPEND, "administrative host")) {
             sge_parse_return |= 1;
          }
@@ -2688,7 +2751,7 @@ int sge_parse_qconf(char *argv[]) {
             ep = ep;
 } else { /* -Arole: CS-2302 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(QConfObj::RL, *spp) != 0) {
+            if (qconf_apply_obj(os, QConfObj::RL, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -2697,7 +2760,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -arole editor path: CS-2302 C2 — upsert (modify if it already exists) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(QConfObj::RL, ep);
+            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::RL, ep);
          }
 
          spp++;
@@ -2723,7 +2786,7 @@ int sge_parse_qconf(char *argv[]) {
             lFreeList(&lp);
             DRETURN(1);
          } else {
-            fprintf(stdout, "%s\n", lGetString(aep, AN_text));
+            os << qconf_cstr(lGetString(aep, AN_text)) << "\n";
          }
          lFreeList(&alp);
 
@@ -2744,7 +2807,7 @@ int sge_parse_qconf(char *argv[]) {
          }
          qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-         if (qconf_rqs_apply(file, ocs::gdi::Command::ADD, nullptr) != 0) {
+         if (qconf_rqs_apply(os, file, ocs::gdi::Command::ADD, nullptr) != 0) {
             sge_parse_return = 1;
          }
 
@@ -2826,7 +2889,7 @@ int sge_parse_qconf(char *argv[]) {
             ep = ep;
 } else { /* -Ap: CS-2301 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(QConfObj::PE, *spp) != 0) {
+            if (qconf_apply_obj(os, QConfObj::PE, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -2835,7 +2898,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -ap editor path: CS-2301 C2 — upsert (modify if it already exists) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(QConfObj::PE, ep);
+            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::PE, ep);
          }
 
          spp++;
@@ -2867,7 +2930,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* CS-2308 C2: upsert (modify if the user already exists) */
          if (newep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(QConfObj::UU, newep);
+            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::UU, newep);
          }
 
          spp++;
@@ -2899,7 +2962,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* CS-2309 C2: upsert (modify if the project already exists) */
          if (newep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(QConfObj::PR, newep);
+            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::PR, newep);
          }
 
          spp++;
@@ -2917,7 +2980,7 @@ int sge_parse_qconf(char *argv[]) {
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(QConfObj::UU, *spp) != 0) {
+         if (qconf_apply_obj(os, QConfObj::UU, *spp) != 0) {
             sge_parse_return = 1;
          }
 
@@ -2936,7 +2999,7 @@ int sge_parse_qconf(char *argv[]) {
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(QConfObj::PR, *spp) != 0) {
+         if (qconf_apply_obj(os, QConfObj::PR, *spp) != 0) {
             sge_parse_return = 1;
          }
 
@@ -2952,7 +3015,7 @@ int sge_parse_qconf(char *argv[]) {
 
          spp = sge_parser_get_next(spp);
          parse_name_list_to_cull("host to add", &lp, HR_Type, HR_name, *spp);
-         if (!mod_reserved_hgroup(lp, SUBMIT_HOSTGROUP,
+         if (!mod_reserved_hgroup(os, lp, SUBMIT_HOSTGROUP,
                                   ocs::gdi::SubCommand::APPEND, "submit host")) {
             sge_parse_return = 1;
          }
@@ -3329,7 +3392,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Dcal", *spp) == 0) {
          /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(QConfObj::CAL, *spp) != 0) {
+         if (qconf_delete_obj(os, QConfObj::CAL, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -3353,7 +3416,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Dckpt", *spp) == 0) {
          /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(QConfObj::CK, *spp) != 0) {
+         if (qconf_delete_obj(os, QConfObj::CK, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -3379,7 +3442,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-De", *spp) == 0) {
          /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(QConfObj::EH, *spp) != 0) {
+         if (qconf_delete_obj(os, QConfObj::EH, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -3392,7 +3455,7 @@ int sge_parse_qconf(char *argv[]) {
          /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
          parse_name_list_to_cull("host to del", &lp, HR_Type, HR_name, *spp);
-         if (!mod_reserved_hgroup(lp, ADMIN_HOSTGROUP,
+         if (!mod_reserved_hgroup(os, lp, ADMIN_HOSTGROUP,
                                   ocs::gdi::SubCommand::REMOVE, "administrative host")) {
             sge_parse_return = 1;
          }
@@ -3415,7 +3478,7 @@ int sge_parse_qconf(char *argv[]) {
       /* "-Drole file|dir": CS-2302 C5 — delete the role(s) named in the file(s) */
       if (strcmp("-Drole", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(QConfObj::RL, *spp) != 0) {
+         if (qconf_delete_obj(os, QConfObj::RL, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -3436,7 +3499,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Drqs", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_rqs_delete(*spp) != 0) {
+         if (qconf_rqs_delete(os, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -3499,7 +3562,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Dp", *spp) == 0) {
          /* no adminhost/manager check needed here */
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(QConfObj::PE, *spp) != 0) {
+         if (qconf_delete_obj(os, QConfObj::PE, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -3512,7 +3575,7 @@ int sge_parse_qconf(char *argv[]) {
 
          spp = sge_parser_get_next(spp);
          parse_name_list_to_cull("host to del", &lp, HR_Type, HR_name, *spp);
-         if (!mod_reserved_hgroup(lp, SUBMIT_HOSTGROUP,
+         if (!mod_reserved_hgroup(os, lp, SUBMIT_HOSTGROUP,
                                   ocs::gdi::SubCommand::REMOVE, "submit host")) {
             sge_parse_return = 1;
          }
@@ -3925,7 +3988,7 @@ int sge_parse_qconf(char *argv[]) {
             ep = cal_src;
 } else { /* -Mcal: CS-2299 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(QConfObj::CAL, *spp) != 0) {
+            if (qconf_apply_obj(os, QConfObj::CAL, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -3934,7 +3997,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -mcal editor path: CS-2299 C2 — upsert (add if it did not exist) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(QConfObj::CAL, ep);
+            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::CAL, ep);
          }
 
          spp++;
@@ -4014,7 +4077,7 @@ int sge_parse_qconf(char *argv[]) {
             ep = ckpt_src;
 } else { /* -Mckpt: CS-2300 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(QConfObj::CK, *spp) != 0) {
+            if (qconf_apply_obj(os, QConfObj::CK, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -4023,7 +4086,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -mckpt editor path: CS-2300 C2 — upsert (add if it did not exist) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(QConfObj::CK, ep);
+            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::CK, ep);
          }
 
          spp++;
@@ -4037,7 +4100,7 @@ int sge_parse_qconf(char *argv[]) {
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(QConfObj::EH, *spp) != 0) {
+         if (qconf_apply_obj(os, QConfObj::EH, *spp) != 0) {
             sge_parse_return = 1;
          }
 
@@ -4156,7 +4219,7 @@ int sge_parse_qconf(char *argv[]) {
             ep = role_src;
 } else { /* -Mrole: CS-2302 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(QConfObj::RL, *spp) != 0) {
+            if (qconf_apply_obj(os, QConfObj::RL, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -4165,7 +4228,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -mrole editor path: CS-2302 C2 — upsert (add if it did not exist) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(QConfObj::RL, ep);
+            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::RL, ep);
          }
 
          spp++;
@@ -4209,7 +4272,7 @@ int sge_parse_qconf(char *argv[]) {
             name = *spp;
          }
 
-         if (qconf_rqs_apply(file, ocs::gdi::Command::MOD, name) != 0) {
+         if (qconf_rqs_apply(os, file, ocs::gdi::Command::MOD, name) != 0) {
             sge_parse_return = 1;
          }
 
@@ -4268,7 +4331,7 @@ int sge_parse_qconf(char *argv[]) {
             ep = pe_src;
 } else { /* -Mp: CS-2301 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-            if (qconf_apply_obj(QConfObj::PE, *spp) != 0) {
+            if (qconf_apply_obj(os, QConfObj::PE, *spp) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -4277,7 +4340,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* -mp editor path: CS-2301 C2 — upsert (add if it did not exist) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(QConfObj::PE, ep);
+            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::PE, ep);
          }
 
          spp++;
@@ -4338,7 +4401,7 @@ int sge_parse_qconf(char *argv[]) {
             hostname = lGetHost(elem, EH_name);
             if (!fnmatch(sge_dstring_get_string(&attribute_pattern), SGE_ATTR_HOSTNAME, 0) &&
                 !fnmatch(sge_dstring_get_string(&value_pattern), hostname, 0)) {
-               printf("%s\n", hostname);
+               os << qconf_cstr(hostname) << "\n";
                already_handled = true;
             }
 
@@ -4368,7 +4431,7 @@ int sge_parse_qconf(char *argv[]) {
                   value_string = sge_dstring_get_string(&value);
                }
                if (!fnmatch(sge_dstring_get_string(&value_pattern), value_string, 0)) {
-                  printf("%s\n", hostname);
+                  os << qconf_cstr(hostname) << "\n";
                   already_handled = true;
                }
                sge_dstring_free(&value);
@@ -4405,7 +4468,7 @@ int sge_parse_qconf(char *argv[]) {
                   value_string = sge_dstring_get_string(&value);
                }
                if (!fnmatch(sge_dstring_get_string(&value_pattern), value_string, 0)) {
-                  printf("%s\n", hostname);
+                  os << qconf_cstr(hostname) << "\n";
                   already_handled = true;
                }
                sge_dstring_free(&value);
@@ -4438,7 +4501,7 @@ int sge_parse_qconf(char *argv[]) {
                   value_string = sge_dstring_get_string(&value);
                }
                if (!fnmatch(sge_dstring_get_string(&value_pattern), value_string, 0)) {
-                  printf("%s\n", hostname);
+                  os << qconf_cstr(hostname) << "\n";
                   already_handled = true;
                }
                sge_dstring_free(&value);
@@ -4455,7 +4518,7 @@ int sge_parse_qconf(char *argv[]) {
                sge_dstring_sprintf(&value, "%d", (int) lGetUlong(elem, EH_processors));
                value_string = sge_dstring_get_string(&value);
                if (!fnmatch(sge_dstring_get_string(&value_pattern), value_string, 0)) {
-                  printf("%s\n", hostname);
+                  os << qconf_cstr(hostname) << "\n";
                   already_handled = true;
                }
                sge_dstring_free(&value);
@@ -4488,7 +4551,7 @@ int sge_parse_qconf(char *argv[]) {
                   value_string = sge_dstring_get_string(&value);
                }
                if (!fnmatch(sge_dstring_get_string(&value_pattern), value_string, 0)) {
-                  printf("%s\n", hostname);
+                  os << qconf_cstr(hostname) << "\n";
                   already_handled = true;
                }
                sge_dstring_free(&value);
@@ -4520,7 +4583,7 @@ int sge_parse_qconf(char *argv[]) {
                   value_string = sge_dstring_get_string(&value);
                }
                if (!fnmatch(sge_dstring_get_string(&value_pattern), value_string, 0)) {
-                  printf("%s\n", hostname);
+                  os << qconf_cstr(hostname) << "\n";
                   already_handled = true;
                }
                sge_dstring_free(&value);
@@ -4577,7 +4640,7 @@ int sge_parse_qconf(char *argv[]) {
                          SGE_ATTR_QNAME, 0)) {
                if (handle_cqueue &&
                    !fnmatch(sge_dstring_get_string(&value_pattern), lGetString(elem, CQ_name), 0)) {
-                  printf("%s\n", lGetString(elem, CQ_name));
+                  os << qconf_cstr(lGetString(elem, CQ_name)) << "\n";
                   already_handled = true;
                }
             }
@@ -4598,7 +4661,7 @@ int sge_parse_qconf(char *argv[]) {
                }
                if (handle_cqueue &&
                    !fnmatch(sge_dstring_get_string(&value_pattern), sge_dstring_get_string(&value), 0)) {
-                  printf("%s\n", lGetString(elem, CQ_name));
+                  os << qconf_cstr(lGetString(elem, CQ_name)) << "\n";
                   already_handled = true;
                }
                sge_dstring_free(&value);
@@ -4642,9 +4705,9 @@ int sge_parse_qconf(char *argv[]) {
 
                      if (!fnmatch(sge_dstring_get_string(&value_pattern), sge_dstring_get_string(&value), 0)) {
                         if (handle_cqueue && is_cqueue) {
-                           printf("%s\n", lGetString(elem, CQ_name));
+                           os << qconf_cstr(lGetString(elem, CQ_name)) << "\n";
                         } else if ((handle_domain && is_domain) || (handle_qinstance && is_qinstance)) {
-                           printf("%s@%s\n", lGetString(elem, CQ_name), host_hgroup);
+                           os << qconf_cstr(lGetString(elem, CQ_name)) << "@" << qconf_cstr(host_hgroup) << "\n";
                         }
                         already_handled = true;
                      }
@@ -5115,7 +5178,7 @@ int sge_parse_qconf(char *argv[]) {
          /* get userset */
          parse_name_list_to_cull("usersets", &lp, US_Type, US_name, *spp);
 
-         if (edit_usersets(lp) != 0) {
+         if (edit_usersets(os, lp) != 0) {
             sge_parse_return = 1;
          }
          lFreeList(&lp);
@@ -5133,7 +5196,7 @@ int sge_parse_qconf(char *argv[]) {
           * The userset uses the static US_fields, the param sfi and the
           * userset entry validator. */
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(QConfObj::US, *spp) != 0) {
+         if (qconf_apply_obj(os, QConfObj::US, *spp) != 0) {
             sge_parse_return = 1;
          }
 
@@ -5148,7 +5211,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Au", *spp) == 0) {
          /* CS-2310 C2+C3: accept a file OR a directory, upsert each userset. */
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(QConfObj::US, *spp) != 0) {
+         if (qconf_apply_obj(os, QConfObj::US, *spp) != 0) {
             sge_parse_return = 1;
          }
 
@@ -5163,7 +5226,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Du", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(QConfObj::US, *spp) != 0) {
+         if (qconf_delete_obj(os, QConfObj::US, *spp) != 0) {
             sge_parse_return = 1;
          }
 
@@ -5218,7 +5281,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* CS-2308 C2: upsert (add if it did not exist) */
          if (newep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(QConfObj::UU, newep);
+            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::UU, newep);
          }
 
          spp++;
@@ -5270,7 +5333,7 @@ int sge_parse_qconf(char *argv[]) {
 
          /* CS-2309 C2: upsert (add if it did not exist) */
          if (newep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(QConfObj::PR, newep);
+            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::PR, newep);
          }
 
          spp++;
@@ -5290,7 +5353,7 @@ int sge_parse_qconf(char *argv[]) {
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(QConfObj::UU, *spp) != 0) {
+         if (qconf_apply_obj(os, QConfObj::UU, *spp) != 0) {
             sge_parse_return = 1;
          }
 
@@ -5306,7 +5369,7 @@ int sge_parse_qconf(char *argv[]) {
 
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(QConfObj::UU, *spp) != 0) {
+         if (qconf_delete_obj(os, QConfObj::UU, *spp) != 0) {
             sge_parse_return = 1;
          }
 
@@ -5324,7 +5387,7 @@ int sge_parse_qconf(char *argv[]) {
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(QConfObj::PR, *spp) != 0) {
+         if (qconf_apply_obj(os, QConfObj::PR, *spp) != 0) {
             sge_parse_return = 1;
          }
 
@@ -5340,7 +5403,7 @@ int sge_parse_qconf(char *argv[]) {
 
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(QConfObj::PR, *spp) != 0) {
+         if (qconf_delete_obj(os, QConfObj::PR, *spp) != 0) {
             sge_parse_return = 1;
          }
 
@@ -5354,7 +5417,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-sc", *spp) == 0) {
          lList *answer_list = nullptr;
 
-         if (!centry_list_show(&answer_list)) {
+         if (!centry_list_show(os, &answer_list)) {
             show_answer(answer_list);
             sge_parse_return = 1;
          }
@@ -5369,7 +5432,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-scatl", *spp) == 0) {
          lList *answer_list = nullptr;
 
-         if (!ocs::CategoryQconf::show_list(&answer_list)) {
+         if (!ocs::CategoryQconf::show_list(os, &answer_list)) {
             show_answer(answer_list);
             sge_parse_return = 1;
          }
@@ -5383,7 +5446,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-scal", *spp) == 0) {
          spp = sge_parser_get_next(spp);
 
-         if (qconf_show_status_classic(qconf_show_object(QConfObj::CAL, *spp), &sge_parse_return)) {
+         if (qconf_show_status_classic(qconf_show_object(os, QConfObj::CAL, *spp), &sge_parse_return)) {
             DRETURN(1);
          }
 
@@ -5394,7 +5457,7 @@ int sge_parse_qconf(char *argv[]) {
       /* "-scall" */
 
       if (strcmp("-scall", *spp) == 0) {
-         if (!qconf_show_names(QConfObj::CAL)) {
+         if (!qconf_show_names(os, QConfObj::CAL)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5448,7 +5511,7 @@ int sge_parse_qconf(char *argv[]) {
              (cp = sge_strtok(nullptr, ","))) {
 
             if (!first) {
-               fprintf(stdout, "\n");
+               os << "\n";
             }
             first = 0;
 
@@ -5456,7 +5519,7 @@ int sge_parse_qconf(char *argv[]) {
              * key is the file basename and each is upserted (flag 3). The basename
              * resolution happens per file inside qconf_conf_apply_path(). */
             if (action == ACTION_Aconf || action == ACTION_Mconf) {
-               if (qconf_conf_apply_path(cp) != 0) {
+               if (qconf_conf_apply_path(os, cp) != 0) {
                   sge_parse_return = 1;
                }
                continue;
@@ -5481,7 +5544,7 @@ int sge_parse_qconf(char *argv[]) {
             }
 
             if (action == ACTION_sconf) {
-               if (print_config(hostname) != 0) {
+               if (print_config(os, hostname) != 0) {
                   sge_parse_return = 1;
                }
             } else if (action == ACTION_aconf || action == ACTION_mconf) {
@@ -5506,7 +5569,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-sckpt", *spp) == 0) {
          spp = sge_parser_get_next(spp);
 
-         if (qconf_show_status_classic(qconf_show_object(QConfObj::CK, *spp), &sge_parse_return)) {
+         if (qconf_show_status_classic(qconf_show_object(os, QConfObj::CK, *spp), &sge_parse_return)) {
             DRETURN(1);
          }
 
@@ -5516,7 +5579,7 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-sckptl" */
       if (strcmp("-sckptl", *spp) == 0) {
-         if (!qconf_show_names(QConfObj::CK)) {
+         if (!qconf_show_names(os, QConfObj::CK)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5526,7 +5589,7 @@ int sge_parse_qconf(char *argv[]) {
       /* "-sconfl" */
 
       if (strcmp("-sconfl", *spp) == 0) {
-         if (!show_object_list(ocs::gdi::Target::CONF_LIST, CONF_Type, CONF_name, "config")) {
+         if (!show_object_list(os, ocs::gdi::Target::CONF_LIST, CONF_Type, CONF_name, "config")) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5596,7 +5659,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Dconf", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_conf_delete_path(*spp) != 0) {
+         if (qconf_conf_delete_path(os, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5622,7 +5685,7 @@ int sge_parse_qconf(char *argv[]) {
             DRETURN(1);
          }
 
-         if (qconf_show_object(QConfObj::EH, lGetHost(hep, EH_name)) != QConfShowStatus::OK) {
+         if (qconf_show_object(os, QConfObj::EH, lGetHost(hep, EH_name)) != QConfShowStatus::OK) {
             sge_parse_return = 1;
          }
          lFreeElem(&hep);
@@ -5633,14 +5696,14 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-secl" */
       if (strcmp("-secl", *spp) == 0) {
-         show_eventclients();
+         show_eventclients(os);
          spp++;
          continue;
       }
 /*-----------------------------------------------------------------------------*/
       /* "-sel" */
       if (strcmp("-sel", *spp) == 0) {
-         if (!qconf_show_names(QConfObj::EH)) {
+         if (!qconf_show_names(os, QConfObj::EH)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5649,14 +5712,14 @@ int sge_parse_qconf(char *argv[]) {
 /*----------------------------------------------------------------------------*/
       /* "-sep" */
       if (strcmp("-sep", *spp) == 0) {
-         show_processors(has_binding_param);
+         show_processors(os, has_binding_param);
          spp++;
          continue;
       }
 /*----------------------------------------------------------------------------*/
       /* "-sh" */
       if (strcmp("-sh", *spp) == 0) {
-         if (!show_reserved_hgroup_hosts(ADMIN_HOSTGROUP, "adminhost",
+         if (!show_reserved_hgroup_hosts(os, ADMIN_HOSTGROUP, "adminhost",
                "administrative host")) {
             sge_parse_return = 1;
          }
@@ -5666,7 +5729,7 @@ int sge_parse_qconf(char *argv[]) {
 /*----------------------------------------------------------------------------*/
       /* "-srqsl " */
       if (strcmp("-srqsl", *spp) == 0) {
-         if (!qconf_show_names(QConfObj::RQS)) {
+         if (!qconf_show_names(os, QConfObj::RQS)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5682,7 +5745,7 @@ int sge_parse_qconf(char *argv[]) {
             spp = sge_parser_get_next(spp);
             name = *spp;
          }
-         ret = rqs_show(&alp, name);
+         ret = rqs_show(os, &alp, name);
          if (!ret) {
             show_answer(alp);
             sge_parse_return = 1;
@@ -5697,7 +5760,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-stl", *spp) == 0) {
          /* show_thread_list() returns 0 on success and -1 on error (not a bool),
           * so compare against 0 - a plain !ret would flag success as an error */
-         if (show_thread_list() != 0) {
+         if (show_thread_list(os) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5708,7 +5771,7 @@ int sge_parse_qconf(char *argv[]) {
 
       if (strcmp("-sm", *spp) == 0) {
          /* CS-2394: managers are the members of the reserved "manager" userset. */
-         if (!show_manop_list(MANAGER_USERSET, "manager")) {
+         if (!show_manop_list(os, MANAGER_USERSET, "manager")) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5719,7 +5782,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-srole", *spp) == 0) {
          spp = sge_parser_get_next(spp);
 
-         if (qconf_show_status_classic(qconf_show_object(QConfObj::RL, *spp), &sge_parse_return)) {
+         if (qconf_show_status_classic(qconf_show_object(os, QConfObj::RL, *spp), &sge_parse_return)) {
             DRETURN(1);
          }
 
@@ -5729,7 +5792,7 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-srolel" */
       if (strcmp("-srolel", *spp) == 0) {
-         if (!qconf_show_names(QConfObj::RL)) {
+         if (!qconf_show_names(os, QConfObj::RL)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5740,7 +5803,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-sp", *spp) == 0) {
          spp = sge_parser_get_next(spp);
 
-         if (qconf_show_status_classic(qconf_show_object(QConfObj::PE, *spp), &sge_parse_return)) {
+         if (qconf_show_status_classic(qconf_show_object(os, QConfObj::PE, *spp), &sge_parse_return)) {
             DRETURN(1);
          }
 
@@ -5750,7 +5813,7 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-spl" */
       if (strcmp("-spl", *spp) == 0) {
-         if (!qconf_show_names(QConfObj::PE)) {
+         if (!qconf_show_names(os, QConfObj::PE)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5760,7 +5823,7 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-scel" */
       if (strcmp("-scel", *spp) == 0) {
-         if (!qconf_show_names(QConfObj::CE)) {
+         if (!qconf_show_names(os, QConfObj::CE)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5771,7 +5834,7 @@ int sge_parse_qconf(char *argv[]) {
 
       if (strcmp("-so", *spp) == 0) {
          /* CS-2394: operators are the members of the reserved "operator" userset. */
-         if (!show_manop_list(OPERATOR_USERSET, "operator")) {
+         if (!show_manop_list(os, OPERATOR_USERSET, "operator")) {
             sge_parse_return = 1;
          }
          spp++;
@@ -5800,8 +5863,8 @@ int sge_parse_qconf(char *argv[]) {
          /* SC has no primary key, so the JSON $id type must be set explicitly
           * (content resolution would yield "petask") */
          filename_stdout = spool_flatfile_write_object(&alp, lFirst(lp), false, SC_fields,
-                                     &qconf_comma_sfi, SP_DEST_STDOUT,
-                                     qconf_opt_format, nullptr, false, "sched_conf");
+                                     &qconf_comma_sfi, SP_DEST_STREAM,
+                                     qconf_opt_format, nullptr, false, "sched_conf", &os);
 
          sge_free(&filename_stdout);
          if (answer_list_output(&alp)) {
@@ -5853,7 +5916,7 @@ int sge_parse_qconf(char *argv[]) {
             const char *nodepath = lGetString(argep, STN_name);
 
             if (nodepath) {
-               found = show_sharetree_path(ep, nodepath);
+               found = show_sharetree_path(os, ep, nodepath);
             }
          }
 
@@ -5907,7 +5970,7 @@ int sge_parse_qconf(char *argv[]) {
                 * leaving "found" at 0, so the branch below fired on success whenever
                 * -rsstnode was the last option and never fired when one followed.
                 * Accumulate so that a failure on any of several paths is reported. */
-               found |= show_sharetree_path(ep, nodepath);
+               found |= show_sharetree_path(os, ep, nodepath);
             }
          }
 
@@ -5957,15 +6020,15 @@ int sge_parse_qconf(char *argv[]) {
             spooling_field *json_fields = sge_build_STN_json_field_list();
             dstring out = DSTRING_INIT;
             spool_json_write_typed_object(&alp, ep, json_fields, "sharetree", &out);
-            printf("%s", sge_dstring_get_string(&out));
+            os << qconf_cstr(sge_dstring_get_string(&out));
             sge_dstring_free(&out);
             sge_free(&json_fields);
          } else {
             fields = sge_build_STN_field_list(false, true);
             filename_stdout = spool_flatfile_write_object(&alp, ep, true, fields,
                                         &qconf_name_value_list_sfi,
-                                        SP_DEST_STDOUT, qconf_opt_format,
-                                        nullptr, false);
+                                        SP_DEST_STREAM, qconf_opt_format,
+                                        nullptr, false, nullptr, &os);
             sge_free(&fields);
             sge_free(&filename_stdout);
          }
@@ -6009,7 +6072,7 @@ int sge_parse_qconf(char *argv[]) {
             continue;
          }
 
-         show_sharetree(ep, nullptr);
+         show_sharetree(os, ep, nullptr);
 
          lFreeList(&lp);
          spp++;
@@ -6041,7 +6104,7 @@ int sge_parse_qconf(char *argv[]) {
             spp++;
             continue;
          } else {
-          show_sharetree(ep, nullptr);
+          show_sharetree(os, ep, nullptr);
          }
 
          lFreeList(&lp);
@@ -6053,7 +6116,7 @@ int sge_parse_qconf(char *argv[]) {
       /* "-ss" */
       if (strcmp("-ss", *spp) == 0) {
 
-         if (!show_reserved_hgroup_hosts(SUBMIT_HOSTGROUP, "submithost",
+         if (!show_reserved_hgroup_hosts(os, SUBMIT_HOSTGROUP, "submithost",
                "submit host")) {
             sge_parse_return = 1;
          }
@@ -6066,7 +6129,7 @@ int sge_parse_qconf(char *argv[]) {
 
       if (strcmp("-sss", *spp) == 0) {
          /* ... */
-         if (!show_object_list(ocs::gdi::Target::EV_LIST, EV_Type, EV_host, "scheduling host")) {
+         if (!show_object_list(os, ocs::gdi::Target::EV_LIST, EV_Type, EV_host, "scheduling host")) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6080,7 +6143,7 @@ int sge_parse_qconf(char *argv[]) {
          spp = sge_parser_get_next(spp);
          parse_name_list_to_cull("acl`s to show", &lp,
                US_Type, US_name, *spp);
-         if (print_acl(lp) != 0) {
+         if (print_acl(os, lp) != 0) {
             sge_parse_return = 1;
          }
          lFreeList(&lp);
@@ -6095,7 +6158,7 @@ int sge_parse_qconf(char *argv[]) {
 
          spp = sge_parser_get_next(spp);
          uint64_t id = strtoull(*spp, nullptr, 10);
-         if (!ocs::CategoryQconf::show(&answer_list, id)) {
+         if (!ocs::CategoryQconf::show(os, &answer_list, id)) {
             show_answer(answer_list);
             sge_parse_return = 1;
          }
@@ -6109,7 +6172,7 @@ int sge_parse_qconf(char *argv[]) {
          lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(spp);
-         if (!centry_show(&answer_list, *spp)) {
+         if (!centry_show(os, &answer_list, *spp)) {
             show_answer(answer_list);
             sge_parse_return = 1;
          }
@@ -6166,7 +6229,7 @@ int sge_parse_qconf(char *argv[]) {
             ep = ce_src;
 /* -mce editor path: CS-2303 C2 — upsert (add if it did not exist) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(QConfObj::CE, ep);
+            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::CE, ep);
          }
          spp++;
          continue;
@@ -6178,7 +6241,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Mce", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(QConfObj::CE, *spp) != 0) {
+         if (qconf_apply_obj(os, QConfObj::CE, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6204,7 +6267,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Dce", *spp) == 0) {
          qconf_is_manager(username);
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(QConfObj::CE, *spp) != 0) {
+         if (qconf_delete_obj(os, QConfObj::CE, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6238,7 +6301,7 @@ int sge_parse_qconf(char *argv[]) {
             ep = ep;
 /* -ace editor path: CS-2303 C2 — upsert (modify if it already exists) */
          if (ep != nullptr) {
-            sge_parse_return |= qconf_send_upsert_obj(QConfObj::CE, ep);
+            sge_parse_return |= qconf_send_upsert_obj(os, QConfObj::CE, ep);
          }
          spp++;
          continue;
@@ -6248,7 +6311,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Ace", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(QConfObj::CE, *spp) != 0) {
+         if (qconf_apply_obj(os, QConfObj::CE, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6261,7 +6324,7 @@ int sge_parse_qconf(char *argv[]) {
 
       /* "-shgrpl" */
       if (strcmp("-shgrpl", *spp) == 0) {
-         if (!qconf_show_names(QConfObj::HGRP)) {
+         if (!qconf_show_names(os, QConfObj::HGRP)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6286,7 +6349,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Mhgrp", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(QConfObj::HGRP, *spp) != 0) {
+         if (qconf_apply_obj(os, QConfObj::HGRP, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6321,7 +6384,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Ahgrp", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(QConfObj::HGRP, *spp) != 0) {
+         if (qconf_apply_obj(os, QConfObj::HGRP, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6344,7 +6407,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Dhgrp", *spp) == 0) {
          qconf_is_manager(username);
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(QConfObj::HGRP, *spp) != 0) {
+         if (qconf_delete_obj(os, QConfObj::HGRP, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6356,7 +6419,7 @@ int sge_parse_qconf(char *argv[]) {
          lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(spp);
-         hgroup_show(&answer_list, *spp);
+         hgroup_show(os, &answer_list, *spp);
          sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
 
@@ -6370,7 +6433,7 @@ int sge_parse_qconf(char *argv[]) {
          lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(spp);
-         hgroup_show_structure(&answer_list, *spp, true);
+         hgroup_show_structure(os, &answer_list, *spp, true);
          sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
 
@@ -6383,7 +6446,7 @@ int sge_parse_qconf(char *argv[]) {
          lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(spp);
-         hgroup_show_structure(&answer_list, *spp, false);
+         hgroup_show_structure(os, &answer_list, *spp, false);
          sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
 
@@ -6409,7 +6472,7 @@ int sge_parse_qconf(char *argv[]) {
          const char *why_group = *spp;
          spp = sge_parser_get_next(spp);
 
-         if (!hgroup_show_why(&answer_list, why_group, *spp, &is_member) || !is_member) {
+         if (!hgroup_show_why(os, &answer_list, why_group, *spp, &is_member) || !is_member) {
             sge_parse_return |= 1;
          }
          show_answer(answer_list);
@@ -6425,7 +6488,7 @@ int sge_parse_qconf(char *argv[]) {
 
       /* "-sql" */
       if (strcmp("-sql", *spp) == 0) {
-         if (!qconf_show_names(QConfObj::CQ)) {
+         if (!qconf_show_names(os, QConfObj::CQ)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6451,7 +6514,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Mq", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(QConfObj::CQ, *spp) != 0) {
+         if (qconf_apply_obj(os, QConfObj::CQ, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6480,7 +6543,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Aq", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_apply_obj(QConfObj::CQ, *spp) != 0) {
+         if (qconf_apply_obj(os, QConfObj::CQ, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6492,7 +6555,7 @@ int sge_parse_qconf(char *argv[]) {
        * IMPORT field list so the exported files re-import unchanged. */
       if (strcmp("-Scal", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(QConfObj::CAL, *spp) != 0) {
+         if (qconf_export_obj(os, QConfObj::CAL, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6500,7 +6563,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Sckpt", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(QConfObj::CK, *spp) != 0) {
+         if (qconf_export_obj(os, QConfObj::CK, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6508,7 +6571,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Sce", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(QConfObj::CE, *spp) != 0) {
+         if (qconf_export_obj(os, QConfObj::CE, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6518,7 +6581,7 @@ int sge_parse_qconf(char *argv[]) {
          spp = sge_parser_get_next(spp);
          /* exclude the template and global pseudo-hosts (KTD5); explicit "exechost"
           * JSON $id (EH shares its name field with adminhost). */
-         if (qconf_export_obj(QConfObj::EH, *spp) != 0) {
+         if (qconf_export_obj(os, QConfObj::EH, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6526,7 +6589,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Shgrp", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(QConfObj::HGRP, *spp) != 0) {
+         if (qconf_export_obj(os, QConfObj::HGRP, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6534,7 +6597,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Sp", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(QConfObj::PE, *spp) != 0) {
+         if (qconf_export_obj(os, QConfObj::PE, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6542,7 +6605,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Sprj", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(QConfObj::PR, *spp) != 0) {
+         if (qconf_export_obj(os, QConfObj::PR, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6550,7 +6613,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Sq", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(QConfObj::CQ, *spp) != 0) {
+         if (qconf_export_obj(os, QConfObj::CQ, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6558,7 +6621,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Srole", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(QConfObj::RL, *spp) != 0) {
+         if (qconf_export_obj(os, QConfObj::RL, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6567,7 +6630,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Srqs", *spp) == 0) {
          spp = sge_parser_get_next(spp);
          /* rqs files carry a rule-set list, so export with list framing (as_list). */
-         if (qconf_export_obj(QConfObj::RQS, *spp) != 0) {
+         if (qconf_export_obj(os, QConfObj::RQS, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6575,7 +6638,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Su", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(QConfObj::US, *spp) != 0) {
+         if (qconf_export_obj(os, QConfObj::US, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6583,7 +6646,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Suser", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj(QConfObj::UU, *spp) != 0) {
+         if (qconf_export_obj(os, QConfObj::UU, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6593,7 +6656,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Sstree", *spp) == 0) {
          spp = sge_parser_get_next(spp);
          /* sharetree writes the root node (is_root=true) with the name/value sfi */
-         if (qconf_export_obj_singleton(QConfObj::STN, *spp) != 0) {
+         if (qconf_export_obj_singleton(os, QConfObj::STN, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6601,7 +6664,7 @@ int sge_parse_qconf(char *argv[]) {
       }
       if (strcmp("-Ssconf", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_export_obj_singleton(QConfObj::SC, *spp) != 0) {
+         if (qconf_export_obj_singleton(os, QConfObj::SC, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6610,7 +6673,7 @@ int sge_parse_qconf(char *argv[]) {
       /* bespoke config export (R7): basename keying, global + per-host */
       if (strcmp("-Sconf", *spp) == 0) {
          spp = sge_parser_get_next(spp);
-         if (qconf_conf_export(*spp) != 0) {
+         if (qconf_conf_export(os, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6631,7 +6694,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-Dq", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
          spp = sge_parser_get_next(spp);
-         if (qconf_delete_obj(QConfObj::CQ, *spp) != 0) {
+         if (qconf_delete_obj(os, QConfObj::CQ, *spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6646,7 +6709,7 @@ int sge_parse_qconf(char *argv[]) {
             lString2List(*spp, &arglp, QR_Type, QR_name, ", ");
          }
 
-         cqueue_show(&alp, arglp);
+         cqueue_show(os, &alp, arglp);
          lFreeList(&arglp);
          sge_parse_return |= show_answer(alp);
          lFreeList(&alp);
@@ -6677,7 +6740,7 @@ int sge_parse_qconf(char *argv[]) {
          lList *answer_list = nullptr;
 
          /* Use cqueue_list_sick()'s return value to set the exit code */
-         sge_parse_return |= (cqueue_list_sick(&answer_list)?0:1);
+         sge_parse_return |= (cqueue_list_sick(os, &answer_list)?0:1);
          show_answer(answer_list);
          lFreeList(&answer_list);
          spp++;
@@ -6700,10 +6763,10 @@ int sge_parse_qconf(char *argv[]) {
             if (first) {
                first = false;
             } else {
-               printf("\n");
+               os << "\n";
             }
             /* a user that does not exist has never changed the exit code here */
-            (void)qconf_show_object(QConfObj::UU, lGetString(uep, ST_name));
+            (void)qconf_show_object(os, QConfObj::UU, lGetString(uep, ST_name));
          }
 
          lFreeList(&uList);
@@ -6718,7 +6781,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-sprj", *spp) == 0) {
          spp = sge_parser_get_next(spp);
 
-         if (qconf_show_object(QConfObj::PR, *spp) != QConfShowStatus::OK) {
+         if (qconf_show_object(os, QConfObj::PR, *spp) != QConfShowStatus::OK) {
             sge_parse_return = 1;
          }
 
@@ -6732,7 +6795,7 @@ int sge_parse_qconf(char *argv[]) {
        * the first match wins); converted with it so no reader has to work out
        * which of the two is live, and so nothing here still names SH_LIST. */
       if (strcmp("-ss", *spp) == 0) {
-         if (!show_reserved_hgroup_hosts(SUBMIT_HOSTGROUP, "submithost",
+         if (!show_reserved_hgroup_hosts(os, SUBMIT_HOSTGROUP, "submithost",
                "submit")) {
             sge_parse_return = 1;
          }
@@ -6743,7 +6806,7 @@ int sge_parse_qconf(char *argv[]) {
       /* "-sul" */
 
       if (strcmp("-sul", *spp) == 0) {
-         if (!qconf_show_names(QConfObj::US)) {
+         if (!qconf_show_names(os, QConfObj::US)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6755,7 +6818,7 @@ int sge_parse_qconf(char *argv[]) {
        /* "-suserl" */
 
       if (strcmp("-suserl", *spp) == 0) {
-         if (!qconf_show_names(QConfObj::UU)) {
+         if (!qconf_show_names(os, QConfObj::UU)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6767,7 +6830,7 @@ int sge_parse_qconf(char *argv[]) {
        /* "-sprjl" */
 
       if (strcmp("-sprjl", *spp) == 0) {
-         if (!qconf_show_names(QConfObj::PR)) {
+         if (!qconf_show_names(os, QConfObj::PR)) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6922,13 +6985,14 @@ static int sge_error_and_exit(const char *ptr) {
  * version named every one. Every answer that does arrive is printed below, so
  * lifting that restriction in the qmaster is all it would take.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param arglp HR_Type list of names as parsed from the command line
  * @param group ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP ocs::gdi::SubCommand sub_command - APPEND to add, REMOVE to delete
  * @param what "administrative host" / "submit host", for messages
  *
  * @return true if every named host was resolved and the request succeeded
  */
-static bool mod_reserved_hgroup(lList *arglp, const char *group,
+static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *group,
                                 ocs::gdi::SubCommand sub_command, const char *what) {
    DENTER(TOP_LAYER);
 
@@ -7044,11 +7108,11 @@ static bool mod_reserved_hgroup(lList *arglp, const char *group,
 
       for_each_ep(host, sent) {
          /* CS-2645 follow-up: this reports success, so it belongs on stdout.
-          * qconf_info_printf() writes there and appends the newline itself. */
+          * qconf_info(os, ) writes there and appends the newline itself. */
          if (sub_command == ocs::gdi::SubCommand::APPEND) {
-            qconf_info_printf(MSG_QCONF_XADDEDTOYLIST_SS, lGetHost(host, HR_name), what);
+            qconf_info(os, MSG_QCONF_XADDEDTOYLIST_SS, lGetHost(host, HR_name), what);
          } else {
-            qconf_info_printf(MSG_QCONF_XREMOVEDFROMYLIST_SS, lGetHost(host, HR_name), what);
+            qconf_info(os, MSG_QCONF_XREMOVEDFROMYLIST_SS, lGetHost(host, HR_name), what);
          }
       }
    } else {
@@ -7424,7 +7488,23 @@ static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid) {
 
 /* ------------------------------------------------------------ */
 
-static bool show_object_list(ocs::gdi::Target target, lDescr *type, int keynm, const char *name) {
+/**
+ * @brief Print the names of every object of one type, the `-s*l` switches
+ *
+ * Fetches only the key field of the target list and writes one name per line,
+ * or a JSON array under `-fmt json`. The template and global pseudo hosts are
+ * filtered out for `EH_name`, the global configuration for `CONF_name`, and
+ * `EV_host` is narrowed to the scheduler event client.
+ *
+ * @param os     the stream the names are written to (CS-1841)
+ * @param target the master list to read
+ * @param type   the CULL type of its elements
+ * @param keynm  the field holding the name
+ * @param name   the object type's display name, used in the "none defined" message
+ * @return true when at least one name was written; false on a GDI error or an
+ *         empty list, which is reported on stderr
+ */
+static bool show_object_list(std::ostream &os, ocs::gdi::Target target, lDescr *type, int keynm, const char *name) {
    DENTER(TOP_LAYER);
    lEnumeration *what = nullptr;
    lCondition *where = nullptr;
@@ -7468,7 +7548,7 @@ static bool show_object_list(ocs::gdi::Target target, lDescr *type, int keynm, c
    if (qconf_opt_format == SP_FORM_JSON) {
       dstring out = DSTRING_INIT;
       spool_json_write_name_list(&alp, lp, keynm, &out);
-      printf("%s", sge_dstring_get_string(&out));
+      os << qconf_cstr(sge_dstring_get_string(&out));
       sge_dstring_free(&out);
    } else if (lGetNumberOfElem(lp) > 0) {
       for_each_rw_lv (ep, lp) {
@@ -7487,7 +7567,7 @@ static bool show_object_list(ocs::gdi::Target target, lDescr *type, int keynm, c
                break;
          }
          if (line != nullptr && line[0] != COMMENT_CHAR) {
-            printf("%s\n", line);
+            os << qconf_cstr(line) << "\n";
          }
       }
    } else {
@@ -7520,6 +7600,7 @@ static bool show_object_list(ocs::gdi::Target target, lDescr *type, int keynm, c
  *   2. entries starting with COMMENT_CHAR skipped;
  *   3. an empty list prints to STDERR and returns false, i.e. non-zero exit.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param group ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP
  * @param json_type envelope name for -fmt json ("adminhost"/"submithost")
  * @param name "administrative host" / "submit host", for the message
@@ -7532,7 +7613,7 @@ static bool show_object_list(ocs::gdi::Target target, lDescr *type, int keynm, c
  *       list is non-empty, because the empty list produced the generic "names" key
  *       before and has to keep producing it.
  */
-static bool show_reserved_hgroup_hosts(const char *group, const char *json_type, const char *name) {
+static bool show_reserved_hgroup_hosts(std::ostream &os, const char *group, const char *json_type, const char *name) {
    DENTER(TOP_LAYER);
    lList *alp = nullptr, *lp = nullptr;
    bool ret = true;
@@ -7569,7 +7650,7 @@ static bool show_reserved_hgroup_hosts(const char *group, const char *json_type,
       dstring out = DSTRING_INIT;
       spool_json_write_name_list_ex(&alp, entries, HR_name,
                                     lGetNumberOfElem(entries) > 0 ? json_type : nullptr, &out);
-      printf("%s", sge_dstring_get_string(&out));
+      os << qconf_cstr(sge_dstring_get_string(&out));
       sge_dstring_free(&out);
    } else if (lGetNumberOfElem(entries) > 0) {
       /*
@@ -7596,7 +7677,7 @@ static bool show_reserved_hgroup_hosts(const char *group, const char *json_type,
             if (ocs::is_matcher(line) != matchers) {
                continue;
             }
-            printf("%s\n", line);
+            os << qconf_cstr(line) << "\n";
          }
       }
    } else {
@@ -7623,12 +7704,13 @@ static bool show_reserved_hgroup_hosts(const char *group, const char *json_type,
  * rather than the retired "manager"/"operator" object type - the plain text
  * output is unchanged.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param userset_name the reserved userset ("manager" or "operator")
  * @param display_name name used in the "no X defined" message
  *
  * @return true on success, false on error or when the list is empty
  */
-static bool show_manop_list(const char *userset_name, const char *display_name) {
+static bool show_manop_list(std::ostream &os, const char *userset_name, const char *display_name) {
    DENTER(TOP_LAYER);
    lList *alp = nullptr, *lp = nullptr;
    bool ret = true;
@@ -7664,13 +7746,13 @@ static bool show_manop_list(const char *userset_name, const char *display_name) 
        * and -so. display_name keeps the pre-CS-2431 "manager"/"operator" envelope
        * and its ocs-qconf-<name>-list.schema.json id. */
       spool_json_write_name_list_ex(&alp, entries, UE_name, display_name, &out);
-      printf("%s", sge_dstring_get_string(&out));
+      os << qconf_cstr(sge_dstring_get_string(&out));
       sge_dstring_free(&out);
    } else if (entries != nullptr && lGetNumberOfElem(entries) > 0) {
       for_each_ep_lv (ep, entries) {
          const char *line = lGetString(ep, UE_name);
          if (line != nullptr && line[0] != COMMENT_CHAR) {
-            printf("%s\n", line);
+            os << qconf_cstr(line) << "\n";
          }
       }
    } else {
@@ -7684,8 +7766,14 @@ static bool show_manop_list(const char *userset_name, const char *display_name) 
    DRETURN(ret);
 }
 
+/**
+ * @brief Print the qmaster thread pools and their sizes, the `-sts` switch
+ *
+ * @param os the stream the table is written to (CS-1841)
+ * @return 0 on success, 1 when qmaster answered with an error
+ */
 static int
-show_thread_list() {
+show_thread_list(std::ostream &os) {
    DENTER(TOP_LAYER);
 
    // send the request
@@ -7710,13 +7798,13 @@ show_thread_list() {
       };
       dstring out = DSTRING_INIT;
       spool_json_write_typed_list(&alp, lp, st_fields, "thread_pools", &out);
-      printf("%s", sge_dstring_get_string(&out));
+      os << qconf_cstr(sge_dstring_get_string(&out));
       sge_dstring_free(&out);
    } else if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
-      printf("%-15s %s\n", MSG_TABLE_EV_POOL, MSG_TABLE_SIZE);
-      printf("--------------------\n");
+      os << std::format("{:<15} {}\n", MSG_TABLE_EV_POOL, MSG_TABLE_SIZE);
+      os << "--------------------\n";
       for_each_ep_lv(ep, lp) {
-         printf("%-15s " sge_u32 "\n", lGetString(ep, ST_name), lGetUlong(ep, ST_id));
+         os << std::format("{:<15} {}\n", qconf_cstr(lGetString(ep, ST_name)), lGetUlong(ep, ST_id));
       }
    }
    lFreeList(&alp);
@@ -7726,7 +7814,16 @@ show_thread_list() {
    DRETURN(0);
 }
 
-static int show_eventclients() {
+/**
+ * @brief Print the registered event clients, the `-secl` switch
+ *
+ * One line per client with its id, name and host, or a JSON array under
+ * `-fmt json`. An empty list is reported on stderr and is not an error.
+ *
+ * @param os the stream the table is written to (CS-1841)
+ * @return 0 on success, 1 when qmaster answered with an error
+ */
+static int show_eventclients(std::ostream &os) {
    DENTER(TOP_LAYER);
    lEnumeration *what = nullptr;
    lList *alp = nullptr, *lp = nullptr;
@@ -7759,15 +7856,15 @@ static int show_eventclients() {
       };
       dstring out = DSTRING_INIT;
       spool_json_write_typed_list(&alp, lp, ev_fields, "event_clients", &out);
-      printf("%s", sge_dstring_get_string(&out));
+      os << qconf_cstr(sge_dstring_get_string(&out));
       sge_dstring_free(&out);
    } else if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
-      printf("%8s %-15s %-25s\n",MSG_TABLE_EV_ID, MSG_TABLE_EV_NAME, MSG_TABLE_HOST);
-      printf("--------------------------------------------------\n");
+      os << std::format("{:>8} {:<15} {:<25}\n", MSG_TABLE_EV_ID, MSG_TABLE_EV_NAME, MSG_TABLE_HOST);
+      os << "--------------------------------------------------\n";
       for_each_ep_lv(ep, lp) {
-         printf("%8d ", (int)lGetUlong(ep, EV_id));
-         printf("%-15s ", lGetString(ep, EV_name));
-         printf("%-25s\n", (lGetHost(ep, EV_host) != nullptr) ? lGetHost(ep, EV_host) : "-");
+         os << std::format("{:>8} ", static_cast<int>(lGetUlong(ep, EV_id)));
+         os << std::format("{:<15} ", qconf_cstr(lGetString(ep, EV_name)));
+         os << std::format("{:<25}\n", (lGetHost(ep, EV_host) != nullptr) ? lGetHost(ep, EV_host) : "-");
       }
    }
    else {
@@ -7780,7 +7877,18 @@ static int show_eventclients() {
 }
 
 
-static int show_processors(bool has_binding_param) {
+/**
+ * @brief Print the processor counts of every execution host, the `-sep` switch
+ *
+ * One line per host with its processor count and architecture, followed by a
+ * total. With @a has_binding_param the socket and core columns are shown as
+ * well. An empty execution host list is reported on stderr.
+ *
+ * @param os                the stream the table is written to (CS-1841)
+ * @param has_binding_param also show the socket and core columns
+ * @return 0 on success, -1 when qmaster answered with an error
+ */
+static int show_processors(std::ostream &os, bool has_binding_param) {
    DENTER(TOP_LAYER);
 
    lEnumeration *what = nullptr;
@@ -7811,69 +7919,69 @@ static int show_processors(bool has_binding_param) {
       lPSortList(lp,"%I+", EH_name);
 
       if (has_binding_param) {
-         printf("%-25.24s%10.9s%6.5s%6.5s%12.11s\n", MSG_TABLE_HOST, MSG_TABLE_PROCESSORS,
+         os << std::format("{:<25.24}{:>10.9}{:>6.5}{:>6.5}{:>12.11}\n", MSG_TABLE_HOST, MSG_TABLE_PROCESSORS,
             MSG_TABLE_SOCKETS, MSG_TABLE_CORES, MSG_TABLE_ARCH);
       } else {
-         printf("%-25.24s%10.9s%12.11s\n", MSG_TABLE_HOST, MSG_TABLE_PROCESSORS, MSG_TABLE_ARCH);
+         os << std::format("{:<25.24}{:>10.9}{:>12.11}\n", MSG_TABLE_HOST, MSG_TABLE_PROCESSORS, MSG_TABLE_ARCH);
       }
-      printf("===============================================");
+      os << "===============================================";
       if (has_binding_param) {
-         printf("============");
+         os << "============";
       }
-      printf("\n");
+      os << "\n";
       for_each_ep(ep, lp) {
          const lListElem *arch_elem = lGetSubStr(ep, HL_name, "arch", EH_load_list);
          uint32_t sockets = 0;
          uint32_t cores = 0;
 
-         printf("%-25.24s", ((cp = lGetHost(ep, EH_name)) ? cp : ""));
-         printf("%10" sge_fu32, lGetUlong(ep, EH_processors));
+         os << std::format("{:<25.24}", ((cp = lGetHost(ep, EH_name)) ? cp : ""));
+         os << std::format("{:>10}", static_cast<int32_t>(lGetUlong(ep, EH_processors)));
 
          if (has_binding_param) {
             const lListElem *socket_elem = lGetSubStr(ep, HL_name, "m_socket", EH_load_list);
             const lListElem *core_elem = lGetSubStr(ep, HL_name, "m_core", EH_load_list);
 
             if (socket_elem != nullptr) {
-               printf("%6.5s", lGetString(socket_elem, HL_value));
+               os << std::format("{:>6.5}", qconf_cstr(lGetString(socket_elem, HL_value)));
                sockets = atol(lGetString(socket_elem, HL_value));
             } else {
-               printf("%6.5s", "-");
+               os << std::format("{:>6.5}", "-");
             }
             if (core_elem != nullptr) {
-               printf("%6.5s", lGetString(core_elem, HL_value));
+               os << std::format("{:>6.5}", qconf_cstr(lGetString(core_elem, HL_value)));
                cores = atol(lGetString(core_elem, HL_value));
             } else {
-               printf("%6.5s", "-");
+               os << std::format("{:>6.5}", "-");
             }
          }
          if (arch_elem) {
-            printf("%12.11s", lGetString(arch_elem, HL_value));
+            os << std::format("{:>12.11}", qconf_cstr(lGetString(arch_elem, HL_value)));
          }
-         printf("\n");
+         os << "\n";
          sum += lGetUlong(ep, EH_processors);
          socket_sum += sockets;
          core_sum += cores;
       }
-      printf("===============================================");
+      os << "===============================================";
       if (has_binding_param) {
-         printf("============");
+         os << "============";
       }
-      printf("\n");
+      os << "\n";
 
-      printf("%-25.24s%10" sge_fu32, MSG_TABLE_SUM_F, sum);
+      os << std::format("{:<25.24}{:>10}", MSG_TABLE_SUM_F, static_cast<int32_t>(sum));
       if (has_binding_param) {
          if (socket_sum > 0) {
-            printf("%6" sge_fu32, socket_sum);
+            os << std::format("{:>6}", static_cast<int32_t>(socket_sum));
          } else {
-            printf("%6.5s", "-");
+            os << std::format("{:>6.5}", "-");
          }
          if (core_sum > 0) {
-            printf("%6" sge_fu32, core_sum);
+            os << std::format("{:>6}", static_cast<int32_t>(core_sum));
          } else {
-            printf("%6.5s", "-");
+            os << std::format("{:>6.5}", "-");
          }
       }
-      printf("\n");
+      os << "\n";
    } else {
       fprintf(stderr,  "%s\n", MSG_QCONF_NOEXECUTIONHOSTSDEFINED);
    }
@@ -7894,7 +8002,7 @@ static int show_processors(bool has_binding_param) {
       1 if arglp contains acl names not present at qmaster
       -1 failed to get any acl
 */
-static int print_acl(lList *arglp) {
+static int print_acl(std::ostream &os, lList *arglp) {
    DENTER(TOP_LAYER);
    lList *acls = nullptr;
    const lListElem *ep = nullptr;
@@ -7922,12 +8030,12 @@ static int print_acl(lList *arglp) {
          if (first_time)
             first_time = 0;
          else {
-            printf("\n");
+            os << "\n";
          }
 
          filename_stdout = spool_flatfile_write_object(&alp, ep, false, US_fields, &qconf_param_sfi,
-                                     SP_DEST_STDOUT, qconf_opt_format, nullptr,
-                                     false);
+                                     SP_DEST_STREAM, qconf_opt_format, nullptr,
+                                     false, nullptr, &os);
          lFreeList(&alp);
          sge_free(&filename_stdout);
       }
@@ -7947,8 +8055,9 @@ static int print_acl(lList *arglp) {
       1 if arglp contains userset names not present at qmaster
       -1 failed to get any userset
       -2 if failed due to disk error
+ * @param os the stream the output is written to (CS-1841)
  **************************************************************/
-static int edit_usersets(lList *arglp) {
+static int edit_usersets(std::ostream &os, lList *arglp) {
    DENTER(TOP_LAYER);
    lList *usersets = nullptr;
    lListElem *ep=nullptr;
@@ -8002,7 +8111,7 @@ static int edit_usersets(lList *arglp) {
 
       if (status > 0) {
          unlink(fname);
-         fprintf(stdout, "%s\n", MSG_FILE_FILEUNCHANGED);
+         os << qconf_cstr(MSG_FILE_FILEUNCHANGED) << "\n";
          continue;
       }
 
@@ -8050,8 +8159,9 @@ static int edit_usersets(lList *arglp) {
 
 /***************************************************************************
   -sconf option
+ * @param os the stream the output is written to (CS-1841)
  ***************************************************************************/
-static int print_config(const char *config_name) {
+static int print_config(std::ostream &os, const char *config_name) {
    DENTER(TOP_LAYER);
 
    lCondition *where = nullptr;
@@ -8092,12 +8202,12 @@ static int print_config(const char *config_name) {
       }
       /* CS-2313a: the "#name:" header is an ASCII-format comment; omit it for JSON */
       if (qconf_opt_format != SP_FORM_JSON) {
-         printf("#%s:\n", cfn);
+         os << "#" << qconf_cstr(cfn) << ":\n";
       }
 
       fields = sge_build_CONF_field_list(false);
       filename_stdout = spool_flatfile_write_object(&alp, ep, false, fields, &qconf_sfi,
-                                  SP_DEST_STDOUT, qconf_opt_format, nullptr, false);
+                                  SP_DEST_STREAM, qconf_opt_format, nullptr, false, nullptr, &os);
       sge_free(&fields);
       sge_free(&filename_stdout);
 

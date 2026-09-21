@@ -57,18 +57,20 @@
 
 #include "sge_qconf_hgroup.h"
 #include "ocs_qconf_parse.h"   /* CS-2313a: qconf_opt_format */
+#include <ostream>
+
 #include "msg_common.h"
 #include "msg_qconf.h"
 
 
 static void 
-hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent);
+hgroup_list_show_elem(std::ostream &os, lList *hgroup_list, const char *name, int indent);
 static bool
 hgroup_provide_modify_context(lListElem **this_elem, lList **answer_list, bool ignore_unchanged_message);
 
 
 static void
-hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent) {
+hgroup_list_show_elem(std::ostream &os, lList *hgroup_list, const char *name, int indent) {
    DENTER(TOP_LAYER);
 
    const char *const indent_string = "   ";
@@ -76,7 +78,7 @@ hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent) {
    int i;
 
    for (i = 0; i < indent; i++) {
-      printf("%s", indent_string);
+      os << indent_string;
    }
 
    /*
@@ -86,10 +88,10 @@ hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent) {
     * read off and a rule among the names should not read like one more name.
     */
    if (ocs::is_matcher(name)) {
-      printf("%s (matcher)\n", name);
+      os << qconf_cstr(name) << " (matcher)\n";
       DRETURN_VOID;
    }
-   printf("%s\n", name);
+   os << qconf_cstr(name) << "\n";
 
    hgroup = lGetElemHost(hgroup_list, HGRP_name, name);
    if (hgroup != nullptr) {
@@ -98,7 +100,7 @@ hgroup_list_show_elem(lList *hgroup_list, const char *name, int indent) {
       for_each_ep_lv(href, sub_list) {
          const char *href_name = lGetHost(href, HR_name);
 
-         hgroup_list_show_elem(hgroup_list, href_name, indent + 1); 
+         hgroup_list_show_elem(os, hgroup_list, href_name, indent + 1); 
       } 
    } 
    DRETURN_VOID;
@@ -446,11 +448,12 @@ bool hgroup_delete(lList **answer_list, const char *name) {
 
 /** @brief Print one host group
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param answer_list used to return error messages
  * @param name the host group to print
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool hgroup_show(lList **answer_list, const char *name) {
+bool hgroup_show(std::ostream &os, lList **answer_list, const char *name) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -490,12 +493,12 @@ bool hgroup_show(lList **answer_list, const char *name) {
             dstring document = DSTRING_INIT;
 
             if (spool_json_write_object_ex(answer_list, hgroup, HGRP_fields, derived, &document)) {
-               printf("%s", sge_dstring_get_string(&document));
+               os << qconf_cstr(sge_dstring_get_string(&document));
             }
             sge_dstring_free(&document);
          } else {
             const char *filename;
-            filename = spool_flatfile_write_object(answer_list, hgroup, false, HGRP_fields, &qconf_sfi, SP_DEST_STDOUT, qconf_opt_format, nullptr, false);
+            filename = spool_flatfile_write_object(answer_list, hgroup, false, HGRP_fields, &qconf_sfi, SP_DEST_STREAM, qconf_opt_format, nullptr, false, nullptr, &os);
 
             sge_free(&filename);
          }
@@ -526,6 +529,7 @@ bool hgroup_show(lList **answer_list, const char *name) {
  * The **definition** is walked, never the resolution, and the first route found
  * is reported (see hgroup_why()).
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param answer_list used to return error messages
  * @param group the host group to ask
  * @param hostname the host in question, as it was written on the command line
@@ -535,7 +539,7 @@ bool hgroup_show(lList **answer_list, const char *name) {
  * @return true when the question could be answered at all; false with
  *         @p answer_list filled when the group does not exist
  */
-bool hgroup_show_why(lList **answer_list, const char *group, const char *hostname, bool *is_member) {
+bool hgroup_show_why(std::ostream &os, lList **answer_list, const char *group, const char *hostname, bool *is_member) {
    DENTER(TOP_LAYER);
 
    if (is_member != nullptr) {
@@ -595,24 +599,24 @@ bool hgroup_show_why(lList **answer_list, const char *group, const char *hostnam
       // so the newline cannot be concatenated onto them
       switch (route) {
          case ocs::Matcher::Route::LITERAL:
-            printf(MSG_QCONF_WHY_LITERAL_S, host);
+            qconf_msg(os, MSG_QCONF_WHY_LITERAL_S, host);
             break;
          case ocs::Matcher::Route::GROUP_REFERENCE:
-            printf(MSG_QCONF_WHY_GROUP_SS, host, in != nullptr ? in : "");
+            qconf_msg(os, MSG_QCONF_WHY_GROUP_SS, host, in != nullptr ? in : "");
             break;
          case ocs::Matcher::Route::MATCHER:
             if (in != nullptr) {
-               printf(MSG_QCONF_WHY_MATCHER_GROUP_SSS, host,
-                      sge_dstring_get_string(&matcher), in);
+               qconf_msg(os, MSG_QCONF_WHY_MATCHER_GROUP_SSS, host,
+                         sge_dstring_get_string(&matcher), in);
             } else {
-               printf(MSG_QCONF_WHY_MATCHER_SS, host, sge_dstring_get_string(&matcher));
+               qconf_msg(os, MSG_QCONF_WHY_MATCHER_SS, host, sge_dstring_get_string(&matcher));
             }
             break;
          case ocs::Matcher::Route::NOT_A_MEMBER:
-            printf(MSG_QCONF_WHY_NOT_S, host);
+            qconf_msg(os, MSG_QCONF_WHY_NOT_S, host);
             break;
       }
-      printf("\n");
+      os << "\n";
 
       if (is_member != nullptr) {
          *is_member = route != ocs::Matcher::Route::NOT_A_MEMBER;
@@ -636,12 +640,13 @@ bool hgroup_show_why(lList **answer_list, const char *group, const char *hostnam
  * which shows what the group finally means. `qconf -shgrp_tree` asks for the
  * first, `-shgrp_resolved` for the second.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param answer_list used to return error messages
  * @param name the host group to print
  * @param show_tree true for the tree, false for the resolved list
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool hgroup_show_structure(lList **answer_list, const char *name, bool show_tree) {
+bool hgroup_show_structure(std::ostream &os, lList **answer_list, const char *name, bool show_tree) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -668,7 +673,7 @@ bool hgroup_show_structure(lList **answer_list, const char *name, bool show_tree
       hgroup = lGetElemHost(hgroup_list, HGRP_name, name); 
       if (hgroup != nullptr) {
          if (show_tree) {
-            hgroup_list_show_elem(hgroup_list, name, 0);
+            hgroup_list_show_elem(os, hgroup_list, name, 0);
          } else {
             dstring string = DSTRING_INIT;
             lList *sub_host_list = nullptr;
@@ -680,7 +685,7 @@ bool hgroup_show_structure(lList **answer_list, const char *name, bool show_tree
             href_list_make_uniq(sub_host_list, answer_list);
             href_list_append_to_dstring(sub_host_list, &string);
             if (sge_dstring_get_string(&string)) {
-               printf("%s\n", sge_dstring_get_string(&string));
+               os << sge_dstring_get_string(&string) << "\n";
             }
 
             /*
@@ -698,7 +703,7 @@ bool hgroup_show_structure(lList **answer_list, const char *name, bool show_tree
 
                href_list_make_uniq(sub_matcher_list, answer_list);
                href_list_append_to_dstring(sub_matcher_list, &matchers);
-               printf("matchers: %s\n", sge_dstring_get_string(&matchers));
+               os << "matchers: " << qconf_cstr(sge_dstring_get_string(&matchers)) << "\n";
                sge_dstring_free(&matchers);
             }
 

@@ -36,6 +36,8 @@
  * @brief qconf - the complex entry switches
  */
 
+#include <ostream>
+
 #include <cstring>
 
 #include "sgeobj/msg_sgeobjlib.h"
@@ -387,11 +389,12 @@ bool centry_delete(lList **answer_list, const char *name) {
 
 /** @brief Print one complex entry
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param answer_list used to return error messages
  * @param name the complex entry to print
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool centry_show(lList **answer_list, const char *name) {
+bool centry_show(std::ostream &os, lList **answer_list, const char *name) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -401,8 +404,8 @@ bool centry_show(lList **answer_list, const char *name) {
 
       if (centry != nullptr) {
          const char *filename;
-         filename = spool_flatfile_write_object(answer_list, centry, false, CE_fields, &qconf_ce_sfi, SP_DEST_STDOUT,
-                                                qconf_opt_format, nullptr, false);
+         filename = spool_flatfile_write_object(answer_list, centry, false, CE_fields, &qconf_ce_sfi, SP_DEST_STREAM,
+                                                qconf_opt_format, nullptr, false, nullptr, &os);
          sge_free(&filename);
          lFreeElem(&centry);
          if (answer_list_has_error(answer_list)) {
@@ -419,10 +422,11 @@ bool centry_show(lList **answer_list, const char *name) {
 
 /** @brief Print the names of all complex entrys
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param answer_list used to return error messages
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool centry_list_show(lList **answer_list) {
+bool centry_list_show(std::ostream &os, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -433,8 +437,8 @@ bool centry_list_show(lList **answer_list) {
       const char *filename;
 
       spool_flatfile_align_list(answer_list, (const lList *) centry_list, CE_fields, 3);
-      filename = spool_flatfile_write_list(answer_list, centry_list, CE_fields, &qconf_ce_list_sfi, SP_DEST_STDOUT,
-                                           qconf_opt_format, nullptr, false);
+      filename = spool_flatfile_write_list(answer_list, centry_list, CE_fields, &qconf_ce_list_sfi, SP_DEST_STREAM,
+                                           qconf_opt_format, nullptr, false, &os);
 
       sge_free(&filename);
       lFreeList(&centry_list);

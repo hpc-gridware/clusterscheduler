@@ -23,6 +23,8 @@
  * @brief Interface of the qconf job category switches
  */
 
+#include <iosfwd>
+
 #include "cull/cull.h"
 
 #include "sgeobj/ocs_Category.h"
@@ -39,10 +41,10 @@ namespace ocs {
    class CategoryQconf {
    public:
       static bool
-      show_list(lList **answer_list);
+      show_list(std::ostream &os, lList **answer_list);
 
       static bool
-      show(lList **answer_list, uint32_t id);
+      show(std::ostream &os, lList **answer_list, uint32_t id);
 
       static lList *
       get_via_gdi(lList **answer_list);

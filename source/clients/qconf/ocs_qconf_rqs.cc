@@ -36,6 +36,8 @@
  * @brief qconf - the resource quota set switches
  */
 
+#include <ostream>
+
 #include <cstring>
 
 #include "uti/sge_edit.h"
@@ -68,6 +70,7 @@ rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_un
  * This funtion gets the selected resource quota sets from GDI and
  * writes they out on stdout
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param answer_list answer list
  * @param name comma separated list of resource quota set names
  *
@@ -75,7 +78,7 @@ rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_un
  *
  * @note MT-NOTE: rqs_show() is MT safe
  */
-bool rqs_show(lList **answer_list, const char *name) {
+bool rqs_show(std::ostream &os, lList **answer_list, const char *name) {
    DENTER(TOP_LAYER);
 
    lList *rqs_list = nullptr;
@@ -95,8 +98,8 @@ bool rqs_show(lList **answer_list, const char *name) {
       const char* filename;
       filename = spool_flatfile_write_list(answer_list, rqs_list, RQS_fields, 
                                         &qconf_rqs_sfi,
-                                        SP_DEST_STDOUT, qconf_opt_format, nullptr,
-                                        false);
+                                        SP_DEST_STREAM, qconf_opt_format, nullptr,
+                                        false, &os);
       sge_free(&filename);
    }
    if (lGetNumberOfElem(rqs_list) == 0) {

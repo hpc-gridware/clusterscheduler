@@ -22,6 +22,8 @@
  * @brief qconf - the job category switches
  */
 
+#include <ostream>
+
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 
@@ -37,13 +39,14 @@
 
 #include "ocs_qconf_Category.h"
 #include "ocs_qconf_parse.h"   /* CS-2313a: qconf_opt_format */
+#include "msg_qconf.h"
+
 /** @brief Print all categories, the `-scatl` switch
+ * @param os the stream the categories are written to (CS-1841)
  * @param answer_list used to return error messages
  * @return true on success
  */
-#include "msg_qconf.h"
-
-bool ocs::CategoryQconf::show_list(lList **answer_list) {
+bool ocs::CategoryQconf::show_list(std::ostream &os, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    lList *cat_list = get_via_gdi(answer_list);
@@ -56,13 +59,13 @@ bool ocs::CategoryQconf::show_list(lList **answer_list) {
        * enveloped empty array (so the JSON output is always valid). */
       dstring out = DSTRING_INIT;
       spool_json_write_typed_list_ex(answer_list, cat_list, CAT_fields, "category-list", "category", &out);
-      printf("%s", sge_dstring_get_string(&out));
+      os << qconf_cstr(sge_dstring_get_string(&out));
       sge_dstring_free(&out);
    } else if (cat_list != nullptr) {
       spool_flatfile_align_list(answer_list, (const lList *) cat_list, CAT_fields, 3);
 
       const char *filename = spool_flatfile_write_list(answer_list, cat_list, CAT_fields, &qconf_cat_list_sfi,
-                                                       SP_DEST_STDOUT, qconf_opt_format, nullptr, false);
+                                                       SP_DEST_STREAM, qconf_opt_format, nullptr, false, &os);
       sge_free(&filename);
    }
    lFreeList(&cat_list);
@@ -74,18 +77,18 @@ bool ocs::CategoryQconf::show_list(lList **answer_list) {
    DRETURN(true);
 }
 /** @brief Print one category, the `-scat` switch
+ * @param os the stream the category is written to (CS-1841)
  * @param answer_list used to return error messages
  * @param id the category id, as `-scatl` printed it
  * @return true on success
  */
-
-bool ocs::CategoryQconf::show(lList **answer_list, uint32_t id) {
+bool ocs::CategoryQconf::show(std::ostream &os, lList **answer_list, uint32_t id) {
    DENTER(TOP_LAYER);
 
    lListElem *centry = get_via_gdi(answer_list, id);
    if (centry != nullptr) {
-      const char *filename = spool_flatfile_write_object(answer_list, centry, false, CAT_fields, &qconf_cat_sfi, SP_DEST_STDOUT,
-                                                         qconf_opt_format, nullptr, false);
+      const char *filename = spool_flatfile_write_object(answer_list, centry, false, CAT_fields, &qconf_cat_sfi, SP_DEST_STREAM,
+                                                         qconf_opt_format, nullptr, false, nullptr, &os);
       sge_free(&filename);
       lFreeElem(&centry);
       if (answer_list_has_error(answer_list)) {

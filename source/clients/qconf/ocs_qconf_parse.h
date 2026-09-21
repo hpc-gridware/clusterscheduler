@@ -37,9 +37,37 @@
  * @brief Interface of the qconf switch handlers
  */
 
+#include <iosfwd>
+
 #include "spool/sge_spooling_utilities.h"
 #include "spool/flatfile/sge_flatfile.h"   /* CS-2313a: spool_flatfile_format */
 #include "sgeobj/sge_daemonize.h"
+
+/** @brief printf's rendering of a `%s` argument, nullptr included (CS-1841)
+ *
+ * `printf("%s", nullptr)` prints `(null)` with glibc, while `os << nullptr` is
+ * undefined behaviour. The print sites converted to a stream go through this
+ * so that a case which used to render a marker does not turn into a crash.
+ *
+ * @param s the string to write, may be nullptr
+ * @return @p s, or `(null)` when @p s is nullptr
+ */
+const char *qconf_cstr(const char *s);
+
+/** @brief Write a printf-style formatted string to a stream (CS-1841)
+ *
+ * The message catalogue (`MSG_*`) is printf shaped and only known at run time,
+ * so its lines cannot go through `std::format`. This formats them the way
+ * `printf` would and puts the result on @a os. Literal formats use
+ * `std::format` directly instead.
+ *
+ * @param os  the stream to write to
+ * @param fmt a printf-style format string, usually a MSG_* catalogue entry
+ * @param ... arguments for @p fmt
+ * @return none
+ */
+void qconf_msg(std::ostream &os, const char *fmt, ...)
+      __attribute__((format(printf, 2, 3)));
 
 /** @brief The output format `-fmt` selected: plain or JSON (CS-2313a)
  *

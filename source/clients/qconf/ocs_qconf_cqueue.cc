@@ -37,6 +37,7 @@
  */
 
 #include <cstring>
+#include <ostream>
 
 #include "uti/sge_edit.h"
 #include "uti/sge_hostname.h"
@@ -690,10 +691,11 @@ bool cqueue_delete(lList **answer_list, const char *name) {
  * The "qinstance" type name is passed explicitly because the QINSTANCE object
  * type cannot be resolved from its content (it is mis-detected as exechost).
  *
+ * @param os the stream the output is written to (CS-1841)
  * @return true on success, false on error
  */
 static bool
-qinstance_list_write(lList **answer_list, const lList *qi_list) {
+qinstance_list_write(std::ostream &os, lList **answer_list, const lList *qi_list) {
    DENTER(TOP_LAYER);
 
    spooling_field *fields = sge_build_QU_field_list(true, false);
@@ -703,20 +705,20 @@ qinstance_list_write(lList **answer_list, const lList *qi_list) {
    if (qconf_opt_format == SP_FORM_JSON) {
       dstring out = DSTRING_INIT;
       spool_json_write_typed_list(answer_list, qi_list, fields, "qinstance", &out);
-      printf("%s", sge_dstring_get_string(&out));
+      os << qconf_cstr(sge_dstring_get_string(&out));
       sge_dstring_free(&out);
    } else {
       bool is_first = true;
       const lListElem *qi;
       for_each_ep(qi, qi_list) {
          if (!is_first) {
-            fprintf(stdout, "\n");
+            os << "\n";
          }
          is_first = false;
          const char *fn = spool_flatfile_write_object(answer_list, qi, false, fields,
-                                                       &qconf_sfi, SP_DEST_STDOUT,
+                                                       &qconf_sfi, SP_DEST_STREAM,
                                                        qconf_opt_format, nullptr,
-                                                       false, "qinstance");
+                                                       false, "qinstance", &os);
          sge_free(&fn);
       }
    }
@@ -728,12 +730,13 @@ qinstance_list_write(lList **answer_list, const lList *qi_list) {
 
 /** @brief Print the cluster queues matching a pattern list
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param answer_list used to return error messages
  * @param qref_pattern_list the queue references to print (`QR_Type`); each may
  *                          be a wildcard pattern, so one call can print several
  * @return true on success; false with `answer_list` filled otherwise
  */
-bool cqueue_show(lList **answer_list, const lList *qref_pattern_list) {
+bool cqueue_show(std::ostream &os, lList **answer_list, const lList *qref_pattern_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -798,7 +801,7 @@ bool cqueue_show(lList **answer_list, const lList *qref_pattern_list) {
 
                /* one json array (or blank-line separated ASCII blocks) for all
                 * instances matched by the domain - keeps the json a single doc */
-               bool ok = qinstance_list_write(answer_list, qi_list);
+               bool ok = qinstance_list_write(os, answer_list, qi_list);
                lFreeList(&qi_list);
                lFreeList(&href_list);
                if (!ok) {
@@ -831,7 +834,7 @@ bool cqueue_show(lList **answer_list, const lList *qref_pattern_list) {
                   }
                }
 
-               bool ok = qinstance_list_write(answer_list, qi_list);
+               bool ok = qinstance_list_write(os, answer_list, qi_list);
                lFreeList(&qi_list);
                if (!ok) {
                   lFreeList(&qref_list);
@@ -850,14 +853,14 @@ bool cqueue_show(lList **answer_list, const lList *qref_pattern_list) {
                      if (is_first) {
                         is_first = false; 
                      } else {
-                        fprintf(stdout, "\n");
+                        os << "\n";
                      }
 
                      cqueue_json_type_complex_overrides(const_cast<lListElem *>(cqueue));
                      outname = spool_flatfile_write_object(answer_list, cqueue,
                                                  false, CQ_fields, &qconf_sfi,
-                                                 SP_DEST_STDOUT, qconf_opt_format,
-                                                 nullptr, false);
+                                                 SP_DEST_STREAM, qconf_opt_format,
+                                                 nullptr, false, nullptr, &os);
                      sge_free(&outname);
                            
                      if (answer_list_output(answer_list)) {
@@ -890,8 +893,8 @@ bool cqueue_show(lList **answer_list, const lList *qref_pattern_list) {
       ret &= cqueue_set_template_attributes(cqueue, answer_list);
       cqueue_json_type_complex_overrides(cqueue);
       filename = spool_flatfile_write_object(answer_list, cqueue, false, CQ_fields,
-                                             &qconf_sfi, SP_DEST_STDOUT, qconf_opt_format,
-                                             nullptr, false);
+                                             &qconf_sfi, SP_DEST_STREAM, qconf_opt_format,
+                                             nullptr, false, nullptr, &os);
                            
       sge_free(&filename);
       lFreeElem(&cqueue);
@@ -911,10 +914,11 @@ bool cqueue_show(lList **answer_list, const lList *qref_pattern_list) {
  * host or host group that the queue does not actually contain, so the override
  * is dead weight that reads as if it applied.
  *
+ * @param os the stream the output is written to (CS-1841)
  * @param answer_list used to return error messages
  * @return true when the check ran; the findings are printed, not returned
  */
-bool cqueue_list_sick(lList **answer_list) {
+bool cqueue_list_sick(std::ostream &os, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -932,7 +936,7 @@ bool cqueue_list_sick(lList **answer_list) {
 
       if (sge_dstring_get_string(&ds) != nullptr) {
          /* JG: TODO: shouldn't we better use INFO or WARNING? */
-         printf("%s", sge_dstring_get_string(&ds));
+         os << qconf_cstr(sge_dstring_get_string(&ds));
          ret = false;
       }
 

@@ -43,6 +43,8 @@
  */
 
 #include <cstring>
+#include <format>
+#include <ostream>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -97,69 +99,79 @@ bool id_sharetree(lList **alpp, lListElem *ep, int id, int *ret_id) {
    DRETURN(true);
 }
 
-/************************************************************************
-  show_sharetree
+/**
+ * @brief printf's rendering of a `%s` argument, nullptr included
+ *
+ * `printf("%s", nullptr)` prints `(null)` with glibc, while `os << nullptr` is
+ * undefined behaviour. The two printers below went from `fprintf` to a stream
+ * (CS-1841) and keep the old rendering rather than risking a crash on a node
+ * without a name.
+ *
+ * @param s the string to write, may be nullptr
+ * @return @p s, or `(null)` when @p s is nullptr
+ */
+static const char *
+stn_cstr(const char *s) {
+   return s != nullptr ? s : "(null)";
+}
 
-  display a tree representation of sharetree 
-
- ************************************************************************/
 /**
  * @brief Print a share tree as an indented tree
  *
- * Writes `name=shares` per node to stdout, one level of indentation per depth.
+ * Writes `name=shares` per node, one level of indentation per depth.
  *
- * @param ep the node to start at
+ * @param os     the stream to write to
+ * @param ep     the node to start at
  * @param indent the string one level of depth is indented by
+ * @param level  the depth `ep` sits at, 0 for the root; the recursion passes
+ *               its own depth down (CS-1841: it used to live in a function
+ *               local `static`, which is not reentrant and would be wrong once
+ *               this runs inside qmaster)
  * @return 0 on success, -1 when `ep` is nullptr
  */
 int show_sharetree(
+std::ostream &os,
 const lListElem *ep,
-const char *indent
+const char *indent,
+int level
 ) {
    DENTER(TOP_LAYER);
-   FILE *fp = stdout;
-   static int level = 0;
-   int i;
 
    if (!ep) {
       DRETURN(-1);
    }
 
-   for (i=0;i<level;i++)
-      fprintf(fp, "%s", indent ? indent : "");
-   fprintf(fp, "%s=" sge_u32 "\n", lGetString(ep, STN_name), lGetUlong(ep, STN_shares));
+   for (int i = 0; i < level; i++) {
+      os << (indent != nullptr ? indent : "");
+   }
+   os << std::format("{}={}\n", stn_cstr(lGetString(ep, STN_name)), lGetUlong(ep, STN_shares));
    for_each_ep_lv(cep, lGetList(ep, STN_children)) {
-      level++;
-      show_sharetree(cep, "   ");
-      level--;
-   }   
+      show_sharetree(os, cep, "   ", level + 1);
+   }
 
    DRETURN(0);
 }
 
-/************************************************************************
-  show_sharetree_path
-
-  display a path representation of sharetree 
-
- ************************************************************************/
 /**
  * @brief Print a share tree as one path per node
  *
- * Writes the full path of every node to stdout, which is the form `qconf`
- * accepts back.
+ * Writes the full path of every node, which is the form `qconf` accepts back.
  *
+ * @param os   the stream to write to
  * @param root the node to start at
  * @param path the path prefix the printed paths start with
- * @return 0 on success, 1 when `root` is nullptr
+ * @return 0 on success, 1 when `root` is nullptr or `path` names no node
+ *
+ * @note The "no such node" message is a diagnostic and stays on stderr; only
+ *       the payload goes to @a os.
  */
 int show_sharetree_path(
+std::ostream &os,
 lListElem *root,
 const char *path 
 ) {
    DENTER(TOP_LAYER);
    lListElem *node;
-   FILE *fp = stdout;
    ancestors_t ancestors;
    int i;
    dstring sb = DSTRING_INIT;
@@ -177,11 +189,11 @@ const char *path
  
    if (node) {
       for(i=0; i<ancestors.depth; i++)
-         fprintf(fp, "/%s", lGetString(ancestors.nodes[i], STN_name));
+         os << "/" << stn_cstr(lGetString(ancestors.nodes[i], STN_name));
       if (!strcmp(path, "/") || !strcasecmp(path, "Root") )
-         fprintf(fp, "/=" sge_u32 "\n", lGetUlong(node, STN_shares));
+         os << std::format("/={}\n", lGetUlong(node, STN_shares));
       else
-         fprintf(fp, "=" sge_u32 "\n", lGetUlong(node, STN_shares));
+         os << std::format("={}\n", lGetUlong(node, STN_shares));
       free_ancestors(&ancestors);
       for_each_ep_lv(cep, lGetList(node, STN_children)) {
 
@@ -190,13 +202,14 @@ const char *path
          else
             sge_dstring_sprintf(&sb, "%s/%s", path,
                                  lGetString(cep, STN_name));
-         show_sharetree_path(root, sge_dstring_get_string(&sb));
+         show_sharetree_path(os, root, sge_dstring_get_string(&sb));
       }
    }
    else {
       fprintf(stderr, MSG_TREE_UNABLETOLACATEXINSHARETREE_S, path);
       fprintf(stderr, "\n");
-      return 1;
+      sge_dstring_free(&sb);
+      DRETURN(1);
    }
  
    sge_dstring_free(&sb);

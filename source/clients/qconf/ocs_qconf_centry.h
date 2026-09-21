@@ -37,6 +37,8 @@
  * @brief Interface of the qconf complex entry switches
  */
 
+#include <iosfwd>
+
 #include "sgeobj/sge_daemonize.h"
 
 lListElem *
@@ -61,7 +63,7 @@ centry_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list,
                            uint32_t gdi_command);
 
 bool 
-centry_show(lList **answer_list, const char *name);
+centry_show(std::ostream &os, lList **answer_list, const char *name);
 
 bool 
 centry_add(lList **answer_list, const char *name);
@@ -88,7 +90,7 @@ bool
 centry_list_modify_from_file(lList **answer_list, const char *filename);
 
 bool
-centry_list_show(lList **answer_list);
+centry_list_show(std::ostream &os, lList **answer_list);
 
 bool
 centry_list_add_del_mod_via_gdi(lList **this_list, lList **answer_list, lList **old_list);

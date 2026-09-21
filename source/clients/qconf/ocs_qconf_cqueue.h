@@ -37,6 +37,8 @@
  * @brief Interface of the qconf cluster queue switches
  */
 
+#include <iosfwd>
+
 #include "sgeobj/sge_daemonize.h"
 
 lListElem *
@@ -52,7 +54,7 @@ cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::
 
 
 bool
-cqueue_show(lList **answer_list, const lList *qref_pattern);
+cqueue_show(std::ostream &os, lList **answer_list, const lList *qref_pattern);
 
 bool 
 cqueue_add(lList **answer_list, const char *name);
@@ -70,4 +72,4 @@ bool
 cqueue_modify_from_file(lList **answer_list, const char *filename);
 
 bool
-cqueue_list_sick(lList **answer_list);
+cqueue_list_sick(std::ostream &os, lList **answer_list);
