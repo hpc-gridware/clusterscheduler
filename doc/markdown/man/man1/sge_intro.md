@@ -146,5 +146,5 @@ Copyright: 2008 by Sun Microsystems, Inc.
 
 Parts of the manual page texts are Copyright 2011 Univa Corporation.
 
-Parts of the manual page texts are Copyright 2024 HPC-Gridware GmbH.
+Parts of the manual page texts are Copyright 2024-__YEAR__ xxQS_COMPANY_NAMExx GmbH.
 
