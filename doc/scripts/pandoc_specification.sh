@@ -18,6 +18,11 @@ DATE=$7
 LOCATED_IN_GCS_EXTENSIONS=$8
 BUILD_OPEN_SOURCE_VERSION=$9
 
+# The copyright pages carry a year range whose end has to follow the build. __DATE__ is a
+# full date and cannot be used for it, so take the year off the front of it - that way the
+# two can never disagree.
+YEAR=${DATE%%-*}
+
 if [ $LOCATED_IN_GCS_EXTENSIONS -eq 0 ]; then
    COMMON_DIR="../clusterscheduler/doc/markdown/specification"
 else
@@ -61,6 +66,7 @@ cat ${TITLE_PAGE} ${COPYRIGHT_PAGE} ${DEFINITIONS_PAGE} ${MANUAL_FILES} | \
         -e "s/__RELEASE__/${QSNAME} ${RELEASE}/g" \
         -e "s/__DATE__/${DATE}/g" \
         -e "s/__TITLE__/${TITLE}/g" \
+        -e "s/__YEAR__/${YEAR}/g" \
         -e "s/xxQS_NAMExx/${QSNAME}/g" \
         -e "s/xxqs_name_sxx/${QSPREFIX_LOWER}/g" \
         -e "s/xxQS_NAME_Sxx/${QSPREFIX_UPPER}/g" \
