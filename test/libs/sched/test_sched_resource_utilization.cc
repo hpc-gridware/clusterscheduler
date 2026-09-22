@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -43,6 +43,7 @@
 #include "sge_resource_utilization.h"
 
 #include "sge_qeti.h"
+#include "sge_select_queue.h"
 
 typedef struct {
    u_long64 start_time;
@@ -57,6 +58,7 @@ static int test_normal_utilization();
 static int test_extensive_utilization();
 static int test_rsmap_utilization();
 static int test_rsmap_below();
+static int test_below_window_before_closed_period();
 
 int main(int argc, char *argv[]) 
 {
@@ -70,6 +72,7 @@ int main(int argc, char *argv[])
    ret += test_extensive_utilization();
    ret += test_rsmap_utilization();
    ret += test_rsmap_below();
+   ret += test_below_window_before_closed_period();
 
    if (ret != 0) {
       printf("\ntest failed!\n");
@@ -714,5 +717,65 @@ static int test_rsmap_below() {
    if (ret == 0) {
       printf("\n - when a group comes free: ok -\n");
    }
+   return ret;
+}
+
+/* CS-1000: a calendar which closes the queue later on books the whole queue for that period, so
+ * the resource diagram ends with a blocked stretch. A reservation has to be made for the free
+ * window in front of it whenever the job fits there, and not for the moment the queue reopens -
+ * by then other jobs have long since taken the resources.
+ *
+ *  1-|----          ----------
+ *    |
+ *  0-|    ----------          ---------->
+ *      100     200        1000      2000
+ *
+ * The free window runs from 200 to 1000, the queue is closed from 1000 to 2000.
+ */
+static int test_below_window_before_closed_period() {
+   int ret = 0;
+
+   struct {
+      u_long64 duration;
+      u_long64 expected;
+      const char *what;
+   } cases[] = {
+      {300, 200,  "a job which fits into the window starts when the running one ends"},
+      {800, 200,  "a job which fills the window exactly still starts there"},
+      {801, 2000, "a job one second too long waits for the queue to open again"},
+      {0, 0, nullptr}
+   };
+
+   lListElem *cr = lCreateElem(RUE_Type);
+   lSetString(cr, RUE_name, "slots");
+
+   printf("\n - test reservation in front of a calendar closed period - \n\n");
+
+   printf("adding a 100s assignment of 1 starting at 100\n");
+   utilization_add(cr, 100, 100, 1, 1, 1, PE_TAG, "slots", "STARTING", false, false, nullptr, nullptr);
+
+   printf("adding a closed period of 1000s starting at 1000\n");
+   utilization_add(cr, 1000, 1000, 1, 2, 1, PE_TAG, "slots", "STARTING", false, false, nullptr, nullptr);
+
+   for (int i = 0; cases[i].what != nullptr; i++) {
+      sge_assignment_t a = SGE_ASSIGNMENT_INIT;
+      a.now = 50;
+      a.duration = cases[i].duration;
+
+      ocs::TopologyString binding_inuse;
+      /* one slot in total, the job wants it: anything above zero utilization is in the way */
+      u_long64 when = utilization_below(&a, nullptr, cr, 0.0, 1.0, 1.0, "test_queue", false,
+                                        binding_inuse);
+      if (when != cases[i].expected) {
+         printf("failed: utilization_below(duration " sge_u64 ") returned " sge_u64 ", expected "
+                sge_u64 " - %s\n", cases[i].duration, when, cases[i].expected, cases[i].what);
+         ret++;
+      } else {
+         printf("success: utilization_below(duration " sge_u64 ") returned " sge_u64 " - %s\n",
+                cases[i].duration, when, cases[i].what);
+      }
+   }
+
+   lFreeElem(&cr);
    return ret;
 }
