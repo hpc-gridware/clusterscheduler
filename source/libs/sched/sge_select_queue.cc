@@ -977,8 +977,14 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
          assignment_copy(best, &tmp_assignment, true);
          assignment_release(&tmp_assignment);
       } else {
-         DPRINTF("SELECT PE TIME: no earlier assignment at %s\n", sge_ctime64(pe_time, &time_str));
-         break;
+         // CS-1000: a time which does not work says nothing about the times before it. The
+         // utilization can go up and come down again - a queue calendar closing the queue for a
+         // period does exactly that - so a free window can lie in front of a blocked one. Giving
+         // up here would place the reservation behind the blocked period although the job fits
+         // long before it. The iterator is bounded by the entries of the resource diagrams, so
+         // carrying on costs one assignment attempt per remaining entry.
+         DPRINTF("SELECT PE TIME: no assignment at %s, looking further back\n",
+                 sge_ctime64(pe_time, &time_str));
       }
    }
    schedd_mes_set_logging(old_logging); /* restore logging mode */

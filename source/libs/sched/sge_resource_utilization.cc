@@ -1143,6 +1143,28 @@ utilization_max(const sge_assignment_t *a, const lListElem *host, const lListEle
    DRETURN(max);
 }
 
+/** @brief Whether the resource stays below max_util for as long as the job would run
+ *
+ * The question a reservation has to answer is not whether a resource is free from some moment
+ * onwards for good, but whether it is free long enough for the job to run. Fills in the binding
+ * pattern which fits in that window when one does.
+ */
+static bool
+utilization_fits_duration(const sge_assignment_t *a, const lListElem *host, const lListElem *cr,
+                          uint64_t start, double max_util, double total, double slots,
+                          bool for_excl_request, ocs::TopologyString &binding_inuse) {
+   ocs::TopologyString candidate_binding;
+
+   const double peak = utilization_max(a, host, cr, start, a->duration, total, total - max_util,
+                                       slots, for_excl_request, candidate_binding);
+   if (peak > max_util) {
+      return false;
+   }
+
+   binding_inuse.reset_topology(candidate_binding.to_string(true, true, true));
+   return true;
+}
+
 /** @brief Determine first time before diagrams end where utilization is below max_util.
  *
  * Searches the resource utilization diagram for the first time before the end of the diagram
@@ -1154,13 +1176,15 @@ utilization_max(const sge_assignment_t *a, const lListElem *host, const lListEle
  * This means that the returned time is the earliest time when additionally a binding pattern can be found that
  * allows the request to be scheduled between that time and the diagrams end.
  *
- * @note The current implementation does not consider that the utilization can go down again after it has gone up.
- * As a consequence, the returned time is not necessarily the earliest time when the utilization is below max_util.
- * It does also not consider the duration of the request. Therefore, there might be an earlier time before the
- * returned time.
- * However, it is guaranteed that between the returned time and the end of the diagram, the utilization
- * is below max_util and additionally for slots binding on hosts, one binding pattern will fit between the returned
- * time and diagrams end.
+ * @note The backward search finds a time from which the utilization stays below max_util until the end
+ * of the diagram. That is more than a job needs, and it passes over a free window which the utilization
+ * closes again later - a queue calendar creates exactly such a window (CS-1000). When the assignment
+ * carries a duration, the result is therefore refined afterwards to the earliest window which is long
+ * enough for the job, and the binding pattern reported belongs to that window.
+ *
+ * Without an assignment, or for a job whose duration reaches the end of the diagram anyway, the older
+ * guarantee is what remains: between the returned time and the end of the diagram the utilization is
+ * below max_util, and for slots binding on hosts one binding pattern fits there.
  *
  * @param a Assignment structure (required for binding consideration)
  * @param host The host element (required for binding consideration)
@@ -1289,6 +1313,49 @@ utilization_below(const sge_assignment_t *a, const lListElem *host, const lListE
       if (when_nonexclusive > when) {
          when = when_nonexclusive;
          combined_binding_inuse.reset_topology(combined_binding_inuse_nonexclusive.to_string(true, true, true));
+      }
+   }
+
+   // CS-1000: the search above answers a stronger question than a job asks. It finds a time from
+   // which the resource stays free until the end of the diagram, while a job only needs a window
+   // as long as it runs. A calendar which closes the queue later on books the whole queue for
+   // that period, so the end of the diagram lies behind the closed period and every free window
+   // in front of it is passed over - the reservation is then made for the moment the queue
+   // reopens, far too late to keep anything free.
+   //
+   // A job whose duration reaches the end of the diagram from wherever it starts asks the same
+   // question as the search above, so for it this finds nothing new.
+   if (when != DISPATCH_TIME_NOW && a != nullptr && a->duration > 0) {
+      uint64_t earlier = when;
+
+      if (utilization_fits_duration(a, host, cr, a->now, max_util, total, slots, for_excl_request,
+                                    combined_binding_inuse)) {
+         earlier = a->now;
+      } else {
+         const lListElem *candidate_rde;
+         for_each_ep (candidate_rde, lGetList(cr, RUE_utilized)) {
+            const uint64_t candidate = lGetUlong64(candidate_rde, RDE_time);
+
+            // a window can only open where an entry of the diagram begins, so those are the
+            // only moments worth asking about
+            if (candidate <= a->now) {
+               continue;
+            }
+            if (candidate >= when) {
+               break;
+            }
+            if (utilization_fits_duration(a, host, cr, candidate, max_util, total, slots,
+                                          for_excl_request, combined_binding_inuse)) {
+               earlier = candidate;
+               break;
+            }
+         }
+      }
+
+      if (earlier < when) {
+         DPRINTF("utilization_below: a window of " sge_u64 " fits already at %s, before " sge_u64 "\n",
+                 a->duration, sge_ctime64(earlier, &dstr), when);
+         when = earlier;
       }
    }
 

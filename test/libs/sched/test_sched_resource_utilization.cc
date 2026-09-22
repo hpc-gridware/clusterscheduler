@@ -47,6 +47,7 @@
 
 #include "sge_resource_utilization.h"
 #include "sge_qeti.h"
+#include "sge_select_queue.h"
 
 /** @brief One booking in a resource utilization test
  *
@@ -288,6 +289,7 @@ static void test_extensive_utilization(int *id) {
 
 static int test_rsmap_utilization();
 static int test_rsmap_below();
+static int test_below_window_before_closed_period();
 
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_resource_utilization");
@@ -335,6 +337,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    // the resource map tests came from V91_BRANCH with a counter of their own; fold it in
    s_fail += test_rsmap_utilization();
    s_fail += test_rsmap_below();
+   s_fail += test_below_window_before_closed_period();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);
@@ -736,5 +739,63 @@ static int test_rsmap_below() {
    if (ret == 0) {
       printf("\n - when a group comes free: ok -\n");
    }
+   return ret;
+}
+
+/**
+ * @brief a free window in front of a calendar closed period is where a reservation belongs
+ *
+ * A calendar which closes the queue later on books the whole queue for that period, so the
+ * diagram ends with a blocked stretch. Searching backwards from the end finds only the moment
+ * the queue reopens, and every free window in front of it is passed over - CS-1000. A job which
+ * fits into such a window has to be reserved there instead.
+ *
+ *  1-|----          ----------
+ *    |
+ *  0-|    ----------          ---------->
+ *      100     200        1000      2000
+ */
+static int test_below_window_before_closed_period() {
+   int ret = 0;
+
+   struct {
+      uint64_t    duration;
+      uint64_t    expected;
+      const char *what;
+   } cases[] = {
+      {300, 200,  "a job which fits into the window starts when the running one ends"},
+      {800, 200,  "a job which fills the window exactly still starts there"},
+      {801, 2000, "a job one second too long waits for the queue to open again"},
+      {0, 0, nullptr}
+   };
+
+   printf("\n - test a reservation in front of a calendar closed period - \n\n");
+
+   lListElem *cr = lCreateElem(RUE_Type);
+   lSetString(cr, RUE_name, "slots");
+
+   // the running job, and the stretch the calendar blocks off later on
+   utilization_add(cr, 100, 100, 1, 1, 1, PE_TAG, "slots", "STARTING", false, false, nullptr, nullptr);
+   utilization_add(cr, 1000, 1000, 1, 2, 1, PE_TAG, "slots", "STARTING", false, false, nullptr, nullptr);
+
+   for (int i = 0; cases[i].what != nullptr; i++) {
+      sge_assignment_t a = SGE_ASSIGNMENT_INIT;
+      a.now = 50;
+      a.duration = cases[i].duration;
+
+      ocs::TopologyString binding_inuse;
+      // one slot in total and the job wants it, so anything above zero is in the way
+      uint64_t when = utilization_below(&a, nullptr, cr, 0.0, 1.0, 1.0, "test_queue", false,
+                                        binding_inuse);
+      if (when != cases[i].expected) {
+         printf("   FAIL: %s: expected " sge_u64 ", got " sge_u64 "\n",
+                cases[i].what, cases[i].expected, when);
+         ret++;
+      } else {
+         printf("   ok: %s\n", cases[i].what);
+      }
+   }
+
+   lFreeElem(&cr);
    return ret;
 }
