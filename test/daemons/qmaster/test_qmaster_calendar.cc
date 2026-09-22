@@ -146,6 +146,12 @@ static cal_entry_t calendars[] = {
 
 /* issue 1787 */      {"NONE", "mon=0:0:0-21:0:0", "queue is off every monday from 0 to 21 hours"},
 
+/* CS-2653 */         {"1.3.2004=0:0-0:10=off","NONE",
+                       "queue is off in the first ten minutes of 3/1/2004"},
+
+                      {"1.3.2004-2.3.2004=0:0-0:10=off","NONE",
+                       "queue is off in the first ten minutes of 3/1/2004 and 3/2/2004"},
+
 /* end of definition */{nullptr, nullptr, nullptr}
 };
 
@@ -181,7 +187,13 @@ static date_entry_t tests[] = {
    {4,  {0,0,19, 2,2,104, 0,0,0}, {0,0, 9, 3,2,104, 0,0,0}, QI_DO_NOTHING,     {0,0,18, 3,2,104, 0,0,0}, QI_DO_CAL_SUSPEND},
    {4,  {0,0, 0, 2,4,104, 0,0,0}, {0,0,1, 1,0, 70, 0,0,0},  QI_DO_NOTHING,     {0,0,1, 1,0, 70, 0,0,0}, -1},
 
-   {5,  {0,0, 0, 1,0,104, 0,0,0}, {0,0,18, 1,1,104, 0,0,0}, QI_DO_NOTHING,     {0,0, 9, 2,1,104, 0,0,0}, QI_DO_CAL_SUSPEND},
+   /* CS-2653: the queue is suspended during the night, so the
+    * first night of the year range starts at 0:0 on 2/1/2004 and
+    * ends at 9:00 on the same day. Until the fix the switch was
+    * reported for 18:00 - the state change at the beginning of the
+    * day was skipped.
+    */
+   {5, {0,0, 0, 1,0,104, 0,0,0}, {0,0, 0, 1,1,104, 0,0,0}, QI_DO_NOTHING, {0,0, 9, 1,1,104, 0,0,0}, QI_DO_CAL_SUSPEND},
    {5,  {0,0,20, 1,2,104, 0,0,0}, {0,0, 9, 2,2,104, 0,0,0}, QI_DO_CAL_SUSPEND, {0,0,18, 2,2,104, 0,0,0}, QI_DO_NOTHING},
    {5,  {0,0,10, 2,2,104, 0,0,0}, {0,0,18, 2,2,104, 0,0,0}, QI_DO_NOTHING,     {0,0, 9, 3,2,104, 0,0,0}, QI_DO_CAL_SUSPEND},
    {5,  {0,0, 0, 2,4,104, 0,0,0}, {0,0,1, 1,0, 70, 0,0,0},  QI_DO_NOTHING,     {0,0,1, 1,0, 70, 0,0,0}, -1},
@@ -233,6 +245,18 @@ static date_entry_t tests[] = {
    {26, {0,0,10, 1,2,104, 0,0,0}, {0,0,21, 1,2,104, 0,0,0}, QI_DO_CAL_DISABLE,  {0,0, 0, 8,2,104, 0,0,0}, QI_DO_NOTHING},
    {26, {0,0,22, 1,2,104, 0,0,0}, {0,0, 0, 8,2,104, 0,0,0}, QI_DO_NOTHING,      {0,0,21, 8,2,104, 0,0,0}, QI_DO_CAL_DISABLE},
    {26, {0,0,12, 3,2,104, 0,0,0}, {0,0, 0, 8,2,104, 0,0,0}, QI_DO_NOTHING,      {0,0,21, 8,2,104, 0,0,0}, QI_DO_CAL_DISABLE},
+
+   /* CS-2653: a year calendar whose daytime range begins at 0:0 on
+    * a day that is still ahead has to arm a state change at 0:0 of
+    * that day. Before the fix the next state change was reported as
+    * "never" for the single day calendar, and a day too late for the
+    * calendar spanning two days.
+    */
+   {27, {0,0,12, 20,1,104, 0,0,0}, {0,0,0, 1,2,104, 0,0,0}, QI_DO_NOTHING, {0,10,0, 1,2,104, 0,0,0}, QI_DO_CAL_DISABLE},
+   {27, {0,58,23, 29,1,104, 0,0,0}, {0,0,0, 1,2,104, 0,0,0}, QI_DO_NOTHING, {0,10,0, 1,2,104, 0,0,0}, QI_DO_CAL_DISABLE},
+   {27, {0,5,0, 1,2,104, 0,0,0}, {0,10,0, 1,2,104, 0,0,0}, QI_DO_CAL_DISABLE, {0,0,1, 1,0, 70, 0,0,0}, QI_DO_NOTHING},
+
+   {28, {0,0,12, 20,1,104, 0,0,0}, {0,0,0, 1,2,104, 0,0,0}, QI_DO_NOTHING, {0,10,0, 1,2,104, 0,0,0}, QI_DO_CAL_DISABLE},
 
    {-1, {0,0,0, 0,0,104, 0,0,0}, {0,0,0, 0,0,104, 0,0,0}, -1, {0,0,0, 0,0,104, 0,0,0}, -1}
 };
@@ -392,6 +416,46 @@ static bool run_time_frame_test(time_frame_entry_t *t, cal_entry_t *cal) {
    return ok;
 }
 
+/** @brief Check that a calendar never has more than one pending timed event
+ *
+ * calendar_arm_timer() is called when a calendar is added or modified, when one of its
+ * events is delivered, and when a queue instance gets the calendar assigned. Delivering an
+ * event recomputes the state of every queue instance using the calendar, so the events must
+ * not accumulate: a cluster queue with many queue instances would otherwise repeat that
+ * sweep once per queue instance, and would keep doing so for every further state change.
+ */
+static bool run_calendar_timer_test() {
+   bool ok = true;
+   int pending;
+
+   te_init();
+
+   // no calendar has been armed yet
+   if ((pending = te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "cal_a")) != 0) {
+      printf("expected no pending event for \"cal_a\", got %d\n", pending);
+      ok = false;
+   }
+
+   // arming the same calendar again replaces its event instead of adding one
+   calendar_arm_timer("cal_a", sge_time_t_to_gmt64(1000000));
+   calendar_arm_timer("cal_a", sge_time_t_to_gmt64(1000060));
+   calendar_arm_timer("cal_a", sge_time_t_to_gmt64(1000120));
+
+   // a different calendar keeps a timer of its own
+   calendar_arm_timer("cal_b", sge_time_t_to_gmt64(1000180));
+
+   if ((pending = te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "cal_a")) != 1) {
+      printf("expected 1 pending event for \"cal_a\", got %d\n", pending);
+      ok = false;
+   }
+   if ((pending = te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "cal_b")) != 1) {
+      printf("expected 1 pending event for \"cal_b\", got %d\n", pending);
+      ok = false;
+   }
+
+   return ok;
+}
+
 static int s_fail = 0;
 
 /** @def CHECK
@@ -449,6 +513,9 @@ int main(int /*argc*/, char * /*argv*/[]) {
                calendars[c].description);
       CHECK(id++, label, run_time_frame_test(&time_frame_tests[i], &calendars[c]));
    }
+
+   printf("\n--- calendar timer tests ---\n");
+   CHECK(id++, "a calendar has at most one pending timed event", run_calendar_timer_test());
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);

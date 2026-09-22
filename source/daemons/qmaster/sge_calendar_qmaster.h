@@ -61,4 +61,7 @@ void
 sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor);
 
 void
+calendar_arm_timer(const char *cal_name, uint64_t when);
+
+void
 calendar_initalize_timer(monitoring_t *monitor);

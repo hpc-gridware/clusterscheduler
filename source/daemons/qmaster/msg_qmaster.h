@@ -755,4 +755,11 @@
 
 #define MSG_AR_CANNOTNAMERSMAPIDS_SSU              _MESSAGE(34001, _("cannot name the instances of resource map " SFQ " on host " SFQ " which an advance reservation was granted (" sge_u32 ")"))
 
+// calendar timer diagnostics
+#define MSG_CALENDAR_NEXTSTATECHANGE_SUS           _MESSAGE(34002, _("calendar " SFQ ": state " sge_u32 ", next state change scheduled for " SFN))
+#define MSG_CALENDAR_NOSTATECHANGE_SU              _MESSAGE(34003, _("calendar " SFQ ": state " sge_u32 ", no further state change scheduled"))
+#define MSG_CALENDAR_TIMEREVENT_SSS                _MESSAGE(34004, _("calendar " SFQ ": timer event due at " SFN " delivered at " SFN))
+#define MSG_CALENDAR_QINSTANCESTATE_SU             _MESSAGE(34005, _("calendar changes the state of queue " SFQ " to calendar order " sge_u32))
+#define MSG_TE_CANNOTADDEVENT_US                   _MESSAGE(34006, _("cannot add timed event of type " sge_u32 " for " SFQ " to the timed event list"))
+
 // clang-format on

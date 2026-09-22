@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -101,7 +101,7 @@ static token_set_t statev[] = {
  * @param t2 the second entry
  * @return negative, zero or positive as `t1` sorts before, with or after `t2`
  */
-typedef int (*cmp_func_t)(const lListElem *t1, const lListElem *t2); 
+typedef int (*cmp_func_t)(const lListElem *t1, const lListElem *t2);
 
 static char old_error[1000];
 static char store[1000];
@@ -110,23 +110,23 @@ static int token_is_valid = 0;
 static char parse_error[MAX_STRING_SIZE];
 
 /* parsing */
-static int 
-disabled_year_list(lList **alpp, const char *s, 
+static int
+disabled_year_list(lList **alpp, const char *s,
                    lList **cal, const char *cal_name);
 
-static int disabled_week_list(lList **alpp, const char *s, lList **cal, const char *cal_name); 
+static int disabled_week_list(lList **alpp, const char *s, lList **cal, const char *cal_name);
 
-static int 
+static int
 state_at(time_t now, const lList *ycal, const lList *wcal, time_t *then);
 
 static int scan(const char *s, token_set_t token_set[]);
 
-static void join_wday_range(lList *week_day); 
+static void join_wday_range(lList *week_day);
 static void extend_wday_range(lList *week_day);
 
 static char *get_string();
 
-static int get_number(); 
+static int get_number();
 
 static void eat_token();
 
@@ -136,7 +136,7 @@ static int cheap_scan(char *s, token_set_t tokenv[], int n, const char *name);
 
 static int disabled_year_entry(lListElem **calep);
 
-static int year_day_range_list(lList **ydrl); 
+static int year_day_range_list(lList **ydrl);
 
 static int year_day_range(lListElem **tmr);
 
@@ -154,7 +154,7 @@ static int tm_wday_cmp(const lListElem *t1, const lListElem *t2);
 
 static int normalize_range_list(lList *rl, cmp_func_t cmp_func);
 
-static bool in_range_list(const lListElem *tm, const lList *rl, cmp_func_t cmp_func); 
+static bool in_range_list(const lListElem *tm, const lList *rl, cmp_func_t cmp_func);
 
 static int in_range(const lListElem *tm, const lListElem *r, cmp_func_t cmp_func);
 
@@ -186,9 +186,9 @@ static uint32_t is_week_entry_active(lListElem *tm, lListElem *week_entry, time_
 
 static uint32_t is_year_entry_active(lListElem *tm, lListElem *year_entry, time_t *limit);
 
-static time_t compute_limit(bool today, bool active, const lList *year_time, const lList *week_time, 
-              const lList *day_time, const lListElem *now, bool *is_end_of_day_reached); 
-                            
+static time_t compute_limit(bool today, bool active, const lList *year_time, const lList *week_time,
+              const lList *day_time, const lListElem *now, bool *is_end_of_day_reached);
+
 static int disabled_week_entry(lListElem **calep);
 
 static int week_day_range_list(lList **wdrl);
@@ -204,18 +204,18 @@ static uint32_t calendar_get_current_state_and_end(const lListElem *this_elem, t
 /*
 
    NAME
-      state_at() - computes state using year and week calendar 
+      state_at() - computes state using year and week calendar
                    and optionally when this state will end
 
    RETURNS
       The actual state according this calendar
-   
+
    PARAMETERS
-      now        - actual time 
+      now        - actual time
       ycal       - year calendar
       wcal       - week calendar
       next_event - if this pointer is not nullptr then
-                   state_at() will compute the next 
+                   state_at() will compute the next
                    time when this calendar has to be checked again
 
    DESCRIPTION
@@ -227,13 +227,13 @@ static uint32_t calendar_get_current_state_and_end(const lListElem *this_elem, t
             is dominant ( disabled < suspended < enabled )
 
          2. When will this state end?
-            For all active entries we compute the end of the range. 
+            For all active entries we compute the end of the range.
             For all inactive entries we compute the start of the range.
             We iterate through all these ranges beginning with that range
             which is closest to 'now' in the future.
-          
+
             In some cases the state does not change but the range which is
-            responsible for that state changes: 
+            responsible for that state changes:
 
                mon-fri=9-18 fri=18-19
 
@@ -277,14 +277,14 @@ static uint32_t calendar_get_current_state_and_end(const lListElem *this_elem, t
          CA_state
 
    FUTURE ENHANCEMENTS
-      The compution of 'next_event' could be improved. Actually 
+      The compution of 'next_event' could be improved. Actually
       state_at() returns 24 o'clock of this day as the end of
       this state also when this state is valid beyond this day.
 
 */
 
 /*
-ycal,  CA_Type 
+ycal,  CA_Type
 wcal,  CA_Type
 */
 static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *next_event) {
@@ -321,7 +321,7 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
       y_is_active = is_year_entry_active(tm, yc, &limit);
       if (state != y_is_active || state == QI_DO_NOTHING) {
          state |= y_is_active;
-    
+
          if (temp_next_event == 0 || (limit != 0 && temp_next_event > limit)) {
             temp_next_event= limit;
          }
@@ -332,13 +332,13 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
          }
       }
    }
-   
-   if (!state) { 
+
+   if (!state) {
       int counter = 0;
       int max = lGetNumberOfElem(wcal);
       bool *visited = (bool*) sge_malloc(max * sizeof(bool));
       bool isOverlapping;
-     
+
       memset(visited, false, max * sizeof(bool));
 
       /* Week calendar */
@@ -347,14 +347,14 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
       do {
          counter = 0;
          isOverlapping = false;
-         
+
          for_each_rw_lv (wc, wcal) {
             have_week_cal = true;
             w_is_active = is_week_entry_active(tm, wc, &limit, &next_state, 0);
             if (w_is_active > 0) {
                state |= w_is_active;
             }
-            
+
             if (limit != 0 && state == next_state && temp_next_event >= limit) {
                if (!visited[counter]) {
                   isOverlapping = true;
@@ -367,28 +367,28 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
                   w_is_active = is_week_entry_active(tm, wc, &limit, &next_state, 0);
                   if (w_is_active > 0) {
                      state |= w_is_active;
-                  }                 
+                  }
                } else {
                   temp_next_event = 0;
                   isOverlapping = false;
                   break;
                }
             }
-            
+
             if ((state != next_state) && (temp_next_event == 0 || ((limit != 0) && (temp_next_event > limit)))) {
                temp_next_event= limit;
-            }   
+            }
             counter++;
          }
       } while(isOverlapping);
 
       sge_free(&visited);
-   }  
+   }
 
    if (next_event != nullptr) {
       *next_event = temp_next_event;
-   }   
-  
+   }
+
    DPRINTF("got state %d from %s calendar. Now: " sge_u32 " Next event: " sge_u32"\n",
            state, have_week_cal ? "week" : "year", now, next_event?*next_event:0);
 
@@ -436,9 +436,9 @@ static uint32_t is_week_entry_active(lListElem *tm, lListElem *week_entry, time_
 
 
    /* compute state */
-   if ((in_wday_range=in_range_list(tm, lGetList(week_entry, CA_wday_range_list), tm_wday_cmp)) 
+   if ((in_wday_range=in_range_list(tm, lGetList(week_entry, CA_wday_range_list), tm_wday_cmp))
      && (in_daytime_range=in_range_list(tm, lGetList(week_entry, CA_daytime_range_list), tm_daytime_cmp))) {
-       /* DPRINTF(("in_range_list(wday) = %d in_range_list(daytime) = %d state = %d\n", 
+       /* DPRINTF(("in_range_list(wday) = %d in_range_list(daytime) = %d state = %d\n",
                     in_wday_range, in_daytime_range, lGetUlong(week_entry, CA_state))); */
       state = lGetUlong(week_entry, CA_state);
       *next_state = 0;
@@ -451,7 +451,7 @@ static uint32_t is_week_entry_active(lListElem *tm, lListElem *week_entry, time_
 
    if (limit != nullptr) {
       bool is_end_of_the_day_reached = false;
-      
+
       *limit = compute_limit(in_wday_range, in_daytime_range,nullptr, lGetList(week_entry, CA_wday_range_list),
             lGetList(week_entry, CA_daytime_range_list), tm, &is_end_of_the_day_reached);
 
@@ -459,20 +459,20 @@ static uint32_t is_week_entry_active(lListElem *tm, lListElem *week_entry, time_
          struct tm *tm_now;
          struct tm res;
          lListElem *new_tm;
-     
+
          /* we have to add a second to get into the next time slot */
          (*limit)++;
-         
+
          /* convert time_t format into struct tm format */
          tm_now = localtime_r(limit, &res);
 
          /* cullify struct tm */
          new_tm= lCreateElem(TM_Type);
          cullify_tm(new_tm, tm_now);
-    
+
          /* more than 2 recursion should never be needed, we allow 4 to be save.*/
          if (rec_count < 4) {
-            state = is_week_entry_active(new_tm, week_entry, limit, next_state, rec_count++); 
+            state = is_week_entry_active(new_tm, week_entry, limit, next_state, rec_count++);
          }
          else {
             ERROR(SFNMAX, MSG_CALENDAR_CALCTERMINATED);
@@ -483,7 +483,7 @@ static uint32_t is_week_entry_active(lListElem *tm, lListElem *week_entry, time_
 
       /* there is no other state change */
       if (*limit == 0) {
-         *next_state = 0;   
+         *next_state = 0;
       }
    }
 
@@ -492,8 +492,8 @@ static uint32_t is_week_entry_active(lListElem *tm, lListElem *week_entry, time_
 
 /* returns state and time when state changes acording this entry */
 /*
-lListElem *tm,         TM_Type 
-lListElem *year_entry, CA_Type 
+lListElem *tm,         TM_Type
+lListElem *year_entry, CA_Type
 */
 
 /**
@@ -527,7 +527,7 @@ static uint32_t is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
    bool in_yday_range, in_daytime_range = false;
 
    /* compute state */
-   if ((in_yday_range=in_range_list(tm, lGetList(year_entry, CA_yday_range_list), tm_yday_cmp)) 
+   if ((in_yday_range=in_range_list(tm, lGetList(year_entry, CA_yday_range_list), tm_yday_cmp))
      && (in_daytime_range=in_range_list(tm, lGetList(year_entry, CA_daytime_range_list), tm_daytime_cmp))) {
       DPRINTF("in_range_list(yday) = %d in_range_list(daytime) = %d state = %d\n",
             in_yday_range, in_daytime_range, lGetUlong(year_entry, CA_state));
@@ -550,19 +550,31 @@ static uint32_t is_year_entry_active(lListElem *tm, lListElem *year_entry, time_
          DPRINTF("trying the next time slot\n");
          /* we have to add a second to get into the next time slot */
          (*limit)++;
-         
+         time_t next_day = *limit;
+
          /* convert time_t format into struct tm format */
          tm_now = localtime_r(limit, &res);
 
          /* cullify struct tm */
          new_tm= lCreateElem(TM_Type);
          cullify_tm(new_tm, tm_now);
-      
-         state = is_year_entry_active(new_tm, year_entry, limit);
+
+         uint32_t next_day_state = is_year_entry_active(new_tm, year_entry, limit);
+
+         /* The state does not change for the rest of the day, that is why we look at the next day.
+            If the next day starts in a different state then the change happens right at midnight
+            and that is the limit we are looking for - the limit the recursion reported belongs to
+            the state of the next day and would be too late. Otherwise the state indeed continues
+            and both the state and its limit are the ones of the next day. */
+         if (next_day_state != state) {
+            *limit = next_day;
+         } else {
+            state = next_day_state;
+         }
 
          lFreeElem(&new_tm);
       }
-            
+
    }
 
    DRETURN(state);
@@ -619,12 +631,12 @@ uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list
       int state_changes = 0;
       const int max_state_changes = 60; /* we want to limit this calculation to about month and for that we
                                           assume 2 state changes per day. This limit is only needed for a
-                                          scheduler configuration like: 
+                                          scheduler configuration like:
                                           year cal: "NONE", week cal: "Mon-Wed=09:00-18:00=suspended Mon-Fri=suspended"
                                           year cal: 1.2.2004-1.4.2004=off 1.3.2004-1.5.2004=off
-                                        */  
+                                        */
 
-      /* we do have to do the calculation at least once, but there are cases, in which the 
+      /* we do have to do the calculation at least once, but there are cases, in which the
         calendar_get_current_state_and_end function does not return the correct state switch
         (overlapping calendar configurations), therefor we have to run it multiple times. */
       do {
@@ -651,16 +663,16 @@ uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list
 
       if (state1 == state2) {
          when1 = temp_when;
-      }      
+      }
    }
-   
+
    *state_changes_list = lCreateList("state_changes", CQU_Type);
    state_change = lCreateElem(CQU_Type);
-   
+
    lSetUlong(state_change, CQU_state, state0);
    lSetUlong64(state_change,  CQU_till, *when64);
    lAppendElem(*state_changes_list, state_change);
-      
+
    /* extend queue state change list */
    if (*when64 != 0) {
       state_change = lCreateElem(CQU_Type);
@@ -705,7 +717,7 @@ uint32_t calender_state_changes(const lListElem *cep, lList **state_changes_list
  *
  * @note MT-NOTE: compute_limit() is MT safe
  */
-static time_t compute_limit(bool today, bool active, const lList *year_time, const lList *week_time, 
+static time_t compute_limit(bool today, bool active, const lList *year_time, const lList *week_time,
                             const lList *day_time, const lListElem *now, bool *is_end_of_day_reached) {
    DENTER(TOP_LAYER);
 
@@ -715,9 +727,9 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
    time_t limit;
    bool is_full_day = false;
    bool is_new_cal_entry = true;
-   const lListElem *time;   
-   lListElem *new_now = (lListElem *) now; /* this is a dirty hack to get rid of the const. new_now will not be modified, 
-                                              but might be overriden with a temp object, which needs to be freed within 
+   const lListElem *time;
+   lListElem *new_now = (lListElem *) now; /* this is a dirty hack to get rid of the const. new_now will not be modified,
+                                              but might be overriden with a temp object, which needs to be freed within
                                               the function. But a const lListElem cannot be freed. */
    bool is_new_now_copy = false;
 
@@ -741,15 +753,15 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
    { /* should only be one entry in case that the calendar is valid for whole days*/
       const lListElem *end = lFirst(lGetList(time, TMR_end));
       const lListElem *begin = lFirst(lGetList(time, TMR_begin));
-      
+
       if ( (lGetUlong(end, TM_sec) == 0)   &&
            (lGetUlong(end, TM_min) == 0)   &&
            (lGetUlong(end, TM_hour) == 24) &&
            (lGetUlong(begin, TM_sec) == 0) &&
            (lGetUlong(begin, TM_min) == 0) &&
            (lGetUlong(begin, TM_hour) == 0)) {
-         is_full_day = true;     
-      }     
+         is_full_day = true;
+      }
    }
 
    /* do we look at a full day calendar or is the next entry not today? We then have to figure out the
@@ -759,9 +771,9 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          if (year_time != nullptr) {
             for_each_ep(time, year_time) {
                if (in_range(now, time, tm_yday_cmp)) {
-                  lep = lCopyElem(lFirst(lGetList(time, TMR_end))); 
+                  lep = lCopyElem(lFirst(lGetList(time, TMR_end)));
                   if (lep == nullptr) {
-                      lep = lCopyElem(lFirst(lGetList(time, TMR_begin))); 
+                      lep = lCopyElem(lFirst(lGetList(time, TMR_begin)));
                   }
                   break;
                }
@@ -769,7 +781,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          }
          else if (week_time != nullptr) {
             bool is_allways_inactive = true;
-            
+
             for_each_ep(time, week_time) {
                const lList *endList = lGetList(time, TMR_end);
                const lList *beginList = lGetList(time, TMR_begin);
@@ -780,17 +792,17 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
                else {
                   is_allways_inactive &= false;
                }
-            
+
                if (in_range(now, time, tm_wday_cmp)) {
                   const lListElem *end = lFirst(endList);
                   uint32_t day;
-                  
+
                   if (end == nullptr) { /* we might only have one day specified. If so, the beginList contains the end */
                      end = lFirst(beginList);
                   }
-                  
+
                   day = lGetUlong(now, TM_mday);
-                  
+
                   day += (lGetUlong(end, TM_wday) - lGetUlong(now, TM_wday));
                   lep = lCopyElem(now);
                   lSetUlong(lep, TM_mday, day);
@@ -817,11 +829,11 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          if (year_time != nullptr) {   /* year calenar */
             for_each_ep(time, year_time) {
                begin = lFirst(lGetList(time, TMR_begin));
-               if (tm_yday_cmp(now, begin) < 0 && 
-                  (!lep || tm_yday_cmp(lep, begin) > 0)) {  
+               if (tm_yday_cmp(now, begin) < 0 &&
+                  (!lep || tm_yday_cmp(lep, begin) > 0)) {
                   lFreeElem(&lep);
-                  lep = lCopyElem(begin);           
-               }   
+                  lep = lCopyElem(begin);
+               }
             }
             if (lep == nullptr) {
                is_new_cal_entry = false;
@@ -831,21 +843,21 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
             bool is_next_week = false;
             for_each_ep(time, week_time) {
                begin = lFirst(lGetList(time, TMR_begin));
-               if (tm_wday_cmp(now, begin) < 0 && 
-                  (!lep || tm_wday_cmp(lep, begin) > 0)) {     
+               if (tm_wday_cmp(now, begin) < 0 &&
+                  (!lep || tm_wday_cmp(lep, begin) > 0)) {
                   lFreeElem(&lep);
-                  lep = lCopyElem(begin);  
+                  lep = lCopyElem(begin);
                }
-            }   
+            }
             if (lep == nullptr) {
                is_next_week = true;
                for_each_ep(time, week_time) {
                   begin = lFirst(lGetList(time, TMR_begin));
-                  if (!lep || tm_wday_cmp(lep, begin) > 0) {     
+                  if (!lep || tm_wday_cmp(lep, begin) > 0) {
                      lFreeElem(&lep);
-                     lep = lCopyElem(begin);  
+                     lep = lCopyElem(begin);
                   }
-               }              
+               }
             }
             if (is_next_week) {
                int days = lGetUlong(now, TM_mday);
@@ -878,47 +890,45 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
             lep = nullptr;
             is_new_now_copy = true; /* new_now needs to be freed later */
          }
-         
+
       }
    }
 
    /* the current calendar changes the state during the day, we have to compute the exact time, when
       that happens */
    if (!is_full_day && new_now != nullptr && today) {
-      
+
       if (active) {
          /* inside of range - seek nearest end of range */
-         /* seek end of active daytime range */ 
+         /* seek end of active daytime range */
          for_each_ep(time, day_time) {
             if (in_range(new_now, time, tm_daytime_cmp)) {
-               lep = lCopyElem(lFirst(lGetList(time, TMR_end))); 
+               lep = lCopyElem(lFirst(lGetList(time, TMR_end)));
                break;
             }
          }
       } else {
          const lListElem *begin;
-         /* outside of range - seek nearest begin of range */
+         /* outside of range - seek nearest begin of range.
+            A day starts at 0:0:0 o'clock, therefore we have to check if we hit the start of the
+            range right away or if we are smaller. This matters whenever new_now was synthesized
+            above as 0:0:0 of a day in the future: a range that begins at 0:0 is the next state
+            change on that day and a strict comparison would skip it, leaving the calendar without
+            any further state change at all.
+            A range that begins at the very daytime of the real now cannot show up here, because
+            in_range() includes both ends of a range - we would be inside of it and "active" would
+            be set. */
          for_each_ep(time, day_time) {
             begin = lFirst(lGetList(time, TMR_begin));
-            if (year_time != nullptr) {
-               if (tm_daytime_cmp(new_now, begin) < 0 && 
-                  (!lep || tm_daytime_cmp(lep, begin) > 0)) {
-                  lFreeElem(&lep);
-                  lep = lCopyElem(begin); 
-               }
-            } 
-            else { /* a day starts at 0:0:0 o'clock, therefore we have to check,
-                      if we hit the start date right away or if we are smaller */
-               if (tm_daytime_cmp(new_now, begin) <= 0 && 
-                  (!lep || tm_daytime_cmp(lep, begin) > 0)) {
-                  lFreeElem(&lep);
-                  lep = lCopyElem(begin); 
-               }
+            if (tm_daytime_cmp(new_now, begin) <= 0 &&
+               (!lep || tm_daytime_cmp(lep, begin) > 0)) {
+               lFreeElem(&lep);
+               lep = lCopyElem(begin);
             }
          }
       }
 
-      
+
       /* it might happen, that we are already to late for todays state shift, though we assume
          a state shift at the end of the day and record it. The function will be called again,
          to compute the state shift for the "next" day */
@@ -948,7 +958,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
 
    if (is_new_now_copy) {
        lFreeElem(&new_now);
-   }         
+   }
 
    if (is_new_cal_entry) {
 #if 0
@@ -961,7 +971,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
          tm_limit.tm_year,
          tm_limit.tm_wday,
          tm_limit.tm_yday,
-         tm_limit.tm_isdst)); 
+         tm_limit.tm_isdst));
 #endif
       limit = mktime(&tm_limit);
 
@@ -1033,13 +1043,13 @@ static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
             /* r1 = min(r1, q1) */
             if (cmp_func(r1, q1) > 0) {
                lSwapList(r, TMR_begin, q, TMR_begin);
-            }   
+            }
 
             /* r2 = max(r2, q2) */
             if ( (q2 && !r2) || cmp_func(r2, q2)<0) {
                lSwapList(r, TMR_end, q, TMR_end);
-            }   
-            
+            }
+
 /*             t1=lFirst(lGetList(r, TMR_begin)); */
 /*             t2=lFirst(lGetList(r, TMR_end)); */
 
@@ -1061,7 +1071,7 @@ static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
             /* r1, r2 are no longer valid after swapping */
             r1 = lFirst(lGetList(r, TMR_begin));
             r2 = lFirst(lGetList(r, TMR_end));
-         } 
+         }
       }
    }
 
@@ -1069,7 +1079,7 @@ static int normalize_range_list(lList *rl, cmp_func_t cmp_func) {
 }
 
 /*
-lListElem *tm, TM_Type 
+lListElem *tm, TM_Type
 */
 static bool in_range_list(const lListElem *tm, const lList *rl, cmp_func_t cmp_func) {
    DENTER(TOP_LAYER);
@@ -1129,14 +1139,14 @@ static int in_range(const lListElem *tm, const lListElem *r, cmp_func_t cmp_func
 }
 
 /* disabled_year_list := disabled_year_entry[<space>disabled_year_entry] */
-static int disabled_year_list(lList **alpp, const char *s, lList **cal, const char *cal_name) { 
+static int disabled_year_list(lList **alpp, const char *s, lList **cal, const char *cal_name) {
    DENTER(TOP_LAYER);
 
    lListElem *calep;
 
    static token_set_t token_set[] = {
-      { DOT,             "." }, 
-      { COLON,           ":" }, 
+      { DOT,             "." },
+      { COLON,           ":" },
       { EQUAL_SIGN,      "=" },
       { MINUS,           "-" },
       { COMMA,           "," },
@@ -1148,7 +1158,7 @@ static int disabled_year_list(lList **alpp, const char *s, lList **cal, const ch
 
    if (cal != nullptr) {
       *cal = nullptr;
-   }   
+   }
 
    if (!s || !strcasecmp(s, "none")) {
       DRETURN(0);
@@ -1169,14 +1179,14 @@ static int disabled_year_list(lList **alpp, const char *s, lList **cal, const ch
       while (scan(nullptr, nullptr) == SPACE) {
          eat_token();
       }
-      
+
       if (disabled_year_entry(cal?&calep:nullptr)) {
          goto ERROR;
-      }   
-      if (cal != nullptr) {
-         lAppendElem(*cal, calep); 
       }
-   }  
+      if (cal != nullptr) {
+         lAppendElem(*cal, calep);
+      }
+   }
 
    /* complain about still unused tokens */
    if (scan(nullptr, nullptr)!=NO_TOKEN) {
@@ -1200,11 +1210,11 @@ static int disabled_year_entry(lListElem **cal) {
    lList *ydrl = nullptr,
          *dtrl = nullptr;
    int state = QI_DO_DISABLE;
-  
+
    if (scan(nullptr, nullptr)==NUMBER) {
       if (year_day_range_list(&ydrl))
          goto ERROR;
-     
+
       if (scan(nullptr, nullptr)!=EQUAL_SIGN)
          goto SUCCESS;
       eat_token();
@@ -1218,7 +1228,7 @@ static int disabled_year_entry(lListElem **cal) {
          goto SUCCESS;
       eat_token();
    }
-   
+
    if (scan(nullptr, nullptr)==STRING) {
       if (action(&state)) {
          DRETURN(-1);
@@ -1261,7 +1271,7 @@ static void full_daytime_range(lList **dtrl) {
    lAddSubUlong(tmr, TM_hour, 0,  TMR_begin, TM_Type);
    lAddSubUlong(tmr, TM_hour, 24, TMR_end,   TM_Type);
 
-   lAppendElem(*dtrl, tmr);   
+   lAppendElem(*dtrl, tmr);
 
    DRETURN_VOID;
 }
@@ -1280,14 +1290,14 @@ static void full_weekday_range(lList **dtrl) {
    lAddSubUlong(tmr, TM_wday, 0,  TMR_begin, TM_Type);
    lAddSubUlong(tmr, TM_wday, 6, TMR_end,   TM_Type);
 
-   lAppendElem(*dtrl, tmr);   
+   lAppendElem(*dtrl, tmr);
 
    DRETURN_VOID;
 }
 
 
 /* year_day_range := year_day_range[,year_day_range] */
-static int year_day_range_list(lList **ydrl) { 
+static int year_day_range_list(lList **ydrl) {
    DENTER(TOP_LAYER);
 
    lListElem *tmr;
@@ -1316,11 +1326,11 @@ static int year_day_range_list(lList **ydrl) {
    DRETURN(0);
 }
 
-static int year_day_range(lListElem **tmr) { 
+static int year_day_range(lListElem **tmr) {
    DENTER(TOP_LAYER);
 
    lListElem *t1, *t2 = nullptr;
- 
+
    if (year_day(&t1)) {
       DRETURN(-1);
    }
@@ -1331,11 +1341,11 @@ static int year_day_range(lListElem **tmr) {
       if (year_day(&t2)) {
          lFreeElem(&t1);
          DRETURN(-1);
-      }   
+      }
       if (tm_yday_cmp(t1, t2)>0) {
          snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_ANSWER_FIRSTYESTERDAYINRANGEMUSTBEBEFORESECONDYESTERDAY);
          lFreeElem(&t1);
-         DRETURN(-1);   
+         DRETURN(-1);
       }
    }
 
@@ -1363,7 +1373,7 @@ static int year_day_range(lListElem **tmr) {
    DRETURN(0);
 }
 
-static int year_day(lListElem **tm) { 
+static int year_day(lListElem **tm) {
    DENTER(TOP_LAYER);
 
    int y, m, d;
@@ -1404,17 +1414,17 @@ static int year_day(lListElem **tm) {
 
 static int range_number(int min, int max, int *ip, const char *name) {
    DENTER(TOP_LAYER);
-   
+
    if (scan(nullptr, nullptr)==NUMBER) {
       int this_number = get_number();
       eat_token();
 
       if (this_number > max || this_number < min) {
          snprintf(parse_error, sizeof(parse_error), MSG_PARSE_WOUTSIDEOFRANGEXYZ_SIIS, get_string(),  min, max, name);
-         DRETURN(-1);   
+         DRETURN(-1);
       } else {
          if (ip)
-            *ip = this_number; 
+            *ip = this_number;
          DRETURN(0);
       }
    }
@@ -1465,12 +1475,12 @@ static int day(int *dp) {
    return range_number(1, 31, dp, "day");
 }
 
-static int year(int *yp) { 
-   return range_number(1970, 2037, yp, "year"); 
+static int year(int *yp) {
+   return range_number(1970, 2037, yp, "year");
 }
 
 /* daytime_range_list   := daytime_range[,daytime_range] ... */
-static int daytime_range_list(lList **dtrl) { 
+static int daytime_range_list(lList **dtrl) {
    DENTER(TOP_LAYER);
 
    lListElem *tmr;
@@ -1481,7 +1491,7 @@ static int daytime_range_list(lList **dtrl) {
    if (dtrl) {
       *dtrl = lCreateList("daytime_range_list", TMR_Type);
       lAppendElem(*dtrl, tmr);
-      split_daytime_range(*dtrl, tmr);   
+      split_daytime_range(*dtrl, tmr);
    }
 
    while (scan(nullptr, nullptr)==COMMA) {
@@ -1494,7 +1504,7 @@ static int daytime_range_list(lList **dtrl) {
       }
       if (dtrl != nullptr) {
          lAppendElem(*dtrl, tmr);
-         split_daytime_range(*dtrl, tmr);   
+         split_daytime_range(*dtrl, tmr);
       }
    }
 
@@ -1517,7 +1527,7 @@ static void split_daytime_range(lList *dtrl, lListElem *tmr) {
          lAddSubUlong(tmr2, TM_hour, 24, TMR_end, TM_Type);
          lSwapList(tmr, TMR_end, tmr2, TMR_end);
          lAppendElem(dtrl, tmr2);
-      
+
          t1=lFirst(lGetList(tmr, TMR_begin));
          t2=lFirst(lGetList(tmr, TMR_end));
          t3=lFirst(lGetList(tmr2, TMR_begin));
@@ -1558,7 +1568,7 @@ static int daytime_range(lListElem **tmr) {
    DENTER(TOP_LAYER);
 
    lListElem *t1 = nullptr, *t2 = nullptr;
-  
+
    if (daytime(&t1)) {
       goto ERROR;
    }
@@ -1604,14 +1614,14 @@ ERROR:
 
 
 /* daytime := hour[:minute][:second] */
-static int daytime(lListElem **tm) { 
+static int daytime(lListElem **tm) {
    DENTER(TOP_LAYER);
 
    int h, m = 0, s = 0;
 
    if (hour(&h)) {
       DRETURN(-1);
-   } 
+   }
 
    if (scan(nullptr, nullptr)!=COLON) {
       goto SUCCESS;
@@ -1647,16 +1657,16 @@ SUCCESS:
    DRETURN(0);
 }
 
-static int hour(int *hp) { 
-   return range_number(0, 24, hp, MSG_PARSE_HOURSPEC); 
+static int hour(int *hp) {
+   return range_number(0, 24, hp, MSG_PARSE_HOURSPEC);
 }
 
-static int minute(int *mp) { 
-   return range_number(0, 59, mp, MSG_PARSE_MINUTESPEC); 
+static int minute(int *mp) {
+   return range_number(0, 59, mp, MSG_PARSE_MINUTESPEC);
 }
 
 static int seconds(int *sp) {
-   return range_number(0, 59, sp, MSG_PARSE_SECONDSSPEC); 
+   return range_number(0, 59, sp, MSG_PARSE_SECONDSSPEC);
 }
 
 static int action(int *sp) {
@@ -1667,7 +1677,7 @@ static int action(int *sp) {
    if (scan(nullptr, nullptr)!=STRING) {
       snprintf(parse_error, sizeof(parse_error), MSG_PARSE_XISNOTASTATESPECIFIER_S, get_string());
       DRETURN(-1);
-   } 
+   }
 
    s = get_string();
    if ((state = cheap_scan(s, statev, 3, "state specifier"))<0) {
@@ -1685,7 +1695,7 @@ static int disabled_week_list(lList **alpp, const char *s, lList **cal, const ch
 
    lListElem *calep;
    static token_set_t token_set[] = {
-      { COLON,        ":" }, 
+      { COLON,        ":" },
       { EQUAL_SIGN,   "=" },
       { MINUS,        "-" },
       { COMMA,        "," },
@@ -1694,10 +1704,10 @@ static int disabled_week_list(lList **alpp, const char *s, lList **cal, const ch
       { NUMBER,       nullptr },
       { 0,            nullptr }
    };
-   
+
    if (cal) {
       *cal = nullptr;
-   }   
+   }
 
    if (!s || !strcasecmp(s, "none")) {
       DRETURN(0);
@@ -1707,7 +1717,7 @@ static int disabled_week_list(lList **alpp, const char *s, lList **cal, const ch
 
    if (disabled_week_entry(cal?&calep:nullptr)) {
       goto ERROR;
-   }   
+   }
 
    if (cal) {
       *cal = lCreateList("week list", CA_Type);
@@ -1721,15 +1731,15 @@ static int disabled_week_list(lList **alpp, const char *s, lList **cal, const ch
       /* there can be multiple spaces between calender def. eat them all */
       while (scan(nullptr, nullptr) ==SPACE) {
          eat_token();
-      }   
+      }
 
       if (disabled_week_entry(cal?&calep:nullptr)) {
          goto ERROR;
       }
       if (cal) {
          lAppendElem(*cal, calep);
-      }   
-   }  
+      }
+   }
 
    /* complain about still unused tokens */
    if (scan(nullptr, nullptr)!=NO_TOKEN) {
@@ -1760,22 +1770,22 @@ static int disabled_week_entry(lListElem **cal) {
 
       if (week_day_range_list(&wdrl)) {
          goto ERROR;
-      }   
-     
+      }
+
       if (scan(nullptr, nullptr)!=EQUAL_SIGN) {
          goto SUCCESS;
-      }   
+      }
       eat_token();
    }
 
    if (scan(nullptr, nullptr)==NUMBER) {
       if (daytime_range_list(&dtrl)) {
          goto ERROR;
-      }   
+      }
       normalize_range_list(dtrl, tm_daytime_cmp);
       if (scan(nullptr, nullptr)!=EQUAL_SIGN) {
          goto SUCCESS;
-      }   
+      }
       eat_token();
    }
 
@@ -1783,7 +1793,7 @@ static int disabled_week_entry(lListElem **cal) {
       state = 0;
       if (action(&state)) {
          goto ERROR;
-      }   
+      }
    } else {
       snprintf(parse_error, sizeof(parse_error), SFNMAX, MSG_ANSWER_GOTEQUALWITHOUTDAYTIMERANGEORSTATE);
       goto ERROR;
@@ -1792,16 +1802,16 @@ static int disabled_week_entry(lListElem **cal) {
 SUCCESS:
    if (cal) {
       *cal = lCreateElem(CA_Type);
-      
+
       if (!wdrl) {
          full_weekday_range(&wdrl);
-      }   
-      
+      }
+
       lSetList(*cal, CA_wday_range_list, wdrl);
-      
+
       if (!dtrl) {
          full_daytime_range(&dtrl);
-      }   
+      }
       lSetList(*cal, CA_daytime_range_list, dtrl);
       lSetUlong(*cal, CA_state, state);
    }
@@ -1815,7 +1825,7 @@ ERROR:
 }
 
 /* week_day_range := week_day_range[,week_day_range] */
-static int week_day_range_list(lList **wdrl) { 
+static int week_day_range_list(lList **wdrl) {
    DENTER(TOP_LAYER);
 
    lListElem *tmr;
@@ -1830,7 +1840,7 @@ static int week_day_range_list(lList **wdrl) {
       split_wday_range(*wdrl, tmr);
    }
 
-   
+
 
    while (scan(nullptr, nullptr)==COMMA) {
       eat_token();
@@ -1842,10 +1852,10 @@ static int week_day_range_list(lList **wdrl) {
          lAppendElem(*wdrl, tmr);
          split_wday_range(*wdrl, tmr);
       }
-   }  
+   }
 
    /* prepare the structures for later use */
-   join_wday_range(*wdrl); 
+   join_wday_range(*wdrl);
    extend_wday_range(*wdrl);
 
    DRETURN(0);
@@ -1872,8 +1882,8 @@ static void join_wday_range(lList *week_day) {
       uint32_t begin1;
       uint32_t end1;
       const lList *beginList1;
-      const lList *endList1;     
-      
+      const lList *endList1;
+
       next1 = lNextRW(next1);
 
       beginList1 = lGetList(day_range1, TMR_begin);
@@ -1892,13 +1902,13 @@ static void join_wday_range(lList *week_day) {
          uint32_t end2;
          const lList *beginList2;
          const lList *endList2;
-      
+
          next2 = lNextRW(next2);
 
          if (day_range2 == day_range1) {
             continue;
          }
-   
+
          beginList2 = lGetList(day_range2, TMR_begin);
          endList2 = lGetList(day_range2, TMR_end);
 
@@ -1908,8 +1918,8 @@ static void join_wday_range(lList *week_day) {
          }
          else {
             end2 = begin2;
-         }         
-        
+         }
+
          if (begin2 <= (end1 +1) && (begin1 <= begin2)) {
             if (end1 < end2) {
                if (endList1) {
@@ -1919,14 +1929,14 @@ static void join_wday_range(lList *week_day) {
                   lSetList(day_range1, TMR_end, lCopyList("", endList2));
                }
             }
-            
+
             if (next1 == day_range2) {
                next1 = next2;
             }
             lRemoveElem(week_day, &day_range2);
             day_range2 = nullptr;
          }
-        
+
       }
    }
 }
@@ -1953,8 +1963,8 @@ static void extend_wday_range(lList *week_day) {
       uint32_t begin1;
       uint32_t end1;
       const lList *beginList1;
-      lList *endList1;     
-      
+      lList *endList1;
+
       next1 = lNextRW(next1);
 
       beginList1 = lGetList(day_range1, TMR_begin);
@@ -1974,13 +1984,13 @@ static void extend_wday_range(lList *week_day) {
          uint32_t end2;
          const lList *beginList2;
          const lList *endList2;
-      
+
          next2 = lNextRW(next2);
 
          if (day_range2 == day_range1) {
             continue;
          }
-   
+
          beginList2 = lGetList(day_range2, TMR_begin);
          endList2 = lGetList(day_range2, TMR_end);
 
@@ -1990,8 +2000,8 @@ static void extend_wday_range(lList *week_day) {
          }
          else {
             end2 = begin2;
-         }         
-        
+         }
+
          if ((end1 == 6) && (begin2 == 0)) {
             int tempEnd = end1 + 1 + end2;
             if (endList1 == 0) {
@@ -2008,7 +2018,7 @@ static void extend_wday_range(lList *week_day) {
 static void split_wday_range(lList *wdrl, lListElem *tmr) {
    DENTER(TOP_LAYER);
 
-   const lListElem *t2, *t1; /* *t3, *t4, */ 
+   const lListElem *t2, *t1; /* *t3, *t4, */
    lListElem *tmr2;
 
    if ((t2=lFirst(lGetList(tmr, TMR_end)))) {
@@ -2051,7 +2061,7 @@ static int week_day_range(lListElem **tmr) {
    lListElem *t1 = nullptr;
    lListElem *t2 = nullptr;
 
-   if (week_day(&t1)) 
+   if (week_day(&t1))
       goto ERROR;
 
    if (scan(nullptr, nullptr)==MINUS) {
@@ -2172,7 +2182,7 @@ static int scan(const char *s, token_set_t token_set[]) {
    }
    if (token_set) {
       ts = token_set;
-   }   
+   }
 
    if (token_is_valid) {        /* no need for a new token to parse */
       DRETURN(token);
@@ -2198,16 +2208,16 @@ static int scan(const char *s, token_set_t token_set[]) {
                            token = ERR_TOKEN;
                            token_is_valid = 1;
                            DRETURN(token);
-                        } else 
+                        } else
                            old_number = number;
                      }
                      if ((found = (j!=0))) {
-                        len = j; 
+                        len = j;
                         strncpy(store, t, len);
                         store[len] = '\0';
                      }
                   }
-            break;                   
+            break;
 
          case STRING:   /* strings and shortcut strings */
                   /* parse string a-z,A-Z[a-z,A-Z,0-9]* and store it */
@@ -2220,12 +2230,12 @@ static int scan(const char *s, token_set_t token_set[]) {
                      store[k] = '\0';
                   }
 
-                  len = j; 
+                  len = j;
                   if (ts[i].token == STRING) {
                      found = (j!=0);
                      break;
                   }
-         
+
                   found = !strcasecmp(ts[i].text, store);
             break;
          default:
@@ -2235,7 +2245,7 @@ static int scan(const char *s, token_set_t token_set[]) {
                store[len] = '\0';
          break;
       }
-      
+
       if (found) {
          t += len;
          token_is_valid = 1;
@@ -2258,15 +2268,15 @@ static int cheap_scan(char *s, token_set_t tokenv[], int n, const char *name) {
 
    if ((len=strlen(s)) < n) {
       match_all_chars = 1;
-   }   
+   }
 
    for (i=0; tokenv[i].text; i++) {
-      if (match_all_chars ? 
+      if (match_all_chars ?
           !strcasecmp(tokenv[i].text, s):
           !strncasecmp(tokenv[i].text, s, len)) {
-         
+
 /*             DPRINTF("recognized \"%s\" == \"%s\" with %d\n", tokenv[i].text, s, tokenv[i].token);  */
-               
+
          DRETURN(tokenv[i].token);
       }
    }
@@ -2277,7 +2287,7 @@ static int cheap_scan(char *s, token_set_t tokenv[], int n, const char *name) {
 static int tm_yday_cmp(const lListElem *t1, const lListElem *t2) {
    int t;
 
-/*   DPRINTF(("tm_yday_cmp(y%d:m%d:d%d, y%d:m%d:d%d)\n", 
+/*   DPRINTF(("tm_yday_cmp(y%d:m%d:d%d, y%d:m%d:d%d)\n",
       lGetUlong(t1, TM_year),
       lGetUlong(t1, TM_mon),
       lGetUlong(t1, TM_mday),
@@ -2301,10 +2311,10 @@ static int tm_daytime_cmp(const lListElem *t1, const lListElem *t2) {
 
    if ((t=(lGetUlong(t1, TM_hour) - lGetUlong(t2, TM_hour)))) {
       return t;
-   }   
+   }
    if ((t=(lGetUlong(t1, TM_min) - lGetUlong(t2, TM_min)))) {
       return t;
-   }   
+   }
    return lGetUlong(t1, TM_sec) - lGetUlong(t2, TM_sec);
 }
 
@@ -2360,12 +2370,12 @@ bool calendar_parse_year(lListElem *cal, lList **answer_list) {
    bool ret = true;
    lList *yc = nullptr;
 
-   if (disabled_year_list(answer_list, lGetString(cal, CAL_year_calendar), 
+   if (disabled_year_list(answer_list, lGetString(cal, CAL_year_calendar),
                           &yc, lGetString(cal, CAL_name))) {
-      ret = false;               
+      ret = false;
    } else {
       lXchgList(cal, CAL_parsed_year_calendar, &yc);
-      lFreeList(&yc); 
+      lFreeList(&yc);
    }
 
    DRETURN(ret);
@@ -2384,12 +2394,12 @@ bool calendar_parse_week(lListElem *cal, lList **answer_list) {
    bool ret = true;
    lList *wc = nullptr;
 
-   if (disabled_week_list(answer_list, lGetString(cal, CAL_week_calendar), 
+   if (disabled_week_list(answer_list, lGetString(cal, CAL_week_calendar),
             &wc, lGetString(cal, CAL_name))) {
       ret = false;
    } else {
       lXchgList(cal, CAL_parsed_week_calendar, &wc);
-      lFreeList(&wc); 
+      lFreeList(&wc);
    }
    DRETURN(ret);
 }
@@ -2414,20 +2424,20 @@ static uint32_t calendar_get_current_state_and_end(const lListElem *cep, time_t 
    uint32_t new_state;
    const lList *year_list = nullptr;
    const lList *week_list = nullptr;
-   
+
    DPRINTF("cal: %s\n", lGetString(cep, CAL_name));
 
    if (cep != nullptr) {
       year_list = lGetList(cep, CAL_parsed_year_calendar);
       week_list = lGetList(cep, CAL_parsed_week_calendar);
    }
-   
+
    if (now == nullptr) {
       new_state = state_at(time(nullptr), year_list, week_list, then);
    } else {
       new_state = state_at(*now, year_list, week_list, then);
    }
-   
+
    switch (new_state) {
    case QI_DO_DISABLE:
       new_state = QI_DO_CAL_DISABLE;
@@ -2457,12 +2467,12 @@ bool calendar_is_referenced(const lListElem *calendar, lList **answer_list,
                             const lList *master_cqueue_list) {
    bool ret = false;
    const lListElem *cqueue = nullptr, *cal = nullptr;
- 
+
    /*
     * fix for bug 6422335
     * check the cq configuration for calendar references instead of qinstances
     */
-   const char *calendar_name = lGetString(calendar, CAL_name);     
+   const char *calendar_name = lGetString(calendar, CAL_name);
    if (calendar_name != nullptr) {
       for_each_ep(cqueue, master_cqueue_list) {
          for_each_ep(cal, lGetList(cqueue, CQ_calendar)) {
@@ -2483,10 +2493,10 @@ bool calendar_is_referenced(const lListElem *calendar, lList **answer_list,
 }
 
 /* -----------------------------
-   
+
    build up a generic cal object
 
-   returns 
+   returns
       nullptr on error
 
 */
@@ -2547,6 +2557,6 @@ bool calendar_open_in_time_frame(const lListElem *cep, uint64_t start_time, uint
    if (state != QI_DO_ENABLE) {
       ret = false;
    }
-  
+
    DRETURN(ret);
 }
