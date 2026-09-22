@@ -94,6 +94,7 @@
 #include "usage.h"
 #include "ocs_qconf_Category.h"
 #include "ocs_qconf_acl.h"
+#include "ocs_qconf_ops.h"
 #include "ocs_qconf_parse.h"
 #include "sge_qconf_hgroup.h"
 #include "ocs_qconf_centry.h"
@@ -2381,105 +2382,62 @@ int sge_parse_qconf(char *argv[]) {
       DRETURN(1);
    }
    
-   /* 
-    * is there a -cb switch. we have to find that switch now because
-    * the loop handles all switches in specified sequence and
-    * -sep -cb would not be handled correctly.
-    */
-   spp = argv;
-   while (*spp) {
-      if (strcmp("-cb", *spp) == 0) {
-         has_binding_param = true;
-      }
-      /* CS-2299 hardening flags must take effect no matter where they appear,
-       * so they are detected here before the ordered option loop runs. */
-      if (strcmp("-dry", *spp) == 0) {
-         qconf_opt_dry_run = true;
-      }
-      if (strcmp("-f", *spp) == 0) {
-         qconf_opt_force = true;
-      }
-      if (strcmp("-strict", *spp) == 0) {
-         qconf_opt_strict = true;
-      }
-      /* CS-2313a: -fmt plain|json selects the output/input serialization format
-       * for the show, add-from-file and modify-from-file operations. Pre-scanned
-       * so it applies regardless of position. */
-      if (strcmp("-fmt", *spp) == 0) {
-         const char *val = *(spp + 1);
-         if (val == nullptr) {
-            fprintf(stderr, "%s\n", MSG_GDI_USAGE_Fmt_OPT);
-            DRETURN(1);
-         } else if (strcmp(val, "plain") == 0) {
-            qconf_opt_format = SP_FORM_ASCII;
-         } else if (strcmp(val, "json") == 0) {
-            qconf_opt_format = SP_FORM_JSON;
-         } else {
-            fprintf(stderr, MSG_QCONF_UNKNOWNFMT_S, val);
-            fprintf(stderr, "\n");
-            DRETURN(1);
-         }
-      }
-      /* CS-2313a: -fmtval compact|numeric selects how TIME/MEM values are rendered in
-       * JSON output - compact unit/colon strings (default) vs numeric seconds/bytes.
-       * Pre-scanned, position-independent like -fmt. */
-      if (strcmp("-fmtval", *spp) == 0) {
-         const char *val = *(spp + 1);
-         if (val != nullptr && strcmp(val, "compact") == 0) {
-            ocs_json_value_format_opt = OCS_JSON_VALUES_COMPACT;
-         } else if (val != nullptr && strcmp(val, "numeric") == 0) {
-            ocs_json_value_format_opt = OCS_JSON_VALUES_NUMERIC;
-         } else {
-            fprintf(stderr, MSG_QCONF_UNKNOWNFMTVAL_S, val != nullptr ? val : "");
-            fprintf(stderr, "\n");
-            DRETURN(1);
-         }
-      }
-      spp++;
+   /* CS-2798: the command line is parsed as data before anything is executed.
+    * What comes back are the invocation-wide flags, taken over into the globals
+    * just below, and the ordered list of operations the execution phase walks -
+    * which is also what get_bundle() marshals in CS-2799.
+    *
+    * The flags have to take effect no matter where they appear, so that
+    * "qconf -sq all.q -fmt json" renders as JSON although -fmt comes last.
+    * qconf_parse_args() reads them in a pass of its own over argv, exactly as
+    * the hand written pre-scan did.
+    *
+    * MISSING_ARGUMENT and UNKNOWN_OPTION are not acted on here but after the
+    * execution phase, so that a partially valid command line still produces the
+    * output of its valid operations before the complaint - the order the single
+    * parse-and-execute pass produced. */
+   qconf_invocation inv;
+   std::string bad_token;
+   const QConfParseStatus parse_status = qconf_parse_args(inv, argv, bad_token);
+   switch (parse_status) {
+      case QConfParseStatus::NO_FORMAT_VALUE:
+         fprintf(stderr, "%s\n", MSG_GDI_USAGE_Fmt_OPT);
+         DRETURN(1);
+      case QConfParseStatus::BAD_FORMAT:
+         fprintf(stderr, MSG_QCONF_UNKNOWNFMT_S, bad_token.c_str());
+         fprintf(stderr, "\n");
+         DRETURN(1);
+      case QConfParseStatus::BAD_FORMAT_VALUE:
+         fprintf(stderr, MSG_QCONF_UNKNOWNFMTVAL_S, bad_token.c_str());
+         fprintf(stderr, "\n");
+         DRETURN(1);
+      default:
+         break;
    }
 
-   /* now start from beginning */
-   spp = argv;
-   while (*spp) {
+   has_binding_param        = inv.binding;
+   qconf_opt_dry_run        = inv.dry_run;
+   qconf_opt_force          = inv.force;
+   qconf_opt_strict         = inv.strict;
+   qconf_opt_format         = inv.format;
+   ocs_json_value_format_opt = inv.value_format;
+
+   /* CS-2798: the execution phase. It walks the operations the parser produced,
+    * in the order they were typed, and hands each option block its own argument
+    * vector - { switch, arg, ..., nullptr }. That is the shape the blocks have
+    * always read, so `*spp`, sge_parser_get_next() and sge_next_is_an_opt()
+    * keep working unchanged; they simply no longer reach across the operation
+    * they belong to. The trailing `spp++; continue;` of every block now means
+    * "on to the next operation". */
+   for (qconf_op &op : inv.ops) {
+      spp = op.as_argv();
 
 /*----------------------------------------------------------------------------*/
-      /* "-cb" */
-
-      if (strcmp("-cb", *spp) == 0) {
-         /* just skip it we have parsed it above */
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* CS-2299 hardening flags: parsed in the pre-scan above, skip here. */
-
-      if (strcmp("-dry", *spp) == 0 ||
-          strcmp("-f", *spp) == 0 ||
-          strcmp("-strict", *spp) == 0) {
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* CS-2313a: -fmt plain|json — parsed in the pre-scan above; skip it and
-       * its value here. */
-
-      if (strcmp("-fmt", *spp) == 0) {
-         spp = sge_parser_get_next(spp);   /* consume the format value */
-         spp++;
-         continue;
-      }
-
-/*----------------------------------------------------------------------------*/
-      /* CS-2313a: -fmtval compact|numeric — parsed in the pre-scan above; skip it and
-       * its value here. */
-
-      if (strcmp("-fmtval", *spp) == 0) {
-         spp = sge_parser_get_next(spp);   /* consume the value */
-         spp++;
-         continue;
-      }
+      /* The four skip branches that used to sit here - for -cb, the CS-2299
+       * hardening flags and the CS-2313a format switches - are gone with
+       * CS-2798. Those switches are marked invocation_wide in the option table,
+       * so the parser reads them in its first pass and does not put them into
+       * the operation list at all. There is nothing left to step over. */
 
 /*----------------------------------------------------------------------------*/
       /* "-acal cal-name" */
@@ -6852,11 +6810,26 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*----------------------------------------------------------------------------*/
-      /* "-huh?" */
+      /* "-huh?" - unreachable: qconf_parse_args() rejects a switch that is not
+       * in the table, and every switch in the table has a block above. Kept as
+       * the backstop it always was, for a row added without its block. */
 
       ERROR(MSG_ANSWER_INVALIDOPTIONARGX_S, *spp);
       fprintf(stderr, MSG_SRC_X_HELP_USAGE_S , "qconf");
       fprintf(stderr, "\n");
+      DRETURN(1);
+   }
+
+   /* The command line was only understood up to here. The operations before the
+    * bad token have run, so the complaint comes after their output - which is
+    * where it came out when the loop parsed and executed in one pass.
+    * MISSING_ARGUMENT needs nothing: the truncated operation was handed over
+    * and its own block has already reported it. */
+   if (parse_status == QConfParseStatus::UNKNOWN_OPTION) {
+      ERROR(MSG_ANSWER_INVALIDOPTIONARGX_S, bad_token.c_str());
+      fprintf(stderr, MSG_SRC_X_HELP_USAGE_S, "qconf");
+      fprintf(stderr, "\n");
+      lFreeList(&alp);
       DRETURN(1);
    }
 
