@@ -27,6 +27,7 @@ add_executable(
       sge_qconf_hgroup.cc
         ocs_qconf_rqs.cc
         ocs_qconf.cc
+        ocs_qconf_ops.cc
         ocs_qconf_parse.cc
         ocs_qconf_acl.cc
       ../../common/sig_handlers.cc
