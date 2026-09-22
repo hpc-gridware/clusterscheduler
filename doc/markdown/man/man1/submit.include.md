@@ -6,7 +6,7 @@
 
 `qlogin` - submit an interactive login session to xxQS_NAMExx.
 
-`qrsh` - submit an interactive rsh session to xxQS_NAMExx.
+`qrsh` - submit an interactive remote shell session to xxQS_NAMExx.
 
 `qalter` - modify a pending or running batch job of xxQS_NAMExx.
 
@@ -45,29 +45,19 @@ are either dispatched to a suitable machine for execution immediately or the use
 executable. Note, however, that the `-e` and `-ls` xterm options do not work with `qsh`.
 
 `qlogin` is similar to *qsh* in that it submits an interactive job to the queuing system. It does not open a xterm(1) 
-window on the X display, but uses the current terminal for user I/O. Usually, `qlogin` establishes a connection with 
-the remote host, using standard client- and server-side commands. These commands can be configured with the 
-*qlogin_daemon* (server-side, xxQS_NAMExx *telnetd* if not set, otherwise something like /usr/sbin/in.telnetd) and
-*qlogin_command* (client-side, xxQS_NAMExx *telnet* if not set, otherwise something like /usr/bin/telnet) 
-parameters in the global and local configuration settings of xxqs_name_sxx_conf(5). The client side command is 
-automatically parameterized with the remote host name and port number to which to connect, resulting in an 
-invocation like
-
-    /usr/bin/telnet my_exec_host 2442
-
-for example. `qlogin` is invoked exactly like `qsh` and its jobs can only run on INTERACTIVE queues. `qlogin` jobs 
-can only be used if the xxqs_name_sxx_execd(8) is running under the root account.
+window on the X display, but uses the current terminal for user I/O. By default `qlogin` carries the session over 
+the xxQS_NAMExx commlib, which needs no configuration. An external transport such as `ssh` can be used instead by 
+setting the *qlogin_daemon* (server-side) and *qlogin_command* (client-side) parameters in the global and local 
+configuration settings of xxqs_name_sxx_conf(5); see INTERACTIVE JOBS OVER SSH under EXAMPLES below. `qlogin` is 
+invoked exactly like `qsh` and its jobs can only run on INTERACTIVE queues. `qlogin` jobs can only be used if the 
+xxqs_name_sxx_execd(8) is running under the root account.
 
 `qrsh` is similar to `qlogin` in that it submits an interactive job to the queuing system. It uses the current 
-terminal for user I/O. Usually, `qrsh` establishes a rsh(1) connection with the remote host. If no
-command is given to `qrsh`, an rlogin(1) session is established. The server-side commands used can be configured with 
-the *rsh_daemon* and *rlogin_daemon* parameters in the global and local configuration settings of xxqs_name_sxx_conf(5). 
-An xxQS_NAMExx `rshd` or `rlogind` is used if the parameters are not set. If the parameters are set, they should be 
-set to something like `/usr/sbin/in.rshd` or `/usr/sbin/in.rlogind`. On the client-side, the *rsh_command* and
-*rlogin_command* parameters can be set in the global and local configuration settings of xxqs_name_sxx_conf(5). If 
-they are not set, special xxQS_NAMExx rsh(1) and rlogin(1) binaries delivered with xxQS_NAMExx are used. Use the 
-cluster configuration parameters to integrate mechanisms like `ssh` or the rsh(1) and rlogin(1) facilities supplied 
-with the operating system.
+terminal for user I/O. If a command is given to `qrsh` it is run on the remote host; if none is given, an 
+interactive shell is started there instead. Like `qlogin`, `qrsh` carries the session over the xxQS_NAMExx commlib 
+by default. The two cases are configured separately: *rsh_daemon* and *rsh_command* apply when a command is given, 
+*rlogin_daemon* and *rlogin_command* when none is, both in the global and local configuration settings of 
+xxqs_name_sxx_conf(5). See INTERACTIVE JOBS OVER SSH under EXAMPLES below.
 
 `qrsh` jobs can only run in INTERACTIVE queues unless the option `-now no` is used (see below). They can also only be 
 run if the xxqs_name_sxx_execd(8) is running under the root account.
@@ -1238,9 +1228,9 @@ Alternative call with the `-noshell` option
 
 Available only for `qrsh`.
 
-Suppress the input stream STDIN - `qrsh` will pass the option -n to the rsh(1) command. This is especially useful, 
-if multiple tasks are executed in parallel using `qrsh`, e.g. in a qmake(1) process - it would be undefined, which 
-process would get the input.
+Suppress the input stream STDIN. Where an external *rsh_command* is configured, the option `-n` is passed on to 
+it. This is especially useful if multiple tasks are executed in parallel using `qrsh`, e.g. in a qmake(1) 
+process - it would be undefined which process would get the input.
 
 ## -o \[\[hostname\]:\]path,...  
 Available for `qsub`, `qsh`, `qrsh`, `qlogin` and `qalter` only.
@@ -1759,10 +1749,9 @@ verification. (see `-jsv` option above or find more information concerning JSV i
 ## -verbose  
 Available only for `qrsh` and `qmake`.
 
-Unlike `qsh` and `qlogin`, `qrsh` does not output any informational messages while establishing the session, 
-compliant with the standard rsh(1) and rlogin(1) system calls. If the option `-verbose` is set, `qrsh` behaves 
-like the `qsh` and `qlogin` commands, printing information about the process of establishing the rsh(1) or 
-rlogin(1) session.
+Unlike `qsh` and `qlogin`, `qrsh` does not output any informational messages while establishing the session. 
+If the option `-verbose` is set, `qrsh` behaves like the `qsh` and `qlogin` commands, printing information about 
+the process of establishing the session.
 
 ## -verify  
 Available for `qsub`, `qsh`, `qrsh`, `qlogin` and `qalter`.
@@ -2136,6 +2125,48 @@ The next example is a more complex xxQS_NAMExx script.
 
     ==========================================================
 
+## INTERACTIVE JOBS OVER SSH
+
+Interactive jobs use the xxQS_NAMExx built-in interactive job support by default, which carries the session over 
+the commlib and needs no configuration. The six parameters below replace it with `ssh` and `sshd`. They are set 
+in the global configuration, or in an execution host local configuration to change the transport for that host 
+alone, with `qconf -mconf`. Changes take effect immediately.
+
+    qlogin_daemon                /usr/sbin/sshd -i
+    qlogin_command               /usr/local/bin/qlogin_wrapper
+    rlogin_daemon                /usr/sbin/sshd -i
+    rlogin_command               /usr/bin/ssh
+    rsh_daemon                   /usr/sbin/sshd -i
+    rsh_command                  /usr/bin/ssh
+
+`sshd` is started with `-i` so that it serves the single connection it is handed on stdin and stdout.
+
+*rlogin_command* and *rsh_command* name `ssh` directly: both are invoked as `command -p port host [command ...]`, 
+which is the ssh(1) calling convention. *qlogin_command* is invoked as `command host port` instead, so `ssh` 
+cannot be named there directly and a wrapper has to reorder the two arguments:
+
+    =====================================================
+
+    #!/bin/sh
+    HOST=$1; PORT=$2
+    exec /usr/bin/ssh -p "$PORT" "$HOST"
+
+    =====================================================
+
+One point to watch on the server side: `sshd` does not pass its own environment on to the remote login shell, and 
+the shepherd puts variables such as *QRSH_PORT* into the daemon's environment before starting it. Where the 
+remote shell needs to see them, start `sshd` through a wrapper which names them with the `SetEnv` directive. 
+This requires OpenSSH 8.0 or later.
+
+    =====================================================
+
+    #!/bin/sh
+    exec /usr/sbin/sshd -i -o "SetEnv QRSH_PORT=$QRSH_PORT"
+
+    =====================================================
+
+See xxqs_name_sxx_conf(5) for the full description of the six parameters.
+
 # FILES
 
 ## $REQUEST.oJID[.TASKID]	
@@ -2178,10 +2209,5 @@ xxqs_name_sxx_aliases(5), xxqs_name_sxx_conf(5), xxqs_name_sxx_ijs(5), xxqs_name
 xxqs_name_sxx_complex(5).
 
 # COPYRIGHT
-
-If configured correspondingly, `qrsh` and `qlogin` contain portions of the `rsh`, `rshd`, `telnet` and `telnetd` 
-code copyrighted by The Regents of the University of California. Therefore, the following note applies with respect 
-to `qrsh` and `qlogin`: This product includes software developed by the University of California, Berkeley and its
-contributors.
 
 See xxqs_name_sxx_intro(1) for a full statement of rights and permissions.
