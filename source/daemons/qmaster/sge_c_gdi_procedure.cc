@@ -34,6 +34,13 @@
 
 #include "procedure/ocs_ProcedureParameter.h"
 
+#include "procedure/qconf/ocs_QConfController.h"
+#include "procedure/qconf/ocs_QConfModelServer.h"
+#include "procedure/qconf/ocs_QConfViewBase.h"
+#include "procedure/qconf/ocs_QConfViewJSON.h"
+#include "procedure/qconf/ocs_QConfViewPlain.h"
+#include "procedure/qconf/ocs_QConfViewXML.h"
+
 #include "procedure/qhost/ocs_QHostContoller.h"
 #include "procedure/qhost/ocs_QHostModelServer.h"
 #include "procedure/qhost/ocs_QHostViewBase.h"
@@ -102,6 +109,33 @@ namespace {
 
       static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
          return std::make_unique<ocs::QHostViewJSON>(parameter);
+      }
+   };
+
+   /** @brief The `qconf` read path
+    *
+    * XML is named because the template asks every procedure for it; qconf has
+    * only plain and json, and a call that requests XML is refused in
+    * QConfModelBase::make_snapshot() before a view is ever chosen.
+    */
+   struct QConfTraits {
+      using Parameter = ocs::QConfParameter;
+      using Model = ocs::QConfModelServer;
+      using ViewBase = ocs::QConfViewBase;
+      using Controller = ocs::QConfController;
+
+      static constexpr ProgName prog_number = QCONF;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QConfViewXML>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QConfViewPlain>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QConfViewJSON>(parameter);
       }
    };
 
@@ -323,8 +357,9 @@ namespace {
       ProcedureHandler handler;
    };
 
-   constexpr std::array<ProcedureDispatchEntry, 7> procedure_dispatch_table{
+   constexpr std::array<ProcedureDispatchEntry, 8> procedure_dispatch_table{
       {
+         {to_string_view(QCONF), "", &run_procedure<QConfTraits>},
          {to_string_view(QHOST), "",  &run_procedure<QHostTraits>},
          {to_string_view(QQUOTA), "",  &run_procedure<QQuotaTraits>},
          {to_string_view(QRSTAT), "", &run_procedure<QRStatTraits>},

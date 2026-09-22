@@ -49,6 +49,16 @@ set(LIBRARY_SOURCES
         qrstat/ocs_QRStatViewJSON.cc
         qrstat/ocs_QRStatViewXML.cc
 
+        qconf/ocs_QConfObject.cc
+        qconf/ocs_QConfParameter.cc
+        qconf/ocs_QConfParameterClient.cc
+        qconf/ocs_QConfModelBase.cc
+        qconf/ocs_QConfModelClient.cc
+        qconf/ocs_QConfModelServer.cc
+        qconf/ocs_QConfViewPlain.cc
+        qconf/ocs_QConfViewJSON.cc
+        qconf/ocs_QConfController.cc
+
         qquota/ocs_QQuotaParameter.cc
         qquota/ocs_QQuotaParameterClient.cc
         qquota/ocs_QQuotaModelBase.cc
@@ -94,4 +104,5 @@ set(LIBRARY_SOURCES
 set(LIBRARY_INCLUDES "./" ${SGE_INCLUDES})
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${LIBRARY_INCLUDES})
+
 

@@ -27,7 +27,6 @@ add_executable(
       sge_qconf_hgroup.cc
         ocs_qconf_rqs.cc
         ocs_qconf.cc
-        ocs_qconf_ops.cc
         ocs_qconf_parse.cc
         ocs_qconf_acl.cc
       ../../common/sig_handlers.cc
@@ -37,7 +36,8 @@ add_executable(
 target_include_directories(qconf PUBLIC ${SGE_INCLUDES})
 target_link_libraries(
       qconf
-      PUBLIC clientscommon
+      PUBLIC procedure
+      clientscommon
       spoolc_static
       spool
       sched

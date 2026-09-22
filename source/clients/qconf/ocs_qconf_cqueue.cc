@@ -67,6 +67,7 @@
 #include "gdi/ocs_gdi_Request.h"
 
 #include "ocs_qconf_cqueue.h"
+#include "qconf/ocs_QConfObject.h"
 #include "ocs_qconf_parse.h"   /* CS-2313a: qconf_opt_format */
 #include "ocs_qconf_centry.h"  /* CS-2313a: centry_list_get_via_gdi */
 #include "msg_qconf.h"
@@ -737,6 +738,20 @@ qinstance_list_write(std::ostream &os, lList **answer_list, const lList *qi_list
  * @return true on success; false with `answer_list` filled otherwise
  */
 bool cqueue_show(std::ostream &os, lList **answer_list, const lList *qref_pattern_list) {
+   /* CS-2799: qconf_json_fill_complex() used to fetch the complex entries
+    * itself, which put one GDI round trip inside the per-host loops below. It
+    * takes them as an argument now - inside qmaster there is nothing to fetch
+    * from - so they are fetched once here, and only for JSON, which is the only
+    * format the fill ever did anything for. */
+   struct CentryListHolder {
+      lList *list = nullptr;
+      ~CentryListHolder() { lFreeList(&list); }
+   } centries;   /* the function has five early returns; a raw list would leak */
+   if (qconf_opt_format == SP_FORM_JSON) {
+      lList *centry_alp = nullptr;
+      centries.list = centry_list_get_via_gdi(&centry_alp);
+      lFreeList(&centry_alp);
+   }
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -791,7 +806,7 @@ bool cqueue_show(std::ostream &os, lList **answer_list, const lList *qref_patter
                         if (qinstance != nullptr) {
                            /* collect a typed copy of the resolved instance */
                            lListElem *qi_copy = lCopyElem(qinstance);
-                           qconf_json_fill_complex(qi_copy, qu_ce, 3);
+                           qconf_json_fill_complex(qi_copy, qu_ce, 3, centries.list);
                            lAppendElem(qi_list, qi_copy);
                            found_something = true;
                         }
@@ -826,7 +841,7 @@ bool cqueue_show(std::ostream &os, lList **answer_list, const lList *qref_patter
                         const char *hostname = lGetHost(qinstance, QU_qhostname);
                         if (!sge_eval_expression(ocs::CEntry::Type::HOST, h_pattern, hostname, nullptr, true, h_pattern_is_expression)) {
                            lListElem *qi_copy = lCopyElem(qinstance);
-                           qconf_json_fill_complex(qi_copy, qu_ce, 3);
+                           qconf_json_fill_complex(qi_copy, qu_ce, 3, centries.list);
                            lAppendElem(qi_list, qi_copy);
                            found_something = true;
                         }

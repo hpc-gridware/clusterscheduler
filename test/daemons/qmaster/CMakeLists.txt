@@ -119,7 +119,14 @@ add_executable(test_qmaster_calendar
 target_include_directories(test_qmaster_calendar PRIVATE "./")
 target_link_libraries(
         test_qmaster_calendar
-        PRIVATE daemonscommon ${SPOOLING_LIBS} procedure sched mir evc evm sgeobj gdi cull comm commlists uti
+        # This test compiles sge_c_gdi_procedure.cc, so it references QConfTraits
+        # and pulls the qconf read path out of the procedure library, which
+        # renders through the flatfile writer (CS-2799). With static libraries a
+        # library has to follow whatever references it, and ${SPOOLING_LIBS}
+        # sits ahead of "procedure" here - so the spooling libraries are named a
+        # second time behind it. sge_qmaster needs no such repetition because
+        # its ${SPOOLING_LIBS} is in the PRIVATE section, after everything else.
+        PRIVATE daemonscommon ${SPOOLING_LIBS} procedure spoolc_static spool sched mir evc evm sgeobj gdi cull comm commlists uti
         ${SGE_LIBS} ${GPERFTOOLS_PROFILER})
 add_test(NAME test_qmaster_calendar COMMAND test_qmaster_calendar)
 

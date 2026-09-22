@@ -42,6 +42,7 @@
 #include <cctype>
 #include <format>
 #include <iostream>
+#include <memory>
 #include <ostream>
 #include <fnmatch.h>
 #include <dirent.h>
@@ -94,7 +95,16 @@
 #include "usage.h"
 #include "ocs_qconf_Category.h"
 #include "ocs_qconf_acl.h"
-#include "ocs_qconf_ops.h"
+#include "procedure/ocs_ProcedureController.h"
+#include "procedure/ocs_ProcedureModel.h"
+#include "procedure/ocs_ProcedureView.h"
+
+#include "qconf/ocs_QConfController.h"
+#include "qconf/ocs_QConfModelClient.h"
+#include "qconf/ocs_QConfObject.h"
+#include "qconf/ocs_QConfViewJSON.h"
+#include "qconf/ocs_QConfViewPlain.h"
+#include "qconf/ocs_QConfParameterClient.h"
 #include "ocs_qconf_parse.h"
 #include "sge_qconf_hgroup.h"
 #include "ocs_qconf_centry.h"
@@ -502,55 +512,6 @@ qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), voi
 }
 
 /** @brief Context shared by the per-file callbacks driven by qconf_for_each_file(). */
-typedef spooling_field *(*qconf_build_fields_fn)(spool_flatfile_format format, bool *owned);
-
-/** @brief The configuration object types the generic engines handle.
- *
- * The cluster configuration is deliberately absent: it is keyed on the host
- * basename rather than on a field, which is why it has its own
- * qconf_conf_export()/qconf_conf_apply_path(). */
-enum class QConfObj {
-   CAL, CK, CE, EH, HGRP, PE, PR, CQ, RL, RQS, US, UU, STN, SC
-};
-
-/** @brief What the read path needs on top of the common descriptor (CS-2796).
- *
- * There is one deliberate difference between showing an object and writing it
- * to a file, and it is in @c fields: -se builds its field list with
- * to_stdout=true, so it shows load_values and processors, which -Se leaves out
- * on purpose - the export has to round-trip. Pinned by exechost.show.plain vs
- * exechost.export.plain (CS-2794). nullptr means "the same as the write path".
- *
- * The layout itself is now the same for both: -suser used to render with
- * qconf_param_sfi where -Suser uses qconf_sfi, which never reached the output
- * (every UU field has width 0, so align_names does nothing, and the sublist
- * fields only exist with spool=true, which qconf does not use). -Suser is new
- * in 9.2, so there was no compatibility reason to keep the two apart. */
-struct qconf_read_desc {
-   qconf_build_fields_fn fields;   ///< field list for -s<obj>, nullptr to use build_fields
-   const char *list_name;          ///< object name in the "no X defined" message of -s<obj>l
-   const char *not_found_msg;      ///< format string of the "X is not a Y" message of -s<obj>
-   void (*prepare)(lListElem *);   ///< fixup before rendering, nullptr for none
-};
-
-/** @brief Everything the generic engines need to know about one object type. */
-struct qconf_object_desc {
-   ocs::gdi::Target target;                          ///< GDI target list
-   const lDescr *descr;                              ///< CULL descriptor
-   int name_nm;                                      ///< name field, NoName for the singletons
-   qconf_build_fields_fn build_fields;               ///< field list provider (may allocate)
-   const spool_flatfile_instr *sfi;                  ///< flatfile spooling instruction
-   const char *json_type_name;                       ///< explicit JSON $id, nullptr derives it
-   int (*validate)(const lListElem *, lList **);     ///< semantic check, nullptr for none
-   int (*prepare)(lListElem *, lList **);            ///< pre-send fixup, nullptr for none
-   ocs::gdi::SubCommand sub_cmd;                     ///< GDI sub-command of an upsert
-   bool as_list;                                     ///< file holds a list, not one object
-   bool del_parse_values;                            ///< parse values when reading for a delete
-   bool is_root;                                     ///< singleton export: object is the root
-   const char *exclude1;                             ///< export: skip this name
-   const char *exclude2;                             ///< export: skip this name too
-   qconf_read_desc read;                             ///< the read path additions (CS-2796)
-};
 
 struct qconf_file_ctx {
    std::ostream *os;               ///< where the per-file messages go (CS-1841)
@@ -1187,33 +1148,6 @@ qconf_export_singleton(std::ostream &os, ocs::gdi::Target target, const lDescr *
    return failures;
 }
 
-/* qconf_build_fields_fn providers (KTD8): objects with a shared static field table
- * report owned=false; objects whose import field list is built on demand report
- * owned=true so the engine frees it. The provider mirrors exactly the field list the
- * matching -A<obj> import handler reads with. */
-static spooling_field *qconf_fields_CAL (spool_flatfile_format, bool *o) { *o = false; return CAL_fields;  }
-static spooling_field *qconf_fields_CK  (spool_flatfile_format, bool *o) { *o = false; return CK_fields;   }
-static spooling_field *qconf_fields_CE  (spool_flatfile_format, bool *o) { *o = false; return CE_fields;   }
-static spooling_field *qconf_fields_RL  (spool_flatfile_format, bool *o) { *o = false; return RL_fields;   }
-static spooling_field *qconf_fields_PE  (spool_flatfile_format, bool *o) { *o = false; return PE_fields;   }
-static spooling_field *qconf_fields_HGRP(spool_flatfile_format, bool *o) { *o = false; return HGRP_fields; }
-static spooling_field *qconf_fields_CQ  (spool_flatfile_format, bool *o) { *o = false; return CQ_fields;   }
-static spooling_field *qconf_fields_US  (spool_flatfile_format, bool *o) { *o = false; return US_fields;   }
-static spooling_field *qconf_fields_RQS (spool_flatfile_format, bool *o) { *o = false; return RQS_fields;  }
-static spooling_field *qconf_fields_SC  (spool_flatfile_format, bool *o) { *o = false; return SC_fields;   }
-/* import list omits runtime load_values/processors (to_stdout=false) so it round-trips (KTD2) */
-static spooling_field *qconf_fields_EH  (spool_flatfile_format, bool *o) { *o = true;  return sge_build_EH_field_list(false, false, false); }
-/* -se shows the host as it is now, so the runtime values are included (CS-2796) */
-static spooling_field *qconf_show_fields_EH(spool_flatfile_format, bool *o) { *o = true;  return sge_build_EH_field_list(false, true, false); }
-
-/* defined below, next to the json helpers it uses */
-static void qconf_show_prepare_EH(lListElem *ep);
-static spooling_field *qconf_fields_PR  (spool_flatfile_format, bool *o) { *o = true;  return sge_build_PR_field_list(false); }
-static spooling_field *qconf_fields_UU  (spool_flatfile_format, bool *o) { *o = true;  return sge_build_UU_field_list(false); }
-static spooling_field *qconf_fields_STN (spool_flatfile_format fmt, bool *o) {
-   *o = true;
-   return (fmt == SP_FORM_JSON) ? sge_build_STN_json_field_list() : sge_build_STN_field_list(false, true);
-}
 
 /**
  * @brief Bespoke config export (R7/KTD8): config keys on the host basename, not on
@@ -1328,146 +1262,7 @@ qconf_conf_export(std::ostream &os, const char *path) {
    return failures;
 }
 
-/**
- * @brief Validate-hook adapter for parallel environments (CS-2301).
- *
- * pe_validate() takes two extra arguments (a startup flag and the master userset
- * list) that the generic validate hook does not; this wrapper fixes them to the
- * values the qconf client uses (0 / nullptr), matching the editor paths.
- *
- * @param ep   the parsed PE object to validate
- * @param alpp answer list to receive validation messages
- * @return STATUS_OK on success, another status on failure
- */
-static int
-qconf_pe_validate(const lListElem *ep, lList **alpp) {
-   return pe_validate(const_cast<lListElem *>(ep), alpp, 0, nullptr);
-}
 
-/**
- * @brief Validate-hook adapter for roles (CS-2302).
- *
- * ocs::Role::validate() returns a bool and takes a startup flag the generic
- * validate hook does not; this wrapper maps it to the hook's status convention,
- * fixing startup to false as the editor paths do.
- *
- * @param ep   the parsed role object to validate
- * @param alpp answer list to receive validation messages
- * @return STATUS_OK on success, STATUS_ESEMANTIC on failure
- */
-static int
-qconf_role_validate(const lListElem *ep, lList **alpp) {
-   return ocs::Role::validate(ep, alpp, false) ? STATUS_OK : STATUS_ESEMANTIC;
-}
-
-/**
- * @brief Prepare-hook adapter for exec hosts (CS-2304): resolve the host name.
- *
- * Exec host objects must carry a resolved (canonical) host name before the name
- * is used for the upsert existence-check and the GDI send; this transform
- * resolves EH_name in place, matching what the interactive -ae/-Ae paths do.
- *
- * @param ep   the parsed exec host object (modified in place)
- * @param alpp answer list to receive a message on resolution failure
- * @return STATUS_OK on success, STATUS_ESEMANTIC if the host cannot be resolved
- */
-static int
-qconf_eh_resolve(lListElem *ep, lList **alpp) {
-   if (sge_resolve_host(ep, EH_name) != CL_RETVAL_OK) {
-      answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                              MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(ep, EH_name));
-      return STATUS_ESEMANTIC;
-   }
-   return STATUS_OK;
-}
-
-/**
- * @brief Validate-hook adapter for cluster queues (CS-2305).
- *
- * cqueue attribute verification (cqueue_verify_attributes) is what the cqueue
- * GDI wrapper runs before ADD/MOD; this maps it to the hook's status convention.
- *
- * @param ep   the parsed cluster queue object to verify
- * @param alpp answer list to receive verification messages
- * @return STATUS_OK on success, STATUS_ESEMANTIC on failure
- */
-static int
-qconf_cq_verify(const lListElem *ep, lList **alpp) {
-   lListElem *e = const_cast<lListElem *>(ep);
-   return cqueue_verify_attributes(e, alpp, e, false, nullptr, nullptr, nullptr, nullptr,
-                                   nullptr, nullptr, nullptr, nullptr)
-      ? STATUS_OK : STATUS_ESEMANTIC;
-}
-
-/**
- * @brief Validate-hook adapter for usersets (CS-2310).
- *
- * userset_validate_entries() is what the interactive -Au/-Mu paths run before
- * ADD/MOD; it takes a non-const element, so this wrapper const-casts to fit the
- * generic validate hook signature.
- *
- * @param ep   the parsed userset object to validate
- * @param alpp answer list to receive validation messages
- * @return STATUS_OK on success, another status on failure
- */
-static int
-qconf_us_validate(const lListElem *ep, lList **alpp) {
-   return userset_validate_entries(const_cast<lListElem *>(ep), alpp);
-}
-
-/* ===== CS-2795: the object descriptor table ================================
- * The generic engines above (qconf_apply_path, qconf_delete_path,
- * qconf_export_path, qconf_export_singleton) already drive every file-based
- * option from one implementation each. What every call site still repeated was
- * the tuple identifying the object: target, descriptor, name field, field list,
- * spooling instruction and the object's hooks. This table holds it once.
- *
- * Adding a new configuration object type is now one row plus its field
- * provider, instead of a tuple copied into each of the add, modify, delete and
- * export branches. */
-
-/** @brief One row per object type, indexed by QConfObj.
- *
- * Kept in the order of the enum so that qconf_desc() is a plain index. */
-static const qconf_object_desc qconf_object_table[] = {
-   /* CAL  */ { ocs::gdi::Target::CAL_LIST,  CAL_Type,  CAL_name,  qconf_fields_CAL,  &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "calendar", MSG_CALENDAR_XISNOTACALENDAR_S, nullptr } },
-   /* CK   */ { ocs::gdi::Target::CK_LIST,   CK_Type,   CK_name,   qconf_fields_CK,   &qconf_sfi,                 nullptr,      ckpt_validate,       nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "ckpt interface definition", MSG_CKPT_XISNOTCHKPINTERFACEDEF_S, nullptr } },
-   /* CE   */ { ocs::gdi::Target::CE_LIST,   CE_Type,   CE_name,   qconf_fields_CE,   &qconf_ce_sfi,              nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "complex entry", nullptr, nullptr } },
-   /* EH   */ { ocs::gdi::Target::EH_LIST,   EH_Type,   EH_name,   qconf_fields_EH,   &qconf_sfi,                 "exechost",   nullptr,             qconf_eh_resolve,  ocs::gdi::SubCommand::NONE,    false, true,  false, SGE_TEMPLATE_NAME,  SGE_GLOBAL_NAME,
-              { qconf_show_fields_EH, "execution host", MSG_EXEC_XISNOTANEXECUTIONHOST_S, qconf_show_prepare_EH } },
-   /* HGRP */ { ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_name, qconf_fields_HGRP, &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "host group list", nullptr, nullptr } },
-   /* PE   */ { ocs::gdi::Target::PE_LIST,   PE_Type,   PE_name,   qconf_fields_PE,   &qconf_sfi,                 nullptr,      qconf_pe_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "parallel environment", MSG_PARALLEL_XNOTAPARALLELEVIRONMENT_S, nullptr } },
-   /* PR   */ { ocs::gdi::Target::PR_LIST,   PR_Type,   PR_name,   qconf_fields_PR,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "project list", MSG_PROJECT_XISNOKNWOWNPROJECT_S, nullptr } },
-   /* CQ   */ { ocs::gdi::Target::CQ_LIST,   CQ_Type,   CQ_name,   qconf_fields_CQ,   &qconf_sfi,                 nullptr,      qconf_cq_verify,     nullptr,           ocs::gdi::SubCommand::SET_ALL, false, false, false, nullptr,            nullptr,
-              { nullptr, "cqueue list", nullptr, nullptr } },
-   /* RL   */ { ocs::gdi::Target::RL_LIST,   RL_Type,   RL_name,   qconf_fields_RL,   &qconf_sfi,                 nullptr,      qconf_role_validate, nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "role", MSG_ROLE_DOESNOTEXIST_S, nullptr } },
-   /* RQS  */ { ocs::gdi::Target::RQS_LIST,  RQS_Type,  RQS_name,  qconf_fields_RQS,  &qconf_rqs_sfi,             nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    true,  true,  false, nullptr,            nullptr,
-              { nullptr, "resource quota set list", nullptr, nullptr } },
-   /* US   */ { ocs::gdi::Target::US_LIST,   US_Type,   US_name,   qconf_fields_US,   &qconf_param_sfi,           nullptr,      qconf_us_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "userset list", nullptr, nullptr } },
-   /* UU   */ { ocs::gdi::Target::UU_LIST,   UU_Type,   UU_name,   qconf_fields_UU,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "user list", MSG_USER_XISNOKNOWNUSER_S, nullptr } },
-   /* STN  */ { ocs::gdi::Target::STN_LIST,  STN_Type,  NoName,    qconf_fields_STN,  &qconf_name_value_list_sfi, "sharetree",  nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  true,  nullptr,            nullptr,
-              { nullptr, nullptr, nullptr, nullptr } },
-   /* SC   */ { ocs::gdi::Target::SC_LIST,   SC_Type,   NoName,    qconf_fields_SC,   &qconf_comma_sfi,           "sched_conf", nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, nullptr, nullptr, nullptr } },
-};
-
-/** @brief The descriptor of one object type.
- * @param o the object type
- * @return its row in qconf_object_table
- */
-static const qconf_object_desc &
-qconf_desc(QConfObj o) {
-   return qconf_object_table[static_cast<size_t>(o)];
-}
 
 /** @brief How a show of one object ended (CS-2796).
  *
@@ -1541,8 +1336,17 @@ qconf_show_object(std::ostream &os, QConfObj o, const char *name) {
    spooling_field *fields = provider(qconf_opt_format, &owned);
 
    lListElem *ep = lFirstRW(lp);
-   if (d.read.prepare != nullptr) {
-      d.read.prepare(ep);
+   if (d.read.prepare != nullptr && qconf_opt_format == SP_FORM_JSON) {
+      /* CS-2799: the hook used to fetch the complex entries itself, once per
+       * helper it calls - two GDI round trips for one -se. It takes them as an
+       * argument now, because inside qmaster there is nothing to fetch from:
+       * the master list is right there. The JSON guard moved out with the
+       * fetch; for plain output the hook did nothing anyway. */
+      lList *centry_alp = nullptr;
+      lList *master_centry_list = centry_list_get_via_gdi(&centry_alp);
+      lFreeList(&centry_alp);
+      d.read.prepare(ep, master_centry_list);
+      lFreeList(&master_centry_list);
    }
    const char *filename = spool_flatfile_write_object(&alp, ep, d.is_root, fields, d.sfi,
                                                       SP_DEST_STREAM, qconf_opt_format, nullptr,
@@ -2215,124 +2019,6 @@ qconf_sharetree_exists() {
    return exists;
 }
 
-/**
- * @brief Fill complex-value sublists with their CULL type/numeric value (CS-2313a).
- *
- * The raw complex_values / threshold entries stored on an exec host or queue carry
- * only a name + string value (CE_valtype is NONE). To emit native JSON numbers
- * (slots -> 32, h_vmem -> bytes, h_rt -> seconds) the writer needs CE_valtype and
- * CE_doubleval, which centry_list_fill_request() derives from the centry
- * definitions - the same fill qstat performs before display.
- *
- * Runs only for -fmt json (ASCII output uses CE_stringval and is unaffected), is
- * best-effort (unresolved entries keep their string value), and mutates only the
- * throwaway in-memory object that is about to be serialized.
- *
- * @param obj       the object whose complex sublists should be filled (modified)
- * @param ce_fields the CE_Type sublist field ids to fill (e.g. EH_consumable_config_list)
- * @param n_fields  number of entries in @p ce_fields
- */
-void qconf_json_fill_complex(lListElem *obj, const int *ce_fields, int n_fields) {
-   if (qconf_opt_format != SP_FORM_JSON || obj == nullptr) {
-      return;
-   }
-   lList *alp = nullptr;
-   lList *master_centry_list = centry_list_get_via_gdi(&alp);
-   lFreeList(&alp);
-   if (master_centry_list == nullptr) {
-      return;
-   }
-   for (int i = 0; i < n_fields; i++) {
-      lList *sub = lGetListRW(obj, ce_fields[i]);
-      if (sub != nullptr && lGetNumberOfElem(sub) > 0) {
-         lList *fill_alp = nullptr;
-         centry_list_fill_request(sub, &fill_alp, master_centry_list, true, true, true);
-         lFreeList(&fill_alp);
-      }
-   }
-   lFreeList(&master_centry_list);
-}
-
-/**
- * @brief Render an exec host's load_values typed by their complex definition (CS-2313a).
- *
- * For -fmt json, values such as mem_total are rendered as bytes, num_proc as an
- * integer, np_load_avg as a double, ... instead of as raw strings. HL_Type load values
- * carry no type, so we build a CE_Type list (name + string value), resolve each entry's
- * type from the master complex list (tolerant of load names that are not defined
- * complexes), parse numeric values into CE_doubleval, and swap the typed CE list into
- * the load-list field. The generic JSON writer then renders it via its typed
- * complex-value path; unmatched or string-typed loads keep their string value. Runs
- * only for -fmt json and mutates only the throwaway object about to be shown.
- *
- * @param host          the (throwaway) exec host element to be shown
- * @param load_list_nm  CULL field id of the load-value list (e.g. EH_load_list)
- */
-static void
-qconf_json_type_load_values(lListElem *host, int load_list_nm) {
-   if (qconf_opt_format != SP_FORM_JSON || host == nullptr) {
-      return;
-   }
-   const lList *hl = lGetList(host, load_list_nm);
-   if (hl == nullptr || lGetNumberOfElem(hl) == 0) {
-      return;
-   }
-   lList *alp = nullptr;
-   lList *master_centry_list = centry_list_get_via_gdi(&alp);
-   lFreeList(&alp);
-   if (master_centry_list == nullptr) {
-      return;
-   }
-
-   lList *ce_list = lCreateList("load_values", CE_Type);
-   const lListElem *hlep;
-   for_each_ep(hlep, hl) {
-      lListElem *ce = lCreateElem(CE_Type);
-      lSetString(ce, CE_name, lGetString(hlep, HL_name));
-      lSetString(ce, CE_stringval, lGetString(hlep, HL_value));
-      lAppendElem(ce_list, ce);
-   }
-
-   /* fill CE_valtype from the complex definitions (skips unknown load names) */
-   centry_list_fill_config(ce_list, master_centry_list);
-
-   /* parse numeric values into CE_doubleval so the writer emits native numbers */
-   for (lListElem *ce = lFirstRW(ce_list); ce != nullptr; ce = lNextRW(ce)) {
-      const auto type = static_cast<ocs::CEntry::Type>(lGetUlong(ce, CE_valtype));
-      const char *s = lGetString(ce, CE_stringval);
-      double dval = 0.0;
-      switch (type) {
-         case ocs::CEntry::Type::INT:
-         case ocs::CEntry::Type::TIME:
-         case ocs::CEntry::Type::MEM:
-         case ocs::CEntry::Type::DOUBLE:
-         case ocs::CEntry::Type::BOOL:
-            if (s != nullptr && parse_ulong_val(&dval, nullptr, type, s, nullptr, 0)) {
-               lSetDouble(ce, CE_doubleval, dval);
-            }
-            break;
-         default:
-            break;   /* string-like / unmatched -> writer emits CE_stringval */
-      }
-   }
-
-   lSetList(host, load_list_nm, ce_list);
-   lFreeList(&master_centry_list);
-}
-
-/** @brief Type the numeric fields of an exec host before it is rendered.
- *
- * CS-2313a: complex_values and the load values are strings in CULL, so -fmt
- * json would quote them without this.
- *
- * @param ep the exec host about to be written
- */
-static void
-qconf_show_prepare_EH(lListElem *ep) {
-   static const int eh_ce_fields[] = { EH_consumable_config_list };
-   qconf_json_fill_complex(ep, eh_ce_fields, 1);
-   qconf_json_type_load_values(ep, EH_load_list);
-}
 
 /*------------------------------------------------------------*/
 /** @brief Work through the `qconf` command line, one switch at a time
@@ -2346,6 +2032,67 @@ qconf_show_prepare_EH(lListElem *ep) {
  * @param argv the arguments, not including `argv[0]`
  * @return 0 when every switch succeeded
  */
+/**
+ * @brief Run one read operation as a stored procedure, if it is one
+ *
+ * The switches of groups A and B render inside qmaster from CS-2799 on. Which
+ * ones is decided by the procedure itself, through
+ * ocs::QConfModelBase::resolve() - not by a list kept here, because what a
+ * caller may read is the server's question.
+ *
+ * @param os        the stream the output is written to
+ * @param param     the invocation, whose operation is set to @p op for the call
+ * @param op        the operation to run
+ * @param ret       the accumulated exit status, raised to 1 on failure
+ * @return true when the operation was handled here, false to run it locally
+ */
+static bool
+qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param,
+                         qconf_op &op, int *ret) {
+   DENTER(TOP_LAYER);
+
+   if (ocs::QConfModelBase::resolve(op.token.c_str()) == nullptr) {
+      DRETURN(false);
+   }
+
+   param.set_operation(op);
+   lList *alp = nullptr;
+   bool ok;
+
+   if (param.get_exec_context() == ocs::ProcedureParameter::ExecContext::SERVER) {
+      ocs::ProcedureModel model;
+      ok = model.make_snapshot(&alp, param);
+      if (ok) {
+         ocs::ProcedureView view(param);
+         ocs::ProcedureController controller(os);
+         controller.process_request(param, model, view);
+      }
+   } else {
+      ocs::QConfModelClient model;
+      ok = model.make_snapshot(&alp, param);
+      if (ok) {
+         std::unique_ptr<ocs::QConfViewBase> view;
+         if (param.get_output_format() == ocs::ProcedureParameter::OutputFormat::JSON) {
+            view = std::make_unique<ocs::QConfViewJSON>(param);
+         } else {
+            view = std::make_unique<ocs::QConfViewPlain>(param);
+         }
+         ocs::QConfController controller(os);
+         controller.process_request(param, model, *view);
+      }
+   }
+
+   if (!ok) {
+      /* the messages the engine used to write to stderr itself; an empty list
+       * for plain output is one of them, and still sets the exit status */
+      answer_list_output(&alp);
+      *ret = 1;
+   }
+   lFreeList(&alp);
+
+   DRETURN(true);
+}
+
 int sge_parse_qconf(char *argv[]) {
    DENTER(TOP_LAYER);
 
@@ -2383,22 +2130,21 @@ int sge_parse_qconf(char *argv[]) {
    }
    
    /* CS-2798: the command line is parsed as data before anything is executed.
-    * What comes back are the invocation-wide flags, taken over into the globals
-    * just below, and the ordered list of operations the execution phase walks -
-    * which is also what get_bundle() marshals in CS-2799.
+    * What comes back are the invocation-wide switches and the ordered list of
+    * operations the execution phase walks.
     *
-    * The flags have to take effect no matter where they appear, so that
+    * Those switches have to take effect no matter where they appear, so that
     * "qconf -sq all.q -fmt json" renders as JSON although -fmt comes last.
-    * qconf_parse_args() reads them in a pass of its own over argv, exactly as
+    * parse_parameters() reads them in a pass of its own over argv, exactly as
     * the hand written pre-scan did.
     *
     * MISSING_ARGUMENT and UNKNOWN_OPTION are not acted on here but after the
     * execution phase, so that a partially valid command line still produces the
     * output of its valid operations before the complaint - the order the single
     * parse-and-execute pass produced. */
-   qconf_invocation inv;
+   ocs::QConfParameterClient param(to_cstr(QCONF));
    std::string bad_token;
-   const QConfParseStatus parse_status = qconf_parse_args(inv, argv, bad_token);
+   const QConfParseStatus parse_status = param.parse_parameters(argv, bad_token);
    switch (parse_status) {
       case QConfParseStatus::NO_FORMAT_VALUE:
          fprintf(stderr, "%s\n", MSG_GDI_USAGE_Fmt_OPT);
@@ -2411,16 +2157,29 @@ int sge_parse_qconf(char *argv[]) {
          fprintf(stderr, MSG_QCONF_UNKNOWNFMTVAL_S, bad_token.c_str());
          fprintf(stderr, "\n");
          DRETURN(1);
+      case QConfParseStatus::BAD_EXEC_CONTEXT:
+         fprintf(stderr, MSG_PARSE_INVALIDOPTIONARGUMENTX_S, bad_token.c_str());
+         fprintf(stderr, "\n");
+         DRETURN(1);
       default:
          break;
    }
 
-   has_binding_param        = inv.binding;
-   qconf_opt_dry_run        = inv.dry_run;
-   qconf_opt_force          = inv.force;
-   qconf_opt_strict         = inv.strict;
-   qconf_opt_format         = inv.format;
-   ocs_json_value_format_opt = inv.value_format;
+   /* CS-2799: the parameter object is the single source of truth. The file
+    * statics below are a client-side mirror, written once, for the code that
+    * has not moved into libs/procedure yet - the write path and the bespoke
+    * show options of group N. They are never read by anything that runs inside
+    * qmaster, which is what the rule is about; a client is one process per
+    * invocation. They go when that code moves. */
+   has_binding_param = param.get_binding();
+   qconf_opt_dry_run = param.get_dry_run();
+   qconf_opt_force = param.get_force();
+   qconf_opt_strict = param.get_strict();
+   qconf_opt_format = (param.get_output_format() == ocs::ProcedureParameter::OutputFormat::JSON)
+                      ? SP_FORM_JSON : SP_FORM_ASCII;
+   ocs_json_value_format_opt =
+      (param.get_value_format() == ocs::QConfParameter::ValueFormat::NUMERIC)
+      ? OCS_JSON_VALUES_NUMERIC : OCS_JSON_VALUES_COMPACT;
 
    /* CS-2798: the execution phase. It walks the operations the parser produced,
     * in the order they were typed, and hands each option block its own argument
@@ -2429,8 +2188,21 @@ int sge_parse_qconf(char *argv[]) {
     * keep working unchanged; they simply no longer reach across the operation
     * they belong to. The trailing `spp++; continue;` of every block now means
     * "on to the next operation". */
-   for (qconf_op &op : inv.ops) {
+   for (qconf_op &op : param.get_operations()) {
       spp = op.as_argv();
+
+      /* CS-2799: the read path of groups A and B is a stored procedure now. In
+       * SERVER context the operation is handed to qmaster, which fetches and
+       * renders it - that is where RBAC knows what the caller may see. In
+       * CLIENT context the same model and view run here, against data fetched
+       * over GDI, which is what makes the two comparable byte for byte.
+       *
+       * Everything else - the write path, the bespoke show options of group N,
+       * and the four of A and B that stayed hand written - falls through to the
+       * option chain below and runs locally, in the order it was typed. */
+      if (qconf_run_read_procedure(os, param, op, &sge_parse_return)) {
+         continue;
+      }
 
 /*----------------------------------------------------------------------------*/
       /* The four skip branches that used to sit here - for -cb, the CS-2299

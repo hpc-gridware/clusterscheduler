@@ -26,7 +26,7 @@
 
 #include "uti/sge_rmon_macros.h"
 
-#include "ocs_qconf_ops.h"
+#include "ocs_QConfParameterClient.h"
 
 /** @brief What every `qconf` switch takes
  *
@@ -47,6 +47,7 @@ static const qconf_opt_spec qconf_opt_table[] = {
    {"-strict",     0, 0,                  0, true},
    {"-fmt",        1, 1,                  0, true},
    {"-fmtval",     1, 1,                  0, true},
+   {"-ectx",       1, 1,                  0, true},
    {"-acal",       0, 1,                  0, false},
    {"-Acal",       1, 1,                  0, false},
    {"-ackpt",      0, 1,                  0, false},
@@ -229,22 +230,9 @@ static const qconf_opt_spec qconf_opt_table[] = {
    {"-sprjl",      0, 0,                  0, false},
    {"-tsm",        0, 0,                  0, false},
 };
-
 /** @brief The number of rows in #qconf_opt_table */
 static constexpr size_t qconf_opt_table_size = sizeof(qconf_opt_table) / sizeof(qconf_opt_table[0]);
 
-/**
- * @brief Find the table row a command line token belongs to
- *
- * Exact matches win over prefix matches, so that `-kec` finds its own row
- * rather than the `-k` one. Among the prefix rows the behaviour of the hand
- * written blocks is kept as it was: `-k` compares two bytes, so `-ke` and
- * `-kej` reach it with their suffix intact, and `-kec` compares four, so a
- * token that merely starts with `-kec` still matches.
- *
- * @param token one command line token
- * @return the row, or nullptr when no switch matches
- */
 const qconf_opt_spec *
 qconf_opt_lookup(const char *token) {
    if (token == nullptr) {
@@ -265,32 +253,6 @@ qconf_opt_lookup(const char *token) {
 }
 
 /**
- * @brief The operation as its own argument vector
- *
- * `{ token, arg0, arg1, ..., nullptr }`, which is the shape the option blocks
- * of `sge_parse_qconf()` have always read: `*spp` is the switch,
- * `sge_parser_get_next()` walks forward and `sge_next_is_an_opt()` sees the
- * terminator. Giving each operation its own slice is what lets the execution
- * phase iterate the parsed list without rewriting all 163 blocks (CS-2798).
- *
- * The pointers are into this operation's own strings, so the vector is valid
- * until the operation is changed or destroyed.
- *
- * @return the argument vector, never nullptr
- */
-char **
-qconf_op::as_argv() {
-   argv_.clear();
-   argv_.reserve(args.size() + 2);
-   argv_.push_back(token.data());
-   for (std::string &a : args) {
-      argv_.push_back(a.data());
-   }
-   argv_.push_back(nullptr);
-   return argv_.data();
-}
-
-/**
  * @brief True when the next token is missing or looks like a switch
  *
  * The rule the option blocks used through `sge_next_is_an_opt()`, repeated here
@@ -307,56 +269,63 @@ qconf_next_is_an_opt(char **argv, int i) {
 }
 
 /**
- * @brief Read the invocation-wide flags out of the whole command line
+ * @brief Read the invocation-wide switches out of the whole command line
  *
  * A first pass over every token, exactly as the pre-scan of `sge_parse_qconf()`
  * did: it looks at each token on its own and does not consume the arguments of
- * the switches it passes. That is what makes these flags position-independent -
- * `qconf -sq all.q -fmt json` renders the queue as JSON although `-fmt` comes
- * last. Doing this with the arity table instead would quietly change that, so
- * it deliberately does not.
+ * the switches it passes. That is what makes these switches position
+ * independent - `qconf -sq all.q -fmt json` renders the queue as JSON although
+ * `-fmt` comes last. Doing this with the arity table instead would quietly
+ * change that, so it deliberately does not.
  *
- * @param inv       filled in with the flags
- * @param argv      the argument vector
+ * @param argv      the argument vector, without `argv[0]`
  * @param bad_token set to the offending value when the status is not OK
- * @return OK, or which flag could not be read
+ * @return OK, or which switch could not be read
  */
-static QConfParseStatus
-qconf_parse_flags(qconf_invocation &inv, char **argv, std::string &bad_token) {
+QConfParseStatus
+ocs::QConfParameterClient::parse_flags(char **argv, std::string &bad_token) {
    DENTER(TOP_LAYER);
 
    for (int i = 0; argv[i] != nullptr; i++) {
       const char *token = argv[i];
+      const char *value = argv[i + 1];
 
       if (strcmp("-cb", token) == 0) {
-         inv.binding = true;
+         binding_ = true;
       } else if (strcmp("-dry", token) == 0) {
-         inv.dry_run = true;
+         dry_run_ = true;
       } else if (strcmp("-f", token) == 0) {
-         inv.force = true;
+         force_ = true;
       } else if (strcmp("-strict", token) == 0) {
-         inv.strict = true;
+         strict_ = true;
       } else if (strcmp("-fmt", token) == 0) {
-         const char *value = argv[i + 1];
          if (value == nullptr) {
             DRETURN(QConfParseStatus::NO_FORMAT_VALUE);
          } else if (strcmp(value, "plain") == 0) {
-            inv.format = SP_FORM_ASCII;
+            output_format_ = OutputFormat::PLAIN;
          } else if (strcmp(value, "json") == 0) {
-            inv.format = SP_FORM_JSON;
+            output_format_ = OutputFormat::JSON;
          } else {
             bad_token = value;
             DRETURN(QConfParseStatus::BAD_FORMAT);
          }
       } else if (strcmp("-fmtval", token) == 0) {
-         const char *value = argv[i + 1];
          if (value != nullptr && strcmp(value, "compact") == 0) {
-            inv.value_format = OCS_JSON_VALUES_COMPACT;
+            value_format_ = ValueFormat::COMPACT;
          } else if (value != nullptr && strcmp(value, "numeric") == 0) {
-            inv.value_format = OCS_JSON_VALUES_NUMERIC;
+            value_format_ = ValueFormat::NUMERIC;
          } else {
             bad_token = value != nullptr ? value : "";
             DRETURN(QConfParseStatus::BAD_FORMAT_VALUE);
+         }
+      } else if (strcmp("-ectx", token) == 0) {
+         if (value != nullptr && strcmp(value, "client") == 0) {
+            exec_context_ = ExecContext::CLIENT;
+         } else if (value != nullptr && strcmp(value, "server") == 0) {
+            exec_context_ = ExecContext::SERVER;
+         } else {
+            bad_token = value != nullptr ? value : "";
+            DRETURN(QConfParseStatus::BAD_EXEC_CONTEXT);
          }
       }
    }
@@ -365,10 +334,10 @@ qconf_parse_flags(qconf_invocation &inv, char **argv, std::string &bad_token) {
 }
 
 /**
- * @brief Turn a `qconf` command line into flags and an ordered operation list
+ * @brief Turn a `qconf` command line into switches and an ordered operation list
  *
- * Two passes, for the reason given at #qconf_parse_flags: the first collects
- * the invocation-wide flags token by token, the second builds the operations,
+ * Two passes, for the reason given at #parse_flags: the first collects the
+ * invocation-wide switches token by token, the second builds the operations,
  * consuming each switch's arguments according to the table.
  *
  * On a malformed switch the parser **stops there** and returns what it has.
@@ -379,19 +348,18 @@ qconf_parse_flags(qconf_invocation &inv, char **argv, std::string &bad_token) {
  * validation.
  *
  * The parser never terminates the process. Like the engines of CS-2796 and
- * CS-2797 it reports and lets the caller decide, because this code moves into
- * qmaster in CS-2799 where `sge_exit()` would take the daemon down with it.
+ * CS-2797 it reports and lets the caller decide, because this code runs inside
+ * qmaster too, where `sge_exit()` would take the daemon down with it.
  *
- * @param inv       filled in with the flags and the operations
  * @param argv      the argument vector, without `argv[0]`
  * @param bad_token set to the offending token when the status is not OK
  * @return OK when the whole line was understood, else why it stopped
  */
 QConfParseStatus
-qconf_parse_args(qconf_invocation &inv, char **argv, std::string &bad_token) {
+ocs::QConfParameterClient::parse_parameters(char **argv, std::string &bad_token) {
    DENTER(TOP_LAYER);
 
-   QConfParseStatus status = qconf_parse_flags(inv, argv, bad_token);
+   QConfParseStatus status = parse_flags(argv, bad_token);
    if (status != QConfParseStatus::OK) {
       DRETURN(status);
    }
@@ -417,7 +385,7 @@ qconf_parse_args(qconf_invocation &inv, char **argv, std::string &bad_token) {
          if (argv[i + 1] == nullptr) {
             bad_token = op.token;
             if (!spec->invocation_wide) {
-               inv.ops.push_back(std::move(op));
+               operations_.push_back(std::move(op));
             }
             DRETURN(QConfParseStatus::MISSING_ARGUMENT);
          }
@@ -436,7 +404,7 @@ qconf_parse_args(qconf_invocation &inv, char **argv, std::string &bad_token) {
       /* the invocation-wide switches were read in the first pass; they are not
        * operations, but their arguments still have to be stepped over */
       if (!spec->invocation_wide) {
-         inv.ops.push_back(std::move(op));
+         operations_.push_back(std::move(op));
       }
    }
 

@@ -75,7 +75,8 @@
 
 #define MSG_CAT_DOESNOTEXIST_U                        _MESSAGE(5252, _("Category " sge_u32 " does not exist"))
 
-#define MSG_ROLE_DOESNOTEXIST_S                       _MESSAGE(5253, _(SFQ " is not a role"))
+/* MSG_ROLE_DOESNOTEXIST_S moved to libs/procedure/qconf/msg_qconf.h with the
+ * object descriptor table that is its only user (CS-2799); the id is unchanged. */
 
 /* CS-2299: qconf add/modify/delete interface enhancements
  * (directory input, upsert, name lists, -dry, -strict, idempotent delete) */
