@@ -23,5 +23,9 @@
 #include "sge_select_queue.h"
 
 bool
+select_granted_rsmap_instances(sge_assignment_t *a, lListElem *ja_task, const lListElem *job,
+                               const lList *host_list);
+
+bool
 add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lListElem *job, const lList *host_list);
 

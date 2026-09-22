@@ -490,6 +490,12 @@ void assignment_clear_cache(sge_assignment_t *a)
    lFreeList(&(a->limit_list));
    lFreeList(&(a->skip_cqueue_list));
    lFreeList(&(a->skip_host_list));
+
+   // The resource map instances are chosen per host for a given number of slots, so a choice
+   // belongs to the attempt it was made in. The parallel path clears the cache between slot
+   // count probes and between the times a reservation is tried at, and a choice left over from
+   // a probe which was then rejected would be applied to an assignment it was not made for.
+   lFreeList(&(a->granted_rsmaps));
 }
 
 static dispatch_t
@@ -6557,8 +6563,9 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
  *   consumable YES        the amount is taken per slot, so a group serves free/amount slots
  *   consumable JOB, HOST  the amount is taken once, so the group either serves it or not
  *
- * Evaluated once per host, from the same host configuration and utilization the booking will see
- * later, so that add_granted_resource_list() reaches the same group without it being carried.
+ * Evaluated once per host, from the host configuration and utilization the instances are then
+ * chosen from - select_granted_rsmap_instances() runs as soon as the assignment is fixed and
+ * records the choice, which the booking applies.
  *
  * @param a          the assignment
  * @param total_list the host's consumable configuration

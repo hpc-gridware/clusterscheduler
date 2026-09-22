@@ -90,15 +90,13 @@ gru_add_selected_instances(lListElem *gru, const lListElem *resource_definition,
  * list keyed the same way the granted resource list is, by name and host. Booking then copies
  * them (see gru_list_apply_selected_rsmap_ids()) instead of searching the host a second time.
  *
- * Before this, matching and booking each derived the ids from the host configuration and the
- * host utilization, and agreed only because nothing is debited between the two. Nothing
- * enforced that, and it does not hold where the lists differ between the two points - inside an
- * advance reservation sge_ar_swap_resource_lists() swaps them back before booking, which is why
- * a same=id request is refused there today (CS-2730).
+ * Matching and booking used to derive the ids separately, agreeing only because nothing is
+ * debited between the two. Nothing enforced that, and it did not hold inside an advance
+ * reservation, where sge_ar_swap_resource_lists() swaps the reservation's lists back before the
+ * booking runs - booking had to reach into AR_reserved_hosts to find what matching had seen.
  *
- * The decision is still taken during booking for now. What has changed is that there is one
- * place which takes it and a place to keep it, so moving it earlier - to where matching knows
- * which instances it chose - is a change to this function's caller and not to the booking.
+ * The decision is now taken once, while matching's view of the hosts is still in place, and the
+ * booking applies it (CS-2805).
  *
  * @param a          the assignment, receives the selection in a->granted_rsmaps
  * @param name       name of the resource map
@@ -115,18 +113,14 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   // Inside an advance reservation the instances come from what the reservation holds, not
-   // from what the host has free: the reservation reserved particular instances and a job
-   // running in it has to be granted from that set. Its copy of the host carries them, and its
-   // utilization records what the other jobs in the reservation took. Outside a reservation
-   // the host itself answers both questions.
-   const lListElem *host = nullptr;
-   if (a->ar != nullptr) {
-      host = lGetSubHost(a->ar, EH_name, host_name, AR_reserved_hosts);
-   }
-   if (host == nullptr) {
-      host = host_list_locate(host_list, host_name);
-   }
+   // Inside an advance reservation the instances come from what the reservation holds rather
+   // than from what the host has free, and the host answers that on its own here: this runs
+   // while sge_ar_swap_resource_lists() still has the reservation's capacity and utilization
+   // swapped into the host list, which is the same view matching worked from. Reading
+   // AR_reserved_hosts instead would reach the real lists, which is the opposite of what is
+   // wanted - while the swap is in place the reservation's copy is where the host's own
+   // lists are parked.
+   const lListElem *host = host_list_locate(host_list, host_name);
    if (host == nullptr) {
       ret = false;
    }
@@ -224,11 +218,14 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
  * @param host_list              the host list
  * @param amount                 the requested amount
  * @param slots                  how often it is taken here
+ * @param select_instances       true on the pass which chooses the resource map instances,
+ *                               false on the one which books what was chosen
  * @return true on success, false when a resource map could not be granted
  */
 static bool
 gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const lListElem *request,
-                     const char *host_name, const lList *host_list, double amount, u_long32 slots) {
+                     const char *host_name, const lList *host_list, double amount, u_long32 slots,
+                     bool select_instances) {
    DENTER(TOP_LAYER);
 
    const char *name = lGetString(request, CE_name);
@@ -297,7 +294,17 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
             same_key = sge_dstring_get_string(&same_param);
          }
 
-         ret = rsmap_select_granted_ids(a, name, host_name, host_list, amount * slots, same_key);
+         if (select_instances) {
+            ret = rsmap_select_granted_ids(a, name, host_name, host_list, amount * slots, same_key);
+         } else if (gru_list_search(a->granted_rsmaps, name, host_name) == nullptr) {
+            // The selection pass walks the same granted requests in the same order, so a map
+            // reached here was reached there. Nothing recorded means the two have drifted
+            // apart, and handing out a map with no instances would give the job a card the
+            // accounting says it holds and the system never gave it.
+            DPRINTF("gru_list_add_request: no instances were selected for %s on %s\n",
+                    name, host_name);
+            ret = false;
+         }
       }
    } else {
       // couldn't malloc gru?
@@ -380,18 +387,31 @@ gru_report_booking_failure(const sge_assignment_t *a, const lListElem *job,
 }
 
 /**
- * @brief add a granted resource list to a just scheduled ja_task
+ * @brief walk the granted requests of a job, once per pass
  *
- * The granted resource list is built from the (granted) hard requests of the job
- * and for RSMAPs by searching free ids in the hosts' complex_values lists.
+ * The granted resource list is built from the granted hard requests of the job, scope by scope
+ * and host by host. Both passes over a job walk this same code, so the rules which decide
+ * whether a request is booked on a host at all - the consumable kind, the master and slave
+ * scopes, how often the amount is taken - are stated once and cannot drift between them.
  *
- * @param ja_task
- * @param job
- * @param gdil
- * @param host_list
+ * The selection pass runs first, while matching's view of the hosts is still in place, and
+ * records the resource map instances on the assignment. It builds the granted resource list too
+ * and throws it away: the list is what carries the "a per host consumable is booked once on the
+ * global host" rule, and asking the question the same way on both passes is cheaper than
+ * restating the rule beside it.
+ *
+ * @param a                      the assignment
+ * @param ja_task                the task, for the failure messages
+ * @param job                    the job being scheduled
+ * @param host_list              the host list
+ * @param select_instances       true on the selection pass, false on the booking pass
+ * @param granted_resources_list out: the list built, nullptr when nothing was granted
  * @return true in case of success, false in case of errors
  */
-bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lListElem *job, const lList *host_list) {
+static bool
+gru_build_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lListElem *job,
+                                const lList *host_list, bool select_instances,
+                                lList **granted_resources_list_out) {
    DENTER(TOP_LAYER);
 
    // check input parameters
@@ -433,7 +453,7 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
          double amount = lGetDouble(request, CE_doubleval);
          DPRINTF("  global: %s, %d, %f\n", name, debit_slots, amount);
          if (!gru_list_add_request(a, &granted_resources_list, request, host_name,
-                                   host_list, amount, debit_slots)) {
+                                   host_list, amount, debit_slots, select_instances)) {
             gru_report_booking_failure(a, job, ja_task, name, host_name);
             ret = false;
          }
@@ -453,7 +473,7 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
             double amount = lGetDouble(request, CE_doubleval);
             DPRINTF("  master: %s, %d, %f\n", name, debit_slots, amount);
             if (!gru_list_add_request(a, &granted_resources_list, request, host_name,
-                                      host_list, amount, debit_slots)) {
+                                      host_list, amount, debit_slots, select_instances)) {
                gru_report_booking_failure(a, job, ja_task, name, host_name);
                ret = false;
             }
@@ -476,7 +496,7 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
          double amount = lGetDouble(request, CE_doubleval);
          DPRINTF("  slave: %s, %d, %f\n", name, debit_slots, amount);
          if (!gru_list_add_request(a, &granted_resources_list, request, host_name,
-                                   host_list, amount, debit_slots)) {
+                                   host_list, amount, debit_slots, select_instances)) {
             gru_report_booking_failure(a, job, ja_task, name, host_name);
             ret = false;
          }
@@ -484,6 +504,57 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
 
       last_host = host_name;
    }
+
+   *granted_resources_list_out = granted_resources_list;
+
+   DRETURN(ret);
+}
+
+/**
+ * @brief choose the resource map instances this assignment is granted
+ *
+ * Runs as soon as the assignment is fixed and before sge_ar_swap_resource_lists() puts an
+ * advance reservation's lists back, so that the choice is made from the host configuration and
+ * the utilization matching worked from. The choice is recorded on the assignment; the booking
+ * applies it.
+ *
+ * @param a         the assignment, receives the choice in a->granted_rsmaps
+ * @param ja_task   the task, for the failure messages
+ * @param job       the job being scheduled
+ * @param host_list the host list
+ * @return true in case of success, false when a resource map could not be served
+ */
+bool select_granted_rsmap_instances(sge_assignment_t *a, lListElem *ja_task, const lListElem *job,
+                                    const lList *host_list) {
+   DENTER(TOP_LAYER);
+
+   lList *granted_resources_list = nullptr;
+   bool ret = gru_build_granted_resource_list(a, ja_task, job, host_list, true,
+                                              &granted_resources_list);
+   lFreeList(&granted_resources_list);
+
+   DRETURN(ret);
+}
+
+/**
+ * @brief add a granted resource list to a just scheduled ja_task
+ *
+ * Books what select_granted_rsmap_instances() chose. The resource map instances are not decided
+ * here: this runs after an advance reservation's lists have been swapped back, so the hosts no
+ * longer show what the choice was made from.
+ *
+ * @param a         the assignment
+ * @param ja_task   the task the list is attached to
+ * @param job       the job being scheduled
+ * @param host_list the host list
+ * @return true in case of success, false in case of errors
+ */
+bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lListElem *job, const lList *host_list) {
+   DENTER(TOP_LAYER);
+
+   lList *granted_resources_list = nullptr;
+   bool ret = gru_build_granted_resource_list(a, ja_task, job, host_list, false,
+                                              &granted_resources_list);
 
    // The ids were selected once, onto the assignment; hand them to the resource maps they
    // were selected for. Doing it after the walk rather than inside it means a map requested
@@ -500,11 +571,6 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
    if (granted_resources_list != nullptr) {
       lSetList(ja_task, JAT_granted_resources_list, granted_resources_list);
    }
-
-#if 0
-   DPRINTF("add_granted_resource_list: after adding binding information\n");
-   lWriteElemTo(ja_task, stderr);
-#endif
 
    DRETURN(ret);
 }

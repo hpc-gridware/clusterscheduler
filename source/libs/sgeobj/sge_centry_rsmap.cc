@@ -840,12 +840,11 @@ centry_rsmap_select_group_instances(const lListElem *resource_definition,
  * take part in the ordinary "how many slots can this host offer" calculation instead of being a
  * separate filter beside it.
  *
- * Both the matching and the booking side call this, which is the point of it living here. They
- * run against the same host configuration and the same utilization - add_granted_resource_list()
- * is called as soon as the assignment is fixed, before anything is debited - so they reach the
- * same answer without the choice having to be carried from one to the other. If they ever
- * disagreed a job would be granted a mixed set while matching believed otherwise, which is why
- * there is one function and not two.
+ * Both the matching side and the side which chooses the instances call this, which is the point
+ * of it living here. Matching asks how many slots a host can offer under the constraint and the
+ * selection asks which instances serve it; one function answering both is what keeps a host from
+ * being offered slots that the selection then cannot fill. The choice itself is made once and
+ * recorded on the assignment for the booking to apply (CS-2805).
  *
  * @param resource_definition  the resource map on the host, from EH_consumable_config_list
  * @param taken                the identifiers which are already spoken for and how many of

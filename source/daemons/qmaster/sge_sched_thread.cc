@@ -1204,6 +1204,17 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       }
    }
 
+   // Choose the resource map instances while the hosts still show what matching worked from.
+   // Inside an advance reservation that is the reservation's own capacity and utilization,
+   // which the swap below puts back; choosing afterwards would read the host's real lists and
+   // could reach a different set than matching had in mind. The booking further down applies
+   // what is chosen here. A failure is not acted on yet - the swap has to happen first, or the
+   // reservation's lists stay in the scheduler's host list - so it is left to
+   // add_granted_resource_list(), which refuses a map that has no instances recorded.
+   if (result == DISPATCH_OK || result == DISPATCH_NOT_AT_TIME) {
+      select_granted_rsmap_instances(&a, ja_task, job, host_list);
+   }
+
    // in case of running in an AR, we swap resources back to the original state
    sge_ar_swap_resource_lists(a);
 
