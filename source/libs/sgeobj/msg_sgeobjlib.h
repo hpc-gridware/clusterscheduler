@@ -384,6 +384,7 @@
 #define MSG_RSMAP_RESERVED_NAME_SPOOLED_SS     _MESSAGE(64574, _("complex " SFQ " uses the " SFQ ", which is a reserved parameter name of a resource map request - it stays usable as an ordinary resource but cannot be matched as a characteristic of a resource map instance"))
 #define MSG_RSMAP_PARAM_NOT_AVAILABLE_SS       _MESSAGE(64575, _("RSMAP " SFQ ": the parameter list " SFQ " is not available in OCS"))
 #define MSG_RSMAP_PARAM_BAD_VALUE_SSS          _MESSAGE(64576, _("RSMAP " SFQ ": parameter " SFQ " does not take the value " SFQ))
+#define MSG_RSMAP_PARAM_BAD_EXPRESSION_SSS     _MESSAGE(64582, _("RSMAP " SFQ ": parameter " SFQ " is not a valid expression: " SFQ))
 #define MSG_RSMAP_DEFAULT_HAS_PARAMS_SS        _MESSAGE(64577, _("complex " SFQ ": the default value " SFQ " must be an amount, a resource map default request cannot carry a parameter list"))
 
 // clang-format on

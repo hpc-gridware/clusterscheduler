@@ -460,7 +460,7 @@ utilization_rsmap_max(const lListElem *cr, u_long64 now, u_long64 start_time, u_
  */
 u_long64
 utilization_rsmap_below(const lListElem *definition, const lListElem *cr, const char *key_name,
-                        u_long32 amount) {
+                        u_long32 amount, const char *id_expr) {
    DENTER(TOP_LAYER);
 
    if (definition == nullptr || amount == 0) {
@@ -474,13 +474,22 @@ utilization_rsmap_below(const lListElem *definition, const lListElem *cr, const 
       DRETURN(DISPATCH_TIME_NOW);
    }
 
-   lList *keys = centry_rsmap_group_keys(definition, key_name);
+   // With same= the request has to be served by one group, so every group is asked and the
+   // earliest of them is the answer. Without it the instances need not agree in anything and
+   // there is a single set to ask about - the one an id= expression leaves, or the whole map.
+   // A single element list keeps that as one walk rather than a second copy of it.
+   lList *keys = nullptr;
+   if (key_name != nullptr) {
+      keys = centry_rsmap_group_keys(definition, key_name);
+   } else {
+      lAddElemStr(&keys, ST_name, "", ST_Type);
+   }
    u_long64 earliest = U_LONG64_MAX;
    bool found = false;
 
    const lListElem *key_ep;
    for_each_ep (key_ep, keys) {
-      const char *key = lGetString(key_ep, ST_name);
+      const char *key = (key_name != nullptr) ? lGetString(key_ep, ST_name) : nullptr;
 
       // Walk this group's history backwards. The entry which does not fit ends the search: the
       // one after it is the point from which the group is free to the end of the diagram.
@@ -493,8 +502,11 @@ utilization_rsmap_below(const lListElem *definition, const lListElem *cr, const 
       bool never = false;
       const lListElem *rde;
       for_each_rev (rde, diagram) {
-         if (centry_rsmap_group_free(definition, lGetList(rde, RDE_resource_map_list),
-                                     key_name, key) >= amount) {
+         const lList *rde_taken = lGetList(rde, RDE_resource_map_list);
+         const u_long32 free = (key != nullptr)
+               ? centry_rsmap_group_free(definition, rde_taken, key_name, key, id_expr)
+               : centry_rsmap_free(definition, rde_taken, id_expr);
+         if (free >= amount) {
             continue;
          }
          const lListElem *next = lNext(rde);
