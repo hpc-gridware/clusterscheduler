@@ -68,7 +68,8 @@ lList *utilization_rsmap_max(const lListElem *cr, uint64_t now, uint64_t start_t
 
 uint64_t utilization_rsmap_below(const lListElem *definition, const lListElem *cr,
                                  const char *key_name, uint32_t amount,
-                                 const char *id_expr = nullptr);
+                                 const char *id_expr = nullptr,
+                                 const lList *required_props = nullptr);
 
 double utilization_max(const sge_assignment_t *a, const lListElem *host, const lListElem *cr, uint64_t start_time, uint64_t duration, double total, double request, double slots, bool for_excl_request, ocs::TopologyString& binding_inuse);
 

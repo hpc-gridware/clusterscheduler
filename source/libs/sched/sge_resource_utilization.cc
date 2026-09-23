@@ -470,12 +470,16 @@ utilization_rsmap_max(const lListElem *cr, uint64_t now, uint64_t start_time, ui
  * @param cr         the resource utilization of the map (RUE_Type), may be nullptr
  * @param key_name   "id" or the name of a characteristic
  * @param amount     how many instances of one group are needed
+ * @param id_expr    nullptr when the request carries no id= parameter, otherwise the expression
+ *                   an instance's identifier has to satisfy
+ * @param required_props nullptr when the request names no characteristic, otherwise the resolved
+ *                   requirements an instance has to carry
  * @return           the time from which a group can serve the request, DISPATCH_TIME_NOW when
  *                   one can already, std::numeric_limits<uint64_t>::max() when no group ever can
  */
 uint64_t
 utilization_rsmap_below(const lListElem *definition, const lListElem *cr, const char *key_name,
-                        uint32_t amount, const char *id_expr) {
+                        uint32_t amount, const char *id_expr, const lList *required_props) {
    DENTER(TOP_LAYER);
 
    if (definition == nullptr || amount == 0) {
@@ -519,8 +523,9 @@ utilization_rsmap_below(const lListElem *definition, const lListElem *cr, const 
       for_each_rev (rde, diagram) {
          const lList *rde_taken = lGetList(rde, RDE_resource_map_list);
          const uint32_t free = (key != nullptr)
-               ? centry_rsmap_group_free(definition, rde_taken, key_name, key, id_expr)
-               : centry_rsmap_free(definition, rde_taken, id_expr);
+               ? centry_rsmap_group_free(definition, rde_taken, key_name, key, id_expr,
+                                         required_props)
+               : centry_rsmap_free(definition, rde_taken, id_expr, required_props);
          if (free >= amount) {
             continue;
          }

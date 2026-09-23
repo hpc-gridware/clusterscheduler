@@ -116,7 +116,8 @@ Whitespace inside the brackets is ignored, so a long definition can be continued
                               affinity_mask=SccccccccSCCCCCCCC])
 
 Most characteristics are metadata that only a prolog or the job itself interprets. One is read by
-xxQS_NAMExx: *devices*, described under DEVICE ISOLATION.
+xxQS_NAMExx: *devices*, described under DEVICE ISOLATION. A request can be matched against any of
+them, as described under REQUESTING A RESOURCE MAP.
 
 Characteristics are available in Gridware Cluster Scheduler only.
 
@@ -151,13 +152,49 @@ reports which. A job running inside a reservation is granted from that set, and 
 outside one is not granted an instance a reservation holds for the time it runs. A job whose
 request cannot be met from the reserved instances is refused when it is submitted.
 
-## Requiring that the granted instances agree
+## Parameters in a request
 
 A request may carry a list of parameters in brackets after the amount:
 
     qsub -l 'gpu=4[same=id]' ...
 
 Quote the request. A shell would otherwise read the brackets as a file name pattern.
+
+The parameters are separated by commas and combine: an instance has to satisfy all of them. The
+names `id`, `same`, `scope`, `distinct` and `bind` are reserved. Any other name is read as a
+complex and matched against the characteristic of that name, as described further below.
+
+A request carrying a parameter list is available in Gridware Cluster Scheduler only. An Open
+Cluster Scheduler refuses such a request when the job is submitted, rather than accepting it and
+granting whichever instances happen to be free.
+
+## Choosing the instances by identifier
+
+*id=* takes an expression over the identifiers of the map, and the job is granted only instances
+whose identifier satisfies it. The expression is the one described under *expression* in
+xxqs_name_sxx_types(1): shell wildcards, combined with `!` for not, `&` for and and `|` for or,
+and grouped with brackets.
+
+    qsub -l 'gpu=1[id=gpu0]' ...
+
+Exactly that instance.
+
+    qsub -l 'gpu=1[id=gpu1*]' ...
+
+Any instance whose identifier begins with `gpu1`. Where the identifiers say which card a share
+belongs to, this is how a job asks for a share of a particular card.
+
+    qsub -l 'gpu=1[id=!gpu0]' ...
+    qsub -l 'gpu=2[id=(gpu1*|gpu2*)&!*b]' ...
+
+Anything but `gpu0`, and then the `a` shares of two cards.
+
+More instances may match than the job asked for, and the scheduler chooses among those that do.
+Where none match on a host the job cannot run there, and where none match anywhere it waits.
+
+An expression which does not parse is refused when the job is submitted.
+
+## Requiring that the granted instances agree
 
 *same=* names what the instances granted for this request must have in common. It takes either
 `id`, meaning the identifier itself, or the name of a characteristic.
@@ -191,6 +228,35 @@ A request carrying *same=* takes part in resource reservation like any other. A 
 `-R y` is given a reserved start time at which one group is actually free, not merely one at which
 the amount is free across several groups, so a job waiting for a whole card is not passed over
 indefinitely by jobs asking for single shares.
+
+## Matching against the characteristics of an instance
+
+A parameter whose name is not one of the reserved words names a complex, and the request is
+matched against the characteristic of that name on the instance.
+
+    qsub -l 'gpu=1[memory=40G]' ...
+
+The comparison uses the relation operator of that complex, in the same direction as an ordinary
+resource request: the requested value on the left of the operator, the configured one on the
+right. No operator is written in the request.
+
+A *memory* complex defined `<=` therefore makes the request above mean at least 40G, and a
+*gpu_temp* complex defined `>=` makes `[gpu_temp=40]` mean no hotter than 40. How the complex is
+defined is what decides how a request for it reads.
+
+Whether a value may be a pattern follows from the type of the complex: *RESTRING* is matched as
+an expression, *CSTRING* without regard to case, *STRING* exactly, *HOST* by the host name rules,
+and the numeric types by value. This differs from an ordinary resource request, where a *STRING*
+value which contains wildcards is matched as a pattern.
+
+An instance which does not carry the characteristic never matches, there being nothing to
+compare it against.
+
+The complex must be defined, must be requestable, and must be neither a consumable nor a
+resource map; a request naming one which is not is refused when the job is submitted. Matching a
+characteristic this way does not satisfy a *FORCED* complex: a forced request is checked against
+the complex_values of the host and the queue and against the requests of the job, and a bracket
+parameter is neither of those.
 
 # WHAT A JOB SEES
 
@@ -242,10 +308,8 @@ A resource map cannot be attached to a queue.
 An identifier is meaningful only on the host it is configured on. Two hosts using the same
 identifier are related only by convention.
 
-A request cannot name the instances it wants. It can require that the instances it is granted
-agree, as described above, but the scheduler chooses among the free ones. The parameter names
-`id`, `scope` and `distinct` are reserved for naming instances and for constraints which are not
-implemented, and a request using one of them is refused.
+The parameter names `scope` and `distinct` are reserved for constraints which are not
+implemented, and a request using either of them is refused.
 
 # SEE ALSO
 
