@@ -6204,21 +6204,29 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
                                  centry_rsmap_get_request_param(rep, RSMAP_REQUEST_PARAM_SAME, &same_key);
          const bool id_given = lGetUlong(rep, CE_valtype) == TYPE_RSMAP &&
                                centry_rsmap_get_request_param(rep, RSMAP_REQUEST_PARAM_ID, &id_key);
-         if (same_given || id_given) {
+         lList *required_props = nullptr;
+         const bool props_given = lGetUlong(rep, CE_valtype) == TYPE_RSMAP &&
+                                  centry_rsmap_resolve_request_properties(rep, a->centry_list,
+                                                                          &required_props);
+         if (same_given || id_given || props_given) {
             const auto group_amount = static_cast<u_long32>(request * slots);
             u_long64 group_when = utilization_rsmap_below(capacitiy_el, actual_el,
                                                           same_given ? sge_dstring_get_string(&same_key) : nullptr,
                                                           group_amount,
-                                                          id_given ? sge_dstring_get_string(&id_key) : nullptr);
+                                                          id_given ? sge_dstring_get_string(&id_key) : nullptr,
+                                                          required_props);
             if (group_when == U_LONG64_MAX) {
                // the request can never be served here, so there is nothing to wait for
                if (same_given) {
                   sge_dstring_sprintf(reason, MSG_SCHEDD_SAMEIDNOTFULLFILLED_SS, attrname,
                                       sge_dstring_get_string(&same_key));
-               } else {
+               } else if (id_given) {
                   sge_dstring_sprintf(reason, MSG_SCHEDD_IDNOTFULLFILLED_SS, attrname,
                                       sge_dstring_get_string(&id_key));
+               } else {
+                  sge_dstring_sprintf(reason, MSG_SCHEDD_CHARNOTFULLFILLED_S, attrname);
                }
+               lFreeList(&required_props);
                lFreeElem(&cplx_el);
                DRETURN(DISPATCH_NEVER_CAT);
             }
@@ -6229,6 +6237,7 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
                        sge_ctime64(group_when, &when_dstr), when);
                when = group_when;
             }
+            lFreeList(&required_props);
          }
 
          if (when == 0) {
@@ -6600,7 +6609,14 @@ rsmap_same_slots(const sge_assignment_t *a, const lList *total_list,
          DSTRING_STATIC(id_param, 256);
          const bool has_same = centry_rsmap_get_request_param(req, RSMAP_REQUEST_PARAM_SAME, &param);
          const bool has_id = centry_rsmap_get_request_param(req, RSMAP_REQUEST_PARAM_ID, &id_param);
-         if (!has_same && !has_id) {
+
+         // A parameter which is not a reserved word names a characteristic the instances have
+         // to carry. Resolved once here rather than once per instance, because the comparison
+         // needs the type and the operator of that characteristic's own complex.
+         lList *required_props = nullptr;
+         const bool has_props = centry_rsmap_resolve_request_properties(req, a->centry_list,
+                                                                        &required_props);
+         if (!has_same && !has_id && !has_props) {
             continue;
          }
          const char *same_key = has_same ? sge_dstring_get_string(&param) : nullptr;
@@ -6611,6 +6627,7 @@ rsmap_same_slots(const sge_assignment_t *a, const lList *total_list,
          const lListElem *definition = lGetElemStr(total_list, CE_name, name);
          if (definition == nullptr) {
             // the map is not configured on this host; the ordinary matching rejects the host
+            lFreeList(&required_props);
             continue;
          }
 
@@ -6638,11 +6655,13 @@ rsmap_same_slots(const sge_assignment_t *a, const lList *total_list,
          // request may use at all, which an id= expression narrows and nothing else does.
          u_long32 best_free = 0;
          if (has_same) {
-            centry_rsmap_best_free_group(definition, taken, same_key, &best_free, id_expr);
+            centry_rsmap_best_free_group(definition, taken, same_key, &best_free, id_expr,
+                                         required_props);
          } else {
-            best_free = centry_rsmap_free(definition, taken, id_expr);
+            best_free = centry_rsmap_free(definition, taken, id_expr, required_props);
          }
          lFreeList(&taken);
+         lFreeList(&required_props);
 
          const auto amount = static_cast<u_long32>(lGetDouble(req, CE_doubleval));
          if (amount == 0) {
@@ -6659,8 +6678,10 @@ rsmap_same_slots(const sge_assignment_t *a, const lList *total_list,
          if (slots == 0) {
             if (has_same) {
                sge_dstring_sprintf(reason, MSG_SCHEDD_SAMEIDNOTFULLFILLED_SS, name, same_key);
-            } else {
+            } else if (has_id) {
                sge_dstring_sprintf(reason, MSG_SCHEDD_IDNOTFULLFILLED_SS, name, id_expr);
+            } else {
+               sge_dstring_sprintf(reason, MSG_SCHEDD_CHARNOTFULLFILLED_S, name);
             }
             return 0;
          }

@@ -105,12 +105,18 @@ gru_add_selected_instances(lListElem *gru, const lListElem *resource_definition,
  * @param amount     how many instances to select
  * @param same_key   nullptr when the request carries no same= constraint, otherwise what the
  *                   granted instances have to agree in: "id" or the name of a characteristic
+ * @param id_expr    nullptr when the request carries no id= parameter, otherwise the expression
+ *                   an instance's identifier has to satisfy to be used at all
+ * @param required_props nullptr when the request names no characteristic, otherwise the
+ *                   resolved requirements an instance has to carry, each holding the name, the
+ *                   type and the relation operator of the characteristic's own complex - see
+ *                   centry_rsmap_resolve_request_properties()
  * @return true on success, false when no set of ids could be selected
  */
 static bool
 rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host_name,
                          const lList *host_list, u_long32 amount, const char *same_key,
-                         const char *id_expr) {
+                         const char *id_expr, const lList *required_props) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -183,10 +189,12 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
             if (same_key != nullptr) {
                selected_ok = centry_rsmap_select_group_instances(resource_definition, taken,
                                                                  already, same_key, amount,
-                                                                 &selected, id_expr);
+                                                                 &selected, id_expr,
+                                                                 required_props);
             } else {
                selected_ok = centry_rsmap_select_instances(resource_definition, taken, already,
-                                                           amount, &selected, id_expr);
+                                                           amount, &selected, id_expr,
+                                                           required_props);
             }
             lFreeList(&taken);
 
@@ -304,9 +312,14 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
             id_expr = sge_dstring_get_string(&id_param);
          }
 
+         // the characteristics the request asks the instances to carry, resolved against the
+         // complex list the same way matching resolved them
+         lList *required_props = nullptr;
+         centry_rsmap_resolve_request_properties(request, a->centry_list, &required_props);
+
          if (select_instances) {
             ret = rsmap_select_granted_ids(a, name, host_name, host_list, amount * slots,
-                                           same_key, id_expr);
+                                           same_key, id_expr, required_props);
          } else if (gru_list_search(a->granted_rsmaps, name, host_name) == nullptr) {
             // The selection pass walks the same granted requests in the same order, so a map
             // reached here was reached there. Nothing recorded means the two have drifted
@@ -316,6 +329,7 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
                     name, host_name);
             ret = false;
          }
+         lFreeList(&required_props);
       }
    } else {
       // couldn't malloc gru?

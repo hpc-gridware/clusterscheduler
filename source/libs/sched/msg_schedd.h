@@ -247,6 +247,7 @@
 #define MSG_SCHEDD_REQUESTNOTRESOLVED                 _MESSAGE(47406, _("the request could not be resolved against the complex configuration"))
 #define MSG_SCHEDD_SAMEIDNOTFULLFILLED_SS             _MESSAGE(47407, _("resource map " SFQ " does not have enough free instances sharing one " SFN))
 #define MSG_SCHEDD_IDNOTFULLFILLED_SS                 _MESSAGE(47413, _("resource map " SFQ " does not have enough free instances matching " SFQ))
+#define MSG_SCHEDD_CHARNOTFULLFILLED_S                _MESSAGE(47414, _("resource map " SFQ " does not have enough free instances carrying the requested characteristics"))
 #define MSG_SCHEDD_INFO_CANNOTBOOKRESOURCE_SS         _MESSAGE(47411, _("resource " SFQ " could not be granted on host " SFQ " although the host was selected for the job"))
 #define MSG_SCHEDD_INFO_CANNOTBOOKRESOURCE            _MESSAGE(47412, _("a resource could not be granted on a host although the host was selected for the job"))
 

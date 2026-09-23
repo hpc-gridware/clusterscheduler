@@ -200,6 +200,15 @@ make_centry_list() {
    lSetUlong(ep, CE_requestable, REQU_YES);
    lAppendElem(lp, ep);
 
+   // may not be requested, so it may not be matched against either
+   ep = lCreateElem(CE_Type);
+   lSetString(ep, CE_name, "gpu_serial");
+   lSetUlong(ep, CE_valtype, TYPE_STR);
+   lSetUlong(ep, CE_relop, CMPLXEQ_OP);
+   lSetUlong(ep, CE_consumable, CONSUMABLE_NO);
+   lSetUlong(ep, CE_requestable, REQU_NO);
+   lAppendElem(lp, ep);
+
    ep = lCreateElem(CE_Type);
    lSetString(ep, CE_name, "mem");
    lSetUlong(ep, CE_valtype, TYPE_MEM);
@@ -386,11 +395,20 @@ test_parameter_validation() {
    check_int("T49d", "same with a value which names nothing at all is refused",
              fill("gpu=4[same=banana]", centries), -1);
 
-   /* a characteristic name resolves, but nothing matches it against an instance yet */
-   check_int("T32", "a characteristic name is refused until it is implemented",
-             fill("gpu=1[gpu_memory=40G]", centries), -1);
+   /* a parameter naming a complex is matched against the characteristic of that name on an
+      instance, so the name has to resolve and the complex has to be one which can be matched */
+   check_int("T32", "a characteristic name is accepted",
+             fill("gpu=1[gpu_memory=40G]", centries), 0);
    check_int("T36", "a character class in a characteristic value does not derail the walk",
-             fill("gpu=1[gpu_model=tesla[AB]]", centries), -1);
+             fill("gpu=1[gpu_model=tesla[AB]]", centries), 0);
+   check_int("T32b", "a characteristic composes with the reserved parameters",
+             fill("gpu=4[gpu_memory=40G,id=gpu1*,same=id]", centries), 0);
+   check_int("T32c", "a consumable complex cannot be a characteristic",
+             fill("gpu=1[mem=1G]", centries), -1);
+   check_int("T32d", "a complex which is not requestable cannot be matched",
+             fill("gpu=1[gpu_serial=X1]", centries), -1);
+   check_int("T32e", "a resource map cannot be a characteristic",
+             fill("gpu=1[gpu=1]", centries), -1);
 
    lFreeList(&centries);
 }
@@ -930,6 +948,175 @@ test_id_expression() {
    lFreeElem(&shared);
 }
 
+/**
+ * Build a complex which can be a characteristic, so that the type and operator matrix can be
+ * exercised: the comparison uses the type and the relop the complex declares.
+ */
+static lListElem *
+make_characteristic(const char *name, u_long32 type, u_long32 relop) {
+   lListElem *ep = lCreateElem(CE_Type);
+   lSetString(ep, CE_name, name);
+   lSetUlong(ep, CE_valtype, type);
+   lSetUlong(ep, CE_relop, relop);
+   lSetUlong(ep, CE_consumable, CONSUMABLE_NO);
+   lSetUlong(ep, CE_requestable, REQU_YES);
+   return ep;
+}
+
+/** Give one instance of a map a characteristic with a value. */
+static void
+set_characteristic(lListElem *def, const char *id, const char *pname, u_long32 type,
+                   const char *value) {
+   lListElem *resl = lGetSubStrRW(def, RESL_value, id, CE_resource_map_list);
+   lListElem *prop = lAddSubStr(resl, CE_name, pname, RESL_properties, CE_Type);
+   lSetUlong(prop, CE_valtype, type);
+   lSetString(prop, CE_stringval, value);
+   lList *answers = nullptr;
+   centry_fill_and_check(prop, &answers, false, false);
+   lFreeList(&answers);
+}
+
+/** A map of two instances, each carrying the characteristics the cases below ask about. */
+static lListElem *
+make_map_with_characteristics() {
+   lListElem *ep = lCreateElem(CE_Type);
+   lSetString(ep, CE_name, "gpu");
+   lSetUlong(ep, CE_valtype, TYPE_RSMAP);
+
+   for (const char *id : {"gpu0", "gpu1"}) {
+      lListElem *resl = lAddSubStr(ep, RESL_value, id, CE_resource_map_list, RESL_Type);
+      lSetUlong(resl, RESL_amount, 1);
+   }
+
+   /* gpu0 is the cool, small, A100; gpu1 the hot, large, H100 */
+   set_characteristic(ep, "gpu0", "gpu_temp",   TYPE_INT, "35");
+   set_characteristic(ep, "gpu1", "gpu_temp",   TYPE_INT, "55");
+   set_characteristic(ep, "gpu0", "gpu_mem",    TYPE_MEM, "40G");
+   set_characteristic(ep, "gpu1", "gpu_mem",    TYPE_MEM, "80G");
+   set_characteristic(ep, "gpu0", "gpu_name",   TYPE_STR, "A100");
+   set_characteristic(ep, "gpu1", "gpu_name",   TYPE_STR, "H100");
+   set_characteristic(ep, "gpu0", "gpu_re",     TYPE_RESTR, "A100");
+   set_characteristic(ep, "gpu1", "gpu_re",     TYPE_RESTR, "H100");
+   set_characteristic(ep, "gpu0", "gpu_ci",     TYPE_CSTR, "A100");
+   set_characteristic(ep, "gpu1", "gpu_ci",     TYPE_CSTR, "H100");
+
+   return ep;
+}
+
+/**
+ * The type and operator matrix. The comparison is "requested relop configured" with the
+ * operator the characteristic's own complex declares, so the same request reads differently
+ * depending on how the complex was defined - which is the point of it.
+ */
+static void
+test_characteristic_matching() {
+   lList *centries = lCreateList("complexes", CE_Type);
+
+   lListElem *gpu = lCreateElem(CE_Type);
+   lSetString(gpu, CE_name, "gpu");
+   lSetUlong(gpu, CE_valtype, TYPE_RSMAP);
+   lSetUlong(gpu, CE_consumable, CONSUMABLE_HOST);
+   lSetUlong(gpu, CE_requestable, REQU_YES);
+   lAppendElem(centries, gpu);
+
+   /* >= : the request is an upper bound, "no hotter than" */
+   lAppendElem(centries, make_characteristic("gpu_temp", TYPE_INT, CMPLXGE_OP));
+   /* <= : the request is a lower bound, "at least" */
+   lAppendElem(centries, make_characteristic("gpu_mem", TYPE_MEM, CMPLXLE_OP));
+   /* == on a string: matched exactly */
+   lAppendElem(centries, make_characteristic("gpu_name", TYPE_STR, CMPLXEQ_OP));
+   /* defined, but no instance of the map carries it */
+   lAppendElem(centries, make_characteristic("gpu_clock", TYPE_INT, CMPLXLE_OP));
+   /* the string types differ in whether a value may be a pattern, and in case */
+   lAppendElem(centries, make_characteristic("gpu_re", TYPE_RESTR, CMPLXEQ_OP));
+   lAppendElem(centries, make_characteristic("gpu_ci", TYPE_CSTR, CMPLXEQ_OP));
+
+   lListElem *def = make_map_with_characteristics();
+
+   struct {
+      const char *id;
+      const char *request;
+      u_long32    expected;
+      const char *what;
+   } cases[] = {
+      {"T140", "gpu=1[gpu_temp=40]", 1,
+       "a >= characteristic reads as an upper bound: only the instance at 35 matches"},
+      {"T141", "gpu=1[gpu_temp=60]", 2,
+       "both instances are below 60"},
+      {"T142", "gpu=1[gpu_temp=30]", 0,
+       "neither instance is that cool"},
+      {"T143", "gpu=1[gpu_mem=40G]", 2,
+       "a <= characteristic reads as a lower bound: both carry at least 40G"},
+      {"T144", "gpu=1[gpu_mem=80G]", 1,
+       "only the larger one carries 80G"},
+      {"T145", "gpu=1[gpu_mem=100G]", 0,
+       "neither carries 100G"},
+      {"T146", "gpu=1[gpu_name=A100]", 1,
+       "a string characteristic matched exactly"},
+      {"T147", "gpu=1[gpu_name=V100]", 0,
+       "a name no instance carries matches none"},
+      {"T148", "gpu=1[gpu_temp=40,gpu_mem=40G]", 1,
+       "two characteristics compose, both have to hold"},
+      {"T149", "gpu=1[gpu_temp=40,gpu_mem=80G]", 0,
+       "the cool one is too small and the large one too hot"},
+      {"T150", "gpu=1[gpu_clock=1000]", 0,
+       "a characteristic which is defined but which no instance carries matches none"},
+
+      /* whether a value may be a pattern follows from the type, which is what the three
+         string types are there to distinguish */
+      {"T152", "gpu=1[gpu_re=A*]", 1,
+       "a RESTRING characteristic takes a pattern"},
+      {"T153", "gpu=1[gpu_re=(A100|H100)]", 2,
+       "and a whole expression"},
+      {"T154", "gpu=1[gpu_name=A*]", 0,
+       "a STRING characteristic does not take a pattern, it is matched exactly"},
+      {"T155", "gpu=1[gpu_name=A100]", 1,
+       "and matches the value it carries"},
+      {"T156", "gpu=1[gpu_ci=a100]", 1,
+       "a CSTRING characteristic ignores case"},
+      {"T157", "gpu=1[gpu_ci=a*]", 0,
+       "but does not take a pattern either"},
+      {nullptr, nullptr, 0, nullptr}
+   };
+
+   for (int i = 0; cases[i].id != nullptr; i++) {
+      lList *request = centry_list_parse_from_string(nullptr, cases[i].request, false);
+      lListElem *req = lFirstRW(request);
+      lSetUlong(req, CE_valtype, TYPE_RSMAP);
+
+      lList *required = nullptr;
+      centry_rsmap_resolve_request_properties(req, centries, &required);
+
+      const u_long32 free = centry_rsmap_free(def, nullptr, nullptr, required);
+      check_int(cases[i].id, cases[i].what, (int)free, (int)cases[i].expected);
+
+      lFreeList(&required);
+      lFreeList(&request);
+   }
+
+   /* an instance which does not carry the characteristic at all never matches, even when the
+      operator would let anything through */
+   lListElem *bare = lCreateElem(CE_Type);
+   lSetString(bare, CE_name, "gpu");
+   lSetUlong(bare, CE_valtype, TYPE_RSMAP);
+   lListElem *resl = lAddSubStr(bare, RESL_value, "gpu9", CE_resource_map_list, RESL_Type);
+   lSetUlong(resl, RESL_amount, 1);
+
+   lList *request = centry_list_parse_from_string(nullptr, "gpu=1[gpu_temp=99]", false);
+   lListElem *req = lFirstRW(request);
+   lSetUlong(req, CE_valtype, TYPE_RSMAP);
+   lList *required = nullptr;
+   centry_rsmap_resolve_request_properties(req, centries, &required);
+   check_int("T151", "an instance carrying no characteristics matches none of them",
+             (int)centry_rsmap_free(bare, nullptr, nullptr, required), 0);
+   lFreeList(&required);
+   lFreeList(&request);
+   lFreeElem(&bare);
+
+   lFreeElem(&def);
+   lFreeList(&centries);
+}
+
 int
 main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_request_parse");
@@ -947,6 +1134,7 @@ main(int argc, char *argv[]) {
    test_select_instances();
    test_get_request_param();
    test_id_expression();
+   test_characteristic_matching();
 
    if (failures == 0) {
       printf("\nPASS - 0 failure(s)\n");
