@@ -109,11 +109,14 @@ gru_add_selected_instances(lListElem *gru, const lListElem *resource_definition,
  * @param amount     how many instances to select
  * @param same_key   nullptr when the request carries no same= constraint, otherwise what the
  *                   granted instances have to agree in: "id" or the name of a characteristic
+ * @param id_expr    nullptr when the request names no id= expression, otherwise the expression
+ *                   over the identifiers the granted instances have to match
  * @return true on success, false when no set of ids could be selected
  */
 static bool
 rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host_name,
-                         const lList *host_list, uint32_t amount, const char *same_key) {
+                         const lList *host_list, uint32_t amount, const char *same_key,
+                         const char *id_expr) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -186,10 +189,10 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
             if (same_key != nullptr) {
                selected_ok = centry_rsmap_select_group_instances(resource_definition, taken,
                                                                  already, same_key, amount,
-                                                                 &selected);
+                                                                 &selected, id_expr);
             } else {
                selected_ok = centry_rsmap_select_instances(resource_definition, taken, already,
-                                                           amount, &selected);
+                                                           amount, &selected, id_expr);
             }
             lFreeList(&taken);
 
@@ -298,8 +301,18 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
             same_key = sge_dstring_get_string(&same_param);
          }
 
+         // id= narrows which instances may be used at all. Read from the request in hand for
+         // the same reason same= is: a constraint written in the master scope belongs to that
+         // scope, and a lookup by name would have to pick one.
+         DSTRING_STATIC(id_param, 256);
+         const char *id_expr = nullptr;
+         if (centry_rsmap_get_request_param(request, RSMAP_REQUEST_PARAM_ID, &id_param)) {
+            id_expr = sge_dstring_get_string(&id_param);
+         }
+
          if (select_instances) {
-            ret = rsmap_select_granted_ids(a, name, host_name, host_list, amount * slots, same_key);
+            ret = rsmap_select_granted_ids(a, name, host_name, host_list, amount * slots,
+                                           same_key, id_expr);
          } else if (gru_list_search(a->granted_rsmaps, name, host_name) == nullptr) {
             // The selection pass walks the same granted requests in the same order, so a map
             // reached here was reached there. Nothing recorded means the two have drifted

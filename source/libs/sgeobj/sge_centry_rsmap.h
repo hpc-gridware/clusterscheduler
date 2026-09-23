@@ -58,25 +58,32 @@ bool centry_rsmap_get_request_param(const lListElem *centry, const char *param,
 
 lList *centry_rsmap_group_keys(const lListElem *resource_definition, const char *key_name);
 
+uint32_t centry_rsmap_free(const lListElem *resource_definition, const lList *taken,
+                           const char *id_expr);
+
 uint32_t centry_rsmap_group_free(const lListElem *resource_definition, const lList *taken,
-                                 const char *key_name, const char *key);
+                                 const char *key_name, const char *key,
+                                 const char *id_expr = nullptr);
 
 const char *centry_rsmap_best_free_group(const lListElem *resource_definition,
                                          const lList *taken,
-                                         const char *key_name, uint32_t *free_amount);
+                                         const char *key_name, uint32_t *free_amount,
+                                         const char *id_expr = nullptr);
 
 bool centry_rsmap_select_instances(const lListElem *resource_definition,
                                    const lList *taken, const lList *already,
-                                   uint32_t amount, lList **selected);
+                                   uint32_t amount, lList **selected,
+                                   const char *id_expr = nullptr);
 
 bool centry_rsmap_select_group_instances(const lListElem *resource_definition,
                                          const lList *taken,
                                          const lList *already, const char *key_name,
-                                         uint32_t amount, lList **selected);
+                                         uint32_t amount, lList **selected,
+                                         const char *id_expr = nullptr);
 
 const char *centry_rsmap_best_free_id(const lListElem *resource_definition,
                                       const lList *taken,
-                                      uint32_t *free_amount);
+                                      uint32_t *free_amount, const char *id_expr = nullptr);
 
 
 bool centry_rsmap_expand_implicit_ids(lList **answer_list, lListElem *centry, uint32_t max_ids);

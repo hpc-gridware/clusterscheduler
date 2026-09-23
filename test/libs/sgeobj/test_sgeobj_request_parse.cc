@@ -356,9 +356,26 @@ test_parameter_validation() {
    check_int("T58d", "a class holding a comma is accepted, the request not being split there",
              fill("gpu_model=[A,B]100", centries), 0);
 
+   /* id= selects instances by an expression over their identifiers. Only the parse is checked
+      at submission: whether anything matches depends on the host the job is scheduled to. */
+   check_int("T46", "a plain identifier is accepted",
+             fill("gpu=4[id=gpu0]", centries), 0);
+   check_int("T46b", "a wildcard is accepted",
+             fill("gpu=4[id=gpu1*]", centries), 0);
+   check_int("T46c", "an alternation is accepted",
+             fill("gpu=4[id=gpu0|gpu1]", centries), 0);
+   check_int("T46d", "a negation is accepted",
+             fill("gpu=4[id=!gpu0]", centries), 0);
+   check_int("T46e", "grouping and negation combined are accepted",
+             fill("gpu=4[id=(gpu1*|gpu2*)&!*b]", centries), 0);
+   check_int("T46f", "id together with same is accepted",
+             fill("gpu=4[id=gpu1*,same=id]", centries), 0);
+   check_int("T46g", "an expression with an unbalanced bracket is refused",
+             fill("gpu=4[id=(gpu0|gpu1]", centries), -1);
+   check_int("T46h", "an empty expression is refused",
+             fill("gpu=4[id=]", centries), -1);
+
    /* reserved, but nothing reads them yet - see centry_rsmap_check_request_params() */
-   check_int("T46", "id is refused until it is implemented",
-             fill("gpu=4[id=gpu0]", centries), -1);
    check_int("T47", "scope is refused until it is implemented, even with its default value",
              fill("gpu=4[scope=host]", centries), -1);
    check_int("T48", "distinct is refused until it is implemented",
@@ -805,6 +822,114 @@ test_get_request_param() {
    lFreeList(&lp);
 }
 
+/**
+ * A map whose identifiers say which card a share belongs to, as in the CS-2732 example:
+ * "gpu=4(gpu1a gpu1b gpu2a gpu2b)". One instance each, so a count is a count of identifiers.
+ */
+static lListElem *
+make_named_map() {
+   static const char *ids[] = {"gpu1a", "gpu1b", "gpu2a", "gpu2b"};
+
+   lListElem *ep = lCreateElem(CE_Type);
+   lSetString(ep, CE_name, "gpu");
+   lSetUlong(ep, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+
+   for (const char *id : ids) {
+      lListElem *resl = lAddSubStr(ep, RESL_value, id, CE_resource_map_list, RESL_Type);
+      lSetUlong(resl, RESL_amount, 1);
+   }
+
+   return ep;
+}
+
+/**
+ * id= narrows which instances a request may use. The expression is asked of the identifier of
+ * each instance, at every point which looks at one, so that what is counted and what is taken
+ * are the same set.
+ */
+static void
+test_id_expression() {
+   lListElem *def = make_named_map();
+   lList *selected = nullptr;
+   uint32_t free = 0;
+
+   /* counting */
+   check_int("T120", "without an expression the whole map is available",
+             (int)centry_rsmap_free(def, nullptr, nullptr), 4);
+   check_int("T121", "a wildcard counts only the instances it accepts",
+             (int)centry_rsmap_free(def, nullptr, "gpu1*"), 2);
+   check_int("T122", "an exact identifier counts one",
+             (int)centry_rsmap_free(def, nullptr, "gpu2a"), 1);
+   check_int("T123", "an alternation counts both sides",
+             (int)centry_rsmap_free(def, nullptr, "gpu1a|gpu2b"), 2);
+   check_int("T124", "a negation counts the rest",
+             (int)centry_rsmap_free(def, nullptr, "!gpu1a"), 3);
+   check_int("T125", "grouping and negation combined",
+             (int)centry_rsmap_free(def, nullptr, "(gpu1*|gpu2*)&!*b"), 2);
+   check_int("T126", "an expression matching nothing counts nothing",
+             (int)centry_rsmap_free(def, nullptr, "gpu3*"), 0);
+
+   /* what other jobs hold is still subtracted */
+   lList *use = make_utilization("gpu1a", 1);
+   check_int("T127", "an instance in use is not free even when it matches",
+             (int)centry_rsmap_free(def, use, "gpu1*"), 1);
+   lFreeList(&use);
+
+   /* selecting */
+   check_int("T130", "one instance is taken from those the expression accepts",
+             centry_rsmap_select_instances(def, nullptr, nullptr, 1, &selected, "gpu1*"), 1);
+   check_str("T130b", "and it is one of them",
+             lGetString(lFirst(selected), RESL_value), "gpu1a");
+   lFreeList(&selected);
+
+   check_int("T131", "more matches than are asked for is not a problem",
+             centry_rsmap_select_instances(def, nullptr, nullptr, 2, &selected, "!gpu1a"), 1);
+   check_int("T131b", "the amount is taken", (int)lGetNumberOfElem(selected), 2);
+   check_str("T131c", "from the accepted set only",
+             lGetString(lFirst(selected), RESL_value), "gpu1b");
+   lFreeList(&selected);
+
+   check_int("T132", "more than the expression leaves is refused",
+             centry_rsmap_select_instances(def, nullptr, nullptr, 3, &selected, "gpu1*"), 0);
+   lFreeList(&selected);
+
+   check_int("T133", "an expression matching nothing is refused",
+             centry_rsmap_select_instances(def, nullptr, nullptr, 1, &selected, "gpu3*"), 0);
+   lFreeList(&selected);
+
+   /* the best free identifier is the best of those accepted */
+   check_str("T134", "the expression narrows which identifier is reported",
+             centry_rsmap_best_free_id(def, nullptr, &free, "gpu2*"), "gpu2a");
+   check_int("T135", "no accepted identifier reports none",
+             centry_rsmap_best_free_id(def, nullptr, &free, "gpu3*") == nullptr, 1);
+
+   lFreeElem(&def);
+
+   /* id= and same= together: the instances agree in the identifier and match the expression */
+   lListElem *shared = lCreateElem(CE_Type);
+   lSetString(shared, CE_name, "gpu");
+   lSetUlong(shared, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   for (const char *id : {"gpu1", "gpu2"}) {
+      lListElem *resl = lAddSubStr(shared, RESL_value, id, CE_resource_map_list, RESL_Type);
+      lSetUlong(resl, RESL_amount, 4);          /* four shares of each card */
+   }
+
+   check_int("T136", "a whole card is taken from the one the expression names",
+             centry_rsmap_select_group_instances(shared, nullptr, nullptr, "id", 4, &selected,
+                                                 "gpu2*"), 1);
+   check_str("T136b", "and it is that card",
+             lGetString(lFirst(selected), RESL_value), "gpu2");
+   check_int("T136c", "in one entry", (int)lGetNumberOfElem(selected), 1);
+   lFreeList(&selected);
+
+   check_int("T137", "a card the expression excludes cannot serve the request",
+             centry_rsmap_select_group_instances(shared, nullptr, nullptr, "id", 5, &selected,
+                                                 "gpu2*"), 0);
+   lFreeList(&selected);
+
+   lFreeElem(&shared);
+}
+
 int
 main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_request_parse");
@@ -821,6 +946,7 @@ main(int argc, char *argv[]) {
    test_select_group_instances();
    test_select_instances();
    test_get_request_param();
+   test_id_expression();
 
    if (failures == 0) {
       printf("\nPASS - 0 failure(s)\n");

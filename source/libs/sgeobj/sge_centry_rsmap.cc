@@ -36,6 +36,7 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_job.h"
@@ -380,15 +381,37 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
             ret = false;
          }
 
-         // id=, scope= and distinct= are reserved so that the grammar has room for them, but
-         // nothing reads any of them yet - same= is the only one the scheduler honours. Were
-         // one of them accepted, a job which asked for a named instance, or for a constraint
-         // across the whole job rather than per host, would run as though it had asked for
-         // nothing at all. Refusing them keeps that from happening quietly, and a request the
-         // system refuses today can be accepted later without breaking anything, which is not
-         // true the other way round.
-         if (param_name == RSMAP_REQUEST_PARAM_ID ||
-             param_name == RSMAP_REQUEST_PARAM_SCOPE ||
+         // id= selects which instances are acceptable by their identifier. The value is an
+         // expression over them - shell wildcards combined with !, & and |, and grouped with
+         // brackets - the same one a string valued resource is matched with, see the
+         // expression entry in sge_types(1).
+         //
+         // What can be checked here is that it parses. Whether it matches anything is not a
+         // question for the submission: which instances a job will be offered is not known
+         // until it is scheduled, and the same request is satisfiable on one host and not on
+         // the next. An expression which matches nothing anywhere leaves the job pending with
+         // a scheduling message saying so.
+         //
+         // The parse is checked by asking the expression about a probe value. A broken one
+         // answers -1 whatever it is asked, and an empty one says nothing at all.
+         if (param_name == RSMAP_REQUEST_PARAM_ID) {
+            if (param_value.empty() ||
+                sge_eval_expression(ocs::CEntry::Type::CSTR, param_value.c_str(), "0",
+                                    nullptr) < 0) {
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                       MSG_RSMAP_PARAM_BAD_EXPRESSION_SSS, name,
+                                       param_name.c_str(), param_value.c_str());
+               ret = false;
+            }
+         }
+
+         // scope= and distinct= are reserved so that the grammar has room for them, but
+         // nothing reads either yet. Were one of them accepted, a job which asked for a
+         // constraint across the whole job rather than per host would run as though it had
+         // asked for nothing at all. Refusing them keeps that from happening quietly, and a
+         // request the system refuses today can be accepted later without breaking anything,
+         // which is not true the other way round.
+         if (param_name == RSMAP_REQUEST_PARAM_SCOPE ||
              param_name == RSMAP_REQUEST_PARAM_DISTINCT) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_RSMAP_PARAM_NOT_YET_SS, name, param_name.c_str());
@@ -609,6 +632,67 @@ centry_rsmap_group_keys(const lListElem *resource_definition, const char *key_na
 }
 
 /**
+ * @brief whether an instance's identifier is one an id= request accepts
+ *
+ * The expression is the one written in the request - shell wildcards combined with !, & and |,
+ * and grouped with brackets - and it is asked of the identifier of the instance. Without an
+ * expression every instance qualifies, which is what every request that does not name one wants.
+ *
+ * Asked at every point which looks at an instance, so that what matching counts and what the
+ * selection takes are the same set. It is the request which is evaluated, never a host state,
+ * so both sides reach the same answer from the same request.
+ *
+ * @param defined_ep the instance, from CE_resource_map_list
+ * @param id_expr    the expression, or nullptr when the request names none
+ * @return           true when the instance may be used
+ */
+static bool
+centry_rsmap_instance_matches_id(const lListElem *defined_ep, const char *id_expr) {
+   if (id_expr == nullptr) {
+      return true;
+   }
+
+   const char *id = lGetString(defined_ep, RESL_value);
+   if (id == nullptr) {
+      return false;
+   }
+
+   return sge_eval_expression(ocs::CEntry::Type::CSTR, id_expr, id, nullptr) == 0;
+}
+
+/**
+ * @brief how many instances of a resource map an id= request may use
+ *
+ * The whole map when the request names no expression, and what the instances it accepts have
+ * free between them when it does. This is the unconstrained counterpart of
+ * centry_rsmap_group_free(): the instances need not agree in anything, they only have to be
+ * ones the request allows.
+ *
+ * @param resource_definition the resource map on the host, from EH_consumable_config_list
+ * @param taken               the identifiers which are spoken for, may be nullptr
+ * @param id_expr             the expression over the identifiers, or nullptr for all of them
+ * @return                    the free instances the request may take
+ */
+uint32_t
+centry_rsmap_free(const lListElem *resource_definition, const lList *taken, const char *id_expr) {
+   uint32_t free = 0;
+
+   if (resource_definition == nullptr) {
+      return 0;
+   }
+
+   const lListElem *defined_ep;
+   for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
+      if (!centry_rsmap_instance_matches_id(defined_ep, id_expr)) {
+         continue;
+      }
+      free += centry_rsmap_instance_free(defined_ep, taken);
+   }
+
+   return free;
+}
+
+/**
  * @brief how many instances of one group of a resource map are free
  *
  * The group counterpart of centry_rsmap_instance_free(): what the instances sharing one key
@@ -619,11 +703,12 @@ centry_rsmap_group_keys(const lListElem *resource_definition, const char *key_na
  * @param taken               the identifiers which are spoken for, may be nullptr
  * @param key_name            "id" or the name of a characteristic
  * @param key                 which group
+ * @param id_expr             the expression over the identifiers, or nullptr for all of them
  * @return                    the free instances of that group
  */
 uint32_t
 centry_rsmap_group_free(const lListElem *resource_definition, const lList *taken,
-                        const char *key_name, const char *key) {
+                        const char *key_name, const char *key, const char *id_expr) {
    uint32_t free = 0;
 
    if (resource_definition == nullptr || key == nullptr) {
@@ -632,6 +717,9 @@ centry_rsmap_group_free(const lListElem *resource_definition, const lList *taken
 
    const lListElem *defined_ep;
    for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
+      if (!centry_rsmap_instance_matches_id(defined_ep, id_expr)) {
+         continue;
+      }
       const char *instance_key = centry_rsmap_instance_key(defined_ep, key_name);
       if (instance_key != nullptr && strcmp(instance_key, key) == 0) {
          free += centry_rsmap_instance_free(defined_ep, taken);
@@ -644,7 +732,7 @@ centry_rsmap_group_free(const lListElem *resource_definition, const lList *taken
 const char *
 centry_rsmap_best_free_group(const lListElem *resource_definition,
                              const lList *taken, const char *key_name,
-                             uint32_t *free_amount) {
+                             uint32_t *free_amount, const char *id_expr) {
    if (free_amount != nullptr) {
       *free_amount = 0;
    }
@@ -652,7 +740,7 @@ centry_rsmap_best_free_group(const lListElem *resource_definition,
       return nullptr;
    }
    if (key_name == nullptr || strcmp(key_name, RSMAP_REQUEST_PARAM_ID) == 0) {
-      return centry_rsmap_best_free_id(resource_definition, taken, free_amount);
+      return centry_rsmap_best_free_id(resource_definition, taken, free_amount, id_expr);
    }
 
    // sum the free instances per key. A resource map holds the devices of one host, so this is
@@ -661,6 +749,9 @@ centry_rsmap_best_free_group(const lListElem *resource_definition,
 
    const lListElem *defined_ep;
    for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
+      if (!centry_rsmap_instance_matches_id(defined_ep, id_expr)) {
+         continue;
+      }
       const char *key = centry_rsmap_instance_key(defined_ep, key_name);
       if (key == nullptr) {
          continue;
@@ -721,6 +812,7 @@ centry_rsmap_best_free_group(const lListElem *resource_definition,
  * @param key_name             nullptr or "id" for the identifier, otherwise a characteristic
  * @param amount               how many instances to take
  * @param selected             out: a new list of (RESL_value, RESL_amount), untouched on failure
+ * @param id_expr              the expression over the identifiers, or nullptr for all of them
  * @return                     true when the amount was taken, false when no group can serve it
  */
 /**
@@ -739,7 +831,7 @@ static bool
 centry_rsmap_take_instances(const lListElem *resource_definition,
                             const lList *taken, const lList *already,
                             const char *key_name, const char *key, uint32_t amount,
-                            lList **selected) {
+                            lList **selected, const char *id_expr) {
    lList *chosen = nullptr;
    uint32_t remaining = amount;
 
@@ -753,6 +845,9 @@ centry_rsmap_take_instances(const lListElem *resource_definition,
          if (instance_key == nullptr || strcmp(instance_key, key) != 0) {
             continue;
          }
+      }
+      if (!centry_rsmap_instance_matches_id(defined_ep, id_expr)) {
+         continue;
       }
 
       const char *id = lGetString(defined_ep, RESL_value);
@@ -800,23 +895,25 @@ centry_rsmap_take_instances(const lListElem *resource_definition,
  * @param already              what this job already holds of the map (RESL_Type), may be nullptr
  * @param amount               how many instances to take
  * @param selected             out: a new list of (RESL_value, RESL_amount), untouched on failure
+ * @param id_expr              the expression over the identifiers, or nullptr for all of them
  * @return                     true when the amount was taken, false when the map cannot serve it
  */
 bool
 centry_rsmap_select_instances(const lListElem *resource_definition,
                               const lList *taken, const lList *already,
-                              uint32_t amount, lList **selected) {
+                              uint32_t amount, lList **selected, const char *id_expr) {
    if (resource_definition == nullptr || selected == nullptr || amount == 0) {
       return false;
    }
    return centry_rsmap_take_instances(resource_definition, taken, already,
-                                      nullptr, nullptr, amount, selected);
+                                      nullptr, nullptr, amount, selected, id_expr);
 }
 
 bool
 centry_rsmap_select_group_instances(const lListElem *resource_definition,
                                     const lList *taken, const lList *already,
-                                    const char *key_name, uint32_t amount, lList **selected) {
+                                    const char *key_name, uint32_t amount, lList **selected,
+                                    const char *id_expr) {
    if (resource_definition == nullptr || selected == nullptr || amount == 0) {
       return false;
    }
@@ -835,14 +932,14 @@ centry_rsmap_select_group_instances(const lListElem *resource_definition,
    } else {
       uint32_t free_in_group = 0;
       key = centry_rsmap_best_free_group(resource_definition, taken, key_name,
-                                         &free_in_group);
+                                         &free_in_group, id_expr);
    }
    if (key == nullptr) {
       return false;
    }
 
    return centry_rsmap_take_instances(resource_definition, taken, already,
-                                      key_name, key, amount, selected);
+                                      key_name, key, amount, selected, id_expr);
 }
 
 /**
@@ -870,11 +967,12 @@ centry_rsmap_select_group_instances(const lListElem *resource_definition,
  * @param taken                the identifiers which are already spoken for and how many of
  *                             each, may be nullptr when nothing is
  * @param free_amount          out: the free count of the id returned, 0 if there is none
+ * @param id_expr              the expression over the identifiers, or nullptr for all of them
  * @return                     the id with the most free instances, or nullptr for an empty map
  */
 const char *
 centry_rsmap_best_free_id(const lListElem *resource_definition,
-                          const lList *taken, uint32_t *free_amount) {
+                          const lList *taken, uint32_t *free_amount, const char *id_expr) {
    const char *best_id = nullptr;
    uint32_t best_free = 0;
 
@@ -887,6 +985,9 @@ centry_rsmap_best_free_id(const lListElem *resource_definition,
 
    const lListElem *defined_ep;
    for_each_ep (defined_ep, lGetList(resource_definition, CE_resource_map_list)) {
+      if (!centry_rsmap_instance_matches_id(defined_ep, id_expr)) {
+         continue;
+      }
       const char *id = lGetString(defined_ep, RESL_value);
       const uint32_t free = centry_rsmap_instance_free(defined_ep, taken);
 
