@@ -1278,89 +1278,97 @@ enum class QConfShowStatus {
    WRITE_FAILED   ///< the object could not be rendered
 };
 
+/** @brief Run one read operation as a stored procedure (CS-2799).
+ *
+ * The one place that decides between the two execution contexts. With
+ * ExecContext::SERVER the generic model ships the operation to qmaster and
+ * renders the response it sends back; with CLIENT the typed model fetches over
+ * GDI and the format specific view renders here. Both write into @p os.
+ *
+ * @param os    the stream the output is written to
+ * @param param the invocation, with its operation already set
+ * @param alpp  answer list, carries the reason when the call fails
+ * @return true when the operation was rendered
+ */
+static bool
+qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lList **alpp) {
+   DENTER(TOP_LAYER);
+
+   bool ok;
+   if (param.get_exec_context() == ocs::ProcedureParameter::ExecContext::SERVER) {
+      ocs::ProcedureModel model;
+      ok = model.make_snapshot(alpp, param);
+      if (ok) {
+         ocs::ProcedureView view(param);
+         ocs::ProcedureController controller(os);
+         controller.process_request(param, model, view);
+      }
+   } else {
+      ocs::QConfModelClient model;
+      ok = model.make_snapshot(alpp, param);
+      if (ok) {
+         std::unique_ptr<ocs::QConfViewBase> view;
+         if (param.get_output_format() == ocs::ProcedureParameter::OutputFormat::JSON) {
+            view = std::make_unique<ocs::QConfViewJSON>(param);
+         } else {
+            view = std::make_unique<ocs::QConfViewPlain>(param);
+         }
+         ocs::QConfController controller(os);
+         controller.process_request(param, model, *view);
+      }
+   }
+
+   DRETURN(ok);
+}
+
 /** @brief Show one object of the given type on stdout.
  *
  * Fetches the object by name - or, for a type without a name field, the single
  * one that exists - and renders it in the layout of the descriptor.
  *
- * @param os the stream the output is written to (CS-1841)
+ * @param os    the stream the output is written to (CS-1841)
+ * @param param the invocation, whose operation is set for the call
  * @param o    the object type
  * @param name the object name, ignored for a type without a name field
  * @return what happened, see QConfShowStatus
  */
 static QConfShowStatus
-qconf_show_object(std::ostream &os, QConfObj o, const char *name) {
+qconf_show_object(std::ostream &os, ocs::QConfParameterClient &param, QConfObj o, const char *name) {
    DENTER(TOP_LAYER);
-   const qconf_object_desc &d = qconf_desc(o);
-   lList *lp = nullptr;
-   lList *alp = nullptr;
 
-   // a type without a name field holds exactly one object, so it is fetched unconditionally;
-   // a host name is matched with the host comparison, which folds the domain away
-   lCondition *where = nullptr;
-   if (d.name_nm != NoName) {
-      int pos = lGetPosInDescr(d.descr, d.name_nm);
-      bool by_host = (lGetPosType(d.descr, pos) == lHostT);
-      where = by_host ? lWhere("%T( %Ih=%s )", d.descr, d.name_nm, name)
-                      : lWhere("%T( %I==%s )", d.descr, d.name_nm, name);
-   }
-   lEnumeration *what = lWhat("%T(ALL)", d.descr);
-   alp = ocs::gdi::Client::sge_gdi(d.target, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-   lFreeWhere(&where);
-   lFreeWhat(&what);
-
-   const lListElem *aep = lFirst(alp);
-   answer_exit_if_not_recoverable(aep);
-   if (answer_get_status(aep) != STATUS_OK) {
-      fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-      lFreeList(&alp);
-      lFreeList(&lp);
+   /* CS-2799: the body of this function is a stored procedure call now. The
+    * signature and the status contract stay, because the option blocks above
+    * disagree about what a failure means and each keeps its own reaction.
+    *
+    * The status is recovered from the answer list: the model reports a missing
+    * object with STATUS_EEXIST, everything else is a fetch failure. That is the
+    * only categorisation that survives the trip back from qmaster, and it is
+    * the one the callers distinguish. */
+   const char *switch_name = ocs::QConfModelBase::switch_for(o, ocs::QConfReadKind::SINGLE_OBJECT);
+   DPRINTF("showing object type %d through %s\n", static_cast<int>(o),
+           switch_name != nullptr ? switch_name : "<none>");
+   if (switch_name == nullptr) {
       DRETURN(QConfShowStatus::GDI_FAILED);
    }
+
+   qconf_op op;
+   op.token = switch_name;
+   if (name != nullptr) {
+      op.args.emplace_back(name);
+   }
+   param.set_operation(op);
+
+   lList *alp = nullptr;
+   const bool ok = qconf_dispatch_procedure(os, param, &alp);
+   if (ok) {
+      lFreeList(&alp);
+      DRETURN(QConfShowStatus::OK);
+   }
+
+   const bool not_found = answer_list_has_status(&alp, STATUS_EEXIST);
+   answer_list_output(&alp);
    lFreeList(&alp);
-
-   // lGetNumberOfElem() would flag a null list as a CULL error, so it is checked first
-   if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-      // the wording is per object type, the shape of the message is not
-      if (d.read.not_found_msg != nullptr) {
-         fprintf(stderr, d.read.not_found_msg, name);
-         fprintf(stderr, "\n");
-      }
-      lFreeList(&lp);
-      DRETURN(QConfShowStatus::NOT_FOUND);
-   }
-
-   // -se is the one type whose read field list differs from the write one
-   qconf_build_fields_fn provider = (d.read.fields != nullptr) ? d.read.fields : d.build_fields;
-   bool owned = false;
-   spooling_field *fields = provider(qconf_opt_format, &owned);
-
-   lListElem *ep = lFirstRW(lp);
-   if (d.read.prepare != nullptr && qconf_opt_format == SP_FORM_JSON) {
-      /* CS-2799: the hook used to fetch the complex entries itself, once per
-       * helper it calls - two GDI round trips for one -se. It takes them as an
-       * argument now, because inside qmaster there is nothing to fetch from:
-       * the master list is right there. The JSON guard moved out with the
-       * fetch; for plain output the hook did nothing anyway. */
-      lList *centry_alp = nullptr;
-      lList *master_centry_list = centry_list_get_via_gdi(&centry_alp);
-      lFreeList(&centry_alp);
-      d.read.prepare(ep, master_centry_list);
-      lFreeList(&master_centry_list);
-   }
-   const char *filename = spool_flatfile_write_object(&alp, ep, d.is_root, fields, d.sfi,
-                                                      SP_DEST_STREAM, qconf_opt_format, nullptr,
-                                                      false, d.json_type_name, &os);
-   sge_free(&filename);
-   if (owned) {
-      sge_free(&fields);
-   }
-   lFreeList(&lp);
-
-   if (answer_list_output(&alp)) {
-      DRETURN(QConfShowStatus::WRITE_FAILED);
-   }
-   DRETURN(QConfShowStatus::OK);
+   DRETURN(not_found ? QConfShowStatus::NOT_FOUND : QConfShowStatus::GDI_FAILED);
 }
 
 /** @brief Map a show status onto the convention of the classic show options.
@@ -2051,36 +2059,19 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param,
                          qconf_op &op, int *ret) {
    DENTER(TOP_LAYER);
 
-   if (ocs::QConfModelBase::resolve(op.token.c_str()) == nullptr) {
+   const ocs::qconf_read_entry *entry = ocs::QConfModelBase::resolve(op.token.c_str());
+   if (entry == nullptr || entry->kind != ocs::QConfReadKind::NAME_LIST) {
+      /* Group A is not intercepted here. Its options disagree about what a
+       * failure means - the classic four leave the parser, -sprj only sets the
+       * exit code, -suser ignores it and shows a whole comma separated list -
+       * and -se resolves the host name first. Those blocks keep their own
+       * handling and reach the procedure through qconf_show_object(). */
       DRETURN(false);
    }
 
    param.set_operation(op);
    lList *alp = nullptr;
-   bool ok;
-
-   if (param.get_exec_context() == ocs::ProcedureParameter::ExecContext::SERVER) {
-      ocs::ProcedureModel model;
-      ok = model.make_snapshot(&alp, param);
-      if (ok) {
-         ocs::ProcedureView view(param);
-         ocs::ProcedureController controller(os);
-         controller.process_request(param, model, view);
-      }
-   } else {
-      ocs::QConfModelClient model;
-      ok = model.make_snapshot(&alp, param);
-      if (ok) {
-         std::unique_ptr<ocs::QConfViewBase> view;
-         if (param.get_output_format() == ocs::ProcedureParameter::OutputFormat::JSON) {
-            view = std::make_unique<ocs::QConfViewJSON>(param);
-         } else {
-            view = std::make_unique<ocs::QConfViewPlain>(param);
-         }
-         ocs::QConfController controller(os);
-         controller.process_request(param, model, *view);
-      }
-   }
+   const bool ok = qconf_dispatch_procedure(os, param, &alp);
 
    if (!ok) {
       /* the messages the engine used to write to stderr itself; an empty list
@@ -5176,7 +5167,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-scal", *spp) == 0) {
          spp = sge_parser_get_next(spp);
 
-         if (qconf_show_status_classic(qconf_show_object(os, QConfObj::CAL, *spp), &sge_parse_return)) {
+         if (qconf_show_status_classic(qconf_show_object(os, param, QConfObj::CAL, *spp), &sge_parse_return)) {
             DRETURN(1);
          }
 
@@ -5299,7 +5290,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-sckpt", *spp) == 0) {
          spp = sge_parser_get_next(spp);
 
-         if (qconf_show_status_classic(qconf_show_object(os, QConfObj::CK, *spp), &sge_parse_return)) {
+         if (qconf_show_status_classic(qconf_show_object(os, param, QConfObj::CK, *spp), &sge_parse_return)) {
             DRETURN(1);
          }
 
@@ -5415,7 +5406,7 @@ int sge_parse_qconf(char *argv[]) {
             DRETURN(1);
          }
 
-         if (qconf_show_object(os, QConfObj::EH, lGetHost(hep, EH_name)) != QConfShowStatus::OK) {
+         if (qconf_show_object(os, param, QConfObj::EH, lGetHost(hep, EH_name)) != QConfShowStatus::OK) {
             sge_parse_return = 1;
          }
          lFreeElem(&hep);
@@ -5512,7 +5503,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-srole", *spp) == 0) {
          spp = sge_parser_get_next(spp);
 
-         if (qconf_show_status_classic(qconf_show_object(os, QConfObj::RL, *spp), &sge_parse_return)) {
+         if (qconf_show_status_classic(qconf_show_object(os, param, QConfObj::RL, *spp), &sge_parse_return)) {
             DRETURN(1);
          }
 
@@ -5533,7 +5524,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-sp", *spp) == 0) {
          spp = sge_parser_get_next(spp);
 
-         if (qconf_show_status_classic(qconf_show_object(os, QConfObj::PE, *spp), &sge_parse_return)) {
+         if (qconf_show_status_classic(qconf_show_object(os, param, QConfObj::PE, *spp), &sge_parse_return)) {
             DRETURN(1);
          }
 
@@ -6496,7 +6487,7 @@ int sge_parse_qconf(char *argv[]) {
                os << "\n";
             }
             /* a user that does not exist has never changed the exit code here */
-            (void)qconf_show_object(os, QConfObj::UU, lGetString(uep, ST_name));
+            (void)qconf_show_object(os, param, QConfObj::UU, lGetString(uep, ST_name));
          }
 
          lFreeList(&uList);
@@ -6511,7 +6502,7 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-sprj", *spp) == 0) {
          spp = sge_parser_get_next(spp);
 
-         if (qconf_show_object(os, QConfObj::PR, *spp) != QConfShowStatus::OK) {
+         if (qconf_show_object(os, param, QConfObj::PR, *spp) != QConfShowStatus::OK) {
             sge_parse_return = 1;
          }
 

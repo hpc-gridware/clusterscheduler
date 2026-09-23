@@ -55,6 +55,7 @@ set(LIBRARY_SOURCES
         qconf/ocs_QConfModelBase.cc
         qconf/ocs_QConfModelClient.cc
         qconf/ocs_QConfModelServer.cc
+        qconf/ocs_QConfViewBase.cc
         qconf/ocs_QConfViewPlain.cc
         qconf/ocs_QConfViewJSON.cc
         qconf/ocs_QConfController.cc

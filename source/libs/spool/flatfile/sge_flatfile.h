@@ -90,6 +90,21 @@ typedef enum {
    SP_FORM_JSON      ///< Structured JSON, `qconf -fmt json` (CS-2313a)
 } spool_flatfile_format;
 
+/** @brief Whether long lines are broken, and who decides (CS-2799)
+ *
+ * The traditional answer is the environment variable `SGE_SINGLE_LINE`, read at
+ * the moment of writing. That stops working once the writing happens in
+ * qmaster, because the variable is a preference of the user running the client
+ * and qmaster's environment is a different one. A caller that knows the user's
+ * wish therefore states it, and only a caller that does not falls back to the
+ * environment.
+ */
+typedef enum {
+   SP_LINE_BREAKS_ENV,  ///< Consult `SGE_SINGLE_LINE`, the historic behaviour
+   SP_LINE_BREAKS_ON,   ///< Break long lines, i.e. `SGE_SINGLE_LINE` unset
+   SP_LINE_BREAKS_OFF   ///< One line per field, i.e. `SGE_SINGLE_LINE` set
+} spool_flatfile_line_breaks;
+
 
 /** @brief How to render a self-nesting object, i.e. the share tree
  *
@@ -189,7 +204,8 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
                             const spool_flatfile_format format,
                             const char *filepath, bool print_header,
                             const char *json_type_name = nullptr,
-                            std::ostream *stream = nullptr);
+                            std::ostream *stream = nullptr,
+                            spool_flatfile_line_breaks line_breaks = SP_LINE_BREAKS_ENV);
 
 const char *
 spool_flatfile_write_list(lList **answer_list,
@@ -199,7 +215,8 @@ spool_flatfile_write_list(lList **answer_list,
                           const spool_flatfile_destination destination,
                           const spool_flatfile_format format,
                           const char *filepath, bool print_header,
-                          std::ostream *stream = nullptr);
+                          std::ostream *stream = nullptr,
+                          spool_flatfile_line_breaks line_breaks = SP_LINE_BREAKS_ENV);
 
 lListElem *
 spool_flatfile_read_object(lList **answer_list, const lDescr *descr, lListElem *root,

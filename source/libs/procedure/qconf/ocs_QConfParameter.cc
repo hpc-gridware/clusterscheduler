@@ -101,12 +101,13 @@ ocs::QConfParameter::get_bundle() {
    }
    add_parameter_bundle(bundle, OPERATION_ARGS, args_list);
 
-   // -cb, -dry, -f, -strict
+   // -cb, -dry, -f, -strict and the client's SGE_SINGLE_LINE
    uint32_t flags = 0;
    flags |= binding_ ? FLAG_BINDING : 0;
    flags |= dry_run_ ? FLAG_DRY_RUN : 0;
    flags |= force_ ? FLAG_FORCE : 0;
    flags |= strict_ ? FLAG_STRICT : 0;
+   flags |= single_line_ ? FLAG_SINGLE_LINE : 0;
    lList *flags_list = nullptr;
    lAddElemUlong(&flags_list, ULNG_value, flags, ULNG_Type);
    add_parameter_bundle(bundle, INVOCATION_FLAGS, flags_list);
@@ -159,6 +160,7 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
          dry_run_ = (flags & FLAG_DRY_RUN) != 0;
          force_ = (flags & FLAG_FORCE) != 0;
          strict_ = (flags & FLAG_STRICT) != 0;
+         single_line_ = (flags & FLAG_SINGLE_LINE) != 0;
       }
    }
 

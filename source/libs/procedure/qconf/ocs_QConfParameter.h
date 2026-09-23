@@ -131,6 +131,7 @@ namespace ocs {
       static constexpr uint32_t FLAG_DRY_RUN = 0x2u;   ///< `-dry`
       static constexpr uint32_t FLAG_FORCE = 0x4u;     ///< `-f`
       static constexpr uint32_t FLAG_STRICT = 0x8u;    ///< `-strict`
+      static constexpr uint32_t FLAG_SINGLE_LINE = 0x10u;   ///< `SGE_SINGLE_LINE` in the client's environment
       /** @} */
 #pragma endregion
 
@@ -141,6 +142,7 @@ namespace ocs {
       bool dry_run_ = false;    ///< `-dry`: validate and report, send nothing
       bool force_ = false;      ///< `-f`: overwrite, and skip the bulk-delete prompt
       bool strict_ = false;     ///< `-strict`: apply nothing unless every file is valid
+      bool single_line_ = false;   ///< `SGE_SINGLE_LINE`: do not break long lines
       ValueFormat value_format_ = ValueFormat::COMPACT;   ///< `-fmtval`
       qconf_op operation_;      ///< the one operation this call carries
 
@@ -164,6 +166,17 @@ namespace ocs {
        * @return true when nothing may be applied unless every file is valid
        */
       [[nodiscard]] bool get_strict() const { return strict_; }
+
+      /** @brief Whether the client's environment asks for unbroken lines
+       *
+       * `SGE_SINGLE_LINE` is a preference of the user running the client, so it
+       * is read where the client runs and travels with the call. Reading it
+       * again while rendering would consult qmaster's environment instead
+       * (CS-2799).
+       *
+       * @return true when long lines must not be wrapped
+       */
+      [[nodiscard]] bool get_single_line() const { return single_line_; }
 
       /** @brief How TIME and MEM values are rendered in JSON
        * @return compact strings or plain numbers

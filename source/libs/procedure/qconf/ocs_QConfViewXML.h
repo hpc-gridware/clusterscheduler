@@ -37,7 +37,7 @@ namespace ocs {
     */
    class QConfViewXML : public QConfViewBase {
    public:
-      explicit QConfViewXML(const ProcedureParameter &parameter) : QConfViewBase(parameter) {}
+      explicit QConfViewXML(const QConfParameter &parameter) : QConfViewBase(parameter) {}
       ~QConfViewXML() override = default;
 
       /** @brief Writes nothing; see the class description

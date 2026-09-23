@@ -38,9 +38,16 @@ namespace ocs {
     * client keeps the procedure in charge of what it reads, which is what
     * matters once RBAC decides what a caller may see.
     */
+   /** @brief What a read switch produces */
+   enum class QConfReadKind {
+      NAME_LIST,     ///< group B: every name of the type, one per line
+      SINGLE_OBJECT  ///< group A: one named object, rendered in full
+   };
+
    struct qconf_read_entry {
       const char *switch_name;   ///< the switch, e.g. `-sql`
       QConfObj object;           ///< the object type it reports on
+      QConfReadKind kind;        ///< a name list or one object
    };
 
    /** @brief The objects one `qconf` read operation asked for
@@ -57,8 +64,10 @@ namespace ocs {
 
    protected:
       lList *object_list_ = nullptr;             ///< what the operation asked for
+      lList *centry_list_ = nullptr;             ///< the complex entries, fetched for JSON only
       const qconf_object_desc *desc_ = nullptr;  ///< the row of the object type
       QConfObj object_ = QConfObj::CAL;          ///< which object type, valid once resolved
+      QConfReadKind kind_ = QConfReadKind::NAME_LIST;   ///< what the switch produces
       int key_nm_ = NoName;                      ///< the field holding the name
 
    public:
@@ -81,16 +90,25 @@ namespace ocs {
        * @return it; only meaningful once make_snapshot() has resolved the switch
        */
       [[nodiscard]] QConfObj get_object() const { return object_; }
+
+      /** @brief Whether the operation produces a name list or one object
+       * @return the kind
+       */
+      [[nodiscard]] QConfReadKind get_kind() const { return kind_; }
 #pragma endregion
 
 #pragma region Data Retrieval
 
    public:
       static const qconf_read_entry *resolve(const char *switch_name);
+      static const char *switch_for(QConfObj object, QConfReadKind kind);
 
    protected:
       static lEnumeration *get_name_what(const lDescr *descr, int key_nm);
       static lCondition *get_name_where(const lDescr *descr, int key_nm);
+      static lCondition *get_object_where(const lDescr *descr, int key_nm, const char *name);
+
+      virtual bool fetch_centries(lList **answer_list) = 0;
 
       virtual bool fetch(lList **answer_list, gdi::Target target,
                          lCondition *where, lEnumeration *what) = 0;

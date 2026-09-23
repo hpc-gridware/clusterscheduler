@@ -327,9 +327,17 @@ get_gdi_executor_ds(ocs::gdi::Packet *packet) {
          // show thread list (SGE_DUMMY_LIST); data comes from thread main therefor Listener DS possible
          type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);
       } else if (operation == ocs::gdi::Command::GET_PROCEDURE) {
-         // So far all procedures are read only
-         // They can get processed by reader threads in parallel
-         type = get_most_restrictive_datastore(type, ocs::DataStore::READER);
+         // Procedures are read only and can get processed by reader threads in
+         // parallel - with the same exception the plain GET below makes: a
+         // manager running qconf is served from the GLOBAL DS, so that a read
+         // issued right after a write, or right after a qmaster restart, cannot
+         // see a mirror that has not caught up yet. Moving the qconf read path
+         // into a procedure (CS-2799) must not drop that guarantee.
+         if (strcmp(packet->commproc, to_cstr(QCONF)) == 0 && manop_is_manager(packet)) {
+            type = get_most_restrictive_datastore(type, ocs::DataStore::GLOBAL);
+         } else {
+            type = get_most_restrictive_datastore(type, ocs::DataStore::READER);
+         }
       } else if (operation == ocs::gdi::Command::GET) {
          bool is_qconf = (strcmp(packet->commproc, to_cstr(QCONF)) == 0);
          bool is_manager = manop_is_manager(packet);

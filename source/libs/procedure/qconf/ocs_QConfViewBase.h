@@ -26,8 +26,10 @@
 #include <ostream>
 
 #include "cull/cull.h"
+#include "spool/flatfile/sge_flatfile.h"
 
 #include "ocs_ProcedureView.h"
+#include "ocs_QConfObject.h"
 #include "ocs_QConfParameter.h"
 
 namespace ocs {
@@ -42,11 +44,22 @@ namespace ocs {
     * @ingroup libprocedure
     */
    class QConfViewBase : public ProcedureView {
+   protected:
+      /** @brief The format this call renders in
+       *
+       * ProcedureView takes the parameter and keeps nothing, so the one thing
+       * the qconf views need from it is kept here.
+       */
+      ProcedureParameter::OutputFormat output_format_;
+      spool_flatfile_line_breaks line_breaks_;   ///< the client's SGE_SINGLE_LINE, see QConfParameter::get_single_line()
+
    public:
       /** @brief Build a view for one procedure call
        * @param parameter what the call asked for
        */
-      explicit QConfViewBase(const ProcedureParameter &parameter) : ProcedureView(parameter) {}
+      explicit QConfViewBase(const QConfParameter &parameter)
+         : ProcedureView(parameter), output_format_(parameter.get_output_format()),
+           line_breaks_(parameter.get_single_line() ? SP_LINE_BREAKS_OFF : SP_LINE_BREAKS_ON) {}
       ~QConfViewBase() override = default;
 
       /** @brief Write the names of the fetched objects
@@ -55,5 +68,7 @@ namespace ocs {
        * @param key_nm the field holding the name
        */
       virtual void show_name_list(std::ostream &os, const lList *list, int key_nm) = 0;
+
+      void show_object(std::ostream &os, const lListElem *ep, const qconf_object_desc &desc);
    };
 }

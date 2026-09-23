@@ -39,6 +39,7 @@
  * @{
  */
 
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -93,10 +94,17 @@ namespace ocs {
 
    public:
       /** @brief Build empty parameters, to be filled in by parse_parameters()
+       *
+       * The client's environment is captured here, because this is the only
+       * place in the call's life where it is the user's environment: from
+       * get_bundle() on, the parameters may be rendered inside qmaster.
+       *
        * @param procedure_name the command being run, `"qconf"`
        */
       explicit QConfParameterClient(std::string procedure_name)
-         : QConfParameter(std::move(procedure_name)) {}
+         : QConfParameter(std::move(procedure_name)) {
+         single_line_ = getenv("SGE_SINGLE_LINE") != nullptr;
+      }
 
       ~QConfParameterClient() override = default;
 #pragma endregion

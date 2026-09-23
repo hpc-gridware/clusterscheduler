@@ -94,3 +94,24 @@ ocs::QConfModelServer::fetch(lList **answer_list, gdi::Target target,
 
    DRETURN(true);
 }
+
+/**
+ * @brief Take the complex entries from qmaster's own list
+ *
+ * A copy rather than the list itself, because the prepare hook works on the
+ * fetched object and the model owns what it hands on; the master list belongs
+ * to the daemon.
+ *
+ * @param answer_list unused, kept for the interface
+ * @return true, always: there is nothing here that can fail
+ */
+bool
+ocs::QConfModelServer::fetch_centries(lList **answer_list) {
+   DENTER(TOP_LAYER);
+   (void) answer_list;
+
+   const lList *master_centry_list = *DataStore::get_master_list(SGE_TYPE_CENTRY);
+   centry_list_ = lCopyList("", master_centry_list);
+
+   DRETURN(true);
+}

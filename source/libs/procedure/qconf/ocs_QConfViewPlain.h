@@ -31,7 +31,7 @@ namespace ocs {
     */
    class QConfViewPlain : public QConfViewBase {
    public:
-      explicit QConfViewPlain(const ProcedureParameter &parameter) : QConfViewBase(parameter) {}
+      explicit QConfViewPlain(const QConfParameter &parameter) : QConfViewBase(parameter) {}
       ~QConfViewPlain() override = default;
 
       void show_name_list(std::ostream &os, const lList *list, int key_nm) override;

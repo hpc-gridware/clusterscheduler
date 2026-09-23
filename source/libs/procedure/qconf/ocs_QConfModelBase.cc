@@ -44,18 +44,30 @@
  * object table, which is why CS-2796 left them hand written in the client.
  */
 static const ocs::qconf_read_entry qconf_read_table[] = {
-   {"-scall",  QConfObj::CAL},
-   {"-sckptl", QConfObj::CK},
-   {"-scel",   QConfObj::CE},
-   {"-sel",    QConfObj::EH},
-   {"-shgrpl", QConfObj::HGRP},
-   {"-spl",    QConfObj::PE},
-   {"-sprjl",  QConfObj::PR},
-   {"-sql",    QConfObj::CQ},
-   {"-srolel", QConfObj::RL},
-   {"-srqsl",  QConfObj::RQS},
-   {"-sul",    QConfObj::US},
-   {"-suserl", QConfObj::UU},
+   /* group B: the name lists */
+   {"-scall",  QConfObj::CAL,  ocs::QConfReadKind::NAME_LIST},
+   {"-sckptl", QConfObj::CK,   ocs::QConfReadKind::NAME_LIST},
+   {"-scel",   QConfObj::CE,   ocs::QConfReadKind::NAME_LIST},
+   {"-sel",    QConfObj::EH,   ocs::QConfReadKind::NAME_LIST},
+   {"-shgrpl", QConfObj::HGRP, ocs::QConfReadKind::NAME_LIST},
+   {"-spl",    QConfObj::PE,   ocs::QConfReadKind::NAME_LIST},
+   {"-sprjl",  QConfObj::PR,   ocs::QConfReadKind::NAME_LIST},
+   {"-sql",    QConfObj::CQ,   ocs::QConfReadKind::NAME_LIST},
+   {"-srolel", QConfObj::RL,   ocs::QConfReadKind::NAME_LIST},
+   {"-srqsl",  QConfObj::RQS,  ocs::QConfReadKind::NAME_LIST},
+   {"-sul",    QConfObj::US,   ocs::QConfReadKind::NAME_LIST},
+   {"-suserl", QConfObj::UU,   ocs::QConfReadKind::NAME_LIST},
+
+   /* group A: one named object, rendered in full. -ssconf and -sstree are
+    * absent: they are singletons with their own fetch, and the share tree also
+    * has a nested JSON path - the two CS-2796 left hand written. */
+   {"-scal",   QConfObj::CAL,  ocs::QConfReadKind::SINGLE_OBJECT},
+   {"-sckpt",  QConfObj::CK,   ocs::QConfReadKind::SINGLE_OBJECT},
+   {"-se",     QConfObj::EH,   ocs::QConfReadKind::SINGLE_OBJECT},
+   {"-srole",  QConfObj::RL,   ocs::QConfReadKind::SINGLE_OBJECT},
+   {"-sp",     QConfObj::PE,   ocs::QConfReadKind::SINGLE_OBJECT},
+   {"-suser",  QConfObj::UU,   ocs::QConfReadKind::SINGLE_OBJECT},
+   {"-sprj",   QConfObj::PR,   ocs::QConfReadKind::SINGLE_OBJECT},
 };
 
 static constexpr size_t qconf_read_table_size =
@@ -63,6 +75,7 @@ static constexpr size_t qconf_read_table_size =
 
 ocs::QConfModelBase::~QConfModelBase() {
    lFreeList(&object_list_);
+   lFreeList(&centry_list_);
 }
 
 /**
@@ -79,6 +92,28 @@ ocs::QConfModelBase::resolve(const char *switch_name) {
    for (size_t i = 0; i < qconf_read_table_size; i++) {
       if (strcmp(qconf_read_table[i].switch_name, switch_name) == 0) {
          return &qconf_read_table[i];
+      }
+   }
+   return nullptr;
+}
+
+/**
+ * @brief The switch that reads one object type in one way
+ *
+ * The reverse of resolve(), for the call sites that know the object type rather
+ * than the switch - the option blocks of group A, which still decide for
+ * themselves what a failure means and therefore call into the procedure by
+ * type.
+ *
+ * @param object the object type
+ * @param kind   a name list or one object
+ * @return the switch, or nullptr when this procedure does not serve that pair
+ */
+const char *
+ocs::QConfModelBase::switch_for(QConfObj object, QConfReadKind kind) {
+   for (size_t i = 0; i < qconf_read_table_size; i++) {
+      if (qconf_read_table[i].object == object && qconf_read_table[i].kind == kind) {
+         return qconf_read_table[i].switch_name;
       }
    }
    return nullptr;
@@ -126,6 +161,29 @@ ocs::QConfModelBase::get_name_where(const lDescr *descr, int key_nm) {
 }
 
 /**
+ * @brief Which element a single-object show asks for
+ *
+ * A type without a name field holds exactly one object, so there is nothing to
+ * filter on. A host name is matched with the host comparison, which folds the
+ * domain away - `qconf -se host` finds `host.example.com`.
+ *
+ * @param descr  the CULL descriptor of the object type
+ * @param key_nm the field holding the name, NoName for a singleton
+ * @param name   the name that was asked for
+ * @return the condition, or nullptr for a singleton; the caller frees
+ */
+lCondition *
+ocs::QConfModelBase::get_object_where(const lDescr *descr, int key_nm, const char *name) {
+   if (key_nm == NoName) {
+      return nullptr;
+   }
+   const int pos = lGetPosInDescr(descr, key_nm);
+   const bool by_host = (lGetPosType(descr, pos) == lHostT);
+   return by_host ? lWhere("%T( %Ih=%s )", descr, key_nm, name)
+                  : lWhere("%T( %I==%s )", descr, key_nm, name);
+}
+
+/**
  * @brief Fetch what the operation asked for
  *
  * An empty list is an error for plain output and not for JSON, which renders
@@ -161,11 +219,19 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
    }
 
    object_ = entry->object;
+   kind_ = entry->kind;
    desc_ = &qconf_desc(entry->object);
    key_nm_ = desc_->name_nm;
 
-   lEnumeration *what = get_name_what(desc_->descr, key_nm_);
-   lCondition *where = get_name_where(desc_->descr, key_nm_);
+   lEnumeration *what;
+   lCondition *where;
+   if (kind_ == QConfReadKind::NAME_LIST) {
+      what = get_name_what(desc_->descr, key_nm_);
+      where = get_name_where(desc_->descr, key_nm_);
+   } else {
+      what = lWhat("%T(ALL)", desc_->descr);
+      where = get_object_where(desc_->descr, key_nm_, parameter.get_operation().arg(0));
+   }
    const bool ok = fetch(answer_list, desc_->target, where, what);
    lFreeWhat(&what);
    lFreeWhere(&where);
@@ -173,13 +239,45 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
       DRETURN(false);
    }
 
-   lPSortList(object_list_, "%I+", key_nm_);
+   if (kind_ == QConfReadKind::NAME_LIST) {
+      lPSortList(object_list_, "%I+", key_nm_);
 
-   if (lGetNumberOfElem(object_list_) == 0 &&
-       parameter.get_output_format() != ProcedureParameter::OutputFormat::JSON) {
-      answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
-                              MSG_QCONF_NOXDEFINED_S, desc_->read.list_name);
-      DRETURN(false);
+      /* An empty list is an error for plain output and not for JSON, which
+       * renders the empty array - the distinction the hand written engine made,
+       * kept as it was. The message travels back in the answer list rather than
+       * going to stderr, because inside qmaster stderr is the daemon's log and
+       * not the caller's terminal. */
+      if (lGetNumberOfElem(object_list_) == 0 &&
+          parameter.get_output_format() != ProcedureParameter::OutputFormat::JSON) {
+         answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                                 MSG_QCONF_NOXDEFINED_S, desc_->read.list_name);
+         DRETURN(false);
+      }
+   } else {
+      /* lGetNumberOfElem() would flag a null list as a CULL error, so the list
+       * itself is checked first - as the hand written engine did. The wording of
+       * the "not found" message is per object type, its shape is not. */
+      if (object_list_ == nullptr || lGetNumberOfElem(object_list_) == 0) {
+         if (desc_->read.not_found_msg != nullptr) {
+            answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                                    desc_->read.not_found_msg,
+                                    parameter.get_operation().arg(0));
+         }
+         DRETURN(false);
+      }
+
+      /* The prepare hook fills the typed JSON values, and needs the complex
+       * entries to do it. Fetching them is the model's job - the client asks
+       * qmaster, qmaster reads its own list - so the hook runs here and the view
+       * only renders. For plain output the hook did nothing anyway, which is why
+       * nothing is fetched then. */
+      if (desc_->read.prepare != nullptr &&
+          parameter.get_output_format() == ProcedureParameter::OutputFormat::JSON) {
+         if (!fetch_centries(answer_list)) {
+            DRETURN(false);
+         }
+         desc_->read.prepare(lFirstRW(object_list_), centry_list_);
+      }
    }
 
    DRETURN(true);

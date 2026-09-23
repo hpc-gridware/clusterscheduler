@@ -28,6 +28,8 @@
 
 #include "gdi/ocs_gdi_Client.h"
 
+#include "sgeobj/sge_centry.h"
+
 #include "ocs_QConfModelClient.h"
 
 /**
@@ -55,6 +57,34 @@ ocs::QConfModelClient::fetch(lList **answer_list, gdi::Target target,
    if (failed) {
       answer_list_append_list(answer_list, &alp);
       lFreeList(&object_list_);
+   }
+   lFreeList(&alp);
+
+   DRETURN(!failed);
+}
+
+/**
+ * @brief Ask qmaster for the complex entries
+ *
+ * Needed only by the JSON prepare hook, which turns the string values of a
+ * resource into typed numbers. The hand written code fetched them inside the
+ * hook, once per call of it; here they are fetched once, by the model.
+ *
+ * @param answer_list for error reporting
+ * @return true on success
+ */
+bool
+ocs::QConfModelClient::fetch_centries(lList **answer_list) {
+   DENTER(TOP_LAYER);
+
+   lEnumeration *what = lWhat("%T(ALL)", CE_Type);
+   lList *alp = gdi::Client::sge_gdi(gdi::Target::CE_LIST, gdi::Command::GET,
+                                     gdi::SubCommand::NONE, &centry_list_, nullptr, what);
+   lFreeWhat(&what);
+   const bool failed = answer_list_has_error(&alp);
+   if (failed) {
+      answer_list_append_list(answer_list, &alp);
+      lFreeList(&centry_list_);
    }
    lFreeList(&alp);
 

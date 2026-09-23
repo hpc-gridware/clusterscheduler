@@ -480,6 +480,24 @@ const spool_flatfile_instr qconf_sub_name_value_comma_braced_sfi =
 
 static void spool_flatfile_add_line_breaks (dstring *buffer);
 
+/** @brief Decide whether long lines are broken
+ *
+ * @param line_breaks what the caller asked for
+ * @return true when the buffer shall be wrapped
+ */
+static bool
+spool_flatfile_wants_line_breaks(spool_flatfile_line_breaks line_breaks) {
+   switch (line_breaks) {
+      case SP_LINE_BREAKS_ON:
+         return true;
+      case SP_LINE_BREAKS_OFF:
+         return false;
+      case SP_LINE_BREAKS_ENV:
+      default:
+         return getenv("SGE_SINGLE_LINE") == nullptr;
+   }
+}
+
 #ifdef DEBUG_FLATFILE
 bool flatfile_debugging = true;
 
@@ -758,6 +776,8 @@ bool spool_flatfile_align_list(lList **answer_list, const lList *list,
  * @param print_header prepend the product version as a comment line; ASCII
  *                     output only
  * @param stream the stream to write to when `destination` is #SP_DEST_STREAM
+ * @param line_breaks whether long lines are broken, see
+ *                    #spool_flatfile_line_breaks
  *
  * @return on success the name of the spool file / stream, else nullptr
  *
@@ -771,7 +791,8 @@ spool_flatfile_write_list(lList **answer_list,
                           const spool_flatfile_destination destination,
                           const spool_flatfile_format format,
                           const char *filepath, bool print_header,
-                          std::ostream *stream) {
+                          std::ostream *stream,
+                          spool_flatfile_line_breaks line_breaks) {
    DENTER(FLATFILE_LAYER);
 
    dstring char_buffer = DSTRING_INIT;
@@ -859,7 +880,8 @@ spool_flatfile_write_list(lList **answer_list,
             sge_dstring_append_char(&char_buffer, '\n');
          }
 
-         if (!print_header && instr->show_field_names && (getenv("SGE_SINGLE_LINE") == nullptr)) {
+         if (!print_header && instr->show_field_names &&
+             spool_flatfile_wants_line_breaks(line_breaks)) {
             spool_flatfile_add_line_breaks(&char_buffer);
          }
          
@@ -946,7 +968,8 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
                             const spool_flatfile_format format,
                             const char *filepath, bool print_header,
                             const char *json_type_name,
-                            std::ostream *stream) {
+                            std::ostream *stream,
+                            spool_flatfile_line_breaks line_breaks) {
    DENTER(FLATFILE_LAYER);
 
    dstring char_buffer = DSTRING_INIT;
@@ -999,7 +1022,8 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
 
          sge_dstring_append_char(&char_buffer, '\n');
 
-         if (!print_header && instr->show_field_names && (getenv("SGE_SINGLE_LINE") == nullptr)) {
+         if (!print_header && instr->show_field_names &&
+             spool_flatfile_wants_line_breaks(line_breaks)) {
             spool_flatfile_add_line_breaks(&char_buffer);
          }
 

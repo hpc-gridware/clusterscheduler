@@ -29,9 +29,9 @@
 /**
  * @brief Render what the model fetched
  *
- * One operation, one list, one rendering - the read path of `qconf` has no
- * report structure to walk, unlike qquota, so there is nothing here but the
- * handover.
+ * The read path of `qconf` has no report structure to walk, unlike qquota, so
+ * there is nothing here but the handover - to one of two renderings, depending
+ * on what the switch asked for.
  *
  * @param parameter what the call asked for
  * @param model     what it fetched
@@ -43,6 +43,12 @@ ocs::QConfController::process_request(QConfParameter &parameter, QConfModelBase 
                                       QConfViewBase &view) {
    DENTER(TOP_LAYER);
    (void) parameter;
-   view.show_name_list(out_, model.get_object_list(), model.get_key_nm());
+
+   if (model.get_kind() == QConfReadKind::NAME_LIST) {
+      view.show_name_list(out_, model.get_object_list(), model.get_key_nm());
+   } else {
+      view.show_object(out_, lFirst(model.get_object_list()), *model.get_desc());
+   }
+
    DRETURN_VOID;
 }
