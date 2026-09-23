@@ -25,6 +25,8 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_answer.h"
+#include "evm/sge_event_master.h"
+
 #include "sgeobj/ocs_DataStore.h"
 
 #include "basis_types.h"
@@ -54,8 +56,15 @@ static const sge_object_type qconf_master_list[] = {
    SGE_TYPE_USERSET,     /* US   */
    SGE_TYPE_USER,        /* UU   */
    SGE_TYPE_SHARETREE,   /* STN  */
-   SGE_TYPE_NONE,        /* SC - the scheduler configuration is a singleton */
+   SGE_TYPE_SCHEDD_CONF, /* SC   */
+   SGE_TYPE_CONFIG,      /* CONF */
+   SGE_TYPE_NONE,        /* EV - event clients live in the event master */
 };
+
+/* the second array on the same index - see the note at QConfObj (CS-2808) */
+static_assert(sizeof(qconf_master_list) / sizeof(qconf_master_list[0]) ==
+              static_cast<size_t>(QConfObj::EV) + 1,
+              "qconf_master_list needs exactly one row per QConfObj value");
 
 /**
  * @brief Read the objects out of qmaster's own lists
@@ -75,6 +84,16 @@ bool
 ocs::QConfModelServer::fetch(lList **answer_list, gdi::Target target,
                              lCondition *where, lEnumeration *what) {
    DENTER(TOP_LAYER);
+
+   if (get_object() == QConfObj::EV) {
+      /* The one read that is not a data store read: event clients are held by
+       * the event master and built on demand, which is why EV_LIST carries
+       * SGE_TYPE_NONE in sge_c_gdi.cc and why the GDI GET is answered from the
+       * LISTENER data store. The call is MT safe and takes its own lock, so
+       * whichever store this request runs under does not matter (CS-2808). */
+      object_list_ = sge_select_event_clients("", where, what);
+      DRETURN(true);
+   }
 
    const size_t index = static_cast<size_t>(get_object());
    const sge_object_type type = qconf_master_list[index];

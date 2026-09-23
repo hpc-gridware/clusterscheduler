@@ -40,8 +40,6 @@
  * the procedure decides what to read from the switch it was given rather than
  * from anything the client sends along.
  *
- * `-sconfl` and `-sss` are absent on purpose: CONF and EV have no row in the
- * object table, which is why CS-2796 left them hand written in the client.
  */
 static const ocs::qconf_read_entry qconf_read_table[] = {
    /* group B: the name lists */
@@ -57,10 +55,10 @@ static const ocs::qconf_read_entry qconf_read_table[] = {
    {"-srqsl",  QConfObj::RQS,  ocs::QConfReadKind::NAME_LIST},
    {"-sul",    QConfObj::US,   ocs::QConfReadKind::NAME_LIST},
    {"-suserl", QConfObj::UU,   ocs::QConfReadKind::NAME_LIST},
+   {"-sconfl", QConfObj::CONF, ocs::QConfReadKind::NAME_LIST},
+   {"-sss",    QConfObj::EV,   ocs::QConfReadKind::NAME_LIST},
 
-   /* group A: one named object, rendered in full. -ssconf and -sstree are
-    * absent: they are singletons with their own fetch, and the share tree also
-    * has a nested JSON path - the two CS-2796 left hand written. */
+   /* group A: one named object, rendered in full */
    {"-scal",   QConfObj::CAL,  ocs::QConfReadKind::SINGLE_OBJECT},
    {"-sckpt",  QConfObj::CK,   ocs::QConfReadKind::SINGLE_OBJECT},
    {"-se",     QConfObj::EH,   ocs::QConfReadKind::SINGLE_OBJECT},
@@ -68,6 +66,14 @@ static const ocs::qconf_read_entry qconf_read_table[] = {
    {"-sp",     QConfObj::PE,   ocs::QConfReadKind::SINGLE_OBJECT},
    {"-suser",  QConfObj::UU,   ocs::QConfReadKind::SINGLE_OBJECT},
    {"-sprj",   QConfObj::PR,   ocs::QConfReadKind::SINGLE_OBJECT},
+
+   /* group A: the singletons. A separate kind rather than a SINGLE_OBJECT row
+    * with name_nm == NoName: that would work - get_object_where() returns
+    * nullptr for NoName and arg(0) is null-safe - but a row whose switch takes
+    * no name would be a trap for the next reader, and the empty case needs a
+    * message that takes no argument (CS-2808). */
+   {"-ssconf", QConfObj::SC,   ocs::QConfReadKind::SINGLETON},
+   {"-sstree", QConfObj::STN,  ocs::QConfReadKind::SINGLETON},
 };
 
 static constexpr size_t qconf_read_table_size =
@@ -258,7 +264,13 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
        * itself is checked first - as the hand written engine did. The wording of
        * the "not found" message is per object type, its shape is not. */
       if (object_list_ == nullptr || lGetNumberOfElem(object_list_) == 0) {
-         if (desc_->read.not_found_msg != nullptr) {
+         if (kind_ == QConfReadKind::SINGLETON) {
+            /* no name was given, so the message takes no argument */
+            if (desc_->read.empty_msg != nullptr) {
+               answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                                       "%s", desc_->read.empty_msg);
+            }
+         } else if (desc_->read.not_found_msg != nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                     desc_->read.not_found_msg,
                                     parameter.get_operation().arg(0));

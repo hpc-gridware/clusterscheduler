@@ -74,6 +74,8 @@ static spooling_field *qconf_show_fields_EH(spool_flatfile_format, bool *o) { *o
 static void qconf_show_prepare_EH(lListElem *ep, const lList *master_centry_list);
 static spooling_field *qconf_fields_PR  (spool_flatfile_format, bool *o) { *o = true;  return sge_build_PR_field_list(false); }
 static spooling_field *qconf_fields_UU  (spool_flatfile_format, bool *o) { *o = true;  return sge_build_UU_field_list(false); }
+/* the cluster configuration has no static field table, only a builder (CS-2808) */
+static spooling_field *qconf_fields_CONF(spool_flatfile_format, bool *o) { *o = true;  return sge_build_CONF_field_list(false); }
 static spooling_field *qconf_fields_STN (spool_flatfile_format fmt, bool *o) {
    *o = true;
    return (fmt == SP_FORM_JSON) ? sge_build_STN_json_field_list() : sge_build_STN_field_list(false, true);
@@ -182,34 +184,56 @@ qconf_us_validate(const lListElem *ep, lList **alpp) {
  * Kept in the order of the enum so that qconf_desc() is a plain index. */
 static const qconf_object_desc qconf_object_table[] = {
    /* CAL  */ { ocs::gdi::Target::CAL_LIST,  CAL_Type,  CAL_name,  qconf_fields_CAL,  &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "calendar", MSG_CALENDAR_XISNOTACALENDAR_S, nullptr } },
+              { nullptr, "calendar", MSG_CALENDAR_XISNOTACALENDAR_S, nullptr, nullptr } },
    /* CK   */ { ocs::gdi::Target::CK_LIST,   CK_Type,   CK_name,   qconf_fields_CK,   &qconf_sfi,                 nullptr,      ckpt_validate,       nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "ckpt interface definition", MSG_CKPT_XISNOTCHKPINTERFACEDEF_S, nullptr } },
+              { nullptr, "ckpt interface definition", MSG_CKPT_XISNOTCHKPINTERFACEDEF_S, nullptr, nullptr } },
    /* CE   */ { ocs::gdi::Target::CE_LIST,   CE_Type,   CE_name,   qconf_fields_CE,   &qconf_ce_sfi,              nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "complex entry", nullptr, nullptr } },
+              { nullptr, "complex entry", nullptr, nullptr, nullptr } },
    /* EH   */ { ocs::gdi::Target::EH_LIST,   EH_Type,   EH_name,   qconf_fields_EH,   &qconf_sfi,                 "exechost",   nullptr,             qconf_eh_resolve,  ocs::gdi::SubCommand::NONE,    false, true,  false, SGE_TEMPLATE_NAME,  SGE_GLOBAL_NAME,
-              { qconf_show_fields_EH, "execution host", MSG_EXEC_XISNOTANEXECUTIONHOST_S, qconf_show_prepare_EH } },
+              { qconf_show_fields_EH, "execution host", MSG_EXEC_XISNOTANEXECUTIONHOST_S, nullptr, qconf_show_prepare_EH } },
    /* HGRP */ { ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_name, qconf_fields_HGRP, &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "host group list", nullptr, nullptr } },
+              { nullptr, "host group list", nullptr, nullptr, nullptr } },
    /* PE   */ { ocs::gdi::Target::PE_LIST,   PE_Type,   PE_name,   qconf_fields_PE,   &qconf_sfi,                 nullptr,      qconf_pe_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "parallel environment", MSG_PARALLEL_XNOTAPARALLELEVIRONMENT_S, nullptr } },
+              { nullptr, "parallel environment", MSG_PARALLEL_XNOTAPARALLELEVIRONMENT_S, nullptr, nullptr } },
    /* PR   */ { ocs::gdi::Target::PR_LIST,   PR_Type,   PR_name,   qconf_fields_PR,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "project list", MSG_PROJECT_XISNOKNWOWNPROJECT_S, nullptr } },
+              { nullptr, "project list", MSG_PROJECT_XISNOKNWOWNPROJECT_S, nullptr, nullptr } },
    /* CQ   */ { ocs::gdi::Target::CQ_LIST,   CQ_Type,   CQ_name,   qconf_fields_CQ,   &qconf_sfi,                 nullptr,      qconf_cq_verify,     nullptr,           ocs::gdi::SubCommand::SET_ALL, false, false, false, nullptr,            nullptr,
-              { nullptr, "cqueue list", nullptr, nullptr } },
+              { nullptr, "cqueue list", nullptr, nullptr, nullptr } },
    /* RL   */ { ocs::gdi::Target::RL_LIST,   RL_Type,   RL_name,   qconf_fields_RL,   &qconf_sfi,                 nullptr,      qconf_role_validate, nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "role", MSG_ROLE_DOESNOTEXIST_S, nullptr } },
+              { nullptr, "role", MSG_ROLE_DOESNOTEXIST_S, nullptr, nullptr } },
    /* RQS  */ { ocs::gdi::Target::RQS_LIST,  RQS_Type,  RQS_name,  qconf_fields_RQS,  &qconf_rqs_sfi,             nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    true,  true,  false, nullptr,            nullptr,
-              { nullptr, "resource quota set list", nullptr, nullptr } },
+              { nullptr, "resource quota set list", nullptr, nullptr, nullptr } },
    /* US   */ { ocs::gdi::Target::US_LIST,   US_Type,   US_name,   qconf_fields_US,   &qconf_param_sfi,           nullptr,      qconf_us_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "userset list", nullptr, nullptr } },
+              { nullptr, "userset list", nullptr, nullptr, nullptr } },
    /* UU   */ { ocs::gdi::Target::UU_LIST,   UU_Type,   UU_name,   qconf_fields_UU,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "user list", MSG_USER_XISNOKNOWNUSER_S, nullptr } },
+              { nullptr, "user list", MSG_USER_XISNOKNOWNUSER_S, nullptr, nullptr } },
    /* STN  */ { ocs::gdi::Target::STN_LIST,  STN_Type,  NoName,    qconf_fields_STN,  &qconf_name_value_list_sfi, "sharetree",  nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  true,  nullptr,            nullptr,
-              { nullptr, nullptr, nullptr, nullptr } },
+              { nullptr, nullptr, nullptr, MSG_OBJ_NOSTREEELEM, nullptr } },
+   /* SC: the hand written -ssconf had no empty check at all - it handed a null
+    * element to the writer and reported the CULL complaint plus this line. The
+    * path cannot occur on a running cluster; inside qmaster a null element must
+    * not reach the writer, so the check is explicit here and reports the closer
+    * of the two messages (CS-2808). */
    /* SC   */ { ocs::gdi::Target::SC_LIST,   SC_Type,   NoName,    qconf_fields_SC,   &qconf_comma_sfi,           "sched_conf", nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, nullptr, nullptr, nullptr } },
+              { nullptr, nullptr, nullptr, MSG_SCHEDCONF_CANTCREATESCHEDULERCONFIGURATION, nullptr } },
+   /* CONF: read only (CS-2808). -sconf/-mconf keep their own code and never ask
+    * this table, so every write field is left empty on purpose. */
+   /* CONF */ { ocs::gdi::Target::CONF_LIST, CONF_Type, CONF_name, qconf_fields_CONF, &qconf_sfi,                nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,            nullptr,
+              { nullptr, "config", nullptr, nullptr, nullptr } },
+   /* EV: read only and name-list only (CS-2808). There is no field list because
+    * EV_Type is not a registered object type and no -s<obj>/export path reaches
+    * this row - show_name_list() renders the key field and nothing else. */
+   /* EV   */ { ocs::gdi::Target::EV_LIST,   EV_Type,   EV_host,   nullptr,           &qconf_sfi,                nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,            nullptr,
+              { nullptr, "scheduling host", nullptr, nullptr, nullptr } },
 };
+
+/* CS-2808: the table is indexed by QConfObj and carries no name to grep for, so
+ * a value appended to the enum without a row here would read past the end in
+ * silence. The bound is spelled out rather than taken from a sentinel, so that
+ * appending a value forces a look at this line. */
+static_assert(sizeof(qconf_object_table) / sizeof(qconf_object_table[0]) ==
+              static_cast<size_t>(QConfObj::EV) + 1,
+              "qconf_object_table needs exactly one row per QConfObj value");
 
 /** @brief The descriptor of one object type.
  * @param o the object type

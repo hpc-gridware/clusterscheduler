@@ -41,7 +41,8 @@ namespace ocs {
    /** @brief What a read switch produces */
    enum class QConfReadKind {
       NAME_LIST,     ///< group B: every name of the type, one per line
-      SINGLE_OBJECT  ///< group A: one named object, rendered in full
+      SINGLE_OBJECT, ///< group A: one named object, rendered in full
+      SINGLETON      ///< group A: the one object of its type, no name given
    };
 
    struct qconf_read_entry {

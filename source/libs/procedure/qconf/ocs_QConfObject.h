@@ -46,11 +46,19 @@ typedef spooling_field *(*qconf_build_fields_fn)(spool_flatfile_format format, b
 
 /** @brief The configuration object types the generic engines handle.
  *
- * The cluster configuration is deliberately absent: it is keyed on the host
- * basename rather than on a field, which is why it has its own
- * qconf_conf_export()/qconf_conf_apply_path(). */
+ * CONF and EV carry read-only rows (CS-2808). The cluster configuration is keyed
+ * on the host basename rather than on a field, so its write path keeps its own
+ * qconf_conf_export()/qconf_conf_apply_path() and the write hooks of its row
+ * stay empty; only -sconfl uses it. EV is not a configuration object at all -
+ * event clients live in the event master, not in a master list - and only
+ * -sss uses it.
+ *
+ * Values are **appended, never inserted**: qconf_desc() is a plain index into
+ * qconf_object_table, and qconf_master_list in ocs_QConfModelServer.cc is a
+ * second array on the same index. Neither carries a name to grep for, so an
+ * insertion shifts every row below it in silence. */
 enum class QConfObj {
-   CAL, CK, CE, EH, HGRP, PE, PR, CQ, RL, RQS, US, UU, STN, SC
+   CAL, CK, CE, EH, HGRP, PE, PR, CQ, RL, RQS, US, UU, STN, SC, CONF, EV
 };
 
 /** @brief What the read path needs on top of the common descriptor (CS-2796).
@@ -70,6 +78,8 @@ struct qconf_read_desc {
    qconf_build_fields_fn fields;   ///< field list for -s<obj>, nullptr to use build_fields
    const char *list_name;          ///< object name in the "no X defined" message of -s<obj>l
    const char *not_found_msg;      ///< format string of the "X is not a Y" message of -s<obj>
+   const char *empty_msg;          ///< message of a singleton read that finds nothing,
+                                   ///< takes no argument; nullptr for a type that is not one
    void (*prepare)(lListElem *, const lList *);   ///< fixup before rendering with the
                                                  ///< master centry list, nullptr for none
 };

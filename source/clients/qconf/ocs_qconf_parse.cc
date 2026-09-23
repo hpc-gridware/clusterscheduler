@@ -2060,12 +2060,15 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param,
    DENTER(TOP_LAYER);
 
    const ocs::qconf_read_entry *entry = ocs::QConfModelBase::resolve(op.token.c_str());
-   if (entry == nullptr || entry->kind != ocs::QConfReadKind::NAME_LIST) {
-      /* Group A is not intercepted here. Its options disagree about what a
-       * failure means - the classic four leave the parser, -sprj only sets the
-       * exit code, -suser ignores it and shows a whole comma separated list -
-       * and -se resolves the host name first. Those blocks keep their own
-       * handling and reach the procedure through qconf_show_object(). */
+   if (entry == nullptr || entry->kind == ocs::QConfReadKind::SINGLE_OBJECT) {
+      /* The named single-object reads are not intercepted here. Their options
+       * disagree about what a failure means - the classic four leave the parser,
+       * -sprj only sets the exit code, -suser ignores it and shows a whole comma
+       * separated list - and -se resolves the host name first. Those blocks keep
+       * their own handling and reach the procedure through qconf_show_object().
+       *
+       * Name lists and singletons have no such quirks: a failure sets the exit
+       * status and the loop carries on, which is what this function does. */
       DRETURN(false);
    }
 
@@ -2098,7 +2101,6 @@ int sge_parse_qconf(char *argv[]) {
    const lListElem *aep=nullptr;
    lListElem *newep = nullptr;
    const char *host = nullptr;
-   const char *filename_stdout;
    int fields_out[MAX_NUM_FIELDS];
    int missing_field = NoName;
    const char* qualified_hostname = component_get_qualified_hostname();
@@ -2188,9 +2190,10 @@ int sge_parse_qconf(char *argv[]) {
        * CLIENT context the same model and view run here, against data fetched
        * over GDI, which is what makes the two comparable byte for byte.
        *
-       * Everything else - the write path, the bespoke show options of group N,
-       * and the four of A and B that stayed hand written - falls through to the
-       * option chain below and runs locally, in the order it was typed. */
+       * CS-2808 added the last four of groups A and B, so the whole read path
+       * of both groups goes this way. Everything else - the write path and the
+       * bespoke show options of group N - falls through to the option chain
+       * below and runs locally, in the order it was typed. */
       if (qconf_run_read_procedure(os, param, op, &sge_parse_return)) {
          continue;
       }
@@ -5307,16 +5310,6 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 /*----------------------------------------------------------------------------*/
-      /* "-sconfl" */
-
-      if (strcmp("-sconfl", *spp) == 0) {
-         if (!show_object_list(os, ocs::gdi::Target::CONF_LIST, CONF_Type, CONF_name, "config")) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-
 /*----------------------------------------------------------------------------*/
       /* "-dconf config_list" */
       if (strcmp("-dconf", *spp) == 0) {
@@ -5563,44 +5556,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*----------------------------------------------------------------------------*/
-      /* "-ssconf" */
-
-      if (strcmp("-ssconf", *spp) == 0) {
-         /* get the scheduler configuration .. */
-         what = lWhat("%T(ALL)", SC_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SC_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-         lFreeList(&alp);
-
-         /* SC has no primary key, so the JSON $id type must be set explicitly
-          * (content resolution would yield "petask") */
-         filename_stdout = spool_flatfile_write_object(&alp, lFirst(lp), false, SC_fields,
-                                     &qconf_comma_sfi, SP_DEST_STREAM,
-                                     qconf_opt_format, nullptr, false, "sched_conf", &os);
-
-         sge_free(&filename_stdout);
-         if (answer_list_output(&alp)) {
-            fprintf(stderr, "%s\n", MSG_SCHEDCONF_CANTCREATESCHEDULERCONFIGURATION);
-            sge_parse_return = 1;
-            spp++;
-            continue;
-         }
-
-         lFreeList(&lp);
-
-         spp++;
-         continue;
-      }
-
 /*----------------------------------------------------------------------------*/
 
       /* "-sstnode node_path[,...]"  show sharetree node */
@@ -5706,64 +5661,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*----------------------------------------------------------------------------*/
-      /* "-sstree" */
-
-      if (strcmp("-sstree", *spp) == 0) {
-         spooling_field *fields = nullptr;
-
-         /* get the sharetree .. */
-         what = lWhat("%T(ALL)", STN_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-         lFreeWhat(&what);
-
-         sge_parse_return |= show_answer_list(alp);
-         if (sge_parse_return) {
-            lFreeList(&alp);
-            lFreeList(&lp);
-            spp++;
-            continue;
-         }
-
-         ep = lFirstRW(lp);
-
-         if (ep == nullptr) {
-            fprintf(stderr, "%s\n", MSG_OBJ_NOSTREEELEM);
-            sge_parse_return = 1;
-            lFreeList(&alp);
-            lFreeList(&lp);
-            spp++;
-            continue;
-         }
-
-         if (qconf_opt_format == SP_FORM_JSON) {
-            /* the share tree is a tree, not a flat object: render it as a nested
-             * JSON document (childnodes -> array of full child nodes, recursively) */
-            spooling_field *json_fields = sge_build_STN_json_field_list();
-            dstring out = DSTRING_INIT;
-            spool_json_write_typed_object(&alp, ep, json_fields, "sharetree", &out);
-            os << qconf_cstr(sge_dstring_get_string(&out));
-            sge_dstring_free(&out);
-            sge_free(&json_fields);
-         } else {
-            fields = sge_build_STN_field_list(false, true);
-            filename_stdout = spool_flatfile_write_object(&alp, ep, true, fields,
-                                        &qconf_name_value_list_sfi,
-                                        SP_DEST_STREAM, qconf_opt_format,
-                                        nullptr, false, nullptr, &os);
-            sge_free(&fields);
-            sge_free(&filename_stdout);
-         }
-         sge_parse_return |= show_answer_list(alp);
-         if (sge_parse_return) {
-            sge_error_and_exit(nullptr);
-         }
-
-         lFreeList(&alp);
-         lFreeList(&lp);
-         spp++;
-         continue;
-      }
-
 /*----------------------------------------------------------------------------*/
       /* "-bonsai" This is the undocumented switch of showing the share tree
          we keep this switch  for compatibility reasons */
@@ -5846,17 +5743,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*-----------------------------------------------------------------------------*/
-      /* "-sss" - show scheduler state */
-
-      if (strcmp("-sss", *spp) == 0) {
-         /* ... */
-         if (!show_object_list(os, ocs::gdi::Target::EV_LIST, EV_Type, EV_host, "scheduling host")) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-
 /*----------------------------------------------------------------------------*/
       /* "-su [list_name[,list_name,...]]" */
 
