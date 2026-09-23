@@ -119,7 +119,6 @@ static int sge_next_is_an_opt(char **ptr);
 static int sge_error_and_exit(const char *ptr);
 
 /* ------------------------------------------------------------- */
-static bool show_object_list(std::ostream &os, ocs::gdi::Target, lDescr *, int, const char *);
 static bool show_reserved_hgroup_hosts(std::ostream &os, const char *, const char *, const char *);
 static bool show_manop_list(std::ostream &os, const char *userset_name, const char *display_name);
 static int show_thread_list(std::ostream &os);
@@ -1397,18 +1396,6 @@ qconf_show_status_classic(QConfShowStatus st, int *parse_return) {
          break;
    }
    return false;
-}
-
-/** @brief Show the names of all objects of the given type, one per line.
- *
- * @param os the stream the output is written to (CS-1841)
- * @param o the object type
- * @return true when the list was printed, false when it was empty or the request failed
- */
-static bool
-qconf_show_names(std::ostream &os, QConfObj o) {
-   const qconf_object_desc &d = qconf_desc(o);
-   return show_object_list(os, d.target, const_cast<lDescr *>(d.descr), d.name_nm, d.read.list_name);
 }
 
 /** @brief Delete the objects named by an already parsed list.
@@ -5180,13 +5167,6 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-scall" */
 
-      if (strcmp("-scall", *spp) == 0) {
-         if (!qconf_show_names(os, QConfObj::CAL)) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
 
 /*-----------------------------------------------------------------------------*/
       /* "-sconf host_list" || "-mconf host_list" || "-aconf host_list" || "-Mconf file_list" || "-Aconf file_list" */
@@ -5302,13 +5282,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 /*-----------------------------------------------------------------------------*/
       /* "-sckptl" */
-      if (strcmp("-sckptl", *spp) == 0) {
-         if (!qconf_show_names(os, QConfObj::CK)) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
 /*----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
       /* "-dconf config_list" */
@@ -5416,13 +5389,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 /*-----------------------------------------------------------------------------*/
       /* "-sel" */
-      if (strcmp("-sel", *spp) == 0) {
-         if (!qconf_show_names(os, QConfObj::EH)) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
 /*----------------------------------------------------------------------------*/
       /* "-sep" */
       if (strcmp("-sep", *spp) == 0) {
@@ -5442,13 +5408,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 /*----------------------------------------------------------------------------*/
       /* "-srqsl " */
-      if (strcmp("-srqsl", *spp) == 0) {
-         if (!qconf_show_names(os, QConfObj::RQS)) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
 /*----------------------------------------------------------------------------*/
       /* "-srqs [rqs_name,...]" */
       if (strcmp("-srqs", *spp) == 0) {
@@ -5505,13 +5464,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 /*-----------------------------------------------------------------------------*/
       /* "-srolel" */
-      if (strcmp("-srolel", *spp) == 0) {
-         if (!qconf_show_names(os, QConfObj::RL)) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
 /*-----------------------------------------------------------------------------*/
       /* "-sp pe_name" */
       if (strcmp("-sp", *spp) == 0) {
@@ -5526,23 +5478,9 @@ int sge_parse_qconf(char *argv[]) {
       }
 /*-----------------------------------------------------------------------------*/
       /* "-spl" */
-      if (strcmp("-spl", *spp) == 0) {
-         if (!qconf_show_names(os, QConfObj::PE)) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
 
 /*-----------------------------------------------------------------------------*/
       /* "-scel" */
-      if (strcmp("-scel", *spp) == 0) {
-         if (!qconf_show_names(os, QConfObj::CE)) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
 /*----------------------------------------------------------------------------*/
       /* "-so" */
 
@@ -5930,13 +5868,6 @@ int sge_parse_qconf(char *argv[]) {
        */
 
       /* "-shgrpl" */
-      if (strcmp("-shgrpl", *spp) == 0) {
-         if (!qconf_show_names(os, QConfObj::HGRP)) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
 
       /* "-mhgrp user"  */
       if (strcmp("-mhgrp", *spp) == 0) {
@@ -6094,13 +6025,6 @@ int sge_parse_qconf(char *argv[]) {
        */
 
       /* "-sql" */
-      if (strcmp("-sql", *spp) == 0) {
-         if (!qconf_show_names(os, QConfObj::CQ)) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
 
       /* "-mq cqueue"  */
       if (strcmp("-mq", *spp) == 0) {
@@ -6412,37 +6336,16 @@ int sge_parse_qconf(char *argv[]) {
 /*----------------------------------------------------------------------------*/
       /* "-sul" */
 
-      if (strcmp("-sul", *spp) == 0) {
-         if (!qconf_show_names(os, QConfObj::US)) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
 
 /*----------------------------------------------------------------------------*/
 
        /* "-suserl" */
 
-      if (strcmp("-suserl", *spp) == 0) {
-         if (!qconf_show_names(os, QConfObj::UU)) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
 
 /*----------------------------------------------------------------------------*/
 
        /* "-sprjl" */
 
-      if (strcmp("-sprjl", *spp) == 0) {
-         if (!qconf_show_names(os, QConfObj::PR)) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
 
 /*----------------------------------------------------------------------------*/
 
@@ -7111,100 +7014,6 @@ static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid) {
 /* ------------------------------------------------------------ */
 
 /**
- * @brief Print the names of every object of one type, the `-s*l` switches
- *
- * Fetches only the key field of the target list and writes one name per line,
- * or a JSON array under `-fmt json`. The template and global pseudo hosts are
- * filtered out for `EH_name`, the global configuration for `CONF_name`, and
- * `EV_host` is narrowed to the scheduler event client.
- *
- * @param os     the stream the names are written to (CS-1841)
- * @param target the master list to read
- * @param type   the CULL type of its elements
- * @param keynm  the field holding the name
- * @param name   the object type's display name, used in the "none defined" message
- * @return true when at least one name was written; false on a GDI error or an
- *         empty list, which is reported on stderr
- */
-static bool show_object_list(std::ostream &os, ocs::gdi::Target target, lDescr *type, int keynm, const char *name) {
-   DENTER(TOP_LAYER);
-   lEnumeration *what = nullptr;
-   lCondition *where = nullptr;
-   lList *alp = nullptr, *lp = nullptr;
-   int pos;
-   int dataType;
-   bool ret = true;
-
-   what = lWhat("%T(%I)", type, keynm);
-
-   switch (keynm) {
-   case EH_name:
-      where = lWhere("%T(!(%Ic=%s || %Ic=%s))", type, keynm, SGE_TEMPLATE_NAME, keynm, SGE_GLOBAL_NAME );
-      break;
-   case CONF_name:
-      where = lWhere("%T(!(%I c= %s))", type, keynm, SGE_GLOBAL_NAME );
-      break;
-   case EV_host:
-      where = lWhere("%T(%I==%u))", type, EV_id, EV_ID_SCHEDD);
-      break;
-   default:
-      where = nullptr; /* all elements */
-      break;
-   }
-
-   alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-   lFreeWhat(&what);
-   lFreeWhere(&where);
-
-   lPSortList(lp, "%I+", keynm);
-
-   lListElem *ep1 = lFirstRW(alp);
-   answer_exit_if_not_recoverable(ep1);
-   if (answer_list_output(&alp)) {
-      lFreeList(&lp);
-      DRETURN(false);
-   }
-
-   /* CS-2313a: -fmt json renders the name list as a JSON array (in the $schema/$id
-    * envelope); ASCII prints one name per line. */
-   if (qconf_opt_format == SP_FORM_JSON) {
-      dstring out = DSTRING_INIT;
-      spool_json_write_name_list(&alp, lp, keynm, &out);
-      os << qconf_cstr(sge_dstring_get_string(&out));
-      sge_dstring_free(&out);
-   } else if (lGetNumberOfElem(lp) > 0) {
-      for_each_rw_lv (ep, lp) {
-         const char *line = nullptr;
-         pos = lGetPosInDescr(type, keynm);
-         dataType = lGetPosType(type , pos);
-         switch(dataType) {
-            case lStringT:
-               line = lGetString(ep, keynm);
-               break;
-            case lHostT:
-               line = lGetHost(ep, keynm);
-               break;
-            default:
-               DPRINTF("show_object_list: unexpected data type\n");
-               break;
-         }
-         if (line != nullptr && line[0] != COMMENT_CHAR) {
-            os << qconf_cstr(line) << "\n";
-         }
-      }
-   } else {
-      fprintf(stderr, MSG_QCONF_NOXDEFINED_S, name);
-      fprintf(stderr, "\n");
-      ret = false;
-   }
-
-   lFreeList(&alp);
-   lFreeList(&lp);
-
-   DRETURN(ret);
-}
-
-/**
  * @brief Qconf -sh / -ss from the reserved group
  *
  * CS-2438 chunk 5. Prints the membership of "@admin_hosts"/"@submit_hosts"
@@ -7216,7 +7025,7 @@ static bool show_object_list(std::ostream &os, ocs::gdi::Target target, lDescr *
  * Where an admin did introduce nesting, the direct entries are the honest
  * answer: they are what "-dh/-ds" operate on. The resolved view already has
  * its own command, "qconf -shgrp_resolved @submit_hosts".
- * The three behaviours of show_object_list() that scripts depend on are
+ * The three behaviours of the name-list output that scripts depend on are
  * reproduced exactly, and for the same reasons:
  *   1. output sorted ascending by name, not stored order;
  *   2. entries starting with COMMENT_CHAR skipped;
