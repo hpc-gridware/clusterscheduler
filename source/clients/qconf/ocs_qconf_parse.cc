@@ -2064,9 +2064,27 @@ qconf_run_read_procedure(std::ostream &os, ocs::QConfParameterClient &param,
    const bool ok = qconf_dispatch_procedure(os, param, &alp);
 
    if (!ok) {
-      /* the messages the engine used to write to stderr itself; an empty list
-       * for plain output is one of them, and still sets the exit status */
-      answer_list_output(&alp);
+      /* CS-2808: a singleton that finds nothing keeps the bare wording its hand
+       * written block used - "no sharetree element", not "error: no sharetree
+       * element". The prefix comes from the ERROR() macro inside answer_log(),
+       * so the text cannot travel as an answer and be printed unchanged. It
+       * does not have to: the wording sits in the descriptor table, which is
+       * linked into the client as well, so it is written here and the answer
+       * carrying the same text is dropped.
+       *
+       * The model raises STATUS_EEXIST for exactly this case and for nothing
+       * else in a singleton read, which is what makes the answer safe to
+       * swallow. */
+      const qconf_object_desc &desc = qconf_desc(entry->object);
+      if (entry->kind == ocs::QConfReadKind::SINGLETON &&
+          desc.read.empty_msg != nullptr &&
+          answer_list_has_status(&alp, STATUS_EEXIST)) {
+         fprintf(stderr, "%s\n", desc.read.empty_msg);
+      } else {
+         /* the messages the engine used to write to stderr itself; an empty
+          * list for plain output is one of them */
+         answer_list_output(&alp);
+      }
       *ret = 1;
    }
    lFreeList(&alp);
