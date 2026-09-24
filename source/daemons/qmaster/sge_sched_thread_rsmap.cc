@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *  
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2026 HPC-Gridware GmbH
  *  
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -111,12 +111,16 @@ gru_add_selected_instances(lListElem *gru, const lListElem *resource_definition,
  *                   resolved requirements an instance has to carry, each holding the name, the
  *                   type and the relation operator of the characteristic's own complex - see
  *                   centry_rsmap_resolve_request_properties()
+ * @param required_key nullptr when this host may choose its own group, otherwise the group the
+ *                   choice is confined to - what scope=job binds every host of the job to, see
+ *                   rsmap_job_scope_key()
  * @return true on success, false when no set of ids could be selected
  */
 static bool
 rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host_name,
                          const lList *host_list, u_long32 amount, const char *same_key,
-                         const char *id_expr, const lList *required_props) {
+                         const char *id_expr, const lList *required_props,
+                         const char *required_key) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -190,7 +194,7 @@ rsmap_select_granted_ids(sge_assignment_t *a, const char *name, const char *host
                selected_ok = centry_rsmap_select_group_instances(resource_definition, taken,
                                                                  already, same_key, amount,
                                                                  &selected, id_expr,
-                                                                 required_props);
+                                                                 required_props, required_key);
             } else {
                selected_ok = centry_rsmap_select_instances(resource_definition, taken, already,
                                                            amount, &selected, id_expr,
@@ -317,9 +321,18 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
          lList *required_props = nullptr;
          centry_rsmap_resolve_request_properties(request, a->centry_list, &required_props);
 
+         // scope=job: the group was chosen over all the hosts the job could run on while
+         // matching, and this host has to take from that one. Asking for it again here returns
+         // what matching decided - it is kept on the assignment - so the instances come from
+         // the group the host was offered slots for.
+         const char *required_key = nullptr;
+         if (same_key != nullptr && rsmap_request_has_job_scope(a, request)) {
+            required_key = rsmap_job_scope_key(a, request, same_key, id_expr, required_props);
+         }
+
          if (select_instances) {
             ret = rsmap_select_granted_ids(a, name, host_name, host_list, amount * slots,
-                                           same_key, id_expr, required_props);
+                                           same_key, id_expr, required_props, required_key);
          } else if (gru_list_search(a->granted_rsmaps, name, host_name) == nullptr) {
             // The selection pass walks the same granted requests in the same order, so a map
             // reached here was reached there. Nothing recorded means the two have drifted

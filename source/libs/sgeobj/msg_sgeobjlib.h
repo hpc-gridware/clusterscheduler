@@ -388,6 +388,8 @@
 #define MSG_RSMAP_PARAM_NOT_REQUESTABLE_SS     _MESSAGE(64583, _("RSMAP " SFQ ": parameter " SFQ " names a complex which is not requestable"))
 #define MSG_RSMAP_PARAM_CONSUMABLE_SS          _MESSAGE(64584, _("RSMAP " SFQ ": parameter " SFQ " names a consumable complex; matching against a consumable characteristic is not available yet"))
 #define MSG_RSMAP_PARAM_IS_RSMAP_SS            _MESSAGE(64585, _("RSMAP " SFQ ": parameter " SFQ " names a resource map, which cannot be a characteristic"))
+#define MSG_RSMAP_PARAM_SCOPE_WITHOUT_SAME_SS  _MESSAGE(64586, _("RSMAP " SFQ ": parameter " SFQ " needs a same= parameter to widen"))
+#define MSG_RSMAP_PARAM_SCOPE_CONFLICT_SSSS    _MESSAGE(64587, _("RSMAP " SFQ ": parameter " SFQ " is " SFQ " in one request scope and " SFQ " in another"))
 #define MSG_RSMAP_DEFAULT_HAS_PARAMS_SS        _MESSAGE(64577, _("complex " SFQ ": the default value " SFQ " must be an amount, a resource map default request cannot carry a parameter list"))
 
 // clang-format on

@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *  
- *  Copyright 2024 HPC-Gridware GmbH
+ *  Copyright 2024,2026 HPC-Gridware GmbH
  *  
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -162,6 +162,9 @@ const char *const RSMAP_REQUEST_PARAM_SAME     = "same";
 const char *const RSMAP_REQUEST_PARAM_SCOPE    = "scope";
 const char *const RSMAP_REQUEST_PARAM_DISTINCT = "distinct";
 const char *const RSMAP_REQUEST_PARAM_BIND     = "bind";
+
+const char *const RSMAP_REQUEST_PARAM_SCOPE_HOST = "host";
+const char *const RSMAP_REQUEST_PARAM_SCOPE_JOB  = "job";
 
 /**
  * Is this the name of a parameter of a resource map request?
@@ -447,14 +450,25 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
             }
          }
 
-         // scope= and distinct= are reserved so that the grammar has room for them, but
-         // nothing reads either yet. Were one of them accepted, a job which asked for a
-         // constraint across the whole job rather than per host would run as though it had
-         // asked for nothing at all. Refusing them keeps that from happening quietly, and a
-         // request the system refuses today can be accepted later without breaking anything,
+         // scope= says how far the same= constraint reaches: over the instances granted on one
+         // host, which is what it has always meant and remains the default, or over every
+         // instance the job is granted anywhere. Only those two readings are defined, and a
+         // value which is neither is refused rather than read as one of them.
+         if (param_name == RSMAP_REQUEST_PARAM_SCOPE &&
+             param_value != RSMAP_REQUEST_PARAM_SCOPE_HOST &&
+             param_value != RSMAP_REQUEST_PARAM_SCOPE_JOB) {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_RSMAP_PARAM_BAD_VALUE_SSS, name, param_name.c_str(),
+                                    param_value.c_str());
+            ret = false;
+         }
+
+         // distinct= is reserved so that the grammar has room for it, but nothing reads it yet.
+         // Were it accepted, a job which asked for instances which differ would run as though
+         // it had asked for nothing at all. Refusing it keeps that from happening quietly, and
+         // a request the system refuses today can be accepted later without breaking anything,
          // which is not true the other way round.
-         if (param_name == RSMAP_REQUEST_PARAM_SCOPE ||
-             param_name == RSMAP_REQUEST_PARAM_DISTINCT) {
+         if (param_name == RSMAP_REQUEST_PARAM_DISTINCT) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_RSMAP_PARAM_NOT_YET_SS, name, param_name.c_str());
             ret = false;
@@ -496,6 +510,16 @@ centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
                                  MSG_RSMAP_PARAM_CONSUMABLE_SS, name, param_name.c_str());
          ret = false;
       }
+   }
+
+   // scope= widens a same= constraint and has nothing of its own to say. On a request which
+   // carries no same= it would be accepted and read by nothing, which is the quiet failure the
+   // parameter list is meant to avoid - so it is refused here rather than ignored.
+   if (seen.count(RSMAP_REQUEST_PARAM_SCOPE) > 0 && seen.count(RSMAP_REQUEST_PARAM_SAME) == 0) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_RSMAP_PARAM_SCOPE_WITHOUT_SAME_SS, name,
+                              RSMAP_REQUEST_PARAM_SCOPE);
+      ret = false;
    }
 
    return ret;
@@ -580,6 +604,30 @@ centry_rsmap_resolve_request_properties(const lListElem *centry, const lList *ma
 
    *required = resolved;
    return true;
+}
+
+/**
+ * @brief does this request want its same= constraint to hold across the whole job?
+ *
+ * scope= takes "host" or "job". "host" is what same= has always meant - the instances granted
+ * on one host have to agree, and a job spanning two hosts may well end up with a different
+ * group on each - and is what a request which names no scope gets.
+ *
+ * Asked of the request in hand rather than looked up by name, for the reason
+ * gru_list_add_request() gives: a constraint written in one request scope belongs to that
+ * scope, and a lookup by name would have to pick one of them.
+ *
+ * @param centry  the request
+ * @return        true when the request carries scope=job
+ */
+bool
+centry_rsmap_request_is_job_scope(const lListElem *centry) {
+   DSTRING_STATIC(scope, 32);
+
+   if (!centry_rsmap_get_request_param(centry, RSMAP_REQUEST_PARAM_SCOPE, &scope)) {
+      return false;
+   }
+   return strcmp(sge_dstring_get_string(&scope), RSMAP_REQUEST_PARAM_SCOPE_JOB) == 0;
 }
 
 /**
@@ -1201,18 +1249,25 @@ centry_rsmap_select_instances(const lListElem *resource_definition,
  *                             expression an instance's identifier has to satisfy
  * @param required_props       nullptr when the request names no characteristic, otherwise the
  *                             resolved requirements an instance has to carry
+ * @param required_key         nullptr when this host may choose its own group, otherwise the
+ *                             group the choice is confined to - what scope=job binds every host
+ *                             of the job to, see rsmap_job_scope_key()
  * @return                     true when the amount was taken, false when no group can serve it
  */
 bool
 centry_rsmap_select_group_instances(const lListElem *resource_definition,
                                     const lList *taken, const lList *already,
                                     const char *key_name, u_long32 amount, lList **selected,
-                                    const char *id_expr, const lList *required_props) {
+                                    const char *id_expr, const lList *required_props,
+                                    const char *required_key) {
    if (resource_definition == nullptr || selected == nullptr || amount == 0) {
       return false;
    }
 
-   // which group: the one an earlier request scope took from, or the emptiest one
+   // which group: the one an earlier request scope took from on this host, the one the job is
+   // bound to everywhere, or the emptiest one. The first comes before the second because the
+   // two can only disagree if the map changed underneath, and a request scope which has already
+   // been granted instances cannot be given different ones now.
    const char *key;
    if (already != nullptr && lGetNumberOfElem(already) > 0) {
       const char *chosen_id = lGetString(lFirst(already), RESL_value);
@@ -1223,6 +1278,8 @@ centry_rsmap_select_group_instances(const lListElem *resource_definition,
          return false;
       }
       key = centry_rsmap_instance_key(chosen_ep, key_name);
+   } else if (required_key != nullptr) {
+      key = required_key;
    } else {
       u_long32 free_in_group = 0;
       key = centry_rsmap_best_free_group(resource_definition, taken, key_name,

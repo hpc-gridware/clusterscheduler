@@ -37,6 +37,8 @@
 #include <cfloat>
 #include <climits>
 #include <cmath>
+#include <string>
+#include <vector>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge.h"
@@ -58,6 +60,7 @@
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_str.h"
+#include "sgeobj/sge_var.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_host.h"
@@ -199,7 +202,7 @@ static int
 sequential_update_host_order(lList *host_list, lList *queues);
 
 static int
-rsmap_same_slots(const sge_assignment_t *a, const lList *total_list, const lList *rue_list,
+rsmap_same_slots(sge_assignment_t *a, const lList *total_list, const lList *rue_list,
                  dstring *reason);
 
 /* -- base functions ---------------------------------------------- */
@@ -458,6 +461,7 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
       lFreeList(&(dst->limit_list));
       lFreeList(&(dst->skip_cqueue_list));
       lFreeList(&(dst->skip_host_list));
+      lFreeList(&(dst->rsmap_job_keys));
    }
 
    memcpy(dst, src, sizeof(sge_assignment_t));
@@ -468,10 +472,10 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
 
    if (move_gdil) {
       src->gdil = src->binding_to_use = src->granted_rsmaps = src->limit_list =
-            src->skip_cqueue_list = src->skip_host_list = nullptr;
+            src->skip_cqueue_list = src->skip_host_list = src->rsmap_job_keys = nullptr;
    } else {
       dst->gdil = dst->binding_to_use = dst->granted_rsmaps = dst->limit_list =
-            dst->skip_cqueue_list = dst->skip_host_list = nullptr;
+            dst->skip_cqueue_list = dst->skip_host_list = dst->rsmap_job_keys = nullptr;
    }
 }
 
@@ -483,6 +487,7 @@ void assignment_release(sge_assignment_t *a)
    lFreeList(&(a->limit_list));
    lFreeList(&(a->skip_cqueue_list));
    lFreeList(&(a->skip_host_list));
+   lFreeList(&(a->rsmap_job_keys));
 }
 
 void assignment_clear_cache(sge_assignment_t *a)
@@ -490,6 +495,11 @@ void assignment_clear_cache(sge_assignment_t *a)
    lFreeList(&(a->limit_list));
    lFreeList(&(a->skip_cqueue_list));
    lFreeList(&(a->skip_host_list));
+
+   // The group a scope=job request binds the job to is chosen from what is free over the window
+   // the job would run in, so it belongs to the attempt it was chosen for just as the instances
+   // themselves do.
+   lFreeList(&(a->rsmap_job_keys));
 
    // The resource map instances are chosen per host for a given number of slots, so a choice
    // belongs to the attempt it was made in. The parallel path clears the cache between slot
@@ -6542,6 +6552,158 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
 }
 
 
+/**
+ * @brief does this request ask for its same= constraint to hold across the hosts of the job?
+ *
+ * scope=job is a statement about the hosts a job runs on, and a job which is not parallel runs
+ * on one. The constraint is then the per host one, and reading it as the job wide one would only
+ * narrow which hosts the job fits on - it would be bound to the group the cluster as a whole has
+ * most of, rather than taking whatever the host it lands on has free - for no gain.
+ *
+ * @param a    the assignment
+ * @param req  the request
+ * @return     true when the request carries scope=job and the job spans more than one host
+ */
+bool
+rsmap_request_has_job_scope(const sge_assignment_t *a, const lListElem *req) {
+   return a->pe != nullptr && centry_rsmap_request_is_job_scope(req);
+}
+
+/**
+ * @brief the instance group every host of a scope=job request has to take from
+ *
+ * A same= constraint is per host: the instances granted on one host have to agree, and a job
+ * spanning two hosts may end up with one group on each. scope=job says that is not enough - the
+ * whole job has to hold one group - which is a constraint across hosts, and hosts are matched
+ * one at a time and independently of each other.
+ *
+ * So the group is chosen before the hosts are, once per assignment attempt, and every host is
+ * then held to it: matching offers a host only the slots that group can serve there, and the
+ * selection takes the instances from it. That is what keeps the two from disagreeing, the same
+ * way rsmap_same_slots() and rsmap_select_granted_ids() agree about a per host constraint.
+ *
+ * Which group: the one with the most slots summed over the hosts which have the map, not the
+ * one which is freest on any single host. A job which is bound to one group everywhere wants
+ * the group which is free in the most places, and choosing per host - first host takes its best
+ * group, the rest must follow - fails whenever that group is the one the other hosts do not
+ * have. Two hosts offering "gpu0 gpu1" and "gpu1" would settle on gpu0 and leave the job
+ * pending, though gpu1 would have run it.
+ *
+ * Only hosts which define the map themselves are looked at, and among those only the ones
+ * carrying a queue this job may use - a group which is plentiful in a rack the job cannot reach
+ * is no use to it. If the queue list rules out every host which has the map, the hosts are
+ * counted again without it rather than refusing the job on the strength of a filter which is
+ * not the one matching will apply. A map which is configured on the global host needs none of
+ * this: every host then books against the one map, so the whole job shares one entry in
+ * a->granted_rsmaps and the group chosen on the first visit already holds for the rest.
+ *
+ * @param a               the assignment, holds the hosts, the window and the cache
+ * @param req             the request carrying scope=job
+ * @param same_key        what the instances have to agree in: "id" or a characteristic name
+ * @param id_expr         nullptr when the request carries no id= parameter, otherwise the
+ *                        expression an instance's identifier has to satisfy
+ * @param required_props  nullptr when the request names no characteristic, otherwise the
+ *                        resolved requirements an instance has to carry
+ * @return                the key of the group, or nullptr when no group can serve the request
+ *                        on any host the job could use
+ */
+const char *
+rsmap_job_scope_key(sge_assignment_t *a, const lListElem *req, const char *same_key,
+                    const char *id_expr, const lList *required_props) {
+   const char *name = lGetString(req, CE_name);
+
+   // Decided once per assignment attempt: the hosts, the window and the request do not change
+   // within one, and every host has to be told the same answer. An empty value is the recorded
+   // form of "there is none" - the question is no cheaper the second time it is asked.
+   const lListElem *cached = lGetElemStr(a->rsmap_job_keys, VA_variable, name);
+   if (cached != nullptr) {
+      const char *key = lGetString(cached, VA_value);
+      return (key != nullptr && key[0] != '\0') ? key : nullptr;
+   }
+
+   const auto amount = static_cast<u_long32>(lGetDouble(req, CE_doubleval));
+   const bool per_slot = lGetUlong(req, CE_consumable) == CONSUMABLE_YES;
+
+   // whether the cluster is to be imagined idle, the same question rsmap_same_slots() asks and
+   // for the same reason - see the comment there
+   const bool count_utilization = a->is_advance_reservation ||
+                                  sconf_get_qs_state() != QS_STATE_EMPTY;
+
+   std::vector<std::pair<std::string, u_long64>> totals;
+
+   for (int pass = 0; pass < 2 && totals.empty(); ++pass) {
+      const bool only_reachable_hosts = (pass == 0);
+
+      const lListElem *host;
+      for_each_ep (host, a->host_list) {
+         const lListElem *definition = lGetSubStr(host, CE_name, name, EH_consumable_config_list);
+         if (definition == nullptr) {
+            continue;
+         }
+         const char *host_name = lGetHost(host, EH_name);
+         if (only_reachable_hosts &&
+             lGetElemHost(a->queue_list, QU_qhostname, host_name) == nullptr) {
+            continue;
+         }
+
+         lList *taken = nullptr;
+         if (count_utilization) {
+            taken = utilization_rsmap_max(lGetSubStr(host, RUE_name, name, EH_resource_utilization),
+                                          a->now, a->start, a->duration);
+         }
+
+         lList *keys = centry_rsmap_group_keys(definition, same_key);
+         const lListElem *key_ep;
+         for_each_ep (key_ep, keys) {
+            const char *key = lGetString(key_ep, ST_name);
+            const u_long32 free = centry_rsmap_group_free(definition, taken, same_key, key,
+                                                          id_expr, required_props);
+            u_long64 slots;
+            if (per_slot) {
+               slots = (amount > 0) ? free / amount : 0;
+            } else {
+               slots = (free >= amount) ? 1 : 0;
+            }
+            if (slots == 0) {
+               continue;
+            }
+
+            bool found = false;
+            for (auto &total : totals) {
+               if (total.first == key) {
+                  total.second += slots;
+                  found = true;
+                  break;
+               }
+            }
+            if (!found) {
+               totals.emplace_back(key, slots);
+            }
+         }
+         lFreeList(&keys);
+         lFreeList(&taken);
+      }
+   }
+
+   // the first of the best, so that the answer does not depend on how the equals are ordered
+   const std::string *best = nullptr;
+   u_long64 best_slots = 0;
+   for (const auto &total : totals) {
+      if (best == nullptr || total.second > best_slots) {
+         best = &total.first;
+         best_slots = total.second;
+      }
+   }
+
+   lListElem *entry = lAddElemStr(&(a->rsmap_job_keys), VA_variable, name, VA_Type);
+   if (entry == nullptr) {
+      return nullptr;
+   }
+   lSetString(entry, VA_value, best != nullptr ? best->c_str() : "");
+
+   return best != nullptr ? lGetString(entry, VA_value) : nullptr;
+}
+
 /* Determine maximum number of host_slots as limited
    by job request to this host
 
@@ -6594,7 +6756,7 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
  *                   one, 0 when it cannot be met
  */
 static int
-rsmap_same_slots(const sge_assignment_t *a, const lList *total_list,
+rsmap_same_slots(sge_assignment_t *a, const lList *total_list,
                           const lList *rue_list, dstring *reason) {
    int max_slots = INT_MAX;
    DSTRING_STATIC(param, 64);
@@ -6648,13 +6810,28 @@ rsmap_same_slots(const sge_assignment_t *a, const lList *total_list,
                                           a->start, a->duration);
          }
 
+         // scope=job takes the choice of group away from the host: the whole job is bound to
+         // one, decided over all the hosts it could run on before any of them is matched, and
+         // this host is offered only what that group can serve here. Without it the host is
+         // free to pick its own, which is what scope=host means and what same= has always done.
+         const bool job_scope = has_same && rsmap_request_has_job_scope(a, req);
+         const char *job_key = job_scope
+                               ? rsmap_job_scope_key(a, req, same_key, id_expr, required_props)
+                               : nullptr;
+
          // With same=, what one group can serve: same=id groups by the identifier,
          // same=<characteristic> by that characteristic's value on the instance, so several
          // identifiers can share one group and the constraint is met by any of them together.
          // Without it the instances need not agree in anything and what counts is what the
          // request may use at all, which an id= expression narrows and nothing else does.
          u_long32 best_free = 0;
-         if (has_same) {
+         if (job_scope) {
+            // no group serves the request anywhere, so none serves it here either
+            if (job_key != nullptr) {
+               best_free = centry_rsmap_group_free(definition, taken, same_key, job_key,
+                                                   id_expr, required_props);
+            }
+         } else if (has_same) {
             centry_rsmap_best_free_group(definition, taken, same_key, &best_free, id_expr,
                                          required_props);
          } else {
@@ -6676,7 +6853,9 @@ rsmap_same_slots(const sge_assignment_t *a, const lList *total_list,
          }
 
          if (slots == 0) {
-            if (has_same) {
+            if (job_scope) {
+               sge_dstring_sprintf(reason, MSG_SCHEDD_SAMEIDJOBNOTFULLFILLED_SS, name, same_key);
+            } else if (has_same) {
                sge_dstring_sprintf(reason, MSG_SCHEDD_SAMEIDNOTFULLFILLED_SS, name, same_key);
             } else if (has_id) {
                sge_dstring_sprintf(reason, MSG_SCHEDD_IDNOTFULLFILLED_SS, name, id_expr);

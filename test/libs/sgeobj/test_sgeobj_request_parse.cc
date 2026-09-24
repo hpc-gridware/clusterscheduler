@@ -384,13 +384,24 @@ test_parameter_validation() {
    check_int("T46h", "an empty expression is refused",
              fill("gpu=4[id=]", centries), -1);
 
-   /* reserved, but nothing reads them yet - see centry_rsmap_check_request_params() */
-   check_int("T47", "scope is refused until it is implemented, even with its default value",
+   /* scope= says how far a same= constraint reaches. It widens same= and says nothing on its
+      own, so a request which carries no same= has nothing for it to apply to. */
+   check_int("T47", "scope without same is refused",
              fill("gpu=4[scope=host]", centries), -1);
+   check_int("T47b", "scope=host next to same is accepted" PARAM_LIST_NOTE,
+             fill("gpu=4[same=id,scope=host]", centries), PARAM_LIST_RC);
+   check_int("T47c", "and so is the job wide reading" PARAM_LIST_NOTE,
+             fill("gpu=4[same=id,scope=job]", centries), PARAM_LIST_RC);
+   check_int("T47d", "a scope which is neither is refused",
+             fill("gpu=4[same=id,scope=cluster]", centries), -1);
+   check_int("T47e", "an empty scope is refused",
+             fill("gpu=4[same=id,scope=]", centries), -1);
+
+   /* reserved, but nothing reads it yet - see centry_rsmap_check_request_params() */
    check_int("T48", "distinct is refused until it is implemented",
              fill("gpu=4[distinct=id]", centries), -1);
    check_int("T49", "a refused reserved parameter is refused next to an accepted one",
-             fill("gpu=4[same=id,scope=job]", centries), -1);
+             fill("gpu=4[same=id,distinct=id]", centries), -1);
 
    check_int("T49d", "same with a value which names nothing at all is refused",
              fill("gpu=4[same=banana]", centries), -1);
@@ -735,6 +746,40 @@ test_select_group_instances() {
    lFreeList(&selected);
    lFreeList(&use);
 
+   /* scope=job hands the group down rather than letting the host pick one: the whole job is
+    * bound to it, so a host takes from that group or from none - see rsmap_job_scope_key() */
+   check_int("T108", "a required group is taken from although another is no worse",
+             centry_rsmap_select_group_instances(numa, nullptr, nullptr, "numa_node", 3,
+                                                 &selected, nullptr, nullptr, "1"), 1);
+   check_str("T108b", "so the cards of that node are used",
+             lGetString(lFirst(selected), RESL_value), "2");
+   check_str("T108c", "both of them", lGetString(lLast(selected), RESL_value), "3");
+   lFreeList(&selected);
+
+   check_int("T109", "more than the required group holds is refused, not moved elsewhere",
+             centry_rsmap_select_group_instances(numa, nullptr, nullptr, "numa_node", 5,
+                                                 &selected, nullptr, nullptr, "1"), 0);
+   lFreeList(&selected);
+
+   check_int("T109b", "a required group the map does not have is refused",
+             centry_rsmap_select_group_instances(numa, nullptr, nullptr, "numa_node", 1,
+                                                 &selected, nullptr, nullptr, "9"), 0);
+   lFreeList(&selected);
+
+   /* what an earlier request scope was granted on this host comes first: it has already been
+    * handed out and cannot be exchanged for the group the rest of the job uses */
+   lList *granted = nullptr;
+   lListElem *granted_ep = lAddElemStr(&granted, RESL_value, "0", RESL_Type);
+   lSetUlong(granted_ep, RESL_amount, 2);
+
+   check_int("T109c", "a group already granted here wins over the required one",
+             centry_rsmap_select_group_instances(numa, nullptr, granted, "numa_node", 2,
+                                                 &selected, nullptr, nullptr, "1"), 1);
+   check_str("T109d", "so the rest comes from the node that scope used",
+             lGetString(lFirst(selected), RESL_value), "1");
+   lFreeList(&selected);
+   lFreeList(&granted);
+
    lFreeElem(&numa);
 }
 
@@ -837,6 +882,18 @@ test_get_request_param() {
    lp = parse("gpu=4[same=id]");
    check_int("T88", "a parameter which is not there is not found",
              centry_rsmap_get_request_param(lFirst(lp), "scope", &value) ? 1 : 0, 0);
+   check_int("T89", "and a request without scope reads as the per host default",
+             centry_rsmap_request_is_job_scope(lFirst(lp)) ? 1 : 0, 0);
+   lFreeList(&lp);
+
+   lp = parse("gpu=4[same=id,scope=host]");
+   check_int("T89b", "as does one which writes that default out",
+             centry_rsmap_request_is_job_scope(lFirst(lp)) ? 1 : 0, 0);
+   lFreeList(&lp);
+
+   lp = parse("gpu=4[same=id,scope=job]");
+   check_int("T89c", "the job wide reading is recognised",
+             centry_rsmap_request_is_job_scope(lFirst(lp)) ? 1 : 0, 1);
    lFreeList(&lp);
 }
 

@@ -229,6 +229,36 @@ A request carrying *same=* takes part in resource reservation like any other. A 
 the amount is free across several groups, so a job waiting for a whole card is not passed over
 indefinitely by jobs asking for single shares.
 
+## How far the agreement reaches
+
+*scope=* says over which instances a *same=* constraint holds. It takes `host` or `job`, and
+`host` is what a request that leaves it out gets.
+
+    qsub -pe mpi 2 -l 'gpu=1[same=id,scope=host]' ...
+
+Each host the job runs on grants instances which agree among themselves, and two hosts need not
+grant the same. This is what *same=* has always meant: an identifier belongs to the host it is
+configured on, and instances on different hosts have nothing to agree about.
+
+    qsub -pe mpi 2 -l 'gpu=1[same=id,scope=job]' ...
+
+Every instance the job is granted, on every host it runs on, belongs to one group. Because the
+identifiers are per host, this is only useful where they are named consistently across the
+cluster - the job asks for the group of that name everywhere, and a host which does not have it
+cannot run the job. Where no group is available on enough hosts the job waits.
+
+The group is chosen once for the whole job, over the hosts it could run on, and every host is then
+held to it. A host which would have chosen a different group on its own is offered only what the
+chosen one can serve there.
+
+A job which is not parallel runs on one host, so *scope=job* on it says what *scope=host* already
+says and is read the same way.
+
+*scope=* only widens a *same=* constraint, so a request which carries no *same=* is refused. A job
+which names one map in the master scope and in the slave scope has to give the same *scope=* in
+both - the two scopes take their instances from the same maps, and one group for the whole job is
+either asked for or it is not.
+
 ## Matching against the characteristics of an instance
 
 A parameter whose name is not one of the reserved words names a complex, and the request is
@@ -308,8 +338,12 @@ A resource map cannot be attached to a queue.
 An identifier is meaningful only on the host it is configured on. Two hosts using the same
 identifier are related only by convention.
 
-The parameter names `scope` and `distinct` are reserved for constraints which are not
-implemented, and a request using either of them is refused.
+*scope=job* is meaningful only where the identifiers of a map are named consistently across the
+hosts of the cluster. Nothing enforces that, and on hosts which name them differently such a
+request simply cannot be met.
+
+The parameter name `distinct` is reserved for a constraint which is not implemented, and a request
+using it is refused.
 
 # SEE ALSO
 
