@@ -103,16 +103,21 @@ echo "shepherd_wrapper: GPU RSMAP selection (${RSMAP_VAR}): $GPU_IDS"
 # ---------------------------------------------------------------------------
 # 3. Build device paths for each selected GPU
 #
-#    Source code reference (sge_shepherd add_devices_allow):
+#    Source code reference (ocs_shepherd_systemd.cc add_devices_allow):
 #
 #      #define DEVICES_DELIMITOR  ";"     <- semicolon separates entries
+#      #define DEVICES_MODE_SEPARATOR ':' <- colon separates path and mode
 #      #define DEVICES_DEFAULT_MODE "r"
 #
 #      Parsing: sge_strtok_r(devices_allow, ";", ...)
-#               then strchr(device, '=') to split name from mode
+#               then strchr(device, ':') to split name from mode
 #
-#      Format per entry:  <device_path>=<mode>
-#      Full string:       /dev/nvidia0=rw;/dev/nvidia1=rw;/dev/nvidiactl=rw
+#      Format per entry:  <device_path>:<mode>
+#      Full string:       /dev/nvidia0:rw;/dev/nvidia1:rw;/dev/nvidiactl:rw
+#
+#      With "=" as separator the shepherd finds no ':' and takes the whole
+#      token "/dev/nvidia0=rw" as the device path with the default mode "r".
+#      Under the closed device policy the job then cannot open its GPU.
 #
 #      Supported modes: "r", "w", "rw"
 #      GPUs need read+write access -> use "rw"
@@ -131,9 +136,9 @@ add_device() {
     local dev="$1"
     local mode="${2:-rw}"
     if [ -z "$DEVICE_LIST" ]; then
-        DEVICE_LIST="${dev}=${mode}"
+        DEVICE_LIST="${dev}:${mode}"
     else
-        DEVICE_LIST="${DEVICE_LIST};${dev}=${mode}"
+        DEVICE_LIST="${DEVICE_LIST};${dev}:${mode}"
     fi
 }
 
@@ -175,7 +180,7 @@ echo "shepherd_wrapper: devices_allow -> $DEVICE_LIST"
 #    Replace it with the resolved device list using sed.
 #
 #    Example result:
-#      devices_allow=/dev/nvidia0=rw;/dev/nvidia2=rw;/dev/nvidiactl=rw;/dev/nvidia-uvm=rw
+#      devices_allow=/dev/nvidia0:rw;/dev/nvidia2:rw;/dev/nvidiactl:rw;/dev/nvidia-uvm:rw
 #
 #    The entry is only written by the execution daemon when cgroup based
 #    device isolation is available on the host. Without it there is nothing to
