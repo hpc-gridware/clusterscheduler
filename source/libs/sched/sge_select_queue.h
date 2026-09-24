@@ -195,6 +195,9 @@ typedef struct {
    lList      *limit_list;      ///< the resource quota limit list (RQL_Type)
    lList      *skip_cqueue_list; ///< cluster queues that need not be checked anymore (CTI_Type)
    lList      *skip_host_list;  ///< hosts that need not be checked anymore (CTI_Type)
+   lList      *rsmap_job_keys;  ///< per resource map, the instance group a scope=job request binds
+                                ///< the whole job to (VA_Type: VA_variable the map name, VA_value
+                                ///< the group key), see rsmap_job_scope_key()
    // -------------------- this section are parallel job related settings --------------------
    lListElem  *pe;              ///< the parallel environment (PE_Type)
    const char* pe_name;         ///< name of the PE
@@ -220,7 +223,7 @@ typedef struct {
 #define SGE_ASSIGNMENT_INIT {0, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, \
    0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, 0,    \
    false, false,                                                                                                       \
-   nullptr, nullptr, nullptr,                            /* caching */                                                 \
+   nullptr, nullptr, nullptr, nullptr,                   /* caching */                                                 \
    nullptr, nullptr, nullptr, 0, nullptr, 0,             /* parallel job related settings */                           \
    nullptr, 0, 0, 0, nullptr, false, nullptr, nullptr, false, /* resulting assignment */                               \
    nullptr                                               /* profiling */                                               \
@@ -231,6 +234,11 @@ void assignment_init_ar(sge_assignment_t *a, lList *ar_list);
 void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdil);
 void assignment_release(sge_assignment_t *a);
 void assignment_clear_cache(sge_assignment_t *a);
+
+bool rsmap_request_has_job_scope(const sge_assignment_t *a, const lListElem *req);
+
+const char *rsmap_job_scope_key(sge_assignment_t *a, const lListElem *req, const char *same_key,
+                                const char *id_expr, const lList *required_props);
 
 /* -------------------------------------------------------------------------------- */
 

@@ -58,6 +58,7 @@
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_manop.h"
@@ -78,6 +79,7 @@
 #include "sge_job_qmaster.h"
 #include "symbols.h"
 #include "msg_common.h"
+#include "sgeobj/msg_sgeobjlib.h"
 #include "msg_qmaster.h"
 
 #include <sge_str.h>
@@ -299,6 +301,68 @@ job_verify_non_pe_soft_master_slave_requests(lList **alpp, const lListElem *jep)
 }
 
 /**
+ * @brief refuse a resource map which is requested with different scope= in different scopes
+ *
+ * How far a same= constraint reaches is a property of the map and not of the request scope it
+ * was written in: the master task and the slave tasks take their instances from the same maps,
+ * and binding every host of the job to one group is either asked for or it is not. Two scopes
+ * which name the same map and disagree about scope= therefore ask for two things at once, and
+ * whichever the scheduler took would silently be the wrong one for the other scope.
+ *
+ * Only master against slave is looked at, because a request in the global scope together with
+ * one in master or slave is already refused by sge_job_verify_global_master_slave_requests().
+ * The comparison is against the effective value, so leaving scope= out in one scope and writing
+ * scope=host in the other is not a conflict - both mean per host.
+ *
+ * @param alpp answer list which is filled in case of errors
+ * @param jep  job carrying the request sets
+ * @return true when every scope agrees about every map, false otherwise
+ */
+static bool
+sge_job_verify_rsmap_scope_requests(lList **alpp, const lListElem *jep) {
+   bool ret = true;
+
+   for_each_ep_lv(jrs, lGetList(jep, JB_request_set_list)) {
+      for_each_ep_lv(request, lGetList(jrs, JRS_hard_resource_list)) {
+         if (static_cast<ocs::CEntry::Type>(lGetUlong(request, CE_valtype)) !=
+             ocs::CEntry::Type::RSMAP) {
+            continue;
+         }
+         const char *name = lGetString(request, CE_name);
+         const char *scope = centry_rsmap_request_is_job_scope(request)
+                             ? RSMAP_REQUEST_PARAM_SCOPE_JOB : RSMAP_REQUEST_PARAM_SCOPE_HOST;
+
+         // only the scopes behind this one, so that a pair is reported once and not twice
+         for (const lListElem *other_jrs = lNext(jrs); other_jrs != nullptr;
+              other_jrs = lNext(other_jrs)) {
+            const lListElem *other = lGetSubStr(other_jrs, CE_name, name, JRS_hard_resource_list);
+            if (other == nullptr) {
+               continue;
+            }
+            const char *other_scope = centry_rsmap_request_is_job_scope(other)
+                                      ? RSMAP_REQUEST_PARAM_SCOPE_JOB
+                                      : RSMAP_REQUEST_PARAM_SCOPE_HOST;
+            if (strcmp(scope, other_scope) != 0) {
+               ERROR(MSG_RSMAP_PARAM_SCOPE_CONFLICT_SSSS, name, RSMAP_REQUEST_PARAM_SCOPE,
+                     scope, other_scope);
+               answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+               ret = false;
+               break;
+            }
+         }
+         if (!ret) {
+            break;
+         }
+      }
+      if (!ret) {
+         break;
+      }
+   }
+
+   return ret;
+}
+
+/**
  * @brief Do all request set related checks
  *
  * Calls all the request set verification functions above:
@@ -308,6 +372,7 @@ job_verify_non_pe_soft_master_slave_requests(lList **alpp, const lListElem *jep)
  * - sge_job_verify_per_host_requests()
  * - job_verify_soft_master_slave_requests()
  * - job_verify_non_pe_soft_master_slave_requests()
+ * - sge_job_verify_rsmap_scope_requests()
  *
  * @param alpp answer list which is filled in case of errors
  * @param jep job containing the request set
@@ -355,6 +420,11 @@ job_verify_adjust_request_set(lList **alpp, const lListElem *jep, const lList *m
    // verify that there are no allocation rule specifications in global scope and one of master or slave
    if (ret) {
       ret = sge_job_verify_global_master_slave_allocation_rule(alpp, jep);
+   }
+
+   // verify that a resource map is not requested with a different scope= in different scopes
+   if (ret) {
+      ret = sge_job_verify_rsmap_scope_requests(alpp, jep);
    }
 
    return ret;

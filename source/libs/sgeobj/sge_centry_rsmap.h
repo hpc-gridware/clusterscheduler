@@ -47,7 +47,16 @@ extern const char *const RSMAP_REQUEST_PARAM_SCOPE;
 extern const char *const RSMAP_REQUEST_PARAM_DISTINCT;
 extern const char *const RSMAP_REQUEST_PARAM_BIND;
 
+/**
+ * The values scope= takes: how far a same= constraint reaches. "host" is the default and what
+ * same= has always meant.
+ */
+extern const char *const RSMAP_REQUEST_PARAM_SCOPE_HOST;
+extern const char *const RSMAP_REQUEST_PARAM_SCOPE_JOB;
+
 bool centry_rsmap_is_reserved_param(const char *name);
+
+bool centry_rsmap_request_is_job_scope(const lListElem *centry);
 
 bool centry_rsmap_check_request_params(lList **answer_list, const lListElem *centry,
                                        const lList *master_centry_list);
@@ -86,7 +95,8 @@ bool centry_rsmap_select_group_instances(const lListElem *resource_definition,
                                          const lList *already, const char *key_name,
                                          uint32_t amount, lList **selected,
                                          const char *id_expr = nullptr,
-                                         const lList *required_props = nullptr);
+                                         const lList *required_props = nullptr,
+                                         const char *required_key = nullptr);
 
 const char *centry_rsmap_best_free_id(const lListElem *resource_definition,
                                       const lList *taken,
