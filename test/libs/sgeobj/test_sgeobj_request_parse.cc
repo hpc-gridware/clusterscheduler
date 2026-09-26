@@ -31,6 +31,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <initializer_list>
 
 #include "uti/sge_rmon_macros.h"
 
