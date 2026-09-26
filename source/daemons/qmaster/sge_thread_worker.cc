@@ -259,11 +259,26 @@ sge_worker_main(void *arg) {
          if (packet->request_type == PACKET_GDI_REQUEST) {
             /*
              * test if a write lock is necessary
+             *
+             * GET_PROCEDURE belongs here next to GET (CS-2815). A procedure that
+             * only reads used to reach this thread never - get_datastore_type()
+             * answered every GET_PROCEDURE from the reader data store, and the
+             * reader thread exempts it in the same way. CS-2799 sends a qconf
+             * procedure issued by a manager to the global data store instead, so
+             * that a read right after a write cannot see a mirror that has not
+             * caught up; that lands it here, and without this exemption such a
+             * read would take the global write lock and serialise the daemon.
+             *
+             * This holds only as long as procedures are read only, which every
+             * one of them is: their server side models do nothing but select
+             * from a master list. A procedure that may modify state gets its own
+             * command value and is deliberately absent from this test.
              */
             for (const auto *task : packet->tasks) {
                auto command = task->command;
 
-               if (command != ocs::gdi::Command::GET) {
+               if (command != ocs::gdi::Command::GET &&
+                   command != ocs::gdi::Command::GET_PROCEDURE) {
                   is_only_read_request = false;
                   break;
                }
