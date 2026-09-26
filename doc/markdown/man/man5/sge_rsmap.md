@@ -307,10 +307,16 @@ while a job granted four shares of one card on the host shown above sees
 A prolog or a wrapper script normally turns this into whatever the application expects, for example
 the device list of a GPU runtime, and has to allow for the repetition.
 
+A parallel job running on several hosts sees on each host the identifiers granted on that host,
+together with those of resource maps configured on the global host, which belong to the job as a
+whole. The variables are set by the execution daemon alone: an `SGE_HGR_` variable the job brings
+along, from `qsub -v` or passed on from another host, is removed before the job starts.
+
 # DEVICE ISOLATION
 
 Where an instance carries a *devices* characteristic and the execution host runs jobs under systemd,
-a job is given access to the device files of the instances it was granted, and denied the rest.
+a job is given access to the device files of the instances it was granted on that host, and denied
+the rest.
 
 The value is a list of device paths separated by `;`, each with an optional access mode:
 

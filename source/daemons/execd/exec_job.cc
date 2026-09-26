@@ -218,6 +218,59 @@ static int addgrpid_already_in_use(long add_grp_id) {
 #endif
 #endif
 
+/**
+ * @brief the granted resources of a job which apply on one host
+ *
+ * The granted resource list of a job holds the grants of all hosts it runs on, one entry per
+ * resource and host, and qmaster sends the whole list to every execd. What the job sees on a
+ * host - SGE_HGR_<name> and the devices it may access - has to come from that host's entries
+ * only, otherwise a task on a slave host is handed the identifiers another host granted.
+ *
+ * Grants booked on the global host (GRU_host is SGE_GLOBAL_NAME), e.g. licence seats, belong to
+ * the whole job and apply on every host. A resource can be configured both on the global host
+ * and on some hosts, and then a job may hold it from the global host for one of its hosts and
+ * from the host itself for another; on a host with a grant of its own, that one applies.
+ *
+ * @param granted_resources_list the granted resources of the job, JAT_granted_resources_list
+ * @param host_name              the host the job is started on
+ * @return a new GRU_Type list holding copies of the entries of granted_resources_list which
+ *         apply on host_name, in list order - nullptr when there are none. The caller frees it.
+ */
+static lList *
+exec_job_granted_resources_for_host(const lList *granted_resources_list, const char *host_name) {
+   DENTER(TOP_LAYER);
+
+   lList *ret = nullptr;
+   const lListElem *gru;
+   for_each_ep (gru, granted_resources_list) {
+      const char *gru_host = lGetHost(gru, GRU_host);
+      bool applies = sge_hostcmp(gru_host, host_name) == 0;
+
+      // a global grant applies, unless this host holds the same resource itself
+      if (!applies && sge_hostcmp(gru_host, SGE_GLOBAL_NAME) == 0) {
+         const char *name = lGetString(gru, GRU_name);
+         applies = true;
+         const lListElem *other;
+         for_each_ep (other, granted_resources_list) {
+            if (sge_strnullcmp(lGetString(other, GRU_name), name) == 0 &&
+                sge_hostcmp(lGetHost(other, GRU_host), host_name) == 0) {
+               applies = false;
+               break;
+            }
+         }
+      }
+
+      if (applies) {
+         if (ret == nullptr) {
+            ret = lCreateList("host granted resources", GRU_Type);
+         }
+         lAppendElem(ret, lCopyElem(gru));
+      }
+   }
+
+   DRETURN(ret);
+}
+
 static const char *
 sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, u_long32 type,
                        const lListElem *master_q, const lListElem *jatep, const lListElem *petep,
@@ -623,12 +676,24 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       sge_free(&sge_binding_environment);
    }
 
+   // SGE_HGR_* is set by execd alone. A job may have brought its own, from qsub -v or from the
+   // environment of the master task which a qrsh -inherit -V passes on, and would keep it where
+   // it was granted no resource of that name. The __SGE_PREFIX__ forms are turned into SGE_*
+   // further down, the first one even replacing what execd sets here.
+   var_list_remove_prefix_vars(&environmentList, "SGE_HGR_");
+   var_list_remove_prefix_vars(&environmentList, VAR_PREFIX "HGR_");
+   var_list_remove_prefix_vars(&environmentList, VAR_PREFIX_NR "HGR_");
+
    /* new RSMAP resource map consumable feature */
-   if (lGetList(jatep, JAT_granted_resources_list) != nullptr) {
-      const lListElem *gr;
+   {
+      // this host's grants and those of the global host - not the whole list, which holds the
+      // grants of every host of the job
+      lList *host_grants = exec_job_granted_resources_for_host(
+         lGetList(jatep, JAT_granted_resources_list), qualified_hostname);
 
       /* now setting the granted resources list */
-      for_each_ep (gr, lGetList(jatep, JAT_granted_resources_list)) {
+      const lListElem *gr;
+      for_each_ep (gr, host_grants) {
          u_long32 gru_type = lGetUlong(gr, GRU_type);
          if (gru_type == GRU_HARD_REQUEST_TYPE || gru_type == GRU_RESOURCE_MAP_TYPE) {
             /* if the type is a hard resource request add it to the string */
@@ -648,6 +713,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                                 id_buffer.c_str());
          }
       }
+
+      lFreeList(&host_grants);
    }
 
    /*
@@ -1450,9 +1517,12 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                add_devices(lGetString(env, VA_value));
             }
 
-            // Source 2: "devices" characteristic on any granted RSMAP instance.
+            // Source 2: "devices" characteristic on any RSMAP instance granted on this host -
+            // see exec_job_granted_resources_for_host()
+            lList *host_grants = exec_job_granted_resources_for_host(granted_resources_list,
+                                                                     qualified_hostname);
             const lListElem *gru;
-            for_each_ep (gru, granted_resources_list) {
+            for_each_ep (gru, host_grants) {
                if (lGetUlong(gru, GRU_type) != GRU_RESOURCE_MAP_TYPE) {
                   continue;
                }
@@ -1465,6 +1535,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                   }
                }
             }
+            lFreeList(&host_grants);
 
             // Emit the merged line (sorted by path — deterministic for testing).
             std::string devices_allow;
