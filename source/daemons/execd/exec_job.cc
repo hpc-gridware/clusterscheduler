@@ -1457,14 +1457,14 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
          // Device isolation for the shepherd (CS-1338 + CS-2462).
          //
-         // Sources unioned into a single devices_allow= line:
-         //   1. SGE_DEBUG_DEVICES_ALLOW env var — legacy debug/testing knob.
-         //   2. "devices" characteristic on any granted RSMAP instance.
+         // The devices_allow= line is the union of the "devices" characteristic of every RSMAP
+         // instance granted on this host. It comes from the configuration only - nothing the job
+         // brings along may widen it (CS-2814).
          //
-         // Value format for both sources and the emitted line:
+         // Value format of the characteristic and of the emitted line:
          //     path[:mode];path[:mode];...
          // where mode is one of r/w/rw. A missing mode defaults to "r" on
-         // the shepherd side. Duplicate paths across sources are merged
+         // the shepherd side. A path named by several instances is merged
          // with the widest access mode ('r' and 'w' seen for the same path
          // becomes 'rw').
          {
@@ -1511,14 +1511,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                free(buf);
             };
 
-            // Source 1: legacy debug env var.
-            env = lGetElemStr(lGetList(jep, JB_env_list), VA_variable, "SGE_DEBUG_DEVICES_ALLOW");
-            if (env != nullptr) {
-               add_devices(lGetString(env, VA_value));
-            }
-
-            // Source 2: "devices" characteristic on any RSMAP instance granted on this host -
-            // see exec_job_granted_resources_for_host()
+            // the "devices" characteristic of the RSMAP instances granted on this host - see
+            // exec_job_granted_resources_for_host()
             lList *host_grants = exec_job_granted_resources_for_host(granted_resources_list,
                                                                      qualified_hostname);
             const lListElem *gru;
