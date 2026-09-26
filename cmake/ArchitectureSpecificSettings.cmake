@@ -56,14 +56,14 @@ function(architecture_specific_settings)
    message(STATUS "Compilearch: ${SGE_COMPILEARCH}")
    message(STATUS "Targetbits: ${SGE_TARGETBITS}")
 
-   # directory for installing 3rdparty tools once
+   # the platform part of the directories the 3rdparty tools are installed to once, below
+   # ${PROJECT_3RDPARTY_HOME}/<package>-<version> - see BuildThirdParty.cmake
    # this allows us to delete the build directory without having to re-build all 3rdparty tools
-   set(PROJECT_3RDPARTY_DIR "${PROJECT_3RDPARTY_HOME}/${SGE_ARCH}/${OS_ID}/${OS_VERSION}/${CMAKE_BUILD_TYPE}")
+   set(PROJECT_3RDPARTY_PLATFORM "${SGE_ARCH}/${OS_ID}/${OS_VERSION}/${CMAKE_BUILD_TYPE}")
 
    # spaces in file/directory names break the build
-   string(REPLACE " " "_" PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR})
-   message(STATUS "3rdparty tools are installed to ${PROJECT_3RDPARTY_DIR}")
-   set(PROJECT_3RDPARTY_DIR ${PROJECT_3RDPARTY_DIR} PARENT_SCOPE)
+   string(REPLACE " " "_" PROJECT_3RDPARTY_PLATFORM ${PROJECT_3RDPARTY_PLATFORM})
+   set(PROJECT_3RDPARTY_PLATFORM ${PROJECT_3RDPARTY_PLATFORM} PARENT_SCOPE)
    set(PROJECT_AUTOMAKE_SRC "/usr/share/automake-*/config.*" PARENT_SCOPE)
 
    # defines for all architectures

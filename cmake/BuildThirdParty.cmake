@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2025 HPC-Gridware GmbH
+#  Copyright 2023-2026 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -26,7 +26,71 @@
 # for cmake projects we use CPM
 set(SGE_PACKAGE_MANAGER none)
 
-function(build_third_party 3rdparty_build_path 3rdparty_install_path)
+# The versions of the 3rdparty packages we build ourselves. Each version is installed to a
+# directory of its own,
+#
+#    ${PROJECT_3RDPARTY_HOME}/<package>-<version>/<arch>/<os>/<os-version>/<build-type>
+#
+# e.g. ~/3rd_party/jemalloc-5.3.0/lx-amd64/rocky/Linux_release_8.10/Debug, so a build expecting
+# another version than the one installed builds and installs that one instead of silently using
+# what it finds.
+# The libdb5 repository has no releases or tags, so berkeleydb is built from its master branch.
+# The version is still the one master carries, see DB_VERSION_* in its dist/RELEASE.
+set(PROJECT_3RDPARTY_BERKELEYDB_VERSION "5.3.28")
+set(PROJECT_3RDPARTY_JEMALLOC_VERSION "5.3.0")
+set(PROJECT_3RDPARTY_HWLOC_VERSION "2.10.0")
+
+# PROJECT_3RDPARTY_<PACKAGE>_DIR, the installation directory of each of them
+foreach (package BERKELEYDB JEMALLOC HWLOC)
+    string(TOLOWER ${package} package_name)
+    set(package_version ${PROJECT_3RDPARTY_${package}_VERSION})
+    set(PROJECT_3RDPARTY_${package}_DIR
+        "${PROJECT_3RDPARTY_HOME}/${package_name}-${package_version}/${PROJECT_3RDPARTY_PLATFORM}")
+endforeach ()
+
+# the include directories of the 3rdparty packages we build ourselves, filled by
+# build_third_party() - the OS packages install their headers to the default search path
+set(PROJECT_3RDPARTY_INCLUDES "")
+
+# @brief add a 3rdparty package to the 3rdparty target unless it is installed already
+#
+# The 3rdparty target builds and installs what is missing, so it can be run on every build and
+# costs nothing when all packages are there. A package counts as installed when both the header
+# and the library the build uses exist in its installation directory - the header alone would
+# also be found after an installation which broke off before the library was in place.
+#
+# -DREBUILD_3RDPARTY=ON adds every package regardless. It holds for one configure run only, so
+# that it is not carried over into every later reconfigure of the same build directory.
+#
+# A package which is added has its ExternalProject stamps removed. A build directory which built
+# it before still holds them, and with them the target counts as up to date and installs nothing
+# - which is what happens when the installation directory was deleted after the package was
+# built.
+#
+# @param name         the package, as it is called in messages
+# @param target       the ExternalProject target building and installing it
+# @param prefix       the PREFIX of the ExternalProject, its stamps are below it
+# @param install_path the installation directory of the package
+# @param header       a header the package installs, relative to <install_path>/include
+# @param library      the full path of the library the build links
+# @return             appends <target> to 3rdparty_list in the caller's scope when it is missing
+function(add_third_party_if_missing name target prefix install_path header library)
+    if (REBUILD_3RDPARTY)
+        message(STATUS "3rdparty ${name} is rebuilt and installed to ${install_path}")
+    elseif (NOT EXISTS "${install_path}/include/${header}" OR NOT EXISTS "${library}")
+        message(STATUS "3rdparty ${name} is missing, it is built and installed to ${install_path}")
+    else ()
+        message(STATUS "3rdparty ${name} is installed in ${install_path}")
+        return()
+    endif ()
+    file(REMOVE_RECURSE "${prefix}/src/${target}-stamp")
+    list(APPEND 3rdparty_list ${target})
+    set(3rdparty_list ${3rdparty_list} PARENT_SCOPE)
+endfunction()
+
+function(build_third_party 3rdparty_build_path)
+    set(3rdparty_includes "")
+
     if (NOT WITH_OS_3RDPARTY)
         include(cmake/CPM.cmake)
         # cpmaddpackage("gh:Tencent/rapidjson#v1.1.0")
@@ -73,7 +137,13 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                    CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 14)
                   set(CUSTOM_CFLAGS "CFLAGS=-Wno-implicit-int -Wno-incompatible-pointer-types -Wno-implicit-function-declaration -Wno-return-type")
                 endif()
-                list(APPEND 3rdparty_list 3rd_party_berkeleydb)
+                set(3rdparty_install_path ${PROJECT_3RDPARTY_BERKELEYDB_DIR})
+                set(berkeleydb_lib ${CMAKE_SHARED_LIBRARY_PREFIX}db${CMAKE_SHARED_LIBRARY_SUFFIX})
+                set(berkeleydb_lib ${3rdparty_install_path}/lib/${berkeleydb_lib})
+                add_third_party_if_missing(berkeleydb 3rd_party_berkeleydb
+                        ${3rdparty_build_path}/berkeleydb ${3rdparty_install_path}
+                        db.h ${berkeleydb_lib})
+                list(APPEND 3rdparty_includes ${3rdparty_install_path}/include)
                 externalproject_add(
                         3rd_party_berkeleydb
                         EXCLUDE_FROM_ALL TRUE
@@ -101,7 +171,7 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                         berkeleydb
                         PROPERTIES
                         IMPORTED_LOCATION
-                        ${3rdparty_install_path}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}db${CMAKE_SHARED_LIBRARY_SUFFIX}
+                        ${berkeleydb_lib}
                 )
             endif ()
         endif ()
@@ -116,14 +186,21 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                 set_target_properties(jemalloc PROPERTIES IMPORTED_LOCATION
                         ${jemalloc_path})
             else ()
-                list(APPEND 3rdparty_list 3rd_party_jemalloc)
+                set(3rdparty_install_path ${PROJECT_3RDPARTY_JEMALLOC_DIR})
+                set(jemalloc_lib ${CMAKE_STATIC_LIBRARY_PREFIX}jemalloc_pic)
+                string(APPEND jemalloc_lib ${CMAKE_STATIC_LIBRARY_SUFFIX})
+                set(jemalloc_lib ${3rdparty_install_path}/lib/${jemalloc_lib})
+                add_third_party_if_missing(jemalloc 3rd_party_jemalloc
+                        ${3rdparty_build_path}/jemalloc ${3rdparty_install_path}
+                        jemalloc/jemalloc.h ${jemalloc_lib})
+                list(APPEND 3rdparty_includes ${3rdparty_install_path}/include)
                 externalproject_add(
                         3rd_party_jemalloc
                         EXCLUDE_FROM_ALL TRUE
                         PREFIX ${3rdparty_build_path}/jemalloc
                         INSTALL_DIR ${3rdparty_install_path}
                         GIT_REPOSITORY https://github.com/jemalloc/jemalloc.git
-                        GIT_TAG 5.3.0
+                        GIT_TAG ${PROJECT_3RDPARTY_JEMALLOC_VERSION}
                         # --disable-cxx works around jemalloc 5.3.0's
                         # src/jemalloc_cpp.cpp failing to build with libstdc++
                         # >= GCC 13 ('__throw_bad_alloc' is not in std::).
@@ -138,7 +215,7 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                         jemalloc
                         PROPERTIES
                         IMPORTED_LOCATION
-                        ${3rdparty_install_path}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}jemalloc_pic${CMAKE_STATIC_LIBRARY_SUFFIX}
+                        ${jemalloc_lib}
                 )
             endif ()
         endif ()
@@ -162,7 +239,18 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                 # cannot satisfy both.
                 # GCS calls no hwloc GPU function anyway - verified: not a single
                 # hwloc_opencl/cuda/nvml call under source/.
-                list(APPEND 3rdparty_list 3rd_party_hwloc)
+                set(3rdparty_install_path ${PROJECT_3RDPARTY_HWLOC_DIR})
+                set(hwloc_lib ${CMAKE_STATIC_LIBRARY_PREFIX}hwloc${CMAKE_STATIC_LIBRARY_SUFFIX})
+                set(hwloc_lib ${3rdparty_install_path}/lib/${hwloc_lib})
+                add_third_party_if_missing(hwloc 3rd_party_hwloc
+                        ${3rdparty_build_path}/hwloc ${3rdparty_install_path}
+                        hwloc.h ${hwloc_lib})
+                list(APPEND 3rdparty_includes ${3rdparty_install_path}/include)
+                # the download directory carries major.minor only, e.g. v2.10/hwloc-2.10.0
+                set(hwloc_version ${PROJECT_3RDPARTY_HWLOC_VERSION})
+                string(REGEX MATCH "^[0-9]+\\.[0-9]+" hwloc_series ${hwloc_version})
+                set(hwloc_url "https://download.open-mpi.org/release/hwloc/v${hwloc_series}")
+                set(hwloc_url "${hwloc_url}/hwloc-${hwloc_version}.tar.gz")
                 if(SGE_ARCH STREQUAL "osol-amd64")
                   set(CUSTOM_CFLAGS CFLAGS=-Wno-incompatible-pointer-types)
                 endif()
@@ -180,13 +268,13 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                         BUILD_ALWAYS FALSE
                         BUILD_COMMAND make
                         # put URL last to avoid the "At least one entry of URL is a path (invalid in a list)"-problem
-                        URL https://download.open-mpi.org/release/hwloc/v2.10/hwloc-2.10.0.tar.gz)
+                        URL ${hwloc_url})
                 add_library(hwloc STATIC IMPORTED GLOBAL)
                 set_target_properties(
                         hwloc
                         PROPERTIES
                         IMPORTED_LOCATION
-                        ${3rdparty_install_path}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}hwloc${CMAKE_STATIC_LIBRARY_SUFFIX}
+                        ${hwloc_lib}
                 )
             endif ()
         endif ()
@@ -238,9 +326,13 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
         endif()
     endif ()
 
-    # add a target containing all 3rdparty libs which need to be built once
+    # add a target containing the 3rdparty libs which are not installed yet
     message(STATUS "We are building the following 3rdparty libraries: ${3rdparty_list}")
     add_custom_target(3rdparty DEPENDS ${3rdparty_list})
+    # one configure run only, see add_third_party_if_missing()
+    unset(REBUILD_3RDPARTY CACHE)
+
+    set(PROJECT_3RDPARTY_INCLUDES ${3rdparty_includes} PARENT_SCOPE)
 endfunction(build_third_party)
 
 # copy thirdparty files from their installation directory

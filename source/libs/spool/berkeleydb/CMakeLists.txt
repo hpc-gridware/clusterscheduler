@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2024 HPC-Gridware GmbH
+#  Copyright 2023-2026 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -52,11 +52,11 @@ if (${WITH_SPOOL_BERKELEYDB})
             # we copy Berkeleydb utilities to utilbin
             # they need to contain rpath with ORIGIN
             set(BDB_PROGS db_deadlock db_dump db_load db_printlog db_recover db_stat db_upgrade db_verify)
-            install_third_party_bin(${PROJECT_3RDPARTY_DIR} "utilbin" BDB_PROGS)
+            install_third_party_bin(${PROJECT_3RDPARTY_BERKELEYDB_DIR} "utilbin" BDB_PROGS)
 
             # and we need the libdb installed in $SGE_ROOT/lib/<arch>
             set(BDB_LIBS db-5.3 db-5 db)
-            install_third_party_lib(${PROJECT_3RDPARTY_DIR} "lib" BDB_LIBS)
+            install_third_party_lib(${PROJECT_3RDPARTY_BERKELEYDB_DIR} "lib" BDB_LIBS)
         endif ()
     endif ()
 endif ()

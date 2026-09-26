@@ -80,6 +80,7 @@ endif()
 
 # 3RD_PARTY OPTIONS
 option(WITH_OS_3RDPARTY "Use 3rdparty libraries provided by OS packages" OFF)
+# REBUILD_3RDPARTY=ON: have the 3rdparty target rebuild all packages, not only the missing ones
 option(WITH_SPOOL_BERKELEYDB "Enable berkeleydb spooling" ON)
 option(WITH_SPOOL_POSTGRES "Enable postgres spooling" OFF)
 option(WITH_SPOOL_DYNAMIC "Enable dynamic spooling configuration" ON)
@@ -172,12 +173,11 @@ architecture_specific_settings()
 set(CMAKE_INSTALL_RPATH "\$ORIGIN/../../lib/${SGE_ARCH}")
 #set(CMAKE_BUILD_WITH_INSTALL_RPATH "TRUE")
 
-# 3rdparty packages @todo: better install them into
-# <base_dir>/<pkg>/<version>/<arch>/<os>/<osversion>/<debug|release>
-
+# 3rdparty packages, installed to
+# <base_dir>/<pkg>-<version>/<arch>/<os>/<osversion>/<debug|release>
 include(cmake/BuildThirdParty.cmake)
 
-build_third_party("${CMAKE_BINARY_DIR}/3rd_party" ${PROJECT_3RDPARTY_DIR})
+build_third_party("${CMAKE_BINARY_DIR}/3rd_party")
 
 # @todo: we shouldn't need includes - daemons/common, required for err_trace.h
 # in libs/sgeobj/sge_binding.h - daemons/execd, required for get_path.h in
@@ -198,7 +198,7 @@ if (PROJECT_FEATURES MATCHES "gcs-extensions")
          ${PROJECT_SOURCE_DIR}/source/daemons/execd
          ${PROJECT_SOURCE_DIR}/source/daemons/qmaster
          ${PROJECT_SOURCE_DIR}/source/libs
-         ${PROJECT_3RDPARTY_DIR}/include
+         ${PROJECT_3RDPARTY_INCLUDES}
          ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include)
    add_compile_definitions(ADD_GRIDWARE_COPYRIGHT)
 else()
@@ -209,7 +209,7 @@ else()
          ${PROJECT_SOURCE_DIR}/source/daemons/execd
          ${PROJECT_SOURCE_DIR}/source/daemons/qmaster
          ${PROJECT_SOURCE_DIR}/source/libs
-         ${PROJECT_3RDPARTY_DIR}/include
+         ${PROJECT_3RDPARTY_INCLUDES}
          ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include)
 endif()
 
