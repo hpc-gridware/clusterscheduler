@@ -25,6 +25,9 @@ namespace ocs::gdi {
    class Command {
          Command() = default; // prevent instantiation
    public:
+      /// What a GDI request asks qmaster to do with its target list.
+      /// The values are consecutive, not bit flags: combining or masking them
+      /// computes a different command rather than a set of them (CS-2829).
       enum Cmd {
          SGE_GDI_NONE = 0,
          SGE_GDI_GET = 1,
