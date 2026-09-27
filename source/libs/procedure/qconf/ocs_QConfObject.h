@@ -109,6 +109,23 @@ struct qconf_object_desc {
  */
 const qconf_object_desc &qconf_desc(QConfObj o);
 
+/** @brief A private copy of a field list, for a renderer that mutates widths
+ *
+ * `spool_flatfile_align_list()` computes the column widths of a table and writes
+ * them back into the `spooling_field` array it is given. Most providers hand out
+ * a shared static table (`CE_fields`, `CAT_fields`, ...), which is harmless in a
+ * client - one process, one call - and a data race inside qmaster, where reader
+ * threads run procedures in parallel. A renderer that aligns therefore works on
+ * its own copy (CS-2817).
+ *
+ * The copy is shallow: `align_list` only writes `width` of the top level, and
+ * everything else in the struct is a pointer to static data.
+ *
+ * @param fields the list to copy, terminated by `nm == NoName`
+ * @return the copy, which the caller frees with sge_free()
+ */
+spooling_field *qconf_copy_fields(const spooling_field *fields);
+
 void qconf_json_fill_complex(lListElem *obj, const int *ce_fields, int n_fields,
                              const lList *master_centry_list);
 

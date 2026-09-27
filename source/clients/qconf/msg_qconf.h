@@ -57,7 +57,9 @@
 #define MSG_ACL_DELFROMACL_SS                         _MESSAGE(5056, _("deleted user " SFQ " from access list " SFQ))
 
 #define MSG_CENTRY_NOTCHANGED                         _MESSAGE(5100, _("Complex attribute configuration has not been changed"))
-#define MSG_CENTRY_DOESNOTEXIST_S                     _MESSAGE(5101, _("Complex attribute " SFQ " does not exist"))
+/* MSG_CENTRY_DOESNOTEXIST_S (5101) moved to libs/procedure/qconf/msg_qconf.h with
+ * the complex entry reads (CS-2817) and was renumbered into that file's own
+ * block. The id stays empty here. */
 #define MSG_CENTRY_FILENOTCORRECT_S                   _MESSAGE(5102, _("Complex attribute file " PFQMAX " is not correct"))
 #define MSG_CENTRY_NULL_URGENCY                       _MESSAGE(5103, _("Complex urgency definition is missing"))
 #define MSG_CENTRY_NULL_NAME                          _MESSAGE(5104, _("Invalid complex attribute definition"))

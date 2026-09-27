@@ -68,6 +68,9 @@ set(LIBRARY_SOURCES
         qconf/hgroup/ocs_QConfHGroupWhyController.cc
         qconf/hgroup/ocs_QConfHGroupWhyView.cc
 
+        qconf/centry/ocs_QConfCEntryListController.cc
+        qconf/centry/ocs_QConfCEntryListView.cc
+
         qquota/ocs_QQuotaParameter.cc
         qquota/ocs_QQuotaParameterClient.cc
         qquota/ocs_QQuotaModelBase.cc

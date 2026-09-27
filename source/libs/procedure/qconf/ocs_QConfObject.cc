@@ -46,6 +46,10 @@
 #include "spool/flatfile/sge_flatfile_obj.h"
 #include "spool/flatfile/ocs_spool_json.h"
 
+#include <cstring>
+
+#include "uti/sge_stdlib.h"
+
 #include "ocs_QConfObject.h"
 #include "msg_qconf.h"
 
@@ -188,7 +192,7 @@ static const qconf_object_desc qconf_object_table[] = {
    /* CK   */ { ocs::gdi::Target::CK_LIST,   CK_Type,   CK_name,   qconf_fields_CK,   &qconf_sfi,                 nullptr,      ckpt_validate,       nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
               { nullptr, "ckpt interface definition", MSG_CKPT_XISNOTCHKPINTERFACEDEF_S, nullptr, nullptr } },
    /* CE   */ { ocs::gdi::Target::CE_LIST,   CE_Type,   CE_name,   qconf_fields_CE,   &qconf_ce_sfi,              nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "complex entry", nullptr, nullptr, nullptr } },
+              { nullptr, "complex entry", MSG_CENTRY_DOESNOTEXIST_S, nullptr, nullptr } },
    /* EH   */ { ocs::gdi::Target::EH_LIST,   EH_Type,   EH_name,   qconf_fields_EH,   &qconf_sfi,                 "exechost",   nullptr,             qconf_eh_resolve,  ocs::gdi::SubCommand::NONE,    false, true,  false, SGE_TEMPLATE_NAME,  SGE_GLOBAL_NAME,
               { qconf_show_fields_EH, "execution host", MSG_EXEC_XISNOTANEXECUTIONHOST_S, nullptr, qconf_show_prepare_EH } },
    /* HGRP */ { ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_name, qconf_fields_HGRP, &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
@@ -234,6 +238,30 @@ static const qconf_object_desc qconf_object_table[] = {
 static_assert(sizeof(qconf_object_table) / sizeof(qconf_object_table[0]) ==
               static_cast<size_t>(QConfObj::EV) + 1,
               "qconf_object_table needs exactly one row per QConfObj value");
+
+/** @brief A private copy of a field list, see the header (CS-2817)
+ *
+ * @param fields the list to copy
+ * @return the copy, or nullptr when @p fields is nullptr
+ */
+spooling_field *
+qconf_copy_fields(const spooling_field *fields) {
+   if (fields == nullptr) {
+      return nullptr;
+   }
+
+   size_t n = 0;
+   while (fields[n].nm != NoName) {
+      n++;
+   }
+
+   // sge_malloc() hands back char*, so the pointer type genuinely changes here
+   auto *copy = reinterpret_cast<spooling_field *>(sge_malloc(sizeof(spooling_field) * (n + 1)));
+   if (copy != nullptr) {
+      memcpy(copy, fields, sizeof(spooling_field) * (n + 1));
+   }
+   return copy;
+}
 
 /** @brief The descriptor of one object type.
  * @param o the object type

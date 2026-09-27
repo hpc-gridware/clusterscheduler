@@ -100,6 +100,8 @@
 #include "procedure/ocs_ProcedureView.h"
 
 #include "qconf/ocs_QConfController.h"
+#include "qconf/centry/ocs_QConfCEntryListController.h"
+#include "qconf/centry/ocs_QConfCEntryListView.h"
 #include "qconf/hgroup/ocs_QConfHGroupResolvedController.h"
 #include "qconf/hgroup/ocs_QConfHGroupShowController.h"
 #include "qconf/hgroup/ocs_QConfHGroupShowViewJSON.h"
@@ -1329,6 +1331,10 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
          } else if (sub == ocs::QConfParameter::HGROUP_WHY) {
             ocs::QConfHGroupWhyView view(param);
             ocs::QConfHGroupWhyController controller(os);
+            controller.process_request(param, model, view);
+         } else if (sub == ocs::QConfParameter::CENTRY_LIST) {
+            ocs::QConfCEntryListView view(param);
+            ocs::QConfCEntryListController controller(os);
             controller.process_request(param, model, view);
          } else {
             std::unique_ptr<ocs::QConfViewBase> view;
@@ -5182,7 +5188,17 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-sc", *spp) == 0) {
          lList *answer_list = nullptr;
 
-         if (!centry_list_show(os, &answer_list)) {
+         /* CS-2817: a sub-procedure. The table is neither a name list nor one
+          * object, and its column alignment writes into the field list, which
+          * must not be the shared static one inside qmaster. */
+         qconf_op op;
+         op.token = "-sc";
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::CENTRY_LIST);
+         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
+
+         if (!ok) {
             show_answer(answer_list);
             sge_parse_return = 1;
          }
@@ -5771,7 +5787,18 @@ int sge_parse_qconf(char *argv[]) {
          lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(spp);
-         if (!centry_show(os, &answer_list, *spp)) {
+
+         /* CS-2817: a plain single-object read. The hand written code rendered it
+          * with CE_fields and qconf_ce_sfi, which is what the CE row holds, so
+          * this needs no sub-procedure - only a row in qconf_read_table. It is
+          * dispatched here rather than through qconf_show_object(), because that
+          * one reports with answer_list_output() and would add an "error: "
+          * prefix where this block has always printed the bare message. */
+         qconf_op op;
+         op.token = "-sce";
+         op.args.emplace_back(*spp);
+         param.set_operation(op);
+         if (!qconf_dispatch_procedure(os, param, &answer_list)) {
             show_answer(answer_list);
             sge_parse_return = 1;
          }

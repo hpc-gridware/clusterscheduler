@@ -69,6 +69,7 @@ static const ocs::qconf_read_entry qconf_read_table[] = {
    {"-sp",     QConfObj::PE,   ocs::QConfReadKind::SINGLE_OBJECT},
    {"-suser",  QConfObj::UU,   ocs::QConfReadKind::SINGLE_OBJECT},
    {"-sprj",   QConfObj::PR,   ocs::QConfReadKind::SINGLE_OBJECT},
+   {"-sce",    QConfObj::CE,   ocs::QConfReadKind::SINGLE_OBJECT},
 
    /* group A: the singletons. A separate kind rather than a SINGLE_OBJECT row
     * with name_nm == NoName: that would work - get_object_where() returns
@@ -206,6 +207,38 @@ ocs::QConfModelBase::get_object_where(const lDescr *descr, int key_nm, const cha
  * @return true when there is something to show
  */
 /**
+ * @brief Fetch every object of one type, for a view that needs the whole list
+ *
+ * The bespoke views are not "one object by name": the host group views resolve
+ * references through the graph, and `-sc` aligns its columns across all complex
+ * entries before it renders the first one. Both want the list, so both take this
+ * snapshot.
+ *
+ * The kind is set to NAME_LIST because that is what was fetched. It does not say
+ * how it is rendered - the sub-procedure's own controller decides that, which is
+ * the whole point of having one.
+ *
+ * @param answer_list for error reporting
+ * @param object      the object type
+ * @return true when the list was fetched
+ */
+bool
+ocs::QConfModelBase::make_list_snapshot(lList **answer_list, QConfObj object) {
+   DENTER(TOP_LAYER);
+
+   object_ = object;
+   kind_ = QConfReadKind::NAME_LIST;
+   desc_ = &qconf_desc(object_);
+   key_nm_ = desc_->name_nm;
+
+   lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
+   const bool ok = fetch(answer_list, desc_->target, nullptr, what);
+   lFreeWhat(&what);
+
+   DRETURN(ok);
+}
+
+/**
  * @brief Fetch the whole host group list for one of the bespoke views (CS-2816)
  *
  * `-shgrp_tree`, `-shgrp_resolved` and `-shgrp_why` resolve references through
@@ -227,16 +260,8 @@ bool
 ocs::QConfModelBase::make_hgroup_snapshot(lList **answer_list, QConfParameter &parameter) {
    DENTER(TOP_LAYER);
 
-   object_ = QConfObj::HGRP;
-   kind_ = QConfReadKind::NAME_LIST;   // a list is fetched, the view decides what to do with it
-   desc_ = &qconf_desc(object_);
-   key_nm_ = desc_->name_nm;
    requested_name_ = parameter.get_operation().arg(0);
-
-   lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
-   const bool ok = fetch(answer_list, desc_->target, nullptr, what);
-   lFreeWhat(&what);
-   if (!ok) {
+   if (!make_list_snapshot(answer_list, QConfObj::HGRP)) {
       DRETURN(false);
    }
 
@@ -314,6 +339,9 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
     * table-driven read of groups A and B and falls through. */
    if (QConfParameter::is_hgroup_sub_procedure(parameter.get_sub_procedure_name())) {
       DRETURN(make_hgroup_snapshot(answer_list, parameter));
+   }
+   if (parameter.get_sub_procedure_name() == QConfParameter::CENTRY_LIST) {
+      DRETURN(make_list_snapshot(answer_list, QConfObj::CE));
    }
 
    const qconf_read_entry *entry = resolve(parameter.get_operation().token.c_str());

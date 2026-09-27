@@ -142,6 +142,7 @@ namespace ocs {
       static constexpr auto HGROUP_TREE = "hostgroup-tree";         ///< `qconf -shgrp_tree`
       static constexpr auto HGROUP_RESOLVED = "hostgroup-resolved"; ///< `qconf -shgrp_resolved`
       static constexpr auto HGROUP_WHY = "hostgroup-why";           ///< `qconf -shgrp_why`
+      static constexpr auto CENTRY_LIST = "complex-list";           ///< `qconf -sc`
 
       /** @brief Whether a sub-procedure name is one of the host group views
        * @param name the name, empty for the table-driven read

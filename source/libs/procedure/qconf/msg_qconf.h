@@ -61,4 +61,6 @@
 #define MSG_QCONF_WHY_MATCHER_GROUP_SSS               _MESSAGE(12005, _(SFN " is a member through the matcher " SFQ " of the group " SFN))
 #define MSG_QCONF_WHY_NOT_S                           _MESSAGE(12006, _(SFN " is not a member"))
 
+#define MSG_CENTRY_DOESNOTEXIST_S                     _MESSAGE(12007, _("Complex attribute " SFQ " does not exist"))
+
 // clang-format on

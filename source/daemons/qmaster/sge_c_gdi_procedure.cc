@@ -35,6 +35,8 @@
 #include "procedure/ocs_ProcedureParameter.h"
 
 #include "procedure/qconf/ocs_QConfController.h"
+#include "procedure/qconf/centry/ocs_QConfCEntryListController.h"
+#include "procedure/qconf/centry/ocs_QConfCEntryListView.h"
 #include "procedure/qconf/hgroup/ocs_QConfHGroupResolvedController.h"
 #include "procedure/qconf/hgroup/ocs_QConfHGroupShowController.h"
 #include "procedure/qconf/hgroup/ocs_QConfHGroupShowViewJSON.h"
@@ -219,6 +221,28 @@ namespace {
       using Model = ocs::QConfModelServer;
       using ViewBase = ocs::QConfHGroupWhyView;
       using Controller = ocs::QConfHGroupWhyController;
+
+      static constexpr ProgName prog_number = QCONF;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+   };
+
+   /** @brief `qconf -sc`: the complex entry table. One view for all three
+    * factories, because the view switches on the output format itself - as the
+    * hand written block did by passing qconf_opt_format to the writer. */
+   struct QConfCEntryListTraits {
+      using Parameter = ocs::QConfParameter;
+      using Model = ocs::QConfModelServer;
+      using ViewBase = ocs::QConfCEntryListView;
+      using Controller = ocs::QConfCEntryListController;
 
       static constexpr ProgName prog_number = QCONF;
 
@@ -451,13 +475,14 @@ namespace {
       ProcedureHandler handler;
    };
 
-   constexpr std::array<ProcedureDispatchEntry, 12> procedure_dispatch_table{
+   constexpr std::array<ProcedureDispatchEntry, 13> procedure_dispatch_table{
       {
          {to_string_view(QCONF), "", &run_procedure<QConfTraits>},
          {to_string_view(QCONF), ocs::QConfParameter::HGROUP_SHOW, &run_procedure<QConfHGroupShowTraits>},
          {to_string_view(QCONF), ocs::QConfParameter::HGROUP_TREE, &run_procedure<QConfHGroupTreeTraits>},
          {to_string_view(QCONF), ocs::QConfParameter::HGROUP_RESOLVED, &run_procedure<QConfHGroupResolvedTraits>},
          {to_string_view(QCONF), ocs::QConfParameter::HGROUP_WHY, &run_procedure<QConfHGroupWhyTraits>},
+         {to_string_view(QCONF), ocs::QConfParameter::CENTRY_LIST, &run_procedure<QConfCEntryListTraits>},
          {to_string_view(QHOST), "",  &run_procedure<QHostTraits>},
          {to_string_view(QQUOTA), "",  &run_procedure<QQuotaTraits>},
          {to_string_view(QRSTAT), "", &run_procedure<QRStatTraits>},

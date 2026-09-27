@@ -61,6 +61,10 @@
 
 #include "msg_common.h"
 #include "msg_qconf.h"
+/* MSG_CENTRY_DOESNOTEXIST_S lives in the procedure's own message header since
+ * CS-2817. The path is spelled out because a bare "msg_qconf.h" from a file in
+ * clients/qconf finds the client's header first, and the two are different. */
+#include "procedure/qconf/msg_qconf.h"
 #include "ocs_qconf_centry.h"
 #include "ocs_qconf_parse.h"   /* CS-2313a: qconf_opt_format */
 
@@ -387,69 +391,7 @@ bool centry_delete(lList **answer_list, const char *name) {
    DRETURN(ret);
 }
 
-/** @brief Print one complex entry
- *
- * @param os the stream the output is written to (CS-1841)
- * @param answer_list used to return error messages
- * @param name the complex entry to print
- * @return true on success; false with `answer_list` filled otherwise
- */
-bool centry_show(std::ostream &os, lList **answer_list, const char *name) {
-   DENTER(TOP_LAYER);
 
-   bool ret = true;
-
-   if (name != nullptr) {
-      lListElem *centry = centry_get_via_gdi(answer_list, name);
-
-      if (centry != nullptr) {
-         const char *filename;
-         filename = spool_flatfile_write_object(answer_list, centry, false, CE_fields, &qconf_ce_sfi, SP_DEST_STREAM,
-                                                qconf_opt_format, nullptr, false, nullptr, &os);
-         sge_free(&filename);
-         lFreeElem(&centry);
-         if (answer_list_has_error(answer_list)) {
-            DRETURN(false);
-         }
-      } else {
-         answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR, MSG_CENTRY_DOESNOTEXIST_S, name);
-         ret = false;
-      }
-   }
-
-   DRETURN(ret);
-}
-
-/** @brief Print the names of all complex entrys
- *
- * @param os the stream the output is written to (CS-1841)
- * @param answer_list used to return error messages
- * @return true on success; false with `answer_list` filled otherwise
- */
-bool centry_list_show(std::ostream &os, lList **answer_list) {
-   DENTER(TOP_LAYER);
-
-   bool ret = true;
-   lList *centry_list = nullptr;
-
-   centry_list = centry_list_get_via_gdi(answer_list);
-   if (centry_list != nullptr) {
-      const char *filename;
-
-      spool_flatfile_align_list(answer_list, (const lList *) centry_list, CE_fields, 3);
-      filename = spool_flatfile_write_list(answer_list, centry_list, CE_fields, &qconf_ce_list_sfi, SP_DEST_STREAM,
-                                           qconf_opt_format, nullptr, false, &os);
-
-      sge_free(&filename);
-      lFreeList(&centry_list);
-
-      if (answer_list_has_error(answer_list)) {
-         DRETURN(false);
-      }
-   }
-
-   DRETURN(ret);
-}
 
 /** @brief Fetch all complex entrys from qmaster
  *

@@ -153,6 +153,7 @@ namespace ocs {
                          lCondition *where, lEnumeration *what) = 0;
 
    protected:
+      bool make_list_snapshot(lList **answer_list, QConfObj object);
       bool make_hgroup_snapshot(lList **answer_list, QConfParameter &parameter);
 
    public:
