@@ -49,25 +49,11 @@ namespace ocs::gdi {
     */
    std::string to_string(Command cmd);
 
-   /**
-    * @brief Combine two values bitwise
-    * @param a first value
-    * @param b second value
-    * @return the union of both
-    */
-   inline Command operator|(Command a, Command b) {
-      return static_cast<Command>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
-   }
-
-   /**
-    * @brief Intersect two values bitwise
-    * @param a first value
-    * @param b second value
-    * @return the bits set in both
-    */
-   inline Command operator&(Command a, Command b) {
-      return static_cast<Command>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
-   }
+   // Command has deliberately no bitwise operators: the values are consecutive, so
+   // combining or masking them computes a different command rather than a set of
+   // them. The only caller that ever did (the GDI request limits) read GET_PROCEDURE
+   // as ADD because of it, see CS-2829. Test a command with == or a lookup table.
+   // The modifiers below are a real bit mask and do have the operators.
 
    /**
     * @brief Modifiers that refine a `Command` value
