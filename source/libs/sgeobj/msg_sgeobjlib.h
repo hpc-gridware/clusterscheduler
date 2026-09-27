@@ -242,7 +242,7 @@
  * would make one queue's host set a member of another object's. Lives here
  * rather than in the qmaster catalogue because the same refusal is needed on
  * both sides of GDI. */
-#define MSG_HGRP_QUEUEGROUP_NOREF_S _MESSAGE(64563, _(SFQ " belongs to a cluster queue and cannot be referenced"))
+#define MSG_HGRP_QUEUEGROUP_NOREF_S _MESSAGE(64589, _(SFQ " belongs to a cluster queue and cannot be referenced"))
 /* CS-2680: two entries of a member list denoting the same set are collapsed into
  * one when the list is written. The collapse is carried out and reported; it is
  * not a rejection, so the message carries STATUS_OK. */

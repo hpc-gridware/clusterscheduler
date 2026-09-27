@@ -19,93 +19,20 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief The host group views of the `qconf` stored procedure (CS-2816)
+ * @brief See the header (CS-2816)
  */
 
 #include <cstdarg>
 
-#include "uti/sge_dstring.h"
-#include "uti/sge_string.h"
 #include "uti/ocs_Pattern.h"
-#include "basis_types.h"
+#include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_stdlib.h"
+#include "uti/sge_string.h"
 
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
 
-#include "spool/flatfile/ocs_spool_json.h"
-
-#include "ocs_QConfHGroupView.h"
-#include "msg_qconf.h"
-
-/** @brief Write one host group as JSON, with its member classes split out
- *
- * The derived lists are computed from the member list at render time, which is
- * why this cannot go through spool_flatfile_write_object(): that one renders the
- * fields of the object, and these are three keys that are not fields. A group
- * without matchers is rendered by the generic path, so nothing changes for an
- * installation that does not use them.
- *
- * Errors are dropped the same way QConfViewBase::show_object() drops them: a
- * view is handed no answer list, because by the time one is chosen the framework
- * has no way left to report. Anything that can fail meaningfully is checked in
- * the model.
- *
- * @param os   the stream to write to
- * @param ep   the host group
- * @param desc its row in the descriptor table, for the field list
- */
-void
-ocs::QConfHGroupShowViewJSON::show_object(std::ostream &os, const lListElem *ep,
-                                          const qconf_object_desc &desc) {
-   DENTER(TOP_LAYER);
-
-   lList *derived_hosts = nullptr;
-   lList *derived_groups = nullptr;
-   lList *derived_matchers = nullptr;
-
-   if (!hgroup_split_members(ep, &derived_hosts, &derived_groups, &derived_matchers)) {
-      /* no matchers: the generic rendering is the whole answer */
-      lFreeList(&derived_hosts);
-      lFreeList(&derived_groups);
-      lFreeList(&derived_matchers);
-      QConfViewBase::show_object(os, ep, desc);
-      DRETURN_VOID;
-   }
-
-   const ocs_json_derived_list derived[] = {
-      {"hosts",      derived_hosts,    HR_name},
-      {"hostgroups", derived_groups,   HR_name},
-      {"matchers",   derived_matchers, HR_name},
-      {nullptr,      nullptr,          0}
-   };
-
-   const qconf_build_fields_fn provider =
-      (desc.read.fields != nullptr) ? desc.read.fields : desc.build_fields;
-   bool owned = false;
-   spooling_field *fields = provider(SP_FORM_JSON, &owned);
-
-   lList *alp = nullptr;
-   dstring document = DSTRING_INIT;
-   if (spool_json_write_object_ex(&alp, ep, fields, derived, &document)) {
-      const char *text = sge_dstring_get_string(&document);
-      if (text != nullptr) {
-         os << text;
-      }
-   }
-   sge_dstring_free(&document);
-   if (owned) {
-      sge_free(&fields);
-   }
-   lFreeList(&alp);
-
-   lFreeList(&derived_hosts);
-   lFreeList(&derived_groups);
-   lFreeList(&derived_matchers);
-
-   DRETURN_VOID;
-}
+#include "ocs_QConfHGroupStructureView.h"
 
 /** @brief What `qconf_cstr()` does in the client, for the library side
  *
@@ -121,30 +48,6 @@ ocs::QConfHGroupShowViewJSON::show_object(std::ostream &os, const lListElem *ep,
 static constexpr const char *
 hgroup_text(const char *s) noexcept {
    return (s != nullptr) ? s : "(null)";
-}
-
-/** @brief Write a catalogue message to a stream
- *
- * The message macros expand to a catalogue lookup rather than to a string
- * literal, so they cannot be streamed directly and the newline cannot be
- * concatenated onto them. The client solves this with qconf_msg(); this is the
- * same thing for the library.
- *
- * @param os  the stream to write to
- * @param fmt the message, a printf format
- */
-static void
-hgroup_msg(std::ostream &os, const char *fmt, ...) {
-   va_list ap;
-   va_start(ap, fmt);
-   dstring buffer = DSTRING_INIT;
-   sge_dstring_vsprintf(&buffer, fmt, ap);
-   va_end(ap);
-   const char *text = sge_dstring_get_string(&buffer);
-   if (text != nullptr) {
-      os << text;
-   }
-   sge_dstring_free(&buffer);
 }
 
 /** @brief One line of the host group tree, then its children
@@ -248,41 +151,6 @@ ocs::QConfHGroupStructureView::show_resolved(std::ostream &os, const lListElem *
    lFreeList(&sub_hgroup_list);
    lFreeList(&sub_matcher_list);
    lFreeList(&answer_list);
-
-   DRETURN_VOID;
-}
-
-/** @brief `qconf -shgrp_why`: word the route the model found
- *
- * @param os  the stream to write to
- * @param why what the model decided
- */
-void
-ocs::QConfHGroupWhyView::show_why(std::ostream &os, const QConfModelBase::HGroupWhy &why) {
-   DENTER(TOP_LAYER);
-
-   const char *host = why.host.c_str();
-   const char *in = why.found_in.empty() ? nullptr : why.found_in.c_str();
-
-   switch (why.route) {
-      case Matcher::Route::LITERAL:
-         hgroup_msg(os, MSG_QCONF_WHY_LITERAL_S, host);
-         break;
-      case Matcher::Route::GROUP_REFERENCE:
-         hgroup_msg(os, MSG_QCONF_WHY_GROUP_SS, host, in != nullptr ? in : "");
-         break;
-      case Matcher::Route::MATCHER:
-         if (in != nullptr) {
-            hgroup_msg(os, MSG_QCONF_WHY_MATCHER_GROUP_SSS, host, why.matcher.c_str(), in);
-         } else {
-            hgroup_msg(os, MSG_QCONF_WHY_MATCHER_SS, host, why.matcher.c_str());
-         }
-         break;
-      case Matcher::Route::NOT_A_MEMBER:
-         hgroup_msg(os, MSG_QCONF_WHY_NOT_S, host);
-         break;
-   }
-   os << "\n";
 
    DRETURN_VOID;
 }

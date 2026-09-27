@@ -59,8 +59,14 @@ set(LIBRARY_SOURCES
         qconf/ocs_QConfViewPlain.cc
         qconf/ocs_QConfViewJSON.cc
         qconf/ocs_QConfController.cc
-        qconf/ocs_QConfHGroupController.cc
-        qconf/ocs_QConfHGroupView.cc
+
+        qconf/hgroup/ocs_QConfHGroupShowController.cc
+        qconf/hgroup/ocs_QConfHGroupShowViewJSON.cc
+        qconf/hgroup/ocs_QConfHGroupStructureView.cc
+        qconf/hgroup/ocs_QConfHGroupTreeController.cc
+        qconf/hgroup/ocs_QConfHGroupResolvedController.cc
+        qconf/hgroup/ocs_QConfHGroupWhyController.cc
+        qconf/hgroup/ocs_QConfHGroupWhyView.cc
 
         qquota/ocs_QQuotaParameter.cc
         qquota/ocs_QQuotaParameterClient.cc

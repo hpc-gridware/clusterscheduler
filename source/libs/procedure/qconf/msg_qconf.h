@@ -24,8 +24,14 @@
  *
  * **This file owns the id block 12000-12999.** Append at the bottom and take the
  * next free number; never reuse one that has been given out, because the id is
- * the catalogue key (`_MESSAGE(x, y)` expands to `sge_gettext_((x),(y))`) and a
- * number that comes back with another text would hand out the wrong translation.
+ * the catalogue key and a number that comes back with another text would hand
+ * out the wrong translation.
+ *
+ * Do not write the message macro's name followed by an opening parenthesis
+ * anywhere in this file except in a real definition. The testsuite's
+ * update_macro_messages_list() scans every line for that exact string with no
+ * regard for comments, and a line it cannot parse as a definition aborts the
+ * build - which is how this note came to be written this way.
  *
  * The messages came from `clients/qconf/msg_qconf.h` when the code moved out of
  * the client - `MSG_ROLE_DOESNOTEXIST_S` with the object descriptor table

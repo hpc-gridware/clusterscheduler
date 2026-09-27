@@ -1,4 +1,5 @@
 #pragma once
+#pragma once
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
@@ -20,11 +21,13 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Driving the host group sub-procedures of `qconf` (CS-2816)
+ * @brief Driving `qconf -shgrp` (CS-2816)
+ *
+ * One class per header, one directory per sub-procedure, as `qstat` does it for
+ * its four output formats.
  */
 
-#include "ocs_QConfController.h"
-#include "ocs_QConfHGroupView.h"
+#include "../ocs_QConfController.h"
 
 namespace ocs {
    /** @brief `qconf -shgrp`: pick the group out of the snapshot and render it
@@ -44,52 +47,5 @@ namespace ocs {
 
       void process_request(QConfParameter &parameter, QConfModelBase &model,
                            QConfViewBase &view) override;
-   };
-
-   /** @brief `qconf -shgrp_tree`
-    *
-    * Not derived from QConfController: its view type is not QConfViewBase, so
-    * process_request() cannot be an override of it. That is the same reason
-    * qstat gives each of its output shapes a controller of its own.
-    *
-    * @ingroup libprocedure
-    */
-   class QConfHGroupTreeController {
-   protected:
-      std::ostream &out_;   ///< where the view writes
-
-   public:
-      explicit QConfHGroupTreeController(std::ostream &out) : out_(out) {}
-
-      void process_request(QConfParameter &parameter, QConfModelBase &model,
-                           QConfHGroupStructureView &view);
-   };
-
-   /** @brief `qconf -shgrp_resolved`
-    * @ingroup libprocedure
-    */
-   class QConfHGroupResolvedController {
-   protected:
-      std::ostream &out_;   ///< where the view writes
-
-   public:
-      explicit QConfHGroupResolvedController(std::ostream &out) : out_(out) {}
-
-      void process_request(QConfParameter &parameter, QConfModelBase &model,
-                           QConfHGroupStructureView &view);
-   };
-
-   /** @brief `qconf -shgrp_why`
-    * @ingroup libprocedure
-    */
-   class QConfHGroupWhyController {
-   protected:
-      std::ostream &out_;   ///< where the view writes
-
-   public:
-      explicit QConfHGroupWhyController(std::ostream &out) : out_(out) {}
-
-      void process_request(QConfParameter &parameter, QConfModelBase &model,
-                           QConfHGroupWhyView &view);
    };
 }
