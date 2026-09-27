@@ -22,16 +22,37 @@
 /** @file
  * @brief Messages of the `qconf` stored procedure
  *
- * The ids stay in the `qconf` range: the code moved out of the client
- * (CS-2799), the messages did not change. `MSG_ROLE_DOESNOTEXIST_S` came from
- * `clients/qconf/msg_qconf.h`, where its six siblings for the other object
- * types never lived - those are in `common/msg_common.h`.
+ * **This file owns the id block 12000-12999.** Append at the bottom and take the
+ * next free number; never reuse one that has been given out, because the id is
+ * the catalogue key (`_MESSAGE(x, y)` expands to `sge_gettext_((x),(y))`) and a
+ * number that comes back with another text would hand out the wrong translation.
+ *
+ * The messages came from `clients/qconf/msg_qconf.h` when the code moved out of
+ * the client - `MSG_ROLE_DOESNOTEXIST_S` with the object descriptor table
+ * (CS-2799), the rest with the host group views (CS-2816). They kept the
+ * client's ids at first, which was wrong twice over: this file had no block of
+ * its own, unlike its siblings `qhost` (9000), `qquota` (10000) and `qstat`
+ * (19010), and `MSG_QCONF_WHY_LITERAL_S` carried 5255, which
+ * `MSG_CENTRY_KEPT_BUILTIN_S` in the client had been given independently by
+ * CS-2523. Splitting the two across two files had hidden that collision from a
+ * per-file check. Renumbering into this block settles both.
+ *
+ * The texts are unchanged throughout. The ids the client gave up stay empty
+ * there rather than being handed out again.
  */
 
 #include <cinttypes>
 
 // clang-format off
 
-#define MSG_ROLE_DOESNOTEXIST_S                       _MESSAGE(5253, _(SFQ " is not a role"))
+#define MSG_HGROUP_NOTEXIST_S                         _MESSAGE(12000, _("Host group " SFQ " does not exist"))
+#define MSG_ROLE_DOESNOTEXIST_S                       _MESSAGE(12001, _(SFQ " is not a role"))
+
+/* the routes -shgrp_why reports (CS-2680, N-I-7) */
+#define MSG_QCONF_WHY_LITERAL_S                       _MESSAGE(12002, _(SFN " is a member as a literal entry"))
+#define MSG_QCONF_WHY_GROUP_SS                        _MESSAGE(12003, _(SFN " is a member through the group " SFN " (literal entry)"))
+#define MSG_QCONF_WHY_MATCHER_SS                      _MESSAGE(12004, _(SFN " is a member through the matcher " SFQ))
+#define MSG_QCONF_WHY_MATCHER_GROUP_SSS               _MESSAGE(12005, _(SFN " is a member through the matcher " SFQ " of the group " SFN))
+#define MSG_QCONF_WHY_NOT_S                           _MESSAGE(12006, _(SFN " is not a member"))
 
 // clang-format on

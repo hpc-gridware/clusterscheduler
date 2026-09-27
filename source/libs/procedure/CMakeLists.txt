@@ -59,6 +59,8 @@ set(LIBRARY_SOURCES
         qconf/ocs_QConfViewPlain.cc
         qconf/ocs_QConfViewJSON.cc
         qconf/ocs_QConfController.cc
+        qconf/ocs_QConfHGroupController.cc
+        qconf/ocs_QConfHGroupView.cc
 
         qquota/ocs_QQuotaParameter.cc
         qquota/ocs_QQuotaParameterClient.cc

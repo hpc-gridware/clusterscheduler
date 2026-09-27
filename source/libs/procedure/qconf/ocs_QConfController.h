@@ -33,8 +33,8 @@ namespace ocs {
     * @ingroup libprocedure
     */
    class QConfController {
-   private:
-      std::ostream &out_;   ///< where the view writes
+   protected:
+      std::ostream &out_;   ///< where the view writes; protected for the sub-procedure controllers (CS-2816)
 
    public:
       /** @brief Bind a controller to an output stream

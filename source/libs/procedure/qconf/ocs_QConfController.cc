@@ -39,10 +39,9 @@
  * @return none
  */
 void
-ocs::QConfController::process_request(QConfParameter &parameter, QConfModelBase &model,
+ocs::QConfController::process_request([[maybe_unused]] QConfParameter &parameter, QConfModelBase &model,
                                       QConfViewBase &view) {
    DENTER(TOP_LAYER);
-   (void) parameter;
 
    if (model.get_kind() == QConfReadKind::NAME_LIST) {
       view.show_name_list(out_, model.get_object_list(), model.get_key_nm());

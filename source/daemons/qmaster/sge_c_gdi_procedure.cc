@@ -35,6 +35,8 @@
 #include "procedure/ocs_ProcedureParameter.h"
 
 #include "procedure/qconf/ocs_QConfController.h"
+#include "procedure/qconf/ocs_QConfHGroupController.h"
+#include "procedure/qconf/ocs_QConfHGroupView.h"
 #include "procedure/qconf/ocs_QConfModelServer.h"
 #include "procedure/qconf/ocs_QConfViewBase.h"
 #include "procedure/qconf/ocs_QConfViewJSON.h"
@@ -136,6 +138,93 @@ namespace {
 
       static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
          return std::make_unique<ocs::QConfViewJSON>(parameter);
+      }
+   };
+
+   /** @brief `qconf -shgrp`: a sub-procedure, because the descriptor table cannot
+    * express the JSON form (CS-2816). Shares QConfModelServer with the
+    * table-driven read, the way the four qstat traits share theirs. */
+   struct QConfHGroupShowTraits {
+      using Parameter = ocs::QConfParameter;
+      using Model = ocs::QConfModelServer;
+      using ViewBase = ocs::QConfViewBase;
+      using Controller = ocs::QConfHGroupShowController;
+
+      static constexpr ProgName prog_number = QCONF;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QConfViewXML>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         /* the hand written plain form used HGRP_fields and qconf_sfi, which is
+          * what the HGRP row holds, so the generic view serves it unchanged */
+         return std::make_unique<ocs::QConfViewPlain>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QConfHGroupShowViewJSON>(parameter);
+      }
+   };
+
+   /** @brief `qconf -shgrp_tree`. The three factories return the same class: the
+    * hand written block ignored -fmt and printed plain text, and that is kept. */
+   struct QConfHGroupTreeTraits {
+      using Parameter = ocs::QConfParameter;
+      using Model = ocs::QConfModelServer;
+      using ViewBase = ocs::QConfHGroupStructureView;
+      using Controller = ocs::QConfHGroupTreeController;
+
+      static constexpr ProgName prog_number = QCONF;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+   };
+
+   /** @brief `qconf -shgrp_resolved`, sharing the view with the tree */
+   struct QConfHGroupResolvedTraits {
+      using Parameter = ocs::QConfParameter;
+      using Model = ocs::QConfModelServer;
+      using ViewBase = ocs::QConfHGroupStructureView;
+      using Controller = ocs::QConfHGroupResolvedController;
+
+      static constexpr ProgName prog_number = QCONF;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+   };
+
+   /** @brief `qconf -shgrp_why` */
+   struct QConfHGroupWhyTraits {
+      using Parameter = ocs::QConfParameter;
+      using Model = ocs::QConfModelServer;
+      using ViewBase = ocs::QConfHGroupWhyView;
+      using Controller = ocs::QConfHGroupWhyController;
+
+      static constexpr ProgName prog_number = QCONF;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
       }
    };
 
@@ -357,9 +446,13 @@ namespace {
       ProcedureHandler handler;
    };
 
-   constexpr std::array<ProcedureDispatchEntry, 8> procedure_dispatch_table{
+   constexpr std::array<ProcedureDispatchEntry, 12> procedure_dispatch_table{
       {
          {to_string_view(QCONF), "", &run_procedure<QConfTraits>},
+         {to_string_view(QCONF), ocs::QConfParameter::HGROUP_SHOW, &run_procedure<QConfHGroupShowTraits>},
+         {to_string_view(QCONF), ocs::QConfParameter::HGROUP_TREE, &run_procedure<QConfHGroupTreeTraits>},
+         {to_string_view(QCONF), ocs::QConfParameter::HGROUP_RESOLVED, &run_procedure<QConfHGroupResolvedTraits>},
+         {to_string_view(QCONF), ocs::QConfParameter::HGROUP_WHY, &run_procedure<QConfHGroupWhyTraits>},
          {to_string_view(QHOST), "",  &run_procedure<QHostTraits>},
          {to_string_view(QQUOTA), "",  &run_procedure<QQuotaTraits>},
          {to_string_view(QRSTAT), "", &run_procedure<QRStatTraits>},

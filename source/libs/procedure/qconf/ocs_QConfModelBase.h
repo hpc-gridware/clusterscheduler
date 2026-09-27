@@ -27,6 +27,10 @@
 
 #include "gdi/ocs_gdi_Target.h"
 
+#include <string>
+
+#include "sgeobj/ocs_Matcher.h"
+
 #include "ocs_QConfObject.h"
 #include "ocs_QConfParameter.h"
 
@@ -70,6 +74,7 @@ namespace ocs {
       QConfObj object_ = QConfObj::CAL;          ///< which object type, valid once resolved
       QConfReadKind kind_ = QConfReadKind::NAME_LIST;   ///< what the switch produces
       int key_nm_ = NoName;                      ///< the field holding the name
+      const char *requested_name_ = nullptr;     ///< what a sub-procedure was asked about (CS-2816)
 
    public:
       /** @brief The objects that were fetched
@@ -96,9 +101,42 @@ namespace ocs {
        * @return the kind
        */
       [[nodiscard]] QConfReadKind get_kind() const { return kind_; }
+
+      /** @brief The object the bespoke views were asked about (CS-2816)
+       *
+       * A sub-procedure names one object but is handed the whole list, because
+       * the host group views resolve references and need the graph. The name is
+       * kept here so that a view need not reach back into the parameter.
+       *
+       * @return the name, or nullptr for a table-driven read
+       */
+      [[nodiscard]] const char *get_requested_name() const { return requested_name_; }
+
+      /** @brief What `-shgrp_why` found out (CS-2816)
+       *
+       * The route is decided here rather than in the view, for two reasons: the
+       * host has to be resolved and the graph walked, which is deciding *what*
+       * rather than *how*, and the answer list only exists at this point - a
+       * host that is no member has always set the exit status, and that has to
+       * travel back from qmaster somehow.
+       */
+      struct HGroupWhy {
+         Matcher::Route route = Matcher::Route::NOT_A_MEMBER;   ///< how the host got in, if it did
+         std::string host;       ///< the host as resolved, which is what the message names
+         std::string found_in;   ///< the group the route led through, empty when there was none
+         std::string matcher;    ///< the matcher that admitted it, empty unless route is MATCHER
+      };
+
+      /** @brief The answer `-shgrp_why` arrived at
+       * @return it; meaningful only for that sub-procedure
+       */
+      [[nodiscard]] const HGroupWhy &get_hgroup_why() const { return hgroup_why_; }
 #pragma endregion
 
 #pragma region Data Retrieval
+
+   protected:
+      HGroupWhy hgroup_why_;   ///< filled by the -shgrp_why sub-procedure only
 
    public:
       static const qconf_read_entry *resolve(const char *switch_name);
@@ -113,6 +151,9 @@ namespace ocs {
 
       virtual bool fetch(lList **answer_list, gdi::Target target,
                          lCondition *where, lEnumeration *what) = 0;
+
+   protected:
+      bool make_hgroup_snapshot(lList **answer_list, QConfParameter &parameter);
 
    public:
       virtual bool make_snapshot(lList **answer_list, QConfParameter &parameter);

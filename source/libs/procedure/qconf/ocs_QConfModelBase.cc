@@ -27,12 +27,15 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_host.h"
+#include "uti/sge_dstring.h"
+#include "sgeobj/sge_hgroup.h"
 #include "sgeobj/config.h"
 #include <cstring>
 
 #include "ocs_QConfModelBase.h"
 
 #include "msg_common.h"
+#include "msg_qconf.h"
 
 /** @brief Which object type each read switch reports on
  *
@@ -202,6 +205,96 @@ ocs::QConfModelBase::get_object_where(const lDescr *descr, int key_nm, const cha
  * @param parameter   the operation and how it renders
  * @return true when there is something to show
  */
+/**
+ * @brief Fetch the whole host group list for one of the bespoke views (CS-2816)
+ *
+ * `-shgrp_tree`, `-shgrp_resolved` and `-shgrp_why` resolve references through
+ * the host group graph, so they need every group even when the switch names one.
+ * `-shgrp` could be served with a single object, and the hand written code did
+ * exactly that - but taking the same snapshot for all four keeps one fetch
+ * instead of two, and inside qmaster it is an lSelect() over the master list
+ * either way. Host groups are a handful; the client's extra bytes are cheaper
+ * than a second code path.
+ *
+ * The group the caller asked about is kept in requested_name_; whether it exists
+ * is the view's business, because the four switches word that differently.
+ *
+ * @param answer_list for error reporting
+ * @param parameter   the invocation, whose operation carries the name
+ * @return true when the list was fetched
+ */
+bool
+ocs::QConfModelBase::make_hgroup_snapshot(lList **answer_list, QConfParameter &parameter) {
+   DENTER(TOP_LAYER);
+
+   object_ = QConfObj::HGRP;
+   kind_ = QConfReadKind::NAME_LIST;   // a list is fetched, the view decides what to do with it
+   desc_ = &qconf_desc(object_);
+   key_nm_ = desc_->name_nm;
+   requested_name_ = parameter.get_operation().arg(0);
+
+   lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
+   const bool ok = fetch(answer_list, desc_->target, nullptr, what);
+   lFreeWhat(&what);
+   if (!ok) {
+      DRETURN(false);
+   }
+
+   /* The controller is handed no answer list, so a missing group is reported
+    * here - the same place the table-driven read reports read.not_found_msg. */
+   const lListElem *hgroup =
+      (requested_name_ != nullptr) ? lGetElemHost(object_list_, key_nm_, requested_name_) : nullptr;
+   if (requested_name_ != nullptr && hgroup == nullptr) {
+      answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                              MSG_HGROUP_NOTEXIST_S, requested_name_);
+      DRETURN(false);
+   }
+
+   if (parameter.get_sub_procedure_name() == QConfParameter::HGROUP_WHY) {
+      /* The host is resolved the way every other host argument of this client is,
+       * so that a short name and the name the group stores compare equal. A name
+       * that does not resolve is not an error: the question is answerable for it,
+       * and the answer is that it is not a member.
+       *
+       * The resolution now happens wherever the procedure runs. In qmaster that
+       * is the daemon's resolver, which is the authority for host names in this
+       * product - but it is a change, and the -ectx comparison of a short name
+       * is what shows whether the two agree. */
+      lListElem *probe = lCreateElem(HR_Type);
+      lSetHost(probe, HR_name, parameter.get_operation().arg(1));
+      sge_resolve_host(probe, HR_name);
+
+      dstring found_in = DSTRING_INIT;
+      dstring matcher = DSTRING_INIT;
+      hgroup_why_.route = hgroup_why(hgroup, lGetHost(probe, HR_name), object_list_,
+                                     &found_in, &matcher);
+      hgroup_why_.host = lGetHost(probe, HR_name);
+
+      /* a cleared dstring hands back an empty string rather than nothing once it
+       * has held a value, so "no group to report" is emptiness and not nullptr */
+      const char *in = sge_dstring_get_string(&found_in);
+      hgroup_why_.found_in = (in != nullptr) ? in : "";
+      const char *m = sge_dstring_get_string(&matcher);
+      hgroup_why_.matcher = (m != nullptr) ? m : "";
+
+      sge_dstring_free(&found_in);
+      sge_dstring_free(&matcher);
+      lFreeElem(&probe);
+
+      if (hgroup_why_.route == Matcher::Route::NOT_A_MEMBER) {
+         /* A host that is no member has always set the exit status while the
+          * message went to stdout, not stderr. show_answer() returns non-zero
+          * for any status other than STATUS_OK and prints the last element only
+          * when its quality is not ANSWER_QUALITY_END - so an END-quality answer
+          * carries the exit status across the procedure boundary and prints
+          * nothing, which is exactly the old behaviour. */
+         answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_END, "%s", "");
+      }
+   }
+
+   DRETURN(true);
+}
+
 bool
 ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &parameter) {
    DENTER(TOP_LAYER);
@@ -214,6 +307,13 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               "qconf has no XML output; -fmt takes plain or json");
       DRETURN(false);
+   }
+
+   /* CS-2816: a sub-procedure renders a shape the descriptor table cannot
+    * express, so it brings its own snapshot. The empty sub-procedure name is the
+    * table-driven read of groups A and B and falls through. */
+   if (QConfParameter::is_hgroup_sub_procedure(parameter.get_sub_procedure_name())) {
+      DRETURN(make_hgroup_snapshot(answer_list, parameter));
    }
 
    const qconf_read_entry *entry = resolve(parameter.get_operation().token.c_str());

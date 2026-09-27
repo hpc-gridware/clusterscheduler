@@ -125,9 +125,8 @@ ocs::QConfModelServer::fetch(lList **answer_list, gdi::Target target,
  * @return true, always: there is nothing here that can fail
  */
 bool
-ocs::QConfModelServer::fetch_centries(lList **answer_list) {
+ocs::QConfModelServer::fetch_centries([[maybe_unused]] lList **answer_list) {
    DENTER(TOP_LAYER);
-   (void) answer_list;
 
    const lList *master_centry_list = *DataStore::get_master_list(SGE_TYPE_CENTRY);
    centry_list_ = lCopyList("", master_centry_list);

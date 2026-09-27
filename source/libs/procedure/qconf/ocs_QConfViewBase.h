@@ -69,6 +69,16 @@ namespace ocs {
        */
       virtual void show_name_list(std::ostream &os, const lList *list, int key_nm) = 0;
 
-      void show_object(std::ostream &os, const lListElem *ep, const qconf_object_desc &desc);
+      /** @brief Write one object in the layout of its descriptor
+       *
+       * Virtual since CS-2816: a sub-procedure whose output the descriptor
+       * cannot express overrides this. The host group JSON form is the first,
+       * because it adds keys derived from the member list.
+       *
+       * @param os   the stream to write to
+       * @param ep   the object
+       * @param desc its row in the descriptor table
+       */
+      virtual void show_object(std::ostream &os, const lListElem *ep, const qconf_object_desc &desc);
    };
 }

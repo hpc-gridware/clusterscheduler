@@ -100,6 +100,8 @@
 #include "procedure/ocs_ProcedureView.h"
 
 #include "qconf/ocs_QConfController.h"
+#include "qconf/ocs_QConfHGroupController.h"
+#include "qconf/ocs_QConfHGroupView.h"
 #include "qconf/ocs_QConfModelClient.h"
 #include "qconf/ocs_QConfObject.h"
 #include "qconf/ocs_QConfViewJSON.h"
@@ -1306,14 +1308,43 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
       ocs::QConfModelClient model;
       ok = model.make_snapshot(alpp, param);
       if (ok) {
-         std::unique_ptr<ocs::QConfViewBase> view;
-         if (param.get_output_format() == ocs::ProcedureParameter::OutputFormat::JSON) {
-            view = std::make_unique<ocs::QConfViewJSON>(param);
+         /* CS-2816: the client side mirror of the traits table. A sub-procedure
+          * brings its own view and controller, so picking them by output format
+          * alone is not enough any more. */
+         const std::string &sub = param.get_sub_procedure_name();
+
+         if (sub == ocs::QConfParameter::HGROUP_TREE) {
+            ocs::QConfHGroupStructureView view(param);
+            ocs::QConfHGroupTreeController controller(os);
+            controller.process_request(param, model, view);
+         } else if (sub == ocs::QConfParameter::HGROUP_RESOLVED) {
+            ocs::QConfHGroupStructureView view(param);
+            ocs::QConfHGroupResolvedController controller(os);
+            controller.process_request(param, model, view);
+         } else if (sub == ocs::QConfParameter::HGROUP_WHY) {
+            ocs::QConfHGroupWhyView view(param);
+            ocs::QConfHGroupWhyController controller(os);
+            controller.process_request(param, model, view);
          } else {
-            view = std::make_unique<ocs::QConfViewPlain>(param);
+            std::unique_ptr<ocs::QConfViewBase> view;
+            if (param.get_output_format() == ocs::ProcedureParameter::OutputFormat::JSON) {
+               if (sub == ocs::QConfParameter::HGROUP_SHOW) {
+                  view = std::make_unique<ocs::QConfHGroupShowViewJSON>(param);
+               } else {
+                  view = std::make_unique<ocs::QConfViewJSON>(param);
+               }
+            } else {
+               view = std::make_unique<ocs::QConfViewPlain>(param);
+            }
+
+            if (sub == ocs::QConfParameter::HGROUP_SHOW) {
+               ocs::QConfHGroupShowController controller(os);
+               controller.process_request(param, model, *view);
+            } else {
+               ocs::QConfController controller(os);
+               controller.process_request(param, model, *view);
+            }
          }
-         ocs::QConfController controller(os);
-         controller.process_request(param, model, *view);
       }
    }
 
@@ -5975,7 +6006,20 @@ int sge_parse_qconf(char *argv[]) {
          lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(spp);
-         hgroup_show(os, &answer_list, *spp);
+
+         /* CS-2816: a sub-procedure, because the JSON form adds keys derived
+          * from the member list and the descriptor table cannot express that.
+          * show_answer() stays: it writes the bare text of the last message,
+          * without the "error: " prefix answer_list_output() would add, and the
+          * exit status has always come from its return value. */
+         qconf_op op;
+         op.token = "-shgrp";
+         op.args.emplace_back(*spp);
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::HGROUP_SHOW);
+         (void) qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
+
          sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
 
@@ -5989,7 +6033,17 @@ int sge_parse_qconf(char *argv[]) {
          lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(spp);
-         hgroup_show_structure(os, &answer_list, *spp, true);
+
+         /* CS-2816: a sub-procedure - this view needs every host group, not the
+          * one named, so it cannot be a row in qconf_read_table. */
+         qconf_op op;
+         op.token = "-shgrp_tree";
+         op.args.emplace_back(*spp);
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::HGROUP_TREE);
+         (void) qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
+
          sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
 
@@ -6002,7 +6056,17 @@ int sge_parse_qconf(char *argv[]) {
          lList *answer_list = nullptr;
 
          spp = sge_parser_get_next(spp);
-         hgroup_show_structure(os, &answer_list, *spp, false);
+
+         /* CS-2816: a sub-procedure - this view needs every host group, not the
+          * one named, so it cannot be a row in qconf_read_table. */
+         qconf_op op;
+         op.token = "-shgrp_resolved";
+         op.args.emplace_back(*spp);
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::HGROUP_RESOLVED);
+         (void) qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
+
          sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
 
@@ -6022,16 +6086,26 @@ int sge_parse_qconf(char *argv[]) {
        */
       if (strcmp("-shgrp_why", *spp) == 0) {
          lList *answer_list = nullptr;
-         bool is_member = false;
 
          spp = sge_parser_get_next(spp);
          const char *why_group = *spp;
          spp = sge_parser_get_next(spp);
 
-         if (!hgroup_show_why(os, &answer_list, why_group, *spp, &is_member) || !is_member) {
-            sge_parse_return |= 1;
-         }
-         show_answer(answer_list);
+         /* CS-2816: a sub-procedure. The exit status used to come from a bool the
+          * client got back; it now rides on the answer list, where the model adds
+          * an ANSWER_QUALITY_END element for a host that is no member - non-OK
+          * status, so show_answer() returns 1, and END quality, so it prints
+          * nothing. A missing group is reported the loud way, as before. */
+         qconf_op op;
+         op.token = "-shgrp_why";
+         op.args.emplace_back(why_group);
+         op.args.emplace_back(*spp);
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::HGROUP_WHY);
+         (void) qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
+
+         sge_parse_return |= show_answer(answer_list);
          lFreeList(&answer_list);
 
          spp++;

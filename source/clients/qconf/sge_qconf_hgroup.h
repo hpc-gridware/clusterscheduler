@@ -59,11 +59,8 @@ lListElem *hgroup_get_via_gdi(lList **answer_list, const char *group);
  */
 bool hgroup_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, uint32_t gdi_command);
 
-bool hgroup_show(std::ostream &os, lList **answer_list, const char *name);
 
-bool hgroup_show_structure(std::ostream &os, lList **answer_list, const char *name, bool show_tree);
 
-bool hgroup_show_why(std::ostream &os, lList **answer_list, const char *group, const char *hostname, bool *is_member);
 
 bool hgroup_add(lList **answer_list, const char *name, bool is_name_validate);
 

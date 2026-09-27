@@ -68,15 +68,20 @@
 #define MSG_CQUEUE_FILENOTCORRECT_S                   _MESSAGE(5151, _("Cluster queue file " PFQMAX " is not correct"))
 #define MSG_CQUEUE_NAMENOTCORRECT_SS                  _MESSAGE(5152, _("The queue name " SFQ " is not correct.  Queue names may not begin with @.  Perhaps you mean \"*" SFN "\"?"))
 
-#define MSG_HGROUP_NOTEXIST_S                         _MESSAGE(5200, _("Host group " SFQ " does not exist"))
+/* MSG_HGROUP_NOTEXIST_S (5200) and the five MSG_QCONF_WHY_* (5255-5259) moved to
+ * libs/procedure/qconf/msg_qconf.h with the host group views (CS-2816) and were
+ * renumbered into that file's own block, 12000-12999. The wordings are
+ * unchanged. These ids stay empty here - an id that has been given out is not
+ * handed out again. */
 #define MSG_HGROUP_FILEINCORRECT_S                    _MESSAGE(5201, _("Host group file " PFQMAX " is not correct"))
 
 #define MSG_RQS_NOTFOUNDINFILE_SS                     _MESSAGE(5251, _("resource quota set " SFQ " not found in file " PFQMAX))
 
 #define MSG_CAT_DOESNOTEXIST_U                        _MESSAGE(5252, _("Category " sge_u32 " does not exist"))
 
-/* MSG_ROLE_DOESNOTEXIST_S moved to libs/procedure/qconf/msg_qconf.h with the
- * object descriptor table that is its only user (CS-2799); the id is unchanged. */
+/* MSG_ROLE_DOESNOTEXIST_S (5253) moved to libs/procedure/qconf/msg_qconf.h with
+ * the object descriptor table that is its only user (CS-2799) and was renumbered
+ * into that file's own block. The id stays empty here. */
 
 /* CS-2299: qconf add/modify/delete interface enhancements
  * (directory input, upsert, name lists, -dry, -strict, idempotent delete) */
@@ -106,11 +111,6 @@
 #define MSG_QCONF_UNKNOWNFMTVAL_S                     _MESSAGE(5254, _("unknown -fmtval value " SFQ " (expected compact|numeric)"))
 
 /* CS-2680, N-I-7: "qconf -shgrp_why <group> <host>" - by which route a host is a member */
-#define MSG_QCONF_WHY_LITERAL_S                       _MESSAGE(5255, _(SFN " is a member as a literal entry"))
-#define MSG_QCONF_WHY_GROUP_SS                        _MESSAGE(5256, _(SFN " is a member through the group " SFN " (literal entry)"))
-#define MSG_QCONF_WHY_MATCHER_SS                      _MESSAGE(5257, _(SFN " is a member through the matcher " SFQ))
-#define MSG_QCONF_WHY_MATCHER_GROUP_SSS               _MESSAGE(5258, _(SFN " is a member through the matcher " SFQ " of the group " SFN))
-#define MSG_QCONF_WHY_NOT_S                           _MESSAGE(5259, _(SFN " is not a member"))
 
 // clang-format on
 

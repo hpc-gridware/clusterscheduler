@@ -124,6 +124,35 @@ namespace ocs {
       static constexpr auto VALUE_FORMAT = "value_format";     ///< -fmtval
       /** @} */
 
+      /** @name Sub-procedure names (CS-2816)
+       *
+       * Most qconf reads are one shape: fetch by the descriptor table, render
+       * through its `sfi`. The bespoke views are not, and they do not belong in
+       * qconf_read_table - they render themselves, and some of them need a whole
+       * object list where the switch names a single object. They become
+       * sub-procedures instead, dispatched on `{procedure, sub_procedure}` the
+       * way qstat's four output formats already are: one model, one view and one
+       * controller per shape.
+       *
+       * The empty sub-procedure name stays the table-driven read of groups A
+       * and B, so nothing that already works has to change.
+       * @{
+       */
+      static constexpr auto HGROUP_SHOW = "hostgroup-show";         ///< `qconf -shgrp`
+      static constexpr auto HGROUP_TREE = "hostgroup-tree";         ///< `qconf -shgrp_tree`
+      static constexpr auto HGROUP_RESOLVED = "hostgroup-resolved"; ///< `qconf -shgrp_resolved`
+      static constexpr auto HGROUP_WHY = "hostgroup-why";           ///< `qconf -shgrp_why`
+
+      /** @brief Whether a sub-procedure name is one of the host group views
+       * @param name the name, empty for the table-driven read
+       * @return true when it needs the host group snapshot
+       */
+      static bool is_hgroup_sub_procedure(const std::string &name) {
+         return name == HGROUP_SHOW || name == HGROUP_TREE ||
+                name == HGROUP_RESOLVED || name == HGROUP_WHY;
+      }
+      /** @} */
+
       /** @name Bits of the #INVOCATION_FLAGS bundle entry
        * @{
        */
