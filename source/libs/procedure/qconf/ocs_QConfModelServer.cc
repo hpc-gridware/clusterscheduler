@@ -66,6 +66,25 @@ static_assert(sizeof(qconf_master_list) / sizeof(qconf_master_list[0]) ==
               static_cast<size_t>(QConfObj::EV) + 1,
               "qconf_master_list needs exactly one row per QConfObj value");
 
+/** @brief Read the host groups from the data store (CS-2818)
+ *
+ * A copy, not the master list itself: the cluster queue read joins the groups'
+ * member lists onto the queues it hands to the view, and that must not touch
+ * what the daemon holds.
+ *
+ * @param answer_list unused; reading the data store cannot fail here
+ * @return true
+ */
+bool
+ocs::QConfModelServer::fetch_hgroups([[maybe_unused]] lList **answer_list) {
+   DENTER(TOP_LAYER);
+
+   const lList *master_hgroup_list = *DataStore::get_master_list(SGE_TYPE_HGROUP);
+   hgroup_list_ = lCopyList("", master_hgroup_list);
+
+   DRETURN(true);
+}
+
 /**
  * @brief Read the objects out of qmaster's own lists
  *

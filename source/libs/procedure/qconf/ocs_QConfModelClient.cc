@@ -63,6 +63,34 @@ ocs::QConfModelClient::fetch(lList **answer_list, gdi::Target target,
    DRETURN(!failed);
 }
 
+/** @brief Fetch the host groups over GDI (CS-2818)
+ *
+ * A request of its own rather than a task in the same multi request as the
+ * queues, which is what the client did before the read moved. The two can
+ * therefore disagree if a group changes in between; in the server context, the
+ * one that matters, both come from the same data store snapshot.
+ *
+ * @param answer_list used to return error messages
+ * @return true on success; false with @p answer_list filled otherwise
+ */
+bool
+ocs::QConfModelClient::fetch_hgroups(lList **answer_list) {
+   DENTER(TOP_LAYER);
+
+   lEnumeration *what = lWhat("%T(ALL)", HGRP_Type);
+   lList *alp = gdi::Client::sge_gdi(gdi::Target::HGRP_LIST, gdi::Command::GET,
+                                     gdi::SubCommand::NONE, &hgroup_list_, nullptr, what);
+   lFreeWhat(&what);
+   const bool failed = answer_list_has_error(&alp);
+   if (failed) {
+      answer_list_append_list(answer_list, &alp);
+      lFreeList(&hgroup_list_);
+   }
+   lFreeList(&alp);
+
+   DRETURN(!failed);
+}
+
 /**
  * @brief Ask qmaster for the complex entries
  *

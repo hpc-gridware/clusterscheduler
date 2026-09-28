@@ -29,12 +29,24 @@
 #include "sgeobj/sge_host.h"
 #include "uti/sge_dstring.h"
 #include "sgeobj/sge_hgroup.h"
+#include "sgeobj/sge_cqueue.h"
+#include "sgeobj/sge_qref.h"
+#include "sgeobj/sge_qinstance.h"
+#include "sgeobj/sge_href.h"
+#include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_eval_expression.h"
+#include "uti/ocs_Pattern.h"
 #include "sgeobj/config.h"
 #include <cstring>
 
 #include "ocs_QConfModelBase.h"
 
 #include "msg_common.h"
+/* MSG_CQUEUE_NOQMATCHING_S lives in the clients' shared catalogue, and
+ * libs/sgeobj/sge_cqueue.cc and sge_qref.cc already reach for it from the
+ * library side for the same reason - the message is about queue references,
+ * not about a client */
+#include "msg_clients_common.h"
 #include "msg_qconf.h"
 
 /** @brief Which object type each read switch reports on
@@ -86,6 +98,12 @@ static constexpr size_t qconf_read_table_size =
 ocs::QConfModelBase::~QConfModelBase() {
    lFreeList(&object_list_);
    lFreeList(&centry_list_);
+   lFreeList(&hgroup_list_);
+   lFreeList(&qref_pattern_list_);
+   for (CQueueOutput &group : cqueue_output_) {
+      lFreeList(&group.cqueues);
+      lFreeList(&group.qinstances);
+   }
 }
 
 /**
@@ -320,6 +338,274 @@ ocs::QConfModelBase::make_hgroup_snapshot(lList **answer_list, QConfParameter &p
    DRETURN(true);
 }
 
+/** @brief Resolve the types of a cluster queue's complex overrides for JSON
+ *
+ * `complex_values`, `load_thresholds` and `suspend_thresholds` may be overridden
+ * per host or host group. Each override's value is a `CE_Type` list, and
+ * resolving its types from the complex entries lets the JSON writer emit typed
+ * numbers - `np_load_avg` as a double rather than as a string.
+ *
+ * The complex entries are passed in. In the client this function fetched them
+ * itself, once per object shown, which CS-2799 had already taken out of the
+ * other consumer of them; inside qmaster there is nothing to fetch.
+ *
+ * Mutates only the copy about to be written.
+ *
+ * @param cqueue      the queue about to be shown, may be nullptr
+ * @param centry_list the complex entries, may be nullptr
+ */
+static void
+cqueue_json_type_complex_overrides(lListElem *cqueue, const lList *centry_list) {
+   if (cqueue == nullptr || centry_list == nullptr) {
+      return;
+   }
+   static const int override_fields[] = {
+      CQ_consumable_config_list, CQ_load_thresholds, CQ_suspend_thresholds
+   };
+   for (const int field : override_fields) {
+      lList *override_list = lGetListRW(cqueue, field);
+      for (lListElem *entry = lFirstRW(override_list); entry != nullptr; entry = lNextRW(entry)) {
+         lList *ce_list = lGetListRW(entry, ACELIST_value);
+         if (ce_list != nullptr && lGetNumberOfElem(ce_list) > 0) {
+            lList *fill_alp = nullptr;
+            centry_list_fill_request(ce_list, &fill_alp, centry_list, true, true, true);
+            lFreeList(&fill_alp);
+         }
+      }
+   }
+}
+
+/** @brief Take the snapshot the cluster queue read needs (CS-2818)
+ *
+ * Three things beyond a plain list read. The queue references are parsed here
+ * because the filter is built from them and because the view iterates the same
+ * list afterwards. The enumeration is reduced the way the client always reduced
+ * it - a pattern naming a host or a domain needs the queue instances, one naming
+ * only a queue does not - so that moving the read into the daemon does not turn
+ * every `qconf -sq` into a copy of every queue instance in the cluster. And the
+ * host groups are fetched next to the queues, because since CS-2677 a queue's
+ * host list is the member list of its own `@@<queue>` group and the queue cannot
+ * be rendered without them.
+ *
+ * Fetching the groups first and the queues second is deliberate: in the client
+ * both went into one multi request so that the two could not disagree, and the
+ * order here keeps the groups the older of the two, which is the safe direction
+ * - a group that has just appeared leaves a queue unresolved, a group that has
+ * just gone would leave a queue pointing at nothing.
+ *
+ * @param answer_list used to return error messages
+ * @param parameter the operation, whose arguments are the queue references
+ * @return true on success; false with @p answer_list filled otherwise
+ */
+bool
+ocs::QConfModelBase::make_cqueue_snapshot(lList **answer_list, QConfParameter &parameter) {
+   DENTER(TOP_LAYER);
+
+   object_ = QConfObj::CQ;
+   kind_ = QConfReadKind::NAME_LIST;
+   desc_ = &qconf_desc(object_);
+   key_nm_ = desc_->name_nm;
+
+   /* CS-2799 took the complex entries out of the render loop once already, for
+    * qconf_json_fill_complex(). The queue rendering has a second consumer of
+    * them, the typed complex overrides, which fetched them itself per object -
+    * so they are fetched once here, and only for JSON, which is the only format
+    * either of the two does anything for. */
+   if (parameter.get_output_format() == ProcedureParameter::OutputFormat::JSON) {
+      if (!fetch_centries(answer_list)) {
+         DRETURN(false);
+      }
+   }
+
+   qref_pattern_list_ = lCreateList("qref_pattern_list", QR_Type);
+   for (size_t i = 0; i < parameter.get_operation().arg_count(); i++) {
+      lString2List(parameter.get_operation().arg(i), &qref_pattern_list_, QR_Type, QR_name, ", ");
+   }
+
+   /* "-sq" without an argument prints a queue template, not every queue, so
+    * there is nothing to fetch and nothing to filter. The template is built
+    * here rather than in the view because it is an object, and producing the
+    * objects is what this side does. An empty pattern list is what tells the
+    * view which of the two it got, the same test the client made on a null
+    * pattern list. */
+   if (lGetNumberOfElem(qref_pattern_list_) == 0) {
+      lListElem *tmpl = cqueue_create(answer_list, "template");
+      if (tmpl == nullptr || !cqueue_set_template_attributes(tmpl, answer_list)) {
+         lFreeElem(&tmpl);
+         DRETURN(false);
+      }
+      object_list_ = lCreateList("cqueue_list", CQ_Type);
+      lAppendElem(object_list_, tmpl);
+      cqueue_json_type_complex_overrides(tmpl, centry_list_);
+
+      CQueueOutput group;
+      group.cqueues = lCreateList("cqueue_list", CQ_Type);
+      lAppendElem(group.cqueues, lCopyElem(tmpl));
+      cqueue_output_.push_back(group);
+      DRETURN(true);
+   }
+
+   lCondition *cqueue_where = nullptr;
+   for_each_ep_lv(qref_pattern, qref_pattern_list_) {
+      dstring cqueue_name = DSTRING_INIT;
+      dstring host_domain = DSTRING_INIT;
+      bool has_hostname;
+      bool has_domain;
+      const char *name = lGetString(qref_pattern, QR_name);
+
+      if (!cqueue_name_split(name, &cqueue_name, &host_domain, &has_hostname, &has_domain)) {
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                 MSG_CQUEUE_NOQMATCHING_S, name);
+         sge_dstring_free(&cqueue_name);
+         sge_dstring_free(&host_domain);
+         lFreeWhere(&cqueue_where);
+         DRETURN(false);
+      }
+      const char *cqueue_name_str = sge_dstring_get_string(&cqueue_name);
+      if (cqueue_name_str == nullptr) {
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                 MSG_CQUEUE_NAMENOTCORRECT_SS, name, name);
+         sge_dstring_free(&cqueue_name);
+         sge_dstring_free(&host_domain);
+         lFreeWhere(&cqueue_where);
+         DRETURN(false);
+      }
+      lCondition *add_where = lWhere("%T(%I p= %s)", CQ_Type, CQ_name, cqueue_name_str);
+      cqueue_where = (cqueue_where == nullptr) ? add_where : lOrWhere(cqueue_where, add_where);
+
+      sge_dstring_free(&cqueue_name);
+      sge_dstring_free(&host_domain);
+   }
+
+   if (!fetch_hgroups(answer_list)) {
+      lFreeWhere(&cqueue_where);
+      DRETURN(false);
+   }
+
+   /* Every attribute, not the reduced selection the client used to ask GDI for.
+    * That selection exists to keep a queue's instances off the wire, and over GDI
+    * the full descriptor is rebuilt when the answer is unpacked. lSelect() has no
+    * such step: it hands back elements carrying exactly the reduced descriptor,
+    * and the spooling field list then asks for a field that is not in them, which
+    * CULL answers by aborting the daemon ("ASTRLIST_href not found in element",
+    * CS-2818). Inside qmaster the copy never leaves the process, so the selection
+    * saved nothing here anyway. */
+   lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
+   const bool ok = fetch(answer_list, desc_->target, cqueue_where, what);
+   lFreeWhat(&what);
+   lFreeWhere(&cqueue_where);   /* fetch() does not take ownership, as in make_snapshot() */
+   if (!ok) {
+      DRETURN(false);
+   }
+
+   /* CS-2677: join the host lists back on, from the groups fetched above */
+   cqueue_list_fill_hostlist(object_list_, hgroup_list_);
+
+   /* The typed JSON values are resolved here rather than in the view, which is
+    * where the descriptor table's prepare hook resolves them too, and it saves
+    * the view a const_cast on the model's list. Nothing to do for plain output,
+    * where centry_list_ was never fetched. */
+   for (lListElem *cqueue = lFirstRW(object_list_); cqueue != nullptr; cqueue = lNextRW(cqueue)) {
+      cqueue_json_type_complex_overrides(cqueue, centry_list_);
+   }
+
+   /* Resolve each reference into the group of objects it stands for. A reference
+    * matching nothing fails the whole call: the framework hands the caller either
+    * a rendering or an error, never both, and reporting one reference while
+    * printing the others would be the odd case rather than the clear one. This is
+    * a deliberate change - the hand written code printed what the other references
+    * matched and still exited non-zero. Every unmatched reference is still added
+    * to the answer list, so show_answer() reports the last of them exactly as
+    * before. */
+   static const int qu_ce[] = {QU_consumable_config_list, QU_load_thresholds,
+                               QU_suspend_thresholds};
+   bool matched_all = true;
+   for_each_ep_lv(qref_pattern, qref_pattern_list_) {
+      dstring cqueue_name = DSTRING_INIT;
+      dstring host_domain = DSTRING_INIT;
+      bool has_hostname;
+      bool has_domain;
+      const char *name = lGetString(qref_pattern, QR_name);
+
+      /* split again rather than remember: the filter loop above threw the parts
+       * away, and splitting is pure string work on a handful of references */
+      (void) cqueue_name_split(name, &cqueue_name, &host_domain, &has_hostname, &has_domain);
+
+      lList *qref_list = nullptr;
+      cqueue_list_find_all_matching_references(object_list_, nullptr,
+                                               sge_dstring_get_string(&cqueue_name), &qref_list);
+
+      CQueueOutput group;
+      if (has_domain || has_hostname) {
+         group.qinstances = lCreateList("qinstance_list", QU_Type);
+      } else {
+         group.cqueues = lCreateList("cqueue_list", CQ_Type);
+      }
+
+      if (has_domain) {
+         lList *href_list = nullptr;
+         hgroup_list_find_matching_and_resolve(hgroup_list_, nullptr,
+                                               sge_dstring_get_string(&host_domain), &href_list);
+         for_each_ep_lv(qref, qref_list) {
+            const lListElem *cqueue = lGetElemStr(object_list_, CQ_name, lGetString(qref, QR_name));
+            if (cqueue == nullptr) {
+               continue;
+            }
+            const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+            for_each_ep_lv(href, href_list) {
+               const lListElem *qinstance =
+                  lGetElemHost(qinstance_list, QU_qhostname, lGetHost(href, HR_name));
+               if (qinstance != nullptr) {
+                  lListElem *qi_copy = lCopyElem(qinstance);
+                  qconf_json_fill_complex(qi_copy, qu_ce, 3, centry_list_);
+                  lAppendElem(group.qinstances, qi_copy);
+               }
+            }
+         }
+         lFreeList(&href_list);
+      } else if (has_hostname) {
+         const char *h_pattern = sge_dstring_get_string(&host_domain);
+         const bool is_expr = is_expression(h_pattern);
+         for_each_ep_lv(qref, qref_list) {
+            const lListElem *cqueue = lGetElemStr(object_list_, CQ_name, lGetString(qref, QR_name));
+            if (cqueue == nullptr) {
+               continue;
+            }
+            for_each_ep_lv(qinstance, lGetList(cqueue, CQ_qinstances)) {
+               /* sge_eval_expression() returns 0 on a match, as strcmp does */
+               if (sge_eval_expression(CEntry::Type::HOST, h_pattern,
+                                       lGetHost(qinstance, QU_qhostname), nullptr,
+                                       true, is_expr) == 0) {
+                  lListElem *qi_copy = lCopyElem(qinstance);
+                  qconf_json_fill_complex(qi_copy, qu_ce, 3, centry_list_);
+                  lAppendElem(group.qinstances, qi_copy);
+               }
+            }
+         }
+      } else {
+         for_each_ep_lv(qref, qref_list) {
+            const lListElem *cqueue = lGetElemStr(object_list_, CQ_name, lGetString(qref, QR_name));
+            if (cqueue != nullptr) {
+               lAppendElem(group.cqueues, lCopyElem(cqueue));
+            }
+         }
+      }
+
+      if (lGetNumberOfElem(group.cqueues) == 0 && lGetNumberOfElem(group.qinstances) == 0) {
+         answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR,
+                                 MSG_CQUEUE_NOQMATCHING_S, name);
+         matched_all = false;
+      }
+      cqueue_output_.push_back(group);
+
+      lFreeList(&qref_list);
+      sge_dstring_free(&cqueue_name);
+      sge_dstring_free(&host_domain);
+   }
+
+   DRETURN(matched_all);
+}
+
 bool
 ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &parameter) {
    DENTER(TOP_LAYER);
@@ -342,6 +628,9 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
    }
    if (parameter.get_sub_procedure_name() == QConfParameter::CENTRY_LIST) {
       DRETURN(make_list_snapshot(answer_list, QConfObj::CE));
+   }
+   if (parameter.get_sub_procedure_name() == QConfParameter::CQUEUE_SHOW) {
+      DRETURN(make_cqueue_snapshot(answer_list, parameter));
    }
 
    const qconf_read_entry *entry = resolve(parameter.get_operation().token.c_str());

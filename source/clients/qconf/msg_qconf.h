@@ -68,7 +68,6 @@
 
 #define MSG_CQUEUE_DOESNOTEXIST_S                     _MESSAGE(5150, _("Cluster queue entry " SFQ " does not exist"))
 #define MSG_CQUEUE_FILENOTCORRECT_S                   _MESSAGE(5151, _("Cluster queue file " PFQMAX " is not correct"))
-#define MSG_CQUEUE_NAMENOTCORRECT_SS                  _MESSAGE(5152, _("The queue name " SFQ " is not correct.  Queue names may not begin with @.  Perhaps you mean \"*" SFN "\"?"))
 
 /* MSG_HGROUP_NOTEXIST_S (5200) and the five MSG_QCONF_WHY_* (5255-5259) moved to
  * libs/procedure/qconf/msg_qconf.h with the host group views (CS-2816) and were

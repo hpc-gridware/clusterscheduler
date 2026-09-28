@@ -37,6 +37,8 @@
 #include "procedure/qconf/ocs_QConfController.h"
 #include "procedure/qconf/centry/ocs_QConfCEntryListController.h"
 #include "procedure/qconf/centry/ocs_QConfCEntryListView.h"
+#include "procedure/qconf/cqueue/ocs_QConfCQueueShowController.h"
+#include "procedure/qconf/cqueue/ocs_QConfCQueueShowView.h"
 #include "procedure/qconf/hgroup/ocs_QConfHGroupResolvedController.h"
 #include "procedure/qconf/hgroup/ocs_QConfHGroupShowController.h"
 #include "procedure/qconf/hgroup/ocs_QConfHGroupShowViewJSON.h"
@@ -243,6 +245,28 @@ namespace {
       using Model = ocs::QConfModelServer;
       using ViewBase = ocs::QConfCEntryListView;
       using Controller = ocs::QConfCEntryListController;
+
+      static constexpr ProgName prog_number = QCONF;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+   };
+
+   /** @brief `qconf -sq`: cluster queues, queue instances or a template. One view
+    * for all three factories, as for the complex entry table - the view switches
+    * on the output format itself. */
+   struct QConfCQueueShowTraits {
+      using Parameter = ocs::QConfParameter;
+      using Model = ocs::QConfModelServer;
+      using ViewBase = ocs::QConfCQueueShowView;
+      using Controller = ocs::QConfCQueueShowController;
 
       static constexpr ProgName prog_number = QCONF;
 
@@ -475,23 +499,26 @@ namespace {
       ProcedureHandler handler;
    };
 
-   constexpr std::array<ProcedureDispatchEntry, 13> procedure_dispatch_table{
-      {
-         {to_string_view(QCONF), "", &run_procedure<QConfTraits>},
-         {to_string_view(QCONF), ocs::QConfParameter::HGROUP_SHOW, &run_procedure<QConfHGroupShowTraits>},
-         {to_string_view(QCONF), ocs::QConfParameter::HGROUP_TREE, &run_procedure<QConfHGroupTreeTraits>},
-         {to_string_view(QCONF), ocs::QConfParameter::HGROUP_RESOLVED, &run_procedure<QConfHGroupResolvedTraits>},
-         {to_string_view(QCONF), ocs::QConfParameter::HGROUP_WHY, &run_procedure<QConfHGroupWhyTraits>},
-         {to_string_view(QCONF), ocs::QConfParameter::CENTRY_LIST, &run_procedure<QConfCEntryListTraits>},
-         {to_string_view(QHOST), "",  &run_procedure<QHostTraits>},
-         {to_string_view(QQUOTA), "",  &run_procedure<QQuotaTraits>},
-         {to_string_view(QRSTAT), "", &run_procedure<QRStatTraits>},
-         {to_string_view(QSTAT), to_string_view(QSELECT), &run_procedure<QStatSelectTraits>},
-         {to_string_view(QSTAT), ocs::QStatParameter::DEFAULT_FORMAT, &run_procedure<QStatDefaultTraits>},
-         {to_string_view(QSTAT), ocs::QStatParameter::CQ_FORMAT, &run_procedure<QStatCQFormatTraits>},
-         {to_string_view(QSTAT), ocs::QStatParameter::JOB_FORMAT, &run_procedure<QStatJobTraits>},
-      }
-   };
+   /* The size is deduced, not written down: it used to be a literal, so adding an
+    * entry without also bumping it was a compile error at best - and the same
+    * coupling in the 9.1 request limits, where the fill was a loop rather than a
+    * brace list, silently overran the array instead (CS-2829). */
+   constexpr auto procedure_dispatch_table = std::to_array<ProcedureDispatchEntry>({
+      {to_string_view(QCONF), "", &run_procedure<QConfTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::HGROUP_SHOW, &run_procedure<QConfHGroupShowTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::HGROUP_TREE, &run_procedure<QConfHGroupTreeTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::HGROUP_RESOLVED, &run_procedure<QConfHGroupResolvedTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::HGROUP_WHY, &run_procedure<QConfHGroupWhyTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::CENTRY_LIST, &run_procedure<QConfCEntryListTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::CQUEUE_SHOW, &run_procedure<QConfCQueueShowTraits>},
+      {to_string_view(QHOST), "",  &run_procedure<QHostTraits>},
+      {to_string_view(QQUOTA), "",  &run_procedure<QQuotaTraits>},
+      {to_string_view(QRSTAT), "", &run_procedure<QRStatTraits>},
+      {to_string_view(QSTAT), to_string_view(QSELECT), &run_procedure<QStatSelectTraits>},
+      {to_string_view(QSTAT), ocs::QStatParameter::DEFAULT_FORMAT, &run_procedure<QStatDefaultTraits>},
+      {to_string_view(QSTAT), ocs::QStatParameter::CQ_FORMAT, &run_procedure<QStatCQFormatTraits>},
+      {to_string_view(QSTAT), ocs::QStatParameter::JOB_FORMAT, &run_procedure<QStatJobTraits>},
+   });
 } // namespace
 
 /** @brief Run a procedure call that arrived over GDI

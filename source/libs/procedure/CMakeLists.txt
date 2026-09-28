@@ -71,6 +71,9 @@ set(LIBRARY_SOURCES
         qconf/centry/ocs_QConfCEntryListController.cc
         qconf/centry/ocs_QConfCEntryListView.cc
 
+        qconf/cqueue/ocs_QConfCQueueShowController.cc
+        qconf/cqueue/ocs_QConfCQueueShowView.cc
+
         qquota/ocs_QQuotaParameter.cc
         qquota/ocs_QQuotaParameterClient.cc
         qquota/ocs_QQuotaModelBase.cc

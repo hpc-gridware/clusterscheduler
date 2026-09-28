@@ -52,10 +52,6 @@ cqueue_hgroup_get_all_via_gdi(lList **answer_list,
 bool 
 cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::Command gdi_command, ocs::gdi::SubCommand sub_cmd);
 
-
-bool
-cqueue_show(std::ostream &os, lList **answer_list, const lList *qref_pattern);
-
 bool 
 cqueue_add(lList **answer_list, const char *name);
 

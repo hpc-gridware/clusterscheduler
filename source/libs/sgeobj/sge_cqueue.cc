@@ -155,49 +155,6 @@ list_attribute_struct cqueue_attribute_array[] = {
 /* EB: ADOC: add commets */
 
 /**
- * @brief Build the field selection for fetching cluster queues
- *
- * A GDI get can ask for only part of an object. The two flags pick the two
- * halves that callers actually want: the queue instances, which are by far the
- * bulk, and everything else. `CQ_name` is always included.
- *
- * @param fetch_all_qi true to include the queue instance sublist
- * @param fetch_all_nqi true to include every attribute other than the instances
- * @return the enumeration to pass to the GDI request
- */
-lEnumeration *
-enumeration_create_reduced_cq(bool fetch_all_qi, bool fetch_all_nqi) {
-   DENTER(CQUEUE_LAYER);
-
-   lEnumeration *ret;
-   dstring format_string = DSTRING_INIT;
-   lDescr *descr = CQ_Type;
-   int name_array[100];
-   int names = -1;
-   int attr;
-
-   for_each_attr(attr, descr) {
-      if (names == -1) {
-         sge_dstring_clear(&format_string);
-         sge_dstring_append(&format_string, "%T(");
-      }
-      if ((attr == CQ_name) ||
-          (fetch_all_qi && attr == CQ_qinstances) ||
-          (fetch_all_nqi && attr != CQ_qinstances)) {
-         names++;
-         name_array[names] = attr;
-         sge_dstring_append(&format_string, "%I");
-      }
-   }
-   sge_dstring_append(&format_string, ")");
-   ret = _lWhat(sge_dstring_get_string(&format_string), CQ_Type, 
-                name_array, ++names);
-   sge_dstring_free(&format_string);
-   
-   DRETURN(ret);
-}
-
-/**
  * @brief Get the CQ and host part of a QI name
  *
  * Splits a qinstance name into its components.

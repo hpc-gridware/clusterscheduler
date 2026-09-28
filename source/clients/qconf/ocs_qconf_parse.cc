@@ -102,6 +102,8 @@
 #include "qconf/ocs_QConfController.h"
 #include "qconf/centry/ocs_QConfCEntryListController.h"
 #include "qconf/centry/ocs_QConfCEntryListView.h"
+#include "qconf/cqueue/ocs_QConfCQueueShowController.h"
+#include "qconf/cqueue/ocs_QConfCQueueShowView.h"
 #include "qconf/hgroup/ocs_QConfHGroupResolvedController.h"
 #include "qconf/hgroup/ocs_QConfHGroupShowController.h"
 #include "qconf/hgroup/ocs_QConfHGroupShowViewJSON.h"
@@ -1335,6 +1337,10 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
          } else if (sub == ocs::QConfParameter::CENTRY_LIST) {
             ocs::QConfCEntryListView view(param);
             ocs::QConfCEntryListController controller(os);
+            controller.process_request(param, model, view);
+         } else if (sub == ocs::QConfParameter::CQUEUE_SHOW) {
+            ocs::QConfCQueueShowView view(param);
+            ocs::QConfCQueueShowController controller(os);
             controller.process_request(param, model, view);
          } else {
             std::unique_ptr<ocs::QConfViewBase> view;
@@ -6358,16 +6364,34 @@ int sge_parse_qconf(char *argv[]) {
 
       /* "-sq [pattern[,pattern,...]]" */
       if (strcmp("-sq", *spp) == 0) {
+         lList *answer_list = nullptr;
 
+         /* CS-2818: a sub-procedure. One switch with four output shapes - a
+          * template, cluster queues, the instances of a host pattern, the
+          * instances of a resolved queue domain - which the descriptor table
+          * cannot express. The references stay one argument each, as typed;
+          * splitting them on commas is the model's job, since it builds the
+          * filter from them. */
+         qconf_op op;
+         op.token = "-sq";
          while (!sge_next_is_an_opt(spp)) {
             spp = sge_parser_get_next(spp);
-            lString2List(*spp, &arglp, QR_Type, QR_name, ", ");
+            op.args.emplace_back(*spp);
          }
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::CQUEUE_SHOW);
+         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
 
-         cqueue_show(os, &alp, arglp);
-         lFreeList(&arglp);
-         sge_parse_return |= show_answer(alp);
-         lFreeList(&alp);
+         /* show_answer() prints the bare message and returns non-zero for a
+          * non-OK status, which is how the hand written block set the exit code.
+          * A reference that matched nothing fails the call, so nothing has been
+          * rendered and the message is all there is to show. */
+         sge_parse_return |= show_answer(answer_list);
+         if (!ok) {
+            sge_parse_return = 1;
+         }
+         lFreeList(&answer_list);
          spp++;
          continue;
       }

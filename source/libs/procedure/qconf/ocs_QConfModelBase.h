@@ -31,6 +31,8 @@
 
 #include "sgeobj/ocs_Matcher.h"
 
+#include <vector>
+
 #include "ocs_QConfObject.h"
 #include "ocs_QConfParameter.h"
 
@@ -70,6 +72,8 @@ namespace ocs {
    protected:
       lList *object_list_ = nullptr;             ///< what the operation asked for
       lList *centry_list_ = nullptr;             ///< the complex entries, fetched for JSON only
+      lList *hgroup_list_ = nullptr;             ///< the host groups, for the cluster queue read (CS-2818)
+      lList *qref_pattern_list_ = nullptr;       ///< the queue references asked for (`QR_Type`, CS-2818)
       const qconf_object_desc *desc_ = nullptr;  ///< the row of the object type
       QConfObj object_ = QConfObj::CAL;          ///< which object type, valid once resolved
       QConfReadKind kind_ = QConfReadKind::NAME_LIST;   ///< what the switch produces
@@ -86,6 +90,57 @@ namespace ocs {
        * @return its CULL id
        */
       [[nodiscard]] int get_key_nm() const { return key_nm_; }
+
+      /** @brief The host groups a cluster queue is written in terms of (CS-2818)
+       *
+       * A queue's host list is the member list of its own `@@<queue>` group, and
+       * a queue domain has to be resolved against the graph, so the cluster queue
+       * read needs the groups next to the queues. Empty for every other read.
+       *
+       * @return them, or nullptr
+       */
+      [[nodiscard]] const lList *get_hgroup_list() const { return hgroup_list_; }
+
+      /** @brief The complex entries, when the output format needed them
+       *
+       * Fetched for JSON only, because that is the only format whose writer
+       * resolves a value's type. Empty otherwise.
+       *
+       * @return them, or nullptr
+       */
+      [[nodiscard]] const lList *get_centry_list() const { return centry_list_; }
+
+      /** @brief One group of objects `qconf -sq` is to print (CS-2818)
+       *
+       * One per queue reference given, in the order they were given, because the
+       * output is grouped that way. A reference either names queues, and then
+       * their configurations are printed, or it names a host or a queue domain,
+       * and then the matching queue instances are printed as one group - JSON
+       * writes them as a single array.
+       *
+       * Resolving which is which happens in the model and not in the view: a
+       * reference that matches nothing is an error, and ProcedureController's
+       * process_request() is handed no answer list to report it in.
+       */
+      struct CQueueOutput {
+         lList *cqueues = nullptr;      ///< the queues to print (`CQ_Type`), or nullptr
+         lList *qinstances = nullptr;   ///< the instances to print (`QU_Type`), or nullptr
+      };
+
+      /** @brief What `qconf -sq` is to print, grouped by queue reference
+       * @return the groups, in the order the references were given
+       */
+      [[nodiscard]] const std::vector<CQueueOutput> &get_cqueue_output() const { return cqueue_output_; }
+
+      /** @brief The queue references the operation was asked about (CS-2818)
+       *
+       * Parsed here because the filter is built from them, and kept so that the
+       * view iterates the same list instead of parsing the arguments again. Each
+       * entry may be a wildcard pattern and may name a host or a queue domain.
+       *
+       * @return them (`QR_Type`), or nullptr for every other read
+       */
+      [[nodiscard]] const lList *get_qref_pattern_list() const { return qref_pattern_list_; }
 
       /** @brief The descriptor of the object type
        * @return its row, or nullptr before make_snapshot()
@@ -137,6 +192,7 @@ namespace ocs {
 
    protected:
       HGroupWhy hgroup_why_;   ///< filled by the -shgrp_why sub-procedure only
+      std::vector<CQueueOutput> cqueue_output_;   ///< filled by the cluster queue sub-procedure only
 
    public:
       static const qconf_read_entry *resolve(const char *switch_name);
@@ -149,12 +205,15 @@ namespace ocs {
 
       virtual bool fetch_centries(lList **answer_list) = 0;
 
+      virtual bool fetch_hgroups(lList **answer_list) = 0;
+
       virtual bool fetch(lList **answer_list, gdi::Target target,
                          lCondition *where, lEnumeration *what) = 0;
 
    protected:
       bool make_list_snapshot(lList **answer_list, QConfObj object);
       bool make_hgroup_snapshot(lList **answer_list, QConfParameter &parameter);
+      bool make_cqueue_snapshot(lList **answer_list, QConfParameter &parameter);
 
    public:
       virtual bool make_snapshot(lList **answer_list, QConfParameter &parameter);

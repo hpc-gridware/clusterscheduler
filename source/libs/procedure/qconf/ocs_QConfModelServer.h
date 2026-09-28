@@ -44,6 +44,7 @@ namespace ocs {
       bool fetch(lList **answer_list, gdi::Target target,
                  lCondition *where, lEnumeration *what) override;
       bool fetch_centries(lList **answer_list) override;
+      bool fetch_hgroups(lList **answer_list) override;
 
    public:
       /** @brief Build the server side model

@@ -63,4 +63,8 @@
 
 #define MSG_CENTRY_DOESNOTEXIST_S                     _MESSAGE(12007, _("Complex attribute " SFQ " does not exist"))
 
+/* moved out of the client with the cluster queue read (CS-2818); its only user
+ * is the model now, and a library cannot include a client header */
+#define MSG_CQUEUE_NAMENOTCORRECT_SS                  _MESSAGE(12008, _("The queue name " SFQ " is not correct.  Queue names may not begin with @.  Perhaps you mean \"*" SFN "\"?"))
+
 // clang-format on
