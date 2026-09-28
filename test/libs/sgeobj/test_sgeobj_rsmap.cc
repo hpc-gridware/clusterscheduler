@@ -219,12 +219,145 @@ test_expand_implicit_ids() {
    }
 }
 
+/**
+ * @brief Add a complex to a master complex list.
+ * @param[in,out] master     the list to add to
+ * @param[in]     name       name of the complex
+ * @param[in]     type       its type, e.g. ocs::CEntry::Type::STR
+ * @param[in]     consumable its consumable setting, e.g. CONSUMABLE_NO
+ */
+static void
+add_master_centry(lList *master, const char *name, ocs::CEntry::Type type, uint32_t consumable) {
+   lListElem *ep = lAddElemStr(&master, CE_name, name, CE_Type);
+   lSetUlong(ep, CE_valtype, static_cast<uint32_t>(type));
+   lSetUlong(ep, CE_relop, type == ocs::CEntry::Type::STR ? CMPLXEQ_OP : CMPLXLE_OP);
+   lSetUlong(ep, CE_consumable, consumable);
+   lSetUlong(ep, CE_requestable, REQU_YES);
+}
+
+/**
+ * @brief Build the complex_values entry gpu=1(gpu0[<name>=<value>,...]) as the flatfile reader
+ *        leaves it: the characteristics carry only their name and their value as a string.
+ * @param[in] names  names of the characteristics
+ * @param[in] values their values, one per name
+ * @param[in] count  how many characteristics
+ * @return a CE_Type element the caller has to free
+ */
+static lListElem *
+make_map_with_characteristics(const char *const names[], const char *const values[], int count) {
+   lListElem *centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 1);
+   lListElem *resl = lAddSubStr(centry, RESL_value, "gpu0", CE_resource_map_list, RESL_Type);
+   lSetUlong(resl, RESL_amount, 1);
+   for (int i = 0; i < count; i++) {
+      lListElem *prop = lCreateElem(CE_Type);
+      lSetString(prop, CE_name, names[i]);
+      lSetString(prop, CE_stringval, values[i]);
+      lAppendElem(lGetOrCreateList(resl, RESL_properties, "properties", CE_Type), prop);
+   }
+   return centry;
+}
+
+/**
+ * @brief The characteristics of a resource map instance are checked against the complexes they
+ *        name; CS-2714: a complex of type RSMAP is refused.
+ */
+static void
+test_check_characteristics() {
+   lList *master = lCreateList("complexes", CE_Type);
+   add_master_centry(master, "gpu",       ocs::CEntry::Type::RSMAP, CONSUMABLE_YES);
+   add_master_centry(master, "nested",    ocs::CEntry::Type::RSMAP, CONSUMABLE_YES);
+   add_master_centry(master, "gpu_model", ocs::CEntry::Type::STR,   CONSUMABLE_NO);
+   add_master_centry(master, "gpu_mem",   ocs::CEntry::Type::MEM,   CONSUMABLE_YES);
+
+   // T11: a string characteristic is accepted and gets the type of its complex
+   {
+      const char *names[] = {"gpu_model"};
+      const char *values[] = {"A100"};
+      lList *al = nullptr;
+      lListElem *centry = make_map_with_characteristics(names, values, 1);
+      bool ok = centry_check_rsmap_characteristics(&al, centry, master);
+      const lListElem *resl = lFirst(lGetList(centry, CE_resource_map_list));
+      const lListElem *prop = lFirst(lGetList(resl, RESL_properties));
+      CHECK(11, "a string characteristic is accepted and typed",
+            ok && static_cast<ocs::CEntry::Type>(lGetUlong(prop, CE_valtype)) ==
+                  ocs::CEntry::Type::STR);
+      lFreeElem(&centry);
+      lFreeList(&al);
+   }
+
+   // T12: a consumable complex is accepted - it is never booked, but it is no error either
+   {
+      const char *names[] = {"gpu_mem"};
+      const char *values[] = {"80G"};
+      lList *al = nullptr;
+      lListElem *centry = make_map_with_characteristics(names, values, 1);
+      bool ok = centry_check_rsmap_characteristics(&al, centry, master);
+      CHECK(12, "a consumable characteristic is accepted", ok);
+      lFreeElem(&centry);
+      lFreeList(&al);
+   }
+
+   // T13: a resource map is refused, whatever the value, and the message says why
+   {
+      const char *names[] = {"nested"};
+      const char *values[] = {"4"};
+      lList *al = nullptr;
+      lListElem *centry = make_map_with_characteristics(names, values, 1);
+      bool ok = centry_check_rsmap_characteristics(&al, centry, master);
+      CHECK(13, "a resource map as characteristic is refused",
+            !ok && strstr(first_answer_text(al), "is a resource map") != nullptr);
+      lFreeElem(&centry);
+      lFreeList(&al);
+   }
+
+   // T14: the map itself is no characteristic of its own instances either
+   {
+      const char *names[] = {"gpu"};
+      const char *values[] = {"1"};
+      lList *al = nullptr;
+      lListElem *centry = make_map_with_characteristics(names, values, 1);
+      bool ok = centry_check_rsmap_characteristics(&al, centry, master);
+      CHECK(14, "the resource map itself as characteristic is refused", !ok);
+      lFreeElem(&centry);
+      lFreeList(&al);
+   }
+
+   // T15: a name which is no complex is refused
+   {
+      const char *names[] = {"no_such_complex"};
+      const char *values[] = {"x"};
+      lList *al = nullptr;
+      lListElem *centry = make_map_with_characteristics(names, values, 1);
+      bool ok = centry_check_rsmap_characteristics(&al, centry, master);
+      CHECK(15, "an unknown characteristic is refused",
+            !ok && strstr(first_answer_text(al), "is not a defined complex") != nullptr);
+      lFreeElem(&centry);
+      lFreeList(&al);
+   }
+
+   // T16: a characteristic given twice on one id is refused
+   {
+      const char *names[] = {"gpu_model", "gpu_model"};
+      const char *values[] = {"A100", "H100"};
+      lList *al = nullptr;
+      lListElem *centry = make_map_with_characteristics(names, values, 2);
+      bool ok = centry_check_rsmap_characteristics(&al, centry, master);
+      CHECK(16, "a duplicate characteristic is refused",
+            !ok && strstr(first_answer_text(al), "is set more than once") != nullptr);
+      lFreeElem(&centry);
+      lFreeList(&al);
+   }
+
+   lFreeList(&master);
+}
+
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
 
    test_expand_implicit_ids();
+   test_check_characteristics();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

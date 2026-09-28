@@ -99,8 +99,13 @@ list after the identifier:
 
 Each *char-name* must itself be a complex, defined before it is used. The referenced complex
 supplies the type, so `memory=80G` is read as *MEMORY* and `bandwidth=100000` as *INT*. A complex of
-type *RSMAP* cannot be used as a characteristic. A *char-value* may contain any byte except `,`,
-`]`, whitespace, `=`, `(` and `)`; there is no quoting or escape mechanism.
+type *RSMAP* cannot be used as a characteristic, and a definition naming one is rejected. A
+*char-value* may contain any byte except `,`, `]`, whitespace, `=`, `(` and `)`; there is no quoting
+or escape mechanism.
+
+A characteristic describes an instance and is never booked, even where its complex is a
+consumable: `memory=80G` on an instance does not make 80G of *memory* available on the host, and a
+job granted the instance does not consume it.
 
 Characteristics cannot be attached to a range which covers more than one identifier, because the
 block would have to belong to every instance the range expands to; those identifiers have to be
