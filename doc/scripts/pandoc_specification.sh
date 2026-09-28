@@ -3,8 +3,9 @@
 # generate PDF from markdown manuals
 # see also https://jdhao.github.io/2019/05/30/markdown2pdf_pandoc/
 
-if [ $# -ne 9 ]; then
-   echo "usage: $0 <source directory> <input directory> <target directory> <target manual> <release> <date> <located_in_gcs_extensions> <build_open_source_version>"
+if [ $# -lt 9 ] || [ $# -gt 10 ]; then
+   echo "usage: $0 <source directory> <input directory> <target directory> <target manual> <title> <release> <date> <located_in_gcs_extensions> <build_open_source_version> [<annotations>]"
+   echo "       <annotations> is on or off and defaults to \$SPEC_ANNOTATIONS or on."
    exit 1
 fi
 
@@ -23,6 +24,12 @@ BUILD_OPEN_SOURCE_VERSION=$9
 # two can never disagree.
 YEAR=${DATE%%-*}
 
+# Progress marks, ticket tags and margin notes are rendered unless they are
+# switched off. "off" reproduces the frozen wording of the specification and
+# is what a contract version is built with. CMake passes nine arguments, so
+# the environment variable is the way to select it from a build tree.
+ANNOTATIONS=${10:-${SPEC_ANNOTATIONS:-on}}
+
 if [ $LOCATED_IN_GCS_EXTENSIONS -eq 0 ]; then
    COMMON_DIR="../clusterscheduler/doc/markdown/specification"
 else
@@ -30,6 +37,8 @@ else
 fi
 
 SETTINGS_FILE="${SOURCE_DIR}/${COMMON_DIR}/head.tex"
+ANNOTATION_FILTER="${SOURCE_DIR}/${COMMON_DIR}/annotations.lua"
+NO_ANNOTATION_FILE="${SOURCE_DIR}/${COMMON_DIR}/no_annotations.tex"
 TITLE_PAGE="${SOURCE_DIR}/${COMMON_DIR}/titlepage.md"
 COPYRIGHT_PAGE="${SOURCE_DIR}/${COMMON_DIR}/copyright.md"
 DEFINITIONS_PAGE="${SOURCE_DIR}/${COMMON_DIR}/typographic_conventions.md"
@@ -51,7 +60,12 @@ QSCOMPANYMAIL="sales@hpc-gridware.com"
 # to show available styles: pandoc --list-highlight-style
 # to show if hightlighting is supported for a language: pandoc --list-highlight-languagess
 PANDOC=pandoc
-OPTIONS="--pdf-engine=xelatex -H ${SETTINGS_FILE}"
+# The marker has to be read before head.tex, which asks for it.
+OPTIONS="--pdf-engine=xelatex"
+if [ "${ANNOTATIONS}" = "off" ] && [ -f "${NO_ANNOTATION_FILE}" ]; then
+   OPTIONS="$OPTIONS -H ${NO_ANNOTATION_FILE}"
+fi
+OPTIONS="$OPTIONS -H ${SETTINGS_FILE}"
 # select the font family: -V CJKmainfont="<font>"
 #OPTIONS="$OPTIONS --highlight-style kate"
 OPTIONS="$OPTIONS --highlight-style espresso"
@@ -60,6 +74,9 @@ OPTIONS="$OPTIONS --table-of-contents"
 OPTIONS="$OPTIONS --toc-depth=6"
 OPTIONS="$OPTIONS --number-sections"
 OPTIONS="$OPTIONS -V subparagraph"
+if [ -f "${ANNOTATION_FILTER}" ]; then
+   OPTIONS="$OPTIONS --lua-filter=${ANNOTATION_FILTER} -M annotations=${ANNOTATIONS}"
+fi
 
 cat ${TITLE_PAGE} ${COPYRIGHT_PAGE} ${DEFINITIONS_PAGE} ${MANUAL_FILES} | \
     sed -e "s~__INPUT_DIR__~${INPUT_DIR}~g" \
