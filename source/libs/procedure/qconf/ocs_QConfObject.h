@@ -58,7 +58,7 @@ typedef spooling_field *(*qconf_build_fields_fn)(spool_flatfile_format format, b
  * second array on the same index. Neither carries a name to grep for, so an
  * insertion shifts every row below it in silence. */
 enum class QConfObj {
-   CAL, CK, CE, EH, HGRP, PE, PR, CQ, RL, RQS, US, UU, STN, SC, CONF, EV
+   CAL, CK, CE, EH, HGRP, PE, PR, CQ, RL, RQS, US, UU, STN, SC, CONF, EV, CAT
 };
 
 /** @brief What the read path needs on top of the common descriptor (CS-2796).
@@ -82,6 +82,23 @@ struct qconf_read_desc {
                                    ///< takes no argument; nullptr for a type that is not one
    void (*prepare)(lListElem *, const lList *);   ///< fixup before rendering with the
                                                  ///< master centry list, nullptr for none
+   const spool_flatfile_instr *list_sfi;  ///< the aligned table form of -s<obj>l, used by
+                                         ///< the table sub-procedures; nullptr for a type
+                                         ///< that has no such form (CS-2819)
+   const char *json_list_id;       ///< the table form's JSON schema id when it differs from
+                                   ///< the single record's - the category list is written
+                                   ///< as "category-list" holding "category" objects, so
+                                   ///< the two do not collide; nullptr uses the plain
+                                   ///< flatfile writer, as the complex entries do
+   const char *not_found_noun;     ///< OBJECT_LIST: what a name that matched nothing is
+                                   ///< called in "denied: <noun> \"x\" does not exist";
+                                   ///< nullptr reports the whole read as empty instead
+   bool write_as_list;             ///< OBJECT_LIST: render the whole list through the
+                                   ///< spooling instruction in one go, rather than one
+                                   ///< object at a time separated by blank lines. It is a
+                                   ///< property of the type, not of the switch: -srqs
+                                   ///< wraps every record in braces (qconf_rqs_sfi),
+                                   ///< -su prints plain blocks (CS-2819)
 };
 
 /** @brief Everything the generic engines need to know about one object type. */

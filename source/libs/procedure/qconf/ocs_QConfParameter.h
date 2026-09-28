@@ -144,6 +144,8 @@ namespace ocs {
       static constexpr auto HGROUP_WHY = "hostgroup-why";           ///< `qconf -shgrp_why`
       static constexpr auto CENTRY_LIST = "complex-list";           ///< `qconf -sc`
       static constexpr auto CQUEUE_SHOW = "cqueue-show";            ///< `qconf -sq`
+      static constexpr auto CATEGORY_LIST = "category-list";        ///< `qconf -scatl`
+      static constexpr auto QUEUE_SICK = "queue-sick";              ///< `qconf -sds`
 
       /** @brief Whether a sub-procedure name is one of the host group views
        * @param name the name, empty for the table-driven read

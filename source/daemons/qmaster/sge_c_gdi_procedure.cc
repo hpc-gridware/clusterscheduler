@@ -35,8 +35,10 @@
 #include "procedure/ocs_ProcedureParameter.h"
 
 #include "procedure/qconf/ocs_QConfController.h"
-#include "procedure/qconf/centry/ocs_QConfCEntryListController.h"
-#include "procedure/qconf/centry/ocs_QConfCEntryListView.h"
+#include "procedure/qconf/table/ocs_QConfTableController.h"
+#include "procedure/qconf/table/ocs_QConfTableView.h"
+#include "procedure/qconf/sick/ocs_QConfSickController.h"
+#include "procedure/qconf/sick/ocs_QConfSickView.h"
 #include "procedure/qconf/cqueue/ocs_QConfCQueueShowController.h"
 #include "procedure/qconf/cqueue/ocs_QConfCQueueShowView.h"
 #include "procedure/qconf/hgroup/ocs_QConfHGroupResolvedController.h"
@@ -240,11 +242,11 @@ namespace {
    /** @brief `qconf -sc`: the complex entry table. One view for all three
     * factories, because the view switches on the output format itself - as the
     * hand written block did by passing qconf_opt_format to the writer. */
-   struct QConfCEntryListTraits {
+   struct QConfTableTraits {
       using Parameter = ocs::QConfParameter;
       using Model = ocs::QConfModelServer;
-      using ViewBase = ocs::QConfCEntryListView;
-      using Controller = ocs::QConfCEntryListController;
+      using ViewBase = ocs::QConfTableView;
+      using Controller = ocs::QConfTableController;
 
       static constexpr ProgName prog_number = QCONF;
 
@@ -267,6 +269,27 @@ namespace {
       using Model = ocs::QConfModelServer;
       using ViewBase = ocs::QConfCQueueShowView;
       using Controller = ocs::QConfCQueueShowController;
+
+      static constexpr ProgName prog_number = QCONF;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+   };
+
+   /** @brief `qconf -sds`: the queues whose configuration cannot take effect. One
+    * view for all three factories - the report is plain text in every format. */
+   struct QConfSickTraits {
+      using Parameter = ocs::QConfParameter;
+      using Model = ocs::QConfModelServer;
+      using ViewBase = ocs::QConfSickView;
+      using Controller = ocs::QConfSickController;
 
       static constexpr ProgName prog_number = QCONF;
 
@@ -509,7 +532,9 @@ namespace {
       {to_string_view(QCONF), ocs::QConfParameter::HGROUP_TREE, &run_procedure<QConfHGroupTreeTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::HGROUP_RESOLVED, &run_procedure<QConfHGroupResolvedTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::HGROUP_WHY, &run_procedure<QConfHGroupWhyTraits>},
-      {to_string_view(QCONF), ocs::QConfParameter::CENTRY_LIST, &run_procedure<QConfCEntryListTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::CENTRY_LIST, &run_procedure<QConfTableTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::CATEGORY_LIST, &run_procedure<QConfTableTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::QUEUE_SICK, &run_procedure<QConfSickTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::CQUEUE_SHOW, &run_procedure<QConfCQueueShowTraits>},
       {to_string_view(QHOST), "",  &run_procedure<QHostTraits>},
       {to_string_view(QQUOTA), "",  &run_procedure<QQuotaTraits>},

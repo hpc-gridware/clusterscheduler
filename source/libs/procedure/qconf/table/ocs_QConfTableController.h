@@ -24,7 +24,7 @@
  */
 
 #include "../ocs_QConfModelBase.h"
-#include "ocs_QConfCEntryListView.h"
+#include "ocs_QConfTableView.h"
 
 namespace ocs {
    /** @brief `qconf -sc`: hand the whole complex entry list to the table view
@@ -35,14 +35,14 @@ namespace ocs {
     *
     * @ingroup libprocedure
     */
-   class QConfCEntryListController {
+   class QConfTableController {
    protected:
       std::ostream &out_;   ///< where the view writes
 
    public:
-      explicit QConfCEntryListController(std::ostream &out) : out_(out) {}
+      explicit QConfTableController(std::ostream &out) : out_(out) {}
 
       void process_request(QConfParameter &parameter, QConfModelBase &model,
-                           QConfCEntryListView &view);
+                           QConfTableView &view);
    };
 }

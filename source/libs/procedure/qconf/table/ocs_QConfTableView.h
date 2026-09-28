@@ -44,10 +44,10 @@ namespace ocs {
     *
     * @ingroup libprocedure
     */
-   class QConfCEntryListView : public QConfViewBase {
+   class QConfTableView : public QConfViewBase {
    public:
-      explicit QConfCEntryListView(const QConfParameter &parameter) : QConfViewBase(parameter) {}
-      ~QConfCEntryListView() override = default;
+      explicit QConfTableView(const QConfParameter &parameter) : QConfViewBase(parameter) {}
+      ~QConfTableView() override = default;
 
       /** @brief Not reached: the table is written by show_table() */
       void show_name_list([[maybe_unused]] std::ostream &os, [[maybe_unused]] const lList *list,

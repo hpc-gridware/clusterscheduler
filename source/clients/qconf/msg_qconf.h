@@ -78,7 +78,6 @@
 
 #define MSG_RQS_NOTFOUNDINFILE_SS                     _MESSAGE(5251, _("resource quota set " SFQ " not found in file " PFQMAX))
 
-#define MSG_CAT_DOESNOTEXIST_U                        _MESSAGE(5252, _("Category " sge_u32 " does not exist"))
 
 /* MSG_ROLE_DOESNOTEXIST_S (5253) moved to libs/procedure/qconf/msg_qconf.h with
  * the object descriptor table that is its only user (CS-2799) and was renumbered

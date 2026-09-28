@@ -93,15 +93,16 @@
 #include "sge.h"
 #include "sge_options.h"
 #include "usage.h"
-#include "ocs_qconf_Category.h"
 #include "ocs_qconf_acl.h"
 #include "procedure/ocs_ProcedureController.h"
 #include "procedure/ocs_ProcedureModel.h"
 #include "procedure/ocs_ProcedureView.h"
 
 #include "qconf/ocs_QConfController.h"
-#include "qconf/centry/ocs_QConfCEntryListController.h"
-#include "qconf/centry/ocs_QConfCEntryListView.h"
+#include "qconf/table/ocs_QConfTableController.h"
+#include "qconf/table/ocs_QConfTableView.h"
+#include "qconf/sick/ocs_QConfSickController.h"
+#include "qconf/sick/ocs_QConfSickView.h"
 #include "qconf/cqueue/ocs_QConfCQueueShowController.h"
 #include "qconf/cqueue/ocs_QConfCQueueShowView.h"
 #include "qconf/hgroup/ocs_QConfHGroupResolvedController.h"
@@ -141,7 +142,6 @@ static void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, i
 static bool del_host_of_type(lList *arglp, ocs::gdi::Target target);
 static bool mod_reserved_hgroup(std::ostream &os, lList *arglp, const char *group,
                                 ocs::gdi::SubCommand sub_command, const char *what);
-static int print_acl(std::ostream &os, lList *arglp);
 static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp, lListElem **epp, ocs::gdi::SubCommand sub_command, struct object_info_entry *info_entry);
 static lListElem *edit_exechost(lListElem *ep, uid_t uid, gid_t gid);
 static int edit_usersets(std::ostream &os, lList *arglp);
@@ -1334,9 +1334,14 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
             ocs::QConfHGroupWhyView view(param);
             ocs::QConfHGroupWhyController controller(os);
             controller.process_request(param, model, view);
-         } else if (sub == ocs::QConfParameter::CENTRY_LIST) {
-            ocs::QConfCEntryListView view(param);
-            ocs::QConfCEntryListController controller(os);
+         } else if (sub == ocs::QConfParameter::CENTRY_LIST ||
+                    sub == ocs::QConfParameter::CATEGORY_LIST) {
+            ocs::QConfTableView view(param);
+            ocs::QConfTableController controller(os);
+            controller.process_request(param, model, view);
+         } else if (sub == ocs::QConfParameter::QUEUE_SICK) {
+            ocs::QConfSickView view(param);
+            ocs::QConfSickController controller(os);
             controller.process_request(param, model, view);
          } else if (sub == ocs::QConfParameter::CQUEUE_SHOW) {
             ocs::QConfCQueueShowView view(param);
@@ -5219,7 +5224,16 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-scatl", *spp) == 0) {
          lList *answer_list = nullptr;
 
-         if (!ocs::CategoryQconf::show_list(os, &answer_list)) {
+         /* CS-2819: the aligned table sub-procedure, the same one -sc uses. The
+          * list has a JSON schema id of its own, which the descriptor carries. */
+         qconf_op op;
+         op.token = "-scatl";
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::CATEGORY_LIST);
+         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
+
+         if (!ok) {
             show_answer(answer_list);
             sge_parse_return = 1;
          }
@@ -5487,19 +5501,22 @@ int sge_parse_qconf(char *argv[]) {
 /*----------------------------------------------------------------------------*/
       /* "-srqs [rqs_name,...]" */
       if (strcmp("-srqs", *spp) == 0) {
-         const char *name = nullptr;
-         bool ret = true;
-
+         /* CS-2819: a table driven read of several objects. No argument shows
+          * every resource quota set, which is what an empty filter does. */
+         qconf_op op;
+         op.token = "-srqs";
          if (!sge_next_is_an_opt(spp)) {
             spp = sge_parser_get_next(spp);
-            name = *spp;
+            op.args.emplace_back(*spp);
          }
-         ret = rqs_show(os, &alp, name);
-         if (!ret) {
-            show_answer(alp);
+         param.set_operation(op);
+
+         lList *answer_list = nullptr;
+         if (!qconf_dispatch_procedure(os, param, &answer_list)) {
+            show_answer(answer_list);
             sge_parse_return = 1;
          }
-         lFreeList(&alp);
+         lFreeList(&answer_list);
 
          spp++;
          continue;
@@ -5761,13 +5778,21 @@ int sge_parse_qconf(char *argv[]) {
       /* "-su [list_name[,list_name,...]]" */
 
       if (strcmp("-su", *spp) == 0) {
+         /* CS-2819: the same table driven read as -srqs; the option table demands
+          * at least one name here, so the "show everything" case cannot occur. */
          spp = sge_parser_get_next(spp);
-         parse_name_list_to_cull("acl`s to show", &lp,
-               US_Type, US_name, *spp);
-         if (print_acl(os, lp) != 0) {
+
+         qconf_op op;
+         op.token = "-su";
+         op.args.emplace_back(*spp);
+         param.set_operation(op);
+
+         lList *answer_list = nullptr;
+         if (!qconf_dispatch_procedure(os, param, &answer_list)) {
+            show_answer(answer_list);
             sge_parse_return = 1;
          }
-         lFreeList(&lp);
+         lFreeList(&answer_list);
 
          spp++;
          continue;
@@ -5777,9 +5802,15 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-scat", *spp) == 0) {
          lList *answer_list = nullptr;
 
+         /* CS-2819: a table driven read whose key is a number; the id is parsed
+          * where the filter is built, so the client passes the text through. */
          spp = sge_parser_get_next(spp);
-         uint64_t id = strtoull(*spp, nullptr, 10);
-         if (!ocs::CategoryQconf::show(os, &answer_list, id)) {
+         qconf_op op;
+         op.token = "-scat";
+         op.args.emplace_back(*spp);
+         param.set_operation(op);
+
+         if (!qconf_dispatch_procedure(os, param, &answer_list)) {
             show_answer(answer_list);
             sge_parse_return = 1;
          }
@@ -6418,9 +6449,21 @@ int sge_parse_qconf(char *argv[]) {
       if (strcmp("-sds", *spp) == 0) {
          lList *answer_list = nullptr;
 
-         /* Use cqueue_list_sick()'s return value to set the exit code */
-         sge_parse_return |= (cqueue_list_sick(os, &answer_list)?0:1);
-         show_answer(answer_list);
+         /* CS-2819: a sub-procedure. The report is the output and a report that
+          * is not empty also sets the exit code, which travels as an
+          * ANSWER_QUALITY_END answer - show_answer() counts it without printing
+          * anything of its own. */
+         qconf_op op;
+         op.token = "-sds";
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::QUEUE_SICK);
+         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
+
+         sge_parse_return |= show_answer(answer_list);
+         if (!ok) {
+            sge_parse_return = 1;
+         }
          lFreeList(&answer_list);
          spp++;
          continue;
@@ -7581,47 +7624,6 @@ static int show_processors(std::ostream &os, bool has_binding_param) {
       1 if arglp contains acl names not present at qmaster
       -1 failed to get any acl
 */
-static int print_acl(std::ostream &os, lList *arglp) {
-   DENTER(TOP_LAYER);
-   lList *acls = nullptr;
-   const lListElem *ep = nullptr;
-   int fail = 0;
-   const char *acl_name = nullptr;
-   int first_time = 1;
-   const char *filename_stdout;
-
-   /* get all acls named in arglp, put them into acls */
-   if (sge_client_get_acls(nullptr, arglp, &acls)) {
-      DRETURN(-1);
-   }
-
-   for_each_ep_lv(argep, arglp) {
-      acl_name = lGetString(argep, US_name);
-
-      ep = lGetElemStrRW(acls, US_name, acl_name);
-      if (ep == nullptr) {
-         fprintf(stderr, MSG_SGETEXT_DOESNOTEXIST_SS, "access list", acl_name);
-         fprintf(stderr, "\n");
-         fail = 1;
-      } else {
-         lList *alp = nullptr;
-
-         if (first_time)
-            first_time = 0;
-         else {
-            os << "\n";
-         }
-
-         filename_stdout = spool_flatfile_write_object(&alp, ep, false, US_fields, &qconf_param_sfi,
-                                     SP_DEST_STREAM, qconf_opt_format, nullptr,
-                                     false, nullptr, &os);
-         lFreeList(&alp);
-         sge_free(&filename_stdout);
-      }
-   }
-   lFreeList(&acls);
-   DRETURN(fail);
-}
 
 /**************************************************************
    get all usersets listed in arglp

@@ -31,6 +31,58 @@
 
 #include "ocs_QConfViewBase.h"
 
+/** @brief Write several objects of one type (CS-2819)
+ *
+ * Two shapes, and which one a type takes is in its descriptor rather than in the
+ * switch: `-srqs` hands the whole list to the writer in one go, because
+ * `qconf_rqs_sfi` wraps every record in braces and a loop would lose them, while
+ * `-su` prints one block per object with a blank line between, the way every
+ * other multi-object output of this client looks.
+ *
+ * @param os   the stream to write to
+ * @param list the objects, in the order they are to appear
+ * @param desc the descriptor of their type
+ */
+void
+ocs::QConfViewBase::show_object_list(std::ostream &os, const lList *list,
+                                     const qconf_object_desc &desc) {
+   DENTER(TOP_LAYER);
+
+   const spool_flatfile_format format =
+      (output_format_ == ProcedureParameter::OutputFormat::JSON) ? SP_FORM_JSON : SP_FORM_ASCII;
+
+   const qconf_build_fields_fn provider =
+      (desc.read.fields != nullptr) ? desc.read.fields : desc.build_fields;
+   bool owned = false;
+   spooling_field *fields = provider(format, &owned);
+
+   lList *alp = nullptr;
+   if (desc.read.write_as_list) {
+      const char *filename = spool_flatfile_write_list(&alp, list, fields, desc.sfi,
+                                                       SP_DEST_STREAM, format, nullptr, false,
+                                                       &os, line_breaks_);
+      sge_free(&filename);
+   } else {
+      bool is_first = true;
+      for_each_ep_lv(ep, list) {
+         if (!is_first) {
+            os << "\n";
+         }
+         is_first = false;
+         const char *filename = spool_flatfile_write_object(&alp, ep, desc.is_root, fields, desc.sfi,
+                                                            SP_DEST_STREAM, format, nullptr, false,
+                                                            desc.json_type_name, &os, line_breaks_);
+         sge_free(&filename);
+      }
+   }
+   if (owned) {
+      sge_free(&fields);
+   }
+   lFreeList(&alp);
+
+   DRETURN_VOID;
+}
+
 /**
  * @brief Write one object through the flatfile writer
  *

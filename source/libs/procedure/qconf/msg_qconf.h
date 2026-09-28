@@ -67,4 +67,9 @@
  * is the model now, and a library cannot include a client header */
 #define MSG_CQUEUE_NAMENOTCORRECT_SS                  _MESSAGE(12008, _("The queue name " SFQ " is not correct.  Queue names may not begin with @.  Perhaps you mean \"*" SFN "\"?"))
 
+/* moved out of the client with the category read (CS-2819); it formats a
+ * number, which is why the read table reports it with the parsed id rather
+ * than with the text the user typed */
+#define MSG_CAT_DOESNOTEXIST_U                        _MESSAGE(12009, _("Category " sge_u32 " does not exist"))
+
 // clang-format on

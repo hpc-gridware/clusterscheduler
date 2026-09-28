@@ -64,53 +64,6 @@
 static bool
 rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_unchanged_message);
 
-/**
- * @brief Show resource quota sets
- *
- * This funtion gets the selected resource quota sets from GDI and
- * writes they out on stdout
- *
- * @param os the stream the output is written to (CS-1841)
- * @param answer_list answer list
- * @param name comma separated list of resource quota set names
- *
- * @return true  on success false on error
- *
- * @note MT-NOTE: rqs_show() is MT safe
- */
-bool rqs_show(std::ostream &os, lList **answer_list, const char *name) {
-   DENTER(TOP_LAYER);
-
-   lList *rqs_list = nullptr;
-   bool ret = false;
-
-   if (name != nullptr) {
-      lList *rqsref_list = nullptr;
-
-      lString2List(name, &rqsref_list, RQS_Type, RQS_name, ", ");
-      ret = rqs_get_via_gdi(answer_list, rqsref_list, &rqs_list);
-      lFreeList(&rqsref_list);
-   } else {
-      ret = rqs_get_all_via_gdi(answer_list, &rqs_list);
-   }
-
-   if (ret && lGetNumberOfElem(rqs_list)) {
-      const char* filename;
-      filename = spool_flatfile_write_list(answer_list, rqs_list, RQS_fields, 
-                                        &qconf_rqs_sfi,
-                                        SP_DEST_STREAM, qconf_opt_format, nullptr,
-                                        false, &os);
-      sge_free(&filename);
-   }
-   if (lGetNumberOfElem(rqs_list) == 0) {
-      answer_list_add(answer_list, MSG_NORQSFOUND, STATUS_EEXIST, ANSWER_QUALITY_WARNING);
-      ret = false;
-   }
-
-   lFreeList(&rqs_list);
-
-   DRETURN(ret);
-}
 
 /**
  * @brief Get resource quota sets from GDI

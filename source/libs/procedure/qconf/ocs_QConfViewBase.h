@@ -80,5 +80,12 @@ namespace ocs {
        * @param desc its row in the descriptor table
        */
       virtual void show_object(std::ostream &os, const lListElem *ep, const qconf_object_desc &desc);
+
+      /** @brief Write several objects of one type
+       * @param os   the stream to write to
+       * @param list the objects, in the order they are to appear
+       * @param desc the descriptor of their type
+       */
+      void show_object_list(std::ostream &os, const lList *list, const qconf_object_desc &desc);
    };
 }

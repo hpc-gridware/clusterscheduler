@@ -42,7 +42,6 @@
 #include "cull/cull.h"
 #include "sgeobj/sge_daemonize.h"
 
-bool rqs_show(std::ostream &os, lList **answer_list, const char *name);
 
 bool rqs_get_via_gdi(lList **answer_list, const lList *rqsref_list, lList **rqs_list);
 

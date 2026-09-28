@@ -111,6 +111,7 @@ bool cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::
    DRETURN(ret);
 }
 
+
 /** @brief Fetch one cluster queue from qmaster
  *
  * @param answer_list used to return error messages
@@ -173,77 +174,6 @@ cqueue_get_via_gdi(lList **answer_list, const char *name) {
       }
    }
 
-   DRETURN(ret);
-}
-
-bool
-/** @brief Fetch the host groups and the cluster queues in one request
- *
- * They are fetched together because a queue's configuration is written in terms
- * of host groups: resolving what a queue actually applies to needs both, and
- * fetching them separately would leave a window in which they disagree.
- *
- * @param answer_list used to return error messages
- * @param hgrp_list receives the host groups (`HGRP_Type`)
- * @param cq_list receives the cluster queues (`CQ_Type`)
- * @return true on success; false with `answer_list` filled otherwise
- */
-cqueue_hgroup_get_all_via_gdi(lList **answer_list,
-                              lList **hgrp_list, lList **cq_list) {
-   DENTER(TOP_LAYER);
-
-   bool ret = true;
-
-   if (hgrp_list != nullptr && cq_list != nullptr) {
-      ocs::gdi::Request gdi_multi{};
-      lEnumeration *hgrp_what = nullptr;
-      lEnumeration *cqueue_what = nullptr;
-      int hgrp_id = 0;
-      int cq_id = 0;
-      lList *local_answer_list = nullptr;
-
-      /* HGRP */
-      hgrp_what = lWhat("%T(ALL)", HGRP_Type);
-      hgrp_id = gdi_multi.request(answer_list, ocs::gdi::Mode::RECORD, ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, nullptr, nullptr, hgrp_what, true);
-      lFreeWhat(&hgrp_what);
-
-      /* CQ */
-      cqueue_what = lWhat("%T(ALL)", CQ_Type);
-      cq_id = gdi_multi.request(answer_list, ocs::gdi::Mode::SEND, ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, nullptr, nullptr, cqueue_what, true);
-      gdi_multi.wait();
-      lFreeWhat(&cqueue_what);
-
-      /* HGRP */
-      gdi_multi.get_response(&local_answer_list, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::HGRP_LIST, hgrp_id, hgrp_list);
-      if (local_answer_list != nullptr) {
-         lListElem *answer = lFirstRW(local_answer_list);
-
-         if (lGetUlong(answer, AN_status) != STATUS_OK) {
-            lDechainElem(local_answer_list, answer);
-            answer_list_add_elem(answer_list, answer);
-            ret = false;
-         }
-      }
-      lFreeList(&local_answer_list);
-      
-      /* CQ */   
-      gdi_multi.get_response(&local_answer_list, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, ocs::gdi::Target::CQ_LIST, cq_id, cq_list);
-      if (local_answer_list != nullptr) {
-         lListElem *answer = lFirstRW(local_answer_list);
-
-         if (lGetUlong(answer, AN_status) != STATUS_OK) {
-            lDechainElem(local_answer_list, answer);
-            answer_list_add_elem(answer_list, answer);
-            ret = false;
-         }
-      } 
-      lFreeList(&local_answer_list);
-
-      /* CS-2677: join the host lists back on, from the groups fetched above */
-      if (ret) {
-         cqueue_list_fill_hostlist(*cq_list, *hgrp_list);
-      }
-   }
    DRETURN(ret);
 }
 
@@ -525,44 +455,3 @@ bool cqueue_delete(lList **answer_list, const char *name) {
    DRETURN(ret);
 }
 
-/** @brief Report cluster queues whose configuration cannot do what it says
- *
- * The `qconf -sick` check. A queue is "sick" when its configuration is
- * accepted but cannot take effect - most often an attribute overridden for a
- * host or host group that the queue does not actually contain, so the override
- * is dead weight that reads as if it applied.
- *
- * @param os the stream the output is written to (CS-1841)
- * @param answer_list used to return error messages
- * @return true when the check ran; the findings are printed, not returned
- */
-bool cqueue_list_sick(std::ostream &os, lList **answer_list) {
-   DENTER(TOP_LAYER);
-
-   bool ret = true;
-   lList *hgroup_list = nullptr;
-   lList *cqueue_list = nullptr;
-   bool local_ret;
-
-   local_ret = cqueue_hgroup_get_all_via_gdi(answer_list, &hgroup_list, &cqueue_list);
-   if (local_ret) {
-      dstring ds = DSTRING_INIT;
-
-      for_each_rw_lv(cqueue, cqueue_list) {
-         cqueue_sick(cqueue, answer_list, hgroup_list, &ds);
-      }
-
-      if (sge_dstring_get_string(&ds) != nullptr) {
-         /* JG: TODO: shouldn't we better use INFO or WARNING? */
-         os << qconf_cstr(sge_dstring_get_string(&ds));
-         ret = false;
-      }
-
-      sge_dstring_free(&ds);
-   }
-
-   lFreeList(&hgroup_list);
-   lFreeList(&cqueue_list);
-   
-   DRETURN(ret);
-}

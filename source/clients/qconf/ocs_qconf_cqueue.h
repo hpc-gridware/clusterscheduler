@@ -45,10 +45,6 @@ lListElem *
 cqueue_get_via_gdi(lList **answer_list, const char *cqueue);
 
 
-bool
-cqueue_hgroup_get_all_via_gdi(lList **answer_list,
-                              lList **hgrp_list, lList **cq_list);
-
 bool 
 cqueue_add_del_mod_via_gdi(lListElem *this_elem, lList **answer_list, ocs::gdi::Command gdi_command, ocs::gdi::SubCommand sub_cmd);
 
@@ -66,6 +62,3 @@ cqueue_add_from_file(lList **answer_list, const char *filename);
 
 bool 
 cqueue_modify_from_file(lList **answer_list, const char *filename);
-
-bool
-cqueue_list_sick(std::ostream &os, lList **answer_list);

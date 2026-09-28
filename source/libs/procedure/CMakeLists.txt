@@ -68,8 +68,8 @@ set(LIBRARY_SOURCES
         qconf/hgroup/ocs_QConfHGroupWhyController.cc
         qconf/hgroup/ocs_QConfHGroupWhyView.cc
 
-        qconf/centry/ocs_QConfCEntryListController.cc
-        qconf/centry/ocs_QConfCEntryListView.cc
+        qconf/table/ocs_QConfTableController.cc
+        qconf/table/ocs_QConfTableView.cc
 
         qconf/cqueue/ocs_QConfCQueueShowController.cc
         qconf/cqueue/ocs_QConfCQueueShowView.cc

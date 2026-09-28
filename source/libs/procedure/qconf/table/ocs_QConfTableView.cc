@@ -25,9 +25,10 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 
+#include "spool/flatfile/ocs_spool_json.h"
 #include "spool/flatfile/sge_flatfile.h"
 
-#include "ocs_QConfCEntryListView.h"
+#include "ocs_QConfTableView.h"
 
 /** @brief Write every complex entry as an aligned table
  *
@@ -40,7 +41,7 @@
  * @param desc the CE row, for the field list and the instruction
  */
 void
-ocs::QConfCEntryListView::show_table(std::ostream &os, const lList *list,
+ocs::QConfTableView::show_table(std::ostream &os, const lList *list,
                                      const qconf_object_desc &desc) {
    DENTER(TOP_LAYER);
 
@@ -66,10 +67,24 @@ ocs::QConfCEntryListView::show_table(std::ostream &os, const lList *list,
    /* aligned unconditionally, as the hand written code did - the widths are
     * meaningless for JSON, but computing them changes nothing there */
    spool_flatfile_align_list(&alp, list, fields, 3);
-   const char *filename = spool_flatfile_write_list(&alp, list, fields, &qconf_ce_list_sfi,
-                                                    SP_DEST_STREAM, format, nullptr, false,
-                                                    &os, line_breaks_);
-   sge_free(&filename);
+
+   if (format == SP_FORM_JSON && desc.read.json_list_id != nullptr) {
+      /* A type whose list has a schema id of its own: the categories are written
+       * as a "category-list" holding "category" objects, so the enveloped array
+       * does not collide with the single record of -scat. An empty list still
+       * yields the enveloped empty array, which keeps the output valid JSON. */
+      dstring out = DSTRING_INIT;
+      spool_json_write_typed_list_ex(&alp, list, fields, desc.read.json_list_id,
+                                     desc.json_type_name, &out);
+      const char *text = sge_dstring_get_string(&out);
+      os << ((text != nullptr) ? text : "");
+      sge_dstring_free(&out);
+   } else {
+      const char *filename = spool_flatfile_write_list(&alp, list, fields, desc.read.list_sfi,
+                                                       SP_DEST_STREAM, format, nullptr, false,
+                                                       &os, line_breaks_);
+      sge_free(&filename);
+   }
    sge_free(&fields);
    lFreeList(&alp);
 

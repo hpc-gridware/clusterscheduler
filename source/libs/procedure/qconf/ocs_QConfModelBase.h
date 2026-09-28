@@ -23,6 +23,8 @@
  * @brief The data one `qconf` read operation needs
  */
 
+#include <cstdint>
+
 #include "cull/cull.h"
 
 #include "gdi/ocs_gdi_Target.h"
@@ -48,7 +50,9 @@ namespace ocs {
    enum class QConfReadKind {
       NAME_LIST,     ///< group B: every name of the type, one per line
       SINGLE_OBJECT, ///< group A: one named object, rendered in full
-      SINGLETON      ///< group A: the one object of its type, no name given
+      SINGLETON,     ///< group A: the one object of its type, no name given
+      OBJECT_LIST,   ///< group N: several named objects, or all of them (CS-2819)
+      SINGLE_OBJECT_BY_ID  ///< group N: one object whose key is a number, not a name (CS-2819)
    };
 
    struct qconf_read_entry {
@@ -79,6 +83,7 @@ namespace ocs {
       QConfReadKind kind_ = QConfReadKind::NAME_LIST;   ///< what the switch produces
       int key_nm_ = NoName;                      ///< the field holding the name
       const char *requested_name_ = nullptr;     ///< what a sub-procedure was asked about (CS-2816)
+      uint32_t requested_id_ = 0;                ///< the numeric key of a SINGLE_OBJECT_BY_ID read (CS-2819)
 
    public:
       /** @brief The objects that were fetched
@@ -131,6 +136,18 @@ namespace ocs {
        * @return the groups, in the order the references were given
        */
       [[nodiscard]] const std::vector<CQueueOutput> &get_cqueue_output() const { return cqueue_output_; }
+
+      /** @brief What `-sds` found (CS-2819)
+       *
+       * The whole report as one piece of text, built while taking the snapshot
+       * because that is where the answer list is: a queue whose configuration
+       * cannot take effect is reported *and* sets a non-zero exit status, and the
+       * status travels in an ANSWER_QUALITY_END answer, which show_answer() counts
+       * without printing. Empty when every queue is sound.
+       *
+       * @return the report
+       */
+      [[nodiscard]] const std::string &get_sick_report() const { return sick_report_; }
 
       /** @brief The queue references the operation was asked about (CS-2818)
        *
@@ -193,6 +210,7 @@ namespace ocs {
    protected:
       HGroupWhy hgroup_why_;   ///< filled by the -shgrp_why sub-procedure only
       std::vector<CQueueOutput> cqueue_output_;   ///< filled by the cluster queue sub-procedure only
+      std::string sick_report_;                  ///< filled by the -sds sub-procedure only
 
    public:
       static const qconf_read_entry *resolve(const char *switch_name);
@@ -202,6 +220,7 @@ namespace ocs {
       static lEnumeration *get_name_what(const lDescr *descr, int key_nm);
       static lCondition *get_name_where(const lDescr *descr, int key_nm);
       static lCondition *get_object_where(const lDescr *descr, int key_nm, const char *name);
+      static lCondition *get_names_where(const lDescr *descr, int key_nm, const qconf_op &op);
 
       virtual bool fetch_centries(lList **answer_list) = 0;
 
@@ -214,6 +233,7 @@ namespace ocs {
       bool make_list_snapshot(lList **answer_list, QConfObj object);
       bool make_hgroup_snapshot(lList **answer_list, QConfParameter &parameter);
       bool make_cqueue_snapshot(lList **answer_list, QConfParameter &parameter);
+      bool make_sick_snapshot(lList **answer_list);
 
    public:
       virtual bool make_snapshot(lList **answer_list, QConfParameter &parameter);

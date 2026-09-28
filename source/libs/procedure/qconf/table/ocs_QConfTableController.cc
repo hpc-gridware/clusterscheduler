@@ -24,7 +24,7 @@
 
 #include "uti/sge_rmon_macros.h"
 
-#include "ocs_QConfCEntryListController.h"
+#include "ocs_QConfTableController.h"
 
 /** @brief Render the complex entry table
  *
@@ -37,9 +37,9 @@
  * @param view      the table rendering
  */
 void
-ocs::QConfCEntryListController::process_request([[maybe_unused]] QConfParameter &parameter,
+ocs::QConfTableController::process_request([[maybe_unused]] QConfParameter &parameter,
                                                QConfModelBase &model,
-                                               QConfCEntryListView &view) {
+                                               QConfTableView &view) {
    DENTER(TOP_LAYER);
 
    view.show_table(out_, model.get_object_list(), *model.get_desc());

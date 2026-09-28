@@ -21,7 +21,6 @@
 # source/clients/qconf
 add_executable(
       qconf
-        ocs_qconf_Category.cc
         ocs_qconf_cqueue.cc
         ocs_qconf_centry.cc
       sge_qconf_hgroup.cc

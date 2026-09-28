@@ -59,11 +59,12 @@ static const sge_object_type qconf_master_list[] = {
    SGE_TYPE_SCHEDD_CONF, /* SC   */
    SGE_TYPE_CONFIG,      /* CONF */
    SGE_TYPE_NONE,        /* EV - event clients live in the event master */
+   SGE_TYPE_CATEGORY,    /* CAT  */
 };
 
 /* the second array on the same index - see the note at QConfObj (CS-2808) */
 static_assert(sizeof(qconf_master_list) / sizeof(qconf_master_list[0]) ==
-              static_cast<size_t>(QConfObj::EV) + 1,
+              static_cast<size_t>(QConfObj::CAT) + 1,
               "qconf_master_list needs exactly one row per QConfObj value");
 
 /** @brief Read the host groups from the data store (CS-2818)

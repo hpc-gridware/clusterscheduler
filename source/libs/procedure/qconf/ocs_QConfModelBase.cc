@@ -83,6 +83,17 @@ static const ocs::qconf_read_entry qconf_read_table[] = {
    {"-sprj",   QConfObj::PR,   ocs::QConfReadKind::SINGLE_OBJECT},
    {"-sce",    QConfObj::CE,   ocs::QConfReadKind::SINGLE_OBJECT},
 
+   /* group N: several named objects, or every one of them when no name is given.
+    * -su demands at least one name, -srqs takes none and then shows all, and the
+    * option table is what enforces the difference (CS-2819). */
+   {"-srqs",   QConfObj::RQS,  ocs::QConfReadKind::OBJECT_LIST},
+   {"-su",     QConfObj::US,   ocs::QConfReadKind::OBJECT_LIST},
+
+   /* group N: the one key that is a number. A row of its own rather than a
+    * SINGLE_OBJECT with a numeric field, because the filter has to compare as a
+    * number - a string compare on CT_id would not match anything (CS-2819). */
+   {"-scat",   QConfObj::CAT,  ocs::QConfReadKind::SINGLE_OBJECT_BY_ID},
+
    /* group A: the singletons. A separate kind rather than a SINGLE_OBJECT row
     * with name_nm == NoName: that would work - get_object_where() returns
     * nullptr for NoName and arg(0) is null-safe - but a row whose switch takes
@@ -188,6 +199,39 @@ ocs::QConfModelBase::get_name_where(const lDescr *descr, int key_nm) {
    }
 }
 
+/** @brief The filter for a read that names several objects (CS-2819)
+ *
+ * `-su a,b c` and `-srqs a,b` mean the same thing, so the arguments are split on
+ * commas and spaces and joined with OR. No argument at all means every object of
+ * the type, which is a null filter - `-srqs` uses that, `-su` cannot, because its
+ * option table entry demands a name.
+ *
+ * @param descr  the CULL descriptor of the type
+ * @param key_nm the field holding the name
+ * @param op     the operation, carrying the arguments
+ * @return the condition, or nullptr for "everything"
+ */
+lCondition *
+ocs::QConfModelBase::get_names_where(const lDescr *descr, int key_nm, const qconf_op &op) {
+   if (key_nm == NoName || op.arg_count() == 0) {
+      return nullptr;
+   }
+
+   lList *name_list = nullptr;
+   for (size_t i = 0; i < op.arg_count(); i++) {
+      lString2List(op.arg(i), &name_list, ST_Type, ST_name, ", ");
+   }
+
+   lCondition *where = nullptr;
+   for_each_ep_lv(name_elem, name_list) {
+      lCondition *one = get_object_where(descr, key_nm, lGetString(name_elem, ST_name));
+      where = (where == nullptr) ? one : lOrWhere(where, one);
+   }
+   lFreeList(&name_list);
+
+   return where;
+}
+
 /**
  * @brief Which element a single-object show asks for
  *
@@ -252,6 +296,16 @@ ocs::QConfModelBase::make_list_snapshot(lList **answer_list, QConfObj object) {
    lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
    const bool ok = fetch(answer_list, desc_->target, nullptr, what);
    lFreeWhat(&what);
+
+   /* An empty result has to be an empty list, not no list at all. lSelect() hands
+    * back nullptr when nothing matched, while the same read over GDI produces an
+    * empty list - and the flatfile writer tells the two apart: it writes the table
+    * header for an empty list and nothing at all for nullptr. `qconf -scatl` on a
+    * cluster without categories printed that header before the read moved, so the
+    * two execution contexts disagreed until this line (CS-2819). */
+   if (ok && object_list_ == nullptr) {
+      object_list_ = lCreateList("", desc_->descr);
+   }
 
    DRETURN(ok);
 }
@@ -373,6 +427,66 @@ cqueue_json_type_complex_overrides(lListElem *cqueue, const lList *centry_list) 
          }
       }
    }
+}
+
+/** @brief Run the sick check over every cluster queue (CS-2819)
+ *
+ * `qconf -sds` reports queues whose configuration is accepted but cannot take
+ * effect - most often an attribute overridden for a host or host group the queue
+ * does not actually contain, so the override reads as if it applied.
+ *
+ * The report is built here rather than in the view for the same reason the
+ * cluster queue references are resolved here: this is where the answer list is,
+ * and a report that is not empty has always set a non-zero exit status as well as
+ * being printed. That status travels in an ANSWER_QUALITY_END answer, which
+ * show_answer() counts without printing - the mechanism -shgrp_why introduced in
+ * CS-2816. Output and a status together is exactly what this switch means, unlike
+ * a reference that matched nothing, which is an error and prints nothing.
+ *
+ * @param answer_list used to return error messages
+ * @return true unless the queues could not be read
+ */
+bool
+ocs::QConfModelBase::make_sick_snapshot(lList **answer_list) {
+   DENTER(TOP_LAYER);
+
+   object_ = QConfObj::CQ;
+   kind_ = QConfReadKind::NAME_LIST;
+   desc_ = &qconf_desc(object_);
+   key_nm_ = desc_->name_nm;
+
+   if (!fetch_hgroups(answer_list)) {
+      DRETURN(false);
+   }
+
+   /* every attribute, for the reason spelled out in make_cqueue_snapshot(): a
+    * reduced descriptor and lSelect() do not go together */
+   lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
+   const bool ok = fetch(answer_list, desc_->target, nullptr, what);
+   lFreeWhat(&what);
+   if (!ok) {
+      DRETURN(false);
+   }
+
+   /* CS-2677: join the host lists back on, from the groups fetched above. Without
+    * it every queue's host list is empty - since CS-2677 it lives in the queue's
+    * own "@@<queue>" host group - and cqueue_sick() then reports every attribute
+    * overridden for a host as unused, which is the whole of its output. */
+   cqueue_list_fill_hostlist(object_list_, hgroup_list_);
+
+   dstring ds = DSTRING_INIT;
+   for (lListElem *cqueue = lFirstRW(object_list_); cqueue != nullptr; cqueue = lNextRW(cqueue)) {
+      cqueue_sick(cqueue, answer_list, hgroup_list_, &ds);
+   }
+   const char *text = sge_dstring_get_string(&ds);
+   sick_report_ = (text != nullptr) ? text : "";
+   sge_dstring_free(&ds);
+
+   if (!sick_report_.empty()) {
+      answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_END, "%s", "");
+   }
+
+   DRETURN(true);
 }
 
 /** @brief Take the snapshot the cluster queue read needs (CS-2818)
@@ -629,6 +743,12 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
    if (parameter.get_sub_procedure_name() == QConfParameter::CENTRY_LIST) {
       DRETURN(make_list_snapshot(answer_list, QConfObj::CE));
    }
+   if (parameter.get_sub_procedure_name() == QConfParameter::CATEGORY_LIST) {
+      DRETURN(make_list_snapshot(answer_list, QConfObj::CAT));
+   }
+   if (parameter.get_sub_procedure_name() == QConfParameter::QUEUE_SICK) {
+      DRETURN(make_sick_snapshot(answer_list));
+   }
    if (parameter.get_sub_procedure_name() == QConfParameter::CQUEUE_SHOW) {
       DRETURN(make_cqueue_snapshot(answer_list, parameter));
    }
@@ -651,6 +771,20 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
    if (kind_ == QConfReadKind::NAME_LIST) {
       what = get_name_what(desc_->descr, key_nm_);
       where = get_name_where(desc_->descr, key_nm_);
+   } else if (kind_ == QConfReadKind::SINGLE_OBJECT_BY_ID) {
+      what = lWhat("%T(ALL)", desc_->descr);
+      /* strtoull rather than a CULL conversion: the argument is whatever the
+       * user typed, and a value that is not a number becomes 0, which matches no
+       * category and is reported as "does not exist" - the wording the hand
+       * written switch produced for a bad id too. */
+      const char *arg = parameter.get_operation().arg(0);
+      requested_id_ = (arg != nullptr) ? static_cast<uint32_t>(strtoull(arg, nullptr, 10)) : 0;
+      where = lWhere("%T(%I==%u)", desc_->descr, key_nm_, requested_id_);
+   } else if (kind_ == QConfReadKind::OBJECT_LIST) {
+      /* The names may be one comma separated argument, several arguments, or
+       * none at all - and none means every object of the type. */
+      what = lWhat("%T(ALL)", desc_->descr);
+      where = get_names_where(desc_->descr, key_nm_, parameter.get_operation());
    } else {
       what = lWhat("%T(ALL)", desc_->descr);
       where = get_object_where(desc_->descr, key_nm_, parameter.get_operation().arg(0));
@@ -677,16 +811,46 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
          DRETURN(false);
       }
    } else {
+      /* A read naming several objects reports per name, when the type says what
+       * to call one - that is what -su always did, one line per userset it could
+       * not find. A type without a noun, like the resource quota sets, reports the
+       * read as a whole instead and never names anything (CS-2819). */
+      if (kind_ == QConfReadKind::OBJECT_LIST && desc_->read.not_found_noun != nullptr &&
+          parameter.get_operation().arg_count() > 0) {
+         lList *wanted = nullptr;
+         for (size_t i = 0; i < parameter.get_operation().arg_count(); i++) {
+            lString2List(parameter.get_operation().arg(i), &wanted, ST_Type, ST_name, ", ");
+         }
+         bool all_found = true;
+         for_each_ep_lv(name_elem, wanted) {
+            const char *name = lGetString(name_elem, ST_name);
+            if (lGetElemStr(object_list_, key_nm_, name) == nullptr) {
+               answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                                       MSG_SGETEXT_DOESNOTEXIST_SS, desc_->read.not_found_noun, name);
+               all_found = false;
+            }
+         }
+         lFreeList(&wanted);
+         if (!all_found) {
+            DRETURN(false);
+         }
+      }
+
       /* lGetNumberOfElem() would flag a null list as a CULL error, so the list
        * itself is checked first - as the hand written engine did. The wording of
        * the "not found" message is per object type, its shape is not. */
       if (object_list_ == nullptr || lGetNumberOfElem(object_list_) == 0) {
-         if (kind_ == QConfReadKind::SINGLETON) {
+         if (kind_ == QConfReadKind::SINGLETON || kind_ == QConfReadKind::OBJECT_LIST) {
             /* no name was given, so the message takes no argument */
             if (desc_->read.empty_msg != nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                        "%s", desc_->read.empty_msg);
             }
+         } else if (kind_ == QConfReadKind::SINGLE_OBJECT_BY_ID) {
+            /* the message of a numeric key formats a number, not the text that
+             * was typed - passing arg(0) would hand a string to a %u (CS-2819) */
+            answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                                    desc_->read.not_found_msg, requested_id_);
          } else if (desc_->read.not_found_msg != nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                     desc_->read.not_found_msg,

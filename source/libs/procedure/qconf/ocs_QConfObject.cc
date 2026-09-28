@@ -54,6 +54,9 @@
 #include "msg_qconf.h"
 
 #include "msg_common.h"
+/* MSG_NORQSFOUND is in the clients' shared catalogue; libs/sgeobj reaches for
+ * that header from the library side too, see ocs_QConfModelBase.cc */
+#include "msg_clients_common.h"
 
 /* qconf_build_fields_fn providers (KTD8): objects with a shared static field table
  * report owned=false; objects whose import field list is built on demand report
@@ -68,6 +71,7 @@ static spooling_field *qconf_fields_HGRP(spool_flatfile_format, bool *o) { *o = 
 static spooling_field *qconf_fields_CQ  (spool_flatfile_format, bool *o) { *o = false; return CQ_fields;   }
 static spooling_field *qconf_fields_US  (spool_flatfile_format, bool *o) { *o = false; return US_fields;   }
 static spooling_field *qconf_fields_RQS (spool_flatfile_format, bool *o) { *o = false; return RQS_fields;  }
+static spooling_field *qconf_fields_CAT (spool_flatfile_format, bool *o) { *o = false; return CAT_fields;  }
 static spooling_field *qconf_fields_SC  (spool_flatfile_format, bool *o) { *o = false; return SC_fields;   }
 /* import list omits runtime load_values/processors (to_stdout=false) so it round-trips (KTD2) */
 static spooling_field *qconf_fields_EH  (spool_flatfile_format, bool *o) { *o = true;  return sge_build_EH_field_list(false, false, false); }
@@ -188,47 +192,60 @@ qconf_us_validate(const lListElem *ep, lList **alpp) {
  * Kept in the order of the enum so that qconf_desc() is a plain index. */
 static const qconf_object_desc qconf_object_table[] = {
    /* CAL  */ { ocs::gdi::Target::CAL_LIST,  CAL_Type,  CAL_name,  qconf_fields_CAL,  &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "calendar", MSG_CALENDAR_XISNOTACALENDAR_S, nullptr, nullptr } },
+              { .list_name = "calendar", .not_found_msg = MSG_CALENDAR_XISNOTACALENDAR_S } },
    /* CK   */ { ocs::gdi::Target::CK_LIST,   CK_Type,   CK_name,   qconf_fields_CK,   &qconf_sfi,                 nullptr,      ckpt_validate,       nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "ckpt interface definition", MSG_CKPT_XISNOTCHKPINTERFACEDEF_S, nullptr, nullptr } },
+              { .list_name = "ckpt interface definition", .not_found_msg = MSG_CKPT_XISNOTCHKPINTERFACEDEF_S } },
    /* CE   */ { ocs::gdi::Target::CE_LIST,   CE_Type,   CE_name,   qconf_fields_CE,   &qconf_ce_sfi,              nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "complex entry", MSG_CENTRY_DOESNOTEXIST_S, nullptr, nullptr } },
+              { .list_name = "complex entry", .not_found_msg = MSG_CENTRY_DOESNOTEXIST_S, .list_sfi = &qconf_ce_list_sfi } },
    /* EH   */ { ocs::gdi::Target::EH_LIST,   EH_Type,   EH_name,   qconf_fields_EH,   &qconf_sfi,                 "exechost",   nullptr,             qconf_eh_resolve,  ocs::gdi::SubCommand::NONE,    false, true,  false, SGE_TEMPLATE_NAME,  SGE_GLOBAL_NAME,
-              { qconf_show_fields_EH, "execution host", MSG_EXEC_XISNOTANEXECUTIONHOST_S, nullptr, qconf_show_prepare_EH } },
+              { .fields = qconf_show_fields_EH, .list_name = "execution host", .not_found_msg = MSG_EXEC_XISNOTANEXECUTIONHOST_S, .prepare = qconf_show_prepare_EH } },
    /* HGRP */ { ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_name, qconf_fields_HGRP, &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "host group list", nullptr, nullptr, nullptr } },
+              { .list_name = "host group list" } },
    /* PE   */ { ocs::gdi::Target::PE_LIST,   PE_Type,   PE_name,   qconf_fields_PE,   &qconf_sfi,                 nullptr,      qconf_pe_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "parallel environment", MSG_PARALLEL_XNOTAPARALLELEVIRONMENT_S, nullptr, nullptr } },
+              { .list_name = "parallel environment", .not_found_msg = MSG_PARALLEL_XNOTAPARALLELEVIRONMENT_S } },
    /* PR   */ { ocs::gdi::Target::PR_LIST,   PR_Type,   PR_name,   qconf_fields_PR,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "project list", MSG_PROJECT_XISNOKNWOWNPROJECT_S, nullptr, nullptr } },
+              { .list_name = "project list", .not_found_msg = MSG_PROJECT_XISNOKNWOWNPROJECT_S } },
    /* CQ   */ { ocs::gdi::Target::CQ_LIST,   CQ_Type,   CQ_name,   qconf_fields_CQ,   &qconf_sfi,                 nullptr,      qconf_cq_verify,     nullptr,           ocs::gdi::SubCommand::SET_ALL, false, false, false, nullptr,            nullptr,
-              { nullptr, "cqueue list", nullptr, nullptr, nullptr } },
+              { .list_name = "cqueue list" } },
    /* RL   */ { ocs::gdi::Target::RL_LIST,   RL_Type,   RL_name,   qconf_fields_RL,   &qconf_sfi,                 nullptr,      qconf_role_validate, nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "role", MSG_ROLE_DOESNOTEXIST_S, nullptr, nullptr } },
+              { .list_name = "role", .not_found_msg = MSG_ROLE_DOESNOTEXIST_S } },
    /* RQS  */ { ocs::gdi::Target::RQS_LIST,  RQS_Type,  RQS_name,  qconf_fields_RQS,  &qconf_rqs_sfi,             nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    true,  true,  false, nullptr,            nullptr,
-              { nullptr, "resource quota set list", nullptr, nullptr, nullptr } },
+              /* -srqs writes the whole list in one go: qconf_rqs_sfi wraps every
+               * record in braces, which a loop over single objects would not do */
+              /* -srqs reports an empty result as a whole and never names the one
+               * that was missing, so there is no noun; empty_msg carries the
+               * message it always printed (CS-2819) */
+              { .list_name = "resource quota set list", .empty_msg = MSG_NORQSFOUND, .write_as_list = true } },
    /* US   */ { ocs::gdi::Target::US_LIST,   US_Type,   US_name,   qconf_fields_US,   &qconf_param_sfi,           nullptr,      qconf_us_validate,   nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "userset list", nullptr, nullptr, nullptr } },
+              /* -su names the userset it could not find, and calls it an access
+               * list, as it always did (CS-2819) */
+              { .list_name = "userset list", .not_found_noun = "access list" } },
    /* UU   */ { ocs::gdi::Target::UU_LIST,   UU_Type,   UU_name,   qconf_fields_UU,   &qconf_sfi,                 nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, "user list", MSG_USER_XISNOKNOWNUSER_S, nullptr, nullptr } },
+              { .list_name = "user list", .not_found_msg = MSG_USER_XISNOKNOWNUSER_S } },
    /* STN  */ { ocs::gdi::Target::STN_LIST,  STN_Type,  NoName,    qconf_fields_STN,  &qconf_name_value_list_sfi, "sharetree",  nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  true,  nullptr,            nullptr,
-              { nullptr, nullptr, nullptr, MSG_OBJ_NOSTREEELEM, nullptr } },
+              { .empty_msg = MSG_OBJ_NOSTREEELEM } },
    /* SC: the hand written -ssconf had no empty check at all - it handed a null
     * element to the writer and reported the CULL complaint plus this line. The
     * path cannot occur on a running cluster; inside qmaster a null element must
     * not reach the writer, so the check is explicit here and reports the closer
     * of the two messages (CS-2808). */
    /* SC   */ { ocs::gdi::Target::SC_LIST,   SC_Type,   NoName,    qconf_fields_SC,   &qconf_comma_sfi,           "sched_conf", nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, true,  false, nullptr,            nullptr,
-              { nullptr, nullptr, nullptr, MSG_SCHEDCONF_CANTCREATESCHEDULERCONFIGURATION, nullptr } },
+              { .empty_msg = MSG_SCHEDCONF_CANTCREATESCHEDULERCONFIGURATION } },
    /* CONF: read only (CS-2808). -sconf/-mconf keep their own code and never ask
     * this table, so every write field is left empty on purpose. */
    /* CONF */ { ocs::gdi::Target::CONF_LIST, CONF_Type, CONF_name, qconf_fields_CONF, &qconf_sfi,                nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,            nullptr,
-              { nullptr, "config", nullptr, nullptr, nullptr } },
+              { .list_name = "config" } },
    /* EV: read only and name-list only (CS-2808). There is no field list because
     * EV_Type is not a registered object type and no -s<obj>/export path reaches
     * this row - show_name_list() renders the key field and nothing else. */
    /* EV   */ { ocs::gdi::Target::EV_LIST,   EV_Type,   EV_host,   nullptr,           &qconf_sfi,                nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,            nullptr,
-              { nullptr, "scheduling host", nullptr, nullptr, nullptr } },
+              { .list_name = "scheduling host" } },
+   /* CAT: read only, and the only type whose key is a number rather than a name.
+    * The list has a JSON schema id of its own so that the enveloped array of
+    * -scatl does not collide with the single record of -scat (CS-2819). */
+   /* CAT  */ { ocs::gdi::Target::CAT_LIST,  CT_Type,   CT_id,     qconf_fields_CAT,  &qconf_cat_sfi,            "category",   nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,            nullptr,
+              { .list_name = "category", .not_found_msg = MSG_CAT_DOESNOTEXIST_U,
+                .list_sfi = &qconf_cat_list_sfi, .json_list_id = "category-list" } },
 };
 
 /* CS-2808: the table is indexed by QConfObj and carries no name to grep for, so
@@ -236,7 +253,7 @@ static const qconf_object_desc qconf_object_table[] = {
  * silence. The bound is spelled out rather than taken from a sentinel, so that
  * appending a value forces a look at this line. */
 static_assert(sizeof(qconf_object_table) / sizeof(qconf_object_table[0]) ==
-              static_cast<size_t>(QConfObj::EV) + 1,
+              static_cast<size_t>(QConfObj::CAT) + 1,
               "qconf_object_table needs exactly one row per QConfObj value");
 
 /** @brief A private copy of a field list, see the header (CS-2817)
