@@ -59,8 +59,11 @@ bool centry_check_rsmap(lList **answer_list, u_long32 consumable, const char *at
  * CE_name and CE_stringval verbatim. This function resolves each name against
  * the master centry list, copies the referenced complex's valtype into the
  * property, type-checks its value via centry_fill_and_check, and rejects
- * duplicates within one id. Called from the host-side complex_values path
- * (centry_list_fill_request) after the top-level RSMAP entry has been typed.
+ * duplicates within one id. A complex of type RSMAP is rejected as well: its
+ * value would be an amount plus a list of instances, and the instances cannot
+ * be written in a characteristic (CS-2714). Called from the host-side
+ * complex_values path (centry_list_fill_request) after the top-level RSMAP
+ * entry has been typed.
  *
  * @param answer_list          answer list; validation errors are appended
  *                             with STATUS_EUNKNOWN/ANSWER_QUALITY_ERROR
@@ -70,8 +73,9 @@ bool centry_check_rsmap(lList **answer_list, u_long32 consumable, const char *at
  *                             may be updated in place
  * @param master_centry_list   the master complex-list used to resolve
  *                             characteristic names and their valtypes
- * @return                     true if every property resolves and its value
- *                             parses; false on the first invalid property
+ * @return                     true if every property resolves to a complex
+ *                             which is not a RSMAP and its value parses; false
+ *                             on the first invalid property
  *                             (all detected problems are still reported to
  *                             the answer_list — the function does not stop
  *                             on the first error within a single centry)
@@ -121,6 +125,18 @@ bool centry_check_rsmap_characteristics(lList **answer_list, lListElem *centry,
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_RSMAP_CHARACTERISTIC_UNKNOWN_SSS,
                                     rsmap_name, id != nullptr ? id : "", pname);
+            ret = false;
+            continue;
+         }
+
+         // A resource map is an amount plus a list of instances, and the grammar of a
+         // characteristic value excludes '(' and ')', so the instances can never be given. What
+         // remains would parse as a plain number which means nothing.
+         if (lGetUlong(master_cep, CE_valtype) == TYPE_RSMAP) {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_RSMAP_CHARACTERISTIC_IS_RSMAP_SSS,
+                                    rsmap_name, id != nullptr ? id : "",
+                                    lGetString(master_cep, CE_name));
             ret = false;
             continue;
          }
