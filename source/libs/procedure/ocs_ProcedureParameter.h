@@ -147,6 +147,22 @@ namespace ocs {
 
       virtual void set_bundle(const lList *bundle);
 
+      /** @brief The text of a bundle value, with the wire format's empty string rule applied
+       *
+       * `unpackstr()` maps an empty string to `nullptr` on purpose
+       * (`libs/cull/pack.cc`), so a value that was empty in the client arrives here
+       * as a null pointer. Building a `std::string` from it throws
+       * `std::logic_error`, which nothing catches and `TerminationManager` turns
+       * into `abort()` - one `qconf -scat ''` took the whole qmaster down
+       * (CS-2840). Every bundle value that becomes a string goes through here.
+       *
+       * @param text the value as CULL returns it, possibly nullptr
+       * @return the text, or an empty string when it was empty on the wire
+       */
+      [[nodiscard]] static std::string bundle_string(const char *text) {
+         return text != nullptr ? std::string{text} : std::string{};
+      }
+
    public:
       [[nodiscard]] virtual lList *get_bundle();
 

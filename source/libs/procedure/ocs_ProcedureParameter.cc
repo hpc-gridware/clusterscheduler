@@ -95,13 +95,12 @@ void ocs::ProcedureParameter::set_bundle(const lList *bundle) {
    const lListElem *name_value_param = lGetElemStr(bundle, SPP_name, NAME_VALUE_LIST);
    const lList *name_value_list = lGetList(name_value_param, SPP_value_list);
    const lListElem *procedure_elem = lGetElemStr(name_value_list, VA_variable, PROCEDURE);
-   procedure_name_ = lGetString(procedure_elem, VA_value);
+   procedure_name_ = bundle_string(lGetString(procedure_elem, VA_value));
    DPRINTF("procedure_name: " SFN "\n", procedure_name_.c_str());
 
    // sub-procedure name
    const lListElem *sub_procedure_elem = lGetElemStr(name_value_list, VA_variable, SUB_PROCEDURE);
-   const char *value = lGetString(sub_procedure_elem, VA_value);
-   sub_procedure_name_ = value != nullptr ? value : "";
+   sub_procedure_name_ = bundle_string(lGetString(sub_procedure_elem, VA_value));
    DPRINTF("sub_procedure_name: " SFN "\n", sub_procedure_name_.c_str());
 
    // -fmt
@@ -143,8 +142,7 @@ std::string ocs::ProcedureParameter::get_sub_procedure_from_bundle(const lList *
 
    // Not every request contains sub-procedure requests
    if (const lListElem *sub_procedure_elem = lGetElemStr(name_value_list, VA_variable, SUB_PROCEDURE); sub_procedure_elem != nullptr) {
-      const char *value = lGetString(sub_procedure_elem, VA_value);
-      return (value != nullptr ? value : "");
+      return bundle_string(lGetString(sub_procedure_elem, VA_value));
    }
    return "";
 }

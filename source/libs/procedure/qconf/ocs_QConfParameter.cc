@@ -139,7 +139,7 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
    if (operation_param != nullptr) {
       const lListElem *token = lFirst(lGetList(operation_param, SPP_value_list));
       if (token != nullptr) {
-         operation_.token = lGetString(token, ST_name);
+         operation_.token = bundle_string(lGetString(token, ST_name));
       }
    }
 
@@ -147,7 +147,9 @@ ocs::QConfParameter::set_bundle(const lList *bundle) {
    if (args_param != nullptr) {
       const lListElem *arg;
       for_each_ep(arg, lGetList(args_param, SPP_value_list)) {
-         operation_.args.emplace_back(lGetString(arg, ST_name));
+         /* an argument that was empty in the client arrives as a null pointer,
+          * see bundle_string() - this is the spot that took qmaster down (CS-2840) */
+         operation_.args.emplace_back(bundle_string(lGetString(arg, ST_name)));
       }
    }
 
