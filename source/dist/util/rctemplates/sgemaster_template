@@ -93,8 +93,8 @@ ARCH=`$SGE_ROOT/util/arch`
 
 # library path setting required only for architectures where RUNPATH is not supported
 case $ARCH in
-#ENFORCE_SHLIBPATH#sol*|lx*)
-#ENFORCE_SHLIBPATH#   ;;
+lx-*|ulx-*|xlx-*|sol-*|osol-*)
+   ;;
 *)
    shlib_path_name=`$SGE_ROOT/util/arch -lib`
    old_value=`eval echo '$'$shlib_path_name`
