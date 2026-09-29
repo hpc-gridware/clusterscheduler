@@ -79,7 +79,6 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_href.h"
-#include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_utility.h"
 
@@ -101,6 +100,8 @@
 #include "qconf/ocs_QConfController.h"
 #include "qconf/table/ocs_QConfTableController.h"
 #include "qconf/table/ocs_QConfTableView.h"
+#include "qconf/objl/ocs_QConfObjectFilterController.h"
+#include "qconf/objl/ocs_QConfObjectFilterView.h"
 #include "qconf/sick/ocs_QConfSickController.h"
 #include "qconf/sick/ocs_QConfSickView.h"
 #include "qconf/cqueue/ocs_QConfCQueueShowController.h"
@@ -1342,6 +1343,10 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
          } else if (sub == ocs::QConfParameter::QUEUE_SICK) {
             ocs::QConfSickView view(param);
             ocs::QConfSickController controller(os);
+            controller.process_request(param, model, view);
+         } else if (sub == ocs::QConfParameter::OBJECT_FILTER) {
+            ocs::QConfObjectFilterView view(param);
+            ocs::QConfObjectFilterController controller(os);
             controller.process_request(param, model, view);
          } else if (sub == ocs::QConfParameter::CQUEUE_SHOW) {
             ocs::QConfCQueueShowView view(param);
@@ -4130,391 +4135,34 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*----------------------------------------------------------------------------*/
-   if (strcmp("-sobjl", *spp) == 0) {
-      dstring object_name = DSTRING_INIT;
-      dstring attribute_pattern = DSTRING_INIT;
-      dstring value_pattern = DSTRING_INIT;
-      bool handle_cqueue;
-      bool handle_domain;
-      bool handle_qinstance;
-      bool handle_exechost;
-
-      spp = sge_parser_get_next(spp);
-      sge_dstring_copy_string(&object_name, *spp);
-      spp = sge_parser_get_next(spp);
-      sge_dstring_copy_string(&attribute_pattern, *spp);
-      spp = sge_parser_get_next(spp);
-      sge_dstring_copy_string(&value_pattern, *spp);
-
-      handle_cqueue = (strcmp(sge_dstring_get_string(&object_name), "queue") == 0) ? true : false;
-      handle_domain = (strcmp(sge_dstring_get_string(&object_name), "queue_domain") == 0) ? true : false;
-      handle_qinstance = (strcmp(sge_dstring_get_string(&object_name), "queue_instance") == 0) ? true : false;
-      handle_exechost = (strcmp(sge_dstring_get_string(&object_name), "exechost") == 0) ? true : false;
-
-      if (handle_exechost) {
-         lEnumeration *what_all = nullptr;
-         lList *list = nullptr;
+      if (strcmp("-sobjl", *spp) == 0) {
          lList *answer_list = nullptr;
-         const lListElem *answer_ep;
+         qconf_op op;
 
-         what_all = lWhat("%T(ALL)", EH_Type);
-         answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &list, nullptr, what_all);
-         lFreeWhat(&what_all);
+         op.token = "-sobjl";
+         spp = sge_parser_get_next(spp);
+         op.args.emplace_back(*spp);
+         spp = sge_parser_get_next(spp);
+         op.args.emplace_back(*spp);
+         spp = sge_parser_get_next(spp);
+         op.args.emplace_back(*spp);
 
-         answer_ep = lFirst(answer_list);
-         answer_exit_if_not_recoverable(answer_ep);
-         if (answer_get_status(answer_ep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(answer_ep, AN_text));
-            lFreeList(&answer_list);
-            sge_dstring_free(&object_name);
-            sge_dstring_free(&attribute_pattern);
-            sge_dstring_free(&value_pattern);
-            DRETURN(0);
+         /* CS-2819: a sub-procedure. Which name an entry produces depends on the
+          * kind of the entry, so the matching cannot be expressed as a filter on
+          * a descriptor row - it has its own model function. */
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::OBJECT_FILTER);
+         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
+
+         sge_parse_return |= show_answer(answer_list);
+         if (!ok) {
+            sge_parse_return = 1;
          }
          lFreeList(&answer_list);
-
-         for_each_rw_lv (elem, list) {
-            const char *hostname = nullptr;
-            bool already_handled = false;
-
-            /*
-             * hostname
-             */
-            hostname = lGetHost(elem, EH_name);
-            if (!fnmatch(sge_dstring_get_string(&attribute_pattern), SGE_ATTR_HOSTNAME, 0) &&
-                !fnmatch(sge_dstring_get_string(&value_pattern), hostname, 0)) {
-               os << qconf_cstr(hostname) << "\n";
-               already_handled = true;
-            }
-
-            /*
-             * load scaling list
-             */
-            if (!already_handled &&
-                !fnmatch(sge_dstring_get_string(&attribute_pattern), SGE_ATTR_LOAD_SCALING, 0)) {
-               dstring value = DSTRING_INIT;
-               const lList *value_list = nullptr;
-               const lListElem *value_elem = nullptr;
-               const char *value_string = nullptr;
-
-               value_list = lGetList(elem, EH_scaling_list);
-               value_elem = lFirst(value_list);
-
-               while (value_elem != nullptr) {
-                  sge_dstring_sprintf_append(&value, "%s=%.10g", lGetString(value_elem, HS_name), lGetDouble(value_elem, HS_value));
-                  value_elem = lNext(value_elem);
-                  if (value_elem != nullptr) {
-                     sge_dstring_append(&value, ",");
-                  }
-               }
-               value_string = sge_dstring_get_string(&value);
-               if (value_string == nullptr) {
-                  sge_dstring_copy_string(&value, "NONE");
-                  value_string = sge_dstring_get_string(&value);
-               }
-               if (!fnmatch(sge_dstring_get_string(&value_pattern), value_string, 0)) {
-                  os << qconf_cstr(hostname) << "\n";
-                  already_handled = true;
-               }
-               sge_dstring_free(&value);
-            }
-
-            /*
-             * complex_values list
-             */
-            if (!already_handled &&
-                !fnmatch(sge_dstring_get_string(&attribute_pattern), SGE_ATTR_COMPLEX_VALUES, 0)) {
-               dstring value = DSTRING_INIT;
-               const lList *value_list = nullptr;
-               const lListElem *value_elem = nullptr;
-               const char *value_string = nullptr;
-
-               value_list = lGetList(elem, EH_consumable_config_list);
-               value_elem = lFirst(value_list);
-
-               while (value_elem != nullptr) {
-                  sge_dstring_sprintf_append(&value, "%s=", lGetString(value_elem, CE_name));
-                  if (lGetString(value_elem, CE_stringval) != nullptr) {
-                     sge_dstring_append(&value, lGetString(value_elem, CE_stringval));
-                  } else {
-                     sge_dstring_sprintf_append(&value, "%f", lGetString(value_elem, CE_doubleval));
-                  }
-                  value_elem = lNext(value_elem);
-                  if (value_elem != nullptr) {
-                     sge_dstring_append(&value, ",");
-                  }
-               }
-               value_string = sge_dstring_get_string(&value);
-               if (value_string == nullptr) {
-                  sge_dstring_copy_string(&value, "NONE");
-                  value_string = sge_dstring_get_string(&value);
-               }
-               if (!fnmatch(sge_dstring_get_string(&value_pattern), value_string, 0)) {
-                  os << qconf_cstr(hostname) << "\n";
-                  already_handled = true;
-               }
-               sge_dstring_free(&value);
-            }
-
-            /*
-             * load_values list
-             */
-            if (!already_handled &&
-                !fnmatch(sge_dstring_get_string(&attribute_pattern), SGE_ATTR_LOAD_VALUES, 0)) {
-               dstring value = DSTRING_INIT;
-               const lList *value_list = nullptr;
-               const lListElem *value_elem = nullptr;
-               const char *value_string = nullptr;
-
-               value_list = lGetList(elem, EH_load_list);
-               value_elem = lFirst(value_list);
-
-               while (value_elem != nullptr) {
-                  sge_dstring_sprintf_append(&value, "%s=", lGetString(value_elem, HL_name));
-                  sge_dstring_sprintf_append(&value, "%s", lGetString(value_elem, HL_value));
-                  value_elem = lNext(value_elem);
-                  if (value_elem != nullptr) {
-                     sge_dstring_append(&value, ",");
-                  }
-               }
-               value_string = sge_dstring_get_string(&value);
-               if (value_string == nullptr) {
-                  sge_dstring_copy_string(&value, "NONE");
-                  value_string = sge_dstring_get_string(&value);
-               }
-               if (!fnmatch(sge_dstring_get_string(&value_pattern), value_string, 0)) {
-                  os << qconf_cstr(hostname) << "\n";
-                  already_handled = true;
-               }
-               sge_dstring_free(&value);
-            }
-
-            /*
-             * processors
-             */
-            if (!already_handled &&
-                !fnmatch(sge_dstring_get_string(&attribute_pattern), SGE_ATTR_PROCESSORS, 0)) {
-               dstring value = DSTRING_INIT;
-               const char *value_string = nullptr;
-
-               sge_dstring_sprintf(&value, "%d", (int) lGetUlong(elem, EH_processors));
-               value_string = sge_dstring_get_string(&value);
-               if (!fnmatch(sge_dstring_get_string(&value_pattern), value_string, 0)) {
-                  os << qconf_cstr(hostname) << "\n";
-                  already_handled = true;
-               }
-               sge_dstring_free(&value);
-            }
-
-
-            /*
-             * user_lists list
-             */
-            if (!already_handled &&
-                !fnmatch(sge_dstring_get_string(&attribute_pattern), SGE_ATTR_USER_LISTS, 0)) {
-               dstring value = DSTRING_INIT;
-               const lList *value_list = nullptr;
-               const lListElem *value_elem = nullptr;
-               const char *value_string = nullptr;
-
-               value_list = lGetList(elem, EH_acl);
-               value_elem = lFirst(value_list);
-
-               while (value_elem != nullptr) {
-                  sge_dstring_append(&value, lGetString(value_elem, US_name));
-                  value_elem = lNext(value_elem);
-                  if (value_elem != nullptr) {
-                     sge_dstring_append(&value, " ");
-                  }
-               }
-               value_string = sge_dstring_get_string(&value);
-               if (value_string == nullptr) {
-                  sge_dstring_copy_string(&value, "NONE");
-                  value_string = sge_dstring_get_string(&value);
-               }
-               if (!fnmatch(sge_dstring_get_string(&value_pattern), value_string, 0)) {
-                  os << qconf_cstr(hostname) << "\n";
-                  already_handled = true;
-               }
-               sge_dstring_free(&value);
-            }
-
-            /*
-             * user_lists list
-             */
-            if (!already_handled &&
-                !fnmatch(sge_dstring_get_string(&attribute_pattern), SGE_ATTR_XUSER_LISTS, 0)) {
-               dstring value = DSTRING_INIT;
-               const lList *value_list = nullptr;
-               const lListElem *value_elem = nullptr;
-               const char *value_string = nullptr;
-
-               value_list = lGetList(elem, EH_xacl);
-               value_elem = lFirst(value_list);
-
-               while (value_elem != nullptr) {
-                  sge_dstring_append(&value, lGetString(value_elem, US_name));
-                  value_elem = lNext(value_elem);
-                  if (value_elem != nullptr) {
-                     sge_dstring_append(&value, " ");
-                  }
-               }
-               value_string = sge_dstring_get_string(&value);
-               if (value_string == nullptr) {
-                  sge_dstring_copy_string(&value, "NONE");
-                  value_string = sge_dstring_get_string(&value);
-               }
-               if (!fnmatch(sge_dstring_get_string(&value_pattern), value_string, 0)) {
-                  os << qconf_cstr(hostname) << "\n";
-                  already_handled = true;
-               }
-               sge_dstring_free(&value);
-            }
-         }
-      } else if (handle_cqueue || handle_domain || handle_qinstance) {
-         lEnumeration *what_all = nullptr;
-         lList *list = nullptr;
-         lList *answer_list = nullptr;
-         const lListElem *answer_ep;
-
-         what_all = lWhat("%T(ALL)", CQ_Type);
-         answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &list, nullptr, what_all);
-         lFreeWhat(&what_all);
-
-         answer_ep = lFirst(answer_list);
-         answer_exit_if_not_recoverable(answer_ep);
-         if (answer_get_status(answer_ep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(answer_ep, AN_text));
-            lFreeList(&answer_list);
-            sge_dstring_free(&object_name);
-            sge_dstring_free(&attribute_pattern);
-            sge_dstring_free(&value_pattern);
-            DRETURN(0);
-         }
-         lFreeList(&answer_list);
-
-         /*
-          * CS-2677: "qconf -sobjl queue hostlist <pattern>" matches against the
-          * host list, which the queue does not carry any more -- it is the
-          * member list of "@@<queue>". Fetch the groups and join them on, so
-          * the pattern is matched against what "qconf -sq" would print.
-          */
-         {
-            lEnumeration *hgrp_what = lWhat("%T(ALL)", HGRP_Type);
-            lList *hgrp_list = nullptr;
-            lList *hgrp_answer_list = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &hgrp_list, nullptr, hgrp_what);
-
-            lFreeWhat(&hgrp_what);
-            answer_exit_if_not_recoverable(lFirst(hgrp_answer_list));
-            cqueue_list_fill_hostlist(list, hgrp_list);
-            lFreeList(&hgrp_list);
-            lFreeList(&hgrp_answer_list);
-         }
-
-         for_each_rw_lv (elem, list) {
-            int index = 0;
-            bool already_handled = false;
-
-            /*
-             * Handle special case: qname
-             */
-            if (!fnmatch(sge_dstring_get_string(&attribute_pattern),
-                         SGE_ATTR_QNAME, 0)) {
-               if (handle_cqueue &&
-                   !fnmatch(sge_dstring_get_string(&value_pattern), lGetString(elem, CQ_name), 0)) {
-                  os << qconf_cstr(lGetString(elem, CQ_name)) << "\n";
-                  already_handled = true;
-               }
-            }
-
-            /*
-             * Handle special case: hostlist
-             */
-            if (!already_handled &&
-                !fnmatch(sge_dstring_get_string(&attribute_pattern),
-                         SGE_ATTR_HOST_LIST, 0)) {
-               dstring value = DSTRING_INIT;
-               const lList *hostref_list = lGetList(elem, CQ_hostlist);
-
-               if (hostref_list != nullptr) {
-                  href_list_append_to_dstring(hostref_list, &value);
-               } else {
-                  sge_dstring_copy_string(&value, "NONE");
-               }
-               if (handle_cqueue &&
-                   !fnmatch(sge_dstring_get_string(&value_pattern), sge_dstring_get_string(&value), 0)) {
-                  os << qconf_cstr(lGetString(elem, CQ_name)) << "\n";
-                  already_handled = true;
-               }
-               sge_dstring_free(&value);
-            }
-
-            /*
-             * Handle all other CQ attributes
-             */
-            while (!already_handled &&
-                   cqueue_attribute_array[index].cqueue_attr != NoName) {
-               if (!fnmatch(sge_dstring_get_string(&attribute_pattern),
-                            cqueue_attribute_array[index].name, 0)) {
-                  dstring value = DSTRING_INIT;
-                  const lList *attribute_list = lGetList(elem, cqueue_attribute_array[index].cqueue_attr);
-
-                  already_handled = false;
-                  for_each_ep_lv(attribute, attribute_list) {
-                     const lDescr *descr = lGetListDescr(attribute_list);
-                     lList *tmp_attribute_list = lCreateList("", descr);
-                     lListElem *tmp_attribute = lCopyElem(attribute);
-                     const char *host_hgroup = lGetHost(attribute, cqueue_attribute_array[index].href_attr);
-                     bool is_cqueue;
-                     bool is_domain;
-                     bool is_qinstance;
-
-                     is_cqueue = (strcmp(host_hgroup, HOSTREF_DEFAULT) == 0) ? true : false;
-                     is_domain = false;
-                     if (!is_cqueue) {
-                        is_domain = ocs::is_hgroup_name(host_hgroup);
-                     }
-                     is_qinstance = (!is_domain && !is_cqueue) ? true : false;
-
-                     lAppendElem(tmp_attribute_list, tmp_attribute);
-                     lSetHost(tmp_attribute,
-                              cqueue_attribute_array[index].href_attr,
-                              HOSTREF_DEFAULT);
-
-                     attr_list_append_to_dstring(tmp_attribute_list,
-                                                 &value, descr, cqueue_attribute_array[index].href_attr,
-                                                 cqueue_attribute_array[index].value_attr);
-
-                     if (!fnmatch(sge_dstring_get_string(&value_pattern), sge_dstring_get_string(&value), 0)) {
-                        if (handle_cqueue && is_cqueue) {
-                           os << qconf_cstr(lGetString(elem, CQ_name)) << "\n";
-                        } else if ((handle_domain && is_domain) || (handle_qinstance && is_qinstance)) {
-                           os << qconf_cstr(lGetString(elem, CQ_name)) << "@" << qconf_cstr(host_hgroup) << "\n";
-                        }
-                        already_handled = true;
-                     }
-                     lFreeList(&tmp_attribute_list);
-                     if (already_handled) {
-                        break;
-                     }
-                  }
-                  sge_dstring_free(&value);
-                  if (already_handled) {
-                     break;
-                  }
-               }
-               index++;
-            }
-         }
-         lFreeList(&list);
+         spp++;
+         continue;
       }
-      sge_dstring_free(&object_name);
-      sge_dstring_free(&attribute_pattern);
-      sge_dstring_free(&value_pattern);
-
-      spp++;
-      continue;
-   }
 
 /*---------------------------------------------------------------------------*/
 

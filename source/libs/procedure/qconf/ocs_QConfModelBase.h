@@ -149,6 +149,17 @@ namespace ocs {
        */
       [[nodiscard]] const std::string &get_sick_report() const { return sick_report_; }
 
+      /** @brief The object names `-sobjl` matched (CS-2819)
+       *
+       * Names rather than objects: the switch answers with what matched, one per
+       * line, and a queue instance or domain is named `queue@host` respectively
+       * `queue@@group`. Built while taking the snapshot, because deciding what
+       * matches is not rendering.
+       *
+       * @return them, in the order the objects were examined
+       */
+      [[nodiscard]] const std::vector<std::string> &get_filtered_names() const { return filtered_names_; }
+
       /** @brief The queue references the operation was asked about (CS-2818)
        *
        * Parsed here because the filter is built from them, and kept so that the
@@ -211,6 +222,7 @@ namespace ocs {
       HGroupWhy hgroup_why_;   ///< filled by the -shgrp_why sub-procedure only
       std::vector<CQueueOutput> cqueue_output_;   ///< filled by the cluster queue sub-procedure only
       std::string sick_report_;                  ///< filled by the -sds sub-procedure only
+      std::vector<std::string> filtered_names_;  ///< filled by the -sobjl sub-procedure only
 
    public:
       static const qconf_read_entry *resolve(const char *switch_name);
@@ -234,6 +246,9 @@ namespace ocs {
       bool make_hgroup_snapshot(lList **answer_list, QConfParameter &parameter);
       bool make_cqueue_snapshot(lList **answer_list, QConfParameter &parameter);
       bool make_sick_snapshot(lList **answer_list);
+      bool make_sobjl_snapshot(lList **answer_list, QConfParameter &parameter);
+      bool collect_exechost_matches(lList **answer_list, const char *attr, const char *val);
+      bool collect_cqueue_matches(lList **answer_list, const char *spec, const char *attr, const char *val);
 
    public:
       virtual bool make_snapshot(lList **answer_list, QConfParameter &parameter);

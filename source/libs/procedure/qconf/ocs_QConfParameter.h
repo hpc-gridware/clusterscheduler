@@ -146,6 +146,7 @@ namespace ocs {
       static constexpr auto CQUEUE_SHOW = "cqueue-show";            ///< `qconf -sq`
       static constexpr auto CATEGORY_LIST = "category-list";        ///< `qconf -scatl`
       static constexpr auto QUEUE_SICK = "queue-sick";              ///< `qconf -sds`
+      static constexpr auto OBJECT_FILTER = "object-filter";        ///< `qconf -sobjl`
 
       /** @brief Whether a sub-procedure name is one of the host group views
        * @param name the name, empty for the table-driven read

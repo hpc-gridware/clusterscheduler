@@ -37,7 +37,13 @@
 #include "sgeobj/sge_eval_expression.h"
 #include "uti/ocs_Pattern.h"
 #include "sgeobj/config.h"
+#include "sgeobj/sge_attr.h"
+#include "sgeobj/sge_userset.h"
+#include "uti/sge.h"
+#include <array>
 #include <cstring>
+#include <fnmatch.h>
+#include <utility>
 
 #include "ocs_QConfModelBase.h"
 
@@ -429,6 +435,321 @@ cqueue_json_type_complex_overrides(lListElem *cqueue, const lList *centry_list) 
    }
 }
 
+/** @brief The rendered value of a list attribute, or `NONE` when it is empty
+ *
+ * Every list valued attribute of `-sobjl` is matched against its rendered form,
+ * and an empty list renders as the literal `NONE` rather than as nothing - which
+ * is why `-sobjl exechost user_lists '*'` answers for every host although none of
+ * them has a user list.
+ *
+ * @param value the dstring the caller filled
+ * @return its contents, or `NONE` when it stayed empty
+ */
+static const char *
+sobjl_value_or_none(dstring *value) {
+   const char *text = sge_dstring_get_string(value);
+   if (text == nullptr) {
+      sge_dstring_copy_string(value, "NONE");
+      text = sge_dstring_get_string(value);
+   }
+   return text;
+}
+
+/** @brief Name the execution hosts `-sobjl exechost` matched (CS-2819)
+ *
+ * Seven attributes, in a fixed order, and a host is named at most once: the first
+ * attribute whose name matches the pattern and whose value matches decides, and
+ * the remaining ones are not looked at. An attribute outside this set matches
+ * nothing at all, which is why `-sobjl exechost projects '*'` answers nothing
+ * although `qconf -se` prints a projects line - the set is the switch's own, not
+ * the object's.
+ *
+ * @param answer_list used to return error messages
+ * @param attr the attribute name pattern
+ * @param val the value pattern
+ * @return true on success; false with @p answer_list filled when the hosts could not be read
+ */
+bool
+ocs::QConfModelBase::collect_exechost_matches(lList **answer_list, const char *attr, const char *val) {
+   DENTER(TOP_LAYER);
+
+   object_ = QConfObj::EH;
+   desc_ = &qconf_desc(object_);
+   key_nm_ = desc_->name_nm;
+   kind_ = QConfReadKind::NAME_LIST;
+
+   lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
+   const bool ok = fetch(answer_list, desc_->target, nullptr, what);
+   lFreeWhat(&what);
+   if (!ok) {
+      DRETURN(false);
+   }
+
+   for_each_ep_lv(elem, object_list_) {
+      const char *hostname = lGetHost(elem, EH_name);
+      bool already_handled = false;
+
+      if (fnmatch(attr, SGE_ATTR_HOSTNAME, 0) == 0 && fnmatch(val, hostname, 0) == 0) {
+         filtered_names_.emplace_back(hostname);
+         already_handled = true;
+      }
+
+      if (!already_handled && fnmatch(attr, SGE_ATTR_LOAD_SCALING, 0) == 0) {
+         dstring value = DSTRING_INIT;
+         for (const lListElem *ep = lFirst(lGetList(elem, EH_scaling_list)); ep != nullptr; ep = lNext(ep)) {
+            sge_dstring_sprintf_append(&value, "%s=%.10g", lGetString(ep, HS_name), lGetDouble(ep, HS_value));
+            if (lNext(ep) != nullptr) {
+               sge_dstring_append(&value, ",");
+            }
+         }
+         if (fnmatch(val, sobjl_value_or_none(&value), 0) == 0) {
+            filtered_names_.emplace_back(hostname);
+            already_handled = true;
+         }
+         sge_dstring_free(&value);
+      }
+
+      if (!already_handled && fnmatch(attr, SGE_ATTR_COMPLEX_VALUES, 0) == 0) {
+         dstring value = DSTRING_INIT;
+         for (const lListElem *ep = lFirst(lGetList(elem, EH_consumable_config_list)); ep != nullptr; ep = lNext(ep)) {
+            sge_dstring_sprintf_append(&value, "%s=", lGetString(ep, CE_name));
+            if (lGetString(ep, CE_stringval) != nullptr) {
+               sge_dstring_append(&value, lGetString(ep, CE_stringval));
+            } else {
+               /* the hand written switch read this double field with lGetString
+                * and printed it as %f, which is a CULL type error and undefined
+                * behaviour; the branch is only reached when a complex value has
+                * no string form, which is why it survived (CS-2819) */
+               sge_dstring_sprintf_append(&value, "%f", lGetDouble(ep, CE_doubleval));
+            }
+            if (lNext(ep) != nullptr) {
+               sge_dstring_append(&value, ",");
+            }
+         }
+         if (fnmatch(val, sobjl_value_or_none(&value), 0) == 0) {
+            filtered_names_.emplace_back(hostname);
+            already_handled = true;
+         }
+         sge_dstring_free(&value);
+      }
+
+      if (!already_handled && fnmatch(attr, SGE_ATTR_LOAD_VALUES, 0) == 0) {
+         dstring value = DSTRING_INIT;
+         for (const lListElem *ep = lFirst(lGetList(elem, EH_load_list)); ep != nullptr; ep = lNext(ep)) {
+            sge_dstring_sprintf_append(&value, "%s=%s", lGetString(ep, HL_name), lGetString(ep, HL_value));
+            if (lNext(ep) != nullptr) {
+               sge_dstring_append(&value, ",");
+            }
+         }
+         if (fnmatch(val, sobjl_value_or_none(&value), 0) == 0) {
+            filtered_names_.emplace_back(hostname);
+            already_handled = true;
+         }
+         sge_dstring_free(&value);
+      }
+
+      if (!already_handled && fnmatch(attr, SGE_ATTR_PROCESSORS, 0) == 0) {
+         dstring value = DSTRING_INIT;
+         sge_dstring_sprintf(&value, "%d", static_cast<int>(lGetUlong(elem, EH_processors)));
+         if (fnmatch(val, sge_dstring_get_string(&value), 0) == 0) {
+            filtered_names_.emplace_back(hostname);
+            already_handled = true;
+         }
+         sge_dstring_free(&value);
+      }
+
+      for (const auto &[attr_name, field] : {std::pair{SGE_ATTR_USER_LISTS, EH_acl},
+                                             std::pair{SGE_ATTR_XUSER_LISTS, EH_xacl}}) {
+         if (already_handled || fnmatch(attr, attr_name, 0) != 0) {
+            continue;
+         }
+         dstring value = DSTRING_INIT;
+         for (const lListElem *ep = lFirst(lGetList(elem, field)); ep != nullptr; ep = lNext(ep)) {
+            sge_dstring_append(&value, lGetString(ep, US_name));
+            if (lNext(ep) != nullptr) {
+               sge_dstring_append(&value, " ");
+            }
+         }
+         if (fnmatch(val, sobjl_value_or_none(&value), 0) == 0) {
+            filtered_names_.emplace_back(hostname);
+            already_handled = true;
+         }
+         sge_dstring_free(&value);
+      }
+   }
+
+   DRETURN(true);
+}
+
+/** @brief Name the queues, domains or instances `-sobjl queue*` matched (CS-2819)
+ *
+ * The three queue specifications share one pass over the cluster queues and differ
+ * only in which of the three kinds of an attribute entry is named: the queue wide
+ * value (`queue`), a value overridden for a host group (`queue_domain`) or one
+ * overridden for a single host (`queue_instance`).
+ *
+ * Two details of the hand written switch are kept deliberately, see CS-2832:
+ * an entry that matches ends the queue even when its kind is not the requested
+ * one - so `-sobjl queue_instance slots '*'` answers nothing, the queue wide
+ * value having matched first - and the rendered value accumulates over the
+ * entries instead of being rebuilt per entry, so the second entry of a queue is
+ * matched against the concatenation of both.
+ *
+ * @param answer_list used to return error messages
+ * @param spec `queue`, `queue_domain` or `queue_instance`
+ * @param attr the attribute name pattern
+ * @param val the value pattern
+ * @return true on success; false with @p answer_list filled when the queues could not be read
+ */
+bool
+ocs::QConfModelBase::collect_cqueue_matches(lList **answer_list, const char *spec, const char *attr, const char *val) {
+   DENTER(TOP_LAYER);
+
+   const bool handle_cqueue = strcmp(spec, "queue") == 0;
+   const bool handle_domain = strcmp(spec, "queue_domain") == 0;
+   const bool handle_qinstance = strcmp(spec, "queue_instance") == 0;
+
+   object_ = QConfObj::CQ;
+   desc_ = &qconf_desc(object_);
+   key_nm_ = desc_->name_nm;
+   kind_ = QConfReadKind::NAME_LIST;
+
+   if (!fetch_hgroups(answer_list)) {
+      DRETURN(false);
+   }
+
+   lEnumeration *what = lWhat("%T(ALL)", desc_->descr);
+   const bool ok = fetch(answer_list, desc_->target, nullptr, what);
+   lFreeWhat(&what);
+   if (!ok) {
+      DRETURN(false);
+   }
+
+   /* CS-2677: the host list lives in the queue's own "@@<queue>" group since then,
+    * so it has to be joined back on before "hostlist" can be matched against what
+    * qconf -sq would print */
+   cqueue_list_fill_hostlist(object_list_, hgroup_list_);
+
+   for_each_ep_lv(cqueue, object_list_) {
+      const char *cqueue_name = lGetString(cqueue, CQ_name);
+      bool already_handled = false;
+
+      if (fnmatch(attr, SGE_ATTR_QNAME, 0) == 0 && handle_cqueue &&
+          fnmatch(val, cqueue_name, 0) == 0) {
+         filtered_names_.emplace_back(cqueue_name);
+         already_handled = true;
+      }
+
+      if (!already_handled && fnmatch(attr, SGE_ATTR_HOST_LIST, 0) == 0) {
+         dstring value = DSTRING_INIT;
+         if (const lList *hostref_list = lGetList(cqueue, CQ_hostlist); hostref_list != nullptr) {
+            href_list_append_to_dstring(hostref_list, &value);
+         } else {
+            sge_dstring_copy_string(&value, "NONE");
+         }
+         if (handle_cqueue && fnmatch(val, sge_dstring_get_string(&value), 0) == 0) {
+            filtered_names_.emplace_back(cqueue_name);
+            already_handled = true;
+         }
+         sge_dstring_free(&value);
+      }
+
+      for (int index = 0; !already_handled && cqueue_attribute_array[index].cqueue_attr != NoName; index++) {
+         if (fnmatch(attr, cqueue_attribute_array[index].name, 0) != 0) {
+            continue;
+         }
+         /* one dstring for the whole attribute, not one per entry - the
+          * accumulation this produces is the behaviour of CS-2832 */
+         dstring value = DSTRING_INIT;
+         const lList *attribute_list = lGetList(cqueue, cqueue_attribute_array[index].cqueue_attr);
+
+         for_each_ep_lv(attribute, attribute_list) {
+            const lDescr *descr = lGetListDescr(attribute_list);
+            const char *host_hgroup = lGetHost(attribute, cqueue_attribute_array[index].href_attr);
+            const bool is_cqueue = strcmp(host_hgroup, HOSTREF_DEFAULT) == 0;
+            const bool is_domain = !is_cqueue && ocs::is_hgroup_name(host_hgroup);
+            const bool is_qinstance = !is_domain && !is_cqueue;
+
+            /* rendered through a one element copy whose host reference is the
+             * default, so the entry renders as a plain value without its
+             * "[<host>=...]" brackets */
+            lList *tmp_attribute_list = lCreateList("", descr);
+            lListElem *tmp_attribute = lCopyElem(attribute);
+            lAppendElem(tmp_attribute_list, tmp_attribute);
+            lSetHost(tmp_attribute, cqueue_attribute_array[index].href_attr, HOSTREF_DEFAULT);
+            attr_list_append_to_dstring(tmp_attribute_list, &value, descr,
+                                        cqueue_attribute_array[index].href_attr,
+                                        cqueue_attribute_array[index].value_attr);
+            lFreeList(&tmp_attribute_list);
+
+            if (fnmatch(val, sge_dstring_get_string(&value), 0) == 0) {
+               if (handle_cqueue && is_cqueue) {
+                  filtered_names_.emplace_back(cqueue_name);
+               } else if ((handle_domain && is_domain) || (handle_qinstance && is_qinstance)) {
+                  filtered_names_.emplace_back(std::string{cqueue_name} + "@" + host_hgroup);
+               }
+               /* set even when nothing was written, see the note above */
+               already_handled = true;
+               break;
+            }
+         }
+         sge_dstring_free(&value);
+      }
+   }
+
+   DRETURN(true);
+}
+
+/** @brief Answer `qconf -sobjl <spec> <attr_pattern> <value_pattern>` (CS-2819)
+ *
+ * The switch names every object of one kind that has an attribute whose *name*
+ * matches the first pattern and whose *value* matches the second. Four kinds,
+ * and the last two are about overrides rather than about the object itself:
+ *
+ * - `queue`          the cluster queues, matched against their own values
+ * - `exechost`       the execution hosts, including `global` and `template`
+ * - `queue_instance` a queue whose attribute is overridden for a host
+ * - `queue_domain`   a queue whose attribute is overridden for a host group
+ *
+ * What comes back are names, not objects, which is why the result is a vector of
+ * strings rather than a CULL list: a queue instance is named `queue@host` and a
+ * domain `queue@@group`, neither of which is the name of anything the daemon
+ * holds.
+ *
+ * @param answer_list used to return error messages
+ * @param parameter the operation, whose three arguments are spec, attribute and value
+ * @return true unless the objects could not be read or the specification is unknown
+ */
+bool
+ocs::QConfModelBase::make_sobjl_snapshot(lList **answer_list, QConfParameter &parameter) {
+   DENTER(TOP_LAYER);
+
+   const char *spec = parameter.get_operation().arg(0);
+   const char *attr = parameter.get_operation().arg(1);
+   const char *val = parameter.get_operation().arg(2);
+   if (spec == nullptr || attr == nullptr || val == nullptr) {
+      /* unreachable from qconf, whose option table demands exactly three
+       * arguments - a guard against a procedure call built elsewhere */
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                              "%s", MSG_PARSE_NOOPTIONARGUMENT);
+      DRETURN(false);
+   }
+
+   if (strcmp(spec, "exechost") == 0) {
+      DRETURN(collect_exechost_matches(answer_list, attr, val));
+   }
+   if (strcmp(spec, "queue") == 0 || strcmp(spec, "queue_domain") == 0 ||
+       strcmp(spec, "queue_instance") == 0) {
+      DRETURN(collect_cqueue_matches(answer_list, spec, attr, val));
+   }
+
+   /* An unknown specification is not an error: none of the four handlers matches,
+    * so the hand written switch wrote nothing and exited zero, and so does this.
+    * The same goes for an unknown attribute and for a value matching nothing -
+    * every answer of this switch that finds nothing is simply empty. */
+   DRETURN(true);
+}
+
 /** @brief Run the sick check over every cluster queue (CS-2819)
  *
  * `qconf -sds` reports queues whose configuration is accepted but cannot take
@@ -748,6 +1069,9 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
    }
    if (parameter.get_sub_procedure_name() == QConfParameter::QUEUE_SICK) {
       DRETURN(make_sick_snapshot(answer_list));
+   }
+   if (parameter.get_sub_procedure_name() == QConfParameter::OBJECT_FILTER) {
+      DRETURN(make_sobjl_snapshot(answer_list, parameter));
    }
    if (parameter.get_sub_procedure_name() == QConfParameter::CQUEUE_SHOW) {
       DRETURN(make_cqueue_snapshot(answer_list, parameter));
