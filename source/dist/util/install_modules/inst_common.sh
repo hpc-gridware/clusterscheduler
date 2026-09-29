@@ -56,8 +56,8 @@ BasicSettings()
 
   # library path setting required only for architectures where RUNPATH is not supported
   case $SGE_ARCH in
-#ENFORCE_SHLIBPATH#sol*|lx*)
-#ENFORCE_SHLIBPATH#  ;;
+  lx-*|ulx-*|xlx-*|sol-*|osol-*)
+    ;;
   *)
     shlib_path_name=`util/arch -lib`
     old_value=`eval echo '$'$shlib_path_name`
