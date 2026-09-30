@@ -124,6 +124,12 @@
       },
       {
          "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-objectfilter-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-objectfilter-list.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
             {"properties": {"$id": {"pattern": "ocs-qconf-submithost-list\\.schema\\.json$"}}},
             {"$ref": "../v9.2/ocs-qconf-submithost-list.schema.json"}
          ]

@@ -1,0 +1,16 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-objectfilter-list.schema.json",
+   "title": "OCS/GCS qconf object filter result schema",
+   "description": "Schema describing the JSON produced by qconf -fmt json -sobjl <obj_spec> <attr_pattern> <value_pattern>: the names of the objects whose attribute matched. All four object specifications answer under this one schema, because they differ in what was searched rather than in the shape of the answer. For queue_instance and queue_domain the names are qualified (all.q@host, all.q@@hostgroup); that qualification is part of the name, not a different structure. The empty array is a filter that matched nothing, which is not an error.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "objectfilter"
+   ],
+   "properties": {
+      "objectfilter": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+      }
+   }
+}
