@@ -1323,12 +1323,17 @@ lUlong64 lGetUlong64Atomic(const lListElem *ep, int name) {
                         lNm2Str(name), multitypes[mt_get_type(ep->descr[pos].mt)]);
    }
 
-   static_assert(std::atomic_ref<lUlong64>::required_alignment <= alignof(lMultiType),
+   // std::atomic_ref would be the idiomatic form, but it cannot be used here:
+   // FreeBSD 14 ships libc++ 18, which does not implement it at all
+   // (__cpp_lib_atomic_ref is not defined), so the build fails on that platform.
+   // The builtins below are understood by gcc and clang alike, need no library
+   // support and emit the same instruction.
+   static_assert(__atomic_always_lock_free(sizeof(lUlong64), nullptr),
+                 "lUlong64 cannot be accessed atomically without a lock on this platform");
+   static_assert(alignof(lMultiType) >= sizeof(lUlong64),
                  "a cull value is not aligned well enough to be accessed atomically");
 
-   const std::atomic_ref<lUlong64> value(const_cast<lUlong64 &>(ep->cont[pos].ul64));
-
-   DRETURN(value.load(std::memory_order_relaxed));
+   DRETURN(__atomic_load_n(&ep->cont[pos].ul64, __ATOMIC_RELAXED));
 }
 
 /** @brief Write a 64 bit unsigned field without a reader being able to see it torn
@@ -1384,8 +1389,8 @@ int lSetUlong64Atomic(lListElem *ep, int name, lUlong64 value) {
       DRETURN(-1);
    }
 
-   std::atomic_ref<lUlong64> slot(ep->cont[pos].ul64);
-   slot.store(value, std::memory_order_relaxed);
+   // see lGetUlong64Atomic() on why this is a builtin and not std::atomic_ref
+   __atomic_store_n(&ep->cont[pos].ul64, value, __ATOMIC_RELAXED);
 
    DRETURN(0);
 }
