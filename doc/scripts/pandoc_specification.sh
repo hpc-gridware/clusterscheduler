@@ -60,6 +60,23 @@ QSCOMPANYMAIL="sales@hpc-gridware.com"
 # to show available styles: pandoc --list-highlight-style
 # to show if hightlighting is supported for a language: pandoc --list-highlight-languagess
 PANDOC=pandoc
+
+# The annotation filter needs the pandoc.log module, which arrived in pandoc 3.
+# An older pandoc does not merely reject the filter: 2.0.6, the version EL8
+# ships, dies on it with a segmentation fault, and it cannot be taught to step
+# aside on its own because PANDOC_VERSION is unset before pandoc 2.1. So the
+# decision is taken here, and a pandoc too old for the filter builds the
+# unannotated specification instead of breaking the build.
+PANDOC_VERSION_LINE=$(${PANDOC} --version 2>/dev/null | sed -n '1p')
+PANDOC_MAJOR=$(echo "${PANDOC_VERSION_LINE}" | sed -n 's/^[^0-9]*\([0-9]*\).*/\1/p')
+if [ -z "${PANDOC_MAJOR}" ] || [ "${PANDOC_MAJOR}" -lt 3 ]; then
+   if [ "${ANNOTATIONS}" != "off" ]; then
+      echo "${0##*/}: ${PANDOC_VERSION_LINE:-pandoc of unknown version} cannot run the annotation filter, building ${MANUAL}.pdf without annotations" >&2
+      ANNOTATIONS=off
+   fi
+   ANNOTATION_FILTER=""
+fi
+
 # The marker has to be read before head.tex, which asks for it.
 OPTIONS="--pdf-engine=xelatex"
 if [ "${ANNOTATIONS}" = "off" ] && [ -f "${NO_ANNOTATION_FILE}" ]; then
