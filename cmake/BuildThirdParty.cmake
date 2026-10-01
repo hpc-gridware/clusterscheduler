@@ -95,8 +95,12 @@ function(build_third_party 3rdparty_build_path)
         include(cmake/CPM.cmake)
         # cpmaddpackage("gh:Tencent/rapidjson#v1.1.0")
         # OS-distributions of rapidjson-1.1.0 seem to contain patches - the original one doesn't work
-        # master branch has the required patches
-        cpmaddpackage("gh:Tencent/rapidjson#master")
+        # master branch has the required patches.
+        # 1.1.0 is the only release, so we build a commit of master - pinned by its full hash, so
+        # that every build uses the same code and the SBOM can state which one (CS-1686). CPM
+        # recognises a hash and skips the shallow clone, which git could not do for a commit.
+        # Update it deliberately; replace it by a release tag once rapidjson publishes one.
+        cpmaddpackage("gh:Tencent/rapidjson#24b5e7a8b27f42fa16b96fc70aade9106cf7102f")
     endif ()
 
     set(3rdparty_list "")
