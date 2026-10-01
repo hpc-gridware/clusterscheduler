@@ -48,6 +48,8 @@
 #endif
 
 #include <cstring>
+#include <string>
+#include <unistd.h>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
@@ -66,6 +68,44 @@ const char *get_dynamic_spooling_method()
 #endif
 {
    return spooling_method;
+}
+
+/**
+ * @brief the path a spooling library is opened by
+ *
+ * The spooling libraries are installed next to this one, in $SGE_ROOT/lib/<arch>. Opened by their
+ * bare name, they are found through the $ORIGIN relative RUNPATH of the object calling dlopen() -
+ * but a preloaded library which wraps dlopen(), e.g. the one of a NoMachine desktop session,
+ * becomes that caller, and it has no such RUNPATH. Opened by absolute path the library is found
+ * whoever calls dlopen(), and its own dependencies are still resolved with its own RUNPATH
+ * (CS-2839).
+ *
+ * @param shlib_fullname file name of the spooling library, e.g. libspoolb.so
+ * @return the absolute path of shlib_fullname in the directory of this library, when it exists
+ *         there - otherwise shlib_fullname unchanged, which leaves the search to dlopen(), as in a
+ *         build directory, where every library has a directory of its own
+ */
+static std::string
+spool_dynamic_get_shlib_path(const char *shlib_fullname) {
+   DENTER(TOP_LAYER);
+
+   std::string ret{shlib_fullname};
+
+   Dl_info info;
+   if (dladdr(reinterpret_cast<void *>(&spool_dynamic_get_shlib_path), &info) != 0 &&
+       info.dli_fname != nullptr) {
+      const char *slash = strrchr(info.dli_fname, '/');
+      if (slash != nullptr) {
+         std::string path{info.dli_fname, static_cast<size_t>(slash - info.dli_fname + 1)};
+         path += shlib_fullname;
+         if (access(path.c_str(), F_OK) == 0) {
+            ret = path;
+         }
+      }
+   }
+
+   DPRINTF("opening spooling library %s\n", ret.c_str());
+   DRETURN(ret);
 }
 
 /** @brief Load a spooling shared library and build its context
@@ -107,22 +147,22 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
 #endif
                                        );
 
-   // Open the shared lib.
+   // Open the shared lib, by absolute path where possible.
    // We need the symbols (esp. from the classic spooling library) in a local name space,
    // as we link sge_qmaster against the spoolc_static library for stored procedure output.
    // Use the RTLD_LOCAL flag explicitly, even if it should be the default.
-
+   const std::string shlib_path = spool_dynamic_get_shlib_path(shlib_fullname);
    # if defined(DARWIN)
    # ifdef RTLD_NODELETE
-   shlib_handle = dlopen(shlib_fullname, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
+   shlib_handle = dlopen(shlib_path.c_str(), RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
    # else
-   shlib_handle = dlopen(shlib_fullname, RTLD_NOW | RTLD_LOCAL);
+   shlib_handle = dlopen(shlib_path.c_str(), RTLD_NOW | RTLD_LOCAL );
    # endif /* RTLD_NODELETE */
    # else
    # ifdef RTLD_NODELETE
-   shlib_handle = dlopen(shlib_fullname, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
+   shlib_handle = dlopen(shlib_path.c_str(), RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
    # else
-   shlib_handle = dlopen(shlib_fullname, RTLD_NOW | RTLD_LOCAL);
+   shlib_handle = dlopen(shlib_path.c_str(), RTLD_NOW | RTLD_LOCAL);
    # endif /* RTLD_NODELETE */
    #endif
 
@@ -130,7 +170,7 @@ spool_dynamic_create_context(lList **answer_list, const char *method,
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_SPOOL_ERROROPENINGSHAREDLIB_SS, 
-                              shlib_fullname, dlerror());
+                              shlib_path.c_str(), dlerror());
       ok = false;
    } 
 
