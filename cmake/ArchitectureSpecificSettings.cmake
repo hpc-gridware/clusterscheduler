@@ -81,8 +81,12 @@ function(architecture_specific_settings)
 
       # Linux supported/unsupported amd64/x86
       message(STATUS "We are on Linux: ${SGE_ARCH}")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
+      # As compile options, not in CMAKE_<LANG>_FLAGS: add_compile_options() sets a directory
+      # property, which reaches the caller of this function, and it leaves the flags of the
+      # tool chain file (CMAKE_<LANG>_FLAGS_INIT) alone (CS-2657). Appended to the cached
+      # CMAKE_<LANG>_FLAGS instead, every cmake run added them once more, the flags of every
+      # target changed, and every run rebuilt everything.
+      add_compile_options(-Wall -Werror -pedantic)
 
       # @todo does -fPIC have any disadvantages when not required (only for shared libs)?
       add_compile_options(-fPIC)
@@ -212,8 +216,8 @@ function(architecture_specific_settings)
       # FreeBSD
       message(STATUS "We are on FreeBSD: ${SGE_ARCH}")
       set(PROJECT_AUTOMAKE_SRC "/usr/local/share/automake-*/config.*" PARENT_SCOPE)
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
+      # see the Linux branch above
+      add_compile_options(-Wall -Werror -pedantic)
       add_compile_definitions(FREEBSD GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
       add_compile_options(-fPIC)
       add_link_options(-lpthread -lutil)
@@ -254,8 +258,8 @@ function(architecture_specific_settings)
       # Darwin M1/M2/M2Max/M2Pro (arm64) platform
       message(STATUS "We are on macOS: ${SGE_ARCH}")
       # -Wextra
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic" CACHE STRING "" FORCE)
+      # see the Linux branch above
+      add_compile_options(-Wall -Werror -pedantic)
       set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "Build architectures for Mac OS X" FORCE)
       add_compile_definitions(DARWIN DARWIN10 GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
 
