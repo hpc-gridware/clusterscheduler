@@ -4448,11 +4448,15 @@ int sge_parse_qconf(char *argv[])
             const char *nodepath = lGetString(argep, STN_name);
 
             if (nodepath) {
-               found = show_sharetree_path(ep, nodepath);
+               /* CS-2850: accumulate, do not assign. An assignment lets the last
+                * path overwrite the verdict of every earlier one, so
+                * "-sstnode /nosuchnode,/" exited zero while "/,/nosuchnode"
+                * exited one. */
+               found |= show_sharetree_path(ep, nodepath);
             }
          }
 
-         if ( found != 0 ) {
+         if (found != 0) {
             DRETURN(1);
          }
 
