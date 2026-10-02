@@ -293,6 +293,10 @@ else ()
 endif ()
 set(SGE_LIBS ${SGE_JEMALLOC_LIB} ${SGE_LIBS_SHARED})
 
+# the software bill of materials, from the options and 3rdparty versions set above
+include(cmake/Sbom.cmake)
+sbom_generate()
+
 if (INSTALL_SGE_DOC)
    include(cmake/BuildMarkdownMan.cmake)
    include(cmake/BuildMarkdownManual.cmake)

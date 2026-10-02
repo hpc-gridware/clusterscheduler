@@ -34,11 +34,30 @@ set(SGE_PACKAGE_MANAGER none)
 # e.g. ~/3rd_party/jemalloc-5.3.0/lx-amd64/rocky/Linux_release_8.10/Debug, so a build expecting
 # another version than the one installed builds and installs that one instead of silently using
 # what it finds.
-# The libdb5 repository has no releases or tags, so berkeleydb is built from its master branch.
-# The version is still the one master carries, see DB_VERSION_* in its dist/RELEASE.
+# The libdb5 repository has no releases or tags, so berkeleydb is built from a commit of its
+# master branch. The version is still the one master carries, see DB_VERSION_* in its
+# dist/RELEASE.
 set(PROJECT_3RDPARTY_BERKELEYDB_VERSION "5.3.28")
 set(PROJECT_3RDPARTY_JEMALLOC_VERSION "5.4.0")
 set(PROJECT_3RDPARTY_HWLOC_VERSION "2.10.0")
+
+# What is fetched from a branch is pinned to a commit by its full hash, and a downloaded tarball
+# is verified by its hash - so that every build uses the same code, and the SBOM (cmake/Sbom.cmake)
+# can state which one. Update them deliberately, together with the version above.
+#
+# rapidjson: 1.1.0 is its only release and does not work for us - the operating system
+# distributions patch it, master has the fixes. Replace the commit by a release tag once rapidjson
+# publishes one. CPM recognises a full hash and skips the shallow clone, which git could not do
+# for a commit.
+set(PROJECT_3RDPARTY_BERKELEYDB_COMMIT "a13b35e72cd996c304fffdd46a1765f506e5fdd0")
+set(PROJECT_3RDPARTY_RAPIDJSON_COMMIT "24b5e7a8b27f42fa16b96fc70aade9106cf7102f")
+set(PROJECT_3RDPARTY_HWLOC_SHA256
+    "c7fd8a1404a9719c76aadc642864b9f77aed1dc1fc8882d6af861a9260ba240d")
+
+# the download directory of hwloc carries major.minor only, e.g. v2.10/hwloc-2.10.0
+string(REGEX MATCH "^[0-9]+\\.[0-9]+" hwloc_series ${PROJECT_3RDPARTY_HWLOC_VERSION})
+set(PROJECT_3RDPARTY_HWLOC_URL "https://download.open-mpi.org/release/hwloc/v${hwloc_series}")
+string(APPEND PROJECT_3RDPARTY_HWLOC_URL "/hwloc-${PROJECT_3RDPARTY_HWLOC_VERSION}.tar.gz")
 
 # PROJECT_3RDPARTY_<PACKAGE>_DIR, the installation directory of each of them
 foreach (package BERKELEYDB JEMALLOC HWLOC)
@@ -93,14 +112,8 @@ function(build_third_party 3rdparty_build_path)
 
     if (NOT WITH_OS_3RDPARTY)
         include(cmake/CPM.cmake)
-        # cpmaddpackage("gh:Tencent/rapidjson#v1.1.0")
-        # OS-distributions of rapidjson-1.1.0 seem to contain patches - the original one doesn't work
-        # master branch has the required patches.
-        # 1.1.0 is the only release, so we build a commit of master - pinned by its full hash, so
-        # that every build uses the same code and the SBOM can state which one (CS-1686). CPM
-        # recognises a hash and skips the shallow clone, which git could not do for a commit.
-        # Update it deliberately; replace it by a release tag once rapidjson publishes one.
-        cpmaddpackage("gh:Tencent/rapidjson#24b5e7a8b27f42fa16b96fc70aade9106cf7102f")
+        # a commit of master, see PROJECT_3RDPARTY_RAPIDJSON_COMMIT above
+        cpmaddpackage("gh:Tencent/rapidjson#${PROJECT_3RDPARTY_RAPIDJSON_COMMIT}")
     endif ()
 
     set(3rdparty_list "")
@@ -146,7 +159,7 @@ function(build_third_party 3rdparty_build_path)
                         PREFIX ${3rdparty_build_path}/berkeleydb
                         INSTALL_DIR ${3rdparty_install_path}
                         GIT_REPOSITORY https://github.com/Positeral/libdb5.git
-                        GIT_TAG master
+                        GIT_TAG ${PROJECT_3RDPARTY_BERKELEYDB_COMMIT}
                         # update config.guess and config.sub with current versions of the installed automake
                         PATCH_COMMAND /bin/sh -c "cp ${PROJECT_AUTOMAKE_SRC} dist"
                         CONFIGURE_COMMAND dist/configure
@@ -237,11 +250,6 @@ function(build_third_party 3rdparty_build_path)
                         ${3rdparty_build_path}/hwloc ${3rdparty_install_path}
                         hwloc.h ${hwloc_lib})
                 list(APPEND 3rdparty_includes ${3rdparty_install_path}/include)
-                # the download directory carries major.minor only, e.g. v2.10/hwloc-2.10.0
-                set(hwloc_version ${PROJECT_3RDPARTY_HWLOC_VERSION})
-                string(REGEX MATCH "^[0-9]+\\.[0-9]+" hwloc_series ${hwloc_version})
-                set(hwloc_url "https://download.open-mpi.org/release/hwloc/v${hwloc_series}")
-                set(hwloc_url "${hwloc_url}/hwloc-${hwloc_version}.tar.gz")
                 if(SGE_ARCH STREQUAL "osol-amd64")
                   set(CUSTOM_CFLAGS CFLAGS=-Wno-incompatible-pointer-types)
                 endif()
@@ -255,8 +263,9 @@ function(build_third_party 3rdparty_build_path)
                         BUILD_IN_SOURCE TRUE
                         BUILD_ALWAYS FALSE
                         BUILD_COMMAND make
+                        URL_HASH SHA256=${PROJECT_3RDPARTY_HWLOC_SHA256}
                         # put URL last to avoid the "At least one entry of URL is a path (invalid in a list)"-problem
-                        URL ${hwloc_url})
+                        URL ${PROJECT_3RDPARTY_HWLOC_URL})
                 add_library(hwloc STATIC IMPORTED GLOBAL)
                 set_target_properties(
                         hwloc
