@@ -241,6 +241,9 @@ function(architecture_specific_settings)
       add_compile_options(-fPIC)
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
+      # spooling is for the qmaster, which is not supported here - and there is no PostgreSQL
+      # client (libpq and its headers) for Solaris and OpenIndiana in the lab to build it with
+      set(WITH_SPOOL_POSTGRES OFF PARENT_SCOPE)
       set(WITH_MUNGE OFF PARENT_SCOPE)
       set(WITH_PYTHON OFF PARENT_SCOPE)
 
