@@ -28,14 +28,49 @@
 
 #include "ocs_QConfViewPlain.h"
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_spool.h"
+
+/**
+ * @brief Read the name of one list element
+ *
+ * The field is read as a string or as a host name depending on how the object
+ * type declares it, which is what the hand written engine did.
+ *
+ * @param ep     the element
+ * @param key_nm the field holding the name
+ * @return the name, or nullptr when the field is unset or of an unexpected type
+ */
+static const char *
+qconf_name_of(const lListElem *ep, int key_nm) {
+   DENTER(TOP_LAYER);
+
+   const lDescr *descr = lGetElemDescr(ep);
+   const int pos = lGetPosInDescr(descr, key_nm);
+
+   switch (lGetPosType(descr, pos)) {
+      case lStringT:
+         DRETURN(lGetString(ep, key_nm));
+      case lHostT:
+         DRETURN(lGetHost(ep, key_nm));
+      default:
+         DPRINTF("show_name_list: unexpected data type\n");
+         DRETURN(nullptr);
+   }
+}
 
 /**
  * @brief One name per line
  *
- * The field is read as a string or as a host name depending on how the object
- * type declares it, which is what the hand written engine did; a name starting
- * with the comment character is skipped, as it always was.
+ * A name starting with the comment character is skipped, as it always was.
+ *
+ * The reserved host groups ask for one more thing (CS-2680, carried over in
+ * CS-2820): host names and `@group` references first, matchers after them, each
+ * block still in the sort order of the whole list. The output is no longer
+ * necessarily a list of host names, and a script handing it to a command that
+ * expects hosts has to filter the matchers out - one block boundary reduces that
+ * to a single line. A configuration without a matcher renders identically,
+ * character for character, because the second pass then prints nothing.
  *
  * @param os     the stream to write to
  * @param list   the objects, already sorted
@@ -44,27 +79,23 @@
  */
 void
 ocs::QConfViewPlain::show_name_list(std::ostream &os, const lList *list, int key_nm,
-                                    [[maybe_unused]] const qconf_object_desc &desc) {
+                                    const qconf_object_desc &desc) {
    DENTER(TOP_LAYER);
 
-   const lListElem *ep;
-   for_each_ep(ep, list) {
-      const lDescr *descr = lGetElemDescr(ep);
-      const int pos = lGetPosInDescr(descr, key_nm);
-      const char *line = nullptr;
+   const int passes = desc.read.member.split_matchers ? 2 : 1;
+   for (int pass = 0; pass < passes; pass++) {
+      const bool matchers = (pass == 1);
+      const lListElem *ep;
 
-      switch (lGetPosType(descr, pos)) {
-         case lStringT:
-            line = lGetString(ep, key_nm);
-            break;
-         case lHostT:
-            line = lGetHost(ep, key_nm);
-            break;
-         default:
-            DPRINTF("show_name_list: unexpected data type\n");
-            break;
-      }
-      if (line != nullptr && line[0] != COMMENT_CHAR) {
+      for_each_ep(ep, list) {
+         const char *line = qconf_name_of(ep, key_nm);
+
+         if (line == nullptr || line[0] == COMMENT_CHAR) {
+            continue;
+         }
+         if (passes == 2 && ocs::is_matcher(line) != matchers) {
+            continue;
+         }
          os << line << "\n";
       }
    }

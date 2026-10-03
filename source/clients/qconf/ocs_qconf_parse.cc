@@ -132,8 +132,6 @@ static int sge_next_is_an_opt(char **ptr);
 static int sge_error_and_exit(const char *ptr);
 
 /* ------------------------------------------------------------- */
-static bool show_reserved_hgroup_hosts(std::ostream &os, const char *, const char *, const char *);
-static bool show_manop_list(std::ostream &os, const char *userset_name, const char *display_name);
 static int show_thread_list(std::ostream &os);
 static int show_processors(std::ostream &os, bool has_binding_param);
 static int show_eventclients(std::ostream &os);
@@ -5135,16 +5133,6 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 /*----------------------------------------------------------------------------*/
-      /* "-sh" */
-      if (strcmp("-sh", *spp) == 0) {
-         if (!show_reserved_hgroup_hosts(os, ADMIN_HOSTGROUP, "adminhost",
-               "administrative host")) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-/*----------------------------------------------------------------------------*/
       /* "-srqsl " */
 /*----------------------------------------------------------------------------*/
       /* "-srqs [rqs_name,...]" */
@@ -5181,17 +5169,6 @@ int sge_parse_qconf(char *argv[]) {
          continue;
       }
 /*----------------------------------------------------------------------------*/
-      /* "-sm" */
-
-      if (strcmp("-sm", *spp) == 0) {
-         /* CS-2394: managers are the members of the reserved "manager" userset. */
-         if (!show_manop_list(os, MANAGER_USERSET, "manager")) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-/*-----------------------------------------------------------------------------*/
       /* "-srole role_name" */
       if (strcmp("-srole", *spp) == 0) {
          spp = sge_parser_get_next(spp);
@@ -5223,17 +5200,6 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-scel" */
 /*----------------------------------------------------------------------------*/
-      /* "-so" */
-
-      if (strcmp("-so", *spp) == 0) {
-         /* CS-2394: operators are the members of the reserved "operator" userset. */
-         if (!show_manop_list(os, OPERATOR_USERSET, "operator")) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-
 /*----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
 
@@ -5414,17 +5380,6 @@ int sge_parse_qconf(char *argv[]) {
       }
 
 /*----------------------------------------------------------------------------*/
-      /* "-ss" */
-      if (strcmp("-ss", *spp) == 0) {
-
-         if (!show_reserved_hgroup_hosts(os, SUBMIT_HOSTGROUP, "submithost",
-               "submit host")) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
-
 /*-----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
       /* "-su [list_name[,list_name,...]]" */
@@ -6165,17 +6120,6 @@ int sge_parse_qconf(char *argv[]) {
 
 /*----------------------------------------------------------------------------*/
 
-      /* "-ss" -- unreachable duplicate of the "-ss" branch above (same if-chain,
-       * the first match wins); converted with it so no reader has to work out
-       * which of the two is live, and so nothing here still names SH_LIST. */
-      if (strcmp("-ss", *spp) == 0) {
-         if (!show_reserved_hgroup_hosts(os, SUBMIT_HOSTGROUP, "submithost",
-               "submit")) {
-            sge_parse_return = 1;
-         }
-         spp++;
-         continue;
-      }
 /*----------------------------------------------------------------------------*/
       /* "-sul" */
 
@@ -6355,7 +6299,8 @@ static int sge_error_and_exit(const char *ptr) {
  *
  * @param os the stream the output is written to (CS-1841)
  * @param arglp HR_Type list of names as parsed from the command line
- * @param group ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP ocs::gdi::SubCommand sub_command - APPEND to add, REMOVE to delete
+ * @param group ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP
+ * @param sub_command APPEND to add, REMOVE to delete
  * @param what "administrative host" / "submit host", for messages
  *
  * @return true if every named host was resolved and the request succeeded
@@ -6856,189 +6801,7 @@ static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid) {
 
 /* ------------------------------------------------------------ */
 
-/**
- * @brief Qconf -sh / -ss from the reserved group
- *
- * CS-2438 chunk 5. Prints the membership of "@admin_hosts"/"@submit_hosts"
- * now that they, and not AH_LIST/SH_LIST, are the source of truth.
- * Deliberately prints the DIRECT entries -- host names and "@group"
- * references -- rather than the resolved set. For a cluster that does not
- * nest, which is every cluster on the day after the upgrade because
- * migration replays a flat list, the output is byte-identical to 9.1.
- * Where an admin did introduce nesting, the direct entries are the honest
- * answer: they are what "-dh/-ds" operate on. The resolved view already has
- * its own command, "qconf -shgrp_resolved @submit_hosts".
- * The three behaviours of the name-list output that scripts depend on are
- * reproduced exactly, and for the same reasons:
- *   1. output sorted ascending by name, not stored order;
- *   2. entries starting with COMMENT_CHAR skipped;
- *   3. an empty list prints to STDERR and returns false, i.e. non-zero exit.
- *
- * @param os the stream the output is written to (CS-1841)
- * @param group ADMIN_HOSTGROUP or SUBMIT_HOSTGROUP
- * @param json_type envelope name for -fmt json ("adminhost"/"submithost")
- * @param name "administrative host" / "submit host", for the message
- *
- * @return false if nothing is defined or the request failed
- *
- * @note json_type has to be passed in: the entries are HR_Type elements, which are
- *       not a registered object type, so the envelope would derive as "unknown"
- *       and both the $id and the array key would change. It is only used when the
- *       list is non-empty, because the empty list produced the generic "names" key
- *       before and has to keep producing it.
- */
-static bool show_reserved_hgroup_hosts(std::ostream &os, const char *group, const char *json_type, const char *name) {
-   DENTER(TOP_LAYER);
-   lList *alp = nullptr, *lp = nullptr;
-   bool ret = true;
 
-   lEnumeration *what = lWhat("%T(%I %I)", HGRP_Type, HGRP_name, HGRP_host_list);
-   // CS-2762: a host field is compared with "h=", which folds case as the
-   // object layer does; "==" with %s is the string comparison
-   lCondition *where = lWhere("%T(%I h= %s)", HGRP_Type, HGRP_name, group);
-
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::GET,
-                                   ocs::gdi::SubCommand::NONE, &lp, where, what);
-   lFreeWhat(&what);
-   lFreeWhere(&where);
-
-   lListElem *ep1 = lFirstRW(alp);
-   answer_exit_if_not_recoverable(ep1);
-   if (answer_list_output(&alp)) {
-      lFreeList(&lp);
-      DRETURN(false);
-   }
-
-   /* the group is seeded on every qmaster startup and cannot be deleted, so a
-    * missing element means an empty membership, handled below like an empty
-    * list -- but it must not reach lGetListRW(), which aborts on a nullptr
-    * element rather than returning nothing */
-   lListElem *hgroup = lFirstRW(lp);
-   lList *entries = (hgroup != nullptr) ? lGetListRW(hgroup, HGRP_host_list) : nullptr;
-
-   if (entries != nullptr) {
-      lPSortList(entries, "%I+", HR_name);
-   }
-
-   if (qconf_opt_format == SP_FORM_JSON) {
-      dstring out = DSTRING_INIT;
-      spool_json_write_name_list_ex(&alp, entries, HR_name,
-                                    lGetNumberOfElem(entries) > 0 ? json_type : nullptr, &out);
-      os << qconf_cstr(sge_dstring_get_string(&out));
-      sge_dstring_free(&out);
-   } else if (lGetNumberOfElem(entries) > 0) {
-      /*
-       * CS-2680. Host names and group references first, matchers after them,
-       * each block sorted ascending in itself -- the list was sorted as a whole
-       * above, so walking it twice preserves that within each block.
-       *
-       * The separation exists because the output is no longer necessarily a
-       * list of host names: a script passing it to a command that expects hosts
-       * has to filter the matchers out, and one block boundary reduces that to
-       * a single line. For a configuration carrying no matcher the second pass
-       * prints nothing and the output is unchanged, character for character.
-       */
-      for (int pass = 0; pass < 2; pass++) {
-         const bool matchers = (pass == 1);
-         const lListElem *ep;
-
-         for_each_ep(ep, entries) {
-            const char *line = lGetHost(ep, HR_name);
-
-            if (line == nullptr || line[0] == COMMENT_CHAR) {
-               continue;
-            }
-            if (ocs::is_matcher(line) != matchers) {
-               continue;
-            }
-            os << qconf_cstr(line) << "\n";
-         }
-      }
-   } else {
-      fprintf(stderr, MSG_QCONF_NOXDEFINED_S, name);
-      fprintf(stderr, "\n");
-      ret = false;
-   }
-
-   lFreeList(&alp);
-   lFreeList(&lp);
-
-   DRETURN(ret);
-}
-
-/**
- * @brief Print the managers/operators (qconf -sm/-so)
- *
- * CS-2394: managers and operators are the members of the reserved
- * "manager"/"operator" access lists (usersets). This reads that access list
- * and prints its member names, reproducing the historical -sm/-so output: a
- * sorted plain name list (one per line), or, with -fmt json, the name-list
- * JSON envelope. Because the names now come from the userset entries
- * (UE_Type), the JSON envelope identity reflects the access-list-entry type
- * rather than the retired "manager"/"operator" object type - the plain text
- * output is unchanged.
- *
- * @param os the stream the output is written to (CS-1841)
- * @param userset_name the reserved userset ("manager" or "operator")
- * @param display_name name used in the "no X defined" message
- *
- * @return true on success, false on error or when the list is empty
- */
-static bool show_manop_list(std::ostream &os, const char *userset_name, const char *display_name) {
-   DENTER(TOP_LAYER);
-   lList *alp = nullptr, *lp = nullptr;
-   bool ret = true;
-
-   /* No where-filter: the userset is selected by name below, so filtering in the
-    * qmaster would only save bandwidth on an interactive admin command over a
-    * list the enumeration has already reduced to names. RBAC will move this work
-    * into the qmaster anyway - the request is to be executed there and only the
-    * reduced output transferred - so the name lookup is the part that survives. */
-   lEnumeration *what = lWhat("%T(%I%I->(%I))", US_Type, US_name, US_entries, UE_name);
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, ocs::gdi::Command::GET,
-                                   ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-   lFreeWhat(&what);
-
-   lListElem *ep1 = lFirstRW(alp);
-   answer_exit_if_not_recoverable(ep1);
-   if (answer_list_output(&alp)) {
-      lFreeList(&lp);
-      DRETURN(false);
-   }
-
-   /* the reserved userset always exists; print its members (UE_name entries).
-    * The GET returns every userset, so select ours by name - never lFirst(),
-    * which would print the manager list for -so. */
-   lListElem *us = lGetElemStrRW(lp, US_name, userset_name);
-   lList *entries = (us != nullptr) ? lGetListRW(us, US_entries) : nullptr;
-   lPSortList(entries, "%I+", UE_name);
-
-   if (qconf_opt_format == SP_FORM_JSON) {
-      dstring out = DSTRING_INIT;
-      /* Name the envelope explicitly: the entries are UE_Type, which is not a
-       * registered object type, so deriving it would yield "unknown" for both -sm
-       * and -so. display_name keeps the pre-CS-2431 "manager"/"operator" envelope
-       * and its ocs-qconf-<name>-list.schema.json id. */
-      spool_json_write_name_list_ex(&alp, entries, UE_name, display_name, &out);
-      os << qconf_cstr(sge_dstring_get_string(&out));
-      sge_dstring_free(&out);
-   } else if (entries != nullptr && lGetNumberOfElem(entries) > 0) {
-      for_each_ep_lv (ep, entries) {
-         const char *line = lGetString(ep, UE_name);
-         if (line != nullptr && line[0] != COMMENT_CHAR) {
-            os << qconf_cstr(line) << "\n";
-         }
-      }
-   } else {
-      fprintf(stderr, MSG_QCONF_NOXDEFINED_S, display_name);
-      fprintf(stderr, "\n");
-      ret = false;
-   }
-
-   lFreeList(&alp);
-   lFreeList(&lp);
-   DRETURN(ret);
-}
 
 /**
  * @brief Print the qmaster thread pools and their sizes, the `-sts` switch

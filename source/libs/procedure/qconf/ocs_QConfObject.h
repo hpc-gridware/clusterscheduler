@@ -53,12 +53,40 @@ typedef spooling_field *(*qconf_build_fields_fn)(spool_flatfile_format format, b
  * event clients live in the event master, not in a master list - and only
  * -sss uses it.
  *
+ * AH, SH, MGR and OP are not object types either (CS-2820): each names one
+ * *reserved* object whose member sublist is what the switch reports - the host
+ * groups @admin_hosts and @submit_hosts for -sh and -ss, the access lists
+ * manager and operator for -sm and -so. They share the descriptor of their
+ * owner type and differ only in which object to read and which sublist to
+ * render, so they are rows here rather than columns in the read table; that
+ * keeps the views taking nothing but a qconf_object_desc.
+ *
  * Values are **appended, never inserted**: qconf_desc() is a plain index into
  * qconf_object_table, and qconf_master_list in ocs_QConfModelServer.cc is a
  * second array on the same index. Neither carries a name to grep for, so an
  * insertion shifts every row below it in silence. */
 enum class QConfObj {
-   CAL, CK, CE, EH, HGRP, PE, PR, CQ, RL, RQS, US, UU, STN, SC, CONF, EV, CAT
+   CAL, CK, CE, EH, HGRP, PE, PR, CQ, RL, RQS, US, UU, STN, SC, CONF, EV, CAT,
+   AH, SH, MGR, OP
+};
+
+/** @brief Where a member name list comes from (CS-2820)
+ *
+ * The four reserved lists are read as "one named object, then its sublist",
+ * which no other read kind expresses: NAME_LIST reads every object of a type,
+ * SINGLE_OBJECT renders one in full. What the output looks like is a name list
+ * all the same, so QConfReadKind::MEMBER_LIST reuses the whole rendering and
+ * empty-list machinery and only the source differs - this struct says how. */
+struct qconf_member_desc {
+   const char *owner;        ///< name of the reserved object, e.g. "@admin_hosts"
+   int list_nm;              ///< its sublist field, e.g. HGRP_host_list
+   int key_nm;               ///< the name field of a sublist element, e.g. HR_name
+   const lDescr *descr;      ///< the sublist element type, for the empty case
+   bool split_matchers;      ///< plain output only: host names and @group references
+                             ///< first, matchers after them, each block still sorted.
+                             ///< A property of the reserved host groups (CS-2680) and
+                             ///< deliberately not of the JSON form, whose array order
+                             ///< must stay the plain sort order
 };
 
 /** @brief What the read path needs on top of the common descriptor (CS-2796).
@@ -110,6 +138,8 @@ struct qconf_read_desc {
                                    ///< and the two reserved pairs really do differ: -sh and
                                    ///< -ss passed the type name only for a non-empty list,
                                    ///< -sm and -so passed it always (CS-2820)
+   qconf_member_desc member;       ///< MEMBER_LIST: which object and which sublist the
+                                   ///< names come from; unused by every other kind
 };
 
 /** @brief Everything the generic engines need to know about one object type. */

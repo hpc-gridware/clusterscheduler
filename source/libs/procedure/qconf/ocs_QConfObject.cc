@@ -246,6 +246,29 @@ static const qconf_object_desc qconf_object_table[] = {
    /* CAT  */ { ocs::gdi::Target::CAT_LIST,  CT_Type,   CT_id,     qconf_fields_CAT,  &qconf_cat_sfi,            "category",   nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,            nullptr,
               { .list_name = "category", .not_found_msg = MSG_CAT_DOESNOTEXIST_U,
                 .list_sfi = &qconf_cat_list_sfi, .json_list_id = "category-list" } },
+   /* AH, SH, MGR, OP: the four reserved member lists (CS-2820). Each row names a
+    * reserved object of an existing type and the sublist that -sh/-ss/-sm/-so
+    * report; the write fields are empty because no write path reaches these rows,
+    * and there is no field list because the names are rendered by
+    * show_name_list() and nothing else - the same reason the EV row has none.
+    *
+    * The entries are HR_Type and UE_Type, neither of them a registered object
+    * type, so the JSON envelope would derive as "unknown" and has to be named.
+    * Whether it is also named for an EMPTY list is not a free choice: -sh and -ss
+    * produced the generic "names" key there and -sm and -so the full envelope,
+    * and scripts see the difference. */
+   /* AH   */ { ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_name, nullptr,           &qconf_sfi,                nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,            nullptr,
+              { .list_name = "administrative host", .json_name_id = "adminhost", .json_name_id_when_empty = false,
+                .member = { ADMIN_HOSTGROUP, HGRP_host_list, HR_name, HR_Type, true } } },
+   /* SH   */ { ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_name, nullptr,           &qconf_sfi,                nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,            nullptr,
+              { .list_name = "submit host", .json_name_id = "submithost", .json_name_id_when_empty = false,
+                .member = { SUBMIT_HOSTGROUP, HGRP_host_list, HR_name, HR_Type, true } } },
+   /* MGR  */ { ocs::gdi::Target::US_LIST,   US_Type,   US_name,   nullptr,           &qconf_sfi,                nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,            nullptr,
+              { .list_name = "manager", .json_name_id = "manager", .json_name_id_when_empty = true,
+                .member = { MANAGER_USERSET, US_entries, UE_name, UE_Type, false } } },
+   /* OP   */ { ocs::gdi::Target::US_LIST,   US_Type,   US_name,   nullptr,           &qconf_sfi,                nullptr,      nullptr,             nullptr,           ocs::gdi::SubCommand::NONE,    false, false, false, nullptr,            nullptr,
+              { .list_name = "operator", .json_name_id = "operator", .json_name_id_when_empty = true,
+                .member = { OPERATOR_USERSET, US_entries, UE_name, UE_Type, false } } },
 };
 
 /* CS-2808: the table is indexed by QConfObj and carries no name to grep for, so
@@ -253,7 +276,7 @@ static const qconf_object_desc qconf_object_table[] = {
  * silence. The bound is spelled out rather than taken from a sentinel, so that
  * appending a value forces a look at this line. */
 static_assert(sizeof(qconf_object_table) / sizeof(qconf_object_table[0]) ==
-              static_cast<size_t>(QConfObj::CAT) + 1,
+              static_cast<size_t>(QConfObj::OP) + 1,
               "qconf_object_table needs exactly one row per QConfObj value");
 
 /** @brief A private copy of a field list, see the header (CS-2817)

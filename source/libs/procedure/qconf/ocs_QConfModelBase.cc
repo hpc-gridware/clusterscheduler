@@ -100,6 +100,14 @@ static const ocs::qconf_read_entry qconf_read_table[] = {
     * number - a string compare on CT_id would not match anything (CS-2819). */
    {"-scat",   QConfObj::CAT,  ocs::QConfReadKind::SINGLE_OBJECT_BY_ID},
 
+   /* group J: the four reserved member lists. The switch reports the sublist of
+    * one named object, not the objects of a type, so the source differs from a
+    * name list while the output does not (CS-2820). */
+   {"-sh",     QConfObj::AH,   ocs::QConfReadKind::MEMBER_LIST},
+   {"-ss",     QConfObj::SH,   ocs::QConfReadKind::MEMBER_LIST},
+   {"-sm",     QConfObj::MGR,  ocs::QConfReadKind::MEMBER_LIST},
+   {"-so",     QConfObj::OP,   ocs::QConfReadKind::MEMBER_LIST},
+
    /* group A: the singletons. A separate kind rather than a SINGLE_OBJECT row
     * with name_nm == NoName: that would work - get_object_where() returns
     * nullptr for NoName and arg(0) is null-safe - but a row whose switch takes
@@ -1109,6 +1117,12 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
        * none at all - and none means every object of the type. */
       what = lWhat("%T(ALL)", desc_->descr);
       where = get_names_where(desc_->descr, key_nm_, parameter.get_operation());
+   } else if (kind_ == QConfReadKind::MEMBER_LIST) {
+      /* One named object and its sublist. The name comes from the descriptor,
+       * not from the command line - the switch itself says which reserved
+       * object is meant, and the user cannot name another one. */
+      what = lWhat("%T(%I %I)", desc_->descr, key_nm_, desc_->read.member.list_nm);
+      where = get_object_where(desc_->descr, key_nm_, desc_->read.member.owner);
    } else {
       what = lWhat("%T(ALL)", desc_->descr);
       where = get_object_where(desc_->descr, key_nm_, parameter.get_operation().arg(0));
@@ -1120,7 +1134,27 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
       DRETURN(false);
    }
 
-   if (kind_ == QConfReadKind::NAME_LIST) {
+   if (kind_ == QConfReadKind::MEMBER_LIST) {
+      /* Replace the fetched owner by its members, so that everything below -
+       * the sort, the empty check, the views - works on a name list and knows
+       * nothing about where the names came from.
+       *
+       * The sublist is copied before the owner is freed, and an absent owner
+       * becomes an empty list rather than a null one: the reserved groups are
+       * seeded at every qmaster startup and cannot be deleted, so not finding
+       * one means an empty membership, which then takes the normal empty path.
+       */
+      const lListElem *owner = lFirst(object_list_);
+      lList *members = (owner != nullptr)
+                       ? lCopyList("", lGetList(owner, desc_->read.member.list_nm))
+                       : nullptr;
+      lFreeList(&object_list_);
+      object_list_ = (members != nullptr) ? members
+                                         : lCreateList("", desc_->read.member.descr);
+      key_nm_ = desc_->read.member.key_nm;
+   }
+
+   if (kind_ == QConfReadKind::NAME_LIST || kind_ == QConfReadKind::MEMBER_LIST) {
       lPSortList(object_list_, "%I+", key_nm_);
 
       /* An empty list is an error for plain output and not for JSON, which

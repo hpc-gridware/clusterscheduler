@@ -52,7 +52,8 @@ namespace ocs {
       SINGLE_OBJECT, ///< group A: one named object, rendered in full
       SINGLETON,     ///< group A: the one object of its type, no name given
       OBJECT_LIST,   ///< group N: several named objects, or all of them (CS-2819)
-      SINGLE_OBJECT_BY_ID  ///< group N: one object whose key is a number, not a name (CS-2819)
+      SINGLE_OBJECT_BY_ID,  ///< group N: one object whose key is a number, not a name (CS-2819)
+      MEMBER_LIST    ///< group J: the names in one reserved object's sublist (CS-2820)
    };
 
    struct qconf_read_entry {

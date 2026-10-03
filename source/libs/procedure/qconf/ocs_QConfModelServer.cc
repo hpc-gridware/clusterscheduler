@@ -60,11 +60,15 @@ static const sge_object_type qconf_master_list[] = {
    SGE_TYPE_CONFIG,      /* CONF */
    SGE_TYPE_NONE,        /* EV - event clients live in the event master */
    SGE_TYPE_CATEGORY,    /* CAT  */
+   SGE_TYPE_HGROUP,      /* AH - @admin_hosts lives in the host group list */
+   SGE_TYPE_HGROUP,      /* SH - @submit_hosts likewise */
+   SGE_TYPE_USERSET,     /* MGR - the reserved "manager" access list */
+   SGE_TYPE_USERSET,     /* OP - the reserved "operator" access list */
 };
 
 /* the second array on the same index - see the note at QConfObj (CS-2808) */
 static_assert(sizeof(qconf_master_list) / sizeof(qconf_master_list[0]) ==
-              static_cast<size_t>(QConfObj::CAT) + 1,
+              static_cast<size_t>(QConfObj::OP) + 1,
               "qconf_master_list needs exactly one row per QConfObj value");
 
 /** @brief Read the host groups from the data store (CS-2818)
