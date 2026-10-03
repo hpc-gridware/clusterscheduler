@@ -100,6 +100,8 @@
 #include "qconf/ocs_QConfController.h"
 #include "qconf/table/ocs_QConfTableController.h"
 #include "qconf/table/ocs_QConfTableView.h"
+#include "qconf/eventclient/ocs_QConfEventClientController.h"
+#include "qconf/eventclient/ocs_QConfEventClientView.h"
 #include "qconf/objl/ocs_QConfObjectFilterController.h"
 #include "qconf/objl/ocs_QConfObjectFilterView.h"
 #include "qconf/sick/ocs_QConfSickController.h"
@@ -134,7 +136,6 @@ static int sge_error_and_exit(const char *ptr);
 /* ------------------------------------------------------------- */
 static int show_thread_list(std::ostream &os);
 static int show_processors(std::ostream &os, bool has_binding_param);
-static int show_eventclients(std::ostream &os);
 
 /* ------------------------------------------------------------- */
 static void parse_name_list_to_cull(const char *name, lList **lpp, lDescr *dp, int nm, char *s);
@@ -1341,6 +1342,10 @@ qconf_dispatch_procedure(std::ostream &os, ocs::QConfParameterClient &param, lLi
          } else if (sub == ocs::QConfParameter::QUEUE_SICK) {
             ocs::QConfSickView view(param);
             ocs::QConfSickController controller(os);
+            controller.process_request(param, model, view);
+         } else if (sub == ocs::QConfParameter::EVENT_CLIENT_LIST) {
+            ocs::QConfEventClientView view(param);
+            ocs::QConfEventClientController controller(os);
             controller.process_request(param, model, view);
          } else if (sub == ocs::QConfParameter::OBJECT_FILTER) {
             ocs::QConfObjectFilterView view(param);
@@ -5119,7 +5124,28 @@ int sge_parse_qconf(char *argv[]) {
 /*-----------------------------------------------------------------------------*/
       /* "-secl" */
       if (strcmp("-secl", *spp) == 0) {
-         show_eventclients(os);
+         lList *answer_list = nullptr;
+         qconf_op op;
+
+         op.token = "-secl";
+
+         /* CS-2820: a sub-procedure rather than a table row. The output is a
+          * table with a hand written header and fixed column widths, which a
+          * flatfile spooling instruction cannot reproduce without re-deriving
+          * them from the data - and that is what a golden file would catch. */
+         param.set_operation(op);
+         param.set_sub_procedure_name(ocs::QConfParameter::EVENT_CLIENT_LIST);
+         const bool ok = qconf_dispatch_procedure(os, param, &answer_list);
+         param.set_sub_procedure_name("");
+
+         if (!ok) {
+            /* the messages the switch used to write to stderr itself: an empty
+             * list for plain output, and the reason a read failed. Unlike before,
+             * both now set the exit code (CS-2820). */
+            answer_list_output(&answer_list);
+            sge_parse_return = 1;
+         }
+         lFreeList(&answer_list);
          spp++;
          continue;
       }
@@ -6847,68 +6873,6 @@ show_thread_list(std::ostream &os) {
    lFreeList(&alp);
    lFreeList(&lp);
 
-
-   DRETURN(0);
-}
-
-/**
- * @brief Print the registered event clients, the `-secl` switch
- *
- * One line per client with its id, name and host, or a JSON array under
- * `-fmt json`. An empty list is reported on stderr and is not an error.
- *
- * @param os the stream the table is written to (CS-1841)
- * @return 0 on success, 1 when qmaster answered with an error
- */
-static int show_eventclients(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   lEnumeration *what = nullptr;
-   lList *alp = nullptr, *lp = nullptr;
-
-   what = lWhat("%T(%I %I %I)", EV_Type, EV_id, EV_name, EV_host);
-
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EV_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
-   lFreeWhat(&what);
-
-   lListElem *ep1 = lFirstRW(alp);
-   answer_exit_if_not_recoverable(ep1);
-   if (answer_get_status(ep1) != STATUS_OK) {
-      fprintf(stderr, "%s\n", lGetString(ep1, AN_text));
-      fprintf(stderr, "\n");
-      DRETURN(-1);
-   }
-
-   if (lp != nullptr) {
-      lPSortList(lp, "%I+", EV_id);
-   }
-
-   if (qconf_opt_format == SP_FORM_JSON) {
-      /* CS-2313a: render the event clients as a JSON array of { id, name, host }
-       * objects (an empty list still yields the enveloped empty array) */
-      static spooling_field ev_fields[] = {
-         { EV_id,   0, "id",   false, nullptr, false, nullptr, nullptr, nullptr },
-         { EV_name, 0, "name", false, nullptr, false, nullptr, nullptr, nullptr },
-         { EV_host, 0, "host", false, nullptr, false, nullptr, nullptr, nullptr },
-         { NoName,  0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr }
-      };
-      dstring out = DSTRING_INIT;
-      spool_json_write_typed_list(&alp, lp, ev_fields, "event_clients", &out);
-      os << qconf_cstr(sge_dstring_get_string(&out));
-      sge_dstring_free(&out);
-   } else if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
-      os << std::format("{:>8} {:<15} {:<25}\n", MSG_TABLE_EV_ID, MSG_TABLE_EV_NAME, MSG_TABLE_HOST);
-      os << "--------------------------------------------------\n";
-      for_each_ep_lv(ep, lp) {
-         os << std::format("{:>8} ", static_cast<int>(lGetUlong(ep, EV_id)));
-         os << std::format("{:<15} ", qconf_cstr(lGetString(ep, EV_name)));
-         os << std::format("{:<25}\n", (lGetHost(ep, EV_host) != nullptr) ? lGetHost(ep, EV_host) : "-");
-      }
-   }
-   else {
-      fprintf(stderr, "%s\n", MSG_QCONF_NOEVENTCLIENTSREGISTERED);
-   }
-   lFreeList(&alp);
-   lFreeList(&lp);
 
    DRETURN(0);
 }

@@ -248,6 +248,7 @@ namespace ocs {
       bool make_cqueue_snapshot(lList **answer_list, QConfParameter &parameter);
       bool make_sick_snapshot(lList **answer_list);
       bool make_sobjl_snapshot(lList **answer_list, QConfParameter &parameter);
+      bool make_eventclient_snapshot(lList **answer_list, QConfParameter &parameter);
       bool collect_exechost_matches(lList **answer_list, const char *attr, const char *val);
       bool collect_cqueue_matches(lList **answer_list, const char *spec, const char *attr, const char *val);
 

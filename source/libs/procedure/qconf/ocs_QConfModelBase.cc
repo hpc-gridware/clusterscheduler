@@ -775,6 +775,63 @@ ocs::QConfModelBase::make_sobjl_snapshot(lList **answer_list, QConfParameter &pa
  * @param answer_list used to return error messages
  * @return true unless the queues could not be read
  */
+/** @brief The snapshot of `qconf -secl` (CS-2820)
+ *
+ * Fetches the registered event clients with the three fields the switch shows
+ * and sorts them by id, which is the order the hand written switch produced.
+ *
+ * The reduced enumeration is deliberate and safe here, unlike the one that
+ * aborted in CS-2818: the only reader of these elements is
+ * QConfEventClientView, and it touches exactly these three fields. In server
+ * context the read does not go through lSelect() at all - QConfModelServer
+ * answers an EV read from the event master, which builds the list on demand.
+ *
+ * An empty list is an error for plain output and not for JSON, which renders
+ * the enveloped empty array - the rule every migrated read follows. It is also
+ * the one behaviour this move changes on purpose: the hand written switch wrote
+ * the message to stderr and still exited 0, so a cluster without event clients
+ * was indistinguishable from a successful read.
+ *
+ * @param answer_list carries the reason when the read fails
+ * @param parameter   the invocation, for the output format
+ * @return true when the clients were fetched
+ */
+bool
+ocs::QConfModelBase::make_eventclient_snapshot(lList **answer_list, QConfParameter &parameter) {
+   DENTER(TOP_LAYER);
+
+   object_ = QConfObj::EV;
+   /* the kind is not consulted on a sub-procedure path - this controller renders
+    * rather than QConfController - but it is set so that nothing downstream sees
+    * an unset field, the way make_sick_snapshot() does */
+   kind_ = QConfReadKind::NAME_LIST;
+   desc_ = &qconf_desc(object_);
+   key_nm_ = desc_->name_nm;
+
+   lEnumeration *what = lWhat("%T(%I %I %I)", EV_Type, EV_id, EV_name, EV_host);
+   const bool ok = fetch(answer_list, desc_->target, nullptr, what);
+   lFreeWhat(&what);
+   if (!ok) {
+      DRETURN(false);
+   }
+
+   /* an empty result has to be an empty list, not no list at all - see the note
+    * in make_list_snapshot() */
+   if (object_list_ == nullptr) {
+      object_list_ = lCreateList("", EV_Type);
+   }
+   lPSortList(object_list_, "%I+", EV_id);
+
+   if (lGetNumberOfElem(object_list_) == 0 &&
+       parameter.get_output_format() != ProcedureParameter::OutputFormat::JSON) {
+      answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
+                              "%s", MSG_QCONF_NOEVENTCLIENTSREGISTERED);
+      DRETURN(false);
+   }
+
+   DRETURN(true);
+}
+
 bool
 ocs::QConfModelBase::make_sick_snapshot(lList **answer_list) {
    DENTER(TOP_LAYER);
@@ -1077,6 +1134,9 @@ ocs::QConfModelBase::make_snapshot(lList **answer_list, QConfParameter &paramete
    }
    if (parameter.get_sub_procedure_name() == QConfParameter::QUEUE_SICK) {
       DRETURN(make_sick_snapshot(answer_list));
+   }
+   if (parameter.get_sub_procedure_name() == QConfParameter::EVENT_CLIENT_LIST) {
+      DRETURN(make_eventclient_snapshot(answer_list, parameter));
    }
    if (parameter.get_sub_procedure_name() == QConfParameter::OBJECT_FILTER) {
       DRETURN(make_sobjl_snapshot(answer_list, parameter));

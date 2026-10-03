@@ -38,6 +38,8 @@
 #include "procedure/qconf/table/ocs_QConfTableController.h"
 #include "procedure/qconf/table/ocs_QConfTableView.h"
 #include "procedure/qconf/objl/ocs_QConfObjectFilterController.h"
+#include "procedure/qconf/eventclient/ocs_QConfEventClientView.h"
+#include "procedure/qconf/eventclient/ocs_QConfEventClientController.h"
 #include "procedure/qconf/objl/ocs_QConfObjectFilterView.h"
 #include "procedure/qconf/sick/ocs_QConfSickController.h"
 #include "procedure/qconf/sick/ocs_QConfSickView.h"
@@ -327,6 +329,28 @@ namespace {
       }
    };
 
+   /** @brief `qconf -secl`: the registered event clients. One view for all three
+    * factories - the view itself picks the table or the JSON array, because the
+    * two share the fetched list and differ only in the writing. */
+   struct QConfEventClientTraits {
+      using Parameter = ocs::QConfParameter;
+      using Model = ocs::QConfModelServer;
+      using ViewBase = ocs::QConfEventClientView;
+      using Controller = ocs::QConfEventClientController;
+
+      static constexpr ProgName prog_number = QCONF;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ViewBase>(parameter);
+      }
+   };
+
    struct QQuotaTraits {
       using Parameter = ocs::QQuotaParameter;
       using Model = ocs::QQuotaModelServer;
@@ -559,6 +583,7 @@ namespace {
       {to_string_view(QCONF), ocs::QConfParameter::CATEGORY_LIST, &run_procedure<QConfTableTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::QUEUE_SICK, &run_procedure<QConfSickTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::OBJECT_FILTER, &run_procedure<QConfObjectFilterTraits>},
+      {to_string_view(QCONF), ocs::QConfParameter::EVENT_CLIENT_LIST, &run_procedure<QConfEventClientTraits>},
       {to_string_view(QCONF), ocs::QConfParameter::CQUEUE_SHOW, &run_procedure<QConfCQueueShowTraits>},
       {to_string_view(QHOST), "",  &run_procedure<QHostTraits>},
       {to_string_view(QQUOTA), "",  &run_procedure<QQuotaTraits>},
