@@ -45,7 +45,8 @@ namespace ocs {
 
       /** @brief Not reached, see QConfHGroupStructureView::show_name_list() */
       void show_name_list([[maybe_unused]] std::ostream &os, [[maybe_unused]] const lList *list,
-                          [[maybe_unused]] int key_nm) override {
+                          [[maybe_unused]] int key_nm,
+                          [[maybe_unused]] const qconf_object_desc &desc) override {
       }
 
       void show_why(std::ostream &os, const QConfModelBase::HGroupWhy &why);

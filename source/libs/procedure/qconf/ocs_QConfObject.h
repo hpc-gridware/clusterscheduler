@@ -99,6 +99,17 @@ struct qconf_read_desc {
                                    ///< property of the type, not of the switch: -srqs
                                    ///< wraps every record in braces (qconf_rqs_sfi),
                                    ///< -su prints plain blocks (CS-2819)
+   const char *json_name_id;       ///< name list JSON: the envelope stem, for a list whose
+                                   ///< elements are not a registered object type and would
+                                   ///< otherwise be reported as "unknown"; nullptr derives
+                                   ///< it from the first element, as the object name lists
+                                   ///< do (CS-2820)
+   bool json_name_id_when_empty;   ///< name list JSON: whether json_name_id is still given
+                                   ///< for an empty list. It decides between a bare
+                                   ///< {"names": []} and the full "<stem>-list" envelope,
+                                   ///< and the two reserved pairs really do differ: -sh and
+                                   ///< -ss passed the type name only for a non-empty list,
+                                   ///< -sm and -so passed it always (CS-2820)
 };
 
 /** @brief Everything the generic engines need to know about one object type. */

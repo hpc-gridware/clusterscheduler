@@ -43,7 +43,8 @@ namespace ocs {
 
       /** @brief Not reached: the report is written by show_report() */
       void show_name_list([[maybe_unused]] std::ostream &os, [[maybe_unused]] const lList *list,
-                          [[maybe_unused]] int key_nm) override {
+                          [[maybe_unused]] int key_nm,
+                          [[maybe_unused]] const qconf_object_desc &desc) override {
       }
 
       /** @brief Write the report the model built

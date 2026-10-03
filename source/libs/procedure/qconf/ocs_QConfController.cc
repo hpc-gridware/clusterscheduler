@@ -44,7 +44,7 @@ ocs::QConfController::process_request([[maybe_unused]] QConfParameter &parameter
    DENTER(TOP_LAYER);
 
    if (model.get_kind() == QConfReadKind::NAME_LIST) {
-      view.show_name_list(out_, model.get_object_list(), model.get_key_nm());
+      view.show_name_list(out_, model.get_object_list(), model.get_key_nm(), *model.get_desc());
    } else if (model.get_kind() == QConfReadKind::OBJECT_LIST) {
       view.show_object_list(out_, model.get_object_list(), *model.get_desc());
    } else {

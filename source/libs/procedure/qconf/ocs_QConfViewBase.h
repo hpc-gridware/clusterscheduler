@@ -63,11 +63,19 @@ namespace ocs {
       ~QConfViewBase() override = default;
 
       /** @brief Write the names of the fetched objects
+       *
+       * Takes the descriptor since CS-2820, as show_object() and
+       * show_object_list() always have: the JSON envelope of a list whose
+       * elements are not a registered object type has to be named explicitly,
+       * and the plain form of the reserved host groups renders matchers last.
+       *
        * @param os     the stream to write to
        * @param list   the objects, already sorted
        * @param key_nm the field holding the name
+       * @param desc   the descriptor of the type the names belong to
        */
-      virtual void show_name_list(std::ostream &os, const lList *list, int key_nm) = 0;
+      virtual void show_name_list(std::ostream &os, const lList *list, int key_nm,
+                                  const qconf_object_desc &desc) = 0;
 
       /** @brief Write one object in the layout of its descriptor
        *

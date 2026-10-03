@@ -40,9 +40,11 @@
  * @param os     the stream to write to
  * @param list   the objects, already sorted
  * @param key_nm the field holding the name
+ * @param desc   the descriptor of the type the names belong to
  */
 void
-ocs::QConfViewPlain::show_name_list(std::ostream &os, const lList *list, int key_nm) {
+ocs::QConfViewPlain::show_name_list(std::ostream &os, const lList *list, int key_nm,
+                                    [[maybe_unused]] const qconf_object_desc &desc) {
    DENTER(TOP_LAYER);
 
    const lListElem *ep;
