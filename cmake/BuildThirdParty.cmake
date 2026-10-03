@@ -37,7 +37,7 @@ set(SGE_PACKAGE_MANAGER none)
 # The libdb5 repository has no releases or tags, so berkeleydb is built from its master branch.
 # The version is still the one master carries, see DB_VERSION_* in its dist/RELEASE.
 set(PROJECT_3RDPARTY_BERKELEYDB_VERSION "5.3.28")
-set(PROJECT_3RDPARTY_JEMALLOC_VERSION "5.3.0")
+set(PROJECT_3RDPARTY_JEMALLOC_VERSION "5.4.0")
 set(PROJECT_3RDPARTY_HWLOC_VERSION "2.10.0")
 
 # PROJECT_3RDPARTY_<PACKAGE>_DIR, the installation directory of each of them
