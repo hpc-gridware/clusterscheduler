@@ -241,6 +241,12 @@ function(sbom_collect_components)
    if (WITH_SPOOL_POSTGRES)
       sbom_add_os_component(libpq "required" "shared" "PostgreSQL client library, spooling")
    endif ()
+
+   # only linked when it was found, see the WITH_CURL block in CMakeLists.txt
+   if (WITH_CURL AND CURL_FOUND)
+      sbom_add_os_component(libcurl "required" "shared"
+                            "HTTP client library, cloud provider detection")
+   endif ()
 endfunction()
 
 # @brief write the SBOM document and install it
